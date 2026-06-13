@@ -9,5 +9,5 @@ entry you can read in a tab next to the vanilla **Log** tab.
 points at any OpenAI-compatible `/chat/completions` endpoint — a local LM Studio /
 llama.cpp server works fine. set the endpoint, model and prompts in the mod settings.
 
-⚠️ **temporary / heavy work in progress.** 
+⚠️ **temporary / experemental / heavy work in progress.** 
 see `DOCUMENTATION.md` for how it actually works under the hood.
