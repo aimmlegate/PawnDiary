@@ -1,0 +1,9 @@
+# mode: solo
+# max_tokens: 200
+===USER===
+event: sad wandering
+pov: Mei
+what happened: Mei had a mental break (Sad wandering). Reason: Despair: recent deaths and a long string of disappointments.
+instruction: the pawn suffered a mental break; write their inner state and what they did, in their own voice
+you: female, 29y; traits: Kind, Depressive; mood: miserable 16%; top thoughts: My friend died -10, Slept in the cold -4, Ate raw food -3
+setting: outdoors, snowfall, cold (-12C), boreal forest

@@ -41,6 +41,7 @@ breaks) produce a single entry from the breaking pawn's point of view.
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
+| `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. Not loaded by RimWorld. |
 
 ---
 
@@ -261,6 +262,13 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-13 (prompt-lab)**
+  - Added `prompt-lab/` — a dependency-free Node harness to iterate on prompts outside the
+    game. Hand-authored fixtures (one per event type: dual interaction, social fight, solo
+    mental break, single POV) mirror the mod's compact format using realistic def labels;
+    `run.js` fires them at the configured endpoint and prints the response (+ parsed dual
+    split). Shared system prompt in `prompts/_system.txt`.
 
 - **2026-06-13 (lean prompt context)**
   - Reworked prompts to send **signal only**. New `AppendField` skips empty/placeholder

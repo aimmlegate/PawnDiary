@@ -1,0 +1,20 @@
+# mode: dual
+# max_tokens: 320
+===USER===
+event: romance attempt (two viewpoints)
+initiator: Wei
+recipient: Liara
+initiator saw: Wei worked up the nerve to make a romantic advance on Liara, and she accepted.
+recipient saw: Wei made a nervous romantic advance on Liara; she accepted.
+instruction: romantic moment between the pawns; may be an advance, commitment, date, or breakup depending on context
+initiator profile: male, 26y; traits: Shy, Optimist; mood: happy 81%
+recipient profile: female, 27y; traits: Beautiful, Kind; mood: stable 67%
+setting: outdoors, clear weather, temperate forest, beautiful surroundings
+initiator relationship: opinion +44 (friendly); because Shared kind words +10, Chitchat +4; last wrote: "Every time Liara laughs I forget what I meant to say."
+recipient relationship: opinion +38 (friendly); because Shared kind words +8
+
+Write two short first-person diary entries, one from each pawn's point of view, following the instruction. Each pawn only knows what they could perceive. Output EXACTLY in this format and nothing else:
+[INITIATOR]
+<Wei's diary entry>
+[RECIPIENT]
+<Liara's diary entry>

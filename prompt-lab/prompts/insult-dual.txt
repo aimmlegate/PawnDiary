@@ -1,0 +1,19 @@
+# mode: dual
+# max_tokens: 320
+===USER===
+event: insult (two viewpoints)
+initiator: Rurik
+recipient: Mei
+what happened: Rurik sneered at Mei, calling her cooking "slop fit for boomrats".
+instruction: hostile exchange: an insult, a slight, or the start of a social fight
+initiator profile: male, 34y; traits: Abrasive, Bloodlust; mood: stressed 41%
+recipient profile: female, 29y; traits: Kind, Too smart; mood: stable 63%
+setting: dining room, indoors, doing: eating at a table
+initiator relationship: opinion -18 (strained); because Insulted -16, Slighted me -8; last wrote: "Mei always acts like she's better than the rest of us."
+recipient relationship: rival; opinion -27 (strained); because Insulted me -20, Social fight -7
+
+Write two short first-person diary entries, one from each pawn's point of view, following the instruction. Each pawn only knows what they could perceive. Output EXACTLY in this format and nothing else:
+[INITIATOR]
+<Rurik's diary entry>
+[RECIPIENT]
+<Mei's diary entry>
