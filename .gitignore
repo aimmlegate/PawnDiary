@@ -1,0 +1,16 @@
+# Build intermediates
+obj/
+*.user
+*.suo
+.vs/
+*.pdb
+
+# OS cruft
+Thumbs.db
+.DS_Store
+
+# Local Claude Code config (machine-specific)
+.claude/
+
+# Note: 1.6/Assemblies/PawnDiary.dll (and bundled 0Harmony.dll) are committed on purpose
+# so the mod is usable straight from a clone.
