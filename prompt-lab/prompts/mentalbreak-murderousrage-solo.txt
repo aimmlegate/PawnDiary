@@ -5,6 +5,7 @@ event: murderous rage
 pov: Bjorn
 what happened: Bjorn had a mental break (Murderous rage), directed at Talia. Reason: A bonded animal died and something in him snapped.
 instruction: the pawn suffered a mental break; write their inner state and what they did, in their own voice
-you: male, 45y; traits: Volatile, Bloodlust; mood: miserable 19%; top thoughts: My bonded animal died -12, Insulted me -8
+you: male, 45y; mood: miserable 19%; top thoughts: My bonded animal died -12, Insulted me -8
+you persona: random
 setting: kitchen, indoors
 relationship: rival; opinion -41 (hostile); because Insulted me -18, Social fight -12

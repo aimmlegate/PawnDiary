@@ -6,6 +6,7 @@ pov: Mei
 with: Rurik
 what happened: Rurik sneered at Mei, calling her cooking "slop fit for boomrats".
 instruction: hostile exchange: an insult, a slight, or the start of a social fight
-you: female, 29y; traits: Kind, Too smart; mood: stable 63%
+you: female, 29y; mood: stable 63%
+you persona: random
 setting: dining room, indoors, doing: eating at a table
 relationship: rival; opinion -27 (strained); because Insulted me -20, Social fight -7; last wrote: "Rurik picks at everyone. I won't give him the satisfaction."

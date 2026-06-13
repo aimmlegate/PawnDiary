@@ -6,8 +6,10 @@ initiator: Rurik
 recipient: Mei
 what happened: Rurik sneered at Mei, calling her cooking "slop fit for boomrats".
 instruction: hostile exchange: an insult, a slight, or the start of a social fight
-initiator profile: male, 34y; traits: Abrasive, Bloodlust; mood: stressed 41%
-recipient profile: female, 29y; traits: Kind, Too smart; mood: stable 63%
+initiator profile: male, 34y; mood: stressed 41%
+initiator persona: random
+recipient profile: female, 29y; mood: stable 63%
+recipient persona: random
 setting: dining room, indoors, doing: eating at a table
 initiator relationship: opinion -18 (strained); because Insulted -16, Slighted me -8; last wrote: "Mei always acts like she's better than the rest of us."
 recipient relationship: rival; opinion -27 (strained); because Insulted me -20, Social fight -7

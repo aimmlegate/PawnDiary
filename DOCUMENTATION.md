@@ -41,7 +41,7 @@ breaks) produce a single entry from the breaking pawn's point of view.
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
-| `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. Not loaded by RimWorld. |
+| `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
 ---
 
@@ -262,6 +262,18 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-13 (persona writing styles)**
+  - Added `prompt-lab/personas.txt` — a catalog of 12 writing-style personas (stoic-survivor,
+    fiery-hothead, melancholy-dreamer, earnest-optimist, cynical-realist, anxious-worrier,
+    gentle-caretaker, grim-veteran, whimsical-eccentric, noble-idealist, bitter-loner,
+    eager-socialite) with short voice descriptions.
+  - Persona is now a **separate line** in fixturess (`initiator persona: random`,
+    `recipient persona: random`, `you persona: random`) — the catalog stays out of the prompt.
+    `run.js` resolves `random` to a randomly picked persona description at runtime.
+  - Replaced `traits:` field with the persona system in all 6 prompt-lab fixtures.
+  - Updated `_system.txt`: the model is now told to match the pawn's writing persona — their
+    voice, sentence rhythm, and emotional register — rather than raw trait names.
 
 - **2026-06-13 (prompt-lab)**
   - Added `prompt-lab/` — a dependency-free Node harness to iterate on prompts outside the

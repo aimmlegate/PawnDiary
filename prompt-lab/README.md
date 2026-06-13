@@ -20,7 +20,7 @@ Make sure your model server is up (LM Studio / llama.cpp / etc.). Endpoint + mod
 `config.json`, or override per run with env vars:
 
 ```
-ENDPOINT=http://localhost:1234/v1 MODEL=my-model node run.js --all
+ENDPOINT=http://localhost:1234/v1 MODEL=rocinante-x-12b-v1-i1 node run.js --all
 ```
 
 ## Editing prompts

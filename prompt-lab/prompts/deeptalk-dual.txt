@@ -6,8 +6,10 @@ initiator: Aria
 recipient: Cassius
 what happened: Aria and Cassius shared a long, searching conversation about the people they lost before the colony.
 instruction: warm or meaningful exchange: a deep talk, kind words, reassurance, or calming someone down
-initiator profile: female, 41y; traits: Kind, Sanguine; mood: happy 78%
-recipient profile: male, 38y; traits: Too smart, Depressive; mood: stressed 44%
+initiator profile: female, 41y; mood: happy 78%
+initiator persona: random
+recipient profile: male, 38y; mood: stressed 44%
+recipient persona: random
 setting: hospital, indoors
 initiator relationship: friend; opinion +31 (friendly); because Deep talk +12, Shared kind words +6
 recipient relationship: friend; opinion +24 (friendly); because Deep talk +12; last wrote: "Aria sat with me when the dark got loud. I didn't have to explain."

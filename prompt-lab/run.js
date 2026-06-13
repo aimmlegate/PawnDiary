@@ -16,7 +16,9 @@ const https = require('https');
 
 const ROOT = __dirname;
 const PROMPTS_DIR = path.join(ROOT, 'prompts');
+const RESULTS_DIR = path.join(ROOT, 'results');
 const CONFIG = loadConfig();
+const PERSONAS = loadPersonas();
 
 function loadConfig() {
   const def = { endpoint: 'http://localhost:1234/v1', model: 'local-model', apiKey: '', temperature: 0.8, maxTokens: 320 };
@@ -30,6 +32,30 @@ function loadConfig() {
   if (process.env.MODEL) cfg.model = process.env.MODEL;
   if (process.env.API_KEY) cfg.apiKey = process.env.API_KEY;
   return cfg;
+}
+
+// Parse personas.txt into an array of persona description strings.
+// Matches numbered entries like "1. stoic-survivor\n   writes in terse, matter-of-fact..."
+function loadPersonas() {
+  const p = path.join(ROOT, 'personas.txt');
+  if (!fs.existsSync(p)) return [];
+  const raw = fs.readFileSync(p, 'utf8');
+  const personas = [];
+  const re = /^\d+\.\s+\S+\n\s+(.+)$/gm;
+  let m;
+  while ((m = re.exec(raw)) !== null) {
+    personas.push(m[1].trim());
+  }
+  return personas;
+}
+
+// Replace each "persona: random" line (initiator/recipient/you persona) with a randomly
+// picked persona from the catalog. Every occurrence gets a fresh random pick.
+function resolvePersonas(userPrompt) {
+  if (!PERSONAS.length) return userPrompt;
+  return userPrompt.replace(/^(.* persona:\s*)random\s*$/gim, (_, prefix) =>
+    prefix + PERSONAS[Math.floor(Math.random() * PERSONAS.length)]
+  );
 }
 
 // Parse a fixture: leading "# key: value" header lines, then ===SYSTEM=== / ===USER=== sections.
@@ -118,23 +144,47 @@ function splitDual(text) {
 
 async function runOne(file, showPrompt) {
   const { meta, system, user } = parseFixture(file);
-  console.log('\n========== ' + path.basename(file) + '  [mode=' + meta.mode + ' temp=' + meta.temperature + ' max=' + meta.maxTokens + '] ==========');
+  const resolvedUser = resolvePersonas(user);
+  const fixtureName = path.basename(file, '.txt');
+  console.log('\n========== ' + fixtureName + '  [mode=' + meta.mode + ' temp=' + meta.temperature + ' max=' + meta.maxTokens + '] ==========');
   if (showPrompt) {
     console.log('--- system ---\n' + (system || '(none)'));
-    console.log('--- user ---\n' + user);
+    console.log('--- user ---\n' + resolvedUser);
   }
   const t0 = Date.now();
   let out;
-  try { out = await callModel(system, user, meta); }
+  try { out = await callModel(system, resolvedUser, meta); }
   catch (e) { console.error('  ERROR: ' + e.message); return; }
   const dt = ((Date.now() - t0) / 1000).toFixed(1);
   console.log('--- response (' + dt + 's) ---\n' + out);
+
+  let parsed = null;
   if (meta.mode === 'dual') {
-    const p = splitDual(out);
+    parsed = splitDual(out);
     console.log('\n--- parsed ---');
-    console.log('[INITIATOR] ' + p.initiator);
-    console.log('[RECIPIENT] ' + p.recipient);
+    console.log('[INITIATOR] ' + parsed.initiator);
+    console.log('[RECIPIENT] ' + parsed.recipient);
   }
+
+  saveResult(fixtureName, meta, system, resolvedUser, out, parsed, dt);
+}
+
+function saveResult(name, meta, system, user, raw, parsed, dt) {
+  if (!fs.existsSync(RESULTS_DIR)) fs.mkdirSync(RESULTS_DIR, { recursive: true });
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const outPath = path.join(RESULTS_DIR, name + '-' + ts + '.txt');
+  let content = 'fixture: ' + name + '\n';
+  content += 'mode: ' + meta.mode + '  temp: ' + meta.temperature + '  max_tokens: ' + meta.maxTokens + '  time: ' + dt + 's\n';
+  content += '\n--- system ---\n' + (system || '(none)') + '\n';
+  content += '--- user ---\n' + user + '\n';
+  content += '\n--- raw response ---\n' + raw + '\n';
+  if (parsed) {
+    content += '\n--- parsed ---\n';
+    content += '[INITIATOR]\n' + parsed.initiator + '\n';
+    content += '[RECIPIENT]\n' + parsed.recipient + '\n';
+  }
+  fs.writeFileSync(outPath, content, 'utf8');
+  console.log('\nsaved: ' + path.relative(ROOT, outPath));
 }
 
 function listFixtures() {

@@ -1,0 +1,51 @@
+personas catalog — writing-style templates for prompt-lab fixtures
+===============================================================
+
+When building a fixture, pick one of these persona descriptions to replace
+the old `traits:` field. The persona tells the model *how the pawn writes* —
+their voice, sentence rhythm, and emotional register.
+
+1. stoic-survivor
+   writes in terse, matter-of-fact sentences; avoids self-pity and focuses on what needs doing next
+
+2. fiery-hothead
+   writes in explosive bursts of emotion, capitalizing words for emphasis; quick to anger and quicker to forgive
+
+3. melancholy-dreamer
+   writes with wistful, poetic melancholy; finds symbolism in small moments and lingers on what was lost
+
+4. earnest-optimist
+   writes with relentless, sometimes naive positivity; finds a silver lining even in catastrophe
+
+5. cynical-realist
+   writes with dry, deadpan gallows humor; expects the worst and is rarely disappointed
+
+6. anxious-worrier
+   writes in long, spiraling anxious sentences; overthinks every interaction and second-guesses every motive
+
+7. gentle-caretaker
+   writes with gentle warmth and empathy; notices others' pain before their own and downplays their troubles
+
+8. grim-veteran
+   writes like a battlefield report; clinical about violence, sentimental about loyalty
+
+9. whimsical-eccentric
+   writes in a stream-of-consciousness tangle of tangents, strange observations, and sudden insights
+
+10. noble-idealist
+    writes with formal, slightly archaic dignity; frames everything through honor, duty, and what is proper
+
+11. bitter-loner
+    writes with bitter sarcasm and mistrust; keeps everyone at arm's length and expects betrayal
+
+12. eager-socialite
+    writes in chatty, gossipy bursts; cares deeply about who said what and where they stand in the pecking order
+
+
+# usage in fixture profiles (replaces old "traits: Abrasive, Bloodlust"):
+# Use "persona: random" — run.js picks a random description from the catalog at runtime.
+
+    initiator profile: male, 34y; mood: stressed 41%
+    initiator persona: random
+    recipient profile: female, 29y; mood: stable 63%
+    recipient persona: random
