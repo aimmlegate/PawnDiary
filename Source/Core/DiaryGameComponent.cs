@@ -870,8 +870,7 @@ namespace PawnDiary
                 return;
             }
 
-            diaryEvent.llmEndpoint = EndpointUtility.BuildChatCompletionsUrl(PawnDiaryMod.Settings.endpointUrl);
-            diaryEvent.llmModel = PawnDiaryMod.Settings.modelName;
+            diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildChatCompletionsUrl(PawnDiaryMod.Settings.endpointUrl), PawnDiaryMod.Settings.modelName);
             diaryEvent.MarkQueued(povRole);
 
             LlmClient.Enqueue(new LlmGenerationRequest

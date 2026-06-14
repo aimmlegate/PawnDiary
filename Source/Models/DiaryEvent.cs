@@ -57,6 +57,12 @@ namespace PawnDiary
         public string initiatorError;
         public string recipientError;
         public string neutralError;
+        public string initiatorLlmEndpoint;
+        public string recipientLlmEndpoint;
+        public string neutralLlmEndpoint;
+        public string initiatorLlmModel;
+        public string recipientLlmModel;
+        public string neutralLlmModel;
         public string llmEndpoint;
         public string llmModel;
         public bool solo;
@@ -101,6 +107,12 @@ namespace PawnDiary
             Scribe_Values.Look(ref neutralError, "neutralError");
             Scribe_Values.Look(ref llmEndpoint, "llmEndpoint");
             Scribe_Values.Look(ref llmModel, "llmModel");
+            Scribe_Values.Look(ref initiatorLlmEndpoint, "initiatorLlmEndpoint");
+            Scribe_Values.Look(ref recipientLlmEndpoint, "recipientLlmEndpoint");
+            Scribe_Values.Look(ref neutralLlmEndpoint, "neutralLlmEndpoint");
+            Scribe_Values.Look(ref initiatorLlmModel, "initiatorLlmModel");
+            Scribe_Values.Look(ref recipientLlmModel, "recipientLlmModel");
+            Scribe_Values.Look(ref neutralLlmModel, "neutralLlmModel");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -184,6 +196,36 @@ namespace PawnDiary
                 initiatorStatus = NormalizeLoadedStatus(initiatorStatus, initiatorGeneratedText);
                 recipientStatus = NormalizeLoadedStatus(recipientStatus, recipientGeneratedText);
                 neutralStatus = NormalizeLoadedStatus(neutralStatus, neutralGeneratedText);
+
+                if (string.IsNullOrWhiteSpace(initiatorLlmEndpoint) && !string.IsNullOrWhiteSpace(llmEndpoint))
+                {
+                    initiatorLlmEndpoint = llmEndpoint;
+                }
+
+                if (string.IsNullOrWhiteSpace(recipientLlmEndpoint) && !string.IsNullOrWhiteSpace(llmEndpoint))
+                {
+                    recipientLlmEndpoint = llmEndpoint;
+                }
+
+                if (string.IsNullOrWhiteSpace(neutralLlmEndpoint) && !string.IsNullOrWhiteSpace(llmEndpoint))
+                {
+                    neutralLlmEndpoint = llmEndpoint;
+                }
+
+                if (string.IsNullOrWhiteSpace(initiatorLlmModel) && !string.IsNullOrWhiteSpace(llmModel))
+                {
+                    initiatorLlmModel = llmModel;
+                }
+
+                if (string.IsNullOrWhiteSpace(recipientLlmModel) && !string.IsNullOrWhiteSpace(llmModel))
+                {
+                    recipientLlmModel = llmModel;
+                }
+
+                if (string.IsNullOrWhiteSpace(neutralLlmModel) && !string.IsNullOrWhiteSpace(llmModel))
+                {
+                    neutralLlmModel = llmModel;
+                }
             }
         }
 
@@ -205,6 +247,59 @@ namespace PawnDiary
             {
                 neutralPrompt = prompt;
             }
+        }
+
+        public void SetLlmMeta(string povRole, string endpoint, string model)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                initiatorLlmEndpoint = endpoint;
+                initiatorLlmModel = model;
+                return;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                recipientLlmEndpoint = endpoint;
+                recipientLlmModel = model;
+                return;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                neutralLlmEndpoint = endpoint;
+                neutralLlmModel = model;
+            }
+        }
+
+        private string LlmEndpointFor(string povRole)
+        {
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientLlmEndpoint;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                return neutralLlmEndpoint;
+            }
+
+            return initiatorLlmEndpoint;
+        }
+
+        private string LlmModelFor(string povRole)
+        {
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientLlmModel;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                return neutralLlmModel;
+            }
+
+            return initiatorLlmModel;
         }
 
         public void SetDualPrompt(string prompt)
@@ -299,8 +394,8 @@ namespace PawnDiary
                 GeneratedTextFor(povRole),
                 StatusFor(povRole),
                 ErrorFor(povRole),
-                llmEndpoint,
-                llmModel,
+                LlmEndpointFor(povRole),
+                LlmModelFor(povRole),
                 PromptFor(povRole),
                 eventId,
                 povRole);
