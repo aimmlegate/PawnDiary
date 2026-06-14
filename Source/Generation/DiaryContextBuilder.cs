@@ -95,7 +95,14 @@ namespace PawnDiary
             }
 
             List<ISocialThought> social = new List<ISocialThought>();
-            povPawn.needs.mood.thoughts.GetSocialThoughts(otherPawn, social);
+            try
+            {
+                povPawn.needs.mood.thoughts.GetSocialThoughts(otherPawn, social);
+            }
+            catch (NullReferenceException)
+            {
+                return string.Empty;
+            }
             if (social.Count == 0)
             {
                 return string.Empty;
