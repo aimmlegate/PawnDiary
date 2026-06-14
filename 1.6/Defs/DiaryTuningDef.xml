@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tuning knobs for Pawn Diary. Edit a value and restart the game to retune behavior WITHOUT
+  recompiling (see DiaryTuningDef.cs for what each field means). Every value here equals the
+  code default, so deleting this file or omitting a field changes nothing.
+-->
+<Defs>
+
+  <PawnDiary.DiaryTuningDef>
+    <defName>Diary_Tuning</defName>
+
+    <!-- Deduplication windows (game ticks; 60 ticks ≈ 1 second) -->
+    <socialFightDedupTicks>300</socialFightDedupTicks>
+    <mentalBreakDedupTicks>2500</mentalBreakDedupTicks>
+
+    <!-- Surroundings scan -->
+    <nearbyRadius>5</nearbyRadius>
+    <maxNearbyThings>6</maxNearbyThings>
+    <coldBelowC>0</coldBelowC>
+    <hotAboveC>32</hotAboveC>
+
+    <!-- Health -->
+    <painVisibleAbove>0.03</painVisibleAbove>
+    <bleedVisibleAbove>0.01</bleedVisibleAbove>
+    <lowCapacityThreshold>0.85</lowCapacityThreshold>
+
+    <!-- Misc -->
+    <diaryLineMaxChars>160</diaryLineMaxChars>
+
+    <!-- Beauty buckets -->
+    <beautyBeautiful>2</beautyBeautiful>
+    <beautyPleasant>0.3</beautyPleasant>
+    <beautyUgly>-2</beautyUgly>
+
+    <!-- Mood buckets (percent) -->
+    <moodHappy>75</moodHappy>
+    <moodStable>50</moodStable>
+    <moodStressed>30</moodStressed>
+
+    <!-- Pain buckets (fraction) -->
+    <painSevere>0.4</painSevere>
+    <painModerate>0.18</painModerate>
+
+    <!-- Opinion buckets (opinion points) -->
+    <opinionDevoted>60</opinionDevoted>
+    <opinionFriendly>25</opinionFriendly>
+    <opinionNeutralAbove>-10</opinionNeutralAbove>
+    <opinionStrainedAbove>-40</opinionStrainedAbove>
+  </PawnDiary.DiaryTuningDef>
+
+</Defs>

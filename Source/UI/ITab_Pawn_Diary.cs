@@ -1,3 +1,6 @@
+// The inspector tab (UI) that renders the selected pawn's diary next to the vanilla Log tab.
+// RimWorld calls FillTab() to draw it using immediate-mode GUI (the whole tab is re-emitted each
+// frame). It reads entries via DiaryGameComponent.EntriesFor. See CSHARP-NOTES.md ("lifecycle").
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;

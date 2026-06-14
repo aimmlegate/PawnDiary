@@ -128,38 +128,38 @@ namespace PawnDiary
             // One toggle per group: whether events in it are recorded at all. A header is
             // drawn the first time the group domain changes (interactions vs mental states).
             bool mentalHeaderDrawn = false;
-            foreach (InteractionGroup group in InteractionGroups.All)
+            foreach (DiaryInteractionGroupDef group in InteractionGroups.All)
             {
-                if (group.Domain == GroupDomain.MentalState && !mentalHeaderDrawn)
+                if (group.domain == GroupDomain.MentalState && !mentalHeaderDrawn)
                 {
                     mentalHeaderDrawn = true;
                     listing.Gap(6f);
                     listing.Label("Mental states & breaks");
                 }
 
-                bool enabled = Settings.IsGroupEnabled(group.Key);
+                bool enabled = Settings.IsGroupEnabled(group.defName);
                 bool before = enabled;
-                listing.CheckboxLabeled(group.Label, ref enabled, group.DefaultInstruction);
+                listing.CheckboxLabeled(group.label, ref enabled, group.instruction);
                 if (enabled != before)
                 {
-                    Settings.SetGroupEnabled(group.Key, enabled);
+                    Settings.SetGroupEnabled(group.defName, enabled);
                 }
             }
 
             listing.GapLine();
 
-            InteractionGroup selectedGroup = SelectedGroup();
+            DiaryInteractionGroupDef selectedGroup = SelectedGroup();
             if (selectedGroup == null)
             {
                 return;
             }
 
-            if (listing.ButtonText($"Prompt for: {selectedGroup.Label}"))
+            if (listing.ButtonText($"Prompt for: {selectedGroup.label}"))
             {
                 List<FloatMenuOption> options = InteractionGroups.All
-                    .Select(group => new FloatMenuOption(group.Label, delegate
+                    .Select(group => new FloatMenuOption(group.label, delegate
                     {
-                        selectedGroupKey = group.Key;
+                        selectedGroupKey = group.defName;
                         instructionEditGroupKey = null;
                     }))
                     .ToList();
@@ -176,20 +176,20 @@ namespace PawnDiary
             listing.Gap(6f);
             if (listing.ButtonText("Save instruction"))
             {
-                Settings.SetGroupInstruction(selectedGroup.Key, instructionEditBuffer);
+                Settings.SetGroupInstruction(selectedGroup.defName, instructionEditBuffer);
                 WriteSettings();
             }
 
             if (listing.ButtonText("Restore this group's default"))
             {
-                Settings.ResetGroupInstruction(selectedGroup.Key);
-                instructionEditBuffer = selectedGroup.DefaultInstruction;
-                instructionEditGroupKey = selectedGroup.Key;
+                Settings.ResetGroupInstruction(selectedGroup.defName);
+                instructionEditBuffer = selectedGroup.instruction;
+                instructionEditGroupKey = selectedGroup.defName;
                 WriteSettings();
             }
         }
 
-        private void EnsureInstructionEditBuffer(InteractionGroup selectedGroup)
+        private void EnsureInstructionEditBuffer(DiaryInteractionGroupDef selectedGroup)
         {
             if (selectedGroup == null)
             {
@@ -198,18 +198,18 @@ namespace PawnDiary
                 return;
             }
 
-            if (instructionEditGroupKey == selectedGroup.Key && instructionEditBuffer != null)
+            if (instructionEditGroupKey == selectedGroup.defName && instructionEditBuffer != null)
             {
                 return;
             }
 
-            instructionEditGroupKey = selectedGroup.Key;
+            instructionEditGroupKey = selectedGroup.defName;
             instructionEditBuffer = Settings.EditableInstructionForGroup(selectedGroup);
         }
 
-        private InteractionGroup SelectedGroup()
+        private DiaryInteractionGroupDef SelectedGroup()
         {
-            InteractionGroup group = InteractionGroups.ByKey(selectedGroupKey);
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(selectedGroupKey);
             if (group != null)
             {
                 return group;
@@ -218,7 +218,7 @@ namespace PawnDiary
             group = InteractionGroups.All.FirstOrDefault();
             if (group != null)
             {
-                selectedGroupKey = group.Key;
+                selectedGroupKey = group.defName;
             }
 
             return group;

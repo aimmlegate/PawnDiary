@@ -1,5 +1,6 @@
 # Build intermediates
 obj/
+bin/
 *.user
 *.suo
 .vs/

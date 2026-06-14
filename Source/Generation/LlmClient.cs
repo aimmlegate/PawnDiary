@@ -1,3 +1,8 @@
+// Async HTTP client for the LLM endpoint. A queue + concurrency gate (SemaphoreSlim) caps how
+// many requests are in flight; each has a hard deadline that purges stuck requests; transient
+// errors retry. Finished results are drained by DiaryGameComponent.GameComponentTick. `async
+// Task` ≈ Promise and `CancellationToken` ≈ AbortSignal — see CSHARP-NOTES.md ("async Task").
+// The concurrency logic below is already commented inline; start there for details.
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-13 (lean prompt context)_
+_Last updated: 2026-06-14 (refactor: rename, file split, XML Defs, JS/TS docs)_
 
 ---
 
@@ -25,22 +25,49 @@ breaks) produce a single entry from the breaking pawn's point of view.
 
 ## 2. File map
 
+**Repository layout** — RimWorld loads only `About/`, the version folder `1.6/`, and `Languages/`.
+The C# **source lives in `Source/` (which the game ignores)**; the compiled DLL is written to
+`1.6/Assemblies/`:
+
+```
+PawnDiary/
+├─ About/                       mod metadata
+├─ 1.6/
+│  ├─ Assemblies/PawnDiary.dll  build output (committed)
+│  └─ Defs/                     editable XML data (groups, tuning)
+├─ Languages/                   UI strings
+├─ Source/                      all C# + PawnDiary.csproj/.slnx (game ignores this)
+│  ├─ Core/ Models/ Generation/ Defs/ Patches/ UI/ Settings/ Util/
+│  └─ Properties/ Libs/
+├─ prompt-lab/                  offline prompt harness (Node)
+└─ *.md                         docs (this file, CLAUDE.md, CSHARP-NOTES.md, README.md)
+```
+
+The table lists files by name; all `.cs` live under `Source/<area>/` per the tree above.
+
 | File | Responsibility |
 |------|----------------|
 | `About/About.xml` | Mod metadata. `packageId = aimml.pawndiary`, supports RimWorld 1.6. |
-| `InteractionGroups.cs` | The interaction **group catalog** + classifier (`InteractionGroups.Classify`). Each group = a themed bucket with a default enabled state and default diary prompt. |
+| `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`) and the `InteractionGroups` classifier over the `DefDatabase`. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts are editable without recompiling. |
 | `Languages/English/Keyed/PawnDiary.xml` | UI strings (currently the Diary tab label). |
-| `Properties/AssemblyInfo.cs` | Assembly metadata. |
-| `ClassLibrary1.csproj` | Build config. Targets .NET Framework 4.7.2, outputs to `1.6/Assemblies/PawnDiary.dll`. |
+| `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
+| `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the Log tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks). |
-| `DiaryGameComponent.cs` | Core logic: recording, context building, generation queueing, applying results, save/load. Also defines `DiaryEvent` and `PawnDiaryRecord`. |
+| `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
+| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status; save/load; applying LLM results (incl. dual-POV parse). |
+| `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries; save/load. |
+| `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, relationship/continuity, opinions) + formatting/bucket helpers. |
+| `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, dual, solo). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
-| `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction maps. |
+| `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). |
+| `DiaryTuningDef.cs` | Defines `DiaryTuningDef : Def` + `DiaryTuning.Current` (tuning knobs: dedup windows, thresholds, buckets). Data lives in XML; falls back to safe code defaults if the Def is absent. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts) and `DiaryTuningDef.xml` (tuning numbers). |
+| `CSHARP-NOTES.md` | Primer mapping the C#/RimWorld idioms used here (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …) to JS/TS analogies. |
 | `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
 ---
@@ -119,7 +146,8 @@ there's nothing worth saying, so the model never spends tokens on noise:
 
 ## 5. Interaction groups (recording + per-group prompt)
 
-Events are organized into **groups** (`InteractionGroups.cs`). Each group is a single
+Events are organized into **groups**, defined as `DiaryInteractionGroupDef` Defs loaded from
+`1.6/Defs/DiaryInteractionGroupDefs.xml` (edit + restart, no recompile). Each group is a single
 settings entry with two things: an **enabled toggle** (is it recorded?) and a **diary prompt
 instruction** (shared by every event in the group). This replaces the old per-defName
 "significant" allowlist *and* the old per-defName instruction map — they are now one system.
@@ -134,7 +162,7 @@ Matching is by exact `defName` or a substring token; order within a domain matte
 (specific themes before generic), with the catch-all last.
 
 **Recording:** `DiaryGameComponent.IsInteractionSignificant(def)` →
-`Settings.IsInteractionEnabled(def)` → `IsGroupEnabled(Classify(def).Key)`. So an interaction
+`Settings.IsInteractionEnabled(def)` → `IsGroupEnabled(Classify(def).defName)`. So an interaction
 is recorded iff its group is enabled.
 
 **Prompt:** `InteractionInstruction(def)` → `Settings.InstructionFor(def)` →
@@ -161,8 +189,16 @@ is recorded iff its group is enabled.
 | **Social fights** (mental) | on | `SocialFighting` — pairwise, two POV entries |
 | **Mental breaks** (mental) | on | Berserk, Tantrum, Wander_Sad, Binging_*, MurderousRage, … (catch-all for mental states) |
 
-To add/retune groups, edit the `InteractionGroups.All` catalog (key, label, domain, default
-enabled, default instruction, explicit defNames, and substring tokens).
+To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
+`domain`, `defaultEnabled`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
+— no recompile. `order` controls classification order within a domain (lowest first; keep the
+catch-all highest). Group `defName`s are the stable keys player settings save overrides under, so
+don't rename them.
+
+**Tuning knobs** (dedup windows, scan radius/temperature, and the mood/pain/beauty/opinion bucket
+thresholds) likewise live in XML — `1.6/Defs/DiaryTuningDef.xml`, backing `DiaryTuningDef` /
+`DiaryTuning.Current`. Every value defaults to the shipped number, so deleting the file or any
+field changes nothing.
 
 **Mental states** are captured via the `MentalStateHandler.TryStartMentalState` postfix:
 - `SocialFighting` with a humanlike `otherPawn` → a **pairwise** event (both pawns).
@@ -254,7 +290,7 @@ a checkbox per group plus a prompt editor for the selected group).
 From a developer command prompt / MSBuild:
 
 ```
-MSBuild ClassLibrary1.csproj /t:Build /p:Configuration=Debug
+MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 ```
 
 Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load the new DLL.
@@ -262,6 +298,31 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (maintainability refactor: rename, split, XML Defs, docs)**
+  - **Renamed the project files** `ClassLibrary1.csproj`/`.slnx` → `PawnDiary.*` (the code,
+    namespace, assembly, and output DLL were already `PawnDiary`). The mod folder is unchanged
+    (RimWorld identifies the mod by `packageId`, not folder name).
+  - **Split the 1968-line `DiaryGameComponent.cs`** into focused files with no behavior change:
+    `DiaryEvent.cs` + `PawnDiaryRecord.cs` (data models), `DiaryContextBuilder.cs` (context
+    summaries + formatting/bucket helpers, now `static`), and `DiaryPromptBuilder.cs` (prompt
+    assembly). The component is now a ~570-line orchestrator. Removed the dead `BuildXmlSummary`.
+  - **Moved the interaction-group catalog to XML Defs.** `InteractionGroup` is now
+    `DiaryInteractionGroupDef : Def`; the 16 groups live in `1.6/Defs/DiaryInteractionGroupDefs.xml`
+    and load via `DefDatabase`. Group `defName`s equal the old keys, so saved per-group settings
+    still apply. Add/retune groups by editing XML — no recompile.
+  - **Moved tuning magic-numbers to a `DiaryTuningDef`** (`1.6/Defs/DiaryTuningDef.xml`, read via
+    `DiaryTuning.Current` with a safe-defaults fallback): dedup windows, scan radius/temperature,
+    capacity/health thresholds, diary-line length, and the beauty/mood/pain/opinion buckets.
+  - **Documentation pass for non-C# maintainers:** added `CSHARP-NOTES.md` (a JS/TS-oriented primer
+    on Defs, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …), a plain-English header comment on
+    every `.cs` file, and XML `///` docs on the main public types/methods.
+  - **Organized the repo to RimWorld convention:** moved all C# + `PawnDiary.csproj`/`.slnx` +
+    `Properties/` + `Libs/` into a `Source/` folder (the game ignores it), grouped by concern
+    (`Core/`, `Models/`, `Generation/`, `Defs/`, `Patches/`, `UI/`, `Settings/`, `Util/`). The root
+    now holds only `About/`, `1.6/`, `Languages/`, `Source/`, `prompt-lab/`, and docs. The `.csproj`
+    now uses a recursive `**\*.cs` glob (new files auto-included); build is
+    `MSBuild Source\PawnDiary.csproj` (output unchanged: `1.6/Assemblies/PawnDiary.dll`).
 
 - **2026-06-13 (persona writing styles)**
   - Added `prompt-lab/personas.txt` — a catalog of 12 writing-style personas (stoic-survivor,

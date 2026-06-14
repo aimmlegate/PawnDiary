@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The interaction-group catalog. Each <PawnDiary.DiaryInteractionGroupDef> is one themed
+  bucket of events with an enable-by-default flag and a diary-prompt instruction. RimWorld
+  loads this at startup; edit it and restart the game to add/retune groups or reword prompts
+  WITHOUT recompiling the C# (see DiaryInteractionGroupDef in InteractionGroups.cs).
+
+  Fields:
+    defName        - stable key (also the key player settings save overrides under; don't rename)
+    label          - name shown in mod settings
+    order          - lower numbers are classified first ("first match wins"); catch-all highest
+    domain         - Interaction (matches InteractionDefs) or MentalState (matches MentalStateDefs)
+    defaultEnabled - whether events in this group are recorded by default
+    instruction    - the diary-prompt instruction shared by every event in the group
+    matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
+    matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
+    catchAll       - true = matches everything in its domain (leave matchers empty)
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>nsfw</defName>
+    <label>NSFW / RJW</label>
+    <order>10</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>explicit sexual encounter; keep it in-character and not graphic</instruction>
+    <matchDefNames>
+      <li>Necro_Vaginal</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Sex_</li>
+      <li>Rape</li>
+      <li>Necro</li>
+      <li>SexTame</li>
+      <li>Speech_sex</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>romance</defName>
+    <label>Romance &amp; dating</label>
+    <order>20</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>romantic moment between the pawns; may be an advance, commitment, date, or breakup depending on context</instruction>
+    <matchDefNames>
+      <li>RomanceAttempt</li>
+      <li>MarriageProposal</li>
+      <li>Breakup</li>
+      <li>Sentence_RomanceAttemptAccepted</li>
+      <li>Sentence_RomanceAttemptRejected</li>
+      <li>Sentence_MarriageProposalAccepted</li>
+      <li>Sentence_MarriageProposalRejected</li>
+      <li>Sentence_MarriageProposalRejectedBrokeUp</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Romance</li>
+      <li>Marriage</li>
+      <li>Breakup</li>
+      <li>Date</li>
+      <li>Hookup</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>recruit</defName>
+    <label>Recruitment &amp; prison</label>
+    <order>30</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>captor works on a prisoner: building rapport, recruiting, reducing will, enslaving, or stirring escape</instruction>
+    <matchDefNames>
+      <li>BuildRapport</li>
+      <li>RecruitAttempt</li>
+      <li>Sentence_RecruitAttemptAccepted</li>
+      <li>Sentence_RecruitAttemptRejected</li>
+      <li>ReduceWill</li>
+      <li>EnslaveAttempt</li>
+      <li>SparkJailbreak</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Recruit</li>
+      <li>Rapport</li>
+      <li>Jailbreak</li>
+      <li>Enslave</li>
+      <li>ReduceWill</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>slavery</defName>
+    <label>Slavery</label>
+    <order>40</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>interaction over slavery: suppression by an overseer or a spark of rebellion</instruction>
+    <matchDefNames>
+      <li>Suppress</li>
+      <li>SparkSlaveRebellion</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Suppress</li>
+      <li>Slave</li>
+      <li>Rebellion</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>conversion</defName>
+    <label>Ideology &amp; conversion</label>
+    <order>50</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>ideological pressure: conversion, counseling, preaching, indoctrination, or motivation</instruction>
+    <matchDefNames>
+      <li>ConvertIdeoAttempt</li>
+      <li>Convert_Success</li>
+      <li>Convert_Failure</li>
+      <li>Counsel_Success</li>
+      <li>Counsel_Failure</li>
+      <li>PreachHealth</li>
+      <li>WorkDrive</li>
+      <li>Indoctrinate</li>
+      <li>RS_WorshipInteraction</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Convert</li>
+      <li>Counsel</li>
+      <li>Preach</li>
+      <li>Indoctrinate</li>
+      <li>Worship</li>
+      <li>WorkDrive</li>
+      <li>Ideo</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>trial</defName>
+    <label>Trials &amp; accusations</label>
+    <order>60</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>formal trial exchange: an accusation or a defense before the colony</instruction>
+    <matchDefNames>
+      <li>Trial_Accuse</li>
+      <li>Trial_Defend</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Trial</li>
+      <li>Accuse</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>anomaly</defName>
+    <label>Anomaly &amp; dark</label>
+    <order>70</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>unsettling or anomalous exchange; convey unease without explaining the supernatural away</instruction>
+    <matchDefNames>
+      <li>DarkDialogue</li>
+      <li>CreepyWords</li>
+      <li>InhumanRambling</li>
+      <li>DisturbingChat</li>
+      <li>OccultTeaching</li>
+      <li>PrisonerStudyAnomaly</li>
+      <li>InterrogateIdentity</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Dark</li>
+      <li>Creepy</li>
+      <li>Inhuman</li>
+      <li>Disturbing</li>
+      <li>Occult</li>
+      <li>Anomaly</li>
+      <li>Interrogate</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>insults</defName>
+    <label>Insults &amp; fights</label>
+    <order>80</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>hostile exchange: an insult, a slight, or the start of a social fight</instruction>
+    <matchDefNames>
+      <li>Insult</li>
+      <li>Slight</li>
+      <li>Sentence_SocialFightStarted</li>
+      <li>Sentence_SocialFightConvoInitiatorStarted</li>
+      <li>Sentence_SocialFightConvoRecipientStarted</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Insult</li>
+      <li>Slight</li>
+      <li>Fight</li>
+      <li>Rebuff</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritual</defName>
+    <label>Rituals &amp; speeches</label>
+    <order>90</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>ceremonial or ritual address rather than a private chat; reflect its solemn, public nature</instruction>
+    <matchDefNames>
+      <li>SpeechUtility</li>
+      <li>Speech_Duel</li>
+      <li>Speech_Funeral</li>
+      <li>Speech_Leader</li>
+      <li>Speech_Sacrifice</li>
+      <li>Speech_Scarification</li>
+      <li>Speech_Blinding</li>
+      <li>Speech_Execution</li>
+      <li>Speech_TreeConnection</li>
+      <li>Speech_Conversion</li>
+      <li>Speech_AcceptRole</li>
+      <li>Speech_RemoveRole</li>
+      <li>WordOfTrust</li>
+      <li>WordOfJoy</li>
+      <li>WordOfLove</li>
+      <li>WordOfSerenity</li>
+      <li>WordOfInspiration</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Speech</li>
+      <li>WordOf</li>
+      <li>Ritual</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>animal</defName>
+    <label>Animal handling</label>
+    <order>100</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>moment between a pawn and an animal: chatting, taming, training, a nuzzle, or release</instruction>
+    <matchDefNames>
+      <li>AnimalChat</li>
+      <li>TameAttempt</li>
+      <li>TrainAttempt</li>
+      <li>Nuzzle</li>
+      <li>ReleaseToWild</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Animal</li>
+      <li>Tame</li>
+      <li>Train</li>
+      <li>Nuzzle</li>
+      <li>ReleaseToWild</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>heartfelt</defName>
+    <label>Heartfelt talk</label>
+    <order>110</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>warm or meaningful exchange: a deep talk, kind words, reassurance, or calming someone down</instruction>
+    <matchDefNames>
+      <li>DeepTalk</li>
+      <li>KindWords</li>
+      <li>Reassure</li>
+      <li>SnapOut_CalmDownInteraction</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>DeepTalk</li>
+      <li>KindWords</li>
+      <li>Reassure</li>
+      <li>Comfort</li>
+      <li>CalmDown</li>
+      <li>SnapOut</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>teaching</defName>
+    <label>Teaching &amp; lessons</label>
+    <order>120</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <instruction>an adult teaches or plays with a child</instruction>
+    <matchDefNames>
+      <li>BabyPlay</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Lesson</li>
+      <li>Teaching</li>
+      <li>BabyPlay</li>
+      <li>Baby</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>smalltalk</defName>
+    <label>Small talk</label>
+    <order>130</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <instruction>casual low-stakes chatter</instruction>
+    <matchDefNames>
+      <li>Chitchat</li>
+      <li>Conversation</li>
+      <li>EndConversation</li>
+      <li>HangOut</li>
+      <li>PrudeSeen</li>
+      <li>TourFinished</li>
+      <li>GR_TalkingToHumans</li>
+      <li>GR_UwUTalkingToHumans</li>
+      <li>LetsTalkEatTogether</li>
+      <li>OfferFood</li>
+      <li>SanguophageChat</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Chitchat</li>
+      <li>Chat</li>
+      <li>Conversation</li>
+      <li>HangOut</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>other</defName>
+    <label>Other / uncategorized</label>
+    <order>140</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <instruction>a social interaction between the pawns</instruction>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Mental-state domain ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>socialfight</defName>
+    <label>Social fights</label>
+    <order>200</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the two pawns lost their tempers and came to blows; write it as a heated physical fight</instruction>
+    <matchDefNames>
+      <li>SocialFighting</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreak</defName>
+    <label>Mental breaks</label>
+    <order>210</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the pawn suffered a mental break; write their inner state and what they did, in their own voice</instruction>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

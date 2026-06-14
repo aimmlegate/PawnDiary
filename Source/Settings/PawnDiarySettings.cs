@@ -1,3 +1,7 @@
+// All mod settings (connection, generation options, and per-group enable/instruction overrides)
+// plus value clamping and save/load. ExposeData persists them — see CSHARP-NOTES.md ("IExposable").
+// The group catalog itself now lives in XML Defs (see InteractionGroups.cs); this file only
+// stores the player's per-group overrides, keyed by group defName.
 using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
@@ -21,7 +25,7 @@ namespace PawnDiary
         public bool dualPovGeneration = true;
         public string systemPrompt = DefaultSystemPrompt;
 
-        // Per interaction-group settings, keyed by InteractionGroup.Key.
+        // Per interaction-group settings, keyed by InteractionGroup.defName.
         // groupEnabled: whether interactions in the group are recorded at all.
         // groupInstructions: optional override of the group's default diary prompt.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
@@ -90,7 +94,10 @@ namespace PawnDiary
                 return false;
             }
 
-            return IsGroupEnabled(InteractionGroups.Classify(interactionDef).Key);
+            // Classify only returns null if the group catalog (XML Defs) failed to load; treat
+            // that as "not recorded" rather than crashing on every interaction.
+            DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
+            return group != null && IsGroupEnabled(group.defName);
         }
 
         // The diary prompt instruction for an interaction (its group's override or default).
@@ -112,7 +119,8 @@ namespace PawnDiary
                 return false;
             }
 
-            return IsGroupEnabled(InteractionGroups.ClassifyMentalState(stateDef).Key);
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyMentalState(stateDef);
+            return group != null && IsGroupEnabled(group.defName);
         }
 
         public string InstructionForMentalState(MentalStateDef stateDef)
@@ -135,7 +143,7 @@ namespace PawnDiary
                 return enabled;
             }
 
-            return InteractionGroups.ByKey(groupKey)?.DefaultEnabled ?? false;
+            return InteractionGroups.ByKey(groupKey)?.defaultEnabled ?? false;
         }
 
         public void SetGroupEnabled(string groupKey, bool enabled)
@@ -144,7 +152,7 @@ namespace PawnDiary
             groupEnabled[groupKey] = enabled;
         }
 
-        public string InstructionForGroup(InteractionGroup group)
+        public string InstructionForGroup(DiaryInteractionGroupDef group)
         {
             if (group == null)
             {
@@ -154,15 +162,15 @@ namespace PawnDiary
             EnsureGroupDictionaries();
 
             string instruction;
-            if (groupInstructions.TryGetValue(group.Key, out instruction) && !string.IsNullOrWhiteSpace(instruction))
+            if (groupInstructions.TryGetValue(group.defName, out instruction) && !string.IsNullOrWhiteSpace(instruction))
             {
                 return instruction.Trim();
             }
 
-            return group.DefaultInstruction;
+            return group.instruction;
         }
 
-        public string EditableInstructionForGroup(InteractionGroup group)
+        public string EditableInstructionForGroup(DiaryInteractionGroupDef group)
         {
             if (group == null)
             {
@@ -172,12 +180,12 @@ namespace PawnDiary
             EnsureGroupDictionaries();
 
             string instruction;
-            if (groupInstructions.TryGetValue(group.Key, out instruction))
+            if (groupInstructions.TryGetValue(group.defName, out instruction))
             {
                 return instruction;
             }
 
-            return group.DefaultInstruction;
+            return group.instruction;
         }
 
         public void SetGroupInstruction(string groupKey, string instruction)
