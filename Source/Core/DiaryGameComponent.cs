@@ -149,13 +149,21 @@ namespace PawnDiary
 
         public bool DiaryGenerationEnabledFor(Pawn pawn)
         {
+            if (!IsDiaryEligible(pawn))
+            {
+                return false;
+            }
+
             return FindDiary(pawn, true)?.diaryGenerationEnabled ?? true;
         }
 
-        // Public setters/getters are used by the pawn inspector tab. They create the record on
-        // first edit so choices exist before the pawn has any diary entries.
         public void SetDiaryGenerationEnabled(Pawn pawn, bool enabled)
         {
+            if (!IsDiaryEligible(pawn))
+            {
+                return;
+            }
+
             PawnDiaryRecord diary = FindDiary(pawn, true);
             if (diary != null)
             {
@@ -165,12 +173,22 @@ namespace PawnDiary
 
         public DiaryPersonaDef PersonaFor(Pawn pawn)
         {
+            if (!IsDiaryEligible(pawn))
+            {
+                return DiaryPersonas.Default;
+            }
+
             PawnDiaryRecord diary = FindDiary(pawn, true);
             return DiaryPersonas.Resolve(diary?.personaDefName);
         }
 
         public void SetPersona(Pawn pawn, string personaDefName)
         {
+            if (!IsDiaryEligible(pawn))
+            {
+                return;
+            }
+
             DiaryPersonaDef persona = DiaryPersonas.Resolve(personaDefName);
             PawnDiaryRecord diary = FindDiary(pawn, true);
             if (diary != null)
@@ -247,9 +265,35 @@ namespace PawnDiary
                 return;
             }
 
+            bool initiatorEligible = IsDiaryEligible(initiator);
+            bool recipientEligible = IsDiaryEligible(recipient);
+
+            if (!initiatorEligible && !recipientEligible)
+            {
+                return;
+            }
+
             string interactionLabel = interactionDef.LabelCap.Resolve();
             string initiatorText = DiaryContextBuilder.CleanLine(initiatorGameText);
             string recipientText = DiaryContextBuilder.CleanLine(recipientGameText);
+
+            if (!initiatorEligible || !recipientEligible)
+            {
+                Pawn eligiblePawn = initiatorEligible ? initiator : recipient;
+                Pawn otherPawn = initiatorEligible ? recipient : initiator;
+                string eligibleText = initiatorEligible ? initiatorText : recipientText;
+                if (string.IsNullOrWhiteSpace(eligibleText))
+                {
+                    eligibleText = $"{eligiblePawn.LabelShortCap} had a {interactionLabel} interaction with {otherPawn.LabelShortCap}.";
+                }
+
+                string gameContext = DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel);
+                DiaryEvent soloEvent = AddSoloEvent(eligiblePawn, otherPawn, interactionDef.defName, interactionLabel,
+                    eligibleText, InteractionInstruction(interactionDef), gameContext);
+                QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(initiatorText))
             {
                 initiatorText = $"{initiator.LabelShortCap} had a {interactionLabel} interaction with {recipient.LabelShortCap}.";
@@ -309,7 +353,7 @@ namespace PawnDiary
         // everything else is recorded as a solo break from the breaking pawn's point of view.
         public void RecordMentalState(Pawn pawn, MentalStateDef stateDef, Pawn otherPawn, string reason)
         {
-            if (!IsHumanlike(pawn) || stateDef == null)
+            if (!IsDiaryEligible(pawn) || stateDef == null)
             {
                 return;
             }
@@ -322,7 +366,7 @@ namespace PawnDiary
             string label = stateDef.LabelCap.Resolve();
             string instruction = PawnDiaryMod.Settings.InstructionForMentalState(stateDef);
             bool isSocialFight = string.Equals(stateDef.defName, "SocialFighting", StringComparison.OrdinalIgnoreCase)
-                && IsHumanlike(otherPawn) && otherPawn != pawn;
+                && IsDiaryEligible(otherPawn) && otherPawn != pawn;
 
             if (isSocialFight)
             {
@@ -486,6 +530,11 @@ namespace PawnDiary
             return pawn != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike;
         }
 
+        private static bool IsDiaryEligible(Pawn pawn)
+        {
+            return IsHumanlike(pawn) && pawn.IsColonist;
+        }
+
         private void FlushReadySmallTalkBatches()
         {
             if (pendingSmallTalkBatches.Count == 0)
@@ -565,6 +614,14 @@ namespace PawnDiary
                 return;
             }
 
+            bool initiatorEligible = IsDiaryEligible(batch.initiator);
+            bool recipientEligible = IsDiaryEligible(batch.recipient);
+
+            if (!initiatorEligible && !recipientEligible)
+            {
+                return;
+            }
+
             bool combined = batch.Count > 1;
             string label = combined ? SmallTalkBatchLabel : batch.firstLabel;
             string defName = combined ? SmallTalkBatchDefName : batch.firstDefName;
@@ -574,6 +631,22 @@ namespace PawnDiary
             string gameContext = "group=smalltalk; events=" + batch.Count
                 + "; first_tick=" + batch.firstTick
                 + "; last_tick=" + batch.lastTick;
+
+            if (!initiatorEligible || !recipientEligible)
+            {
+                Pawn eligiblePawn = initiatorEligible ? batch.initiator : batch.recipient;
+                Pawn otherPawn = initiatorEligible ? batch.recipient : batch.initiator;
+                string eligibleText = initiatorEligible ? initiatorText : recipientText;
+                if (string.IsNullOrWhiteSpace(eligibleText))
+                {
+                    eligibleText = $"{eligiblePawn.LabelShortCap} had small talk with {otherPawn.LabelShortCap}.";
+                }
+
+                DiaryEvent soloEvent = AddSoloEvent(eligiblePawn, otherPawn, defName, label,
+                    eligibleText, instruction, gameContext);
+                QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
+                return;
+            }
 
             DiaryEvent diaryEvent = AddPairwiseEvent(batch.initiator, batch.recipient, defName, label,
                 initiatorText, recipientText, instruction, gameContext);
@@ -671,8 +744,13 @@ namespace PawnDiary
 
         private void AddEventRef(Pawn pawn, string eventId)
         {
+            if (!IsDiaryEligible(pawn) || string.IsNullOrWhiteSpace(eventId))
+            {
+                return;
+            }
+
             PawnDiaryRecord diary = FindDiary(pawn, true);
-            if (diary == null || string.IsNullOrWhiteSpace(eventId))
+            if (diary == null)
             {
                 return;
             }

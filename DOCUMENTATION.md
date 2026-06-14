@@ -5,27 +5,34 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-14 (in-game persona layer)_
+_Last updated: 2026-06-14 (colonist-only diary eligibility)_
 
 ---
 
 ## 1. What the mod does
 
-Pawn Diary watches humanlike pawns' social **interactions**, **social fights**, and
+Pawn Diary watches **colonist** pawns' social **interactions**, **social fights**, and
 **mental breaks**, keeps the meaningful ones, and uses an LLM (any OpenAI-compatible
 `/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server) to rewrite each
 event into a short first-person diary entry. Each pawn's diary is shown in an **inspector
 tab next to the vanilla Log tab**.
 
+Only **free colonists** (`pawn.IsColonist`) are eligible for diary entries. Animals,
+prisoners, slaves, enemies, and visitors never receive diary entries. When a mixed
+interaction involves one eligible colonist and one ineligible pawn (e.g. a colonist
+nuzzled by an animal, or a colonist chatting with a prisoner), a **solo** entry is created
+for the colonist only — the ineligible pawn's POV is never generated and cannot block the
+colonist's entry. Interactions between two ineligible pawns are silently skipped.
+
 Each pawn also has saved diary controls in that tab: a **persona preset** that shapes their
 writing voice, and a checkbox to disable LLM diary generation for that pawn while keeping raw
 events recorded.
 
-Pairwise events (interactions, social fights) produce two entries — one from each pawn's
-point of view — by default as **paired sequential POV**: first the initiator entry, then
-the recipient entry with the initiator's generated text included as hidden continuity
-context. Solo events (mental breaks) produce a single entry from the breaking pawn's point
-of view.
+Pairwise events (interactions, social fights) between two eligible colonists produce two
+entries — one from each pawn's point of view — by default as **paired sequential POV**:
+first the initiator entry, then the recipient entry with the initiator's generated text
+included as hidden continuity context. Solo events (mental breaks, or any event where only
+one pawn is eligible) produce a single entry from that pawn's point of view.
 
 ---
 
@@ -91,12 +98,14 @@ PlayLog.Add ─postfix─▶ PlayLogAddPatch   MentalStateHandler.TryStartMental
       ▼                                        ▼
 DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState
       │                                        │   • group enabled? (§5)
-      │                                        │   • SocialFighting + humanlike otherPawn → pairwise (dedup mirrored call)
+      │                                        │   • pawn must be eligible colonist (§4)
+      │                                        │   • SocialFighting + eligible otherPawn → pairwise (dedup mirrored call)
       │                                        │   • otherwise → solo break (breaking pawn's POV)
       │   • significance filter (§5)            │
+      │   • eligibility filter: both ineligible → skip; mixed → solo for colonist (§4)
       │   • Small talk group → buffered by pawn pair, then flushed as one combined DiaryEvent
       │   • all other enabled interactions → builds one DiaryEvent immediately
-      │   • adds event to diaryEvents + the involved pawns' PawnDiaryRecord(s)
+      │   • adds event to diaryEvents + the involved pawns' PawnDiaryRecord(s) (eligible pawns only)
       │   • queues generation if the pawn allows it (pairwise: paired sequential/single §4; solo: single initiator)
       ▼                                        ▼
 LlmClient.Enqueue ─▶ concurrency gate ─▶ SendOnce(HTTP) ─▶ Completed queue
@@ -113,6 +122,23 @@ ITab_Pawn_Diary.FillTab
 ## 4. Generation modes
 
 Controlled by the `dualPovGeneration` setting.
+
+### Pawn eligibility (colonist-only)
+
+Diary entries are **only generated for free colonists** (`pawn.IsColonist == true`).
+Animals, prisoners, slaves, enemies, and visitors are never eligible. This is enforced
+at every entry point via `IsDiaryEligible(pawn)` (humanlike + colonist):
+
+- **Two ineligible pawns**: interaction is silently skipped — no event is created.
+- **One eligible, one ineligible**: a **solo** event is created for the eligible colonist
+  only. The ineligible pawn appears as `otherPawn` context (for opinions/surroundings)
+  but never gets a POV or a `PawnDiaryRecord`. This prevents the blocking issue where
+  an ineligible initiator (e.g. an animal's Nuzzle) would queue a POV that the eligible
+  recipient's entry depends on in sequential mode.
+- **Two eligible colonists**: normal pairwise flow (both POVs generated).
+
+This applies uniformly to interactions, social fights, mental breaks, and small-talk
+batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist pawns.
 
 ### Paired sequential POV (default, `dualPovGeneration = true`)
 - Pairwise events start by queueing the initiator request only. Its prompt
@@ -236,13 +262,15 @@ batched: for example `DeepTalk` is classified under `heartfelt`, so it records a
 immediately.
 
 **Mental states** are captured via the `MentalStateHandler.TryStartMentalState` postfix:
-- `SocialFighting` with a humanlike `otherPawn` → a **pairwise** event (both pawns).
+- `SocialFighting` with an eligible colonist `otherPawn` → a **pairwise** event (both pawns).
   `TryStartMentalState` fires once per participant, so the mirrored call is de-duplicated by
   pair within `SocialFightDedupTicks` (300).
 - Any other mental state → a **solo** event from the breaking pawn (de-duplicated per
   pawn+state within `MentalBreakDedupTicks` ≈ one day). A target pawn, if any, is named in
   the text but gets no entry of their own.
-- Only humanlike pawns are recorded (animal manhunter/panic states are ignored).
+- Only eligible colonist pawns are recorded (animal manhunter/panic states and
+  non-colonist mental breaks are ignored). Social fights between a colonist and a
+  non-colonist are recorded as solo events for the colonist only.
 
 ---
 
@@ -304,7 +332,9 @@ enabled).
 ## 9. UI
 
 - **Inspector tab** (`ITab_Pawn_Diary`), injected after the vanilla **Log** tab on all
-  humanlike pawn defs at startup. Renders newest-first: date + status header, the diary
+humanlike pawn defs at startup. The tab is **visible only for free colonists**
+(`pawn.IsColonist`); animals, prisoners, slaves, enemies, and visitors never see it.
+Renders newest-first: date + status header, the diary
   text (generated, or the raw fallback line while pending/failed), and a small grey debug
   block (event id, POV, endpoint, model, status, error, prompt).
 - There is **no** standalone window or gizmo anymore, and **no** colony/neutral events
@@ -337,6 +367,23 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (colonist-only diary eligibility)**
+  - Diary entries are now generated **only for free colonists** (`pawn.IsColonist`).
+    Animals, prisoners, slaves, enemies, and visitors never receive diary entries.
+  - Mixed interactions (one colonist + one ineligible pawn) produce a **solo** event for
+    the colonist only, preventing the blocking issue where an ineligible initiator (e.g.
+    animal Nuzzle) would queue a POV that the colonist recipient's entry depends on in
+    sequential mode.
+  - Interactions between two ineligible pawns are silently skipped.
+  - `RecordMentalState` now requires the breaking pawn to be an eligible colonist; social
+    fights between a colonist and a non-colonist produce a solo entry for the colonist.
+  - `IsDiaryEligible(pawn)` (humanlike + colonist) replaces the old `IsHumanlike` checks
+    throughout recording and event-ref creation.
+  - `ITab_Pawn_Diary.IsVisible` now also requires `pawn.IsColonist`, hiding the tab for
+    non-colonist humanlikes.
+  - Public API guards: `DiaryGenerationEnabledFor`, `SetDiaryGenerationEnabled`,
+    `PersonaFor`, `SetPersona` all return early for non-colonist pawns.
 
 - **2026-06-14 (in-game persona layer + per-pawn generation toggle)**
   - Added `DiaryPersonaDef` + `1.6/Defs/DiaryPersonaDefs.xml`, copying the 12 prompt-lab writing

@@ -39,7 +39,7 @@ namespace PawnDiary
                 pawn = corpse?.InnerPawn;
             }
 
-            if (pawn == null || pawn.RaceProps == null || !pawn.RaceProps.Humanlike)
+            if (pawn == null || pawn.RaceProps == null || !pawn.RaceProps.Humanlike || !pawn.IsColonist)
             {
                 return null;
             }

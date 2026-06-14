@@ -146,3 +146,14 @@ All C# is under `Source/` (the game ignores it); the compiled DLL goes to `1.6/A
 - `Source/Defs/InteractionGroups.cs` + `1.6/Defs/DiaryInteractionGroupDefs.xml` — the event catalog (XML-editable).
 - `Source/Defs/DiaryTuningDef.cs` + `1.6/Defs/DiaryTuningDef.xml` — tuning numbers (XML-editable).
 - `Source/Util/MiniJson.cs` — dependency-free JSON parser (Mono lacks the usual ones).
+
+---
+
+## Eligibility
+
+Diary entries are only generated for **free colonists**. The helper `IsDiaryEligible(pawn)`
+combines `IsHumanlike(pawn)` (race check) and `pawn.IsColonist` (faction check). It is
+used at every entry point — `RecordInteraction`, `RecordMentalState`, `FlushSmallTalkBatch`,
+`AddEventRef` — and in the UI (`ITab_Pawn_Diary.IsVisible`). Mixed interactions (one
+eligible colonist + one ineligible pawn) produce a solo event for the colonist; interactions
+between two ineligible pawns are skipped.
