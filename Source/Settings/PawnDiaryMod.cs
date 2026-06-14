@@ -15,6 +15,7 @@ namespace PawnDiary
         public static PawnDiarySettings Settings;
 
         private readonly List<string> fetchedModels = new List<string>();
+        private int fetchGeneration;
         private bool isFetchingModels;
         private string fetchStatus = "Models not fetched.";
         private string selectedGroupKey;
@@ -72,6 +73,7 @@ namespace PawnDiary
             listing.Gap(12f);
             if (listing.ButtonText("Reset connection"))
             {
+                fetchGeneration++;
                 Settings.ResetConnectionDefaults();
                 fetchedModels.Clear();
                 fetchStatus = "Models not fetched.";
@@ -238,12 +240,17 @@ namespace PawnDiary
 
         private async void FetchModels()
         {
+            int generation = ++fetchGeneration;
             isFetchingModels = true;
             fetchStatus = "Fetching models...";
 
             try
             {
                 List<string> models = await ModelListClient.FetchModels(Settings.endpointUrl, Settings.apiKey, Settings.timeoutSeconds);
+
+                if (generation != fetchGeneration)
+                    return;
+
                 fetchedModels.Clear();
                 fetchedModels.AddRange(models);
 
@@ -263,11 +270,15 @@ namespace PawnDiary
             }
             catch (Exception ex)
             {
+                if (generation != fetchGeneration)
+                    return;
+
                 fetchStatus = $"Fetch failed: {ex.Message}";
             }
             finally
             {
-                isFetchingModels = false;
+                if (generation == fetchGeneration)
+                    isFetchingModels = false;
             }
         }
     }
