@@ -19,6 +19,7 @@ namespace PawnDiary
         private string fetchStatus = "Models not fetched.";
         private string selectedGroupKey;
         private Vector2 settingsScrollPosition;
+        private string modelNameEditBuffer;
         private string instructionEditBuffer;
         private string instructionEditGroupKey;
 
@@ -45,6 +46,9 @@ namespace PawnDiary
             Settings.apiKey = listing.TextEntryLabeled("API key", Settings.apiKey);
 
             listing.Gap(6f);
+            EnsureModelNameEditBuffer();
+            modelNameEditBuffer = listing.TextEntryLabeled("Model name", modelNameEditBuffer);
+            Settings.modelName = modelNameEditBuffer;
             DrawModelSelector(listing);
 
             listing.Gap(6f);
@@ -71,6 +75,7 @@ namespace PawnDiary
                 Settings.ResetConnectionDefaults();
                 fetchedModels.Clear();
                 fetchStatus = "Models not fetched.";
+                modelNameEditBuffer = Settings.modelName ?? string.Empty;
             }
 
             listing.GapLine();
@@ -99,9 +104,7 @@ namespace PawnDiary
 
         private void DrawModelSelector(Listing_Standard listing)
         {
-            string selectedModel = string.IsNullOrWhiteSpace(Settings.modelName) ? "Select model" : Settings.modelName;
-
-            if (listing.ButtonText($"Model: {selectedModel}"))
+            if (listing.ButtonText("Pick fetched model"))
             {
                 List<FloatMenuOption> options = fetchedModels
                     .Distinct()
@@ -109,15 +112,24 @@ namespace PawnDiary
                     .Select(model => new FloatMenuOption(model, delegate
                     {
                         Settings.modelName = model;
+                        modelNameEditBuffer = model;
                     }))
                     .ToList();
 
                 if (options.Count == 0)
                 {
-                    options.Add(new FloatMenuOption("Fetch models first", null));
+                    options.Add(new FloatMenuOption("No models fetched yet", null));
                 }
 
                 Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private void EnsureModelNameEditBuffer()
+        {
+            if (modelNameEditBuffer == null || (modelNameEditBuffer != Settings.modelName && !string.IsNullOrWhiteSpace(Settings.modelName)))
+            {
+                modelNameEditBuffer = Settings.modelName ?? string.Empty;
             }
         }
 
@@ -245,6 +257,7 @@ namespace PawnDiary
                     if (string.IsNullOrWhiteSpace(Settings.modelName) || Settings.modelName == PawnDiarySettings.DefaultModelName)
                     {
                         Settings.modelName = models[0];
+                        modelNameEditBuffer = models[0];
                     }
                 }
             }
