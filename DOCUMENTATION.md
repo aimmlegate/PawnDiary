@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-14 (colonist-only diary eligibility)_
+_Last updated: 2026-06-14 (documentation parity fixes)_
 
 ---
 
@@ -296,7 +296,7 @@ immediately.
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight at once; the rest queue. **Use 1 for a single local model.** |
 | `maxTokens` | 160 | 32–2048. Applied to each one-entry request. |
 | `temperature` | 0.8 | 0–2. |
-| `dualPovGeneration` | true | Paired sequential vs. lazy single POV (§4). |
+| `dualPovGeneration` | true | Paired sequential vs. independent single-POV requests for both sides (§4). |
 | `systemPrompt` | from `DiaryPromptDef` XML | Sent as a `system` message; edit `1.6/Defs/DiaryPromptDef.xml` then click "Restore default" to apply (existing saves persist their saved value). |
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
@@ -359,7 +359,7 @@ Renders newest-first: date + status header, the diary
 - `DiaryEvent` is `IExposable`; generated text, statuses, errors, and context summaries are
   scribed. Prompts are not scribed (rebuilt on demand).
 - Pending requests are not persisted; on load, pending statuses normalize back to
-  not-generated and regenerate when next viewed.
+  not-generated and regenerate via the background queue scan.
 - **Backward-compat:** dormant `neutral*` fields remain scribed so older saves load; they
   are no longer populated or shown.
 
@@ -378,6 +378,12 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (documentation parity fixes)**
+  - Corrected the `dualPovGeneration` settings description to match implementation:
+    disabling paired mode queues both POV requests independently (not lazily).
+  - Corrected persistence docs: pending entries regenerate through the background
+    generation scan, not on diary-tab view.
 
 - **2026-06-14 (background-only generation)**
   - All LLM diary generation is now driven by a background tick scan, never by UI actions.
