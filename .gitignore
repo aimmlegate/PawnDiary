@@ -13,8 +13,16 @@ Thumbs.db
 # Local Claude Code config (machine-specific)
 .claude/
 
+# Local agent/editor/tooling config and indexes
+.codegraph/
+.mcp.json
+.vscode/
+AGENTS.md
+opencode.jsonc
+
 # Note: 1.6/Assemblies/PawnDiary.dll (and bundled 0Harmony.dll) are committed on purpose
 # so the mod is usable straight from a clone.
 
 # Prompt-lab runtime output
 prompt-lab/results/
+prompt-lab/results.zip
