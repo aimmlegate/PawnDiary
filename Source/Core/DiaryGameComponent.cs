@@ -147,9 +147,47 @@ namespace PawnDiary
             return views;
         }
 
+        public bool DiaryGenerationEnabledFor(Pawn pawn)
+        {
+            return FindDiary(pawn, true)?.diaryGenerationEnabled ?? true;
+        }
+
+        // Public setters/getters are used by the pawn inspector tab. They create the record on
+        // first edit so choices exist before the pawn has any diary entries.
+        public void SetDiaryGenerationEnabled(Pawn pawn, bool enabled)
+        {
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            if (diary != null)
+            {
+                diary.diaryGenerationEnabled = enabled;
+            }
+        }
+
+        public DiaryPersonaDef PersonaFor(Pawn pawn)
+        {
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            return DiaryPersonas.Resolve(diary?.personaDefName);
+        }
+
+        public void SetPersona(Pawn pawn, string personaDefName)
+        {
+            DiaryPersonaDef persona = DiaryPersonas.Resolve(personaDefName);
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            if (diary != null)
+            {
+                diary.personaDefName = persona.defName;
+            }
+        }
+
         private void EnsureGenerationQueued(DiaryEvent diaryEvent, string povRole)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            // Disabled pawns still keep the raw event in their diary, but never start an LLM job.
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
             {
                 return;
             }
@@ -658,12 +696,19 @@ namespace PawnDiary
                 return;
             }
 
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
+            {
+                return;
+            }
+
             if (!diaryEvent.CanQueueGeneration(povRole))
             {
                 return;
             }
 
-            string rawText = DiaryPromptBuilder.BuildInteractionPrompt(diaryEvent, povRole);
+            // Persona is resolved at queue time so changing a pawn affects future generations
+            // without rewriting prompts that were already sent or saved for debugging.
+            string rawText = DiaryPromptBuilder.BuildInteractionPrompt(diaryEvent, povRole, PersonaRuleFor(diaryEvent, povRole));
             QueuePrompt(diaryEvent, povRole, rawText);
         }
 
@@ -674,14 +719,26 @@ namespace PawnDiary
                 return;
             }
 
-            if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
+            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole);
+            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole);
+
+            // Normal paired flow: initiator writes first, then recipient can receive that entry
+            // as hidden continuity context.
+            if (initiatorEnabled && diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
             {
-                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.InitiatorRole, PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole));
                 QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, rawText);
                 return;
             }
 
-            if (string.Equals(diaryEvent.initiatorStatus, DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase))
+            // If the recipient is disabled, stop here even if the initiator completed.
+            if (!recipientEnabled)
+            {
+                return;
+            }
+
+            // Keep the old paired behavior when the initiator was supposed to generate but failed.
+            if (initiatorEnabled && string.Equals(diaryEvent.initiatorStatus, DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase))
             {
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
                 {
@@ -691,15 +748,21 @@ namespace PawnDiary
                 return;
             }
 
-            if (!string.Equals(diaryEvent.initiatorStatus, DiaryEvent.CompleteStatus, StringComparison.OrdinalIgnoreCase)
-                || string.IsNullOrWhiteSpace(diaryEvent.initiatorGeneratedText))
+            // Wait for initiator context only when the initiator is enabled. If the initiator is
+            // disabled, the recipient can still generate from the base event prompt.
+            if (initiatorEnabled
+                && (!string.Equals(diaryEvent.initiatorStatus, DiaryEvent.CompleteStatus, StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(diaryEvent.initiatorGeneratedText)))
             {
                 return;
             }
 
             if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
             {
-                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.RecipientRole);
+                // Recipient prompt includes hidden initiator context only when that context exists.
+                string rawText = initiatorEnabled
+                    ? DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.RecipientRole, PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole))
+                    : DiaryPromptBuilder.BuildInteractionPrompt(diaryEvent, DiaryEvent.RecipientRole, PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole));
                 QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, rawText);
             }
         }
@@ -707,6 +770,11 @@ namespace PawnDiary
         private void QueuePrompt(DiaryEvent diaryEvent, string povRole, string rawText)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
             {
                 return;
             }
@@ -798,7 +866,9 @@ namespace PawnDiary
 
             if (!result.success)
             {
-                if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                // Do not mark a disabled recipient as failed; they intentionally have no LLM state.
+                if (DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole)
+                    && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
                 {
                     diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "Skipped because initiator diary generation failed.");
                 }
@@ -807,6 +877,47 @@ namespace PawnDiary
             }
 
             QueueSequentialPairwiseRewrite(diaryEvent);
+        }
+
+        private bool DiaryGenerationEnabledFor(DiaryEvent diaryEvent, string povRole)
+        {
+            // DiaryEvents store pawn IDs, not Pawn instances, so queue-time checks resolve through
+            // the saved diary record for that POV.
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return true;
+            }
+
+            return FindDiaryByPawnId(pawnId)?.diaryGenerationEnabled ?? true;
+        }
+
+        private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole)
+        {
+            // Missing records fall back to the XML default persona, which also covers old saves.
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            return DiaryPersonas.RuleFor(diary?.personaDefName);
+        }
+
+        private static string PawnIdForRole(DiaryEvent diaryEvent, string povRole)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return null;
+            }
+
+            if (string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return diaryEvent.recipientPawnId;
+            }
+
+            if (string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return diaryEvent.initiatorPawnId;
+            }
+
+            return null;
         }
 
         private DiaryEvent FindEvent(string eventId)
@@ -839,6 +950,7 @@ namespace PawnDiary
             {
                 if (diaries[i].pawnId == pawnId)
                 {
+                    EnsurePawnDiaryDefaults(diaries[i]);
                     return diaries[i];
                 }
             }
@@ -851,10 +963,45 @@ namespace PawnDiary
             PawnDiaryRecord diary = new PawnDiaryRecord
             {
                 pawnId = pawnId,
-                pawnName = pawn.LabelShortCap
+                pawnName = pawn.LabelShortCap,
+                personaDefName = DiaryPersonas.Default.defName,
+                diaryGenerationEnabled = true
             };
             diaries.Add(diary);
             return diary;
+        }
+
+        private PawnDiaryRecord FindDiaryByPawnId(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || diaries == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                if (diaries[i].pawnId == pawnId)
+                {
+                    EnsurePawnDiaryDefaults(diaries[i]);
+                    return diaries[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static void EnsurePawnDiaryDefaults(PawnDiaryRecord diary)
+        {
+            if (diary == null)
+            {
+                return;
+            }
+
+            // Existing saves may have no persona, and XML mods may remove an old persona Def.
+            if (string.IsNullOrWhiteSpace(diary.personaDefName) || DiaryPersonas.ForDefName(diary.personaDefName) == null)
+            {
+                diary.personaDefName = DiaryPersonas.Default.defName;
+            }
         }
 
         private static class EmptyEntries

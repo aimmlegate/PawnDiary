@@ -15,6 +15,8 @@ namespace PawnDiary
     {
         private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
 
+        private const float ControlsHeight = 116f;
+
         private Vector2 scrollPosition;
 
         public ITab_Pawn_Diary()
@@ -54,13 +56,19 @@ namespace PawnDiary
             }
 
             Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(12f);
+            DiaryGameComponent component = DiaryGameComponent.Current;
 
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(rect.x, rect.y, rect.width, 34f), pawn.LabelShortCap + "'s Diary");
             Text.Font = GameFont.Small;
 
-            Rect outRect = new Rect(rect.x, rect.y + 40f, rect.width, rect.height - 40f);
-            IReadOnlyList<DiaryEntryView> entries = DiaryGameComponent.Current?.EntriesFor(pawn) ?? EmptyList;
+            Rect controlsRect = new Rect(rect.x, rect.y + 36f, rect.width, ControlsHeight);
+            DrawPawnControls(pawn, component, controlsRect);
+
+            // The controls are part of the diary tab, so reserve fixed space before the scroll view.
+            float entriesY = controlsRect.yMax + 8f;
+            Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
+            IReadOnlyList<DiaryEntryView> entries = component?.EntriesFor(pawn) ?? EmptyList;
 
             if (entries.Count == 0)
             {
@@ -98,6 +106,72 @@ namespace PawnDiary
                 curY += height + 8f;
             }
             Widgets.EndScrollView();
+        }
+
+        private static void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
+        {
+            if (pawn == null || component == null)
+            {
+                return;
+            }
+
+            Listing_Standard listing = new Listing_Standard();
+            listing.Begin(rect);
+
+            // Toggling this only gates future LLM requests. Recorded events remain visible as raw
+            // diary entries, which lets players pause generation without losing history.
+            bool enabled = component.DiaryGenerationEnabledFor(pawn);
+            bool before = enabled;
+            listing.CheckboxLabeled(
+                "Generate diary entries for this pawn",
+                ref enabled,
+                "When disabled, events are still recorded here, but no LLM request is sent for this pawn.");
+            if (enabled != before)
+            {
+                component.SetDiaryGenerationEnabled(pawn, enabled);
+            }
+
+            // Persona options come from DiaryPersonaDefs.xml so new presets can be added without
+            // changing UI code.
+            DiaryPersonaDef persona = component.PersonaFor(pawn);
+            if (listing.ButtonText("Persona: " + PersonaLabel(persona)))
+            {
+                List<FloatMenuOption> options = DiaryPersonas.All
+                    .OrderBy(PersonaLabel)
+                    .Select(option =>
+                    {
+                        DiaryPersonaDef selected = option;
+                        return new FloatMenuOption(PersonaLabel(selected), delegate
+                        {
+                            component.SetPersona(pawn, selected.defName);
+                        });
+                    })
+                    .ToList();
+
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+
+            string rule = persona?.rule ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(rule))
+            {
+                // Show the active rule inline so players can inspect the style without opening XML.
+                GameFont oldFont = Text.Font;
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(listing.GetRect(40f), rule);
+                Text.Font = oldFont;
+            }
+
+            listing.End();
+        }
+
+        private static string PersonaLabel(DiaryPersonaDef persona)
+        {
+            if (persona == null)
+            {
+                return "default";
+            }
+
+            return string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label;
         }
 
         private static float EntryHeight(DiaryEntryView entry, float width)

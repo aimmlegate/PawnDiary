@@ -25,6 +25,9 @@ namespace PawnDiary
         // Legacy marker that preceded the recipient's diary entry in old dual-POV responses.
         public string recipientMarker = "[RECIPIENT]";
 
+        // Default persona for new/existing pawns that do not have an explicit saved choice.
+        public string defaultPersonaDefName = "DiaryPersona_StoicSurvivor";
+
         // The default system prompt. Copied into saved settings on first use; players can
         // override it in-game. Editing this in XML only affects the "restore default" action
         // for existing saves.
@@ -32,7 +35,7 @@ namespace PawnDiary
             + "between colonists and write short, first-person diary entries in the voice of the colonist whose point of view is requested.\n"
             + "Rules:\n"
             + "- Write only what that colonist could plausibly know, see, or feel. Never invent events, names, places, or facts that are not in the notes.\n"
-            + "- Stay in first person and in character. Reflect the colonist's traits, mood, and their opinion of the other pawn.\n"
+            + "- Stay in first person and in character. Reflect the colonist's persona, mood, and their opinion of the other pawn.\n"
             + "- Keep each entry to a few sentences. Be concrete and grounded in the provided context; do not moralize or summarize game mechanics.\n"
             + "- If another pawn's diary entry is included as hidden context, use it only for continuity and contrast; the current pawn has not read it unless the notes say so.\n"
             + "- Output only the diary text. Do not use markdown, headings, labels, or commentary.";

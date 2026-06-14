@@ -15,31 +15,31 @@ namespace PawnDiary
     {
         // Prompts intentionally omit any field that is empty or "normal" (see AppendField),
         // so the model only ever sees signal — no "health: healthy", no weather indoors, etc.
-        public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole)
+        public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule)
         {
             if (diaryEvent.solo)
             {
-                return BuildSoloPrompt(diaryEvent);
+                return BuildSoloPrompt(diaryEvent, personaRule);
             }
 
             string initiatorEntry = string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase)
                 ? DiaryContextBuilder.CleanLine(diaryEvent.initiatorGeneratedText)
                 : null;
 
-            return BuildPairPrompt(diaryEvent, povRole, initiatorEntry);
+            return BuildPairPrompt(diaryEvent, povRole, initiatorEntry, personaRule);
         }
 
-        public static string BuildInteractionPrompt(DiaryEvent diaryEvent, string povRole)
+        public static string BuildInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule)
         {
             if (diaryEvent.solo)
             {
-                return BuildSoloPrompt(diaryEvent);
+                return BuildSoloPrompt(diaryEvent, personaRule);
             }
 
-            return BuildPairPrompt(diaryEvent, povRole, null);
+            return BuildPairPrompt(diaryEvent, povRole, null, personaRule);
         }
 
-        private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry)
+        private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule)
         {
             bool isInitiator = string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase);
             string otherName = isInitiator ? diaryEvent.recipientName : diaryEvent.initiatorName;
@@ -54,6 +54,8 @@ namespace PawnDiary
             AppendField(lines, "what you saw", povText);
             AppendField(lines, "instruction", diaryEvent.instruction);
             AppendField(lines, "you", povSummary);
+            // Persona is a writing-style rule from the pawn's saved preset, not a gameplay fact.
+            AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
             AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
             AppendField(lines, "initiator diary (hidden context)", initiatorEntry);
@@ -66,7 +68,7 @@ namespace PawnDiary
             return string.Join("\n", lines.ToArray()) + "\n\n" + instruction;
         }
 
-        private static string BuildSoloPrompt(DiaryEvent diaryEvent)
+        private static string BuildSoloPrompt(DiaryEvent diaryEvent, string personaRule)
         {
             List<string> lines = new List<string> { "event: " + EventNoun(diaryEvent) };
 
@@ -74,6 +76,8 @@ namespace PawnDiary
             AppendField(lines, "what happened", diaryEvent.initiatorText);
             AppendField(lines, "instruction", diaryEvent.instruction);
             AppendField(lines, "you", diaryEvent.initiatorPawnSummary);
+            // Solo events use the same persona field as pairwise entries for prompt-lab parity.
+            AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
             AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
 

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pawn writing personas, copied from prompt-lab/personas.txt so they can be selected in-game.
+  Edit rules here and restart the game to retune the persona catalog.
+-->
+<Defs>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_StoicSurvivor</defName>
+    <label>stoic-survivor</label>
+    <rule>writes in terse, matter-of-fact sentences; avoids self-pity and focuses on what needs doing next</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_FieryHothead</defName>
+    <label>fiery-hothead</label>
+    <rule>writes in explosive bursts of emotion, capitalizing words for emphasis; quick to anger and quicker to forgive</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_MelancholyDreamer</defName>
+    <label>melancholy-dreamer</label>
+    <rule>writes with wistful, poetic melancholy; finds symbolism in small moments and lingers on what was lost</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_EarnestOptimist</defName>
+    <label>earnest-optimist</label>
+    <rule>writes with relentless, sometimes naive positivity; finds a silver lining even in catastrophe</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_CynicalRealist</defName>
+    <label>cynical-realist</label>
+    <rule>writes with dry, deadpan gallows humor; expects the worst and is rarely disappointed</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_AnxiousWorrier</defName>
+    <label>anxious-worrier</label>
+    <rule>writes in long, spiraling anxious sentences; overthinks every interaction and second-guesses every motive</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_GentleCaretaker</defName>
+    <label>gentle-caretaker</label>
+    <rule>writes with gentle warmth and empathy; notices others' pain before their own and downplays their troubles</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_GrimVeteran</defName>
+    <label>grim-veteran</label>
+    <rule>writes like a battlefield report; clinical about violence, sentimental about loyalty</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_WhimsicalEccentric</defName>
+    <label>whimsical-eccentric</label>
+    <rule>writes in a stream-of-consciousness tangle of tangents, strange observations, and sudden insights</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_NobleIdealist</defName>
+    <label>noble-idealist</label>
+    <rule>writes with formal, slightly archaic dignity; frames everything through honor, duty, and what is proper</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_BitterLoner</defName>
+    <label>bitter-loner</label>
+    <rule>writes with bitter sarcasm and mistrust; keeps everyone at arm's length and expects betrayal</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_EagerSocialite</defName>
+    <label>eager-socialite</label>
+    <rule>writes in chatty, gossipy bursts; cares deeply about who said what and where they stand in the pecking order</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+</Defs>
