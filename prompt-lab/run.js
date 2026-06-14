@@ -62,7 +62,7 @@ function resolvePersonas(userPrompt) {
 // If no ===SYSTEM=== block, fall back to prompts/_system.txt.
 function parseFixture(file) {
   const raw = fs.readFileSync(file, 'utf8');
-  const meta = { mode: 'dual', temperature: CONFIG.temperature, maxTokens: CONFIG.maxTokens };
+  const meta = { mode: 'single', temperature: CONFIG.temperature, maxTokens: CONFIG.maxTokens };
   const lines = raw.split(/\r?\n/);
 
   let i = 0;

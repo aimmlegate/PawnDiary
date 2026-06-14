@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-14 (refactor: rename, file split, XML Defs, JS/TS docs)_
+_Last updated: 2026-06-14 (paired sequential POV generation)_
 
 ---
 
@@ -18,8 +18,10 @@ event into a short first-person diary entry. Each pawn's diary is shown in an **
 tab next to the vanilla Log tab**.
 
 Pairwise events (interactions, social fights) produce two entries — one from each pawn's
-point of view — by default in a **single LLM request** ("dual POV"). Solo events (mental
-breaks) produce a single entry from the breaking pawn's point of view.
+point of view — by default as **paired sequential POV**: first the initiator entry, then
+the recipient entry with the initiator's generated text included as hidden continuity
+context. Solo events (mental breaks) produce a single entry from the breaking pawn's point
+of view.
 
 ---
 
@@ -55,18 +57,19 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the Log tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks). |
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
-| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status; save/load; applying LLM results (incl. dual-POV parse). |
+| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, relationship/continuity, opinions) + formatting/bucket helpers. |
-| `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, dual, solo). |
+| `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
 | `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). |
 | `DiaryTuningDef.cs` | Defines `DiaryTuningDef : Def` + `DiaryTuning.Current` (tuning knobs: dedup windows, thresholds, buckets). Data lives in XML; falls back to safe code defaults if the Def is absent. |
+| `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, legacy dual markers, and the default system prompt). |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
-| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts) and `DiaryTuningDef.xml` (tuning numbers). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), and `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt default). |
 | `CSHARP-NOTES.md` | Primer mapping the C#/RimWorld idioms used here (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …) to JS/TS analogies. |
 | `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
@@ -88,7 +91,7 @@ DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState
       │   • significance filter (§5)            │
       │   • builds a DiaryEvent immediately (NO batching — one event per occurrence)
       │   • adds event to diaryEvents + the involved pawns' PawnDiaryRecord(s)
-      │   • queues generation (pairwise: dual/single §4; solo: single initiator)
+      │   • queues generation (pairwise: paired sequential/single §4; solo: single initiator)
       ▼                                        ▼
 LlmClient.Enqueue ─▶ concurrency gate ─▶ SendOnce(HTTP) ─▶ Completed queue
       ▼
@@ -105,13 +108,17 @@ ITab_Pawn_Diary.FillTab
 
 Controlled by the `dualPovGeneration` setting.
 
-### Dual POV (default, `dualPovGeneration = true`)
-- One request per event. The prompt (`BuildDualInteractionPrompt`) asks the model to
-  return both entries delimited by `[INITIATOR]` and `[RECIPIENT]` markers.
-- `DiaryEvent.ParseDualResponse` splits the response and fills both POVs. If markers are
-  missing it falls back to using the whole response for both (so nothing is lost).
-- Token budget is doubled (`maxTokens * 2`) for the combined response.
-- Routed through the `"dual"` POV role; `ApplyDualResult` writes both POVs complete.
+### Paired sequential POV (default, `dualPovGeneration = true`)
+- Pairwise events start by queueing the initiator request only. Its prompt
+  (`BuildSequentialInteractionPrompt(..., "initiator")`) asks for exactly one diary entry.
+- When the initiator result is applied, `QueueRecipientAfterInitiatorResult` queues the
+  recipient request. The recipient prompt includes the generated initiator entry as
+  `initiator diary (hidden context)` and instructs the model not to treat it as something
+  the recipient has read.
+- If the initiator request fails, the recipient POV is marked failed too, because the
+  required hidden context does not exist.
+- Old `[INITIATOR]` / `[RECIPIENT]` parser code remains dormant for compatibility, but new
+  requests are ordinary one-entry POV requests.
 
 ### Single POV (legacy, `dualPovGeneration = false`)
 - Initiator generated on record; recipient generated lazily when that pawn's tab is
@@ -119,9 +126,9 @@ Controlled by the `dualPovGeneration` setting.
 
 ### Solo events (mental breaks)
 - `DiaryEvent.solo == true`. Only the breaking pawn is involved (recipient fields blank).
-  `CanQueueDual()` returns false for solo, so generation always uses the single initiator
-  POV via `BuildSoloPrompt` (a `mental_event` prompt). The target of a targeted break (e.g.
-  MurderousRage) is named in the text/context but does not get their own entry.
+  Generation always uses the single initiator POV via `BuildSoloPrompt` (a `mental_event`
+  prompt). The target of a targeted break (e.g. MurderousRage) is named in the text/context
+  but does not get their own entry.
 
 All paths share the same per-event context fields and the system prompt.
 
@@ -220,15 +227,15 @@ field changes nothing.
 | `modelName` | `local-model` | Picked via "Fetch models" or typed. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight at once; the rest queue. **Use 1 for a single local model.** |
-| `maxTokens` | 160 | 32–2048. Doubled for dual-POV requests. |
+| `maxTokens` | 160 | 32–2048. Applied to each one-entry request. |
 | `temperature` | 0.8 | 0–2. |
-| `dualPovGeneration` | true | Dual vs. single POV (§4). |
-| `systemPrompt` | see `DefaultSystemPrompt` | Sent as a `system` message; empty = no system message. |
+| `dualPovGeneration` | true | Paired sequential vs. lazy single POV (§4). |
+| `systemPrompt` | from `DiaryPromptDef` XML | Sent as a `system` message; edit `1.6/Defs/DiaryPromptDef.xml` then click "Restore default" to apply (existing saves persist their saved value). |
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
 
 Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents` (connection, model fetch,
-dual toggle, concurrency slider, system prompt editor, and the interaction-group editor —
+paired POV toggle, concurrency slider, system prompt editor, and the interaction-group editor —
 a checkbox per group plus a prompt editor for the selected group).
 
 ---
@@ -298,6 +305,25 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (paired sequential POV generation)**
+  - Replaced live dual-POV generation with a paired sequential flow: initiator request first,
+    recipient request second after the initiator result is applied.
+  - Rewrote pairwise prompts to request one diary entry at a time. Recipient prompts now include
+    the generated initiator entry as hidden continuity context.
+  - Updated the settings label/help and prompt Def defaults to match the new behavior. Legacy
+    dual-marker parsing remains dormant for compatibility.
+
+- **2026-06-14 (DiaryPromptDef: single XML source of truth for markers/prompts)**
+  - Added `DiaryPromptDef` (`Source/Defs/DiaryPromptDef.cs`) + `1.6/Defs/DiaryPromptDef.xml`
+    holding `dualInstruction`, `initiatorMarker`, `recipientMarker`, and the `systemPrompt`
+    default. Read via `DiaryPrompts.Current` with safe-code-default fallback (same pattern as
+    `DiaryTuning`).
+  - The old dual prompt/parser path read its markers/instruction from `DiaryPrompts.Current`
+    instead of three hardcoded copies.
+  - `PawnDiarySettings.DefaultSystemPrompt` is now a property reading from
+    `DiaryPrompts.Current.systemPrompt`. Existing saves keep their stored system prompt; edit
+    the XML and click "Restore default" in-game to adopt the new default.
 
 - **2026-06-14 (maintainability refactor: rename, split, XML Defs, docs)**
   - **Renamed the project files** `ClassLibrary1.csproj`/`.slnx` → `PawnDiary.*` (the code,

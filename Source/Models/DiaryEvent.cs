@@ -518,8 +518,8 @@ namespace PawnDiary
                 return;
             }
 
-            const string initiatorMarker = "[INITIATOR]";
-            const string recipientMarker = "[RECIPIENT]";
+            string initiatorMarker = DiaryPrompts.Current.initiatorMarker;
+            string recipientMarker = DiaryPrompts.Current.recipientMarker;
             int initiatorIndex = text.IndexOf(initiatorMarker, StringComparison.OrdinalIgnoreCase);
             int recipientIndex = text.IndexOf(recipientMarker, StringComparison.OrdinalIgnoreCase);
 
@@ -576,7 +576,8 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            value = value.Replace("[INITIATOR]", string.Empty).Replace("[RECIPIENT]", string.Empty);
+            value = value.Replace(DiaryPrompts.Current.initiatorMarker, string.Empty)
+                         .Replace(DiaryPrompts.Current.recipientMarker, string.Empty);
             return value.Trim();
         }
 

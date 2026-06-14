@@ -2,7 +2,8 @@
 
 Tinker with Pawn Diary's prompts outside the game. Each fixture is an editable prompt
 that mirrors what the mod actually sends; the runner fires it at your model and prints the
-result (and, for dual fixtures, the parsed `[INITIATOR]`/`[RECIPIENT]` split).
+result. Legacy dual fixtures can still be parsed, but current paired POV prompts are
+single-entry requests.
 
 No dependencies — just Node.
 
@@ -28,7 +29,7 @@ ENDPOINT=http://localhost:1234/v1 MODEL=rocinante-x-12b-v1-i1 node run.js --all
 A fixture is a plain text file:
 
 ```
-# mode: dual            # dual | solo | single  (only changes how output is printed/parsed)
+# mode: single          # single | solo | dual  (only changes how output is printed/parsed)
 # max_tokens: 320       # optional per-fixture override
 # temperature: 0.8      # optional per-fixture override
 ===SYSTEM===            # optional — omit to use prompts/_system.txt
@@ -47,7 +48,6 @@ A fixture is a plain text file:
 ## Keeping it honest
 
 These fixtures are hand-authored to match the mod's current compact format (see
-`../DOCUMENTATION.md` §5/§4). Dual fixtures keep the trailing `[INITIATOR]/[RECIPIENT]`
-directive because the real dual prompt does; solo/single prompts have no trailing directive
-(the system prompt drives the writing) — mirror that when you add new ones so what you test
-matches what ships.
+`../DOCUMENTATION.md` §5/§4). Current pairwise fixtures should represent one request at a
+time: initiator first, then recipient with an `initiator diary (hidden context)` line.
+Mirror that when you add new ones so what you test matches what ships.

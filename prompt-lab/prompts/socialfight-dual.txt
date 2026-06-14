@@ -1,21 +1,15 @@
-# mode: dual
-# max_tokens: 320
+# mode: single
+# max_tokens: 160
 ===USER===
-event: social fight (two viewpoints)
-initiator: Bjorn
-recipient: Talia
-what happened: Bjorn and Talia lost their tempers and came to blows.
+event: social fight
+pov: Bjorn
+role: initiator
+with: Talia
+what you saw: Bjorn and Talia lost their tempers and came to blows.
 instruction: the two pawns lost their tempers and came to blows; write it as a heated physical fight
-initiator profile: male, 45y; mood: miserable 22%
-initiator persona: random
-recipient profile: female, 33y; mood: stressed 39%
-recipient persona: random
+you: male, 45y; mood: miserable 22%
+you persona: random
 setting: barracks, indoors
-initiator relationship: opinion -41 (hostile); because Insulted me -18, Social fight -12, Slighted me -8
-recipient relationship: rival; opinion -36 (hostile); because Insulted me -16, Social fight -12; last wrote: "Bjorn has been spoiling for a fight for days. Today he got one."
+relationship: opinion -41 (hostile); because Insulted me -18, Social fight -12, Slighted me -8
 
-Write two short first-person diary entries, one from each pawn's point of view, following the instruction. Each pawn only knows what they could perceive. Output EXACTLY in this format and nothing else:
-[INITIATOR]
-<Bjorn's diary entry>
-[RECIPIENT]
-<Talia's diary entry>
+Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.

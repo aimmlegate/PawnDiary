@@ -39,15 +39,10 @@ namespace PawnDiary
         public const string DefaultEndpointUrl = "http://localhost:1234/v1";
         public const string DefaultModelName = "local-model";
 
-        public const string DefaultSystemPrompt =
-            "You are the diary-writer for a RimWorld colony. You receive structured notes about a social interaction "
-            + "between colonists and write short, first-person diary entries in the voice of the colonist whose point of view is requested.\n"
-            + "Rules:\n"
-            + "- Write only what that colonist could plausibly know, see, or feel. Never invent events, names, places, or facts that are not in the notes.\n"
-            + "- Stay in first person and in character. Reflect the colonist's traits, mood, and their opinion of the other pawn.\n"
-            + "- Keep each entry to a few sentences. Be concrete and grounded in the provided context; do not moralize or summarize game mechanics.\n"
-            + "- Do not use markdown, headings, or any commentary outside the diary text.\n"
-            + "- When the notes specify an output format (for example labelled sections like [INITIATOR] and [RECIPIENT]), follow it exactly and output nothing else.";
+        // Default comes from the DiaryPromptDef XML (editable without recompiling). If the Def
+        // isn't loaded yet during early startup, the field initializer in DiaryPromptDef
+        // provides the same hardcoded text as a fallback.
+        public static string DefaultSystemPrompt => DiaryPrompts.Current.systemPrompt;
 
         public override void ExposeData()
         {

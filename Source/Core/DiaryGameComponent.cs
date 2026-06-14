@@ -138,11 +138,11 @@ namespace PawnDiary
                 return;
             }
 
-            // In dual mode, a request from either pawn's diary covers both POVs at once.
-            // Fall through to the single-POV path only for a partially-generated (legacy) event.
-            if (DualPovEnabled && DiaryEvent.RoleIsInitiatorOrRecipient(povRole) && diaryEvent.CanQueueDual())
+            // In paired mode, the recipient entry waits for the finished initiator entry so the
+            // second prompt can use it as continuity context.
+            if (DualPovEnabled && DiaryEvent.RoleIsInitiatorOrRecipient(povRole) && !diaryEvent.solo)
             {
-                QueueDualRewrite(diaryEvent);
+                QueueSequentialPairwiseRewrite(diaryEvent);
                 return;
             }
 
@@ -345,7 +345,7 @@ namespace PawnDiary
         {
             if (DualPovEnabled)
             {
-                QueueDualRewrite(diaryEvent);
+                QueueSequentialPairwiseRewrite(diaryEvent);
             }
             else
             {
@@ -436,6 +436,58 @@ namespace PawnDiary
             }
 
             string rawText = DiaryPromptBuilder.BuildInteractionPrompt(diaryEvent, povRole);
+            QueuePrompt(diaryEvent, povRole, rawText);
+        }
+
+        private void QueueSequentialPairwiseRewrite(DiaryEvent diaryEvent)
+        {
+            if (diaryEvent == null || diaryEvent.solo)
+            {
+                return;
+            }
+
+            if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
+            {
+                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.InitiatorRole);
+                QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, rawText);
+                return;
+            }
+
+            if (string.Equals(diaryEvent.initiatorStatus, DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase))
+            {
+                if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                {
+                    diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "Skipped because initiator diary generation failed.");
+                }
+
+                return;
+            }
+
+            if (!string.Equals(diaryEvent.initiatorStatus, DiaryEvent.CompleteStatus, StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(diaryEvent.initiatorGeneratedText))
+            {
+                return;
+            }
+
+            if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+            {
+                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.RecipientRole);
+                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, rawText);
+            }
+        }
+
+        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, string rawText)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            if (!diaryEvent.CanQueueGeneration(povRole))
+            {
+                return;
+            }
+
             diaryEvent.SetPrompt(povRole, rawText);
 
             if (PawnDiaryMod.Settings == null)
@@ -459,44 +511,6 @@ namespace PawnDiary
                 apiKey = PawnDiaryMod.Settings.apiKey,
                 timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
                 maxTokens = PawnDiaryMod.Settings.maxTokens,
-                temperature = PawnDiaryMod.Settings.temperature
-            });
-        }
-
-        private void QueueDualRewrite(DiaryEvent diaryEvent)
-        {
-            if (diaryEvent == null || !diaryEvent.CanQueueDual())
-            {
-                return;
-            }
-
-            string rawText = DiaryPromptBuilder.BuildDualInteractionPrompt(diaryEvent);
-            diaryEvent.SetDualPrompt(rawText);
-
-            if (PawnDiaryMod.Settings == null)
-            {
-                diaryEvent.MarkDualFailed("LLM settings are not available.");
-                return;
-            }
-
-            diaryEvent.llmEndpoint = EndpointUtility.BuildChatCompletionsUrl(PawnDiaryMod.Settings.endpointUrl);
-            diaryEvent.llmModel = PawnDiaryMod.Settings.modelName;
-            diaryEvent.MarkDualQueued();
-
-            // Two entries in one response need roughly twice the budget of a single POV.
-            int dualMaxTokens = Mathf.Clamp(PawnDiaryMod.Settings.maxTokens * 2, 64, 4096);
-
-            LlmClient.Enqueue(new LlmGenerationRequest
-            {
-                eventId = diaryEvent.eventId,
-                povRole = DiaryEvent.DualRole,
-                systemPrompt = PawnDiaryMod.Settings.systemPrompt,
-                rawText = rawText,
-                endpointUrl = PawnDiaryMod.Settings.endpointUrl,
-                modelName = PawnDiaryMod.Settings.modelName,
-                apiKey = PawnDiaryMod.Settings.apiKey,
-                timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
-                maxTokens = dualMaxTokens,
                 temperature = PawnDiaryMod.Settings.temperature
             });
         }
@@ -526,7 +540,37 @@ namespace PawnDiary
             }
 
             DiaryEvent diaryEvent = FindEvent(result.eventId);
-            diaryEvent?.ApplyLlmResult(result);
+            if (diaryEvent == null)
+            {
+                return;
+            }
+
+            diaryEvent.ApplyLlmResult(result);
+            QueueRecipientAfterInitiatorResult(diaryEvent, result);
+        }
+
+        private void QueueRecipientAfterInitiatorResult(DiaryEvent diaryEvent, LlmGenerationResult result)
+        {
+            if (!DualPovEnabled
+                || diaryEvent == null
+                || diaryEvent.solo
+                || result == null
+                || !string.Equals(result.povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (!result.success)
+            {
+                if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                {
+                    diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "Skipped because initiator diary generation failed.");
+                }
+
+                return;
+            }
+
+            QueueSequentialPairwiseRewrite(diaryEvent);
         }
 
         private DiaryEvent FindEvent(string eventId)

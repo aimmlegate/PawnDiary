@@ -1,22 +1,16 @@
-# mode: dual
-# max_tokens: 320
+# mode: single
+# max_tokens: 160
 ===USER===
-event: romance attempt (two viewpoints)
-initiator: Wei
-recipient: Liara
-initiator saw: Wei worked up the nerve to make a romantic advance on Liara, and she accepted.
-recipient saw: Wei made a nervous romantic advance on Liara; she accepted.
+event: romance attempt
+pov: Liara
+role: recipient
+with: Wei
+what you saw: Wei made a nervous romantic advance on Liara; she accepted.
 instruction: romantic moment between the pawns; may be an advance, commitment, date, or breakup depending on context
-initiator profile: male, 26y; mood: happy 81%
-initiator persona: random
-recipient profile: female, 27y; mood: stable 67%
-recipient persona: random
+you: female, 27y; mood: stable 67%
+you persona: random
 setting: outdoors, clear weather, temperate forest, beautiful surroundings
-initiator relationship: opinion +44 (friendly); because Shared kind words +10, Chitchat +4; last wrote: "Every time Liara laughs I forget what I meant to say."
-recipient relationship: opinion +38 (friendly); because Shared kind words +8
+relationship: opinion +38 (friendly); because Shared kind words +8
+initiator diary (hidden context): I finally asked Liara instead of rehearsing the words until they turned to dust. She smiled, and for once the whole colony went quiet in my head.
 
-Write two short first-person diary entries, one from each pawn's point of view, following the instruction. Each pawn only knows what they could perceive. Output EXACTLY in this format and nothing else:
-[INITIATOR]
-<Wei's diary entry>
-[RECIPIENT]
-<Liara's diary entry>
+Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.

@@ -1,21 +1,16 @@
-# mode: dual
-# max_tokens: 320
+# mode: single
+# max_tokens: 160
 ===USER===
-event: insult (two viewpoints)
-initiator: Rurik
-recipient: Mei
-what happened: Rurik sneered at Mei, calling her cooking "slop fit for boomrats".
+event: insult
+pov: Mei
+role: recipient
+with: Rurik
+what you saw: Rurik sneered at Mei, calling her cooking "slop fit for boomrats".
 instruction: hostile exchange: an insult, a slight, or the start of a social fight
-initiator profile: male, 34y; mood: stressed 41%
-initiator persona: random
-recipient profile: female, 29y; mood: stable 63%
-recipient persona: random
+you: female, 29y; mood: stable 63%
+you persona: random
 setting: dining room, indoors, doing: eating at a table
-initiator relationship: opinion -18 (strained); because Insulted -16, Slighted me -8; last wrote: "Mei always acts like she's better than the rest of us."
-recipient relationship: rival; opinion -27 (strained); because Insulted me -20, Social fight -7
+relationship: rival; opinion -27 (strained); because Insulted me -20, Social fight -7
+initiator diary (hidden context): I told Mei the truth about that meal. If she wants praise, she can stop serving slop and acting wounded when someone says it.
 
-Write two short first-person diary entries, one from each pawn's point of view, following the instruction. Each pawn only knows what they could perceive. Output EXACTLY in this format and nothing else:
-[INITIATOR]
-<Rurik's diary entry>
-[RECIPIENT]
-<Mei's diary entry>
+Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.

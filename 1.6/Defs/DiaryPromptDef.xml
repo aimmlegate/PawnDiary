@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Prompt texts and legacy markers used at generation time. Edit a value and restart the game to
+  retune behavior WITHOUT recompiling (see DiaryPromptDef.cs for what each field means).
+  Every value here equals the code default, so deleting this file or omitting a field
+  changes nothing.
+-->
+<Defs>
+
+  <PawnDiary.DiaryPromptDef>
+    <defName>Diary_Prompts</defName>
+
+    <!-- Wrapped instruction appended after the structured context lines in a single-entry prompt -->
+    <singlePovInstruction>Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.</singlePovInstruction>
+
+    <!-- Wrapped instruction for the recipient's second request in paired sequential mode -->
+    <recipientFollowupInstruction>Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.</recipientFollowupInstruction>
+
+    <!-- Legacy dual-POV instruction retained for compatibility with older saved/generated data -->
+    <dualInstruction>Write two short first-person diary entries, one from each pawn's point of view, following the instruction.</dualInstruction>
+
+    <!-- Legacy marker that preceded the initiator's diary entry in old dual-POV responses -->
+    <initiatorMarker>[INITIATOR]</initiatorMarker>
+
+    <!-- Legacy marker that preceded the recipient's diary entry in old dual-POV responses -->
+    <recipientMarker>[RECIPIENT]</recipientMarker>
+
+    <!-- The default system prompt (players can override it in-game; this only affects the "restore default" action) -->
+    <systemPrompt>You are the diary-writer for a RimWorld colony. You receive structured notes about a social interaction between colonists and write short, first-person diary entries in the voice of the colonist whose point of view is requested.
+Rules:
+- Write only what that colonist could plausibly know, see, or feel. Never invent events, names, places, or facts that are not in the notes.
+- Stay in first person and in character. Reflect the colonist's traits, mood, and their opinion of the other pawn.
+- Keep each entry to a few sentences. Be concrete and grounded in the provided context; do not moralize or summarize game mechanics.
+- If another pawn's diary entry is included as hidden context, use it only for continuity and contrast; the current pawn has not read it unless the notes say so.
+- Output only the diary text. Do not use markdown, headings, labels, or commentary.</systemPrompt>
+  </PawnDiary.DiaryPromptDef>
+
+</Defs>

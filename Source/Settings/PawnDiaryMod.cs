@@ -57,9 +57,9 @@ namespace PawnDiary
 
             listing.Gap(12f);
             listing.CheckboxLabeled(
-                "Dual POV in one request (faster)",
+                "Paired POV generation",
                 ref Settings.dualPovGeneration,
-                "Generate both pawns' diary entries from a single model request instead of one request per pawn. Disable to use the older one-request-per-POV path.");
+                "Generate pairwise diary entries sequentially: initiator first, then recipient with the initiator entry as hidden context. Disable to generate only the first POV immediately and let other POVs generate lazily.");
 
             listing.Label($"Max concurrent requests: {Settings.maxConcurrentRequests}");
             Settings.maxConcurrentRequests = Mathf.RoundToInt(listing.Slider(Settings.maxConcurrentRequests, 1f, 16f));

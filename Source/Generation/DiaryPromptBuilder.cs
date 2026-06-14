@@ -1,5 +1,5 @@
 // Assembles the final prompt text sent to the model for each generation mode
-// (single POV, dual POV, solo). Static helpers, no state. Split out of
+// (single POV, paired sequential POV, solo). Static helpers, no state. Split out of
 // DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
 using System.Collections.Generic;
@@ -15,45 +15,18 @@ namespace PawnDiary
     {
         // Prompts intentionally omit any field that is empty or "normal" (see AppendField),
         // so the model only ever sees signal — no "health: healthy", no weather indoors, etc.
-        public static string BuildDualInteractionPrompt(DiaryEvent diaryEvent)
+        public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole)
         {
-            List<string> lines = new List<string> { "event: " + EventNoun(diaryEvent) + " (two viewpoints)" };
-
-            AppendField(lines, "initiator", diaryEvent.initiatorName);
-            AppendField(lines, "recipient", diaryEvent.recipientName);
-            if (string.Equals(diaryEvent.initiatorText, diaryEvent.recipientText, StringComparison.OrdinalIgnoreCase))
+            if (diaryEvent.solo)
             {
-                AppendField(lines, "what happened", diaryEvent.initiatorText);
-            }
-            else
-            {
-                AppendField(lines, "initiator saw", diaryEvent.initiatorText);
-                AppendField(lines, "recipient saw", diaryEvent.recipientText);
+                return BuildSoloPrompt(diaryEvent);
             }
 
-            AppendField(lines, "instruction", diaryEvent.instruction);
-            AppendField(lines, "initiator profile", diaryEvent.initiatorPawnSummary);
-            AppendField(lines, "recipient profile", diaryEvent.recipientPawnSummary);
-            if (string.Equals(diaryEvent.initiatorSurroundings, diaryEvent.recipientSurroundings, StringComparison.OrdinalIgnoreCase))
-            {
-                AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
-            }
-            else
-            {
-                AppendField(lines, "initiator setting", diaryEvent.initiatorSurroundings);
-                AppendField(lines, "recipient setting", diaryEvent.recipientSurroundings);
-            }
+            string initiatorEntry = string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase)
+                ? DiaryContextBuilder.CleanLine(diaryEvent.initiatorGeneratedText)
+                : null;
 
-            AppendField(lines, "initiator relationship", diaryEvent.initiatorContinuity);
-            AppendField(lines, "recipient relationship", diaryEvent.recipientContinuity);
-
-            return string.Join("\n", lines.ToArray())
-                + "\n\nWrite two short first-person diary entries, one from each pawn's point of view, following the instruction."
-                + " Each pawn only knows what they could perceive. Output EXACTLY in this format and nothing else:"
-                + "\n[INITIATOR]"
-                + "\n<" + diaryEvent.initiatorName + "'s diary entry>"
-                + "\n[RECIPIENT]"
-                + "\n<" + diaryEvent.recipientName + "'s diary entry>";
+            return BuildPairPrompt(diaryEvent, povRole, initiatorEntry);
         }
 
         public static string BuildInteractionPrompt(DiaryEvent diaryEvent, string povRole)
@@ -63,28 +36,34 @@ namespace PawnDiary
                 return BuildSoloPrompt(diaryEvent);
             }
 
+            return BuildPairPrompt(diaryEvent, povRole, null);
+        }
+
+        private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry)
+        {
             bool isInitiator = string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase);
             string otherName = isInitiator ? diaryEvent.recipientName : diaryEvent.initiatorName;
             string povText = diaryEvent.TextForRole(povRole);
-            string otherText = isInitiator ? diaryEvent.recipientText : diaryEvent.initiatorText;
             string povSummary = isInitiator ? diaryEvent.initiatorPawnSummary : diaryEvent.recipientPawnSummary;
 
             List<string> lines = new List<string> { "event: " + EventNoun(diaryEvent) };
 
             AppendField(lines, "pov", diaryEvent.NameForRole(povRole));
+            AppendField(lines, "role", isInitiator ? "initiator" : "recipient");
             AppendField(lines, "with", otherName);
-            AppendField(lines, "what happened", povText);
-            if (!string.Equals(povText, otherText, StringComparison.OrdinalIgnoreCase))
-            {
-                AppendField(lines, "their view", otherText);
-            }
-
+            AppendField(lines, "what you saw", povText);
             AppendField(lines, "instruction", diaryEvent.instruction);
             AppendField(lines, "you", povSummary);
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
             AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
+            AppendField(lines, "initiator diary (hidden context)", initiatorEntry);
 
-            return string.Join("\n", lines.ToArray());
+            DiaryPromptDef p = DiaryPrompts.Current;
+            string instruction = string.IsNullOrWhiteSpace(initiatorEntry)
+                ? p.singlePovInstruction
+                : p.recipientFollowupInstruction;
+
+            return string.Join("\n", lines.ToArray()) + "\n\n" + instruction;
         }
 
         private static string BuildSoloPrompt(DiaryEvent diaryEvent)
@@ -98,7 +77,7 @@ namespace PawnDiary
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
             AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
 
-            return string.Join("\n", lines.ToArray());
+            return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.singlePovInstruction;
         }
 
         private static string EventNoun(DiaryEvent diaryEvent)

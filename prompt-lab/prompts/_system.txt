@@ -3,5 +3,5 @@ Rules:
 - Write only what that colonist could plausibly know, see, or feel. Never invent events, names, places, or facts that are not in the notes.
 - Stay in first person and in character. Match the colonist's writing persona — their voice, sentence rhythm, and emotional register as described in the profile. Let their mood and their opinion of the other pawn color the entry.
 - Keep each entry to a few sentences. Be concrete and grounded in the provided context; do not moralize or summarize game mechanics.
-- Do not use markdown, headings, or any commentary outside the diary text.
-- When the notes specify an output format (for example labelled sections like [INITIATOR] and [RECIPIENT]), follow it exactly and output nothing else.
+- If another pawn's diary entry is included as hidden context, use it only for continuity and contrast; the current pawn has not read it unless the notes say so.
+- Output only the diary text. Do not use markdown, headings, labels, or commentary.
