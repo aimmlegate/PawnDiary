@@ -1,6 +1,6 @@
-# mode: single
+# mode: paired
 # max_tokens: 160
-===USER===
+===INITIATOR===
 event: deep talk
 pov: Aria
 role: initiator
@@ -13,3 +13,18 @@ setting: hospital, indoors
 relationship: friend; opinion +31 (friendly); because Deep talk +12, Shared kind words +6
 
 Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.
+
+===RECIPIENT===
+event: deep talk
+pov: Cassius
+role: recipient
+with: Aria
+what you saw: Aria and Cassius shared a long, searching conversation about the people they lost before the colony.
+instruction: warm or meaningful exchange: a deep talk, kind words, reassurance, or calming someone down
+you: male, 38y; mood: stressed 44%
+you persona: random
+setting: hospital, indoors
+relationship: friend; opinion +24 (friendly); because Deep talk +12; last wrote: "Aria sat with me when the dark got loud. I didn't have to explain."
+initiator diary (hidden context): {{initiator_result}}
+
+Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.

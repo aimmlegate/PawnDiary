@@ -1,6 +1,20 @@
-# mode: single
+# mode: paired
 # max_tokens: 160
-===USER===
+===INITIATOR===
+event: insult
+pov: Rurik
+role: initiator
+with: Mei
+what you saw: Rurik sneered at Mei, calling her cooking "slop fit for boomrats".
+instruction: hostile exchange: an insult, a slight, or the start of a social fight
+you: male, 34y; mood: stressed 41%
+you persona: random
+setting: dining room, indoors, doing: eating at a table
+relationship: opinion -18 (strained); because Insulted -16, Slighted me -8; last wrote: "Mei always acts like she's better than the rest of us."
+
+Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.
+
+===RECIPIENT===
 event: insult
 pov: Mei
 role: recipient
@@ -11,6 +25,6 @@ you: female, 29y; mood: stable 63%
 you persona: random
 setting: dining room, indoors, doing: eating at a table
 relationship: rival; opinion -27 (strained); because Insulted me -20, Social fight -7
-initiator diary (hidden context): I told Mei the truth about that meal. If she wants praise, she can stop serving slop and acting wounded when someone says it.
+initiator diary (hidden context): {{initiator_result}}
 
 Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.

@@ -1,6 +1,6 @@
-# mode: single
+# mode: paired
 # max_tokens: 160
-===USER===
+===INITIATOR===
 event: social fight
 pov: Bjorn
 role: initiator
@@ -13,3 +13,18 @@ setting: barracks, indoors
 relationship: opinion -41 (hostile); because Insulted me -18, Social fight -12, Slighted me -8
 
 Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.
+
+===RECIPIENT===
+event: social fight
+pov: Talia
+role: recipient
+with: Bjorn
+what you saw: Bjorn and Talia lost their tempers and came to blows.
+instruction: the two pawns lost their tempers and came to blows; write it as a heated physical fight
+you: female, 33y; mood: stressed 39%
+you persona: random
+setting: barracks, indoors
+relationship: rival; opinion -36 (hostile); because Insulted me -16, Social fight -12; last wrote: "Bjorn has been spoiling for a fight for days. Today he got one."
+initiator diary (hidden context): {{initiator_result}}
+
+Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.

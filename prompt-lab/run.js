@@ -5,7 +5,6 @@
 //   node run.js                       list fixtures
 //   node run.js prompts/insult.txt --show    run one, echo full prompt
 //   node run.js --all                 run every fixture
-//   node run.js --md                  build a markdown book from results/ for phone reading
 //
 // Endpoint/model come from config.json (or ENDPOINT / MODEL / API_KEY env vars).
 
@@ -58,11 +57,12 @@ function resolvePersonas(userPrompt) {
   );
 }
 
-// Parse a fixture: leading "# key: value" header lines, then ===SYSTEM=== / ===USER=== sections.
+// Parse a fixture: leading "# key: value" header lines, then named sections such as
+// ===SYSTEM===, ===USER===, ===INITIATOR===, and ===RECIPIENT===.
 // If no ===SYSTEM=== block, fall back to prompts/_system.txt.
 function parseFixture(file) {
   const raw = fs.readFileSync(file, 'utf8');
-  const meta = { mode: 'single', temperature: CONFIG.temperature, maxTokens: CONFIG.maxTokens };
+  const meta = { mode: null, temperature: CONFIG.temperature, maxTokens: CONFIG.maxTokens };
   const lines = raw.split(/\r?\n/);
 
   let i = 0;
@@ -76,10 +76,11 @@ function parseFixture(file) {
     else if (k === 'max_tokens' || k === 'maxtokens') meta.maxTokens = parseInt(m[2], 10);
   }
 
-  let system = null, user = null, current = null, buf = [];
+  let system = null, current = null, buf = [];
+  const sections = {};
   const flush = () => {
     if (current === 'SYSTEM') system = buf.join('\n').trim();
-    else if (current === 'USER') user = buf.join('\n').trim();
+    else if (current) sections[current.toLowerCase()] = buf.join('\n').trim();
     buf = [];
   };
   for (; i < lines.length; i++) {
@@ -93,7 +94,16 @@ function parseFixture(file) {
     const sp = path.join(PROMPTS_DIR, '_system.txt');
     if (fs.existsSync(sp)) system = fs.readFileSync(sp, 'utf8').trim();
   }
-  return { meta, system, user };
+  if (!meta.mode) {
+    meta.mode = sections.initiator && sections.recipient ? 'paired' : 'single';
+  }
+  return {
+    meta,
+    system,
+    user: sections.user || null,
+    initiator: sections.initiator || null,
+    recipient: sections.recipient || null
+  };
 }
 
 function callModel(system, user, meta) {
@@ -125,68 +135,178 @@ function callModel(system, user, meta) {
   });
 }
 
-// Tolerant [INITIATOR]/[RECIPIENT] split, mirroring DiaryEvent.ParseDualResponse.
-function splitDual(text) {
-  const clean = (s) => (s || '').replace(/\[INITIATOR\]/gi, '').replace(/\[RECIPIENT\]/gi, '').trim();
-  const iIdx = text.search(/\[INITIATOR\]/i);
-  const rIdx = text.search(/\[RECIPIENT\]/i);
-  let initiator = '', recipient = '';
-  if (iIdx >= 0 && rIdx >= 0) {
-    if (iIdx < rIdx) { initiator = text.slice(iIdx, rIdx); recipient = text.slice(rIdx); }
-    else { recipient = text.slice(rIdx, iIdx); initiator = text.slice(iIdx); }
-  } else if (rIdx >= 0) { initiator = text.slice(0, rIdx); recipient = text.slice(rIdx); }
-  else if (iIdx >= 0) { initiator = text.slice(iIdx); recipient = text; }
-  else { initiator = text; recipient = text; }
-  initiator = clean(initiator) || clean(text);
-  recipient = clean(recipient) || clean(text);
-  return { initiator, recipient };
-}
-
 async function runOne(file, showPrompt) {
-  const { meta, system, user } = parseFixture(file);
-  const resolvedUser = resolvePersonas(user);
+  const fixture = parseFixture(file);
+  const { meta, system } = fixture;
   const fixtureName = path.basename(file, '.txt');
   console.log('\n========== ' + fixtureName + '  [mode=' + meta.mode + ' temp=' + meta.temperature + ' max=' + meta.maxTokens + '] ==========');
+
+  if (fixture.initiator && fixture.recipient) {
+    await runPaired(fixtureName, meta, system, fixture.initiator, fixture.recipient, showPrompt);
+    return;
+  }
+
+  const userPrompt = resolvePersonas(fixture.user || '');
   if (showPrompt) {
     console.log('--- system ---\n' + (system || '(none)'));
-    console.log('--- user ---\n' + resolvedUser);
+    console.log('--- user ---\n' + userPrompt);
   }
+
   const t0 = Date.now();
-  let out;
-  try { out = await callModel(system, resolvedUser, meta); }
+  let response;
+  try { response = await callModel(system, userPrompt, meta); }
   catch (e) { console.error('  ERROR: ' + e.message); return; }
-  const dt = ((Date.now() - t0) / 1000).toFixed(1);
-  console.log('--- response (' + dt + 's) ---\n' + out);
+  const elapsed = secondsSince(t0);
+  console.log('--- response (' + elapsed + 's) ---\n' + response);
 
-  let parsed = null;
-  if (meta.mode === 'dual') {
-    parsed = splitDual(out);
-    console.log('\n--- parsed ---');
-    console.log('[INITIATOR] ' + parsed.initiator);
-    console.log('[RECIPIENT] ' + parsed.recipient);
-  }
-
-  saveResult(fixtureName, meta, system, resolvedUser, out, parsed, dt);
+  saveResult(fixtureName, meta, system, [{
+    role: 'entry',
+    label: 'Diary Entry',
+    prompt: userPrompt,
+    response,
+    elapsedSeconds: Number(elapsed)
+  }], elapsed);
 }
 
-function saveResult(name, meta, system, user, raw, parsed, dt) {
+async function runPaired(name, meta, system, initiatorTemplate, recipientTemplate, showPrompt) {
+  const startedAt = Date.now();
+  const initiatorPrompt = resolvePersonas(initiatorTemplate);
+  if (showPrompt) {
+    console.log('--- system ---\n' + (system || '(none)'));
+    console.log('--- initiator prompt ---\n' + initiatorPrompt);
+  }
+
+  const initiatorStartedAt = Date.now();
+  let initiatorResponse;
+  try { initiatorResponse = await callModel(system, initiatorPrompt, meta); }
+  catch (e) { console.error('  INITIATOR ERROR: ' + e.message); return; }
+  const initiatorElapsed = secondsSince(initiatorStartedAt);
+  console.log('--- initiator response (' + initiatorElapsed + 's) ---\n' + initiatorResponse);
+
+  const recipientPrompt = resolvePersonas(fillInitiatorResult(recipientTemplate, initiatorResponse));
+  if (showPrompt) {
+    console.log('--- recipient prompt ---\n' + recipientPrompt);
+  }
+
+  const recipientStartedAt = Date.now();
+  let recipientResponse;
+  try { recipientResponse = await callModel(system, recipientPrompt, meta); }
+  catch (e) { console.error('  RECIPIENT ERROR: ' + e.message); return; }
+  const recipientElapsed = secondsSince(recipientStartedAt);
+  console.log('--- recipient response (' + recipientElapsed + 's) ---\n' + recipientResponse);
+
+  saveResult(name, meta, system, [
+    {
+      role: 'initiator',
+      label: 'Initiator POV',
+      prompt: initiatorPrompt,
+      response: initiatorResponse,
+      elapsedSeconds: Number(initiatorElapsed)
+    },
+    {
+      role: 'recipient',
+      label: 'Recipient POV',
+      prompt: recipientPrompt,
+      response: recipientResponse,
+      elapsedSeconds: Number(recipientElapsed)
+    }
+  ], secondsSince(startedAt));
+}
+
+function fillInitiatorResult(prompt, initiatorResponse) {
+  return String(prompt || '').replace(/\{\{initiator_result\}\}/g, compactLine(initiatorResponse));
+}
+
+function compactLine(value) {
+  return String(value || '').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function secondsSince(tick) {
+  return ((Date.now() - tick) / 1000).toFixed(1);
+}
+
+function saveResult(name, meta, system, entries, totalElapsed) {
   const model = CONFIG.model.replace(/[\\/:*?"<>|]/g, '-');
   const catalogDir = path.join(RESULTS_DIR, name);
   if (!fs.existsSync(catalogDir)) fs.mkdirSync(catalogDir, { recursive: true });
-  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const generatedAt = new Date();
+  const ts = generatedAt.toISOString().replace(/[:.]/g, '-');
   const outPath = path.join(catalogDir, model + '-' + ts + '.md');
-  let content = '# ' + name + '\n\n';
-  content += 'mode: ' + meta.mode + '  temp: ' + meta.temperature + '  max_tokens: ' + meta.maxTokens + '  time: ' + dt + 's\n\n';
-  content += '## prompt\n\n```\n' + user + '\n```\n\n';
-  content += '## response\n\n';
-  if (parsed) {
-    content += '**Initiator:** ' + parsed.initiator + '\n\n';
-    content += '**Recipient:** ' + parsed.recipient + '\n';
-  } else {
-    content += raw + '\n';
+  const rawData = {
+    fixture: name,
+    generatedAt: generatedAt.toISOString(),
+    endpoint: CONFIG.endpoint,
+    model: CONFIG.model,
+    mode: meta.mode,
+    temperature: meta.temperature,
+    maxTokens: meta.maxTokens,
+    elapsedSeconds: Number(totalElapsed),
+    systemPrompt: system || '',
+    entries: entries.map((entry) => ({
+      role: entry.role,
+      prompt: entry.prompt || '',
+      rawResponse: entry.response || '',
+      elapsedSeconds: entry.elapsedSeconds
+    }))
+  };
+
+  let content = '# ' + titleFromName(name) + '\n\n';
+  content += '| Field | Value |\n';
+  content += '| --- | --- |\n';
+  content += '| Fixture | `' + escapeTable(name) + '` |\n';
+  content += '| Model | `' + escapeTable(CONFIG.model) + '` |\n';
+  content += '| Endpoint | `' + escapeTable(CONFIG.endpoint) + '` |\n';
+  content += '| Mode | `' + escapeTable(meta.mode) + '` |\n';
+  content += '| Temperature | `' + escapeTable(meta.temperature) + '` |\n';
+  content += '| Max tokens | `' + escapeTable(meta.maxTokens) + '` |\n';
+  content += '| Time | `' + escapeTable(totalElapsed + 's') + '` |\n';
+  content += '| Generated | `' + escapeTable(generatedAt.toISOString()) + '` |\n\n';
+
+  content += '## Result\n\n';
+  for (const entry of entries) {
+    content += '### ' + entry.label + '\n\n';
+    content += quoteBlock(entry.response) + '\n\n';
   }
+
+  content += '## Prompt\n\n';
+  content += '### System\n\n' + codeBlock(system || '(none)', 'text') + '\n\n';
+  for (const entry of entries) {
+    content += '### ' + entry.label + '\n\n' + codeBlock(entry.prompt || '', 'text') + '\n\n';
+  }
+  content += '## Raw Response\n\n';
+  for (const entry of entries) {
+    content += '### ' + entry.label + '\n\n' + codeBlock(entry.response || '', 'text') + '\n\n';
+  }
+  content += '## Raw Data\n\n' + codeBlock(JSON.stringify(rawData, null, 2), 'json') + '\n';
+
   fs.writeFileSync(outPath, content, 'utf8');
   console.log('\nsaved: ' + path.relative(ROOT, outPath));
+}
+
+function titleFromName(name) {
+  return name
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function escapeTable(value) {
+  return String(value == null ? '' : value)
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, ' ');
+}
+
+function quoteBlock(value) {
+  const text = String(value || '').trim();
+  if (!text) return '> (empty)';
+  return text.split(/\r?\n/).map((line) => line.trim() ? '> ' + line : '>').join('\n');
+}
+
+function codeBlock(value, lang) {
+  const text = String(value == null ? '' : value).replace(/\s+$/g, '');
+  const matches = text.match(/`{3,}/g) || [];
+  const fenceLength = matches.reduce((max, s) => Math.max(max, s.length + 1), 3);
+  const fence = '`'.repeat(fenceLength);
+  return fence + (lang || '') + '\n' + text + '\n' + fence;
 }
 
 function listFixtures() {
@@ -196,90 +316,8 @@ function listFixtures() {
     .map((f) => path.join(PROMPTS_DIR, f));
 }
 
-// ——————————————————————————— Markdown book builder ————————————————————————————
-
-function buildMd() {
-  if (!fs.existsSync(RESULTS_DIR)) {
-    console.log('No results/ directory yet. Run some fixtures first.');
-    return;
-  }
-
-  const dirs = fs.readdirSync(RESULTS_DIR).filter(d => {
-    const st = fs.statSync(path.join(RESULTS_DIR, d));
-    return st.isDirectory();
-  }).sort();
-
-  if (!dirs.length) {
-    console.log('No fixture result folders found in results/.');
-    return;
-  }
-
-  const date = new Date().toISOString().slice(0, 10);
-  const model = CONFIG.model;
-  let md = '# Pawn Diary — ' + date + '\n';
-  md += 'model: ' + model + '\n\n';
-
-  for (const dir of dirs) {
-    const dirPath = path.join(RESULTS_DIR, dir);
-    const files = fs.readdirSync(dirPath).filter(f =>
-      (f.endsWith('.md') || f.endsWith('.txt')) && f !== 'catalog.txt'
-    ).sort().reverse();
-    if (!files.length) continue;
-
-    const latest = files[0];
-    const raw = fs.readFileSync(path.join(dirPath, latest), 'utf8');
-
-    let initiator = null, recipient = null;
-
-    // Try markdown format first
-    const mdSec = raw.split(/\n## /);
-    for (const s of mdSec) {
-      if (s.startsWith('response')) {
-        const body = s.slice('response'.length).trim();
-        const im = body.match(/\*\*Initiator:\*\*\s*([\s\S]*?)(?:\*\*Recipient:\*\*|$)/);
-        const rm = body.match(/\*\*Recipient:\*\*\s*([\s\S]*?)$/);
-        initiator = im ? im[1].trim() : body.trim();
-        recipient = rm ? rm[1].trim() : '';
-      }
-    }
-
-    // Fall back to old .txt format
-    if (!initiator && !recipient) {
-      const txtSec = raw.split(/\n--- /);
-      for (const s of txtSec) {
-        if (s.startsWith('parsed')) {
-          const val = s.slice('parsed'.length).trim();
-          const im = val.match(/\[INITIATOR\]\s*([\s\S]*?)(?:\[RECIPIENT\]|$)/i);
-          const rm = val.match(/\[RECIPIENT\]\s*([\s\S]*?)$/i);
-          initiator = im ? im[1].trim() : val.trim();
-          recipient = rm ? rm[1].trim() : '';
-        } else if (s.startsWith('raw response')) {
-          initiator = s.slice('raw response'.length).trim();
-        }
-      }
-    }
-
-    md += '\n\n## ' + dir.replace(/-/g, ' ') + '\n\n';
-    if (initiator) {
-      md += '**Initiator:** ' + initiator + '\n\n';
-      if (recipient) {
-        md += '**Recipient:** ' + recipient + '\n';
-      }
-    }
-  }
-
-  const outPath = path.join(ROOT, 'pawn-diary-' + date + '.md');
-  fs.writeFileSync(outPath, md, 'utf8');
-  console.log('Markdown written: ' + path.relative(ROOT, outPath) + '  (' + dirs.length + ' chapters)');
-}
-
 (async () => {
   const args = process.argv.slice(2);
-
-  if (args.includes('--md')) {
-    buildMd();
-    return;
-  }
 
   const showPrompt = args.includes('--show');
   const positional = args.filter((a) => !a.startsWith('--'));
@@ -294,6 +332,7 @@ function buildMd() {
     console.log('\nfixtures (prompts/):');
     listFixtures().forEach((f) => console.log('  ' + path.basename(f)));
     console.log('\nusage: node run.js <fixture.txt> [--show]   |   node run.js --all');
+    console.log('results: saved directly as formatted Markdown under results/<fixture>/');
     return;
   }
 

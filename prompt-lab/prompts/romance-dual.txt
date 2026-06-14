@@ -1,6 +1,20 @@
-# mode: single
+# mode: paired
 # max_tokens: 160
-===USER===
+===INITIATOR===
+event: romance attempt
+pov: Wei
+role: initiator
+with: Liara
+what you saw: Wei worked up the nerve to make a romantic advance on Liara, and she accepted.
+instruction: romantic moment between the pawns; may be an advance, commitment, date, or breakup depending on context
+you: male, 26y; mood: happy 81%
+you persona: random
+setting: outdoors, clear weather, temperate forest, beautiful surroundings
+relationship: opinion +44 (friendly); because Shared kind words +10, Chitchat +4; last wrote: "Every time Liara laughs I forget what I meant to say."
+
+Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.
+
+===RECIPIENT===
 event: romance attempt
 pov: Liara
 role: recipient
@@ -11,6 +25,6 @@ you: female, 27y; mood: stable 67%
 you persona: random
 setting: outdoors, clear weather, temperate forest, beautiful surroundings
 relationship: opinion +38 (friendly); because Shared kind words +8
-initiator diary (hidden context): I finally asked Liara instead of rehearsing the words until they turned to dust. She smiled, and for once the whole colony went quiet in my head.
+initiator diary (hidden context): {{initiator_result}}
 
 Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.
