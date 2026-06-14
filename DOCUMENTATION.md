@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-14 (small-talk batching)_
+_Last updated: 2026-06-14 (in-game persona layer)_
 
 ---
 
@@ -16,6 +16,10 @@ Pawn Diary watches humanlike pawns' social **interactions**, **social fights**, 
 `/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server) to rewrite each
 event into a short first-person diary entry. Each pawn's diary is shown in an **inspector
 tab next to the vanilla Log tab**.
+
+Each pawn also has saved diary controls in that tab: a **persona preset** that shapes their
+writing voice, and a checkbox to disable LLM diary generation for that pawn while keeping raw
+events recorded.
 
 Pairwise events (interactions, social fights) produce two entries — one from each pawn's
 point of view — by default as **paired sequential POV**: first the initiator entry, then
@@ -36,7 +40,7 @@ PawnDiary/
 ├─ About/                       mod metadata
 ├─ 1.6/
 │  ├─ Assemblies/PawnDiary.dll  build output (committed)
-│  └─ Defs/                     editable XML data (groups, tuning)
+│  └─ Defs/                     editable XML data (groups, tuning, prompts, personas)
 ├─ Languages/                   UI strings
 ├─ Source/                      all C# + PawnDiary.csproj/.slnx (game ignores this)
 │  ├─ Core/ Models/ Generation/ Defs/ Patches/ UI/ Settings/ Util/
@@ -58,7 +62,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks). |
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status; save/load; applying LLM results (incl. legacy dual-POV parse). |
-| `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries; save/load. |
+| `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, relationship/continuity, opinions) + formatting/bucket helpers. |
 | `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
@@ -66,10 +70,11 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). |
 | `DiaryTuningDef.cs` | Defines `DiaryTuningDef : Def` + `DiaryTuning.Current` (tuning knobs: dedup windows, thresholds, buckets). Data lives in XML; falls back to safe code defaults if the Def is absent. |
 | `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, legacy dual markers, and the default system prompt). |
+| `DiaryPersonaDef.cs` | Defines `DiaryPersonaDef : Def` + `DiaryPersonas` lookup/fallback helpers. Data lives in XML and is selected per pawn. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
-| `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary. |
+| `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary and exposes that pawn's persona/generation controls. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
-| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), and `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt default). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `CSHARP-NOTES.md` | Primer mapping the C#/RimWorld idioms used here (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …) to JS/TS analogies. |
 | `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
@@ -92,7 +97,7 @@ DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState
       │   • Small talk group → buffered by pawn pair, then flushed as one combined DiaryEvent
       │   • all other enabled interactions → builds one DiaryEvent immediately
       │   • adds event to diaryEvents + the involved pawns' PawnDiaryRecord(s)
-      │   • queues generation (pairwise: paired sequential/single §4; solo: single initiator)
+      │   • queues generation if the pawn allows it (pairwise: paired sequential/single §4; solo: single initiator)
       ▼                                        ▼
 LlmClient.Enqueue ─▶ concurrency gate ─▶ SendOnce(HTTP) ─▶ Completed queue
       ▼
@@ -133,10 +138,23 @@ Controlled by the `dualPovGeneration` setting.
 
 All paths share the same per-event context fields and the system prompt.
 
+### Per-pawn persona and generation toggle
+- Each `PawnDiaryRecord` saves `personaDefName` and `diaryGenerationEnabled`.
+- Persona options are `DiaryPersonaDef` XML Defs in `1.6/Defs/DiaryPersonaDefs.xml`, with
+  `DiaryPromptDef.defaultPersonaDefName` providing the fallback/default (`DiaryPersona_StoicSurvivor`).
+- The Diary tab creates a pawn's record on first edit/open and shows a checkbox plus persona
+  selector above the entries.
+- Disabled generation does **not** delete or skip events; it only prevents future LLM requests for
+  that pawn. The raw event text still appears in the diary.
+- In paired sequential mode, if the initiator has generation disabled but the recipient does not,
+  the recipient can still generate from the base event prompt without hidden initiator context.
+
 ### Prompt context — signal only, no filler
 Prompts are assembled line-by-line via `AppendField`, which **drops any field that is empty
 or a placeholder** (`none` / `n/a` / `unknown`). Builders are written to return empty when
 there's nothing worth saying, so the model never spends tokens on noise:
+- **Persona**: the selected writing-style rule is sent as a `persona:` line, separate from
+  gameplay facts such as mood, traits, and relationship.
 - **Surroundings** (`BuildSurroundingsSummary`): weather and biome only when **outdoors**;
   temperature only when actually cold (≤0°C) or hot (≥32°C); beauty only when notably nice
   or grim; nearby things / current job only when present.
@@ -248,6 +266,10 @@ Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents` (connection, model 
 paired POV toggle, concurrency slider, system prompt editor, and the interaction-group editor —
 a checkbox per group plus a prompt editor for the selected group).
 
+Per-pawn diary controls live in `ITab_Pawn_Diary`, not the global mod settings window. They are
+stored in each pawn's `PawnDiaryRecord`: persona preset and `diaryGenerationEnabled` (default
+enabled).
+
 ---
 
 ## 7. Concurrency & reliability (`LlmClient`)
@@ -315,6 +337,18 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (in-game persona layer + per-pawn generation toggle)**
+  - Added `DiaryPersonaDef` + `1.6/Defs/DiaryPersonaDefs.xml`, copying the 12 prompt-lab writing
+    personas into RimWorld-loaded XML Defs.
+  - Added `DiaryPromptDef.defaultPersonaDefName` so the default pawn persona can be changed in XML.
+  - Added per-pawn saved fields on `PawnDiaryRecord`: `personaDefName` and
+    `diaryGenerationEnabled` (default enabled).
+  - Added controls at the top of the pawn Diary inspector tab: persona selector and a checkbox to
+    pause LLM generation for that pawn without losing raw recorded events.
+  - Prompt builders now include the selected persona as a `persona:` line. Paired sequential
+    generation respects disabled pawns and lets an enabled recipient generate without hidden
+    initiator context if the initiator is disabled.
 
 - **2026-06-14 (small-talk batching)**
   - Added per-pawn-pair batching for the `smalltalk` interaction group (`Chitchat`,
