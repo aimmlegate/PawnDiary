@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using RimWorld;
 using UnityEngine;
@@ -22,9 +23,13 @@ namespace PawnDiary
     public class DiaryGameComponent : GameComponent
     {
         // Dedup windows live in DiaryTuningDef (editable XML); see DiaryTuning.Current.
+        private const string SmallTalkGroupKey = "smalltalk";
+        private const string SmallTalkBatchDefName = "SmallTalkBatch";
+        private const string SmallTalkBatchLabel = "Small talk";
 
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
         private List<DiaryEvent> diaryEvents = new List<DiaryEvent>();
+        private readonly Dictionary<string, PendingSmallTalkBatch> pendingSmallTalkBatches = new Dictionary<string, PendingSmallTalkBatch>();
 
         // Transient (not saved) guard against duplicate mental-state events, e.g. the two
         // mirrored SocialFighting starts, or a break that re-triggers quickly.
@@ -45,16 +50,23 @@ namespace PawnDiary
 
         public override void StartedNewGame()
         {
+            pendingSmallTalkBatches.Clear();
             LlmClient.BeginSession();
         }
 
         public override void LoadedGame()
         {
+            pendingSmallTalkBatches.Clear();
             LlmClient.BeginSession();
         }
 
         public override void ExposeData()
         {
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                FlushAllSmallTalkBatches();
+            }
+
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             Scribe_Collections.Look(ref diaryEvents, "diaryEvents", LookMode.Deep);
 
@@ -74,6 +86,8 @@ namespace PawnDiary
 
         public override void GameComponentTick()
         {
+            FlushReadySmallTalkBatches();
+
             LlmGenerationResult result;
             while (LlmClient.TryDequeueCompleted(out result))
             {
@@ -92,13 +106,15 @@ namespace PawnDiary
                 return EmptyEntries.List;
             }
 
+            string pawnId = pawn.GetUniqueLoadID();
+            FlushSmallTalkBatchesForPawn(pawnId);
+
             PawnDiaryRecord diary = FindDiary(pawn, false);
             if (diary == null)
             {
                 return EmptyEntries.List;
             }
 
-            string pawnId = pawn.GetUniqueLoadID();
             List<DiaryEntryView> views = new List<DiaryEntryView>();
 
             if (diary.eventIds != null)
@@ -206,11 +222,49 @@ namespace PawnDiary
                 recipientText = initiatorText;
             }
 
+            if (IsSmallTalkInteraction(interactionDef))
+            {
+                RecordSmallTalkInteraction(initiator, recipient, interactionDef, interactionLabel, initiatorText, recipientText);
+                return;
+            }
+
             DiaryEvent diaryEvent = AddPairwiseEvent(initiator, recipient, interactionDef.defName, interactionLabel,
                 initiatorText, recipientText,
                 InteractionInstruction(interactionDef),
                 DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel));
             QueuePairwiseGeneration(diaryEvent);
+        }
+
+        private void RecordSmallTalkInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef,
+            string interactionLabel, string initiatorText, string recipientText)
+        {
+            string key = PairKey(initiator, recipient);
+            PendingSmallTalkBatch batch;
+            if (!pendingSmallTalkBatches.TryGetValue(key, out batch))
+            {
+                int now = Find.TickManager.TicksGame;
+                batch = new PendingSmallTalkBatch
+                {
+                    initiator = initiator,
+                    recipient = recipient,
+                    initiatorPawnId = initiator.GetUniqueLoadID(),
+                    recipientPawnId = recipient.GetUniqueLoadID(),
+                    firstTick = now,
+                    lastTick = now,
+                    firstDefName = interactionDef.defName,
+                    firstLabel = interactionLabel,
+                    instruction = InteractionInstruction(interactionDef)
+                };
+                pendingSmallTalkBatches[key] = batch;
+            }
+
+            AppendSmallTalkBatchLine(batch, initiator, interactionLabel, initiatorText, recipientText);
+            batch.lastTick = Find.TickManager.TicksGame;
+
+            if (batch.Count >= SmallTalkBatchMaxEvents)
+            {
+                FlushSmallTalkBatch(key, batch);
+            }
         }
 
         // Social fights and mental breaks. Social fights are pairwise (both pawns fight);
@@ -394,6 +448,180 @@ namespace PawnDiary
             return pawn != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike;
         }
 
+        private void FlushReadySmallTalkBatches()
+        {
+            if (pendingSmallTalkBatches.Count == 0)
+            {
+                return;
+            }
+
+            int now = Find.TickManager.TicksGame;
+            int windowTicks = SmallTalkBatchWindowTicks;
+            List<string> keysToFlush = new List<string>();
+
+            foreach (KeyValuePair<string, PendingSmallTalkBatch> pair in pendingSmallTalkBatches)
+            {
+                PendingSmallTalkBatch batch = pair.Value;
+                if (batch == null || batch.Count >= SmallTalkBatchMaxEvents || now - batch.lastTick >= windowTicks)
+                {
+                    keysToFlush.Add(pair.Key);
+                }
+            }
+
+            FlushSmallTalkBatches(keysToFlush);
+        }
+
+        private void FlushAllSmallTalkBatches()
+        {
+            if (pendingSmallTalkBatches.Count == 0)
+            {
+                return;
+            }
+
+            FlushSmallTalkBatches(new List<string>(pendingSmallTalkBatches.Keys));
+        }
+
+        private void FlushSmallTalkBatchesForPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || pendingSmallTalkBatches.Count == 0)
+            {
+                return;
+            }
+
+            List<string> keysToFlush = new List<string>();
+            foreach (KeyValuePair<string, PendingSmallTalkBatch> pair in pendingSmallTalkBatches)
+            {
+                PendingSmallTalkBatch batch = pair.Value;
+                if (batch != null && (batch.initiatorPawnId == pawnId || batch.recipientPawnId == pawnId))
+                {
+                    keysToFlush.Add(pair.Key);
+                }
+            }
+
+            FlushSmallTalkBatches(keysToFlush);
+        }
+
+        private void FlushSmallTalkBatches(List<string> keysToFlush)
+        {
+            if (keysToFlush == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < keysToFlush.Count; i++)
+            {
+                PendingSmallTalkBatch batch;
+                if (pendingSmallTalkBatches.TryGetValue(keysToFlush[i], out batch))
+                {
+                    FlushSmallTalkBatch(keysToFlush[i], batch);
+                }
+            }
+        }
+
+        private void FlushSmallTalkBatch(string key, PendingSmallTalkBatch batch)
+        {
+            pendingSmallTalkBatches.Remove(key);
+
+            if (batch == null || batch.initiator == null || batch.recipient == null || batch.Count == 0)
+            {
+                return;
+            }
+
+            bool combined = batch.Count > 1;
+            string label = combined ? SmallTalkBatchLabel : batch.firstLabel;
+            string defName = combined ? SmallTalkBatchDefName : batch.firstDefName;
+            string initiatorText = BuildSmallTalkBatchText(batch.initiatorLines);
+            string recipientText = BuildSmallTalkBatchText(batch.recipientLines);
+            string instruction = SmallTalkBatchInstruction(batch.instruction);
+            string gameContext = "group=smalltalk; events=" + batch.Count
+                + "; first_tick=" + batch.firstTick
+                + "; last_tick=" + batch.lastTick;
+
+            DiaryEvent diaryEvent = AddPairwiseEvent(batch.initiator, batch.recipient, defName, label,
+                initiatorText, recipientText, instruction, gameContext);
+            QueuePairwiseGeneration(diaryEvent);
+        }
+
+        private static void AppendSmallTalkBatchLine(PendingSmallTalkBatch batch, Pawn initiator,
+            string interactionLabel, string initiatorText, string recipientText)
+        {
+            string initiatorLine = SmallTalkBatchLine(interactionLabel, initiatorText);
+            string recipientLine = SmallTalkBatchLine(interactionLabel, recipientText);
+
+            if (initiator.GetUniqueLoadID() == batch.initiatorPawnId)
+            {
+                batch.initiatorLines.Add(initiatorLine);
+                batch.recipientLines.Add(recipientLine);
+            }
+            else
+            {
+                batch.initiatorLines.Add(recipientLine);
+                batch.recipientLines.Add(initiatorLine);
+            }
+        }
+
+        private static string BuildSmallTalkBatchText(List<string> lines)
+        {
+            if (lines == null || lines.Count == 0)
+            {
+                return "A brief small-talk exchange.";
+            }
+
+            if (lines.Count == 1)
+            {
+                return lines[0];
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append("Several small-talk moments happened:");
+            for (int i = 0; i < lines.Count; i++)
+            {
+                builder.Append("\n").Append(i + 1).Append(". ").Append(lines[i]);
+            }
+
+            return builder.ToString();
+        }
+
+        private static string SmallTalkBatchLine(string interactionLabel, string text)
+        {
+            string cleanText = DiaryContextBuilder.CleanLine(text);
+            string cleanLabel = DiaryContextBuilder.CleanLine(interactionLabel);
+            if (string.IsNullOrWhiteSpace(cleanLabel))
+            {
+                return cleanText;
+            }
+
+            return cleanLabel + ": " + cleanText;
+        }
+
+        private static string SmallTalkBatchInstruction(string baseInstruction)
+        {
+            string instruction = DiaryContextBuilder.CleanLine(baseInstruction);
+            string batchingInstruction = "write one diary entry for the overall small-talk exchange, not separate entries for each listed moment";
+            if (string.IsNullOrWhiteSpace(instruction))
+            {
+                return batchingInstruction;
+            }
+
+            return instruction + "; " + batchingInstruction;
+        }
+
+        private static int SmallTalkBatchWindowTicks
+        {
+            get
+            {
+                return Math.Max(0, DiaryTuning.Current.smallTalkBatchWindowTicks);
+            }
+        }
+
+        private static int SmallTalkBatchMaxEvents
+        {
+            get
+            {
+                return Math.Max(1, DiaryTuning.Current.smallTalkBatchMaxEvents);
+            }
+        }
+
         private static string PairKey(Pawn first, Pawn second)
         {
             string firstId = first.GetUniqueLoadID();
@@ -531,6 +759,14 @@ namespace PawnDiary
                 && PawnDiaryMod.Settings.IsInteractionEnabled(interactionDef);
         }
 
+        private static bool IsSmallTalkInteraction(InteractionDef interactionDef)
+        {
+            // Only the low-stakes Small talk group batches. Heartfelt events such as DeepTalk
+            // stay immediate because their group key is "heartfelt", not "smalltalk".
+            DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
+            return group != null && string.Equals(group.defName, SmallTalkGroupKey, StringComparison.OrdinalIgnoreCase);
+        }
+
 
         private void ApplyLlmResult(LlmGenerationResult result)
         {
@@ -624,6 +860,29 @@ namespace PawnDiary
         private static class EmptyEntries
         {
             public static readonly IReadOnlyList<DiaryEntryView> List = new List<DiaryEntryView>();
+        }
+
+        private class PendingSmallTalkBatch
+        {
+            public Pawn initiator;
+            public Pawn recipient;
+            public string initiatorPawnId;
+            public string recipientPawnId;
+            public int firstTick;
+            public int lastTick;
+            public string firstDefName;
+            public string firstLabel;
+            public string instruction;
+            public readonly List<string> initiatorLines = new List<string>();
+            public readonly List<string> recipientLines = new List<string>();
+
+            public int Count
+            {
+                get
+                {
+                    return initiatorLines.Count;
+                }
+            }
         }
     }
 }

@@ -12,6 +12,8 @@
     <!-- Deduplication windows (game ticks; 60 ticks ≈ 1 second) -->
     <socialFightDedupTicks>300</socialFightDedupTicks>
     <mentalBreakDedupTicks>2500</mentalBreakDedupTicks>
+    <smallTalkBatchWindowTicks>2500</smallTalkBatchWindowTicks>
+    <smallTalkBatchMaxEvents>6</smallTalkBatchMaxEvents>
 
     <!-- Surroundings scan -->
     <nearbyRadius>5</nearbyRadius>

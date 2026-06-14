@@ -15,6 +15,10 @@ namespace PawnDiary
         public int socialFightDedupTicks = 300;
         // The same pawn+break is only recorded once per this window (~1 in-game day).
         public int mentalBreakDedupTicks = 2500;
+        // Small-talk interactions for the same pawn pair are combined until this quiet window passes.
+        public int smallTalkBatchWindowTicks = 2500;
+        // Flush sooner when a pair talks this many times before the quiet window passes.
+        public int smallTalkBatchMaxEvents = 6;
 
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things

@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-14 (paired sequential POV generation)_
+_Last updated: 2026-06-14 (small-talk batching)_
 
 ---
 
@@ -89,7 +89,8 @@ DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState
       │                                        │   • SocialFighting + humanlike otherPawn → pairwise (dedup mirrored call)
       │                                        │   • otherwise → solo break (breaking pawn's POV)
       │   • significance filter (§5)            │
-      │   • builds a DiaryEvent immediately (NO batching — one event per occurrence)
+      │   • Small talk group → buffered by pawn pair, then flushed as one combined DiaryEvent
+      │   • all other enabled interactions → builds one DiaryEvent immediately
       │   • adds event to diaryEvents + the involved pawns' PawnDiaryRecord(s)
       │   • queues generation (pairwise: paired sequential/single §4; solo: single initiator)
       ▼                                        ▼
@@ -202,10 +203,19 @@ To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, 
 catch-all highest). Group `defName`s are the stable keys player settings save overrides under, so
 don't rename them.
 
-**Tuning knobs** (dedup windows, scan radius/temperature, and the mood/pain/beauty/opinion bucket
-thresholds) likewise live in XML — `1.6/Defs/DiaryTuningDef.xml`, backing `DiaryTuningDef` /
-`DiaryTuning.Current`. Every value defaults to the shipped number, so deleting the file or any
-field changes nothing.
+**Tuning knobs** (dedup windows, small-talk batching, scan radius/temperature, and the
+mood/pain/beauty/opinion bucket thresholds) likewise live in XML —
+`1.6/Defs/DiaryTuningDef.xml`, backing `DiaryTuningDef` / `DiaryTuning.Current`. Every value
+defaults to the shipped number, so deleting the file or any field changes nothing.
+
+**Small talk batching:** interactions classified into the `smalltalk` group are buffered per
+pawn pair instead of queued immediately. The batch flushes when no new small-talk event arrives
+for `smallTalkBatchWindowTicks` (default 2500, about one in-game hour), when the pair reaches
+`smallTalkBatchMaxEvents` (default 6), when either pawn's diary tab is opened, or before saving.
+Each flushed batch becomes one normal pairwise `DiaryEvent`, so generation still uses the same
+paired sequential/single-POV paths as other interactions. Important social groups are not
+batched: for example `DeepTalk` is classified under `heartfelt`, so it records and queues
+immediately.
 
 **Mental states** are captured via the `MentalStateHandler.TryStartMentalState` postfix:
 - `SocialFighting` with a humanlike `otherPawn` → a **pairwise** event (both pawns).
@@ -305,6 +315,13 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (small-talk batching)**
+  - Added per-pawn-pair batching for the `smalltalk` interaction group (`Chitchat`,
+    `Conversation`, `HangOut`, `OfferFood`, etc.). A batch flushes after a quiet window, at a
+    max event count, when either pawn's diary opens, or before save.
+  - Added XML-backed tuning knobs: `smallTalkBatchWindowTicks` and
+    `smallTalkBatchMaxEvents`.
 
 - **2026-06-14 (paired sequential POV generation)**
   - Replaced live dual-POV generation with a paired sequential flow: initiator request first,
