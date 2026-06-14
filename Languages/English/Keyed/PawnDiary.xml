@@ -7,14 +7,21 @@
   <PawnDiaryTimeline_FilterGroup>Group: {0}</PawnDiaryTimeline_FilterGroup>
   <PawnDiaryTimeline_FilterStatus>Status: {0}</PawnDiaryTimeline_FilterStatus>
   <PawnDiaryTimeline_FilterDate>Date: {0}</PawnDiaryTimeline_FilterDate>
+  <PawnDiaryTimeline_Search>Search:</PawnDiaryTimeline_Search>
   <PawnDiaryTimeline_ResultCount>Results: {0}</PawnDiaryTimeline_ResultCount>
   <PawnDiaryTimeline_Page>{0}/{1}</PawnDiaryTimeline_Page>
+  <PawnDiaryTimeline_PagePrev>&lt; Prev</PawnDiaryTimeline_PagePrev>
+  <PawnDiaryTimeline_PageNext>Next &gt;</PawnDiaryTimeline_PageNext>
+  <PawnDiaryTimeline_HeaderWithOther>{0} — {1} vs {2} ({3} / {4})</PawnDiaryTimeline_HeaderWithOther>
+  <PawnDiaryTimeline_HeaderSolo>{0} — {1} ({2} / {3})</PawnDiaryTimeline_HeaderSolo>
+  <PawnDiaryTimeline_HeaderWithStatus>{0} [{1}]</PawnDiaryTimeline_HeaderWithStatus>
   <PawnDiaryTimeline_NoResults>No diary entries match the current filters.</PawnDiaryTimeline_NoResults>
   <PawnDiaryTimeline_Jump>Jump to pawn</PawnDiaryTimeline_Jump>
   <PawnDiaryTimeline_Retry>Retry failed generation</PawnDiaryTimeline_Retry>
   <PawnDiaryTimeline_RetryQueued>Queued retry for failed diary generation.</PawnDiaryTimeline_RetryQueued>
   <PawnDiaryTimeline_RetryUnavailable>Could not retry this entry right now.</PawnDiaryTimeline_RetryUnavailable>
   <PawnDiaryTimeline_PawnUnavailable>That pawn is no longer available to select.</PawnDiaryTimeline_PawnUnavailable>
+  <PawnDiaryTimeline_UnknownPawn>Unknown pawn</PawnDiaryTimeline_UnknownPawn>
   <PawnDiaryTimeline_All>All</PawnDiaryTimeline_All>
   <PawnDiaryTimeline_AllDates>All dates</PawnDiaryTimeline_AllDates>
   <PawnDiaryTimeline_StatusGenerated>generated</PawnDiaryTimeline_StatusGenerated>

@@ -13,6 +13,7 @@ namespace PawnDiary
     {
         private const int PageSize = 30;
         private const int TicksPerDay = 60000;
+        private const string SmallTalkContextToken = "group=smalltalk";
 
         private enum TimelineStatusFilter
         {
@@ -39,7 +40,7 @@ namespace PawnDiary
             public string Date;
             public string GroupKey;
             public string GroupLabel;
-            public string DefLabel;
+            public string InteractionLabel;
             public string PawnId;
             public string PawnName;
             public string OtherPawnName;
@@ -128,7 +129,7 @@ namespace PawnDiary
                 OpenDateFilterMenu();
             }
 
-            Widgets.Label(new Rect(rect.x, secondRowY + 3f, 56f, 24f), "Search:");
+            Widgets.Label(new Rect(rect.x, secondRowY + 3f, 56f, 24f), "PawnDiaryTimeline_Search".Translate());
             searchText = Widgets.TextField(
                 new Rect(rect.x + 58f, secondRowY, Math.Max(220f, rect.width - 58f), 26f),
                 searchText ?? string.Empty);
@@ -141,7 +142,7 @@ namespace PawnDiary
 
             float controlsWidth = 220f;
             Rect controlsRect = new Rect(rect.xMax - controlsWidth, rect.y, controlsWidth, rect.height);
-            if (Widgets.ButtonText(new Rect(controlsRect.x, controlsRect.y, 68f, 24f), "< Prev"))
+            if (Widgets.ButtonText(new Rect(controlsRect.x, controlsRect.y, 68f, 24f), "PawnDiaryTimeline_PagePrev".Translate()))
             {
                 pageIndex = Math.Max(0, pageIndex - 1);
                 scrollPosition = Vector2.zero;
@@ -150,7 +151,7 @@ namespace PawnDiary
             Widgets.Label(new Rect(controlsRect.x + 72f, controlsRect.y + 3f, 76f, 24f),
                 "PawnDiaryTimeline_Page".Translate(pageIndex + 1, totalPages));
 
-            if (Widgets.ButtonText(new Rect(controlsRect.x + 152f, controlsRect.y, 68f, 24f), "Next >"))
+            if (Widgets.ButtonText(new Rect(controlsRect.x + 152f, controlsRect.y, 68f, 24f), "PawnDiaryTimeline_PageNext".Translate()))
             {
                 pageIndex = Math.Min(totalPages - 1, pageIndex + 1);
                 scrollPosition = Vector2.zero;
@@ -192,16 +193,12 @@ namespace PawnDiary
         private void DrawRow(DiaryGameComponent component, Rect rect, TimelineRow row)
         {
             string statusLabel = StatusLabelFromEvent(row.Status, row.GeneratedText);
-            string header = row.Date + " — " + row.PawnName;
-            if (!string.IsNullOrWhiteSpace(row.OtherPawnName))
-            {
-                header += " vs " + row.OtherPawnName;
-            }
-
-            header += " (" + row.DefLabel + " / " + row.GroupLabel + ")";
+            string header = string.IsNullOrWhiteSpace(row.OtherPawnName)
+                ? "PawnDiaryTimeline_HeaderSolo".Translate(row.Date, row.PawnName, row.InteractionLabel, row.GroupLabel)
+                : "PawnDiaryTimeline_HeaderWithOther".Translate(row.Date, row.PawnName, row.OtherPawnName, row.InteractionLabel, row.GroupLabel);
             if (!string.IsNullOrWhiteSpace(statusLabel))
             {
-                header += " [" + statusLabel + "]";
+                header = "PawnDiaryTimeline_HeaderWithStatus".Translate(header, statusLabel);
             }
 
             Widgets.Label(new Rect(rect.x + 8f, rect.y + 6f, rect.width - 200f, 24f), header);
@@ -290,9 +287,9 @@ namespace PawnDiary
                 Date = diaryEvent.date,
                 GroupKey = group?.defName ?? "other",
                 GroupLabel = group?.label ?? "Other",
-                DefLabel = string.IsNullOrWhiteSpace(diaryEvent.interactionLabel) ? diaryEvent.interactionDefName : diaryEvent.interactionLabel,
+                InteractionLabel = string.IsNullOrWhiteSpace(diaryEvent.interactionLabel) ? diaryEvent.interactionDefName : diaryEvent.interactionLabel,
                 PawnId = pawnId,
-                PawnName = string.IsNullOrWhiteSpace(diaryEvent.NameForRole(povRole)) ? "Unknown pawn" : diaryEvent.NameForRole(povRole),
+                PawnName = string.IsNullOrWhiteSpace(diaryEvent.NameForRole(povRole)) ? "PawnDiaryTimeline_UnknownPawn".Translate() : diaryEvent.NameForRole(povRole),
                 OtherPawnName = diaryEvent.OtherNameForRole(povRole),
                 PovRole = povRole,
                 RawText = diaryEvent.TextForRole(povRole),
@@ -548,7 +545,7 @@ namespace PawnDiary
             }
 
             if (!string.IsNullOrWhiteSpace(diaryEvent.gameContext)
-                && diaryEvent.gameContext.IndexOf("group=smalltalk", StringComparison.OrdinalIgnoreCase) >= 0)
+                && diaryEvent.gameContext.IndexOf(SmallTalkContextToken, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return InteractionGroups.ByKey("smalltalk");
             }
