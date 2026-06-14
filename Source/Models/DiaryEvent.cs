@@ -485,6 +485,14 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns the persisted generation status for a POV role.
+        /// </summary>
+        public string StatusForRole(string povRole)
+        {
+            return StatusFor(povRole);
+        }
+
+        /// <summary>
         /// Returns the LLM-generated text for the role if available, otherwise falls back to the raw game text.
         /// </summary>
         public string DisplayTextForRole(string povRole)
@@ -509,6 +517,53 @@ namespace PawnDiary
             }
 
             return "colony";
+        }
+
+        /// <summary>
+        /// Returns the counterpart pawn display name for this POV role.
+        /// </summary>
+        public string OtherNameForRole(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                return recipientName;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return initiatorName;
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Resets one POV slot so a failed generation can be retried.
+        /// </summary>
+        public void ResetForRetry(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                initiatorGeneratedText = string.Empty;
+                initiatorError = string.Empty;
+                initiatorStatus = NotGeneratedStatus;
+                return;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                recipientGeneratedText = string.Empty;
+                recipientError = string.Empty;
+                recipientStatus = NotGeneratedStatus;
+                return;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                neutralGeneratedText = string.Empty;
+                neutralError = string.Empty;
+                neutralStatus = NotGeneratedStatus;
+            }
         }
 
         /// <summary>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <MainButtonDef>
+    <defName>PawnDiaryTimeline</defName>
+    <label>Diary timeline</label>
+    <description>Browse all pawn diary events in one place, with filters and quick actions.</description>
+    <order>95</order>
+    <tabWindowClass>PawnDiary.MainTabWindow_DiaryTimeline</tabWindowClass>
+  </MainButtonDef>
+</Defs>

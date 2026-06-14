@@ -1,4 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
+  <PawnDiaryTimeline_Title>Colony Diary Timeline</PawnDiaryTimeline_Title>
+  <PawnDiaryTimeline_NoGameLoaded>Load or start a game to view the diary timeline.</PawnDiaryTimeline_NoGameLoaded>
+  <PawnDiaryTimeline_FilterPawn>Pawn: {0}</PawnDiaryTimeline_FilterPawn>
+  <PawnDiaryTimeline_FilterGroup>Group: {0}</PawnDiaryTimeline_FilterGroup>
+  <PawnDiaryTimeline_FilterStatus>Status: {0}</PawnDiaryTimeline_FilterStatus>
+  <PawnDiaryTimeline_FilterDate>Date: {0}</PawnDiaryTimeline_FilterDate>
+  <PawnDiaryTimeline_ResultCount>Results: {0}</PawnDiaryTimeline_ResultCount>
+  <PawnDiaryTimeline_Page>{0}/{1}</PawnDiaryTimeline_Page>
+  <PawnDiaryTimeline_NoResults>No diary entries match the current filters.</PawnDiaryTimeline_NoResults>
+  <PawnDiaryTimeline_Jump>Jump to pawn</PawnDiaryTimeline_Jump>
+  <PawnDiaryTimeline_Retry>Retry failed generation</PawnDiaryTimeline_Retry>
+  <PawnDiaryTimeline_RetryQueued>Queued retry for failed diary generation.</PawnDiaryTimeline_RetryQueued>
+  <PawnDiaryTimeline_RetryUnavailable>Could not retry this entry right now.</PawnDiaryTimeline_RetryUnavailable>
+  <PawnDiaryTimeline_PawnUnavailable>That pawn is no longer available to select.</PawnDiaryTimeline_PawnUnavailable>
+  <PawnDiaryTimeline_All>All</PawnDiaryTimeline_All>
+  <PawnDiaryTimeline_AllDates>All dates</PawnDiaryTimeline_AllDates>
+  <PawnDiaryTimeline_StatusGenerated>generated</PawnDiaryTimeline_StatusGenerated>
+  <PawnDiaryTimeline_StatusRaw>raw/pending</PawnDiaryTimeline_StatusRaw>
+  <PawnDiaryTimeline_StatusFailed>failed</PawnDiaryTimeline_StatusFailed>
+  <PawnDiaryTimeline_DateLast1>last 1 day</PawnDiaryTimeline_DateLast1>
+  <PawnDiaryTimeline_DateLast3>last 3 days</PawnDiaryTimeline_DateLast3>
+  <PawnDiaryTimeline_DateLast7>last 7 days</PawnDiaryTimeline_DateLast7>
+  <PawnDiaryTimeline_DateLast15>last 15 days</PawnDiaryTimeline_DateLast15>
+  <PawnDiaryTimeline_DateLast30>last 30 days</PawnDiaryTimeline_DateLast30>
 </LanguageData>

@@ -160,6 +160,51 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns all recorded diary events (across all pawns) for read-only timeline views.
+        /// </summary>
+        public IReadOnlyList<DiaryEvent> AllEvents()
+        {
+            return diaryEvents ?? EmptyDiaryEvents.List;
+        }
+
+        /// <summary>
+        /// Retries one failed POV generation by resetting it to not-generated and queueing it again.
+        /// </summary>
+        public bool RetryFailedGeneration(string eventId, string povRole)
+        {
+            if (string.IsNullOrWhiteSpace(eventId)
+                || string.IsNullOrWhiteSpace(povRole)
+                || !DiaryEvent.RoleIsInitiatorOrRecipient(povRole))
+            {
+                return false;
+            }
+
+            DiaryEvent diaryEvent = FindEvent(eventId);
+            if (diaryEvent == null
+                || (diaryEvent.solo && string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase))
+                || !string.Equals(diaryEvent.StatusForRole(povRole), DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase)
+                || !DiaryGenerationEnabledFor(diaryEvent, povRole))
+            {
+                return false;
+            }
+
+            diaryEvent.ResetForRetry(povRole);
+
+            // Sequential pairwise retries need the downstream recipient slot reset too, otherwise
+            // it stays stuck in "failed" and can never be queued again after initiator succeeds.
+            if (DualPovEnabled
+                && !diaryEvent.solo
+                && string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(diaryEvent.StatusForRole(DiaryEvent.RecipientRole), DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase))
+            {
+                diaryEvent.ResetForRetry(DiaryEvent.RecipientRole);
+            }
+
+            EnsureGenerationQueued(diaryEvent, povRole);
+            return true;
+        }
+
+        /// <summary>
         /// Returns whether a pawn has diary generation enabled (defaults to true if no record exists yet).
         /// </summary>
         public bool DiaryGenerationEnabledFor(Pawn pawn)
@@ -1259,6 +1304,11 @@ namespace PawnDiary
         private static class EmptyEntries
         {
             public static readonly IReadOnlyList<DiaryEntryView> List = new List<DiaryEntryView>();
+        }
+
+        private static class EmptyDiaryEvents
+        {
+            public static readonly IReadOnlyList<DiaryEvent> List = new List<DiaryEvent>();
         }
 
         /// <summary>

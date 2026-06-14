@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-14 (colonist-only diary eligibility)_
+_Last updated: 2026-06-14 (colony-wide timeline window)_
 
 ---
 
@@ -80,8 +80,9 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryPersonaDef.cs` | Defines `DiaryPersonaDef : Def` + `DiaryPersonas` lookup/fallback helpers. Data lives in XML and is selected per pawn. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary and exposes that pawn's persona/generation controls. |
+| `MainTabWindow_DiaryTimeline.cs` | Colony-wide main-tab timeline view across all diary events, with filters/search/paging and row actions (jump to pawn, retry failed generation). |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
-| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), `DiaryPersonaDefs.xml` (selectable writing personas), and `DiaryTimelineMainButtonDef.xml` (main-button entry for the colony-wide timeline window). |
 | `CSHARP-NOTES.md` | Primer mapping the C#/RimWorld idioms used here (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …) to JS/TS analogies. |
 | `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
@@ -126,6 +127,8 @@ UI actions. `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 secon
 scanning all `not_generated` events and queueing any whose pawns have generation enabled.
 This also fires immediately on game load and when a player re-enables generation for a pawn.
 Opening the diary tab (`EntriesFor`) is a pure read with no side effects.
+Opening the colony-wide timeline tab is also a pure read; generation is only retried when the
+player explicitly presses a row's retry action.
 
 ---
 
@@ -348,8 +351,14 @@ humanlike pawn defs at startup. The tab is **visible only for free colonists**
 Renders newest-first: date + status header, the diary
   text (generated, or the raw fallback line while pending/failed), and a small grey debug
   block (event id, POV, endpoint, model, status, error, prompt).
-- There is **no** standalone window or gizmo anymore, and **no** colony/neutral events
-  view (both removed — see Changelog).
+- There is **no** standalone pawn-diary window or gizmo anymore (removed — see Changelog).
+- **Main-button timeline tab** (`MainTabWindow_DiaryTimeline`), opened from the new
+  `Diary timeline` main button. Shows newest-first rows across all diary events, one row
+  per generated POV, with filters for pawn/group/status/date range, text search over raw +
+  generated text, paging (30 rows per page), and row actions:
+  - **Jump to pawn**: camera-jumps/selects the pawn and opens Inspect.
+  - **Retry failed generation**: for failed rows only, resets that POV to `not_generated`
+    and queues generation if the pawn's generation toggle is enabled.
 
 ---
 
@@ -378,6 +387,21 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (colony-wide diary timeline tab)**
+  - Added a new **main-button tab** (`Diary timeline`) backed by
+    `MainTabWindow_DiaryTimeline`, providing a colony-wide read-only diary view.
+  - Timeline rows are newest-first and support filter/search controls:
+    pawn, interaction group, generation status (generated/raw/failed), date-range presets,
+    and text search across raw + generated text.
+  - Added paging (30 rows/page) to keep timeline rendering responsive on large colonies.
+  - Added row actions:
+    - **Jump to pawn** (camera jump + select pawn + open Inspect)
+    - **Retry failed generation** (resets failed POV to `not_generated` and queues retry if enabled)
+  - Added `DiaryGameComponent.AllEvents()` and `RetryFailedGeneration(eventId, povRole)` for
+    timeline access/retry plumbing.
+  - Added `1.6/Defs/DiaryTimelineMainButtonDef.xml` to register the new main-button tab.
+  - Added English localization keys for timeline labels, filters, paging, and action feedback.
 
 - **2026-06-14 (background-only generation)**
   - All LLM diary generation is now driven by a background tick scan, never by UI actions.
