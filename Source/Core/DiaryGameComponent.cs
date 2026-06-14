@@ -57,12 +57,15 @@ namespace PawnDiary
         {
             pendingSmallTalkBatches.Clear();
             LlmClient.BeginSession();
+            nextGenerationScanTick = 0;
         }
 
         public override void LoadedGame()
         {
             pendingSmallTalkBatches.Clear();
             LlmClient.BeginSession();
+            nextGenerationScanTick = 0;
+            QueueAllPendingGenerations();
         }
 
         public override void ExposeData()
@@ -93,6 +96,13 @@ namespace PawnDiary
         {
             FlushReadySmallTalkBatches();
 
+            int now = Find.TickManager.TicksGame;
+            if (now >= nextGenerationScanTick)
+            {
+                nextGenerationScanTick = now + GenerationScanIntervalTicks;
+                QueueAllPendingGenerations();
+            }
+
             LlmGenerationResult result;
             while (LlmClient.TryDequeueCompleted(out result))
             {
@@ -101,8 +111,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the diary entries to render for a pawn (newest data first as stored), and
-        /// lazily queues generation for any entry that hasn't been written yet. Called by the UI.
+        /// Returns the diary entries to render for a pawn (newest data first as stored).
+        /// Pure read — no side effects. Generation is driven entirely by the background tick scan.
         /// </summary>
         public IReadOnlyList<DiaryEntryView> EntriesFor(Pawn pawn)
         {
@@ -112,7 +122,6 @@ namespace PawnDiary
             }
 
             string pawnId = pawn.GetUniqueLoadID();
-            FlushSmallTalkBatchesForPawn(pawnId);
 
             PawnDiaryRecord diary = FindDiary(pawn, false);
             if (diary == null)
@@ -127,8 +136,6 @@ namespace PawnDiary
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
                     DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
-                    string povRole = diaryEvent?.RoleForPawn(pawnId);
-                    EnsureGenerationQueued(diaryEvent, povRole);
                     DiaryEntryView view = diaryEvent?.ToViewFor(pawnId);
                     if (view != null)
                     {
@@ -176,6 +183,10 @@ namespace PawnDiary
             if (diary != null)
             {
                 diary.diaryGenerationEnabled = enabled;
+                if (enabled)
+                {
+                    QueuePendingGenerationsForPawn(pawn.GetUniqueLoadID());
+                }
             }
         }
 
@@ -212,14 +223,11 @@ namespace PawnDiary
                 return;
             }
 
-            // Disabled pawns still keep the raw event in their diary, but never start an LLM job.
             if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
             {
                 return;
             }
 
-            // In paired mode, the recipient entry waits for the finished initiator entry so the
-            // second prompt can use it as continuity context.
             if (DualPovEnabled && DiaryEvent.RoleIsInitiatorOrRecipient(povRole) && !diaryEvent.solo)
             {
                 QueueSequentialPairwiseRewrite(diaryEvent);
@@ -229,6 +237,62 @@ namespace PawnDiary
             if (diaryEvent.CanQueueGeneration(povRole))
             {
                 QueueLlmRewrite(diaryEvent, povRole);
+            }
+        }
+
+        private const int GenerationScanIntervalTicks = 120;
+        private int nextGenerationScanTick;
+
+        private void QueueAllPendingGenerations()
+        {
+            if (diaryEvents == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = diaryEvents[i];
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
+                {
+                    EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole);
+                }
+
+                if (!diaryEvent.solo && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                {
+                    EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole);
+                }
+            }
+        }
+
+        private void QueuePendingGenerationsForPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return;
+            }
+
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            if (diary == null || diary.eventIds == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                string povRole = diaryEvent.RoleForPawn(pawnId);
+                EnsureGenerationQueued(diaryEvent, povRole);
             }
         }
 
@@ -510,6 +574,7 @@ namespace PawnDiary
             else
             {
                 QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+                QueueLlmRewrite(diaryEvent, DiaryEvent.RecipientRole);
             }
         }
 
@@ -612,29 +677,6 @@ namespace PawnDiary
             }
 
             FlushSmallTalkBatches(new List<string>(pendingSmallTalkBatches.Keys));
-        }
-
-        /// <summary>
-        /// Flushes all batches that involve a specific pawn, so their diary view is up to date.
-        /// </summary>
-        private void FlushSmallTalkBatchesForPawn(string pawnId)
-        {
-            if (string.IsNullOrWhiteSpace(pawnId) || pendingSmallTalkBatches.Count == 0)
-            {
-                return;
-            }
-
-            List<string> keysToFlush = new List<string>();
-            foreach (KeyValuePair<string, PendingSmallTalkBatch> pair in pendingSmallTalkBatches)
-            {
-                PendingSmallTalkBatch batch = pair.Value;
-                if (batch != null && (batch.initiatorPawnId == pawnId || batch.recipientPawnId == pawnId))
-                {
-                    keysToFlush.Add(pair.Key);
-                }
-            }
-
-            FlushSmallTalkBatches(keysToFlush);
         }
 
         /// <summary>

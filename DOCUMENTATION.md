@@ -106,16 +106,26 @@ DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState
       │   • Small talk group → buffered by pawn pair, then flushed as one combined DiaryEvent
       │   • all other enabled interactions → builds one DiaryEvent immediately
       │   • adds event to diaryEvents + the involved pawns' PawnDiaryRecord(s) (eligible pawns only)
-      │   • queues generation if the pawn allows it (pairwise: paired sequential/single §4; solo: single initiator)
+      │   • queues generation (pairwise: paired sequential/single §4; solo: single initiator)
       ▼                                        ▼
 LlmClient.Enqueue ─▶ concurrency gate ─▶ SendOnce(HTTP) ─▶ Completed queue
       ▼
 DiaryGameComponent.GameComponentTick (every tick)
-      │   TryDequeueCompleted → ApplyLlmResult → DiaryEvent updated
+      │   • FlushReadySmallTalkBatches (time-window / max-events flush)
+      │   • QueueAllPendingGenerations (every ~2 s: scan for not_generated events)
+      │   • TryDequeueCompleted → ApplyLlmResult → DiaryEvent updated
+      │                                        ┌─ if initiator done → queue recipient (paired sequential)
+      │                                        └─ if initiator failed → mark recipient failed
       ▼
 ITab_Pawn_Diary.FillTab
-      │   EntriesFor(pawn) → renders entries, and lazily queues any not-yet-generated
+      │   EntriesFor(pawn) → pure read, no side effects
 ```
+
+**Background generation.** All LLM diary generation is driven by background ticks, never by
+UI actions. `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 seconds (120 ticks),
+scanning all `not_generated` events and queueing any whose pawns have generation enabled.
+This also fires immediately on game load and when a player re-enables generation for a pawn.
+Opening the diary tab (`EntriesFor`) is a pure read with no side effects.
 
 ---
 
@@ -153,8 +163,8 @@ batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist p
   requests are ordinary one-entry POV requests.
 
 ### Single POV (legacy, `dualPovGeneration = false`)
-- Initiator generated on record; recipient generated lazily when that pawn's tab is
-  opened. Two separate requests. Kept for fallback; off by default.
+- Both initiator and recipient are queued as separate independent requests at record time.
+- Kept for fallback; off by default.
 
 ### Solo events (mental breaks)
 - `DiaryEvent.solo == true`. Only the breaking pawn is involved (recipient fields blank).
@@ -171,7 +181,8 @@ All paths share the same per-event context fields and the system prompt.
 - The Diary tab creates a pawn's record on first edit/open and shows a checkbox plus persona
   selector above the entries.
 - Disabled generation does **not** delete or skip events; it only prevents future LLM requests for
-  that pawn. The raw event text still appears in the diary.
+that pawn. The raw event text still appears in the diary.
+- Re-enabling generation for a pawn immediately queues any `not_generated` events for that pawn.
 - In paired sequential mode, if the initiator has generation disabled but the recipient does not,
   the recipient can still generate from the base event prompt without hidden initiator context.
 
@@ -255,7 +266,7 @@ defaults to the shipped number, so deleting the file or any field changes nothin
 **Small talk batching:** interactions classified into the `smalltalk` group are buffered per
 pawn pair instead of queued immediately. The batch flushes when no new small-talk event arrives
 for `smallTalkBatchWindowTicks` (default 2500, about one in-game hour), when the pair reaches
-`smallTalkBatchMaxEvents` (default 6), when either pawn's diary tab is opened, or before saving.
+`smallTalkBatchMaxEvents` (default 6), or before saving.
 Each flushed batch becomes one normal pairwise `DiaryEvent`, so generation still uses the same
 paired sequential/single-POV paths as other interactions. Important social groups are not
 batched: for example `DeepTalk` is classified under `heartfelt`, so it records and queues
@@ -367,6 +378,20 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-14 (background-only generation)**
+  - All LLM diary generation is now driven by a background tick scan, never by UI actions.
+    `EntriesFor` (the diary tab) is a pure read with no side effects.
+  - `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 seconds (120 ticks),
+    scanning for `not_generated` events and queueing generation where enabled.
+  - Generation is also queued immediately on game load and when a pawn's generation is
+    re-enabled via the settings checkbox.
+  - Single-POV mode now queues both initiator and recipient at record time instead of
+    lazily queueing the recipient on tab-open.
+  - Small-talk batches no longer flush on diary tab open; they flush purely on timer,
+    max-events cap, and save. The doc previously claimed a tab-open flush that was never
+    implemented.
+  - Removed `FlushSmallTalkBatchesForPawn` (only caller was `EntriesFor`).
 
 - **2026-06-14 (colonist-only diary eligibility)**
   - Diary entries are now generated **only for free colonists** (`pawn.IsColonist`).
