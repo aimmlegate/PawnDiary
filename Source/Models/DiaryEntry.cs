@@ -8,18 +8,22 @@ using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// Legacy diary entry persisted in older save files. New events use DiaryEvent instead;
+    /// this class exists solely so older saves still load correctly.
+    /// </summary>
     public class DiaryEntry : IExposable
     {
-        public int tick;
-        public string date;
-        public string text;
-        public string id;
-        public string generatedText;
-        public string llmStatus;
-        public string llmError;
-        public string llmEndpoint;
-        public string llmModel;
-        public string llmPrompt;
+        public int tick;            // Game tick when the entry was recorded
+        public string date;         // Human-readable date string (e.g. "2nd of Apr, 5500")
+        public string text;         // Raw game-authored text for this event
+        public string id;           // Unique identifier — backfilled on load if missing
+        public string generatedText; // Text produced by the LLM (may be empty while pending)
+        public string llmStatus;    // "pending", "failed", or empty after successful generation
+        public string llmError;     // Error message from the LLM call, if any
+        public string llmEndpoint;  // API endpoint that was called
+        public string llmModel;     // LLM model identifier used for generation
+        public string llmPrompt;    // Full prompt sent to the LLM
 
         public DiaryEntry()
         {
@@ -34,6 +38,10 @@ namespace PawnDiary
             llmStatus = "pending";
         }
 
+        /// <summary>
+        /// RimWorld save/load hook. Deserialises all fields from the save file and
+        /// backfills a missing id for saves created before the id field existed.
+        /// </summary>
         public void ExposeData()
         {
             Scribe_Values.Look(ref id, "id");
@@ -52,6 +60,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Returns generatedText if available, otherwise falls back to the raw game text.
+        /// </summary>
         public string DisplayText
         {
             get
@@ -65,6 +76,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Human-readable status label: "generating" while pending, "generation failed" on error, empty otherwise.
+        /// </summary>
         public string StatusText
         {
             get
@@ -83,6 +97,10 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Diagnostic block showing endpoint, model, status, error, and the prompt — used for
+        /// in-game debugging of LLM generation issues.
+        /// </summary>
         public string DebugText
         {
             get
@@ -115,19 +133,23 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Immutable, read-only display model rendered by the diary UI tab.
+    /// Represents a single POV snapshot of a diary event (or a legacy DiaryEntry).
+    /// </summary>
     public class DiaryEntryView
     {
-        public readonly int Tick;
-        public readonly string Date;
-        public readonly string Text;
-        public readonly string GeneratedText;
-        public readonly string LlmStatus;
-        public readonly string LlmError;
-        public readonly string LlmEndpoint;
-        public readonly string LlmModel;
-        public readonly string LlmPrompt;
-        public readonly string EventId;
-        public readonly string PovRole;
+        public readonly int Tick;           // Game tick when the event occurred
+        public readonly string Date;        // Human-readable date string
+        public readonly string Text;        // Raw game-authored event text
+        public readonly string GeneratedText; // LLM-generated narrative text
+        public readonly string LlmStatus;   // LLM generation status ("pending", "failed", or empty)
+        public readonly string LlmError;    // Error message if LLM generation failed
+        public readonly string LlmEndpoint; // API endpoint used for the LLM call
+        public readonly string LlmModel;    // LLM model identifier
+        public readonly string LlmPrompt;  // Full prompt sent to the LLM
+        public readonly string EventId;     // Identifier of the backing DiaryEvent
+        public readonly string PovRole;     // Role/perspective this view represents (e.g. "legacy")
 
         public DiaryEntryView(
             int tick,
@@ -155,6 +177,10 @@ namespace PawnDiary
             PovRole = povRole;
         }
 
+        /// <summary>
+        /// Creates a DiaryEntryView from a legacy DiaryEntry, tagging it with POV role "legacy".
+        /// Returns null if the entry is null.
+        /// </summary>
         public static DiaryEntryView FromLegacy(DiaryEntry entry)
         {
             if (entry == null)
@@ -176,6 +202,10 @@ namespace PawnDiary
                 "legacy");
         }
 
+        /// <summary>
+        /// Returns "writing..." while pending with no output, generatedText if available,
+        /// otherwise falls back to raw Text.
+        /// </summary>
         public string DisplayText
         {
             get
@@ -194,6 +224,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Human-readable status label: "writing" while pending, "generation failed" on error, empty otherwise.
+        /// </summary>
         public string StatusText
         {
             get
@@ -212,6 +245,10 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Diagnostic block showing event ID, POV, endpoint, model, status, error, and the prompt.
+        /// Used for in-game debugging of LLM generation issues in the view context.
+        /// </summary>
         public string DebugText
         {
             get

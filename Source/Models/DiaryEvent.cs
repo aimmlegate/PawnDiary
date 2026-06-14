@@ -14,6 +14,8 @@ namespace PawnDiary
     /// </summary>
     public class DiaryEvent : IExposable
     {
+        // POV-role and generation-status string constants used across the diary system
+        // for comparing/switching on roles and statuses.
         public const string InitiatorRole = "initiator";
         public const string RecipientRole = "recipient";
         public const string NeutralRole = "neutral";
@@ -23,49 +25,49 @@ namespace PawnDiary
         public const string CompleteStatus = "complete";
         public const string FailedStatus = "failed";
 
-        public string eventId;
-        public int tick;
-        public string date;
-        public string interactionDefName;
-        public string interactionLabel;
-        public string initiatorPawnId;
-        public string recipientPawnId;
-        public string initiatorName;
-        public string recipientName;
-        public string initiatorText;
-        public string recipientText;
-        public string neutralText;
-        public string sequenceText;
-        public string gameContext;
-        public string instruction;
-        public string initiatorPawnSummary;
-        public string recipientPawnSummary;
-        public string initiatorSurroundings;
-        public string recipientSurroundings;
-        public string opinionsSummary;
-        public string initiatorContinuity;
-        public string recipientContinuity;
-        public string initiatorPrompt;
-        public string recipientPrompt;
-        public string neutralPrompt;
-        public string initiatorGeneratedText;
-        public string recipientGeneratedText;
-        public string neutralGeneratedText;
-        public string initiatorStatus;
-        public string recipientStatus;
-        public string neutralStatus;
-        public string initiatorError;
-        public string recipientError;
-        public string neutralError;
-        public string initiatorLlmEndpoint;
-        public string recipientLlmEndpoint;
-        public string neutralLlmEndpoint;
-        public string initiatorLlmModel;
-        public string recipientLlmModel;
-        public string neutralLlmModel;
-        public string llmEndpoint;
-        public string llmModel;
-        public bool solo;
+        public string eventId; // unique ID for this event, stable across saves
+        public int tick; // game tick when the event was recorded
+        public string date; // human-readable date string at event time
+        public string interactionDefName; // RimWorld InteractionDef defName (e.g. "Chat")
+        public string interactionLabel; // display label for the interaction type
+        public string initiatorPawnId; // RimWorld unique load ID of the initiating pawn
+        public string recipientPawnId; // RimWorld unique load ID of the receiving pawn
+        public string initiatorName; // display name of the initiator
+        public string recipientName; // display name of the recipient
+        public string initiatorText; // raw game-side description from the initiator's POV
+        public string recipientText; // raw game-side description from the recipient's POV
+        public string neutralText; // merged description combining both POVs for neutral view
+        public string sequenceText; // used by legacy dual-POV generation mode
+        public string gameContext; // metadata string describing game state at event time
+        public string instruction; // group-specific prompt instruction appended to LLM calls
+        public string initiatorPawnSummary; // LLM-oriented summary of initiator's traits/backstory
+        public string recipientPawnSummary; // LLM-oriented summary of recipient's traits/backstory
+        public string initiatorSurroundings; // textual description of initiator's surroundings
+        public string recipientSurroundings; // textual description of recipient's surroundings
+        public string opinionsSummary; // social opinions between the two involved pawns
+        public string initiatorContinuity; // context string carrying forward initiator's prior entries
+        public string recipientContinuity; // context string carrying forward recipient's prior entries
+        public string initiatorPrompt; // assembled prompt text sent to the LLM for initiator POV
+        public string recipientPrompt; // assembled prompt text sent to the LLM for recipient POV
+        public string neutralPrompt; // assembled prompt text sent to the LLM for neutral POV
+        public string initiatorGeneratedText; // text returned by the LLM for initiator POV
+        public string recipientGeneratedText; // text returned by the LLM for recipient POV
+        public string neutralGeneratedText; // text returned by the LLM for neutral POV
+        public string initiatorStatus; // generation status for initiator POV
+        public string recipientStatus; // generation status for recipient POV
+        public string neutralStatus; // generation status for neutral POV
+        public string initiatorError; // error message from a failed initiator generation
+        public string recipientError; // error message from a failed recipient generation
+        public string neutralError; // error message from a failed neutral generation
+        public string initiatorLlmEndpoint; // LLM endpoint used for initiator POV generation
+        public string recipientLlmEndpoint; // LLM endpoint used for recipient POV generation
+        public string neutralLlmEndpoint; // LLM endpoint used for neutral POV generation
+        public string initiatorLlmModel; // LLM model name used for initiator POV generation
+        public string recipientLlmModel; // LLM model name used for recipient POV generation
+        public string neutralLlmModel; // LLM model name used for neutral POV generation
+        public string llmEndpoint; // legacy flat field, migrated to per-POV fields on load
+        public string llmModel; // legacy flat field, migrated to per-POV fields on load
+        public bool solo; // true for events with a single POV (e.g. mental breaks)
 
         // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
         // keys written to the save file — renaming one breaks existing saves. The PostLoadInit
@@ -116,6 +118,7 @@ namespace PawnDiary
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                // Backfill defaults for fields that may be absent in older saves
                 if (string.IsNullOrWhiteSpace(eventId))
                 {
                     eventId = Guid.NewGuid().ToString("N");
@@ -193,10 +196,13 @@ namespace PawnDiary
                     neutralStatus = NotGeneratedStatus;
                 }
 
+                // Normalize statuses: treat stale "pending" or empty as not_generated,
+                // and upgrade to "complete" if generated text is already present
                 initiatorStatus = NormalizeLoadedStatus(initiatorStatus, initiatorGeneratedText);
                 recipientStatus = NormalizeLoadedStatus(recipientStatus, recipientGeneratedText);
                 neutralStatus = NormalizeLoadedStatus(neutralStatus, neutralGeneratedText);
 
+                // Migrate legacy flat LLM fields into per-POV fields when per-POV slots are empty
                 if (string.IsNullOrWhiteSpace(initiatorLlmEndpoint) && !string.IsNullOrWhiteSpace(llmEndpoint))
                 {
                     initiatorLlmEndpoint = llmEndpoint;
@@ -229,6 +235,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Stores the assembled prompt text for a specific POV role.
+        /// </summary>
         public void SetPrompt(string povRole, string prompt)
         {
             if (RoleEquals(povRole, InitiatorRole))
@@ -249,6 +258,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Records which LLM endpoint and model were used for a specific POV role.
+        /// </summary>
         public void SetLlmMeta(string povRole, string endpoint, string model)
         {
             if (RoleEquals(povRole, InitiatorRole))
@@ -302,52 +314,80 @@ namespace PawnDiary
             return initiatorLlmModel;
         }
 
+        /// <summary>
+        /// Sets the same prompt text for both initiator and recipient POVs (dual-POV mode).
+        /// </summary>
         public void SetDualPrompt(string prompt)
         {
             initiatorPrompt = prompt;
             recipientPrompt = prompt;
         }
 
+        /// <summary>
+        /// Returns true if this POV role can be queued for LLM generation (not already pending/complete/failed).
+        /// </summary>
         public bool CanQueueGeneration(string povRole)
         {
             string status = StatusFor(povRole);
             return string.IsNullOrWhiteSpace(status) || RoleEquals(status, NotGeneratedStatus);
         }
 
+        /// <summary>
+        /// Returns true if both initiator and recipient POVs can be queued (non-solo dual-POV event).
+        /// </summary>
         public bool CanQueueDual()
         {
             return !solo && CanQueueGeneration(InitiatorRole) && CanQueueGeneration(RecipientRole);
         }
 
+        /// <summary>
+        /// Returns true if the given role is either initiator or recipient (not neutral/dual).
+        /// </summary>
         public static bool RoleIsInitiatorOrRecipient(string povRole)
         {
             return RoleEquals(povRole, InitiatorRole) || RoleEquals(povRole, RecipientRole);
         }
 
+        /// <summary>
+        /// Marks a POV role as pending generation and clears any previous error.
+        /// </summary>
         public void MarkQueued(string povRole)
         {
             SetStatus(povRole, PendingStatus);
             SetError(povRole, null);
         }
 
+        /// <summary>
+        /// Marks a POV role as failed and records the error message.
+        /// </summary>
         public void MarkFailed(string povRole, string error)
         {
             SetStatus(povRole, FailedStatus);
             SetError(povRole, error);
         }
 
+        /// <summary>
+        /// Marks both initiator and recipient POVs as pending generation.
+        /// </summary>
         public void MarkDualQueued()
         {
             MarkQueued(InitiatorRole);
             MarkQueued(RecipientRole);
         }
 
+        /// <summary>
+        /// Marks both initiator and recipient POVs as failed with the given error.
+        /// </summary>
         public void MarkDualFailed(string error)
         {
             MarkFailed(InitiatorRole, error);
             MarkFailed(RecipientRole, error);
         }
 
+        /// <summary>
+        /// Applies an LLM generation result to the appropriate POV slot based on result.povRole.
+        /// Dispatches to the initiator, recipient, neutral, or dual handler.
+        /// </summary>
         public void ApplyLlmResult(LlmGenerationResult result)
         {
             if (result == null)
@@ -379,6 +419,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Builds a read-only view of this event for the given pawn's POV, or null if the pawn is not involved.
+        /// </summary>
         public DiaryEntryView ToViewFor(string pawnId)
         {
             string povRole = RoleForPawn(pawnId);
@@ -401,6 +444,9 @@ namespace PawnDiary
                 povRole);
         }
 
+        /// <summary>
+        /// Returns the POV role string for a pawn involved in this event, or null if the pawn is not part of it.
+        /// </summary>
         public string RoleForPawn(string pawnId)
         {
             if (string.IsNullOrWhiteSpace(pawnId))
@@ -421,23 +467,35 @@ namespace PawnDiary
             return null;
         }
 
+        /// <summary>
+        /// Returns true if the two given pawn IDs are the initiator and recipient of this event (in either order).
+        /// </summary>
         public bool Involves(string firstPawnId, string secondPawnId)
         {
             return (firstPawnId == initiatorPawnId && secondPawnId == recipientPawnId)
                 || (firstPawnId == recipientPawnId && secondPawnId == initiatorPawnId);
         }
 
+        /// <summary>
+        /// Returns the raw game description text for the given POV role.
+        /// </summary>
         public string TextForRole(string povRole)
         {
             return TextFor(povRole);
         }
 
+        /// <summary>
+        /// Returns the LLM-generated text for the role if available, otherwise falls back to the raw game text.
+        /// </summary>
         public string DisplayTextForRole(string povRole)
         {
             string generated = GeneratedTextFor(povRole);
             return string.IsNullOrWhiteSpace(generated) ? TextFor(povRole) : generated;
         }
 
+        /// <summary>
+        /// Returns the display name for the given role, or "colony" for neutral.
+        /// </summary>
         public string NameForRole(string povRole)
         {
             if (RoleEquals(povRole, InitiatorRole))
@@ -453,6 +511,9 @@ namespace PawnDiary
             return "colony";
         }
 
+        /// <summary>
+        /// Returns the surroundings description for the given role (defaults to initiator's surroundings for neutral).
+        /// </summary>
         public string SurroundingsForRole(string povRole)
         {
             if (RoleEquals(povRole, RecipientRole))
@@ -463,6 +524,9 @@ namespace PawnDiary
             return initiatorSurroundings;
         }
 
+        /// <summary>
+        /// Returns the continuity context string for the given role, or "none" for neutral.
+        /// </summary>
         public string ContinuityForRole(string povRole)
         {
             if (RoleEquals(povRole, InitiatorRole))

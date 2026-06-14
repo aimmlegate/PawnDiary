@@ -20,6 +20,10 @@ namespace PawnDiary
             Log.Message("[Pawn Diary] Loaded.");
         }
 
+        /// <summary>
+        /// Injects the Diary inspector tab into every humanlike pawn's inspector, placing it
+        /// immediately after the vanilla Log tab so it appears as a sibling tab.
+        /// </summary>
         // Add the Diary inspector tab to every humanlike pawn, placed right after the
         // vanilla Log tab so it reads as a sibling of it.
         private static void InjectDiaryTab()

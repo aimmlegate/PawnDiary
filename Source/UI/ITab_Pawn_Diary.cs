@@ -13,10 +13,13 @@ namespace PawnDiary
     // Log tab. Replaces the old standalone Diary window/gizmo.
     public class ITab_Pawn_Diary : ITab
     {
+        // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
         private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
 
+        // Vertical space reserved for the enable/persona controls above the scroll view.
         private const float ControlsHeight = 116f;
 
+        // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
 
         public ITab_Pawn_Diary()
@@ -25,11 +28,18 @@ namespace PawnDiary
             labelKey = "PawnDiaryTabLabel";
         }
 
+        /// <summary>
+        /// Only show the diary tab for colonist pawns (or corpses of colonists).
+        /// </summary>
         public override bool IsVisible
         {
             get { return PawnToShow() != null; }
         }
 
+        /// <summary>
+        /// Resolves the pawn to display a diary for, handling both selected colonists
+        /// and selected corpses of colonists.
+        /// </summary>
         private Pawn PawnToShow()
         {
             Pawn pawn = SelPawn;
@@ -47,6 +57,10 @@ namespace PawnDiary
             return pawn;
         }
 
+        /// <summary>
+        /// RimWorld's immediate-mode draw callback for the entire tab content.
+        /// Called every frame; the whole UI is rebuilt from scratch each time.
+        /// </summary>
         protected override void FillTab()
         {
             Pawn pawn = PawnToShow();
@@ -56,6 +70,7 @@ namespace PawnDiary
             }
 
             Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(12f);
+            // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Current;
 
             Text.Font = GameFont.Medium;
@@ -76,8 +91,11 @@ namespace PawnDiary
                 return;
             }
 
+            // Newest entries first for diary-style reading order.
             List<DiaryEntryView> ordered = entries.OrderByDescending(entry => entry.Tick).ToList();
+            // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
             float viewWidth = outRect.width - 16f;
+            // Total scrollable height including 12f bottom padding.
             float viewHeight = ordered.Sum(entry => EntryHeight(entry, viewWidth)) + 12f;
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
 
@@ -108,6 +126,9 @@ namespace PawnDiary
             Widgets.EndScrollView();
         }
 
+        /// <summary>
+        /// Renders the enable-toggle and persona-picker controls above the diary entries.
+        /// </summary>
         private static void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
         {
             if (pawn == null || component == null)
@@ -133,6 +154,7 @@ namespace PawnDiary
 
             // Persona options come from DiaryPersonaDefs.xml so new presets can be added without
             // changing UI code.
+            // The persona currently assigned to this pawn.
             DiaryPersonaDef persona = component.PersonaFor(pawn);
             if (listing.ButtonText("Persona: " + PersonaLabel(persona)))
             {
@@ -164,6 +186,10 @@ namespace PawnDiary
             listing.End();
         }
 
+        /// <summary>
+        /// Returns the human-readable label for a persona, falling back to "default" if null
+        /// or to defName if the label is blank.
+        /// </summary>
         private static string PersonaLabel(DiaryPersonaDef persona)
         {
             if (persona == null)
@@ -174,6 +200,10 @@ namespace PawnDiary
             return string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label;
         }
 
+        /// <summary>
+        /// Calculates the height needed for a single diary entry card, accounting for
+        /// dynamic text wrapping of both display and debug text.
+        /// </summary>
         private static float EntryHeight(DiaryEntryView entry, float width)
         {
             float innerWidth = width - 16f;

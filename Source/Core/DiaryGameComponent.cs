@@ -23,12 +23,17 @@ namespace PawnDiary
     public class DiaryGameComponent : GameComponent
     {
         // Dedup windows live in DiaryTuningDef (editable XML); see DiaryTuning.Current.
+        // InteractionGroups key that marks an interaction as low-stakes small talk eligible for batching.
         private const string SmallTalkGroupKey = "smalltalk";
+        // Synthetic defName/label used when multiple small-talk interactions are merged into one diary event.
         private const string SmallTalkBatchDefName = "SmallTalkBatch";
         private const string SmallTalkBatchLabel = "Small talk";
 
+        // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
+        // All diary events across every pawn. Persisted via ExposeData.
         private List<DiaryEvent> diaryEvents = new List<DiaryEvent>();
+        // Small-talk batches still accumulating lines; keyed by PairKey. Not saved (flushed first).
         private readonly Dictionary<string, PendingSmallTalkBatch> pendingSmallTalkBatches = new Dictionary<string, PendingSmallTalkBatch>();
 
         // Transient (not saved) guard against duplicate mental-state events, e.g. the two
@@ -147,6 +152,9 @@ namespace PawnDiary
             return views;
         }
 
+        /// <summary>
+        /// Returns whether a pawn has diary generation enabled (defaults to true if no record exists yet).
+        /// </summary>
         public bool DiaryGenerationEnabledFor(Pawn pawn)
         {
             if (!IsDiaryEligible(pawn))
@@ -232,6 +240,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Convenience overload that auto-generates a fallback description from the pawns and interaction label.
+        /// </summary>
         public void RecordInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef)
         {
             if (initiator == null || recipient == null || interactionDef == null)
@@ -243,6 +254,9 @@ namespace PawnDiary
             RecordInteraction(initiator, recipient, interactionDef, fallbackText);
         }
 
+        /// <summary>
+        /// Convenience overload that uses the same game text for both initiator and recipient.
+        /// </summary>
         public void RecordInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef, string gameText)
         {
             RecordInteraction(initiator, recipient, interactionDef, gameText, gameText);
@@ -397,6 +411,10 @@ namespace PawnDiary
             QueueLlmRewrite(breakEvent, DiaryEvent.InitiatorRole);
         }
 
+        /// <summary>
+        /// Creates a DiaryEvent involving two pawns (initiator + recipient), enriches it with context
+        /// summaries, registers it, and cross-references both pawns' diary records.
+        /// </summary>
         private DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
             string initiatorText, string recipientText, string instruction, string gameContext)
         {
@@ -439,6 +457,9 @@ namespace PawnDiary
             return diaryEvent;
         }
 
+        /// <summary>
+        /// Creates a solo DiaryEvent (single-POV, e.g. a mental break) with no recipient role.
+        /// </summary>
         private DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
             string text, string instruction, string gameContext)
         {
@@ -477,6 +498,9 @@ namespace PawnDiary
             return diaryEvent;
         }
 
+        /// <summary>
+        /// Dispatches a pairwise event for LLM generation: sequential if dual-POV is on, else initiator-only.
+        /// </summary>
         private void QueuePairwiseGeneration(DiaryEvent diaryEvent)
         {
             if (DualPovEnabled)
@@ -489,6 +513,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Assembles a human-readable fallback description for a mental break, including target and reason if available.
+        /// </summary>
         private static string BuildMentalBreakText(Pawn pawn, string label, Pawn otherPawn, string reason)
         {
             string text = pawn.LabelShortCap + " had a mental break (" + DiaryContextBuilder.CleanLine(label) + ")";
@@ -506,12 +533,19 @@ namespace PawnDiary
             return text + ".";
         }
 
+        /// <summary>
+        /// Returns a cleaned "reason=…" suffix for appending to gameContext strings, or empty if no reason.
+        /// </summary>
         private static string ReasonSuffix(string reason)
         {
             string cleanReason = DiaryContextBuilder.CleanLine(reason);
             return string.IsNullOrWhiteSpace(cleanReason) ? string.Empty : "; reason=" + cleanReason;
         }
 
+        /// <summary>
+        /// Dedup gate: returns true if the same key was recorded within the given tick window, preventing
+        /// duplicate events (e.g. mirrored SocialFighting calls).
+        /// </summary>
         private bool RecentlyRecorded(string key, int windowTicks)
         {
             int now = Find.TickManager.TicksGame;
@@ -525,16 +559,25 @@ namespace PawnDiary
             return false;
         }
 
+        /// <summary>
+        /// Checks whether a pawn is a humanlike (as opposed to an animal or mechanoid).
+        /// </summary>
         private static bool IsHumanlike(Pawn pawn)
         {
             return pawn != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike;
         }
 
+        /// <summary>
+        /// A pawn qualifies for diary tracking if it is a humanlike colonist.
+        /// </summary>
         private static bool IsDiaryEligible(Pawn pawn)
         {
             return IsHumanlike(pawn) && pawn.IsColonist;
         }
 
+        /// <summary>
+        /// Called each tick: flushes any batch that has exceeded the time window or hit the max-events cap.
+        /// </summary>
         private void FlushReadySmallTalkBatches()
         {
             if (pendingSmallTalkBatches.Count == 0)
@@ -558,6 +601,9 @@ namespace PawnDiary
             FlushSmallTalkBatches(keysToFlush);
         }
 
+        /// <summary>
+        /// Flushes every pending small-talk batch immediately (used on save to avoid losing transient data).
+        /// </summary>
         private void FlushAllSmallTalkBatches()
         {
             if (pendingSmallTalkBatches.Count == 0)
@@ -568,6 +614,9 @@ namespace PawnDiary
             FlushSmallTalkBatches(new List<string>(pendingSmallTalkBatches.Keys));
         }
 
+        /// <summary>
+        /// Flushes all batches that involve a specific pawn, so their diary view is up to date.
+        /// </summary>
         private void FlushSmallTalkBatchesForPawn(string pawnId)
         {
             if (string.IsNullOrWhiteSpace(pawnId) || pendingSmallTalkBatches.Count == 0)
@@ -588,6 +637,9 @@ namespace PawnDiary
             FlushSmallTalkBatches(keysToFlush);
         }
 
+        /// <summary>
+        /// Flushes each batch identified by its key in the provided list.
+        /// </summary>
         private void FlushSmallTalkBatches(List<string> keysToFlush)
         {
             if (keysToFlush == null)
@@ -605,6 +657,10 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Converts a finished batch into a DiaryEvent (solo or pairwise depending on eligibility) and
+        /// queues it for LLM generation.
+        /// </summary>
         private void FlushSmallTalkBatch(string key, PendingSmallTalkBatch batch)
         {
             pendingSmallTalkBatches.Remove(key);
@@ -653,6 +709,10 @@ namespace PawnDiary
             QueuePairwiseGeneration(diaryEvent);
         }
 
+        /// <summary>
+        /// Appends one interaction line to the batch, assigning it to the correct initiator/recipient line lists
+        /// regardless of which pawn was the initiator in the original interaction.
+        /// </summary>
         private static void AppendSmallTalkBatchLine(PendingSmallTalkBatch batch, Pawn initiator,
             string interactionLabel, string initiatorText, string recipientText)
         {
@@ -671,6 +731,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Formats accumulated lines into a single description string; uses a numbered list when multiple.
+        /// </summary>
         private static string BuildSmallTalkBatchText(List<string> lines)
         {
             if (lines == null || lines.Count == 0)
@@ -693,6 +756,9 @@ namespace PawnDiary
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Formats one small-talk moment as "label: text" (or just text if the label is empty).
+        /// </summary>
         private static string SmallTalkBatchLine(string interactionLabel, string text)
         {
             string cleanText = DiaryContextBuilder.CleanLine(text);
@@ -705,6 +771,9 @@ namespace PawnDiary
             return cleanLabel + ": " + cleanText;
         }
 
+        /// <summary>
+        /// Appends a batching-specific instruction to the base instruction so the LLM writes one combined entry.
+        /// </summary>
         private static string SmallTalkBatchInstruction(string baseInstruction)
         {
             string instruction = DiaryContextBuilder.CleanLine(baseInstruction);
@@ -717,6 +786,9 @@ namespace PawnDiary
             return instruction + "; " + batchingInstruction;
         }
 
+        /// <summary>
+        /// How many ticks a small-talk batch stays open before being flushed automatically.
+        /// </summary>
         private static int SmallTalkBatchWindowTicks
         {
             get
@@ -725,6 +797,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Maximum number of small-talk interactions to accumulate per batch before forcing a flush.
+        /// </summary>
         private static int SmallTalkBatchMaxEvents
         {
             get
@@ -733,6 +808,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Produces a deterministic, order-independent key for a pawn pair (for small-talk batch grouping).
+        /// </summary>
         private static string PairKey(Pawn first, Pawn second)
         {
             string firstId = first.GetUniqueLoadID();
@@ -742,6 +820,9 @@ namespace PawnDiary
                 : secondId + "|" + firstId;
         }
 
+        /// <summary>
+        /// Adds an event ID to a pawn's diary, creating the diary record if necessary.
+        /// </summary>
         private void AddEventRef(Pawn pawn, string eventId)
         {
             if (!IsDiaryEligible(pawn) || string.IsNullOrWhiteSpace(eventId))
@@ -767,6 +848,9 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Builds the prompt for a single POV role and enqueues the LLM request if generation is still allowed.
+        /// </summary>
         private void QueueLlmRewrite(DiaryEvent diaryEvent, string povRole)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
@@ -790,6 +874,10 @@ namespace PawnDiary
             QueuePrompt(diaryEvent, povRole, rawText);
         }
 
+        /// <summary>
+        /// Dual-POV flow: queues the initiator first, then the recipient once the initiator result arrives
+        /// (so the recipient prompt can include the initiator's generated text as hidden continuity context).
+        /// </summary>
         private void QueueSequentialPairwiseRewrite(DiaryEvent diaryEvent)
         {
             if (diaryEvent == null || diaryEvent.solo)
@@ -845,6 +933,10 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Final step before LLM dispatch: stamps the prompt on the event, records endpoint metadata, marks
+        /// the event queued, and enqueues the request to <see cref="LlmClient"/>.
+        /// </summary>
         private void QueuePrompt(DiaryEvent diaryEvent, string povRole, string rawText)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
@@ -889,13 +981,17 @@ namespace PawnDiary
         }
 
 
+        /// <summary>
+        /// Returns the user-defined instruction for a specific interaction def, or empty string if none.
+        /// </summary>
         private static string InteractionInstruction(InteractionDef interactionDef)
         {
             return PawnDiaryMod.Settings?.InstructionFor(interactionDef) ?? string.Empty;
         }
 
-        // An interaction is recorded only if its group (see InteractionGroups) is enabled
-        // in settings.
+        /// <summary>
+        /// An interaction is recorded only if its group (see InteractionGroups) is enabled in settings.
+        /// </summary>
         private static bool IsInteractionSignificant(InteractionDef interactionDef)
         {
             return interactionDef != null
@@ -904,6 +1000,10 @@ namespace PawnDiary
                 && PawnDiaryMod.Settings.IsInteractionEnabled(interactionDef);
         }
 
+        /// <summary>
+        /// Returns true when the interaction belongs to the "smalltalk" group and should be batched rather
+        /// than recorded individually.
+        /// </summary>
         private static bool IsSmallTalkInteraction(InteractionDef interactionDef)
         {
             // Only the low-stakes Small talk group batches. Heartfelt events such as DeepTalk
@@ -913,6 +1013,10 @@ namespace PawnDiary
         }
 
 
+        /// <summary>
+        /// Dequeues a completed LLM result and applies it to the corresponding DiaryEvent, then kicks
+        /// off the recipient side if dual-POV is active.
+        /// </summary>
         private void ApplyLlmResult(LlmGenerationResult result)
         {
             if (result == null || string.IsNullOrWhiteSpace(result.eventId))
@@ -930,6 +1034,10 @@ namespace PawnDiary
             QueueRecipientAfterInitiatorResult(diaryEvent, result);
         }
 
+        /// <summary>
+        /// After the initiator entry completes, either marks the recipient as failed (if the initiator failed)
+        /// or re-evaluates the sequential queue so the recipient can generate with the initiator's text as context.
+        /// </summary>
         private void QueueRecipientAfterInitiatorResult(DiaryEvent diaryEvent, LlmGenerationResult result)
         {
             if (!DualPovEnabled
@@ -956,6 +1064,10 @@ namespace PawnDiary
             QueueSequentialPairwiseRewrite(diaryEvent);
         }
 
+        /// <summary>
+        /// Checks whether the pawn for a given POV role in an event has diary generation enabled,
+        /// resolving the pawn via its saved diary record.
+        /// </summary>
         private bool DiaryGenerationEnabledFor(DiaryEvent diaryEvent, string povRole)
         {
             // DiaryEvents store pawn IDs, not Pawn instances, so queue-time checks resolve through
@@ -969,6 +1081,9 @@ namespace PawnDiary
             return FindDiaryByPawnId(pawnId)?.diaryGenerationEnabled ?? true;
         }
 
+        /// <summary>
+        /// Resolves the LLM persona rule string for a given POV in an event, falling back to the XML default.
+        /// </summary>
         private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole)
         {
             // Missing records fall back to the XML default persona, which also covers old saves.
@@ -977,6 +1092,9 @@ namespace PawnDiary
             return DiaryPersonas.RuleFor(diary?.personaDefName);
         }
 
+        /// <summary>
+        /// Returns the pawn ID for a given POV role in a DiaryEvent (initiator or recipient).
+        /// </summary>
         private static string PawnIdForRole(DiaryEvent diaryEvent, string povRole)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
@@ -997,6 +1115,9 @@ namespace PawnDiary
             return null;
         }
 
+        /// <summary>
+        /// Locates a DiaryEvent by its unique ID.
+        /// </summary>
         private DiaryEvent FindEvent(string eventId)
         {
             if (string.IsNullOrWhiteSpace(eventId) || diaryEvents == null)
@@ -1015,6 +1136,9 @@ namespace PawnDiary
             return null;
         }
 
+        /// <summary>
+        /// Looks up a pawn's diary record by Pawn instance; optionally creates one if missing.
+        /// </summary>
         private PawnDiaryRecord FindDiary(Pawn pawn, bool createIfMissing)
         {
             if (pawn == null)
@@ -1048,6 +1172,9 @@ namespace PawnDiary
             return diary;
         }
 
+        /// <summary>
+        /// Looks up a diary record by pawn ID string (no creation).
+        /// </summary>
         private PawnDiaryRecord FindDiaryByPawnId(string pawnId)
         {
             if (string.IsNullOrWhiteSpace(pawnId) || diaries == null)
@@ -1067,6 +1194,9 @@ namespace PawnDiary
             return null;
         }
 
+        /// <summary>
+        /// Migrates old saves: ensures a persona is assigned even if the Def was removed or never set.
+        /// </summary>
         private static void EnsurePawnDiaryDefaults(PawnDiaryRecord diary)
         {
             if (diary == null)
@@ -1081,25 +1211,40 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Singleton empty list returned when a pawn has no diary entries, avoiding per-call allocations.
+        /// </summary>
         private static class EmptyEntries
         {
             public static readonly IReadOnlyList<DiaryEntryView> List = new List<DiaryEntryView>();
         }
 
+        /// <summary>
+        /// Accumulates small-talk moments between a specific pair of pawns until the batch window
+        /// expires or the max event count is reached, then produces a single merged DiaryEvent.
+        /// </summary>
         private class PendingSmallTalkBatch
         {
+            // Live Pawn references — only valid during the current game session (not saved).
             public Pawn initiator;
             public Pawn recipient;
+            // Saved-safe IDs used when flushing after a Pawn reference may have become invalid.
             public string initiatorPawnId;
             public string recipientPawnId;
+            // Tick range over which the batch accumulated lines.
             public int firstTick;
             public int lastTick;
+            // The defName/label of the first interaction in the batch, used as the event label
+            // when the batch contains only one entry.
             public string firstDefName;
             public string firstLabel;
+            // The LLM instruction carried over from the first interaction in the batch.
             public string instruction;
+            // Per-POV line accumulators — each small-talk moment appends one line per POV.
             public readonly List<string> initiatorLines = new List<string>();
             public readonly List<string> recipientLines = new List<string>();
 
+            /// <summary>Number of small-talk moments accumulated so far.</summary>
             public int Count
             {
                 get

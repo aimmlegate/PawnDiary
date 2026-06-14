@@ -10,34 +10,57 @@ using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// RimWorld mod entry point. Manages the settings dialog, model discovery,
+    /// and interaction-group configuration for the Pawn Diary mod.
+    /// </summary>
     public class PawnDiaryMod : Mod
     {
+        /// <summary>Shared settings instance available throughout the mod.</summary>
         public static PawnDiarySettings Settings;
 
+        // Model IDs retrieved from the remote endpoint via FetchModels().
         private readonly List<string> fetchedModels = new List<string>();
+        // Incremented on each FetchModels call so stale async results are discarded.
         private int fetchGeneration;
+        // True while an async model-list request is in flight; disables the button.
         private bool isFetchingModels;
+        // Human-readable status line shown below the Fetch button.
         private string fetchStatus = "Models not fetched.";
+        // DefName of the interaction group currently selected in the instruction editor.
         private string selectedGroupKey;
+        // Scroll position for the settings window scroll view.
         private Vector2 settingsScrollPosition;
+        // Ephemeral text buffer for the model-name text field (decouples editing from Settings).
         private string modelNameEditBuffer;
+        // Ephemeral text buffer for the per-group instruction text area.
         private string instructionEditBuffer;
+        // Tracks which group instructionEditBuffer belongs to; when the selected group
+        // changes the buffer is refreshed from settings to avoid stale edits.
         private string instructionEditGroupKey;
 
+        /// <summary>
+        /// Initializes the mod, loading persisted settings from the save/config store.
+        /// </summary>
         public PawnDiaryMod(ModContentPack content) : base(content)
         {
             Settings = GetSettings<PawnDiarySettings>();
         }
 
+        /// <summary>Returns the title shown in the RimWorld mod-settings list.</summary>
         public override string SettingsCategory()
         {
             return "Pawn Diary";
         }
 
+        /// <summary>
+        /// Draws the full settings window: connection fields, model selector,
+        /// concurrency control, system prompt, and per-group instruction editor.
+        /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
             Rect outRect = inRect;
-            Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, 1500f);
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, 1500f); // 16px reserved for the scrollbar
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
             listing.Begin(viewRect);
@@ -97,6 +120,10 @@ namespace PawnDiary
             Settings.ClampValues();
         }
 
+        /// <summary>
+        /// Persists settings to disk and applies the current concurrency limit
+        /// to the shared LlmClient so it takes effect immediately.
+        /// </summary>
         public override void WriteSettings()
         {
             Settings.ClampValues();
@@ -104,6 +131,10 @@ namespace PawnDiary
             base.WriteSettings();
         }
 
+        /// <summary>
+        /// Draws a button that opens a floating menu of fetched model IDs,
+        /// allowing the user to pick one instead of typing it manually.
+        /// </summary>
         private void DrawModelSelector(Listing_Standard listing)
         {
             if (listing.ButtonText("Pick fetched model"))
@@ -127,6 +158,11 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Syncs the model-name edit buffer with the current setting value.
+        /// Replaces the buffer when it is uninitialized or the saved model
+        /// name changed externally (e.g. via the Pick menu or Reset button).
+        /// </summary>
         private void EnsureModelNameEditBuffer()
         {
             if (modelNameEditBuffer == null || (modelNameEditBuffer != Settings.modelName && !string.IsNullOrWhiteSpace(Settings.modelName)))
@@ -135,6 +171,10 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Draws per-group enable checkboxes and, for the currently selected group,
+        /// an editable instruction text area with save/restore buttons.
+        /// </summary>
         private void DrawInteractionGroupsEditor(Listing_Standard listing)
         {
             listing.Label("Events — enable groups and edit their diary prompt");
@@ -203,6 +243,10 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Refreshes the instruction edit buffer when the selected group changes,
+        /// so the text area always shows the correct group's instruction text.
+        /// </summary>
         private void EnsureInstructionEditBuffer(DiaryInteractionGroupDef selectedGroup)
         {
             if (selectedGroup == null)
@@ -221,6 +265,10 @@ namespace PawnDiary
             instructionEditBuffer = Settings.EditableInstructionForGroup(selectedGroup);
         }
 
+        /// <summary>
+        /// Returns the currently selected interaction group, falling back to
+        /// the first available group if the stored key is invalid or null.
+        /// </summary>
         private DiaryInteractionGroupDef SelectedGroup()
         {
             DiaryInteractionGroupDef group = InteractionGroups.ByKey(selectedGroupKey);
@@ -238,9 +286,14 @@ namespace PawnDiary
             return group;
         }
 
+        /// <summary>
+        /// Fetches the list of available model IDs from the configured endpoint
+        /// asynchronously. Uses a generation counter so stale results from
+        /// earlier (or reset) requests are discarded.
+        /// </summary>
         private async void FetchModels()
         {
-            int generation = ++fetchGeneration;
+            int generation = ++fetchGeneration; // capture current generation to detect stale completions
             isFetchingModels = true;
             fetchStatus = "Fetching models...";
 
@@ -283,8 +336,17 @@ namespace PawnDiary
         }
     }
 
+    /// <summary>
+    /// Static helpers to normalize endpoint URLs and build the
+    /// /models and /chat/completions paths expected by OpenAI-compatible APIs.
+    /// </summary>
     public static class EndpointUtility
     {
+        /// <summary>
+        /// Strips trailing slashes and any /chat/completions suffix so the
+        /// endpoint can be used as a clean base for path construction.
+        /// Falls back to the default endpoint when the input is empty.
+        /// </summary>
         public static string NormalizeBaseEndpoint(string endpoint)
         {
             if (string.IsNullOrWhiteSpace(endpoint))
@@ -302,24 +364,35 @@ namespace PawnDiary
             return normalized;
         }
 
+        /// <summary>Builds the full /models URL for model discovery.</summary>
         public static string BuildModelsUrl(string endpoint)
         {
             return NormalizeBaseEndpoint(endpoint) + "/models";
         }
 
+        /// <summary>Builds the full /chat/completions URL for LLM requests.</summary>
         public static string BuildChatCompletionsUrl(string endpoint)
         {
             return NormalizeBaseEndpoint(endpoint) + "/chat/completions";
         }
     }
 
+    /// <summary>
+    /// Async HTTP client that fetches available model IDs from an
+    /// OpenAI-compatible /models endpoint and parses the JSON response.
+    /// </summary>
     public static class ModelListClient
     {
+        // Shared HttpClient with no built-in timeout; per-request timeouts are set via CancellationTokenSource.
         private static readonly HttpClient Client = new HttpClient
         {
             Timeout = Timeout.InfiniteTimeSpan
         };
 
+        /// <summary>
+        /// Sends a GET request to the /models endpoint, authenticates with the
+        /// given API key, and returns a sorted, deduplicated list of model IDs.
+        /// </summary>
         public static async Task<List<string>> FetchModels(string endpoint, string apiKey, int timeoutSeconds)
         {
             using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
@@ -343,6 +416,10 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Extracts the "id" strings from the "data" array of an OpenAI-style
+        /// /models JSON response, returning distinct, sorted model IDs.
+        /// </summary>
         private static List<string> ParseModelIds(string json)
         {
             List<string> models = new List<string>();
@@ -376,6 +453,7 @@ namespace PawnDiary
             return models.Distinct().OrderBy(model => model).ToList();
         }
 
+        /// <summary>Truncates a string to 120 chars for display in error status messages.</summary>
         private static string TrimForStatus(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
