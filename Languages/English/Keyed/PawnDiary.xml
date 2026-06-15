@@ -71,7 +71,7 @@
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsHeader>Events — enable groups and edit their diary prompt</PawnDiary.Settings.EventsHeader>
-<PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
+  <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
   <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
   <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
   <PawnDiary.Settings.PromptForGroup>Prompt for: {0}</PawnDiary.Settings.PromptForGroup>

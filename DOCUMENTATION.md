@@ -141,12 +141,15 @@ LlmClient.Enqueue ─▶ (same pipeline)
 
 Two additional narrow hooks feed the same event pipeline:
 - `QualityUtility.SendCraftNotification` records **Masterwork** and **Legendary** crafted items
-  as solo events for the crafter (`tale=CraftedMasterwork` / `tale=CraftedLegendary`).
+  as solo events for the crafter (`tale=CraftedMasterwork` / `tale=CraftedLegendary`). Art is
+  skipped here — vanilla's `CraftedArt` tale already covers it, so this avoids a double entry.
 - `JobDriver_InstallRelic`'s completion action records the pawn who installs an ideology relic
   in a reliquary (`tale=RelicInstalled`).
 - `GameConditionManager.RegisterCondition` records **mood-affecting game conditions**
   (aurora, eclipse, psychic drone, toxic fallout, etc.) as solo events for each eligible
-  colonist on affected maps (`mood_event=<defName>`).
+  colonist on affected maps (`mood_event=<defName>`). Several of these (Eclipse, Aurora,
+  ToxicFallout, VolcanicWinter, Flashstorm) are *also* TaleDefs; the Tale hook skips any tale
+  whose defName matches a GameConditionDef, so each is recorded once here — never twice.
 
 **Background generation.** All LLM diary generation is driven by background ticks, never by
 UI actions. `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 seconds (120 ticks),
@@ -305,9 +308,11 @@ is recorded iff its group is enabled.
 | **Relics** (synthetic tale) | on | RelicInstalled |
 | **Work & achievements** (tale) | **off** | FinishedResearchProject, CompletedLongConstructionProject, GainedMasterSkill* |
 | **Anomaly horror** (tale) | on | StudiedEntity, MutatedMyArm, PerformedPsychicRitual, ClosedTheVoid, EmbracedTheVoid, DeathPall, UnnaturalDarkness, NoxiousHaze |
-| **Raids, disasters & colony events** (tale) | on | Raid, Infestation, ManhunterPack, ToxicFallout, Aurora, CaravanAmbushed*, LaunchedShip |
+| **Raids, disasters & colony events** (tale) | on | Raid, Infestation, ManhunterPack, MeteoriteImpact, ShipPartCrash, CaravanAmbushed*, LaunchedShip † |
 | **Quiet personal moments** (tale) | **off** | AttendedParty, Meditated, Prayed, ReadBook, Vomited, WalkedNaked, VisitedGrave |
 | **Other notable events** (tale) | **off** | any unmatched TaleDef |
+
+† Incidents that are also game conditions (Eclipse, Aurora, ToxicFallout, VolcanicWinter, Flashstorm) are recorded once via the **MoodEvent** domain, not as tales.
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
 `domain`, `defaultEnabled`, `important`, `combat`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
@@ -359,7 +364,8 @@ does not add a second surgery hook that would duplicate successful operations.
 **Synthetic tale-style events** cover vanilla moments that do not arrive as TaleDefs:
 - Masterwork and Legendary production is captured from `QualityUtility.SendCraftNotification`.
   Only the crafter receives a solo entry. These entries classify into the Tale domain using
-  synthetic defNames (`CraftedMasterwork`, `CraftedLegendary`).
+  synthetic defNames (`CraftedMasterwork`, `CraftedLegendary`). Art is excluded — it already
+  arrives as vanilla's `CraftedArt` tale, so recording it here too would double-log one sculpture.
 - Relic installation is captured from `JobDriver_InstallRelic`'s final action. Only the installer
   receives a solo entry (`RelicInstalled`). Relic discovery letters are colony-level and do not
   reliably name a pawn, so they are not used for diary ownership.

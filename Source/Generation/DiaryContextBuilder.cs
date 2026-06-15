@@ -922,7 +922,10 @@ namespace PawnDiary
         // pawn-specific factors (e.g. PsychicDrone targets one gender; PsychicSuppressor only
         // hurts the suppressed gender). Returns "positive", "negative", or "neutral" for use in
         // the gameContext mood_impact field and the event text.
-        public static string DetermineMoodImpact(GameCondition condition, Pawn pawn)
+        // conditionThoughtOffset is the pawn-independent offset from the condition's thoughts,
+        // computed once by the caller (GetMoodOffsetFromConditionThoughts scans the whole ThoughtDef
+        // database, so we pass it in rather than repeat the scan for every affected colonist).
+        public static string DetermineMoodImpact(GameCondition condition, Pawn pawn, float conditionThoughtOffset)
         {
             if (condition == null || condition.def == null || pawn == null)
             {
@@ -951,11 +954,11 @@ namespace PawnDiary
                 }
             }
 
-            // Check the condition's associated thought definitions for mood offsets. RimWorld's
-            // relationship is inverted from what you might expect: GameConditionDef does not hold
-            // thought references; instead, ThoughtDef has a `gameCondition` field that references
-            // the GameConditionDef it belongs to. We scan DefDatabase<ThoughtDef> for matches.
-            float bestOffset = GetMoodOffsetFromConditionThoughts(def);
+            // Combine the pawn-independent condition offset (precomputed by the caller) with this
+            // pawn's own active thoughts from the condition; the larger magnitude wins. RimWorld's
+            // relationship is inverted: GameConditionDef does not hold thought references; instead
+            // ThoughtDef has a `gameCondition` field that references the GameConditionDef it belongs to.
+            float bestOffset = conditionThoughtOffset;
             float pawnOffset = GetMoodOffsetFromPawnThoughts(condition, pawn);
             if (Mathf.Abs(pawnOffset) > Mathf.Abs(bestOffset))
             {
@@ -994,7 +997,7 @@ namespace PawnDiary
         // GameConditionDef via their `gameCondition` field, then sums the baseMoodEffect
         // across all stages. RimWorld's relationship is inverted: ThoughtDef points to
         // GameConditionDef, not vice versa. Returns 0 if no matching thoughts are found.
-        private static float GetMoodOffsetFromConditionThoughts(GameConditionDef conditionDef)
+        public static float GetMoodOffsetFromConditionThoughts(GameConditionDef conditionDef)
         {
             if (conditionDef == null)
             {

@@ -11,7 +11,7 @@ using Verse;
 
 namespace PawnDiary
 {
-// Which kind of game event a group classifies. Interaction groups match InteractionDefs
+    // Which kind of game event a group classifies. Interaction groups match InteractionDefs
     // (social log entries); MentalState groups match MentalStateDefs (breaks, social fights);
     // Tale groups match TaleDefs (RimWorld's notable-history events); MoodEvent groups match
     // GameConditionDefs that affect colonist mood (aurora, eclipse, psychic drone, etc.).

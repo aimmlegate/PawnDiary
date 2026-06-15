@@ -477,7 +477,6 @@
       <li>FinishedResearchProject</li>
       <li>CompletedLongConstructionProject</li>
       <li>CompletedLongCraftingProject</li>
-      <li>CraftedArt</li>
       <li>MinedValuable</li>
       <li>GainedMasterSkillWithoutPassion</li>
       <li>GainedMasterSkillWithPassion</li>
@@ -570,7 +569,7 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
-<PawnDiary.DiaryInteractionGroupDef>
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>taleother</defName>
     <label>Other notable events</label>
     <order>390</order>
