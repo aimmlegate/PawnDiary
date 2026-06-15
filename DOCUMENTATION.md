@@ -54,9 +54,9 @@ PawnDiary/
 │  └─ Properties/ Libs/
 ├─ prompt-lab/                  offline prompt harness (Node)
 ├─ skills/                      shared agent skills (tool-agnostic)
-├─ AGENTS.md                    OpenCode-focused agent wrapper + repo rules
-├─ CLAUDE.md                    Claude Code wrapper to shared skill
-├─ CODEX.md                     Codex wrapper to shared skill
+├─ AGENTS.md                    OpenCode wrapper (shared skill + repo rules)
+├─ CLAUDE.md                    Claude Code wrapper (shared skill)
+├─ CODEX.md                     Codex wrapper (shared skill)
 └─ *.md                         docs (this file, AGENTS.md, CSHARP-NOTES.md, README.md)
 ```
 
