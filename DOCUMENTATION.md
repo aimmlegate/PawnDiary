@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-14 (documentation parity fixes)_
+_Last updated: 2026-06-15 (agent guidance doc rename)_
 
 ---
 
@@ -53,7 +53,7 @@ PawnDiary/
 │  ├─ Core/ Models/ Generation/ Defs/ Patches/ UI/ Settings/ Util/
 │  └─ Properties/ Libs/
 ├─ prompt-lab/                  offline prompt harness (Node)
-└─ *.md                         docs (this file, CLAUDE.md, CSHARP-NOTES.md, README.md)
+└─ *.md                         docs (this file, AGENTS.md, CSHARP-NOTES.md, README.md)
 ```
 
 The table lists files by name; all `.cs` live under `Source/<area>/` per the tree above.
@@ -378,6 +378,10 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 ---
 
 ## 12. Changelog
+
+- **2026-06-15 (agent guidance doc rename)**
+  - Replaced `CLAUDE.md` with `AGENTS.md` so shared repository agent rules are tool-agnostic.
+  - Updated the file-map docs to reference `AGENTS.md`.
 
 - **2026-06-14 (documentation parity fixes)**
   - Corrected the `dualPovGeneration` settings description to match implementation:
