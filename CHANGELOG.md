@@ -4,7 +4,6 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
-<<<<<<< HEAD
 - **2026-06-15 (colony arrival first entries)**
   - Added neutral, persona-independent first entries that describe how a pawn joined the colony,
     using the new `DiaryPromptDef.arrivalDescriptionInstruction`.
@@ -28,7 +27,6 @@ doc itself describes only "what happens now".
   - Death descriptions are terminal for that pawn: later-tick events are not added to the pawn's
     visible diary, are skipped by pending-generation scans, and are blocked by queue-time generation
     gates.
-=======
 - **2026-06-15 (dev-gated diary tab controls)**
   - Hid the per-pawn persona picker from the normal Diary tab. RimWorld dev mode now shows a
     "Show persona settings" toggle that reveals the manual persona picker only when needed.
@@ -57,7 +55,6 @@ doc itself describes only "what happens now".
     `RandomStartingPersona` is retained as the fallback, and `DiaryPersonaDef.themes` defaults to
     an empty list so old/partial XML never NullReferences. `DOCUMENTATION.md` (per-pawn persona
     section) updated to match.
->>>>>>> ad008bf363491d0d2b444ec84853b43680d29d3c
 - **2026-06-15 (expanded persona catalog with 10 voice-driven presets)**
   - Added 10 new `DiaryPersonaDef`s to `1.6/Defs/DiaryPersonaDefs.xml`, growing the catalog from
     12 to 22. The new presets are distinguished by a distinctive *voice or worldview* (a way of
