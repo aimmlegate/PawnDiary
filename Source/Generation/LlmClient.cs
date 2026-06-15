@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Text;
 using System.Threading.Tasks;
+using Verse;
 
 namespace PawnDiary
 {
@@ -234,12 +235,14 @@ namespace PawnDiary
             string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId);
             if (!PendingKeys.TryAdd(pendingKey, 0)) // deduplicate: same event+role+session is already queued
             {
+                LogDebug("Skipped duplicate queued request event=" + request.eventId + " role=" + request.povRole + " session=" + request.sessionId);
                 return;
             }
 
             // Capture this lane's gate now so a later BeginSession/ApplyConcurrency that swaps in
             // fresh gates can't cause this worker to release the wrong semaphore.
             SemaphoreSlim gate = GetOrCreateGate(request);
+            LogDebug("Enqueued request event=" + request.eventId + " role=" + request.povRole + " primary=" + LaneLabel(request));
             Task.Run(() => SendWithRetries(request, gate));
         }
 
@@ -290,6 +293,10 @@ namespace PawnDiary
             try
             {
                 List<ApiEndpointConfig> targets = BuildAttemptTargets(request);
+                LogDebug(
+                    "Attempt order event=" + request.eventId
+                    + " role=" + request.povRole
+                    + " lanes=[" + LaneList(targets) + "]");
 
                 for (int t = 0; t < targets.Count; t++)
                 {
@@ -299,6 +306,7 @@ namespace PawnDiary
                     request.endpointUrl = target.url;
                     request.apiKey = target.apiKey;
                     request.modelName = target.model;
+                    string laneLabel = LaneLabel(request);
 
                     // Reuse the gate captured at enqueue for the first lane; create per-lane gates
                     // for failover lanes. Each is acquired and released as the same reference here.
@@ -322,17 +330,21 @@ namespace PawnDiary
                         // wasting a slot on a result nobody will read.
                         if (request.sessionId != Interlocked.Read(ref currentSessionId))
                         {
+                            LogDebug("Dropped stale request before attempt event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
                             return;
                         }
 
+                        LogDebug("Trying lane " + (t + 1) + "/" + targets.Count + " event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
                         LaneResult outcome = await TryLane(request);
                         if (outcome.Cancelled)
                         {
+                            LogDebug("Cancelled request event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
                             return; // session cancelled mid-flight: drop quietly
                         }
 
                         if (outcome.Success)
                         {
+                            LogDebug("Lane succeeded event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
                             Completed.Enqueue(new LlmGenerationResult
                             {
                                 eventId = request.eventId,
@@ -347,6 +359,7 @@ namespace PawnDiary
                         }
 
                         lastError = outcome.Error; // this lane failed — fall through to the next one
+                        LogDebug("Lane failed event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel + " error=" + TrimForLog(outcome.Error));
                     }
                     finally
                     {
@@ -368,6 +381,7 @@ namespace PawnDiary
                     success = false,
                     error = lastError ?? "Unknown network error."
                 });
+                LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(lastError));
             }
             finally
             {
@@ -462,6 +476,7 @@ namespace PawnDiary
                 {
                     if (candidate == null || string.IsNullOrWhiteSpace(candidate.url) || string.IsNullOrWhiteSpace(candidate.model))
                     {
+                        LogDebug("Skipped blank failover lane while building attempt order event=" + request.eventId + " role=" + request.povRole);
                         continue;
                     }
 
@@ -479,6 +494,10 @@ namespace PawnDiary
                     if (!duplicate)
                     {
                         targets.Add(new ApiEndpointConfig(candidate.url, candidate.apiKey, candidate.model));
+                    }
+                    else
+                    {
+                        LogDebug("Skipped duplicate failover lane while building attempt order event=" + request.eventId + " role=" + request.povRole + " lane=" + LaneLabel(candidate));
                     }
                 }
             }
@@ -689,6 +708,55 @@ namespace PawnDiary
         private static string PendingKey(string eventId, string povRole, long sessionId)
         {
             return sessionId + "|" + eventId + "|" + povRole;
+        }
+
+        /// <summary>
+        /// Writes one-line LLM lane diagnostics to the RimWorld log. These are intentionally
+        /// English debug logs and never include API keys.
+        /// </summary>
+        private static void LogDebug(string message)
+        {
+            Log.Message("[PawnDiary debug] " + message);
+        }
+
+        private static string LaneList(List<ApiEndpointConfig> lanes)
+        {
+            if (lanes == null || lanes.Count == 0)
+            {
+                return "none";
+            }
+
+            List<string> labels = new List<string>();
+            foreach (ApiEndpointConfig lane in lanes)
+            {
+                labels.Add(LaneLabel(lane));
+            }
+
+            return string.Join(" | ", labels.ToArray());
+        }
+
+        private static string LaneLabel(ApiEndpointConfig lane)
+        {
+            if (lane == null)
+            {
+                return "<null>";
+            }
+
+            return (string.IsNullOrWhiteSpace(lane.model) ? "<blank-model>" : lane.model)
+                + " @ "
+                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildChatCompletionsUrl(lane.url));
+        }
+
+        private static string LaneLabel(LlmGenerationRequest request)
+        {
+            if (request == null)
+            {
+                return "<null>";
+            }
+
+            return (string.IsNullOrWhiteSpace(request.modelName) ? "<blank-model>" : request.modelName)
+                + " @ "
+                + (string.IsNullOrWhiteSpace(request.endpointUrl) ? "<blank-url>" : EndpointUtility.BuildChatCompletionsUrl(request.endpointUrl));
         }
 
         /// <summary>Drains all results from the completed queue, discarding them. Used on session transitions.</summary>

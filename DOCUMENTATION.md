@@ -353,6 +353,10 @@ enabled), both editable from the tab (persona via a float-menu picker, generatio
   lane. Only when **every** lane fails is a failure reported. On success the result reports which
   lane actually produced the text, and `ApplyLlmResult` updates the recorded LLM meta so a paired
   recipient pins to the model that really worked.
+- **Debug lane logs:** each queued request writes `[PawnDiary debug]` lines to the RimWorld log:
+  configured vs active lane counts, selected primary lane and reason, failover order, skipped
+  blank/duplicate lanes, each lane attempt, success lane, and all-lanes-failed summaries. API keys
+  are never logged.
 - **Stuck-request purge:** once a request acquires a lane's slot, a hard deadline (`timeoutSeconds`)
   covers that **lane attempt including its retries**. When it fires the lane is abandoned (and
   failover moves on); if it was the last lane, the entry is reported as

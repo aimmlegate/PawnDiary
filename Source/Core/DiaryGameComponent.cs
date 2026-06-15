@@ -1101,13 +1101,22 @@ namespace PawnDiary
             // lanes (parallelism); the recipient half of a paired event reuses the initiator's lane
             // so a sequential pair stays on one model.
             List<ApiEndpointConfig> targets = PawnDiaryMod.Settings.ActiveEndpoints();
+            LogApiLaneConfiguration(PawnDiaryMod.Settings, targets);
             if (targets.Count == 0)
             {
                 diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoApiConfigured".Translate());
                 return;
             }
 
-            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets);
+            string selectionReason;
+            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, out selectionReason);
+            List<ApiEndpointConfig> failoverTargets = BuildFailoverTargets(targets, target);
+            LogApiDebug(
+                "Queue event=" + diaryEvent.eventId
+                + " role=" + povRole
+                + " primary=" + LaneLabel(target)
+                + " reason=" + selectionReason
+                + " failovers=[" + LaneList(failoverTargets) + "]");
 
             diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildChatCompletionsUrl(target.url), target.model);
             diaryEvent.MarkQueued(povRole);
@@ -1122,7 +1131,7 @@ namespace PawnDiary
                 modelName = target.model,
                 apiKey = target.apiKey,
                 // The other configured lanes, tried in order if this one errors ("use next model").
-                failoverTargets = BuildFailoverTargets(targets, target),
+                failoverTargets = failoverTargets,
                 timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
                 maxTokens = PawnDiaryMod.Settings.maxTokens,
                 temperature = PawnDiaryMod.Settings.temperature
@@ -1135,7 +1144,7 @@ namespace PawnDiary
         /// by the endpoint+model recorded on the event — so the sequential pair shares one model.
         /// Everything else takes the next lane in round-robin order to spread load across APIs.
         /// </summary>
-        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets)
+        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets, out string reason)
         {
             // Sequential pinning: keep the recipient on the initiator's lane when paired mode ran
             // the initiator first and recorded which endpoint+model it used (after failover, the
@@ -1151,13 +1160,21 @@ namespace PawnDiary
                         if (string.Equals(EndpointUtility.BuildChatCompletionsUrl(candidate.url), initiatorEndpoint, StringComparison.OrdinalIgnoreCase)
                             && string.Equals(candidate.model, initiatorModel, StringComparison.Ordinal))
                         {
+                            reason = "recipient pinned to initiator lane";
                             return candidate;
                         }
                     }
+
+                    LogApiDebug(
+                        "Recipient pin missed for event=" + diaryEvent.eventId
+                        + " initiatorLane=" + initiatorModel + " @ " + initiatorEndpoint
+                        + "; falling back to round-robin");
                 }
             }
 
-            return targets[LlmClient.NextRoundRobinIndex() % targets.Count];
+            int index = LlmClient.NextRoundRobinIndex() % targets.Count;
+            reason = "round-robin index " + index + " of " + targets.Count;
+            return targets[index];
         }
 
         /// <summary>
@@ -1176,6 +1193,54 @@ namespace PawnDiary
             }
 
             return failovers;
+        }
+
+        /// <summary>
+        /// Writes one-line API lane diagnostics to the RimWorld log. These are intentionally
+        /// English debug logs, not player-facing UI strings; never include API keys here.
+        /// </summary>
+        private static void LogApiLaneConfiguration(PawnDiarySettings settings, List<ApiEndpointConfig> active)
+        {
+            int configuredCount = settings?.apiEndpoints?.Count ?? 0;
+            int activeCount = active?.Count ?? 0;
+            LogApiDebug(
+                "Configured API lanes=" + configuredCount
+                + ", active lanes=" + activeCount
+                + (configuredCount == activeCount ? string.Empty : " (rows with blank url/model are skipped)")
+                + "; active=[" + LaneList(active) + "]");
+        }
+
+        private static void LogApiDebug(string message)
+        {
+            Log.Message("[PawnDiary debug] " + message);
+        }
+
+        private static string LaneList(List<ApiEndpointConfig> lanes)
+        {
+            if (lanes == null || lanes.Count == 0)
+            {
+                return "none";
+            }
+
+            List<string> labels = new List<string>();
+            foreach (ApiEndpointConfig lane in lanes)
+            {
+                labels.Add(LaneLabel(lane));
+            }
+
+            return string.Join(" | ", labels.ToArray());
+        }
+
+        private static string LaneLabel(ApiEndpointConfig lane)
+        {
+            if (lane == null)
+            {
+                return "<null>";
+            }
+
+            return (string.IsNullOrWhiteSpace(lane.model) ? "<blank-model>" : lane.model)
+                + " @ "
+                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildChatCompletionsUrl(lane.url));
         }
 
 

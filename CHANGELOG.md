@@ -4,6 +4,11 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (multi-model debug logs)**
+  - Added `[PawnDiary debug]` RimWorld log lines around API lane selection and LLM failover:
+    configured vs active lane counts, selected primary model, failover order, skipped blank/duplicate
+    lanes, each attempted model, success lane, and all-lanes-failed summaries.
+
 - **2026-06-15 (starting persona randomization)**
   - New pawn diary records now start with a random `DiaryPersonaDef` instead of always using the
     configured default persona. Existing saves and existing pawn records keep their saved persona.
