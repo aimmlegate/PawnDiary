@@ -1381,7 +1381,7 @@ namespace PawnDiary
             {
                 pawnId = pawnId,
                 pawnName = pawn.LabelShortCap,
-                personaDefName = DiaryPersonas.Default.defName,
+                personaDefName = DiaryPersonas.RandomStartingPersona().defName,
                 diaryGenerationEnabled = true
             };
             diaries.Add(diary);

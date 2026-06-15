@@ -4,6 +4,10 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (starting persona randomization)**
+  - New pawn diary records now start with a random `DiaryPersonaDef` instead of always using the
+    configured default persona. Existing saves and existing pawn records keep their saved persona.
+
 - **2026-06-15 (subtle diary model tag)**
   - Diary cards now show the generating model id as a tiny, low-contrast note at the bottom-right
     of each generated entry, making multi-model provenance visible without drawing attention.

@@ -53,6 +53,21 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Picks the initial persona for a brand-new pawn diary record. Existing records keep
+        /// their saved persona; this is only used the first time a pawn enters the diary system.
+        /// </summary>
+        public static DiaryPersonaDef RandomStartingPersona()
+        {
+            IReadOnlyList<DiaryPersonaDef> personas = All;
+            if (personas == null || personas.Count == 0)
+            {
+                return Default ?? Fallback;
+            }
+
+            return personas[Rand.Range(0, personas.Count)] ?? Default ?? Fallback;
+        }
+
+        /// <summary>
         /// Looks up a persona by defName, returning null if not found or the name is blank.
         /// </summary>
         public static DiaryPersonaDef ForDefName(string defName)

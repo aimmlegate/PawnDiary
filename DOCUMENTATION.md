@@ -185,6 +185,8 @@ All paths share the same per-event context fields and the system prompt.
 - Each `PawnDiaryRecord` saves `personaDefName` and `diaryGenerationEnabled`.
 - Persona options are `DiaryPersonaDef` XML Defs in `1.6/Defs/DiaryPersonaDefs.xml`, with
   `DiaryPromptDef.defaultPersonaDefName` providing the fallback/default (`DiaryPersona_StoicSurvivor`).
+- New pawn diary records pick a random loaded persona as their starting voice. Existing records
+  keep their saved persona; missing/invalid saved persona values fall back to the default above.
 - The Diary tab creates a pawn's record on first edit/open and shows the generation
   checkbox plus a persona picker (a float-menu of every `DiaryPersonaDef`) above the entries.
 - Disabled generation does **not** delete or skip events; it only prevents future LLM requests for
