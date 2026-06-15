@@ -7,6 +7,7 @@ doc itself describes only "what happens now".
 - **2026-06-15 (subtle diary model tag)**
   - Diary cards now show the generating model id as a tiny, low-contrast note at the bottom-right
     of each generated entry, making multi-model provenance visible without drawing attention.
+  - Increased the model tag's line box so the tiny text is not clipped by RimWorld's UI font metrics.
 
 - **2026-06-15 (automatic failover to the next model)**
   - On an error, a request now **falls over to the next configured API/model** instead of failing.

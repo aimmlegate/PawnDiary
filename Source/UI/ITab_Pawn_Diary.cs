@@ -28,8 +28,8 @@ namespace PawnDiary
         private const float LinkedEntryLabelHeight = 20f;
         private const float LinkedEntryTextHeight = 36f;
         private const float LinkedEntryTotalHeight = 64f;
-        private const float ModelNameTopPadding = 2f;
-        private const float ModelNameHeight = 14f;
+        private const float ModelNameTopPadding = 4f;
+        private const float ModelNameHeight = 20f;
 
         private static readonly Color ImportantColor = new Color(0.96f, 0.62f, 0.22f);
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
@@ -428,7 +428,7 @@ namespace PawnDiary
             Color oldColor = GUI.color;
 
             Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.UpperRight;
+            Text.Anchor = TextAnchor.MiddleRight;
             GUI.color = new Color(0.45f, 0.48f, 0.50f, 0.62f);
             Widgets.LabelFit(rect, modelName);
 
