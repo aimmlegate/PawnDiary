@@ -2,7 +2,7 @@
 //   DiaryEntry     — a LEGACY entry persisted in old saves. New events use DiaryEvent instead;
 //                    this stays only so older saves still load.
 //   DiaryEntryView — the read-only display model the UI renders (text + status + debug block).
-// IExposable/ExposeData is RimWorld's save/load hook; see CSHARP-NOTES.md ("IExposable").
+// IExposable/ExposeData is RimWorld's save/load hook; see AGENTS.md ("IExposable").
 using System;
 using Verse;
 

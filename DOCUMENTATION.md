@@ -1,11 +1,14 @@
 # Pawn Diary — Architecture & Behavior
 
-> **Maintenance note:** This file is the living design doc for the mod. Whenever the
-> mod's behavior or structure changes, update the relevant section **and** add a line to
-> the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
-> happens now".
+> **Maintenance note:** This file is the living design doc for the mod — it describes "what
+> happens now". Whenever the mod's behavior or structure changes, update the relevant section
+> here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
+<<<<<<< HEAD
 _Last updated: 2026-06-15 (shared agent skill scaffolding)_
+=======
+_Last updated: 2026-06-15 (docs restructuring)_
+>>>>>>> origin/main
 
 ---
 
@@ -53,11 +56,15 @@ PawnDiary/
 │  ├─ Core/ Models/ Generation/ Defs/ Patches/ UI/ Settings/ Util/
 │  └─ Properties/ Libs/
 ├─ prompt-lab/                  offline prompt harness (Node)
+<<<<<<< HEAD
 ├─ skills/                      shared agent skills (tool-agnostic)
 ├─ AGENTS.md                    OpenCode wrapper (shared skill + repo rules)
 ├─ CLAUDE.md                    Claude Code wrapper (shared skill)
 ├─ CODEX.md                     Codex wrapper (shared skill)
 └─ *.md                         docs (this file, AGENTS.md, CSHARP-NOTES.md, README.md)
+=======
+└─ *.md                         docs (this file, AGENTS.md, CHANGELOG.md, README.md)
+>>>>>>> origin/main
 ```
 
 The table lists files by name; all `.cs` live under `Source/<area>/` per the tree above.
@@ -86,11 +93,16 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's diary and exposes that pawn's persona/generation controls. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
 | `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
+<<<<<<< HEAD
 | `CSHARP-NOTES.md` | Primer mapping the C#/RimWorld idioms used here (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …) to JS/TS analogies. |
 | `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
 | `AGENTS.md` | OpenCode-oriented wrapper with repo constraints plus skill-routing rules. |
 | `CLAUDE.md` | Thin Claude Code wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
 | `CODEX.md` | Thin Codex wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
+=======
+| `AGENTS.md` | Guide for code agents: the working rules (docs, localization, comments, build) **and** the C#/RimWorld→JS/TS primer (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …). Start here. |
+| `CHANGELOG.md` | Dated history of every change; add a line with each change. |
+>>>>>>> origin/main
 | `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
 ---
@@ -422,6 +434,7 @@ values, and (optionally) add `DefInjected` files for the persona/group/prompt De
 
 ## 13. Changelog
 
+<<<<<<< HEAD
 - **2026-06-15 (shared skill setup for Claude/Codex/OpenCode)**
   - Added a shared repo skill at `skills/pawndiary-engineering/SKILL.md` as the source-of-truth workflow (scope-first, Mono constraints, minimal edits, build validation, doc updates).
   - Added thin wrappers `CLAUDE.md` and `CODEX.md` that point to the shared skill and existing repo rules.
@@ -613,3 +626,6 @@ values, and (optionally) add `DefInjected` files for the persona/group/prompt De
   - **UI rework:** moved the diary from a gizmo + window to an **inspector tab next to the
     Log tab** (`ITab_Pawn_Diary`); **removed the colony/neutral events view**.
   - Added this documentation file.
+=======
+The full dated history lives in [`CHANGELOG.md`](CHANGELOG.md) (repo root). Add a dated entry there with every change.
+>>>>>>> origin/main
