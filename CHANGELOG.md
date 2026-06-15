@@ -4,6 +4,26 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (prompt improvements for small local models 6B–31B)**
+  - Simplified the default system prompt from 5 rules (~250 words) to 3 rules (~100 words).
+    Smaller models absorb fewer rules more effectively. Added explicit "One to three sentences."
+  - Enriched all 12 persona rules with emotional triggers, sentence openers, and stylistic tips.
+    Each persona now provides concrete guidance (e.g., "Opens with blunt observations about the
+    situation. Uses short declarative sentences.") rather than just a one-line description.
+  - Added `atmosphere:` prompt field—a short emotional anchor (e.g., "tense hostility",
+    "bright warmth") combining mood bucket + opinion bucket. Helps small models establish tone
+    without complex inference.
+  - Reframed all interaction group `instruction` fields to be more cinematic/evocative "scene"
+    descriptions (e.g., "a spark between two people" instead of "romantic moment between the
+    pawns"). Primes the model for emotional texture rather than mechanical categorization.
+  - Reduced default `maxTokens` from 160 to 100 for faster generation on small local models.
+  - Added localization keys for atmosphere words (PawnDiary.Atmosphere.Mood.*, 
+    PawnDiary.Atmosphere.Opinion.*).
+  - Updated all prompt-lab fixtures to match the new format: reduced max_tokens, added atmosphere
+    field, updated persona field to use enriched rules, and updated instruction field to use new
+    scene-like phrasing.
+  - Updated hardcoded persona fallback in `DiaryPersonaDef.cs` to match XML.
+
 - **2026-06-15 (skip ProblemCauser game conditions)**
   - Commented out ProblemCauser handling: `GameConditionStartPatch` now skips conditions
     whose def is `ProblemCauser` or whose type is `GameCondition_ProblemCauser`.

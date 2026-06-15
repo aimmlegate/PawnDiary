@@ -57,6 +57,8 @@ namespace PawnDiary
             // Persona is a writing-style rule from the pawn's saved preset, not a gameplay fact.
             AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
+            // Atmosphere is a short emotional anchor combining mood + relationship context.
+            AppendField(lines, "atmosphere", diaryEvent.AtmosphereForRole(povRole));
             AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
             AppendField(lines, "my last opener (not repeat)", diaryEvent.LastOpenerForRole(povRole));
             // Burning passion only for important events (not chit chat etc.)
@@ -92,6 +94,8 @@ namespace PawnDiary
             // Solo events use the same persona field as pairwise entries for prompt-lab parity.
             AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
+            // Atmosphere is a short emotional anchor for the model.
+            AppendField(lines, "atmosphere", diaryEvent.initiatorAtmosphere);
             AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
             AppendField(lines, "my last opener (not repeat)", diaryEvent.initiatorLastOpener);
             // Burning passion only for important events (not chit chat etc.)

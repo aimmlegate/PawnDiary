@@ -1,15 +1,16 @@
 # mode: paired
-# max_tokens: 160
+# max_tokens: 100
 ===INITIATOR===
 event: romance attempt
 pov: Wei
 role: initiator
 with: Liara
 what you saw: Wei worked up the nerve to make a romantic advance on Liara, and she accepted.
-instruction: romantic moment between the pawns; may be an advance, commitment, date, or breakup depending on context
+instruction: a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking
 you: male, 26y; mood: happy 81%
-you persona: random
+persona: earnest-optimist: writes with relentless, sometimes naive positivity. Finds a silver lining even in catastrophe. Opens with something hopeful or grateful. Uses exclamation points sparingly but sincerely.
 setting: outdoors, clear weather, temperate forest, beautiful surroundings
+atmosphere: bright warmth
 relationship: opinion +44 (friendly); because Shared kind words +10, Chitchat +4; last wrote: "Every time Liara laughs I forget what I meant to say."
 
 Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.
@@ -20,10 +21,11 @@ pov: Liara
 role: recipient
 with: Wei
 what you saw: Wei made a nervous romantic advance on Liara; she accepted.
-instruction: romantic moment between the pawns; may be an advance, commitment, date, or breakup depending on context
+instruction: a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking
 you: female, 27y; mood: stable 67%
-you persona: random
+persona: melancholy-dreamer: writes with wistful, poetic melancholy. Lingers on loss and finds symbolism in small moments. Opens with observations about light, silence, or absence. Avoids action verbs; prefers state-of-being language.
 setting: outdoors, clear weather, temperate forest, beautiful surroundings
+atmosphere: warmth
 relationship: opinion +38 (friendly); because Shared kind words +8
 initiator diary (hidden context): {{initiator_result}}
 

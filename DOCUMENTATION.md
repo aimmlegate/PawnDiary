@@ -4,7 +4,7 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-15 (mood-event game conditions for diary entries)_
+_Last updated: 2026-06-15 (prompt improvements for small local models 6B–31B)_
 
 ---
 
@@ -76,7 +76,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
-| `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, relationship/continuity, opinions) + formatting/bucket helpers. |
+| `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
 | `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
@@ -221,7 +221,12 @@ Prompts are assembled line-by-line via `AppendField`, which **drops any field th
 or a placeholder** (`none` / `n/a` / `unknown`). Builders are written to return empty when
 there's nothing worth saying, so the model never spends tokens on noise:
 - **Persona**: the selected writing-style rule is sent as a `persona:` line, separate from
-  gameplay facts such as mood and relationship.
+  gameplay facts such as mood and relationship. Each persona now includes emotional triggers,
+  sentence openers, and stylistic tips (e.g., "Opens with blunt observations").
+- **Atmosphere** (`BuildAtmosphere`): a short emotional anchor combining the pawn's mood bucket
+  and their opinion-based relationship tone (e.g., "tense friction", "bright warmth", "bleak
+  hostility"). Helps small models establish emotional tone without complex inference. Empty
+  for neutral moods and neutral opinions.
 - **Pawn summary** (`BuildPawnSummary`): compact profile — `sex=`, `age=`, `mood=` (bucket + %),
   `health=` (empty when healthy), `low_capacities=` (only Moving/Talking/Sight/Hearing when
   below 80%, using localized keyword labels like "impaired movement"), `thoughts=` (exactly one
@@ -492,8 +497,8 @@ stray English biases the model toward writing in English when the player runs a 
 
 **Kept in English on purpose — a stable machine "schema", not prose:**
 - The structured prompt **field labels** in `DiaryPromptBuilder` (`event:`, `pov:`, `role:`,
-  `with:`, `what you saw:`, `what happened:`, `you:`, `persona:`, `setting:`, `relationship:`,
-  `my last opener (not repeat):`, `burning passion:`, `instruction:`,
+  `with:`, `what you saw:`, `what happened:`, `you:`, `persona:`, `setting:`, `atmosphere:`,
+  `relationship:`, `my last opener (not repeat):`, `burning passion:`, `instruction:`,
   `initiator diary (hidden context):`) and the `key=` summary sub-keys in
   `BuildPawnSummary` (`sex=`, `age=`, `mood=`, `health=`, `low_capacities=`, `thoughts=`, …).
 - The `initiator` / `recipient` role words, and the `none` / `n/a` / `unknown` skip-sentinels

@@ -72,7 +72,8 @@ namespace PawnDiary
         // Maximum number of in-flight LLM requests to avoid overwhelming local servers.
         public int maxConcurrentRequests = 4;
         // Token cap on each completion response to keep diary entries concise.
-        public int maxTokens = 160;
+        // Reduced from 160 to 100 for faster generation on small local models (6B–31B).
+        public int maxTokens = 100;
         // Sampling temperature — higher values produce more creative/varied entries.
         public float temperature = 0.8f;
         // When true, raw game-text entries are kept even if LLM generation fails, so no history is lost.
@@ -120,7 +121,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref sendApiKeyAsBearerToken, "sendApiKeyAsBearerToken", true);
             Scribe_Values.Look(ref timeoutSeconds, "timeoutSeconds", 30);
             Scribe_Values.Look(ref maxConcurrentRequests, "maxConcurrentRequests", 4);
-            Scribe_Values.Look(ref maxTokens, "maxTokens", 160);
+            Scribe_Values.Look(ref maxTokens, "maxTokens", 100);
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
             Scribe_Values.Look(ref keepRawEntryOnFailure, "keepRawEntryOnFailure", true);
             Scribe_Values.Look(ref dualPovGeneration, "dualPovGeneration", true);

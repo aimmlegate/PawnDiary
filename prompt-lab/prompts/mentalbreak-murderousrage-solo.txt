@@ -1,11 +1,14 @@
 # mode: solo
-# max_tokens: 200
+# max_tokens: 100
 ===USER===
 event: murderous rage
 pov: Bjorn
 what happened: Bjorn had a mental break (Murderous rage), directed at Talia. Reason: A bonded animal died and something in him snapped.
-instruction: the pawn suffered a mental break; write their inner state and what they did, in their own voice
+instruction: the mind breaking—write the pawn's inner storm and what they did
 you: male, 45y; mood: miserable 19%; top thoughts: My bonded animal died -12, Insulted me -8
-you persona: random
+persona: grim-veteran: writes like a battlefield report. Clinical about violence, sentimental about loyalty. Opens with tactical observations or body counts. Uses military cadence: short, punchy, precise.
 setting: kitchen, indoors
+atmosphere: bleak hostility
 relationship: rival; opinion -41 (hostile); because Insulted me -18, Social fight -12
+
+Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.

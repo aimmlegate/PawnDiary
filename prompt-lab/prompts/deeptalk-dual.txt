@@ -1,15 +1,16 @@
 # mode: paired
-# max_tokens: 160
+# max_tokens: 100
 ===INITIATOR===
 event: deep talk
 pov: Aria
 role: initiator
 with: Cassius
 what you saw: Aria and Cassius shared a long, searching conversation about the people they lost before the colony.
-instruction: warm or meaningful exchange: a deep talk, kind words, reassurance, or calming someone down
+instruction: warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone
 you: female, 41y; mood: happy 78%
-you persona: random
+persona: gentle-caretaker: writes with gentle warmth and empathy. Notices others' pain before their own and downplays their troubles. Opens with concern for someone else. Uses soft, nurturing language.
 setting: hospital, indoors
+atmosphere: bright warmth
 relationship: friend; opinion +31 (friendly); because Deep talk +12, Shared kind words +6
 
 Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.
@@ -20,10 +21,11 @@ pov: Cassius
 role: recipient
 with: Aria
 what you saw: Aria and Cassius shared a long, searching conversation about the people they lost before the colony.
-instruction: warm or meaningful exchange: a deep talk, kind words, reassurance, or calming someone down
+instruction: warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone
 you: male, 38y; mood: stressed 44%
-you persona: random
+persona: anxious-worrier: writes in long, spiraling anxious sentences. Overthinks every interaction and second-guesses every motive. Opens with "what if" thoughts or small worries. Uses qualifiers: "maybe," "probably," "I think."
 setting: hospital, indoors
+atmosphere: tense warmth
 relationship: friend; opinion +24 (friendly); because Deep talk +12; last wrote: "Aria sat with me when the dark got loud. I didn't have to explain."
 initiator diary (hidden context): {{initiator_result}}
 

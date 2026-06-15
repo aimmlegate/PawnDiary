@@ -1,15 +1,16 @@
 # mode: paired
-# max_tokens: 160
+# max_tokens: 100
 ===INITIATOR===
 event: social fight
 pov: Bjorn
 role: initiator
 with: Talia
 what you saw: Bjorn and Talia lost their tempers and came to blows.
-instruction: the two pawns lost their tempers and came to blows; write it as a heated physical fight
+instruction: tempers snapped—two people came to blows. Write it as heat and impact
 you: male, 45y; mood: miserable 22%
-you persona: random
+persona: fiery-hothead: writes in explosive bursts of emotion, capitalizing words for emphasis. Quick to anger and quicker to forgive. Opens with exclamations or rhetorical questions. Uses sentence fragments when agitated.
 setting: barracks, indoors
+atmosphere: bleak hostility
 relationship: opinion -41 (hostile); because Insulted me -18, Social fight -12, Slighted me -8
 
 Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.
@@ -20,10 +21,11 @@ pov: Talia
 role: recipient
 with: Bjorn
 what you saw: Bjorn and Talia lost their tempers and came to blows.
-instruction: the two pawns lost their tempers and came to blows; write it as a heated physical fight
+instruction: tempers snapped—two people came to blows. Write it as heat and impact
 you: female, 33y; mood: stressed 39%
-you persona: random
+persona: grim-veteran: writes like a battlefield report. Clinical about violence, sentimental about loyalty. Opens with tactical observations or body counts. Uses military cadence: short, punchy, precise.
 setting: barracks, indoors
+atmosphere: tense hostility
 relationship: rival; opinion -36 (hostile); because Insulted me -16, Social fight -12; last wrote: "Bjorn has been spoiling for a fight for days. Today he got one."
 initiator diary (hidden context): {{initiator_result}}
 

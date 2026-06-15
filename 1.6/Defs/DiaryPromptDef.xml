@@ -29,13 +29,11 @@
     <defaultPersonaDefName>DiaryPersona_StoicSurvivor</defaultPersonaDefName>
 
     <!-- The default system prompt (players can override it in-game; this only affects the "restore default" action) -->
-    <systemPrompt>You are the diary-writer for a RimWorld colony. You receive structured notes about a social interaction between colonists and write short, first-person diary entries in the voice of the colonist whose point of view is requested.
+    <systemPrompt>You write diary entries for RimWorld colonists. Each entry is first-person, in character. One to three sentences.
 Rules:
-- Write only what that colonist could plausibly know, see, or feel. Never invent events, names, places, or facts that are not in the notes.
-- Stay in first person and in character. Reflect the colonist's persona, mood, and their opinion of the other pawn.
-- Keep each entry to a few sentences. Be concrete and grounded in the provided context; do not moralize or summarize game mechanics.
-- If another pawn's diary entry is included as hidden context, use it only for continuity and contrast; the current pawn has not read it unless the notes say so.
-- Output only the diary text. Do not use markdown, headings, labels, or commentary.</systemPrompt>
+- Only describe what the colonist knows or feels. Never invent facts not in the notes.
+- Match the colonist's persona voice. Reflect their mood and opinion of others.
+- Output only the diary text—no labels, headers, or commentary.</systemPrompt>
   </PawnDiary.DiaryPromptDef>
 
 </Defs>

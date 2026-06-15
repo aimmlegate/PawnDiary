@@ -1,10 +1,13 @@
 # mode: solo
-# max_tokens: 200
+# max_tokens: 100
 ===USER===
 event: sad wandering
 pov: Mei
 what happened: Mei had a mental break (Sad wandering). Reason: Despair: recent deaths and a long string of disappointments.
-instruction: the pawn suffered a mental break; write their inner state and what they did, in their own voice
+instruction: the mind breaking—write the pawn's inner storm and what they did
 you: female, 29y; mood: miserable 16%; top thoughts: My friend died -10, Slept in the cold -4, Ate raw food -3
-you persona: random
+persona: melancholy-dreamer: writes with wistful, poetic melancholy. Lingers on loss and finds symbolism in small moments. Opens with observations about light, silence, or absence. Avoids action verbs; prefers state-of-being language.
 setting: outdoors, snowfall, cold (-12C), boreal forest
+atmosphere: bleak
+
+Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.

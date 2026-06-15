@@ -768,6 +768,92 @@ namespace PawnDiary
             return "PawnDiary.Bucket.Beauty.Hideous".Translate();
         }
 
+        // Builds a short atmospheric phrase combining mood + relationship context.
+        // This gives small models an emotional anchor without requiring complex inference.
+        // Example outputs: "tense hostility", "fragile warmth", "bitter resentment"
+        public static string BuildAtmosphere(Pawn povPawn, Pawn otherPawn, string instruction)
+        {
+            if (povPawn == null)
+            {
+                return string.Empty;
+            }
+
+            int moodPercent = povPawn.needs?.mood != null
+                ? Mathf.RoundToInt(povPawn.needs.mood.CurLevelPercentage * 100f)
+                : 50;
+
+            string moodWord = MoodAtmosphereWord(moodPercent);
+            string relationWord = string.Empty;
+
+            if (otherPawn != null && povPawn.relations != null)
+            {
+                int opinion = povPawn.relations.OpinionOf(otherPawn);
+                relationWord = OpinionAtmosphereWord(opinion);
+            }
+
+            // Combine into a short phrase
+            if (!string.IsNullOrWhiteSpace(moodWord) && !string.IsNullOrWhiteSpace(relationWord))
+            {
+                return moodWord + " " + relationWord;
+            }
+
+            if (!string.IsNullOrWhiteSpace(relationWord))
+            {
+                return relationWord;
+            }
+
+            return moodWord;
+        }
+
+        // Maps mood percentage to an evocative atmosphere word
+        private static string MoodAtmosphereWord(int moodPercent)
+        {
+            DiaryTuningDef t = DiaryTuning.Current;
+            if (moodPercent >= t.moodHappy)
+            {
+                return "PawnDiary.Atmosphere.Mood.Bright".Translate();
+            }
+
+            if (moodPercent >= t.moodStable)
+            {
+                return string.Empty; // neutral moods add no atmosphere
+            }
+
+            if (moodPercent >= t.moodStressed)
+            {
+                return "PawnDiary.Atmosphere.Mood.Tense".Translate();
+            }
+
+            return "PawnDiary.Atmosphere.Mood.Bleak".Translate();
+        }
+
+        // Maps opinion to an evocative relationship atmosphere word
+        private static string OpinionAtmosphereWord(int opinion)
+        {
+            DiaryTuningDef t = DiaryTuning.Current;
+            if (opinion >= t.opinionDevoted)
+            {
+                return "PawnDiary.Atmosphere.Opinion.Devotion".Translate();
+            }
+
+            if (opinion >= t.opinionFriendly)
+            {
+                return "PawnDiary.Atmosphere.Opinion.Warmth".Translate();
+            }
+
+            if (opinion > t.opinionNeutralAbove)
+            {
+                return string.Empty; // neutral opinions add no atmosphere
+            }
+
+            if (opinion > t.opinionStrainedAbove)
+            {
+                return "PawnDiary.Atmosphere.Opinion.Friction".Translate();
+            }
+
+            return "PawnDiary.Atmosphere.Opinion.Hostility".Translate();
+        }
+
         private static string MoodBucket(int moodPercent)
         {
             DiaryTuningDef t = DiaryTuning.Current;
