@@ -1,7 +1,7 @@
 // The prompt instructions, legacy dual markers, and system-prompt default — pulled into one Def
 // so they can be retuned by editing XML (1.6/Defs/DiaryPromptDef.xml) and restarting — no recompile.
 // Every field defaults to the value the code shipped with, so a missing or partial XML changes
-// nothing. New to C#/RimWorld? See CSHARP-NOTES.md ("Defs").
+// nothing. New to C#/RimWorld? See AGENTS.md ("Defs").
 using Verse;
 
 namespace PawnDiary

@@ -1,7 +1,7 @@
 // Mod entry point. [StaticConstructorOnStartup] makes RimWorld run this class's static
 // constructor once at game load (there is no main()). We use it to apply our Harmony patches and
 // inject the Diary inspector tab after the vanilla Log tab on every humanlike pawn.
-// See CSHARP-NOTES.md ("[StaticConstructorOnStartup]").
+// See AGENTS.md ("[StaticConstructorOnStartup]").
 using System;
 using System.Collections.Generic;
 using HarmonyLib;

@@ -1,5 +1,5 @@
 // All mod settings (connection, generation options, and per-group enable/instruction overrides)
-// plus value clamping and save/load. ExposeData persists them — see CSHARP-NOTES.md ("IExposable").
+// plus value clamping and save/load. ExposeData persists them — see AGENTS.md ("IExposable").
 // The group catalog itself now lives in XML Defs (see InteractionGroups.cs); this file only
 // stores the player's per-group overrides, keyed by group defName.
 using System.Collections.Generic;

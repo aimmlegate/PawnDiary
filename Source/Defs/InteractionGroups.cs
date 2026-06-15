@@ -2,7 +2,7 @@
 // loaded from XML (1.6/Defs/DiaryInteractionGroupDefs.xml), so groups, their matchers, and
 // their diary prompts can be retuned by editing XML and restarting — no recompile. This file
 // defines the Def type plus the static lookup/classification helpers over the DefDatabase.
-// New to C#/RimWorld? See CSHARP-NOTES.md ("Defs & DefDatabase").
+// New to C#/RimWorld? See AGENTS.md ("Defs & DefDatabase").
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -96,7 +96,7 @@ namespace PawnDiary
     }
 
     // Static lookup + classification over the loaded DiaryInteractionGroupDefs. (A static class
-    // is a namespace-level singleton — no instances; see CSHARP-NOTES.md.)
+    // is a namespace-level singleton — no instances; see AGENTS.md.)
     public static class InteractionGroups
     {
         private static List<DiaryInteractionGroupDef> cachedAll;

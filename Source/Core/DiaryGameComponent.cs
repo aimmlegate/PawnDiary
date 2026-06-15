@@ -3,7 +3,7 @@
 // request -> apply the result each tick -> hand views to the UI. Context/prompt building live in
 // DiaryContextBuilder / DiaryPromptBuilder; the saved data models in DiaryEvent / PawnDiaryRecord.
 // This is a RimWorld GameComponent (lifecycle hooks: GameComponentTick, ExposeData, etc.).
-// New to C#/RimWorld? See CSHARP-NOTES.md.
+// New to C#/RimWorld? See AGENTS.md.
 using System;
 using System.Collections.Generic;
 using System.Linq;
