@@ -11,6 +11,7 @@
     order          - lower numbers are classified first ("first match wins"); catch-all highest
     domain         - Interaction (matches InteractionDefs) or MentalState (matches MentalStateDefs)
     defaultEnabled - whether events in this group are recorded by default
+    important      - whether entries in this group get the strong importance marker in the Diary tab
     instruction    - the diary-prompt instruction shared by every event in the group
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
@@ -286,6 +287,7 @@
     <order>120</order>
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
+    <important>false</important>
     <instruction>an adult teaches or plays with a child</instruction>
     <matchDefNames>
       <li>BabyPlay</li>
@@ -304,6 +306,7 @@
     <order>130</order>
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
+    <important>false</important>
     <instruction>casual low-stakes chatter</instruction>
     <matchDefNames>
       <li>Chitchat</li>
@@ -332,6 +335,7 @@
     <order>140</order>
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
+    <important>false</important>
     <instruction>a social interaction between the pawns</instruction>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>

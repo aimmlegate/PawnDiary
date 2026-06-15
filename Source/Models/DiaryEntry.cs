@@ -1,7 +1,7 @@
 // Two small models for diary text:
 //   DiaryEntry     — a LEGACY entry persisted in old saves. New events use DiaryEvent instead;
 //                    this stays only so older saves still load.
-//   DiaryEntryView — the read-only display model the UI renders (text + status + debug block).
+//   DiaryEntryView — the read-only display model the UI renders (text + status + display hints).
 // IExposable/ExposeData is RimWorld's save/load hook; see AGENTS.md ("IExposable").
 using System;
 using Verse;
@@ -150,6 +150,8 @@ namespace PawnDiary
         public readonly string LlmPrompt;  // Full prompt sent to the LLM
         public readonly string EventId;     // Identifier of the backing DiaryEvent
         public readonly string PovRole;     // Role/perspective this view represents (e.g. "legacy")
+        public readonly string GroupLabel;  // Human-readable event group shown in the entry header
+        public readonly bool Important;     // Visual importance marker derived from the event group
 
         public DiaryEntryView(
             int tick,
@@ -162,7 +164,9 @@ namespace PawnDiary
             string llmModel,
             string llmPrompt,
             string eventId,
-            string povRole)
+            string povRole,
+            string groupLabel,
+            bool important)
         {
             Tick = tick;
             Date = date;
@@ -175,6 +179,8 @@ namespace PawnDiary
             LlmPrompt = llmPrompt;
             EventId = eventId;
             PovRole = povRole;
+            GroupLabel = groupLabel;
+            Important = important;
         }
 
         /// <summary>
@@ -199,7 +205,9 @@ namespace PawnDiary
                 entry.llmModel,
                 entry.llmPrompt,
                 entry.id,
-                "legacy");
+                "legacy",
+                string.Empty,
+                true);
         }
 
         /// <summary>

@@ -15,7 +15,7 @@
 -->
 <LanguageData>
 
-  <!-- Inspector tab label (next to the vanilla Log tab) -->
+  <!-- Inspector tab label (after the vanilla Health tab) -->
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
 
   <!-- ===== Diary tab UI ===== -->
@@ -26,6 +26,8 @@
   <PawnDiary.Tab.GenerateForPawnTip>When disabled, events are still recorded here, but no LLM request is sent for this pawn.</PawnDiary.Tab.GenerateForPawnTip>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.GeneratingCount>{0} generating</PawnDiary.Tab.GeneratingCount>
+  <PawnDiary.Tab.Important>important</PawnDiary.Tab.Important>
+  <PawnDiary.Tab.Quiet>quiet</PawnDiary.Tab.Quiet>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->

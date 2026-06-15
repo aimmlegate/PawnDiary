@@ -4,6 +4,20 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (diary tab roleplay UI pass)**
+  - Moved the Diary inspector tab from the far-right position to immediately after the vanilla
+    Health tab.
+  - Added roleplay-log rendering for generated entries: narration is muted/italic, and
+    dialogue-looking lines are bold/italic with the pawn's favorite color.
+  - Added XML-backed `DiaryInteractionGroupDef.important` display metadata and quiet/important
+    entry markers in the Diary tab.
+
+- **2026-06-15 (safe social-memory summaries)**
+  - Changed `BuildSocialThoughtsSummary` to aggregate only stored social memories instead of
+    calling RimWorld's situational social thought recalculation. This keeps animal interactions
+    such as Nuzzle from logging vanilla `ThoughtWorker_Joyous` null-reference errors while diary
+    prompt context is being built.
+
 - **2026-06-15 (diary tab production UI pass)**
   - Moved the Diary inspector tab to the far-right/final pawn tab position.
   - Changed the Diary tab to show only finished generated entries; pending/raw/debug rows are hidden.

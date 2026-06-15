@@ -1,6 +1,7 @@
 // The inspector tab (UI) that renders the selected pawn's finished diary entries.
 // RimWorld calls FillTab() to draw it using immediate-mode GUI (the whole tab is re-emitted each
 // frame). It reads entries via DiaryGameComponent.EntriesFor. See AGENTS.md ("lifecycle").
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -18,6 +19,16 @@ namespace PawnDiary
 
         // Vertical space reserved for the per-pawn generation toggle above the scroll view.
         private const float ControlsHeight = 32f;
+        private const float EntryTitleHeight = 28f;
+        private const float EntryTextTop = 38f;
+        private const float EntryBottomPadding = 10f;
+        private const float RoleplayLineGap = 3f;
+        private const float RoleplayParagraphGap = 6f;
+
+        private static readonly Color ImportantColor = new Color(0.96f, 0.62f, 0.22f);
+        private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
+        private static readonly Color NarrativeColor = new Color(0.78f, 0.78f, 0.72f);
+        private static readonly Color FallbackDialogueColor = new Color(0.58f, 0.80f, 1f);
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
@@ -113,6 +124,7 @@ namespace PawnDiary
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             float curY = 0f;
+            Color dialogueColor = PreferredDialogueColor(pawn);
             for (int i = 0; i < ordered.Count; i++)
             {
                 DiaryEntryView entry = ordered[i];
@@ -122,15 +134,16 @@ namespace PawnDiary
                 Widgets.DrawMenuSection(entryRect);
                 Widgets.DrawHighlightIfMouseover(entryRect);
 
-                Rect titleRect = new Rect(entryRect.x, entryRect.y, entryRect.width, 28f);
+                Rect titleRect = new Rect(entryRect.x, entryRect.y, entryRect.width, EntryTitleHeight);
                 Widgets.DrawTitleBG(titleRect);
+                Widgets.DrawBoxSolid(new Rect(entryRect.x + 1f, entryRect.y + 1f, 5f, entryRect.height - 2f), ImportanceColor(entry));
 
                 GUI.color = new Color(0.86f, 0.86f, 0.86f);
-                Widgets.LabelFit(new Rect(entryRect.x + 8f, entryRect.y + 5f, entryRect.width - 16f, 22f), entry.Date);
+                Widgets.LabelFit(new Rect(entryRect.x + 12f, entryRect.y + 5f, entryRect.width - 20f, 22f), EntryHeader(entry));
                 GUI.color = Color.white;
 
-                float textHeight = Text.CalcHeight(entry.GeneratedText, entryRect.width - 16f);
-                Widgets.Label(new Rect(entryRect.x + 8f, entryRect.y + 36f, entryRect.width - 16f, textHeight), entry.GeneratedText);
+                Rect textRect = new Rect(entryRect.x + 12f, entryRect.y + EntryTextTop, entryRect.width - 20f, entryRect.height - EntryTextTop - EntryBottomPadding);
+                DrawRoleplayText(textRect, entry.GeneratedText, dialogueColor);
 
                 curY += height + 8f;
             }
@@ -202,6 +215,82 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Produces the compact header shown on each entry card: date, group, and importance.
+        /// </summary>
+        private static string EntryHeader(DiaryEntryView entry)
+        {
+            string importance = entry.Important
+                ? "PawnDiary.Tab.Important".Translate()
+                : "PawnDiary.Tab.Quiet".Translate();
+
+            if (string.IsNullOrWhiteSpace(entry.GroupLabel))
+            {
+                return entry.Date + " - " + importance;
+            }
+
+            return entry.Date + " - " + entry.GroupLabel + " - " + importance;
+        }
+
+        /// <summary>
+        /// Returns the color strip used to mark whether an entry belongs to an important group.
+        /// </summary>
+        private static Color ImportanceColor(DiaryEntryView entry)
+        {
+            return entry != null && entry.Important ? ImportantColor : QuietColor;
+        }
+
+        /// <summary>
+        /// Uses the pawn's RimWorld favorite color for dialogue, brightened enough for dark UI.
+        /// </summary>
+        private static Color PreferredDialogueColor(Pawn pawn)
+        {
+            Color color = pawn?.story?.favoriteColor != null ? pawn.story.favoriteColor.color : FallbackDialogueColor;
+            color.a = 1f;
+
+            float max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            if (max < 0.55f)
+            {
+                float lift = 0.55f - max;
+                color.r = Mathf.Clamp01(color.r + lift);
+                color.g = Mathf.Clamp01(color.g + lift);
+                color.b = Mathf.Clamp01(color.b + lift);
+            }
+
+            return color;
+        }
+
+        /// <summary>
+        /// Draws generated text in a light roleplay style: narration is muted/italic, while
+        /// dialogue-looking lines are bold and colored with the pawn's preferred color.
+        /// </summary>
+        private static void DrawRoleplayText(Rect rect, string text, Color dialogueColor)
+        {
+            GameFont oldFont = Text.Font;
+            Color oldColor = GUI.color;
+            Text.Font = GameFont.Small;
+            GUI.color = Color.white;
+
+            float curY = rect.y;
+            foreach (string line in RoleplayLines(text))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    curY += RoleplayParagraphGap;
+                    continue;
+                }
+
+                bool dialogue = IsDialogueLine(line);
+                GUIStyle style = RoleplayStyle(dialogue, dialogueColor);
+                float height = style.CalcHeight(new GUIContent(line), rect.width);
+                GUI.Label(new Rect(rect.x, curY, rect.width, height), line, style);
+                curY += height + RoleplayLineGap;
+            }
+
+            GUI.color = oldColor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
         /// Calculates the height needed for a single diary entry card, accounting for
         /// dynamic text wrapping of the generated diary text.
         /// </summary>
@@ -211,10 +300,82 @@ namespace PawnDiary
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Small;
-            float textHeight = Text.CalcHeight(entry.GeneratedText, innerWidth);
+            float textHeight = RoleplayTextHeight(entry.GeneratedText, innerWidth);
             Text.Font = oldFont;
 
-            return 48f + textHeight;
+            return EntryTextTop + textHeight + EntryBottomPadding;
+        }
+
+        /// <summary>
+        /// Measures the same roleplay lines that DrawRoleplayText renders.
+        /// </summary>
+        private static float RoleplayTextHeight(string text, float width)
+        {
+            float height = 0f;
+            foreach (string line in RoleplayLines(text))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    height += RoleplayParagraphGap;
+                    continue;
+                }
+
+                GUIStyle style = RoleplayStyle(IsDialogueLine(line), FallbackDialogueColor);
+                height += style.CalcHeight(new GUIContent(line), width) + RoleplayLineGap;
+            }
+
+            return Mathf.Max(Text.LineHeight, height);
+        }
+
+        /// <summary>
+        /// Splits generated text into author-provided lines while preserving blank paragraph breaks.
+        /// </summary>
+        private static IEnumerable<string> RoleplayLines(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                yield break;
+            }
+
+            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            string[] lines = normalized.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                yield return lines[i].Trim();
+            }
+        }
+
+        /// <summary>
+        /// Heuristic for lines that should read as dialogue in a roleplay log.
+        /// </summary>
+        private static bool IsDialogueLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return false;
+            }
+
+            string trimmed = line.TrimStart();
+            return trimmed.StartsWith("\"", StringComparison.Ordinal)
+                || trimmed.StartsWith("'", StringComparison.Ordinal)
+                || trimmed.StartsWith("-\"", StringComparison.Ordinal)
+                || trimmed.StartsWith("- '", StringComparison.Ordinal)
+                || trimmed.IndexOf('"') >= 0
+                || trimmed.IndexOf(':') > 0 && trimmed.IndexOf(':') <= 24;
+        }
+
+        /// <summary>
+        /// Creates an isolated GUIStyle so line colors/font styles do not leak into other RimWorld UI.
+        /// </summary>
+        private static GUIStyle RoleplayStyle(bool dialogue, Color dialogueColor)
+        {
+            GUIStyle style = new GUIStyle(Text.CurFontStyle)
+            {
+                wordWrap = true,
+                fontStyle = dialogue ? FontStyle.BoldAndItalic : FontStyle.Italic
+            };
+            style.normal.textColor = dialogue ? dialogueColor : NarrativeColor;
+            return style;
         }
     }
 }

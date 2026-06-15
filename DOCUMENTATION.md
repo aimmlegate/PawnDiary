@@ -4,7 +4,7 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-15 (diary tab production UI pass)_
+_Last updated: 2026-06-15 (diary tab roleplay UI pass)_
 
 ---
 
@@ -13,8 +13,8 @@ _Last updated: 2026-06-15 (diary tab production UI pass)_
 Pawn Diary watches **colonist** pawns' social **interactions**, **social fights**, and
 **mental breaks**, keeps the meaningful ones, and uses an LLM (any OpenAI-compatible
 `/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server) to rewrite each
-event into a short first-person diary entry. Each pawn's diary is shown in the final
-**inspector tab** on that pawn's UI.
+event into a short first-person diary entry. Each pawn's diary is shown in an
+**inspector tab after Health** on that pawn's UI.
 
 Only **free colonists** (`pawn.IsColonist`) are eligible for diary entries. Animals,
 prisoners, slaves, enemies, and visitors never receive diary entries. When a mixed
@@ -69,7 +69,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `Languages/English/Keyed/PawnDiary.xml` | All player-facing UI strings **and** the natural-language prompt text (event sentences, context words, buckets), resolved via `.Translate()`. See §12 Localization. |
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
-| `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` as the final inspector tab on humanlike pawn defs. |
+| `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Health tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks). |
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status; save/load; applying LLM results (incl. legacy dual-POV parse). |
@@ -83,7 +83,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, legacy dual markers, and the default system prompt). |
 | `DiaryPersonaDef.cs` | Defines `DiaryPersonaDef : Def` + `DiaryPersonas` lookup/fallback helpers. Data lives in XML and is selected per pawn. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
-| `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries and exposes that pawn's generation toggle. |
+| `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries with roleplay styling, importance markers, and that pawn's generation toggle. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
 | `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
@@ -208,8 +208,9 @@ there's nothing worth saying, so the model never spends tokens on noise:
 - **Health** (`BuildHealthSummary`): empty when healthy — only pain, bleeding, downed,
   pain-shock, and notable conditions are sent.
 - **Relationship** (`BuildContinuitySummary`): a compact memory line per pawn —
-  relation kind (spouse/rival/…) + `opinion ±N (bucket)` + **why** (the top social memories
-  driving it, aggregated and signed, via `BuildSocialThoughtsSummary`) + **last wrote** (the
+  relation kind (spouse/rival/…) + `opinion ±N (bucket)` + **why** (the top stored social memories
+  driving it, aggregated and signed, via `BuildSocialThoughtsSummary`; situational social thought
+  workers are not recalculated here) + **last wrote** (the
   most recent diary line that pawn produced about the other — a lightweight memory layer for
   continuity).
 - Dropped from prompts entirely (still stored on the event): raw per-beat logs,
@@ -263,10 +264,12 @@ is recorded iff its group is enabled.
 | **Mental breaks** (mental) | on | Berserk, Tantrum, Wander_Sad, Binging_*, MurderousRage, … (catch-all for mental states) |
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
-`domain`, `defaultEnabled`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
+`domain`, `defaultEnabled`, `important`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
 — no recompile. `order` controls classification order within a domain (lowest first; keep the
 catch-all highest). Group `defName`s are the stable keys player settings save overrides under, so
 don't rename them.
+The Diary tab uses `important` only as a display hint: important groups get a warm marker,
+while quiet groups get a muted marker. It does not affect recording or generation.
 
 **Tuning knobs** (dedup windows, small-talk batching, scan radius/temperature, and the
 mood/pain/beauty/opinion bucket thresholds) likewise live in XML —
@@ -352,10 +355,12 @@ enabled). The persona control is temporarily hidden from the tab UI.
 
 ## 9. UI
 
-- **Inspector tab** (`ITab_Pawn_Diary`), injected as the final inspector tab on all
+- **Inspector tab** (`ITab_Pawn_Diary`), injected immediately after the vanilla **Health** tab on all
 humanlike pawn defs at startup. The tab is **visible only for free colonists**
 (`pawn.IsColonist`); animals, prisoners, slaves, enemies, and visitors never see it.
-Renders newest-first: date header plus the generated diary text. Pending, failed-without-output,
+Renders newest-first: date/group/importance header plus the generated diary text. The text is
+drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking lines are
+bold/italic and colored with the pawn's RimWorld favorite color. Pending, failed-without-output,
 raw fallback, debug, and persona-editing details are hidden from the production tab. A compact
 generating badge appears in the tab while pending entries exist.
 - There is **no** standalone window or gizmo anymore, and **no** colony/neutral events

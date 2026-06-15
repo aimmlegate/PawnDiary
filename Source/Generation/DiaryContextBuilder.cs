@@ -86,44 +86,36 @@ namespace PawnDiary
         }
 
         // The standing social memories that drive the opinion, aggregated by kind and signed
-        // (e.g. "shared kind words +12, slept in a poor bedroom -4").
+        // (e.g. "shared kind words +12, slept in a poor bedroom -4"). This intentionally reads
+        // stored memories only: RimWorld's broader GetSocialThoughts helper also recalculates
+        // situational social thoughts, and some vanilla thought workers assume a humanlike "other"
+        // pawn. Animal interactions such as Nuzzle can otherwise produce harmless-but-loud log
+        // errors while the diary is only trying to build prompt context.
         private static string BuildSocialThoughtsSummary(Pawn povPawn, Pawn otherPawn)
         {
-            if (povPawn.needs?.mood?.thoughts == null)
-            {
-                return string.Empty;
-            }
-
-            List<ISocialThought> social = new List<ISocialThought>();
-            try
-            {
-                povPawn.needs.mood.thoughts.GetSocialThoughts(otherPawn, social);
-            }
-            catch (NullReferenceException)
-            {
-                return string.Empty;
-            }
-            if (social.Count == 0)
+            List<Thought_Memory> memories = povPawn?.needs?.mood?.thoughts?.memories?.Memories;
+            if (memories == null)
             {
                 return string.Empty;
             }
 
             Dictionary<string, float> byLabel = new Dictionary<string, float>();
-            for (int i = 0; i < social.Count; i++)
+            for (int i = 0; i < memories.Count; i++)
             {
-                Thought thought = social[i] as Thought;
-                if (thought == null)
+                Thought_Memory memory = memories[i];
+                ISocialThought socialThought = memory as ISocialThought;
+                if (memory == null || socialThought == null || memory.otherPawn != otherPawn)
                 {
                     continue;
                 }
 
-                string label = CleanLine(thought.LabelCap);
+                string label = CleanLine(memory.LabelCap);
                 if (string.IsNullOrWhiteSpace(label))
                 {
                     continue;
                 }
 
-                float offset = social[i].OpinionOffset();
+                float offset = socialThought.OpinionOffset();
                 byLabel[label] = (byLabel.TryGetValue(label, out float existing) ? existing : 0f) + offset;
             }
 

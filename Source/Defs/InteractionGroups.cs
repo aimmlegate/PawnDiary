@@ -34,6 +34,10 @@ namespace PawnDiary
         // Whether events in this group are recorded by default (a player can override per-save).
         public bool defaultEnabled = true;
 
+        // Whether entries from this group should be visually marked as important in the Diary tab.
+        // Low-stakes groups can set this false in XML without changing save data or code.
+        public bool important = true;
+
         // The diary-prompt instruction shared by every event in the group.
         public string instruction;
 
@@ -130,6 +134,13 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyMentalState(MentalStateDef stateDef)
         {
             return ClassifyIn(GroupDomain.MentalState, stateDef?.defName);
+        }
+
+        // Same classifier, but for saved events where we only have the stored defName string.
+        // The Diary tab uses this to color-mark old and new entries without adding save fields.
+        public static DiaryInteractionGroupDef ClassifyDefName(GroupDomain domain, string defName)
+        {
+            return ClassifyIn(domain, defName);
         }
 
         private static DiaryInteractionGroupDef ClassifyIn(GroupDomain domain, string defName)

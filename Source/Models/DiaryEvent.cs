@@ -430,6 +430,7 @@ namespace PawnDiary
                 return null;
             }
 
+            DiaryInteractionGroupDef group = GroupForDisplay();
             return new DiaryEntryView(
                 tick,
                 date,
@@ -441,7 +442,9 @@ namespace PawnDiary
                 LlmModelFor(povRole),
                 PromptFor(povRole),
                 eventId,
-                povRole);
+                povRole,
+                group?.label ?? interactionLabel ?? string.Empty,
+                group == null || group.important);
         }
 
         /// <summary>
@@ -522,6 +525,26 @@ namespace PawnDiary
             }
 
             return initiatorSurroundings;
+        }
+
+        /// <summary>
+        /// Resolves the event group used by the Diary tab for labels and importance coloring.
+        /// Saved events only keep the defName string, so this reuses the XML classifiers.
+        /// </summary>
+        private DiaryInteractionGroupDef GroupForDisplay()
+        {
+            GroupDomain domain = IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
+            return InteractionGroups.ClassifyDefName(domain, interactionDefName);
+        }
+
+        /// <summary>
+        /// Mental-state events store their state defName in interactionDefName too; their context
+        /// starts with a stable mental_state field, which lets UI classification pick the right domain.
+        /// </summary>
+        private bool IsMentalStateEvent()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("mental_state=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
