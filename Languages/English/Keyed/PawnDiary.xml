@@ -28,6 +28,11 @@
   <PawnDiary.Tab.GeneratingCount>{0} generating</PawnDiary.Tab.GeneratingCount>
   <PawnDiary.Tab.Important>important</PawnDiary.Tab.Important>
   <PawnDiary.Tab.Quiet>quiet</PawnDiary.Tab.Quiet>
+  <PawnDiary.Tab.LinkedInitiator>{0}'s perspective (initiator):</PawnDiary.Tab.LinkedInitiator>
+  <PawnDiary.Tab.LinkedRecipient>{0}'s perspective (recipient):</PawnDiary.Tab.LinkedRecipient>
+  <PawnDiary.Tab.LinkedNotGenerated>[not yet generated]</PawnDiary.Tab.LinkedNotGenerated>
+  <PawnDiary.Tab.LinkedNoText>[no text yet]</PawnDiary.Tab.LinkedNoText>
+  <PawnDiary.Tab.LinkedTooltip>Click to view {0}'s diary entry for this event</PawnDiary.Tab.LinkedTooltip>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->
@@ -98,6 +103,12 @@
   <PawnDiary.Ctx.PainShock>pain shock</PawnDiary.Ctx.PainShock>
   <PawnDiary.Ctx.Fire>fire</PawnDiary.Ctx.Fire>
   <PawnDiary.Ctx.Corpse>corpse of {0}</PawnDiary.Ctx.Corpse>
+
+  <!-- Capacity keywords (shown when sub-optimal, <80%) -->
+  <PawnDiary.Capacity.Moving>impaired movement</PawnDiary.Capacity.Moving>
+  <PawnDiary.Capacity.Talking>impaired speech</PawnDiary.Capacity.Talking>
+  <PawnDiary.Capacity.Sight>impaired sight</PawnDiary.Capacity.Sight>
+  <PawnDiary.Capacity.Hearing>impaired hearing</PawnDiary.Capacity.Hearing>
 
   <!-- Mood / beauty / pain / opinion "buckets" -->
   <PawnDiary.Bucket.Mood.Happy>happy</PawnDiary.Bucket.Mood.Happy>

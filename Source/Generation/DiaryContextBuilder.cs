@@ -155,6 +155,77 @@ namespace PawnDiary
             return string.Empty;
         }
 
+        // Extracts the first sentence of the pawn's most recent diary entry.
+        // Used as "my last opener" so the model avoids repeating the same opening pattern.
+        public static string LatestDiaryOpener(string pawnId, IReadOnlyList<DiaryEvent> events)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || events == null)
+            {
+                return string.Empty;
+            }
+
+            for (int i = events.Count - 1; i >= 0; i--)
+            {
+                DiaryEvent diaryEvent = events[i];
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                string role = diaryEvent.RoleForPawn(pawnId);
+                if (string.IsNullOrWhiteSpace(role))
+                {
+                    continue;
+                }
+
+                string text = diaryEvent.DisplayTextForRole(role);
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    continue;
+                }
+
+                string opener = ExtractFirstSentence(text);
+                if (!string.IsNullOrWhiteSpace(opener))
+                {
+                    return opener;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        // Extracts the first sentence from a text block.
+        // Looks for sentence-ending punctuation (.!?) followed by a space or end of string.
+        private static string ExtractFirstSentence(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string cleaned = CleanLine(text);
+            if (string.IsNullOrWhiteSpace(cleaned))
+            {
+                return string.Empty;
+            }
+
+            // Look for the first sentence-ending punctuation
+            for (int i = 0; i < cleaned.Length; i++)
+            {
+                char c = cleaned[i];
+                if (c == '.' || c == '!' || c == '?')
+                {
+                    // Include the punctuation in the opener
+                    string sentence = cleaned.Substring(0, i + 1);
+                    return sentence.Trim();
+                }
+            }
+
+            // No sentence-ending punctuation found; return the whole text (truncated)
+            int max = DiaryTuning.Current.diaryLineMaxChars;
+            return cleaned.Length <= max ? cleaned : cleaned.Substring(0, max) + "...";
+        }
+
         public static string BuildOpinionsSummary(Pawn initiator, Pawn recipient)
         {
             if (initiator == null || recipient == null)
@@ -260,12 +331,6 @@ namespace PawnDiary
                 parts.Add("age=" + pawn.ageTracker.AgeBiologicalYears);
             }
 
-            string traits = BuildTraitsSummary(pawn);
-            if (!string.IsNullOrWhiteSpace(traits))
-            {
-                parts.Add("traits=" + traits);
-            }
-
             string mood = BuildMoodSummary(pawn);
             if (!string.IsNullOrWhiteSpace(mood))
             {
@@ -287,25 +352,10 @@ namespace PawnDiary
             string thoughts = BuildTopThoughtsSummary(pawn);
             if (!string.IsNullOrWhiteSpace(thoughts))
             {
-                parts.Add("top_thoughts=" + thoughts);
+                parts.Add("thoughts=" + thoughts);
             }
 
             return string.Join("; ", parts.ToArray());
-        }
-
-        private static string BuildTraitsSummary(Pawn pawn)
-        {
-            if (pawn.story?.traits?.TraitsSorted == null)
-            {
-                return string.Empty;
-            }
-
-            return string.Join(", ", pawn.story.traits.TraitsSorted
-                .Where(trait => trait != null && !trait.Suppressed)
-                .Select(trait => CleanLine(trait.LabelCap))
-                .Where(label => !string.IsNullOrWhiteSpace(label))
-                .Take(3)
-                .ToArray());
         }
 
         private static string BuildMoodSummary(Pawn pawn)
@@ -385,12 +435,10 @@ namespace PawnDiary
 
             PawnCapacityDef[] relevantCapacities =
             {
-                PawnCapacityDefOf.Consciousness,
+                PawnCapacityDefOf.Moving,
                 PawnCapacityDefOf.Talking,
-                PawnCapacityDefOf.Hearing,
                 PawnCapacityDefOf.Sight,
-                PawnCapacityDefOf.Manipulation,
-                PawnCapacityDefOf.Moving
+                PawnCapacityDefOf.Hearing
             };
 
             List<string> parts = new List<string>();
@@ -403,13 +451,43 @@ namespace PawnDiary
                 }
 
                 float level = pawn.health.capacities.GetLevel(capacity);
-                if (level < DiaryTuning.Current.lowCapacityThreshold)
+                if (level < 0.80f)
                 {
-                    parts.Add(CleanLine(capacity.GetLabelFor(pawn)) + "=" + Mathf.RoundToInt(level * 100f) + "%");
+                    string keyword = CapacityKeyword(capacity, level);
+                    if (!string.IsNullOrWhiteSpace(keyword))
+                    {
+                        parts.Add(keyword);
+                    }
                 }
             }
 
             return string.Join(", ", parts.ToArray());
+        }
+
+        // Converts a capacity level to a localized keyword label.
+        private static string CapacityKeyword(PawnCapacityDef capacity, float level)
+        {
+            if (capacity == PawnCapacityDefOf.Moving)
+            {
+                return "PawnDiary.Capacity.Moving".Translate();
+            }
+
+            if (capacity == PawnCapacityDefOf.Talking)
+            {
+                return "PawnDiary.Capacity.Talking".Translate();
+            }
+
+            if (capacity == PawnCapacityDefOf.Sight)
+            {
+                return "PawnDiary.Capacity.Sight".Translate();
+            }
+
+            if (capacity == PawnCapacityDefOf.Hearing)
+            {
+                return "PawnDiary.Capacity.Hearing".Translate();
+            }
+
+            return string.Empty;
         }
 
         private static string BuildTopThoughtsSummary(Pawn pawn)
@@ -422,12 +500,64 @@ namespace PawnDiary
             List<Thought> thoughts = new List<Thought>();
             pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
 
-            return string.Join(", ", thoughts
-                .Where(thought => thought != null && thought.VisibleInNeedsTab && Mathf.Abs(thought.MoodOffset()) >= 1f)
-                .OrderByDescending(thought => Mathf.Abs(thought.MoodOffset()))
-                .Select(thought => CleanLine(thought.LabelCap) + " " + FormatSignedNumber(Mathf.RoundToInt(thought.MoodOffset())))
-                .Take(3)
-                .ToArray());
+            List<Thought> visible = thoughts
+                .Where(t => t != null && t.VisibleInNeedsTab && Mathf.Abs(t.MoodOffset()) >= 1f)
+                .ToList();
+
+            List<Thought> positive = visible.Where(t => t.MoodOffset() > 0f).ToList();
+            List<Thought> negative = visible.Where(t => t.MoodOffset() < 0f).ToList();
+
+            string posStr = PickWeightedThought(positive);
+            string negStr = PickWeightedThought(negative);
+
+            List<string> parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(posStr))
+            {
+                parts.Add(posStr);
+            }
+
+            if (!string.IsNullOrWhiteSpace(negStr))
+            {
+                parts.Add(negStr);
+            }
+
+            return string.Join(", ", parts.ToArray());
+        }
+
+        // Picks one thought from the list using weighted random: weight = |moodOffset|,
+        // so thoughts with stronger effect are more likely to be chosen.
+        private static string PickWeightedThought(List<Thought> thoughts)
+        {
+            if (thoughts == null || thoughts.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            float totalWeight = 0f;
+            for (int i = 0; i < thoughts.Count; i++)
+            {
+                totalWeight += Mathf.Abs(thoughts[i].MoodOffset());
+            }
+
+            if (totalWeight <= 0f)
+            {
+                return string.Empty;
+            }
+
+            float roll = UnityEngine.Random.value * totalWeight;
+            float cumulative = 0f;
+            for (int i = 0; i < thoughts.Count; i++)
+            {
+                cumulative += Mathf.Abs(thoughts[i].MoodOffset());
+                if (roll <= cumulative)
+                {
+                    return CleanLine(thoughts[i].LabelCap) + " " + FormatSignedNumber(Mathf.RoundToInt(thoughts[i].MoodOffset()));
+                }
+            }
+
+            // Fallback: return the last one (shouldn't reach here normally)
+            Thought last = thoughts[thoughts.Count - 1];
+            return CleanLine(last.LabelCap) + " " + FormatSignedNumber(Mathf.RoundToInt(last.MoodOffset()));
         }
 
         private static string BuildNearbyThingsSummary(Pawn pawn)

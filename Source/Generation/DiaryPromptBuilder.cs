@@ -58,6 +58,7 @@ namespace PawnDiary
             AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
             AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
+            AppendField(lines, "my last opener (not repeat)", diaryEvent.LastOpenerForRole(povRole));
             AppendField(lines, "initiator diary (hidden context)", initiatorEntry);
 
             DiaryPromptDef p = DiaryPrompts.Current;
@@ -80,6 +81,7 @@ namespace PawnDiary
             AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
             AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
+            AppendField(lines, "my last opener (not repeat)", diaryEvent.initiatorLastOpener);
 
             return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.singlePovInstruction;
         }

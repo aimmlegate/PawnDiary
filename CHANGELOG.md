@@ -4,6 +4,18 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (linked diary entries between pawns)**
+  - Added `LinkedEntryView` model: a compact, truncated preview of the other pawn's diary
+    entry for the same interaction event, attached to each `DiaryEntryView`.
+  - In the initiator's diary entry, the recipient's preview card appears **after** the main text.
+  - In the recipient's diary entry, the initiator's preview card appears **before** the main text.
+  - Clicking a linked-entry card selects the other pawn, opens their Diary tab, and scrolls to
+    the same event — mirroring the existing Social-tab click-through pattern.
+  - `DiaryEvent.RoleEquals` is now public so the UI tab can compare roles.
+  - Added `DiaryGameComponent.FindEventById` as a public accessor for the private `FindEvent`.
+  - Added localization keys: `LinkedInitiator`, `LinkedRecipient`, `LinkedNotGenerated`,
+    `LinkedNoText`, `LinkedTooltip`.
+
 - **2026-06-15 (social-adjacent diary tab and click-through)**
   - Moved the Diary inspector tab to immediately after the vanilla Social tab.
   - Added PlayLog id tracking on diary events, including batched small-talk rows.

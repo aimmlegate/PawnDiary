@@ -24,11 +24,19 @@ namespace PawnDiary
         private const float EntryBottomPadding = 10f;
         private const float RoleplayLineGap = 3f;
         private const float RoleplayParagraphGap = 6f;
+        private const float LinkedEntryPadding = 8f;
+        private const float LinkedEntryLabelHeight = 20f;
+        private const float LinkedEntryTextHeight = 36f;
+        private const float LinkedEntryTotalHeight = 64f;
 
         private static readonly Color ImportantColor = new Color(0.96f, 0.62f, 0.22f);
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
         private static readonly Color NarrativeColor = new Color(0.78f, 0.78f, 0.72f);
         private static readonly Color FallbackDialogueColor = new Color(0.58f, 0.80f, 1f);
+        private static readonly Color LinkedEntryBgColor = new Color(0.15f, 0.17f, 0.20f, 0.85f);
+        private static readonly Color LinkedEntryBorderColor = new Color(0.35f, 0.45f, 0.55f);
+        private static readonly Color LinkedEntryTextColor = new Color(0.65f, 0.70f, 0.75f);
+        private static readonly Color LinkedEntryHoverColor = new Color(0.25f, 0.30f, 0.38f, 0.90f);
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
@@ -167,8 +175,32 @@ namespace PawnDiary
                 Widgets.LabelFit(new Rect(entryRect.x + 12f, entryRect.y + 5f, entryRect.width - 20f, 22f), EntryHeader(entry));
                 GUI.color = Color.white;
 
-                Rect textRect = new Rect(entryRect.x + 12f, entryRect.y + EntryTextTop, entryRect.width - 20f, entryRect.height - EntryTextTop - EntryBottomPadding);
+                // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
+                // recipient (shows the initiator's perspective first). When this pawn is the
+                // initiator, the linked recipient entry goes AFTER the main text instead.
+                float textY = entryRect.y + EntryTextTop;
+                LinkedEntryView linked = entry.LinkedEntry;
+                bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
+                bool linkedAfter = linked != null && !linkedBefore;
+
+                if (linkedBefore)
+                {
+                    Rect linkedRect = new Rect(entryRect.x + 10f, textY, entryRect.width - 20f, LinkedEntryTotalHeight);
+                    DrawLinkedEntry(linked, linkedRect, pawn);
+                    textY = linkedRect.yMax + LinkedEntryPadding;
+                }
+
+                float mainTextHeight = entryRect.height - EntryTextTop - EntryBottomPadding
+                    - (linkedBefore ? LinkedEntryTotalHeight + LinkedEntryPadding : 0f)
+                    - (linkedAfter ? LinkedEntryTotalHeight + LinkedEntryPadding : 0f);
+                Rect textRect = new Rect(entryRect.x + 12f, textY, entryRect.width - 20f, mainTextHeight);
                 DrawRoleplayText(textRect, entry.GeneratedText, dialogueColor);
+
+                if (linkedAfter)
+                {
+                    Rect linkedRect = new Rect(entryRect.x + 10f, textRect.yMax + LinkedEntryPadding, entryRect.width - 20f, LinkedEntryTotalHeight);
+                    DrawLinkedEntry(linked, linkedRect, pawn);
+                }
 
                 curY += height + 8f;
             }
@@ -351,8 +383,146 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Draws a compact linked-entry card showing a truncated preview of the other pawn's
+        /// diary entry for the same event. Clicking it selects the other pawn, opens their diary
+        /// tab, and scrolls to the same event.
+        /// </summary>
+        private static void DrawLinkedEntry(LinkedEntryView link, Rect rect, Pawn currentPawn)
+        {
+            if (link == null)
+            {
+                return;
+            }
+
+            // Hover highlight for the clickable area
+            bool hovered = Mouse.IsOver(rect);
+            Widgets.DrawBoxSolid(rect, hovered ? LinkedEntryHoverColor : LinkedEntryBgColor);
+            // Draw border using thin solid rects (Widgets.DrawBox with color is unavailable)
+            GUI.color = LinkedEntryBorderColor;
+            Widgets.DrawBox(rect, 1);
+            GUI.color = Color.white;
+
+            // Left-side accent strip colored by the linked role
+            Color stripColor = DiaryEvent.RoleEquals(link.OtherRole, DiaryEvent.InitiatorRole)
+                ? ImportantColor : QuietColor;
+            Widgets.DrawBoxSolid(new Rect(rect.x + 1f, rect.y + 1f, 4f, rect.height - 2f), stripColor);
+
+            // Label line: "Alice's perspective (initiator):"
+            string roleLabel = DiaryEvent.RoleEquals(link.OtherRole, DiaryEvent.InitiatorRole)
+                ? "PawnDiary.Tab.LinkedInitiator".Translate(link.OtherPawnName)
+                : "PawnDiary.Tab.LinkedRecipient".Translate(link.OtherPawnName);
+            GameFont oldFont = Text.Font;
+            Color oldColor = GUI.color;
+            Text.Font = GameFont.Tiny;
+            GUI.color = new Color(0.80f, 0.85f, 0.92f);
+            Widgets.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - 14f, LinkedEntryLabelHeight), roleLabel);
+
+            // Truncated preview text
+            GUI.color = LinkedEntryTextColor;
+            Text.Font = GameFont.Tiny;
+            string preview = link.TruncatedText;
+            if (!link.Generated && !string.IsNullOrWhiteSpace(preview))
+            {
+                preview = "PawnDiary.Tab.LinkedNotGenerated".Translate() + " " + preview;
+            }
+            else if (string.IsNullOrWhiteSpace(preview))
+            {
+                preview = "PawnDiary.Tab.LinkedNoText".Translate();
+            }
+            Widgets.Label(new Rect(rect.x + 10f, rect.y + LinkedEntryLabelHeight + 2f, rect.width - 14f, LinkedEntryTextHeight), preview);
+            GUI.color = oldColor;
+            Text.Font = oldFont;
+
+            // Click handler: navigate to the other pawn's diary at this event
+            if (Widgets.ButtonInvisible(rect, false))
+            {
+                NavigateToLinkedEntry(link, currentPawn);
+            }
+
+            // Tooltip hint
+            if (hovered)
+            {
+                TooltipHandler.TipRegion(rect, "PawnDiary.Tab.LinkedTooltip".Translate(link.OtherPawnName));
+            }
+        }
+
+        /// <summary>
+        /// Selects the other pawn involved in a linked entry, opens their diary tab,
+        /// and scrolls to the same event.
+        /// </summary>
+        private static void NavigateToLinkedEntry(LinkedEntryView link, Pawn currentPawn)
+        {
+            if (link == null || string.IsNullOrWhiteSpace(link.OtherPawnId))
+            {
+                return;
+            }
+
+            Pawn otherPawn = FindPawnByLoadId(link.OtherPawnId);
+            if (otherPawn == null || !otherPawn.Spawned)
+            {
+                return;
+            }
+
+            // Select the other pawn (same pattern as the Social-tab click patch)
+            if (Find.Selector == null)
+            {
+                return;
+            }
+
+            Find.Selector.ClearSelection();
+            Find.Selector.Select(otherPawn, true, false);
+
+            // Request scroll to the shared event and open the diary tab
+            ITab_Pawn_Diary.RequestScrollToEntry(otherPawn, link.EventId);
+            InspectTabBase opened = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+            if (!(opened is ITab_Pawn_Diary))
+            {
+                ITab_Pawn_Diary.ClearPendingScrollRequest();
+            }
+        }
+
+        /// <summary>
+        /// Finds a live Pawn by its RimWorld unique load ID. Searches all pawns on the
+        /// current map first, then falls back to the world pawns list.
+        /// </summary>
+        private static Pawn FindPawnByLoadId(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            // Fast path: check the current map's pawn list
+            if (Find.CurrentMap != null)
+            {
+                foreach (Pawn p in Find.CurrentMap.mapPawns.AllPawns)
+                {
+                    if (p != null && p.GetUniqueLoadID() == pawnId)
+                    {
+                        return p;
+                    }
+                }
+            }
+
+            // Fallback: world pawns (off-map colonists, etc.)
+            if (Find.WorldPawns != null)
+            {
+                foreach (Pawn p in Find.WorldPawns.AllPawnsAlive)
+                {
+                    if (p != null && p.GetUniqueLoadID() == pawnId)
+                    {
+                        return p;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Calculates the height needed for a single diary entry card, accounting for
-        /// dynamic text wrapping of the generated diary text.
+        /// dynamic text wrapping of the generated diary text and the linked-entry card
+        /// (if present) positioned before or after the main text.
         /// </summary>
         private static float EntryHeight(DiaryEntryView entry, float width)
         {
@@ -363,7 +533,15 @@ namespace PawnDiary
             float textHeight = RoleplayTextHeight(entry.GeneratedText, innerWidth);
             Text.Font = oldFont;
 
-            return EntryTextTop + textHeight + EntryBottomPadding;
+            float height = EntryTextTop + textHeight + EntryBottomPadding;
+
+            // Add space for the linked-entry card and its surrounding padding
+            if (entry.LinkedEntry != null)
+            {
+                height += LinkedEntryTotalHeight + LinkedEntryPadding;
+            }
+
+            return height;
         }
 
         /// <summary>

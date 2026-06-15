@@ -559,6 +559,8 @@ namespace PawnDiary
                 opinionsSummary = DiaryContextBuilder.BuildOpinionsSummary(initiator, recipient),
                 initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, diaryEvents),
                 recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, diaryEvents),
+                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), diaryEvents),
+                recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), diaryEvents),
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
                 recipientStatus = DiaryEvent.NotGeneratedStatus,
                 neutralStatus = DiaryEvent.NotGeneratedStatus
@@ -600,6 +602,8 @@ namespace PawnDiary
                 opinionsSummary = otherPawn != null ? DiaryContextBuilder.BuildOpinionsSummary(pawn, otherPawn) : "n/a",
                 initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, diaryEvents),
                 recipientContinuity = "none",
+                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), diaryEvents),
+                recipientLastOpener = string.Empty,
                 solo = true,
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
                 recipientStatus = DiaryEvent.NotGeneratedStatus,
@@ -1257,6 +1261,15 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Public accessor for finding a DiaryEvent by ID (used by the diary tab to build
+        /// linked-entry previews and navigate to the other pawn's entry).
+        /// </summary>
+        public DiaryEvent FindEventById(string eventId)
+        {
+            return FindEvent(eventId);
         }
 
         /// <summary>

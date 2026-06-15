@@ -134,6 +134,44 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Lightweight, read-only preview of the OTHER pawn's diary entry for the same event.
+    /// Shown as a clickable "linked entry" card inside the current pawn's diary — recipient
+    /// link appears after the initiator's main text, initiator link appears before the
+    /// recipient's main text. Clicking navigates to that pawn and scrolls to the same event.
+    /// </summary>
+    public class LinkedEntryView
+    {
+        /// RimWorld unique load ID of the other pawn involved in this event.</summary>
+        public readonly string OtherPawnId;
+        /// Display name of the other pawn (e.g. "Alice").</summary>
+        public readonly string OtherPawnName;
+        /// POV role of the other pawn in this event ("initiator" or "recipient").</summary>
+        public readonly string OtherRole;
+        /// The eventId shared by both entries — used to scroll after navigating.</summary>
+        public readonly string EventId;
+        /// Truncated preview of the other pawn's generated text (first ~120 chars + ellipsis).</summary>
+        public readonly string TruncatedText;
+        /// Whether the other pawn's entry has finished LLM generation.</summary>
+        public readonly bool Generated;
+
+        public LinkedEntryView(
+            string otherPawnId,
+            string otherPawnName,
+            string otherRole,
+            string eventId,
+            string truncatedText,
+            bool generated)
+        {
+            OtherPawnId = otherPawnId;
+            OtherPawnName = otherPawnName;
+            OtherRole = otherRole;
+            EventId = eventId;
+            TruncatedText = truncatedText;
+            Generated = generated;
+        }
+    }
+
+    /// <summary>
     /// Immutable, read-only display model rendered by the diary UI tab.
     /// Represents a single POV snapshot of a diary event (or a legacy DiaryEntry).
     /// </summary>
@@ -152,6 +190,7 @@ namespace PawnDiary
         public readonly string PovRole;     // Role/perspective this view represents (e.g. "legacy")
         public readonly string GroupLabel;  // Human-readable event group shown in the entry header
         public readonly bool Important;     // Visual importance marker derived from the event group
+        public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo/legacy)
 
         public DiaryEntryView(
             int tick,
@@ -166,7 +205,8 @@ namespace PawnDiary
             string eventId,
             string povRole,
             string groupLabel,
-            bool important)
+            bool important,
+            LinkedEntryView linkedEntry = null)
         {
             Tick = tick;
             Date = date;
@@ -181,6 +221,7 @@ namespace PawnDiary
             PovRole = povRole;
             GroupLabel = groupLabel;
             Important = important;
+            LinkedEntry = linkedEntry;
         }
 
         /// <summary>

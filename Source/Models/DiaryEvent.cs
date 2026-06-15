@@ -49,6 +49,8 @@ namespace PawnDiary
         public string opinionsSummary; // social opinions between the two involved pawns
         public string initiatorContinuity; // context string carrying forward initiator's prior entries
         public string recipientContinuity; // context string carrying forward recipient's prior entries
+        public string initiatorLastOpener; // first sentence of initiator's last diary entry (avoid repeats)
+        public string recipientLastOpener; // first sentence of recipient's last diary entry (avoid repeats)
         public string initiatorPrompt; // assembled prompt text sent to the LLM for initiator POV
         public string recipientPrompt; // assembled prompt text sent to the LLM for recipient POV
         public string neutralPrompt; // assembled prompt text sent to the LLM for neutral POV
@@ -101,6 +103,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref opinionsSummary, "opinionsSummary");
             Scribe_Values.Look(ref initiatorContinuity, "initiatorContinuity");
             Scribe_Values.Look(ref recipientContinuity, "recipientContinuity");
+            Scribe_Values.Look(ref initiatorLastOpener, "initiatorLastOpener");
+            Scribe_Values.Look(ref recipientLastOpener, "recipientLastOpener");
             Scribe_Values.Look(ref initiatorGeneratedText, "initiatorGeneratedText");
             Scribe_Values.Look(ref recipientGeneratedText, "recipientGeneratedText");
             Scribe_Values.Look(ref neutralGeneratedText, "neutralGeneratedText");
@@ -197,6 +201,16 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(recipientContinuity))
                 {
                     recipientContinuity = "none";
+                }
+
+                if (string.IsNullOrWhiteSpace(initiatorLastOpener))
+                {
+                    initiatorLastOpener = string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(recipientLastOpener))
+                {
+                    recipientLastOpener = string.Empty;
                 }
 
                 if (neutralStatus == null)
@@ -429,6 +443,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Builds a read-only view of this event for the given pawn's POV, or null if the pawn is not involved.
+        /// For two-pawn events, includes a LinkedEntryView previewing the other pawn's entry.
         /// </summary>
         public DiaryEntryView ToViewFor(string pawnId)
         {
@@ -439,6 +454,30 @@ namespace PawnDiary
             }
 
             DiaryInteractionGroupDef group = GroupForDisplay();
+
+            // Build a linked entry for the other pawn in a paired event.
+            // Solo events (mental breaks) and legacy entries have no link.
+            LinkedEntryView linkedEntry = null;
+            if (!solo && RoleIsInitiatorOrRecipient(povRole))
+            {
+                string otherRole = RoleEquals(povRole, InitiatorRole) ? RecipientRole : InitiatorRole;
+                string otherPawnId = RoleEquals(otherRole, InitiatorRole) ? initiatorPawnId : recipientPawnId;
+                string otherPawnName = RoleEquals(otherRole, InitiatorRole) ? initiatorName : recipientName;
+                string otherGeneratedText = GeneratedTextFor(otherRole);
+                bool otherGenerated = !string.IsNullOrWhiteSpace(otherGeneratedText);
+                string truncated = TruncateForPreview(otherGenerated
+                    ? otherGeneratedText
+                    : TextFor(otherRole));
+
+                linkedEntry = new LinkedEntryView(
+                    otherPawnId,
+                    otherPawnName ?? string.Empty,
+                    otherRole,
+                    eventId,
+                    truncated,
+                    otherGenerated);
+            }
+
             return new DiaryEntryView(
                 tick,
                 date,
@@ -452,7 +491,33 @@ namespace PawnDiary
                 eventId,
                 povRole,
                 group?.label ?? interactionLabel ?? string.Empty,
-                group == null || group.important);
+                group == null || group.important,
+                linkedEntry);
+        }
+
+        /// <summary>
+        /// Truncates text to a short preview suitable for the linked-entry card.
+        /// Takes the first line (or up to ~120 characters), appending an ellipsis if truncated.
+        /// </summary>
+        private static string TruncateForPreview(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            int newlineIdx = normalized.IndexOf('\n');
+            string firstLine = newlineIdx >= 0 ? normalized.Substring(0, newlineIdx) : normalized;
+            firstLine = firstLine.Trim();
+
+            const int MaxPreviewLength = 120;
+            if (firstLine.Length > MaxPreviewLength)
+            {
+                return firstLine.Substring(0, MaxPreviewLength) + "...";
+            }
+
+            return firstLine;
         }
 
         /// <summary>
@@ -603,6 +668,25 @@ namespace PawnDiary
             }
 
             return "none";
+        }
+
+        /// <summary>
+        /// Returns the last opener (first sentence of previous diary entry) for the given role,
+        /// or empty string for neutral. Used to avoid repetitive openings.
+        /// </summary>
+        public string LastOpenerForRole(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                return initiatorLastOpener;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientLastOpener;
+            }
+
+            return string.Empty;
         }
 
         private string TextFor(string povRole)
@@ -873,7 +957,7 @@ namespace PawnDiary
             return string.IsNullOrWhiteSpace(status) ? NotGeneratedStatus : status;
         }
 
-        private static bool RoleEquals(string left, string right)
+        public static bool RoleEquals(string left, string right)
         {
             return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
         }
