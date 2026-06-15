@@ -4,6 +4,22 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (DLC-safety: guidance + first guarded DLC reads)**
+  - Verified the mod runs on **base RimWorld with no paid DLC**: `About.xml` declares no DLC
+    dependency, no `[DefOf]`/`GetNamed` of DLC defs, and DLC *events* are handled reactively via
+    base-game patch choke points + `defName` string matching, so DLC content is inert (never
+    crashes) when absent.
+  - Added a **"DLC-safety"** section to `AGENTS.md` (+ a note in `DOCUMENTATION.md §8`) so new
+    features keep this property: explains the "all DLC ships in one assembly, so it compiles but
+    breaks at runtime" trap and the rules (prefer string matchers, route DLC pawn reads through
+    `DlcContext`, gate with `ModsConfig.*Active`, avoid `GetNamed` of DLC defs, tag DLC XML refs
+    with `MayRequire`).
+  - **New `Source/Generation/DlcContext.cs`** — the single, double-guarded home for DLC-gated pawn
+    reads (`ModsConfig.<Dlc>Active` + null-check; returns empty when the DLC/trait is absent). Wired
+    three identity fields into `BuildPawnSummary`, each omitted without its DLC and for the trait's
+    vanilla default: `xenotype=` (Biotech; skips plain Baseliner), `title=` (Royalty; highest
+    title), `faith=` (Ideology; ideoligion + role). Verified by building against the game assembly.
+
 - **2026-06-15 (code-review fixes: patch robustness & duplicate entries)**
   - **Relic patch no longer risks the whole mod.** `RelicInstallCompletionPatch` targets a
     compiler-generated method name (`<MakeNewToils>b__5_5`) that can change between RimWorld

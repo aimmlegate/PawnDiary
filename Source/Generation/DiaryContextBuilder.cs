@@ -332,6 +332,28 @@ namespace PawnDiary
                 parts.Add("age=" + pawn.ageTracker.AgeBiologicalYears);
             }
 
+            // DLC identity (Biotech xenotype / Royalty title / Ideology faith). Each accessor
+            // returns empty without its DLC, so a no-DLC game simply omits these lines — see
+            // DlcContext and AGENTS.md ("DLC-safety"). The labels are structured prompt schema
+            // (like sex=/age=), so they stay English per the localization carve-out.
+            string xenotype = DlcContext.Xenotype(pawn);
+            if (!string.IsNullOrWhiteSpace(xenotype))
+            {
+                parts.Add("xenotype=" + xenotype);
+            }
+
+            string royalTitle = DlcContext.RoyalTitle(pawn);
+            if (!string.IsNullOrWhiteSpace(royalTitle))
+            {
+                parts.Add("title=" + royalTitle);
+            }
+
+            string faith = DlcContext.Ideoligion(pawn);
+            if (!string.IsNullOrWhiteSpace(faith))
+            {
+                parts.Add("faith=" + faith);
+            }
+
             string mood = BuildMoodSummary(pawn);
             if (!string.IsNullOrWhiteSpace(mood))
             {
