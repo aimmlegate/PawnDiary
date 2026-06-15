@@ -1206,7 +1206,7 @@ namespace PawnDiary
             LogApiDebug(
                 "Configured API lanes=" + configuredCount
                 + ", active lanes=" + activeCount
-                + (configuredCount == activeCount ? string.Empty : " (rows with blank url/model are skipped)")
+                + (configuredCount == activeCount ? string.Empty : " (disabled rows or rows with blank url/model are skipped)")
                 + "; active=[" + LaneList(active) + "]");
         }
 

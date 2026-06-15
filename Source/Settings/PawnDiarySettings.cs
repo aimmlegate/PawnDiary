@@ -24,6 +24,8 @@ namespace PawnDiary
         public string model = string.Empty;
         // API key (may be empty for local models that don't require auth).
         public string apiKey = string.Empty;
+        // When false, keep this row configured but exclude it from generation and failover.
+        public bool enabled = true;
 
         public ApiEndpointConfig()
         {
@@ -36,12 +38,13 @@ namespace PawnDiary
             this.model = model;
         }
 
-        // Reads/writes the three fields on save and load (Scribe is RimWorld's serializer).
+        // Reads/writes the row fields on save and load (Scribe is RimWorld's serializer).
         public void ExposeData()
         {
             Scribe_Values.Look(ref url, "url", PawnDiarySettings.DefaultEndpointUrl);
             Scribe_Values.Look(ref model, "model", string.Empty);
             Scribe_Values.Look(ref apiKey, "apiKey", string.Empty);
+            Scribe_Values.Look(ref enabled, "enabled", true);
         }
     }
 
@@ -76,6 +79,8 @@ namespace PawnDiary
         public bool keepRawEntryOnFailure = true;
         // When true, generates diary text from both the initiator's and recipient's perspectives.
         public bool dualPovGeneration = true;
+        // UI preference: when false, the compact API/model setup block is collapsed in mod settings.
+        public bool showApiSettings = true;
         // System message sent with each LLM request to set the model's behavior.
         public string systemPrompt = DefaultSystemPrompt;
 
@@ -119,6 +124,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
             Scribe_Values.Look(ref keepRawEntryOnFailure, "keepRawEntryOnFailure", true);
             Scribe_Values.Look(ref dualPovGeneration, "dualPovGeneration", true);
+            Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
             Scribe_Values.Look(ref systemPrompt, "systemPrompt", DefaultSystemPrompt);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
@@ -192,8 +198,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the API lanes usable for generation: those with both a URL and a model.
-        /// A model is required ("force to pick a model"), so blank-model rows are skipped.
+        /// Returns the API lanes usable for generation: enabled rows with both a URL and a model.
+        /// A model is required ("force to pick a model"), so disabled or blank-model rows are skipped.
         /// </summary>
         public List<ApiEndpointConfig> ActiveEndpoints()
         {
@@ -203,6 +209,7 @@ namespace PawnDiary
             foreach (ApiEndpointConfig endpoint in apiEndpoints)
             {
                 if (endpoint != null
+                    && endpoint.enabled
                     && !string.IsNullOrWhiteSpace(endpoint.url)
                     && !string.IsNullOrWhiteSpace(endpoint.model))
                 {

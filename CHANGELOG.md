@@ -4,6 +4,14 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (compact hideable model setup)**
+  - Made the API/model settings block compact and collapsible. Each lane now uses tighter rows for
+    endpoint, key, model, Fetch, and Pick controls, and the expanded/collapsed state is saved.
+
+- **2026-06-15 (toggle API lanes without deleting)**
+  - Added an enabled checkbox to each configured API/model row. Disabled rows keep their endpoint,
+    key, and model settings but are skipped by generation, round-robin selection, and failover.
+
 - **2026-06-15 (multi-model debug logs)**
   - Added `[PawnDiary debug]` RimWorld log lines around API lane selection and LLM failover:
     configured vs active lane counts, selected primary model, failover order, skipped blank/duplicate

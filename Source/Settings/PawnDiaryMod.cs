@@ -63,8 +63,9 @@ namespace PawnDiary
             Settings.EnsureEndpointsList();
 
             Rect outRect = inRect;
-            // Height grows with the number of API rows so the scroll view always fits them.
-            float viewHeight = 1300f + Settings.apiEndpoints.Count * 190f + 40f;
+            // Height grows with the visible API rows so the scroll view always fits them.
+            float apiEditorHeight = Settings.showApiSettings ? 92f + Settings.apiEndpoints.Count * 98f : 58f;
+            float viewHeight = 1300f + apiEditorHeight;
             Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight); // 16px reserved for the scrollbar
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
@@ -111,13 +112,29 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the list of API lanes — one block per row (endpoint, key, model, fetch/pick
-        /// buttons) with a Remove button per row, an Add button below, and a Reset button.
-        /// Requests are spread across these lanes in parallel (see LlmClient / QueuePrompt).
+        /// Draws the list of API lanes in a compact, collapsible block. Each row stores one
+        /// endpoint/key/model tuple, can be enabled or disabled, and has fetch/pick model buttons.
+        /// Requests are spread across the enabled lanes in parallel (see LlmClient / QueuePrompt).
         /// </summary>
         private void DrawApiEndpointsEditor(Listing_Standard listing)
         {
-            listing.Label("PawnDiary.Settings.ApisHeader".Translate());
+            Rect titleRect = listing.GetRect(28f);
+            Rect labelRect = new Rect(titleRect.x, titleRect.y, titleRect.width - 126f, titleRect.height);
+            Widgets.Label(labelRect, "PawnDiary.Settings.ApisHeader".Translate());
+            Rect toggleRect = new Rect(titleRect.xMax - 118f, titleRect.y, 118f, titleRect.height);
+            string toggleKey = Settings.showApiSettings ? "PawnDiary.Settings.HideModelSettings" : "PawnDiary.Settings.ShowModelSettings";
+            if (Widgets.ButtonText(toggleRect, toggleKey.Translate()))
+            {
+                Settings.showApiSettings = !Settings.showApiSettings;
+            }
+
+            if (!Settings.showApiSettings)
+            {
+                listing.Label("PawnDiary.Settings.ApisSummary".Translate(Settings.ActiveEndpoints().Count, Settings.apiEndpoints.Count));
+                listing.GapLine();
+                return;
+            }
+
             listing.Gap(2f);
 
             // Defer removal until after the loop so we don't mutate the list while drawing it.
@@ -130,27 +147,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                // Row header: "API N" on the left, a Remove button on the right. The last remaining
-                // row keeps no Remove button so there's always at least one lane to configure.
-                Rect headerRect = listing.GetRect(28f);
-                Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, headerRect.width - 110f, headerRect.height);
-                Widgets.Label(headerLabelRect, "PawnDiary.Settings.ApiLabel".Translate(i + 1));
-                if (Settings.apiEndpoints.Count > 1)
-                {
-                    Rect removeRect = new Rect(headerRect.xMax - 100f, headerRect.y, 100f, headerRect.height);
-                    if (Widgets.ButtonText(removeRect, "PawnDiary.Settings.RemoveApi".Translate()))
-                    {
-                        removeIndex = i;
-                    }
-                }
-
-                endpoint.url = listing.TextEntryLabeled("PawnDiary.Settings.Endpoint".Translate(), endpoint.url);
-                endpoint.apiKey = listing.TextEntryLabeled("PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey);
-                endpoint.model = listing.TextEntryLabeled("PawnDiary.Settings.ModelName".Translate(), endpoint.model);
-
-                DrawModelButtons(listing, i, endpoint);
-
-                listing.GapLine();
+                DrawCompactApiEndpointRow(listing, i, endpoint, ref removeIndex);
             }
 
             if (removeIndex >= 0)
@@ -182,15 +179,68 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the per-row Fetch + Pick buttons and the fetch status line. "Fetch models" queries
-        /// that row's endpoint; "Pick fetched model" opens a menu of the results to set the row's model.
+        /// Draws a compact API/model row using two thin field lines instead of three tall labeled
+        /// entries, so adding several models stays readable in RimWorld's narrow settings window.
         /// </summary>
-        private void DrawModelButtons(Listing_Standard listing, int index, ApiEndpointConfig endpoint)
+        private void DrawCompactApiEndpointRow(Listing_Standard listing, int index, ApiEndpointConfig endpoint, ref int removeIndex)
         {
-            Rect rowRect = listing.GetRect(28f);
-            Rect fetchRect = new Rect(rowRect.x, rowRect.y, rowRect.width / 2f - 4f, rowRect.height);
-            Rect pickRect = new Rect(rowRect.x + rowRect.width / 2f + 4f, rowRect.y, rowRect.width / 2f - 4f, rowRect.height);
+            // Row header: "API N" on the left, then Enabled and Remove controls on the right.
+            Rect headerRect = listing.GetRect(28f);
+            Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, headerRect.width - 230f, headerRect.height);
+            Widgets.Label(headerLabelRect, "PawnDiary.Settings.ApiLabel".Translate(index + 1));
+            Rect enabledRect = new Rect(headerRect.xMax - 220f, headerRect.y, 110f, headerRect.height);
+            Widgets.CheckboxLabeled(enabledRect, "PawnDiary.Settings.ApiEnabled".Translate(), ref endpoint.enabled);
+            if (Settings.apiEndpoints.Count > 1)
+            {
+                Rect removeRect = new Rect(headerRect.xMax - 100f, headerRect.y, 100f, headerRect.height);
+                if (Widgets.ButtonText(removeRect, "PawnDiary.Settings.RemoveApi".Translate()))
+                {
+                    removeIndex = index;
+                }
+            }
 
+            Rect firstLineRect = listing.GetRect(28f);
+            float halfWidth = firstLineRect.width / 2f - 4f;
+            Rect endpointRect = new Rect(firstLineRect.x, firstLineRect.y, halfWidth, firstLineRect.height);
+            Rect modelRect = new Rect(firstLineRect.x + halfWidth + 8f, firstLineRect.y, halfWidth, firstLineRect.height);
+            endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, 68f);
+            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 54f);
+
+            Rect secondLineRect = listing.GetRect(28f);
+            float buttonWidth = 124f;
+            Rect keyRect = new Rect(secondLineRect.x, secondLineRect.y, secondLineRect.width - buttonWidth * 2f - 16f, secondLineRect.height);
+            Rect fetchRect = new Rect(keyRect.xMax + 8f, secondLineRect.y, buttonWidth, secondLineRect.height);
+            Rect pickRect = new Rect(fetchRect.xMax + 8f, secondLineRect.y, buttonWidth, secondLineRect.height);
+            endpoint.apiKey = DrawCompactTextField(keyRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 60f);
+            DrawModelButtons(fetchRect, pickRect, index, endpoint);
+
+            // Show the fetch status under the row that triggered the fetch.
+            if (fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus))
+            {
+                listing.Label(fetchStatus);
+            }
+
+            listing.GapLine();
+        }
+
+        /// <summary>
+        /// Draws a short label and text field inside one row. This mirrors TextEntryLabeled but lets
+        /// two settings share a line without clipping labels into neighboring controls.
+        /// </summary>
+        private static string DrawCompactTextField(Rect rect, string label, string value, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect fieldRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+            Widgets.Label(labelRect, label);
+            return Widgets.TextField(fieldRect, value ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Draws the per-row Fetch + Pick buttons. "Fetch models" queries that row's endpoint;
+        /// "Pick fetched model" opens a menu of the results to set the row's model.
+        /// </summary>
+        private void DrawModelButtons(Rect fetchRect, Rect pickRect, int index, ApiEndpointConfig endpoint)
+        {
             bool fetchingThis = isFetchingModels && fetchTargetIndex == index;
             if (Widgets.ButtonText(fetchRect, (fetchingThis ? "PawnDiary.Settings.FetchingModels" : "PawnDiary.Settings.FetchModels").Translate()) && !isFetchingModels)
             {
@@ -214,12 +264,6 @@ namespace PawnDiary
                 }
 
                 Find.WindowStack.Add(new FloatMenu(options));
-            }
-
-            // Show the fetch status under the row that triggered the fetch.
-            if (fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus))
-            {
-                listing.Label(fetchStatus);
             }
         }
 

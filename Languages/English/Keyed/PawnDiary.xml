@@ -44,14 +44,18 @@
   <!-- ===== Mod settings window ===== -->
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Connection</PawnDiary.Settings.Connection>
-  <PawnDiary.Settings.ApisHeader>APIs — added here run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
+  <PawnDiary.Settings.ApisHeader>APIs — enabled rows run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
+  <PawnDiary.Settings.ShowModelSettings>Show models</PawnDiary.Settings.ShowModelSettings>
+  <PawnDiary.Settings.HideModelSettings>Hide models</PawnDiary.Settings.HideModelSettings>
+  <PawnDiary.Settings.ApisSummary>{0} enabled of {1} configured model rows</PawnDiary.Settings.ApisSummary>
   <PawnDiary.Settings.ApiLabel>API {0}</PawnDiary.Settings.ApiLabel>
+  <PawnDiary.Settings.ApiEnabled>Enabled</PawnDiary.Settings.ApiEnabled>
   <PawnDiary.Settings.AddApi>+ Add API</PawnDiary.Settings.AddApi>
   <PawnDiary.Settings.RemoveApi>− Remove</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>API key</PawnDiary.Settings.ApiKey>
   <PawnDiary.Settings.ModelName>Model name</PawnDiary.Settings.ModelName>
-  <PawnDiary.Settings.FetchModels>Fetch models</PawnDiary.Settings.FetchModels>
+  <PawnDiary.Settings.FetchModels>Fetch</PawnDiary.Settings.FetchModels>
   <PawnDiary.Settings.FetchingModels>Fetching models...</PawnDiary.Settings.FetchingModels>
   <PawnDiary.Settings.ModelsNotFetched>Models not fetched.</PawnDiary.Settings.ModelsNotFetched>
   <PawnDiary.Settings.NoModelsReturned>No models returned.</PawnDiary.Settings.NoModelsReturned>
@@ -64,7 +68,7 @@
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
   <PawnDiary.Settings.SystemPrompt>System prompt</PawnDiary.Settings.SystemPrompt>
   <PawnDiary.Settings.RestoreSystemPrompt>Restore default system prompt</PawnDiary.Settings.RestoreSystemPrompt>
-  <PawnDiary.Settings.PickModel>Pick fetched model</PawnDiary.Settings.PickModel>
+  <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsHeader>Events — enable groups and edit their diary prompt</PawnDiary.Settings.EventsHeader>
   <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>

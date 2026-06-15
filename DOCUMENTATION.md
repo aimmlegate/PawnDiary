@@ -313,7 +313,8 @@ immediately.
 
 | Setting | Default | Range / notes |
 |---------|---------|---------------|
-| `apiEndpoints` | one row: `http://localhost:1234/v1` / `local-model` | **List of API lanes**, each = base URL + key + **one** model (`ApiEndpointConfig`). Requests spread across rows and run in parallel (§7). Add rows with **+ Add API**; a model is required per row (blank-model rows are skipped). Legacy single-endpoint saves migrate into one row automatically. |
+| `apiEndpoints` | one row: enabled `http://localhost:1234/v1` / `local-model` | **List of API lanes**, each = enabled flag + base URL + key + **one** model (`ApiEndpointConfig`). Requests spread across enabled rows and run in parallel (§7). Add rows with **+ Add API**; disabled rows stay saved but are skipped, and a model is required per active row (blank-model rows are skipped). Legacy single-endpoint saves migrate into one enabled row automatically. |
+| `showApiSettings` | true | UI-only preference for whether the compact API/model setup block is expanded in mod settings. |
 | `endpointUrl` / `apiKey` / `modelName` | localhost / _(empty)_ / `local-model` | **Legacy** single-endpoint fields, kept only to seed `apiEndpoints` on first load. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight **per API**; the rest queue on that API. Different APIs always run in parallel. **Use 1 for a single local model.** |
@@ -324,8 +325,8 @@ immediately.
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
 
-Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`: the **API lanes editor**
-(`DrawApiEndpointsEditor` — per-row endpoint/key/model with per-row "Fetch models" + "Pick",
+Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`: the compact, hideable **API lanes editor**
+(`DrawApiEndpointsEditor` — per-row enabled toggle + endpoint/key/model with per-row "Fetch" + "Pick",
 **+ Add API** / **− Remove** / **Reset** buttons), paired-POV toggle, per-API concurrency slider,
 system prompt editor, and the interaction-group editor (a checkbox per group plus a prompt editor
 for the selected group). The scroll-view height grows with the number of API rows.
@@ -342,10 +343,10 @@ enabled), both editable from the tab (persona via a float-menu picker, generatio
   endpoint+model), sized to `maxConcurrentRequests`. At most N requests are in flight **per API**;
   lanes run independently, so several APIs work in parallel. Requests are **never dropped** for
   being "too many".
-- **Distribution:** `QueuePrompt` (`DiaryGameComponent`) assigns each new event to the next lane
-  round-robin (`LlmClient.NextRoundRobinIndex`). The recipient half of a paired/sequential event is
+- **Distribution:** `QueuePrompt` (`DiaryGameComponent`) assigns each new event to the next enabled
+  lane round-robin (`LlmClient.NextRoundRobinIndex`). The recipient half of a paired/sequential event is
   pinned to the **same lane the initiator used** (matched via the endpoint+model recorded on the
-  event) so a sequential pair stays on one model. No configured lane ⇒ the entry fails with
+  event) so a sequential pair stays on one model. No enabled configured lane ⇒ the entry fails with
   `PawnDiary.Error.NoApiConfigured` (raw text kept if `keepRawEntryOnFailure`).
 - **Failover ("use next model"):** each request carries the chosen lane plus the **other lanes as
   ordered failover targets** (`failoverTargets`). `SendWithRetries` tries each lane via `TryLane`;
