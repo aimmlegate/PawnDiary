@@ -38,6 +38,10 @@ namespace PawnDiary
         // Low-stakes groups can set this false in XML without changing save data or code.
         public bool important = true;
 
+        // Whether events in this group are combat-related (social fights, insults). Used to decide
+        // whether to add the equipped weapon to the prompt; set per group in XML, default false.
+        public bool combat = false;
+
         // The diary-prompt instruction shared by every event in the group.
         public string instruction;
 

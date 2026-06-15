@@ -12,6 +12,7 @@
     domain         - Interaction (matches InteractionDefs) or MentalState (matches MentalStateDefs)
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
+    combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
     instruction    - the diary-prompt instruction shared by every event in the group
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
@@ -186,6 +187,7 @@
     <order>80</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <combat>true</combat>
     <instruction>hostile exchange: an insult, a slight, or the start of a social fight</instruction>
     <matchDefNames>
       <li>Insult</li>

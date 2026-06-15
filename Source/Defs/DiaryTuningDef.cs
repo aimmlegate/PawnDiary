@@ -29,7 +29,7 @@ namespace PawnDiary
         // ---- Health ----
         public float painVisibleAbove = 0.03f;     // report pain only above this fraction
         public float bleedVisibleAbove = 0.01f;    // report bleeding only above this rate
-        public float lowCapacityThreshold = 0.85f; // report a capacity only when below this level
+        public float lowCapacityThreshold = 0.80f; // report a capacity only when below this level
 
         // ---- Misc ----
         public int diaryLineMaxChars = 160;   // truncate the "last wrote" continuity line to this

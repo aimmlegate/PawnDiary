@@ -23,10 +23,9 @@ nuzzled by an animal, or a colonist chatting with a prisoner), a **solo** entry 
 for the colonist only — the ineligible pawn's POV is never generated and cannot block the
 colonist's entry. Interactions between two ineligible pawns are silently skipped.
 
-Each pawn also has saved diary controls: a **persona preset** that shapes their writing
-voice, and a checkbox to disable LLM diary generation for that pawn while keeping raw
-events recorded. The persona selector is temporarily hidden from the pawn tab; the
-generation checkbox remains visible.
+Each pawn also has saved diary controls, shown above the entries in the pawn tab: a
+**persona preset** picker that shapes their writing voice, and a checkbox to disable LLM
+diary generation for that pawn while keeping raw events recorded.
 
 Pairwise events (interactions, social fights) between two eligible colonists produce two
 entries — one from each pawn's point of view — by default as **paired sequential POV**:
@@ -186,9 +185,8 @@ All paths share the same per-event context fields and the system prompt.
 - Each `PawnDiaryRecord` saves `personaDefName` and `diaryGenerationEnabled`.
 - Persona options are `DiaryPersonaDef` XML Defs in `1.6/Defs/DiaryPersonaDefs.xml`, with
   `DiaryPromptDef.defaultPersonaDefName` providing the fallback/default (`DiaryPersona_StoicSurvivor`).
-- The Diary tab creates a pawn's record on first edit/open and currently shows only the
-  generation checkbox above the entries. The persona selector remains saved/model-backed,
-  but is temporarily hidden from the pawn tab.
+- The Diary tab creates a pawn's record on first edit/open and shows the generation
+  checkbox plus a persona picker (a float-menu of every `DiaryPersonaDef`) above the entries.
 - Disabled generation does **not** delete or skip events; it only prevents future LLM requests for
 that pawn. Raw event text is still stored, but the production diary tab only displays finished
 generated entries.
@@ -273,12 +271,14 @@ is recorded iff its group is enabled.
 | **Mental breaks** (mental) | on | Berserk, Tantrum, Wander_Sad, Binging_*, MurderousRage, … (catch-all for mental states) |
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
-`domain`, `defaultEnabled`, `important`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
+`domain`, `defaultEnabled`, `important`, `combat`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
 — no recompile. `order` controls classification order within a domain (lowest first; keep the
 catch-all highest). Group `defName`s are the stable keys player settings save overrides under, so
 don't rename them.
 The Diary tab uses `important` only as a display hint: important groups get a warm marker,
-while quiet groups get a muted marker. It does not affect recording or generation.
+while quiet groups get a muted marker. It does not affect recording or generation. `important`
+also gates the `burning passion:` prompt field; `combat` (data-driven, default false) gates the
+`weapon:` field — together they decide whether the equipped weapon is added to the prompt.
 
 **Tuning knobs** (dedup windows, small-talk batching, scan radius/temperature, and the
 mood/pain/beauty/opinion bucket thresholds) likewise live in XML —
@@ -330,7 +330,7 @@ for the selected group). The scroll-view height grows with the number of API row
 
 Per-pawn diary controls live in `ITab_Pawn_Diary`, not the global mod settings window. They are
 stored in each pawn's `PawnDiaryRecord`: persona preset and `diaryGenerationEnabled` (default
-enabled). The persona control is temporarily hidden from the tab UI.
+enabled), both editable from the tab (persona via a float-menu picker, generation via a checkbox).
 
 ---
 
