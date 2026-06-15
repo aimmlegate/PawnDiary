@@ -395,6 +395,8 @@ does not add a second surgery hook that would duplicate successful operations.
 |---------|---------|---------------|
 | `apiEndpoints` | one row: enabled `http://localhost:1234/v1` / `local-model` | **List of API lanes**, each = enabled flag + base URL + key + **one** model (`ApiEndpointConfig`). Requests spread across enabled rows and run in parallel (§7). Add rows with **+ Add API**; disabled rows stay saved but are skipped, and a model is required per active row (blank-model rows are skipped). Legacy single-endpoint saves migrate into one enabled row automatically. |
 | `showApiSettings` | true | UI-only preference for whether the compact API/model setup block is expanded in mod settings. |
+| `showPersonaSettings` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this reveals the manual persona picker in the pawn Diary tab. Normal mode always hides persona controls. |
+| `showLlmDebugInfo` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this shows raw/pending/failed entries plus the LLM endpoint/model/status/error/prompt diagnostic block in the pawn Diary tab. Normal mode always hides it. |
 | `endpointUrl` / `apiKey` / `modelName` | localhost / _(empty)_ / `local-model` | **Legacy** single-endpoint fields, kept only to seed `apiEndpoints` on first load. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight **per API**; the rest queue on that API. Different APIs always run in parallel. **Use 1 for a single local model.** |
@@ -413,7 +415,8 @@ for the selected group). The scroll-view height grows with the number of API row
 
 Per-pawn diary controls live in `ITab_Pawn_Diary`, not the global mod settings window. They are
 stored in each pawn's `PawnDiaryRecord`: persona preset and `diaryGenerationEnabled` (default
-enabled), both editable from the tab (persona via a float-menu picker, generation via a checkbox).
+enabled). The generation checkbox is always visible. The persona picker is a dev-mode-only control:
+dev mode shows a "Show persona settings" toggle, and normal mode hides persona editing entirely.
 
 ---
 
@@ -482,7 +485,10 @@ drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking l
 bold/italic and colored with the pawn's RimWorld favorite color. Each generated card ends with
 a tiny, low-contrast model id so multi-model output can be traced without making the card feel
 technical. Pending, failed-without-output, raw fallback, debug, and persona-editing details are
-hidden from the production tab. A compact generating badge appears in the tab while pending entries exist.
+hidden from the production tab. In RimWorld dev mode, the tab adds toggles for persona controls
+and LLM diagnostics; the debug toggle reveals raw/pending/failed rows plus the existing diagnostic
+block with endpoint, model, status, error, and prompt. A compact generating badge appears in the
+tab while pending entries exist.
 - Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
   matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
   continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can

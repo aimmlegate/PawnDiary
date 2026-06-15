@@ -15,7 +15,7 @@
 -->
 <LanguageData>
 
-  <!-- Inspector tab label (after the vanilla Health tab) -->
+  <!-- Inspector tab label (after the vanilla Social tab) -->
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
 
   <!-- ===== Diary tab UI ===== -->
@@ -24,6 +24,10 @@
   <PawnDiary.Tab.NoGeneratedEntries>No finished diary entries yet.</PawnDiary.Tab.NoGeneratedEntries>
   <PawnDiary.Tab.GenerateForPawn>Generate diary entries for this pawn</PawnDiary.Tab.GenerateForPawn>
   <PawnDiary.Tab.GenerateForPawnTip>When disabled, events are still recorded here, but no LLM request is sent for this pawn.</PawnDiary.Tab.GenerateForPawnTip>
+  <PawnDiary.Tab.ShowPersonaSettings>Show persona settings</PawnDiary.Tab.ShowPersonaSettings>
+  <PawnDiary.Tab.ShowPersonaSettingsTip>Show the manual persona picker in this pawn's Diary tab.</PawnDiary.Tab.ShowPersonaSettingsTip>
+  <PawnDiary.Tab.ShowLlmDebugInfo>Show LLM debug info</PawnDiary.Tab.ShowLlmDebugInfo>
+  <PawnDiary.Tab.ShowLlmDebugInfoTip>Show raw, pending, and failed entries with endpoint, model, status, error, and prompt diagnostics.</PawnDiary.Tab.ShowLlmDebugInfoTip>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.GeneratingCount>{0} generating</PawnDiary.Tab.GeneratingCount>
   <PawnDiary.Tab.Important>important</PawnDiary.Tab.Important>
