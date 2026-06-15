@@ -1,7 +1,8 @@
 // Harmony patches — our hooks into vanilla RimWorld. We don't own the game's code, so we "patch"
-// vanilla methods: Postfix hooks record PlayLog.Add social interactions and
-// MentalStateHandler.TryStartMentalState social fights / mental breaks after RimWorld handles
-// them, and a Prefix hook redirects Social-tab play-log clicks into the matching Diary entry
+// vanilla methods: Postfix hooks record PlayLog.Add social interactions,
+// MentalStateHandler.TryStartMentalState social fights / mental breaks, and TaleRecorder
+// notable-history events after RimWorld handles them. A Prefix hook redirects Social-tab
+// play-log clicks into the matching Diary entry
 // when one exists. AccessTools.Field reads private vanilla fields via reflection.
 // New to this? See AGENTS.md ("Harmony patches").
 using System.Reflection;
@@ -12,6 +13,118 @@ using Verse.AI;
 
 namespace PawnDiary
 {
+    // Fires when vanilla sends the masterwork/legendary craft letter. We filter by quality in
+    // DiaryGameComponent too, but patching this narrow method avoids watching every produced item.
+    [HarmonyPatch(typeof(QualityUtility), nameof(QualityUtility.SendCraftNotification))]
+    public static class CraftQualityNotificationPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for QualityUtility.SendCraftNotification. Forwards the crafted item
+        /// and worker so masterwork/legendary production can become a solo diary event.
+        /// </summary>
+        public static void Postfix(Thing thing, Pawn worker)
+        {
+            DiaryGameComponent.Current?.RecordCraftedQuality(thing, worker);
+        }
+    }
+
+    // Fires when a pawn finishes installing an ideology relic in a reliquary. The method name is
+    // compiler-generated from a local function/lambda inside MakeNewToils; using TargetMethod keeps
+    // the fragile private name in one place and fails harmlessly if RimWorld changes it.
+    [HarmonyPatch]
+    public static class RelicInstallCompletionPatch
+    {
+        /// <summary>
+        /// Locates the private final-action method inside JobDriver_InstallRelic.MakeNewToils.
+        /// </summary>
+        public static MethodBase TargetMethod()
+        {
+            return AccessTools.Method(typeof(JobDriver_InstallRelic), "<MakeNewToils>b__5_5");
+        }
+
+        /// <summary>
+        /// Harmony Postfix for the install-relic completion action. Finds the relic from the job
+        /// targets or the reliquary container, then records the installer pawn's diary event.
+        /// </summary>
+        public static void Postfix(JobDriver_InstallRelic __instance)
+        {
+            if (__instance == null)
+            {
+                return;
+            }
+
+            Thing relic = FindRelic(__instance);
+            if (relic == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordRelicInstalled(__instance.pawn, relic);
+        }
+
+        private static Thing FindRelic(JobDriver_InstallRelic driver)
+        {
+            Thing[] targets = new Thing[]
+            {
+                driver.job.GetTarget(TargetIndex.A).Thing,
+                driver.job.GetTarget(TargetIndex.B).Thing,
+                driver.job.GetTarget(TargetIndex.C).Thing
+            };
+
+            CompRelicContainer container = null;
+            for (int i = 0; i < targets.Length; i++)
+            {
+                ThingWithComps thingWithComps = targets[i] as ThingWithComps;
+                CompRelicContainer found = thingWithComps?.GetComp<CompRelicContainer>();
+                if (found != null)
+                {
+                    container = found;
+                    if (found.ContainedThing != null)
+                    {
+                        return found.ContainedThing;
+                    }
+                }
+            }
+
+            if (container == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < targets.Length; i++)
+            {
+                Thing target = targets[i];
+                if (target != null && CompRelicContainer.IsRelic(target))
+                {
+                    return target;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    // Fires whenever RimWorld accepts a notable "tale" for history/art generation. Tales cover
+    // many non-social events, such as wounds, deaths, surgeries, births, recruitment, research,
+    // construction/crafting milestones, raids, and disasters.
+    [HarmonyPatch(typeof(TaleRecorder), nameof(TaleRecorder.RecordTale))]
+    public static class TaleRecorderPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for TaleRecorder.RecordTale. The returned Tale is null when vanilla
+        /// chose not to record it, so only successful tales are forwarded to DiaryGameComponent.
+        /// </summary>
+        public static void Postfix(Tale __result, TaleDef def)
+        {
+            if (__result == null || def == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordTale(__result, def);
+        }
+    }
+
     // Fires whenever a pawn enters a mental state: social fights (pairwise) and mental
     // breaks (solo). This is the single choke point for all mental states, so it catches
     // them regardless of how they were triggered.

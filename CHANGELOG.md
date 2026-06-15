@@ -4,6 +4,31 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (quality crafts, relics, and Anomaly tales)**
+  - Added a `QualityUtility.SendCraftNotification` patch so Masterwork and Legendary items
+    create solo diary events for the crafter. These use synthetic Tale-domain defNames
+    (`CraftedMasterwork`, `CraftedLegendary`) and a new enabled "Masterworks & legendary crafts"
+    group.
+  - Added a `JobDriver_InstallRelic` completion patch so installing an ideology relic creates a
+    solo diary event for the installer via the new enabled "Relics" group.
+  - Split scary Anomaly TaleDefs into a dedicated enabled "Anomaly horror" group, including
+    entity study, arm mutation, psychic rituals, void contact, death pall, unnatural darkness,
+    and noxious haze.
+  - Confirmed successful pawn operations are already covered through vanilla TaleDefs
+    (`DidSurgery`, `HealedMe`) and avoided adding a duplicate surgery hook.
+
+- **2026-06-15 (notable events beyond social logs)**
+  - Added a `TaleRecorder.RecordTale` Harmony postfix so RimWorld's broader notable-history
+    events can generate diary entries, not just social-log interactions and mental states.
+  - Added a `Tale` group domain with data-driven TaleDef categories: combat/injuries/death,
+    health/medicine, life milestones, work/achievements, raids/disasters/colony events,
+    quiet personal moments, and a catch-all. High-signal categories default on; quieter ones
+    default off.
+  - Tale entries reuse existing solo/pairwise diary generation, colonist eligibility, per-pawn
+    generation toggles, group prompt overrides, importance/combat flags, and localization.
+  - Added `taleDedupTicks` tuning and skip duplicate TaleDefs already covered by the mental-state
+    hook (`SocialFight`, `MentalStateBerserk`, `MentalStateGaveUp`).
+
 - **2026-06-15 (compact hideable model setup)**
   - Made the API/model settings block compact and collapsible. Each lane now uses tighter rows for
     endpoint, key, model, Fetch, and Pick controls, and the expanded/collapsed state is saved.

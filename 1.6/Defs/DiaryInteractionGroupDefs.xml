@@ -9,7 +9,8 @@
     defName        - stable key (also the key player settings save overrides under; don't rename)
     label          - name shown in mod settings
     order          - lower numbers are classified first ("first match wins"); catch-all highest
-    domain         - Interaction (matches InteractionDefs) or MentalState (matches MentalStateDefs)
+    domain         - Interaction (matches InteractionDefs), MentalState (matches MentalStateDefs),
+                     or Tale (matches TaleDefs from RimWorld's notable-history system)
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
@@ -363,6 +364,220 @@
     <domain>MentalState</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the pawn suffered a mental break; write their inner state and what they did, in their own voice</instruction>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Tale domain: vanilla notable-history events beyond social logs ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talecombat</defName>
+    <label>Combat, injuries &amp; death</label>
+    <order>300</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <combat>true</combat>
+    <instruction>serious danger, injury, combat, death, or rescue; write it as a vivid first-person memory grounded in what happened</instruction>
+    <matchDefNames>
+      <li>Downed</li>
+      <li>Wounded</li>
+      <li>KilledBy</li>
+      <li>KilledCapacity</li>
+      <li>KilledLongRange</li>
+      <li>KilledMajorThreat</li>
+      <li>KilledMelee</li>
+      <li>KilledMortar</li>
+      <li>KilledChild</li>
+      <li>KilledColonist</li>
+      <li>KilledColonyAnimal</li>
+      <li>DefeatedHostileFactionLeader</li>
+      <li>CollapseDodged</li>
+      <li>WasOnFire</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talehealth</defName>
+    <label>Health &amp; medicine</label>
+    <order>310</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>medical event, surgery, illness, extreme exposure, or recovery; focus on the pawn's body, fear, relief, or trust</instruction>
+    <matchDefNames>
+      <li>DidSurgery</li>
+      <li>HealedMe</li>
+      <li>IllnessRevealed</li>
+      <li>HeatstrokeRevealed</li>
+      <li>HypothermiaRevealed</li>
+      <li>ToxicityRevealed</li>
+      <li>VacuumExposureRevealed</li>
+      <li>Exhausted</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talelife</defName>
+    <label>Life milestones</label>
+    <order>320</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>major life change: birth, capture, recruitment, cryptosleep, bonding, taming, or similar; write it as a personally significant turning point</instruction>
+    <matchDefNames>
+      <li>GaveBirth</li>
+      <li>Captured</li>
+      <li>Recruited</li>
+      <li>KidnappedColonist</li>
+      <li>ExecutedPrisoner</li>
+      <li>SoldPrisoner</li>
+      <li>EnteredCryptosleep</li>
+      <li>PutIntoCryptosleep</li>
+      <li>LandedInPod</li>
+      <li>BecameLover</li>
+      <li>Breakup</li>
+      <li>Marriage</li>
+      <li>BondedWithAnimal</li>
+      <li>TamedAnimal</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talequality</defName>
+    <label>Masterworks &amp; legendary crafts</label>
+    <order>325</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the pawn created an exceptional crafted item; write the pride, exhaustion, and weight of making something the colony will remember</instruction>
+    <matchDefNames>
+      <li>CraftedMasterwork</li>
+      <li>CraftedLegendary</li>
+      <li>CraftedArt</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talerelic</defName>
+    <label>Relics</label>
+    <order>326</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the pawn installed or handled a revered ideology relic; write it as a solemn, culturally important moment</instruction>
+    <matchDefNames>
+      <li>RelicInstalled</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talework</defName>
+    <label>Work &amp; achievements</label>
+    <order>330</order>
+    <domain>Tale</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <important>false</important>
+    <instruction>achievement through labor, craft, study, mining, construction, research, or skill growth; keep it proud but grounded</instruction>
+    <matchDefNames>
+      <li>FinishedResearchProject</li>
+      <li>CompletedLongConstructionProject</li>
+      <li>CompletedLongCraftingProject</li>
+      <li>CraftedArt</li>
+      <li>MinedValuable</li>
+      <li>GainedMasterSkillWithoutPassion</li>
+      <li>GainedMasterSkillWithPassion</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>taleanomaly</defName>
+    <label>Anomaly horror</label>
+    <order>335</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>an eerie Anomaly event, entity study, mutation, void contact, or unnatural disaster; write it with dread and uncertainty without explaining the horror away</instruction>
+    <matchDefNames>
+      <li>StudiedEntity</li>
+      <li>MutatedMyArm</li>
+      <li>PerformedPsychicRitual</li>
+      <li>ClosedTheVoid</li>
+      <li>EmbracedTheVoid</li>
+      <li>DeathPall</li>
+      <li>UnnaturalDarkness</li>
+      <li>NoxiousHaze</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>taleincident</defName>
+    <label>Raids, disasters &amp; colony events</label>
+    <order>340</order>
+    <domain>Tale</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>large colony event, raid, disaster, weather omen, caravan crisis, or supernatural incident; write what it felt like to live through it</instruction>
+    <matchDefNames>
+      <li>Raid</li>
+      <li>Infestation</li>
+      <li>ManhunterPack</li>
+      <li>MajorThreat</li>
+      <li>MeteoriteImpact</li>
+      <li>ShipPartCrash</li>
+      <li>Flashstorm</li>
+      <li>Tornado</li>
+      <li>TornadoFromItem</li>
+      <li>ToxicFallout</li>
+      <li>VolcanicWinter</li>
+      <li>Eclipse</li>
+      <li>Aurora</li>
+      <li>NoxiousHaze</li>
+      <li>DeathPall</li>
+      <li>UnnaturalDarkness</li>
+      <li>OrbitalDebris</li>
+      <li>StudiedEntity</li>
+      <li>ClosedTheVoid</li>
+      <li>EmbracedTheVoid</li>
+      <li>CaravanAmbushDefeated</li>
+      <li>CaravanAmbushedByHumanlike</li>
+      <li>CaravanAmbushedByManhunter</li>
+      <li>CaravanAssaultSuccessful</li>
+      <li>CaravanDemand</li>
+      <li>CaravanFled</li>
+      <li>CaravanFormed</li>
+      <li>CaravanMeeting</li>
+      <li>EndGame_ShipEscape</li>
+      <li>LaunchedShip</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>talequiet</defName>
+    <label>Quiet personal moments</label>
+    <order>350</order>
+    <domain>Tale</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <important>false</important>
+    <instruction>small personal moment, habit, recreation, ceremony attendance, reading, prayer, meditation, or embarrassment; write it as a brief diary aside</instruction>
+    <matchDefNames>
+      <li>AteRawHumanlikeMeat</li>
+      <li>AttendedConcert</li>
+      <li>AttendedParty</li>
+      <li>BuiltSnowman</li>
+      <li>Drunk</li>
+      <li>HeldConcert</li>
+      <li>Meditated</li>
+      <li>PerformedPsychicRitual</li>
+      <li>PlayedGame</li>
+      <li>Prayed</li>
+      <li>ReadBook</li>
+      <li>Vomited</li>
+      <li>WalkedNaked</li>
+      <li>VisitedGrave</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>taleother</defName>
+    <label>Other notable events</label>
+    <order>390</order>
+    <domain>Tale</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <important>false</important>
+    <instruction>a notable non-social RimWorld tale involving the pawn</instruction>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 

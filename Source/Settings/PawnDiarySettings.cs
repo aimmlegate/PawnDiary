@@ -284,6 +284,35 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Same as IsInteractionEnabled but for RimWorld tales (notable history events such as
+        /// deaths, injuries, recruitment, research, disasters, and other non-social events).
+        /// </summary>
+        public bool IsTaleEnabled(TaleDef taleDef)
+        {
+            if (taleDef == null)
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyTale(taleDef);
+            return group != null && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a TaleDef's diary entry,
+        /// falling back to the group's default if no override is set.
+        /// </summary>
+        public string InstructionForTale(TaleDef taleDef)
+        {
+            if (taleDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(InteractionGroups.ClassifyTale(taleDef));
+        }
+
+        /// <summary>
         /// Checks whether an interaction group is enabled, falling back to the group's
         /// defaultEnabled if no player override exists.
         /// </summary>

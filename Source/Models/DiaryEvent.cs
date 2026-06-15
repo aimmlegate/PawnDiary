@@ -1,4 +1,4 @@
-// One recorded event (interaction / social fight / mental break) and all of its
+// One recorded event (interaction / social fight / mental break / notable tale) and all of its
 // generation state for up to two points of view. Pure model: fields, save/load,
 // and prompt/result plumbing. Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
@@ -9,7 +9,7 @@ namespace PawnDiary
 {
     /// <summary>
     /// One recorded event plus all of its generation state for up to two points of view
-    /// (initiator/recipient), or a single POV for solo mental breaks. Holds the raw game text,
+        /// (initiator/recipient), or a single POV for solo mental breaks and single-pawn tales. Holds the raw game text,
     /// the context summaries, the prompts, the generated text, and per-POV status/errors. Knows
     /// how to save/load itself and how to apply an <see cref="LlmGenerationResult"/>.
     /// </summary>
@@ -666,7 +666,9 @@ namespace PawnDiary
         /// </summary>
         private DiaryInteractionGroupDef GroupForDisplay()
         {
-            GroupDomain domain = IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
+            GroupDomain domain = IsTaleEvent()
+                ? GroupDomain.Tale
+                : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, interactionDefName);
         }
 
@@ -714,6 +716,16 @@ namespace PawnDiary
         {
             return !string.IsNullOrWhiteSpace(gameContext)
                 && gameContext.IndexOf("mental_state=", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Tale events store their TaleDef defName in interactionDefName too; their context
+        /// starts with a stable tale field, which lets UI classification pick the Tale domain.
+        /// </summary>
+        private bool IsTaleEvent()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("tale=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>

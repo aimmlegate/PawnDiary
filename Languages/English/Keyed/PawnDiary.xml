@@ -72,6 +72,7 @@
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsHeader>Events — enable groups and edit their diary prompt</PawnDiary.Settings.EventsHeader>
   <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
+  <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
   <PawnDiary.Settings.PromptForGroup>Prompt for: {0}</PawnDiary.Settings.PromptForGroup>
   <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
   <PawnDiary.Settings.SaveInstruction>Save instruction</PawnDiary.Settings.SaveInstruction>
@@ -88,6 +89,14 @@
   <PawnDiary.Event.SmallTalkBrief>A brief small-talk exchange.</PawnDiary.Event.SmallTalkBrief>
   <PawnDiary.Event.SmallTalkBatchHeader>Several small-talk moments happened:</PawnDiary.Event.SmallTalkBatchHeader>
   <PawnDiary.Event.SmallTalkBatchInstruction>write one diary entry for the overall small-talk exchange, not separate entries for each listed moment</PawnDiary.Event.SmallTalkBatchInstruction>
+  <PawnDiary.Event.TaleSolo>{0} experienced {1}.</PawnDiary.Event.TaleSolo>
+  <PawnDiary.Event.TaleSoloWithOther>{0} experienced {1} involving {2}.</PawnDiary.Event.TaleSoloWithOther>
+  <PawnDiary.Event.TalePair>{0} and {1} were involved in {2}.</PawnDiary.Event.TalePair>
+  <PawnDiary.Event.TaleAttachedDef> Related: {0}.</PawnDiary.Event.TaleAttachedDef>
+  <PawnDiary.Event.CraftedQualityLabel>{0} craft</PawnDiary.Event.CraftedQualityLabel>
+  <PawnDiary.Event.CraftedQuality>{0} created a {1} {2}.</PawnDiary.Event.CraftedQuality>
+  <PawnDiary.Event.RelicInstalledLabel>Relic installed</PawnDiary.Event.RelicInstalledLabel>
+  <PawnDiary.Event.RelicInstalled>{0} installed the relic {1}.</PawnDiary.Event.RelicInstalled>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because initiator diary generation failed.</PawnDiary.Error.SkippedInitiatorFailed>

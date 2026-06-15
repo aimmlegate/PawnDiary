@@ -275,9 +275,10 @@ namespace PawnDiary
         {
             listing.Label("PawnDiary.Settings.EventsHeader".Translate());
 
-            // One toggle per group: whether events in it are recorded at all. A header is
-            // drawn the first time the group domain changes (interactions vs mental states).
+            // One toggle per group: whether events in it are recorded at all. Headers are
+            // drawn the first time later domains appear, keeping the XML order readable.
             bool mentalHeaderDrawn = false;
+            bool taleHeaderDrawn = false;
             foreach (DiaryInteractionGroupDef group in InteractionGroups.All)
             {
                 if (group.domain == GroupDomain.MentalState && !mentalHeaderDrawn)
@@ -285,6 +286,13 @@ namespace PawnDiary
                     mentalHeaderDrawn = true;
                     listing.Gap(6f);
                     listing.Label("PawnDiary.Settings.MentalStatesHeader".Translate());
+                }
+
+                if (group.domain == GroupDomain.Tale && !taleHeaderDrawn)
+                {
+                    taleHeaderDrawn = true;
+                    listing.Gap(6f);
+                    listing.Label("PawnDiary.Settings.TalesHeader".Translate());
                 }
 
                 bool enabled = Settings.IsGroupEnabled(group.defName);

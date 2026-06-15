@@ -1,5 +1,5 @@
 // The orchestrator. Owns the saved diary data and drives the whole flow: record an event
-// (RecordInteraction / RecordMentalState) -> build a DiaryEvent with context -> queue an LLM
+// (RecordInteraction / RecordMentalState / RecordTale) -> build a DiaryEvent with context -> queue an LLM
 // request -> apply the result each tick -> hand views to the UI. Context/prompt building live in
 // DiaryContextBuilder / DiaryPromptBuilder; the saved data models in DiaryEvent / PawnDiaryRecord.
 // This is a RimWorld GameComponent (lifecycle hooks: GameComponentTick, ExposeData, etc.).
@@ -27,6 +27,9 @@ namespace PawnDiary
         private const string SmallTalkGroupKey = "smalltalk";
         // Synthetic defName/label used when multiple small-talk interactions are merged into one diary event.
         private const string SmallTalkBatchDefName = "SmallTalkBatch";
+        // Synthetic Tale-domain groups for notable events vanilla does not expose as TaleDefs.
+        private const string TaleQualityGroupKey = "talequality";
+        private const string TaleRelicGroupKey = "talerelic";
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
@@ -38,6 +41,17 @@ namespace PawnDiary
         // Transient (not saved) guard against duplicate mental-state events, e.g. the two
         // mirrored SocialFighting starts, or a break that re-triggers quickly.
         private readonly Dictionary<string, int> recentMentalEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against TaleRecorder firing the same notable event repeatedly.
+        private readonly Dictionary<string, int> recentTaleEvents = new Dictionary<string, int>();
+
+        // These TaleDefs mirror events we already capture through more specific hooks. Skipping
+        // them avoids two diary entries for one social fight or mental break.
+        private static readonly HashSet<string> TaleDefsCoveredElsewhere = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "SocialFight",
+            "MentalStateBerserk",
+            "MentalStateGaveUp"
+        };
 
         public DiaryGameComponent(Game game)
         {
@@ -55,6 +69,8 @@ namespace PawnDiary
         public override void StartedNewGame()
         {
             pendingSmallTalkBatches.Clear();
+            recentMentalEvents.Clear();
+            recentTaleEvents.Clear();
             LlmClient.BeginSession();
             nextGenerationScanTick = 0;
         }
@@ -62,6 +78,8 @@ namespace PawnDiary
         public override void LoadedGame()
         {
             pendingSmallTalkBatches.Clear();
+            recentMentalEvents.Clear();
+            recentTaleEvents.Clear();
             LlmClient.BeginSession();
             nextGenerationScanTick = 0;
             QueueAllPendingGenerations();
@@ -498,7 +516,7 @@ namespace PawnDiary
             if (isSocialFight)
             {
                 // SocialFighting fires once per participant; collapse the mirrored call.
-                if (RecentlyRecorded("fight|" + PairKey(pawn, otherPawn), DiaryTuning.Current.socialFightDedupTicks))
+                if (RecentlyRecorded(recentMentalEvents, "fight|" + PairKey(pawn, otherPawn), DiaryTuning.Current.socialFightDedupTicks))
                 {
                     return;
                 }
@@ -511,7 +529,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (RecentlyRecorded("break|" + pawn.GetUniqueLoadID() + "|" + stateDef.defName, DiaryTuning.Current.mentalBreakDedupTicks))
+            if (RecentlyRecorded(recentMentalEvents, "break|" + pawn.GetUniqueLoadID() + "|" + stateDef.defName, DiaryTuning.Current.mentalBreakDedupTicks))
             {
                 return;
             }
@@ -522,6 +540,146 @@ namespace PawnDiary
                 + ReasonSuffix(reason);
             DiaryEvent breakEvent = AddSoloEvent(pawn, otherPawn, stateDef.defName, label, breakText, instruction, breakContext);
             QueueLlmRewrite(breakEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Records one RimWorld TaleRecorder event. Tales are vanilla's broader notable-history
+        /// events: deaths, wounds, surgeries, births, recruitment, research, disasters, and more.
+        /// Some tales involve one pawn, others two; this method records a solo or pairwise diary
+        /// event depending on how many eligible colonists are involved.
+        /// </summary>
+        public void RecordTale(Tale tale, TaleDef taleDef)
+        {
+            taleDef = taleDef ?? tale?.def;
+            if (tale == null || taleDef == null || PawnDiaryMod.Settings == null)
+            {
+                return;
+            }
+
+            if (TaleDefsCoveredElsewhere.Contains(taleDef.defName) || !PawnDiaryMod.Settings.IsTaleEnabled(taleDef))
+            {
+                return;
+            }
+
+            Pawn firstPawn;
+            Pawn secondPawn;
+            ExtractTalePawns(tale, out firstPawn, out secondPawn);
+
+            bool firstEligible = IsDiaryEligible(firstPawn);
+            bool secondEligible = IsDiaryEligible(secondPawn);
+            if (!firstEligible && !secondEligible)
+            {
+                return;
+            }
+
+            string key = "tale|" + taleDef.defName + "|" + (firstPawn?.GetUniqueLoadID() ?? string.Empty)
+                + "|" + (secondPawn?.GetUniqueLoadID() ?? string.Empty);
+            if (RecentlyRecorded(recentTaleEvents, key, DiaryTuning.Current.taleDedupTicks))
+            {
+                return;
+            }
+
+            string label = CleanTaleLabel(taleDef);
+            Def attachedDef = AttachedDefFor(tale);
+            string instruction = PawnDiaryMod.Settings.InstructionForTale(taleDef);
+            string gameContext = BuildTaleGameContext(tale, taleDef, label, attachedDef);
+
+            if (firstEligible && secondEligible && firstPawn != secondPawn)
+            {
+                string text = BuildTalePairText(firstPawn, secondPawn, label, attachedDef);
+                DiaryEvent pairEvent = AddPairwiseEvent(firstPawn, secondPawn, taleDef.defName, label,
+                    text, text, instruction, gameContext);
+                QueuePairwiseGeneration(pairEvent);
+                return;
+            }
+
+            Pawn povPawn = firstEligible ? firstPawn : secondPawn;
+            Pawn otherPawn = firstEligible ? secondPawn : firstPawn;
+            string soloText = BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
+            DiaryEvent soloEvent = AddSoloEvent(povPawn, otherPawn, taleDef.defName, label, soloText, instruction, gameContext);
+            QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Records a masterwork or legendary item created by a colonist. Vanilla sends letters for
+        /// these through QualityUtility rather than TaleRecorder, so this bridges that notification
+        /// into the same solo diary-event flow used by Tale events.
+        /// </summary>
+        public void RecordCraftedQuality(Thing craftedThing, Pawn worker)
+        {
+            if (!IsDiaryEligible(worker) || craftedThing == null || PawnDiaryMod.Settings == null)
+            {
+                return;
+            }
+
+            QualityCategory quality;
+            if (!QualityUtility.TryGetQuality(craftedThing, out quality)
+                || (quality != QualityCategory.Masterwork && quality != QualityCategory.Legendary))
+            {
+                return;
+            }
+
+            if (!PawnDiaryMod.Settings.IsGroupEnabled(TaleQualityGroupKey))
+            {
+                return;
+            }
+
+            string defName = quality == QualityCategory.Legendary ? "CraftedLegendary" : "CraftedMasterwork";
+            string key = "crafted_quality|" + worker.GetUniqueLoadID() + "|" + defName + "|" + craftedThing.ThingID;
+            if (RecentlyRecorded(recentTaleEvents, key, DiaryTuning.Current.taleDedupTicks))
+            {
+                return;
+            }
+
+            string qualityLabel = ("QualityCategory_" + quality).Translate().Resolve();
+            string itemLabel = DiaryContextBuilder.CleanLine(craftedThing.LabelShortCap);
+            string label = "PawnDiary.Event.CraftedQualityLabel".Translate(qualityLabel).Resolve();
+            string text = "PawnDiary.Event.CraftedQuality".Translate(worker.LabelShortCap, qualityLabel, itemLabel).Resolve();
+            string instruction = PawnDiaryMod.Settings.InstructionForGroup(InteractionGroups.ByKey(TaleQualityGroupKey));
+            string gameContext = "tale=" + defName
+                + "; source=QualityUtility.SendCraftNotification"
+                + "; quality=" + quality
+                + "; item=" + itemLabel
+                + "; itemDef=" + (craftedThing.def?.defName ?? string.Empty);
+
+            DiaryEvent qualityEvent = AddSoloEvent(worker, null, defName, label, text, instruction, gameContext);
+            QueueLlmRewrite(qualityEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Records the pawn who installs a venerated ideology relic in a reliquary. The relic
+        /// container knows the item but not the worker, so the Harmony patch calls this from the
+        /// install job's completion action where both are available.
+        /// </summary>
+        public void RecordRelicInstalled(Pawn pawn, Thing relic)
+        {
+            if (!IsDiaryEligible(pawn) || relic == null || PawnDiaryMod.Settings == null)
+            {
+                return;
+            }
+
+            if (!PawnDiaryMod.Settings.IsGroupEnabled(TaleRelicGroupKey))
+            {
+                return;
+            }
+
+            string key = "relic_installed|" + pawn.GetUniqueLoadID() + "|" + relic.ThingID;
+            if (RecentlyRecorded(recentTaleEvents, key, DiaryTuning.Current.taleDedupTicks))
+            {
+                return;
+            }
+
+            string relicLabel = DiaryContextBuilder.CleanLine(relic.LabelShortCap);
+            string label = "PawnDiary.Event.RelicInstalledLabel".Translate().Resolve();
+            string text = "PawnDiary.Event.RelicInstalled".Translate(pawn.LabelShortCap, relicLabel).Resolve();
+            string instruction = PawnDiaryMod.Settings.InstructionForGroup(InteractionGroups.ByKey(TaleRelicGroupKey));
+            string gameContext = "tale=RelicInstalled"
+                + "; source=JobDriver_InstallRelic"
+                + "; relic=" + relicLabel
+                + "; relicDef=" + (relic.def?.defName ?? string.Empty);
+
+            DiaryEvent relicEvent = AddSoloEvent(pawn, null, "RelicInstalled", label, text, instruction, gameContext);
+            QueueLlmRewrite(relicEvent, DiaryEvent.InitiatorRole);
         }
 
         /// <summary>
@@ -669,19 +827,135 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Pulls the live pawn references out of vanilla Tale subclasses. TaleData also keeps
+        /// historical snapshots, but the live Pawn is what we need for diary ownership/context.
+        /// </summary>
+        private static void ExtractTalePawns(Tale tale, out Pawn firstPawn, out Pawn secondPawn)
+        {
+            firstPawn = null;
+            secondPawn = null;
+
+            Tale_DoublePawn doublePawnTale = tale as Tale_DoublePawn;
+            if (doublePawnTale != null)
+            {
+                firstPawn = doublePawnTale.firstPawnData?.pawn;
+                secondPawn = doublePawnTale.secondPawnData?.pawn;
+                return;
+            }
+
+            Tale_SinglePawn singlePawnTale = tale as Tale_SinglePawn;
+            if (singlePawnTale != null)
+            {
+                firstPawn = singlePawnTale.pawnData?.pawn;
+            }
+        }
+
+        /// <summary>
+        /// Returns the extra Def attached to some tales (research project, skill, damage type,
+        /// crafted object kind, etc.), or null for plain pawn-only tales.
+        /// </summary>
+        private static Def AttachedDefFor(Tale tale)
+        {
+            Tale_DoublePawnAndDef doublePawnAndDef = tale as Tale_DoublePawnAndDef;
+            if (doublePawnAndDef != null)
+            {
+                return doublePawnAndDef.defData?.def;
+            }
+
+            Tale_SinglePawnAndDef singlePawnAndDef = tale as Tale_SinglePawnAndDef;
+            return singlePawnAndDef?.defData?.def;
+        }
+
+        /// <summary>
+        /// Resolves a user-facing TaleDef label, falling back to defName if the label is blank.
+        /// </summary>
+        private static string CleanTaleLabel(TaleDef taleDef)
+        {
+            if (taleDef == null)
+            {
+                return "unknown";
+            }
+
+            string label = DiaryContextBuilder.CleanLine(taleDef.LabelCap.Resolve());
+            return string.IsNullOrWhiteSpace(label) ? taleDef.defName : label;
+        }
+
+        /// <summary>
+        /// Builds the raw game text for a single-pawn tale, localized because it is shown in
+        /// the Diary tab and also passed to the model as "what happened".
+        /// </summary>
+        private static string BuildTaleSoloText(Pawn povPawn, string label, Pawn otherPawn, Def attachedDef)
+        {
+            string text = otherPawn != null
+                ? "PawnDiary.Event.TaleSoloWithOther".Translate(povPawn.LabelShortCap, label, otherPawn.LabelShortCap).Resolve()
+                : "PawnDiary.Event.TaleSolo".Translate(povPawn.LabelShortCap, label).Resolve();
+
+            return AppendAttachedDefText(text, attachedDef);
+        }
+
+        /// <summary>
+        /// Builds the raw game text for a two-pawn tale. Both pawns receive the same factual
+        /// description; the LLM prompt adds separate pawn summaries and continuity for each POV.
+        /// </summary>
+        private static string BuildTalePairText(Pawn firstPawn, Pawn secondPawn, string label, Def attachedDef)
+        {
+            string text = "PawnDiary.Event.TalePair".Translate(firstPawn.LabelShortCap, secondPawn.LabelShortCap, label).Resolve();
+            return AppendAttachedDefText(text, attachedDef);
+        }
+
+        /// <summary>
+        /// Appends the TaleData_Def label when vanilla supplied one, such as a research project,
+        /// skill, damage type, or crafted object kind.
+        /// </summary>
+        private static string AppendAttachedDefText(string text, Def attachedDef)
+        {
+            if (attachedDef == null)
+            {
+                return text;
+            }
+
+            string label = DiaryContextBuilder.CleanLine(attachedDef.LabelCap.Resolve());
+            return string.IsNullOrWhiteSpace(label)
+                ? text
+                : text + "PawnDiary.Event.TaleAttachedDef".Translate(label).Resolve();
+        }
+
+        /// <summary>
+        /// Creates a compact metadata string for Tale-sourced diary events. The leading tale=
+        /// marker is also how saved events are later classified back into the Tale domain.
+        /// </summary>
+        private static string BuildTaleGameContext(Tale tale, TaleDef taleDef, string label, Def attachedDef)
+        {
+            List<string> parts = new List<string>
+            {
+                "tale=" + taleDef.defName,
+                "label=" + DiaryContextBuilder.CleanLine(label),
+                "taleClass=" + tale.GetType().Name
+            };
+
+            if (attachedDef != null)
+            {
+                parts.Add("attachedDef=" + attachedDef.defName);
+                parts.Add("attachedLabel=" + DiaryContextBuilder.CleanLine(attachedDef.LabelCap.Resolve()));
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
+        /// <summary>
         /// Dedup gate: returns true if the same key was recorded within the given tick window, preventing
         /// duplicate events (e.g. mirrored SocialFighting calls).
         /// </summary>
-        private bool RecentlyRecorded(string key, int windowTicks)
+        private bool RecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
         {
             int now = Find.TickManager.TicksGame;
             int last;
-            if (recentMentalEvents.TryGetValue(key, out last) && now - last < windowTicks)
+            if (recentEvents.TryGetValue(key, out last) && now - last < windowTicks)
             {
                 return true;
             }
 
-            recentMentalEvents[key] = now;
+            recentEvents[key] = now;
             return false;
         }
 

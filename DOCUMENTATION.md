@@ -4,14 +4,16 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-15 (revised diary context: thoughts, capacities, passions, last opener)_
+_Last updated: 2026-06-15 (quality crafts, relic installs, and Anomaly tale events)_
 
 ---
 
 ## 1. What the mod does
 
-Pawn Diary watches **colonist** pawns' social **interactions**, **social fights**, and
-**mental breaks**, keeps the meaningful ones, and uses an LLM (any OpenAI-compatible
+Pawn Diary watches **colonist** pawns' social **interactions**, **social fights**,
+**mental breaks**, and RimWorld **notable tales** (deaths, injuries, surgeries, births,
+recruitment, research, raids, disasters, and similar non-social history events), keeps
+the meaningful ones, and uses an LLM (any OpenAI-compatible
 `/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server) to rewrite each
 event into a short first-person diary entry. Each pawn's diary is shown in an
 **inspector tab after Health** on that pawn's UI.
@@ -27,11 +29,11 @@ Each pawn also has saved diary controls, shown above the entries in the pawn tab
 **persona preset** picker that shapes their writing voice, and a checkbox to disable LLM
 diary generation for that pawn while keeping raw events recorded.
 
-Pairwise events (interactions, social fights) between two eligible colonists produce two
+Pairwise events (interactions, social fights, and two-pawn tales) between two eligible colonists produce two
 entries — one from each pawn's point of view — by default as **paired sequential POV**:
 first the initiator entry, then the recipient entry with the initiator's generated text
-included as hidden continuity context. Solo events (mental breaks, or any event where only
-one pawn is eligible) produce a single entry from that pawn's point of view.
+included as hidden continuity context. Solo events (mental breaks, single-pawn tales, or
+any event where only one pawn is eligible) produce a single entry from that pawn's point of view.
 
 ---
 
@@ -69,7 +71,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
-| `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks). |
+| `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`. |
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
@@ -84,7 +86,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries with roleplay styling, importance markers, linked-entry cross-pawn previews (click-to-navigate), and that pawn's generation toggle. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry), `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`), and `LinkedEntryView` (truncated preview of the other pawn's entry for cross-linking). |
-| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, and tale groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
 | `AGENTS.md` | Guide for code agents: the working rules (docs, localization, comments, build), skill-routing rules, and the C#/RimWorld→JS/TS primer (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …). Start here. |
 | `CLAUDE.md` | Thin Claude Code wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
@@ -97,24 +99,27 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 ## 3. Data flow
 
 ```
-Pawn interaction                         Pawn enters a mental state
-      │  (vanilla logs it)                     │  (social fight / break)
-      ▼                                        ▼
-PlayLog.Add ─postfix─▶ PlayLogAddPatch   MentalStateHandler.TryStartMentalState ─postfix─▶ MentalStateStartPatch
-      │                                        │   (reads handler.pawn, stateDef, otherPawn, reason)
-      ▼                                        ▼
-DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState
-      │                                        │   • group enabled? (§5)
-      │                                        │   • pawn must be eligible colonist (§4)
-      │                                        │   • SocialFighting + eligible otherPawn → pairwise (dedup mirrored call)
-      │                                        │   • otherwise → solo break (breaking pawn's POV)
-      │   • significance filter (§5)            │
+Pawn interaction                         Pawn enters a mental state                 RimWorld records a notable tale
+      │  (vanilla logs it)                     │  (social fight / break)                    │  (history/art event)
+      ▼                                        ▼                                            ▼
+PlayLog.Add ─postfix─▶ PlayLogAddPatch   MentalStateHandler.TryStartMentalState       TaleRecorder.RecordTale
+      │                                        │   ─postfix─▶ MentalStateStartPatch          │   ─postfix─▶ TaleRecorderPatch
+      │                                        │   (reads handler.pawn, stateDef,            │
+      │                                        │    otherPawn, reason)                       │
+      ▼                                        ▼                                            ▼
+DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState         DiaryGameComponent.RecordTale
+      │                                        │   • group enabled? (§5)                     │   • Tale group enabled? (§5)
+      │                                        │   • pawn must be eligible colonist (§4)     │   • extract one/two pawns from TaleData
+      │                                        │   • SocialFighting + eligible otherPawn     │   • both ineligible → skip; mixed → solo
+      │                                        │     → pairwise (dedup mirrored call)        │   • one/two eligible → solo/pairwise
+      │                                        │   • otherwise → solo break                  │   • skip TaleDefs already covered by
+      │   • significance filter (§5)            │                                                mental-state hooks
       │   • eligibility filter: both ineligible → skip; mixed → solo for colonist (§4)
       │   • Small talk group → buffered by pawn pair, then flushed as one combined DiaryEvent
       │   • all other enabled interactions → builds one DiaryEvent immediately
       │   • adds event to diaryEvents + the involved pawns' PawnDiaryRecord(s) (eligible pawns only)
       │   • queues generation (pairwise: paired sequential/single §4; solo: single initiator)
-      ▼                                        ▼
+      ▼                                        ▼                                            ▼
 LlmClient.Enqueue ─▶ concurrency gate ─▶ SendOnce(HTTP) ─▶ Completed queue
       ▼
 DiaryGameComponent.GameComponentTick (every tick)
@@ -127,6 +132,12 @@ DiaryGameComponent.GameComponentTick (every tick)
 ITab_Pawn_Diary.FillTab
       │   EntriesFor(pawn) → pure read, no side effects
 ```
+
+Two additional narrow hooks feed the same event pipeline:
+- `QualityUtility.SendCraftNotification` records **Masterwork** and **Legendary** crafted items
+  as solo events for the crafter (`tale=CraftedMasterwork` / `tale=CraftedLegendary`).
+- `JobDriver_InstallRelic`'s completion action records the pawn who installs an ideology relic
+  in a reliquary (`tale=RelicInstalled`).
 
 **Background generation.** All LLM diary generation is driven by background ticks, never by
 UI actions. `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 seconds (120 ticks),
@@ -154,7 +165,7 @@ at every entry point via `IsDiaryEligible(pawn)` (humanlike + colonist):
   recipient's entry depends on in sequential mode.
 - **Two eligible colonists**: normal pairwise flow (both POVs generated).
 
-This applies uniformly to interactions, social fights, mental breaks, and small-talk
+This applies uniformly to interactions, social fights, mental breaks, TaleRecorder events, and small-talk
 batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist pawns.
 
 ### Paired sequential POV (default, `dualPovGeneration = true`)
@@ -173,11 +184,11 @@ batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist p
 - Both initiator and recipient are queued as separate independent requests at record time.
 - Kept for fallback; off by default.
 
-### Solo events (mental breaks)
-- `DiaryEvent.solo == true`. Only the breaking pawn is involved (recipient fields blank).
-  Generation always uses the single initiator POV via `BuildSoloPrompt` (a `mental_event`
-  prompt). The target of a targeted break (e.g. MurderousRage) is named in the text/context
-  but does not get their own entry.
+### Solo events (mental breaks and single-pawn tales)
+- `DiaryEvent.solo == true`. Only one eligible pawn is involved (recipient fields blank).
+  Generation always uses the single initiator POV via `BuildSoloPrompt`. The target of a
+  targeted break (e.g. MurderousRage), or the other pawn in a mixed-eligibility tale, is named
+  in the text/context but does not get their own entry.
 
 All paths share the same per-event context fields and the system prompt.
 
@@ -235,11 +246,13 @@ settings entry with two things: an **enabled toggle** (is it recorded?) and a **
 instruction** (shared by every event in the group). This replaces the old per-defName
 "significant" allowlist *and* the old per-defName instruction map — they are now one system.
 
-Groups have a **domain**: `Interaction` (matches `InteractionDef`s) or `MentalState`
-(matches `MentalStateDef`s). Classification is domain-scoped so the two never cross-match:
+Groups have a **domain**: `Interaction` (matches `InteractionDef`s), `MentalState`
+(matches `MentalStateDef`s), or `Tale` (matches `TaleDef`s from RimWorld's notable-history
+system). Classification is domain-scoped so the three never cross-match:
 - `Classify(InteractionDef)` → first matching Interaction-domain group, else **Other**.
 - `ClassifyMentalState(MentalStateDef)` → first matching MentalState-domain group, else
   **Mental breaks**.
+- `ClassifyTale(TaleDef)` → first matching Tale-domain group, else **Other notable events**.
 
 Matching is by exact `defName` or a substring token; order within a domain matters
 (specific themes before generic), with the catch-all last.
@@ -271,6 +284,16 @@ is recorded iff its group is enabled.
 | Other / uncategorized | **off** | anything unmatched (e.g. RiMindInteraction) |
 | **Social fights** (mental) | on | `SocialFighting` — pairwise, two POV entries |
 | **Mental breaks** (mental) | on | Berserk, Tantrum, Wander_Sad, Binging_*, MurderousRage, … (catch-all for mental states) |
+| **Combat, injuries & death** (tale) | on | Downed, Wounded, KilledBy, KilledMajorThreat, WasOnFire |
+| **Health & medicine** (tale) | on | DidSurgery, HealedMe, IllnessRevealed, HeatstrokeRevealed, Exhausted |
+| **Life milestones** (tale) | on | GaveBirth, Captured, Recruited, Marriage, Breakup, BondedWithAnimal |
+| **Masterworks & legendary crafts** (synthetic tale) | on | CraftedMasterwork, CraftedLegendary, CraftedArt |
+| **Relics** (synthetic tale) | on | RelicInstalled |
+| **Work & achievements** (tale) | **off** | FinishedResearchProject, CompletedLongConstructionProject, GainedMasterSkill* |
+| **Anomaly horror** (tale) | on | StudiedEntity, MutatedMyArm, PerformedPsychicRitual, ClosedTheVoid, EmbracedTheVoid, DeathPall, UnnaturalDarkness, NoxiousHaze |
+| **Raids, disasters & colony events** (tale) | on | Raid, Infestation, ManhunterPack, ToxicFallout, Aurora, CaravanAmbushed*, LaunchedShip |
+| **Quiet personal moments** (tale) | **off** | AttendedParty, Meditated, Prayed, ReadBook, Vomited, WalkedNaked, VisitedGrave |
+| **Other notable events** (tale) | **off** | any unmatched TaleDef |
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
 `domain`, `defaultEnabled`, `important`, `combat`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
@@ -307,6 +330,26 @@ immediately.
   non-colonist mental breaks are ignored). Social fights between a colonist and a
   non-colonist are recorded as solo events for the colonist only.
 
+**Notable tales** are captured via the `TaleRecorder.RecordTale` postfix after vanilla accepts
+the tale. The recorder extracts one or two pawns from `Tale_SinglePawn` / `Tale_DoublePawn`
+subclasses, then creates a solo or pairwise `DiaryEvent` using the same eligibility and
+generation rules as interactions. Tale events are tagged in `gameContext` with `tale=...` so
+saved events classify back into the Tale domain without adding a save-breaking source field.
+TaleDefs already covered more precisely by the mental-state hook (`SocialFight`,
+`MentalStateBerserk`, `MentalStateGaveUp`) are skipped. Repeated TaleDef+pawn combinations are
+de-duplicated within `taleDedupTicks` (default 2500).
+
+This includes pawn medical operations when vanilla records `DidSurgery` / `HealedMe`, so the mod
+does not add a second surgery hook that would duplicate successful operations.
+
+**Synthetic tale-style events** cover vanilla moments that do not arrive as TaleDefs:
+- Masterwork and Legendary production is captured from `QualityUtility.SendCraftNotification`.
+  Only the crafter receives a solo entry. These entries classify into the Tale domain using
+  synthetic defNames (`CraftedMasterwork`, `CraftedLegendary`).
+- Relic installation is captured from `JobDriver_InstallRelic`'s final action. Only the installer
+  receives a solo entry (`RelicInstalled`). Relic discovery letters are colony-level and do not
+  reliably name a pawn, so they are not used for diary ownership.
+
 ---
 
 ## 6. Settings (`PawnDiarySettings`)
@@ -328,7 +371,7 @@ immediately.
 Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`: the compact, hideable **API lanes editor**
 (`DrawApiEndpointsEditor` — per-row enabled toggle + endpoint/key/model with per-row "Fetch" + "Pick",
 **+ Add API** / **− Remove** / **Reset** buttons), paired-POV toggle, per-API concurrency slider,
-system prompt editor, and the interaction-group editor (a checkbox per group plus a prompt editor
+system prompt editor, and the event-group editor (a checkbox per group plus a prompt editor
 for the selected group). The scroll-view height grows with the number of API rows.
 
 Per-pawn diary controls live in `ITab_Pawn_Diary`, not the global mod settings window. They are
@@ -407,7 +450,9 @@ hidden from the production tab. A compact generating badge appears in the tab wh
 
 - `DiaryGameComponent.ExposeData` saves `diaries` (per-pawn records) and `diaryEvents`.
 - `DiaryEvent` is `IExposable`; generated text, statuses, errors, context summaries, and
-  originating PlayLog ids are scribed. Prompts are not scribed (rebuilt on demand).
+  originating PlayLog ids are scribed. Tale and mental-state source kinds are inferred from
+  stable `gameContext` markers (`tale=...`, `mental_state=...`) to avoid adding save fields.
+  Prompts are not scribed (rebuilt on demand).
 - Pending requests are not persisted; on load, pending statuses normalize back to
   not-generated and regenerate via the background queue scan.
 - **Backward-compat:** dormant `neutral*` fields remain scribed so older saves load; they
