@@ -71,8 +71,9 @@
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsHeader>Events — enable groups and edit their diary prompt</PawnDiary.Settings.EventsHeader>
-  <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
+<PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
   <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
+  <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
   <PawnDiary.Settings.PromptForGroup>Prompt for: {0}</PawnDiary.Settings.PromptForGroup>
   <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
   <PawnDiary.Settings.SaveInstruction>Save instruction</PawnDiary.Settings.SaveInstruction>
@@ -97,6 +98,11 @@
   <PawnDiary.Event.CraftedQuality>{0} created a {1} {2}.</PawnDiary.Event.CraftedQuality>
   <PawnDiary.Event.RelicInstalledLabel>Relic installed</PawnDiary.Event.RelicInstalledLabel>
   <PawnDiary.Event.RelicInstalled>{0} installed the relic {1}.</PawnDiary.Event.RelicInstalled>
+
+  <!-- Mood-event text (GameCondition diary entries) -->
+  <PawnDiary.Event.MoodEvent>{0} experienced {1}.</PawnDiary.Event.MoodEvent>
+  <PawnDiary.Event.MoodEventPositive>{0} enjoyed {1}.</PawnDiary.Event.MoodEventPositive>
+  <PawnDiary.Event.MoodEventNegative>{0} was troubled by {1}.</PawnDiary.Event.MoodEventNegative>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because initiator diary generation failed.</PawnDiary.Error.SkippedInitiatorFailed>

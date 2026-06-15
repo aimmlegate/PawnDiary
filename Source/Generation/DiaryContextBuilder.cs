@@ -1,6 +1,7 @@
 // Builds the compact context strings sent to the LLM (pawn profile, surroundings,
-// relationship/continuity, opinions) plus the text/number formatting helpers.
-// Static helpers, no state. Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
+// relationship/continuity, opinions) plus the text/number formatting helpers and the
+// mood-impact determination for GameCondition entries. Static helpers, no state.
+// Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -828,6 +829,179 @@ namespace PawnDiary
             }
 
             return "PawnDiary.Bucket.Opinion.Hostile".Translate();
+        }
+
+        // Determines whether a GameCondition has a positive, negative, or neutral mood impact
+        // on a specific pawn. Uses the condition's thought definitions for direction, then checks
+        // pawn-specific factors (e.g. PsychicDrone targets one gender; PsychicSuppressor only
+        // hurts the suppressed gender). Returns "positive", "negative", or "neutral" for use in
+        // the gameContext mood_impact field and the event text.
+        public static string DetermineMoodImpact(GameCondition condition, Pawn pawn)
+        {
+            if (condition == null || condition.def == null || pawn == null)
+            {
+                return "neutral";
+            }
+
+            GameConditionDef def = condition.def;
+            string defName = def.defName;
+
+            // First, check if this pawn is unaffected by the condition due to gender targeting.
+            // GameCondition_PsychicEmanation (psychic drone / soothe) targets one gender.
+            if (condition is GameCondition_PsychicEmanation emanationCondition)
+            {
+                if (emanationCondition.gender != pawn.gender)
+                {
+                    return "neutral";
+                }
+            }
+
+            // GameCondition_PsychicSuppression also targets one gender.
+            if (condition is GameCondition_PsychicSuppression suppressionCondition)
+            {
+                if (suppressionCondition.gender != pawn.gender)
+                {
+                    return "neutral";
+                }
+            }
+
+            // Check the condition's associated thought definitions for mood offsets. RimWorld's
+            // relationship is inverted from what you might expect: GameConditionDef does not hold
+            // thought references; instead, ThoughtDef has a `gameCondition` field that references
+            // the GameConditionDef it belongs to. We scan DefDatabase<ThoughtDef> for matches.
+            float bestOffset = GetMoodOffsetFromConditionThoughts(def);
+            float pawnOffset = GetMoodOffsetFromPawnThoughts(condition, pawn);
+            if (Mathf.Abs(pawnOffset) > Mathf.Abs(bestOffset))
+            {
+                bestOffset = pawnOffset;
+            }
+
+            // If we found a meaningful mood offset, return the direction.
+            if (bestOffset > 0.5f)
+            {
+                return "positive";
+            }
+
+            if (bestOffset < -0.5f)
+            {
+                return "negative";
+            }
+
+            // If no thought offsets found (some conditions apply thoughts programmatically),
+            // fall back to name-based heuristics for known condition families.
+            if (IsKnownPositiveCondition(defName))
+            {
+                return "positive";
+            }
+
+            if (IsKnownNegativeCondition(defName))
+            {
+                return "negative";
+            }
+
+            // If we can't determine the impact, default to neutral. The LLM will use the
+            // condition label and gameContext to figure out how the pawn feels.
+            return "neutral";
+        }
+
+        // Scans DefDatabase<ThoughtDef> for any thoughts that reference the given
+        // GameConditionDef via their `gameCondition` field, then sums the baseMoodEffect
+        // across all stages. RimWorld's relationship is inverted: ThoughtDef points to
+        // GameConditionDef, not vice versa. Returns 0 if no matching thoughts are found.
+        private static float GetMoodOffsetFromConditionThoughts(GameConditionDef conditionDef)
+        {
+            if (conditionDef == null)
+            {
+                return 0f;
+            }
+
+            float totalOffset = 0f;
+            List<ThoughtDef> allThoughtDefs = DefDatabase<ThoughtDef>.AllDefsListForReading;
+            for (int i = 0; i < allThoughtDefs.Count; i++)
+            {
+                ThoughtDef td = allThoughtDefs[i];
+                if (td == null || td.gameCondition != conditionDef)
+                {
+                    continue;
+                }
+
+                if (td.stages == null)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < td.stages.Count; j++)
+                {
+                    if (td.stages[j] != null)
+                    {
+                        totalOffset += td.stages[j].baseMoodEffect;
+                    }
+                }
+            }
+
+            return totalOffset;
+        }
+
+        // Checks the pawn's current mood thoughts for any that come from the given GameCondition,
+        // matching by the thought's `gameCondition` field pointing to our condition def.
+        // Returns the total mood offset from matching thoughts, or 0 if none are found.
+        private static float GetMoodOffsetFromPawnThoughts(GameCondition condition, Pawn pawn)
+        {
+            if (condition == null || condition.def == null || pawn?.needs?.mood?.thoughts == null)
+            {
+                return 0f;
+            }
+
+            float totalOffset = 0f;
+            List<Thought> thoughts = new List<Thought>();
+            pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
+
+            for (int i = 0; i < thoughts.Count; i++)
+            {
+                Thought thought = thoughts[i];
+                if (thought == null || thought.def == null)
+                {
+                    continue;
+                }
+
+                // Match thoughts whose def references this condition (DefDatabase link).
+                if (thought.def.gameCondition == condition.def)
+                {
+                    totalOffset += thought.MoodOffset();
+                }
+            }
+
+            return totalOffset;
+        }
+
+        // Known GameConditionDefs that are always positive for every colonist.
+        private static bool IsKnownPositiveCondition(string defName)
+        {
+            if (string.IsNullOrEmpty(defName))
+            {
+                return false;
+            }
+
+            return string.Equals(defName, "Aurora", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, "Party", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, "PsychicSoothe", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, "PsychicEmanation", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Known GameConditionDefs that are always negative for affected colonists.
+        // Excludes condition causers and gender-targeted effects (those vary per pawn).
+        private static bool IsKnownNegativeCondition(string defName)
+        {
+            if (string.IsNullOrEmpty(defName))
+            {
+                return false;
+            }
+
+            return string.Equals(defName, "Eclipse", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, "ToxicFallout", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, "VolcanicWinter", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, "Flashstorm", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, "GrayPall", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

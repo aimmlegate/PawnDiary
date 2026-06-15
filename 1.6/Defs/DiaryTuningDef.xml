@@ -9,10 +9,11 @@
   <PawnDiary.DiaryTuningDef>
     <defName>Diary_Tuning</defName>
 
-    <!-- Deduplication windows (game ticks; 60 ticks ≈ 1 second) -->
+<!-- Deduplication windows (game ticks; 60 ticks ≈ 1 second) -->
     <socialFightDedupTicks>300</socialFightDedupTicks>
     <mentalBreakDedupTicks>2500</mentalBreakDedupTicks>
     <taleDedupTicks>2500</taleDedupTicks>
+    <moodEventDedupTicks>2500</moodEventDedupTicks>
     <smallTalkBatchWindowTicks>2500</smallTalkBatchWindowTicks>
     <smallTalkBatchMaxEvents>6</smallTalkBatchMaxEvents>
 

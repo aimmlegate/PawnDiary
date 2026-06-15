@@ -77,6 +77,12 @@ namespace PawnDiary
         public string llmModel; // legacy flat field, migrated to per-POV fields on load
         public bool solo; // true for events with a single POV (e.g. mental breaks)
 
+        // Mood impact direction for mood-event diary entries: "positive", "negative", or "neutral".
+        // Reflects how the condition actually feels for the pawn (e.g. PsychicSuppressorMale is
+        // "neutral" for female pawns). Used in gameContext (mood_impact=) and to select text keys.
+        // Empty string for non-mood events.
+        public string moodImpact;
+
         // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
         // keys written to the save file — renaming one breaks existing saves. The PostLoadInit
         // block below back-fills defaults/normalizes status when loading older saves.
@@ -130,6 +136,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref initiatorLlmModel, "initiatorLlmModel");
             Scribe_Values.Look(ref recipientLlmModel, "recipientLlmModel");
             Scribe_Values.Look(ref neutralLlmModel, "neutralLlmModel");
+            Scribe_Values.Look(ref moodImpact, "moodImpact");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -239,6 +246,13 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(recipientWeapon))
                 {
                     recipientWeapon = string.Empty;
+                }
+
+                // Mood impact defaults to neutral for older saves that don't have this field.
+                // "positive"/"negative" are set at record time for mood-event entries.
+                if (string.IsNullOrWhiteSpace(moodImpact))
+                {
+                    moodImpact = "neutral";
                 }
 
                 if (neutralStatus == null)
@@ -660,7 +674,7 @@ namespace PawnDiary
             return initiatorSurroundings;
         }
 
-        /// <summary>
+/// <summary>
         /// Resolves the event group used by the Diary tab for labels and importance coloring.
         /// Saved events only keep the defName string, so this reuses the XML classifiers.
         /// </summary>
@@ -668,7 +682,9 @@ namespace PawnDiary
         {
             GroupDomain domain = IsTaleEvent()
                 ? GroupDomain.Tale
-                : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
+                : IsMoodEventEvent()
+                    ? GroupDomain.MoodEvent
+                    : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, interactionDefName);
         }
 
@@ -718,7 +734,7 @@ namespace PawnDiary
                 && gameContext.IndexOf("mental_state=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
+/// <summary>
         /// Tale events store their TaleDef defName in interactionDefName too; their context
         /// starts with a stable tale field, which lets UI classification pick the Tale domain.
         /// </summary>
@@ -726,6 +742,17 @@ namespace PawnDiary
         {
             return !string.IsNullOrWhiteSpace(gameContext)
                 && gameContext.IndexOf("tale=", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Mood-affecting GameCondition events store their GameConditionDef defName in
+        /// interactionDefName; their context starts with a stable mood_event field, which
+        /// lets UI classification pick the MoodEvent domain.
+        /// </summary>
+        private bool IsMoodEventEvent()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("mood_event=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>

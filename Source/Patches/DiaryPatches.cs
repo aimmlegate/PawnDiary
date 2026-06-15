@@ -1,10 +1,12 @@
 // Harmony patches — our hooks into vanilla RimWorld. We don't own the game's code, so we "patch"
 // vanilla methods: Postfix hooks record PlayLog.Add social interactions,
-// MentalStateHandler.TryStartMentalState social fights / mental breaks, and TaleRecorder
-// notable-history events after RimWorld handles them. A Prefix hook redirects Social-tab
-// play-log clicks into the matching Diary entry
-// when one exists. AccessTools.Field reads private vanilla fields via reflection.
+// MentalStateHandler.TryStartMentalState social fights / mental breaks, TaleRecorder
+// notable-history events, and GameConditionManager.RegisterCondition mood-affecting game
+// conditions after RimWorld handles them. A Prefix hook redirects Social-tab play-log clicks
+// into the matching Diary entry when one exists. AccessTools.Field reads private vanilla
+// fields via reflection.
 // New to this? See AGENTS.md ("Harmony patches").
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -273,9 +275,37 @@ namespace PawnDiary
                 return false;
             }
 
-            Find.Selector.ClearSelection();
+Find.Selector.ClearSelection();
             Find.Selector.Select(pawn, true, false);
             return true;
+        }
+    }
+
+    // Fires when a mood-affecting GameCondition starts (aurora, eclipse, psychic drone,
+    // toxic fallout, etc.). The patch iterates eligible colonists on affected maps and records
+    // a solo diary event for each one, so colonists can note how they feel about the event.
+    [HarmonyPatch(typeof(GameConditionManager), nameof(GameConditionManager.RegisterCondition))]
+    public static class GameConditionStartPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for GameConditionManager.RegisterCondition. Detects
+        /// mood-affecting game conditions (aurora, eclipse, psychic drone, etc.) and
+        /// forwards each affected colonist to DiaryGameComponent.RecordMoodEvent.
+        /// </summary>
+        public static void Postfix(GameCondition cond)
+        {
+            if (cond == null || cond.def == null)
+            {
+                return;
+            }
+
+            // TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now.
+            if (cond.def.defName == "ProblemCauser")
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordMoodEvent(cond);
         }
     }
 }

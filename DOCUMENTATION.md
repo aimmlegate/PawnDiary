@@ -4,16 +4,17 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-15 (quality crafts, relic installs, and Anomaly tale events)_
+_Last updated: 2026-06-15 (mood-event game conditions for diary entries)_
 
 ---
 
 ## 1. What the mod does
 
 Pawn Diary watches **colonist** pawns' social **interactions**, **social fights**,
-**mental breaks**, and RimWorld **notable tales** (deaths, injuries, surgeries, births,
-recruitment, research, raids, disasters, and similar non-social history events), keeps
-the meaningful ones, and uses an LLM (any OpenAI-compatible
+**mental breaks**, RimWorld **notable tales** (deaths, injuries, surgeries, births,
+recruitment, research, raids, disasters, and similar non-social history events), and
+**mood-affecting game conditions** (aurora, eclipse, psychic drone, toxic fallout, etc.),
+keeps the meaningful ones, and uses an LLM (any OpenAI-compatible
 `/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server) to rewrite each
 event into a short first-person diary entry. Each pawn's diary is shown in an
 **inspector tab after Health** on that pawn's UI.
@@ -71,7 +72,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
-| `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`. |
+| `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions). |
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
@@ -102,7 +103,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 Pawn interaction                         Pawn enters a mental state                 RimWorld records a notable tale
       │  (vanilla logs it)                     │  (social fight / break)                    │  (history/art event)
       ▼                                        ▼                                            ▼
-PlayLog.Add ─postfix─▶ PlayLogAddPatch   MentalStateHandler.TryStartMentalState       TaleRecorder.RecordTale
+PlayLog.add ─postfix─▶ PlayLogAddPatch   MentalStateHandler.TryStartMentalState       TaleRecorder.RecordTale
       │                                        │   ─postfix─▶ MentalStateStartPatch          │   ─postfix─▶ TaleRecorderPatch
       │                                        │   (reads handler.pawn, stateDef,            │
       │                                        │    otherPawn, reason)                       │
@@ -121,16 +122,21 @@ DiaryGameComponent.RecordInteraction     DiaryGameComponent.RecordMentalState   
       │   • queues generation (pairwise: paired sequential/single §4; solo: single initiator)
       ▼                                        ▼                                            ▼
 LlmClient.Enqueue ─▶ concurrency gate ─▶ SendOnce(HTTP) ─▶ Completed queue
+
+A game condition starts (aurora, eclipse, psychic drone, toxic fallout, etc.)
+      │  (vanilla registers it)
       ▼
-DiaryGameComponent.GameComponentTick (every tick)
-      │   • FlushReadySmallTalkBatches (time-window / max-events flush)
-      │   • QueueAllPendingGenerations (every ~2 s: scan for not_generated events)
-      │   • TryDequeueCompleted → ApplyLlmResult → DiaryEvent updated
-      │                                        ┌─ if initiator done → queue recipient (paired sequential)
-      │                                        └─ if initiator failed → mark recipient failed
+GameConditionManager.RegisterCondition ─postfix─▶ GameConditionStartPatch
+      │
       ▼
-ITab_Pawn_Diary.FillTab
-      │   EntriesFor(pawn) → pure read, no side effects
+DiaryGameComponent.RecordMoodEvent
+      │   • MoodEvent group enabled? (§5)
+      │   • for each eligible colonist on affected maps
+      │     → solo event (dedup by condition defName)
+      │   • adds event to diaryEvents + the pawn's PawnDiaryRecord
+      │   • queues generation (solo initiator)
+      ▼
+LlmClient.Enqueue ─▶ (same pipeline)
 ```
 
 Two additional narrow hooks feed the same event pipeline:
@@ -138,6 +144,9 @@ Two additional narrow hooks feed the same event pipeline:
   as solo events for the crafter (`tale=CraftedMasterwork` / `tale=CraftedLegendary`).
 - `JobDriver_InstallRelic`'s completion action records the pawn who installs an ideology relic
   in a reliquary (`tale=RelicInstalled`).
+- `GameConditionManager.RegisterCondition` records **mood-affecting game conditions**
+  (aurora, eclipse, psychic drone, toxic fallout, etc.) as solo events for each eligible
+  colonist on affected maps (`mood_event=<defName>`).
 
 **Background generation.** All LLM diary generation is driven by background ticks, never by
 UI actions. `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 seconds (120 ticks),

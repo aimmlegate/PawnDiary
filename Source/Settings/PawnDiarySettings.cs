@@ -298,7 +298,7 @@ namespace PawnDiary
             return group != null && IsGroupEnabled(group.defName);
         }
 
-        /// <summary>
+/// <summary>
         /// Returns the per-group prompt instruction for a TaleDef's diary entry,
         /// falling back to the group's default if no override is set.
         /// </summary>
@@ -310,6 +310,35 @@ namespace PawnDiary
             }
 
             return InstructionForGroup(InteractionGroups.ClassifyTale(taleDef));
+        }
+
+        /// <summary>
+        /// Same as IsInteractionEnabled but for mood-affecting GameConditions (aurora,
+        /// eclipse, psychic drone, toxic fallout, etc.).
+        /// </summary>
+        public bool IsMoodEventEnabled(GameConditionDef conditionDef)
+        {
+            if (conditionDef == null)
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyMoodEvent(conditionDef);
+            return group != null && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a mood event's diary entry,
+        /// falling back to the group's default if no override is set.
+        /// </summary>
+        public string InstructionForMoodEvent(GameConditionDef conditionDef)
+        {
+            if (conditionDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(InteractionGroups.ClassifyMoodEvent(conditionDef));
         }
 
         /// <summary>

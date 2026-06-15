@@ -4,6 +4,34 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (skip ProblemCauser game conditions)**
+  - Commented out ProblemCauser handling: `GameConditionStartPatch` now skips conditions
+    whose def is `ProblemCauser` or whose type is `GameCondition_ProblemCauser`.
+    ProblemCauser conditions are too complex to handle correctly right now.
+  - Commented out the `ProblemCauser` matchDefName in the mixed mood-events group in
+    `DiaryInteractionGroupDefs.xml`. The `moodeventMixed` group still matches
+    `PsychicSuppressorMale` and `PsychicSuppressorFemale`.
+
+- **2026-06-15 (mood-event game conditions)**
+  - Added a `GameConditionManager.RegisterCondition` Harmony postfix so mood-affecting
+    game conditions (aurora, party, psychic soothe, eclipse, psychic drone, gray pall,
+    toxic fallout) create solo diary events for each eligible colonist.
+  - Added `GroupDomain.MoodEvent` to the `InteractionGroups` enum and
+    `ClassifyMoodEvent()` classifier. Mood-event groups are data-driven from XML like
+    the other domains, with a "Positive mood events" group (aurora, party, psychic soothe),
+    a "Negative mood events" group (eclipse, psychic drone, gray pall, toxic fallout),
+    a "Situationally mixed mood events" group (psychic suppressor by sex), and a catch-all.
+  - Added `DiaryGameComponent.RecordMoodEvent()` with dedup via a transient
+    `recentMoodEvents` dictionary, `moodEventDedupTicks` tuning (default 2500), and
+    per-map colonist iteration.
+  - Added `IsMoodEventEnabled` / `InstructionForMoodEvent` settings helpers and a
+    "Mood events (colony conditions)" header in the settings UI.
+  - Added `PawnDiary.Event.MoodEvent` localization key and
+    `PawnDiary.Settings.MoodEventsHeader` settings header key.
+  - Added `DiaryEvent.IsMoodEventEvent()` so mood events are classified into the
+    MoodEvent domain for display purposes.
+  - Updated `DOCUMENTATION.md` and data-flow diagram.
+
 - **2026-06-15 (quality crafts, relics, and Anomaly tales)**
   - Added a `QualityUtility.SendCraftNotification` patch so Masterwork and Legendary items
     create solo diary events for the crafter. These use synthetic Tale-domain defNames

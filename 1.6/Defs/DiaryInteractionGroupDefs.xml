@@ -570,7 +570,7 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
-  <PawnDiary.DiaryInteractionGroupDef>
+<PawnDiary.DiaryInteractionGroupDef>
     <defName>taleother</defName>
     <label>Other notable events</label>
     <order>390</order>
@@ -578,6 +578,63 @@
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
     <instruction>a notable non-social RimWorld tale involving the pawn</instruction>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Mood-event domain: GameConditions that affect colonist mood ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventPositive</defName>
+    <label>Positive mood events</label>
+    <order>400</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a positive colony-wide event that lifts spirits: the pawn notices and reacts to it</instruction>
+    <matchDefNames>
+      <li>Aurora</li>
+      <li>Party</li>
+      <li>PsychicSoothe</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventNegative</defName>
+    <label>Negative mood events</label>
+    <order>410</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a negative colony-wide event that strains morale: the pawn reacts to the hardship</instruction>
+    <matchDefNames>
+      <li>Eclipse</li>
+      <li>PsychicDrone</li>
+      <li>GrayPall</li>
+      <li>ToxicFallout</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventMixed</defName>
+    <label>Situationally mixed mood events</label>
+    <order>405</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a colony-wide condition that may affect mood differently depending on who you are; react based on how it actually feels to the pawn</instruction>
+    <matchDefNames>
+      <!-- TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now. -->
+      <!-- <li>ProblemCauser</li> -->
+      <li>PsychicSuppressorMale</li>
+      <li>PsychicSuppressorFemale</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventOther</defName>
+    <label>Other mood events</label>
+    <order>420</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a colony-wide event affecting the pawn's mood</instruction>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 

@@ -1,5 +1,5 @@
 // The orchestrator. Owns the saved diary data and drives the whole flow: record an event
-// (RecordInteraction / RecordMentalState / RecordTale) -> build a DiaryEvent with context -> queue an LLM
+// (RecordInteraction / RecordMentalState / RecordTale / RecordMoodEvent) -> build a DiaryEvent with context -> queue an LLM
 // request -> apply the result each tick -> hand views to the UI. Context/prompt building live in
 // DiaryContextBuilder / DiaryPromptBuilder; the saved data models in DiaryEvent / PawnDiaryRecord.
 // This is a RimWorld GameComponent (lifecycle hooks: GameComponentTick, ExposeData, etc.).
@@ -38,11 +38,14 @@ namespace PawnDiary
         // Small-talk batches still accumulating lines; keyed by PairKey. Not saved (flushed first).
         private readonly Dictionary<string, PendingSmallTalkBatch> pendingSmallTalkBatches = new Dictionary<string, PendingSmallTalkBatch>();
 
-        // Transient (not saved) guard against duplicate mental-state events, e.g. the two
+// Transient (not saved) guard against duplicate mental-state events, e.g. the two
         // mirrored SocialFighting starts, or a break that re-triggers quickly.
         private readonly Dictionary<string, int> recentMentalEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against TaleRecorder firing the same notable event repeatedly.
         private readonly Dictionary<string, int> recentTaleEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against the same mood event firing for the same
+        // GameCondition on multiple maps within a short window.
+        private readonly Dictionary<string, int> recentMoodEvents = new Dictionary<string, int>();
 
         // These TaleDefs mirror events we already capture through more specific hooks. Skipping
         // them avoids two diary entries for one social fight or mental break.
@@ -66,11 +69,12 @@ namespace PawnDiary
             }
         }
 
-        public override void StartedNewGame()
+public override void StartedNewGame()
         {
             pendingSmallTalkBatches.Clear();
             recentMentalEvents.Clear();
             recentTaleEvents.Clear();
+            recentMoodEvents.Clear();
             LlmClient.BeginSession();
             nextGenerationScanTick = 0;
         }
@@ -80,6 +84,7 @@ namespace PawnDiary
             pendingSmallTalkBatches.Clear();
             recentMentalEvents.Clear();
             recentTaleEvents.Clear();
+            recentMoodEvents.Clear();
             LlmClient.BeginSession();
             nextGenerationScanTick = 0;
             QueueAllPendingGenerations();
@@ -678,8 +683,108 @@ namespace PawnDiary
                 + "; relic=" + relicLabel
                 + "; relicDef=" + (relic.def?.defName ?? string.Empty);
 
-            DiaryEvent relicEvent = AddSoloEvent(pawn, null, "RelicInstalled", label, text, instruction, gameContext);
+DiaryEvent relicEvent = AddSoloEvent(pawn, null, "RelicInstalled", label, text, instruction, gameContext);
             QueueLlmRewrite(relicEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Records a mood-affecting GameCondition (aurora, eclipse, psychic drone, toxic fallout,
+        /// etc.) as solo diary events for each eligible colonist on affected maps. Called by the
+        /// <see cref="GameConditionStartPatch"/> Harmony postfix on
+        /// <c>GameConditionManager.RegisterCondition</c>.
+        /// </summary>
+        public void RecordMoodEvent(GameCondition condition)
+        {
+            if (condition == null || condition.def == null || PawnDiaryMod.Settings == null)
+            {
+                return;
+            }
+
+            if (!PawnDiaryMod.Settings.IsMoodEventEnabled(condition.def))
+            {
+                return;
+            }
+
+            GameConditionDef conditionDef = condition.def;
+            string conditionDefName = conditionDef.defName;
+            string conditionLabel = DiaryContextBuilder.CleanLine(conditionDef.LabelCap.Resolve());
+
+            // Dedup: the same GameCondition type within a short window avoids duplicate diary events
+            // if a condition fires across multiple maps or re-triggers quickly.
+            string dedupKey = "moodevent|" + conditionDefName;
+            if (RecentlyRecorded(recentMoodEvents, dedupKey, DiaryTuning.Current.moodEventDedupTicks))
+            {
+                return;
+            }
+string instruction = PawnDiaryMod.Settings.InstructionForMoodEvent(conditionDef);
+
+            // Base gameContext shared by all pawns experiencing this condition.
+            string baseContext = "mood_event=" + conditionDefName
+                + "; label=" + conditionLabel;
+
+            // Collect all eligible colonists on maps affected by this condition.
+            // AffectedMaps can be empty for planet-wide conditions, in which case we
+            // check all maps in play.
+            List<Map> affectedMaps = condition.AffectedMaps;
+            if (affectedMaps == null || affectedMaps.Count == 0)
+            {
+                affectedMaps = Find.Maps;
+            }
+
+            HashSet<string> recordedPawnIds = new HashSet<string>();
+            for (int i = 0; i < affectedMaps.Count; i++)
+            {
+                Map map = affectedMaps[i];
+                if (map == null || map.mapPawns == null)
+                {
+                    continue;
+                }
+
+                List<Pawn> colonists = map.mapPawns.FreeColonists;
+                for (int j = 0; j < colonists.Count; j++)
+                {
+                    Pawn pawn = colonists[j];
+                    if (pawn == null || !IsDiaryEligible(pawn))
+                    {
+                        continue;
+                    }
+
+                    // A pawn could be on multiple maps during transitions; skip duplicates.
+                    string pawnId = pawn.GetUniqueLoadID();
+                    if (recordedPawnIds.Contains(pawnId))
+                    {
+                        continue;
+                    }
+
+                    recordedPawnIds.Add(pawnId);
+
+                    // Each affected colonist gets their own solo diary event, since each
+                    // pawn experiences the mood event independently. The mood impact direction
+                    // (positive/negative/neutral) is determined per-pawn because some conditions
+                    // (e.g. PsychicSuppressorMale) affect different sexes differently.
+                    string moodImpact = DiaryContextBuilder.DetermineMoodImpact(condition, pawn);
+                    string perPawnContext = baseContext + "; mood_impact=" + moodImpact;
+
+                    string text;
+                    if (string.Equals(moodImpact, "positive", StringComparison.OrdinalIgnoreCase))
+                    {
+                        text = "PawnDiary.Event.MoodEventPositive".Translate(pawn.LabelShortCap, conditionLabel).Resolve();
+                    }
+                    else if (string.Equals(moodImpact, "negative", StringComparison.OrdinalIgnoreCase))
+                    {
+                        text = "PawnDiary.Event.MoodEventNegative".Translate(pawn.LabelShortCap, conditionLabel).Resolve();
+                    }
+                    else
+                    {
+                        text = "PawnDiary.Event.MoodEvent".Translate(pawn.LabelShortCap, conditionLabel).Resolve();
+                    }
+
+                    DiaryEvent moodEvent = AddSoloEvent(pawn, null, conditionDefName, conditionLabel,
+                        text, instruction, perPawnContext);
+                    moodEvent.moodImpact = moodImpact;
+                    QueueLlmRewrite(moodEvent, DiaryEvent.InitiatorRole);
+                }
+            }
         }
 
         /// <summary>

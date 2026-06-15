@@ -11,15 +11,17 @@ using Verse;
 
 namespace PawnDiary
 {
-    // Which kind of game event a group classifies. Interaction groups match InteractionDefs
+// Which kind of game event a group classifies. Interaction groups match InteractionDefs
     // (social log entries); MentalState groups match MentalStateDefs (breaks, social fights);
-    // Tale groups match TaleDefs (RimWorld's notable-history events).
+    // Tale groups match TaleDefs (RimWorld's notable-history events); MoodEvent groups match
+    // GameConditionDefs that affect colonist mood (aurora, eclipse, psychic drone, etc.).
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
         Interaction,
         MentalState,
-        Tale
+        Tale,
+        MoodEvent
     }
 
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in
@@ -146,6 +148,12 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyTale(TaleDef taleDef)
         {
             return ClassifyIn(GroupDomain.Tale, taleDef?.defName);
+        }
+
+        // First MoodEvent-domain group that matches the GameConditionDef, else the MoodEvent catch-all.
+        public static DiaryInteractionGroupDef ClassifyMoodEvent(GameConditionDef conditionDef)
+        {
+            return ClassifyIn(GroupDomain.MoodEvent, conditionDef?.defName);
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.
