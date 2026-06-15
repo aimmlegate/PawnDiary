@@ -4,6 +4,25 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (trait/backstory-aware, colony-deduplicated initial persona roll)**
+  - New pawns no longer get a uniform-random persona. `DiaryPersonas.WeightedStartingPersona`
+    (`Source/Defs/DiaryPersonaDef.cs`) now rolls the *initial* voice with a weight per persona,
+    keeping flat random only as a fallback. Existing saved personas and the manual picker are
+    untouched — the roll runs only when a pawn's diary record is first created.
+  - **Trait/backstory fit.** Each `DiaryPersonaDef` gained an optional `<themes>` list of coarse
+    keywords (grim/warm/hostile/anxious/analytical/dramatic/social/whimsical/noble); all 22
+    personas in `1.6/Defs/DiaryPersonaDefs.xml` are tagged. New `Source/Generation/PersonaAffinity.cs`
+    maps RimWorld trait defNames (incl. spectrum-trait degrees like `NaturalMood:1` = optimist,
+    `Nerves:-1` = nervous) and backstory `spawnCategories` to that vocabulary, adding weight per
+    shared theme. Themes are internal keywords — never shown to the player, never localized.
+  - **Soft colony de-duplication.** `DiaryGameComponent.BuildUsedPersonaCounts` counts personas
+    in use by current living free colonists; weight is multiplied by ~0.25 per existing user
+    (clamped to a small floor), so duplicate voices are rare but still possible once the catalog is
+    spread thin, and assignment never starves with more colonists than personas.
+  - Additive/back-compatible: untagged or removed persona defs still work (base weight only),
+    `RandomStartingPersona` is retained as the fallback, and `DiaryPersonaDef.themes` defaults to
+    an empty list so old/partial XML never NullReferences. `DOCUMENTATION.md` (per-pawn persona
+    section) updated to match.
 - **2026-06-15 (expanded persona catalog with 10 voice-driven presets)**
   - Added 10 new `DiaryPersonaDef`s to `1.6/Defs/DiaryPersonaDefs.xml`, growing the catalog from
     12 to 22. The new presets are distinguished by a distinctive *voice or worldview* (a way of
