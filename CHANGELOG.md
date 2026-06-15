@@ -4,6 +4,20 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (expanded persona catalog with 10 voice-driven presets)**
+  - Added 10 new `DiaryPersonaDef`s to `1.6/Defs/DiaryPersonaDefs.xml`, growing the catalog from
+    12 to 22. The new presets are distinguished by a distinctive *voice or worldview* (a way of
+    framing events) rather than by mood, to complement the existing temperament-based set:
+    ledger-keeper, hardboiled-gumshoe, doomsaying-prophet, clinical-experimenter,
+    theatrical-tragedian, swaggering-braggart, rambling-old-timer, superstitious-ritualist,
+    detached-philosopher, imagist-minimalist. Each follows the enriched rule format (writing
+    style, emotional behavior, a sentence-opener cue, and a stylistic-device tip).
+  - Mirrored the same 10 entries in the upstream `prompt-lab/personas.txt` catalog (entries
+    13–22) so prompt-lab fixtures using `persona: random` can draw from them too.
+  - Additive only: no existing personas were renamed or removed, so saved `personaDefName`
+    values on existing pawns are unaffected. The default persona is unchanged
+    (`DiaryPersona_StoicSurvivor`).
+
 - **2026-06-15 (prompt improvements for small local models 6B–31B)**
   - Simplified the default system prompt from 5 rules (~250 words) to 3 rules (~100 words).
     Smaller models absorb fewer rules more effectively. Added explicit "One to three sentences."

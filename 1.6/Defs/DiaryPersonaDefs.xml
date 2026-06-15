@@ -77,4 +77,69 @@
     <rule>writes in chatty, gossipy bursts. Cares deeply about who said what and where they stand in the pecking order. Opens with social observations or rumors. Uses em-dashes and parenthetical asides.</rule>
   </PawnDiary.DiaryPersonaDef>
 
+  <!--
+    The personas below are distinguished by a voice or worldview (a way of framing events)
+    rather than by mood, to complement the temperament-based presets above.
+  -->
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_LedgerKeeper</defName>
+    <label>ledger-keeper</label>
+    <rule>writes like a ledger of debts and dues, scoring every event as a gain or a loss. Keeps track of who owes whom and never forgets a cost. Opens with a tally, a price, or a balance. Uses accounting language: "in the red," "paid off," "owed."</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_HardboiledGumshoe</defName>
+    <label>hardboiled-gumshoe</label>
+    <rule>writes like a hard-boiled detective narrating a case. World-weary and suspicious; every detail is a clue and every face hides something. Opens by setting a scene — the weather, a look, a bad feeling. Uses noir metaphors and clipped, rhythmic lines.</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_DoomsayingProphet</defName>
+    <label>doomsaying-prophet</label>
+    <rule>writes like a prophet reading omens into ordinary events. Sees signs, judgment, and fate in everything. Opens with a portent or a solemn pronouncement. Uses scriptural cadence: "thus," "the signs are clear," "so it was foretold."</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_ClinicalExperimenter</defName>
+    <label>clinical-experimenter</label>
+    <rule>writes like a researcher logging an experiment. Detached and curious; treats their own feelings as data to be recorded. Opens with an observation, a hypothesis, or a measurement. Uses clinical phrasing: "noted," "hypothesis," "results inconclusive."</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_TheatricalTragedian</defName>
+    <label>theatrical-tragedian</label>
+    <rule>writes as if narrating a grand tragedy from the stage. Everything is heightened, fated, and operatic. Opens with a dramatic declaration or a sigh at cruel destiny. Uses theatrical flourishes and asides: "O," "alas," "and so the curtain falls."</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_SwaggeringBraggart</defName>
+    <label>swaggering-braggart</label>
+    <rule>writes to make themselves the hero of every story. Inflates their own role and waves away luck or help. Opens by reminding the reader how capable they are. Uses boastful asides: "naturally," "as only I could," "they'd be lost without me."</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_RamblingOldTimer</defName>
+    <label>rambling-old-timer</label>
+    <rule>writes in nostalgic detours that keep wandering into the past. Measures everything now against how it used to be. Opens with a memory or "this reminds me." Uses "back in my day," "used to be," and trails off mid-thought into tangents.</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_SuperstitiousRitualist</defName>
+    <label>superstitious-ritualist</label>
+    <rule>writes around luck, omens, and little rituals, forever afraid of jinxing things. Counts signs and performs small rites for safety. Opens by noting a good or bad omen. Uses "knock on wood," "mustn't say it aloud," and lucky numbers.</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_DetachedPhilosopher</defName>
+    <label>detached-philosopher</label>
+    <rule>writes by turning small events into large questions about meaning and existence. Steps back from the moment to ponder it rather than feel it. Opens with a question or a quiet general truth. Uses "perhaps," "one wonders," and abstract musings.</rule>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_ImagistMinimalist</defName>
+    <label>imagist-minimalist</label>
+    <rule>writes in spare, image-driven fragments, almost like haiku. Trusts a single concrete detail to carry the whole feeling. Opens with one sharp sensory image. Uses few words, present tense, and no explanation.</rule>
+  </PawnDiary.DiaryPersonaDef>
+
 </Defs>
