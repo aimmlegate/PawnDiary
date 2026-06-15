@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (thought patch target fix)**
+  - Fixed the thought feature being silently disabled: `ThoughtGainPatch` targeted
+    `ThoughtHandler.GetNewThought`, which does not exist in RimWorld 1.6 (verified against
+    `Assembly-CSharp.dll`), so `TryRegister` always logged its warning and recorded nothing.
+    Re-pointed the postfix at `MemoryThoughtHandler.TryGainMemory(Thought_Memory, Pawn)` — the real
+    memory-gain path. The `ThoughtDef` overload and `TryGainMemoryFast` both route through it, so the
+    single hook catches every memory thought. Postfix now reads `__instance.pawn` + the `Thought_Memory`
+    argument instead of `__result`.
+  - Simplified the `RecordThought` magnitude gate (removed the empty `if (bypassThreshold)` branch in
+    favor of a single `if (!bypassThreshold)` threshold check). Behavior unchanged.
+
 - **2026-06-16 (thought feature review fixes)**
   - Converted `ThoughtGainPatch` from `[HarmonyPatch]` attribute to `TryRegister` pattern (matching
     `RelicInstallCompletionPatch`), so a missing or renamed `ThoughtHandler.GetNewThought` only

@@ -1092,17 +1092,17 @@ namespace PawnDiary
             bool isEatingThought = MatchesAnyToken(thought.def, DiaryTuning.Current.thoughtEatingTokens);
             bool bypassThreshold = MatchesAnyToken(thought.def, DiaryTuning.Current.thoughtBypassThresholdTokens);
 
-            if (bypassThreshold)
+            // Bypass thoughts (death, banishment, etc.) are always recorded regardless of magnitude.
+            // Everything else must clear its threshold; eating thoughts use the higher bar.
+            if (!bypassThreshold)
             {
-                // Bypass thoughts (death, banishment, etc.) are always recorded regardless of magnitude.
-            }
-            else if (isEatingThought && Mathf.Abs(moodOffset) < DiaryTuning.Current.thoughtEatingMinMoodOffset)
-            {
-                return;
-            }
-            else if (!isEatingThought && Mathf.Abs(moodOffset) < DiaryTuning.Current.thoughtMinMoodOffset)
-            {
-                return;
+                float minMoodOffset = isEatingThought
+                    ? DiaryTuning.Current.thoughtEatingMinMoodOffset
+                    : DiaryTuning.Current.thoughtMinMoodOffset;
+                if (Mathf.Abs(moodOffset) < minMoodOffset)
+                {
+                    return;
+                }
             }
 
             string dedupKey = "thought|" + pawn.GetUniqueLoadID() + "|" + thought.def.defName;

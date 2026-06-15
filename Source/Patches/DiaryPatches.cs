@@ -370,19 +370,22 @@ namespace PawnDiary
     // Fires when a pawn gains a temporary thought (Thought_Memory). We only record thoughts
     // that have an expiration (durationDays > 0), filtering out permanent traits and
     // low-magnitude thoughts. The patch catches all temporary mood thoughts at the moment
-    // they are added to the pawn's thought collection.
+    // they are added to the pawn's memory collection. We hook the Thought_Memory overload of
+    // TryGainMemory because the ThoughtDef overload delegates to it, so this one catches both.
     public static class ThoughtGainPatch
     {
         /// <summary>
-        /// Patches ThoughtHandler.GetNewThought, if it can still be found. Safe to call even
-        /// when the method name has changed: it logs and skips.
+        /// Patches MemoryThoughtHandler.TryGainMemory(Thought_Memory, Pawn), if it can still be
+        /// found. Safe to call even when the method name has changed: it logs and skips.
         /// </summary>
         public static void TryRegister(Harmony harmony)
         {
-            MethodBase target = AccessTools.Method(typeof(ThoughtHandler), "GetNewThought");
+            MethodBase target = AccessTools.Method(
+                typeof(MemoryThoughtHandler), "TryGainMemory",
+                new[] { typeof(Thought_Memory), typeof(Pawn) });
             if (target == null)
             {
-                Log.Warning("[Pawn Diary] Could not find ThoughtHandler.GetNewThought; "
+                Log.Warning("[Pawn Diary] Could not find MemoryThoughtHandler.TryGainMemory(Thought_Memory, Pawn); "
                     + "thought diary entries are disabled (a RimWorld update likely renamed it).");
                 return;
             }
@@ -391,23 +394,24 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Harmony Postfix for ThoughtHandler.GetNewThought. Fires when a thought is created
-        /// and added to a pawn's thought collection. Forwards temporary thoughts (Thought_Memory
-        /// with expiration) to the diary.
+        /// Harmony Postfix for MemoryThoughtHandler.TryGainMemory. Fires after a memory thought is
+        /// gained by a pawn. Forwards temporary thoughts (Thought_Memory with expiration) to the
+        /// diary. __instance is the owning pawn's handler; __0 is the gained memory.
         /// </summary>
-        public static void Postfix(ThoughtHandler __instance, Thought __result)
+        public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory __0)
         {
-            if (__instance == null || __result == null || !(__result is Thought_Memory thoughtMemory))
+            if (__instance == null || __0 == null || __0.def == null)
             {
                 return;
             }
 
-            if (thoughtMemory.pawn == null || thoughtMemory.def == null)
+            Pawn pawn = __instance.pawn;
+            if (pawn == null)
             {
                 return;
             }
 
-            DiaryGameComponent.Current?.RecordThought(thoughtMemory.pawn, thoughtMemory);
+            DiaryGameComponent.Current?.RecordThought(pawn, __0);
         }
     }
 }
