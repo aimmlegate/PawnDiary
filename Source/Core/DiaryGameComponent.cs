@@ -161,6 +161,10 @@ namespace PawnDiary
             {
                 ApplyLlmResult(result);
             }
+
+            // Background send workers can't call Log.Message safely (it's main-thread only), so they
+            // queue debug lines; flush them here, on the main thread. See LlmClient.LogDebug.
+            LlmClient.FlushPendingLogs();
         }
 
         /// <summary>

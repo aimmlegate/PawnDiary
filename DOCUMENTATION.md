@@ -519,7 +519,12 @@ dev mode shows a "Show persona settings" toggle, and normal mode hides persona e
 - **Debug lane logs:** each queued request writes `[PawnDiary debug]` lines to the RimWorld log:
   configured vs active lane counts, selected primary lane and reason, failover order, skipped
   blank/duplicate lanes, each lane attempt, success lane, and all-lanes-failed summaries. API keys
-  are never logged.
+  are never logged. These lines originate on background send workers, but `Log.Message` is
+  **main-thread only** (it mutates the queue the in-game log window enumerates during OnGUI, so an
+  off-thread write throws "Collection was modified"). So `LlmClient.LogDebug` logs directly only
+  when already on the main thread (`UnityData.IsInMainThread`) and otherwise queues the line for
+  `FlushPendingLogs`, which `DiaryGameComponent.GameComponentTick` drains on the main thread —
+  mirroring how finished results cross the thread boundary.
 - **Stuck-request purge:** once a request acquires a lane's slot, a hard deadline (`timeoutSeconds`)
   covers that **lane attempt including its retries**. When it fires the lane is abandoned (and
   failover moves on); if it was the last lane, the entry is reported as

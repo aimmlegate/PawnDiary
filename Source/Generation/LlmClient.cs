@@ -113,6 +113,15 @@ namespace PawnDiary
         /// <summary>Finished results awaiting consumption by the main-thread tick.</summary>
         private static readonly ConcurrentQueue<LlmGenerationResult> Completed = new ConcurrentQueue<LlmGenerationResult>();
 
+        /// <summary>
+        /// Debug log lines produced on background worker threads, awaiting flush on the main-thread
+        /// tick. RimWorld's <c>Log.Message</c> appends to a shared queue that the in-game log window
+        /// enumerates during OnGUI, so calling it off the main thread can corrupt that enumeration
+        /// ("Collection was modified"). Like <see cref="Completed"/>, background work hands log lines
+        /// across the thread boundary through this queue and the main thread does the actual logging.
+        /// </summary>
+        private static readonly ConcurrentQueue<string> PendingLogs = new ConcurrentQueue<string>();
+
         /// <summary>Tracks in-flight request keys to prevent duplicate submissions for the same event + session.</summary>
         private static readonly ConcurrentDictionary<string, byte> PendingKeys = new ConcurrentDictionary<string, byte>();
 
@@ -713,10 +722,38 @@ namespace PawnDiary
         /// <summary>
         /// Writes one-line LLM lane diagnostics to the RimWorld log. These are intentionally
         /// English debug logs and never include API keys.
+        ///
+        /// Thread-safety: most callers run on background worker threads (the <c>Task.Run</c> send
+        /// loop and its <c>await</c> continuations). <c>Log.Message</c> is **main-thread only** — it
+        /// mutates the queue the in-game log window enumerates on the GUI thread, so an off-thread
+        /// call races that enumeration and throws "Collection was modified". We therefore log
+        /// directly only when already on the main thread, and otherwise defer the line to
+        /// <see cref="FlushPendingLogs"/>, which the main-thread tick drains. (Same reason
+        /// <c>.Translate()</c> is kept off these threads — see AGENTS.md.)
         /// </summary>
         private static void LogDebug(string message)
         {
-            Log.Message("[PawnDiary debug] " + message);
+            if (UnityData.IsInMainThread)
+            {
+                Log.Message("[PawnDiary debug] " + message);
+            }
+            else
+            {
+                PendingLogs.Enqueue(message);
+            }
+        }
+
+        /// <summary>
+        /// Writes any debug lines queued by background workers to the RimWorld log. Must be called
+        /// on the main thread (the game tick does so); see <see cref="LogDebug"/> for why.
+        /// </summary>
+        public static void FlushPendingLogs()
+        {
+            string message;
+            while (PendingLogs.TryDequeue(out message))
+            {
+                Log.Message("[PawnDiary debug] " + message);
+            }
         }
 
         private static string LaneList(List<ApiEndpointConfig> lanes)

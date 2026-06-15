@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (thread-safe debug logging)**
+  - Fixed a `System.InvalidOperationException: Collection was modified` crash in the in-game log
+    window (`EditWindow_Log.DoMessagesListing`). `LlmClient`'s background send workers (the
+    `Task.Run` loop and its `await` continuations) called `Log.Message` directly, but that API is
+    main-thread only — it appends to the queue the log window enumerates during OnGUI, so an
+    off-thread write raced that enumeration. `LogDebug` now logs directly only when on the main
+    thread (`UnityData.IsInMainThread`) and otherwise queues the line into a `ConcurrentQueue` that
+    the new `FlushPendingLogs` drains from `DiaryGameComponent.GameComponentTick`, reusing the same
+    main-thread hand-off the `Completed` results queue already uses. Same hazard the existing
+    `.Translate()` carve-out guards against (AGENTS.md). No change to what gets logged.
+
 - **2026-06-16 (thought patch target fix)**
   - Fixed the thought feature being silently disabled: `ThoughtGainPatch` targeted
     `ThoughtHandler.GetNewThought`, which does not exist in RimWorld 1.6 (verified against
