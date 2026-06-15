@@ -26,7 +26,7 @@ namespace PawnDiary
         // True while an async model-list request is in flight; disables the button.
         private bool isFetchingModels;
         // Human-readable status line shown below the Fetch button.
-        private string fetchStatus = "Models not fetched.";
+        private string fetchStatus;
         // DefName of the interaction group currently selected in the instruction editor.
         private string selectedGroupKey;
         // Scroll position for the settings window scroll view.
@@ -50,7 +50,7 @@ namespace PawnDiary
         /// <summary>Returns the title shown in the RimWorld mod-settings list.</summary>
         public override string SettingsCategory()
         {
-            return "Pawn Diary";
+            return "PawnDiary.Settings.Category".Translate();
         }
 
         /// <summary>
@@ -65,49 +65,49 @@ namespace PawnDiary
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
             listing.Begin(viewRect);
 
-            listing.Label("Connection");
-            Settings.endpointUrl = listing.TextEntryLabeled("Endpoint", Settings.endpointUrl);
-            Settings.apiKey = listing.TextEntryLabeled("API key", Settings.apiKey);
+            listing.Label("PawnDiary.Settings.Connection".Translate());
+            Settings.endpointUrl = listing.TextEntryLabeled("PawnDiary.Settings.Endpoint".Translate(), Settings.endpointUrl);
+            Settings.apiKey = listing.TextEntryLabeled("PawnDiary.Settings.ApiKey".Translate(), Settings.apiKey);
 
             listing.Gap(6f);
             EnsureModelNameEditBuffer();
-            modelNameEditBuffer = listing.TextEntryLabeled("Model name", modelNameEditBuffer);
+            modelNameEditBuffer = listing.TextEntryLabeled("PawnDiary.Settings.ModelName".Translate(), modelNameEditBuffer);
             Settings.modelName = modelNameEditBuffer;
             DrawModelSelector(listing);
 
             listing.Gap(6f);
-            if (listing.ButtonText(isFetchingModels ? "Fetching models..." : "Fetch models") && !isFetchingModels)
+            if (listing.ButtonText((isFetchingModels ? "PawnDiary.Settings.FetchingModels" : "PawnDiary.Settings.FetchModels").Translate()) && !isFetchingModels)
             {
                 FetchModels();
             }
 
-            listing.Label(fetchStatus);
+            listing.Label(fetchStatus ?? "PawnDiary.Settings.ModelsNotFetched".Translate());
 
             listing.Gap(12f);
             listing.CheckboxLabeled(
-                "Paired POV generation",
+                "PawnDiary.Settings.PairedPov".Translate(),
                 ref Settings.dualPovGeneration,
-                "Generate pairwise diary entries sequentially: initiator first, then recipient with the initiator entry as hidden context. Disable to generate only the first POV immediately and let other POVs generate lazily.");
+                "PawnDiary.Settings.PairedPovTip".Translate());
 
-            listing.Label($"Max concurrent requests: {Settings.maxConcurrentRequests}");
+            listing.Label("PawnDiary.Settings.MaxConcurrent".Translate(Settings.maxConcurrentRequests));
             Settings.maxConcurrentRequests = Mathf.RoundToInt(listing.Slider(Settings.maxConcurrentRequests, 1f, 16f));
-            listing.Label("How many requests may be in flight (awaiting a model response) at once; the rest wait in the queue. Use 1 for a single local model that handles one request at a time; raise it only if your endpoint serves requests in parallel.");
+            listing.Label("PawnDiary.Settings.MaxConcurrentHelp".Translate());
 
             listing.Gap(12f);
-            if (listing.ButtonText("Reset connection"))
+            if (listing.ButtonText("PawnDiary.Settings.ResetConnection".Translate()))
             {
                 fetchGeneration++;
                 Settings.ResetConnectionDefaults();
                 fetchedModels.Clear();
-                fetchStatus = "Models not fetched.";
+                fetchStatus = "PawnDiary.Settings.ModelsNotFetched".Translate();
                 modelNameEditBuffer = Settings.modelName ?? string.Empty;
             }
 
             listing.GapLine();
-            listing.Label("System prompt");
+            listing.Label("PawnDiary.Settings.SystemPrompt".Translate());
             Rect systemPromptRect = listing.GetRect(150f, 1f);
             Settings.systemPrompt = Widgets.TextArea(systemPromptRect, Settings.systemPrompt ?? string.Empty);
-            if (listing.ButtonText("Restore default system prompt"))
+            if (listing.ButtonText("PawnDiary.Settings.RestoreSystemPrompt".Translate()))
             {
                 Settings.systemPrompt = PawnDiarySettings.DefaultSystemPrompt;
             }
@@ -137,7 +137,7 @@ namespace PawnDiary
         /// </summary>
         private void DrawModelSelector(Listing_Standard listing)
         {
-            if (listing.ButtonText("Pick fetched model"))
+            if (listing.ButtonText("PawnDiary.Settings.PickModel".Translate()))
             {
                 List<FloatMenuOption> options = fetchedModels
                     .Distinct()
@@ -151,7 +151,7 @@ namespace PawnDiary
 
                 if (options.Count == 0)
                 {
-                    options.Add(new FloatMenuOption("No models fetched yet", null));
+                    options.Add(new FloatMenuOption("PawnDiary.Settings.NoModelsYet".Translate(), null));
                 }
 
                 Find.WindowStack.Add(new FloatMenu(options));
@@ -177,7 +177,7 @@ namespace PawnDiary
         /// </summary>
         private void DrawInteractionGroupsEditor(Listing_Standard listing)
         {
-            listing.Label("Events — enable groups and edit their diary prompt");
+            listing.Label("PawnDiary.Settings.EventsHeader".Translate());
 
             // One toggle per group: whether events in it are recorded at all. A header is
             // drawn the first time the group domain changes (interactions vs mental states).
@@ -188,7 +188,7 @@ namespace PawnDiary
                 {
                     mentalHeaderDrawn = true;
                     listing.Gap(6f);
-                    listing.Label("Mental states & breaks");
+                    listing.Label("PawnDiary.Settings.MentalStatesHeader".Translate());
                 }
 
                 bool enabled = Settings.IsGroupEnabled(group.defName);
@@ -208,7 +208,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (listing.ButtonText($"Prompt for: {selectedGroup.label}"))
+            if (listing.ButtonText("PawnDiary.Settings.PromptForGroup".Translate(selectedGroup.label)))
             {
                 List<FloatMenuOption> options = InteractionGroups.All
                     .Select(group => new FloatMenuOption(group.label, delegate
@@ -223,18 +223,18 @@ namespace PawnDiary
 
             EnsureInstructionEditBuffer(selectedGroup);
 
-            listing.Label("Diary prompt instruction for this group");
+            listing.Label("PawnDiary.Settings.GroupInstructionLabel".Translate());
             Rect textAreaRect = listing.GetRect(120f, 1f);
             instructionEditBuffer = Widgets.TextArea(textAreaRect, instructionEditBuffer ?? string.Empty);
 
             listing.Gap(6f);
-            if (listing.ButtonText("Save instruction"))
+            if (listing.ButtonText("PawnDiary.Settings.SaveInstruction".Translate()))
             {
                 Settings.SetGroupInstruction(selectedGroup.defName, instructionEditBuffer);
                 WriteSettings();
             }
 
-            if (listing.ButtonText("Restore this group's default"))
+            if (listing.ButtonText("PawnDiary.Settings.RestoreGroupDefault".Translate()))
             {
                 Settings.ResetGroupInstruction(selectedGroup.defName);
                 instructionEditBuffer = selectedGroup.instruction;
@@ -295,7 +295,7 @@ namespace PawnDiary
         {
             int generation = ++fetchGeneration; // capture current generation to detect stale completions
             isFetchingModels = true;
-            fetchStatus = "Fetching models...";
+            fetchStatus = "PawnDiary.Settings.FetchingModels".Translate();
 
             try
             {
@@ -309,11 +309,11 @@ namespace PawnDiary
 
                 if (models.Count == 0)
                 {
-                    fetchStatus = "No models returned.";
+                    fetchStatus = "PawnDiary.Settings.NoModelsReturned".Translate();
                 }
                 else
                 {
-                    fetchStatus = $"Found {models.Count} model(s).";
+                    fetchStatus = "PawnDiary.Settings.ModelsFound".Translate(models.Count);
                     if (string.IsNullOrWhiteSpace(Settings.modelName) || Settings.modelName == PawnDiarySettings.DefaultModelName)
                     {
                         Settings.modelName = models[0];
@@ -326,7 +326,7 @@ namespace PawnDiary
                 if (generation != fetchGeneration)
                     return;
 
-                fetchStatus = $"Fetch failed: {ex.Message}";
+                fetchStatus = "PawnDiary.Settings.FetchFailed".Translate(ex.Message);
             }
             finally
             {

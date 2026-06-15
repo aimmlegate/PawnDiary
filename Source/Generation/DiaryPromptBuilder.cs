@@ -87,7 +87,12 @@ namespace PawnDiary
         private static string EventNoun(DiaryEvent diaryEvent)
         {
             string label = DiaryContextBuilder.CleanLine(diaryEvent.interactionLabel);
-            return string.IsNullOrWhiteSpace(label) ? "social event" : label.ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return "PawnDiary.Prompt.SocialEvent".Translate();
+            }
+
+            return label.ToLowerInvariant();
         }
 
         // Adds "key: value" only when the value carries real signal. Empty strings and

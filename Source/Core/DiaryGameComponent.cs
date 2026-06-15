@@ -27,7 +27,6 @@ namespace PawnDiary
         private const string SmallTalkGroupKey = "smalltalk";
         // Synthetic defName/label used when multiple small-talk interactions are merged into one diary event.
         private const string SmallTalkBatchDefName = "SmallTalkBatch";
-        private const string SmallTalkBatchLabel = "Small talk";
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
@@ -314,7 +313,7 @@ namespace PawnDiary
                 return;
             }
 
-            string fallbackText = $"{initiator.LabelShortCap} had a {interactionDef.LabelCap.Resolve()} interaction with {recipient.LabelShortCap}.";
+            string fallbackText = "PawnDiary.Event.Interaction".Translate(initiator.LabelShortCap, interactionDef.LabelCap.Resolve(), recipient.LabelShortCap);
             RecordInteraction(initiator, recipient, interactionDef, fallbackText);
         }
 
@@ -362,7 +361,7 @@ namespace PawnDiary
                 string eligibleText = initiatorEligible ? initiatorText : recipientText;
                 if (string.IsNullOrWhiteSpace(eligibleText))
                 {
-                    eligibleText = $"{eligiblePawn.LabelShortCap} had a {interactionLabel} interaction with {otherPawn.LabelShortCap}.";
+                    eligibleText = "PawnDiary.Event.Interaction".Translate(eligiblePawn.LabelShortCap, interactionLabel, otherPawn.LabelShortCap);
                 }
 
                 string gameContext = DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel);
@@ -374,7 +373,7 @@ namespace PawnDiary
 
             if (string.IsNullOrWhiteSpace(initiatorText))
             {
-                initiatorText = $"{initiator.LabelShortCap} had a {interactionLabel} interaction with {recipient.LabelShortCap}.";
+                initiatorText = "PawnDiary.Event.Interaction".Translate(initiator.LabelShortCap, interactionLabel, recipient.LabelShortCap);
             }
 
             if (string.IsNullOrWhiteSpace(recipientText))
@@ -454,7 +453,7 @@ namespace PawnDiary
                     return;
                 }
 
-                string text = pawn.LabelShortCap + " and " + otherPawn.LabelShortCap + " lost their tempers and came to blows.";
+                string text = "PawnDiary.Event.SocialFight".Translate(pawn.LabelShortCap, otherPawn.LabelShortCap);
                 string gameContext = "mental_state=" + stateDef.defName + "; label=" + DiaryContextBuilder.CleanLine(label) + ReasonSuffix(reason);
                 DiaryEvent fightEvent = AddPairwiseEvent(pawn, otherPawn, stateDef.defName, label,
                     text, text, instruction, gameContext);
@@ -583,16 +582,16 @@ namespace PawnDiary
         /// </summary>
         private static string BuildMentalBreakText(Pawn pawn, string label, Pawn otherPawn, string reason)
         {
-            string text = pawn.LabelShortCap + " had a mental break (" + DiaryContextBuilder.CleanLine(label) + ")";
+            string text = "PawnDiary.Event.MentalBreak".Translate(pawn.LabelShortCap, DiaryContextBuilder.CleanLine(label));
             if (otherPawn != null)
             {
-                text += ", directed at " + DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap);
+                text += "PawnDiary.Event.DirectedAt".Translate(DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap)).Resolve();
             }
 
             string cleanReason = DiaryContextBuilder.CleanLine(reason);
             if (!string.IsNullOrWhiteSpace(cleanReason))
             {
-                text += ". Reason: " + cleanReason;
+                text += "PawnDiary.Event.ReasonSuffix".Translate(cleanReason).Resolve();
             }
 
             return text + ".";
@@ -721,7 +720,7 @@ namespace PawnDiary
             }
 
             bool combined = batch.Count > 1;
-            string label = combined ? SmallTalkBatchLabel : batch.firstLabel;
+            string label = combined ? "PawnDiary.Event.SmallTalkLabel".Translate().Resolve() : batch.firstLabel;
             string defName = combined ? SmallTalkBatchDefName : batch.firstDefName;
             string initiatorText = BuildSmallTalkBatchText(batch.initiatorLines);
             string recipientText = BuildSmallTalkBatchText(batch.recipientLines);
@@ -737,7 +736,7 @@ namespace PawnDiary
                 string eligibleText = initiatorEligible ? initiatorText : recipientText;
                 if (string.IsNullOrWhiteSpace(eligibleText))
                 {
-                    eligibleText = $"{eligiblePawn.LabelShortCap} had small talk with {otherPawn.LabelShortCap}.";
+                    eligibleText = "PawnDiary.Event.SmallTalk".Translate(eligiblePawn.LabelShortCap, otherPawn.LabelShortCap);
                 }
 
                 DiaryEvent soloEvent = AddSoloEvent(eligiblePawn, otherPawn, defName, label,
@@ -780,7 +779,7 @@ namespace PawnDiary
         {
             if (lines == null || lines.Count == 0)
             {
-                return "A brief small-talk exchange.";
+                return "PawnDiary.Event.SmallTalkBrief".Translate();
             }
 
             if (lines.Count == 1)
@@ -789,7 +788,7 @@ namespace PawnDiary
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append("Several small-talk moments happened:");
+            builder.Append("PawnDiary.Event.SmallTalkBatchHeader".Translate().Resolve());
             for (int i = 0; i < lines.Count; i++)
             {
                 builder.Append("\n").Append(i + 1).Append(". ").Append(lines[i]);
@@ -819,7 +818,7 @@ namespace PawnDiary
         private static string SmallTalkBatchInstruction(string baseInstruction)
         {
             string instruction = DiaryContextBuilder.CleanLine(baseInstruction);
-            string batchingInstruction = "write one diary entry for the overall small-talk exchange, not separate entries for each listed moment";
+            string batchingInstruction = "PawnDiary.Event.SmallTalkBatchInstruction".Translate();
             if (string.IsNullOrWhiteSpace(instruction))
             {
                 return batchingInstruction;
@@ -950,7 +949,7 @@ namespace PawnDiary
             {
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
                 {
-                    diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "Skipped because initiator diary generation failed.");
+                    diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "PawnDiary.Error.SkippedInitiatorFailed".Translate());
                 }
 
                 return;
@@ -1000,7 +999,7 @@ namespace PawnDiary
 
             if (PawnDiaryMod.Settings == null)
             {
-                diaryEvent.MarkFailed(povRole, "LLM settings are not available.");
+                diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoLlmSettings".Translate());
                 return;
             }
 
@@ -1097,7 +1096,7 @@ namespace PawnDiary
                 if (DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole)
                     && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
                 {
-                    diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "Skipped because initiator diary generation failed.");
+                    diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "PawnDiary.Error.SkippedInitiatorFailed".Translate());
                 }
 
                 return;

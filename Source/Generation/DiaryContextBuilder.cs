@@ -68,18 +68,18 @@ namespace PawnDiary
             }
 
             int opinion = povPawn.relations?.OpinionOf(otherPawn) ?? 0;
-            parts.Add("opinion " + FormatOpinion(opinion));
+            parts.Add("PawnDiary.Ctx.Opinion".Translate(FormatOpinion(opinion)));
 
             string reasons = BuildSocialThoughtsSummary(povPawn, otherPawn);
             if (!string.IsNullOrWhiteSpace(reasons))
             {
-                parts.Add("because " + reasons);
+                parts.Add("PawnDiary.Ctx.Because".Translate(reasons));
             }
 
             string latest = LatestDiaryLineAbout(povPawn.GetUniqueLoadID(), otherPawn.GetUniqueLoadID(), events);
             if (!string.IsNullOrWhiteSpace(latest))
             {
-                parts.Add("last wrote: \"" + latest + "\"");
+                parts.Add("PawnDiary.Ctx.LastWrote".Translate(latest));
             }
 
             return parts.Count == 0 ? "none" : string.Join("; ", parts.ToArray());
@@ -198,7 +198,7 @@ namespace PawnDiary
                 }
             }
 
-            parts.Add(outdoors ? "outdoors" : "indoors");
+            parts.Add((outdoors ? "PawnDiary.Ctx.Outdoors" : "PawnDiary.Ctx.Indoors").Translate());
 
             // Weather and biome only matter when the pawn is exposed to them.
             if (outdoors)
@@ -218,34 +218,34 @@ namespace PawnDiary
             float temperature = pawn.AmbientTemperature;
             if (temperature <= DiaryTuning.Current.coldBelowC)
             {
-                parts.Add("cold (" + temperature.ToString("0") + "C)");
+                parts.Add("PawnDiary.Ctx.Cold".Translate(temperature.ToString("0")));
             }
             else if (temperature >= DiaryTuning.Current.hotAboveC)
             {
-                parts.Add("hot (" + temperature.ToString("0") + "C)");
+                parts.Add("PawnDiary.Ctx.Hot".Translate(temperature.ToString("0")));
             }
 
             // Beauty only when it's notably nice or grim.
             float beauty = BeautyUtility.AverageBeautyPerceptible(pawn.Position, pawn.Map);
             if (beauty >= DiaryTuning.Current.beautyPleasant || beauty <= -DiaryTuning.Current.beautyPleasant)
             {
-                parts.Add(BeautyBucket(beauty) + " surroundings");
+                parts.Add("PawnDiary.Ctx.Surroundings".Translate(BeautyBucket(beauty)));
             }
 
             string nearby = BuildNearbyThingsSummary(pawn);
             if (!string.IsNullOrWhiteSpace(nearby))
             {
-                parts.Add("near " + nearby);
+                parts.Add("PawnDiary.Ctx.Near".Translate(nearby));
             }
 
             string jobReport = CleanLine(pawn.GetJobReport());
             if (!string.IsNullOrWhiteSpace(jobReport))
             {
-                parts.Add("doing: " + jobReport);
+                parts.Add("PawnDiary.Ctx.Doing".Translate(jobReport));
             }
             else if (pawn.CurJobDef != null)
             {
-                parts.Add("doing: " + CleanLine(pawn.CurJobDef.LabelCap.Resolve()));
+                parts.Add("PawnDiary.Ctx.Doing".Translate(CleanLine(pawn.CurJobDef.LabelCap.Resolve())));
             }
 
             return string.Join(", ", parts.ToArray());
@@ -338,12 +338,12 @@ namespace PawnDiary
 
             if (pawn.Downed)
             {
-                parts.Add("downed");
+                parts.Add("PawnDiary.Ctx.Downed".Translate());
             }
 
             if (pawn.health.InPainShock)
             {
-                parts.Add("pain shock");
+                parts.Add("PawnDiary.Ctx.PainShock".Translate());
             }
 
             float pain = pawn.health.hediffSet?.PainTotal ?? 0f;
@@ -492,13 +492,13 @@ namespace PawnDiary
         {
             if (thing is Fire)
             {
-                return "fire";
+                return "PawnDiary.Ctx.Fire".Translate();
             }
 
             Corpse corpse = thing as Corpse;
             if (corpse?.InnerPawn != null)
             {
-                return "corpse of " + CleanLine(corpse.InnerPawn.LabelShortCap);
+                return "PawnDiary.Ctx.Corpse".Translate(CleanLine(corpse.InnerPawn.LabelShortCap));
             }
 
             return CleanLine(thing.LabelNoCount);
@@ -532,25 +532,25 @@ namespace PawnDiary
             DiaryTuningDef t = DiaryTuning.Current;
             if (beauty >= t.beautyBeautiful)
             {
-                return "beautiful";
+                return "PawnDiary.Bucket.Beauty.Beautiful".Translate();
             }
 
             if (beauty >= t.beautyPleasant)
             {
-                return "pleasant";
+                return "PawnDiary.Bucket.Beauty.Pleasant".Translate();
             }
 
             if (beauty > -t.beautyPleasant)
             {
-                return "neutral";
+                return "PawnDiary.Bucket.Beauty.Neutral".Translate();
             }
 
             if (beauty > t.beautyUgly)
             {
-                return "ugly";
+                return "PawnDiary.Bucket.Beauty.Ugly".Translate();
             }
 
-            return "hideous";
+            return "PawnDiary.Bucket.Beauty.Hideous".Translate();
         }
 
         private static string MoodBucket(int moodPercent)
@@ -558,20 +558,20 @@ namespace PawnDiary
             DiaryTuningDef t = DiaryTuning.Current;
             if (moodPercent >= t.moodHappy)
             {
-                return "happy";
+                return "PawnDiary.Bucket.Mood.Happy".Translate();
             }
 
             if (moodPercent >= t.moodStable)
             {
-                return "stable";
+                return "PawnDiary.Bucket.Mood.Stable".Translate();
             }
 
             if (moodPercent >= t.moodStressed)
             {
-                return "stressed";
+                return "PawnDiary.Bucket.Mood.Stressed".Translate();
             }
 
-            return "miserable";
+            return "PawnDiary.Bucket.Mood.Miserable".Translate();
         }
 
         private static string PainBucket(float pain)
@@ -579,15 +579,15 @@ namespace PawnDiary
             DiaryTuningDef t = DiaryTuning.Current;
             if (pain >= t.painSevere)
             {
-                return "severe";
+                return "PawnDiary.Bucket.Pain.Severe".Translate();
             }
 
             if (pain >= t.painModerate)
             {
-                return "moderate";
+                return "PawnDiary.Bucket.Pain.Moderate".Translate();
             }
 
-            return "minor";
+            return "PawnDiary.Bucket.Pain.Minor".Translate();
         }
 
         private static string OpinionBucket(int opinion)
@@ -595,25 +595,25 @@ namespace PawnDiary
             DiaryTuningDef t = DiaryTuning.Current;
             if (opinion >= t.opinionDevoted)
             {
-                return "devoted";
+                return "PawnDiary.Bucket.Opinion.Devoted".Translate();
             }
 
             if (opinion >= t.opinionFriendly)
             {
-                return "friendly";
+                return "PawnDiary.Bucket.Opinion.Friendly".Translate();
             }
 
             if (opinion > t.opinionNeutralAbove)
             {
-                return "neutral";
+                return "PawnDiary.Bucket.Opinion.Neutral".Translate();
             }
 
             if (opinion > t.opinionStrainedAbove)
             {
-                return "strained";
+                return "PawnDiary.Bucket.Opinion.Strained".Translate();
             }
 
-            return "hostile";
+            return "PawnDiary.Bucket.Opinion.Hostile".Translate();
         }
     }
 }
