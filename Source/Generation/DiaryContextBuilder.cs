@@ -411,6 +411,45 @@ namespace PawnDiary
                 : lastLabel;
         }
 
+        // Returns the label of the pawn's currently equipped weapon, or empty if unarmed.
+        // For mods with multiple weapons, picks a random one from the inventory.
+        public static string EquippedWeapon(Pawn pawn)
+        {
+            if (pawn?.equipment == null)
+            {
+                return string.Empty;
+            }
+
+            // Check for primary equipped weapon first
+            ThingWithComps primary = pawn.equipment.Primary;
+            if (primary != null)
+            {
+                return CleanLine(primary.LabelNoCount);
+            }
+
+            // If no primary, check inventory for weapons (for mods that allow multiple)
+            if (pawn.inventory?.innerContainer != null)
+            {
+                List<Thing> weapons = new List<Thing>();
+                for (int i = 0; i < pawn.inventory.innerContainer.Count; i++)
+                {
+                    Thing thing = pawn.inventory.innerContainer[i];
+                    if (thing != null && thing is ThingWithComps twc && twc.def.IsWeapon)
+                    {
+                        weapons.Add(twc);
+                    }
+                }
+
+                if (weapons.Count > 0)
+                {
+                    Thing chosen = weapons[UnityEngine.Random.Range(0, weapons.Count)];
+                    return CleanLine(chosen.LabelNoCount);
+                }
+            }
+
+            return string.Empty;
+        }
+
         private static string BuildMoodSummary(Pawn pawn)
         {
             if (pawn.needs?.mood == null)

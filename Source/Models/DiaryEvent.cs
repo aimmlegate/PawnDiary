@@ -53,6 +53,8 @@ namespace PawnDiary
         public string recipientLastOpener; // first sentence of recipient's last diary entry (avoid repeats)
         public string initiatorBurningPassion; // random burning passion of initiator (important events only)
         public string recipientBurningPassion; // random burning passion of recipient (important events only)
+        public string initiatorWeapon; // currently equipped weapon of initiator (important/combat only)
+        public string recipientWeapon; // currently equipped weapon of recipient (important/combat only)
         public string initiatorPrompt; // assembled prompt text sent to the LLM for initiator POV
         public string recipientPrompt; // assembled prompt text sent to the LLM for recipient POV
         public string neutralPrompt; // assembled prompt text sent to the LLM for neutral POV
@@ -109,6 +111,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref recipientLastOpener, "recipientLastOpener");
             Scribe_Values.Look(ref initiatorBurningPassion, "initiatorBurningPassion");
             Scribe_Values.Look(ref recipientBurningPassion, "recipientBurningPassion");
+            Scribe_Values.Look(ref initiatorWeapon, "initiatorWeapon");
+            Scribe_Values.Look(ref recipientWeapon, "recipientWeapon");
             Scribe_Values.Look(ref initiatorGeneratedText, "initiatorGeneratedText");
             Scribe_Values.Look(ref recipientGeneratedText, "recipientGeneratedText");
             Scribe_Values.Look(ref neutralGeneratedText, "neutralGeneratedText");
@@ -225,6 +229,16 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(recipientBurningPassion))
                 {
                     recipientBurningPassion = string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(initiatorWeapon))
+                {
+                    initiatorWeapon = string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(recipientWeapon))
+                {
+                    recipientWeapon = string.Empty;
                 }
 
                 if (neutralStatus == null)
@@ -664,6 +678,42 @@ namespace PawnDiary
         {
             DiaryInteractionGroupDef group = GroupForDisplay();
             return group == null || group.important;
+        }
+
+        /// <summary>
+        /// Returns true if this event is combat-related (social fights, mental breaks with violence).
+        /// Used to decide whether to include equipped weapon in the prompt context.
+        /// </summary>
+        public bool IsCombatRelated()
+        {
+            // Mental state events (social fights, violent breaks) are combat-related
+            if (IsMentalStateEvent())
+            {
+                return true;
+            }
+
+            // Check if the group defName contains combat-related keywords
+            DiaryInteractionGroupDef group = GroupForDisplay();
+            if (group != null)
+            {
+                string defName = group.defName ?? string.Empty;
+                if (defName.IndexOf("fight", StringComparison.OrdinalIgnoreCase) >= 0
+                    || defName.IndexOf("insult", StringComparison.OrdinalIgnoreCase) >= 0
+                    || defName.IndexOf("violence", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if the weapon should be included in the prompt (important or combat events).
+        /// </summary>
+        public bool ShouldShowWeapon()
+        {
+            return IsImportant() || IsCombatRelated();
         }
 
         /// <summary>

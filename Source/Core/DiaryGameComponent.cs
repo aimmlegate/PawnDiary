@@ -563,6 +563,8 @@ namespace PawnDiary
                 recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), diaryEvents),
                 initiatorBurningPassion = DiaryContextBuilder.RandomBurningPassion(initiator),
                 recipientBurningPassion = DiaryContextBuilder.RandomBurningPassion(recipient),
+                initiatorWeapon = DiaryContextBuilder.EquippedWeapon(initiator),
+                recipientWeapon = DiaryContextBuilder.EquippedWeapon(recipient),
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
                 recipientStatus = DiaryEvent.NotGeneratedStatus,
                 neutralStatus = DiaryEvent.NotGeneratedStatus
@@ -608,6 +610,8 @@ namespace PawnDiary
                 recipientLastOpener = string.Empty,
                 initiatorBurningPassion = DiaryContextBuilder.RandomBurningPassion(pawn),
                 recipientBurningPassion = string.Empty,
+                initiatorWeapon = DiaryContextBuilder.EquippedWeapon(pawn),
+                recipientWeapon = string.Empty,
                 solo = true,
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
                 recipientStatus = DiaryEvent.NotGeneratedStatus,

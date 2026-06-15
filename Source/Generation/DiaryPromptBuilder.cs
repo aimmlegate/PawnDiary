@@ -65,6 +65,12 @@ namespace PawnDiary
                 AppendField(lines, "burning passion", isInitiator ? diaryEvent.initiatorBurningPassion : diaryEvent.recipientBurningPassion);
             }
 
+            // Weapon only for important or combat events
+            if (diaryEvent.ShouldShowWeapon())
+            {
+                AppendField(lines, "weapon", isInitiator ? diaryEvent.initiatorWeapon : diaryEvent.recipientWeapon);
+            }
+
             AppendField(lines, "initiator diary (hidden context)", initiatorEntry);
 
             DiaryPromptDef p = DiaryPrompts.Current;
@@ -92,6 +98,12 @@ namespace PawnDiary
             if (diaryEvent.IsImportant())
             {
                 AppendField(lines, "burning passion", diaryEvent.initiatorBurningPassion);
+            }
+
+            // Weapon only for important or combat events
+            if (diaryEvent.ShouldShowWeapon())
+            {
+                AppendField(lines, "weapon", diaryEvent.initiatorWeapon);
             }
 
             return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.singlePovInstruction;
