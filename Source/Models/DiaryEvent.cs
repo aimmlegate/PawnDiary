@@ -499,6 +499,26 @@ namespace PawnDiary
                 return null;
             }
 
+            if (HasDeathDescription())
+            {
+                if (!IsDeathDescriptionFor(pawnId))
+                {
+                    return null;
+                }
+
+                povRole = NeutralRole;
+            }
+
+            if (HasArrivalDescription())
+            {
+                if (!IsArrivalDescriptionFor(pawnId))
+                {
+                    return null;
+                }
+
+                povRole = NeutralRole;
+            }
+
             DiaryInteractionGroupDef group = GroupForDisplay();
 
             // Build a linked entry for the other pawn in a paired event.
@@ -587,6 +607,55 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Returns true when this event has a neutral colonist-death description and the requested
+        /// pawn is the deceased colonist. The UI then shows the death description instead of a
+        /// persona-based diary entry from the dead pawn's POV.
+        /// </summary>
+        public bool IsDeathDescriptionFor(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || string.IsNullOrWhiteSpace(gameContext))
+            {
+                return false;
+            }
+
+            return HasDeathDescription()
+                && gameContext.IndexOf("death_victim_id=" + pawnId, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Returns true when this event owns a neutral colonist-death description request.
+        /// </summary>
+        public bool HasDeathDescription()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("death_description=true", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Returns true when this event has a neutral colony-arrival description and the requested
+        /// pawn is the colonist who joined.
+        /// </summary>
+        public bool IsArrivalDescriptionFor(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || string.IsNullOrWhiteSpace(gameContext))
+            {
+                return false;
+            }
+
+            return HasArrivalDescription()
+                && gameContext.IndexOf("arrival_pawn_id=" + pawnId, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Returns true when this event owns a neutral colony-arrival description request.
+        /// </summary>
+        public bool HasArrivalDescription()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("arrival_description=true", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>

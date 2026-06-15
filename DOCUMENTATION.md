@@ -4,7 +4,7 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-15 (prompt improvements for small local models 6B–31B)_
+_Last updated: 2026-06-15 (colonist death descriptions)_
 
 ---
 
@@ -18,6 +18,11 @@ keeps the meaningful ones, and uses an LLM (any OpenAI-compatible
 `/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server) to rewrite each
 event into a short first-person diary entry. Each pawn's diary is shown in an
 **inspector tab after Health** on that pawn's UI.
+
+Colonist deaths are the exception to the first-person rule: when a death Tale names a player
+colonist as the victim, the mod generates a separate **persona-independent death description**
+from the neutral role. It uses the death hook's cause details plus nearby context and is shown in
+the deceased pawn's diary instead of a first-person entry from a dead pawn.
 
 Only **free colonists** (`pawn.IsColonist`) are eligible for diary entries. Animals,
 prisoners, slaves, enemies, and visitors never receive diary entries. When a mixed
@@ -72,13 +77,15 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
-| `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions). |
+| `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions). |
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
+| `ArrivalContextCache.cs` | Transient bridge around `Pawn.SetFaction`: captures prior faction, recruiter, pawn kind, creepjoiner flag, and nearby context for neutral first-entry colony-arrival descriptions. |
+| `DeathContextCache.cs` | Transient bridge between `Pawn.Kill` and `TaleRecorder.RecordTale`: captures `DamageInfo`, culprit hediff, damaged/destroyed body parts, lethal conditions, and nearby context for neutral colonist death descriptions. |
 | `DlcContext.cs` | The single, double-guarded home for reading DLC-gated pawn data (Biotech `xenotype=`, Royalty `title=`, Ideology `faith=`). Each accessor checks `ModsConfig.<Dlc>Active` + null and returns empty when the DLC/trait is absent, so a no-DLC game never breaks. See §8 and AGENTS.md ("DLC-safety"). |
-| `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo). |
+| `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo, neutral arrival description, and neutral death description). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
 | `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). |
@@ -141,6 +148,13 @@ LlmClient.Enqueue ─▶ (same pipeline)
 ```
 
 Two additional narrow hooks feed the same event pipeline:
+- New-game startup records one neutral **arrival** entry for each starting colonist on the first
+  tick where maps/free-colonist lists exist. These entries include the active scenario name and
+  description plus the pawn summary, so founding pawns get a first page grounded in the scenario.
+- `Pawn.SetFaction` records later humanlike pawns who become `Faction.OfPlayer`. This catches the
+  broad join family through the actual runtime transition: recruitment, wanderer/quest joins,
+  Anomaly creepjoiners (`pawn.IsCreepJoiner`), and modded arrivals that set the player faction.
+  The cache captures prior faction, recruiter, pawn kind, creepjoiner flag, and surroundings.
 - `QualityUtility.SendCraftNotification` records **Masterwork** and **Legendary** crafted items
   as solo events for the crafter (`tale=CraftedMasterwork` / `tale=CraftedLegendary`). Art is
   skipped here — vanilla's `CraftedArt` tale already covers it, so this avoids a double entry.
@@ -202,6 +216,37 @@ batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist p
   Generation always uses the single initiator POV via `BuildSoloPrompt`. The target of a
   targeted break (e.g. MurderousRage), or the other pawn in a mixed-eligibility tale, is named
   in the text/context but does not get their own entry.
+
+### Colony arrival descriptions
+- Every tracked pawn can receive one neutral first entry explaining how they joined the colony.
+  It is a factual third-person colony record, not a persona-based first-person diary entry.
+- Starting colonists are recorded after new-game map creation and receive `arrival_source=game_start`
+  plus the scenario name/description and their pawn summary. This lets the prompt frame them as
+  founders of the chosen scenario rather than generic recruits.
+- Later joins are caught at `Pawn.SetFaction(..., Faction.OfPlayer, recruiter)`. The prefix caches
+  prior faction, recruiter, pawn kind, creepjoiner status, and surroundings; the postfix records
+  the event only if vanilla confirms the pawn is now a colonist. This covers vanilla recruitment,
+  wanderer/quest joins, Anomaly creepjoiners, and modded paths that converge on player faction.
+- Arrival events carry `arrival_description=true` / `arrival_pawn_id=...` in `gameContext` and queue
+  only the `neutral` role through `BuildArrivalDescriptionPrompt`, using
+  `DiaryPromptDef.arrivalDescriptionInstruction`. `DiaryEvent.ToViewFor` shows this neutral entry
+  only in the arriving pawn's diary.
+
+### Colonist death descriptions
+- `Pawn.Kill` is patched with a prefix that caches the killing `DamageInfo`, exact culprit hediff,
+  damaged body part, destroyed/missing parts, other life-threatening conditions, and nearby
+  surroundings while the data is still available.
+- When `TaleRecorder.RecordTale` later accepts a death Tale (`KilledBy`, `KilledMelee`,
+  `KilledColonist`, etc.) and the victim is a player colonist, `RecordTale` consumes that cache,
+  appends `death_description=true` plus death facts to `gameContext`, and queues the `neutral`
+  role with `BuildDeathDescriptionPrompt`.
+- The death prompt uses `DiaryPromptDef.deathDescriptionInstruction`, does **not** include persona
+  or relationship continuity, and asks for one short third-person description of how the colonist
+  died. In the deceased pawn's diary, `DiaryEvent.ToViewFor` shows the neutral death text instead
+  of a first-person victim POV.
+- A death description is terminal for that pawn. `EntriesFor`, pending-generation scans, and new
+  event-reference adds all suppress that pawn's events with ticks later than the final death
+  description, so nothing generates or displays after the death entry.
 
 All paths share the same per-event context fields and the system prompt.
 
@@ -360,6 +405,13 @@ saved events classify back into the Tale domain without adding a save-breaking s
 TaleDefs already covered more precisely by the mental-state hook (`SocialFight`,
 `MentalStateBerserk`, `MentalStateGaveUp`) are skipped. Repeated TaleDef+pawn combinations are
 de-duplicated within `taleDedupTicks` (default 2500).
+
+Death TaleDefs get one extra pass: if the victim is a player colonist, the event also carries
+`death_description=true`, `death_victim_id=...`, the victim role, and cached death facts from
+`Pawn.Kill`. The deceased pawn's visible entry uses the neutral death description prompt rather
+than a persona-based first-person diary entry. That death description is treated as the pawn's
+final diary event: later events for that pawn are not queued for generation and are filtered out
+of the diary view.
 
 This includes pawn medical operations when vanilla records `DidSurgery` / `HealedMe`, so the mod
 does not add a second surgery hook that would duplicate successful operations.

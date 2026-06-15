@@ -1,10 +1,11 @@
 // Harmony patches — our hooks into vanilla RimWorld. We don't own the game's code, so we "patch"
 // vanilla methods: Postfix hooks record PlayLog.Add social interactions,
 // MentalStateHandler.TryStartMentalState social fights / mental breaks, TaleRecorder
-// notable-history events, and GameConditionManager.RegisterCondition mood-affecting game
-// conditions after RimWorld handles them. A Prefix hook redirects Social-tab play-log clicks
-// into the matching Diary entry when one exists. AccessTools.Field reads private vanilla
-// fields via reflection.
+// notable-history events, Pawn.Kill death details, Pawn.SetFaction colony arrivals,
+// and GameConditionManager.RegisterCondition
+// mood-affecting game conditions after RimWorld handles them. A Prefix hook redirects Social-tab
+// play-log clicks into the matching Diary entry when one exists. AccessTools.Field reads private
+// vanilla fields via reflection.
 // New to this? See AGENTS.md ("Harmony patches").
 using System.Collections.Generic;
 using System.Reflection;
@@ -15,6 +16,52 @@ using Verse.AI;
 
 namespace PawnDiary
 {
+    // Fires at the exact moment a pawn is killed. TaleRecorder later tells us that a colonist death
+    // should become a diary event, but the Tale no longer carries the killing DamageInfo or culprit
+    // hediff. This prefix caches those facts while they are still available.
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.Kill))]
+    public static class PawnKillPatch
+    {
+        /// <summary>
+        /// Harmony Prefix for Pawn.Kill. Captures death cause details for colonists before vanilla
+        /// mutates death/corpse state and records the corresponding Tale.
+        /// </summary>
+        public static void Prefix(Pawn __instance, DamageInfo? dinfo, Hediff exactCulprit)
+        {
+            DeathContextCache.Capture(__instance, dinfo, exactCulprit);
+        }
+    }
+
+    // Fires whenever a pawn changes faction. Many vanilla and DLC join paths eventually converge
+    // here: prisoner recruitment, wanderer/quest joins, creepjoiners, and modded arrivals.
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.SetFaction))]
+    public static class PawnSetFactionPatch
+    {
+        /// <summary>
+        /// Harmony Prefix for Pawn.SetFaction. Captures the pre-change faction and recruiter before
+        /// vanilla mutates the pawn into a colonist.
+        /// </summary>
+        public static void Prefix(Pawn __instance, Faction newFaction, Pawn recruiter)
+        {
+            ArrivalContextCache.Capture(__instance, newFaction, recruiter);
+        }
+
+        /// <summary>
+        /// Harmony Postfix for Pawn.SetFaction. Records the arrival only after vanilla confirms the
+        /// pawn is now a player colonist.
+        /// </summary>
+        public static void Postfix(Pawn __instance, Faction newFaction)
+        {
+            if (__instance == null || newFaction != Faction.OfPlayer || !__instance.IsColonist)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordColonistArrival(__instance,
+                ArrivalContextCache.ConsumeOrBuild(__instance, "set_faction"));
+        }
+    }
+
     // Fires when vanilla sends the masterwork/legendary craft letter. We filter by quality in
     // DiaryGameComponent too, but patching this narrow method avoids watching every produced item.
     [HarmonyPatch(typeof(QualityUtility), nameof(QualityUtility.SendCraftNotification))]

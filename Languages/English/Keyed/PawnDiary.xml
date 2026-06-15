@@ -98,6 +98,9 @@
   <PawnDiary.Event.CraftedQuality>{0} created a {1} {2}.</PawnDiary.Event.CraftedQuality>
   <PawnDiary.Event.RelicInstalledLabel>Relic installed</PawnDiary.Event.RelicInstalledLabel>
   <PawnDiary.Event.RelicInstalled>{0} installed the relic {1}.</PawnDiary.Event.RelicInstalled>
+  <PawnDiary.Event.ArrivalLabel>Arrival</PawnDiary.Event.ArrivalLabel>
+  <PawnDiary.Event.StartingArrival>{0} was one of the colony's founding colonists.</PawnDiary.Event.StartingArrival>
+  <PawnDiary.Event.JoinedArrival>{0} joined the colony.</PawnDiary.Event.JoinedArrival>
 
   <!-- Mood-event text (GameCondition diary entries) -->
   <PawnDiary.Event.MoodEvent>{0} experienced {1}.</PawnDiary.Event.MoodEvent>

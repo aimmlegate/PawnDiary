@@ -4,6 +4,29 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (colony arrival first entries)**
+  - Added neutral, persona-independent first entries that describe how a pawn joined the colony,
+    using the new `DiaryPromptDef.arrivalDescriptionInstruction`.
+  - Starting colonists are recorded after new-game map creation with scenario name/description plus
+    pawn details, so their first diary entry is grounded in the selected scenario.
+  - Later joins are captured through `Pawn.SetFaction(..., Faction.OfPlayer, recruiter)`, with
+    `ArrivalContextCache` preserving prior faction, recruiter, pawn kind, creepjoiner status, and
+    surroundings. This covers vanilla recruitment/wanderer/quest joins, Anomaly creepjoiners, and
+    modded arrivals that converge on player faction without requiring DLC references.
+  - Arrival events queue only the neutral role and are shown only in the arriving pawn's diary; the
+    existing final-death terminal guard also blocks later event references after a death entry.
+- **2026-06-15 (colonist death descriptions)**
+  - Added a `Pawn.Kill` Harmony prefix plus `DeathContextCache` to capture killing `DamageInfo`,
+    culprit hediff, hit/destroyed body parts, lethal conditions, weapon/instigator, and nearby
+    surroundings at the moment a player colonist dies.
+  - Death TaleDefs now queue a separate `neutral` LLM request for the deceased colonist using the
+    new `DiaryPromptDef.deathDescriptionInstruction`, producing a persona-independent third-person
+    death description instead of a first-person victim diary entry.
+  - The deceased pawn's diary view now displays the neutral death description for that event, while
+    non-death TaleRecorder behavior remains unchanged.
+  - Death descriptions are terminal for that pawn: later-tick events are not added to the pawn's
+    visible diary, are skipped by pending-generation scans, and are blocked by queue-time generation
+    gates.
 - **2026-06-15 (expanded persona catalog with 10 voice-driven presets)**
   - Added 10 new `DiaryPersonaDef`s to `1.6/Defs/DiaryPersonaDefs.xml`, growing the catalog from
     12 to 22. The new presets are distinguished by a distinctive *voice or worldview* (a way of

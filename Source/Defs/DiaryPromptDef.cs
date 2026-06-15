@@ -19,6 +19,12 @@ namespace PawnDiary
         // Legacy dual-POV instruction retained for compatibility with older saved/generated data.
         public string dualInstruction = "Write two short first-person diary entries, one from each pawn's point of view, following the instruction.";
 
+        // Neutral, non-persona instruction for colonist death summaries.
+        public string deathDescriptionInstruction = "Write one short, third-person death description. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's persona or write from first person. Output only the death description.";
+
+        // Neutral, non-persona instruction for the first diary entry describing how a pawn joined.
+        public string arrivalDescriptionInstruction = "Write one short, third-person colony arrival description. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. For starting colonists, use the scenario details as founding context; for later colonists, use the join facts. Do not use the pawn's persona or write from first person. Output only the arrival description.";
+
         // Legacy marker that preceded the initiator's diary entry in old dual-POV responses.
         public string initiatorMarker = "[INITIATOR]";
 

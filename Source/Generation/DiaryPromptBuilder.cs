@@ -39,6 +39,53 @@ namespace PawnDiary
             return BuildPairPrompt(diaryEvent, povRole, null, personaRule);
         }
 
+        /// <summary>
+        /// Builds the neutral, persona-independent prompt used only for colonist death
+        /// descriptions. It deliberately omits persona, relationship continuity, and first-person
+        /// POV fields because this output is a factual death note, not a diary entry.
+        /// </summary>
+        public static string BuildDeathDescriptionPrompt(DiaryEvent diaryEvent)
+        {
+            string victimRole = ContextValue(diaryEvent.gameContext, "death_victim_role");
+            string victimName = ContextValue(diaryEvent.gameContext, "death_victim");
+            if (string.IsNullOrWhiteSpace(victimName))
+            {
+                victimName = NameForContextRole(diaryEvent, victimRole);
+            }
+
+            List<string> lines = new List<string> { "event: colonist death" };
+            AppendField(lines, "deceased", victimName);
+            AppendField(lines, "what happened", diaryEvent.neutralText);
+            AppendField(lines, "death facts", diaryEvent.gameContext);
+            AppendField(lines, "deceased pawn", PawnSummaryForContextRole(diaryEvent, victimRole));
+            AppendField(lines, "setting", SurroundingsForContextRole(diaryEvent, victimRole));
+
+            return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.deathDescriptionInstruction;
+        }
+
+        /// <summary>
+        /// Builds the neutral, persona-independent prompt used for the first diary entry: how this
+        /// pawn became part of the colony. Starting pawns get scenario context; later pawns get the
+        /// SetFaction/join facts captured at runtime.
+        /// </summary>
+        public static string BuildArrivalDescriptionPrompt(DiaryEvent diaryEvent)
+        {
+            string pawnName = ContextValue(diaryEvent.gameContext, "arrival_pawn");
+            if (string.IsNullOrWhiteSpace(pawnName))
+            {
+                pawnName = diaryEvent.initiatorName;
+            }
+
+            List<string> lines = new List<string> { "event: colonist arrival" };
+            AppendField(lines, "colonist", pawnName);
+            AppendField(lines, "what happened", diaryEvent.neutralText);
+            AppendField(lines, "arrival facts", diaryEvent.gameContext);
+            AppendField(lines, "colonist pawn", diaryEvent.initiatorPawnSummary);
+            AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
+
+            return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.arrivalDescriptionInstruction;
+        }
+
         private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule)
         {
             bool isInitiator = string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase);
@@ -122,6 +169,57 @@ namespace PawnDiary
             }
 
             return label.ToLowerInvariant();
+        }
+
+        private static string NameForContextRole(DiaryEvent diaryEvent, string role)
+        {
+            if (string.Equals(role, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return diaryEvent.recipientName;
+            }
+
+            return diaryEvent.initiatorName;
+        }
+
+        private static string PawnSummaryForContextRole(DiaryEvent diaryEvent, string role)
+        {
+            if (string.Equals(role, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return diaryEvent.recipientPawnSummary;
+            }
+
+            return diaryEvent.initiatorPawnSummary;
+        }
+
+        private static string SurroundingsForContextRole(DiaryEvent diaryEvent, string role)
+        {
+            if (string.Equals(role, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return diaryEvent.recipientSurroundings;
+            }
+
+            return diaryEvent.initiatorSurroundings;
+        }
+
+        private static string ContextValue(string context, string key)
+        {
+            if (string.IsNullOrWhiteSpace(context) || string.IsNullOrWhiteSpace(key))
+            {
+                return string.Empty;
+            }
+
+            string prefix = key + "=";
+            string[] parts = context.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string part = parts[i].Trim();
+                if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return part.Substring(prefix.Length).Trim();
+                }
+            }
+
+            return string.Empty;
         }
 
         // Adds "key: value" only when the value carries real signal. Empty strings and

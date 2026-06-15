@@ -30,6 +30,8 @@ namespace PawnDiary
         // Synthetic Tale-domain groups for notable events vanilla does not expose as TaleDefs.
         private const string TaleQualityGroupKey = "talequality";
         private const string TaleRelicGroupKey = "talerelic";
+        // Synthetic event used for the neutral first entry that explains how a pawn joined.
+        private const string ArrivalDefName = "PawnDiary_Arrival";
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
@@ -46,6 +48,9 @@ namespace PawnDiary
         // Transient (not saved) guard against the same mood event firing for the same
         // GameCondition on multiple maps within a short window.
         private readonly Dictionary<string, int> recentMoodEvents = new Dictionary<string, int>();
+        // New games build maps after StartedNewGame. This flag lets the first tick with maps create
+        // founding-colonist arrival entries using scenario context.
+        private bool initialArrivalScanPending;
 
         // These TaleDefs mirror events we already capture through more specific hooks. Skipping
         // them avoids two diary entries for one social fight or mental break.
@@ -54,6 +59,21 @@ namespace PawnDiary
             "SocialFight",
             "MentalStateBerserk",
             "MentalStateGaveUp"
+        };
+
+        // TaleDefs where one involved pawn died. RimWorld uses different first/second pawn roles
+        // depending on the tale, so DeathVictimForTale below resolves the victim explicitly.
+        private static readonly HashSet<string> DeathTaleDefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "KilledBy",
+            "KilledCapacity",
+            "KilledLongRange",
+            "KilledMajorThreat",
+            "KilledMelee",
+            "KilledMortar",
+            "KilledChild",
+            "KilledColonist",
+            "KilledColonyAnimal"
         };
 
         public DiaryGameComponent(Game game)
@@ -77,6 +97,7 @@ namespace PawnDiary
             recentMoodEvents.Clear();
             LlmClient.BeginSession();
             nextGenerationScanTick = 0;
+            initialArrivalScanPending = true;
         }
 
         public override void LoadedGame()
@@ -87,6 +108,7 @@ namespace PawnDiary
             recentMoodEvents.Clear();
             LlmClient.BeginSession();
             nextGenerationScanTick = 0;
+            initialArrivalScanPending = false;
             QueueAllPendingGenerations();
         }
 
@@ -117,6 +139,11 @@ namespace PawnDiary
         public override void GameComponentTick()
         {
             FlushReadySmallTalkBatches();
+
+            if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
+            {
+                initialArrivalScanPending = false;
+            }
 
             int now = Find.TickManager.TicksGame;
             if (now >= nextGenerationScanTick)
@@ -152,12 +179,18 @@ namespace PawnDiary
             }
 
             List<DiaryEntryView> views = new List<DiaryEntryView>();
+            int? finalDeathTick = FinalDeathTickFor(pawnId, diary);
 
             if (diary.eventIds != null)
             {
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
                     DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                    if (EventFallsAfterFinalDeath(diaryEvent, finalDeathTick))
+                    {
+                        continue;
+                    }
+
                     DiaryEntryView view = diaryEvent?.ToViewFor(pawnId);
                     if (view != null)
                     {
@@ -170,6 +203,11 @@ namespace PawnDiary
             {
                 for (int i = 0; i < diary.entries.Count; i++)
                 {
+                    if (finalDeathTick.HasValue && diary.entries[i] != null && diary.entries[i].tick > finalDeathTick.Value)
+                    {
+                        continue;
+                    }
+
                     DiaryEntryView view = DiaryEntryView.FromLegacy(diary.entries[i]);
                     if (view != null)
                     {
@@ -287,6 +325,18 @@ namespace PawnDiary
                 return;
             }
 
+            if (DiaryEvent.RoleEquals(povRole, DiaryEvent.NeutralRole) && diaryEvent.HasDeathDescription())
+            {
+                QueueDeathDescription(diaryEvent);
+                return;
+            }
+
+            if (DiaryEvent.RoleEquals(povRole, DiaryEvent.NeutralRole) && diaryEvent.HasArrivalDescription())
+            {
+                QueueArrivalDescription(diaryEvent);
+                return;
+            }
+
             if (DualPovEnabled && DiaryEvent.RoleIsInitiatorOrRecipient(povRole) && !diaryEvent.solo)
             {
                 QueueSequentialPairwiseRewrite(diaryEvent);
@@ -317,15 +367,39 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
+                if (diaryEvent.HasDeathDescription())
+                {
+                    if (diaryEvent.CanQueueGeneration(DiaryEvent.NeutralRole))
+                    {
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                    }
+
+                    continue;
+                }
+
+                if (diaryEvent.HasArrivalDescription())
+                {
+                    if (diaryEvent.CanQueueGeneration(DiaryEvent.NeutralRole))
+                    {
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                    }
+
+                    continue;
+                }
+
+                if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole)
+                    && !EventFallsAfterFinalDeathForPawn(diaryEvent, diaryEvent.initiatorPawnId))
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole);
                 }
 
-                if (!diaryEvent.solo && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
+                if (!diaryEvent.solo
+                    && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole)
+                    && !EventFallsAfterFinalDeathForPawn(diaryEvent, diaryEvent.recipientPawnId))
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole);
                 }
+
             }
         }
 
@@ -350,9 +424,157 @@ namespace PawnDiary
                     continue;
                 }
 
+                if (EventFallsAfterFinalDeathForPawn(diaryEvent, pawnId))
+                {
+                    continue;
+                }
+
+                if (diaryEvent.HasDeathDescription())
+                {
+                    if (diaryEvent.IsDeathDescriptionFor(pawnId))
+                    {
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                    }
+
+                    continue;
+                }
+
+                if (diaryEvent.HasArrivalDescription())
+                {
+                    if (diaryEvent.IsArrivalDescriptionFor(pawnId))
+                    {
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                    }
+
+                    continue;
+                }
+
                 string povRole = diaryEvent.RoleForPawn(pawnId);
                 EnsureGenerationQueued(diaryEvent, povRole);
             }
+        }
+
+        /// <summary>
+        /// New-game bootstrap: records one neutral arrival entry for each starting colonist once
+        /// RimWorld has finished creating maps and free-colonist lists.
+        /// </summary>
+        private bool TryRecordStartingColonistArrivals()
+        {
+            if (Find.Maps == null || Find.Maps.Count == 0)
+            {
+                return false;
+            }
+
+            for (int mapIndex = 0; mapIndex < Find.Maps.Count; mapIndex++)
+            {
+                Map map = Find.Maps[mapIndex];
+                if (map?.mapPawns?.FreeColonists == null)
+                {
+                    continue;
+                }
+
+                List<Pawn> colonists = map.mapPawns.FreeColonists;
+                for (int i = 0; i < colonists.Count; i++)
+                {
+                    RecordColonistArrival(colonists[i], BuildStartingArrivalContext());
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Records the first neutral entry for a pawn: how they became part of the colony. This is
+        /// public because the Pawn.SetFaction Harmony patch calls it after vanilla confirms the join.
+        /// </summary>
+        public void RecordColonistArrival(Pawn pawn, string arrivalContext)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            if (HasArrivalEventFor(pawnId))
+            {
+                return;
+            }
+
+            bool startingPawn = !string.IsNullOrWhiteSpace(arrivalContext)
+                && arrivalContext.IndexOf("arrival_source=game_start", StringComparison.OrdinalIgnoreCase) >= 0;
+            string label = "PawnDiary.Event.ArrivalLabel".Translate().Resolve();
+            string text = startingPawn
+                ? "PawnDiary.Event.StartingArrival".Translate(pawn.LabelShortCap).Resolve()
+                : "PawnDiary.Event.JoinedArrival".Translate(pawn.LabelShortCap).Resolve();
+
+            DiaryEvent arrivalEvent = AddSoloEvent(pawn, null, ArrivalDefName, label, text, string.Empty,
+                BuildArrivalGameContext(pawn, arrivalContext));
+            QueueArrivalDescription(arrivalEvent);
+        }
+
+        private bool HasArrivalEventFor(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || diaryEvents == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                if (diaryEvents[i] != null && diaryEvents[i].IsArrivalDescriptionFor(pawnId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string BuildArrivalGameContext(Pawn pawn, string arrivalContext)
+        {
+            List<string> parts = new List<string>
+            {
+                "arrival_description=true",
+                "arrival_pawn=" + DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
+                "arrival_pawn_id=" + pawn.GetUniqueLoadID()
+            };
+
+            if (!string.IsNullOrWhiteSpace(arrivalContext))
+            {
+                parts.Add(arrivalContext);
+            }
+            else
+            {
+                parts.Add("arrival_source=unknown");
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
+        private static string BuildStartingArrivalContext()
+        {
+            List<string> parts = new List<string>
+            {
+                "arrival_source=game_start"
+            };
+
+            Scenario scenario = Verse.Current.Game?.Scenario;
+            if (scenario != null)
+            {
+                string scenarioName = DiaryContextBuilder.CleanLine(scenario.name);
+                if (!string.IsNullOrWhiteSpace(scenarioName))
+                {
+                    parts.Add("scenario_name=" + scenarioName);
+                }
+
+                string scenarioDescription = DiaryContextBuilder.CleanLine(scenario.description);
+                if (!string.IsNullOrWhiteSpace(scenarioDescription))
+                {
+                    parts.Add("scenario_description=" + scenarioDescription);
+                }
+            }
+
+            return string.Join("; ", parts.ToArray());
         }
 
         private static bool DualPovEnabled
@@ -579,8 +801,11 @@ namespace PawnDiary
             Pawn secondPawn;
             ExtractTalePawns(tale, out firstPawn, out secondPawn);
 
-            bool firstEligible = IsDiaryEligible(firstPawn);
-            bool secondEligible = IsDiaryEligible(secondPawn);
+            Pawn deathVictim = DeathVictimForTale(taleDef, firstPawn, secondPawn);
+            bool deathDescription = IsDeathDescriptionEligible(deathVictim);
+
+            bool firstEligible = IsDiaryEligible(firstPawn) || (deathDescription && firstPawn == deathVictim);
+            bool secondEligible = IsDiaryEligible(secondPawn) || (deathDescription && secondPawn == deathVictim);
             if (!firstEligible && !secondEligible)
             {
                 return;
@@ -597,12 +822,23 @@ namespace PawnDiary
             Def attachedDef = AttachedDefFor(tale);
             string instruction = PawnDiaryMod.Settings.InstructionForTale(taleDef);
             string gameContext = BuildTaleGameContext(tale, taleDef, label, attachedDef);
+            if (deathDescription)
+            {
+                gameContext = AppendDeathDescriptionContext(gameContext, deathVictim, firstPawn, secondPawn);
+            }
 
             if (firstEligible && secondEligible && firstPawn != secondPawn)
             {
                 string text = BuildTalePairText(firstPawn, secondPawn, label, attachedDef);
                 DiaryEvent pairEvent = AddPairwiseEvent(firstPawn, secondPawn, taleDef.defName, label,
                     text, text, instruction, gameContext);
+                if (deathDescription)
+                {
+                    AddDeathEventRef(deathVictim, pairEvent.eventId);
+                    QueueDeathDescription(pairEvent);
+                    return;
+                }
+
                 QueuePairwiseGeneration(pairEvent);
                 return;
             }
@@ -611,6 +847,13 @@ namespace PawnDiary
             Pawn otherPawn = firstEligible ? secondPawn : firstPawn;
             string soloText = BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
             DiaryEvent soloEvent = AddSoloEvent(povPawn, otherPawn, taleDef.defName, label, soloText, instruction, gameContext);
+            if (deathDescription)
+            {
+                AddDeathEventRef(deathVictim, soloEvent.eventId);
+                QueueDeathDescription(soloEvent);
+                return;
+            }
+
             QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
         }
 
@@ -1074,6 +1317,80 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Appends colonist-death metadata to the Tale context. The neutral death prompt reads this
+        /// instead of using a pawn persona, so it can describe cause, damaged body part, illness, and
+        /// nearby context without pretending the dead pawn wrote a diary entry.
+        /// </summary>
+        private static string AppendDeathDescriptionContext(string gameContext, Pawn deathVictim, Pawn firstPawn, Pawn secondPawn)
+        {
+            List<string> parts = new List<string>
+            {
+                gameContext,
+                "death_description=true",
+                "death_victim=" + DiaryContextBuilder.CleanLine(deathVictim.LabelShortCap),
+                "death_victim_id=" + deathVictim.GetUniqueLoadID(),
+                "death_victim_role=" + DeathVictimRole(deathVictim, firstPawn, secondPawn)
+            };
+
+            Pawn otherPawn = deathVictim == firstPawn ? secondPawn : firstPawn;
+            if (otherPawn != null)
+            {
+                parts.Add("other_pawn=" + DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap));
+            }
+
+            string deathFacts = DeathContextCache.ConsumeOrBuild(deathVictim);
+            if (!string.IsNullOrWhiteSpace(deathFacts))
+            {
+                parts.Add(deathFacts);
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
+        /// <summary>
+        /// Returns the pawn who died for TaleDefs that represent deaths. Vanilla's TaleDefs do not
+        /// use one consistent pawn order, so this method keeps that mapping in one place.
+        /// </summary>
+        private static Pawn DeathVictimForTale(TaleDef taleDef, Pawn firstPawn, Pawn secondPawn)
+        {
+            if (taleDef == null || string.IsNullOrWhiteSpace(taleDef.defName) || !DeathTaleDefs.Contains(taleDef.defName))
+            {
+                return null;
+            }
+
+            // KilledBy is firstPawn=VICTIM, secondPawn=KILLER. Most other kill tales are
+            // firstPawn=KILLER, secondPawn=VICTIM/COLONIST/CHILD.
+            if (string.Equals(taleDef.defName, "KilledBy", StringComparison.OrdinalIgnoreCase))
+            {
+                return firstPawn;
+            }
+
+            return secondPawn;
+        }
+
+        private static string DeathVictimRole(Pawn deathVictim, Pawn firstPawn, Pawn secondPawn)
+        {
+            if (deathVictim == firstPawn)
+            {
+                return DiaryEvent.InitiatorRole;
+            }
+
+            if (deathVictim == secondPawn)
+            {
+                return DiaryEvent.RecipientRole;
+            }
+
+            return DiaryEvent.NeutralRole;
+        }
+
+        private static bool IsDeathDescriptionEligible(Pawn pawn)
+        {
+            return pawn != null
+                && IsHumanlike(pawn)
+                && (pawn.IsColonist || pawn.Faction == Faction.OfPlayer);
+        }
+
+        /// <summary>
         /// Dedup gate: returns true if the same key was recorded within the given tick window, preventing
         /// duplicate events (e.g. mirrored SocialFighting calls).
         /// </summary>
@@ -1376,6 +1693,12 @@ namespace PawnDiary
                 return;
             }
 
+            DiaryEvent diaryEvent = FindEvent(eventId);
+            if (EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawn.GetUniqueLoadID(), diary)))
+            {
+                return;
+            }
+
             diary.pawnName = pawn.LabelShortCap;
             if (diary.eventIds == null)
             {
@@ -1386,6 +1709,86 @@ namespace PawnDiary
             {
                 diary.eventIds.Add(eventId);
             }
+        }
+
+        /// <summary>
+        /// Adds the death-description event to the deceased colonist's diary even after death state
+        /// makes the usual live-colonist eligibility checks unreliable.
+        /// </summary>
+        private void AddDeathEventRef(Pawn pawn, string eventId)
+        {
+            if (!IsDeathDescriptionEligible(pawn) || string.IsNullOrWhiteSpace(eventId))
+            {
+                return;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            if (diary == null)
+            {
+                return;
+            }
+
+            DiaryEvent diaryEvent = FindEvent(eventId);
+            if (EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawn.GetUniqueLoadID(), diary)))
+            {
+                return;
+            }
+
+            diary.pawnName = pawn.LabelShortCap;
+            if (diary.eventIds == null)
+            {
+                diary.eventIds = new List<string>();
+            }
+
+            if (!diary.eventIds.Contains(eventId))
+            {
+                diary.eventIds.Add(eventId);
+            }
+        }
+
+        /// <summary>
+        /// Returns the tick of the latest neutral death-description event for a pawn. That event is
+        /// terminal: anything later is suppressed from display and generation for that pawn.
+        /// </summary>
+        private int? FinalDeathTickFor(string pawnId, PawnDiaryRecord diary)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || diary?.eventIds == null)
+            {
+                return null;
+            }
+
+            int? finalDeathTick = null;
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                if (diaryEvent == null || !diaryEvent.IsDeathDescriptionFor(pawnId))
+                {
+                    continue;
+                }
+
+                if (!finalDeathTick.HasValue || diaryEvent.tick > finalDeathTick.Value)
+                {
+                    finalDeathTick = diaryEvent.tick;
+                }
+            }
+
+            return finalDeathTick;
+        }
+
+        private bool EventFallsAfterFinalDeathForPawn(DiaryEvent diaryEvent, string pawnId)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            return EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawnId, diary));
+        }
+
+        private static bool EventFallsAfterFinalDeath(DiaryEvent diaryEvent, int? finalDeathTick)
+        {
+            return diaryEvent != null && finalDeathTick.HasValue && diaryEvent.tick > finalDeathTick.Value;
         }
 
         /// <summary>
@@ -1412,6 +1815,36 @@ namespace PawnDiary
             // without rewriting prompts that were already sent or saved for debugging.
             string rawText = DiaryPromptBuilder.BuildInteractionPrompt(diaryEvent, povRole, PersonaRuleFor(diaryEvent, povRole));
             QueuePrompt(diaryEvent, povRole, rawText);
+        }
+
+        /// <summary>
+        /// Queues the persona-independent neutral description used for colonist deaths. This is not
+        /// a first-person diary entry; it is a concise record of how the pawn died.
+        /// </summary>
+        private void QueueDeathDescription(DiaryEvent diaryEvent)
+        {
+            if (diaryEvent == null || !diaryEvent.CanQueueGeneration(DiaryEvent.NeutralRole))
+            {
+                return;
+            }
+
+            string rawText = DiaryPromptBuilder.BuildDeathDescriptionPrompt(diaryEvent);
+            QueuePrompt(diaryEvent, DiaryEvent.NeutralRole, rawText);
+        }
+
+        /// <summary>
+        /// Queues the persona-independent neutral description used for colony arrivals. This is a
+        /// factual first page for the pawn's diary, not a first-person entry.
+        /// </summary>
+        private void QueueArrivalDescription(DiaryEvent diaryEvent)
+        {
+            if (diaryEvent == null || !diaryEvent.CanQueueGeneration(DiaryEvent.NeutralRole))
+            {
+                return;
+            }
+
+            string rawText = DiaryPromptBuilder.BuildArrivalDescriptionPrompt(diaryEvent);
+            QueuePrompt(diaryEvent, DiaryEvent.NeutralRole, rawText);
         }
 
         /// <summary>
@@ -1753,6 +2186,11 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(pawnId))
             {
                 return true;
+            }
+
+            if (EventFallsAfterFinalDeathForPawn(diaryEvent, pawnId))
+            {
+                return false;
             }
 
             return FindDiaryByPawnId(pawnId)?.diaryGenerationEnabled ?? true;
