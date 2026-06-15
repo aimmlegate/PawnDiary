@@ -1,13 +1,19 @@
 # PawnDiary
 
-a vibecoded rimworld mod.
+LLM-written diaries for RimWorld colonists.
 
-gives your colonists an LLM-written diary. it watches their social interactions,
-social fights and mental breaks, then turns each one into a short first-person
-entry you can read in a tab next to the vanilla **Log** tab.
+## What it does
 
-points at any OpenAI-compatible `/chat/completions` endpoint — a local LM Studio /
-llama.cpp server works fine. set the endpoint, model and prompts in the mod settings.
+Watches in-game events — social interactions, fights, mental breaks, injuries, deaths, raids, crafts — and rewrites each into a short **first-person diary entry**. Entries appear in a new inspector tab on each colonist.
 
-⚠️ **temporary / experemental / heavy work in progress.** 
-see `DOCUMENTATION.md` for how it actually works under the hood.
+- **Diary entries, not chat.** Reflective prose written after the fact, not real-time dialog.
+- **In-game data only.** Uses what RimWorld already tracks: relationships, moods, traits, events. No external memory, no extended context, no game-mechanic changes.
+- **Minimal prompts, small models.** Designed for 6–31B local LLMs (LM Studio, llama.cpp, Ollama). Works with any OpenAI-compatible `/chat/completions` endpoint.
+- **Per-pawn personas.** Optional writing-style presets shape each colonist's voice.
+- **Paired POV.** Two-pawn events generate two entries — one from each perspective.
+
+## Setup
+
+Point the mod at your LLM endpoint in settings. Defaults work out of the box with a local server on `http://localhost:1234`.
+
+⚠️ **Experimental / heavy WIP.** Expect rough edges. See `DOCUMENTATION.md` for internals.
