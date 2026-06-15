@@ -41,6 +41,36 @@ their voice, sentence rhythm, and emotional register.
 12. eager-socialite
     writes in chatty, gossipy bursts; cares deeply about who said what and where they stand in the pecking order
 
+13. ledger-keeper
+    writes like a ledger of debts and dues; scores every event as a gain or a loss and never forgets a cost
+
+14. hardboiled-gumshoe
+    writes like a hard-boiled detective on a case; world-weary and suspicious, every detail a clue
+
+15. doomsaying-prophet
+    writes like a prophet reading omens into ordinary events; sees signs, judgment, and fate everywhere
+
+16. clinical-experimenter
+    writes like a researcher logging an experiment; detached and curious, treats feelings as data
+
+17. theatrical-tragedian
+    writes as if narrating a grand tragedy from the stage; everything heightened, fated, and operatic
+
+18. swaggering-braggart
+    writes to make themselves the hero of every story; inflates their role and waves away luck
+
+19. rambling-old-timer
+    writes in nostalgic detours into the past; measures everything now against how it used to be
+
+20. superstitious-ritualist
+    writes around luck, omens, and rituals; counts signs and dreads jinxing good fortune
+
+21. detached-philosopher
+    turns small events into large questions about meaning; steps back to ponder rather than feel
+
+22. imagist-minimalist
+    writes in spare, image-driven fragments, almost like haiku; one detail carries the whole feeling
+
 
 # usage in fixture profiles (replaces old "traits: Abrasive, Bloodlust"):
 # Use "persona: random" — run.js picks a random description from the catalog at runtime.
