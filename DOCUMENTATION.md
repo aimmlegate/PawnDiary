@@ -69,10 +69,10 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `Languages/English/Keyed/PawnDiary.xml` | All player-facing UI strings **and** the natural-language prompt text (event sentences, context words, buckets), resolved via `.Translate()`. See §12 Localization. |
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
-| `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Health tab on humanlike pawn defs. |
+| `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony postfixes: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks). |
 | `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
-| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status; save/load; applying LLM results (incl. legacy dual-POV parse). |
+| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, relationship/continuity, opinions) + formatting/bucket helpers. |
 | `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo). |
@@ -355,7 +355,7 @@ enabled). The persona control is temporarily hidden from the tab UI.
 
 ## 9. UI
 
-- **Inspector tab** (`ITab_Pawn_Diary`), injected immediately after the vanilla **Health** tab on all
+- **Inspector tab** (`ITab_Pawn_Diary`), injected immediately after the vanilla **Social** tab on all
 humanlike pawn defs at startup. The tab is **visible only for free colonists**
 (`pawn.IsColonist`); animals, prisoners, slaves, enemies, and visitors never see it.
 Renders newest-first: date/group/importance header plus the generated diary text. The text is
@@ -363,6 +363,10 @@ drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking l
 bold/italic and colored with the pawn's RimWorld favorite color. Pending, failed-without-output,
 raw fallback, debug, and persona-editing details are hidden from the production tab. A compact
 generating badge appears in the tab while pending entries exist.
+- Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
+  matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
+  continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can
+  jump to the combined diary entry after generation completes.
 - There is **no** standalone window or gizmo anymore, and **no** colony/neutral events
   view (both removed — see Changelog).
 
@@ -371,8 +375,8 @@ generating badge appears in the tab while pending entries exist.
 ## 10. Persistence (save/load)
 
 - `DiaryGameComponent.ExposeData` saves `diaries` (per-pawn records) and `diaryEvents`.
-- `DiaryEvent` is `IExposable`; generated text, statuses, errors, and context summaries are
-  scribed. Prompts are not scribed (rebuilt on demand).
+- `DiaryEvent` is `IExposable`; generated text, statuses, errors, context summaries, and
+  originating PlayLog ids are scribed. Prompts are not scribed (rebuilt on demand).
 - Pending requests are not persisted; on load, pending statuses normalize back to
   not-generated and regenerate via the background queue scan.
 - **Backward-compat:** dormant `neutral*` fields remain scribed so older saves load; they

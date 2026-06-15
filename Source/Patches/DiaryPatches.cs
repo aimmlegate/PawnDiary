@@ -1,8 +1,9 @@
 // Harmony patches — our hooks into vanilla RimWorld. We don't own the game's code, so we "patch"
-// two methods with Postfixes that run AFTER the originals to catch the events we care about:
-// PlayLog.Add (every social interaction) and MentalStateHandler.TryStartMentalState (social
-// fights + mental breaks). Each just forwards to DiaryGameComponent. AccessTools.Field reads
-// private vanilla fields via reflection. New to this? See AGENTS.md ("Harmony patches").
+// vanilla methods: Postfix hooks record PlayLog.Add social interactions and
+// MentalStateHandler.TryStartMentalState social fights / mental breaks after RimWorld handles
+// them, and a Prefix hook redirects Social-tab play-log clicks into the matching Diary entry
+// when one exists. AccessTools.Field reads private vanilla fields via reflection.
+// New to this? See AGENTS.md ("Harmony patches").
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -68,7 +69,8 @@ namespace PawnDiary
             string initiatorGameText = GameTextFromPov(interactionEntry, initiator);
             string recipientGameText = GameTextFromPov(interactionEntry, recipient);
 
-            DiaryGameComponent.Current?.RecordInteraction(initiator, recipient, interactionDef, initiatorGameText, recipientGameText);
+            DiaryGameComponent.Current?.RecordInteraction(initiator, recipient, interactionDef,
+                initiatorGameText, recipientGameText, interactionEntry.LogID);
         }
 
         /// <summary>
@@ -90,6 +92,77 @@ namespace PawnDiary
             {
                 return interactionEntry.ToString();
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayLogEntry_Interaction), nameof(PlayLogEntry_Interaction.ClickedFromPOV))]
+    public static class PlayLogInteractionClickPatch
+    {
+        /// <summary>
+        /// Harmony Prefix for social interaction log clicks. When this exact PlayLog row has a
+        /// finished diary entry for the clicked pawn's POV, open Diary instead of vanilla behavior.
+        /// Returning true lets RimWorld continue normally when no diary entry is available yet.
+        /// </summary>
+        public static bool Prefix(PlayLogEntry_Interaction __instance, Thing pov)
+        {
+            if (__instance == null)
+            {
+                return true;
+            }
+
+            Pawn pawn = pov as Pawn;
+            if (pawn == null)
+            {
+                return true;
+            }
+
+            DiaryEntryView entry = DiaryGameComponent.Current?.GeneratedEntryForPlayLogEntry(pawn, __instance.LogID);
+            if (entry == null)
+            {
+                return true;
+            }
+
+            if (!EnsureSelected(pawn))
+            {
+                return true;
+            }
+
+            ITab_Pawn_Diary.RequestScrollToEntry(pawn, entry.EventId);
+            InspectTabBase opened = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+            if (opened is ITab_Pawn_Diary)
+            {
+                return false;
+            }
+
+            ITab_Pawn_Diary.ClearPendingScrollRequest();
+            return true;
+        }
+
+        /// <summary>
+        /// The inspect pane opens tabs for the current selection, so make sure the POV pawn is
+        /// selected. Social-tab clicks usually already satisfy this; the spawned guard avoids
+        /// trying to select an off-map pawn from another play-log surface.
+        /// </summary>
+        private static bool EnsureSelected(Pawn pawn)
+        {
+            if (pawn == null || Find.Selector == null)
+            {
+                return false;
+            }
+
+            if (Find.Selector.IsSelected(pawn))
+            {
+                return true;
+            }
+
+            if (!pawn.Spawned)
+            {
+                return false;
+            }
+
+            Find.Selector.ClearSelection();
+            Find.Selector.Select(pawn, true, false);
+            return true;
         }
     }
 }

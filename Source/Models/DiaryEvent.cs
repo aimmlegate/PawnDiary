@@ -2,6 +2,7 @@
 // generation state for up to two points of view. Pure model: fields, save/load,
 // and prompt/result plumbing. Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
+using System.Collections.Generic;
 using Verse;
 
 namespace PawnDiary
@@ -26,6 +27,7 @@ namespace PawnDiary
         public const string FailedStatus = "failed";
 
         public string eventId; // unique ID for this event, stable across saves
+        public List<int> playLogEntryIds = new List<int>(); // Verse.LogEntry ids that produced this diary event
         public int tick; // game tick when the event was recorded
         public string date; // human-readable date string at event time
         public string interactionDefName; // RimWorld InteractionDef defName (e.g. "Chat")
@@ -76,6 +78,7 @@ namespace PawnDiary
         public void ExposeData()
         {
             Scribe_Values.Look(ref eventId, "eventId");
+            Scribe_Collections.Look(ref playLogEntryIds, "playLogEntryIds", LookMode.Value);
             Scribe_Values.Look(ref solo, "solo", false);
             Scribe_Values.Look(ref tick, "tick");
             Scribe_Values.Look(ref date, "date");
@@ -122,6 +125,11 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(eventId))
                 {
                     eventId = Guid.NewGuid().ToString("N");
+                }
+
+                if (playLogEntryIds == null)
+                {
+                    playLogEntryIds = new List<int>();
                 }
 
                 if (string.IsNullOrWhiteSpace(initiatorStatus))
@@ -468,6 +476,38 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Remembers the RimWorld social-log row(s) that were folded into this diary event.
+        /// Small-talk batching can add several ids to one event; direct interactions add one.
+        /// </summary>
+        public void AddPlayLogEntryId(int playLogEntryId)
+        {
+            if (playLogEntryId < 0)
+            {
+                return;
+            }
+
+            if (playLogEntryIds == null)
+            {
+                playLogEntryIds = new List<int>();
+            }
+
+            if (!playLogEntryIds.Contains(playLogEntryId))
+            {
+                playLogEntryIds.Add(playLogEntryId);
+            }
+        }
+
+        /// <summary>
+        /// True when a clicked RimWorld social-log entry maps back to this diary event.
+        /// </summary>
+        public bool MatchesPlayLogEntry(int playLogEntryId)
+        {
+            return playLogEntryId >= 0
+                && playLogEntryIds != null
+                && playLogEntryIds.Contains(playLogEntryId);
         }
 
         /// <summary>

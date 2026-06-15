@@ -4,6 +4,12 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (social-adjacent diary tab and click-through)**
+  - Moved the Diary inspector tab to immediately after the vanilla Social tab.
+  - Added PlayLog id tracking on diary events, including batched small-talk rows.
+  - Clicking a Social-tab interaction row now opens the Diary tab and scrolls to the matching
+    generated entry when one exists; otherwise vanilla click behavior continues.
+
 - **2026-06-15 (diary tab roleplay UI pass)**
   - Moved the Diary inspector tab from the far-right position to immediately after the vanilla
     Health tab.

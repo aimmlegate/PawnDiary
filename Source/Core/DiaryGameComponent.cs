@@ -159,6 +159,43 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Finds the generated diary entry that belongs to a clicked RimWorld social-log row.
+        /// Returns null when the event was not recorded, belongs to another pawn, or has not
+        /// produced visible LLM text yet; callers should keep vanilla click behavior in that case.
+        /// </summary>
+        public DiaryEntryView GeneratedEntryForPlayLogEntry(Pawn pawn, int playLogEntryId)
+        {
+            if (!IsDiaryEligible(pawn) || playLogEntryId < 0)
+            {
+                return null;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (diary == null || diary.eventIds == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                if (diaryEvent == null || !diaryEvent.MatchesPlayLogEntry(playLogEntryId))
+                {
+                    continue;
+                }
+
+                DiaryEntryView view = diaryEvent.ToViewFor(pawnId);
+                if (view != null && !string.IsNullOrWhiteSpace(view.GeneratedText))
+                {
+                    return view;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Returns whether a pawn has diary generation enabled (defaults to true if no record exists yet).
         /// </summary>
         public bool DiaryGenerationEnabledFor(Pawn pawn)
@@ -332,6 +369,16 @@ namespace PawnDiary
         /// </summary>
         public void RecordInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef, string initiatorGameText, string recipientGameText)
         {
+            RecordInteraction(initiator, recipient, interactionDef, initiatorGameText, recipientGameText, -1);
+        }
+
+        /// <summary>
+        /// Records one social interaction and remembers the originating PlayLog id, so a later
+        /// click in RimWorld's Social tab can jump back to the generated diary entry.
+        /// </summary>
+        public void RecordInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef,
+            string initiatorGameText, string recipientGameText, int playLogEntryId)
+        {
             if (initiator == null || recipient == null || interactionDef == null)
             {
                 return;
@@ -367,6 +414,7 @@ namespace PawnDiary
                 string gameContext = DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel);
                 DiaryEvent soloEvent = AddSoloEvent(eligiblePawn, otherPawn, interactionDef.defName, interactionLabel,
                     eligibleText, InteractionInstruction(interactionDef), gameContext);
+                soloEvent.AddPlayLogEntryId(playLogEntryId);
                 QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
                 return;
             }
@@ -383,7 +431,7 @@ namespace PawnDiary
 
             if (IsSmallTalkInteraction(interactionDef))
             {
-                RecordSmallTalkInteraction(initiator, recipient, interactionDef, interactionLabel, initiatorText, recipientText);
+                RecordSmallTalkInteraction(initiator, recipient, interactionDef, interactionLabel, initiatorText, recipientText, playLogEntryId);
                 return;
             }
 
@@ -391,11 +439,12 @@ namespace PawnDiary
                 initiatorText, recipientText,
                 InteractionInstruction(interactionDef),
                 DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel));
+            diaryEvent.AddPlayLogEntryId(playLogEntryId);
             QueuePairwiseGeneration(diaryEvent);
         }
 
         private void RecordSmallTalkInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef,
-            string interactionLabel, string initiatorText, string recipientText)
+            string interactionLabel, string initiatorText, string recipientText, int playLogEntryId)
         {
             string key = PairKey(initiator, recipient);
             PendingSmallTalkBatch batch;
@@ -418,6 +467,7 @@ namespace PawnDiary
             }
 
             AppendSmallTalkBatchLine(batch, initiator, interactionLabel, initiatorText, recipientText);
+            AddPlayLogEntryId(batch.playLogEntryIds, playLogEntryId);
             batch.lastTick = Find.TickManager.TicksGame;
 
             if (batch.Count >= SmallTalkBatchMaxEvents)
@@ -741,12 +791,14 @@ namespace PawnDiary
 
                 DiaryEvent soloEvent = AddSoloEvent(eligiblePawn, otherPawn, defName, label,
                     eligibleText, instruction, gameContext);
+                AddPlayLogEntryIds(soloEvent, batch.playLogEntryIds);
                 QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
                 return;
             }
 
             DiaryEvent diaryEvent = AddPairwiseEvent(batch.initiator, batch.recipient, defName, label,
                 initiatorText, recipientText, instruction, gameContext);
+            AddPlayLogEntryIds(diaryEvent, batch.playLogEntryIds);
             QueuePairwiseGeneration(diaryEvent);
         }
 
@@ -769,6 +821,36 @@ namespace PawnDiary
             {
                 batch.initiatorLines.Add(recipientLine);
                 batch.recipientLines.Add(initiatorLine);
+            }
+        }
+
+        /// <summary>
+        /// Adds one PlayLog id to an in-progress small-talk batch, ignoring the sentinel used
+        /// by older call paths that do not know the originating log row.
+        /// </summary>
+        private static void AddPlayLogEntryId(List<int> playLogEntryIds, int playLogEntryId)
+        {
+            if (playLogEntryIds == null || playLogEntryId < 0 || playLogEntryIds.Contains(playLogEntryId))
+            {
+                return;
+            }
+
+            playLogEntryIds.Add(playLogEntryId);
+        }
+
+        /// <summary>
+        /// Copies all PlayLog ids from a small-talk batch onto its merged diary event.
+        /// </summary>
+        private static void AddPlayLogEntryIds(DiaryEvent diaryEvent, List<int> playLogEntryIds)
+        {
+            if (diaryEvent == null || playLogEntryIds == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < playLogEntryIds.Count; i++)
+            {
+                diaryEvent.AddPlayLogEntryId(playLogEntryIds[i]);
             }
         }
 
@@ -1284,6 +1366,8 @@ namespace PawnDiary
             // Per-POV line accumulators — each small-talk moment appends one line per POV.
             public readonly List<string> initiatorLines = new List<string>();
             public readonly List<string> recipientLines = new List<string>();
+            // RimWorld social-log ids represented by the eventual merged diary event.
+            public readonly List<int> playLogEntryIds = new List<int>();
 
             /// <summary>Number of small-talk moments accumulated so far.</summary>
             public int Count

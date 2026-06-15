@@ -32,11 +32,34 @@ namespace PawnDiary
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
+        // Set by the Social-tab click patch before opening this tab. FillTab consumes it once
+        // the relevant pawn's generated entry list is available.
+        private static string pendingScrollPawnId;
+        private static string pendingScrollEventId;
 
         public ITab_Pawn_Diary()
         {
             size = new Vector2(600f, 500f);
             labelKey = "PawnDiaryTabLabel";
+        }
+
+        /// <summary>
+        /// Requests that the next Diary tab draw for this pawn scroll to the given event card.
+        /// Used by the Social-tab play-log click patch.
+        /// </summary>
+        public static void RequestScrollToEntry(Pawn pawn, string eventId)
+        {
+            pendingScrollPawnId = pawn?.GetUniqueLoadID();
+            pendingScrollEventId = eventId;
+        }
+
+        /// <summary>
+        /// Clears a pending scroll request when the tab could not be opened after all.
+        /// </summary>
+        public static void ClearPendingScrollRequest()
+        {
+            pendingScrollPawnId = null;
+            pendingScrollEventId = null;
         }
 
         /// <summary>
@@ -122,6 +145,8 @@ namespace PawnDiary
             float viewHeight = ordered.Sum(entry => EntryHeight(entry, viewWidth)) + 12f;
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
 
+            TryApplyPendingScroll(pawn, ordered, viewWidth, viewHeight, outRect.height);
+
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             float curY = 0f;
             Color dialogueColor = PreferredDialogueColor(pawn);
@@ -148,6 +173,41 @@ namespace PawnDiary
                 curY += height + 8f;
             }
             Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// Consumes a pending Social-tab jump request by placing the target card near the top
+        /// of the scroll view. If the entry disappeared before redraw, clear the stale request.
+        /// </summary>
+        private void TryApplyPendingScroll(Pawn pawn, List<DiaryEntryView> ordered, float viewWidth, float viewHeight, float outHeight)
+        {
+            if (pawn == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            if (pawnId != pendingScrollPawnId)
+            {
+                return;
+            }
+
+            float curY = 0f;
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                DiaryEntryView entry = ordered[i];
+                if (entry != null && entry.EventId == pendingScrollEventId)
+                {
+                    float maxScroll = Mathf.Max(0f, viewHeight - outHeight);
+                    scrollPosition.y = Mathf.Clamp(curY, 0f, maxScroll);
+                    ClearPendingScrollRequest();
+                    return;
+                }
+
+                curY += EntryHeight(entry, viewWidth) + 8f;
+            }
+
+            ClearPendingScrollRequest();
         }
 
         /// <summary>
