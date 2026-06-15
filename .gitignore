@@ -17,7 +17,6 @@ Thumbs.db
 .codegraph/
 .mcp.json
 .vscode/
-AGENTS.md
 opencode.jsonc
 
 # Note: 1.6/Assemblies/PawnDiary.dll (and bundled 0Harmony.dll) are committed on purpose

@@ -1,4 +1,4 @@
-# Pawn Diary — working notes for Claude
+# Pawn Diary — working notes for code agents
 
 **Always keep `DOCUMENTATION.md` up to date.** It is the living design doc for this mod.
 After any change to the mod's behavior or structure, update the affected section of
