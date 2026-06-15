@@ -1851,11 +1851,59 @@ namespace PawnDiary
             {
                 pawnId = pawnId,
                 pawnName = pawn.LabelShortCap,
-                personaDefName = DiaryPersonas.RandomStartingPersona().defName,
+                // Initial persona is rolled once, biased toward the pawn's traits/backstory and
+                // softly steered away from personas other colonists already use. The player can
+                // still override it from the diary tab; that saved choice is never re-rolled.
+                personaDefName = DiaryPersonas.WeightedStartingPersona(pawn, BuildUsedPersonaCounts(pawnId)).defName,
                 diaryGenerationEnabled = true
             };
             diaries.Add(diary);
             return diary;
+        }
+
+        /// <summary>
+        /// Counts how many current, living colonists already use each persona, so a new pawn's
+        /// initial roll can softly avoid duplicates (see <see cref="DiaryPersonas.WeightedStartingPersona"/>).
+        /// Keyed by persona defName. The pawn being created is excluded via <paramref name="excludePawnId"/>;
+        /// dead/lost pawns and non-colonists are ignored so retired voices free up again.
+        /// </summary>
+        private Dictionary<string, int> BuildUsedPersonaCounts(string excludePawnId)
+        {
+            Dictionary<string, int> counts = new Dictionary<string, int>();
+            if (diaries == null)
+            {
+                return counts;
+            }
+
+            // The set of pawn IDs that are colonists right now, so persona "use" reflects the
+            // living colony rather than every record ever created.
+            HashSet<string> colonistIds = new HashSet<string>();
+            foreach (Pawn colonist in PawnsFinder.AllMaps_FreeColonists)
+            {
+                if (colonist != null)
+                {
+                    colonistIds.Add(colonist.GetUniqueLoadID());
+                }
+            }
+
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                PawnDiaryRecord diary = diaries[i];
+                if (diary == null || diary.pawnId == excludePawnId || string.IsNullOrWhiteSpace(diary.personaDefName))
+                {
+                    continue;
+                }
+
+                if (!colonistIds.Contains(diary.pawnId))
+                {
+                    continue;
+                }
+
+                counts.TryGetValue(diary.personaDefName, out int current);
+                counts[diary.personaDefName] = current + 1;
+            }
+
+            return counts;
         }
 
         /// <summary>

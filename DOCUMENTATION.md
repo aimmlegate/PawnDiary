@@ -209,8 +209,22 @@ All paths share the same per-event context fields and the system prompt.
 - Each `PawnDiaryRecord` saves `personaDefName` and `diaryGenerationEnabled`.
 - Persona options are `DiaryPersonaDef` XML Defs in `1.6/Defs/DiaryPersonaDefs.xml`, with
   `DiaryPromptDef.defaultPersonaDefName` providing the fallback/default (`DiaryPersona_StoicSurvivor`).
-- New pawn diary records pick a random loaded persona as their starting voice. Existing records
-  keep their saved persona; missing/invalid saved persona values fall back to the default above.
+- **Initial persona is a weighted roll, not uniform random.** When a pawn's record is first created,
+  `DiaryPersonas.WeightedStartingPersona(pawn, usedCounts)` picks the starting voice:
+  - **Trait/backstory fit.** Each persona carries coarse `<themes>` keywords in XML (e.g. `grim`,
+    `warm`, `anxious`). `Source/Generation/PersonaAffinity.cs` maps RimWorld trait defNames (and
+    spectrum-trait degrees, e.g. `Nerves:-1` = nervous) and backstory `spawnCategories` to that
+    same vocabulary, then adds `ThemeBonus` to a persona's weight per theme it shares with the pawn.
+    A persona with no matching theme still has the flat base weight, so nothing is impossible.
+  - **Soft colony de-duplication.** `DiaryGameComponent.BuildUsedPersonaCounts` counts how many
+    current living free colonists already use each persona; the weight is multiplied by
+    `DuplicatePenalty` (≈0.25) once per existing user, so repeats are rare but still possible once
+    the catalog is spread thin (clamped to a small floor so weights never reach zero — assignment
+    never starves even with more colonists than personas).
+  - Themes are internal keywords only; they are **not** shown to the player and are **not** localized.
+- Existing records keep their saved persona — the weighted roll only runs the first time a pawn
+  enters the diary system; the manual picker overrides it freely. Missing/invalid saved persona
+  values fall back to the default above.
 - The Diary tab creates a pawn's record on first edit/open and shows the generation
   checkbox plus a persona picker (a float-menu of every `DiaryPersonaDef`) above the entries.
 - Disabled generation does **not** delete or skip events; it only prevents future LLM requests for
