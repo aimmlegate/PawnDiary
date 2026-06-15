@@ -4,6 +4,10 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (subtle diary model tag)**
+  - Diary cards now show the generating model id as a tiny, low-contrast note at the bottom-right
+    of each generated entry, making multi-model provenance visible without drawing attention.
+
 - **2026-06-15 (automatic failover to the next model)**
   - On an error, a request now **falls over to the next configured API/model** instead of failing.
     `SendWithRetries` was restructured to try the chosen lane first, then each other lane in order;

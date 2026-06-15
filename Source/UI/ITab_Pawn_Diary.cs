@@ -28,6 +28,8 @@ namespace PawnDiary
         private const float LinkedEntryLabelHeight = 20f;
         private const float LinkedEntryTextHeight = 36f;
         private const float LinkedEntryTotalHeight = 64f;
+        private const float ModelNameTopPadding = 2f;
+        private const float ModelNameHeight = 14f;
 
         private static readonly Color ImportantColor = new Color(0.96f, 0.62f, 0.22f);
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
@@ -196,6 +198,8 @@ namespace PawnDiary
                 LinkedEntryView linked = entry.LinkedEntry;
                 bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
                 bool linkedAfter = linked != null && !linkedBefore;
+                bool showModelName = HasModelName(entry);
+                float modelNameSpace = showModelName ? ModelNameTopPadding + ModelNameHeight : 0f;
 
                 if (linkedBefore)
                 {
@@ -206,7 +210,8 @@ namespace PawnDiary
 
                 float mainTextHeight = entryRect.height - EntryTextTop - EntryBottomPadding
                     - (linkedBefore ? LinkedEntryTotalHeight + LinkedEntryPadding : 0f)
-                    - (linkedAfter ? LinkedEntryTotalHeight + LinkedEntryPadding : 0f);
+                    - (linkedAfter ? LinkedEntryTotalHeight + LinkedEntryPadding : 0f)
+                    - modelNameSpace;
                 Rect textRect = new Rect(entryRect.x + 12f, textY, entryRect.width - 20f, mainTextHeight);
                 DrawRoleplayText(textRect, entry.GeneratedText, dialogueColor);
 
@@ -214,6 +219,12 @@ namespace PawnDiary
                 {
                     Rect linkedRect = new Rect(entryRect.x + 10f, textRect.yMax + LinkedEntryPadding, entryRect.width - 20f, LinkedEntryTotalHeight);
                     DrawLinkedEntry(linked, linkedRect, pawn);
+                }
+
+                if (showModelName)
+                {
+                    Rect modelRect = new Rect(entryRect.x + 12f, entryRect.yMax - EntryBottomPadding - ModelNameHeight, entryRect.width - 24f, ModelNameHeight);
+                    DrawModelName(modelRect, entry.LlmModel);
                 }
 
                 curY += height + 8f;
@@ -355,6 +366,14 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True when an entry has a model id worth showing as a quiet provenance hint.
+        /// </summary>
+        private static bool HasModelName(DiaryEntryView entry)
+        {
+            return entry != null && !string.IsNullOrWhiteSpace(entry.LlmModel);
+        }
+
+        /// <summary>
         /// Produces the compact header shown on each entry card: date, group, and importance.
         /// </summary>
         private static string EntryHeader(DiaryEntryView entry)
@@ -397,6 +416,25 @@ namespace PawnDiary
             }
 
             return color;
+        }
+
+        /// <summary>
+        /// Draws the model id as a tiny, low-contrast note at the end of a diary card.
+        /// </summary>
+        private static void DrawModelName(Rect rect, string modelName)
+        {
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.UpperRight;
+            GUI.color = new Color(0.45f, 0.48f, 0.50f, 0.62f);
+            Widgets.LabelFit(rect, modelName);
+
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
         }
 
         /// <summary>
@@ -589,6 +627,11 @@ namespace PawnDiary
             if (entry.LinkedEntry != null)
             {
                 height += LinkedEntryTotalHeight + LinkedEntryPadding;
+            }
+
+            if (HasModelName(entry))
+            {
+                height += ModelNameTopPadding + ModelNameHeight;
             }
 
             return height;

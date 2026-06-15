@@ -383,9 +383,10 @@ humanlike pawn defs at startup. The tab is **visible only for free colonists**
 (`pawn.IsColonist`); animals, prisoners, slaves, enemies, and visitors never see it.
 Renders newest-first: date/group/importance header plus the generated diary text. The text is
 drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking lines are
-bold/italic and colored with the pawn's RimWorld favorite color. Pending, failed-without-output,
-raw fallback, debug, and persona-editing details are hidden from the production tab. A compact
-generating badge appears in the tab while pending entries exist.
+bold/italic and colored with the pawn's RimWorld favorite color. Each generated card ends with
+a tiny, low-contrast model id so multi-model output can be traced without making the card feel
+technical. Pending, failed-without-output, raw fallback, debug, and persona-editing details are
+hidden from the production tab. A compact generating badge appears in the tab while pending entries exist.
 - Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
   matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
   continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can
