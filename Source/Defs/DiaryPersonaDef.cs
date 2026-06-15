@@ -21,7 +21,7 @@ namespace PawnDiary
         {
             defName = "DiaryPersona_StoicSurvivor",
             label = "stoic-survivor",
-            rule = "writes in terse, matter-of-fact sentences; avoids self-pity and focuses on what needs doing next"
+            rule = "writes in terse, matter-of-fact sentences. Avoids self-pity; focuses on what needs doing next. Opens with blunt observations about the situation. Uses short declarative sentences."
         };
 
         // Wrapped in a list so All can return a non-null IReadOnlyList even with zero XML defs.

@@ -27,7 +27,7 @@
     <order>10</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>explicit sexual encounter; keep it in-character and not graphic</instruction>
+    <instruction>the heat of desire—an explicit sexual encounter. Keep it in-character, sensory, not clinical</instruction>
     <matchDefNames>
       <li>Necro_Vaginal</li>
     </matchDefNames>
@@ -46,7 +46,7 @@
     <order>20</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>romantic moment between the pawns; may be an advance, commitment, date, or breakup depending on context</instruction>
+    <instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</instruction>
     <matchDefNames>
       <li>RomanceAttempt</li>
       <li>MarriageProposal</li>
@@ -72,7 +72,7 @@
     <order>30</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>captor works on a prisoner: building rapport, recruiting, reducing will, enslaving, or stirring escape</instruction>
+    <instruction>the dance of captor and captive—building rapport, breaking will, or planting seeds of rebellion</instruction>
     <matchDefNames>
       <li>BuildRapport</li>
       <li>RecruitAttempt</li>
@@ -97,7 +97,7 @@
     <order>40</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>interaction over slavery: suppression by an overseer or a spark of rebellion</instruction>
+    <instruction>the weight of chains—suppression by an overseer or the first spark of defiance</instruction>
     <matchDefNames>
       <li>Suppress</li>
       <li>SparkSlaveRebellion</li>
@@ -115,7 +115,7 @@
     <order>50</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>ideological pressure: conversion, counseling, preaching, indoctrination, or motivation</instruction>
+    <instruction>a battle of belief—conversion, counseling, preaching, or the pressure of faith on faith</instruction>
     <matchDefNames>
       <li>ConvertIdeoAttempt</li>
       <li>Convert_Success</li>
@@ -144,7 +144,7 @@
     <order>60</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>formal trial exchange: an accusation or a defense before the colony</instruction>
+    <instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</instruction>
     <matchDefNames>
       <li>Trial_Accuse</li>
       <li>Trial_Defend</li>
@@ -161,7 +161,7 @@
     <order>70</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>unsettling or anomalous exchange; convey unease without explaining the supernatural away</instruction>
+    <instruction>something wrong—an unsettling exchange that leaves unease lingering. Don't explain it away</instruction>
     <matchDefNames>
       <li>DarkDialogue</li>
       <li>CreepyWords</li>
@@ -189,7 +189,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <combat>true</combat>
-    <instruction>hostile exchange: an insult, a slight, or the start of a social fight</instruction>
+    <instruction>the sting of contempt—an insult, a slight, or fists about to fly</instruction>
     <matchDefNames>
       <li>Insult</li>
       <li>Slight</li>
@@ -211,7 +211,7 @@
     <order>90</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>ceremonial or ritual address rather than a private chat; reflect its solemn, public nature</instruction>
+    <instruction>a solemn public moment—ritual, ceremony, or address. The colony watches</instruction>
     <matchDefNames>
       <li>SpeechUtility</li>
       <li>Speech_Duel</li>
@@ -244,7 +244,7 @@
     <order>100</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>moment between a pawn and an animal: chatting, taming, training, a nuzzle, or release</instruction>
+    <instruction>a quiet bond—chatting with an animal, taming, training, or letting one go</instruction>
     <matchDefNames>
       <li>AnimalChat</li>
       <li>TameAttempt</li>
@@ -267,7 +267,7 @@
     <order>110</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>warm or meaningful exchange: a deep talk, kind words, reassurance, or calming someone down</instruction>
+    <instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</instruction>
     <matchDefNames>
       <li>DeepTalk</li>
       <li>KindWords</li>
@@ -291,7 +291,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
-    <instruction>an adult teaches or plays with a child</instruction>
+    <instruction>a lesson passed down—an adult teaching or playing with a child</instruction>
     <matchDefNames>
       <li>BabyPlay</li>
     </matchDefNames>
@@ -310,7 +310,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
-    <instruction>casual low-stakes chatter</instruction>
+    <instruction>idle chatter—low-stakes small talk that fills the silence</instruction>
     <matchDefNames>
       <li>Chitchat</li>
       <li>Conversation</li>
@@ -351,7 +351,7 @@
     <order>200</order>
     <domain>MentalState</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>the two pawns lost their tempers and came to blows; write it as a heated physical fight</instruction>
+    <instruction>tempers snapped—two people came to blows. Write it as heat and impact</instruction>
     <matchDefNames>
       <li>SocialFighting</li>
     </matchDefNames>
@@ -363,7 +363,7 @@
     <order>210</order>
     <domain>MentalState</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>the pawn suffered a mental break; write their inner state and what they did, in their own voice</instruction>
+    <instruction>the mind breaking—write the pawn's inner storm and what they did</instruction>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -376,7 +376,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <combat>true</combat>
-    <instruction>serious danger, injury, combat, death, or rescue; write it as a vivid first-person memory grounded in what happened</instruction>
+    <instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</instruction>
     <matchDefNames>
       <li>Downed</li>
       <li>Wounded</li>
@@ -401,7 +401,7 @@
     <order>310</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>medical event, surgery, illness, extreme exposure, or recovery; focus on the pawn's body, fear, relief, or trust</instruction>
+    <instruction>the body's fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</instruction>
     <matchDefNames>
       <li>DidSurgery</li>
       <li>HealedMe</li>
@@ -420,7 +420,7 @@
     <order>320</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>major life change: birth, capture, recruitment, cryptosleep, bonding, taming, or similar; write it as a personally significant turning point</instruction>
+    <instruction>a turning point—birth, capture, bonding, or a new beginning. Write it as a life changed</instruction>
     <matchDefNames>
       <li>GaveBirth</li>
       <li>Captured</li>
@@ -445,7 +445,7 @@
     <order>325</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>the pawn created an exceptional crafted item; write the pride, exhaustion, and weight of making something the colony will remember</instruction>
+    <instruction>hands that made something lasting—pride, exhaustion, and the weight of creation</instruction>
     <matchDefNames>
       <li>CraftedMasterwork</li>
       <li>CraftedLegendary</li>
@@ -459,7 +459,7 @@
     <order>326</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>the pawn installed or handled a revered ideology relic; write it as a solemn, culturally important moment</instruction>
+    <instruction>a sacred object placed with reverence—a solemn, culturally weighty moment</instruction>
     <matchDefNames>
       <li>RelicInstalled</li>
     </matchDefNames>
@@ -472,7 +472,7 @@
     <domain>Tale</domain>
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
-    <instruction>achievement through labor, craft, study, mining, construction, research, or skill growth; keep it proud but grounded</instruction>
+    <instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</instruction>
     <matchDefNames>
       <li>FinishedResearchProject</li>
       <li>CompletedLongConstructionProject</li>
@@ -490,7 +490,7 @@
     <order>335</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>an eerie Anomaly event, entity study, mutation, void contact, or unnatural disaster; write it with dread and uncertainty without explaining the horror away</instruction>
+    <instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</instruction>
     <matchDefNames>
       <li>StudiedEntity</li>
       <li>MutatedMyArm</li>
@@ -509,7 +509,7 @@
     <order>340</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>large colony event, raid, disaster, weather omen, caravan crisis, or supernatural incident; write what it felt like to live through it</instruction>
+    <instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</instruction>
     <matchDefNames>
       <li>Raid</li>
       <li>Infestation</li>
@@ -551,7 +551,7 @@
     <domain>Tale</domain>
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
-    <instruction>small personal moment, habit, recreation, ceremony attendance, reading, prayer, meditation, or embarrassment; write it as a brief diary aside</instruction>
+    <instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</instruction>
     <matchDefNames>
       <li>AteRawHumanlikeMeat</li>
       <li>AttendedConcert</li>
@@ -589,7 +589,7 @@
     <order>400</order>
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>a positive colony-wide event that lifts spirits: the pawn notices and reacts to it</instruction>
+    <instruction>something lifted—a positive colony-wide event that eases the heart</instruction>
     <matchDefNames>
       <li>Aurora</li>
       <li>Party</li>
@@ -603,7 +603,7 @@
     <order>410</order>
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>a negative colony-wide event that strains morale: the pawn reacts to the hardship</instruction>
+    <instruction>something weighing—a negative colony-wide event that strains the spirit</instruction>
     <matchDefNames>
       <li>Eclipse</li>
       <li>PsychicDrone</li>
@@ -618,7 +618,7 @@
     <order>405</order>
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>a colony-wide condition that may affect mood differently depending on who you are; react based on how it actually feels to the pawn</instruction>
+    <instruction>a condition that touches each person differently—write how it feels to this pawn</instruction>
     <matchDefNames>
       <!-- TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now. -->
       <!-- <li>ProblemCauser</li> -->

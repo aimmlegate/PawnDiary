@@ -1,12 +1,15 @@
 # mode: single
-# max_tokens: 160
+# max_tokens: 100
 ===USER===
 event: insult
 pov: Mei
 with: Rurik
 what happened: Rurik sneered at Mei, calling her cooking "slop fit for boomrats".
-instruction: hostile exchange: an insult, a slight, or the start of a social fight
+instruction: the sting of contempt—an insult, a slight, or fists about to fly
 you: female, 29y; mood: stable 63%
-you persona: random
+persona: stoic-survivor: writes in terse, matter-of-fact sentences. Avoids self-pity; focuses on what needs doing next. Opens with blunt observations about the situation. Uses short declarative sentences.
 setting: dining room, indoors, doing: eating at a table
+atmosphere: friction
 relationship: rival; opinion -27 (strained); because Insulted me -20, Social fight -7; last wrote: "Rurik picks at everyone. I won't give him the satisfaction."
+
+Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.

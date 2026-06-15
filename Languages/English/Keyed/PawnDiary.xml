@@ -153,4 +153,13 @@
   <PawnDiary.Bucket.Opinion.Strained>strained</PawnDiary.Bucket.Opinion.Strained>
   <PawnDiary.Bucket.Opinion.Hostile>hostile</PawnDiary.Bucket.Opinion.Hostile>
 
+  <!-- Atmosphere words (short evocative modifiers for the "atmosphere:" prompt field) -->
+  <PawnDiary.Atmosphere.Mood.Bright>bright</PawnDiary.Atmosphere.Mood.Bright>
+  <PawnDiary.Atmosphere.Mood.Tense>tense</PawnDiary.Atmosphere.Mood.Tense>
+  <PawnDiary.Atmosphere.Mood.Bleak>bleak</PawnDiary.Atmosphere.Mood.Bleak>
+  <PawnDiary.Atmosphere.Opinion.Devotion>devotion</PawnDiary.Atmosphere.Opinion.Devotion>
+  <PawnDiary.Atmosphere.Opinion.Warmth>warmth</PawnDiary.Atmosphere.Opinion.Warmth>
+  <PawnDiary.Atmosphere.Opinion.Friction>friction</PawnDiary.Atmosphere.Opinion.Friction>
+  <PawnDiary.Atmosphere.Opinion.Hostility>hostility</PawnDiary.Atmosphere.Opinion.Hostility>
+
 </LanguageData>
