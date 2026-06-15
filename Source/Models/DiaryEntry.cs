@@ -141,17 +141,17 @@ namespace PawnDiary
     /// </summary>
     public class LinkedEntryView
     {
-        /// RimWorld unique load ID of the other pawn involved in this event.</summary>
+        /// <summary>RimWorld unique load ID of the other pawn involved in this event.</summary>
         public readonly string OtherPawnId;
-        /// Display name of the other pawn (e.g. "Alice").</summary>
+        /// <summary>Display name of the other pawn (e.g. "Alice").</summary>
         public readonly string OtherPawnName;
-        /// POV role of the other pawn in this event ("initiator" or "recipient").</summary>
+        /// <summary>POV role of the other pawn in this event ("initiator" or "recipient").</summary>
         public readonly string OtherRole;
-        /// The eventId shared by both entries — used to scroll after navigating.</summary>
+        /// <summary>The eventId shared by both entries — used to scroll after navigating.</summary>
         public readonly string EventId;
-        /// Truncated preview of the other pawn's generated text (first ~120 chars + ellipsis).</summary>
+        /// <summary>Truncated preview of the other pawn's generated text (first ~120 chars + ellipsis).</summary>
         public readonly string TruncatedText;
-        /// Whether the other pawn's entry has finished LLM generation.</summary>
+        /// <summary>Whether the other pawn's entry has finished LLM generation.</summary>
         public readonly bool Generated;
 
         public LinkedEntryView(

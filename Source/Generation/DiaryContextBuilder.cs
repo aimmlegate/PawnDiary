@@ -543,7 +543,7 @@ namespace PawnDiary
                 }
 
                 float level = pawn.health.capacities.GetLevel(capacity);
-                if (level < 0.80f)
+                if (level < DiaryTuning.Current.lowCapacityThreshold)
                 {
                     string keyword = CapacityKeyword(capacity, level);
                     if (!string.IsNullOrWhiteSpace(keyword))

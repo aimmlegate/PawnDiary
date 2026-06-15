@@ -4,6 +4,19 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (diary review fixes)**
+  - Fixed diary entry text clipping: `EntryHeight` measured wrapped text at `width - 16f` but the
+    tab drew it at `width - 20f`, so long entries overflowed their card. Both now use `width - 20f`.
+  - Restored the per-pawn persona picker to the Diary tab (it had been hidden during the UI
+    rework, leaving `PersonaFor`/`SetPersona` unreachable). `ControlsHeight` grew to fit it.
+  - Capacity keywords now honor the tunable `lowCapacityThreshold` again instead of a hardcoded
+    `0.80f`; the def default (and `DiaryTuningDef.xml`) is set to `0.80` so behavior is unchanged.
+  - Replaced `IsCombatRelated`'s `defName` substring sniffing with a data-driven `combat` bool on
+    `DiaryInteractionGroupDef` (set `true` on the `insults` group in XML); mirrors the `important` flag.
+  - Cached the roleplay `GUIStyle`s instead of allocating one per line every frame, and measure
+    each entry's height once per frame (reused by the height sum, scroll jump, and draw loop).
+  - Fixed malformed `LinkedEntryView` XML doc comments (missing `<summary>` open tags).
+
 - **2026-06-15 (revised diary context)**
   - Removed `traits=` from pawn summary to reduce token usage and focus on more impactful context.
   - Changed `top_thoughts=` to `thoughts=`: now sends exactly one positive and one negative

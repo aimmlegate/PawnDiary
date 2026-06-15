@@ -17,8 +17,8 @@ namespace PawnDiary
         // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
         private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
 
-        // Vertical space reserved for the per-pawn generation toggle above the scroll view.
-        private const float ControlsHeight = 32f;
+        // Vertical space reserved for the per-pawn generation toggle and persona picker above the scroll view.
+        private const float ControlsHeight = 60f;
         private const float EntryTitleHeight = 28f;
         private const float EntryTextTop = 38f;
         private const float EntryBottomPadding = 10f;
@@ -37,6 +37,12 @@ namespace PawnDiary
         private static readonly Color LinkedEntryBorderColor = new Color(0.35f, 0.45f, 0.55f);
         private static readonly Color LinkedEntryTextColor = new Color(0.65f, 0.70f, 0.75f);
         private static readonly Color LinkedEntryHoverColor = new Color(0.25f, 0.30f, 0.38f, 0.90f);
+
+        // Cached roleplay text styles, reused every frame to avoid allocating a fresh GUIStyle per
+        // line. Built once from the active font, then refreshed (font size + color) on each use so
+        // they still track UI-scale changes. Shared by the measure pass and the draw pass.
+        private static GUIStyle dialogueStyle;
+        private static GUIStyle narrativeStyle;
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
@@ -149,11 +155,19 @@ namespace PawnDiary
 
             // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
             float viewWidth = outRect.width - 16f;
-            // Total scrollable height including 12f bottom padding.
-            float viewHeight = ordered.Sum(entry => EntryHeight(entry, viewWidth)) + 12f;
+            // Measure each card once per frame and reuse the result for the scroll-height sum, the
+            // pending-scroll jump, and the draw loop. Wrapping height is otherwise recomputed two or
+            // three times per entry every frame.
+            float[] heights = new float[ordered.Count];
+            float viewHeight = 12f; // includes 12f bottom padding
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                heights[i] = EntryHeight(ordered[i], viewWidth);
+                viewHeight += heights[i];
+            }
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
 
-            TryApplyPendingScroll(pawn, ordered, viewWidth, viewHeight, outRect.height);
+            TryApplyPendingScroll(pawn, ordered, heights, viewHeight, outRect.height);
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             float curY = 0f;
@@ -161,7 +175,7 @@ namespace PawnDiary
             for (int i = 0; i < ordered.Count; i++)
             {
                 DiaryEntryView entry = ordered[i];
-                float height = EntryHeight(entry, viewRect.width);
+                float height = heights[i];
                 Rect entryRect = new Rect(0f, curY, viewRect.width, height);
 
                 Widgets.DrawMenuSection(entryRect);
@@ -211,7 +225,7 @@ namespace PawnDiary
         /// Consumes a pending Social-tab jump request by placing the target card near the top
         /// of the scroll view. If the entry disappeared before redraw, clear the stale request.
         /// </summary>
-        private void TryApplyPendingScroll(Pawn pawn, List<DiaryEntryView> ordered, float viewWidth, float viewHeight, float outHeight)
+        private void TryApplyPendingScroll(Pawn pawn, List<DiaryEntryView> ordered, float[] heights, float viewHeight, float outHeight)
         {
             if (pawn == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
             {
@@ -236,7 +250,7 @@ namespace PawnDiary
                     return;
                 }
 
-                curY += EntryHeight(entry, viewWidth) + 8f;
+                curY += heights[i] + 8f;
             }
 
             ClearPendingScrollRequest();
@@ -268,7 +282,41 @@ namespace PawnDiary
                 component.SetDiaryGenerationEnabled(pawn, enabled);
             }
 
+            // Persona picker. Options come from DiaryPersonaDefs.xml so new presets can be added
+            // without touching UI code; the choice is saved per pawn and used for future generations.
+            DiaryPersonaDef persona = component.PersonaFor(pawn);
+            if (listing.ButtonText("PawnDiary.Tab.PersonaButton".Translate(PersonaLabel(persona))))
+            {
+                List<FloatMenuOption> options = DiaryPersonas.All
+                    .OrderBy(PersonaLabel)
+                    .Select(option =>
+                    {
+                        DiaryPersonaDef selected = option;
+                        return new FloatMenuOption(PersonaLabel(selected), delegate
+                        {
+                            component.SetPersona(pawn, selected.defName);
+                        });
+                    })
+                    .ToList();
+
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+
             listing.End();
+        }
+
+        /// <summary>
+        /// Returns the human-readable label for a persona, falling back to "default" if null
+        /// or to defName if the label is blank.
+        /// </summary>
+        private static string PersonaLabel(DiaryPersonaDef persona)
+        {
+            if (persona == null)
+            {
+                return "PawnDiary.Persona.DefaultLabel".Translate();
+            }
+
+            return string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label;
         }
 
         /// <summary>
@@ -526,7 +574,9 @@ namespace PawnDiary
         /// </summary>
         private static float EntryHeight(DiaryEntryView entry, float width)
         {
-            float innerWidth = width - 16f;
+            // Must match the draw width in FillTab (entryRect.width - 20f) so the measured wrap
+            // height equals what is actually rendered; a wider measure clips long entries at the bottom.
+            float innerWidth = width - 20f;
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Small;
@@ -607,11 +657,28 @@ namespace PawnDiary
         /// </summary>
         private static GUIStyle RoleplayStyle(bool dialogue, Color dialogueColor)
         {
-            GUIStyle style = new GUIStyle(Text.CurFontStyle)
+            GUIStyle baseStyle = Text.CurFontStyle;
+            GUIStyle style;
+            if (dialogue)
             {
-                wordWrap = true,
-                fontStyle = dialogue ? FontStyle.BoldAndItalic : FontStyle.Italic
-            };
+                if (dialogueStyle == null)
+                {
+                    dialogueStyle = new GUIStyle(baseStyle) { wordWrap = true, fontStyle = FontStyle.BoldAndItalic };
+                }
+                style = dialogueStyle;
+            }
+            else
+            {
+                if (narrativeStyle == null)
+                {
+                    narrativeStyle = new GUIStyle(baseStyle) { wordWrap = true, fontStyle = FontStyle.Italic };
+                }
+                style = narrativeStyle;
+            }
+
+            // Refresh the bits that can change at runtime (UI scale) without reallocating the style.
+            style.font = baseStyle.font;
+            style.fontSize = baseStyle.fontSize;
             style.normal.textColor = dialogue ? dialogueColor : NarrativeColor;
             return style;
         }
