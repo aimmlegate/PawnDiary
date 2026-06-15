@@ -1,5 +1,17 @@
 # Pawn Diary — guide for code agents
 
+<<<<<<< HEAD
+This file is the OpenCode-focused wrapper and shared baseline for all agents.
+Also see:
+- `skills/pawndiary-engineering/SKILL.md` (source-of-truth workflow)
+- `CLAUDE.md` (Claude Code wrapper)
+- `CODEX.md` (Codex wrapper)
+
+**Always keep `DOCUMENTATION.md` up to date.** It is the living design doc for this mod.
+After any change to the mod's behavior or structure, update the affected section of
+`DOCUMENTATION.md` and add a dated line to its Changelog in the same change. Treat the doc
+as part of "done", not an afterthought.
+=======
 Onboarding for anyone (AI agent or human) changing this mod. **Read this once** and the code
 should read easily. For the full architecture, data flow, and settings see `DOCUMENTATION.md`;
 for the dated history see `CHANGELOG.md`.
@@ -44,6 +56,12 @@ for the dated history see `CHANGELOG.md`.
 4. **Build after every change** to confirm it compiles (see *Building* below).
 
 ---
+>>>>>>> origin/main
+
+## Skill routing (critical)
+- Before acting, check whether `skills/pawndiary-engineering/SKILL.md` applies.
+- If it applies, follow it exactly (plan first, smallest safe change, validate, document).
+- Do not skip build validation or documentation updates.
 
 ## Key facts
 
