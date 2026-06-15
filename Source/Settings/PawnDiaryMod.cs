@@ -25,14 +25,14 @@ namespace PawnDiary
         private int fetchGeneration;
         // True while an async model-list request is in flight; disables the button.
         private bool isFetchingModels;
+        // Which API row the current/last fetch targets, so its status + picker show on that row.
+        private int fetchTargetIndex = -1;
         // Human-readable status line shown below the Fetch button.
         private string fetchStatus;
         // DefName of the interaction group currently selected in the instruction editor.
         private string selectedGroupKey;
         // Scroll position for the settings window scroll view.
         private Vector2 settingsScrollPosition;
-        // Ephemeral text buffer for the model-name text field (decouples editing from Settings).
-        private string modelNameEditBuffer;
         // Ephemeral text buffer for the per-group instruction text area.
         private string instructionEditBuffer;
         // Tracks which group instructionEditBuffer belongs to; when the selected group
@@ -54,34 +54,23 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the full settings window: connection fields, model selector,
-        /// concurrency control, system prompt, and per-group instruction editor.
+        /// Draws the full settings window: the API lanes editor (parallel endpoints + models),
+        /// paired-POV toggle, per-lane concurrency control, system prompt, and the per-group
+        /// instruction editor.
         /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
+            Settings.EnsureEndpointsList();
+
             Rect outRect = inRect;
-            Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, 1500f); // 16px reserved for the scrollbar
+            // Height grows with the number of API rows so the scroll view always fits them.
+            float viewHeight = 1300f + Settings.apiEndpoints.Count * 190f + 40f;
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight); // 16px reserved for the scrollbar
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
             listing.Begin(viewRect);
 
-            listing.Label("PawnDiary.Settings.Connection".Translate());
-            Settings.endpointUrl = listing.TextEntryLabeled("PawnDiary.Settings.Endpoint".Translate(), Settings.endpointUrl);
-            Settings.apiKey = listing.TextEntryLabeled("PawnDiary.Settings.ApiKey".Translate(), Settings.apiKey);
-
-            listing.Gap(6f);
-            EnsureModelNameEditBuffer();
-            modelNameEditBuffer = listing.TextEntryLabeled("PawnDiary.Settings.ModelName".Translate(), modelNameEditBuffer);
-            Settings.modelName = modelNameEditBuffer;
-            DrawModelSelector(listing);
-
-            listing.Gap(6f);
-            if (listing.ButtonText((isFetchingModels ? "PawnDiary.Settings.FetchingModels" : "PawnDiary.Settings.FetchModels").Translate()) && !isFetchingModels)
-            {
-                FetchModels();
-            }
-
-            listing.Label(fetchStatus ?? "PawnDiary.Settings.ModelsNotFetched".Translate());
+            DrawApiEndpointsEditor(listing);
 
             listing.Gap(12f);
             listing.CheckboxLabeled(
@@ -92,16 +81,6 @@ namespace PawnDiary
             listing.Label("PawnDiary.Settings.MaxConcurrent".Translate(Settings.maxConcurrentRequests));
             Settings.maxConcurrentRequests = Mathf.RoundToInt(listing.Slider(Settings.maxConcurrentRequests, 1f, 16f));
             listing.Label("PawnDiary.Settings.MaxConcurrentHelp".Translate());
-
-            listing.Gap(12f);
-            if (listing.ButtonText("PawnDiary.Settings.ResetConnection".Translate()))
-            {
-                fetchGeneration++;
-                Settings.ResetConnectionDefaults();
-                fetchedModels.Clear();
-                fetchStatus = "PawnDiary.Settings.ModelsNotFetched".Translate();
-                modelNameEditBuffer = Settings.modelName ?? string.Empty;
-            }
 
             listing.GapLine();
             listing.Label("PawnDiary.Settings.SystemPrompt".Translate());
@@ -132,42 +111,115 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws a button that opens a floating menu of fetched model IDs,
-        /// allowing the user to pick one instead of typing it manually.
+        /// Draws the list of API lanes — one block per row (endpoint, key, model, fetch/pick
+        /// buttons) with a Remove button per row, an Add button below, and a Reset button.
+        /// Requests are spread across these lanes in parallel (see LlmClient / QueuePrompt).
         /// </summary>
-        private void DrawModelSelector(Listing_Standard listing)
+        private void DrawApiEndpointsEditor(Listing_Standard listing)
         {
-            if (listing.ButtonText("PawnDiary.Settings.PickModel".Translate()))
-            {
-                List<FloatMenuOption> options = fetchedModels
-                    .Distinct()
-                    .OrderBy(model => model)
-                    .Select(model => new FloatMenuOption(model, delegate
-                    {
-                        Settings.modelName = model;
-                        modelNameEditBuffer = model;
-                    }))
-                    .ToList();
+            listing.Label("PawnDiary.Settings.ApisHeader".Translate());
+            listing.Gap(2f);
 
-                if (options.Count == 0)
+            // Defer removal until after the loop so we don't mutate the list while drawing it.
+            int removeIndex = -1;
+            for (int i = 0; i < Settings.apiEndpoints.Count; i++)
+            {
+                ApiEndpointConfig endpoint = Settings.apiEndpoints[i];
+                if (endpoint == null)
                 {
-                    options.Add(new FloatMenuOption("PawnDiary.Settings.NoModelsYet".Translate(), null));
+                    continue;
                 }
 
-                Find.WindowStack.Add(new FloatMenu(options));
+                // Row header: "API N" on the left, a Remove button on the right. The last remaining
+                // row keeps no Remove button so there's always at least one lane to configure.
+                Rect headerRect = listing.GetRect(28f);
+                Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, headerRect.width - 110f, headerRect.height);
+                Widgets.Label(headerLabelRect, "PawnDiary.Settings.ApiLabel".Translate(i + 1));
+                if (Settings.apiEndpoints.Count > 1)
+                {
+                    Rect removeRect = new Rect(headerRect.xMax - 100f, headerRect.y, 100f, headerRect.height);
+                    if (Widgets.ButtonText(removeRect, "PawnDiary.Settings.RemoveApi".Translate()))
+                    {
+                        removeIndex = i;
+                    }
+                }
+
+                endpoint.url = listing.TextEntryLabeled("PawnDiary.Settings.Endpoint".Translate(), endpoint.url);
+                endpoint.apiKey = listing.TextEntryLabeled("PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey);
+                endpoint.model = listing.TextEntryLabeled("PawnDiary.Settings.ModelName".Translate(), endpoint.model);
+
+                DrawModelButtons(listing, i, endpoint);
+
+                listing.GapLine();
+            }
+
+            if (removeIndex >= 0)
+            {
+                Settings.apiEndpoints.RemoveAt(removeIndex);
+                // A removed row shifts indices, so any pending fetch result no longer maps cleanly.
+                fetchTargetIndex = -1;
+                fetchedModels.Clear();
+                fetchStatus = null;
+            }
+
+            Rect actionRect = listing.GetRect(28f);
+            Rect addRect = new Rect(actionRect.x, actionRect.y, actionRect.width / 2f - 4f, actionRect.height);
+            Rect resetRect = new Rect(actionRect.x + actionRect.width / 2f + 4f, actionRect.y, actionRect.width / 2f - 4f, actionRect.height);
+
+            if (Widgets.ButtonText(addRect, "PawnDiary.Settings.AddApi".Translate()))
+            {
+                Settings.apiEndpoints.Add(new ApiEndpointConfig(PawnDiarySettings.DefaultEndpointUrl, string.Empty, string.Empty));
+            }
+
+            if (Widgets.ButtonText(resetRect, "PawnDiary.Settings.ResetConnection".Translate()))
+            {
+                fetchGeneration++;
+                Settings.ResetConnectionDefaults();
+                fetchTargetIndex = -1;
+                fetchedModels.Clear();
+                fetchStatus = null;
             }
         }
 
         /// <summary>
-        /// Syncs the model-name edit buffer with the current setting value.
-        /// Replaces the buffer when it is uninitialized or the saved model
-        /// name changed externally (e.g. via the Pick menu or Reset button).
+        /// Draws the per-row Fetch + Pick buttons and the fetch status line. "Fetch models" queries
+        /// that row's endpoint; "Pick fetched model" opens a menu of the results to set the row's model.
         /// </summary>
-        private void EnsureModelNameEditBuffer()
+        private void DrawModelButtons(Listing_Standard listing, int index, ApiEndpointConfig endpoint)
         {
-            if (modelNameEditBuffer == null || (modelNameEditBuffer != Settings.modelName && !string.IsNullOrWhiteSpace(Settings.modelName)))
+            Rect rowRect = listing.GetRect(28f);
+            Rect fetchRect = new Rect(rowRect.x, rowRect.y, rowRect.width / 2f - 4f, rowRect.height);
+            Rect pickRect = new Rect(rowRect.x + rowRect.width / 2f + 4f, rowRect.y, rowRect.width / 2f - 4f, rowRect.height);
+
+            bool fetchingThis = isFetchingModels && fetchTargetIndex == index;
+            if (Widgets.ButtonText(fetchRect, (fetchingThis ? "PawnDiary.Settings.FetchingModels" : "PawnDiary.Settings.FetchModels").Translate()) && !isFetchingModels)
             {
-                modelNameEditBuffer = Settings.modelName ?? string.Empty;
+                FetchModels(index);
+            }
+
+            if (Widgets.ButtonText(pickRect, "PawnDiary.Settings.PickModel".Translate()))
+            {
+                List<FloatMenuOption> options;
+                if (fetchTargetIndex == index && fetchedModels.Count > 0)
+                {
+                    options = fetchedModels
+                        .Distinct()
+                        .OrderBy(model => model)
+                        .Select(model => new FloatMenuOption(model, delegate { endpoint.model = model; }))
+                        .ToList();
+                }
+                else
+                {
+                    options = new List<FloatMenuOption> { new FloatMenuOption("PawnDiary.Settings.NoModelsYet".Translate(), null) };
+                }
+
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+
+            // Show the fetch status under the row that triggered the fetch.
+            if (fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus))
+            {
+                listing.Label(fetchStatus);
             }
         }
 
@@ -287,19 +339,26 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Fetches the list of available model IDs from the configured endpoint
-        /// asynchronously. Uses a generation counter so stale results from
-        /// earlier (or reset) requests are discarded.
+        /// Fetches the list of available model IDs from one API row's endpoint asynchronously,
+        /// and auto-fills that row's model if it has none yet. Uses a generation counter so stale
+        /// results from earlier (or reset) requests are discarded.
         /// </summary>
-        private async void FetchModels()
+        private async void FetchModels(int index)
         {
             int generation = ++fetchGeneration; // capture current generation to detect stale completions
             isFetchingModels = true;
+            fetchTargetIndex = index;
             fetchStatus = "PawnDiary.Settings.FetchingModels".Translate();
 
             try
             {
-                List<string> models = await ModelListClient.FetchModels(Settings.endpointUrl, Settings.apiKey, Settings.timeoutSeconds);
+                if (index < 0 || index >= Settings.apiEndpoints.Count)
+                {
+                    return;
+                }
+
+                ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
+                List<string> models = await ModelListClient.FetchModels(endpoint.url, endpoint.apiKey, Settings.timeoutSeconds);
 
                 if (generation != fetchGeneration)
                     return;
@@ -314,10 +373,9 @@ namespace PawnDiary
                 else
                 {
                     fetchStatus = "PawnDiary.Settings.ModelsFound".Translate(models.Count);
-                    if (string.IsNullOrWhiteSpace(Settings.modelName) || Settings.modelName == PawnDiarySettings.DefaultModelName)
+                    if (string.IsNullOrWhiteSpace(endpoint.model) || endpoint.model == PawnDiarySettings.DefaultModelName)
                     {
-                        Settings.modelName = models[0];
-                        modelNameEditBuffer = models[0];
+                        endpoint.model = models[0];
                     }
                 }
             }

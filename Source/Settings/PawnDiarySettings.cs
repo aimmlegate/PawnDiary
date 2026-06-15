@@ -9,10 +9,52 @@ using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// One configured API "lane": a single OpenAI-compatible endpoint, its optional key, and the
+    /// one model it serves. Many of these can be listed (see <see cref="PawnDiarySettings.apiEndpoints"/>)
+    /// so diary generation is spread across them in parallel. We keep it to one model per row on
+    /// purpose — to use several models you just add several rows (possibly sharing an endpoint).
+    /// Implements <see cref="IExposable"/> so RimWorld can save/load it — see AGENTS.md ("IExposable").
+    /// </summary>
+    public class ApiEndpointConfig : IExposable
+    {
+        // Base URL of the OpenAI-compatible chat completions endpoint (e.g. http://localhost:1234/v1).
+        public string url = PawnDiarySettings.DefaultEndpointUrl;
+        // Model name sent in the request payload. Required — a row with no model is ignored.
+        public string model = string.Empty;
+        // API key (may be empty for local models that don't require auth).
+        public string apiKey = string.Empty;
+
+        public ApiEndpointConfig()
+        {
+        }
+
+        public ApiEndpointConfig(string url, string apiKey, string model)
+        {
+            this.url = url;
+            this.apiKey = apiKey;
+            this.model = model;
+        }
+
+        // Reads/writes the three fields on save and load (Scribe is RimWorld's serializer).
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref url, "url", PawnDiarySettings.DefaultEndpointUrl);
+            Scribe_Values.Look(ref model, "model", string.Empty);
+            Scribe_Values.Look(ref apiKey, "apiKey", string.Empty);
+        }
+    }
+
     public class PawnDiarySettings : ModSettings
     {
         // Master toggle: when false, no LLM requests are made (events are still recorded).
         public bool enableLlm = true;
+        // The configured API lanes used for generation. Requests are distributed across these
+        // round-robin and run in parallel (one in-flight request per lane, see LlmClient).
+        // Seeded from the legacy single-endpoint fields below the first time it's empty.
+        public List<ApiEndpointConfig> apiEndpoints = new List<ApiEndpointConfig>();
+
+        // ---- Legacy single-endpoint fields (kept for migration from older saves) ----
         // Base URL of the OpenAI-compatible chat completions endpoint.
         public string endpointUrl = DefaultEndpointUrl;
         // Model name sent in the request payload.
@@ -65,6 +107,7 @@ namespace PawnDiary
             string legacyChatCompletionsUrl = null;
 
             Scribe_Values.Look(ref enableLlm, "enableLlm", true);
+            Scribe_Collections.Look(ref apiEndpoints, "apiEndpoints", LookMode.Deep);
             Scribe_Values.Look(ref endpointUrl, "endpointUrl", DefaultEndpointUrl);
             Scribe_Values.Look(ref legacyChatCompletionsUrl, "chatCompletionsUrl", null);
             Scribe_Values.Look(ref modelName, "modelName", DefaultModelName);
@@ -89,13 +132,85 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resets only the connection-related fields (URL, model, API key) to their defaults.
+        /// Resets the connection config to a single default API lane (and clears the legacy fields).
         /// </summary>
         public void ResetConnectionDefaults()
         {
             endpointUrl = DefaultEndpointUrl;
             modelName = DefaultModelName;
             apiKey = string.Empty;
+
+            apiEndpoints = new List<ApiEndpointConfig>
+            {
+                new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName)
+            };
+        }
+
+        // ---- API endpoint helpers ----
+
+        /// <summary>
+        /// Guarantees <see cref="apiEndpoints"/> is non-null, migrates a legacy single-endpoint
+        /// config into the list the first time it is empty, and normalizes each row's URL.
+        /// Public so the settings UI can call it before drawing the first frame.
+        /// </summary>
+        public void EnsureEndpointsList()
+        {
+            if (apiEndpoints == null)
+            {
+                apiEndpoints = new List<ApiEndpointConfig>();
+            }
+
+            // Migrate: older saves stored a single endpoint/model/key. Seed the list from those so
+            // existing users keep their configured API with no action needed.
+            if (apiEndpoints.Count == 0)
+            {
+                apiEndpoints.Add(new ApiEndpointConfig(
+                    string.IsNullOrWhiteSpace(endpointUrl) ? DefaultEndpointUrl : endpointUrl,
+                    apiKey ?? string.Empty,
+                    string.IsNullOrWhiteSpace(modelName) ? DefaultModelName : modelName));
+            }
+
+            // Normalize each row's URL the same way the legacy single endpoint is normalized.
+            foreach (ApiEndpointConfig endpoint in apiEndpoints)
+            {
+                if (endpoint == null)
+                {
+                    continue;
+                }
+
+                endpoint.url = EndpointUtility.NormalizeBaseEndpoint(endpoint.url);
+                if (endpoint.apiKey == null)
+                {
+                    endpoint.apiKey = string.Empty;
+                }
+
+                if (endpoint.model == null)
+                {
+                    endpoint.model = string.Empty;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the API lanes usable for generation: those with both a URL and a model.
+        /// A model is required ("force to pick a model"), so blank-model rows are skipped.
+        /// </summary>
+        public List<ApiEndpointConfig> ActiveEndpoints()
+        {
+            EnsureEndpointsList();
+
+            List<ApiEndpointConfig> active = new List<ApiEndpointConfig>();
+            foreach (ApiEndpointConfig endpoint in apiEndpoints)
+            {
+                if (endpoint != null
+                    && !string.IsNullOrWhiteSpace(endpoint.url)
+                    && !string.IsNullOrWhiteSpace(endpoint.model))
+                {
+                    active.Add(endpoint);
+                }
+            }
+
+            return active;
         }
 
         // ---- Interaction group helpers ----
@@ -285,6 +400,8 @@ namespace PawnDiary
             {
                 modelName = DefaultModelName;
             }
+
+            EnsureEndpointsList();
 
             if (systemPrompt == null)
             {

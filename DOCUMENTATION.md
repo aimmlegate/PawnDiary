@@ -311,11 +311,10 @@ immediately.
 
 | Setting | Default | Range / notes |
 |---------|---------|---------------|
-| `endpointUrl` | `http://localhost:1234/v1` | Base URL; `/chat/completions` and `/models` are derived from it. |
-| `apiKey` | _(empty)_ | Sent as `Authorization: Bearer` when set. |
-| `modelName` | `local-model` | Picked via "Fetch models" or typed. |
+| `apiEndpoints` | one row: `http://localhost:1234/v1` / `local-model` | **List of API lanes**, each = base URL + key + **one** model (`ApiEndpointConfig`). Requests spread across rows and run in parallel (§7). Add rows with **+ Add API**; a model is required per row (blank-model rows are skipped). Legacy single-endpoint saves migrate into one row automatically. |
+| `endpointUrl` / `apiKey` / `modelName` | localhost / _(empty)_ / `local-model` | **Legacy** single-endpoint fields, kept only to seed `apiEndpoints` on first load. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
-| `maxConcurrentRequests` | 4 | 1–16. Max requests in flight at once; the rest queue. **Use 1 for a single local model.** |
+| `maxConcurrentRequests` | 4 | 1–16. Max requests in flight **per API**; the rest queue on that API. Different APIs always run in parallel. **Use 1 for a single local model.** |
 | `maxTokens` | 160 | 32–2048. Applied to each one-entry request. |
 | `temperature` | 0.8 | 0–2. |
 | `dualPovGeneration` | true | Paired sequential vs. independent single-POV requests for both sides (§4). |
@@ -323,9 +322,11 @@ immediately.
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
 
-Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents` (connection, model fetch,
-paired POV toggle, concurrency slider, system prompt editor, and the interaction-group editor —
-a checkbox per group plus a prompt editor for the selected group).
+Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`: the **API lanes editor**
+(`DrawApiEndpointsEditor` — per-row endpoint/key/model with per-row "Fetch models" + "Pick",
+**+ Add API** / **− Remove** / **Reset** buttons), paired-POV toggle, per-API concurrency slider,
+system prompt editor, and the interaction-group editor (a checkbox per group plus a prompt editor
+for the selected group). The scroll-view height grows with the number of API rows.
 
 Per-pawn diary controls live in `ITab_Pawn_Diary`, not the global mod settings window. They are
 stored in each pawn's `PawnDiaryRecord`: persona preset and `diaryGenerationEnabled` (default
@@ -335,18 +336,31 @@ enabled). The persona control is temporarily hidden from the tab UI.
 
 ## 7. Concurrency & reliability (`LlmClient`)
 
-- **Queue + gate:** every request passes through a `SemaphoreSlim` sized to
-  `maxConcurrentRequests`. At most N are in flight (awaiting a response/error); the rest
-  wait in line. Requests are **never dropped** for being "too many".
-- **Stuck-request purge:** once a request acquires a slot, a single hard deadline
-  (`timeoutSeconds`) covers the whole request **including retries**. When it fires the
-  request is abandoned, reported as `"Timed out waiting for the model."`, and the slot is
-  freed. The deadline clock starts only after leaving the queue, so waiting in line does
-  not count against it.
+- **Per-API lanes:** each configured API has its own `SemaphoreSlim` gate (keyed by
+  endpoint+model), sized to `maxConcurrentRequests`. At most N requests are in flight **per API**;
+  lanes run independently, so several APIs work in parallel. Requests are **never dropped** for
+  being "too many".
+- **Distribution:** `QueuePrompt` (`DiaryGameComponent`) assigns each new event to the next lane
+  round-robin (`LlmClient.NextRoundRobinIndex`). The recipient half of a paired/sequential event is
+  pinned to the **same lane the initiator used** (matched via the endpoint+model recorded on the
+  event) so a sequential pair stays on one model. No configured lane ⇒ the entry fails with
+  `PawnDiary.Error.NoApiConfigured` (raw text kept if `keepRawEntryOnFailure`).
+- **Failover ("use next model"):** each request carries the chosen lane plus the **other lanes as
+  ordered failover targets** (`failoverTargets`). `SendWithRetries` tries each lane via `TryLane`;
+  a lane that returns a permanent error, exhausts its retries, or times out hands off to the next
+  lane. Only when **every** lane fails is a failure reported. On success the result reports which
+  lane actually produced the text, and `ApplyLlmResult` updates the recorded LLM meta so a paired
+  recipient pins to the model that really worked.
+- **Stuck-request purge:** once a request acquires a lane's slot, a hard deadline (`timeoutSeconds`)
+  covers that **lane attempt including its retries**. When it fires the lane is abandoned (and
+  failover moves on); if it was the last lane, the entry is reported as
+  `"Timed out waiting for the model."` and the slot is freed. The deadline clock starts only after
+  leaving the queue, so waiting in line does not count against it. (Worst-case total wait ≈ lanes ×
+  `timeoutSeconds`.)
 - **Stale-session purge:** `BeginSession` (new game / load) bumps a session id and cancels
   the old token. Requests from an ended session are dropped instead of wasting a slot.
-- **Retries:** up to 3 attempts for transient errors (429, 5xx, network) within the
-  deadline; permanent errors (other 4xx, empty content) fail immediately.
+- **Retries:** up to 3 attempts per lane for transient errors (429, 5xx, network) within that
+  lane's deadline; permanent errors (other 4xx, empty content) skip straight to the next lane.
 
 ---
 

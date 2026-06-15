@@ -4,6 +4,35 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (automatic failover to the next model)**
+  - On an error, a request now **falls over to the next configured API/model** instead of failing.
+    `SendWithRetries` was restructured to try the chosen lane first, then each other lane in order;
+    a lane that hits a permanent error, exhausts its transient retries, or times out hands off to
+    the next. A failure is only reported when **every** lane fails. Per-lane logic was extracted into
+    `TryLane`; candidate order is built by `BuildAttemptTargets` (LlmClient) / `BuildFailoverTargets`
+    (DiaryGameComponent).
+  - The deadline (`timeoutSeconds`) is now **per lane attempt** (worst-case total ≈ lanes × timeout).
+  - `LlmGenerationResult` now reports the lane that actually produced the text (`endpointUrl`,
+    `modelName`); `ApplyLlmResult` updates the recorded LLM meta so the debug block and **paired
+    recipient pinning** follow the lane that really worked, not just the originally chosen one.
+  - Single-API users are unaffected (no other lanes ⇒ no failover; behavior identical to before).
+
+- **2026-06-15 (parallel multi-API generation)**
+  - Settings now hold a **list of API lanes** (`apiEndpoints`, `List<ApiEndpointConfig>`) instead of
+    a single endpoint/key/model. Each lane is one endpoint + key + **one** model; add more rows for
+    more models. Old single-endpoint saves migrate into one row automatically (legacy
+    `endpointUrl`/`apiKey`/`modelName` fields are kept only to seed it).
+  - Diary requests are **distributed across lanes round-robin** and run in parallel. `LlmClient`'s
+    single global concurrency gate became **one gate per lane** (keyed by endpoint+model), each
+    sized to `maxConcurrentRequests`; lanes run independently. Added `LlmClient.NextRoundRobinIndex`.
+  - **Sequential pinning:** in paired dual-POV mode the recipient reuses the **same lane the
+    initiator used** (matched by the endpoint+model recorded on the event), so a sequential pair
+    stays on one model. Target selection lives in `DiaryGameComponent.SelectApiTarget`.
+  - Rebuilt the settings UI as an **array editor** with **+ Add API** / **− Remove** / **Reset**
+    buttons and per-row "Fetch models" + "Pick"; the per-concurrency slider is now labelled per-API.
+  - Added keys `PawnDiary.Settings.ApisHeader/ApiLabel/AddApi/RemoveApi` and
+    `PawnDiary.Error.NoApiConfigured`; updated the max-concurrent help text.
+
 - **2026-06-15 (revised diary context)**
   - Removed `traits=` from pawn summary to reduce token usage and focus on more impactful context.
   - Changed `top_thoughts=` to `thoughts=`: now sends exactly one positive and one negative

@@ -1097,7 +1097,19 @@ namespace PawnDiary
                 return;
             }
 
-            diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildChatCompletionsUrl(PawnDiaryMod.Settings.endpointUrl), PawnDiaryMod.Settings.modelName);
+            // Pick which configured API lane handles this request. New events spread across all
+            // lanes (parallelism); the recipient half of a paired event reuses the initiator's lane
+            // so a sequential pair stays on one model.
+            List<ApiEndpointConfig> targets = PawnDiaryMod.Settings.ActiveEndpoints();
+            if (targets.Count == 0)
+            {
+                diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoApiConfigured".Translate());
+                return;
+            }
+
+            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets);
+
+            diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildChatCompletionsUrl(target.url), target.model);
             diaryEvent.MarkQueued(povRole);
 
             LlmClient.Enqueue(new LlmGenerationRequest
@@ -1106,13 +1118,64 @@ namespace PawnDiary
                 povRole = povRole,
                 systemPrompt = PawnDiaryMod.Settings.systemPrompt,
                 rawText = rawText,
-                endpointUrl = PawnDiaryMod.Settings.endpointUrl,
-                modelName = PawnDiaryMod.Settings.modelName,
-                apiKey = PawnDiaryMod.Settings.apiKey,
+                endpointUrl = target.url,
+                modelName = target.model,
+                apiKey = target.apiKey,
+                // The other configured lanes, tried in order if this one errors ("use next model").
+                failoverTargets = BuildFailoverTargets(targets, target),
                 timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
                 maxTokens = PawnDiaryMod.Settings.maxTokens,
                 temperature = PawnDiaryMod.Settings.temperature
             });
+        }
+
+        /// <summary>
+        /// Chooses the primary API lane for a request from the given active lanes (non-empty).
+        /// The recipient of a paired (dual-POV) event reuses the lane the initiator used — matched
+        /// by the endpoint+model recorded on the event — so the sequential pair shares one model.
+        /// Everything else takes the next lane in round-robin order to spread load across APIs.
+        /// </summary>
+        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets)
+        {
+            // Sequential pinning: keep the recipient on the initiator's lane when paired mode ran
+            // the initiator first and recorded which endpoint+model it used (after failover, the
+            // recorded meta is the lane that actually produced the initiator's entry).
+            if (DualPovEnabled && DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole))
+            {
+                string initiatorEndpoint = diaryEvent.initiatorLlmEndpoint;
+                string initiatorModel = diaryEvent.initiatorLlmModel;
+                if (!string.IsNullOrWhiteSpace(initiatorEndpoint) && !string.IsNullOrWhiteSpace(initiatorModel))
+                {
+                    foreach (ApiEndpointConfig candidate in targets)
+                    {
+                        if (string.Equals(EndpointUtility.BuildChatCompletionsUrl(candidate.url), initiatorEndpoint, StringComparison.OrdinalIgnoreCase)
+                            && string.Equals(candidate.model, initiatorModel, StringComparison.Ordinal))
+                        {
+                            return candidate;
+                        }
+                    }
+                }
+            }
+
+            return targets[LlmClient.NextRoundRobinIndex() % targets.Count];
+        }
+
+        /// <summary>
+        /// Returns the lanes to fall back to (every active lane except the chosen primary), in order,
+        /// so a request that errors on its primary lane can retry on the others.
+        /// </summary>
+        private static List<ApiEndpointConfig> BuildFailoverTargets(List<ApiEndpointConfig> targets, ApiEndpointConfig primary)
+        {
+            List<ApiEndpointConfig> failovers = new List<ApiEndpointConfig>();
+            foreach (ApiEndpointConfig candidate in targets)
+            {
+                if (!ReferenceEquals(candidate, primary))
+                {
+                    failovers.Add(candidate);
+                }
+            }
+
+            return failovers;
         }
 
 
@@ -1166,6 +1229,15 @@ namespace PawnDiary
             }
 
             diaryEvent.ApplyLlmResult(result);
+
+            // Record the lane that actually produced the text. After failover this may differ from
+            // the primary lane chosen at queue time, so updating it here keeps the debug block
+            // accurate and lets a paired recipient pin to the model the initiator really used.
+            if (result.success && !string.IsNullOrWhiteSpace(result.endpointUrl) && !string.IsNullOrWhiteSpace(result.modelName))
+            {
+                diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildChatCompletionsUrl(result.endpointUrl), result.modelName);
+            }
+
             QueueRecipientAfterInitiatorResult(diaryEvent, result);
         }
 

@@ -44,6 +44,10 @@
   <!-- ===== Mod settings window ===== -->
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Connection</PawnDiary.Settings.Connection>
+  <PawnDiary.Settings.ApisHeader>APIs — added here run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
+  <PawnDiary.Settings.ApiLabel>API {0}</PawnDiary.Settings.ApiLabel>
+  <PawnDiary.Settings.AddApi>+ Add API</PawnDiary.Settings.AddApi>
+  <PawnDiary.Settings.RemoveApi>− Remove</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>API key</PawnDiary.Settings.ApiKey>
   <PawnDiary.Settings.ModelName>Model name</PawnDiary.Settings.ModelName>
@@ -55,8 +59,8 @@
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
   <PawnDiary.Settings.PairedPov>Paired POV generation</PawnDiary.Settings.PairedPov>
   <PawnDiary.Settings.PairedPovTip>Generate pairwise diary entries sequentially: initiator first, then recipient with the initiator entry as hidden context. Disable to generate only the first POV immediately and let other POVs generate lazily.</PawnDiary.Settings.PairedPovTip>
-  <PawnDiary.Settings.MaxConcurrent>Max concurrent requests: {0}</PawnDiary.Settings.MaxConcurrent>
-  <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight (awaiting a model response) at once; the rest wait in the queue. Use 1 for a single local model that handles one request at a time; raise it only if your endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
+  <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
+  <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
   <PawnDiary.Settings.SystemPrompt>System prompt</PawnDiary.Settings.SystemPrompt>
   <PawnDiary.Settings.RestoreSystemPrompt>Restore default system prompt</PawnDiary.Settings.RestoreSystemPrompt>
@@ -84,6 +88,7 @@
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because initiator diary generation failed.</PawnDiary.Error.SkippedInitiatorFailed>
   <PawnDiary.Error.NoLlmSettings>LLM settings are not available.</PawnDiary.Error.NoLlmSettings>
+  <PawnDiary.Error.NoApiConfigured>No API is configured. Add an endpoint and model in the mod settings.</PawnDiary.Error.NoApiConfigured>
 
   <!-- ===== Prompt context: descriptive words the model reads (the field KEYS stay English) ===== -->
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>

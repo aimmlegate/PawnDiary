@@ -43,6 +43,13 @@ namespace PawnDiary
         /// <summary>Bearer token for API authentication; may be empty for local endpoints.</summary>
         public string apiKey;
 
+        /// <summary>
+        /// Ordered alternate lanes (endpoint + key + model) to try if the primary lane above errors —
+        /// "on error, use the next model". Optional; null/empty means no failover. Populated by the
+        /// diary system with the other configured APIs.
+        /// </summary>
+        public List<ApiEndpointConfig> failoverTargets;
+
         /// <summary>Per-request wall-clock timeout in seconds. Also used as an overall deadline across retries.</summary>
         public int timeoutSeconds;
 
@@ -79,6 +86,13 @@ namespace PawnDiary
 
         /// <summary>Human-readable error message when <see cref="success"/> is false.</summary>
         public string error;
+
+        /// <summary>Base URL of the API lane that actually produced the text — may differ from the
+        /// primary lane after failover. Used to keep the recorded LLM meta (and recipient pinning) accurate.</summary>
+        public string endpointUrl;
+
+        /// <summary>Model of the API lane that actually produced the text (see <see cref="endpointUrl"/>).</summary>
+        public string modelName;
     }
 
     /// <summary>
@@ -113,10 +127,15 @@ namespace PawnDiary
         /// <summary>Monotonically increasing ID so stale results from previous sessions are ignored.</summary>
         private static long currentSessionId;
 
-        // Gates how many requests may actually be in flight (awaiting a response or
-        // error from the model) at once. Everything else waits in line rather than
-        // being dropped. The limit is configurable; this is just the pre-session value.
-        private static SemaphoreSlim sendGate = new SemaphoreSlim(4, MaxConcurrencyCap);
+        // One gate per API lane (keyed by endpoint+model). Each lane caps how many of its own
+        // requests are in flight at once; lanes run independently so several APIs work in
+        // parallel. The cap per lane is `maxConcurrentRequests` (set it to 1 for a local model
+        // that serves one request at a time). Gates are created lazily and rebuilt when the limit changes.
+        private static ConcurrentDictionary<string, SemaphoreSlim> sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+
+        // Rotates over the configured API lanes so successive requests spread across them.
+        // Incremented atomically because requests may be enqueued from different threads.
+        private static int roundRobinCounter = -1;
 
         /// <summary>
         /// Starts a new session, cancelling all in-flight requests from the previous one
@@ -126,22 +145,52 @@ namespace PawnDiary
         {
             CancellationTokenSource oldCancellation = sessionCancellation;
             sessionCancellation = new CancellationTokenSource();
-            sendGate = new SemaphoreSlim(ResolveConcurrency(), MaxConcurrencyCap);
+            sendGates = new ConcurrentDictionary<string, SemaphoreSlim>(); // fresh per-lane gates at the current limit
             Interlocked.Increment(ref currentSessionId); // bump so stale results are ignored
             ClearCompleted();
             oldCancellation.Cancel(); // abort all in-flight requests from previous session
         }
 
         /// <summary>
-        /// Replaces the concurrency gate with a fresh semaphore reflecting the latest
-        /// user setting. Safe to call at any time — in-flight workers hold their own
-        /// gate reference and release that one.
+        /// Discards the per-lane gates so the next request rebuilds them at the latest
+        /// user limit. Safe to call at any time — in-flight workers hold their own gate
+        /// reference and release that one, so they never touch the new gates.
         /// </summary>
         public static void ApplyConcurrency()
         {
             // Safe to swap at any time: in-flight workers hold their own gate reference
-            // and release that one, so they never touch this new semaphore.
-            sendGate = new SemaphoreSlim(ResolveConcurrency(), MaxConcurrencyCap);
+            // and release that one, so they never touch these new gates.
+            sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+        }
+
+        /// <summary>
+        /// Returns the next round-robin index for spreading new events across the configured
+        /// API lanes. Callers take it modulo the lane count. Always non-negative.
+        /// </summary>
+        public static int NextRoundRobinIndex()
+        {
+            // Mask off the sign so the value stays non-negative even after Int32 overflow.
+            return Interlocked.Increment(ref roundRobinCounter) & int.MaxValue;
+        }
+
+        /// <summary>
+        /// Builds the gate key identifying an API lane: its endpoint plus model. Requests
+        /// sharing both share a lane (and therefore its in-flight cap).
+        /// </summary>
+        private static string GateKey(LlmGenerationRequest request)
+        {
+            string endpoint = (request.endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
+            string model = (request.modelName ?? string.Empty).Trim();
+            return endpoint + "\n" + model;
+        }
+
+        /// <summary>
+        /// Gets the gate for a lane, creating it at the current per-lane limit on first use.
+        /// </summary>
+        private static SemaphoreSlim GetOrCreateGate(LlmGenerationRequest request)
+        {
+            string key = GateKey(request);
+            return sendGates.GetOrAdd(key, _ => new SemaphoreSlim(ResolveConcurrency(), MaxConcurrencyCap));
         }
 
         /// <summary>
@@ -188,9 +237,9 @@ namespace PawnDiary
                 return;
             }
 
-            // Capture the gate for this session so a later BeginSession that swaps in a
-            // new gate can't cause this worker to release the wrong semaphore.
-            SemaphoreSlim gate = sendGate;
+            // Capture this lane's gate now so a later BeginSession/ApplyConcurrency that swaps in
+            // fresh gates can't cause this worker to release the wrong semaphore.
+            SemaphoreSlim gate = GetOrCreateGate(request);
             Task.Run(() => SendWithRetries(request, gate));
         }
 
@@ -216,139 +265,225 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Core async loop: acquires a semaphore slot, applies a hard deadline across all
-        /// retry attempts, and retries transient errors up to <see cref="MaxAttempts"/> times
-        /// with linear back-off. Permanent errors or exhausted retries produce a failed result.
+        /// Outcome of one API lane attempt, used to decide between reporting success, failing over
+        /// to the next lane, or dropping the request because the session ended.
         /// </summary>
-        private static async Task SendWithRetries(LlmGenerationRequest request, SemaphoreSlim gate)
+        private sealed class LaneResult
         {
-            string lastError = null;
+            public bool Success;
+            public string Text;
+            public string Error;
+            public bool Cancelled; // session ended mid-flight — abort entirely, no failover
+        }
+
+        /// <summary>
+        /// Tries each configured lane in turn ("on error, use the next model"): the chosen lane
+        /// first, then the failover lanes. A lane that returns a permanent error, exhausts its
+        /// transient retries, or times out hands off to the next lane. Success reports which lane
+        /// actually produced the text. Only when every lane fails is a failed result reported.
+        /// </summary>
+        private static async Task SendWithRetries(LlmGenerationRequest request, SemaphoreSlim primaryGate)
+        {
             string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId);
+            string lastError = null;
 
             try
             {
-                // Wait our turn before touching the model, so at most N requests are
-                // ever in flight. Time spent queued here does not count against the
-                // per-request deadline below.
-                await gate.WaitAsync(request.cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                PendingKeys.TryRemove(pendingKey, out _);
-                return;
-            }
+                List<ApiEndpointConfig> targets = BuildAttemptTargets(request);
 
-            try
-            {
-                // Drop requests whose session ended while they were queued, instead of
-                // wasting a slot on a result nobody will read.
-                if (request.sessionId != Interlocked.Read(ref currentSessionId))
+                for (int t = 0; t < targets.Count; t++)
                 {
-                    return;
-                }
+                    // Point the request at this lane so the gate key, HTTP call, and reported
+                    // result all reflect the model we are about to try.
+                    ApiEndpointConfig target = targets[t];
+                    request.endpointUrl = target.url;
+                    request.apiKey = target.apiKey;
+                    request.modelName = target.model;
 
-                // Hard deadline for the whole request (across retries). Once it fires we
-                // stop waiting on the model and free the slot, so a stuck request can't
-                // hold up the queue.
-                using (CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(request.cancellationToken))
-                {
-                    // Floor at 5s so a bad setting of "0" doesn't instantly cancel everything
-                    deadline.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, request.timeoutSeconds)));
+                    // Reuse the gate captured at enqueue for the first lane; create per-lane gates
+                    // for failover lanes. Each is acquired and released as the same reference here.
+                    SemaphoreSlim gate = (t == 0) ? primaryGate : GetOrCreateGate(request);
 
-                    for (int attempt = 1; attempt <= MaxAttempts; attempt++)
+                    try
                     {
-                        try
+                        // Wait our turn before touching the model, so at most N requests are ever
+                        // in flight per lane. Time spent queued here does not count against the
+                        // per-lane deadline below.
+                        await gate.WaitAsync(request.cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return; // session ended while queued
+                    }
+
+                    try
+                    {
+                        // Drop requests whose session ended while they were queued, instead of
+                        // wasting a slot on a result nobody will read.
+                        if (request.sessionId != Interlocked.Read(ref currentSessionId))
                         {
-                            string generatedText = await SendOnce(request, deadline.Token);
+                            return;
+                        }
+
+                        LaneResult outcome = await TryLane(request);
+                        if (outcome.Cancelled)
+                        {
+                            return; // session cancelled mid-flight: drop quietly
+                        }
+
+                        if (outcome.Success)
+                        {
                             Completed.Enqueue(new LlmGenerationResult
                             {
                                 eventId = request.eventId,
                                 povRole = request.povRole,
                                 sessionId = request.sessionId,
                                 success = true,
-                                generatedText = generatedText
+                                generatedText = outcome.Text,
+                                endpointUrl = request.endpointUrl,
+                                modelName = request.modelName
                             });
                             return;
                         }
-                        catch (LlmPermanentException ex)
-                        {
-                            Completed.Enqueue(new LlmGenerationResult
-                            {
-                                eventId = request.eventId,
-                                povRole = request.povRole,
-                                sessionId = request.sessionId,
-                                success = false,
-                                error = ex.Message
-                            });
-                            return;
-                        }
-                        catch (Exception ex) when (IsTransientException(ex))
-                        {
-                            lastError = ex.Message;
-                            // If the overall deadline already fired, stop retrying immediately
-                            if (deadline.IsCancellationRequested)
-                            {
-                                break;
-                            }
 
-                            if (attempt < MaxAttempts)
-                            {
-                                await Task.Delay(500 * attempt, deadline.Token); // linear back-off: 0.5s, 1s, ...
-                            }
-                        }
-                        catch (Exception ex) // unexpected / non-transient: fail immediately
-                        {
-                            Completed.Enqueue(new LlmGenerationResult
-                            {
-                                eventId = request.eventId,
-                                povRole = request.povRole,
-                                sessionId = request.sessionId,
-                                success = false,
-                                error = ex.Message
-                            });
-                            return;
-                        }
+                        lastError = outcome.Error; // this lane failed — fall through to the next one
                     }
-
-                    // Session ended mid-flight: drop quietly, the result is stale.
-                    if (request.cancellationToken.IsCancellationRequested)
+                    finally
                     {
-                        return;
+                        gate.Release();
                     }
-
-                    Completed.Enqueue(new LlmGenerationResult
-                    {
-                        eventId = request.eventId,
-                        povRole = request.povRole,
-                        sessionId = request.sessionId,
-                        success = false,
-                        error = deadline.IsCancellationRequested
-                            ? "Timed out waiting for the model."
-                            : (lastError ?? "Unknown network error.")
-                    });
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                // Reaches here if the deadline fired during a backoff delay. A real
-                // session cancellation is dropped; a timeout is reported as a failure.
-                if (!request.cancellationToken.IsCancellationRequested)
+
+                // Every lane failed. Drop quietly if the session ended; otherwise report the last error.
+                if (request.cancellationToken.IsCancellationRequested)
                 {
-                    Completed.Enqueue(new LlmGenerationResult
-                    {
-                        eventId = request.eventId,
-                        povRole = request.povRole,
-                        sessionId = request.sessionId,
-                        success = false,
-                        error = "Timed out waiting for the model."
-                    });
+                    return;
                 }
+
+                Completed.Enqueue(new LlmGenerationResult
+                {
+                    eventId = request.eventId,
+                    povRole = request.povRole,
+                    sessionId = request.sessionId,
+                    success = false,
+                    error = lastError ?? "Unknown network error."
+                });
             }
             finally
             {
-                gate.Release();
                 PendingKeys.TryRemove(pendingKey, out _);
             }
+        }
+
+        /// <summary>
+        /// Runs a single lane: the transient-retry loop under a per-lane hard deadline. Returns
+        /// success+text, failure+error (so the caller can try the next lane), or Cancelled when the
+        /// session ended. Never throws for normal network/timeout outcomes.
+        /// </summary>
+        private static async Task<LaneResult> TryLane(LlmGenerationRequest request)
+        {
+            // Hard deadline for this lane (across its retries). Once it fires we stop waiting on the
+            // model and free the slot, so a stuck lane can't hold up the queue — we move to the next.
+            using (CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(request.cancellationToken))
+            {
+                // Floor at 5s so a bad setting of "0" doesn't instantly cancel everything.
+                deadline.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, request.timeoutSeconds)));
+
+                string lastError = null;
+                for (int attempt = 1; attempt <= MaxAttempts; attempt++)
+                {
+                    try
+                    {
+                        string generatedText = await SendOnce(request, deadline.Token);
+                        return new LaneResult { Success = true, Text = generatedText };
+                    }
+                    catch (LlmPermanentException ex)
+                    {
+                        return new LaneResult { Success = false, Error = ex.Message }; // won't improve on retry — try the next lane
+                    }
+                    catch (Exception ex) when (IsTransientException(ex))
+                    {
+                        lastError = ex.Message;
+                        // If the deadline already fired, stop retrying this lane immediately.
+                        if (deadline.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        if (attempt < MaxAttempts)
+                        {
+                            try
+                            {
+                                await Task.Delay(500 * attempt, deadline.Token); // linear back-off: 0.5s, 1s, ...
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                break; // deadline (or session) fired during back-off
+                            }
+                        }
+                    }
+                    catch (Exception ex) // unexpected / non-transient
+                    {
+                        return new LaneResult { Success = false, Error = ex.Message }; // try the next lane
+                    }
+                }
+
+                // A real session cancellation is dropped; a timeout/exhausted retries fails over.
+                if (request.cancellationToken.IsCancellationRequested)
+                {
+                    return new LaneResult { Cancelled = true };
+                }
+
+                return new LaneResult
+                {
+                    Success = false,
+                    Error = deadline.IsCancellationRequested
+                        ? "Timed out waiting for the model."
+                        : (lastError ?? "Unknown network error.")
+                };
+            }
+        }
+
+        /// <summary>
+        /// Builds the ordered list of lanes to attempt: the request's primary lane first, then any
+        /// failover lanes, skipping blanks and duplicates. Always contains at least the primary.
+        /// Returns fresh copies so mutating the in-flight request never touches the settings objects.
+        /// </summary>
+        private static List<ApiEndpointConfig> BuildAttemptTargets(LlmGenerationRequest request)
+        {
+            List<ApiEndpointConfig> targets = new List<ApiEndpointConfig>
+            {
+                new ApiEndpointConfig(request.endpointUrl, request.apiKey, request.modelName)
+            };
+
+            if (request.failoverTargets != null)
+            {
+                foreach (ApiEndpointConfig candidate in request.failoverTargets)
+                {
+                    if (candidate == null || string.IsNullOrWhiteSpace(candidate.url) || string.IsNullOrWhiteSpace(candidate.model))
+                    {
+                        continue;
+                    }
+
+                    bool duplicate = false;
+                    foreach (ApiEndpointConfig existing in targets)
+                    {
+                        if (string.Equals(existing.url, candidate.url, StringComparison.OrdinalIgnoreCase)
+                            && string.Equals(existing.model, candidate.model, StringComparison.Ordinal))
+                        {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+
+                    if (!duplicate)
+                    {
+                        targets.Add(new ApiEndpointConfig(candidate.url, candidate.apiKey, candidate.model));
+                    }
+                }
+            }
+
+            return targets;
         }
 
         /// <summary>
