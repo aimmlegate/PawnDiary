@@ -4,6 +4,15 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (dev-gated diary tab controls)**
+  - Hid the per-pawn persona picker from the normal Diary tab. RimWorld dev mode now shows a
+    "Show persona settings" toggle that reveals the manual persona picker only when needed.
+  - Added a dev-mode-only "Show LLM debug info" toggle. When enabled, the Diary tab shows
+    raw/pending/failed entries plus the existing endpoint/model/status/error/prompt diagnostic
+    block; normal mode keeps the production-only generated-entry view.
+  - Confirmed the Diary inspector tab injection remains immediately after the vanilla Social tab,
+    and corrected UI comments/docs that still referenced older tab positions.
+
 - **2026-06-15 (trait/backstory-aware, colony-deduplicated initial persona roll)**
   - New pawns no longer get a uniform-random persona. `DiaryPersonas.WeightedStartingPersona`
     (`Source/Defs/DiaryPersonaDef.cs`) now rolls the *initial* voice with a weight per persona,

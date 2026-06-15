@@ -82,6 +82,10 @@ namespace PawnDiary
         public bool dualPovGeneration = true;
         // UI preference: when false, the compact API/model setup block is collapsed in mod settings.
         public bool showApiSettings = true;
+        // Dev-mode UI preference: shows the per-pawn persona picker in the Diary inspector tab.
+        public bool showPersonaSettings = false;
+        // Dev-mode UI preference: shows raw/pending entries and the LLM prompt/status diagnostic block.
+        public bool showLlmDebugInfo = false;
         // System message sent with each LLM request to set the model's behavior.
         public string systemPrompt = DefaultSystemPrompt;
 
@@ -126,6 +130,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref keepRawEntryOnFailure, "keepRawEntryOnFailure", true);
             Scribe_Values.Look(ref dualPovGeneration, "dualPovGeneration", true);
             Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
+            Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
+            Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
             Scribe_Values.Look(ref systemPrompt, "systemPrompt", DefaultSystemPrompt);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
