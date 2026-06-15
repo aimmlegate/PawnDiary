@@ -4,7 +4,7 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-15 (linked diary entries between pawns)_
+_Last updated: 2026-06-15 (revised diary context: thoughts, capacities, passions, last opener)_
 
 ---
 
@@ -201,7 +201,11 @@ Prompts are assembled line-by-line via `AppendField`, which **drops any field th
 or a placeholder** (`none` / `n/a` / `unknown`). Builders are written to return empty when
 there's nothing worth saying, so the model never spends tokens on noise:
 - **Persona**: the selected writing-style rule is sent as a `persona:` line, separate from
-  gameplay facts such as mood, traits, and relationship.
+  gameplay facts such as mood and relationship.
+- **Pawn summary** (`BuildPawnSummary`): compact profile — `sex=`, `age=`, `mood=` (bucket + %),
+  `health=` (empty when healthy), `low_capacities=` (only Moving/Talking/Sight/Hearing when
+  below 80%, using localized keyword labels like "impaired movement"), `thoughts=` (exactly one
+  positive and one negative thought, weighted random so stronger effects are more likely).
 - **Surroundings** (`BuildSurroundingsSummary`): weather and biome only when **outdoors**;
   temperature only when actually cold (≤0°C) or hot (≥32°C); beauty only when notably nice
   or grim; nearby things / current job only when present.
@@ -213,6 +217,11 @@ there's nothing worth saying, so the model never spends tokens on noise:
   workers are not recalculated here) + **last wrote** (the
   most recent diary line that pawn produced about the other — a lightweight memory layer for
   continuity).
+- **My last opener** (`LatestDiaryOpener`): the first sentence of the pawn's most recent diary
+  entry, included as a hint to avoid repetitive openings. Empty for the first entry.
+- **Burning passion** (`RandomBurningPassion`): a randomly selected passion (major 3x weight,
+  minor 1x weight) from the pawn's skills, shown as `"Mining (burning)"` for major or
+  `"Plants"` for minor. Only included for **important events** (not small talk, chit chat, etc.).
 - Dropped from prompts entirely (still stored on the event): raw per-beat logs,
   `shared_event`, `sequence`, `game`/worker details, and the separate `opinions` line.
 
@@ -408,8 +417,9 @@ stray English biases the model toward writing in English when the player runs a 
 **Kept in English on purpose — a stable machine "schema", not prose:**
 - The structured prompt **field labels** in `DiaryPromptBuilder` (`event:`, `pov:`, `role:`,
   `with:`, `what you saw:`, `what happened:`, `you:`, `persona:`, `setting:`, `relationship:`,
-  `instruction:`, `initiator diary (hidden context):`) and the `key=` summary sub-keys in
-  `BuildPawnSummary` (`sex=`, `age=`, `traits=`, `mood=`, `health=`, …).
+  `my last opener (not repeat):`, `burning passion:`, `instruction:`,
+  `initiator diary (hidden context):`) and the `key=` summary sub-keys in
+  `BuildPawnSummary` (`sex=`, `age=`, `mood=`, `health=`, `low_capacities=`, `thoughts=`, …).
 - The `initiator` / `recipient` role words, and the `none` / `n/a` / `unknown` skip-sentinels
   that `AppendField` filters on.
 

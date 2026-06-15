@@ -4,6 +4,24 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (revised diary context)**
+  - Removed `traits=` from pawn summary to reduce token usage and focus on more impactful context.
+  - Changed `top_thoughts=` to `thoughts=`: now sends exactly one positive and one negative
+    thought, selected via weighted random (stronger effects are more likely to be chosen).
+  - Changed `low_capacities=` to only show Moving, Talking, Sight, and Hearing when below 80%,
+    using localized keyword labels (e.g. "impaired movement") instead of percentages.
+  - Added `my last opener (not repeat):` field — the first sentence of the pawn's most recent
+    diary entry, included as a hint to avoid repetitive openings.
+  - Added `burning passion:` field — a randomly selected passion (major 3x weight, minor 1x
+    weight) from the pawn's skills. Only included for important events (not small talk, chit
+    chat, etc.). Major passions show as `"Mining (burning)"`, minor as `"Plants"`.
+  - Added `IsImportant()` method to `DiaryEvent` to check if the event's group is important.
+  - Added `RandomBurningPassion()` and `LatestDiaryOpener()` methods to `DiaryContextBuilder`.
+  - Added `initiatorLastOpener`, `recipientLastOpener`, `initiatorBurningPassion`,
+    `recipientBurningPassion` fields to `DiaryEvent` with save/load support.
+  - Added capacity keyword localization keys: `PawnDiary.Capacity.Moving`,
+    `PawnDiary.Capacity.Talking`, `PawnDiary.Capacity.Sight`, `PawnDiary.Capacity.Hearing`.
+
 - **2026-06-15 (linked diary entries between pawns)**
   - Added `LinkedEntryView` model: a compact, truncated preview of the other pawn's diary
     entry for the same interaction event, attached to each `DiaryEntryView`.
