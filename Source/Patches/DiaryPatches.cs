@@ -2,7 +2,7 @@
 // two methods with Postfixes that run AFTER the originals to catch the events we care about:
 // PlayLog.Add (every social interaction) and MentalStateHandler.TryStartMentalState (social
 // fights + mental breaks). Each just forwards to DiaryGameComponent. AccessTools.Field reads
-// private vanilla fields via reflection. New to this? See CSHARP-NOTES.md ("Harmony patches").
+// private vanilla fields via reflection. New to this? See AGENTS.md ("Harmony patches").
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;

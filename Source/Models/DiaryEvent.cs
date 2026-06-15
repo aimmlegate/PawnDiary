@@ -72,7 +72,7 @@ namespace PawnDiary
         // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
         // keys written to the save file — renaming one breaks existing saves. The PostLoadInit
         // block below back-fills defaults/normalizes status when loading older saves.
-        // See CSHARP-NOTES.md ("IExposable").
+        // See AGENTS.md ("IExposable").
         public void ExposeData()
         {
             Scribe_Values.Look(ref eventId, "eventId");
