@@ -62,7 +62,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 |------|----------------|
 | `About/About.xml` | Mod metadata. `packageId = aimml.pawndiary`, supports RimWorld 1.6. |
 | `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`) and the `InteractionGroups` classifier over the `DefDatabase`. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts are editable without recompiling. |
-| `Languages/English/Keyed/PawnDiary.xml` | UI strings (currently the Diary tab label). |
+| `Languages/English/Keyed/PawnDiary.xml` | All player-facing UI strings **and** the natural-language prompt text (event sentences, context words, buckets), resolved via `.Translate()`. See §12 Localization. |
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the Log tab on humanlike pawn defs. |
@@ -377,7 +377,53 @@ Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load t
 
 ---
 
-## 12. Changelog
+## 12. Localization
+
+The mod is **localization-ready**: every player-facing UI string and every natural-language
+word fed to the LLM is a key in `Languages/English/Keyed/PawnDiary.xml`, resolved at runtime via
+`"Key".Translate()`. RimWorld resolves `.Translate()` against the **game's active language**, so
+translating that one file (plus the DefInjected text below) localizes the whole mod — *including
+the prompt the model reads*. That is the point: with the prompt scaffolding also translated, no
+stray English biases the model toward writing in English when the player runs a translated game.
+
+**Kept in English on purpose — a stable machine "schema", not prose:**
+- The structured prompt **field labels** in `DiaryPromptBuilder` (`event:`, `pov:`, `role:`,
+  `with:`, `what you saw:`, `what happened:`, `you:`, `persona:`, `setting:`, `relationship:`,
+  `instruction:`, `initiator diary (hidden context):`) and the `key=` summary sub-keys in
+  `BuildPawnSummary` (`sex=`, `age=`, `traits=`, `mood=`, `health=`, …).
+- The `initiator` / `recipient` role words, and the `none` / `n/a` / `unknown` skip-sentinels
+  that `AppendField` filters on.
+
+These read like JSON keys; the (translated) instruction drives the output language. Only the
+*values* beside them — buckets (`happy`, `beautiful`, `hostile`…), state words (`outdoors`,
+`downed`, `corpse of …`), and full event sentences — are localized.
+
+**Also left in English** (not normal player-facing prose): the greyed `LLM debug` block under
+each entry, and `LlmClient` network-error messages — the latter are built on background threads,
+where `.Translate()` is not thread-safe.
+
+**Def-based text** (persona `rule`, group `label` / `instruction`, and `DiaryPromptDef`'s
+`systemPrompt` + wrapped instructions) is localized the RimWorld way — via
+`Languages/<lang>/DefInjected/…`, not Keyed. The English in `1.6/Defs/*.xml` (and the C# field
+defaults) is the source/fallback.
+
+**To add a language:** copy `Languages/English` to `Languages/<Language>`, translate the Keyed
+values, and (optionally) add `DefInjected` files for the persona/group/prompt Def text.
+
+---
+
+## 13. Changelog
+
+- **2026-06-15 (localization-friendly strings)**
+  - Moved all UI strings (settings window, diary tab, entry status) and all natural-language
+    prompt text (event fallback sentences, surroundings/relationship/health words, and the
+    mood/beauty/pain/opinion buckets) into `Languages/English/Keyed/PawnDiary.xml`, resolved via
+    `.Translate()`. See §12.
+  - Structured prompt field keys (`pov:`, `setting:`, `sex=`, …), the `initiator`/`recipient`
+    role words, and the `none`/`n/a`/`unknown` skip-sentinels stay English as a stable schema;
+    the `LLM debug` block and background-thread `LlmClient` errors stay English too.
+  - No behavior change for English players; a translator can now localize **both** the UI and the
+    LLM prompt by translating one Keyed file (plus DefInjected for the persona/group/prompt Defs).
 
 - **2026-06-15 (agent guidance doc rename)**
   - Replaced `CLAUDE.md` with `AGENTS.md` so shared repository agent rules are tool-agnostic.

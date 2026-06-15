@@ -1,4 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  English strings for the Pawn Diary mod. These are the DEFAULT language values; a translator
+  can localize the whole mod (UI *and* the text fed to the LLM) by copying this file under
+  Languages/<Language>/Keyed/ and translating the values - no code changes needed.
+
+  Two deliberate exceptions are kept in English as a stable machine "schema" and are NOT keyed:
+    - The structured prompt field labels (event:, pov:, role:, with:, setting:, you=, mood=, ...)
+      and the initiator/recipient role words, in DiaryPromptBuilder / DiaryContextBuilder.
+    - The greyed-out "LLM debug" diagnostic block under each entry, and the LlmClient network
+      error messages (the latter are built on background threads, where .Translate() is unsafe).
+  Everything a player reads, and every natural-language word the model reads, lives here.
+
+  Placeholders: {0}, {1}, ... are filled in by the code in order.
+-->
 <LanguageData>
+
+  <!-- Inspector tab label (next to the vanilla Log tab) -->
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
+
+  <!-- ===== Diary tab UI ===== -->
+  <PawnDiary.Tab.DiaryHeader>{0}'s Diary</PawnDiary.Tab.DiaryHeader>
+  <PawnDiary.Tab.NoEntries>No interactions have been recorded yet.</PawnDiary.Tab.NoEntries>
+  <PawnDiary.Tab.GenerateForPawn>Generate diary entries for this pawn</PawnDiary.Tab.GenerateForPawn>
+  <PawnDiary.Tab.GenerateForPawnTip>When disabled, events are still recorded here, but no LLM request is sent for this pawn.</PawnDiary.Tab.GenerateForPawnTip>
+  <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
+  <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
+
+  <!-- Per-entry status shown in the entry header -->
+  <PawnDiary.Status.Generating>generating</PawnDiary.Status.Generating>
+  <PawnDiary.Status.Writing>writing</PawnDiary.Status.Writing>
+  <PawnDiary.Status.WritingEllipsis>writing...</PawnDiary.Status.WritingEllipsis>
+  <PawnDiary.Status.GenerationFailed>generation failed</PawnDiary.Status.GenerationFailed>
+
+  <!-- ===== Mod settings window ===== -->
+  <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
+  <PawnDiary.Settings.Connection>Connection</PawnDiary.Settings.Connection>
+  <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
+  <PawnDiary.Settings.ApiKey>API key</PawnDiary.Settings.ApiKey>
+  <PawnDiary.Settings.ModelName>Model name</PawnDiary.Settings.ModelName>
+  <PawnDiary.Settings.FetchModels>Fetch models</PawnDiary.Settings.FetchModels>
+  <PawnDiary.Settings.FetchingModels>Fetching models...</PawnDiary.Settings.FetchingModels>
+  <PawnDiary.Settings.ModelsNotFetched>Models not fetched.</PawnDiary.Settings.ModelsNotFetched>
+  <PawnDiary.Settings.NoModelsReturned>No models returned.</PawnDiary.Settings.NoModelsReturned>
+  <PawnDiary.Settings.ModelsFound>Found {0} model(s).</PawnDiary.Settings.ModelsFound>
+  <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
+  <PawnDiary.Settings.PairedPov>Paired POV generation</PawnDiary.Settings.PairedPov>
+  <PawnDiary.Settings.PairedPovTip>Generate pairwise diary entries sequentially: initiator first, then recipient with the initiator entry as hidden context. Disable to generate only the first POV immediately and let other POVs generate lazily.</PawnDiary.Settings.PairedPovTip>
+  <PawnDiary.Settings.MaxConcurrent>Max concurrent requests: {0}</PawnDiary.Settings.MaxConcurrent>
+  <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight (awaiting a model response) at once; the rest wait in the queue. Use 1 for a single local model that handles one request at a time; raise it only if your endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
+  <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
+  <PawnDiary.Settings.SystemPrompt>System prompt</PawnDiary.Settings.SystemPrompt>
+  <PawnDiary.Settings.RestoreSystemPrompt>Restore default system prompt</PawnDiary.Settings.RestoreSystemPrompt>
+  <PawnDiary.Settings.PickModel>Pick fetched model</PawnDiary.Settings.PickModel>
+  <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
+  <PawnDiary.Settings.EventsHeader>Events — enable groups and edit their diary prompt</PawnDiary.Settings.EventsHeader>
+  <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
+  <PawnDiary.Settings.PromptForGroup>Prompt for: {0}</PawnDiary.Settings.PromptForGroup>
+  <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
+  <PawnDiary.Settings.SaveInstruction>Save instruction</PawnDiary.Settings.SaveInstruction>
+  <PawnDiary.Settings.RestoreGroupDefault>Restore this group's default</PawnDiary.Settings.RestoreGroupDefault>
+
+  <!-- ===== Raw event text (shown in the diary AND fed to the model as "what happened") ===== -->
+  <PawnDiary.Event.Interaction>{0} had a {1} interaction with {2}.</PawnDiary.Event.Interaction>
+  <PawnDiary.Event.SocialFight>{0} and {1} lost their tempers and came to blows.</PawnDiary.Event.SocialFight>
+  <PawnDiary.Event.MentalBreak>{0} had a mental break ({1})</PawnDiary.Event.MentalBreak>
+  <PawnDiary.Event.DirectedAt>, directed at {0}</PawnDiary.Event.DirectedAt>
+  <PawnDiary.Event.ReasonSuffix>. Reason: {0}</PawnDiary.Event.ReasonSuffix>
+  <PawnDiary.Event.SmallTalk>{0} had small talk with {1}.</PawnDiary.Event.SmallTalk>
+  <PawnDiary.Event.SmallTalkLabel>Small talk</PawnDiary.Event.SmallTalkLabel>
+  <PawnDiary.Event.SmallTalkBrief>A brief small-talk exchange.</PawnDiary.Event.SmallTalkBrief>
+  <PawnDiary.Event.SmallTalkBatchHeader>Several small-talk moments happened:</PawnDiary.Event.SmallTalkBatchHeader>
+  <PawnDiary.Event.SmallTalkBatchInstruction>write one diary entry for the overall small-talk exchange, not separate entries for each listed moment</PawnDiary.Event.SmallTalkBatchInstruction>
+
+  <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
+  <PawnDiary.Error.SkippedInitiatorFailed>Skipped because initiator diary generation failed.</PawnDiary.Error.SkippedInitiatorFailed>
+  <PawnDiary.Error.NoLlmSettings>LLM settings are not available.</PawnDiary.Error.NoLlmSettings>
+
+  <!-- ===== Prompt context: descriptive words the model reads (the field KEYS stay English) ===== -->
+  <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
+  <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
+
+  <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
+  <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>
+  <PawnDiary.Ctx.LastWrote>last wrote: "{0}"</PawnDiary.Ctx.LastWrote>
+  <PawnDiary.Ctx.Outdoors>outdoors</PawnDiary.Ctx.Outdoors>
+  <PawnDiary.Ctx.Indoors>indoors</PawnDiary.Ctx.Indoors>
+  <PawnDiary.Ctx.Cold>cold ({0}C)</PawnDiary.Ctx.Cold>
+  <PawnDiary.Ctx.Hot>hot ({0}C)</PawnDiary.Ctx.Hot>
+  <PawnDiary.Ctx.Surroundings>{0} surroundings</PawnDiary.Ctx.Surroundings>
+  <PawnDiary.Ctx.Near>near {0}</PawnDiary.Ctx.Near>
+  <PawnDiary.Ctx.Doing>doing: {0}</PawnDiary.Ctx.Doing>
+  <PawnDiary.Ctx.Downed>downed</PawnDiary.Ctx.Downed>
+  <PawnDiary.Ctx.PainShock>pain shock</PawnDiary.Ctx.PainShock>
+  <PawnDiary.Ctx.Fire>fire</PawnDiary.Ctx.Fire>
+  <PawnDiary.Ctx.Corpse>corpse of {0}</PawnDiary.Ctx.Corpse>
+
+  <!-- Mood / beauty / pain / opinion "buckets" -->
+  <PawnDiary.Bucket.Mood.Happy>happy</PawnDiary.Bucket.Mood.Happy>
+  <PawnDiary.Bucket.Mood.Stable>stable</PawnDiary.Bucket.Mood.Stable>
+  <PawnDiary.Bucket.Mood.Stressed>stressed</PawnDiary.Bucket.Mood.Stressed>
+  <PawnDiary.Bucket.Mood.Miserable>miserable</PawnDiary.Bucket.Mood.Miserable>
+  <PawnDiary.Bucket.Beauty.Beautiful>beautiful</PawnDiary.Bucket.Beauty.Beautiful>
+  <PawnDiary.Bucket.Beauty.Pleasant>pleasant</PawnDiary.Bucket.Beauty.Pleasant>
+  <PawnDiary.Bucket.Beauty.Neutral>neutral</PawnDiary.Bucket.Beauty.Neutral>
+  <PawnDiary.Bucket.Beauty.Ugly>ugly</PawnDiary.Bucket.Beauty.Ugly>
+  <PawnDiary.Bucket.Beauty.Hideous>hideous</PawnDiary.Bucket.Beauty.Hideous>
+  <PawnDiary.Bucket.Pain.Minor>minor</PawnDiary.Bucket.Pain.Minor>
+  <PawnDiary.Bucket.Pain.Moderate>moderate</PawnDiary.Bucket.Pain.Moderate>
+  <PawnDiary.Bucket.Pain.Severe>severe</PawnDiary.Bucket.Pain.Severe>
+  <PawnDiary.Bucket.Opinion.Devoted>devoted</PawnDiary.Bucket.Opinion.Devoted>
+  <PawnDiary.Bucket.Opinion.Friendly>friendly</PawnDiary.Bucket.Opinion.Friendly>
+  <PawnDiary.Bucket.Opinion.Neutral>neutral</PawnDiary.Bucket.Opinion.Neutral>
+  <PawnDiary.Bucket.Opinion.Strained>strained</PawnDiary.Bucket.Opinion.Strained>
+  <PawnDiary.Bucket.Opinion.Hostile>hostile</PawnDiary.Bucket.Opinion.Hostile>
+
 </LanguageData>

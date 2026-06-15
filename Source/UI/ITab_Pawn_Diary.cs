@@ -74,7 +74,7 @@ namespace PawnDiary
             DiaryGameComponent component = DiaryGameComponent.Current;
 
             Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(rect.x, rect.y, rect.width, 34f), pawn.LabelShortCap + "'s Diary");
+            Widgets.Label(new Rect(rect.x, rect.y, rect.width, 34f), "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
             Text.Font = GameFont.Small;
 
             Rect controlsRect = new Rect(rect.x, rect.y + 36f, rect.width, ControlsHeight);
@@ -87,7 +87,7 @@ namespace PawnDiary
 
             if (entries.Count == 0)
             {
-                Widgets.Label(outRect, "No interactions have been recorded yet.");
+                Widgets.Label(outRect, "PawnDiary.Tab.NoEntries".Translate());
                 return;
             }
 
@@ -144,9 +144,9 @@ namespace PawnDiary
             bool enabled = component.DiaryGenerationEnabledFor(pawn);
             bool before = enabled;
             listing.CheckboxLabeled(
-                "Generate diary entries for this pawn",
+                "PawnDiary.Tab.GenerateForPawn".Translate(),
                 ref enabled,
-                "When disabled, events are still recorded here, but no LLM request is sent for this pawn.");
+                "PawnDiary.Tab.GenerateForPawnTip".Translate());
             if (enabled != before)
             {
                 component.SetDiaryGenerationEnabled(pawn, enabled);
@@ -156,7 +156,7 @@ namespace PawnDiary
             // changing UI code.
             // The persona currently assigned to this pawn.
             DiaryPersonaDef persona = component.PersonaFor(pawn);
-            if (listing.ButtonText("Persona: " + PersonaLabel(persona)))
+            if (listing.ButtonText("PawnDiary.Tab.PersonaButton".Translate(PersonaLabel(persona))))
             {
                 List<FloatMenuOption> options = DiaryPersonas.All
                     .OrderBy(PersonaLabel)
@@ -194,7 +194,7 @@ namespace PawnDiary
         {
             if (persona == null)
             {
-                return "default";
+                return "PawnDiary.Persona.DefaultLabel".Translate();
             }
 
             return string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label;

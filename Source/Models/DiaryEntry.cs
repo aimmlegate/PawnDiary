@@ -85,12 +85,12 @@ namespace PawnDiary
             {
                 if (llmStatus == "pending")
                 {
-                    return "generating";
+                    return "PawnDiary.Status.Generating".Translate();
                 }
 
                 if (llmStatus == "failed")
                 {
-                    return "generation failed";
+                    return "PawnDiary.Status.GenerationFailed".Translate();
                 }
 
                 return string.Empty;
@@ -212,7 +212,7 @@ namespace PawnDiary
             {
                 if (LlmStatus == "pending" && string.IsNullOrWhiteSpace(GeneratedText))
                 {
-                    return "writing...";
+                    return "PawnDiary.Status.WritingEllipsis".Translate();
                 }
 
                 if (!string.IsNullOrWhiteSpace(GeneratedText))
@@ -233,12 +233,12 @@ namespace PawnDiary
             {
                 if (LlmStatus == "pending")
                 {
-                    return "writing";
+                    return "PawnDiary.Status.Writing".Translate();
                 }
 
                 if (LlmStatus == "failed")
                 {
-                    return "generation failed";
+                    return "PawnDiary.Status.GenerationFailed".Translate();
                 }
 
                 return string.Empty;

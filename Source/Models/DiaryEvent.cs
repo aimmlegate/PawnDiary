@@ -508,7 +508,7 @@ namespace PawnDiary
                 return recipientName;
             }
 
-            return "colony";
+            return "PawnDiary.Prompt.Colony".Translate();
         }
 
         /// <summary>
