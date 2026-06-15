@@ -692,20 +692,10 @@ namespace PawnDiary
                 return true;
             }
 
-            // Check if the group defName contains combat-related keywords
+            // Otherwise rely on a data-driven flag set per group in XML, rather than sniffing
+            // defName substrings (which silently breaks if a group is renamed or a new one added).
             DiaryInteractionGroupDef group = GroupForDisplay();
-            if (group != null)
-            {
-                string defName = group.defName ?? string.Empty;
-                if (defName.IndexOf("fight", StringComparison.OrdinalIgnoreCase) >= 0
-                    || defName.IndexOf("insult", StringComparison.OrdinalIgnoreCase) >= 0
-                    || defName.IndexOf("violence", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return group != null && group.combat;
         }
 
         /// <summary>
