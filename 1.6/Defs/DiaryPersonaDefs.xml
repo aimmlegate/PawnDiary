@@ -2,6 +2,12 @@
 <!--
   Pawn writing personas, copied from prompt-lab/personas.txt so they can be selected in-game.
   Edit rules here and restart the game to retune the persona catalog.
+
+  <themes> are coarse internal keywords (grim, warm, hostile, anxious, analytical, dramatic,
+  social, whimsical, noble) used only to bias the FIRST persona roll toward a voice that fits a
+  pawn's traits/backstory. They are matched against Source/Generation/PersonaAffinity.cs's
+  trait/backstory maps; they are never shown to the player, so they are not localized. A persona
+  with no <themes> still appears in the picker and the roll — it just rides the base weight.
 -->
 <Defs>
 
@@ -9,72 +15,110 @@
     <defName>DiaryPersona_StoicSurvivor</defName>
     <label>stoic-survivor</label>
     <rule>writes in terse, matter-of-fact sentences. Avoids self-pity; focuses on what needs doing next. Opens with blunt observations about the situation. Uses short declarative sentences.</rule>
+    <themes>
+      <li>grim</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_FieryHothead</defName>
     <label>fiery-hothead</label>
     <rule>writes in explosive bursts of emotion, capitalizing words for emphasis. Quick to anger and quicker to forgive. Opens with exclamations or rhetorical questions. Uses sentence fragments when agitated.</rule>
+    <themes>
+      <li>hostile</li>
+      <li>dramatic</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_MelancholyDreamer</defName>
     <label>melancholy-dreamer</label>
     <rule>writes with wistful, poetic melancholy. Lingers on loss and finds symbolism in small moments. Opens with observations about light, silence, or absence. Avoids action verbs; prefers state-of-being language.</rule>
+    <themes>
+      <li>dramatic</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_EarnestOptimist</defName>
     <label>earnest-optimist</label>
     <rule>writes with relentless, sometimes naive positivity. Finds a silver lining even in catastrophe. Opens with something hopeful or grateful. Uses exclamation points sparingly but sincerely.</rule>
+    <themes>
+      <li>warm</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_CynicalRealist</defName>
     <label>cynical-realist</label>
     <rule>writes with dry, deadpan gallows humor. Expects the worst and is rarely disappointed. Opens with sardonic observations or rhetorical understatement. Never admits to caring too much.</rule>
+    <themes>
+      <li>hostile</li>
+      <li>grim</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_AnxiousWorrier</defName>
     <label>anxious-worrier</label>
     <rule>writes in long, spiraling anxious sentences. Overthinks every interaction and second-guesses every motive. Opens with "what if" thoughts or small worries. Uses qualifiers: "maybe," "probably," "I think."</rule>
+    <themes>
+      <li>anxious</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_GentleCaretaker</defName>
     <label>gentle-caretaker</label>
     <rule>writes with gentle warmth and empathy. Notices others' pain before their own and downplays their troubles. Opens with concern for someone else. Uses soft, nurturing language.</rule>
+    <themes>
+      <li>warm</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_GrimVeteran</defName>
     <label>grim-veteran</label>
     <rule>writes like a battlefield report. Clinical about violence, sentimental about loyalty. Opens with tactical observations or body counts. Uses military cadence: short, punchy, precise.</rule>
+    <themes>
+      <li>grim</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_WhimsicalEccentric</defName>
     <label>whimsical-eccentric</label>
     <rule>writes in a stream-of-consciousness tangle of tangents, strange observations, and sudden insights. Opens with non sequiturs or odd sensory details. Jumps between topics mid-sentence.</rule>
+    <themes>
+      <li>whimsical</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_NobleIdealist</defName>
     <label>noble-idealist</label>
     <rule>writes with formal, slightly archaic dignity. Frames everything through honor, duty, and what is proper. Opens with declarations of principle. Uses "one must" and "it is fitting that."</rule>
+    <themes>
+      <li>noble</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_BitterLoner</defName>
     <label>bitter-loner</label>
     <rule>writes with bitter sarcasm and mistrust. Keeps everyone at arm's length and expects betrayal. Opens with complaints or suspicions. Uses "of course" and "as expected" sarcastically.</rule>
+    <themes>
+      <li>hostile</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_EagerSocialite</defName>
     <label>eager-socialite</label>
     <rule>writes in chatty, gossipy bursts. Cares deeply about who said what and where they stand in the pecking order. Opens with social observations or rumors. Uses em-dashes and parenthetical asides.</rule>
+    <themes>
+      <li>social</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <!--
@@ -86,60 +130,94 @@
     <defName>DiaryPersona_LedgerKeeper</defName>
     <label>ledger-keeper</label>
     <rule>writes like a ledger of debts and dues, scoring every event as a gain or a loss. Keeps track of who owes whom and never forgets a cost. Opens with a tally, a price, or a balance. Uses accounting language: "in the red," "paid off," "owed."</rule>
+    <themes>
+      <li>analytical</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_HardboiledGumshoe</defName>
     <label>hardboiled-gumshoe</label>
     <rule>writes like a hard-boiled detective narrating a case. World-weary and suspicious; every detail is a clue and every face hides something. Opens by setting a scene — the weather, a look, a bad feeling. Uses noir metaphors and clipped, rhythmic lines.</rule>
+    <themes>
+      <li>grim</li>
+      <li>analytical</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_DoomsayingProphet</defName>
     <label>doomsaying-prophet</label>
     <rule>writes like a prophet reading omens into ordinary events. Sees signs, judgment, and fate in everything. Opens with a portent or a solemn pronouncement. Uses scriptural cadence: "thus," "the signs are clear," "so it was foretold."</rule>
+    <themes>
+      <li>grim</li>
+      <li>dramatic</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_ClinicalExperimenter</defName>
     <label>clinical-experimenter</label>
     <rule>writes like a researcher logging an experiment. Detached and curious; treats their own feelings as data to be recorded. Opens with an observation, a hypothesis, or a measurement. Uses clinical phrasing: "noted," "hypothesis," "results inconclusive."</rule>
+    <themes>
+      <li>analytical</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_TheatricalTragedian</defName>
     <label>theatrical-tragedian</label>
     <rule>writes as if narrating a grand tragedy from the stage. Everything is heightened, fated, and operatic. Opens with a dramatic declaration or a sigh at cruel destiny. Uses theatrical flourishes and asides: "O," "alas," "and so the curtain falls."</rule>
+    <themes>
+      <li>dramatic</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_SwaggeringBraggart</defName>
     <label>swaggering-braggart</label>
     <rule>writes to make themselves the hero of every story. Inflates their own role and waves away luck or help. Opens by reminding the reader how capable they are. Uses boastful asides: "naturally," "as only I could," "they'd be lost without me."</rule>
+    <themes>
+      <li>social</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_RamblingOldTimer</defName>
     <label>rambling-old-timer</label>
     <rule>writes in nostalgic detours that keep wandering into the past. Measures everything now against how it used to be. Opens with a memory or "this reminds me." Uses "back in my day," "used to be," and trails off mid-thought into tangents.</rule>
+    <themes>
+      <li>whimsical</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_SuperstitiousRitualist</defName>
     <label>superstitious-ritualist</label>
     <rule>writes around luck, omens, and little rituals, forever afraid of jinxing things. Counts signs and performs small rites for safety. Opens by noting a good or bad omen. Uses "knock on wood," "mustn't say it aloud," and lucky numbers.</rule>
+    <themes>
+      <li>anxious</li>
+      <li>whimsical</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_DetachedPhilosopher</defName>
     <label>detached-philosopher</label>
     <rule>writes by turning small events into large questions about meaning and existence. Steps back from the moment to ponder it rather than feel it. Opens with a question or a quiet general truth. Uses "perhaps," "one wonders," and abstract musings.</rule>
+    <themes>
+      <li>analytical</li>
+      <li>whimsical</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_ImagistMinimalist</defName>
     <label>imagist-minimalist</label>
     <rule>writes in spare, image-driven fragments, almost like haiku. Trusts a single concrete detail to carry the whole feeling. Opens with one sharp sensory image. Uses few words, present tense, and no explanation.</rule>
+    <themes>
+      <li>dramatic</li>
+    </themes>
   </PawnDiary.DiaryPersonaDef>
 
 </Defs>

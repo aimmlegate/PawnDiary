@@ -11,14 +11,16 @@ using Verse;
 namespace PawnDiary
 {
     // Inspector tab that shows the selected pawn's diary. Replaces the old standalone
-    // Diary window/gizmo and is injected as the final pawn inspector tab at startup.
+    // Diary window/gizmo and is injected immediately after the vanilla Social tab at startup.
     public class ITab_Pawn_Diary : ITab
     {
         // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
         private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
 
-        // Vertical space reserved for the per-pawn generation toggle and persona picker above the scroll view.
-        private const float ControlsHeight = 60f;
+        // Vertical space constants for the per-pawn controls above the scroll view. The actual
+        // height is dynamic because dev-mode controls are hidden during normal play.
+        private const float ControlLineHeight = 28f;
+        private const float ControlGap = 2f;
         private const float EntryTitleHeight = 28f;
         private const float EntryTextTop = 38f;
         private const float EntryBottomPadding = 10f;
@@ -30,6 +32,7 @@ namespace PawnDiary
         private const float LinkedEntryTotalHeight = 64f;
         private const float ModelNameTopPadding = 4f;
         private const float ModelNameHeight = 20f;
+        private const float DebugTextTopPadding = 8f;
 
         private static readonly Color ImportantColor = new Color(0.96f, 0.62f, 0.22f);
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
@@ -125,6 +128,7 @@ namespace PawnDiary
 
             IReadOnlyList<DiaryEntryView> entries = component?.EntriesFor(pawn) ?? EmptyList;
             int generatingCount = entries.Count(IsGenerating);
+            bool showLlmDebugInfo = ShouldShowLlmDebugInfo();
 
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(rect.x, rect.y, rect.width, 34f), "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
@@ -135,23 +139,23 @@ namespace PawnDiary
                 DrawGeneratingIndicator(new Rect(rect.xMax - 150f, rect.y + 3f, 150f, 24f), generatingCount);
             }
 
-            Rect controlsRect = new Rect(rect.x, rect.y + 36f, rect.width, ControlsHeight);
+            Rect controlsRect = new Rect(rect.x, rect.y + 36f, rect.width, PawnControlsHeight());
             DrawPawnControls(pawn, component, controlsRect);
 
             // The controls are part of the diary tab, so reserve fixed space before the scroll view.
             float entriesY = controlsRect.yMax + 8f;
             Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
 
-            // Production view: show only completed LLM output. Pending/raw/debug rows are still
-            // saved in the model, but they are deliberately hidden from the player-facing tab.
+            // Production view: show only completed LLM output. Dev mode can reveal raw/pending
+            // rows plus the diagnostic prompt/status block for troubleshooting.
             List<DiaryEntryView> ordered = entries
-                .Where(IsGenerated)
+                .Where(entry => showLlmDebugInfo || IsGenerated(entry))
                 .OrderByDescending(entry => entry.Tick)
                 .ToList();
 
             if (ordered.Count == 0)
             {
-                Widgets.Label(outRect, "PawnDiary.Tab.NoGeneratedEntries".Translate());
+                Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
                 return;
             }
 
@@ -164,7 +168,7 @@ namespace PawnDiary
             float viewHeight = 12f; // includes 12f bottom padding
             for (int i = 0; i < ordered.Count; i++)
             {
-                heights[i] = EntryHeight(ordered[i], viewWidth);
+                heights[i] = EntryHeight(ordered[i], viewWidth, showLlmDebugInfo);
                 viewHeight += heights[i];
             }
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
@@ -199,7 +203,11 @@ namespace PawnDiary
                 bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
                 bool linkedAfter = linked != null && !linkedBefore;
                 bool showModelName = HasModelName(entry);
-                float modelNameSpace = showModelName ? ModelNameTopPadding + ModelNameHeight : 0f;
+                string bodyText = EntryBodyText(entry, showLlmDebugInfo);
+                string debugText = showLlmDebugInfo ? entry.DebugText : string.Empty;
+                float innerTextWidth = entryRect.width - 20f;
+                float mainTextHeight = RoleplayTextHeight(bodyText, innerTextWidth);
+                float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
 
                 if (linkedBefore)
                 {
@@ -208,17 +216,21 @@ namespace PawnDiary
                     textY = linkedRect.yMax + LinkedEntryPadding;
                 }
 
-                float mainTextHeight = entryRect.height - EntryTextTop - EntryBottomPadding
-                    - (linkedBefore ? LinkedEntryTotalHeight + LinkedEntryPadding : 0f)
-                    - (linkedAfter ? LinkedEntryTotalHeight + LinkedEntryPadding : 0f)
-                    - modelNameSpace;
                 Rect textRect = new Rect(entryRect.x + 12f, textY, entryRect.width - 20f, mainTextHeight);
-                DrawRoleplayText(textRect, entry.GeneratedText, dialogueColor);
+                DrawRoleplayText(textRect, bodyText, dialogueColor);
+                float afterTextY = textRect.yMax;
 
                 if (linkedAfter)
                 {
-                    Rect linkedRect = new Rect(entryRect.x + 10f, textRect.yMax + LinkedEntryPadding, entryRect.width - 20f, LinkedEntryTotalHeight);
+                    Rect linkedRect = new Rect(entryRect.x + 10f, afterTextY + LinkedEntryPadding, entryRect.width - 20f, LinkedEntryTotalHeight);
                     DrawLinkedEntry(linked, linkedRect, pawn);
+                    afterTextY = linkedRect.yMax;
+                }
+
+                if (debugTextHeight > 0f)
+                {
+                    Rect debugRect = new Rect(entryRect.x + 12f, afterTextY + DebugTextTopPadding, entryRect.width - 20f, debugTextHeight);
+                    DrawDebugText(debugRect, debugText);
                 }
 
                 if (showModelName)
@@ -268,7 +280,26 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Renders the per-pawn generation toggle above the diary entries.
+        /// Returns the height needed for the per-pawn controls above the diary list.
+        /// Dev-only rows are omitted in normal play, keeping the tab focused on entries.
+        /// </summary>
+        private static float PawnControlsHeight()
+        {
+            float lines = 1f; // generation toggle
+            if (Prefs.DevMode && PawnDiaryMod.Settings != null)
+            {
+                lines += 2f; // dev toggles for persona controls and LLM diagnostics
+                if (ShouldShowPersonaSettings())
+                {
+                    lines += 1f; // persona picker
+                }
+            }
+
+            return lines * ControlLineHeight + (lines - 1f) * ControlGap;
+        }
+
+        /// <summary>
+        /// Renders the per-pawn generation toggle plus dev-mode-only troubleshooting controls.
         /// </summary>
         private static void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
         {
@@ -293,27 +324,64 @@ namespace PawnDiary
                 component.SetDiaryGenerationEnabled(pawn, enabled);
             }
 
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            bool writeGlobalSettings = false;
+            if (Prefs.DevMode && settings != null)
+            {
+                bool showPersonaSettings = settings.showPersonaSettings;
+                bool showPersonaBefore = showPersonaSettings;
+                listing.CheckboxLabeled(
+                    "PawnDiary.Tab.ShowPersonaSettings".Translate(),
+                    ref showPersonaSettings,
+                    "PawnDiary.Tab.ShowPersonaSettingsTip".Translate());
+                if (showPersonaSettings != showPersonaBefore)
+                {
+                    settings.showPersonaSettings = showPersonaSettings;
+                    writeGlobalSettings = true;
+                }
+
+                bool showLlmDebugInfo = settings.showLlmDebugInfo;
+                bool showDebugBefore = showLlmDebugInfo;
+                listing.CheckboxLabeled(
+                    "PawnDiary.Tab.ShowLlmDebugInfo".Translate(),
+                    ref showLlmDebugInfo,
+                    "PawnDiary.Tab.ShowLlmDebugInfoTip".Translate());
+                if (showLlmDebugInfo != showDebugBefore)
+                {
+                    settings.showLlmDebugInfo = showLlmDebugInfo;
+                    writeGlobalSettings = true;
+                }
+            }
+
             // Persona picker. Options come from DiaryPersonaDefs.xml so new presets can be added
             // without touching UI code; the choice is saved per pawn and used for future generations.
-            DiaryPersonaDef persona = component.PersonaFor(pawn);
-            if (listing.ButtonText("PawnDiary.Tab.PersonaButton".Translate(PersonaLabel(persona))))
+            if (ShouldShowPersonaSettings())
             {
-                List<FloatMenuOption> options = DiaryPersonas.All
-                    .OrderBy(PersonaLabel)
-                    .Select(option =>
-                    {
-                        DiaryPersonaDef selected = option;
-                        return new FloatMenuOption(PersonaLabel(selected), delegate
+                DiaryPersonaDef persona = component.PersonaFor(pawn);
+                if (listing.ButtonText("PawnDiary.Tab.PersonaButton".Translate(PersonaLabel(persona))))
+                {
+                    List<FloatMenuOption> options = DiaryPersonas.All
+                        .OrderBy(PersonaLabel)
+                        .Select(option =>
                         {
-                            component.SetPersona(pawn, selected.defName);
-                        });
-                    })
-                    .ToList();
+                            DiaryPersonaDef selected = option;
+                            return new FloatMenuOption(PersonaLabel(selected), delegate
+                            {
+                                component.SetPersona(pawn, selected.defName);
+                            });
+                        })
+                        .ToList();
 
-                Find.WindowStack.Add(new FloatMenu(options));
+                    Find.WindowStack.Add(new FloatMenu(options));
+                }
             }
 
             listing.End();
+
+            if (writeGlobalSettings)
+            {
+                WriteGlobalSettings();
+            }
         }
 
         /// <summary>
@@ -355,6 +423,48 @@ namespace PawnDiary
         private static bool IsGenerated(DiaryEntryView entry)
         {
             return entry != null && !string.IsNullOrWhiteSpace(entry.GeneratedText);
+        }
+
+        /// <summary>
+        /// Dev-mode preference gate for manual persona editing in the Diary tab.
+        /// </summary>
+        private static bool ShouldShowPersonaSettings()
+        {
+            return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.showPersonaSettings;
+        }
+
+        /// <summary>
+        /// Dev-mode preference gate for raw/pending entries and the LLM prompt/status block.
+        /// </summary>
+        private static bool ShouldShowLlmDebugInfo()
+        {
+            return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.showLlmDebugInfo;
+        }
+
+        /// <summary>
+        /// Persists global mod UI preferences changed from this pawn tab.
+        /// </summary>
+        private static void WriteGlobalSettings()
+        {
+            PawnDiaryMod mod = LoadedModManager.GetMod<PawnDiaryMod>();
+            if (mod != null)
+            {
+                mod.WriteSettings();
+            }
+        }
+
+        /// <summary>
+        /// Returns the entry body text for the current view mode: polished generated output in
+        /// normal play, or the existing generated/raw/status fallback when debug info is enabled.
+        /// </summary>
+        private static string EntryBodyText(DiaryEntryView entry, bool showLlmDebugInfo)
+        {
+            if (entry == null)
+            {
+                return string.Empty;
+            }
+
+            return showLlmDebugInfo ? entry.DisplayText : entry.GeneratedText;
         }
 
         /// <summary>
@@ -434,6 +544,27 @@ namespace PawnDiary
 
             GUI.color = oldColor;
             Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Draws the existing English-only diagnostic block in tiny muted text.
+        /// </summary>
+        private static void DrawDebugText(Rect rect, string debugText)
+        {
+            if (string.IsNullOrWhiteSpace(debugText))
+            {
+                return;
+            }
+
+            GameFont oldFont = Text.Font;
+            Color oldColor = GUI.color;
+
+            Text.Font = GameFont.Tiny;
+            GUI.color = new Color(0.54f, 0.58f, 0.60f, 0.90f);
+            Widgets.Label(rect, debugText);
+
+            GUI.color = oldColor;
             Text.Font = oldFont;
         }
 
@@ -610,7 +741,7 @@ namespace PawnDiary
         /// dynamic text wrapping of the generated diary text and the linked-entry card
         /// (if present) positioned before or after the main text.
         /// </summary>
-        private static float EntryHeight(DiaryEntryView entry, float width)
+        private static float EntryHeight(DiaryEntryView entry, float width, bool showLlmDebugInfo)
         {
             // Must match the draw width in FillTab (entryRect.width - 20f) so the measured wrap
             // height equals what is actually rendered; a wider measure clips long entries at the bottom.
@@ -618,7 +749,7 @@ namespace PawnDiary
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Small;
-            float textHeight = RoleplayTextHeight(entry.GeneratedText, innerWidth);
+            float textHeight = RoleplayTextHeight(EntryBodyText(entry, showLlmDebugInfo), innerWidth);
             Text.Font = oldFont;
 
             float height = EntryTextTop + textHeight + EntryBottomPadding;
@@ -634,6 +765,32 @@ namespace PawnDiary
                 height += ModelNameTopPadding + ModelNameHeight;
             }
 
+            if (showLlmDebugInfo)
+            {
+                float debugHeight = DebugTextHeight(entry?.DebugText, innerWidth);
+                if (debugHeight > 0f)
+                {
+                    height += DebugTextTopPadding + debugHeight;
+                }
+            }
+
+            return height;
+        }
+
+        /// <summary>
+        /// Measures the tiny diagnostic text block shown only when the dev debug toggle is enabled.
+        /// </summary>
+        private static float DebugTextHeight(string debugText, float width)
+        {
+            if (string.IsNullOrWhiteSpace(debugText))
+            {
+                return 0f;
+            }
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            float height = Text.CalcHeight(debugText, width);
+            Text.Font = oldFont;
             return height;
         }
 

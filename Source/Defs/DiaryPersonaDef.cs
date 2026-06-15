@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Verse;
 
 namespace PawnDiary
@@ -10,6 +11,13 @@ namespace PawnDiary
     {
         // The writing rule injected into the LLM prompt as "persona:" so the model adopts a consistent voice.
         public string rule;
+
+        // Coarse internal keyword tags (e.g. "grim", "warm", "anxious") used only to bias the
+        // *initial* persona roll toward a fitting voice for the pawn's traits/backstory. They are
+        // matched against PersonaAffinity's trait/backstory -> theme maps; they are never shown to
+        // the player, so they are NOT localized. Untagged personas simply ride the base weight.
+        // Initialized so old/partial defs that omit <themes> never NullReference.
+        public List<string> themes = new List<string>();
     }
 
     // Central lookup/fallback helper for the persona catalog. RimWorld loads Defs from
@@ -65,6 +73,75 @@ namespace PawnDiary
             }
 
             return personas[Rand.Range(0, personas.Count)] ?? Default ?? Fallback;
+        }
+
+        // Base weight every persona gets so the catalog never starves; the theme bonus is layered
+        // on top. Multiplied per duplicate already in use, so a persona another colonist holds is
+        // ~quarter as likely each time (soft penalty, never fully excluded). Floor keeps weights
+        // positive so weighted selection cannot divide by zero. Tunable.
+        private const float BaseWeight = 1f;
+        private const float DuplicatePenalty = 0.25f;
+        private const float WeightFloor = 0.0001f;
+
+        /// <summary>
+        /// Picks the initial persona for a NEW pawn, biased toward personas whose <c>themes</c>
+        /// fit the pawn's traits/backstory (see <see cref="PersonaAffinity"/>) and softly penalized
+        /// for personas already used by other colonists (<paramref name="usedCounts"/> maps a
+        /// persona defName to how many current colonists already write in it). Falls back to a flat
+        /// random pick if weights are unusable. Existing records keep their saved persona — this
+        /// only runs the first time a pawn enters the diary system.
+        /// </summary>
+        public static DiaryPersonaDef WeightedStartingPersona(Pawn pawn, IDictionary<string, int> usedCounts)
+        {
+            IReadOnlyList<DiaryPersonaDef> personas = All;
+            if (personas == null || personas.Count == 0)
+            {
+                return Default ?? Fallback;
+            }
+
+            // Sum of all weights; each persona's chance is its weight / this total.
+            float total = 0f;
+            float[] weights = new float[personas.Count];
+            for (int i = 0; i < personas.Count; i++)
+            {
+                DiaryPersonaDef persona = personas[i];
+                if (persona == null)
+                {
+                    continue;
+                }
+
+                float weight = BaseWeight + PersonaAffinity.ThemeBonusFor(persona, pawn);
+
+                // Apply the soft duplicate penalty once per colonist already using this persona.
+                int used = 0;
+                if (usedCounts != null && persona.defName != null && usedCounts.TryGetValue(persona.defName, out used) && used > 0)
+                {
+                    weight *= Mathf.Pow(DuplicatePenalty, used);
+                }
+
+                weight = Mathf.Max(weight, WeightFloor);
+                weights[i] = weight;
+                total += weight;
+            }
+
+            if (total <= 0f)
+            {
+                return RandomStartingPersona();
+            }
+
+            // Standard weighted pick: walk the cumulative weights until we pass the roll.
+            float roll = Rand.Range(0f, total);
+            float cumulative = 0f;
+            for (int i = 0; i < personas.Count; i++)
+            {
+                cumulative += weights[i];
+                if (roll <= cumulative && personas[i] != null)
+                {
+                    return personas[i];
+                }
+            }
+
+            return RandomStartingPersona();
         }
 
         /// <summary>

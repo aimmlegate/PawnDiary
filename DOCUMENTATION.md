@@ -254,8 +254,22 @@ All paths share the same per-event context fields and the system prompt.
 - Each `PawnDiaryRecord` saves `personaDefName` and `diaryGenerationEnabled`.
 - Persona options are `DiaryPersonaDef` XML Defs in `1.6/Defs/DiaryPersonaDefs.xml`, with
   `DiaryPromptDef.defaultPersonaDefName` providing the fallback/default (`DiaryPersona_StoicSurvivor`).
-- New pawn diary records pick a random loaded persona as their starting voice. Existing records
-  keep their saved persona; missing/invalid saved persona values fall back to the default above.
+- **Initial persona is a weighted roll, not uniform random.** When a pawn's record is first created,
+  `DiaryPersonas.WeightedStartingPersona(pawn, usedCounts)` picks the starting voice:
+  - **Trait/backstory fit.** Each persona carries coarse `<themes>` keywords in XML (e.g. `grim`,
+    `warm`, `anxious`). `Source/Generation/PersonaAffinity.cs` maps RimWorld trait defNames (and
+    spectrum-trait degrees, e.g. `Nerves:-1` = nervous) and backstory `spawnCategories` to that
+    same vocabulary, then adds `ThemeBonus` to a persona's weight per theme it shares with the pawn.
+    A persona with no matching theme still has the flat base weight, so nothing is impossible.
+  - **Soft colony de-duplication.** `DiaryGameComponent.BuildUsedPersonaCounts` counts how many
+    current living free colonists already use each persona; the weight is multiplied by
+    `DuplicatePenalty` (≈0.25) once per existing user, so repeats are rare but still possible once
+    the catalog is spread thin (clamped to a small floor so weights never reach zero — assignment
+    never starves even with more colonists than personas).
+  - Themes are internal keywords only; they are **not** shown to the player and are **not** localized.
+- Existing records keep their saved persona — the weighted roll only runs the first time a pawn
+  enters the diary system; the manual picker overrides it freely. Missing/invalid saved persona
+  values fall back to the default above.
 - The Diary tab creates a pawn's record on first edit/open and shows the generation
   checkbox plus a persona picker (a float-menu of every `DiaryPersonaDef`) above the entries.
 - Disabled generation does **not** delete or skip events; it only prevents future LLM requests for
@@ -433,6 +447,8 @@ does not add a second surgery hook that would duplicate successful operations.
 |---------|---------|---------------|
 | `apiEndpoints` | one row: enabled `http://localhost:1234/v1` / `local-model` | **List of API lanes**, each = enabled flag + base URL + key + **one** model (`ApiEndpointConfig`). Requests spread across enabled rows and run in parallel (§7). Add rows with **+ Add API**; disabled rows stay saved but are skipped, and a model is required per active row (blank-model rows are skipped). Legacy single-endpoint saves migrate into one enabled row automatically. |
 | `showApiSettings` | true | UI-only preference for whether the compact API/model setup block is expanded in mod settings. |
+| `showPersonaSettings` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this reveals the manual persona picker in the pawn Diary tab. Normal mode always hides persona controls. |
+| `showLlmDebugInfo` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this shows raw/pending/failed entries plus the LLM endpoint/model/status/error/prompt diagnostic block in the pawn Diary tab. Normal mode always hides it. |
 | `endpointUrl` / `apiKey` / `modelName` | localhost / _(empty)_ / `local-model` | **Legacy** single-endpoint fields, kept only to seed `apiEndpoints` on first load. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight **per API**; the rest queue on that API. Different APIs always run in parallel. **Use 1 for a single local model.** |
@@ -451,7 +467,8 @@ for the selected group). The scroll-view height grows with the number of API row
 
 Per-pawn diary controls live in `ITab_Pawn_Diary`, not the global mod settings window. They are
 stored in each pawn's `PawnDiaryRecord`: persona preset and `diaryGenerationEnabled` (default
-enabled), both editable from the tab (persona via a float-menu picker, generation via a checkbox).
+enabled). The generation checkbox is always visible. The persona picker is a dev-mode-only control:
+dev mode shows a "Show persona settings" toggle, and normal mode hides persona editing entirely.
 
 ---
 
@@ -520,7 +537,10 @@ drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking l
 bold/italic and colored with the pawn's RimWorld favorite color. Each generated card ends with
 a tiny, low-contrast model id so multi-model output can be traced without making the card feel
 technical. Pending, failed-without-output, raw fallback, debug, and persona-editing details are
-hidden from the production tab. A compact generating badge appears in the tab while pending entries exist.
+hidden from the production tab. In RimWorld dev mode, the tab adds toggles for persona controls
+and LLM diagnostics; the debug toggle reveals raw/pending/failed rows plus the existing diagnostic
+block with endpoint, model, status, error, and prompt. A compact generating badge appears in the
+tab while pending entries exist.
 - Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
   matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
   continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can
