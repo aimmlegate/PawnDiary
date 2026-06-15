@@ -299,7 +299,7 @@ namespace PawnDiary
             return group != null && IsGroupEnabled(group.defName);
         }
 
-/// <summary>
+        /// <summary>
         /// Returns the per-group prompt instruction for a TaleDef's diary entry,
         /// falling back to the group's default if no override is set.
         /// </summary>

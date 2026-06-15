@@ -15,7 +15,22 @@ namespace PawnDiary
     {
         static DiaryModStartup()
         {
-            new Harmony("aimml.pawndiary").PatchAll();
+            // Apply all attribute-tagged ([HarmonyPatch]) patches. Wrapped so one failing patch
+            // can't abort this static constructor (which would also skip the tab injection below).
+            Harmony harmony = new Harmony("aimml.pawndiary");
+            try
+            {
+                harmony.PatchAll();
+            }
+            catch (Exception e)
+            {
+                Log.Error("[Pawn Diary] PatchAll failed: " + e);
+            }
+
+            // Registered manually (not via PatchAll) because its target is a fragile compiler-
+            // generated method name — see RelicInstallCompletionPatch for why.
+            RelicInstallCompletionPatch.TryRegister(harmony);
+
             InjectDiaryTab();
             Log.Message("[Pawn Diary] Loaded.");
         }

@@ -9,7 +9,7 @@ namespace PawnDiary
 {
     /// <summary>
     /// One recorded event plus all of its generation state for up to two points of view
-        /// (initiator/recipient), or a single POV for solo mental breaks and single-pawn tales. Holds the raw game text,
+    /// (initiator/recipient), or a single POV for solo mental breaks and single-pawn tales. Holds the raw game text,
     /// the context summaries, the prompts, the generated text, and per-POV status/errors. Knows
     /// how to save/load itself and how to apply an <see cref="LlmGenerationResult"/>.
     /// </summary>
@@ -691,7 +691,7 @@ namespace PawnDiary
             return initiatorAtmosphere;
         }
 
-/// <summary>
+        /// <summary>
         /// Resolves the event group used by the Diary tab for labels and importance coloring.
         /// Saved events only keep the defName string, so this reuses the XML classifiers.
         /// </summary>
@@ -751,7 +751,7 @@ namespace PawnDiary
                 && gameContext.IndexOf("mental_state=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-/// <summary>
+        /// <summary>
         /// Tale events store their TaleDef defName in interactionDefName too; their context
         /// starts with a stable tale field, which lets UI classification pick the Tale domain.
         /// </summary>
