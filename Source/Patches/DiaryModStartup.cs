@@ -1,6 +1,6 @@
 // Mod entry point. [StaticConstructorOnStartup] makes RimWorld run this class's static
 // constructor once at game load (there is no main()). We use it to apply our Harmony patches and
-// inject the Diary inspector tab after the vanilla Log tab on every humanlike pawn.
+// inject the Diary inspector tab as the final tab on every humanlike pawn.
 // See AGENTS.md ("[StaticConstructorOnStartup]").
 using System;
 using System.Collections.Generic;
@@ -21,11 +21,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Injects the Diary inspector tab into every humanlike pawn's inspector, placing it
-        /// immediately after the vanilla Log tab so it appears as a sibling tab.
+        /// Injects the Diary inspector tab into every humanlike pawn's inspector, placing it last.
         /// </summary>
-        // Add the Diary inspector tab to every humanlike pawn, placed right after the
-        // vanilla Log tab so it reads as a sibling of it.
+        // Add the Diary inspector tab to every humanlike pawn. If another path already inserted it,
+        // remove that earlier slot first so the tab ends up consistently at the far right.
         private static void InjectDiaryTab()
         {
             foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
@@ -45,31 +44,12 @@ namespace PawnDiary
                     def.inspectorTabsResolved = new List<InspectTabBase>();
                 }
 
-                if (def.inspectorTabs.Contains(typeof(ITab_Pawn_Diary)))
-                {
-                    continue;
-                }
-
-                int logIndex = def.inspectorTabs.IndexOf(typeof(ITab_Pawn_Log));
-                if (logIndex >= 0)
-                {
-                    def.inspectorTabs.Insert(logIndex + 1, typeof(ITab_Pawn_Diary));
-                }
-                else
-                {
-                    def.inspectorTabs.Add(typeof(ITab_Pawn_Diary));
-                }
+                def.inspectorTabs.RemoveAll(tab => tab == typeof(ITab_Pawn_Diary));
+                def.inspectorTabs.Add(typeof(ITab_Pawn_Diary));
 
                 InspectTabBase instance = InspectTabManager.GetSharedInstance(typeof(ITab_Pawn_Diary));
-                int resolvedLogIndex = def.inspectorTabsResolved.FindIndex(tab => tab is ITab_Pawn_Log);
-                if (resolvedLogIndex >= 0)
-                {
-                    def.inspectorTabsResolved.Insert(resolvedLogIndex + 1, instance);
-                }
-                else
-                {
-                    def.inspectorTabsResolved.Add(instance);
-                }
+                def.inspectorTabsResolved.RemoveAll(tab => tab is ITab_Pawn_Diary);
+                def.inspectorTabsResolved.Add(instance);
             }
         }
     }

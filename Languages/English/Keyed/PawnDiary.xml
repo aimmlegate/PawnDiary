@@ -21,9 +21,11 @@
   <!-- ===== Diary tab UI ===== -->
   <PawnDiary.Tab.DiaryHeader>{0}'s Diary</PawnDiary.Tab.DiaryHeader>
   <PawnDiary.Tab.NoEntries>No interactions have been recorded yet.</PawnDiary.Tab.NoEntries>
+  <PawnDiary.Tab.NoGeneratedEntries>No finished diary entries yet.</PawnDiary.Tab.NoGeneratedEntries>
   <PawnDiary.Tab.GenerateForPawn>Generate diary entries for this pawn</PawnDiary.Tab.GenerateForPawn>
   <PawnDiary.Tab.GenerateForPawnTip>When disabled, events are still recorded here, but no LLM request is sent for this pawn.</PawnDiary.Tab.GenerateForPawnTip>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
+  <PawnDiary.Tab.GeneratingCount>{0} generating</PawnDiary.Tab.GeneratingCount>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->

@@ -4,6 +4,14 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-15 (diary tab production UI pass)**
+  - Moved the Diary inspector tab to the far-right/final pawn tab position.
+  - Changed the Diary tab to show only finished generated entries; pending/raw/debug rows are hidden.
+  - Temporarily hid the pawn-tab persona selector/rule text, leaving only the per-pawn generation
+    checkbox visible.
+  - Added a compact generating badge and switched entry cards to built-in RimWorld `Widgets`
+    chrome (`DrawMenuSection`, `DrawTitleBG`, `DrawHighlightIfMouseover`, `LabelFit`).
+
 - **2026-06-15 (docs restructuring)**
   - Extracted this changelog out of `DOCUMENTATION.md` into this file. The design doc now points
     here; keep updating it the same way — a dated entry per change, newest first.

@@ -1,4 +1,4 @@
-// The inspector tab (UI) that renders the selected pawn's diary next to the vanilla Log tab.
+// The inspector tab (UI) that renders the selected pawn's finished diary entries.
 // RimWorld calls FillTab() to draw it using immediate-mode GUI (the whole tab is re-emitted each
 // frame). It reads entries via DiaryGameComponent.EntriesFor. See AGENTS.md ("lifecycle").
 using System.Collections.Generic;
@@ -9,15 +9,15 @@ using Verse;
 
 namespace PawnDiary
 {
-    // Inspector tab that shows the selected pawn's diary, sitting next to the vanilla
-    // Log tab. Replaces the old standalone Diary window/gizmo.
+    // Inspector tab that shows the selected pawn's diary. Replaces the old standalone
+    // Diary window/gizmo and is injected as the final pawn inspector tab at startup.
     public class ITab_Pawn_Diary : ITab
     {
         // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
         private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
 
-        // Vertical space reserved for the enable/persona controls above the scroll view.
-        private const float ControlsHeight = 116f;
+        // Vertical space reserved for the per-pawn generation toggle above the scroll view.
+        private const float ControlsHeight = 32f;
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
@@ -73,9 +73,17 @@ namespace PawnDiary
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Current;
 
+            IReadOnlyList<DiaryEntryView> entries = component?.EntriesFor(pawn) ?? EmptyList;
+            int generatingCount = entries.Count(IsGenerating);
+
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(rect.x, rect.y, rect.width, 34f), "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
             Text.Font = GameFont.Small;
+
+            if (generatingCount > 0)
+            {
+                DrawGeneratingIndicator(new Rect(rect.xMax - 150f, rect.y + 3f, 150f, 24f), generatingCount);
+            }
 
             Rect controlsRect = new Rect(rect.x, rect.y + 36f, rect.width, ControlsHeight);
             DrawPawnControls(pawn, component, controlsRect);
@@ -83,16 +91,20 @@ namespace PawnDiary
             // The controls are part of the diary tab, so reserve fixed space before the scroll view.
             float entriesY = controlsRect.yMax + 8f;
             Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
-            IReadOnlyList<DiaryEntryView> entries = component?.EntriesFor(pawn) ?? EmptyList;
 
-            if (entries.Count == 0)
+            // Production view: show only completed LLM output. Pending/raw/debug rows are still
+            // saved in the model, but they are deliberately hidden from the player-facing tab.
+            List<DiaryEntryView> ordered = entries
+                .Where(IsGenerated)
+                .OrderByDescending(entry => entry.Tick)
+                .ToList();
+
+            if (ordered.Count == 0)
             {
-                Widgets.Label(outRect, "PawnDiary.Tab.NoEntries".Translate());
+                Widgets.Label(outRect, "PawnDiary.Tab.NoGeneratedEntries".Translate());
                 return;
             }
 
-            // Newest entries first for diary-style reading order.
-            List<DiaryEntryView> ordered = entries.OrderByDescending(entry => entry.Tick).ToList();
             // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
             float viewWidth = outRect.width - 16f;
             // Total scrollable height including 12f bottom padding.
@@ -108,18 +120,17 @@ namespace PawnDiary
                 Rect entryRect = new Rect(0f, curY, viewRect.width, height);
 
                 Widgets.DrawMenuSection(entryRect);
-                string status = entry.StatusText;
-                string header = string.IsNullOrWhiteSpace(status) ? entry.Date : $"{entry.Date} ({status})";
+                Widgets.DrawHighlightIfMouseover(entryRect);
 
-                Widgets.Label(new Rect(entryRect.x + 8f, entryRect.y + 6f, entryRect.width - 16f, 22f), header);
-                float textHeight = Text.CalcHeight(entry.DisplayText, entryRect.width - 16f);
-                Widgets.Label(new Rect(entryRect.x + 8f, entryRect.y + 30f, entryRect.width - 16f, textHeight), entry.DisplayText);
+                Rect titleRect = new Rect(entryRect.x, entryRect.y, entryRect.width, 28f);
+                Widgets.DrawTitleBG(titleRect);
 
-                Text.Font = GameFont.Tiny;
-                GUI.color = new Color(0.72f, 0.72f, 0.72f);
-                Widgets.Label(new Rect(entryRect.x + 8f, entryRect.y + 36f + textHeight, entryRect.width - 16f, entryRect.height - textHeight - 44f), entry.DebugText);
+                GUI.color = new Color(0.86f, 0.86f, 0.86f);
+                Widgets.LabelFit(new Rect(entryRect.x + 8f, entryRect.y + 5f, entryRect.width - 16f, 22f), entry.Date);
                 GUI.color = Color.white;
-                Text.Font = GameFont.Small;
+
+                float textHeight = Text.CalcHeight(entry.GeneratedText, entryRect.width - 16f);
+                Widgets.Label(new Rect(entryRect.x + 8f, entryRect.y + 36f, entryRect.width - 16f, textHeight), entry.GeneratedText);
 
                 curY += height + 8f;
             }
@@ -127,7 +138,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Renders the enable-toggle and persona-picker controls above the diary entries.
+        /// Renders the per-pawn generation toggle above the diary entries.
         /// </summary>
         private static void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
         {
@@ -152,57 +163,47 @@ namespace PawnDiary
                 component.SetDiaryGenerationEnabled(pawn, enabled);
             }
 
-            // Persona options come from DiaryPersonaDefs.xml so new presets can be added without
-            // changing UI code.
-            // The persona currently assigned to this pawn.
-            DiaryPersonaDef persona = component.PersonaFor(pawn);
-            if (listing.ButtonText("PawnDiary.Tab.PersonaButton".Translate(PersonaLabel(persona))))
-            {
-                List<FloatMenuOption> options = DiaryPersonas.All
-                    .OrderBy(PersonaLabel)
-                    .Select(option =>
-                    {
-                        DiaryPersonaDef selected = option;
-                        return new FloatMenuOption(PersonaLabel(selected), delegate
-                        {
-                            component.SetPersona(pawn, selected.defName);
-                        });
-                    })
-                    .ToList();
-
-                Find.WindowStack.Add(new FloatMenu(options));
-            }
-
-            string rule = persona?.rule ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(rule))
-            {
-                // Show the active rule inline so players can inspect the style without opening XML.
-                GameFont oldFont = Text.Font;
-                Text.Font = GameFont.Tiny;
-                Widgets.Label(listing.GetRect(40f), rule);
-                Text.Font = oldFont;
-            }
-
             listing.End();
         }
 
         /// <summary>
-        /// Returns the human-readable label for a persona, falling back to "default" if null
-        /// or to defName if the label is blank.
+        /// Draws a compact, RimWorld-style badge while hidden pending entries are being rewritten.
         /// </summary>
-        private static string PersonaLabel(DiaryPersonaDef persona)
+        private static void DrawGeneratingIndicator(Rect rect, int count)
         {
-            if (persona == null)
-            {
-                return "PawnDiary.Persona.DefaultLabel".Translate();
-            }
+            string label = count == 1
+                ? "PawnDiary.Status.Generating".Translate()
+                : "PawnDiary.Tab.GeneratingCount".Translate(count);
 
-            return string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label;
+            Widgets.DrawBoxSolidWithOutline(rect, new Color(0.12f, 0.14f, 0.12f, 0.86f), new Color(0.42f, 0.68f, 0.42f), 1);
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = new Color(0.78f, 0.95f, 0.78f);
+            Widgets.LabelFit(rect.ContractedBy(4f), label);
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+        }
+
+        /// <summary>
+        /// True when an entry has actual LLM output ready for the production diary list.
+        /// </summary>
+        private static bool IsGenerated(DiaryEntryView entry)
+        {
+            return entry != null && !string.IsNullOrWhiteSpace(entry.GeneratedText);
+        }
+
+        /// <summary>
+        /// True while an entry is still waiting on the background LLM generation pipeline.
+        /// </summary>
+        private static bool IsGenerating(DiaryEntryView entry)
+        {
+            return entry != null && entry.LlmStatus == DiaryEvent.PendingStatus;
         }
 
         /// <summary>
         /// Calculates the height needed for a single diary entry card, accounting for
-        /// dynamic text wrapping of both display and debug text.
+        /// dynamic text wrapping of the generated diary text.
         /// </summary>
         private static float EntryHeight(DiaryEntryView entry, float width)
         {
@@ -210,12 +211,10 @@ namespace PawnDiary
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Small;
-            float textHeight = Text.CalcHeight(entry.DisplayText, innerWidth);
-            Text.Font = GameFont.Tiny;
-            float debugHeight = Text.CalcHeight(entry.DebugText, innerWidth);
+            float textHeight = Text.CalcHeight(entry.GeneratedText, innerWidth);
             Text.Font = oldFont;
 
-            return 54f + textHeight + debugHeight;
+            return 48f + textHeight;
         }
     }
 }
