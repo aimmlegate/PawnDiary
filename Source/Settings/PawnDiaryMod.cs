@@ -275,7 +275,7 @@ namespace PawnDiary
         {
             listing.Label("PawnDiary.Settings.EventsHeader".Translate());
 
-// One toggle per group: whether events in it are recorded at all. Headers are
+            // One toggle per group: whether events in it are recorded at all. Headers are
             // drawn the first time later domains appear, keeping the XML order readable.
             bool mentalHeaderDrawn = false;
             bool taleHeaderDrawn = false;

@@ -32,10 +32,57 @@ should read easily. Companion files:
    idioms get a `//` note or a link to the primer below (e.g.
    `// New to C#/RimWorld? See AGENTS.md ("IExposable")`). Update comments when you touch the code.
 4. **Build after every change** to confirm it compiles (see *Building*).
+5. **Don't break a no-DLC game.** This mod targets **base RimWorld** and declares no DLC in
+   `About/About.xml` — keep it that way. A new feature may *react* to DLC content but must never
+   *require* it. Before touching anything from Royalty / Ideology / Biotech / Anomaly, read
+   **DLC-safety** below.
 
 ## Skill routing
 Before acting, check whether `skills/pawndiary-engineering/SKILL.md` applies. If it does, follow it
 exactly (plan first, smallest safe change, validate, document) — don't skip build or doc updates.
+
+## DLC-safety — a feature must not require a paid DLC
+The mod must keep working for players who own **no** paid DLC. It does today; keep it that way.
+
+**The trap (this surprises people coming from Node/npm):** *all* RimWorld C# — base game **and**
+all four DLCs — ships in one assembly, `Assembly-CSharp.dll`. DLCs are just content packs (XML
+defs, art, audio) plus an ownership flag. So a DLC type like `Gene` or `JobDriver_InstallRelic`
+**compiles fine without the DLC** — unlike a missing npm package, the reference resolves and the
+build passes. It tells you nothing. The breakage shows up at **runtime**, where the DLC's content
+and pawn state are absent.
+
+Rules, strongest first:
+
+- **Prefer our reactive string-matching pattern — it references no DLC at all.** We never name DLC
+  content in C#. We hook base-game choke points that *every* event flows through — `PlayLog.Add`,
+  `MentalStateHandler.TryStartMentalState`, `TaleRecorder.RecordTale`,
+  `GameConditionManager.RegisterCondition` — and classify each event by matching its `defName`
+  **as a string** (`1.6/Defs/DiaryInteractionGroupDefs.xml`). DLC defNames simply never appear
+  without the DLC, so those matchers sit harmlessly inert: no crash, no null-check, no `MayRequire`.
+  Add new DLC-aware content (a gene-, ritual-, or anomaly-themed prompt group) the **same way** —
+  string matchers in XML, never a C# type or def reference.
+- **Null-check DLC-gated pawn data — and put it in `DlcContext`.** These trackers are **`null`**
+  for a player without the DLC: `pawn.genes` (Biotech), `pawn.royalty` (Royalty), `pawn.ideo`
+  (Ideology). `Source/Generation/DlcContext.cs` is the **one** home for reading them: each accessor
+  double-guards (`ModsConfig.<Dlc>Active` + null-check) and returns `string.Empty` when absent, so
+  callers append the result unconditionally and a no-DLC game just omits the line (see the
+  `xenotype=`/`title=`/`faith=` fields in `BuildPawnSummary`). Add new DLC pawn reads there, in the
+  same shape — don't scatter raw `pawn.genes`/`royalty`/`ideo` access through the codebase.
+- **Gate live DLC behavior** behind `ModsConfig.RoyaltyActive` / `IdeologyActive` / `BiotechActive`
+  / `AnomalyActive` before doing anything DLC-specific. The type existing ≠ the content present.
+- **Never `DefDatabase<T>.GetNamed("SomeDlcDef")`** — it throws when the def is missing. Use
+  `GetNamedSilentFail` + null-check, or (better) the string-matcher pattern above.
+- **In XML, never reference a DLC def** (as `ParentName`, a `<li>` def reference, or a field)
+  without tagging it `MayRequire="Ludeon.RimWorld.Biotech"` (etc.); an untagged reference to a
+  missing def errors on load. Our matcher lists are plain strings, so they're safe.
+- **Harmony-patching a DLC method is fine** (the type exists) — it just never fires without the
+  DLC. If the target is a fragile compiler-generated name, register it defensively with a
+  null-check + warning like `RelicInstallCompletionPatch.TryRegister`, never via bare `PatchAll`.
+- **Only add a DLC `<modDependencies>` to `About.xml` if the *entire mod* needs it** — never for
+  one optional feature.
+
+Done bar for any DLC-touching change: *would this run, cleanly no-op, or crash if the DLC weren't
+installed?* It must run or no-op — never crash, never spam errors.
 
 ## Key facts
 - **Runtime is RimWorld's Unity Mono.** Only assemblies shipped in `RimWorldWin64_Data/Managed`

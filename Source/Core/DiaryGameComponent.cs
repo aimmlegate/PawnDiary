@@ -38,7 +38,7 @@ namespace PawnDiary
         // Small-talk batches still accumulating lines; keyed by PairKey. Not saved (flushed first).
         private readonly Dictionary<string, PendingSmallTalkBatch> pendingSmallTalkBatches = new Dictionary<string, PendingSmallTalkBatch>();
 
-// Transient (not saved) guard against duplicate mental-state events, e.g. the two
+        // Transient (not saved) guard against duplicate mental-state events, e.g. the two
         // mirrored SocialFighting starts, or a break that re-triggers quickly.
         private readonly Dictionary<string, int> recentMentalEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against TaleRecorder firing the same notable event repeatedly.
@@ -69,7 +69,7 @@ namespace PawnDiary
             }
         }
 
-public override void StartedNewGame()
+        public override void StartedNewGame()
         {
             pendingSmallTalkBatches.Clear();
             recentMentalEvents.Clear();
@@ -566,6 +566,15 @@ public override void StartedNewGame()
                 return;
             }
 
+            // Several incidents (Eclipse, Aurora, ToxicFallout, VolcanicWinter, Flashstorm, ...) are
+            // recorded BOTH as a Tale and as a GameCondition that shares the same defName. The
+            // MoodEvent domain already captures the GameCondition with proper positive/negative mood
+            // handling, so skip the Tale here to avoid logging the same event in the diary twice.
+            if (DefDatabase<GameConditionDef>.GetNamedSilentFail(taleDef.defName) != null)
+            {
+                return;
+            }
+
             Pawn firstPawn;
             Pawn secondPawn;
             ExtractTalePawns(tale, out firstPawn, out secondPawn);
@@ -620,6 +629,14 @@ public override void StartedNewGame()
             QualityCategory quality;
             if (!QualityUtility.TryGetQuality(craftedThing, out quality)
                 || (quality != QualityCategory.Masterwork && quality != QualityCategory.Legendary))
+            {
+                return;
+            }
+
+            // Art already flows through vanilla's CraftedArt tale (RecordTale), so recording the
+            // quality letter for it too would produce two diary entries for one sculpture. Let the
+            // tale own art; this hook covers only non-art masterwork/legendary items.
+            if (craftedThing.TryGetComp<CompArt>() != null)
             {
                 return;
             }
@@ -683,7 +700,7 @@ public override void StartedNewGame()
                 + "; relic=" + relicLabel
                 + "; relicDef=" + (relic.def?.defName ?? string.Empty);
 
-DiaryEvent relicEvent = AddSoloEvent(pawn, null, "RelicInstalled", label, text, instruction, gameContext);
+            DiaryEvent relicEvent = AddSoloEvent(pawn, null, "RelicInstalled", label, text, instruction, gameContext);
             QueueLlmRewrite(relicEvent, DiaryEvent.InitiatorRole);
         }
 
@@ -716,7 +733,12 @@ DiaryEvent relicEvent = AddSoloEvent(pawn, null, "RelicInstalled", label, text, 
             {
                 return;
             }
-string instruction = PawnDiaryMod.Settings.InstructionForMoodEvent(conditionDef);
+
+            string instruction = PawnDiaryMod.Settings.InstructionForMoodEvent(conditionDef);
+
+            // The condition's own thought offset is identical for every colonist, so compute it once
+            // here (it scans the whole ThoughtDef database) instead of inside the per-pawn loop.
+            float conditionThoughtOffset = DiaryContextBuilder.GetMoodOffsetFromConditionThoughts(conditionDef);
 
             // Base gameContext shared by all pawns experiencing this condition.
             string baseContext = "mood_event=" + conditionDefName
@@ -762,7 +784,7 @@ string instruction = PawnDiaryMod.Settings.InstructionForMoodEvent(conditionDef)
                     // pawn experiences the mood event independently. The mood impact direction
                     // (positive/negative/neutral) is determined per-pawn because some conditions
                     // (e.g. PsychicSuppressorMale) affect different sexes differently.
-                    string moodImpact = DiaryContextBuilder.DetermineMoodImpact(condition, pawn);
+                    string moodImpact = DiaryContextBuilder.DetermineMoodImpact(condition, pawn, conditionThoughtOffset);
                     string perPawnContext = baseContext + "; mood_impact=" + moodImpact;
 
                     string text;

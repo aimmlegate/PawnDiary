@@ -13,11 +13,12 @@ namespace PawnDiary
         // ---- Deduplication windows (in game ticks; 60 ticks ≈ 1 second) ----
         // SocialFighting fires once per participant; collapse the mirrored call within this window.
         public int socialFightDedupTicks = 300;
-        // The same pawn+break is only recorded once per this window (~1 in-game day).
+        // The same pawn+break is only recorded once per this window (~1 in-game hour).
         public int mentalBreakDedupTicks = 2500;
-// The same TaleDef+pawn combination is only recorded once within this short window.
+        // The same TaleDef+pawn combination is only recorded once within this short window.
         public int taleDedupTicks = 2500;
-        // The same mood-event GameConditionDef is only recorded once per colonist within this window.
+        // The same mood-event GameConditionDef is only recorded once across the colony within this
+        // window (the dedup is keyed by condition, not per colonist).
         public int moodEventDedupTicks = 2500;
         // Small-talk interactions for the same pawn pair are combined until this quiet window passes.
         public int smallTalkBatchWindowTicks = 2500;

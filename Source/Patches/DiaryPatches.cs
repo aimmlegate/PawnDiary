@@ -30,18 +30,29 @@ namespace PawnDiary
         }
     }
 
-    // Fires when a pawn finishes installing an ideology relic in a reliquary. The method name is
-    // compiler-generated from a local function/lambda inside MakeNewToils; using TargetMethod keeps
-    // the fragile private name in one place and fails harmlessly if RimWorld changes it.
-    [HarmonyPatch]
+    // Fires when a pawn finishes installing an ideology relic in a reliquary. The target is a
+    // compiler-generated local function inside MakeNewToils, whose name (<MakeNewToils>b__5_5) can
+    // shift between RimWorld versions. We deliberately do NOT register this via [HarmonyPatch] /
+    // PatchAll: if the name no longer resolves, AccessTools.Method returns null and PatchAll would
+    // THROW, aborting every other patch. Instead DiaryModStartup calls TryRegister, which null-checks
+    // the method and logs a warning, so a future rename only disables relic entries — nothing else.
     public static class RelicInstallCompletionPatch
     {
         /// <summary>
-        /// Locates the private final-action method inside JobDriver_InstallRelic.MakeNewToils.
+        /// Patches the private final-action method inside JobDriver_InstallRelic.MakeNewToils, if it
+        /// can still be found. Safe to call even when the method name has changed: it logs and skips.
         /// </summary>
-        public static MethodBase TargetMethod()
+        public static void TryRegister(Harmony harmony)
         {
-            return AccessTools.Method(typeof(JobDriver_InstallRelic), "<MakeNewToils>b__5_5");
+            MethodBase target = AccessTools.Method(typeof(JobDriver_InstallRelic), "<MakeNewToils>b__5_5");
+            if (target == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find JobDriver_InstallRelic.<MakeNewToils>b__5_5; "
+                    + "relic-install diary entries are disabled (a RimWorld update likely renamed it).");
+                return;
+            }
+
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicInstallCompletionPatch), nameof(Postfix)));
         }
 
         /// <summary>
@@ -275,7 +286,7 @@ namespace PawnDiary
                 return false;
             }
 
-Find.Selector.ClearSelection();
+            Find.Selector.ClearSelection();
             Find.Selector.Select(pawn, true, false);
             return true;
         }

@@ -77,6 +77,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
+| `DlcContext.cs` | The single, double-guarded home for reading DLC-gated pawn data (Biotech `xenotype=`, Royalty `title=`, Ideology `faith=`). Each accessor checks `ModsConfig.<Dlc>Active` + null and returns empty when the DLC/trait is absent, so a no-DLC game never breaks. See §8 and AGENTS.md ("DLC-safety"). |
 | `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
@@ -141,12 +142,15 @@ LlmClient.Enqueue ─▶ (same pipeline)
 
 Two additional narrow hooks feed the same event pipeline:
 - `QualityUtility.SendCraftNotification` records **Masterwork** and **Legendary** crafted items
-  as solo events for the crafter (`tale=CraftedMasterwork` / `tale=CraftedLegendary`).
+  as solo events for the crafter (`tale=CraftedMasterwork` / `tale=CraftedLegendary`). Art is
+  skipped here — vanilla's `CraftedArt` tale already covers it, so this avoids a double entry.
 - `JobDriver_InstallRelic`'s completion action records the pawn who installs an ideology relic
   in a reliquary (`tale=RelicInstalled`).
 - `GameConditionManager.RegisterCondition` records **mood-affecting game conditions**
   (aurora, eclipse, psychic drone, toxic fallout, etc.) as solo events for each eligible
-  colonist on affected maps (`mood_event=<defName>`).
+  colonist on affected maps (`mood_event=<defName>`). Several of these (Eclipse, Aurora,
+  ToxicFallout, VolcanicWinter, Flashstorm) are *also* TaleDefs; the Tale hook skips any tale
+  whose defName matches a GameConditionDef, so each is recorded once here — never twice.
 
 **Background generation.** All LLM diary generation is driven by background ticks, never by
 UI actions. `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 seconds (120 ticks),
@@ -227,9 +231,11 @@ there's nothing worth saying, so the model never spends tokens on noise:
   and their opinion-based relationship tone (e.g., "tense friction", "bright warmth", "bleak
   hostility"). Helps small models establish emotional tone without complex inference. Empty
   for neutral moods and neutral opinions.
-- **Pawn summary** (`BuildPawnSummary`): compact profile — `sex=`, `age=`, `mood=` (bucket + %),
-  `health=` (empty when healthy), `low_capacities=` (only Moving/Talking/Sight/Hearing when
-  below 80%, using localized keyword labels like "impaired movement"), `thoughts=` (exactly one
+- **Pawn summary** (`BuildPawnSummary`): compact profile — `sex=`, `age=`, then DLC identity
+  (each omitted without its DLC, via `DlcContext`): `xenotype=` (Biotech; skips plain Baseliner),
+  `title=` (Royalty; highest title), `faith=` (Ideology; ideoligion + role) — then `mood=`
+  (bucket + %), `health=` (empty when healthy), `low_capacities=` (only Moving/Talking/Sight/Hearing
+  when below 80%, using localized keyword labels like "impaired movement"), `thoughts=` (exactly one
   positive and one negative thought, weighted random so stronger effects are more likely).
 - **Surroundings** (`BuildSurroundingsSummary`): weather and biome only when **outdoors**;
   temperature only when actually cold (≤0°C) or hot (≥32°C); beauty only when notably nice
@@ -305,9 +311,11 @@ is recorded iff its group is enabled.
 | **Relics** (synthetic tale) | on | RelicInstalled |
 | **Work & achievements** (tale) | **off** | FinishedResearchProject, CompletedLongConstructionProject, GainedMasterSkill* |
 | **Anomaly horror** (tale) | on | StudiedEntity, MutatedMyArm, PerformedPsychicRitual, ClosedTheVoid, EmbracedTheVoid, DeathPall, UnnaturalDarkness, NoxiousHaze |
-| **Raids, disasters & colony events** (tale) | on | Raid, Infestation, ManhunterPack, ToxicFallout, Aurora, CaravanAmbushed*, LaunchedShip |
+| **Raids, disasters & colony events** (tale) | on | Raid, Infestation, ManhunterPack, MeteoriteImpact, ShipPartCrash, CaravanAmbushed*, LaunchedShip † |
 | **Quiet personal moments** (tale) | **off** | AttendedParty, Meditated, Prayed, ReadBook, Vomited, WalkedNaked, VisitedGrave |
 | **Other notable events** (tale) | **off** | any unmatched TaleDef |
+
+† Incidents that are also game conditions (Eclipse, Aurora, ToxicFallout, VolcanicWinter, Flashstorm) are recorded once via the **MoodEvent** domain, not as tales.
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
 `domain`, `defaultEnabled`, `important`, `combat`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
@@ -359,7 +367,8 @@ does not add a second surgery hook that would duplicate successful operations.
 **Synthetic tale-style events** cover vanilla moments that do not arrive as TaleDefs:
 - Masterwork and Legendary production is captured from `QualityUtility.SendCraftNotification`.
   Only the crafter receives a solo entry. These entries classify into the Tale domain using
-  synthetic defNames (`CraftedMasterwork`, `CraftedLegendary`).
+  synthetic defNames (`CraftedMasterwork`, `CraftedLegendary`). Art is excluded — it already
+  arrives as vanilla's `CraftedArt` tale, so recording it here too would double-log one sculpture.
 - Relic installation is captured from `JobDriver_InstallRelic`'s final action. Only the installer
   receives a solo entry (`RelicInstalled`). Relic discovery letters are colony-level and do not
   reliably name a pawn, so they are not used for diary ownership.
@@ -437,6 +446,15 @@ enabled), both editable from the tab (persona via a float-menu picker, generatio
   therefore parsed with the hand-written `MiniJson` (objects → `Dictionary<string,object>`,
   arrays → `object[]`, etc.). Do not reintroduce `JavaScriptSerializer` or add a NuGet
   JSON library unless it is shipped in the mod's own `Assemblies`.
+- **No paid DLC required.** `About/About.xml` declares no DLC dependency, and there are no
+  `[DefOf]`/`DefDatabase.GetNamed` lookups of DLC defs. DLC *events* are handled **reactively** —
+  patches hook base-game choke points (`PlayLog.Add`, `MentalStateHandler`, `TaleRecorder`,
+  `GameConditionManager`) and the interaction groups classify by matching `defName` **strings**
+  (§5), so DLC defNames are simply inert when the DLC is absent. DLC-gated **pawn data**
+  (Biotech genes, Royalty titles, Ideology faith) is read **only** through `DlcContext` (§4),
+  which double-guards every access (`ModsConfig.<Dlc>Active` + null-check) and returns empty when
+  absent — so a no-DLC game omits those prompt lines rather than crashing. New features must
+  preserve this — see **AGENTS.md → "DLC-safety"**.
 
 ---
 

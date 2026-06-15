@@ -17,6 +17,41 @@ doc itself describes only "what happens now".
   - Additive only: no existing personas were renamed or removed, so saved `personaDefName`
     values on existing pawns are unaffected. The default persona is unchanged
     (`DiaryPersona_StoicSurvivor`).
+- **2026-06-15 (DLC-safety: guidance + first guarded DLC reads)**
+  - Verified the mod runs on **base RimWorld with no paid DLC**: `About.xml` declares no DLC
+    dependency, no `[DefOf]`/`GetNamed` of DLC defs, and DLC *events* are handled reactively via
+    base-game patch choke points + `defName` string matching, so DLC content is inert (never
+    crashes) when absent.
+  - Added a **"DLC-safety"** section to `AGENTS.md` (+ a note in `DOCUMENTATION.md §8`) so new
+    features keep this property: explains the "all DLC ships in one assembly, so it compiles but
+    breaks at runtime" trap and the rules (prefer string matchers, route DLC pawn reads through
+    `DlcContext`, gate with `ModsConfig.*Active`, avoid `GetNamed` of DLC defs, tag DLC XML refs
+    with `MayRequire`).
+  - **New `Source/Generation/DlcContext.cs`** — the single, double-guarded home for DLC-gated pawn
+    reads (`ModsConfig.<Dlc>Active` + null-check; returns empty when the DLC/trait is absent). Wired
+    three identity fields into `BuildPawnSummary`, each omitted without its DLC and for the trait's
+    vanilla default: `xenotype=` (Biotech; skips plain Baseliner), `title=` (Royalty; highest
+    title), `faith=` (Ideology; ideoligion + role). Verified by building against the game assembly.
+
+- **2026-06-15 (code-review fixes: patch robustness & duplicate entries)**
+  - **Relic patch no longer risks the whole mod.** `RelicInstallCompletionPatch` targets a
+    compiler-generated method name (`<MakeNewToils>b__5_5`) that can change between RimWorld
+    versions. It was registered via `PatchAll`, where a failed lookup throws and aborts *every*
+    other patch. It is now registered manually from `DiaryModStartup` via `TryRegister`, which
+    null-checks the method and logs a warning — a future rename disables only relic entries.
+    `PatchAll` is also wrapped in try/catch as a backstop.
+  - **No more double diary entries for masterwork/legendary art.** `RecordCraftedQuality` now
+    skips art (`CompArt`), since vanilla's `CraftedArt` tale already records it. Removed the dead
+    duplicate `CraftedArt` from the `talework` group (it always classified to `talequality`).
+  - **No more double entries for condition-backed incidents.** Eclipse, Aurora, ToxicFallout,
+    VolcanicWinter and Flashstorm are both TaleDefs *and* GameConditionDefs, so they were logged
+    once as a Tale and once as a MoodEvent. `RecordTale` now skips any tale whose defName matches
+    a `GameConditionDef`; the MoodEvent domain (with positive/negative handling) owns them.
+  - **Efficiency:** `DetermineMoodImpact` no longer rescans the whole `ThoughtDef` database once
+    per colonist — the pawn-independent condition offset is computed once in `RecordMoodEvent`
+    and passed in (`DiaryContextBuilder` stays stateless).
+  - Fixed stray de-indentation introduced across ~10 files in the previous two commits, and
+    corrected the `moodEventDedupTicks` comment (dedup is per-condition, not per-colonist).
 
 - **2026-06-15 (prompt improvements for small local models 6B–31B)**
   - Simplified the default system prompt from 5 rules (~250 words) to 3 rules (~100 words).
