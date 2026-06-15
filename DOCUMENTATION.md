@@ -5,7 +5,7 @@
 > the Changelog at the bottom. Keep it accurate — it is the source of truth for "what
 > happens now".
 
-_Last updated: 2026-06-15 (agent guidance doc rename)_
+_Last updated: 2026-06-15 (shared agent skill scaffolding)_
 
 ---
 
@@ -53,6 +53,10 @@ PawnDiary/
 │  ├─ Core/ Models/ Generation/ Defs/ Patches/ UI/ Settings/ Util/
 │  └─ Properties/ Libs/
 ├─ prompt-lab/                  offline prompt harness (Node)
+├─ skills/                      shared agent skills (tool-agnostic)
+├─ AGENTS.md                    OpenCode-focused agent wrapper + repo rules
+├─ CLAUDE.md                    Claude Code wrapper to shared skill
+├─ CODEX.md                     Codex wrapper to shared skill
 └─ *.md                         docs (this file, AGENTS.md, CSHARP-NOTES.md, README.md)
 ```
 
@@ -83,6 +87,10 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry) and `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`). |
 | `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (the 16 groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `CSHARP-NOTES.md` | Primer mapping the C#/RimWorld idioms used here (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …) to JS/TS analogies. |
+| `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
+| `AGENTS.md` | OpenCode-oriented wrapper with repo constraints plus skill-routing rules. |
+| `CLAUDE.md` | Thin Claude Code wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
+| `CODEX.md` | Thin Codex wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
 | `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
 ---
@@ -413,6 +421,11 @@ values, and (optionally) add `DefInjected` files for the persona/group/prompt De
 ---
 
 ## 13. Changelog
+
+- **2026-06-15 (shared skill setup for Claude/Codex/OpenCode)**
+  - Added a shared repo skill at `skills/pawndiary-engineering/SKILL.md` as the source-of-truth workflow (scope-first, Mono constraints, minimal edits, build validation, doc updates).
+  - Added thin wrappers `CLAUDE.md` and `CODEX.md` that point to the shared skill and existing repo rules.
+  - Updated `AGENTS.md` to act as the OpenCode wrapper with explicit skill-routing requirements.
 
 - **2026-06-15 (localization-friendly strings)**
   - Moved all UI strings (settings window, diary tab, entry status) and all natural-language
