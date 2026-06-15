@@ -51,6 +51,8 @@ namespace PawnDiary
         public string recipientContinuity; // context string carrying forward recipient's prior entries
         public string initiatorLastOpener; // first sentence of initiator's last diary entry (avoid repeats)
         public string recipientLastOpener; // first sentence of recipient's last diary entry (avoid repeats)
+        public string initiatorBurningPassion; // random burning passion of initiator (important events only)
+        public string recipientBurningPassion; // random burning passion of recipient (important events only)
         public string initiatorPrompt; // assembled prompt text sent to the LLM for initiator POV
         public string recipientPrompt; // assembled prompt text sent to the LLM for recipient POV
         public string neutralPrompt; // assembled prompt text sent to the LLM for neutral POV
@@ -105,6 +107,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref recipientContinuity, "recipientContinuity");
             Scribe_Values.Look(ref initiatorLastOpener, "initiatorLastOpener");
             Scribe_Values.Look(ref recipientLastOpener, "recipientLastOpener");
+            Scribe_Values.Look(ref initiatorBurningPassion, "initiatorBurningPassion");
+            Scribe_Values.Look(ref recipientBurningPassion, "recipientBurningPassion");
             Scribe_Values.Look(ref initiatorGeneratedText, "initiatorGeneratedText");
             Scribe_Values.Look(ref recipientGeneratedText, "recipientGeneratedText");
             Scribe_Values.Look(ref neutralGeneratedText, "neutralGeneratedText");
@@ -211,6 +215,16 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(recipientLastOpener))
                 {
                     recipientLastOpener = string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(initiatorBurningPassion))
+                {
+                    initiatorBurningPassion = string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(recipientBurningPassion))
+                {
+                    recipientBurningPassion = string.Empty;
                 }
 
                 if (neutralStatus == null)
@@ -640,6 +654,16 @@ namespace PawnDiary
         {
             GroupDomain domain = IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, interactionDefName);
+        }
+
+        /// <summary>
+        /// Returns true if this event belongs to an important group (not chit chat, small talk, etc.).
+        /// Used to decide whether to include burning passion in the prompt context.
+        /// </summary>
+        public bool IsImportant()
+        {
+            DiaryInteractionGroupDef group = GroupForDisplay();
+            return group == null || group.important;
         }
 
         /// <summary>

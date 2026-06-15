@@ -358,6 +358,59 @@ namespace PawnDiary
             return string.Join("; ", parts.ToArray());
         }
 
+        // Returns a random passion from the pawn's skills, weighted so major passions
+        // are more likely to be chosen. Used for important events only.
+        public static string RandomBurningPassion(Pawn pawn)
+        {
+            if (pawn?.skills?.skills == null)
+            {
+                return string.Empty;
+            }
+
+            List<SkillRecord> passions = new List<SkillRecord>();
+            for (int i = 0; i < pawn.skills.skills.Count; i++)
+            {
+                SkillRecord skill = pawn.skills.skills[i];
+                if (skill != null && (skill.passion == Passion.Major || skill.passion == Passion.Minor))
+                {
+                    passions.Add(skill);
+                }
+            }
+
+            if (passions.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            // Weighted selection: major = 3x weight, minor = 1x weight
+            float totalWeight = 0f;
+            for (int i = 0; i < passions.Count; i++)
+            {
+                totalWeight += passions[i].passion == Passion.Major ? 3f : 1f;
+            }
+
+            float roll = UnityEngine.Random.value * totalWeight;
+            float cumulative = 0f;
+            for (int i = 0; i < passions.Count; i++)
+            {
+                cumulative += passions[i].passion == Passion.Major ? 3f : 1f;
+                if (roll <= cumulative)
+                {
+                    string label = CleanLine(passions[i].def.LabelCap);
+                    return passions[i].passion == Passion.Major
+                        ? label + " (burning)"
+                        : label;
+                }
+            }
+
+            // Fallback
+            SkillRecord last = passions[passions.Count - 1];
+            string lastLabel = CleanLine(last.def.LabelCap);
+            return last.passion == Passion.Major
+                ? lastLabel + " (burning)"
+                : lastLabel;
+        }
+
         private static string BuildMoodSummary(Pawn pawn)
         {
             if (pawn.needs?.mood == null)

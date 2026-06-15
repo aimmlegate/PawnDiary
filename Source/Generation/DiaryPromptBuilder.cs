@@ -59,6 +59,12 @@ namespace PawnDiary
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
             AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
             AppendField(lines, "my last opener (not repeat)", diaryEvent.LastOpenerForRole(povRole));
+            // Burning passion only for important events (not chit chat etc.)
+            if (diaryEvent.IsImportant())
+            {
+                AppendField(lines, "burning passion", isInitiator ? diaryEvent.initiatorBurningPassion : diaryEvent.recipientBurningPassion);
+            }
+
             AppendField(lines, "initiator diary (hidden context)", initiatorEntry);
 
             DiaryPromptDef p = DiaryPrompts.Current;
@@ -82,6 +88,11 @@ namespace PawnDiary
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
             AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
             AppendField(lines, "my last opener (not repeat)", diaryEvent.initiatorLastOpener);
+            // Burning passion only for important events (not chit chat etc.)
+            if (diaryEvent.IsImportant())
+            {
+                AppendField(lines, "burning passion", diaryEvent.initiatorBurningPassion);
+            }
 
             return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.singlePovInstruction;
         }
