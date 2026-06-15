@@ -349,6 +349,34 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Same as IsInteractionEnabled but for ThoughtDefs with expiration (positive/negative mood thoughts).
+        /// </summary>
+        public bool IsThoughtEnabled(ThoughtDef thoughtDef)
+        {
+            if (thoughtDef == null)
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyThought(thoughtDef);
+            return group != null && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a thought's diary entry,
+        /// falling back to the group's default if no override is set.
+        /// </summary>
+        public string InstructionForThought(ThoughtDef thoughtDef)
+        {
+            if (thoughtDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(InteractionGroups.ClassifyThought(thoughtDef));
+        }
+
+        /// <summary>
         /// Checks whether an interaction group is enabled, falling back to the group's
         /// defaultEnabled if no player override exists.
         /// </summary>

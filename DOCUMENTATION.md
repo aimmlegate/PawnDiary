@@ -4,7 +4,7 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-15 (colonist death descriptions)_
+_Last updated: 2026-06-16 (temporary thought diary entries)_
 
 ---
 
@@ -12,11 +12,12 @@ _Last updated: 2026-06-15 (colonist death descriptions)_
 
 Pawn Diary watches **colonist** pawns' social **interactions**, **social fights**,
 **mental breaks**, RimWorld **notable tales** (deaths, injuries, surgeries, births,
-recruitment, research, raids, disasters, and similar non-social history events), and
+recruitment, research, raids, disasters, and similar non-social history events),
 **mood-affecting game conditions** (aurora, eclipse, psychic drone, toxic fallout, etc.),
-keeps the meaningful ones, and uses an LLM (any OpenAI-compatible
-`/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server) to rewrite each
-event into a short first-person diary entry. Each pawn's diary is shown in an
+and **temporary thoughts** (mood thoughts with expiration, such as ate a fine meal,
+beautiful fire, colonist banished, etc.), keeps the meaningful ones, and uses an LLM (any
+OpenAI-compatible `/chat/completions` endpoint — e.g. a local LM Studio / llama.cpp server)
+to rewrite each event into a short first-person diary entry. Each pawn's diary is shown in an
 **inspector tab after Health** on that pawn's UI.
 
 Colonist deaths are the exception to the first-person rule: when a death Tale names a player
@@ -72,13 +73,13 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | File | Responsibility |
 |------|----------------|
 | `About/About.xml` | Mod metadata. `packageId = aimml.pawndiary`, supports RimWorld 1.6. |
-| `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`) and the `InteractionGroups` classifier over the `DefDatabase`. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts are editable without recompiling. |
+| `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`) and the `InteractionGroups` classifier over the `DefDatabase`. Supports five domains: Interaction, MentalState, Tale, MoodEvent, and Thought. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts are editable without recompiling. |
 | `Languages/English/Keyed/PawnDiary.xml` | All player-facing UI strings **and** the natural-language prompt text (event sentences, context words, buckets), resolved via `.Translate()`. See §12 Localization. |
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
-| `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions). |
-| `DiaryGameComponent.cs` | Orchestrator: recording, generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
+| `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions); `ThoughtHandler.GetNewThought` → `RecordThought` (temporary thoughts with expiration). |
+| `DiaryGameComponent.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
@@ -88,14 +89,14 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo, neutral arrival description, and neutral death description). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
-| `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). |
+| `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). Includes `IsThoughtEnabled`/`InstructionForThought` for the Thought domain. |
 | `DiaryTuningDef.cs` | Defines `DiaryTuningDef : Def` + `DiaryTuning.Current` (tuning knobs: dedup windows, thresholds, buckets). Data lives in XML; falls back to safe code defaults if the Def is absent. |
 | `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, legacy dual markers, and the default system prompt). |
 | `DiaryPersonaDef.cs` | Defines `DiaryPersonaDef : Def` + `DiaryPersonas` lookup/fallback helpers. Data lives in XML and is selected per pawn. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries with roleplay styling, importance markers, linked-entry cross-pawn previews (click-to-navigate), and that pawn's generation toggle. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry), `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`), and `LinkedEntryView` (truncated preview of the other pawn's entry for cross-linking). |
-| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, and tale groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, tale, mood-event, and thought groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers including thought thresholds/token lists), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
 | `AGENTS.md` | Guide for code agents: the working rules (docs, localization, comments, build), skill-routing rules, and the C#/RimWorld→JS/TS primer (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …). Start here. |
 | `CLAUDE.md` | Thin Claude Code wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
@@ -326,12 +327,16 @@ instruction** (shared by every event in the group). This replaces the old per-de
 "significant" allowlist *and* the old per-defName instruction map — they are now one system.
 
 Groups have a **domain**: `Interaction` (matches `InteractionDef`s), `MentalState`
-(matches `MentalStateDef`s), or `Tale` (matches `TaleDef`s from RimWorld's notable-history
-system). Classification is domain-scoped so the three never cross-match:
+(matches `MentalStateDef`s), `Tale` (matches `TaleDef`s from RimWorld's notable-history
+system), `MoodEvent` (matches `GameConditionDef`s that affect mood), or `Thought`
+(matches `ThoughtDef`s with expiration). Classification is domain-scoped so they never cross-match:
 - `Classify(InteractionDef)` → first matching Interaction-domain group, else **Other**.
 - `ClassifyMentalState(MentalStateDef)` → first matching MentalState-domain group, else
   **Mental breaks**.
 - `ClassifyTale(TaleDef)` → first matching Tale-domain group, else **Other notable events**.
+- `ClassifyMoodEvent(GameConditionDef)` → first matching MoodEvent-domain group, else
+  **Other mood events**.
+- `ClassifyThought(ThoughtDef)` → first matching Thought-domain group, else **Other thoughts**.
 
 Matching is by exact `defName` or a substring token; order within a domain matters
 (specific themes before generic), with the catch-all last.
@@ -373,8 +378,28 @@ is recorded iff its group is enabled.
 | **Raids, disasters & colony events** (tale) | on | Raid, Infestation, ManhunterPack, MeteoriteImpact, ShipPartCrash, CaravanAmbushed*, LaunchedShip † |
 | **Quiet personal moments** (tale) | **off** | AttendedParty, Meditated, Prayed, ReadBook, Vomited, WalkedNaked, VisitedGrave |
 | **Other notable events** (tale) | **off** | any unmatched TaleDef |
+| **Positive mood events** (mood) | on | Aurora, Party, PsychicSoothe |
+| **Negative mood events** (mood) | on | Eclipse, PsychicDrone, GrayPall, ToxicFallout |
+| **Situationally mixed mood events** (mood) | on | PsychicSuppressorMale, PsychicSuppressorFemale |
+| **Other mood events** (mood) | on | any unmatched GameConditionDef |
+| **Positive thoughts** (thought) | on | Apparel*, Beautiful*, Good*, Joy*, Happy*, etc. (filtered by `thoughtMinMoodOffset`) |
+| **Negative thoughts** (thought) | on | Pain*, Ugly*, Bad*, Sad*, etc. (filtered by `thoughtMinMoodOffset`) |
+| **Other thoughts** (thought) | on | any unmatched ThoughtDef with expiration |
 
 † Incidents that are also game conditions (Eclipse, Aurora, ToxicFallout, VolcanicWinter, Flashstorm) are recorded once via the **MoodEvent** domain, not as tales.
+
+**Thought recording** is driven by a Harmony postfix on `ThoughtHandler.GetNewThought`. Only
+temporary thoughts (`durationDays > 0`) are considered. Filtering rules are configurable via
+`DiaryTuningDef.xml`:
+- `thoughtIgnoreTokens`: substring tokens for thoughts always skipped (room stats, corpse observations).
+- `thoughtBypassThresholdTokens`: substring tokens for thoughts that skip the magnitude check
+  (death, banishment, abandonment — always recorded regardless of mood offset).
+- `thoughtEatingTokens`: substring tokens for eating thoughts, which use a higher threshold.
+- `thoughtMinMoodOffset` (default ±5): minimum absolute mood offset for general thoughts.
+- `thoughtEatingMinMoodOffset` (default ±15): minimum absolute mood offset for eating thoughts.
+
+The prompt instruction for thought groups tells the LLM to match dramatism to the mood offset
+magnitude: minor offsets get a passing mention, strong offsets get raw emotion and detail.
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
 `domain`, `defaultEnabled`, `important`, `combat`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
@@ -386,10 +411,11 @@ while quiet groups get a muted marker. It does not affect recording or generatio
 also gates the `burning passion:` prompt field; `combat` (data-driven, default false) gates the
 `weapon:` field — together they decide whether the equipped weapon is added to the prompt.
 
-**Tuning knobs** (dedup windows, small-talk batching, scan radius/temperature, and the
-mood/pain/beauty/opinion bucket thresholds) likewise live in XML —
-`1.6/Defs/DiaryTuningDef.xml`, backing `DiaryTuningDef` / `DiaryTuning.Current`. Every value
-defaults to the shipped number, so deleting the file or any field changes nothing.
+**Tuning knobs** (dedup windows, small-talk batching, scan radius/temperature, the
+mood/pain/beauty/opinion bucket thresholds, and thought recording thresholds/token lists)
+likewise live in XML — `1.6/Defs/DiaryTuningDef.xml`, backing `DiaryTuningDef` /
+`DiaryTuning.Current`. Every value defaults to the shipped number, so deleting the file or
+any field changes nothing.
 
 **Small talk batching:** interactions classified into the `smalltalk` group are buffered per
 pawn pair instead of queued immediately. The batch flushes when no new small-talk event arrives

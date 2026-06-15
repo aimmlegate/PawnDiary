@@ -14,6 +14,7 @@
     <mentalBreakDedupTicks>2500</mentalBreakDedupTicks>
     <taleDedupTicks>2500</taleDedupTicks>
     <moodEventDedupTicks>2500</moodEventDedupTicks>
+    <thoughtDedupTicks>2500</thoughtDedupTicks>
     <smallTalkBatchWindowTicks>2500</smallTalkBatchWindowTicks>
     <smallTalkBatchMaxEvents>6</smallTalkBatchMaxEvents>
 
@@ -50,6 +51,36 @@
     <opinionFriendly>25</opinionFriendly>
     <opinionNeutralAbove>-10</opinionNeutralAbove>
     <opinionStrainedAbove>-40</opinionStrainedAbove>
+
+    <!-- Thought recording thresholds -->
+    <thoughtMinMoodOffset>5</thoughtMinMoodOffset>
+    <thoughtEatingMinMoodOffset>15</thoughtEatingMinMoodOffset>
+
+    <!-- Thoughts to always ignore (substring match in defName) -->
+    <thoughtIgnoreTokens>
+      <li>Room</li>
+      <li>Environment</li>
+      <li>ObservedCorpse</li>
+    </thoughtIgnoreTokens>
+
+    <!-- Thoughts that bypass magnitude threshold (always recorded if they have duration) -->
+    <thoughtBypassThresholdTokens>
+      <li>Death</li>
+      <li>Died</li>
+      <li>Killed</li>
+      <li>Executed</li>
+      <li>Banished</li>
+      <li>Abandoned</li>
+    </thoughtBypassThresholdTokens>
+
+    <!-- Thoughts classified as eating-related (use higher threshold) -->
+    <thoughtEatingTokens>
+      <li>Ate</li>
+      <li>Food</li>
+      <li>Meal</li>
+      <li>Cannibalism</li>
+      <li>RawFood</li>
+    </thoughtEatingTokens>
   </PawnDiary.DiaryTuningDef>
 
 </Defs>

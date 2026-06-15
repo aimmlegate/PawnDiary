@@ -4,6 +4,42 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (thought feature review fixes)**
+  - Converted `ThoughtGainPatch` from `[HarmonyPatch]` attribute to `TryRegister` pattern (matching
+    `RelicInstallCompletionPatch`), so a missing or renamed `ThoughtHandler.GetNewThought` only
+    disables thought entries instead of crashing all patches.
+  - Fixed `GetThoughtMoodOffset` to use `thought.MoodOffset()` (current stage's `baseMoodEffect`)
+    instead of summing all stages, which gave incorrect magnitude for multi-stage thoughts.
+  - Fixed bypass threshold priority: `thoughtBypassThresholdTokens` (death, banishment) now always
+    bypass the magnitude check, even if the thought also matches `thoughtEatingTokens`.
+  - Removed redundant entries from `thoughtIgnoreTokens` (Bedroom, Barracks, Hospital, DiningRoom,
+    ObservedRottingCorpse, RottingCorpse) — already covered by `Room` and `ObservedCorpse`.
+  - Added TODO comments in `DiaryInteractionGroupDefs.xml` flagging broad substring tokens
+    (Good, Nice, Bad, Sad, Hot, Cold) that may misclassify modded ThoughtDefs.
+  - Fixed stale comment referencing `durationTicks` instead of `durationDays`.
+
+- **2026-06-16 (temporary thought diary entries)**
+  - Added a new `Thought` domain for recording temporary thoughts (Thought_Memory with expiration)
+    as solo diary entries. A Harmony postfix on `ThoughtHandler.GetNewThought` forwards newly gained
+    thoughts to `DiaryGameComponent.RecordThought`.
+  - Only thoughts with `durationDays > 0` are recorded (permanent traits are skipped). Filtering rules
+    are fully configurable via `DiaryTuningDef.xml`:
+    - `thoughtIgnoreTokens`: substring tokens for thoughts always skipped (room stats, corpse observations).
+    - `thoughtBypassThresholdTokens`: substring tokens for thoughts that skip the magnitude check
+      (death, banishment, abandonment — always recorded).
+    - `thoughtEatingTokens`: substring tokens for eating thoughts, which use a higher threshold.
+    - `thoughtMinMoodOffset` (default ±5): minimum absolute mood offset for general thoughts.
+    - `thoughtEatingMinMoodOffset` (default ±15): minimum absolute mood offset for eating thoughts.
+  - Three new interaction groups in `DiaryInteractionGroupDefs.xml`: `thoughtPositive`, `thoughtNegative`,
+    and `thoughtOther` (catch-all). Each has a prompt instruction that tells the LLM to match
+    dramatism to the mood offset magnitude.
+  - Added `PawnDiary.Settings.ThoughtsHeader` label and a "Temporary thoughts" section header in the
+    mod settings UI alongside the existing domain sections.
+  - Added `PawnDiary.Event.Thought`, `PawnDiary.Event.ThoughtPositive`, `PawnDiary.Event.ThoughtNegative`
+    keyed strings for the raw event text fed to the LLM.
+  - `DiaryEvent.GroupForDisplay` now recognizes the `thought=` gameContext field to classify saved
+    thought events into the `Thought` domain for UI coloring.
+
 - **2026-06-15 (colony arrival first entries)**
   - Added neutral, persona-independent first entries that describe how a pawn joined the colony,
     using the new `DiaryPromptDef.arrivalDescriptionInstruction`.

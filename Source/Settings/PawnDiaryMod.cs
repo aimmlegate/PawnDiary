@@ -280,6 +280,7 @@ namespace PawnDiary
             bool mentalHeaderDrawn = false;
             bool taleHeaderDrawn = false;
             bool moodEventHeaderDrawn = false;
+            bool thoughtHeaderDrawn = false;
             foreach (DiaryInteractionGroupDef group in InteractionGroups.All)
             {
                 if (group.domain == GroupDomain.MentalState && !mentalHeaderDrawn)
@@ -301,6 +302,13 @@ namespace PawnDiary
                     moodEventHeaderDrawn = true;
                     listing.Gap(6f);
                     listing.Label("PawnDiary.Settings.MoodEventsHeader".Translate());
+                }
+
+                if (group.domain == GroupDomain.Thought && !thoughtHeaderDrawn)
+                {
+                    thoughtHeaderDrawn = true;
+                    listing.Gap(6f);
+                    listing.Label("PawnDiary.Settings.ThoughtsHeader".Translate());
                 }
 
                 bool enabled = Settings.IsGroupEnabled(group.defName);

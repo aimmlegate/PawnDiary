@@ -637,4 +637,94 @@
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- ===== Thought domain: temporary thoughts with expiration ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtPositive</defName>
+    <label>Positive thoughts</label>
+    <order>500</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood offset: minor joys get a quiet note, strong ones get warmth and detail</instruction>
+    <!-- TODO: Some tokens (Good, Nice, Love, Social) are broad substring matches that may
+         misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
+    <matchTokens>
+      <li>Apparel</li>
+      <li>Beautiful</li>
+      <li>Good</li>
+      <li>Joy</li>
+      <li>Happy</li>
+      <li>Great</li>
+      <li>Nice</li>
+      <li>Proud</li>
+      <li>Confident</li>
+      <li>Inspired</li>
+      <li>Comfort</li>
+      <li>Warm</li>
+      <li>Cool</li>
+      <li>Refreshed</li>
+      <li>Relaxed</li>
+      <li>Love</li>
+      <li>Social</li>
+      <li>Fun</li>
+      <li>Played</li>
+      <li>Telescope</li>
+      <li>Nature</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtNegative</defName>
+    <label>Negative thoughts</label>
+    <order>510</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood offset: minor irritations get a passing mention, severe ones get raw emotion and weight</instruction>
+    <!-- TODO: Some tokens (Bad, Sad, Hot, Cold) are broad substring matches that may
+         misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
+    <matchTokens>
+      <li>Pain</li>
+      <li>Ugly</li>
+      <li>Bad</li>
+      <li>Sad</li>
+      <li>Horrible</li>
+      <li>Terrible</li>
+      <li>Awful</li>
+      <li>Miserable</li>
+      <li>Depressed</li>
+      <li>Annoyed</li>
+      <li>Disgusted</li>
+      <li>Scared</li>
+      <li>Afraid</li>
+      <li>Cold</li>
+      <li>Hot</li>
+      <li>Wet</li>
+      <li>Dirty</li>
+      <li>Sick</li>
+      <li>Naked</li>
+      <li>Jealous</li>
+      <li>Angry</li>
+      <li>Humiliated</li>
+      <li>Shamed</li>
+      <li>Guilt</li>
+      <li>Bored</li>
+      <li>Tired</li>
+      <li>Exhausted</li>
+      <li>Hungry</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtOther</defName>
+    <label>Other thoughts</label>
+    <order>520</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood offset</instruction>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
 </Defs>

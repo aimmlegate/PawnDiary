@@ -78,6 +78,7 @@
   <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
   <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
   <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
+  <PawnDiary.Settings.ThoughtsHeader>Temporary thoughts</PawnDiary.Settings.ThoughtsHeader>
   <PawnDiary.Settings.PromptForGroup>Prompt for: {0}</PawnDiary.Settings.PromptForGroup>
   <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
   <PawnDiary.Settings.SaveInstruction>Save instruction</PawnDiary.Settings.SaveInstruction>
@@ -110,6 +111,11 @@
   <PawnDiary.Event.MoodEvent>{0} experienced {1}.</PawnDiary.Event.MoodEvent>
   <PawnDiary.Event.MoodEventPositive>{0} enjoyed {1}.</PawnDiary.Event.MoodEventPositive>
   <PawnDiary.Event.MoodEventNegative>{0} was troubled by {1}.</PawnDiary.Event.MoodEventNegative>
+
+  <!-- Thought text (temporary thought diary entries) -->
+  <PawnDiary.Event.Thought>{0} had a thought: {1}.</PawnDiary.Event.Thought>
+  <PawnDiary.Event.ThoughtPositive>{0} was cheered by {1}.</PawnDiary.Event.ThoughtPositive>
+  <PawnDiary.Event.ThoughtNegative>{0} was troubled by {1}.</PawnDiary.Event.ThoughtNegative>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because initiator diary generation failed.</PawnDiary.Error.SkippedInitiatorFailed>

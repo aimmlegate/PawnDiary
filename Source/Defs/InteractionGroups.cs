@@ -21,7 +21,8 @@ namespace PawnDiary
         Interaction,
         MentalState,
         Tale,
-        MoodEvent
+        MoodEvent,
+        Thought
     }
 
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in
@@ -154,6 +155,12 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyMoodEvent(GameConditionDef conditionDef)
         {
             return ClassifyIn(GroupDomain.MoodEvent, conditionDef?.defName);
+        }
+
+        // First Thought-domain group that matches the ThoughtDef, else the Thought catch-all.
+        public static DiaryInteractionGroupDef ClassifyThought(ThoughtDef thoughtDef)
+        {
+            return ClassifyIn(GroupDomain.Thought, thoughtDef?.defName);
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.

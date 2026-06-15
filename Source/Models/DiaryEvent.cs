@@ -770,7 +770,9 @@ namespace PawnDiary
                 ? GroupDomain.Tale
                 : IsMoodEventEvent()
                     ? GroupDomain.MoodEvent
-                    : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
+                    : IsThoughtEvent()
+                        ? GroupDomain.Thought
+                        : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, interactionDefName);
         }
 
@@ -839,6 +841,16 @@ namespace PawnDiary
         {
             return !string.IsNullOrWhiteSpace(gameContext)
                 && gameContext.IndexOf("mood_event=", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Thought events store their ThoughtDef defName in interactionDefName; their context
+        /// starts with a stable thought field, which lets UI classification pick the Thought domain.
+        /// </summary>
+        private bool IsThoughtEvent()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("thought=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>

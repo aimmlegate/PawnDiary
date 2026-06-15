@@ -2,6 +2,7 @@
 // code into a single Def so they can be retuned by editing XML (1.6/Defs/DiaryTuningDef.xml)
 // and restarting — no recompile. Every field defaults to the value the code shipped with, so a
 // missing or partial XML changes nothing. New to C#/RimWorld? See AGENTS.md ("Defs").
+using System.Collections.Generic;
 using Verse;
 
 namespace PawnDiary
@@ -20,6 +21,8 @@ namespace PawnDiary
         // The same mood-event GameConditionDef is only recorded once across the colony within this
         // window (the dedup is keyed by condition, not per colonist).
         public int moodEventDedupTicks = 2500;
+        // The same pawn+thought combination is only recorded once within this window (~1 in-game hour).
+        public int thoughtDedupTicks = 2500;
         // Small-talk interactions for the same pawn pair are combined until this quiet window passes.
         public int smallTalkBatchWindowTicks = 2500;
         // Flush sooner when a pair talks this many times before the quiet window passes.
@@ -58,6 +61,25 @@ namespace PawnDiary
         public int opinionFriendly = 25;
         public int opinionNeutralAbove = -10;   // opinion > this => "neutral" (else worse)
         public int opinionStrainedAbove = -40;  // opinion > this => "strained" (else "hostile")
+
+        // ---- Thought recording thresholds ----
+        // Minimum absolute mood offset for a general thought to be recorded.
+        public float thoughtMinMoodOffset = 5f;
+        // Minimum absolute mood offset for an eating-related thought to be recorded.
+        public float thoughtEatingMinMoodOffset = 15f;
+
+        // Substring tokens: a ThoughtDef defName containing any token (case-insensitive) is always
+        // ignored — never recorded as a diary entry. Used for room stat thoughts, corpse observations, etc.
+        public List<string> thoughtIgnoreTokens;
+
+        // Substring tokens: a ThoughtDef defName containing any token (case-insensitive) bypasses
+        // the magnitude threshold — always recorded regardless of mood offset (if it has expiration).
+        // Used for death thoughts, banishment, abandonment, etc.
+        public List<string> thoughtBypassThresholdTokens;
+
+        // Substring tokens: a ThoughtDef defName containing any token (case-insensitive) is classified
+        // as an eating thought and uses thoughtEatingMinMoodOffset instead of thoughtMinMoodOffset.
+        public List<string> thoughtEatingTokens;
     }
 
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default

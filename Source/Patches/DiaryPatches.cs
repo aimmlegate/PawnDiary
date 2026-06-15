@@ -366,4 +366,48 @@ namespace PawnDiary
             DiaryGameComponent.Current?.RecordMoodEvent(cond);
         }
     }
+
+    // Fires when a pawn gains a temporary thought (Thought_Memory). We only record thoughts
+    // that have an expiration (durationDays > 0), filtering out permanent traits and
+    // low-magnitude thoughts. The patch catches all temporary mood thoughts at the moment
+    // they are added to the pawn's thought collection.
+    public static class ThoughtGainPatch
+    {
+        /// <summary>
+        /// Patches ThoughtHandler.GetNewThought, if it can still be found. Safe to call even
+        /// when the method name has changed: it logs and skips.
+        /// </summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            MethodBase target = AccessTools.Method(typeof(ThoughtHandler), "GetNewThought");
+            if (target == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find ThoughtHandler.GetNewThought; "
+                    + "thought diary entries are disabled (a RimWorld update likely renamed it).");
+                return;
+            }
+
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(ThoughtGainPatch), nameof(Postfix)));
+        }
+
+        /// <summary>
+        /// Harmony Postfix for ThoughtHandler.GetNewThought. Fires when a thought is created
+        /// and added to a pawn's thought collection. Forwards temporary thoughts (Thought_Memory
+        /// with expiration) to the diary.
+        /// </summary>
+        public static void Postfix(ThoughtHandler __instance, Thought __result)
+        {
+            if (__instance == null || __result == null || !(__result is Thought_Memory thoughtMemory))
+            {
+                return;
+            }
+
+            if (thoughtMemory.pawn == null || thoughtMemory.def == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordThought(thoughtMemory.pawn, thoughtMemory);
+        }
+    }
 }
