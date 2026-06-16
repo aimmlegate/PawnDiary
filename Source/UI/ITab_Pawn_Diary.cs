@@ -241,7 +241,7 @@ namespace PawnDiary
             if (years.Count > 1)
             {
                 Rect yearRect = new Rect(rect.x, entriesY, rect.width, YearFilterHeight);
-                DrawYearFilter(yearRect, years, CountEntriesForYear(visibleEntries, selectedYear));
+                DrawYearFilter(yearRect, years, visibleEntries);
                 entriesY = yearRect.yMax + YearFilterGap;
                 outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
             }
@@ -437,28 +437,35 @@ namespace PawnDiary
         private static void DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend)
         {
             Widgets.DrawMenuSection(rect);
-            Widgets.DrawTitleBG(rect);
+            Rect titleRect = new Rect(rect.x, rect.y, rect.width, EntryTitleHeight);
+            Widgets.DrawTitleBG(titleRect);
             Widgets.DrawHighlightIfMouseover(rect);
 
             Rect accentRect = new Rect(rect.x + 1f, rect.y + 1f, EntryAccentWidth, rect.height - 2f);
             Widgets.DrawBoxSolid(accentRect, accent);
             Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
+            Widgets.DrawBoxSolid(
+                new Rect(
+                    rect.x + EntryAccentWidth + 8f,
+                    rect.y + EntryTitleHeight,
+                    Mathf.Max(0f, rect.width - EntryAccentWidth - 20f),
+                    1f),
+                HeaderRuleColor);
 
-            Rect groupRect = GroupLabelRect(rect, entry?.GroupLabel);
+            Rect groupRect = GroupLabelRect(titleRect, entry?.GroupLabel);
             if (groupRect.width > 0f)
             {
-                groupRect.y = rect.y + (rect.height - groupRect.height) * 0.5f;
                 DrawGroupLabel(groupRect, entry.GroupLabel, accent);
             }
 
             float headerRight = groupRect.width > 0f ? groupRect.x - 6f : rect.xMax - 8f;
             Rect headerRect = new Rect(
                 rect.x + 34f,
-                rect.y + (rect.height - 22f) * 0.5f,
+                rect.y + 5f,
                 Mathf.Max(80f, headerRight - rect.x - 34f),
                 22f);
             DrawEntryHeader(headerRect, entry, accent);
-            DrawExpansionIndicator(rect, expanded, expansionBlend, accent);
+            DrawExpansionIndicator(titleRect, expanded, expansionBlend, accent);
 
             TooltipHandler.TipRegion(rect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
         }
@@ -605,7 +612,7 @@ namespace PawnDiary
         /// that actually have visible entries, newest first; all entries for the selected year are
         /// shown in the scroll view below.
         /// </summary>
-        private void DrawYearFilter(Rect rect, List<int> years, int entryCount)
+        private void DrawYearFilter(Rect rect, List<int> years, List<DiaryEntryView> entries)
         {
             if (years == null || years.Count <= 1)
             {
@@ -635,16 +642,26 @@ namespace PawnDiary
                 SelectYear(years[index + 1]);
             }
 
-            GameFont oldFont = Text.Font;
-            TextAnchor oldAnchor = Text.Anchor;
-            Color oldColor = GUI.color;
-            Text.Font = GameFont.Small;
-            Text.Anchor = TextAnchor.MiddleCenter;
-            GUI.color = new Color(0.86f, 0.86f, 0.80f);
-            Widgets.LabelFit(labelRect, "PawnDiary.Tab.YearFilter".Translate(YearLabel(selectedYear), entryCount));
-            GUI.color = oldColor;
-            Text.Anchor = oldAnchor;
-            Text.Font = oldFont;
+            int entryCount = CountEntriesForYear(entries, selectedYear);
+            if (Widgets.ButtonText(labelRect, "PawnDiary.Tab.YearFilter".Translate(YearLabel(selectedYear), entryCount)))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>();
+                for (int i = 0; i < years.Count; i++)
+                {
+                    int optionYear = years[i];
+                    string label = "PawnDiary.Tab.YearFilter".Translate(
+                        YearLabel(optionYear),
+                        CountEntriesForYear(entries, optionYear)).ToString();
+                    options.Add(new FloatMenuOption(label, delegate
+                    {
+                        SelectYear(optionYear);
+                    }));
+                }
+
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+
+            TooltipHandler.TipRegion(labelRect, "PawnDiary.Tab.YearSelectorTip".Translate());
         }
 
         /// <summary>

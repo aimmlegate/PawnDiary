@@ -47,6 +47,7 @@
   <PawnDiary.Tab.NewerYear>Newer year</PawnDiary.Tab.NewerYear>
   <PawnDiary.Tab.OlderYear>Older year</PawnDiary.Tab.OlderYear>
   <PawnDiary.Tab.YearFilter>{0} - {1} pages</PawnDiary.Tab.YearFilter>
+  <PawnDiary.Tab.YearSelectorTip>Click to choose a diary year.</PawnDiary.Tab.YearSelectorTip>
   <PawnDiary.Tab.YearLabel>Year {0}</PawnDiary.Tab.YearLabel>
   <PawnDiary.Tab.UnknownYear>Undated</PawnDiary.Tab.UnknownYear>
   <PawnDiary.Tab.ExpandCollapseTip>Click the header to expand or collapse this page.</PawnDiary.Tab.ExpandCollapseTip>

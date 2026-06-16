@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (dev mock diary filler)_
+_Last updated: 2026-06-17 (discovery code quarantine)_
 
 ---
 
@@ -140,19 +140,14 @@ Synthetic tale-style events cover:
 
 ### Game events and map discoveries
 
-Synthetic GameEvent entries cover meaningful map/story discoveries that vanilla does not expose as
-TaleDefs. Fog reveals use `FogGrid.Notify_PawnEnteringDoor` to cache the entering colonist briefly,
-then `FogGrid.NotifyAreaRevealed` records the reveal from that pawn's point of view when it exposes
-an ancient mech threat or a nearby `CompLetterOnRevealed` object. Ancient-danger shrine warnings also
-hook `TriggerUnfogged.Activated()` directly, because that is the stable vanilla trigger behind the
-foreboding discovery letter. The recorder deduplicates by map/object so the same ancient danger reveal
-does not become several diary pages. These Harmony patches bind vanilla method arguments by position,
-avoiding RimWorld parameter-name drift that would otherwise abort patch registration.
-
-Void/fallen monolith beats are recorded directly from `Building_VoidMonolith.Investigate(Pawn)` and
-`Building_VoidMonolith.Activate(Pawn)`, and from `CompStudiableMonolith.Study(Pawn, ...)` as a
-fallback for study-driven discovery flows, so the investigator, activator, or studier is the diary
-author.
+Synthetic GameEvent entries were intended to cover meaningful map/story discoveries that vanilla does
+not expose as TaleDefs, including ancient danger, ancient mech threats, hidden revealed things, and
+void/fallen monolith beats. This feature is currently marked non-functional: the recorder remains in
+`Source/Core/DiaryGameComponent.GameEvents.cs` for future repair, but the attempted Harmony hook
+classes have been moved to `Source/Patches/DiscoveryPatches.cs` without `[HarmonyPatch]` attributes so
+they do not register through `PatchAll`. The recorder and disabled hook stubs also guard on
+`DiaryGameComponent.DiscoveryEventsEnabled`, which returns `false`, so accidental/manual calls no-op
+before creating diary events.
 
 ### Arrivals and deaths
 
@@ -313,11 +308,13 @@ across many saved display dates without calling an LLM. Long histories are paged
 above the diary list, showing the full set of visible entries for one year at a time rather than one
 unbounded scroll view. The year comes from the saved display date that every old entry already has;
 malformed or missing dates fall back to an undated page so old saves do not lose reachable entries.
-Within a year page, the newest 15 visible entries open in full by default and older entries collapse
-to compact date/title header rows with a clean border and accent strip at the same height as an
-expanded card header including its menu-section border. Compact rendering takes over only once the
-height animation is fully closed, so the border and header framing do not swap midway through the
-collapse. Clicking a header toggles that page with a lightweight height animation, and the choice is
+The year control keeps adjacent newer/older buttons and makes the center year label a selector menu
+listing every visible year with its page count. Within a year page, the newest 15 visible entries
+open in full by default and older entries collapse to compact date/title header rows with a clean
+border and accent strip at the same height as an expanded card header including its menu-section
+border. Compact rows draw the same header geometry as expanded cards, including chip/text offsets
+and the hairline rule, and compact rendering takes over only once the height animation is fully
+closed. Clicking a header toggles that page with a lightweight height animation, and the choice is
 kept as session UI state so manually opened older pages stay open while the tab lives. Collapsed and
 animating rows keep hover/click feedback bounded to their visible height, so hidden full-card body
 space never lights up neighboring rows. Generated cards show

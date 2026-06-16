@@ -2,12 +2,11 @@
 // vanilla methods: Postfix hooks record PlayLog.Add social interactions,
 // MentalStateHandler.TryStartMentalState social fights / mental breaks, TaleRecorder
 // notable-history events, Pawn.Kill death details, Pawn.SetFaction colony arrivals,
-// FogGrid area reveals, monolith investigation/activation, and GameConditionManager.RegisterCondition
+// and GameConditionManager.RegisterCondition
 // mood-affecting game conditions after RimWorld handles them. A Prefix hook redirects Social-tab
 // play-log clicks into the matching Diary entry when one exists. AccessTools.Field reads private
 // vanilla fields via reflection.
 // New to this? See AGENTS.md ("Harmony patches").
-using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -16,59 +15,6 @@ using Verse.AI;
 
 namespace PawnDiary
 {
-    // Keeps the pawn who just caused a fog reveal available for FogGrid.NotifyAreaRevealed. Vanilla's
-    // reveal result tells us what was uncovered (including ancient mech danger), but not who opened
-    // the door. Notify_PawnEnteringDoor has that pawn, so this tiny cache bridges the two callbacks.
-    internal static class AreaRevealDiscovererCache
-    {
-        private const int CacheLifetimeTicks = 300;
-        private static readonly Dictionary<int, CachedDiscoverer> ByMap = new Dictionary<int, CachedDiscoverer>();
-
-        public static void Note(Pawn pawn, Map map)
-        {
-            if (pawn == null || map == null || !pawn.IsColonist)
-            {
-                return;
-            }
-
-            ByMap[map.uniqueID] = new CachedDiscoverer(pawn, Find.TickManager.TicksGame);
-        }
-
-        public static Pawn LatestFor(Map map)
-        {
-            if (map == null)
-            {
-                return null;
-            }
-
-            CachedDiscoverer cached;
-            if (!ByMap.TryGetValue(map.uniqueID, out cached))
-            {
-                return null;
-            }
-
-            if (Find.TickManager.TicksGame - cached.Tick > CacheLifetimeTicks)
-            {
-                ByMap.Remove(map.uniqueID);
-                return null;
-            }
-
-            return cached.Pawn;
-        }
-
-        private struct CachedDiscoverer
-        {
-            public readonly Pawn Pawn;
-            public readonly int Tick;
-
-            public CachedDiscoverer(Pawn pawn, int tick)
-            {
-                Pawn = pawn;
-                Tick = tick;
-            }
-        }
-    }
-
     // Fires at the exact moment a pawn is killed. TaleRecorder later tells us that a colonist death
     // should become a diary event, but the Tale no longer carries the killing DamageInfo or culprit
     // hediff. This prefix caches those facts while they are still available.
@@ -270,106 +216,6 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.Current?.RecordTale(__result, def);
-        }
-    }
-
-    // Fires just before a pawn entering a door can cause nearby fog to open. We cache the pawn so the
-    // subsequent area-revealed callback can write the diary entry from the discoverer's POV.
-    [HarmonyPatch(typeof(FogGrid), nameof(FogGrid.Notify_PawnEnteringDoor))]
-    public static class FogGridPawnEnteringDoorPatch
-    {
-        /// <summary>
-        /// Harmony Prefix for FogGrid.Notify_PawnEnteringDoor. Remembers the entering pawn briefly.
-        /// </summary>
-        public static void Prefix(FogGrid __instance, Building_Door __0, Pawn __1)
-        {
-            AreaRevealDiscovererCache.Note(__1, __0?.Map);
-        }
-    }
-
-    // Fires after RimWorld reveals an area from fog. The FloodUnfogResult tells us whether an
-    // ancient mech threat was exposed; DiaryGameComponent also scans nearby newly-visible things for
-    // CompLetterOnRevealed, covering similar special discovery letters.
-    [HarmonyPatch(typeof(FogGrid), "NotifyAreaRevealed")]
-    public static class FogGridAreaRevealedPatch
-    {
-        private static readonly FieldInfo MapField = AccessTools.Field(typeof(FogGrid), "map");
-
-        /// <summary>
-        /// Harmony Postfix for FogGrid.NotifyAreaRevealed. Records notable pawn-caused discoveries.
-        /// </summary>
-        public static void Postfix(FogGrid __instance, IntVec3 __0, FloodUnfogResult __1)
-        {
-            Map map = MapField?.GetValue(__instance) as Map;
-            Pawn discoverer = AreaRevealDiscovererCache.LatestFor(map);
-            DiaryGameComponent.Current?.RecordAreaRevealed(discoverer, map, __0, __1);
-        }
-    }
-
-    // Fires when vanilla's hidden ancient-shrine trigger activates after being unfogged. This is a
-    // simpler fallback for ancient-danger discovery letters than trying to infer every reveal from
-    // FloodUnfogResult, and still uses the nearest/cached colonist as the diary author. Prefix runs
-    // before vanilla can despawn the trigger, so MapHeld/PositionHeld are still reliable.
-    [HarmonyPatch(typeof(TriggerUnfogged), nameof(TriggerUnfogged.Activated))]
-    public static class TriggerUnfoggedActivatedPatch
-    {
-        /// <summary>
-        /// Harmony Prefix for TriggerUnfogged.Activated. Records ancient-danger style discoveries.
-        /// </summary>
-        public static void Prefix(TriggerUnfogged __instance)
-        {
-            if (__instance == null)
-            {
-                return;
-            }
-
-            Map map = __instance.Map ?? __instance.MapHeld;
-            Pawn discoverer = AreaRevealDiscovererCache.LatestFor(map);
-            DiaryGameComponent.Current?.RecordAncientDangerRevealed(discoverer, map, __instance.PositionHeld, __instance);
-        }
-    }
-
-    // Fires when a pawn studies/investigates a void or fallen monolith. The method carries the pawn,
-    // so this can create the entry from exactly the discoverer's point of view.
-    [HarmonyPatch(typeof(Building_VoidMonolith), nameof(Building_VoidMonolith.Investigate))]
-    public static class VoidMonolithInvestigatedPatch
-    {
-        /// <summary>
-        /// Harmony Postfix for Building_VoidMonolith.Investigate.
-        /// </summary>
-        public static void Postfix(Building_VoidMonolith __instance, Pawn __0)
-        {
-            DiaryGameComponent.Current?.RecordMonolithInvestigated(__0, __instance);
-        }
-    }
-
-    // Fires while a pawn studies the monolith through Anomaly's studiable comp. Some "fallen
-    // monolith" discovery flows go through study work/letters instead of Building_VoidMonolith's
-    // direct Investigate method, so this fallback keeps the entry tied to the actual studier.
-    [HarmonyPatch(typeof(CompStudiableMonolith), nameof(CompStudiableMonolith.Study),
-        new[] { typeof(Pawn), typeof(float), typeof(float) })]
-    public static class CompStudiableMonolithStudyPatch
-    {
-        /// <summary>
-        /// Harmony Postfix for CompStudiableMonolith.Study. Records the first studied-monolith beat.
-        /// </summary>
-        public static void Postfix(CompStudiableMonolith __instance, Pawn __0)
-        {
-            DiaryGameComponent.Current?.RecordMonolithInvestigated(__0, __instance?.parent);
-        }
-    }
-
-    // Fires when a pawn activates the monolith. Activation is intentionally separate from
-    // investigation because it is a stronger story beat and deserves its own atmosphere.
-    [HarmonyPatch(typeof(Building_VoidMonolith), nameof(Building_VoidMonolith.Activate))]
-    public static class VoidMonolithActivatedPatch
-    {
-        /// <summary>
-        /// Harmony Postfix for Building_VoidMonolith.Activate.
-        /// </summary>
-        public static void Postfix(Building_VoidMonolith __instance, Pawn __0)
-        {
-            DiaryGameComponent.Current?.RecordMonolithActivated(__0, __instance);
         }
     }
 

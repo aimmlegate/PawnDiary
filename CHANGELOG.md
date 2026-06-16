@@ -3,6 +3,24 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (discovery code quarantine)**
+  - Moved the known non-functional discovery hook attempts into `Source/Patches/DiscoveryPatches.cs`
+    without Harmony registration attributes, keeping the reference code isolated from the main patch
+    file and inactive at runtime.
+  - Added a `DiscoveryEventsEnabled` false guard so accidental/manual calls into discovery recorder
+    methods return before creating diary events.
+
+- **2026-06-17 (Diary year selector and collapse smoothing)**
+  - Made the year pager's center label a selector menu listing every visible diary year with page
+    counts, while keeping newer/older buttons for quick adjacent navigation.
+  - Matched compact collapsed-row header geometry to the expanded card header, including chip/text
+    offsets and the hairline rule, so the final closed frame no longer visibly snaps.
+
+- **2026-06-17 (discovery reveal hook fix)**
+  - Moved fog-based discovery recording from stale `FogGrid` hooks to
+    `FloodFillerFog.FloodUnfog`, so ancient mech and hidden-object reveal results can reach the
+    GameEvent diary recorder in RimWorld 1.6.
+
 - **2026-06-17 (Diary tab year paging)**
   - Enlarged the Diary inspector tab and fixed the scrollable content height so inter-entry gaps
     are included in the scrollbar range.

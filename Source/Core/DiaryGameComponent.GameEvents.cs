@@ -1,6 +1,10 @@
 // Game events — synthetic map/story discoveries that vanilla does not expose as TaleDefs.
-// These hooks keep diary ownership on the pawn who caused the discovery: monolith methods pass the
-// pawn directly, while fog reveals use a short-lived cache from FogGrid.Notify_PawnEnteringDoor.
+// Known status: discovery generation is non-functional in current RimWorld 1.6 testing. The
+// recorder is kept here for future repair, but the broken Harmony hooks are disabled in
+// Source/Patches/DiscoveryPatches.cs and do not call these methods at runtime.
+// These hooks keep diary ownership on the pawn who caused the discovery when vanilla exposes that
+// pawn directly. Monolith methods pass the pawn; fog reveals only expose map/root/result in RimWorld
+// 1.6, so the recorder chooses the nearest eligible colonist as the discoverer.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System.Collections.Generic;
 using RimWorld;
@@ -16,6 +20,7 @@ namespace PawnDiary
         private const string GameMonolithInvestigatedDefName = "PawnDiary_GameMonolithInvestigated";
         private const string GameMonolithActivatedDefName = "PawnDiary_GameMonolithActivated";
         private const float RevealThingSearchRadius = 30f;
+        internal static bool DiscoveryEventsEnabled => false;
 
         /// <summary>
         /// Records a pawn-triggered fog reveal when it exposes an ancient mech threat or another
@@ -23,6 +28,11 @@ namespace PawnDiary
         /// </summary>
         public void RecordAreaRevealed(Pawn discoverer, Map map, IntVec3 root, FloodUnfogResult result)
         {
+            if (!ShouldRecordDiscoveryEvent("area reveal"))
+            {
+                return;
+            }
+
             if (PawnDiaryMod.Settings == null || map == null)
             {
                 LogGameEventDebug("area reveal skipped: settings or map missing");
@@ -81,6 +91,11 @@ namespace PawnDiary
         /// </summary>
         public void RecordAncientDangerRevealed(Pawn discoverer, Map map, IntVec3 root, Thing trigger)
         {
+            if (!ShouldRecordDiscoveryEvent("ancient danger"))
+            {
+                return;
+            }
+
             if (PawnDiaryMod.Settings == null || map == null)
             {
                 LogGameEventDebug("ancient danger skipped: settings or map missing");
@@ -143,6 +158,11 @@ namespace PawnDiary
         private void RecordMonolithEvent(Pawn pawn, Thing monolith, string defName,
             string labelKey, string textKey)
         {
+            if (!ShouldRecordDiscoveryEvent(defName))
+            {
+                return;
+            }
+
             if (pawn == null || monolith == null || PawnDiaryMod.Settings == null || !IsDiaryEligible(pawn))
             {
                 LogGameEventDebug("monolith skipped: pawn/monolith/settings/eligibility failed for " + defName);
@@ -174,6 +194,17 @@ namespace PawnDiary
                 PawnDiaryMod.Settings.InstructionForGameEvent(defName), gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
             LogGameEventDebug("monolith queued: " + defName + " pawn=" + pawn.LabelShortCap);
+        }
+
+        private bool ShouldRecordDiscoveryEvent(string eventKind)
+        {
+            if (DiscoveryEventsEnabled)
+            {
+                return true;
+            }
+
+            LogGameEventDebug(eventKind + " skipped: discovery generation is disabled; hooks are known non-functional");
+            return false;
         }
 
         private Pawn ResolveDiscoverer(Pawn discoverer, Map map, IntVec3 root)
