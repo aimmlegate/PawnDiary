@@ -9,6 +9,22 @@ Dated history of every change to the mod. Add an entry here with each change, ne
   - Added explicit max-token-budget and return-only-text guidance to the diary/reflection prompt
     defaults, XML defs, and prompt-lab copies.
 
+- **2026-06-16 (diary text readability pass)**
+  - Added `Source/UI/DiaryTextFormat.cs`, which rewrites each diary line into Unity rich text: light
+    markdown (`**bold**`, `*italic*`, `# ` headings, `- `/`* ` bullets, `> ` block quotes) becomes
+    tags, and quoted speech is colored inline so the spoken words stand out without lighting up the
+    surrounding narration.
+  - Replaced the over-eager whole-line dialogue heuristic (any stray quote or early colon turned a
+    prose line bold and colored) with span-level inline coloring. The diary tab now renders body text
+    through one rich-text body style instead of switching between dialogue/narrative line styles;
+    the first-seen fade is applied via `GUI.color` so inline-colored spans fade with the rest.
+  - Typography polish: more line/paragraph leading, a faint warm "page" tint behind each card's body
+    text, and a luminance-based brightness floor for the pawn's favorite dialogue color so deep
+    blues/reds stay readable on the dark card.
+  - Card chrome polish for a tidier journal look: warmer page tint, a warm hairline rule under each
+    header, a soft highlight beside the group accent "spine", warmer parchment-ink header text, and a
+    little more breathing room between the header and the body.
+
 - **2026-06-16 (prompt atmosphere cleanup)**
   - Removed the pawn-state `atmosphere:` line from first-person LLM prompts and prompt-lab fixtures,
     leaving event group `tone:` as the single emotional-register cue.

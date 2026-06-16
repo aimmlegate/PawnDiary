@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (prompt context handling guidance)_
+_Last updated: 2026-06-16 (diary text readability pass)_
 
 ---
 
@@ -83,6 +83,7 @@ Important files:
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Mod settings, API lane editor, model-list fetcher, group prompt editor. |
 | `ITab_Pawn_Diary.cs` | Production diary view, dev diagnostics, linked-entry previews, animations, and click targets. |
+| `DiaryTextFormat.cs` | Formats one diary line into Unity rich text: markdown emphasis, headings/bullets, and inline-colored quoted speech. |
 | `MiniJson.cs` | Dependency-free JSON parser compatible with RimWorld's Unity Mono runtime. |
 
 ---
@@ -254,9 +255,14 @@ section shows grouped toggles by domain plus one per-group prompt editor.
 
 The Diary tab production view shows only finished generated pages. Dev mode reveals per-pawn writing
 enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, and in-progress
-dot indicators. Generated cards show date/title, group accent and chip, roleplay text styling, a
+dot indicators. Generated cards show date/title, group accent and chip, a faint warm page tint with
+a hairline header rule and a soft accent-spine highlight, a
 subtle model id, linked previews for the other pawn's POV on pairwise events, and a header-level
-loading animation when the follow-up title request has not finished yet. Social-tab log rows can
+loading animation when the follow-up title request has not finished yet. Body text is rendered as
+rich text by `DiaryTextFormat`: light markdown (`**bold**`, `*italic*`, headings, bullets, block
+quotes) is converted to tags, and quoted speech is colored inline with the pawn's favorite color
+(brightened to a readable luminance) while the surrounding narration stays muted prose. Social-tab
+log rows can
 jump to matching diary entries.
 
 ---
