@@ -98,6 +98,17 @@
     <thoughtAmbientMinEventsToWrite>2</thoughtAmbientMinEventsToWrite>
     <thoughtAmbientMaxSampleLines>5</thoughtAmbientMaxSampleLines>
 
+    <!-- Work diary sampling. Work has no one-shot event hook, so the mod periodically samples
+         current colonist jobs, then applies chance and cooldown gates. -->
+    <workScanIntervalTicks>2500</workScanIntervalTicks>
+    <workBaseChance>0.08</workBaseChance>
+    <workSameTypeCooldownTicks>180000</workSameTypeCooldownTicks>
+    <workRecentDifferentTypeMultiplier>0.5</workRecentDifferentTypeMultiplier>
+    <workPassionChanceMultiplier>1.4</workPassionChanceMultiplier>
+    <workNegativeChanceMultiplier>1.2</workNegativeChanceMultiplier>
+    <workDarkStudyChanceMultiplier>1.5</workDarkStudyChanceMultiplier>
+    <workLowSkillThreshold>4</workLowSkillThreshold>
+
     <!-- Day reflection (end-of-day summary). Set daySummaryEnabled false to fall back to the
          old per-source ambient notes. Weights are relative; raise one to make that kind of
          moment survive selection more often. -->

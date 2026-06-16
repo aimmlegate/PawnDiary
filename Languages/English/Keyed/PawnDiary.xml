@@ -94,6 +94,7 @@
   <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
   <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
   <PawnDiary.Settings.ThoughtsHeader>Temporary thoughts</PawnDiary.Settings.ThoughtsHeader>
+  <PawnDiary.Settings.WorkHeader>Work moments</PawnDiary.Settings.WorkHeader>
   <PawnDiary.Settings.EditingPromptFor>Editing prompt for: {0}</PawnDiary.Settings.EditingPromptFor>
   <PawnDiary.Settings.ChangeGroup>Change group</PawnDiary.Settings.ChangeGroup>
   <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
@@ -167,6 +168,12 @@
   <PawnDiary.Event.Thought>{0} had a thought: {1}.</PawnDiary.Event.Thought>
   <PawnDiary.Event.ThoughtPositive>{0} was cheered by {1}.</PawnDiary.Event.ThoughtPositive>
   <PawnDiary.Event.ThoughtNegative>{0} was troubled by {1}.</PawnDiary.Event.ThoughtNegative>
+
+  <!-- Work text (periodic sampled WorkTypeDef diary entries) -->
+  <PawnDiary.Event.WorkPositive>{PAWN} found real satisfaction in {WORK}.</PawnDiary.Event.WorkPositive>
+  <PawnDiary.Event.WorkNeutral>{PAWN} spent time on {WORK}.</PawnDiary.Event.WorkNeutral>
+  <PawnDiary.Event.WorkNegative>{PAWN} was worn down by {WORK}.</PawnDiary.Event.WorkNegative>
+  <PawnDiary.Event.WorkDarkStudy>{0} studied what should not be studied: {1}.</PawnDiary.Event.WorkDarkStudy>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because the initiator diary page failed to write.</PawnDiary.Error.SkippedInitiatorFailed>

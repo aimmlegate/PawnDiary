@@ -910,7 +910,9 @@ namespace PawnDiary
                     ? GroupDomain.MoodEvent
                     : IsThoughtEvent()
                         ? GroupDomain.Thought
-                        : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
+                        : IsWorkEvent()
+                            ? GroupDomain.Work
+                            : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, interactionDefName);
         }
 
@@ -989,6 +991,16 @@ namespace PawnDiary
         {
             return !string.IsNullOrWhiteSpace(gameContext)
                 && gameContext.IndexOf("thought=", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Work scanner events store the real WorkTypeDef in the stable work= field; the saved
+        /// interactionDefName is a synthetic group defName such as PawnDiary_WorkPassion.
+        /// </summary>
+        private bool IsWorkEvent()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("work=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>

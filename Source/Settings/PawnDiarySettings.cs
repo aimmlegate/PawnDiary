@@ -365,6 +365,24 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Same as IsInteractionEnabled but for synthetic work events emitted by the work scanner.
+        /// The scanner picks the group first (passion, strain, routine, dark study), because those
+        /// groups depend on pawn state as well as the WorkTypeDef.
+        /// </summary>
+        public bool IsWorkEnabled(DiaryInteractionGroupDef group)
+        {
+            return group != null && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a work diary entry.
+        /// </summary>
+        public string InstructionForWork(DiaryInteractionGroupDef group)
+        {
+            return InstructionForGroup(group);
+        }
+
+        /// <summary>
         /// Checks whether an interaction group is enabled, falling back to the group's
         /// defaultEnabled if no player override exists.
         /// </summary>

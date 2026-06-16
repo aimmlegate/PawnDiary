@@ -87,6 +87,27 @@ namespace PawnDiary
         // Keep at most this many thought evidence lines in the prompt.
         public int thoughtAmbientMaxSampleLines = 5;
 
+        // ---- Work recording ----
+        // Periodic scanner interval for colonists' current work jobs. Work has no clean one-shot
+        // RimWorld event for "this was a diary-worthy work moment", so the scanner samples rarely
+        // and then applies the chance/cooldown gates below.
+        public int workScanIntervalTicks = 2500;
+        // Base probability per scan that a currently working pawn writes about that work type.
+        public float workBaseChance = 0.08f;
+        // After a pawn gets a work entry for one WorkTypeDef, suppress that same work type for this
+        // many ticks (~3 in-game days by default).
+        public int workSameTypeCooldownTicks = 180000;
+        // If the pawn had any other work entry inside the same cooldown window, halve the roll so
+        // different work can still surface without filling the diary.
+        public float workRecentDifferentTypeMultiplier = 0.5f;
+        // Relative chance nudges. The final roll is still clamped to 0..1.
+        public float workPassionChanceMultiplier = 1.4f;
+        public float workNegativeChanceMultiplier = 1.2f;
+        public float workDarkStudyChanceMultiplier = 1.5f;
+        // A non-passion work type whose best relevant skill is below this level reads as uncertain
+        // or frustrating instead of confident.
+        public int workLowSkillThreshold = 4;
+
         // ---- Day reflection (end-of-day summary) ----
         // Master toggle. When false, the old per-source ambient notes are emitted as before.
         public bool daySummaryEnabled = true;

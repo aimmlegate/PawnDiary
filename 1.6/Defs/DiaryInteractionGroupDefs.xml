@@ -10,7 +10,8 @@
     label          - name shown in mod settings
     order          - lower numbers are classified first ("first match wins"); catch-all highest
     domain         - Interaction (matches InteractionDefs), MentalState (matches MentalStateDefs),
-                     or Tale (matches TaleDefs from RimWorld's notable-history system)
+                     Tale (matches TaleDefs from RimWorld's notable-history system), MoodEvent,
+                     Thought, or Work (matches synthetic work diary defNames)
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
@@ -819,6 +820,63 @@
     <important>false</important>
     <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood offset</instruction>
     <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Work domain: occasional sampled solo entries from pawn WorkTypeDef jobs ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workDarkStudy</defName>
+    <label>Dark study work</label>
+    <order>600</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>dark research that should feel unsettling every time—write the work as intimate contact with something wrong; keep it spooky, sensory, and unresolved</instruction>
+    <tone>with creeping, unresolved dread</tone>
+    <matchDefNames>
+      <li>PawnDiary_WorkDarkStudy</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workPassion</defName>
+    <label>Passionate work</label>
+    <order>610</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>work that touches one of the pawn's passions—positive, focused, quietly satisfying, without pretending the colony is easy</instruction>
+    <tone>with grounded satisfaction</tone>
+    <matchDefNames>
+      <li>PawnDiary_WorkPassion</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workStrain</defName>
+    <label>Straining work</label>
+    <order>620</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>work that feels dull, grimy, clumsy, or frustrating—negative when it is cleaning/dumb labor or when the pawn lacks skill</instruction>
+    <tone>with weary irritation</tone>
+    <matchDefNames>
+      <li>PawnDiary_WorkStrain</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>workRoutine</defName>
+    <label>Routine work</label>
+    <order>630</order>
+    <domain>Work</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</instruction>
+    <matchDefNames>
+      <li>PawnDiary_WorkRoutine</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
 </Defs>

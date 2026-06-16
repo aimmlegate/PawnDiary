@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (sampled pawn-work diary entries)**
+  - Added a periodic work scanner that sometimes records solo diary pages for colonists' current
+    Work-tab jobs, with persistent same-work cooldowns and a 0.5 recent-different-work chance
+    multiplier so work notes do not spam the diary.
+  - Added Work-domain XML groups for passionate, straining, routine, and dark-study work. Passion
+    work is positive; cleaning/ManualDumb work and low-skill non-passion work are negative;
+    `DarkStudy` always uses a separate unsettling prompt/tone.
+  - Added XML tuning for work scan interval, base chance, cooldown, recent-work multiplier, tone
+    multipliers, and low-skill threshold; updated localization and docs. Build verified with
+    `dotnet build Source\PawnDiary.csproj -c Debug` because `MSBuild` was not on PATH.
+
 - **2026-06-16 (prompt-lab restored for XML-driven testing)**
   - Restored the standalone `prompt-lab/` Node harness for prompt engineering and removed the
     old broken behavior by rebuilding it around the current compact prompt schema.

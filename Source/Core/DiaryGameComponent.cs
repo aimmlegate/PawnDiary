@@ -18,6 +18,7 @@
 //   DiaryGameComponent.CraftedAndRelics.cs — masterwork/legendary crafts + relic installs
 //   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
+//   DiaryGameComponent.Work.cs           — occasional solo notes about current pawn work
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
 //   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
 //   DiaryGameComponent.AmbientThoughts.cs — day-note batching for low-impact temporary thoughts
@@ -100,6 +101,11 @@ namespace PawnDiary
         private const int AmbientSleepFlushScanIntervalTicks = 250;
         private int nextAmbientSleepFlushScanTick;
 
+        // Work entries are sampled rather than hook-driven because vanilla work jobs can run for a
+        // long time and there is no single "meaningful work moment happened" callback. The scanner
+        // interval itself is XML-tunable; this field only stores the next allowed scan tick.
+        private int nextWorkScanTick;
+
         // Current absolute in-game day. Uses TicksAbs so day-note batching follows the world calendar.
         private static int CurrentDayIndex
         {
@@ -147,6 +153,7 @@ namespace PawnDiary
             // their diary entries stuck on "Generating" with no way to re-queue them this session.
             nextGenerationScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
+            nextWorkScanTick = 0;
             initialArrivalScanPending = true;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
@@ -170,6 +177,7 @@ namespace PawnDiary
             // so the scan below re-queues them in the current session.
             nextGenerationScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
+            nextWorkScanTick = 0;
             initialArrivalScanPending = false;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
@@ -223,6 +231,12 @@ namespace PawnDiary
             if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
             {
                 initialArrivalScanPending = false;
+            }
+
+            if (!initialArrivalScanPending && now >= nextWorkScanTick)
+            {
+                nextWorkScanTick = now + Math.Max(250, DiaryTuning.Current.workScanIntervalTicks);
+                ScanPawnWorkForDiaryEvents();
             }
 
             if (now >= nextGenerationScanTick)
