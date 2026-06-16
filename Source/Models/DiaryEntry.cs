@@ -77,7 +77,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Human-readable status label: "generating" while pending, "generation failed" on error, empty otherwise.
+        /// Human-readable status label: "writing" while pending, "generation failed" on error, empty otherwise.
         /// </summary>
         public string StatusText
         {
@@ -85,7 +85,7 @@ namespace PawnDiary
             {
                 if (llmStatus == "pending")
                 {
-                    return "PawnDiary.Status.Generating".Translate();
+                    return "PawnDiary.Status.Writing".Translate();
                 }
 
                 if (llmStatus == "failed")

@@ -272,8 +272,9 @@ All paths share the same per-event context fields and the system prompt.
 - Existing records keep their saved persona — the weighted roll only runs the first time a pawn
   enters the diary system; the manual picker overrides it freely. Missing/invalid saved persona
   values fall back to the default above.
-- The Diary tab creates a pawn's record on first edit/open and shows the generation
-  checkbox plus a persona picker (a float-menu of every `DiaryPersonaDef`) above the entries.
+- The Diary tab creates a pawn's record on first edit/open. In normal play it shows only the diary
+  pages; RimWorld dev mode reveals the per-pawn writing checkbox plus the persona picker (a
+  float-menu of every `DiaryPersonaDef`) above the entries.
 - Disabled generation does **not** delete or skip events; it only prevents future LLM requests for
 that pawn. Raw event text is still stored, but the production diary tab only displays finished
 generated entries.
@@ -331,13 +332,13 @@ Groups have a **domain**: `Interaction` (matches `InteractionDef`s), `MentalStat
 (matches `MentalStateDef`s), `Tale` (matches `TaleDef`s from RimWorld's notable-history
 system), `MoodEvent` (matches `GameConditionDef`s that affect mood), or `Thought`
 (matches `ThoughtDef`s with expiration). Classification is domain-scoped so they never cross-match:
-- `Classify(InteractionDef)` → first matching Interaction-domain group, else **Other**.
+- `Classify(InteractionDef)` → first matching Interaction-domain group, else **A quiet day**.
 - `ClassifyMentalState(MentalStateDef)` → first matching MentalState-domain group, else
   **Mental breaks**.
-- `ClassifyTale(TaleDef)` → first matching Tale-domain group, else **Other notable events**.
+- `ClassifyTale(TaleDef)` → first matching Tale-domain group, else **A notable day**.
 - `ClassifyMoodEvent(GameConditionDef)` → first matching MoodEvent-domain group, else
-  **Other mood events**.
-- `ClassifyThought(ThoughtDef)` → first matching Thought-domain group, else **Other thoughts**.
+  **Passing moods**.
+- `ClassifyThought(ThoughtDef)` → first matching Thought-domain group, else **Passing thoughts**.
 
 Matching is by exact `defName` or a substring token; order within a domain matters
 (specific themes before generic), with the catch-all last.
@@ -366,7 +367,7 @@ is recorded iff its group is enabled.
 | Heartfelt talk | on | DeepTalk, KindWords, Reassure, SnapOut_CalmDown |
 | Teaching & lessons | **off** | Lesson*, BabyPlay |
 | Small talk | **off** | Chitchat, Conversation, HangOut, OfferFood, SanguophageChat |
-| Other / uncategorized | **off** | anything unmatched (e.g. RiMindInteraction) |
+| A quiet day | **off** | anything unmatched (e.g. RiMindInteraction) |
 | **Social fights** (mental) | on | `SocialFighting` — pairwise, two POV entries |
 | **Mental breaks** (mental) | on | Berserk, Tantrum, Wander_Sad, Binging_*, MurderousRage, … (catch-all for mental states) |
 | **Combat, injuries & death** (tale) | on | Downed, Wounded, KilledBy, KilledMajorThreat, WasOnFire |
@@ -378,14 +379,14 @@ is recorded iff its group is enabled.
 | **Anomaly horror** (tale) | on | StudiedEntity, MutatedMyArm, PerformedPsychicRitual, ClosedTheVoid, EmbracedTheVoid, DeathPall, UnnaturalDarkness, NoxiousHaze |
 | **Raids, disasters & colony events** (tale) | on | Raid, Infestation, ManhunterPack, MeteoriteImpact, ShipPartCrash, CaravanAmbushed*, LaunchedShip † |
 | **Quiet personal moments** (tale) | **off** | AttendedParty, Meditated, Prayed, ReadBook, Vomited, WalkedNaked, VisitedGrave |
-| **Other notable events** (tale) | **off** | any unmatched TaleDef |
+| **A notable day** (tale) | **off** | any unmatched TaleDef |
 | **Positive mood events** (mood) | on | Aurora, Party, PsychicSoothe |
 | **Negative mood events** (mood) | on | Eclipse, PsychicDrone, GrayPall, ToxicFallout |
 | **Situationally mixed mood events** (mood) | on | PsychicSuppressorMale, PsychicSuppressorFemale |
-| **Other mood events** (mood) | on | any unmatched GameConditionDef |
+| **Passing moods** (mood) | on | any unmatched GameConditionDef |
 | **Positive thoughts** (thought) | on | Apparel*, Beautiful*, Good*, Joy*, Happy*, etc. (filtered by `thoughtMinMoodOffset`) |
 | **Negative thoughts** (thought) | on | Pain*, Ugly*, Bad*, Sad*, etc. (filtered by `thoughtMinMoodOffset`) |
-| **Other thoughts** (thought) | on | any unmatched ThoughtDef with expiration |
+| **Passing thoughts** (thought) | on | any unmatched ThoughtDef with expiration |
 
 † Incidents that are also game conditions (Eclipse, Aurora, ToxicFallout, VolcanicWinter, Flashstorm) are recorded once via the **MoodEvent** domain, not as tales.
 
@@ -587,17 +588,18 @@ dev mode shows a "Show persona settings" toggle, and normal mode hides persona e
 - **Inspector tab** (`ITab_Pawn_Diary`), injected immediately after the vanilla **Social** tab on all
 humanlike pawn defs at startup. The tab is **visible only for free colonists**
 (`pawn.IsColonist`); animals, prisoners, slaves, enemies, and visitors never see it.
-Renders newest-first: date/group/importance header plus the generated diary text. The text is
-drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking lines are
-bold/italic and colored with the pawn's RimWorld favorite color. Each generated card ends with
-a tiny, low-contrast model id so multi-model output can be traced without making the card feel
+Renders newest-first: each card uses a diary-like `date: subject` header plus the generated diary
+text. The text is drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking
+lines are bold/italic and colored with the pawn's RimWorld favorite color. Each generated card ends
+with a tiny, low-contrast model id so multi-model output can be traced without making the card feel
 technical. Pending, failed-without-output, raw fallback, debug, and persona-editing details are
-hidden from the production tab. In RimWorld dev mode, the tab adds toggles for persona controls,
-LLM diagnostics, and showing in-progress entries; the debug toggle reveals raw/pending/failed rows
-plus the existing diagnostic block with endpoint, model, status, error, and prompt. The lighter
-"Show entries being generated" toggle reveals only the in-progress/stuck rows (rendered with the
-"writing..." placeholder) without that diagnostic block, so a stuck event can be inspected rather
-than only counted. A compact generating badge appears in the tab while pending entries exist.
+hidden from the production tab. In RimWorld dev mode, the tab adds the per-pawn writing checkbox,
+toggles for persona controls, LLM diagnostics, and showing in-progress entries; the debug toggle
+reveals raw/pending/failed rows plus the existing diagnostic block with endpoint, model, status,
+error, and prompt. The lighter "Show pages still being written" toggle reveals only the
+in-progress/stuck rows (rendered with the "writing..." placeholder) without that diagnostic block,
+so a stuck event can be inspected rather than only counted. A compact writing badge appears in the
+tab while pending entries exist.
 - Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
   matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
   continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can

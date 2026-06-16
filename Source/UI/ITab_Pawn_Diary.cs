@@ -24,6 +24,10 @@ namespace PawnDiary
         private const float EntryTitleHeight = 28f;
         private const float EntryTextTop = 38f;
         private const float EntryBottomPadding = 10f;
+        private const float SubtitleHeight = 24f;
+        private const float StatusBadgeWidth = 136f;
+        private const float StatusBadgeHeight = 24f;
+        private const float StatusBadgeRightPadding = 24f;
         private const float RoleplayLineGap = 3f;
         private const float RoleplayParagraphGap = 6f;
         private const float LinkedEntryPadding = 8f;
@@ -133,20 +137,37 @@ namespace PawnDiary
             // toggle already shows them, so this only matters when debug info is off).
             bool showGeneratingEntries = ShouldShowGeneratingEntries();
 
-            Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(rect.x, rect.y, rect.width, 34f), "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
-            Text.Font = GameFont.Small;
-
+            Rect headerRect = new Rect(rect.x, rect.y, rect.width, 34f);
             if (generatingCount > 0)
             {
-                DrawGeneratingIndicator(new Rect(rect.xMax - 150f, rect.y + 3f, 150f, 24f), generatingCount);
+                Rect statusRect = new Rect(
+                    rect.xMax - StatusBadgeRightPadding - StatusBadgeWidth,
+                    rect.y + 3f,
+                    StatusBadgeWidth,
+                    StatusBadgeHeight);
+                headerRect.width = Mathf.Max(0f, statusRect.x - rect.x - 8f);
+                DrawWritingIndicator(statusRect, generatingCount);
             }
 
-            Rect controlsRect = new Rect(rect.x, rect.y + 36f, rect.width, PawnControlsHeight());
-            DrawPawnControls(pawn, component, controlsRect);
+            Text.Font = GameFont.Medium;
+            Widgets.Label(headerRect, "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
+            Text.Font = GameFont.Small;
+
+            float controlsY = rect.y + 36f;
+            float controlsHeight = PawnControlsHeight();
+            if (Prefs.DevMode)
+            {
+                Rect controlsRect = new Rect(rect.x, controlsY, rect.width, controlsHeight);
+                DrawPawnControls(pawn, component, controlsRect);
+            }
+            else
+            {
+                DrawDiarySubtitle(new Rect(rect.x, controlsY, rect.width, SubtitleHeight));
+                controlsHeight = SubtitleHeight;
+            }
 
             // The controls are part of the diary tab, so reserve fixed space before the scroll view.
-            float entriesY = controlsRect.yMax + 8f;
+            float entriesY = controlsY + controlsHeight + 8f;
             Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
 
             // Production view: show only completed LLM output. Dev mode can reveal raw/pending
@@ -288,8 +309,13 @@ namespace PawnDiary
         /// </summary>
         private static float PawnControlsHeight()
         {
+            if (!Prefs.DevMode)
+            {
+                return 0f;
+            }
+
             float lines = 1f; // generation toggle
-            if (Prefs.DevMode && PawnDiaryMod.Settings != null)
+            if (PawnDiaryMod.Settings != null)
             {
                 lines += 3f; // dev toggles: persona controls, LLM diagnostics, show generating
                 if (ShouldShowPersonaSettings())
@@ -307,6 +333,11 @@ namespace PawnDiary
         private static void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
         {
             if (pawn == null || component == null)
+            {
+                return;
+            }
+
+            if (!Prefs.DevMode)
             {
                 return;
             }
@@ -414,20 +445,39 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws a compact, RimWorld-style badge while hidden pending entries are being rewritten.
+        /// Draws a compact, RimWorld-style badge while hidden pending entries are being written.
         /// </summary>
-        private static void DrawGeneratingIndicator(Rect rect, int count)
+        private static void DrawWritingIndicator(Rect rect, int count)
         {
             string label = count == 1
-                ? "PawnDiary.Status.Generating".Translate()
-                : "PawnDiary.Tab.GeneratingCount".Translate(count);
+                ? "PawnDiary.Status.Writing".Translate()
+                : "PawnDiary.Tab.WritingCount".Translate(count);
 
             Widgets.DrawBoxSolidWithOutline(rect, new Color(0.12f, 0.14f, 0.12f, 0.86f), new Color(0.42f, 0.68f, 0.42f), 1);
+            GameFont oldFont = Text.Font;
             TextAnchor oldAnchor = Text.Anchor;
             Color oldColor = GUI.color;
+            Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.MiddleCenter;
             GUI.color = new Color(0.78f, 0.95f, 0.78f);
             Widgets.LabelFit(rect.ContractedBy(4f), label);
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Draws the normal-play subtitle that replaces the dev-only generation controls.
+        /// </summary>
+        private static void DrawDiarySubtitle(Rect rect)
+        {
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = new Color(0.80f, 0.80f, 0.74f);
+            Widgets.LabelFit(rect, "PawnDiary.Tab.DiarySubtitle".Translate());
+
             GUI.color = oldColor;
             Text.Anchor = oldAnchor;
         }
@@ -517,20 +567,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Produces the compact header shown on each entry card: date, group, and importance.
+        /// Produces the compact header shown on each entry card: date plus a diary-like subject.
         /// </summary>
         private static string EntryHeader(DiaryEntryView entry)
         {
-            string importance = entry.Important
-                ? "PawnDiary.Tab.Important".Translate()
-                : "PawnDiary.Tab.Quiet".Translate();
-
-            if (string.IsNullOrWhiteSpace(entry.GroupLabel))
-            {
-                return entry.Date + " - " + importance;
-            }
-
-            return entry.Date + " - " + entry.GroupLabel + " - " + importance;
+            string subject = string.IsNullOrWhiteSpace(entry.GroupLabel)
+                ? "PawnDiary.Tab.EntrySubjectFallback".Translate().ToString()
+                : entry.GroupLabel;
+            return "PawnDiary.Tab.EntryHeader".Translate(entry.Date, subject);
         }
 
         /// <summary>

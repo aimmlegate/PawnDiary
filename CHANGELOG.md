@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (diary tab atmosphere polish)**
+  - Hid the per-pawn "write diary pages" checkbox from normal play; it now appears only in
+    RimWorld dev mode alongside the other troubleshooting controls. Normal play shows a quiet
+    diary subtitle instead.
+  - Renamed pending UI from "generating" to "writing", shifted the top-right writing badge inward
+    to avoid clipping near the tab chrome, and kept the per-entry model id visible as the quiet
+    provenance note.
+  - Changed entry headers from a log-like date/group/importance string to a diary-style
+    `date: subject` title, and renamed fallback catch-all labels to "A quiet day", "A notable
+    day", "Passing moods", and "Passing thoughts".
+
 - **2026-06-16 (settings API editor polish + scroll fix)**
   - Reworked each API/model lane in the mod settings window from a cramped two-line layout into a
     framed block with full-width endpoint and API-key fields, a clearer model row, and contained

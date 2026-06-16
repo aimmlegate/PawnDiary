@@ -334,7 +334,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>other</defName>
-    <label>Other / uncategorized</label>
+    <label>A quiet day</label>
     <order>140</order>
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
@@ -571,7 +571,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>taleother</defName>
-    <label>Other notable events</label>
+    <label>A notable day</label>
     <order>390</order>
     <domain>Tale</domain>
     <defaultEnabled>false</defaultEnabled>
@@ -628,7 +628,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>moodeventOther</defName>
-    <label>Other mood events</label>
+    <label>Passing moods</label>
     <order>420</order>
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
@@ -718,7 +718,7 @@
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>thoughtOther</defName>
-    <label>Other thoughts</label>
+    <label>Passing thoughts</label>
     <order>520</order>
     <domain>Thought</domain>
     <defaultEnabled>true</defaultEnabled>
