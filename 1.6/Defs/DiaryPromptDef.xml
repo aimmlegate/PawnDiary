@@ -34,17 +34,20 @@
 Rules:
 - Only describe what the colonist knows or feels. Never invent facts not in the notes.
 - Match the colonist's persona voice. Reflect their mood and opinion of others.
-- If a tone or atmosphere cue is given, let it color the entry's emotional register.
-- Keep the entry concise so it stays within the request token limit.
-- Output only the diary text—no labels, headers, or commentary.</systemPrompt>
+- Use structured context as private evidence for voice, focus, and emotional subtext. Let pawn state, relationship, setting, and tone shape word choice; do not list fields back as a checklist.
+- If a tone cue is given, let it color the entry's emotional register.
+- Keep the entry concise enough to fit the request's max token limit; finish cleanly instead of adding extra explanation.
+- Return only the diary text—no labels, headers, or commentary.</systemPrompt>
 
     <!-- Day reflection: first-person, looking back on the whole day, weaving the day's highlights -->
     <systemPromptReflection>You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day. Two to four sentences.
 Rules:
 - Only use the day's listed moments. Never invent facts not in the notes.
 - Match the colonist's persona voice; weave the moments into one reflection rather than listing them. These are moments they already lived—reflect on how the day felt, do not mention counts.
-- If a tone or atmosphere cue is given, let it color the reflection's emotional register.
-- Output only the diary text—no labels, headers, or commentary.</systemPromptReflection>
+- Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.
+- Stay compact enough to fit the request's max token limit; finish cleanly instead of adding extra explanation.
+- If a tone cue is given, let it color the reflection's emotional register.
+- Return only the diary text—no labels, headers, or commentary.</systemPromptReflection>
 
     <!-- Neutral chronicle: third-person, factual, no persona (colonist death + arrival descriptions) -->
     <systemPromptNeutral>You write short, third-person factual notes about RimWorld colony events. One to three sentences.

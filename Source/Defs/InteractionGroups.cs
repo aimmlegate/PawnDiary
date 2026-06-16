@@ -145,9 +145,9 @@ namespace PawnDiary
         // The diary-prompt instruction shared by every event in the group.
         public string instruction;
 
-        // Optional emotional register for entries in this group (e.g. "with creeping dread"). Unlike
-        // the pawn-state atmosphere, this is event-driven: a raid reads tense, a prank light. Sent to
-        // the LLM as a "tone:" field for first-person entries; empty leaves the tone neutral.
+        // Optional emotional register for entries in this group (e.g. "with creeping dread"). This
+        // is event-driven: a raid reads tense, a prank light. Sent to the LLM as a "tone:" field for
+        // first-person entries; empty leaves the tone neutral.
         // Localized via DefInjected like `instruction` (it reaches the prompt), not Keyed.
         public string tone;
 

@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (performance & robustness pass)_
+_Last updated: 2026-06-16 (prompt context handling guidance)_
 
 ---
 
@@ -72,7 +72,7 @@ Important files:
 | `DiaryGameComponent*.cs` | Orchestrates recording, batching, generation scans, save/load, lookups, and public UI access. Event-source partials own their `Record*` method. |
 | `DiaryEvent.cs` | Saved event model: raw text, context, statuses, generated text, LLM metadata, titles, source ids, and save/load. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, persona preset, and generation toggle. |
-| `DiaryContextBuilder.cs` | Compact pawn, surroundings, atmosphere, relationship, health, passion, and opener context. |
+| `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, passion, and opener context. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, and title prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug log handoff. |
 | `InteractionGroups.cs` | `DiaryInteractionGroupDef` and classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, and Work domains. |
@@ -197,11 +197,15 @@ Prompts are compact `key: value` lines. `AppendField` drops empty values and `no
 Main prompt context can include:
 - `event`, `pov`, `role`, `with`, `what you saw` / `what happened`, and group `instruction`
 - pawn summary: sex, age, DLC identity lines, mood, health, low capacities, and top thoughts
-- persona rule, surroundings, pawn-state atmosphere, event tone, relationship continuity
+- persona rule, surroundings, event tone, relationship continuity
 - surroundings now include 1–2 nearby objects chosen each entry with weighted random selection so
   important context objects (fire, corpses, buildings) are favored more often
 - latest opener to avoid repetition
 - burning passion and weapon only when the event is important or combat-related
+
+Diary and reflection system prompts tell the model to treat structured fields as private evidence
+for voice, focus, and subtext rather than a checklist to echo back. They also ask it to stay compact
+enough for the request's max-token budget and return only the diary/reflection text.
 
 Narrative mode chooses the system prompt at dispatch:
 - `systemPrompt` for first-person diary pages

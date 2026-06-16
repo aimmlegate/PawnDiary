@@ -130,8 +130,6 @@ namespace PawnDiary
             // Persona is a writing-style rule from the pawn's saved preset, not a gameplay fact.
             AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
-            // Atmosphere is a short emotional anchor combining mood + relationship context.
-            AppendField(lines, "atmosphere", diaryEvent.AtmosphereForRole(povRole));
             // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
             AppendField(lines, "tone", diaryEvent.ToneDirective());
             AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
@@ -169,8 +167,6 @@ namespace PawnDiary
             // Solo events use the same persona field as pairwise entries for prompt consistency.
             AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
-            // Atmosphere is a short emotional anchor for the model.
-            AppendField(lines, "atmosphere", diaryEvent.initiatorAtmosphere);
             // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
             AppendField(lines, "tone", diaryEvent.ToneDirective());
             AppendField(lines, "relationship", diaryEvent.initiatorContinuity);

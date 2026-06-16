@@ -796,8 +796,8 @@ namespace PawnDiary
 
         /// <summary>
         /// The emotional-register cue for this event's group (e.g. "with creeping dread"), or empty
-        /// when the group sets no tone. Event-driven and distinct from the pawn-state atmosphere; it
-        /// is appended to the user prompt as a "tone:" field for first-person entries.
+        /// when the group sets no tone. Event-driven and appended to the user prompt as a "tone:"
+        /// field for first-person entries.
         /// </summary>
         public string ToneDirective()
         {

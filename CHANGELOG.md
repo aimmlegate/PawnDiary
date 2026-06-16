@@ -3,6 +3,18 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (prompt context handling guidance)**
+  - Tightened diary and reflection system prompts so structured context is treated as private
+    evidence for voice/subtext instead of echoed as a checklist.
+  - Added explicit max-token-budget and return-only-text guidance to the diary/reflection prompt
+    defaults, XML defs, and prompt-lab copies.
+
+- **2026-06-16 (prompt atmosphere cleanup)**
+  - Removed the pawn-state `atmosphere:` line from first-person LLM prompts and prompt-lab fixtures,
+    leaving event group `tone:` as the single emotional-register cue.
+  - Kept pawn mood, health, low capacities, and top thoughts in the `you:` summary so pawn state
+    still reaches the model without duplicating the tone field.
+
 - **2026-06-16 (nearby-object weighted selection)**
   - Updated surroundings context generation so nearby objects are now summarized as 1–2 weighted-random
     picks from nearby candidates instead of an unweighted fixed list.
