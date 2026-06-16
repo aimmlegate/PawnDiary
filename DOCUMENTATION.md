@@ -144,7 +144,9 @@ Synthetic GameEvent entries cover meaningful map/story discoveries that vanilla 
 TaleDefs. Fog reveals use `FogGrid.Notify_PawnEnteringDoor` to cache the entering colonist briefly,
 then `FogGrid.NotifyAreaRevealed` records the reveal from that pawn's point of view when it exposes
 an ancient mech threat or a nearby `CompLetterOnRevealed` object. The recorder deduplicates by
-map/object so the same ancient danger reveal does not become several diary pages.
+map/object so the same ancient danger reveal does not become several diary pages. These Harmony
+patches bind vanilla method arguments by position, avoiding RimWorld parameter-name drift that would
+otherwise abort patch registration.
 
 Void/fallen monolith beats are recorded directly from `Building_VoidMonolith.Investigate(Pawn)` and
 `Building_VoidMonolith.Activate(Pawn)`, so the investigator or activator is the diary author.

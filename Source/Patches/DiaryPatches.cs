@@ -272,9 +272,9 @@ namespace PawnDiary
         /// <summary>
         /// Harmony Prefix for FogGrid.Notify_PawnEnteringDoor. Remembers the entering pawn briefly.
         /// </summary>
-        public static void Prefix(FogGrid __instance, Building_Door door, Pawn pawn)
+        public static void Prefix(FogGrid __instance, Building_Door __0, Pawn __1)
         {
-            AreaRevealDiscovererCache.Note(pawn, door?.Map);
+            AreaRevealDiscovererCache.Note(__1, __0?.Map);
         }
     }
 
@@ -289,11 +289,11 @@ namespace PawnDiary
         /// <summary>
         /// Harmony Postfix for FogGrid.NotifyAreaRevealed. Records notable pawn-caused discoveries.
         /// </summary>
-        public static void Postfix(FogGrid __instance, IntVec3 root, FloodUnfogResult result)
+        public static void Postfix(FogGrid __instance, IntVec3 __0, FloodUnfogResult __1)
         {
             Map map = MapField?.GetValue(__instance) as Map;
             Pawn discoverer = AreaRevealDiscovererCache.LatestFor(map);
-            DiaryGameComponent.Current?.RecordAreaRevealed(discoverer, map, root, result);
+            DiaryGameComponent.Current?.RecordAreaRevealed(discoverer, map, __0, __1);
         }
     }
 
@@ -305,9 +305,9 @@ namespace PawnDiary
         /// <summary>
         /// Harmony Postfix for Building_VoidMonolith.Investigate.
         /// </summary>
-        public static void Postfix(Building_VoidMonolith __instance, Pawn pawn)
+        public static void Postfix(Building_VoidMonolith __instance, Pawn __0)
         {
-            DiaryGameComponent.Current?.RecordMonolithInvestigated(pawn, __instance);
+            DiaryGameComponent.Current?.RecordMonolithInvestigated(__0, __instance);
         }
     }
 
@@ -319,9 +319,9 @@ namespace PawnDiary
         /// <summary>
         /// Harmony Postfix for Building_VoidMonolith.Activate.
         /// </summary>
-        public static void Postfix(Building_VoidMonolith __instance, Pawn pawn)
+        public static void Postfix(Building_VoidMonolith __instance, Pawn __0)
         {
-            DiaryGameComponent.Current?.RecordMonolithActivated(pawn, __instance);
+            DiaryGameComponent.Current?.RecordMonolithActivated(__0, __instance);
         }
     }
 
