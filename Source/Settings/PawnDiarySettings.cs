@@ -54,19 +54,8 @@ namespace PawnDiary
         public bool enableLlm = true;
         // The configured API lanes used for generation. Requests are distributed across these
         // round-robin and run in parallel (one in-flight request per lane, see LlmClient).
-        // Seeded from the legacy single-endpoint fields below the first time it's empty.
         public List<ApiEndpointConfig> apiEndpoints = new List<ApiEndpointConfig>();
 
-        // ---- Legacy single-endpoint fields (kept for migration from older saves) ----
-        // Base URL of the OpenAI-compatible chat completions endpoint.
-        public string endpointUrl = DefaultEndpointUrl;
-        // Model name sent in the request payload.
-        public string modelName = DefaultModelName;
-        // API key (may be empty for local models that don't require auth).
-        public string apiKey = string.Empty;
-
-        // If true, sends the API key as a Bearer token; otherwise includes it as a query parameter.
-        public bool sendApiKeyAsBearerToken = true;
         // Per-request timeout in seconds before the request is cancelled.
         public int timeoutSeconds = 30;
         // Maximum number of in-flight LLM requests to avoid overwhelming local servers.
@@ -78,8 +67,6 @@ namespace PawnDiary
         public float temperature = 0.8f;
         // When true, raw game-text entries are kept even if LLM generation fails, so no history is lost.
         public bool keepRawEntryOnFailure = true;
-        // When true, generates diary text from both the initiator's and recipient's perspectives.
-        public bool dualPovGeneration = true;
         // UI preference: when false, the compact API/model setup block is collapsed in mod settings.
         public bool showApiSettings = true;
         // Dev-mode UI preference: shows the per-pawn persona picker in the Diary inspector tab.
@@ -133,21 +120,13 @@ namespace PawnDiary
 
         public override void ExposeData()
         {
-            string legacyChatCompletionsUrl = null;
-
             Scribe_Values.Look(ref enableLlm, "enableLlm", true);
             Scribe_Collections.Look(ref apiEndpoints, "apiEndpoints", LookMode.Deep);
-            Scribe_Values.Look(ref endpointUrl, "endpointUrl", DefaultEndpointUrl);
-            Scribe_Values.Look(ref legacyChatCompletionsUrl, "chatCompletionsUrl", null);
-            Scribe_Values.Look(ref modelName, "modelName", DefaultModelName);
-            Scribe_Values.Look(ref apiKey, "apiKey", string.Empty);
-            Scribe_Values.Look(ref sendApiKeyAsBearerToken, "sendApiKeyAsBearerToken", true);
             Scribe_Values.Look(ref timeoutSeconds, "timeoutSeconds", 30);
             Scribe_Values.Look(ref maxConcurrentRequests, "maxConcurrentRequests", 4);
             Scribe_Values.Look(ref maxTokens, "maxTokens", 100);
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
             Scribe_Values.Look(ref keepRawEntryOnFailure, "keepRawEntryOnFailure", true);
-            Scribe_Values.Look(ref dualPovGeneration, "dualPovGeneration", true);
             Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
@@ -160,23 +139,14 @@ namespace PawnDiary
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
 
-            if (!string.IsNullOrWhiteSpace(legacyChatCompletionsUrl) && endpointUrl == DefaultEndpointUrl)
-            {
-                endpointUrl = EndpointUtility.NormalizeBaseEndpoint(legacyChatCompletionsUrl);
-            }
-
             ClampValues();
         }
 
         /// <summary>
-        /// Resets the connection config to a single default API lane (and clears the legacy fields).
+        /// Resets the connection config to a single default API lane.
         /// </summary>
         public void ResetConnectionDefaults()
         {
-            endpointUrl = DefaultEndpointUrl;
-            modelName = DefaultModelName;
-            apiKey = string.Empty;
-
             apiEndpoints = new List<ApiEndpointConfig>
             {
                 new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName)
@@ -186,8 +156,7 @@ namespace PawnDiary
         // ---- API endpoint helpers ----
 
         /// <summary>
-        /// Guarantees <see cref="apiEndpoints"/> is non-null, migrates a legacy single-endpoint
-        /// config into the list the first time it is empty, and normalizes each row's URL.
+        /// Guarantees <see cref="apiEndpoints"/> is non-null and normalizes each row's URL.
         /// Public so the settings UI can call it before drawing the first frame.
         /// </summary>
         public void EnsureEndpointsList()
@@ -197,17 +166,12 @@ namespace PawnDiary
                 apiEndpoints = new List<ApiEndpointConfig>();
             }
 
-            // Migrate: older saves stored a single endpoint/model/key. Seed the list from those so
-            // existing users keep their configured API with no action needed.
             if (apiEndpoints.Count == 0)
             {
-                apiEndpoints.Add(new ApiEndpointConfig(
-                    string.IsNullOrWhiteSpace(endpointUrl) ? DefaultEndpointUrl : endpointUrl,
-                    apiKey ?? string.Empty,
-                    string.IsNullOrWhiteSpace(modelName) ? DefaultModelName : modelName));
+                apiEndpoints.Add(new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName));
             }
 
-            // Normalize each row's URL the same way the legacy single endpoint is normalized.
+            // Normalize each row's URL before it is used for /models or /chat/completions.
             foreach (ApiEndpointConfig endpoint in apiEndpoints)
             {
                 if (endpoint == null)
@@ -509,21 +473,8 @@ namespace PawnDiary
         {
             enableLlm = true;
             keepRawEntryOnFailure = true;
-            sendApiKeyAsBearerToken = true;
 
             EnsureGroupDictionaries();
-
-            if (string.IsNullOrWhiteSpace(endpointUrl))
-            {
-                endpointUrl = DefaultEndpointUrl;
-            }
-
-            endpointUrl = EndpointUtility.NormalizeBaseEndpoint(endpointUrl);
-
-            if (string.IsNullOrWhiteSpace(modelName))
-            {
-                modelName = DefaultModelName;
-            }
 
             EnsureEndpointsList();
 

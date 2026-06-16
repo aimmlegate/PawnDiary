@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Prompt texts and legacy markers used at generation time. Edit a value and restart the game to
+  Prompt texts used at generation time. Edit a value and restart the game to
   retune behavior WITHOUT recompiling (see DiaryPromptDef.cs for what each field means).
   Every value here equals the code default, so deleting this file or omitting a field
   changes nothing.
@@ -16,22 +16,13 @@
     <!-- Wrapped instruction for the recipient's second request in paired sequential mode -->
     <recipientFollowupInstruction>Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.</recipientFollowupInstruction>
 
-    <!-- Legacy dual-POV instruction retained for compatibility with older saved/generated data -->
-    <dualInstruction>Write two short first-person diary entries, one from each pawn's point of view, following the instruction.</dualInstruction>
-
     <!-- Neutral, persona-independent instruction for colonist death descriptions -->
     <deathDescriptionInstruction>Write one short, third-person death description. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's persona or write from first person. Output only the death description.</deathDescriptionInstruction>
 
     <!-- Neutral, persona-independent instruction for first colony-arrival descriptions -->
     <arrivalDescriptionInstruction>Write one short, third-person colony arrival description. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. For starting colonists, use the scenario details as founding context; for later colonists, use the join facts. Do not use the pawn's persona or write from first person. Output only the arrival description.</arrivalDescriptionInstruction>
 
-    <!-- Legacy marker that preceded the initiator's diary entry in old dual-POV responses -->
-    <initiatorMarker>[INITIATOR]</initiatorMarker>
-
-    <!-- Legacy marker that preceded the recipient's diary entry in old dual-POV responses -->
-    <recipientMarker>[RECIPIENT]</recipientMarker>
-
-    <!-- Default persona assigned to new pawns and older saves without a persona choice -->
+    <!-- Default persona assigned to new pawns without a persona choice -->
     <defaultPersonaDefName>DiaryPersona_StoicSurvivor</defaultPersonaDefName>
 
     <!-- The three system prompts, one per narrative mode. Which one a request uses is chosen by

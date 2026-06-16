@@ -23,10 +23,6 @@ namespace PawnDiary
         public int moodEventDedupTicks = 2500;
         // The same pawn+thought combination is only recorded once within this window (~1 in-game hour).
         public int thoughtDedupTicks = 2500;
-        // Legacy fallback for any interaction batch policy that omits windowTicks.
-        public int smallTalkBatchWindowTicks = 2500;
-        // Legacy fallback for any interaction batch policy that omits maxEvents.
-        public int smallTalkBatchMaxEvents = 6;
 
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things

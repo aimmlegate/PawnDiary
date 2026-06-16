@@ -656,8 +656,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Extracts the generated text from an OpenAI-style chat completion response.
-        /// Supports both the standard <c>choices[0].message.content</c> shape and the
-        /// legacy <c>choices[0].text</c> shape used by older completions endpoints.
+        /// Supports the standard <c>choices[0].message.content</c> shape.
         /// </summary>
         private static string ParseGeneratedText(string json)
         {
@@ -686,11 +685,6 @@ namespace PawnDiary
                 {
                     return contentObject as string;
                 }
-            }
-
-            if (firstChoice.TryGetValue("text", out object textObject))
-            {
-                return textObject as string;
             }
 
             return null;

@@ -69,8 +69,6 @@
   <PawnDiary.Settings.NoModelsReturned>No models returned.</PawnDiary.Settings.NoModelsReturned>
   <PawnDiary.Settings.ModelsFound>Found {0} model(s).</PawnDiary.Settings.ModelsFound>
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
-  <PawnDiary.Settings.PairedPov>Paired POV generation</PawnDiary.Settings.PairedPov>
-  <PawnDiary.Settings.PairedPovTip>Generate pairwise diary entries sequentially: initiator first, then recipient with the initiator entry as hidden context. Disable to generate only the first POV immediately and let other POVs generate lazily.</PawnDiary.Settings.PairedPovTip>
   <PawnDiary.Settings.GenerateTitles>Generate LLM titles for diary entries</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to produce a short title after the main entry is written. Adds latency and one extra token bill per entry. When disabled, no new title is generated and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>

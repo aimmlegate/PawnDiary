@@ -20,7 +20,6 @@ namespace PawnDiary
         public const string InitiatorRole = "initiator";
         public const string RecipientRole = "recipient";
         public const string NeutralRole = "neutral";
-        public const string DualRole = "dual";
         public const string NotGeneratedStatus = "not_generated";
         public const string PendingStatus = "pending";
         public const string CompleteStatus = "complete";
@@ -39,7 +38,6 @@ namespace PawnDiary
         public string initiatorText; // raw game-side description from the initiator's POV
         public string recipientText; // raw game-side description from the recipient's POV
         public string neutralText; // merged description combining both POVs for neutral view
-        public string sequenceText; // used by legacy dual-POV generation mode
         public string gameContext; // metadata string describing game state at event time
         public string instruction; // group-specific prompt instruction appended to LLM calls
         public string initiatorPawnSummary; // LLM-oriented summary of initiator's traits/backstory
@@ -75,8 +73,6 @@ namespace PawnDiary
         public string initiatorLlmModel; // LLM model name used for initiator POV generation
         public string recipientLlmModel; // LLM model name used for recipient POV generation
         public string neutralLlmModel; // LLM model name used for neutral POV generation
-        public string llmEndpoint; // legacy flat field, migrated to per-POV fields on load
-        public string llmModel; // legacy flat field, migrated to per-POV fields on load
         public bool solo; // true for events with a single POV (e.g. mental breaks)
         // Per-POV title: short chat-style subject (3-8 words) derived from the generated entry.
         // Populated by the "Generate LLM titles" follow-up call; empty means the diary card
@@ -101,8 +97,8 @@ namespace PawnDiary
         public string moodImpact;
 
         // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
-        // keys written to the save file — renaming one breaks existing saves. The PostLoadInit
-        // block below back-fills defaults/normalizes status when loading older saves.
+        // keys written to the save file — renaming one breaks saved games. The PostLoadInit
+        // block below keeps loaded fields non-null and normalizes status.
         // See AGENTS.md ("IExposable").
         public void ExposeData()
         {
@@ -120,7 +116,6 @@ namespace PawnDiary
             Scribe_Values.Look(ref initiatorText, "initiatorText");
             Scribe_Values.Look(ref recipientText, "recipientText");
             Scribe_Values.Look(ref neutralText, "neutralText");
-            Scribe_Values.Look(ref sequenceText, "sequenceText");
             Scribe_Values.Look(ref gameContext, "gameContext");
             Scribe_Values.Look(ref instruction, "instruction");
             Scribe_Values.Look(ref initiatorPawnSummary, "initiatorPawnSummary");
@@ -147,8 +142,6 @@ namespace PawnDiary
             Scribe_Values.Look(ref initiatorError, "initiatorError");
             Scribe_Values.Look(ref recipientError, "recipientError");
             Scribe_Values.Look(ref neutralError, "neutralError");
-            Scribe_Values.Look(ref llmEndpoint, "llmEndpoint");
-            Scribe_Values.Look(ref llmModel, "llmModel");
             Scribe_Values.Look(ref initiatorLlmEndpoint, "initiatorLlmEndpoint");
             Scribe_Values.Look(ref recipientLlmEndpoint, "recipientLlmEndpoint");
             Scribe_Values.Look(ref neutralLlmEndpoint, "neutralLlmEndpoint");
@@ -168,7 +161,7 @@ namespace PawnDiary
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                // Backfill defaults for fields that may be absent in older saves
+                // Keep loaded fields non-null so later code can stay simple.
                 if (string.IsNullOrWhiteSpace(eventId))
                 {
                     eventId = Guid.NewGuid().ToString("N");
@@ -194,11 +187,6 @@ namespace PawnDiary
                     neutralText = string.Equals(initiatorText, recipientText, StringComparison.OrdinalIgnoreCase)
                         ? initiatorText
                         : initiatorName + ": " + initiatorText + "\n" + recipientName + ": " + recipientText;
-                }
-
-                if (string.IsNullOrWhiteSpace(sequenceText))
-                {
-                    sequenceText = neutralText;
                 }
 
                 if (string.IsNullOrWhiteSpace(gameContext))
@@ -276,7 +264,7 @@ namespace PawnDiary
                     recipientWeapon = string.Empty;
                 }
 
-                // Mood impact defaults to neutral for older saves that don't have this field.
+                // Mood impact defaults to neutral when no mood direction was saved.
                 // "positive"/"negative" are set at record time for mood-event entries.
                 if (string.IsNullOrWhiteSpace(moodImpact))
                 {
@@ -288,9 +276,7 @@ namespace PawnDiary
                     neutralStatus = NotGeneratedStatus;
                 }
 
-                // Title backfill for older saves that pre-date the title feature. All values
-                // default to empty (not_generated status is implied by absence), so saved events
-                // with no generated title render a date-only card header.
+                // Empty title fields render a date-only card header.
                 if (initiatorTitle == null)
                 {
                     initiatorTitle = string.Empty;
@@ -342,36 +328,6 @@ namespace PawnDiary
                 recipientStatus = NormalizeLoadedStatus(recipientStatus, recipientGeneratedText);
                 neutralStatus = NormalizeLoadedStatus(neutralStatus, neutralGeneratedText);
 
-                // Migrate legacy flat LLM fields into per-POV fields when per-POV slots are empty
-                if (string.IsNullOrWhiteSpace(initiatorLlmEndpoint) && !string.IsNullOrWhiteSpace(llmEndpoint))
-                {
-                    initiatorLlmEndpoint = llmEndpoint;
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientLlmEndpoint) && !string.IsNullOrWhiteSpace(llmEndpoint))
-                {
-                    recipientLlmEndpoint = llmEndpoint;
-                }
-
-                if (string.IsNullOrWhiteSpace(neutralLlmEndpoint) && !string.IsNullOrWhiteSpace(llmEndpoint))
-                {
-                    neutralLlmEndpoint = llmEndpoint;
-                }
-
-                if (string.IsNullOrWhiteSpace(initiatorLlmModel) && !string.IsNullOrWhiteSpace(llmModel))
-                {
-                    initiatorLlmModel = llmModel;
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientLlmModel) && !string.IsNullOrWhiteSpace(llmModel))
-                {
-                    recipientLlmModel = llmModel;
-                }
-
-                if (string.IsNullOrWhiteSpace(neutralLlmModel) && !string.IsNullOrWhiteSpace(llmModel))
-                {
-                    neutralLlmModel = llmModel;
-                }
             }
         }
 
@@ -551,29 +507,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Sets the same prompt text for both initiator and recipient POVs (dual-POV mode).
-        /// </summary>
-        public void SetDualPrompt(string prompt)
-        {
-            initiatorPrompt = prompt;
-            recipientPrompt = prompt;
-        }
-
-        /// <summary>
         /// Returns true if this POV role can be queued for LLM generation (not already pending/complete/failed).
         /// </summary>
         public bool CanQueueGeneration(string povRole)
         {
             string status = StatusFor(povRole);
             return string.IsNullOrWhiteSpace(status) || RoleEquals(status, NotGeneratedStatus);
-        }
-
-        /// <summary>
-        /// Returns true if both initiator and recipient POVs can be queued (non-solo dual-POV event).
-        /// </summary>
-        public bool CanQueueDual()
-        {
-            return !solo && CanQueueGeneration(InitiatorRole) && CanQueueGeneration(RecipientRole);
         }
 
         /// <summary>
@@ -625,26 +564,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Marks both initiator and recipient POVs as pending generation.
-        /// </summary>
-        public void MarkDualQueued()
-        {
-            MarkQueued(InitiatorRole);
-            MarkQueued(RecipientRole);
-        }
-
-        /// <summary>
-        /// Marks both initiator and recipient POVs as failed with the given error.
-        /// </summary>
-        public void MarkDualFailed(string error)
-        {
-            MarkFailed(InitiatorRole, error);
-            MarkFailed(RecipientRole, error);
-        }
-
-        /// <summary>
         /// Applies an LLM generation result to the appropriate POV slot based on result.povRole.
-        /// Dispatches to the initiator, recipient, neutral, or dual handler.
+        /// Dispatches to the initiator, recipient, or neutral handler.
         /// </summary>
         public void ApplyLlmResult(LlmGenerationResult result)
         {
@@ -671,10 +592,6 @@ namespace PawnDiary
                 return;
             }
 
-            if (RoleEquals(result.povRole, DualRole))
-            {
-                ApplyDualResult(result);
-            }
         }
 
         /// <summary>
@@ -716,7 +633,7 @@ namespace PawnDiary
             string titleForPov = TitleForRole(povRole);
 
             // Build a linked entry for the other pawn in a paired event.
-            // Solo events (mental breaks) and legacy entries have no link.
+            // Solo events (mental breaks) have no link.
             LinkedEntryView linkedEntry = null;
             if (!solo && RoleIsInitiatorOrRecipient(povRole))
             {
@@ -1214,99 +1131,6 @@ namespace PawnDiary
                 recipientStatus = FailedStatus;
                 recipientError = result.error;
             }
-        }
-
-        private void ApplyDualResult(LlmGenerationResult result)
-        {
-            if (!result.success)
-            {
-                MarkDualFailed(result.error);
-                return;
-            }
-
-            string initiatorEntry;
-            string recipientEntry;
-            ParseDualResponse(result.generatedText, out initiatorEntry, out recipientEntry);
-
-            initiatorGeneratedText = initiatorEntry;
-            initiatorStatus = CompleteStatus;
-            initiatorError = null;
-
-            recipientGeneratedText = recipientEntry;
-            recipientStatus = CompleteStatus;
-            recipientError = null;
-        }
-
-        private static void ParseDualResponse(string text, out string initiatorEntry, out string recipientEntry)
-        {
-            initiatorEntry = string.Empty;
-            recipientEntry = string.Empty;
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return;
-            }
-
-            string initiatorMarker = DiaryPrompts.Current.initiatorMarker;
-            string recipientMarker = DiaryPrompts.Current.recipientMarker;
-            int initiatorIndex = text.IndexOf(initiatorMarker, StringComparison.OrdinalIgnoreCase);
-            int recipientIndex = text.IndexOf(recipientMarker, StringComparison.OrdinalIgnoreCase);
-
-            if (initiatorIndex >= 0 && recipientIndex >= 0)
-            {
-                if (initiatorIndex < recipientIndex)
-                {
-                    int start = initiatorIndex + initiatorMarker.Length;
-                    initiatorEntry = text.Substring(start, recipientIndex - start);
-                    recipientEntry = text.Substring(recipientIndex + recipientMarker.Length);
-                }
-                else
-                {
-                    int start = recipientIndex + recipientMarker.Length;
-                    recipientEntry = text.Substring(start, initiatorIndex - start);
-                    initiatorEntry = text.Substring(initiatorIndex + initiatorMarker.Length);
-                }
-            }
-            else if (recipientIndex >= 0)
-            {
-                initiatorEntry = text.Substring(0, recipientIndex);
-                recipientEntry = text.Substring(recipientIndex + recipientMarker.Length);
-            }
-            else if (initiatorIndex >= 0)
-            {
-                initiatorEntry = text.Substring(initiatorIndex + initiatorMarker.Length);
-                recipientEntry = text;
-            }
-            else
-            {
-                // No markers returned; fall back to the same text for both POVs.
-                initiatorEntry = text;
-                recipientEntry = text;
-            }
-
-            initiatorEntry = CleanDualEntry(initiatorEntry);
-            recipientEntry = CleanDualEntry(recipientEntry);
-
-            if (string.IsNullOrWhiteSpace(initiatorEntry))
-            {
-                initiatorEntry = CleanDualEntry(text);
-            }
-
-            if (string.IsNullOrWhiteSpace(recipientEntry))
-            {
-                recipientEntry = CleanDualEntry(text);
-            }
-        }
-
-        private static string CleanDualEntry(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            value = value.Replace(DiaryPrompts.Current.initiatorMarker, string.Empty)
-                         .Replace(DiaryPrompts.Current.recipientMarker, string.Empty);
-            return value.Trim();
         }
 
         private void ApplyLlmResultToNeutral(LlmGenerationResult result)

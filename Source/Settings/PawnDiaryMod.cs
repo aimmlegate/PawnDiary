@@ -67,7 +67,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Draws the full settings window: the API lanes editor (parallel endpoints + models),
-        /// paired-POV toggle, per-lane concurrency control, system prompt, and the per-group
+        /// per-lane concurrency control, system prompt, and the per-group
         /// instruction editor.
         /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
@@ -90,10 +90,6 @@ namespace PawnDiary
             DrawApiEndpointsEditor(listing);
 
             SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
-            listing.CheckboxLabeled(
-                "PawnDiary.Settings.PairedPov".Translate(),
-                ref Settings.dualPovGeneration,
-                "PawnDiary.Settings.PairedPovTip".Translate());
             listing.CheckboxLabeled(
                 "PawnDiary.Settings.GenerateTitles".Translate(),
                 ref Settings.generateTitles,
@@ -508,10 +504,9 @@ namespace PawnDiary
                 height += 34f; // compact summary
             }
 
-            // Generation and system-prompt sections. The Generation block now also includes
-            // the GenerateTitles toggle; the system-prompt block now also includes the title
-            // prompt editor (one more short section than before).
-            height += 190f;
+            // Generation and system-prompt sections. The system-prompt block includes the title
+            // prompt editor as a short extra section.
+            height += 160f;
             height += 290f;
 
             // Events section: two-column group toggles, domain subheaders, and the prompt editor.

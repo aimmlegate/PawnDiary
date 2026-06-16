@@ -1,5 +1,5 @@
-// One pawn's diary index: the ordered event IDs they appear in, plus legacy inline
-// entries from older saves. Pure data + save/load. Split out of DiaryGameComponent.cs.
+// One pawn's diary index: the ordered event IDs they appear in, plus per-pawn persona and
+// generation controls. Pure data + save/load. Split out of DiaryGameComponent.cs.
 using System.Collections.Generic;
 using Verse;
 
@@ -29,13 +29,10 @@ namespace PawnDiary
         // Ordered list of DiaryEvent IDs this pawn appears in.
         public List<string> eventIds = new List<string>();
 
-        // Legacy inline entries from older saves (pre-event model).
-        public List<DiaryEntry> entries = new List<DiaryEntry>();
-
         /// <summary>
         /// Serialises/deserialises this record into the RimWorld save file.
-        /// PostLoadInit back-fills older saves and recovers gracefully if a
-        /// persona Def was renamed or removed.
+        /// PostLoadInit keeps list fields non-null and recovers gracefully if a persona Def was
+        /// renamed or removed.
         /// </summary>
         public void ExposeData()
         {
@@ -44,11 +41,10 @@ namespace PawnDiary
             Scribe_Values.Look(ref personaDefName, "personaDefName", DiaryPersonas.Default.defName);
             Scribe_Values.Look(ref diaryGenerationEnabled, "diaryGenerationEnabled", true);
             Scribe_Collections.Look(ref eventIds, "eventIds", LookMode.Value);
-            Scribe_Collections.Look(ref entries, "entries", LookMode.Deep);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                // Back-fill older saves and recover gracefully if a persona Def was renamed/removed.
+                // Recover gracefully if a persona Def was renamed/removed.
                 if (string.IsNullOrWhiteSpace(personaDefName) || DiaryPersonas.ForDefName(personaDefName) == null)
                 {
                     personaDefName = DiaryPersonas.Default.defName;
@@ -57,11 +53,6 @@ namespace PawnDiary
                 if (eventIds == null)
                 {
                     eventIds = new List<string>();
-                }
-
-                if (entries == null)
-                {
-                    entries = new List<DiaryEntry>();
                 }
             }
         }

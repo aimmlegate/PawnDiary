@@ -4,6 +4,24 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (legacy cleanup)**
+  - Removed the unsupported `prompt-lab/` Node harness and its ignored generated result files.
+    Prompt/persona data now lives only in the RimWorld XML defs and runtime source.
+  - Removed legacy generation/settings paths: `dualPovGeneration`, the paired-POV settings toggle,
+    the old combined dual-response parser (`[INITIATOR]` / `[RECIPIENT]` markers), and the unused
+    `DiaryPromptDef` dual-marker fields.
+  - Removed pre-event-model `DiaryEntry` save/display support, `PawnDiaryRecord.entries`,
+    obsolete flat LLM migration fields (`llmEndpoint` / `llmModel`), `sequenceText`, and the old
+    single-endpoint settings migration fields (`endpointUrl` / `modelName` / top-level `apiKey` /
+    `sendApiKeyAsBearerToken`).
+  - Removed legacy small-talk batch fallback tuning (`smallTalkBatchWindowTicks` /
+    `smallTalkBatchMaxEvents`); current batch policies define their own `windowTicks` and
+    `maxEvents`.
+  - Removed `LlmClient`'s old `choices[0].text` response fallback; chat-completion responses now
+    parse only the current `choices[0].message.content` shape.
+  - Updated `DOCUMENTATION.md`, XML comments, localization, and `.gitignore` to match the reduced
+    supported surface.
+
 - **2026-06-16 (LLM titles default on, no fallback)**
   - `generateTitles` now defaults ON for new settings, so successful diary entries queue the small
     title follow-up unless the player disables it. When disabled, diary headers render date-only;

@@ -703,29 +703,19 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Window in ticks for this batch policy, with the old small-talk tuning as fallback.
+        /// Window in ticks for this batch policy.
         /// </summary>
         private static int BatchWindowTicks(InteractionBatchPolicy policy)
         {
-            if (policy != null && policy.windowTicks >= 0)
-            {
-                return policy.windowTicks;
-            }
-
-            return Math.Max(0, DiaryTuning.Current.smallTalkBatchWindowTicks);
+            return Math.Max(0, policy?.windowTicks ?? 0);
         }
 
         /// <summary>
-        /// Maximum event count for this batch policy, with the old small-talk tuning as fallback.
+        /// Maximum event count for this batch policy.
         /// </summary>
         private static int BatchMaxEvents(InteractionBatchPolicy policy)
         {
-            if (policy != null && policy.maxEvents > 0)
-            {
-                return policy.maxEvents;
-            }
-
-            return Math.Max(1, DiaryTuning.Current.smallTalkBatchMaxEvents);
+            return Math.Max(1, policy?.maxEvents ?? 1);
         }
 
         /// <summary>

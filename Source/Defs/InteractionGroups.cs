@@ -34,7 +34,7 @@ namespace PawnDiary
     }
 
     // Which kind of diary event an Interaction-domain batch eventually produces.
-    // PairEvent keeps the old behavior: one merged pairwise event. AmbientDayNote treats the
+    // PairEvent creates one merged pairwise event. AmbientDayNote treats the
     // low-stakes interactions as background material and writes one solo diary note per pawn/day.
     public enum InteractionBatchMode
     {
@@ -49,14 +49,12 @@ namespace PawnDiary
     {
         // Set false in XML to leave a documented policy disabled without deleting it.
         public bool enabled = true;
-        // PairEvent = old pairwise merged event; AmbientDayNote = one solo low-stakes memory per pawn/day.
+        // PairEvent = one merged pairwise event; AmbientDayNote = one solo low-stakes memory per pawn/day.
         public InteractionBatchMode mode = InteractionBatchMode.PairEvent;
-        // How long the batch waits after the last matching event before flushing. A negative value
-        // falls back to DiaryTuning's legacy small-talk number for compatibility.
-        public int windowTicks = -1;
-        // Force a flush after this many accumulated moments. A non-positive value uses the legacy
-        // DiaryTuning fallback.
-        public int maxEvents = -1;
+        // How long the batch waits after the last matching event before flushing.
+        public int windowTicks = 0;
+        // Force a flush after this many accumulated moments.
+        public int maxEvents = 1;
         // Pair = one group-level batch per pawn pair; Def = separate per InteractionDef per pair.
         public InteractionBatchScope scope = InteractionBatchScope.Pair;
         // Synthetic defName used for combined diary events. Empty falls back to "<group>Batch".

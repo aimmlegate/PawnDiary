@@ -60,7 +60,6 @@ PawnDiary/
 ├─ Source/                      all C# + PawnDiary.csproj/.slnx (game ignores this)
 │  ├─ Core/ Models/ Generation/ Defs/ Patches/ UI/ Settings/ Util/
 │  └─ Properties/ Libs/
-├─ prompt-lab/                  offline prompt harness (Node)
 ├─ skills/                      shared agent skills (tool-agnostic)
 ├─ AGENTS.md                    shared repo rules for code agents
 ├─ CLAUDE.md                    Claude Code wrapper (shared skill)
@@ -80,8 +79,8 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions); `MemoryThoughtHandler.TryGainMemory` → `RecordThought` (temporary thoughts with expiration); `Pawn_HealthTracker.AddHediff` → `RecordHediffAppeared` (major new afflictions, for the day reflection). |
 | `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.InteractionBatching.cs` (XML-configured batching for quick social logs — `RecordBatchedInteraction` + `PendingInteractionBatch`), `.AmbientThoughts.cs` (day-note batching for low-impact temporary thoughts), `.DaySummary.cs` (the end-of-day reflection — collectors for major events/opinion shifts/new afflictions/filler, the weighted-random highlight selector, and the `DayReflection` emit, flushed when a pawn beds down). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
-| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse); per-POV title fields and helpers (`SetTitle` / `TitleForRole` / `MarkTitleQueued` / `MarkTitleFailed` / `IsTitlePending`). |
-| `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
+| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results; per-POV title fields and helpers (`SetTitle` / `TitleForRole` / `MarkTitleQueued` / `MarkTitleFailed` / `IsTitlePending`). |
+| `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
 | `MoodImpact.cs` | Single home for the mood-direction tokens (`"positive"`/`"negative"`/`"neutral"`) shared by mood-event and thought entries: the constants (saved on `DiaryEvent.moodImpact` and embedded in `gameContext`), the ±0.5 `Classify` threshold, and `PickText` (picks the positive/negative/neutral translation key). Replaces the literals/blocks that were duplicated across `DiaryGameComponent` and `DiaryContextBuilder`. |
 | `ArrivalContextCache.cs` | Transient bridge around `Pawn.SetFaction`: captures prior faction, recruiter, pawn kind, creepjoiner flag, and nearby context for neutral first-entry colony-arrival descriptions. |
@@ -92,18 +91,17 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
 | `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). Includes `IsThoughtEnabled`/`InstructionForThought` for the Thought domain. |
 | `DiaryTuningDef.cs` | Defines `DiaryTuningDef : Def` + `DiaryTuning.Current` (tuning knobs: dedup windows, thresholds, buckets). Data lives in XML; falls back to safe code defaults if the Def is absent. |
-| `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, legacy dual markers, and the three default system prompts: diary voice / day reflection / neutral chronicle). |
+| `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, neutral death/arrival instructions, and the four default system prompts: diary voice / day reflection / neutral chronicle / title). |
 | `DiaryPersonaDef.cs` | Defines `DiaryPersonaDef : Def` + `DiaryPersonas` lookup/fallback helpers. Data lives in XML and is selected per pawn. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries with roleplay styling, importance markers, linked-entry cross-pawn previews (click-to-navigate), and that pawn's generation toggle. |
-| `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry), `DiaryEntryView` (display model: `Date`/`Title`/`GeneratedText`/`LlmStatus`/`DebugText`), and `LinkedEntryView` (truncated preview of the other pawn's entry for cross-linking, including the other pawn's title). |
-| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, tale, mood-event, and thought groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers including thought thresholds/token lists), `DiaryPromptDef.xml` (prompt instructions, legacy markers, the three system prompts/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
+| `DiaryEntry.cs` | `DiaryEntryView` (display model: `Date`/`Title`/`GeneratedText`/`LlmStatus`/`DebugText`) and `LinkedEntryView` (truncated preview of the other pawn's entry for cross-linking, including the other pawn's title). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, tale, mood-event, and thought groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers including thought thresholds/token lists), `DiaryPromptDef.xml` (prompt instructions, the four system prompts/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
 | `AGENTS.md` | Guide for code agents: the working rules (docs, localization, comments, build), skill-routing rules, and the C#/RimWorld→JS/TS primer (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …). Start here. |
 | `CLAUDE.md` | Thin Claude Code wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
 | `CODEX.md` | Thin Codex wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
 | `CHANGELOG.md` | Dated history of every change; add a line with each change. |
-| `prompt-lab/` | Standalone Node harness for tinkering with prompts **outside the game** (see its own README). Editable fixtures mirror the mod's prompt format; the runner fires them at the endpoint and prints/parses the result. `personas.txt` is the writing-style catalog used in fixtures. `_system.txt` is the shared system prompt. Not loaded by RimWorld. |
 
 ---
 
@@ -178,7 +176,8 @@ Opening the diary tab (`EntriesFor`) is a pure read with no side effects.
 
 ## 4. Generation modes
 
-Controlled by the `dualPovGeneration` setting.
+Pairwise events use one supported flow: initiator first, then recipient with the initiator's
+generated entry as hidden continuity context. Solo and neutral events use one request.
 
 ### Pawn eligibility (colonist-only)
 
@@ -197,7 +196,7 @@ at every entry point via `IsDiaryEligible(pawn)` (humanlike + colonist):
 This applies uniformly to interactions, social fights, mental breaks, TaleRecorder events, and
 interaction batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist pawns.
 
-### Paired sequential POV (default, `dualPovGeneration = true`)
+### Paired sequential POV
 - Pairwise events start by queueing the initiator request only. Its prompt
   (`BuildSequentialInteractionPrompt(..., "initiator")`) asks for exactly one diary entry.
 - When the initiator result is applied, `QueueRecipientAfterInitiatorResult` queues the
@@ -206,12 +205,6 @@ interaction batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for no
   the recipient has read.
 - If the initiator request fails, the recipient POV is marked failed too, because the
   required hidden context does not exist.
-- Old `[INITIATOR]` / `[RECIPIENT]` parser code remains dormant for compatibility, but new
-  requests are ordinary one-entry POV requests.
-
-### Single POV (legacy, `dualPovGeneration = false`)
-- Both initiator and recipient are queued as separate independent requests at record time.
-- Kept for fallback; off by default.
 
 ### Solo events (mental breaks and single-pawn tales)
 - `DiaryEvent.solo == true`. Only one eligible pawn is involved (recipient fields blank).
@@ -471,7 +464,7 @@ while quiet groups get a muted marker. It does not affect recording or generatio
 also gates the `burning passion:` prompt field; `combat` (data-driven, default false) gates the
 `weapon:` field — together they decide whether the equipped weapon is added to the prompt.
 
-**Tuning knobs** (dedup windows, legacy batch fallbacks, scan radius/temperature, the
+**Tuning knobs** (dedup windows, scan radius/temperature, the
 mood/pain/beauty/opinion bucket thresholds, and thought recording thresholds/token lists)
 likewise live in XML — `1.6/Defs/DiaryTuningDef.xml`, backing `DiaryTuningDef` /
 `DiaryTuning.Current`. Every value defaults to the shipped number, so deleting the file or
@@ -496,9 +489,8 @@ immediately. `mode` chooses the output shape:
 `syntheticDefName` and the `*Key` fields choose the combined event identity and localized
 label/header/fallback/instruction text; the classifier automatically treats a group's own
 `syntheticDefName` as matching that group for Diary tab display. `includeInteractionLabel` controls
-whether each numbered line includes the original interaction label. If `windowTicks` or `maxEvents`
-are omitted, the legacy `smallTalkBatchWindowTicks` and `smallTalkBatchMaxEvents` tuning values are
-used as fallbacks.
+whether each numbered line includes the original interaction label. Each shipped batch policy sets
+its own `windowTicks` and `maxEvents`.
 
 The shipped `smalltalk`, `animal`, and `teaching` groups use `AmbientDayNote`. `smalltalk` writes
 only after at least three low-stakes social moments for a pawn in the day; animal handling and
@@ -604,27 +596,25 @@ does not add a second surgery hook that would duplicate successful operations.
 
 | Setting | Default | Range / notes |
 |---------|---------|---------------|
-| `apiEndpoints` | one row: enabled `http://localhost:1234/v1` / `local-model` | **List of API lanes**, each = enabled flag + base URL + key + **one** model (`ApiEndpointConfig`). Requests spread across enabled rows and run in parallel (§7). Add rows with **+ Add API**; disabled rows stay saved but are skipped, and a model is required per active row (blank-model rows are skipped). Legacy single-endpoint saves migrate into one enabled row automatically. |
+| `apiEndpoints` | one row: enabled `http://localhost:1234/v1` / `local-model` | **List of API lanes**, each = enabled flag + base URL + key + **one** model (`ApiEndpointConfig`). Requests spread across enabled rows and run in parallel (§7). Add rows with **+ Add API**; disabled rows stay saved but are skipped, and a model is required per active row (blank-model rows are skipped). |
 | `showApiSettings` | true | UI-only preference for whether the compact API/model setup block is expanded in mod settings. |
 | `showPersonaSettings` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this reveals the manual persona picker in the pawn Diary tab. Normal mode always hides persona controls. |
 | `showLlmDebugInfo` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this shows raw/pending/failed entries plus the LLM endpoint/model/status/error/prompt diagnostic block in the pawn Diary tab. Normal mode always hides it. |
 | `showGeneratingEntries` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this reveals entries still in the generation pipeline (in-progress or stuck on "writing...") in the pawn Diary tab — without the full diagnostic block — so a stuck event is visible instead of only counted by the badge. Implied by `showLlmDebugInfo` (which already shows pending rows). Normal mode always hides them. |
-| `endpointUrl` / `apiKey` / `modelName` | localhost / _(empty)_ / `local-model` | **Legacy** single-endpoint fields, kept only to seed `apiEndpoints` on first load. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight **per API**; the rest queue on that API. Different APIs always run in parallel. **Use 1 for a single local model.** |
 | `maxTokens` | 100 | 32–2048. Applied to each one-entry request, and also enforced locally as a hard response cap if a model ignores API-side `max_tokens`. |
 | `temperature` | 0.8 | 0–2. |
-| `dualPovGeneration` | true | Paired sequential vs. independent single-POV requests for both sides (§4). |
 | `generateTitles` | true | LLM-titling master toggle. **ON by default**: every successful main entry queues a small follow-up title call (`TitleMaxTokens = 40`) with a focused system prompt asking for a 3-8 word title, no quotes, no period. The result is stored per POV on the event. When OFF, no new title request is made and diary headers render date-only; stored titles are kept and show again if the setting is re-enabled. See §4 "Title generation". |
 | `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` / `systemPromptTitle` | from `DiaryPromptDef` XML | The system prompts (diary voice / day reflection / neutral chronicle / title), chosen per request type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). The default diary `systemPrompt` also explicitly tells the model to stay within the request token limit. `systemPromptTitle` is only sent by the title follow-up; main entries are unaffected by changes to it. |
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
-| `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
+| `enableLlm`, `keepRawEntryOnFailure` | true | Currently forced on in `ClampValues`. |
 
 Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`, organized into medium-font **sections**
 (`SectionTitle`) with muted hint text (`DrawHint`): **Connection** (the hideable **API lanes
 editor** — `DrawApiEndpointsEditor` — each lane is a framed block with an enabled toggle,
 endpoint/model/API-key fields, per-row "Fetch" + "Pick", and **+ Add API** / **− Remove** /
-**Reset** buttons), **Generation** (paired-POV toggle + per-API concurrency slider), **System
+**Reset** buttons), **Generation** (title toggle + per-API concurrency slider), **System
 prompt** (editor + restore), and **Events** (the event-group editor). The group editor draws the
 ~30 enable toggles in **two columns** per domain (`DrawGroupTogglesForDomain` / `DrawGroupToggle`,
 each showing its prompt as a hover tooltip), followed by a per-group prompt editor — an "Editing
@@ -756,9 +746,6 @@ exist.
   Prompts are not scribed (rebuilt on demand).
 - Pending requests are not persisted; on load, pending statuses normalize back to
   not-generated and regenerate via the background queue scan.
-- **Backward-compat:** dormant `neutral*` fields remain scribed so older saves load; they
-  are no longer populated or shown.
-
 ---
 
 ## 11. Building

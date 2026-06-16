@@ -87,8 +87,8 @@ namespace PawnDiary
 
         // Trailer appended to every title-generation user message. Lives in code (not in
         // DiaryPromptDef / Keyed) because it is the structured "what to return" instruction for
-        // the model — the same carve-out as singlePovInstruction / dualInstruction, which are
-        // also fixed English trailers on the user side. Keeping it constant here avoids loading
+        // the model — the same carve-out as singlePovInstruction, which is also a fixed English
+        // trailer on the user side. Keeping it constant here avoids loading
         // a new Keyed string for one short sentence.
         private const string TitleTrailer =
             "\n\nReturn one short title (3-8 words) for this diary entry. Output only the title \u2014 no quotes, no period, no labels, no commentary.";
@@ -174,7 +174,7 @@ namespace PawnDiary
             AppendField(lines, "what happened", diaryEvent.initiatorText);
             AppendField(lines, "instruction", diaryEvent.instruction);
             AppendField(lines, "you", diaryEvent.initiatorPawnSummary);
-            // Solo events use the same persona field as pairwise entries for prompt-lab parity.
+            // Solo events use the same persona field as pairwise entries for prompt consistency.
             AppendField(lines, "persona", personaRule);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
             // Atmosphere is a short emotional anchor for the model.

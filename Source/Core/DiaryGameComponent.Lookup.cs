@@ -1,7 +1,7 @@
 // Lookups and bookkeeping over the saved data: cross-referencing events onto pawn diary records,
 // finding events/records by id, the "final death" rules that make a colonist's death entry terminal
 // (anything later is hidden and never generated), per-pawn eligibility checks, the dedup gate shared
-// by every Record* hook, persona migration/seeding, and the shared empty-list singleton. These are
+// by every Record* hook, persona seeding/defaulting, and the shared empty-list singleton. These are
 // the small, mostly-pure helpers the other partial files lean on.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
@@ -297,7 +297,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Migrates old saves: ensures a persona is assigned even if the Def was removed or never set.
+        /// Ensures a usable persona is assigned even if the Def was removed or never set.
         /// </summary>
         private static void EnsurePawnDiaryDefaults(PawnDiaryRecord diary)
         {
@@ -306,7 +306,7 @@ namespace PawnDiary
                 return;
             }
 
-            // Existing saves may have no persona, and XML mods may remove an old persona Def.
+            // XML edits or mod patches may remove a persona Def that a pawn record names.
             if (string.IsNullOrWhiteSpace(diary.personaDefName) || DiaryPersonas.ForDefName(diary.personaDefName) == null)
             {
                 diary.personaDefName = DiaryPersonas.Default.defName;

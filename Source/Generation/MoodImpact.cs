@@ -21,7 +21,7 @@ namespace PawnDiary
         public const string Positive = "positive";
         /// <summary>The event hurt the pawn's mood.</summary>
         public const string Negative = "negative";
-        /// <summary>No clear mood direction (also the safe default for old saves).</summary>
+        /// <summary>No clear mood direction.</summary>
         public const string Neutral = "neutral";
 
         /// <summary>

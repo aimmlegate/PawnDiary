@@ -51,23 +51,6 @@ namespace PawnDiary
                 }
             }
 
-            if (diary.entries != null)
-            {
-                for (int i = 0; i < diary.entries.Count; i++)
-                {
-                    if (finalDeathTick.HasValue && diary.entries[i] != null && diary.entries[i].tick > finalDeathTick.Value)
-                    {
-                        continue;
-                    }
-
-                    DiaryEntryView view = DiaryEntryView.FromLegacy(diary.entries[i]);
-                    if (view != null)
-                    {
-                        views.Add(view);
-                    }
-                }
-            }
-
             return views;
         }
 

@@ -14,14 +14,6 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        private static bool DualPovEnabled
-        {
-            get
-            {
-                return PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.dualPovGeneration;
-            }
-        }
-
         // Max tokens the title follow-up is allowed to emit. A title is 3-8 words; 40 is generous
         // for a chat-style subject plus a stray word or two, and small enough to keep the call
         // cheap when the title toggle is on. Reused from the same field on the main-entry
@@ -52,7 +44,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (DualPovEnabled && DiaryEvent.RoleIsInitiatorOrRecipient(povRole) && !diaryEvent.solo)
+            if (DiaryEvent.RoleIsInitiatorOrRecipient(povRole) && !diaryEvent.solo)
             {
                 QueueSequentialPairwiseRewrite(diaryEvent);
                 return;
@@ -227,19 +219,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Dispatches a pairwise event for LLM generation: sequential if dual-POV is on, else initiator-only.
+        /// Dispatches a pairwise event for LLM generation through the supported sequential POV flow.
         /// </summary>
         private void QueuePairwiseGeneration(DiaryEvent diaryEvent)
         {
-            if (DualPovEnabled)
-            {
-                QueueSequentialPairwiseRewrite(diaryEvent);
-            }
-            else
-            {
-                QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
-                QueueLlmRewrite(diaryEvent, DiaryEvent.RecipientRole);
-            }
+            QueueSequentialPairwiseRewrite(diaryEvent);
         }
 
         /// <summary>
@@ -450,7 +434,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Chooses the primary API lane for a request from the given active lanes (non-empty).
-        /// The recipient of a paired (dual-POV) event reuses the lane the initiator used — matched
+        /// The recipient of a paired event reuses the lane the initiator used — matched
         /// by the endpoint+model recorded on the event — so the sequential pair shares one model.
         /// Everything else takes the next lane in round-robin order to spread load across APIs.
         /// </summary>
@@ -459,7 +443,7 @@ namespace PawnDiary
             // Sequential pinning: keep the recipient on the initiator's lane when paired mode ran
             // the initiator first and recorded which endpoint+model it used (after failover, the
             // recorded meta is the lane that actually produced the initiator's entry).
-            if (DualPovEnabled && DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole))
+            if (DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole))
             {
                 string initiatorEndpoint = diaryEvent.initiatorLlmEndpoint;
                 string initiatorModel = diaryEvent.initiatorLlmModel;
@@ -575,7 +559,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Dequeues a completed LLM result and applies it to the corresponding DiaryEvent, then kicks
-        /// off the recipient side if dual-POV is active. Title follow-up results are routed
+        /// off the recipient side for pairwise entries. Title follow-up results are routed
         /// separately (see the <c>isTitleRequest</c> branch) so they never reach the main-entry
         /// applier.
         /// </summary>
@@ -746,8 +730,7 @@ namespace PawnDiary
         /// </summary>
         private void QueueRecipientAfterInitiatorResult(DiaryEvent diaryEvent, LlmGenerationResult result)
         {
-            if (!DualPovEnabled
-                || diaryEvent == null
+            if (diaryEvent == null
                 || diaryEvent.solo
                 || result == null
                 || !string.Equals(result.povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase))
@@ -797,7 +780,7 @@ namespace PawnDiary
         /// </summary>
         private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole)
         {
-            // Missing records fall back to the XML default persona, which also covers old saves.
+            // Missing records fall back to the XML default persona.
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             return DiaryPersonas.RuleFor(diary?.personaDefName);

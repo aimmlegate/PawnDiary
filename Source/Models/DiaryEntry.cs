@@ -1,138 +1,10 @@
-// Two small models for diary text:
-//   DiaryEntry     — a LEGACY entry persisted in old saves. New events use DiaryEvent instead;
-//                    this stays only so older saves still load.
-//   DiaryEntryView — the read-only display model the UI renders (text + status + display hints).
-// IExposable/ExposeData is RimWorld's save/load hook; see AGENTS.md ("IExposable").
-using System;
+// Small view models for diary text. DiaryEntryView is the read-only display model the UI renders
+// (text + status + display hints), and LinkedEntryView previews the other pawn's POV for pairwise
+// events.
 using Verse;
 
 namespace PawnDiary
 {
-    /// <summary>
-    /// Legacy diary entry persisted in older save files. New events use DiaryEvent instead;
-    /// this class exists solely so older saves still load correctly.
-    /// </summary>
-    public class DiaryEntry : IExposable
-    {
-        public int tick;            // Game tick when the entry was recorded
-        public string date;         // Human-readable date string (e.g. "2nd of Apr, 5500")
-        public string text;         // Raw game-authored text for this event
-        public string id;           // Unique identifier — backfilled on load if missing
-        public string generatedText; // Text produced by the LLM (may be empty while pending)
-        public string llmStatus;    // "pending", "failed", or empty after successful generation
-        public string llmError;     // Error message from the LLM call, if any
-        public string llmEndpoint;  // API endpoint that was called
-        public string llmModel;     // LLM model identifier used for generation
-        public string llmPrompt;    // Full prompt sent to the LLM
-
-        public DiaryEntry()
-        {
-        }
-
-        public DiaryEntry(int tick, string date, string text)
-        {
-            id = Guid.NewGuid().ToString("N");
-            this.tick = tick;
-            this.date = date;
-            this.text = text;
-            llmStatus = "pending";
-        }
-
-        /// <summary>
-        /// RimWorld save/load hook. Deserialises all fields from the save file and
-        /// backfills a missing id for saves created before the id field existed.
-        /// </summary>
-        public void ExposeData()
-        {
-            Scribe_Values.Look(ref id, "id");
-            Scribe_Values.Look(ref tick, "tick");
-            Scribe_Values.Look(ref date, "date");
-            Scribe_Values.Look(ref text, "text");
-            Scribe_Values.Look(ref generatedText, "generatedText");
-            Scribe_Values.Look(ref llmStatus, "llmStatus");
-            Scribe_Values.Look(ref llmError, "llmError");
-            Scribe_Values.Look(ref llmEndpoint, "llmEndpoint");
-            Scribe_Values.Look(ref llmModel, "llmModel");
-
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                id = Guid.NewGuid().ToString("N");
-            }
-        }
-
-        /// <summary>
-        /// Returns generatedText if available, otherwise falls back to the raw game text.
-        /// </summary>
-        public string DisplayText
-        {
-            get
-            {
-                if (!string.IsNullOrWhiteSpace(generatedText))
-                {
-                    return generatedText;
-                }
-
-                return text ?? string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Human-readable status label: "writing" while pending, "generation failed" on error, empty otherwise.
-        /// </summary>
-        public string StatusText
-        {
-            get
-            {
-                if (llmStatus == "pending")
-                {
-                    return "PawnDiary.Status.Writing".Translate();
-                }
-
-                if (llmStatus == "failed")
-                {
-                    return "PawnDiary.Status.GenerationFailed".Translate();
-                }
-
-                return string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Diagnostic block showing endpoint, model, status, error, and the prompt — used for
-        /// in-game debugging of LLM generation issues.
-        /// </summary>
-        public string DebugText
-        {
-            get
-            {
-                string debug = "LLM debug";
-
-                if (!string.IsNullOrWhiteSpace(llmEndpoint))
-                {
-                    debug += "\nEndpoint: " + llmEndpoint;
-                }
-
-                if (!string.IsNullOrWhiteSpace(llmModel))
-                {
-                    debug += "\nModel: " + llmModel;
-                }
-
-                if (!string.IsNullOrWhiteSpace(llmStatus))
-                {
-                    debug += "\nStatus: " + llmStatus;
-                }
-
-                if (!string.IsNullOrWhiteSpace(llmError))
-                {
-                    debug += "\nError: " + llmError;
-                }
-
-                debug += "\nPrompt:\n" + (llmPrompt ?? text ?? string.Empty);
-                return debug;
-            }
-        }
-    }
-
     /// <summary>
     /// Lightweight, read-only preview of the OTHER pawn's diary entry for the same event.
     /// Shown as a clickable "linked entry" card inside the current pawn's diary — recipient
@@ -177,7 +49,7 @@ namespace PawnDiary
 
     /// <summary>
     /// Immutable, read-only display model rendered by the diary UI tab.
-    /// Represents a single POV snapshot of a diary event (or a legacy DiaryEntry).
+    /// Represents a single POV snapshot of a diary event.
     /// </summary>
     public class DiaryEntryView
     {
@@ -191,12 +63,12 @@ namespace PawnDiary
         public readonly string LlmModel;    // LLM model identifier
         public readonly string LlmPrompt;  // Full prompt sent to the LLM
         public readonly string EventId;     // Identifier of the backing DiaryEvent
-        public readonly string PovRole;     // Role/perspective this view represents (e.g. "legacy")
+        public readonly string PovRole;     // Role/perspective this view represents.
         public readonly string GroupLabel;  // Human-readable event group shown in the entry header
         public readonly bool Important;     // Visual importance marker derived from the event group
-        public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo/legacy)
+        public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo).
         // Short chat-style subject: stored LLM-generated title only. Empty when no title has
-        // been generated, e.g. legacy entries or title generation disabled.
+        // been generated or title generation is disabled.
         public readonly string Title;
 
         public DiaryEntryView(
@@ -231,33 +103,6 @@ namespace PawnDiary
             Important = important;
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Creates a DiaryEntryView from a legacy DiaryEntry, tagging it with POV role "legacy".
-        /// Returns null if the entry is null.
-        /// </summary>
-        public static DiaryEntryView FromLegacy(DiaryEntry entry)
-        {
-            if (entry == null)
-            {
-                return null;
-            }
-
-            return new DiaryEntryView(
-                entry.tick,
-                entry.date,
-                entry.text,
-                entry.generatedText,
-                entry.llmStatus,
-                entry.llmError,
-                entry.llmEndpoint,
-                entry.llmModel,
-                entry.llmPrompt,
-                entry.id,
-                "legacy",
-                string.Empty,
-                true);
         }
 
         /// <summary>

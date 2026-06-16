@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Pawn writing personas, copied from prompt-lab/personas.txt so they can be selected in-game.
+  Pawn writing personas available in the in-game diary persona picker.
   Edit rules here and restart the game to retune the persona catalog.
 
   <themes> are coarse internal keywords (grim, warm, hostile, anxious, analytical, dramatic,
