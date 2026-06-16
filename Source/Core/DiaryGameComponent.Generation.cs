@@ -109,6 +109,66 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Re-queues diary entries stranded on "Generating": a POV marked pending whose background
+        /// request is no longer in flight (e.g. it was cancelled by a session restart). Such an entry
+        /// never recovers on its own, because CanQueueGeneration rejects the pending status, so
+        /// QueueAllPendingGenerations skips it. We reset it to NotGenerated so the queue pass that runs
+        /// right after re-drives it. Two guards keep this from ever double-sending real work:
+        ///   * anything still in flight (its session-keyed request key is present) is left alone, and
+        ///   * an entry must look orphaned on two consecutive scans before we touch it, so a request
+        ///     that merely finished between scans — its result still waiting in the main-thread drain —
+        ///     is never mistaken for an orphan.
+        /// </summary>
+        private void RecoverOrphanedPendingGenerations()
+        {
+            if (diaryEvents == null)
+            {
+                orphanCandidatesLastScan.Clear();
+                return;
+            }
+
+            HashSet<string> orphansThisScan = new HashSet<string>();
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = diaryEvents[i];
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                CollectOrphanedPendingRole(diaryEvent, DiaryEvent.InitiatorRole, orphansThisScan);
+                CollectOrphanedPendingRole(diaryEvent, DiaryEvent.RecipientRole, orphansThisScan);
+                CollectOrphanedPendingRole(diaryEvent, DiaryEvent.NeutralRole, orphansThisScan);
+            }
+
+            orphanCandidatesLastScan = orphansThisScan;
+        }
+
+        /// <summary>
+        /// Helper for <see cref="RecoverOrphanedPendingGenerations"/>: when the role looks orphaned
+        /// (pending, not in flight), recover it if we also saw it orphaned on the previous scan,
+        /// otherwise remember it as a candidate so a second sighting next scan can recover it.
+        /// </summary>
+        private void CollectOrphanedPendingRole(DiaryEvent diaryEvent, string povRole, HashSet<string> orphansThisScan)
+        {
+            if (!diaryEvent.IsPending(povRole) || LlmClient.IsInFlight(diaryEvent.eventId, povRole))
+            {
+                return;
+            }
+
+            string key = diaryEvent.eventId + "|" + povRole;
+            if (orphanCandidatesLastScan.Contains(key))
+            {
+                diaryEvent.ResetPendingToNotGenerated(povRole);
+                LogApiDebug("Recovered orphaned pending generation event=" + diaryEvent.eventId + " role=" + povRole);
+            }
+            else
+            {
+                orphansThisScan.Add(key);
+            }
+        }
+
         private void QueuePendingGenerationsForPawn(string pawnId)
         {
             if (string.IsNullOrWhiteSpace(pawnId))

@@ -219,13 +219,21 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Cancels all in-flight requests for the current session without starting a new one.
-        /// Used when the player manually triggers a cancel.
+        /// Returns true if a request for this event+role is queued or in flight in the **current**
+        /// session (its dedup key is present). The diary tick uses this to tell a genuinely-running
+        /// generation apart from one orphaned on "Generating" by a cancelled session, so the orphan
+        /// recovery never re-sends a request that is still in progress. Keyed on the current session
+        /// id, so a leftover key from a previous session never reads as in flight.
         /// </summary>
-        public static void CancelSession()
+        public static bool IsInFlight(string eventId, string povRole)
         {
-            sessionCancellation.Cancel();
-            ClearCompleted();
+            if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(povRole))
+            {
+                return false;
+            }
+
+            long sessionId = Interlocked.Read(ref currentSessionId);
+            return PendingKeys.ContainsKey(PendingKey(eventId, povRole, sessionId));
         }
 
         /// <summary>

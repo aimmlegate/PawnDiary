@@ -426,6 +426,28 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns true if the given POV role is currently marked pending (queued or generating).
+        /// </summary>
+        public bool IsPending(string povRole)
+        {
+            return RoleEquals(StatusFor(povRole), PendingStatus);
+        }
+
+        /// <summary>
+        /// Resets a pending POV role back to not-generated (clearing any error) so it can be re-queued.
+        /// Used to recover an entry orphaned on "Generating" when its in-flight request was dropped
+        /// (e.g. a session restart cancelled it). No-op if the role is not pending.
+        /// </summary>
+        public void ResetPendingToNotGenerated(string povRole)
+        {
+            if (IsPending(povRole))
+            {
+                SetStatus(povRole, NotGeneratedStatus);
+                SetError(povRole, null);
+            }
+        }
+
+        /// <summary>
         /// Marks a POV role as failed and records the error message.
         /// </summary>
         public void MarkFailed(string povRole, string error)
