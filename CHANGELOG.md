@@ -4,6 +4,18 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (weighted promotion of batched interactions)**
+  - Added an optional `<promotion>` policy (`InteractionPromotionPolicy`) to interaction batch
+    groups: each matching moment gets a weighted-random roll and, on a win, escapes batching to
+    become its own immediate pairwise diary event instead of daily filler. Counteracts overly
+    aggressive ambient batching that was starving the diary of interesting moments.
+  - Promotion odds are a small `baseChance` plus bonuses (clamped to `maxChance`) for notable
+    signals: intense or lopsided opinions between the pair, and extreme need (food/rest/joy) or
+    near-break mood for either pawn. All signals read structured, language-independent data — no
+    text/topic matching — so behavior is identical in every language.
+  - Enabled a conservative promotion policy on the `smalltalk` group; engine is generic, so any
+    batch group can opt in via XML, and `enabled=false` reverts to pure batching.
+
 - **2026-06-16 (ambient day notes for noisy interactions)**
   - Added an `AmbientDayNote` interaction batch mode that accumulates low-stakes social-log rows per
     pawn/group/day and flushes them as one solo diary memory, avoiding paired POV chains and

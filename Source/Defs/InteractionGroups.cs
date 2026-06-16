@@ -75,6 +75,42 @@ namespace PawnDiary
         public int maxSampleLines = 5;
     }
 
+    // Optional "promotion" policy embedded in a DiaryInteractionGroupDef. A batched (low-value)
+    // interaction normally gets merged into the daily ambient note, so individually-interesting
+    // moments are lost. With a <promotion> node, each matching moment gets a weighted-random roll:
+    // win and it escapes the batch to become its own immediate pairwise diary event; lose and it
+    // batches as before. The odds are a small base chance plus bonuses when the moment looks
+    // notable. Every signal reads structured, language-independent data (opinion numbers, need
+    // levels) — no text/topic matching — so behavior is identical in any language.
+    public class InteractionPromotionPolicy
+    {
+        // Set false in XML to leave a documented policy disabled without deleting it.
+        public bool enabled = true;
+        // Floor probability that any matching moment is promoted (0..1). Keep small so most stay filler.
+        public float baseChance = 0.04f;
+        // Hard ceiling on the probability after all bonuses are added (0..1).
+        public float maxChance = 0.6f;
+
+        // ---- Social-dynamic signal (reads relations.OpinionOf, both directions) ----
+        // Added when the strongest opinion between the pair is at/above opinionStrongThreshold
+        // (intense love or hate makes even idle chatter loaded).
+        public float opinionStrongBonus = 0.25f;
+        public int opinionStrongThreshold = 40;
+        // Added when the two pawns' opinions of each other differ by at least this many points
+        // (lopsided feelings — one adores, the other is cold).
+        public float opinionAsymmetryBonus = 0.2f;
+        public int opinionAsymmetryThreshold = 40;
+
+        // ---- Pawn-state salience signal (reads need levels) ----
+        // Added when either pawn has a core need (food/rest/joy) at/below needLowThreshold
+        // (a starving or exhausted pawn's small talk is worth surfacing).
+        public float needLowBonus = 0.2f;
+        public float needLowThreshold = 0.25f;
+        // Added when either pawn's mood is at/below moodLowThreshold (near a mental break).
+        public float moodExtremeBonus = 0.2f;
+        public float moodLowThreshold = 0.25f;
+    }
+
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in
     // settings: an enable toggle (is it recorded?) plus a single diary-prompt instruction
     // shared by every event in it. To add or retune a group, edit
@@ -100,6 +136,11 @@ namespace PawnDiary
         // Optional Interaction-domain batching policy. When present and enabled, matching social
         // log rows are buffered according to this policy instead of immediately becoming entries.
         public InteractionBatchPolicy batch;
+
+        // Optional promotion policy. When present and enabled on a batch group, each matching moment
+        // can win a weighted-random roll to skip batching and become its own immediate pairwise
+        // event (see InteractionPromotionPolicy). Only consulted for groups that also batch.
+        public InteractionPromotionPolicy promotion;
 
         // The diary-prompt instruction shared by every event in the group.
         public string instruction;
@@ -175,6 +216,16 @@ namespace PawnDiary
             get
             {
                 return domain == GroupDomain.Interaction && batch != null && batch.enabled;
+            }
+        }
+
+        // True when this group can promote a batched moment into its own immediate event. Promotion
+        // only makes sense as an escape hatch from batching, so it requires an active batch policy.
+        public bool HasPromotionPolicy
+        {
+            get
+            {
+                return HasBatchPolicy && promotion != null && promotion.enabled;
             }
         }
     }

@@ -73,7 +73,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | File | Responsibility |
 |------|----------------|
 | `About/About.xml` | Mod metadata. `packageId = aimml.pawndiary`, supports RimWorld 1.6. |
-| `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`), optional `InteractionBatchPolicy` data for quick social-log batching, and the `InteractionGroups` classifier over the `DefDatabase`. Supports five domains: Interaction, MentalState, Tale, MoodEvent, and Thought. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts/batch policies are editable without recompiling. |
+| `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`), optional `InteractionBatchPolicy` data for quick social-log batching, optional `InteractionPromotionPolicy` data that lets an interesting moment escape a batch into its own event, and the `InteractionGroups` classifier over the `DefDatabase`. Supports five domains: Interaction, MentalState, Tale, MoodEvent, and Thought. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts/batch policies are editable without recompiling. |
 | `Languages/English/Keyed/PawnDiary.xml` | All player-facing UI strings **and** the natural-language prompt text (event sentences, context words, buckets), resolved via `.Translate()`. See §12 Localization. |
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
@@ -416,8 +416,8 @@ material, it can flush when the pawn settles into RimWorld's `LayDown` or `LayDo
 fallback.
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
-`domain`, `defaultEnabled`, `important`, `combat`, optional `batch`, `instruction`,
-`matchDefNames`, `matchTokens`, `catchAll`) and restart
+`domain`, `defaultEnabled`, `important`, `combat`, optional `batch`, optional `promotion`,
+`instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
 — no recompile. `order` controls classification order within a domain (lowest first; keep the
 catch-all highest). Group `defName`s are the stable keys player settings save overrides under, so
 don't rename them.
@@ -461,6 +461,30 @@ teaching write only after at least two. The prompt wording tells the LLM to writ
 recollection, not a list or report. Important social groups are not batched unless their own XML
 group opts in; for example `DeepTalk` is classified under `heartfelt`, so it records and queues
 immediately by default.
+
+**Promotion (escaping the batch):** aggressive `AmbientDayNote` batching can starve the diary of
+individually-interesting moments, since everything for a pawn/day collapses into one note (or is
+dropped under `minEventsToWrite`). A batch group can add an optional `<promotion>` policy
+(`InteractionPromotionPolicy`) so each matching moment gets a weighted-random roll *before* it is
+batched. On a win, the moment skips batching and falls through to a normal **immediate pairwise
+`DiaryEvent`** (using the group's existing label/text/instruction); on a loss it batches as usual.
+The roll happens in `RecordInteraction` via `ShouldPromoteInteraction`/`PromotionChance`
+(`DiaryGameComponent.InteractionBatching.cs`), and is only consulted for groups that also batch
+(`HasPromotionPolicy` requires `HasBatchPolicy`). The probability is `baseChance` plus a bonus per
+notable signal, clamped to `maxChance`:
+
+- **Social dynamic** — `opinionStrongBonus` when the strongest `OpinionOf` between the pair is at/
+  above `opinionStrongThreshold` (intense love/hate); `opinionAsymmetryBonus` when the two opinions
+  differ by at least `opinionAsymmetryThreshold` (lopsided, one-way feelings).
+- **Pawn-state salience** — `needLowBonus` when either pawn has a core need (food/rest/joy) at/below
+  `needLowThreshold`; `moodExtremeBonus` when either pawn's mood is at/below `moodLowThreshold`
+  (near a mental break). Pawns lacking a need simply don't trigger that signal.
+
+Every signal reads structured, language-independent data (opinion numbers, need levels) — there is
+no text/topic matching — so promotion behaves identically in every language. The shipped
+`smalltalk` group enables a conservative policy (`baseChance` 0.04, `maxChance` 0.6); other batch
+groups can opt in the same way, and `enabled=false` reverts to pure batching without deleting the
+block.
 
 **Mental states** are captured via the `MentalStateHandler.TryStartMentalState` postfix:
 - `SocialFighting` with an eligible colonist `otherPawn` → a **pairwise** event (both pawns).

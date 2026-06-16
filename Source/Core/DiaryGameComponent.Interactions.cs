@@ -104,8 +104,11 @@ namespace PawnDiary
                 recipientText = initiatorText;
             }
 
+            // Low-value groups normally batch. A promotion policy can let an individually-interesting
+            // moment win a weighted-random roll and skip batching — falling through to the immediate
+            // pairwise path below so it becomes its own diary event instead of daily filler.
             DiaryInteractionGroupDef batchGroup = BatchGroupFor(interactionDef);
-            if (batchGroup != null)
+            if (batchGroup != null && !ShouldPromoteInteraction(batchGroup, initiator, recipient))
             {
                 RecordBatchedInteraction(batchGroup, initiator, recipient, interactionDef,
                     interactionLabel, initiatorText, recipientText, playLogEntryId);

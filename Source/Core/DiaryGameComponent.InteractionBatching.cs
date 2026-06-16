@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace PawnDiary
@@ -22,6 +23,90 @@ namespace PawnDiary
         {
             DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
             return group != null && group.HasBatchPolicy ? group : null;
+        }
+
+        /// <summary>
+        /// Weighted-random gate: returns true when this otherwise-batched moment should "win"
+        /// promotion to its own immediate pairwise diary event instead of being merged into the
+        /// group's batch. Higher odds when the pair's feelings are intense/lopsided or when a pawn
+        /// is in an extreme need/mood state. No-op (false) for groups without a promotion policy.
+        /// </summary>
+        private static bool ShouldPromoteInteraction(DiaryInteractionGroupDef group, Pawn initiator, Pawn recipient)
+        {
+            if (group == null || !group.HasPromotionPolicy || initiator == null || recipient == null)
+            {
+                return false;
+            }
+
+            return Rand.Chance(PromotionChance(group.promotion, initiator, recipient));
+        }
+
+        /// <summary>
+        /// Builds the promotion probability: a small base chance plus a bonus for each notable
+        /// signal, clamped to the policy's ceiling. Reads only structured, language-independent
+        /// data (opinion numbers, need levels), so it behaves identically in every language.
+        /// </summary>
+        private static float PromotionChance(InteractionPromotionPolicy promo, Pawn a, Pawn b)
+        {
+            float chance = promo.baseChance;
+
+            // Social dynamic: intense mutual feeling, or a lopsided one-way bond, both raise interest.
+            int opinionAB = a.relations?.OpinionOf(b) ?? 0;
+            int opinionBA = b.relations?.OpinionOf(a) ?? 0;
+            if (Mathf.Max(Mathf.Abs(opinionAB), Mathf.Abs(opinionBA)) >= promo.opinionStrongThreshold)
+            {
+                chance += promo.opinionStrongBonus;
+            }
+
+            if (Mathf.Abs(opinionAB - opinionBA) >= promo.opinionAsymmetryThreshold)
+            {
+                chance += promo.opinionAsymmetryBonus;
+            }
+
+            // Pawn-state salience: a starving/exhausted/joy-starved pawn, or one near a mental break.
+            if (HasLowNeed(a, promo.needLowThreshold) || HasLowNeed(b, promo.needLowThreshold))
+            {
+                chance += promo.needLowBonus;
+            }
+
+            if (IsMoodLow(a, promo.moodLowThreshold) || IsMoodLow(b, promo.moodLowThreshold))
+            {
+                chance += promo.moodExtremeBonus;
+            }
+
+            return Mathf.Clamp(chance, 0f, promo.maxChance);
+        }
+
+        /// <summary>
+        /// True when any core need (food, rest, joy) sits at or below the threshold fraction (0..1).
+        /// Pawns that lack a given need (e.g. animals, certain pawn kinds) simply don't trigger it.
+        /// </summary>
+        private static bool HasLowNeed(Pawn pawn, float threshold)
+        {
+            return IsBelow(NeedLevel(pawn?.needs?.food), threshold)
+                || IsBelow(NeedLevel(pawn?.needs?.rest), threshold)
+                || IsBelow(NeedLevel(pawn?.needs?.joy), threshold);
+        }
+
+        /// <summary>True when the pawn's mood need sits at or below the threshold fraction (0..1).</summary>
+        private static bool IsMoodLow(Pawn pawn, float threshold)
+        {
+            return IsBelow(NeedLevel(pawn?.needs?.mood), threshold);
+        }
+
+        /// <summary>
+        /// Current level of a need as a 0..1 fraction, or -1 when the need is absent. The -1 sentinel
+        /// lets <see cref="IsBelow"/> skip missing needs instead of treating them as "empty".
+        /// </summary>
+        private static float NeedLevel(Need need)
+        {
+            return need == null ? -1f : need.CurLevelPercentage;
+        }
+
+        /// <summary>True only when a real (non-sentinel) need level is at or below the threshold.</summary>
+        private static bool IsBelow(float level, float threshold)
+        {
+            return level >= 0f && level <= threshold;
         }
 
         /// <summary>

@@ -351,6 +351,22 @@
       <minEventsToWrite>3</minEventsToWrite>
       <maxSampleLines>5</maxSampleLines>
     </batch>
+    <!-- Let the most loaded moments escape the daily batch and become their own entry. Odds rise
+         when the pair's feelings are intense/lopsided or when a pawn is in an extreme need/mood
+         state. All numbers are tunable; remove this block (or set enabled false) to revert to
+         pure batching. -->
+    <promotion>
+      <baseChance>0.04</baseChance>
+      <maxChance>0.6</maxChance>
+      <opinionStrongBonus>0.25</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.2</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.2</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.2</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
     <instruction>idle chatter—low-stakes small talk that fills the silence</instruction>
     <matchDefNames>
       <li>Chitchat</li>
