@@ -1,6 +1,6 @@
 {
   "endpoint": "http://localhost:1234/v1",
-  "model": "local-model",
+  "model": "rocinante-x-12b-v1-i1",
   "apiKey": "",
   "temperature": 0.8,
   "maxTokens": 120,
