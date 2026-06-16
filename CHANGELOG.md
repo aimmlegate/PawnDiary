@@ -4,6 +4,19 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (split DiaryGameComponent into partial files)**
+  - Decomposed the ~2.5k-line `Source/Core/DiaryGameComponent.cs` into one `partial class`
+    spread across eight files grouped by concern, with **no logic changes** (the compiler merges
+    partials into the identical class, so fields/private methods and behavior are unchanged; build
+    verified). New files in `Source/Core/`: `DiaryGameComponent.cs` (state + lifecycle hooks),
+    `.PublicApi.cs` (UI read/write entry points), `.Recording.cs` (the `Record*` hooks),
+    `.Arrivals.cs` (colony-arrival first entries), `.EventFactory.cs` (`AddSoloEvent`/
+    `AddPairwiseEvent` + fallback/context text builders), `.SmallTalk.cs` (small-talk batching +
+    `PendingSmallTalkBatch`), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch and
+    result apply), `.Lookup.cs` (record/event lookups, eligibility, dedup gate, persona seeding,
+    `EmptyEntries`). Added a file-map header comment to each partial. Updated the §2 file map.
+    The `.csproj` globs `**\*.cs`, so no project edit was needed.
+
 - **2026-06-16 (dev toggle: show generating entries)**
   - Added a dev-mode-only "Show entries being generated" toggle to the pawn Diary tab so stuck /
     in-progress events can be seen instead of only counted by the generating badge. New setting
