@@ -50,6 +50,7 @@
   <!-- ===== Mod settings window ===== -->
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Connection</PawnDiary.Settings.Connection>
+  <PawnDiary.Settings.GenerationHeader>Generation</PawnDiary.Settings.GenerationHeader>
   <PawnDiary.Settings.ApisHeader>APIs — enabled rows run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
   <PawnDiary.Settings.ShowModelSettings>Show models</PawnDiary.Settings.ShowModelSettings>
   <PawnDiary.Settings.HideModelSettings>Hide models</PawnDiary.Settings.HideModelSettings>
@@ -76,12 +77,14 @@
   <PawnDiary.Settings.RestoreSystemPrompt>Restore default system prompt</PawnDiary.Settings.RestoreSystemPrompt>
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
-  <PawnDiary.Settings.EventsHeader>Events — enable groups and edit their diary prompt</PawnDiary.Settings.EventsHeader>
+  <PawnDiary.Settings.EventsSectionTitle>Events</PawnDiary.Settings.EventsSectionTitle>
+  <PawnDiary.Settings.EventsHeader>Enable event groups and edit the diary prompt each one uses.</PawnDiary.Settings.EventsHeader>
   <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
   <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
   <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
   <PawnDiary.Settings.ThoughtsHeader>Temporary thoughts</PawnDiary.Settings.ThoughtsHeader>
-  <PawnDiary.Settings.PromptForGroup>Prompt for: {0}</PawnDiary.Settings.PromptForGroup>
+  <PawnDiary.Settings.EditingPromptFor>Editing prompt for: {0}</PawnDiary.Settings.EditingPromptFor>
+  <PawnDiary.Settings.ChangeGroup>Change group</PawnDiary.Settings.ChangeGroup>
   <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
   <PawnDiary.Settings.SaveInstruction>Save instruction</PawnDiary.Settings.SaveInstruction>
   <PawnDiary.Settings.RestoreGroupDefault>Restore this group's default</PawnDiary.Settings.RestoreGroupDefault>

@@ -39,6 +39,18 @@ namespace PawnDiary
         // changes the buffer is refreshed from settings to avoid stale edits.
         private string instructionEditGroupKey;
 
+        // Measured pixel height of the settings content from the previous frame, used to size the
+        // scroll view's inner rect. Starts generous so nothing clips before the first measurement;
+        // afterwards it tracks the real content height so every control stays scrollable and
+        // clickable no matter how many event groups are listed. Replaces a brittle hardcoded height
+        // that pushed the bottom controls (the per-group prompt editor) out of reach.
+        private float lastSettingsContentHeight = 5000f;
+
+        // Muted colors for secondary text and sub-headers, so the window reads as a hierarchy
+        // instead of a flat wall of same-weight labels.
+        private static readonly Color HintColor = new Color(0.72f, 0.72f, 0.72f);
+        private static readonly Color SubheaderColor = new Color(0.58f, 0.80f, 0.95f);
+
         /// <summary>
         /// Initializes the mod, loading persisted settings from the save/config store.
         /// </summary>
@@ -63,40 +75,45 @@ namespace PawnDiary
             Settings.EnsureEndpointsList();
 
             Rect outRect = inRect;
-            // Height grows with the visible API rows so the scroll view always fits them.
-            float apiEditorHeight = Settings.showApiSettings ? 92f + Settings.apiEndpoints.Count * 98f : 58f;
-            float viewHeight = 1300f + apiEditorHeight;
+            // Self-measuring scroll height: render the content, then remember how tall it actually
+            // was (lastSettingsContentHeight) and reuse that next frame. This replaces a hardcoded
+            // height that was too short once enough event groups were listed, which pushed the
+            // bottom controls (the per-group prompt editor) outside the scroll area where they
+            // could not be reached or clicked.
+            float viewHeight = Mathf.Max(lastSettingsContentHeight, inRect.height);
             Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight); // 16px reserved for the scrollbar
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
             listing.Begin(viewRect);
 
+            listing.Gap(4f);
             DrawApiEndpointsEditor(listing);
 
-            listing.Gap(12f);
+            SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
             listing.CheckboxLabeled(
                 "PawnDiary.Settings.PairedPov".Translate(),
                 ref Settings.dualPovGeneration,
                 "PawnDiary.Settings.PairedPovTip".Translate());
-
             listing.Label("PawnDiary.Settings.MaxConcurrent".Translate(Settings.maxConcurrentRequests));
             Settings.maxConcurrentRequests = Mathf.RoundToInt(listing.Slider(Settings.maxConcurrentRequests, 1f, 16f));
-            listing.Label("PawnDiary.Settings.MaxConcurrentHelp".Translate());
+            DrawHint(listing, "PawnDiary.Settings.MaxConcurrentHelp".Translate());
 
-            listing.GapLine();
-            listing.Label("PawnDiary.Settings.SystemPrompt".Translate());
-            Rect systemPromptRect = listing.GetRect(150f, 1f);
+            SectionTitle(listing, "PawnDiary.Settings.SystemPrompt".Translate());
+            Rect systemPromptRect = listing.GetRect(120f);
             Settings.systemPrompt = Widgets.TextArea(systemPromptRect, Settings.systemPrompt ?? string.Empty);
+            listing.Gap(4f);
             if (listing.ButtonText("PawnDiary.Settings.RestoreSystemPrompt".Translate()))
             {
                 Settings.systemPrompt = PawnDiarySettings.DefaultSystemPrompt;
             }
 
-            listing.GapLine();
             DrawInteractionGroupsEditor(listing);
 
             listing.End();
             Widgets.EndScrollView();
+
+            // Remember the real content height so next frame's scroll view fits it exactly.
+            lastSettingsContentHeight = listing.CurHeight;
             Settings.ClampValues();
         }
 
@@ -118,23 +135,27 @@ namespace PawnDiary
         /// </summary>
         private void DrawApiEndpointsEditor(Listing_Standard listing)
         {
-            Rect titleRect = listing.GetRect(28f);
+            // Section title row: "Connection" on the left, the Show/Hide-models toggle on the right.
+            Text.Font = GameFont.Medium;
+            Rect titleRect = listing.GetRect(Text.LineHeight);
             Rect labelRect = new Rect(titleRect.x, titleRect.y, titleRect.width - 126f, titleRect.height);
-            Widgets.Label(labelRect, "PawnDiary.Settings.ApisHeader".Translate());
-            Rect toggleRect = new Rect(titleRect.xMax - 118f, titleRect.y, 118f, titleRect.height);
+            Widgets.Label(labelRect, "PawnDiary.Settings.Connection".Translate());
+            Text.Font = GameFont.Small;
+            Rect toggleRect = new Rect(titleRect.xMax - 118f, titleRect.y, 118f, Mathf.Min(titleRect.height, 30f));
             string toggleKey = Settings.showApiSettings ? "PawnDiary.Settings.HideModelSettings" : "PawnDiary.Settings.ShowModelSettings";
             if (Widgets.ButtonText(toggleRect, toggleKey.Translate()))
             {
                 Settings.showApiSettings = !Settings.showApiSettings;
             }
+            listing.GapLine(6f);
 
             if (!Settings.showApiSettings)
             {
                 listing.Label("PawnDiary.Settings.ApisSummary".Translate(Settings.ActiveEndpoints().Count, Settings.apiEndpoints.Count));
-                listing.GapLine();
                 return;
             }
 
+            DrawHint(listing, "PawnDiary.Settings.ApisHeader".Translate());
             listing.Gap(2f);
 
             // Defer removal until after the loop so we don't mutate the list while drawing it.
@@ -204,7 +225,9 @@ namespace PawnDiary
             Rect endpointRect = new Rect(firstLineRect.x, firstLineRect.y, halfWidth, firstLineRect.height);
             Rect modelRect = new Rect(firstLineRect.x + halfWidth + 8f, firstLineRect.y, halfWidth, firstLineRect.height);
             endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, 68f);
-            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 54f);
+            // "Model name" is wider than "Endpoint", so it needs a wider label column or it wraps
+            // to a second line and gets clipped by the field next to it.
+            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 90f);
 
             Rect secondLineRect = listing.GetRect(28f);
             float buttonWidth = 124f;
@@ -273,62 +296,32 @@ namespace PawnDiary
         /// </summary>
         private void DrawInteractionGroupsEditor(Listing_Standard listing)
         {
-            listing.Label("PawnDiary.Settings.EventsHeader".Translate());
+            SectionTitle(listing, "PawnDiary.Settings.EventsSectionTitle".Translate());
+            DrawHint(listing, "PawnDiary.Settings.EventsHeader".Translate());
 
-            // One toggle per group: whether events in it are recorded at all. Headers are
-            // drawn the first time later domains appear, keeping the XML order readable.
-            bool mentalHeaderDrawn = false;
-            bool taleHeaderDrawn = false;
-            bool moodEventHeaderDrawn = false;
-            bool thoughtHeaderDrawn = false;
-            foreach (DiaryInteractionGroupDef group in InteractionGroups.All)
-            {
-                if (group.domain == GroupDomain.MentalState && !mentalHeaderDrawn)
-                {
-                    mentalHeaderDrawn = true;
-                    listing.Gap(6f);
-                    listing.Label("PawnDiary.Settings.MentalStatesHeader".Translate());
-                }
+            // Enable toggles, two per row so the ~30-group catalog stays compact. The Interaction
+            // domain sits directly under the section title; later domains get a muted sub-header.
+            DrawGroupTogglesForDomain(listing, GroupDomain.Interaction, null);
+            DrawGroupTogglesForDomain(listing, GroupDomain.MentalState, "PawnDiary.Settings.MentalStatesHeader");
+            DrawGroupTogglesForDomain(listing, GroupDomain.Tale, "PawnDiary.Settings.TalesHeader");
+            DrawGroupTogglesForDomain(listing, GroupDomain.MoodEvent, "PawnDiary.Settings.MoodEventsHeader");
+            DrawGroupTogglesForDomain(listing, GroupDomain.Thought, "PawnDiary.Settings.ThoughtsHeader");
 
-                if (group.domain == GroupDomain.Tale && !taleHeaderDrawn)
-                {
-                    taleHeaderDrawn = true;
-                    listing.Gap(6f);
-                    listing.Label("PawnDiary.Settings.TalesHeader".Translate());
-                }
+            listing.GapLine(10f);
 
-                if (group.domain == GroupDomain.MoodEvent && !moodEventHeaderDrawn)
-                {
-                    moodEventHeaderDrawn = true;
-                    listing.Gap(6f);
-                    listing.Label("PawnDiary.Settings.MoodEventsHeader".Translate());
-                }
-
-                if (group.domain == GroupDomain.Thought && !thoughtHeaderDrawn)
-                {
-                    thoughtHeaderDrawn = true;
-                    listing.Gap(6f);
-                    listing.Label("PawnDiary.Settings.ThoughtsHeader".Translate());
-                }
-
-                bool enabled = Settings.IsGroupEnabled(group.defName);
-                bool before = enabled;
-                listing.CheckboxLabeled(group.label, ref enabled, group.instruction);
-                if (enabled != before)
-                {
-                    Settings.SetGroupEnabled(group.defName, enabled);
-                }
-            }
-
-            listing.GapLine();
-
+            // Per-group prompt editor: pick a group, edit its diary-prompt instruction, save/restore.
             DiaryInteractionGroupDef selectedGroup = SelectedGroup();
             if (selectedGroup == null)
             {
                 return;
             }
 
-            if (listing.ButtonText("PawnDiary.Settings.PromptForGroup".Translate(selectedGroup.label)))
+            // Header row: which group is being edited, plus a button to switch to another group.
+            Rect pickRow = listing.GetRect(28f);
+            Rect pickLabelRect = new Rect(pickRow.x, pickRow.y, pickRow.width - 120f, pickRow.height);
+            Widgets.Label(pickLabelRect, "PawnDiary.Settings.EditingPromptFor".Translate(selectedGroup.label));
+            Rect changeRect = new Rect(pickRow.xMax - 110f, pickRow.y, 110f, pickRow.height);
+            if (Widgets.ButtonText(changeRect, "PawnDiary.Settings.ChangeGroup".Translate()))
             {
                 List<FloatMenuOption> options = InteractionGroups.All
                     .Select(group => new FloatMenuOption(group.label, delegate
@@ -343,24 +336,115 @@ namespace PawnDiary
 
             EnsureInstructionEditBuffer(selectedGroup);
 
-            listing.Label("PawnDiary.Settings.GroupInstructionLabel".Translate());
-            Rect textAreaRect = listing.GetRect(120f, 1f);
+            DrawHint(listing, "PawnDiary.Settings.GroupInstructionLabel".Translate());
+            Rect textAreaRect = listing.GetRect(120f);
             instructionEditBuffer = Widgets.TextArea(textAreaRect, instructionEditBuffer ?? string.Empty);
 
             listing.Gap(6f);
-            if (listing.ButtonText("PawnDiary.Settings.SaveInstruction".Translate()))
+            // Save and Restore share one row instead of stacking two full-width buttons.
+            Rect buttonRow = listing.GetRect(30f);
+            float halfButton = buttonRow.width / 2f - 4f;
+            Rect saveRect = new Rect(buttonRow.x, buttonRow.y, halfButton, buttonRow.height);
+            Rect restoreRect = new Rect(buttonRow.x + halfButton + 8f, buttonRow.y, halfButton, buttonRow.height);
+            if (Widgets.ButtonText(saveRect, "PawnDiary.Settings.SaveInstruction".Translate()))
             {
                 Settings.SetGroupInstruction(selectedGroup.defName, instructionEditBuffer);
                 WriteSettings();
             }
 
-            if (listing.ButtonText("PawnDiary.Settings.RestoreGroupDefault".Translate()))
+            if (Widgets.ButtonText(restoreRect, "PawnDiary.Settings.RestoreGroupDefault".Translate()))
             {
                 Settings.ResetGroupInstruction(selectedGroup.defName);
                 instructionEditBuffer = selectedGroup.instruction;
                 instructionEditGroupKey = selectedGroup.defName;
                 WriteSettings();
             }
+        }
+
+        /// <summary>
+        /// Draws the enable toggles for one event domain as a two-column block, with an optional
+        /// muted sub-header above it. Two columns keep the ~30-group catalog from becoming a tall
+        /// single-column wall (the old layout's main source of wasted height).
+        /// </summary>
+        private void DrawGroupTogglesForDomain(Listing_Standard listing, GroupDomain domain, string headerKey)
+        {
+            List<DiaryInteractionGroupDef> groups = InteractionGroups.All.Where(group => group.domain == domain).ToList();
+            if (groups.Count == 0)
+            {
+                return;
+            }
+
+            if (headerKey != null)
+            {
+                listing.Gap(8f);
+                Color previousColor = GUI.color;
+                GUI.color = SubheaderColor;
+                listing.Label(headerKey.Translate());
+                GUI.color = previousColor;
+            }
+
+            const float rowHeight = 24f;
+            const float columnGap = 18f;
+            for (int i = 0; i < groups.Count; i += 2)
+            {
+                Rect row = listing.GetRect(rowHeight);
+                float columnWidth = (row.width - columnGap) / 2f;
+                DrawGroupToggle(new Rect(row.x, row.y, columnWidth, row.height), groups[i]);
+                if (i + 1 < groups.Count)
+                {
+                    DrawGroupToggle(new Rect(row.x + columnWidth + columnGap, row.y, columnWidth, row.height), groups[i + 1]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws one group's enable checkbox into the given rect, showing the group's diary-prompt
+        /// instruction as a hover tooltip so the player can preview it without opening the editor.
+        /// </summary>
+        private void DrawGroupToggle(Rect rect, DiaryInteractionGroupDef group)
+        {
+            if (!string.IsNullOrEmpty(group.instruction) && Mouse.IsOver(rect))
+            {
+                TooltipHandler.TipRegion(rect, group.instruction);
+            }
+
+            bool enabled = Settings.IsGroupEnabled(group.defName);
+            bool before = enabled;
+            Widgets.CheckboxLabeled(rect, group.label, ref enabled);
+            if (enabled != before)
+            {
+                Settings.SetGroupEnabled(group.defName, enabled);
+            }
+        }
+
+        /// <summary>
+        /// Draws a section title (medium font) with a divider line beneath it, giving the settings
+        /// window a clear visual hierarchy instead of a flat run of same-size labels.
+        /// </summary>
+        private static void SectionTitle(Listing_Standard listing, string label)
+        {
+            listing.Gap(10f);
+            GameFont previousFont = Text.Font;
+            Text.Font = GameFont.Medium;
+            Rect rect = listing.GetRect(Text.LineHeight);
+            Widgets.Label(rect, label);
+            Text.Font = previousFont;
+            listing.GapLine(6f);
+        }
+
+        /// <summary>
+        /// Draws small, muted helper text (tiny font, grey) for secondary descriptions and hints,
+        /// so long explanatory lines don't compete visually with the actual controls.
+        /// </summary>
+        private static void DrawHint(Listing_Standard listing, string text)
+        {
+            GameFont previousFont = Text.Font;
+            Color previousColor = GUI.color;
+            Text.Font = GameFont.Tiny;
+            GUI.color = HintColor;
+            listing.Label(text);
+            GUI.color = previousColor;
+            Text.Font = previousFont;
         }
 
         /// <summary>
