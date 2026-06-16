@@ -22,13 +22,13 @@ namespace PawnDiary
         private const float ControlLineHeight = 28f;
         private const float ControlGap = 2f;
         private const float EntryTitleHeight = 28f;
-        private const float EntryTextTop = 38f;
+        private const float EntryTextTop = 42f;
         private const float EntryBottomPadding = 10f;
         private const float StatusBadgeWidth = 34f;
         private const float StatusBadgeHeight = 24f;
         private const float StatusBadgeRightPadding = 24f;
-        private const float RoleplayLineGap = 3f;
-        private const float RoleplayParagraphGap = 6f;
+        private const float RoleplayLineGap = 5f;
+        private const float RoleplayParagraphGap = 8f;
         private const float LinkedEntryPadding = 8f;
         private const float LinkedEntryLabelHeight = 20f;
         private const float LinkedEntryTextHeight = 36f;
@@ -46,6 +46,13 @@ namespace PawnDiary
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
         private static readonly Color NarrativeColor = new Color(0.78f, 0.78f, 0.72f);
         private static readonly Color FallbackDialogueColor = new Color(0.58f, 0.80f, 1f);
+        // Faint warm wash painted behind each card's body text to suggest a journal page. Kept at a
+        // very low alpha so it tints the dark RimWorld card chrome without muddying it.
+        private static readonly Color PageTintColor = new Color(0.91f, 0.83f, 0.66f, 0.07f);
+        // Warm hairline drawn under the header so the page body reads as its own block.
+        private static readonly Color HeaderRuleColor = new Color(0.62f, 0.58f, 0.50f, 0.35f);
+        // Soft inner highlight beside the group "spine" to give the left edge a little depth.
+        private static readonly Color AccentHighlightColor = new Color(1f, 1f, 1f, 0.10f);
         private static readonly Color LinkedEntryBgColor = new Color(0.15f, 0.17f, 0.20f, 0.85f);
         private static readonly Color LinkedEntryBorderColor = new Color(0.35f, 0.45f, 0.55f);
         private static readonly Color LinkedEntryTextColor = new Color(0.65f, 0.70f, 0.75f);
@@ -64,11 +71,11 @@ namespace PawnDiary
             new Color(0.62f, 0.68f, 0.76f)
         };
 
-        // Cached roleplay text styles, reused every frame to avoid allocating a fresh GUIStyle per
-        // line. Built once from the active font, then refreshed (font size + color) on each use so
-        // they still track UI-scale changes. Shared by the measure pass and the draw pass.
-        private static GUIStyle dialogueStyle;
-        private static GUIStyle narrativeStyle;
+        // Cached roleplay body style, reused every frame to avoid allocating a fresh GUIStyle per
+        // line. Built once from the active font, then refreshed (font size + color) on each use so it
+        // still tracks UI-scale changes. Rich text is enabled so the inline <b>/<i>/<color> tags from
+        // DiaryTextFormat render instead of printing literally. Shared by the measure and draw passes.
+        private static GUIStyle bodyStyle;
         private static readonly Dictionary<string, float> EntryFirstSeenSeconds = new Dictionary<string, float>();
         // Upper bound on the first-seen fade cache. It keys on eventId|role|status (and title), so a
         // long session would otherwise grow it without limit. When exceeded we clear it wholesale;
@@ -231,11 +238,31 @@ namespace PawnDiary
 
                 Color accentColor = EntryAccentColor(entry);
                 Widgets.DrawMenuSection(entryRect);
+                // Faint warm "page" wash behind the body text, drawn under the hover highlight so
+                // mouseover still reads. Starts below the title bar and inside the accent strip.
+                Rect pageRect = new Rect(
+                    entryRect.x + EntryAccentWidth + 2f,
+                    entryRect.y + EntryTitleHeight,
+                    Mathf.Max(0f, entryRect.width - EntryAccentWidth - 4f),
+                    Mathf.Max(0f, entryRect.height - EntryTitleHeight - 2f));
+                Widgets.DrawBoxSolid(pageRect, PageTintColor);
                 Widgets.DrawHighlightIfMouseover(entryRect);
 
                 Rect titleRect = new Rect(entryRect.x, entryRect.y, entryRect.width, EntryTitleHeight);
                 Widgets.DrawTitleBG(titleRect);
-                Widgets.DrawBoxSolid(new Rect(entryRect.x + 1f, entryRect.y + 1f, EntryAccentWidth, entryRect.height - 2f), accentColor);
+
+                // Group "spine" down the left edge, with a soft inner highlight for depth, then a warm
+                // hairline under the header so the body reads as its own page block.
+                Rect accentRect = new Rect(entryRect.x + 1f, entryRect.y + 1f, EntryAccentWidth, entryRect.height - 2f);
+                Widgets.DrawBoxSolid(accentRect, accentColor);
+                Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
+                Widgets.DrawBoxSolid(
+                    new Rect(
+                        entryRect.x + EntryAccentWidth + 8f,
+                        entryRect.y + EntryTitleHeight,
+                        Mathf.Max(0f, entryRect.width - EntryAccentWidth - 20f),
+                        1f),
+                    HeaderRuleColor);
 
                 Rect groupRect = GroupLabelRect(titleRect, entry.GroupLabel);
                 if (groupRect.width > 0f)
@@ -633,13 +660,13 @@ namespace PawnDiary
                 float age = Time.realtimeSinceStartup - TitleFirstSeenAt(entry);
                 float alpha = Mathf.Clamp01(age / TitleFadeDurationSeconds);
                 float pulse = Mathf.Lerp(0.22f, 0.38f, WritingPulse(1.4f));
-                Color titleColor = Color.Lerp(new Color(0.86f, 0.86f, 0.86f), accent, pulse);
+                Color titleColor = Color.Lerp(new Color(0.88f, 0.86f, 0.79f), accent, pulse);
                 titleColor.a = alpha;
                 GUI.color = titleColor;
             }
             else
             {
-                GUI.color = new Color(0.86f, 0.86f, 0.86f);
+                GUI.color = new Color(0.88f, 0.86f, 0.79f);
             }
 
             Widgets.LabelFit(rect, header);
@@ -850,10 +877,14 @@ namespace PawnDiary
             Color color = pawn?.story?.favoriteColor != null ? pawn.story.favoriteColor.color : FallbackDialogueColor;
             color.a = 1f;
 
-            float max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
-            if (max < 0.55f)
+            // Lift dark favorite colors toward a readable brightness on the dark card. Use perceived
+            // luminance (green-weighted) rather than the max channel, so deep blues and reds — which
+            // a max-channel check under-corrects — are still raised enough to read.
+            float luminance = 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
+            const float minLuminance = 0.5f;
+            if (luminance < minLuminance)
             {
-                float lift = 0.55f - max;
+                float lift = minLuminance - luminance;
                 color.r = Mathf.Clamp01(color.r + lift);
                 color.g = Mathf.Clamp01(color.g + lift);
                 color.b = Mathf.Clamp01(color.b + lift);
@@ -903,16 +934,21 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws generated text in a light roleplay style: narration is muted/italic, while
-        /// dialogue-looking lines are bold and colored with the pawn's preferred color.
+        /// Draws generated text as light roleplay prose. Each line is formatted to rich text by
+        /// <see cref="DiaryTextFormat"/> so markdown emphasis renders and quoted speech is colored
+        /// inline with the pawn's dialogue color, while the surrounding narration stays muted prose.
+        /// The fade-in alpha is applied through GUI.color so inline-colored spans fade with the rest.
         /// </summary>
         private static void DrawRoleplayText(Rect rect, string text, Color dialogueColor, float alpha)
         {
             GameFont oldFont = Text.Font;
             Color oldColor = GUI.color;
             Text.Font = GameFont.Small;
-            GUI.color = Color.white;
+            // GUI.color multiplies with both the style color and any inline <color> spans, so a single
+            // alpha here fades the whole page uniformly during the first-seen reveal.
+            GUI.color = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
 
+            GUIStyle style = BodyStyle();
             float curY = rect.y;
             foreach (string line in RoleplayLines(text))
             {
@@ -922,10 +958,9 @@ namespace PawnDiary
                     continue;
                 }
 
-                bool dialogue = IsDialogueLine(line);
-                GUIStyle style = RoleplayStyle(dialogue, dialogueColor, alpha);
-                float height = style.CalcHeight(new GUIContent(line), rect.width);
-                GUI.Label(new Rect(rect.x, curY, rect.width, height), line, style);
+                string rich = DiaryTextFormat.ToRichText(line, dialogueColor);
+                float height = style.CalcHeight(new GUIContent(rich), rect.width);
+                GUI.Label(new Rect(rect.x, curY, rect.width, height), rich, style);
                 curY += height + RoleplayLineGap;
             }
 
@@ -1156,10 +1191,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Measures the same roleplay lines that DrawRoleplayText renders.
+        /// Measures the same roleplay lines that DrawRoleplayText renders. Uses the same rich-text
+        /// formatting and body style so the measured wrap height matches what is drawn; the dialogue
+        /// color is irrelevant to height (only the bold spans matter, and those are applied here too),
+        /// so a fixed fallback color is passed.
         /// </summary>
         private static float RoleplayTextHeight(string text, float width)
         {
+            GUIStyle style = BodyStyle();
             float height = 0f;
             foreach (string line in RoleplayLines(text))
             {
@@ -1169,8 +1208,8 @@ namespace PawnDiary
                     continue;
                 }
 
-                GUIStyle style = RoleplayStyle(IsDialogueLine(line), FallbackDialogueColor, 1f);
-                height += style.CalcHeight(new GUIContent(line), width) + RoleplayLineGap;
+                string rich = DiaryTextFormat.ToRichText(line, FallbackDialogueColor);
+                height += style.CalcHeight(new GUIContent(rich), width) + RoleplayLineGap;
             }
 
             return Mathf.Max(Text.LineHeight, height);
@@ -1195,55 +1234,25 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Heuristic for lines that should read as dialogue in a roleplay log.
+        /// Returns the shared body style for diary prose, refreshed each call so it tracks UI-scale
+        /// (font/size) changes without reallocating. Rich text is enabled so the inline tags from
+        /// <see cref="DiaryTextFormat"/> render; the base color is the muted narrative color, and
+        /// inline &lt;color&gt; spans supply the dialogue color. The fade alpha is applied by the
+        /// caller through GUI.color, so the style color itself stays at full alpha.
         /// </summary>
-        private static bool IsDialogueLine(string line)
-        {
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                return false;
-            }
-
-            string trimmed = line.TrimStart();
-            return trimmed.StartsWith("\"", StringComparison.Ordinal)
-                || trimmed.StartsWith("'", StringComparison.Ordinal)
-                || trimmed.StartsWith("-\"", StringComparison.Ordinal)
-                || trimmed.StartsWith("- '", StringComparison.Ordinal)
-                || trimmed.IndexOf('"') >= 0
-                || trimmed.IndexOf(':') > 0 && trimmed.IndexOf(':') <= 24;
-        }
-
-        /// <summary>
-        /// Creates an isolated GUIStyle so line colors/font styles do not leak into other RimWorld UI.
-        /// </summary>
-        private static GUIStyle RoleplayStyle(bool dialogue, Color dialogueColor, float alpha)
+        private static GUIStyle BodyStyle()
         {
             GUIStyle baseStyle = Text.CurFontStyle;
-            GUIStyle style;
-            if (dialogue)
+            if (bodyStyle == null)
             {
-                if (dialogueStyle == null)
-                {
-                    dialogueStyle = new GUIStyle(baseStyle) { wordWrap = true, fontStyle = FontStyle.BoldAndItalic };
-                }
-                style = dialogueStyle;
-            }
-            else
-            {
-                if (narrativeStyle == null)
-                {
-                    narrativeStyle = new GUIStyle(baseStyle) { wordWrap = true, fontStyle = FontStyle.Italic };
-                }
-                style = narrativeStyle;
+                bodyStyle = new GUIStyle(baseStyle) { wordWrap = true, fontStyle = FontStyle.Normal, richText = true };
             }
 
             // Refresh the bits that can change at runtime (UI scale) without reallocating the style.
-            style.font = baseStyle.font;
-            style.fontSize = baseStyle.fontSize;
-            Color color = dialogue ? dialogueColor : NarrativeColor;
-            color.a *= Mathf.Clamp01(alpha);
-            style.normal.textColor = color;
-            return style;
+            bodyStyle.font = baseStyle.font;
+            bodyStyle.fontSize = baseStyle.fontSize;
+            bodyStyle.normal.textColor = NarrativeColor;
+            return bodyStyle;
         }
     }
 }
