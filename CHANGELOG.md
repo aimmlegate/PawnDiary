@@ -3,6 +3,13 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (README and mod description refresh)**
+  - Rewrote the README as a player-facing overview covering the Diary tab, event coverage, LLM
+    setup, experimental status, and prompt-lab workflow.
+  - Expanded the RimWorld-visible `About/About.xml` description from the README summary so the
+    in-game mod list now reflects current diary, persona, event, and local-LLM behavior.
+  - Added a temporary generated RimWorld-themed `About/Preview.png` image for the mod list.
+
 - **2026-06-16 (prompt customization settings pass)**
   - Added saved mod-settings overrides for every Def-backed prompt text that actually reaches LLM
     generation: the single-entry instruction, recipient follow-up instruction, neutral death/arrival
