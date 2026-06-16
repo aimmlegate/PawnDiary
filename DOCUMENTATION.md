@@ -723,22 +723,22 @@ humanlike pawn defs at startup. The tab is **visible only for free colonists**
 Renders newest-first: each card's header shows **`date — title`** only when title generation is
 enabled and a stored title exists; otherwise it shows only the date, with no dangling separator.
 Titles come from the LLM-titling flow (§4 "Title generation"); there is no first-line fallback.
-`LabelFit` shrinks long titles to fit;
+`LabelFit` shrinks long titles to fit, and titled headers fade in with a soft accent-color pulse;
 the existing `EntryTitleHeight = 28f` is unchanged. The text is drawn in a roleplay-log style:
 narration is muted/italic, and dialogue-looking lines are bold/italic and colored with the
 pawn's RimWorld favorite color. Each card also gets a deterministic group-color accent strip and
 a small group-label chip in the header; quiet groups use a dimmer version of their palette color
 while important groups stay brighter. Newly visible finished text fades in over a short, cheap
-UI-time animation, and pending rows shown in dev mode use a pulsing writing placeholder. Each generated card ends with a tiny, low-contrast model id so
+UI-time animation, and pending rows shown in dev mode use pulsing dots with no status text. Each generated card ends with a tiny, low-contrast model id so
 multi-model output can be traced without making the card feel technical. Pending, failed-without-output,
 raw fallback, debug, and persona-editing details are hidden from the production tab. In RimWorld
 dev mode, the tab adds the per-pawn writing checkbox, toggles for persona controls, LLM
 diagnostics, and showing in-progress entries; the debug toggle reveals raw/pending/failed rows
 plus the existing diagnostic block with endpoint, model, status, error, and prompt. The lighter
 "Show pages still being written" toggle reveals only the in-progress/stuck rows (rendered with
-the "writing..." placeholder) without that diagnostic block, so a stuck event can be inspected
-rather than only counted. A compact writing badge appears in the tab while pending entries
-exist, with the same pulsing-dot animation.
+animated dots) without that diagnostic block, so a stuck event can be inspected rather than only
+counted. A compact dot-only indicator appears in the tab while pending entries exist, with no
+outline or status text.
 - Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
   matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
   continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can

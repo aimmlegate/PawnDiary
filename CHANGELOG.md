@@ -4,6 +4,12 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (title and writing indicator animation polish)**
+  - Diary card titles now fade in with a subtle accent-color pulse, including titles that arrive
+    after the entry text is already visible.
+  - Pending writing indicators are now dot-only: the header badge no longer draws a green outline
+    or "writing" text, and dev-mode pending rows also show just the animated dots.
+
 - **2026-06-16 (diary UI polish)**
   - Diary cards now use stable group-based accent colors plus small group-label chips, with quiet
     groups rendered more softly and important groups kept brighter.

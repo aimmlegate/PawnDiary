@@ -24,7 +24,7 @@ namespace PawnDiary
         private const float EntryTitleHeight = 28f;
         private const float EntryTextTop = 38f;
         private const float EntryBottomPadding = 10f;
-        private const float StatusBadgeWidth = 136f;
+        private const float StatusBadgeWidth = 34f;
         private const float StatusBadgeHeight = 24f;
         private const float StatusBadgeRightPadding = 24f;
         private const float RoleplayLineGap = 3f;
@@ -39,6 +39,7 @@ namespace PawnDiary
         private const float EntryAccentWidth = 6f;
         private const float EntryLabelMaxWidth = 148f;
         private const float EntryFadeDurationSeconds = 0.55f;
+        private const float TitleFadeDurationSeconds = 0.8f;
         private const float WritingDotSize = 4f;
         private const float WritingDotGap = 5f;
 
@@ -163,7 +164,7 @@ namespace PawnDiary
                     StatusBadgeWidth,
                     StatusBadgeHeight);
                 headerRect.width = Mathf.Max(0f, statusRect.x - rect.x - 8f);
-                DrawWritingIndicator(statusRect, generatingCount);
+                DrawWritingIndicator(statusRect);
             }
 
             Text.Font = GameFont.Medium;
@@ -237,9 +238,10 @@ namespace PawnDiary
                     DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
                 }
                 float headerRight = groupRect.width > 0f ? groupRect.x - 6f : entryRect.xMax - 8f;
-                GUI.color = new Color(0.86f, 0.86f, 0.86f);
-                Widgets.LabelFit(new Rect(entryRect.x + 14f, entryRect.y + 5f, Mathf.Max(80f, headerRight - entryRect.x - 14f), 22f), EntryHeader(entry));
-                GUI.color = Color.white;
+                DrawEntryHeader(
+                    new Rect(entryRect.x + 14f, entryRect.y + 5f, Mathf.Max(80f, headerRight - entryRect.x - 14f), 22f),
+                    entry,
+                    accentColor);
 
                 // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
                 // recipient (shows the initiator's perspective first). When this pawn is the
@@ -474,31 +476,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws a compact, RimWorld-style badge while hidden pending entries are being written.
+        /// Draws compact animated dots while hidden pending entries are being written.
         /// </summary>
-        private static void DrawWritingIndicator(Rect rect, int count)
+        private static void DrawWritingIndicator(Rect rect)
         {
-            string label = count == 1
-                ? "PawnDiary.Status.Writing".Translate()
-                : "PawnDiary.Tab.WritingCount".Translate(count);
-
-            float pulse = WritingPulse(0f);
-            Color borderColor = Color.Lerp(new Color(0.34f, 0.56f, 0.48f), new Color(0.56f, 0.86f, 0.70f), pulse);
-            Color backgroundColor = Color.Lerp(new Color(0.11f, 0.13f, 0.12f, 0.86f), new Color(0.14f, 0.19f, 0.16f, 0.92f), pulse);
-            Widgets.DrawBoxSolidWithOutline(rect, backgroundColor, borderColor, 1);
-            GameFont oldFont = Text.Font;
-            TextAnchor oldAnchor = Text.Anchor;
-            Color oldColor = GUI.color;
-            Text.Font = GameFont.Small;
-            Text.Anchor = TextAnchor.MiddleCenter;
-            GUI.color = new Color(0.78f, 0.95f, 0.78f);
-            Rect labelRect = rect.ContractedBy(4f);
-            labelRect.width -= 22f;
-            Widgets.LabelFit(labelRect, label);
-            DrawWritingDots(new Rect(rect.xMax - 25f, rect.y + rect.height * 0.5f - 2f, 20f, 8f), new Color(0.78f, 0.95f, 0.78f), 0f);
-            GUI.color = oldColor;
-            Text.Anchor = oldAnchor;
-            Text.Font = oldFont;
+            DrawWritingDots(
+                new Rect(rect.x + rect.width * 0.5f - 10f, rect.y + rect.height * 0.5f - 2f, 24f, 8f),
+                new Color(0.78f, 0.95f, 0.78f),
+                0f);
         }
 
         /// <summary>
@@ -603,6 +588,38 @@ namespace PawnDiary
             }
 
             return (entry.Date ?? string.Empty) + " \u2014 " + entry.Title;
+        }
+
+        /// <summary>
+        /// Draws the date/title line. Titled entries get a short fade and a very soft color pulse,
+        /// which gives new diary subjects a little life without constantly shifting layout.
+        /// </summary>
+        private static void DrawEntryHeader(Rect rect, DiaryEntryView entry, Color accent)
+        {
+            string header = EntryHeader(entry);
+            if (string.IsNullOrWhiteSpace(header))
+            {
+                return;
+            }
+
+            bool hasTitle = entry != null && TitlesEnabled() && !string.IsNullOrWhiteSpace(entry.Title);
+            Color oldColor = GUI.color;
+            if (hasTitle)
+            {
+                float age = Time.realtimeSinceStartup - TitleFirstSeenAt(entry);
+                float alpha = Mathf.Clamp01(age / TitleFadeDurationSeconds);
+                float pulse = Mathf.Lerp(0.22f, 0.38f, WritingPulse(1.4f));
+                Color titleColor = Color.Lerp(new Color(0.86f, 0.86f, 0.86f), accent, pulse);
+                titleColor.a = alpha;
+                GUI.color = titleColor;
+            }
+            else
+            {
+                GUI.color = new Color(0.86f, 0.86f, 0.86f);
+            }
+
+            Widgets.LabelFit(rect, header);
+            GUI.color = oldColor;
         }
 
         /// <summary>
@@ -724,6 +741,22 @@ namespace PawnDiary
                 + "|"
                 + (IsGenerated(entry) ? "written" : entry.LlmStatus ?? string.Empty);
 
+            return FirstSeenAt(key);
+        }
+
+        private static float TitleFirstSeenAt(DiaryEntryView entry)
+        {
+            string key = (entry?.EventId ?? string.Empty)
+                + "|"
+                + (entry?.PovRole ?? string.Empty)
+                + "|title|"
+                + (entry?.Title ?? string.Empty);
+
+            return FirstSeenAt(key);
+        }
+
+        private static float FirstSeenAt(string key)
+        {
             float firstSeen;
             if (!EntryFirstSeenSeconds.TryGetValue(key, out firstSeen))
             {
@@ -831,27 +864,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws a soft "writing" placeholder for dev-mode pending rows. The dots are simple
-        /// rectangles, which keeps the animation cheap in RimWorld's immediate-mode GUI.
+        /// Draws a soft pending-row indicator. The dots are simple rectangles, which keeps the
+        /// animation cheap in RimWorld's immediate-mode GUI.
         /// </summary>
         private static void DrawWritingPlaceholder(Rect rect)
         {
-            GameFont oldFont = Text.Font;
-            Color oldColor = GUI.color;
-            Text.Font = GameFont.Small;
-
-            string label = "PawnDiary.Status.Writing".Translate();
             Color textColor = Color.Lerp(new Color(0.58f, 0.72f, 0.66f), new Color(0.80f, 0.96f, 0.84f), WritingPulse(0f));
-            GUIStyle style = RoleplayStyle(false, textColor, 1f);
-            style.normal.textColor = textColor;
-            GUI.Label(rect, label, style);
-
-            float labelWidth = style.CalcSize(new GUIContent(label)).x;
-            Rect dotsRect = new Rect(rect.x + labelWidth + 8f, rect.y + Text.LineHeight * 0.5f - 1f, 28f, 8f);
+            Rect dotsRect = new Rect(rect.x, rect.y + Text.LineHeight * 0.5f - 1f, 28f, 8f);
             DrawWritingDots(dotsRect, textColor, 0.4f);
-
-            GUI.color = oldColor;
-            Text.Font = oldFont;
         }
 
         private static void DrawWritingDots(Rect rect, Color color, float phaseOffset)
