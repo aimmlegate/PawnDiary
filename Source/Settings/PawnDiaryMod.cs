@@ -529,7 +529,7 @@ namespace PawnDiary
 
             EnsureInstructionEditBuffer(selectedGroup);
 
-            Rect cardRect = listing.GetRect(248f);
+            Rect cardRect = listing.GetRect(268f);
             Widgets.DrawMenuSection(cardRect);
 
             Rect innerRect = cardRect.ContractedBy(10f);
@@ -867,7 +867,7 @@ namespace PawnDiary
                 height += 40f + (Mathf.Ceil(groupCount / 2f) * 30f);
             }
 
-            height += 270f;
+            height += 290f;
             return height + 220f; // breathing room for translated labels and RimWorld skin variance
         }
 

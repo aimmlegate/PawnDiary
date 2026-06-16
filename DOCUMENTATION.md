@@ -265,7 +265,8 @@ without turning the page into a giant wall of text areas, and it supports per-pr
 back to XML defaults. The Events section shows grouped toggles by domain, quick Edit buttons for each
 group, a summary card, and one per-group prompt editor for instruction overrides. Long prompt-reset
 and group-save actions use full-width button rows so translated labels do not clip inside the framed
-cards.
+cards, and the group editor card leaves extra bottom space so the restore action stays inside the
+frame.
 
 The Diary tab production view shows only finished generated pages. Dev mode reveals per-pawn writing
 enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, and in-progress

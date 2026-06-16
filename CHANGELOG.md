@@ -15,6 +15,8 @@ Dated history of every change to the mod. Add an entry here with each change, ne
     buttons, override summaries, and a framed per-group instruction editor.
   - Followed up on clipping in that UI by widening the model-fetch button and moving the long
     prompt-reset and group save/restore actions onto full-width rows inside their cards.
+  - Corrected the group editor card height so the bottom restore action no longer spills outside
+    the framed container.
 
 - **2026-06-16 (prompt context handling guidance)**
   - Tightened diary and reflection system prompts so structured context is treated as private
