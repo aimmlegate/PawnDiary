@@ -823,6 +823,7 @@
     <tone>with breath-held dread and awe</tone>
     <matchDefNames>
       <li>PawnDiary_GameAncientMechRevealed</li>
+      <li>PawnDiary_GameAncientDangerRevealed</li>
       <li>PawnDiary_GameRevealedThing</li>
       <li>PawnDiary_GameMonolithInvestigated</li>
       <li>PawnDiary_GameMonolithActivated</li>

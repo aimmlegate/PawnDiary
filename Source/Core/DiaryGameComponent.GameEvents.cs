@@ -11,6 +11,7 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         private const string GameAncientMechRevealedDefName = "PawnDiary_GameAncientMechRevealed";
+        private const string GameAncientDangerRevealedDefName = "PawnDiary_GameAncientDangerRevealed";
         private const string GameRevealedThingDefName = "PawnDiary_GameRevealedThing";
         private const string GameMonolithInvestigatedDefName = "PawnDiary_GameMonolithInvestigated";
         private const string GameMonolithActivatedDefName = "PawnDiary_GameMonolithActivated";
@@ -24,24 +25,28 @@ namespace PawnDiary
         {
             if (PawnDiaryMod.Settings == null || map == null)
             {
+                LogGameEventDebug("area reveal skipped: settings or map missing");
                 return;
             }
 
             Pawn pawn = ResolveDiscoverer(discoverer, map, root);
             if (pawn == null)
             {
+                LogGameEventDebug("area reveal skipped: no eligible discoverer at " + root);
                 return;
             }
 
             Thing revealedThing = result.mechanoidFound ? null : FindNearbyLetterOnRevealedThing(map, root);
             if (!result.mechanoidFound && revealedThing == null)
             {
+                LogGameEventDebug("area reveal skipped: no mechanoid flag and no nearby CompLetterOnRevealed thing at " + root);
                 return;
             }
 
             string defName = result.mechanoidFound ? GameAncientMechRevealedDefName : GameRevealedThingDefName;
             if (!PawnDiaryMod.Settings.IsGameEventEnabled(defName))
             {
+                LogGameEventDebug("area reveal skipped: group disabled for " + defName);
                 return;
             }
 
@@ -49,6 +54,7 @@ namespace PawnDiary
             string dedupKey = "gameevent|" + defName + "|map=" + map.uniqueID + "|object=" + objectKey;
             if (RecentlyRecorded(recentGameEvents, dedupKey, DiaryTuning.Current.taleDedupTicks))
             {
+                LogGameEventDebug("area reveal skipped: recently recorded " + dedupKey);
                 return;
             }
 
@@ -66,12 +72,60 @@ namespace PawnDiary
             DiaryEvent diaryEvent = AddSoloEvent(pawn, null, defName, label, text,
                 PawnDiaryMod.Settings.InstructionForGameEvent(defName), gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            LogGameEventDebug("area reveal queued: " + defName + " pawn=" + pawn.LabelShortCap + " root=" + root);
+        }
+
+        /// <summary>
+        /// Records vanilla ancient-danger reveal triggers, which are emitted by TriggerUnfogged
+        /// and can fire even when the broader FloodUnfogResult does not expose a useful flag.
+        /// </summary>
+        public void RecordAncientDangerRevealed(Pawn discoverer, Map map, IntVec3 root, Thing trigger)
+        {
+            if (PawnDiaryMod.Settings == null || map == null)
+            {
+                LogGameEventDebug("ancient danger skipped: settings or map missing");
+                return;
+            }
+
+            Pawn pawn = ResolveDiscoverer(discoverer, map, root);
+            if (pawn == null)
+            {
+                LogGameEventDebug("ancient danger skipped: no eligible discoverer at " + root);
+                return;
+            }
+
+            if (!PawnDiaryMod.Settings.IsGameEventEnabled(GameAncientDangerRevealedDefName))
+            {
+                LogGameEventDebug("ancient danger skipped: group disabled");
+                return;
+            }
+
+            string objectKey = trigger != null ? trigger.GetUniqueLoadID() : root.ToString();
+            string dedupKey = "gameevent|" + GameAncientDangerRevealedDefName + "|map=" + map.uniqueID + "|object=" + objectKey;
+            if (RecentlyRecorded(recentGameEvents, dedupKey, DiaryTuning.Current.taleDedupTicks))
+            {
+                LogGameEventDebug("ancient danger skipped: recently recorded " + dedupKey);
+                return;
+            }
+
+            string label = "PawnDiary.Event.AncientDangerRevealedLabel".Translate().Resolve();
+            string text = "PawnDiary.Event.AncientDangerRevealed".Translate(pawn.LabelShortCap).Resolve();
+            string gameContext = "game_event=" + GameAncientDangerRevealedDefName
+                + "; label=" + DiaryContextBuilder.CleanLine(label)
+                + "; map=" + map.uniqueID
+                + "; root_cell=" + root
+                + "; trigger=" + (trigger?.def?.defName ?? "unknown");
+
+            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, GameAncientDangerRevealedDefName, label, text,
+                PawnDiaryMod.Settings.InstructionForGameEvent(GameAncientDangerRevealedDefName), gameContext);
+            QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            LogGameEventDebug("ancient danger queued: pawn=" + pawn.LabelShortCap + " root=" + root);
         }
 
         /// <summary>
         /// Records a pawn's first investigation of a void/fallen monolith.
         /// </summary>
-        public void RecordMonolithInvestigated(Pawn pawn, Building_VoidMonolith monolith)
+        public void RecordMonolithInvestigated(Pawn pawn, Thing monolith)
         {
             RecordMonolithEvent(pawn, monolith, GameMonolithInvestigatedDefName,
                 "PawnDiary.Event.MonolithInvestigatedLabel", "PawnDiary.Event.MonolithInvestigated");
@@ -80,29 +134,31 @@ namespace PawnDiary
         /// <summary>
         /// Records the pawn who activates the monolith, a separate beat from first investigation.
         /// </summary>
-        public void RecordMonolithActivated(Pawn pawn, Building_VoidMonolith monolith)
+        public void RecordMonolithActivated(Pawn pawn, Thing monolith)
         {
             RecordMonolithEvent(pawn, monolith, GameMonolithActivatedDefName,
                 "PawnDiary.Event.MonolithActivatedLabel", "PawnDiary.Event.MonolithActivated");
         }
 
-        private void RecordMonolithEvent(Pawn pawn, Building_VoidMonolith monolith, string defName,
+        private void RecordMonolithEvent(Pawn pawn, Thing monolith, string defName,
             string labelKey, string textKey)
         {
             if (pawn == null || monolith == null || PawnDiaryMod.Settings == null || !IsDiaryEligible(pawn))
             {
+                LogGameEventDebug("monolith skipped: pawn/monolith/settings/eligibility failed for " + defName);
                 return;
             }
 
             if (!PawnDiaryMod.Settings.IsGameEventEnabled(defName))
             {
+                LogGameEventDebug("monolith skipped: group disabled for " + defName);
                 return;
             }
 
-            string dedupKey = "gameevent|" + defName + "|monolith=" + monolith.GetUniqueLoadID()
-                + "|pawn=" + pawn.GetUniqueLoadID();
+            string dedupKey = "gameevent|" + defName + "|monolith=" + monolith.GetUniqueLoadID();
             if (RecentlyRecorded(recentGameEvents, dedupKey, DiaryTuning.Current.taleDedupTicks))
             {
+                LogGameEventDebug("monolith skipped: recently recorded " + dedupKey);
                 return;
             }
 
@@ -117,6 +173,7 @@ namespace PawnDiary
             DiaryEvent diaryEvent = AddSoloEvent(pawn, null, defName, label, text,
                 PawnDiaryMod.Settings.InstructionForGameEvent(defName), gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            LogGameEventDebug("monolith queued: " + defName + " pawn=" + pawn.LabelShortCap);
         }
 
         private Pawn ResolveDiscoverer(Pawn discoverer, Map map, IntVec3 root)
@@ -212,6 +269,16 @@ namespace PawnDiary
             }
 
             return string.Join("; ", parts.ToArray());
+        }
+
+        private static void LogGameEventDebug(string message)
+        {
+            if (!Prefs.DevMode)
+            {
+                return;
+            }
+
+            Log.Message("[PawnDiary debug] game event: " + message);
         }
     }
 }

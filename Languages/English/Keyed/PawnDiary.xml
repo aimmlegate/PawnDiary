@@ -204,6 +204,8 @@
   <!-- Game-event text (synthetic map/story discovery diary entries) -->
   <PawnDiary.Event.AncientMechRevealedLabel>Ancient mech threat revealed</PawnDiary.Event.AncientMechRevealedLabel>
   <PawnDiary.Event.AncientMechRevealed>{0} discovered an ancient mechanized threat in the dark.</PawnDiary.Event.AncientMechRevealed>
+  <PawnDiary.Event.AncientDangerRevealedLabel>Ancient danger revealed</PawnDiary.Event.AncientDangerRevealedLabel>
+  <PawnDiary.Event.AncientDangerRevealed>{0} discovered an ancient danger hidden nearby.</PawnDiary.Event.AncientDangerRevealed>
   <PawnDiary.Event.RevealedThingLabel>Hidden thing revealed</PawnDiary.Event.RevealedThingLabel>
   <PawnDiary.Event.RevealedThing>{0} discovered {1}.</PawnDiary.Event.RevealedThing>
   <PawnDiary.Event.MonolithInvestigatedLabel>Monolith investigated</PawnDiary.Event.MonolithInvestigatedLabel>

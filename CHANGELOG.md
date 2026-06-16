@@ -3,6 +3,10 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (simpler discovery fallbacks)**
+  - Added direct discovery fallbacks for ancient-danger `TriggerUnfogged` activations and Anomaly
+    monolith study work, plus debug breadcrumbs for GameEvent discovery recording decisions.
+
 - **2026-06-17 (game-event patch registration fix)**
   - Fixed the fog-reveal and monolith Harmony hooks to bind RimWorld method arguments by position,
     preventing a `PatchAll` abort that could stop ordinary diary events from registering.

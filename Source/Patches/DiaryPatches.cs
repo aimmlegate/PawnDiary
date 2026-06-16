@@ -297,6 +297,29 @@ namespace PawnDiary
         }
     }
 
+    // Fires when vanilla's hidden ancient-shrine trigger activates after being unfogged. This is a
+    // simpler fallback for ancient-danger discovery letters than trying to infer every reveal from
+    // FloodUnfogResult, and still uses the nearest/cached colonist as the diary author. Prefix runs
+    // before vanilla can despawn the trigger, so MapHeld/PositionHeld are still reliable.
+    [HarmonyPatch(typeof(TriggerUnfogged), nameof(TriggerUnfogged.Activated))]
+    public static class TriggerUnfoggedActivatedPatch
+    {
+        /// <summary>
+        /// Harmony Prefix for TriggerUnfogged.Activated. Records ancient-danger style discoveries.
+        /// </summary>
+        public static void Prefix(TriggerUnfogged __instance)
+        {
+            if (__instance == null)
+            {
+                return;
+            }
+
+            Map map = __instance.Map ?? __instance.MapHeld;
+            Pawn discoverer = AreaRevealDiscovererCache.LatestFor(map);
+            DiaryGameComponent.Current?.RecordAncientDangerRevealed(discoverer, map, __instance.PositionHeld, __instance);
+        }
+    }
+
     // Fires when a pawn studies/investigates a void or fallen monolith. The method carries the pawn,
     // so this can create the entry from exactly the discoverer's point of view.
     [HarmonyPatch(typeof(Building_VoidMonolith), nameof(Building_VoidMonolith.Investigate))]
@@ -308,6 +331,22 @@ namespace PawnDiary
         public static void Postfix(Building_VoidMonolith __instance, Pawn __0)
         {
             DiaryGameComponent.Current?.RecordMonolithInvestigated(__0, __instance);
+        }
+    }
+
+    // Fires while a pawn studies the monolith through Anomaly's studiable comp. Some "fallen
+    // monolith" discovery flows go through study work/letters instead of Building_VoidMonolith's
+    // direct Investigate method, so this fallback keeps the entry tied to the actual studier.
+    [HarmonyPatch(typeof(CompStudiableMonolith), nameof(CompStudiableMonolith.Study),
+        new[] { typeof(Pawn), typeof(float), typeof(float) })]
+    public static class CompStudiableMonolithStudyPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for CompStudiableMonolith.Study. Records the first studied-monolith beat.
+        /// </summary>
+        public static void Postfix(CompStudiableMonolith __instance, Pawn __0)
+        {
+            DiaryGameComponent.Current?.RecordMonolithInvestigated(__0, __instance?.parent);
         }
     }
 
