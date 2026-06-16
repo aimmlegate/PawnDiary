@@ -15,6 +15,8 @@ Dated history of every change to the mod. Add an entry here with each change, ne
     instead of clipped full-card body chrome.
   - Fixed collapsed/animating row hover hitboxes so a closed entry no longer highlights like its
     hidden full-height card is still open.
+  - Matched collapsed row height to the expanded card header height so closing a page no longer
+    jumps into a taller final row.
 
 - **2026-06-17 (death fallback entries)**
   - Added a `Pawn.Kill` postfix fallback so condition deaths such as malnutrition/starvation still

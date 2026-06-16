@@ -31,7 +31,7 @@ namespace PawnDiary
         private const float RoleplayParagraphGap = 8f;
         private const float EntryGap = 8f;
         private const int AutoExpandedEntryCount = 15;
-        private const float CollapsedEntryHeight = 36f;
+        private const float CollapsedEntryHeight = EntryTitleHeight;
         private const float ExpansionAnimationSpeed = 5.5f;
         private const float LinkedEntryPadding = 8f;
         private const float LinkedEntryLabelHeight = 20f;
