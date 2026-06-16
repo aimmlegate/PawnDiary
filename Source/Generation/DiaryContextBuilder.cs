@@ -197,7 +197,9 @@ namespace PawnDiary
 
         // Extracts the first sentence from a text block.
         // Looks for sentence-ending punctuation (.!?) followed by a space or end of string.
-        private static string ExtractFirstSentence(string text)
+        // Public so DiaryEvent.ToViewFor and any view layer can derive a free fallback title
+        // for the diary card header without re-implementing the same lookup.
+        public static string ExtractFirstSentence(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {

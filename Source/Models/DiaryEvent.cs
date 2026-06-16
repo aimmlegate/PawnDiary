@@ -78,6 +78,21 @@ namespace PawnDiary
         public string llmEndpoint; // legacy flat field, migrated to per-POV fields on load
         public string llmModel; // legacy flat field, migrated to per-POV fields on load
         public bool solo; // true for events with a single POV (e.g. mental breaks)
+        // Per-POV title: short chat-style subject (3-8 words) derived from the generated entry.
+        // Populated by the opt-in "Generate LLM titles" follow-up call; empty otherwise (the
+        // diary card header falls back to the first sentence of the generated text). Separate
+        // from the per-POV status fields so the main-entry recovery logic is untouched.
+        public string initiatorTitle;
+        public string recipientTitle;
+        public string neutralTitle;
+        // Per-POV title-generation status and error. Reuse PendingStatus/CompleteStatus/FailedStatus
+        // from the main-entry vocabulary so the title follow-up rides the same status machine.
+        public string initiatorTitleStatus;
+        public string recipientTitleStatus;
+        public string neutralTitleStatus;
+        public string initiatorTitleError;
+        public string recipientTitleError;
+        public string neutralTitleError;
 
         // Mood impact direction for mood-event diary entries: "positive", "negative", or "neutral".
         // Reflects how the condition actually feels for the pawn (e.g. PsychicSuppressorMale is
@@ -141,6 +156,15 @@ namespace PawnDiary
             Scribe_Values.Look(ref recipientLlmModel, "recipientLlmModel");
             Scribe_Values.Look(ref neutralLlmModel, "neutralLlmModel");
             Scribe_Values.Look(ref moodImpact, "moodImpact");
+            Scribe_Values.Look(ref initiatorTitle, "initiatorTitle");
+            Scribe_Values.Look(ref recipientTitle, "recipientTitle");
+            Scribe_Values.Look(ref neutralTitle, "neutralTitle");
+            Scribe_Values.Look(ref initiatorTitleStatus, "initiatorTitleStatus");
+            Scribe_Values.Look(ref recipientTitleStatus, "recipientTitleStatus");
+            Scribe_Values.Look(ref neutralTitleStatus, "neutralTitleStatus");
+            Scribe_Values.Look(ref initiatorTitleError, "initiatorTitleError");
+            Scribe_Values.Look(ref recipientTitleError, "recipientTitleError");
+            Scribe_Values.Look(ref neutralTitleError, "neutralTitleError");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -264,6 +288,54 @@ namespace PawnDiary
                     neutralStatus = NotGeneratedStatus;
                 }
 
+                // Title backfill for older saves that pre-date the title feature. All values
+                // default to empty (not_generated status is implied by absence) so a saved event
+                // just falls back to the free first-sentence title.
+                if (initiatorTitle == null)
+                {
+                    initiatorTitle = string.Empty;
+                }
+
+                if (recipientTitle == null)
+                {
+                    recipientTitle = string.Empty;
+                }
+
+                if (neutralTitle == null)
+                {
+                    neutralTitle = string.Empty;
+                }
+
+                if (initiatorTitleStatus == null)
+                {
+                    initiatorTitleStatus = string.Empty;
+                }
+
+                if (recipientTitleStatus == null)
+                {
+                    recipientTitleStatus = string.Empty;
+                }
+
+                if (neutralTitleStatus == null)
+                {
+                    neutralTitleStatus = string.Empty;
+                }
+
+                if (initiatorTitleError == null)
+                {
+                    initiatorTitleError = string.Empty;
+                }
+
+                if (recipientTitleError == null)
+                {
+                    recipientTitleError = string.Empty;
+                }
+
+                if (neutralTitleError == null)
+                {
+                    neutralTitleError = string.Empty;
+                }
+
                 // Normalize statuses: treat stale "pending" or empty as not_generated,
                 // and upgrade to "complete" if generated text is already present
                 initiatorStatus = NormalizeLoadedStatus(initiatorStatus, initiatorGeneratedText);
@@ -352,6 +424,83 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Stores the opt-in LLM-generated title for a specific POV role. Mirrors
+        /// <see cref="SetLlmMeta"/>; an empty string clears the stored title so the view can
+        /// fall back to the first sentence of the generated text.
+        /// </summary>
+        public void SetTitle(string povRole, string title)
+        {
+            string value = title ?? string.Empty;
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                initiatorTitle = value;
+                return;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                recipientTitle = value;
+                return;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                neutralTitle = value;
+            }
+        }
+
+        /// <summary>
+        /// Returns the stored opt-in LLM title for a POV role, or empty string when none has
+        /// been set yet. The view layer combines this with the first-sentence fallback to render
+        /// the diary card header. Public because the title-queue decision in
+        /// <c>DiaryGameComponent.Generation.cs</c> reads the same field.
+        /// </summary>
+        public string TitleForRole(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                return initiatorTitle ?? string.Empty;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientTitle ?? string.Empty;
+            }
+
+            return neutralTitle ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Marks a POV role's title follow-up as queued. Clears any previous title error.
+        /// Distinct from <see cref="MarkQueued"/> so the main-entry recovery scan never sees
+        /// a title status.
+        /// </summary>
+        public void MarkTitleQueued(string povRole)
+        {
+            SetTitleStatus(povRole, PendingStatus);
+            SetTitleError(povRole, null);
+        }
+
+        /// <summary>
+        /// Marks a POV role's title follow-up as failed and records the error message.
+        /// The view still falls back to the first sentence of the generated text in that case.
+        /// </summary>
+        public void MarkTitleFailed(string povRole, string error)
+        {
+            SetTitleStatus(povRole, FailedStatus);
+            SetTitleError(povRole, error);
+        }
+
+        /// <summary>
+        /// Returns true if a title follow-up is currently pending (queued or generating) for
+        /// the given POV role. Mirrors <see cref="IsPending"/> for the main-entry status.
+        /// </summary>
+        public bool IsTitlePending(string povRole)
+        {
+            return RoleEquals(TitleStatusFor(povRole), PendingStatus);
+        }
+
         private string LlmEndpointFor(string povRole)
         {
             if (RoleEquals(povRole, RecipientRole))
@@ -380,6 +529,26 @@ namespace PawnDiary
             }
 
             return initiatorLlmModel;
+        }
+
+        /// <summary>
+        /// Public read accessor for the recorded LLM endpoint of a POV role. Used by the
+        /// opt-in title queueing logic to pin a follow-up title to the same lane the main
+        /// entry used (so a paired event stays on one model).
+        /// </summary>
+        public string LlmEndpointForRole(string povRole)
+        {
+            return LlmEndpointFor(povRole);
+        }
+
+        /// <summary>
+        /// Public read accessor for the recorded LLM model of a POV role. Mirrors
+        /// <see cref="LlmEndpointForRole"/>; both are returned together so the title queue
+        /// can match a lane by endpoint+model pair.
+        /// </summary>
+        public string LlmModelForRole(string povRole)
+        {
+            return LlmModelFor(povRole);
         }
 
         /// <summary>
@@ -543,6 +712,16 @@ namespace PawnDiary
 
             DiaryInteractionGroupDef group = GroupForDisplay();
 
+            // Title for this pawn's POV: stored opt-in LLM title, else the first sentence of
+            // the generated text, else empty. The view layer only renders a header when it's
+            // non-empty, so legacy entries (no generated text yet) and unfinished events stay
+            // header-less.
+            string titleForPov = TitleForRole(povRole);
+            if (string.IsNullOrWhiteSpace(titleForPov))
+            {
+                titleForPov = DiaryContextBuilder.ExtractFirstSentence(GeneratedTextFor(povRole));
+            }
+
             // Build a linked entry for the other pawn in a paired event.
             // Solo events (mental breaks) and legacy entries have no link.
             LinkedEntryView linkedEntry = null;
@@ -557,13 +736,23 @@ namespace PawnDiary
                     ? otherGeneratedText
                     : TextFor(otherRole));
 
+                // Title for the OTHER pawn's POV — same logic as the main view, mirrored onto
+                // the linked preview so the click target also shows a "We sat by the fire"-style
+                // subject. The other pawn's stored title (when present) takes precedence.
+                string otherTitle = TitleForRole(otherRole);
+                if (string.IsNullOrWhiteSpace(otherTitle))
+                {
+                    otherTitle = DiaryContextBuilder.ExtractFirstSentence(otherGeneratedText);
+                }
+
                 linkedEntry = new LinkedEntryView(
                     otherPawnId,
                     otherPawnName ?? string.Empty,
                     otherRole,
                     eventId,
                     truncated,
-                    otherGenerated);
+                    otherGenerated,
+                    otherTitle);
             }
 
             return new DiaryEntryView(
@@ -580,7 +769,8 @@ namespace PawnDiary
                 povRole,
                 group?.label ?? interactionLabel ?? string.Empty,
                 group == null || group.important,
-                linkedEntry);
+                linkedEntry,
+                titleForPov);
         }
 
         /// <summary>
@@ -1184,6 +1374,61 @@ namespace PawnDiary
             {
                 neutralError = error;
             }
+        }
+
+        private void SetTitleStatus(string povRole, string status)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                initiatorTitleStatus = status;
+                return;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                recipientTitleStatus = status;
+                return;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                neutralTitleStatus = status;
+            }
+        }
+
+        private void SetTitleError(string povRole, string error)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                initiatorTitleError = error;
+                return;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                recipientTitleError = error;
+                return;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                neutralTitleError = error;
+            }
+        }
+
+        private string TitleStatusFor(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                return initiatorTitleStatus;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientTitleStatus;
+            }
+
+            return neutralTitleStatus;
         }
 
         private static string NormalizeLoadedStatus(string status, string generatedText)

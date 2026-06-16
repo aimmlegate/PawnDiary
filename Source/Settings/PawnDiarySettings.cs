@@ -97,6 +97,15 @@ namespace PawnDiary
         public string systemPrompt = DefaultSystemPrompt;
         public string systemPromptReflection = DefaultSystemPromptReflection;
         public string systemPromptNeutral = DefaultSystemPromptNeutral;
+        // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
+        // Used only by the opt-in title flow; main entries never send this prompt.
+        public string systemPromptTitle = DefaultSystemPromptTitle;
+
+        // Master toggle for the opt-in LLM-titling flow. When false, no extra LLM call is made
+        // and the diary card header falls back to the first sentence of the generated entry
+        // (see DiaryEvent.ToViewFor / DiaryContextBuilder.ExtractFirstSentence). Default OFF
+        // so existing users see no behavior or cost change.
+        public bool generateTitles = false;
 
         // Per interaction-group settings, keyed by InteractionGroup.defName.
         // groupEnabled: whether interactions in the group are recorded at all.
@@ -122,6 +131,7 @@ namespace PawnDiary
         public static string DefaultSystemPrompt => DiaryPrompts.Current.systemPrompt;
         public static string DefaultSystemPromptReflection => DiaryPrompts.Current.systemPromptReflection;
         public static string DefaultSystemPromptNeutral => DiaryPrompts.Current.systemPromptNeutral;
+        public static string DefaultSystemPromptTitle => DiaryPrompts.Current.titleSystemPrompt;
 
         public override void ExposeData()
         {
@@ -147,6 +157,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref systemPrompt, "systemPrompt", DefaultSystemPrompt);
             Scribe_Values.Look(ref systemPromptReflection, "systemPromptReflection", DefaultSystemPromptReflection);
             Scribe_Values.Look(ref systemPromptNeutral, "systemPromptNeutral", DefaultSystemPromptNeutral);
+            Scribe_Values.Look(ref systemPromptTitle, "systemPromptTitle", DefaultSystemPromptTitle);
+            Scribe_Values.Look(ref generateTitles, "generateTitles", false);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
 
@@ -530,6 +542,11 @@ namespace PawnDiary
             if (systemPromptNeutral == null)
             {
                 systemPromptNeutral = string.Empty;
+            }
+
+            if (systemPromptTitle == null)
+            {
+                systemPromptTitle = string.Empty;
             }
 
             timeoutSeconds = Mathf.Clamp(timeoutSeconds, 5, 300);

@@ -22,6 +22,12 @@ namespace PawnDiary
             }
         }
 
+        // Max tokens the title follow-up is allowed to emit. A title is 3-8 words; 40 is generous
+        // for a chat-style subject plus a stray word or two, and small enough to keep the call
+        // cheap when the opt-in toggle is on. Reused from the same field on the main-entry
+        // request — we do NOT add a player setting for it.
+        private const int TitleMaxTokens = 40;
+
         private void EnsureGenerationQueued(DiaryEvent diaryEvent, string povRole)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
@@ -569,7 +575,9 @@ namespace PawnDiary
 
         /// <summary>
         /// Dequeues a completed LLM result and applies it to the corresponding DiaryEvent, then kicks
-        /// off the recipient side if dual-POV is active.
+        /// off the recipient side if dual-POV is active. Title follow-up results are routed
+        /// separately (see the <c>isTitleRequest</c> branch) so they never reach the main-entry
+        /// applier.
         /// </summary>
         private void ApplyLlmResult(LlmGenerationResult result)
         {
@@ -584,6 +592,14 @@ namespace PawnDiary
                 return;
             }
 
+            // Title follow-up: never call ApplyLlmResult (which is the main-entry applier) —
+            // the title is a separate, smaller request that lives on its own per-POV fields.
+            if (result.isTitleRequest)
+            {
+                ApplyTitleResult(diaryEvent, result);
+                return;
+            }
+
             diaryEvent.ApplyLlmResult(result);
 
             // Record the lane that actually produced the text. After failover this may differ from
@@ -595,6 +611,135 @@ namespace PawnDiary
             }
 
             QueueRecipientAfterInitiatorResult(diaryEvent, result);
+
+            // Opt-in title follow-up: if Generate LLM titles is on and the main entry produced
+            // text but the role has no stored title yet, queue a small title call. The title is
+            // tiny (3-8 words), the request is capped to TitleMaxTokens, and the toggle is OFF
+            // by default — existing users pay nothing.
+            if (result.success
+                && PawnDiaryMod.Settings != null
+                && PawnDiaryMod.Settings.generateTitles
+                && !string.IsNullOrWhiteSpace(result.generatedText)
+                && string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(result.povRole)))
+            {
+                QueueTitleRequest(diaryEvent, result.povRole, null);
+            }
+        }
+
+        /// <summary>
+        /// Applies a title-generation result to the event: stores the cleaned title on success
+        /// or records the failure. Uses a separate per-POV status field so the main-entry
+        /// recovery scan never touches it. The view layer's first-sentence fallback covers the
+        /// case where the title call fails — the diary card just shows the entry's opening line.
+        /// </summary>
+        private static void ApplyTitleResult(DiaryEvent diaryEvent, LlmGenerationResult result)
+        {
+            if (diaryEvent == null || result == null)
+            {
+                return;
+            }
+
+            if (result.success)
+            {
+                string title = DiaryPromptBuilder.CleanTitle(result.generatedText);
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    diaryEvent.MarkTitleFailed(result.povRole, "PawnDiary.Error.TitleEmptyResponse".Translate());
+                }
+                else
+                {
+                    diaryEvent.SetTitle(result.povRole, title);
+                }
+            }
+            else
+            {
+                diaryEvent.MarkTitleFailed(result.povRole, result.error);
+            }
+        }
+
+        /// <summary>
+        /// Queues the opt-in title-generation follow-up for the given POV. Mirrors the
+        /// <see cref="QueuePrompt"/> shape: pick a lane (pin to the same lane the main entry
+        /// used so a sequential pair stays on one model), mark the title status as pending, and
+        /// enqueue an <see cref="LlmGenerationRequest"/> with <c>isTitleRequest = true</c>.
+        /// On failure (no API configured, lane unavailable) the per-POV title is left untouched
+        /// — the view layer falls back to the first sentence of the generated text.
+        /// </summary>
+        private void QueueTitleRequest(DiaryEvent diaryEvent, string povRole, ApiEndpointConfig primaryOverride)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            // Don't double-queue: an existing title or an in-flight title request both skip.
+            if (!string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(povRole)))
+            {
+                return;
+            }
+
+            if (diaryEvent.IsTitlePending(povRole))
+            {
+                return;
+            }
+
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (settings == null)
+            {
+                return;
+            }
+
+            List<ApiEndpointConfig> targets = settings.ActiveEndpoints();
+            if (targets == null || targets.Count == 0)
+            {
+                return;
+            }
+
+            ApiEndpointConfig target = primaryOverride;
+            if (target == null)
+            {
+                // Pin the title to the same lane the main entry used, when available — keeps a
+                // paired event on one model (recipient title and initiator title both come from
+                // the same lane). Falls back to round-robin for first-time titles on a new role.
+                string mainEndpoint = diaryEvent.LlmEndpointForRole(povRole);
+                string mainModel = diaryEvent.LlmModelForRole(povRole);
+                if (!string.IsNullOrWhiteSpace(mainEndpoint) && !string.IsNullOrWhiteSpace(mainModel))
+                {
+                    foreach (ApiEndpointConfig candidate in targets)
+                    {
+                        if (string.Equals(EndpointUtility.BuildChatCompletionsUrl(candidate.url), mainEndpoint, StringComparison.OrdinalIgnoreCase)
+                            && string.Equals(candidate.model, mainModel, StringComparison.Ordinal))
+                        {
+                            target = candidate;
+                            break;
+                        }
+                    }
+                }
+
+                if (target == null)
+                {
+                    int index = LlmClient.NextRoundRobinIndex() % targets.Count;
+                    target = targets[index];
+                }
+            }
+
+            diaryEvent.MarkTitleQueued(povRole);
+
+            LlmClient.Enqueue(new LlmGenerationRequest
+            {
+                eventId = diaryEvent.eventId,
+                povRole = povRole,
+                isTitleRequest = true,
+                systemPrompt = settings.systemPromptTitle,
+                rawText = DiaryPromptBuilder.BuildTitlePrompt(diaryEvent, povRole),
+                endpointUrl = target.url,
+                modelName = target.model,
+                apiKey = target.apiKey,
+                failoverTargets = BuildFailoverTargets(targets, target),
+                timeoutSeconds = settings.timeoutSeconds,
+                maxTokens = TitleMaxTokens,
+                temperature = settings.temperature
+            });
         }
 
         /// <summary>

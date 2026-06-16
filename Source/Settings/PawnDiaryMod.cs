@@ -94,6 +94,10 @@ namespace PawnDiary
                 "PawnDiary.Settings.PairedPov".Translate(),
                 ref Settings.dualPovGeneration,
                 "PawnDiary.Settings.PairedPovTip".Translate());
+            listing.CheckboxLabeled(
+                "PawnDiary.Settings.GenerateTitles".Translate(),
+                ref Settings.generateTitles,
+                "PawnDiary.Settings.GenerateTitlesTip".Translate());
             listing.Label("PawnDiary.Settings.MaxConcurrent".Translate(Settings.maxConcurrentRequests));
             Settings.maxConcurrentRequests = Mathf.RoundToInt(listing.Slider(Settings.maxConcurrentRequests, 1f, 16f));
             DrawHint(listing, "PawnDiary.Settings.MaxConcurrentHelp".Translate());
@@ -129,6 +133,18 @@ namespace PawnDiary
             if (listing.ButtonText("PawnDiary.Settings.RestoreSystemPromptNeutral".Translate()))
             {
                 Settings.systemPromptNeutral = PawnDiarySettings.DefaultSystemPromptNeutral;
+            }
+
+            // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
+            // Used only by the opt-in title flow; main entries never send this prompt.
+            SectionTitle(listing, "PawnDiary.Settings.SystemPromptTitle".Translate());
+            DrawHint(listing, "PawnDiary.Settings.SystemPromptTitleHelp".Translate());
+            Rect titlePromptRect = listing.GetRect(80f);
+            Settings.systemPromptTitle = Widgets.TextArea(titlePromptRect, Settings.systemPromptTitle ?? string.Empty);
+            listing.Gap(4f);
+            if (listing.ButtonText("PawnDiary.Settings.RestoreSystemPromptTitle".Translate()))
+            {
+                Settings.systemPromptTitle = PawnDiarySettings.DefaultSystemPromptTitle;
             }
 
             DrawInteractionGroupsEditor(listing);
@@ -492,9 +508,11 @@ namespace PawnDiary
                 height += 34f; // compact summary
             }
 
-            // Generation and system-prompt sections.
-            height += 150f;
-            height += 210f;
+            // Generation and system-prompt sections. The Generation block now also includes
+            // the GenerateTitles toggle; the system-prompt block now also includes the title
+            // prompt editor (one more short section than before).
+            height += 190f;
+            height += 290f;
 
             // Events section: two-column group toggles, domain subheaders, and the prompt editor.
             height += 70f;

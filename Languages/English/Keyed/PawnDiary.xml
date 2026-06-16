@@ -71,6 +71,8 @@
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
   <PawnDiary.Settings.PairedPov>Paired POV generation</PawnDiary.Settings.PairedPov>
   <PawnDiary.Settings.PairedPovTip>Generate pairwise diary entries sequentially: initiator first, then recipient with the initiator entry as hidden context. Disable to generate only the first POV immediately and let other POVs generate lazily.</PawnDiary.Settings.PairedPovTip>
+  <PawnDiary.Settings.GenerateTitles>Generate LLM titles for diary entries</PawnDiary.Settings.GenerateTitles>
+  <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to produce a short title after the main entry is written. Adds latency and one extra token bill per entry. When disabled, the title is the first sentence of the entry — no extra request, no extra cost.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
@@ -83,6 +85,9 @@
   <PawnDiary.Settings.SystemPromptNeutral>System prompt — neutral chronicle</PawnDiary.Settings.SystemPromptNeutral>
   <PawnDiary.Settings.SystemPromptNeutralHelp>Third-person factual notes with no persona: colonist death and arrival descriptions.</PawnDiary.Settings.SystemPromptNeutralHelp>
   <PawnDiary.Settings.RestoreSystemPromptNeutral>Restore default neutral prompt</PawnDiary.Settings.RestoreSystemPromptNeutral>
+  <PawnDiary.Settings.SystemPromptTitle>System prompt — diary title</PawnDiary.Settings.SystemPromptTitle>
+  <PawnDiary.Settings.SystemPromptTitleHelp>Short chat-style subject (3-8 words) for an existing diary entry. Sent only by the opt-in "Generate LLM titles" follow-up; main entries are unaffected.</PawnDiary.Settings.SystemPromptTitleHelp>
+  <PawnDiary.Settings.RestoreSystemPromptTitle>Restore default title prompt</PawnDiary.Settings.RestoreSystemPromptTitle>
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsSectionTitle>Events</PawnDiary.Settings.EventsSectionTitle>
@@ -169,6 +174,7 @@
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because initiator diary generation failed.</PawnDiary.Error.SkippedInitiatorFailed>
   <PawnDiary.Error.NoLlmSettings>LLM settings are not available.</PawnDiary.Error.NoLlmSettings>
   <PawnDiary.Error.NoApiConfigured>No API is configured. Add an endpoint and model in the mod settings.</PawnDiary.Error.NoApiConfigured>
+  <PawnDiary.Error.TitleEmptyResponse>Title follow-up returned no usable text.</PawnDiary.Error.TitleEmptyResponse>
 
   <!-- ===== Prompt context: descriptive words the model reads (the field KEYS stay English) ===== -->
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>

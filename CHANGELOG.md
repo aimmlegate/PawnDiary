@@ -4,6 +4,34 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (optional LLM titling for diary entries)**
+  - Diary card headers now show `date — title` instead of just the date. By default the title is the
+    first sentence of the LLM-generated text — no extra request, no extra cost, works for every
+    entry type (interactions, mental states, tales, mood events, thoughts, day reflections, death
+    and arrival descriptions). `DiaryContextBuilder.ExtractFirstSentence` is the shared free
+    fallback; `DiaryEvent.ToViewFor` uses it whenever the stored title is empty.
+  - Added an opt-in "Generate LLM titles" toggle in **Generation** (default OFF, no behavior
+    change for existing users). When on, every successful main entry queues a small follow-up
+    LLM call (`TitleMaxTokens = 40`, pinned to the same lane the main entry used) with a focused
+    system prompt ("3-8 word title, no quotes, no period, output only the title"); the result
+    is stored on the event per POV (`initiatorTitle` / `recipientTitle` / `neutralTitle`) and
+    replaces the first-sentence fallback. When the title call fails, the first-sentence fallback
+    renders instead. The main entry's system prompt and format rules are NOT modified.
+  - New setting `systemPromptTitle` lets players override the title-generation system prompt;
+    the default lives in `DiaryPromptDef.titleSystemPrompt` (XML-editable). `DiaryPromptBuilder`
+    also gained `BuildTitlePrompt` and `CleanTitle` (strips quotes, leading markdown bullets,
+    trailing period; truncates to 80 chars). New keyed strings
+    `PawnDiary.Settings.GenerateTitles[Tip]`, `PawnDiary.Settings.SystemPromptTitle[Help]`,
+    `PawnDiary.Settings.RestoreSystemPromptTitle`, and `PawnDiary.Error.TitleEmptyResponse`.
+  - `DiaryEntryView.Title` and the linked-entry card (`LinkedEntryView.Title`) now show titles
+    too — the other pawn's POV title is computed the same way (stored first, else first-sentence
+    of their generated text). Persisted per-POV title fields survive save/load; older saves
+    backfill to empty on `PostLoadInit` and use the first-sentence fallback immediately. Title
+    status (`*TitleStatus` / `*TitleError`) is tracked in separate per-POV fields so the main-
+    entry orphan-recovery scan never touches it. `LlmGenerationRequest` / `LlmGenerationResult`
+    carry an `isTitleRequest` flag (and `LlmClient.PendingKey` now includes it) so a title
+    request and a main entry for the same event+role do not collide in the dedup map.
+
 - **2026-06-16 (streamlined entry headers — date only)**
   - Each diary card header now shows just the date instead of `date: subject`. The old subject was
     the event-group label (e.g. "Animal handling", "Passing thoughts"), which leaked technical

@@ -548,15 +548,25 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Produces the compact header shown on each entry card. For now this is just the date:
-        /// the old "date: subject" form leaked technical event-group names ("Animal handling")
-        /// into the UI. A future version will replace this with an LLM-generated title, the way
-        /// a chat assistant names a conversation. (The event group still lives on
-        /// <see cref="DiaryEntryView.GroupLabel"/> for that work.)
+        /// Produces the compact header shown on each entry card: the date, then a chat-style
+        /// subject ("date — title"). The title is the opt-in LLM-generated one when present,
+        /// otherwise the first sentence of the generated text (free fallback). When neither is
+        /// available (e.g. legacy entries, no generated text yet), the header is just the date
+        /// — no dangling separator. <see cref="Widgets.LabelFit"/> shrinks long titles to fit.
         /// </summary>
         private static string EntryHeader(DiaryEntryView entry)
         {
-            return entry?.Date ?? string.Empty;
+            if (entry == null)
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.Title))
+            {
+                return entry.Date ?? string.Empty;
+            }
+
+            return (entry.Date ?? string.Empty) + " \u2014 " + entry.Title;
         }
 
         /// <summary>

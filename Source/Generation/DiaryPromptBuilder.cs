@@ -86,6 +86,106 @@ namespace PawnDiary
             return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.arrivalDescriptionInstruction;
         }
 
+        // Trailer appended to every title-generation user message. Lives in code (not in
+        // DiaryPromptDef / Keyed) because it is the structured "what to return" instruction for
+        // the model — the same carve-out as singlePovInstruction / dualInstruction, which are
+        // also fixed English trailers on the user side. Keeping it constant here avoids loading
+        // a new Keyed string for one short sentence.
+        private const string TitleTrailer =
+            "\n\nReturn one short title (3-8 words) for this diary entry. Output only the title \u2014 no quotes, no period, no labels, no commentary.";
+
+        /// <summary>
+        /// Builds the user message for the opt-in title-generation follow-up call. The system
+        /// prompt lives on the request and tells the model to return a title; the user message
+        /// carries the diary entry to summarize. Uses the LLM-generated entry when available,
+        /// else falls back to the raw game text. The title prompt is intentionally small and
+        /// cheap — see <see cref="DiaryGameComponent.Generation.QueueTitleRequest"/>.
+        /// </summary>
+        public static string BuildTitlePrompt(DiaryEvent diaryEvent, string povRole)
+        {
+            if (diaryEvent == null)
+            {
+                return TitleTrailer.TrimStart('\n', 'r');
+            }
+
+            // Prefer the polished LLM output; fall back to the raw game text when the main entry
+            // hasn't finished yet (rare — the title call is only fired after a successful main
+            // entry, but the fallback keeps the request self-contained).
+            // DisplayTextForRole is the public accessor: returns generated if non-empty, else raw.
+            string entryText = diaryEvent.DisplayTextForRole(povRole);
+            if (string.IsNullOrWhiteSpace(entryText))
+            {
+                return TitleTrailer.TrimStart('\n', 'r');
+            }
+
+            return entryText + TitleTrailer;
+        }
+
+        /// <summary>
+        /// Strips the common noise a model adds around a short title (markdown bullets, quote
+        /// marks, a trailing period) and truncates to a sensible UI length. Returns empty when
+        /// the input is too short to be a title; callers then fall back to the first sentence
+        /// of the generated entry.
+        /// </summary>
+        public static string CleanTitle(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+
+            string cleaned = raw.Trim();
+            // Strip a single leading " or ' wrapping the whole title.
+            if (cleaned.Length >= 2
+                && (cleaned[0] == '"' || cleaned[0] == '\u201c')
+                && (cleaned[cleaned.Length - 1] == '"' || cleaned[cleaned.Length - 1] == '\u201d'))
+            {
+                cleaned = cleaned.Substring(1, cleaned.Length - 2).Trim();
+            }
+            else if (cleaned.Length >= 2 && cleaned[0] == '\'' && cleaned[cleaned.Length - 1] == '\'')
+            {
+                cleaned = cleaned.Substring(1, cleaned.Length - 2).Trim();
+            }
+
+            // Strip a leading markdown bullet ("- ", "* ", "# ") — some models decorate lists.
+            if (cleaned.StartsWith("- ", StringComparison.Ordinal))
+            {
+                cleaned = cleaned.Substring(2).TrimStart();
+            }
+            else if (cleaned.StartsWith("* ", StringComparison.Ordinal))
+            {
+                cleaned = cleaned.Substring(2).TrimStart();
+            }
+            else if (cleaned.StartsWith("# ", StringComparison.Ordinal))
+            {
+                cleaned = cleaned.Substring(2).TrimStart();
+            }
+            else if (cleaned.StartsWith("#", StringComparison.Ordinal) && cleaned.Length > 1 && char.IsLetterOrDigit(cleaned[1]))
+            {
+                cleaned = cleaned.Substring(1).TrimStart();
+            }
+
+            // Collapse internal whitespace so a model that emits "We  sat   by the fire"
+            // doesn't end up with stray double-spaces in the diary header.
+            cleaned = Regex.Replace(cleaned, @"\s+", " ");
+
+            // Drop a trailing period (or similar) — the system prompt already forbids it,
+            // but small models sometimes add one anyway.
+            char last = cleaned.Length > 0 ? cleaned[cleaned.Length - 1] : '\0';
+            if (last == '.' || last == '!' || last == '?' || last == '\u2026')
+            {
+                cleaned = cleaned.Substring(0, cleaned.Length - 1).TrimEnd();
+            }
+
+            const int MaxTitleLength = 80;
+            if (cleaned.Length > MaxTitleLength)
+            {
+                cleaned = cleaned.Substring(0, MaxTitleLength).TrimEnd();
+            }
+
+            return cleaned;
+        }
+
         private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule)
         {
             bool isInitiator = string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase);

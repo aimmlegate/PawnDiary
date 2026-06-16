@@ -70,6 +70,13 @@ namespace PawnDiary
             + "- Write in third person. Do not adopt any colonist persona, do not write in first person, and do not editorialize or moralize.\n"
             + "- Keep it to a few sentences, concrete and grounded.\n"
             + "- Output only the note text. Do not use markdown, headings, labels, or commentary.";
+
+        // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
+        // Used only by the opt-in "Generate LLM titles" flow. The system prompt stays minimal so
+        // a small local model can follow it; the heavy formatting lives in the user message's
+        // trailer instead.
+        public string titleSystemPrompt = "You write short, evocative titles (3 to 8 words) for RimWorld diary entries. "
+            + "You receive the diary entry and return ONLY the title \u2014 no quotes, no period, no markdown, no labels, no commentary.";
     }
 
     // Accessor for the single DiaryPromptDef. Caches the lookup and falls back to a default

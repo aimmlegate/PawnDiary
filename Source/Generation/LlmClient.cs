@@ -62,6 +62,13 @@ namespace PawnDiary
 
         /// <summary>Linked to the session cancellation source so stale requests are aborted on game load.</summary>
         public CancellationToken cancellationToken;
+
+        /// <summary>True when this is a follow-up title-generation request (not a main diary entry).
+        /// The result dispatcher uses the flag to route the response to the right handler: main
+        /// entries call <see cref="DiaryEvent.ApplyLlmResult"/>, title calls call
+        /// <see cref="DiaryEvent.SetTitle"/> / <see cref="DiaryEvent.MarkTitleFailed"/>. Defaults
+        /// to false so the existing main-entry path is unchanged.</summary>
+        public bool isTitleRequest;
     }
 
     /// <summary>
@@ -94,6 +101,11 @@ namespace PawnDiary
 
         /// <summary>Model of the API lane that actually produced the text (see <see cref="endpointUrl"/>).</summary>
         public string modelName;
+
+        /// <summary>Mirror of <see cref="LlmGenerationRequest.isTitleRequest"/>. The dispatcher
+        /// branches on this to route the result to the title handler instead of the main-entry
+        /// handler. Defaults to false so existing main-entry results behave exactly as before.</summary>
+        public bool isTitleRequest;
     }
 
     /// <summary>
@@ -233,7 +245,7 @@ namespace PawnDiary
             }
 
             long sessionId = Interlocked.Read(ref currentSessionId);
-            return PendingKeys.ContainsKey(PendingKey(eventId, povRole, sessionId));
+            return PendingKeys.ContainsKey(PendingKey(eventId, povRole, sessionId, false));
         }
 
         /// <summary>
@@ -249,8 +261,8 @@ namespace PawnDiary
 
             request.sessionId = Interlocked.Read(ref currentSessionId); // stamp with current session
             request.cancellationToken = sessionCancellation.Token;
-            string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId);
-            if (!PendingKeys.TryAdd(pendingKey, 0)) // deduplicate: same event+role+session is already queued
+            string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId, request.isTitleRequest);
+            if (!PendingKeys.TryAdd(pendingKey, 0)) // deduplicate: same event+role+session+kind is already queued
             {
                 LogDebug("Skipped duplicate queued request event=" + request.eventId + " role=" + request.povRole + " session=" + request.sessionId);
                 return;
@@ -304,7 +316,7 @@ namespace PawnDiary
         /// </summary>
         private static async Task SendWithRetries(LlmGenerationRequest request, SemaphoreSlim primaryGate)
         {
-            string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId);
+            string pendingKey = PendingKey(request.eventId, request.povRole, request.sessionId, request.isTitleRequest);
             string lastError = null;
 
             try
@@ -370,7 +382,8 @@ namespace PawnDiary
                                 success = true,
                                 generatedText = outcome.Text,
                                 endpointUrl = request.endpointUrl,
-                                modelName = request.modelName
+                                modelName = request.modelName,
+                                isTitleRequest = request.isTitleRequest
                             });
                             return;
                         }
@@ -396,7 +409,8 @@ namespace PawnDiary
                     povRole = request.povRole,
                     sessionId = request.sessionId,
                     success = false,
-                    error = lastError ?? "Unknown network error."
+                    error = lastError ?? "Unknown network error.",
+                    isTitleRequest = request.isTitleRequest
                 });
                 LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(lastError));
             }
@@ -721,10 +735,14 @@ namespace PawnDiary
             return statusCode == 429 || statusCode >= 500;
         }
 
-        /// <summary>Composes a deduplication key from the triple that uniquely identifies an in-flight request.</summary>
-        private static string PendingKey(string eventId, string povRole, long sessionId)
+        /// <summary>Composes a deduplication key from the tuple that uniquely identifies an
+        /// in-flight request. The <c>isTitleRequest</c> bit keeps title follow-ups from colliding
+        /// with the main entry that produced them — they share event+role, but a session should
+        /// be allowed to have both running at the same logical time (even if, in practice, the
+        /// title is queued only after the main entry has finished).</summary>
+        private static string PendingKey(string eventId, string povRole, long sessionId, bool isTitleRequest)
         {
-            return sessionId + "|" + eventId + "|" + povRole;
+            return sessionId + "|" + eventId + "|" + povRole + "|" + (isTitleRequest ? "title" : "main");
         }
 
         /// <summary>
