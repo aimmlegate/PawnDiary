@@ -327,6 +327,13 @@ namespace PawnDiary
                 initiatorStatus = NormalizeLoadedStatus(initiatorStatus, initiatorGeneratedText);
                 recipientStatus = NormalizeLoadedStatus(recipientStatus, recipientGeneratedText);
                 neutralStatus = NormalizeLoadedStatus(neutralStatus, neutralGeneratedText);
+                // Title requests run on the same async client, but use separate status fields.
+                // If a save/load interrupts an in-flight title call, no result will arrive for this
+                // session, so pending title statuses must be cleared or the title retry guard will
+                // keep treating the missing request as active forever.
+                initiatorTitleStatus = NormalizeLoadedTitleStatus(initiatorTitleStatus, initiatorTitle);
+                recipientTitleStatus = NormalizeLoadedTitleStatus(recipientTitleStatus, recipientTitle);
+                neutralTitleStatus = NormalizeLoadedTitleStatus(neutralTitleStatus, neutralTitle);
 
             }
         }
@@ -1268,6 +1275,21 @@ namespace PawnDiary
             }
 
             return string.IsNullOrWhiteSpace(status) ? NotGeneratedStatus : status;
+        }
+
+        private static string NormalizeLoadedTitleStatus(string status, string title)
+        {
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                return CompleteStatus;
+            }
+
+            if (RoleEquals(status, PendingStatus))
+            {
+                return string.Empty;
+            }
+
+            return status ?? string.Empty;
         }
 
         public static bool RoleEquals(string left, string right)

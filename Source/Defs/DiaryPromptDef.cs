@@ -63,11 +63,13 @@ namespace PawnDiary
             + "- Output only the note text. Do not use markdown, headings, labels, or commentary.";
 
         // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
-        // Used only by the "Generate LLM titles" flow. The system prompt stays minimal so
-        // a small local model can follow it; the heavy formatting lives in the user message's
-        // trailer instead.
+        // Used only by the "Generate LLM titles" flow. The system prompt stays minimal so a small
+        // local model can follow it; the user instruction is appended to the title request body.
         public string titleSystemPrompt = "You write short, evocative titles (3 to 8 words) for RimWorld diary entries. "
             + "You receive the diary entry and return ONLY the title \u2014 no quotes, no period, no markdown, no labels, no commentary.";
+
+        public string titleUserInstruction = "Return one short title (3-8 words) for this diary entry. "
+            + "Output only the title \u2014 no quotes, no period, no labels, no commentary.";
     }
 
     // Accessor for the single DiaryPromptDef. Caches the lookup and falls back to a default

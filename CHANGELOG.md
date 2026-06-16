@@ -4,6 +4,12 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (title retry and prompt XML cleanup)**
+  - Save/load now clears stale pending title-generation statuses when no title was stored, so an
+    interrupted title request no longer blocks that diary page from ever receiving a title.
+  - Moved the title request's user-message instruction into `DiaryPromptDef.titleUserInstruction`
+    and XML, keeping title prompt text editable with the rest of the generation prompts.
+
 - **2026-06-16 (sampled pawn-work diary entries)**
   - Added a periodic work scanner that sometimes records solo diary pages for colonists' current
     Work-tab jobs, with persistent same-work cooldowns and a 0.5 recent-different-work chance

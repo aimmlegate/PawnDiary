@@ -323,8 +323,9 @@ generated entries.
   recorded `LlmEndpointForRole` + `LlmModelForRole`), is capped at `TitleMaxTokens = 40`, and
   uses `DiaryPrompts.Current.titleSystemPrompt` (or the player's `systemPromptTitle` override)
   as the system message. The user message is the diary entry text (generated when available, raw
-  fallback) plus a fixed English trailer asking for a 3-8 word title with no quotes or period.
-  Successful title responses are stored as returned by the LLM result path. If the title call
+  fallback) plus `DiaryPrompts.Current.titleUserInstruction` from XML, which asks for a 3-8 word
+  title with no quotes or period. Successful title responses are stored as returned by the LLM
+  result path. If the title call
   fails (no API, timeout, model returned nothing), the per-POV title is left empty and the card
   remains date-only.
 - The title's per-POV status is tracked in a separate `initiatorTitleStatus` / `recipientTitleStatus`
@@ -333,7 +334,9 @@ generated entries.
   title request and a main entry for the same `eventId` + `povRole` can both be active in the
   same session without colliding. `LlmGenerationRequest` and `LlmGenerationResult` carry the
   same flag, which `ApplyLlmResult` reads to route the response to `ApplyTitleResult` (stores
-  the title or records the failure) instead of the main-entry `ApplyLlmResult`.
+  the title or records the failure) instead of the main-entry `ApplyLlmResult`. On save/load,
+  stale pending title statuses with no stored title are cleared so interrupted title requests can
+  be retried instead of staying permanently pending.
 - The title request's `LlmGenerationRequest.isTitleRequest` is set on the result object by
   `LlmClient.SendWithRetries` so the dispatcher always knows the kind without inspecting the
   payload. The same lane-pinning as paired sequential mode keeps a paired event's two titles
@@ -660,7 +663,7 @@ does not add a second surgery hook that would duplicate successful operations.
 | `maxTokens` | 100 | 32–2048. Applied to each one-entry request, and also enforced locally as a hard response cap if a model ignores API-side `max_tokens`. |
 | `temperature` | 0.8 | 0–2. |
 | `generateTitles` | true | LLM-titling master toggle. **ON by default**: every successful main entry queues a small follow-up title call (`TitleMaxTokens = 40`) with a focused system prompt asking for a 3-8 word title, no quotes, no period. The result is stored per POV on the event. When OFF, no new title request is made and diary headers render date-only; stored titles are kept and show again if the setting is re-enabled. See §4 "Title generation". |
-| `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` / `systemPromptTitle` | from `DiaryPromptDef` XML | The system prompts (diary voice / day reflection / neutral chronicle / title), chosen per request type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). The default diary `systemPrompt` also explicitly tells the model to stay within the request token limit. `systemPromptTitle` is only sent by the title follow-up; main entries are unaffected by changes to it. |
+| `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` / `systemPromptTitle` | from `DiaryPromptDef` XML | The system prompts (diary voice / day reflection / neutral chronicle / title), chosen per request type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). The default diary `systemPrompt` also explicitly tells the model to stay within the request token limit. `systemPromptTitle` is only sent by the title follow-up; main entries are unaffected by changes to it. The title follow-up's user-message instruction comes from `DiaryPromptDef.titleUserInstruction`. |
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure` | true | Currently forced on in `ClampValues`. |
 

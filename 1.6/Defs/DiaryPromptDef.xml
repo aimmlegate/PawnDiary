@@ -56,6 +56,9 @@ Rules:
     <!-- Title generation: short chat-style subject (3-8 words) for an existing diary entry.
          Used only by the "Generate LLM titles" flow; main entries are unaffected. -->
     <titleSystemPrompt>You write short, evocative titles (3 to 8 words) for RimWorld diary entries. You receive the diary entry and return ONLY the title — no quotes, no period, no markdown, no labels, no commentary.</titleSystemPrompt>
+
+    <!-- Appended to the title request's user message after the diary entry text -->
+    <titleUserInstruction>Return one short title (3-8 words) for this diary entry. Output only the title — no quotes, no period, no labels, no commentary.</titleUserInstruction>
   </PawnDiary.DiaryPromptDef>
 
 </Defs>

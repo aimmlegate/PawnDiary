@@ -85,14 +85,6 @@ namespace PawnDiary
             return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.arrivalDescriptionInstruction;
         }
 
-        // Trailer appended to every title-generation user message. Lives in code (not in
-        // DiaryPromptDef / Keyed) because it is the structured "what to return" instruction for
-        // the model — the same carve-out as singlePovInstruction, which is also a fixed English
-        // trailer on the user side. Keeping it constant here avoids loading
-        // a new Keyed string for one short sentence.
-        private const string TitleTrailer =
-            "\n\nReturn one short title (3-8 words) for this diary entry. Output only the title \u2014 no quotes, no period, no labels, no commentary.";
-
         /// <summary>
         /// Builds the user message for the title-generation follow-up call. The system
         /// prompt lives on the request and tells the model to return a title; the user message
@@ -104,7 +96,7 @@ namespace PawnDiary
         {
             if (diaryEvent == null)
             {
-                return TitleTrailer.TrimStart('\n', 'r');
+                return DiaryPrompts.Current.titleUserInstruction;
             }
 
             // Prefer the polished LLM output; fall back to the raw game text when the main entry
@@ -114,10 +106,10 @@ namespace PawnDiary
             string entryText = diaryEvent.DisplayTextForRole(povRole);
             if (string.IsNullOrWhiteSpace(entryText))
             {
-                return TitleTrailer.TrimStart('\n', 'r');
+                return DiaryPrompts.Current.titleUserInstruction;
             }
 
-            return entryText + TitleTrailer;
+            return entryText + "\n\n" + DiaryPrompts.Current.titleUserInstruction;
         }
 
         private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule)
