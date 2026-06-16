@@ -90,6 +90,24 @@ namespace PawnDiary
         public int thoughtAmbientMinEventsToWrite = 2;
         // Keep at most this many thought evidence lines in the prompt.
         public int thoughtAmbientMaxSampleLines = 5;
+
+        // ---- Day reflection (end-of-day summary) ----
+        // Master toggle. When false, the old per-source ambient notes are emitted as before.
+        public bool daySummaryEnabled = true;
+        // Highest number of highlights woven into one reflection (the weighted selection cap).
+        public int daySummaryMaxHighlights = 3;
+        // A colonist→colonist opinion swing of at least this many points (vs the day-start snapshot)
+        // becomes a social-dynamic signal.
+        public int daySummaryOpinionDeltaThreshold = 15;
+        // A newly-appeared hediff counts as "major" at/above this severity (or if chronic / an
+        // addiction / makes a sick thought — any one qualifies regardless of severity).
+        public float daySummaryHediffMinSeverity = 0.3f;
+        // Relative selection weights (higher = more likely to survive selection).
+        public float daySummaryWeightCriticalEvent = 1f;   // combat / mental-state day events
+        public float daySummaryWeightMajorEvent = 0.7f;    // other "important" day events
+        public float daySummaryWeightHediff = 0.8f;        // a major new hediff
+        public float daySummaryWeightOpinionShift = 0.6f;  // base; scaled up by swing magnitude
+        public float daySummaryWeightFiller = 0.15f;       // background small talk / passing feelings
     }
 
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default

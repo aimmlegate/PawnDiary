@@ -77,6 +77,32 @@ namespace PawnDiary
         }
     }
 
+    // Fires whenever a hediff is added to any pawn (injuries, diseases, addictions, implants...).
+    // We forward colonist additions so a major new affliction can feed that pawn's end-of-day
+    // reflection. The "is this major enough?" filter and per-day accumulation live in
+    // DiaryGameComponent (DaySummary.cs), keeping this hook thin and the threshold XML-tunable.
+    // AddHediff has overloads, so the argument-type array selects the canonical Hediff overload
+    // every add path routes through. hediff.pawn is already assigned by the time the postfix runs.
+    [HarmonyPatch(typeof(Pawn_HealthTracker), nameof(Pawn_HealthTracker.AddHediff),
+        new[] { typeof(Hediff), typeof(BodyPartRecord), typeof(DamageInfo?), typeof(DamageWorker.DamageResult) })]
+    public static class HealthTrackerAddHediffPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for Pawn_HealthTracker.AddHediff. Forwards a colonist's newly-added
+        /// hediff to the diary so the day-summary builder can decide whether it is worth remembering.
+        /// </summary>
+        public static void Postfix(Hediff hediff)
+        {
+            Pawn pawn = hediff?.pawn;
+            if (pawn == null || !pawn.IsColonist)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordHediffAppeared(pawn, hediff);
+        }
+    }
+
     // Fires when a pawn finishes installing an ideology relic in a reliquary. The target is a
     // compiler-generated local function inside MakeNewToils, whose name (<MakeNewToils>b__5_5) can
     // shift between RimWorld versions. We deliberately do NOT register this via [HarmonyPatch] /

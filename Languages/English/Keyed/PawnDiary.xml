@@ -130,6 +130,15 @@
   <PawnDiary.Event.AmbientThoughtHeader>Small feelings and impressions colored the day:</PawnDiary.Event.AmbientThoughtHeader>
   <PawnDiary.Event.AmbientThoughtFallback>{0} carried a few passing feelings through the day.</PawnDiary.Event.AmbientThoughtFallback>
   <PawnDiary.Event.AmbientThoughtInstruction>write one natural diary paragraph about the emotional texture these passing feelings left behind; do not list each thought, do not mention counts, and only name the source of a feeling if it would matter to the pawn</PawnDiary.Event.AmbientThoughtInstruction>
+  <!-- Day reflection (end-of-day summary woven from the day's selected highlights) -->
+  <PawnDiary.Event.DayReflectionLabel>Looking back on the day</PawnDiary.Event.DayReflectionLabel>
+  <PawnDiary.Event.DayReflectionHeader>Of everything today, these stayed with {0}:</PawnDiary.Event.DayReflectionHeader>
+  <PawnDiary.Event.DayReflectionFallback>{0} settled down at the end of a quiet, unremarkable day.</PawnDiary.Event.DayReflectionFallback>
+  <PawnDiary.Event.DayReflectionInstruction>write one short reflective diary paragraph as {0} settling down at day's end, looking back on the day as a whole; weave together only the moments below that would still be on their mind, in their own voice; these are the highlights they already lived, so reflect on how the day felt rather than re-reporting each event; do not write a list or mention counts</PawnDiary.Event.DayReflectionInstruction>
+  <PawnDiary.Event.DayReflectionFillerLine>the ordinary background of small talk and passing moods</PawnDiary.Event.DayReflectionFillerLine>
+  <PawnDiary.Event.DayReflectionOpinionWarmed>felt noticeably warmer toward {0}</PawnDiary.Event.DayReflectionOpinionWarmed>
+  <PawnDiary.Event.DayReflectionOpinionCooled>grew noticeably colder toward {0}</PawnDiary.Event.DayReflectionOpinionCooled>
+  <PawnDiary.Event.DayReflectionHediff>a new affliction took hold: {0}</PawnDiary.Event.DayReflectionHediff>
   <PawnDiary.Event.TaleSolo>{0} experienced {1}.</PawnDiary.Event.TaleSolo>
   <PawnDiary.Event.TaleSoloWithOther>{0} experienced {1} involving {2}.</PawnDiary.Event.TaleSoloWithOther>
   <PawnDiary.Event.TalePair>{0} and {1} were involved in {2}.</PawnDiary.Event.TalePair>

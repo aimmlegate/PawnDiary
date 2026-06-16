@@ -390,6 +390,20 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>dayreflection</defName>
+    <label>Day's reflection</label>
+    <order>135</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
+    <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
+    <matchDefNames>
+      <li>DayReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>other</defName>
     <label>A quiet day</label>
     <order>140</order>

@@ -4,6 +4,21 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (reflective end-of-day summary)**
+  - Reworked the end-of-day memory: instead of building a thin note from low-stakes filler, a pawn
+    bedding down now writes one reflective `DayReflection` entry drawn from a weighted-random
+    selection of the day's most notable signals. It coexists with the per-event entries that already
+    fired in the moment (`DiaryGameComponent.DaySummary.cs`).
+  - Collectors: today's important diary events (raids, breaks, romance, deep talks, heavy thoughts),
+    opinion swings toward other colonists versus a day-start snapshot, major new afflictions (new
+    `Pawn_HealthTracker.AddHediff` hook, filtered to diseases/addictions/lost parts/chronic), and the
+    day's small talk / passing thoughts folded in as low-weight background. `SelectHighlights` keeps
+    only the most important few (`daySummaryMaxHighlights`, default 3).
+  - All signals read structured, language-independent data; all day-summary state is transient, so no
+    save schema changed. Tunable via new `DiaryTuningDef` fields (weights, thresholds); set
+    `daySummaryEnabled=false` to restore the old per-source ambient notes. Added a `dayreflection`
+    display group and localized reflection strings.
+
 - **2026-06-16 (weighted promotion of batched interactions)**
   - Added an optional `<promotion>` policy (`InteractionPromotionPolicy`) to interaction batch
     groups: each matching moment gets a weighted-random roll and, on a win, escapes batching to

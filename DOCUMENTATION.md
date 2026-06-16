@@ -78,8 +78,8 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
-| `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions); `MemoryThoughtHandler.TryGainMemory` → `RecordThought` (temporary thoughts with expiration). |
-| `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.InteractionBatching.cs` (XML-configured batching for quick social logs — `RecordBatchedInteraction` + `PendingInteractionBatch`), `.AmbientThoughts.cs` (day-note batching for low-impact temporary thoughts). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
+| `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions); `MemoryThoughtHandler.TryGainMemory` → `RecordThought` (temporary thoughts with expiration); `Pawn_HealthTracker.AddHediff` → `RecordHediffAppeared` (major new afflictions, for the day reflection). |
+| `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.InteractionBatching.cs` (XML-configured batching for quick social logs — `RecordBatchedInteraction` + `PendingInteractionBatch`), `.AmbientThoughts.cs` (day-note batching for low-impact temporary thoughts), `.DaySummary.cs` (the end-of-day reflection — collectors for major events/opinion shifts/new afflictions/filler, the weighted-random highlight selector, and the `DayReflection` emit, flushed when a pawn beds down). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
@@ -485,6 +485,34 @@ no text/topic matching — so promotion behaves identically in every language. T
 `smalltalk` group enables a conservative policy (`baseChance` 0.04, `maxChance` 0.6); other batch
 groups can opt in the same way, and `enabled=false` reverts to pure batching without deleting the
 block.
+
+**Day reflection (end-of-day summary):** when `daySummaryEnabled` (default), the old per-source
+ambient notes no longer each emit on sleep. Instead, the moment a colonist lies down
+(`FlushDaySummaryForPawn` in `DiaryGameComponent.DaySummary.cs`) one richer solo entry is written —
+a reflection looking back on the whole day — which **coexists** with the per-event entries that
+already fired in the moment. It gathers candidate signals from several collectors:
+
+- **Major day events** — today's `DiaryEvent`s the pawn took part in that are `IsImportant()` (raids,
+  breaks, romance, deep talks, heavy thoughts). Scanned newest-first with an early break, so the
+  work is bounded to today. Weight `daySummaryWeightCriticalEvent` for combat/mental-state events,
+  else `daySummaryWeightMajorEvent`.
+- **Opinion shifts** — each other colonist this pawn's `OpinionOf` swung past
+  `daySummaryOpinionDeltaThreshold` versus a day-start snapshot (re-baselined at each day rollover
+  and on load; a pawn sleeping past midnight gets a weaker signal that day). Weight scales with the
+  swing.
+- **New afflictions** — major hediffs that appeared today, collected by the `Pawn_HealthTracker.AddHediff`
+  postfix and filtered in `IsMajorHediff` (diseases / addictions / lost parts / chronic / bad past
+  `daySummaryHediffMinSeverity`; plain injuries are excluded — combat tales cover those). Weight
+  `daySummaryWeightHediff`.
+- **Filler** — one low-weight (`daySummaryWeightFiller`) background signal when the day held ≥2 small
+  talk / passing-thought moments, which are consumed (folded in) rather than separately emitted.
+
+`SelectHighlights` then does weighted-random sampling without replacement down to
+`daySummaryMaxHighlights` (default 3), so high-weight signals almost always survive and medium ones
+rotate for variety. The selection feeds a `DayReflection` solo event whose instruction asks for a
+reflective paragraph, not a list. A day with no candidates writes nothing. All day-summary state is
+transient (re-derived on load), so no save schema changed; set `daySummaryEnabled=false` to restore
+the old per-source ambient notes.
 
 **Mental states** are captured via the `MentalStateHandler.TryStartMentalState` postfix:
 - `SocialFighting` with an eligible colonist `otherPawn` → a **pairwise** event (both pawns).

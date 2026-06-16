@@ -100,6 +100,19 @@
     <thoughtAmbientWindowTicks>60000</thoughtAmbientWindowTicks>
     <thoughtAmbientMinEventsToWrite>2</thoughtAmbientMinEventsToWrite>
     <thoughtAmbientMaxSampleLines>5</thoughtAmbientMaxSampleLines>
+
+    <!-- Day reflection (end-of-day summary). Set daySummaryEnabled false to fall back to the
+         old per-source ambient notes. Weights are relative; raise one to make that kind of
+         moment survive selection more often. -->
+    <daySummaryEnabled>true</daySummaryEnabled>
+    <daySummaryMaxHighlights>3</daySummaryMaxHighlights>
+    <daySummaryOpinionDeltaThreshold>15</daySummaryOpinionDeltaThreshold>
+    <daySummaryHediffMinSeverity>0.3</daySummaryHediffMinSeverity>
+    <daySummaryWeightCriticalEvent>1</daySummaryWeightCriticalEvent>
+    <daySummaryWeightMajorEvent>0.7</daySummaryWeightMajorEvent>
+    <daySummaryWeightHediff>0.8</daySummaryWeightHediff>
+    <daySummaryWeightOpinionShift>0.6</daySummaryWeightOpinionShift>
+    <daySummaryWeightFiller>0.15</daySummaryWeightFiller>
   </PawnDiary.DiaryTuningDef>
 
 </Defs>

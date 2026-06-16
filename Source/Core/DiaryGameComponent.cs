@@ -148,6 +148,8 @@ namespace PawnDiary
             nextGenerationScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             initialArrivalScanPending = true;
+            // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
+            ResetDaySummaryState();
         }
 
         public override void LoadedGame()
@@ -169,6 +171,8 @@ namespace PawnDiary
             nextGenerationScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             initialArrivalScanPending = false;
+            // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
+            ResetDaySummaryState();
             QueueAllPendingGenerations();
         }
 
@@ -201,6 +205,13 @@ namespace PawnDiary
         {
             FlushReadyInteractionBatches();
             FlushReadyAmbientThoughtNotes();
+
+            // Re-baseline each colonist's opinions at the start of every new day, so the reflection
+            // can measure how feelings shifted over the day. Cheap: a no-op comparison most ticks.
+            if (CurrentDayIndex != opinionSnapshotDay)
+            {
+                SnapshotDayStartOpinions();
+            }
 
             int now = Find.TickManager.TicksGame;
             if (now >= nextAmbientSleepFlushScanTick)
@@ -238,14 +249,29 @@ namespace PawnDiary
         /// </summary>
         private void FlushAmbientNotesForSleepingPawns()
         {
-            if (pendingAmbientInteractionNotes.Count == 0 && pendingAmbientThoughtNotes.Count == 0)
+            bool daySummary = DiaryTuning.Current.daySummaryEnabled;
+
+            // When the reflection is off we only have work if filler notes are pending. When it is on,
+            // a reflection can also be driven by major events / opinion shifts / new afflictions even
+            // with no pending filler, so we always scan resting pawns (each is cheap and idempotent).
+            if (!daySummary && pendingAmbientInteractionNotes.Count == 0 && pendingAmbientThoughtNotes.Count == 0)
             {
                 return;
             }
 
             foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonists)
             {
-                if (IsRestingForAmbientFlush(pawn))
+                if (!IsRestingForAmbientFlush(pawn))
+                {
+                    continue;
+                }
+
+                if (daySummary)
+                {
+                    // The reflection folds the filler in and writes one richer end-of-day entry.
+                    FlushDaySummaryForPawn(pawn);
+                }
+                else
                 {
                     FlushAmbientInteractionNotesForPawn(pawn);
                     FlushAmbientThoughtNotesForPawn(pawn);
