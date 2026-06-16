@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (tick-time colonist scan snapshots)_
+_Last updated: 2026-06-17 (Diary tab after Needs)_
 
 ---
 
@@ -11,7 +11,7 @@ _Last updated: 2026-06-16 (tick-time colonist scan snapshots)_
 
 Pawn Diary records meaningful moments for free colonists and asks an OpenAI-compatible
 `/chat/completions` endpoint to rewrite them as short diary pages. The Diary inspector tab is
-injected immediately after the vanilla Social tab and is visible only for colonist pawns, including
+injected immediately after the vanilla Needs tab and is visible only for colonist pawns, including
 corpses of colonists.
 
 Recorded sources:
@@ -68,7 +68,7 @@ Important files:
 
 | File | Role |
 |---|---|
-| `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Social. |
+| `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Needs. |
 | `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, map discoveries, mood events, thoughts, and hediff day-summary signals. |
 | `DiaryGameComponent*.cs` | Orchestrates recording, batching, generation scans, save/load, lookups, and public UI access. Event-source partials own their `Record*` method; `ThoughtProgression` scans staged situational thoughts. |
 | `DiaryEvent.cs` | Saved event model: raw text, context, statuses, generated text, LLM metadata, titles, source ids, and save/load. |

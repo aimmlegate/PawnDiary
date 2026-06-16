@@ -1,6 +1,6 @@
 // Mod entry point. [StaticConstructorOnStartup] makes RimWorld run this class's static
 // constructor once at game load (there is no main()). We use it to apply our Harmony patches and
-// inject the Diary inspector tab after the vanilla Social tab on every humanlike pawn.
+// inject the Diary inspector tab after the vanilla Needs tab on every humanlike pawn.
 // See AGENTS.md ("[StaticConstructorOnStartup]").
 using System;
 using System.Collections.Generic;
@@ -40,10 +40,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Injects the Diary inspector tab into every humanlike pawn's inspector, placing it after Social.
+        /// Injects the Diary inspector tab into every humanlike pawn's inspector, placing it after Needs.
         /// </summary>
         // Add the Diary inspector tab to every humanlike pawn. If another path already inserted it,
-        // remove that earlier slot first so the tab ends up consistently after the vanilla Social tab.
+        // remove that earlier slot first so the tab ends up consistently after the vanilla Needs tab.
         private static void InjectDiaryTab()
         {
             foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
@@ -64,10 +64,10 @@ namespace PawnDiary
                 }
 
                 def.inspectorTabs.RemoveAll(tab => tab == typeof(ITab_Pawn_Diary));
-                int socialIndex = def.inspectorTabs.IndexOf(typeof(ITab_Pawn_Social));
-                if (socialIndex >= 0)
+                int needsIndex = def.inspectorTabs.IndexOf(typeof(ITab_Pawn_Needs));
+                if (needsIndex >= 0)
                 {
-                    def.inspectorTabs.Insert(socialIndex + 1, typeof(ITab_Pawn_Diary));
+                    def.inspectorTabs.Insert(needsIndex + 1, typeof(ITab_Pawn_Diary));
                 }
                 else
                 {
@@ -76,10 +76,10 @@ namespace PawnDiary
 
                 InspectTabBase instance = InspectTabManager.GetSharedInstance(typeof(ITab_Pawn_Diary));
                 def.inspectorTabsResolved.RemoveAll(tab => tab is ITab_Pawn_Diary);
-                int resolvedSocialIndex = def.inspectorTabsResolved.FindIndex(tab => tab is ITab_Pawn_Social);
-                if (resolvedSocialIndex >= 0)
+                int resolvedNeedsIndex = def.inspectorTabsResolved.FindIndex(tab => tab is ITab_Pawn_Needs);
+                if (resolvedNeedsIndex >= 0)
                 {
-                    def.inspectorTabsResolved.Insert(resolvedSocialIndex + 1, instance);
+                    def.inspectorTabsResolved.Insert(resolvedNeedsIndex + 1, instance);
                 }
                 else
                 {
