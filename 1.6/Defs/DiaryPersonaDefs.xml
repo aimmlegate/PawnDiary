@@ -4,10 +4,11 @@
   Edit rules here and restart the game to retune the persona catalog.
 
   <themes> are coarse internal keywords (grim, warm, hostile, anxious, analytical, dramatic,
-  social, whimsical, noble) used only to bias the FIRST persona roll toward a voice that fits a
+  social, whimsical, noble, void) used only to bias the FIRST persona roll toward a voice that fits a
   pawn's traits/backstory. They are matched against Source/Generation/PersonaAffinity.cs's
   trait/backstory maps; they are never shown to the player, so they are not localized. A persona
   with no <themes> still appears in the picker and the roll — it just rides the base weight.
+  Creepjoiners receive an extra first-roll bonus toward personas tagged with void.
 -->
 <Defs>
 
@@ -216,6 +217,52 @@
     <label>imagist-minimalist</label>
     <rule>writes in spare, image-driven fragments, almost like haiku. Trusts a single concrete detail to carry the whole feeling. Opens with one sharp sensory image. Uses few words, present tense, and no explanation.</rule>
     <themes>
+      <li>dramatic</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <!--
+    Void personas are especially likely for creepjoiners. They remain available to other pawns at
+    normal catalog weight, but the internal "void" theme gets a large creepjoiner-only bonus in
+    PersonaAffinity.
+  -->
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_VoidListener</defName>
+    <label>void-listener</label>
+    <rule>writes as if silence is speaking from just outside the room. Calm, attentive, and deeply unsettling; treats gaps, pauses, and missing details as messages. Opens with something they almost heard. Uses phrases like "the quiet answered," "under the sound," and "it was listening too."</rule>
+    <themes>
+      <li>void</li>
+      <li>anxious</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_HollowWitness</defName>
+    <label>hollow-witness</label>
+    <rule>writes with a vacant, dissociated calm, as though watching their body from a few steps away. Notices wrongness in ordinary gestures and describes emotions as borrowed objects. Opens with a flat statement that feels slightly off. Uses restrained, cold sentences and avoids explaining fear directly.</rule>
+    <themes>
+      <li>void</li>
+      <li>grim</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_BlackSignal</defName>
+    <label>black-signal</label>
+    <rule>writes like a broken transmission from somewhere dark. Fragments of thought arrive as static, coordinates, warnings, and repeated phrases. Opens with a signal, pulse, or error in perception. Uses clipped fragments, but keeps the event understandable.</rule>
+    <themes>
+      <li>void</li>
+      <li>analytical</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_UnsetClock</defName>
+    <label>unset-clock</label>
+    <rule>writes as if time has loosened around them. Places moments out of order, repeats small details, and suspects the present has already happened once before. Opens with a time that feels impossible or wrong. Uses cyclical phrasing: "again," "before it began," "not yet, but already."</rule>
+    <themes>
+      <li>void</li>
       <li>dramatic</li>
     </themes>
   </PawnDiary.DiaryPersonaDef>

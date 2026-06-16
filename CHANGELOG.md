@@ -3,6 +3,12 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (creepjoiner void persona bias)**
+  - Added four dark, void, and unsettling persona presets and tagged them with the new internal
+    `void` theme.
+  - Added a creepjoiner-only first-roll bonus for void-tagged personas so creepjoiners strongly
+    prefer those voices without making them common for ordinary colonists.
+
 - **2026-06-16 (first-release group catalog cleanup)**
   - Dropped an unreleased placeholder interaction group from the XML catalog and kept prompt-lab
     generated fixtures aligned with the first-release group set.

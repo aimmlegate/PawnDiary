@@ -3,11 +3,13 @@
 // that knows which RimWorld trait/backstory keywords suggest which writing theme.
 //
 // How it fits together:
-//   - Personas declare <themes> in 1.6/Defs/DiaryPersonaDefs.xml (e.g. "grim", "warm").
+//   - Personas declare <themes> in 1.6/Defs/DiaryPersonaDefs.xml (e.g. "grim", "warm", "void").
 //   - The two maps below translate a pawn's trait defNames and backstory spawnCategories into the
 //     same theme vocabulary.
 //   - ThemeBonusFor counts how many of the pawn's themes a given persona shares, and the persona
 //     selector (DiaryPersonas.WeightedStartingPersona) turns that count into extra roll weight.
+//   - Creepjoiners get an extra boost toward void-tagged personas so their starting voice leans
+//     uncanny without making those personas common for ordinary colonists.
 //
 // Everything is null-safe in the same spirit as DlcContext: traits/backstory can be absent for
 // some pawn kinds, and any trait/category we don't recognize simply contributes nothing (it never
@@ -35,6 +37,11 @@ namespace PawnDiary
         // weight in DiaryPersonas, so a persona that hits two of the pawn's themes is strongly
         // favored without ever making the others impossible. Tunable.
         private const float ThemeBonus = 3f;
+
+        // Extra roll weight for Anomaly creepjoiners when a persona is tagged with the internal
+        // "void" theme. This is intentionally separate from grim/anxious so normal colonists do not
+        // over-select the darker voices just because they share a common trait theme.
+        private const float CreepjoinerVoidBonus = 12f;
 
         // Trait -> writing themes. Singular traits are keyed by bare defName; spectrum-trait degrees
         // are keyed "defName:degree" (see file header). Unlisted traits/degrees contribute nothing.
@@ -103,8 +110,8 @@ namespace PawnDiary
         /// <summary>
         /// Returns the extra roll weight a persona earns for matching the pawn's traits/backstory:
         /// <c>ThemeBonus * (number of distinct themes shared between the pawn and the persona)</c>.
-        /// Returns 0 for a null pawn/persona, an untagged persona, or a pawn whose traits/backstory
-        /// match none of the persona's themes.
+        /// Void-tagged personas also receive a large bonus for creepjoiners. Returns 0 for a null
+        /// pawn/persona, an untagged persona, or a pawn with no matching themes or creepjoiner bias.
         /// </summary>
         public static float ThemeBonusFor(DiaryPersonaDef persona, Pawn pawn)
         {
@@ -114,21 +121,25 @@ namespace PawnDiary
             }
 
             HashSet<string> pawnThemes = ThemesForPawn(pawn);
-            if (pawnThemes.Count == 0)
-            {
-                return 0f;
-            }
-
             int matches = 0;
-            for (int i = 0; i < persona.themes.Count; i++)
+            if (pawnThemes.Count > 0)
             {
-                if (pawnThemes.Contains(persona.themes[i]))
+                for (int i = 0; i < persona.themes.Count; i++)
                 {
-                    matches++;
+                    if (pawnThemes.Contains(persona.themes[i]))
+                    {
+                        matches++;
+                    }
                 }
             }
 
-            return ThemeBonus * matches;
+            float bonus = ThemeBonus * matches;
+            if (pawn.IsCreepJoiner && HasTheme(persona, "void"))
+            {
+                bonus += CreepjoinerVoidBonus;
+            }
+
+            return bonus;
         }
 
         // Collects the distinct themes implied by a pawn's traits and backstory categories.
@@ -188,6 +199,24 @@ namespace PawnDiary
             {
                 themes.Add(mapped[i]);
             }
+        }
+
+        private static bool HasTheme(DiaryPersonaDef persona, string theme)
+        {
+            if (persona?.themes == null || theme == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < persona.themes.Count; i++)
+            {
+                if (persona.themes[i] == theme)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

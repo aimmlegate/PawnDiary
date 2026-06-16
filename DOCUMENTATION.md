@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (first-release group catalog cleanup)_
+_Last updated: 2026-06-16 (creepjoiner void persona bias)_
 
 ---
 
@@ -208,9 +208,10 @@ Narrative mode chooses the system prompt at dispatch:
 
 Persona presets are `DiaryPersonaDef` XML. A new pawn's first persona is selected with
 `DiaryPersonas.WeightedStartingPersona`: every persona has base weight, matching trait/backstory
-themes add weight through `PersonaAffinity`, and voices already used by living free colonists get a
-soft duplicate penalty. Existing records keep their saved persona. Manual persona editing is a
-dev-mode Diary-tab control.
+themes add weight through `PersonaAffinity`, void-tagged personas get a large extra first-roll
+bonus for creepjoiners, and voices already used by living free colonists get a soft duplicate
+penalty. Existing records keep their saved persona. Manual persona editing is a dev-mode Diary-tab
+control.
 
 Title generation defaults on. After a successful main entry, `QueueTitleRequest` sends the entry text
 plus `DiaryPromptDef.titleUserInstruction`, capped at `TitleMaxTokens = 40`, pinned to the main

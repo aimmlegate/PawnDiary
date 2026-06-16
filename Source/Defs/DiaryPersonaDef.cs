@@ -12,10 +12,11 @@ namespace PawnDiary
         // The writing rule injected into the LLM prompt as "persona:" so the model adopts a consistent voice.
         public string rule;
 
-        // Coarse internal keyword tags (e.g. "grim", "warm", "anxious") used only to bias the
+        // Coarse internal keyword tags (e.g. "grim", "warm", "anxious", "void") used only to bias the
         // *initial* persona roll toward a fitting voice for the pawn's traits/backstory. They are
-        // matched against PersonaAffinity's trait/backstory -> theme maps; they are never shown to
-        // the player, so they are NOT localized. Untagged personas simply ride the base weight.
+        // matched against PersonaAffinity's pawn -> theme logic; "void" also gets a creepjoiner-only
+        // boost. Tags are never shown to the player, so they are NOT localized. Untagged personas
+        // simply ride the base weight.
         // Initialized so old/partial defs that omit <themes> never NullReference.
         public List<string> themes = new List<string>();
     }
