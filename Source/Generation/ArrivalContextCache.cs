@@ -17,6 +17,11 @@ namespace PawnDiary
     {
         private static readonly Dictionary<string, string> CachedByPawnId = new Dictionary<string, string>();
 
+        // Arrival facts are consumed in the Pawn.SetFaction postfix right after Capture, so a
+        // leftover entry only happens when a join path doesn't reach the postfix. Cap the cache so
+        // any such strays can't accumulate over a long game.
+        private const int MaxCachedEntries = 64;
+
         /// <summary>
         /// Runs before Pawn.SetFaction mutates the pawn, so we can see the prior faction and whether
         /// this is a real transition into the player colony.
@@ -61,6 +66,11 @@ namespace PawnDiary
             if (!string.IsNullOrWhiteSpace(surroundings) && surroundings != "unknown" && surroundings != "none")
             {
                 parts.Add("arrival_surroundings=" + surroundings);
+            }
+
+            if (CachedByPawnId.Count >= MaxCachedEntries && !CachedByPawnId.ContainsKey(pawnId))
+            {
+                CachedByPawnId.Clear(); // drop stale, never-consumed entries before growing further
             }
 
             CachedByPawnId[pawnId] = string.Join("; ", parts.ToArray());

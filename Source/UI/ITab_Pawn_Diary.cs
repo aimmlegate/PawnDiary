@@ -70,6 +70,11 @@ namespace PawnDiary
         private static GUIStyle dialogueStyle;
         private static GUIStyle narrativeStyle;
         private static readonly Dictionary<string, float> EntryFirstSeenSeconds = new Dictionary<string, float>();
+        // Upper bound on the first-seen fade cache. It keys on eventId|role|status (and title), so a
+        // long session would otherwise grow it without limit. When exceeded we clear it wholesale;
+        // the only visible effect is that currently-shown cards fade in once more, which is rare (it
+        // takes hundreds of distinct entry states to trigger) and harmless.
+        private const int MaxFirstSeenEntries = 512;
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
@@ -820,6 +825,11 @@ namespace PawnDiary
             float firstSeen;
             if (!EntryFirstSeenSeconds.TryGetValue(key, out firstSeen))
             {
+                if (EntryFirstSeenSeconds.Count >= MaxFirstSeenEntries)
+                {
+                    EntryFirstSeenSeconds.Clear();
+                }
+
                 firstSeen = Time.realtimeSinceStartup;
                 EntryFirstSeenSeconds[key] = firstSeen;
             }

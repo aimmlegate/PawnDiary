@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (pending title header animation)_
+_Last updated: 2026-06-16 (performance & robustness pass)_
 
 ---
 
@@ -260,7 +260,8 @@ jump to matching diary entries.
 - new requests are assigned round-robin
 - pairwise recipient requests and title follow-ups pin to the lane that actually produced the prior
   text when possible
-- lanes run independently, each guarded by its own `SemaphoreSlim`
+- lanes run independently, each guarded by its own `SemaphoreSlim`; `ServicePointManager.DefaultConnectionLimit`
+  is raised at startup so the per-lane semaphore (not the transport's default 2-per-host limit) governs concurrency
 - each request carries ordered failover targets and tries the next lane after permanent errors,
   exhausted retries, or timeout
 - transient errors retry up to 3 times per lane; permanent 4xx and empty content move on
@@ -276,7 +277,9 @@ raw text is kept when configured.
 
 ## 9. Persistence
 
-`DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. `DiaryEvent` saves raw text,
+`DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. The `eventId -> DiaryEvent`
+lookup index (`eventsById`) is not saved; it is rebuilt from `diaryEvents` on load so `FindEvent`
+stays O(1). `DiaryEvent` saves raw text,
 generated text, statuses/errors, context, source ids, LLM metadata, and per-POV titles. Prompts are
 rebuilt on demand rather than saved. Tale/mental/source classification is inferred from stable
 `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`, `thought=`, and `work=`.
