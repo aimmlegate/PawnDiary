@@ -309,6 +309,9 @@ jump to matching diary entries.
 - transient errors retry up to 3 times per lane; permanent 4xx and empty content move on
 - successful content is trimmed locally to `maxTokens`, preferring the last complete sentence before
   the cap and falling back to word-level ellipsis only when no sentence boundary fits
+- main diary/note responses that arrive under the cap but still end with an incomplete trailing
+  sentence (commonly because the endpoint itself stopped at `max_tokens`) drop that dangling
+  fragment before saving; title responses are exempt because they should not use sentence punctuation
 - debug logs from background workers are queued and flushed on the main thread
 - stale sessions are cancelled when a new `DiaryGameComponent` is constructed
 - pending entries with no in-flight request are reset only after two consecutive orphan scans

@@ -618,11 +618,24 @@ namespace PawnDiary
                     // Some RP-tuned models ignore max_tokens and return very long entries anyway.
                     // Enforce a local hard cap (by whitespace-token count) so saved diary events
                     // never exceed the request's token budget, even when the endpoint misbehaves.
-                    // When possible, the cap backs up to a complete sentence so the diary page
-                    // does not end on an ugly mid-thought fragment.
-                    return TrimToMaxTokens(generatedText, request.maxTokens);
+                    // Some endpoints also stop exactly at max_tokens, returning a mid-sentence
+                    // fragment that is already under our local cap; clean that up for main diary
+                    // text too. Titles are exempt because they should not end with sentence
+                    // punctuation.
+                    return CleanGeneratedText(generatedText, request.maxTokens, request.isTitleRequest);
                 }
             }
+        }
+
+        /// <summary>
+        /// Applies local response cleanup before text is saved: length cap first, then trailing
+        /// fragment removal for diary/note text. Kept separate from parsing so API response handling
+        /// stays easy to follow.
+        /// </summary>
+        private static string CleanGeneratedText(string text, int maxTokens, bool isTitleRequest)
+        {
+            string capped = TrimToMaxTokens(text, maxTokens);
+            return isTitleRequest ? capped : TrimTrailingIncompleteSentence(capped);
         }
 
         /// <summary>
@@ -677,6 +690,33 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Removes a dangling final sentence fragment from main diary/note output. This catches the
+        /// common API-stop case where the model obeys max_tokens by cutting off in the middle of a
+        /// sentence, so the local token cap never sees an over-limit response.
+        /// </summary>
+        private static string TrimTrailingIncompleteSentence(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = text.Trim();
+            if (EndsWithCompleteSentence(trimmed))
+            {
+                return trimmed;
+            }
+
+            int sentenceEnd = LastSentenceEndBefore(trimmed, trimmed.Length);
+            if (sentenceEnd > 0)
+            {
+                return trimmed.Substring(0, sentenceEnd).TrimEnd();
+            }
+
+            return trimmed;
+        }
+
+        /// <summary>
         /// Finds a sentence boundary that fits inside the token cap. This deliberately uses a small
         /// punctuation heuristic rather than culture-heavy sentence parsing, keeping RimWorld Mono
         /// compatibility and avoiding new dependencies.
@@ -709,6 +749,27 @@ namespace PawnDiary
             }
 
             return -1;
+        }
+
+        private static bool EndsWithCompleteSentence(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            int i = text.Length - 1;
+            while (i >= 0 && char.IsWhiteSpace(text[i]))
+            {
+                i--;
+            }
+
+            while (i >= 0 && IsSentenceClosingCharacter(text[i]))
+            {
+                i--;
+            }
+
+            return i >= 0 && IsSentenceEndingPunctuation(text[i]);
         }
 
         private static bool IsSentenceEndingPunctuation(char c)

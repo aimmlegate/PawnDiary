@@ -8,6 +8,8 @@ Dated history of every change to the mod. Add an entry here with each change, ne
     complete-sentence and word-count limits, plus "prefer shorter complete output" wording.
   - Updated matching C# fallback defaults and prompt-lab fallback prompts so experiments use the
     same length contract as the in-game XML defaults.
+  - Added cleanup for under-limit LLM responses that still end in a dangling sentence fragment,
+    preventing API-side `max_tokens` stops from saving broken trailing text.
 
 - **2026-06-16 (sentence-aware LLM trimming)**
   - Changed the local LLM response cap to prefer the last complete sentence before `maxTokens`,
