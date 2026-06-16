@@ -3,6 +3,13 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (nearby-object weighted selection)**
+  - Updated surroundings context generation so nearby objects are now summarized as 1–2 weighted-random
+    picks from nearby candidates instead of an unweighted fixed list.
+  - Added distance-nearby weighting so fire, corpses, and buildings are more likely to appear in the
+    prompt context, preserving variety via replacement-free random draws.
+  - Updated `DOCUMENTATION.md` to document the new nearby-selection behavior and tuning implications.
+
 - **2026-06-16 (performance & robustness pass)**
   - Added an `eventId -> DiaryEvent` lookup index (`eventsById`) so `FindEvent` is O(1); all event
     creation routes through `RegisterDiaryEvent` and the index is rebuilt on load (`RebuildEventIndex`).

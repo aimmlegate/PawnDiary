@@ -183,8 +183,9 @@ opinion asymmetry, low needs, or extreme mood. These signals are numeric/game-st
 localized text matching.
 
 `1.6/Defs/DiaryTuningDef.xml` holds dedup windows, scanner intervals, mood/health/beauty buckets,
-thought thresholds, work odds/cooldowns, and day-reflection weights. Code defaults keep the mod
-usable if XML fails to load.
+thought thresholds, work odds/cooldowns, and day-reflection weights. Nearby-context tuning includes the
+radial search radius plus the nearby-object candidate cap. Code defaults keep the mod usable if XML fails
+to load.
 
 ---
 
@@ -197,6 +198,8 @@ Main prompt context can include:
 - `event`, `pov`, `role`, `with`, `what you saw` / `what happened`, and group `instruction`
 - pawn summary: sex, age, DLC identity lines, mood, health, low capacities, and top thoughts
 - persona rule, surroundings, pawn-state atmosphere, event tone, relationship continuity
+- surroundings now include 1–2 nearby objects chosen each entry with weighted random selection so
+  important context objects (fire, corpses, buildings) are favored more often
 - latest opener to avoid repetition
 - burning passion and weapon only when the event is important or combat-related
 

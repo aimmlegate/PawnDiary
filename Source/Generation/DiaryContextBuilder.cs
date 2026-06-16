@@ -683,7 +683,9 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            List<string> labels = new List<string>();
+            List<Thing> candidates = new List<Thing>();
+            HashSet<string> seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int nearbyCandidateCap = Mathf.Max(1, DiaryTuning.Current.maxNearbyThings);
 
             foreach (Thing thing in GenRadial.RadialDistinctThingsAround(pawn.Position, pawn.Map, DiaryTuning.Current.nearbyRadius, true))
             {
@@ -693,19 +695,120 @@ namespace PawnDiary
                 }
 
                 string label = NearbyThingLabel(thing);
-                if (string.IsNullOrWhiteSpace(label) || labels.Contains(label))
+                if (string.IsNullOrWhiteSpace(label) || !seenLabels.Add(label))
                 {
                     continue;
                 }
 
-                labels.Add(label);
-                if (labels.Count >= DiaryTuning.Current.maxNearbyThings)
+                candidates.Add(thing);
+                if (candidates.Count >= nearbyCandidateCap)
                 {
                     break;
                 }
             }
 
-            return string.Join(", ", labels.ToArray());
+            if (candidates.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            int maxNearbyToPick = Mathf.Min(2, candidates.Count);
+            int minNearbyToPick = Mathf.Min(1, maxNearbyToPick);
+            int nearbyToPick = maxNearbyToPick == minNearbyToPick
+                ? maxNearbyToPick
+                : UnityEngine.Random.Range(minNearbyToPick, maxNearbyToPick + 1);
+
+            List<string> selectedLabels = PickWeightedNearbyThings(candidates, nearbyToPick);
+            return string.Join(", ", selectedLabels.ToArray());
+        }
+
+        // Picks 1-2 nearby things with weighted random and no replacement, so high-value objects like
+        // fire/corpse/buildings appear more often across repeated diary entries while still keeping
+        // variety.
+        private static List<string> PickWeightedNearbyThings(List<Thing> candidates, int maxCount)
+        {
+            if (candidates == null || candidates.Count == 0 || maxCount <= 0)
+            {
+                return new List<string>();
+            }
+
+            List<Thing> pool = new List<Thing>(candidates);
+            List<string> selected = new List<string>(Mathf.Min(maxCount, pool.Count));
+            int take = Mathf.Min(maxCount, pool.Count);
+
+            for (int pick = 0; pick < take; pick++)
+            {
+                float totalWeight = 0f;
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    totalWeight += Mathf.Max(0.0001f, NearbyThingWeight(pool[i]));
+                }
+
+                if (totalWeight <= 0f)
+                {
+                    break;
+                }
+
+                float roll = UnityEngine.Random.value * totalWeight;
+                float cumulative = 0f;
+                int selectedIndex = pool.Count - 1;
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    cumulative += Mathf.Max(0.0001f, NearbyThingWeight(pool[i]));
+                    if (roll <= cumulative)
+                    {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+
+                string label = NearbyThingLabel(pool[selectedIndex]);
+                if (!string.IsNullOrWhiteSpace(label))
+                {
+                    selected.Add(label);
+                }
+
+                pool.RemoveAt(selectedIndex);
+            }
+
+            return selected;
+        }
+
+        // Fire and corpses are story-relevant more often; buildings usually matter for location/context;
+        // items and plants are still useful but less likely than those anchors.
+        private static float NearbyThingWeight(Thing thing)
+        {
+            if (thing is Fire)
+            {
+                return 4f;
+            }
+
+            if (thing is Corpse)
+            {
+                return 3.5f;
+            }
+
+            if (thing?.def == null)
+            {
+                return 1f;
+            }
+
+            if (thing.def.category == ThingCategory.Building)
+            {
+                return 2.2f;
+            }
+
+            if (thing.def.category == ThingCategory.Item)
+            {
+                return 1.2f;
+            }
+
+            if (thing.def.category == ThingCategory.Plant)
+            {
+                return 1.1f;
+            }
+
+            return 1f;
         }
 
         private static bool ShouldIncludeNearbyThing(Thing thing)

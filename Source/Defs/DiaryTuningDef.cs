@@ -26,7 +26,7 @@ namespace PawnDiary
 
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things
-        public int maxNearbyThings = 6;       // cap on how many nearby things are listed
+        public int maxNearbyThings = 6;       // cap on nearby candidates considered before weighted pick
         public float coldBelowC = 0f;         // report "cold" at or below this temperature (°C)
         public float hotAboveC = 32f;         // report "hot" at or above this temperature (°C)
 

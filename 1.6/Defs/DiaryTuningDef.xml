@@ -17,7 +17,9 @@
     <thoughtDedupTicks>2500</thoughtDedupTicks>
 
     <!-- Surroundings scan -->
+    <!-- nearbyRadius: search radius in cells around pawn for notable objects -->
     <nearbyRadius>5</nearbyRadius>
+    <!-- maxNearbyThings: candidate cap before weighted random pick -->
     <maxNearbyThings>6</maxNearbyThings>
     <coldBelowC>0</coldBelowC>
     <hotAboveC>32</hotAboveC>
