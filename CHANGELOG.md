@@ -18,7 +18,8 @@ doc itself describes only "what happens now".
     sub-text (`DrawHint`), and laid the event-group enable toggles out in **two columns**
     (`DrawGroupTogglesForDomain`/`DrawGroupToggle`) with the prompt shown as a hover tooltip. The
     prompt editor now has an "Editing prompt for: X" header with a **Change group** button and
-    Save/Restore side by side.
+    Save/Restore side by side. Also widened the per-row **Model name** field label so it no longer
+    wraps to a second line and gets clipped by the field next to it.
   - Keyed strings: added `GenerationHeader`, `EventsSectionTitle`, `EditingPromptFor`,
     `ChangeGroup`; reused `Connection`/`SystemPrompt` as section titles; removed the now-unused
     `PromptForGroup`. No settings data or save format changed.
