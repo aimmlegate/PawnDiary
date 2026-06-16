@@ -618,14 +618,16 @@ namespace PawnDiary
                     // Some RP-tuned models ignore max_tokens and return very long entries anyway.
                     // Enforce a local hard cap (by whitespace-token count) so saved diary events
                     // never exceed the request's token budget, even when the endpoint misbehaves.
+                    // When possible, the cap backs up to a complete sentence so the diary page
+                    // does not end on an ugly mid-thought fragment.
                     return TrimToMaxTokens(generatedText, request.maxTokens);
                 }
             }
         }
 
         /// <summary>
-        /// Enforces a hard upper bound on response length by counting whitespace-delimited tokens.
-        /// This is a local safety net for endpoints/models that do not honor max_tokens.
+        /// Enforces a hard upper bound on response length by counting whitespace-delimited tokens,
+        /// preferring to end at the last complete sentence before the cap.
         /// </summary>
         private static string TrimToMaxTokens(string text, int maxTokens)
         {
@@ -660,12 +662,63 @@ namespace PawnDiary
                 tokenCount++;
                 if (tokenCount > maxTokens)
                 {
+                    int sentenceEnd = LastSentenceEndBefore(trimmed, i);
+                    if (sentenceEnd > 0)
+                    {
+                        return trimmed.Substring(0, sentenceEnd).TrimEnd();
+                    }
+
                     string capped = trimmed.Substring(0, i).TrimEnd();
                     return string.IsNullOrEmpty(capped) ? string.Empty : capped + "...";
                 }
             }
 
             return trimmed;
+        }
+
+        /// <summary>
+        /// Finds a sentence boundary that fits inside the token cap. This deliberately uses a small
+        /// punctuation heuristic rather than culture-heavy sentence parsing, keeping RimWorld Mono
+        /// compatibility and avoiding new dependencies.
+        /// </summary>
+        private static int LastSentenceEndBefore(string text, int maxEndExclusive)
+        {
+            if (string.IsNullOrEmpty(text) || maxEndExclusive <= 0)
+            {
+                return -1;
+            }
+
+            int cappedEnd = Math.Min(maxEndExclusive, text.Length);
+            for (int i = cappedEnd - 1; i >= 0; i--)
+            {
+                if (!IsSentenceEndingPunctuation(text[i]))
+                {
+                    continue;
+                }
+
+                int end = i + 1;
+                while (end < cappedEnd && IsSentenceClosingCharacter(text[end]))
+                {
+                    end++;
+                }
+
+                if (end == text.Length || end == cappedEnd || char.IsWhiteSpace(text[end]))
+                {
+                    return end;
+                }
+            }
+
+            return -1;
+        }
+
+        private static bool IsSentenceEndingPunctuation(char c)
+        {
+            return c == '.' || c == '!' || c == '?';
+        }
+
+        private static bool IsSentenceClosingCharacter(char c)
+        {
+            return c == '"' || c == '\'' || c == ')' || c == ']' || c == '}';
         }
 
         /// <summary>

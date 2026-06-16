@@ -210,8 +210,11 @@ Main prompt context can include:
 - burning passion and weapon only when the event is important or combat-related
 
 Diary and reflection system prompts tell the model to treat structured fields as private evidence
-for voice, focus, and subtext rather than a checklist to echo back. They also ask it to stay compact
-enough for the request's max-token budget and return only the diary/reflection text.
+for voice, focus, and subtext rather than a checklist to echo back. The default prompt contract uses
+explicit sentence and word-count ranges (diary pages 1-3 complete sentences / 35-75 words,
+reflections 2-4 complete sentences / 50-90 words, neutral notes 1-3 complete sentences / 25-65
+words), tells the model to prefer a shorter complete entry over covering every detail, and asks it
+to end with normal sentence punctuation rather than an ellipsis or fragment.
 
 Narrative mode chooses the system prompt at dispatch:
 - `systemPrompt` for first-person diary pages
@@ -226,6 +229,10 @@ player-customizable through settings:
 - `deathDescriptionInstruction` for neutral death notes
 - `arrivalDescriptionInstruction` for neutral arrival notes
 - `titleUserInstruction` for the short title follow-up request
+
+Existing saves store prompt overrides in `PawnDiarySettings`; players who already have saved prompt
+text can use Prompt Studio's reset action for a prompt (or reset all prompts) to pick up new XML
+defaults after an update.
 
 Persona presets are `DiaryPersonaDef` XML. A new pawn's first persona is selected with
 `DiaryPersonas.WeightedStartingPersona`: every persona has base weight, matching trait/backstory
@@ -253,7 +260,7 @@ Global settings live in `PawnDiarySettings`:
 | `apiEndpoints` | one enabled local lane | URL, model, key, enabled flag; blank-model or disabled rows are skipped. |
 | `timeoutSeconds` | 30 | 5-300; per-lane-attempt deadline after a request leaves the queue. |
 | `maxConcurrentRequests` | 4 | 1-16 per API lane. Use 1 for a single local model. |
-| `maxTokens` | 100 | API `max_tokens` plus local hard response cap. |
+| `maxTokens` | 100 | API `max_tokens` plus local hard response cap; overlong responses are backed up to a complete sentence when possible. |
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
 | `workGenerationWeight` | 1 | 0-5 multiplier for random work-sampling diary pages. |
@@ -300,7 +307,8 @@ jump to matching diary entries.
 - each request carries ordered failover targets and tries the next lane after permanent errors,
   exhausted retries, or timeout
 - transient errors retry up to 3 times per lane; permanent 4xx and empty content move on
-- successful content is trimmed locally to `maxTokens`
+- successful content is trimmed locally to `maxTokens`, preferring the last complete sentence before
+  the cap and falling back to word-level ellipsis only when no sentence boundary fits
 - debug logs from background workers are queued and flushed on the main thread
 - stale sessions are cancelled when a new `DiaryGameComponent` is constructed
 - pending entries with no in-flight request are reset only after two consecutive orphan scans

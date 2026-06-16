@@ -3,6 +3,16 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (stricter prompt length contract)**
+  - Tightened the default diary, reflection, neutral, and appended user instructions with explicit
+    complete-sentence and word-count limits, plus "prefer shorter complete output" wording.
+  - Updated matching C# fallback defaults and prompt-lab fallback prompts so experiments use the
+    same length contract as the in-game XML defaults.
+
+- **2026-06-16 (sentence-aware LLM trimming)**
+  - Changed the local LLM response cap to prefer the last complete sentence before `maxTokens`,
+    avoiding mid-sentence diary fragments when a model ignores the requested length.
+
 - **2026-06-16 (tick-time colonist scan snapshots)**
   - Changed scheduled diary scans to iterate one-tick snapshots of RimWorld's free-colonist list,
     preventing `Collection was modified` errors if pawn membership changes while tick work records

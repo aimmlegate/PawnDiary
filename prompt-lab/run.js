@@ -322,13 +322,13 @@ function parseInteractionGroupsFromXml(config) {
 function loadPromptData(config) {
   return {
     promptDefs: parsePromptDefsFromXml(config) || {
-      singlePovInstruction: "Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.",
-      recipientFollowupInstruction: "Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.",
-      deathDescriptionInstruction: 'Write one short, third-person death description. State how the colonist died using only the supplied facts.',
-      arrivalDescriptionInstruction: 'Write one short, third-person colony arrival description. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts.',
-      systemPrompt: 'You write diary entries for RimWorld colonists. Each entry is first-person, in character. One to three sentences.',
-      systemPromptReflection: 'You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day.',
-      systemPromptNeutral: 'You write short, third-person factual notes about RimWorld colony events. One to three sentences.',
+      singlePovInstruction: "Write 1-3 complete first-person diary sentences from this pawn's point of view, 35-75 words total. Prefer a shorter complete entry over covering every detail. Output only the diary entry.",
+      recipientFollowupInstruction: "Write 1-3 complete first-person diary sentences from the recipient's point of view, 35-75 words total. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Prefer a shorter complete entry over covering every detail. Output only the diary entry.",
+      deathDescriptionInstruction: 'Write 1-3 complete third-person death-description sentences, 25-65 words total. State how the colonist died using only the supplied facts.',
+      arrivalDescriptionInstruction: 'Write 1-3 complete third-person colony-arrival sentences, 25-75 words total. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts.',
+      systemPrompt: 'You write diary entries for RimWorld colonists. Each entry is first-person, in character, and exactly 1-3 complete sentences. Hard length limit: 35-75 words total. Do not exceed 75 words.',
+      systemPromptReflection: 'You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and exactly 2-4 complete sentences. Hard length limit: 50-90 words total. Do not exceed 90 words.',
+      systemPromptNeutral: 'You write short, third-person factual notes about RimWorld colony events. Each note is exactly 1-3 complete sentences. Hard length limit: 25-65 words total. Do not exceed 65 words.',
       titleSystemPrompt: 'You write short, evocative titles (3 to 8 words) for RimWorld diary entries. Return only the title — no quotes, no period, no markdown, no labels, no commentary.',
     },
     personas: parsePersonaDefsFromXml(config),

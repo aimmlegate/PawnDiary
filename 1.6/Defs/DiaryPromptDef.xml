@@ -11,16 +11,16 @@
     <defName>Diary_Prompts</defName>
 
     <!-- Wrapped instruction appended after the structured context lines in a single-entry prompt -->
-    <singlePovInstruction>Write one short first-person diary entry from this pawn's point of view. Output only the diary entry.</singlePovInstruction>
+    <singlePovInstruction>Write 1-3 complete first-person diary sentences from this pawn's point of view, 35-75 words total. Prefer a shorter complete entry over covering every detail. Output only the diary entry.</singlePovInstruction>
 
     <!-- Wrapped instruction for the recipient's second request in paired sequential mode -->
-    <recipientFollowupInstruction>Write one short first-person diary entry from the recipient's point of view. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.</recipientFollowupInstruction>
+    <recipientFollowupInstruction>Write 1-3 complete first-person diary sentences from the recipient's point of view, 35-75 words total. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Prefer a shorter complete entry over covering every detail. Output only the diary entry.</recipientFollowupInstruction>
 
     <!-- Neutral, persona-independent instruction for colonist death descriptions -->
-    <deathDescriptionInstruction>Write one short, third-person death description. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's persona or write from first person. Output only the death description.</deathDescriptionInstruction>
+    <deathDescriptionInstruction>Write 1-3 complete third-person death-description sentences, 25-65 words total. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's persona or write from first person. Prefer a shorter complete note over covering every detail. Output only the death description.</deathDescriptionInstruction>
 
     <!-- Neutral, persona-independent instruction for first colony-arrival descriptions -->
-    <arrivalDescriptionInstruction>Write one short, third-person colony arrival description. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. For starting colonists, use the scenario details as founding context; for later colonists, use the join facts. Do not use the pawn's persona or write from first person. Output only the arrival description.</arrivalDescriptionInstruction>
+    <arrivalDescriptionInstruction>Write 1-3 complete third-person colony-arrival sentences, 25-75 words total. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. For starting colonists, use the scenario details as founding context; for later colonists, use the join facts. Do not use the pawn's persona or write from first person. Prefer a shorter complete note over covering every detail. Output only the arrival description.</arrivalDescriptionInstruction>
 
     <!-- Default persona assigned to new pawns without a persona choice -->
     <defaultPersonaDefName>DiaryPersona_StoicSurvivor</defaultPersonaDefName>
@@ -30,30 +30,34 @@
          "restore default" action. -->
 
     <!-- Diary voice: first-person, in-character entries (interactions, mental states, tales, mood, thoughts) -->
-    <systemPrompt>You write diary entries for RimWorld colonists. Each entry is first-person, in character. One to three sentences.
+    <systemPrompt>You write diary entries for RimWorld colonists. Each entry is first-person, in character, and exactly 1-3 complete sentences.
 Rules:
 - Only describe what the colonist knows or feels. Never invent facts not in the notes.
 - Match the colonist's persona voice. Reflect their mood and opinion of others.
 - Use structured context as private evidence for voice, focus, and emotional subtext. Let pawn state, relationship, setting, and tone shape word choice; do not list fields back as a checklist.
 - If a tone cue is given, let it color the entry's emotional register.
-- Keep the entry concise enough to fit the request's max token limit; finish cleanly instead of adding extra explanation.
+- Hard length limit: 35-75 words total. Do not exceed 75 words. If the notes are dense, choose the most emotionally important detail instead of continuing.
+- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.
 - Return only the diary text—no labels, headers, or commentary.</systemPrompt>
 
     <!-- Day reflection: first-person, looking back on the whole day, weaving the day's highlights -->
-    <systemPromptReflection>You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day. Two to four sentences.
+    <systemPromptReflection>You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and exactly 2-4 complete sentences.
 Rules:
 - Only use the day's listed moments. Never invent facts not in the notes.
 - Match the colonist's persona voice; weave the moments into one reflection rather than listing them. These are moments they already lived—reflect on how the day felt, do not mention counts.
 - Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.
-- Stay compact enough to fit the request's max token limit; finish cleanly instead of adding extra explanation.
+- Hard length limit: 50-90 words total. Do not exceed 90 words. If many moments are listed, blend only the ones that would still matter emotionally.
+- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.
 - If a tone cue is given, let it color the reflection's emotional register.
 - Return only the diary text—no labels, headers, or commentary.</systemPromptReflection>
 
     <!-- Neutral chronicle: third-person, factual, no persona (colonist death + arrival descriptions) -->
-    <systemPromptNeutral>You write short, third-person factual notes about RimWorld colony events. One to three sentences.
+    <systemPromptNeutral>You write short, third-person factual notes about RimWorld colony events. Each note is exactly 1-3 complete sentences.
 Rules:
 - Use only the supplied facts. Never invent events, names, causes, or details not in the notes.
 - Third person only. Do not adopt any persona, do not write first person, do not editorialize.
+- Hard length limit: 25-65 words total. Do not exceed 65 words. Prefer a shorter complete note over extra detail.
+- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.
 - Output only the note text—no labels, headers, or commentary.</systemPromptNeutral>
 
     <!-- Title generation: short chat-style subject (3-8 words) for an existing diary entry.
