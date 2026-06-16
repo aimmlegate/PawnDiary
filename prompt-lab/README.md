@@ -41,6 +41,23 @@ Saved files:
 
 Where `<model-name>` is a filesystem-safe model label.
 
+Results now include both:
+
+- Main response
+- LLM-generated title (follow-up request), matching the in-game title flow
+
+The title is generated with:
+
+- same endpoint and model as the main call
+- temperature copied from the main request
+- title tokens capped to `40` (same as in-game)
+
+Disable title follow-up locally with:
+
+```bash
+node run.js --from-defs --no-title
+```
+
 ## Useful overrides
 
 - `--endpoint http://127.0.0.1:1234/v1`
@@ -52,6 +69,7 @@ Where `<model-name>` is a filesystem-safe model label.
 - `--include-groups <n>`
 - `--include-personas <n>`
 - `--case <fixture-id>` (single case filter)
+- `--no-title` (skip title follow-up generation)
 - `--dry-run` (build prompt only)
 - `--verbose` (print payload)
 

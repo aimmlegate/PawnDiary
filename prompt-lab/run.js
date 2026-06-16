@@ -18,6 +18,7 @@ const DEFAULT_CONFIG_PATH = path.join(ROOT, 'prompt-lab.config.json');
 const DEFAULT_FIXTURE_DIR = path.join(ROOT, 'prompts', 'fixtures');
 const DEFAULT_RESULT_RELATIVE_DIR = 'results';
 const TITLE_TRAILER = 'Return one short title (3-8 words) for this diary entry. Output only the title -- no quotes, no period, no labels, no commentary.';
+const TITLE_MAX_TOKENS = 40;
 
 const DEFAULTS = {
   endpoint: 'http://localhost:1234/v1',
@@ -59,6 +60,7 @@ function parseArgs(argv) {
     saveResults: false,
     verbose: false,
     fromXml: false,
+    skipTitle: false,
     endpoint: null,
     model: null,
     apiKey: null,
@@ -112,6 +114,10 @@ function parseArgs(argv) {
     }
     if (arg === '--from-defs') {
       options.fromXml = true;
+      continue;
+    }
+    if (arg === '--no-title') {
+      options.skipTitle = true;
       continue;
     }
     if (arg === '--include-groups') {
@@ -186,6 +192,7 @@ function usage() {
     '  --dry-run                     Print prompt payload only',
     '  --save                        Save outputs to prompt-lab/results/<model>/YYYY-mm-ddTHH-MM-SS.mmmZ.md',
     '  --verbose                     Print request payloads',
+    '  --no-title                    Skip follow-up title generation',
     '  --endpoint <url>              Override endpoint',
     '  --model <name>                Override model',
     '  --api-key <key>               Override API key',
@@ -887,10 +894,116 @@ function buildMarkdownOutput(runConfig) {
     chunks.push('```');
     chunks.push((entry.generated || '').trim() || '(empty)');
     chunks.push('```');
+    if (
+      entry.titleStatus !== undefined ||
+      entry.title !== undefined ||
+      entry.titleError !== undefined
+    ) {
+      chunks.push('');
+      chunks.push('### Title');
+      chunks.push(`- status: ${entry.titleStatus || 'not-generated'}`);
+      if (entry.titleModel) {
+        chunks.push(`- title model override: ${entry.titleModel}`);
+      }
+      if (entry.titleError) {
+        chunks.push(`- error: ${entry.titleError}`);
+      }
+      chunks.push('');
+      chunks.push('```');
+      chunks.push((entry.title || '').trim() || '(not generated)');
+      chunks.push('```');
+    }
     chunks.push('');
   }
 
   return chunks.join('\n');
+}
+
+function isSuccessfulResponse(result) {
+  const status = Number.parseInt(result.status, 10);
+  return Number.isFinite(status) && status >= 200 && status < 300;
+}
+
+function shouldRunTitle(fixture, options, mainResult) {
+  if (options.skipTitle) return false;
+  if (!mainResult || mainResult.error) return false;
+  if (!mainResult.generated || !mainResult.generated.trim()) return false;
+  const selectedMode = String(fixture.systemMode || 'diary').toLowerCase();
+  if (selectedMode === 'title') return false;
+  if (fixture.skipTitle === true) return false;
+  return true;
+}
+
+async function runTitleFollowUp(fixture, mainText, requestConfig, config, promptData, options, runState) {
+  const titleFixture = {
+    ...fixture,
+    promptText: mainText,
+    promptLines: undefined,
+    promptFields: undefined,
+    promptFieldOrder: undefined,
+    systemMode: 'title',
+    system: null,
+    systemText: null,
+    append: TITLE_TRAILER,
+    model: fixture.model,
+    endpoint: fixture.endpoint,
+    apiKey: fixture.apiKey,
+    temperature: fixture.temperature,
+    maxTokens: fixture.maxTokens,
+    timeoutSeconds: fixture.timeoutSeconds,
+  };
+
+  const titleConfig = {
+    ...requestConfig,
+    maxTokens: TITLE_MAX_TOKENS,
+  };
+
+  const titleSystemText = getSystemForFixture(titleFixture, config, promptData);
+  const titlePromptText = buildPromptText(titleFixture);
+  const titlePayload = buildPayload(titleFixture, titleSystemText, titleConfig);
+  const titleEndpointUrl = toChatUrl(titleConfig.endpoint);
+
+  const id = fixtureId(fixture, runState.index);
+  const result = {
+    titleStatus: 'not-run',
+    title: '',
+    titleModel: titleConfig.model,
+    titleSystemText,
+    titlePrompt: titlePromptText,
+    titleError: null,
+  };
+
+  if (options.verbose) {
+    console.log(`\n[${id} title]`);
+    console.log('endpoint:', titleEndpointUrl);
+    console.log('model:', titleConfig.model);
+    console.log('system:', titleSystemText || '(none)');
+    console.log('user:\n', titlePromptText);
+    console.log('payload:', JSON.stringify(titlePayload, null, 2));
+  }
+
+  try {
+    const response = await postJson(
+      titleEndpointUrl,
+      titlePayload,
+      titleConfig.apiKey,
+      Math.max(1000, titleConfig.timeoutSeconds * 1000),
+    );
+    result.titleStatus = String(response.statusCode || 0);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      result.titleError = `HTTP ${response.statusCode}: ${response.body ? response.body.substring(0, 500) : 'empty response body'}`;
+      return result;
+    }
+
+    const parsed = parseModelResponse(response.body);
+    result.title = (parsed.generated || '').trim();
+    result.titleError = parsed.error;
+    return result;
+  } catch (error) {
+    result.titleStatus = 'error';
+    result.titleError = error.message || String(error);
+    return result;
+  }
 }
 
 async function runOneFixture(fixture, config, promptData, options, runState) {
@@ -943,6 +1056,47 @@ async function runOneFixture(fixture, config, promptData, options, runState) {
     const parsed = parseModelResponse(response.body);
     resultEntry.generated = parsed.generated || '';
     resultEntry.error = parsed.error;
+    if (!isSuccessfulResponse(resultEntry)) {
+      resultEntry.titleStatus = 'not-generated';
+      resultEntry.titleError = resultEntry.error || 'Main response unavailable';
+      return resultEntry;
+    }
+
+    if (shouldRunTitle(fixture, options, resultEntry)) {
+      try {
+        const titleResult = await runTitleFollowUp(
+          fixture,
+          resultEntry.generated,
+          requestConfig,
+          config,
+          promptData,
+          options,
+          runState,
+        );
+        resultEntry.titleStatus = titleResult.titleStatus;
+        resultEntry.title = titleResult.title;
+        resultEntry.titleModel = titleResult.titleModel;
+        resultEntry.titleSystemText = titleResult.titleSystemText;
+        resultEntry.titlePrompt = titleResult.titlePrompt;
+        resultEntry.titleError = titleResult.titleError;
+      } catch (titleError) {
+        resultEntry.titleStatus = 'error';
+        resultEntry.titleError = titleError.message || String(titleError);
+      }
+    } else if (options.skipTitle) {
+      resultEntry.titleStatus = 'disabled';
+      resultEntry.titleError = 'Title generation skipped because --no-title was set';
+    } else {
+      resultEntry.titleStatus = 'not-generated';
+      resultEntry.title = '';
+      if (fixture.systemMode && String(fixture.systemMode).toLowerCase() === 'title') {
+        resultEntry.titleError = 'Skipped: fixture is already title mode';
+      } else if (!resultEntry.generated || !resultEntry.generated.trim()) {
+        resultEntry.titleError = 'Skipped: empty main response';
+      } else {
+        resultEntry.titleError = resultEntry.error || 'Skipped';
+      }
+    }
     return resultEntry;
   } catch (error) {
     resultEntry.error = error.message || String(error);
@@ -1005,8 +1159,9 @@ async function main() {
     const runState = { index: i };
     const entry = await runOneFixture(fixtures[i], config, promptData, args, runState);
     runEntries.push(entry);
-    const preview = entry.generated ? `\n${entry.generated.split('\n').slice(0, 6).join('\n')}` : '';
-    console.log(`[${entry.id}] ${entry.status}${entry.error ? ` ERROR: ${entry.error}` : ''}${preview}`);
+    const generatedPreview = entry.generated ? `\n${entry.generated.split('\n').slice(0, 6).join('\n')}` : '';
+    const titlePreview = entry.title ? `\nTitle: ${entry.title}` : '';
+    console.log(`[${entry.id}] ${entry.status}${entry.error ? ` ERROR: ${entry.error}` : ''}${generatedPreview}${titlePreview}`);
   }
 
   if (!config.saveResults) return;
