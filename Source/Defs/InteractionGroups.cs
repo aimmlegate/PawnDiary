@@ -25,6 +25,41 @@ namespace PawnDiary
         Thought
     }
 
+    // How an Interaction-domain batch is keyed. Pair means "all matching interactions for this
+    // pawn pair share one batch"; Def keeps separate batches per InteractionDef within the pair.
+    public enum InteractionBatchScope
+    {
+        Pair,
+        Def
+    }
+
+    // Optional batching policy embedded in a DiaryInteractionGroupDef. RimWorld can populate this
+    // from a nested <batch> XML node. It currently applies to social InteractionDefs because those
+    // arrive as pairwise PlayLog rows; other domains have different event shapes.
+    public class InteractionBatchPolicy
+    {
+        // Set false in XML to leave a documented policy disabled without deleting it.
+        public bool enabled = true;
+        // How long the batch waits after the last matching event before flushing. A negative value
+        // falls back to DiaryTuning's legacy small-talk number for compatibility.
+        public int windowTicks = -1;
+        // Force a flush after this many accumulated moments. A non-positive value uses the legacy
+        // DiaryTuning fallback.
+        public int maxEvents = -1;
+        // Pair = one group-level batch per pawn pair; Def = separate per InteractionDef per pair.
+        public InteractionBatchScope scope = InteractionBatchScope.Pair;
+        // Synthetic defName used for combined diary events. Empty falls back to "<group>Batch".
+        public string syntheticDefName;
+        // Localization keys used for combined label/text/instruction. Empty uses generic batch keys.
+        public string labelKey;
+        public string briefKey;
+        public string headerKey;
+        public string fallbackKey;
+        public string instructionKey;
+        // When true, each line is "Interaction label: original log text"; false keeps only log text.
+        public bool includeInteractionLabel = true;
+    }
+
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in
     // settings: an enable toggle (is it recorded?) plus a single diary-prompt instruction
     // shared by every event in it. To add or retune a group, edit
@@ -46,6 +81,10 @@ namespace PawnDiary
         // Whether events in this group are combat-related (social fights, insults). Used to decide
         // whether to add the equipped weapon to the prompt; set per group in XML, default false.
         public bool combat = false;
+
+        // Optional Interaction-domain batching policy. When present and enabled, matching social
+        // log rows are buffered according to this policy instead of immediately becoming entries.
+        public InteractionBatchPolicy batch;
 
         // The diary-prompt instruction shared by every event in the group.
         public string instruction;
@@ -82,6 +121,13 @@ namespace PawnDiary
                 return false;
             }
 
+            if (batch != null
+                && !string.IsNullOrWhiteSpace(batch.syntheticDefName)
+                && string.Equals(batch.syntheticDefName, defName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
             if (matchDefNames != null)
             {
                 for (int i = 0; i < matchDefNames.Count; i++)
@@ -105,6 +151,16 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        // True when this group should batch matching InteractionDef events. Kept as a helper so
+        // callers don't need to know how a missing <batch> node is represented.
+        public bool HasBatchPolicy
+        {
+            get
+            {
+                return domain == GroupDomain.Interaction && batch != null && batch.enabled;
+            }
         }
     }
 

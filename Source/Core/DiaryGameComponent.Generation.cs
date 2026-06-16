@@ -547,19 +547,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns true when the interaction belongs to the "smalltalk" group and should be batched rather
-        /// than recorded individually.
-        /// </summary>
-        private static bool IsSmallTalkInteraction(InteractionDef interactionDef)
-        {
-            // Only the low-stakes Small talk group batches. Heartfelt events such as DeepTalk
-            // stay immediate because their group key is "heartfelt", not "smalltalk".
-            DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
-            return group != null && string.Equals(group.defName, SmallTalkGroupKey, StringComparison.OrdinalIgnoreCase);
-        }
-
-
-        /// <summary>
         /// Dequeues a completed LLM result and applies it to the corresponding DiaryEvent, then kicks
         /// off the recipient side if dual-POV is active.
         /// </summary>

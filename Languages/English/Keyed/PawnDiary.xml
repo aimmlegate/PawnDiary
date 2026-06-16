@@ -104,6 +104,11 @@
   <PawnDiary.Event.SmallTalkBrief>A brief small-talk exchange.</PawnDiary.Event.SmallTalkBrief>
   <PawnDiary.Event.SmallTalkBatchHeader>Several small-talk moments happened:</PawnDiary.Event.SmallTalkBatchHeader>
   <PawnDiary.Event.SmallTalkBatchInstruction>write one diary entry for the overall small-talk exchange, not separate entries for each listed moment</PawnDiary.Event.SmallTalkBatchInstruction>
+  <PawnDiary.Event.BatchFallback>{0} had several {2} moments with {1}.</PawnDiary.Event.BatchFallback>
+  <PawnDiary.Event.BatchLabel>{0}</PawnDiary.Event.BatchLabel>
+  <PawnDiary.Event.BatchBrief>A brief {0} exchange.</PawnDiary.Event.BatchBrief>
+  <PawnDiary.Event.BatchHeader>Several {0} moments happened:</PawnDiary.Event.BatchHeader>
+  <PawnDiary.Event.BatchInstruction>write one diary entry for the overall {0} exchange, not separate entries for each listed moment</PawnDiary.Event.BatchInstruction>
   <PawnDiary.Event.TaleSolo>{0} experienced {1}.</PawnDiary.Event.TaleSolo>
   <PawnDiary.Event.TaleSoloWithOther>{0} experienced {1} involving {2}.</PawnDiary.Event.TaleSoloWithOther>
   <PawnDiary.Event.TalePair>{0} and {1} were involved in {2}.</PawnDiary.Event.TalePair>

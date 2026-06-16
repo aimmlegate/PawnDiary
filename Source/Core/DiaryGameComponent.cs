@@ -19,7 +19,7 @@
 //   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
-//   DiaryGameComponent.SmallTalk.cs      — batching low-stakes chatter into one merged entry
+//   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
 //   ──
 //   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
 //   DiaryGameComponent.Generation.cs     — prompt building, API lane selection, LLM dispatch/apply
@@ -43,10 +43,6 @@ namespace PawnDiary
     public partial class DiaryGameComponent : GameComponent
     {
         // Dedup windows live in DiaryTuningDef (editable XML); see DiaryTuning.Current.
-        // InteractionGroups key that marks an interaction as low-stakes small talk eligible for batching.
-        private const string SmallTalkGroupKey = "smalltalk";
-        // Synthetic defName/label used when multiple small-talk interactions are merged into one diary event.
-        private const string SmallTalkBatchDefName = "SmallTalkBatch";
         // Synthetic Tale-domain groups for notable events vanilla does not expose as TaleDefs.
         private const string TaleQualityGroupKey = "talequality";
         private const string TaleRelicGroupKey = "talerelic";
@@ -57,8 +53,9 @@ namespace PawnDiary
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
         // All diary events across every pawn. Persisted via ExposeData.
         private List<DiaryEvent> diaryEvents = new List<DiaryEvent>();
-        // Small-talk batches still accumulating lines; keyed by PairKey. Not saved (flushed first).
-        private readonly Dictionary<string, PendingSmallTalkBatch> pendingSmallTalkBatches = new Dictionary<string, PendingSmallTalkBatch>();
+        // Interaction batches still accumulating lines; keyed by group/pair/optional def. Not saved
+        // because ExposeData flushes first.
+        private readonly Dictionary<string, PendingInteractionBatch> pendingInteractionBatches = new Dictionary<string, PendingInteractionBatch>();
 
         // Transient (not saved) guard against duplicate mental-state events, e.g. the two
         // mirrored SocialFighting starts, or a break that re-triggers quickly.
@@ -107,7 +104,7 @@ namespace PawnDiary
 
         public override void StartedNewGame()
         {
-            pendingSmallTalkBatches.Clear();
+            pendingInteractionBatches.Clear();
             recentMentalEvents.Clear();
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
@@ -123,7 +120,7 @@ namespace PawnDiary
 
         public override void LoadedGame()
         {
-            pendingSmallTalkBatches.Clear();
+            pendingInteractionBatches.Clear();
             recentMentalEvents.Clear();
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
@@ -142,7 +139,7 @@ namespace PawnDiary
         {
             if (Scribe.mode == LoadSaveMode.Saving)
             {
-                FlushAllSmallTalkBatches();
+                FlushAllInteractionBatches();
             }
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
@@ -164,7 +161,7 @@ namespace PawnDiary
 
         public override void GameComponentTick()
         {
-            FlushReadySmallTalkBatches();
+            FlushReadyInteractionBatches();
 
             if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
             {

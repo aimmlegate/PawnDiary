@@ -4,6 +4,15 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (configurable interaction batching)**
+  - Replaced the hard-coded small-talk batcher with XML-configured Interaction-domain batching:
+    groups can opt into `<batch>` with per-group `windowTicks`, `maxEvents`, `scope` (`Pair` or
+    `Def`), synthetic defName, localization keys, and line-label behavior.
+  - Moved the shipped `smalltalk` batching behavior into `DiaryInteractionGroupDefs.xml` while
+    keeping the old tuning fields as fallbacks when a batch policy omits window/count values.
+  - Added generic localized batch text keys so future quick-firing social groups can batch without
+    hardcoded English.
+
 - **2026-06-16 (diary tab atmosphere polish)**
   - Hid the per-pawn "write diary pages" checkbox from normal play; it now appears only in
     RimWorld dev mode alongside the other troubleshooting controls. Normal play shows a quiet

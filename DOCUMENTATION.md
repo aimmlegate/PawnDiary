@@ -73,13 +73,13 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | File | Responsibility |
 |------|----------------|
 | `About/About.xml` | Mod metadata. `packageId = aimml.pawndiary`, supports RimWorld 1.6. |
-| `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`) and the `InteractionGroups` classifier over the `DefDatabase`. Supports five domains: Interaction, MentalState, Tale, MoodEvent, and Thought. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts are editable without recompiling. |
+| `InteractionGroups.cs` | Defines `DiaryInteractionGroupDef : Def` (the group type + `Matches`), optional `InteractionBatchPolicy` data for quick social-log batching, and the `InteractionGroups` classifier over the `DefDatabase`. Supports five domains: Interaction, MentalState, Tale, MoodEvent, and Thought. The group **data** now lives in XML (see `1.6/Defs/` below), so groups/prompts/batch policies are editable without recompiling. |
 | `Languages/English/Keyed/PawnDiary.xml` | All player-facing UI strings **and** the natural-language prompt text (event sentences, context words, buckets), resolved via `.Translate()`. See §12 Localization. |
 | `Source/Properties/AssemblyInfo.cs` | Assembly metadata. |
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions); `MemoryThoughtHandler.TryGainMemory` → `RecordThought` (temporary thoughts with expiration). |
-| `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.SmallTalk.cs` (batching low-stakes chatter — `RecordSmallTalkInteraction` + `PendingSmallTalkBatch`). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
+| `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.InteractionBatching.cs` (XML-configured batching for quick social logs — `RecordBatchedInteraction` + `PendingInteractionBatch`). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
@@ -194,8 +194,8 @@ at every entry point via `IsDiaryEligible(pawn)` (humanlike + colonist):
   recipient's entry depends on in sequential mode.
 - **Two eligible colonists**: normal pairwise flow (both POVs generated).
 
-This applies uniformly to interactions, social fights, mental breaks, TaleRecorder events, and small-talk
-batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist pawns.
+This applies uniformly to interactions, social fights, mental breaks, TaleRecorder events, and
+interaction batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for non-colonist pawns.
 
 ### Paired sequential POV (default, `dualPovGeneration = true`)
 - Pairwise events start by queueing the initiator request only. Its prompt
@@ -405,7 +405,8 @@ The prompt instruction for thought groups tells the LLM to match dramatism to th
 magnitude: minor offsets get a passing mention, strong offsets get raw emotion and detail.
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
-`domain`, `defaultEnabled`, `important`, `combat`, `instruction`, `matchDefNames`, `matchTokens`, `catchAll`) and restart
+`domain`, `defaultEnabled`, `important`, `combat`, optional `batch`, `instruction`,
+`matchDefNames`, `matchTokens`, `catchAll`) and restart
 — no recompile. `order` controls classification order within a domain (lowest first; keep the
 catch-all highest). Group `defName`s are the stable keys player settings save overrides under, so
 don't rename them.
@@ -414,20 +415,30 @@ while quiet groups get a muted marker. It does not affect recording or generatio
 also gates the `burning passion:` prompt field; `combat` (data-driven, default false) gates the
 `weapon:` field — together they decide whether the equipped weapon is added to the prompt.
 
-**Tuning knobs** (dedup windows, small-talk batching, scan radius/temperature, the
+**Tuning knobs** (dedup windows, legacy batch fallbacks, scan radius/temperature, the
 mood/pain/beauty/opinion bucket thresholds, and thought recording thresholds/token lists)
 likewise live in XML — `1.6/Defs/DiaryTuningDef.xml`, backing `DiaryTuningDef` /
 `DiaryTuning.Current`. Every value defaults to the shipped number, so deleting the file or
 any field changes nothing.
 
-**Small talk batching:** interactions classified into the `smalltalk` group are buffered per
-pawn pair instead of queued immediately. The batch flushes when no new small-talk event arrives
-for `smallTalkBatchWindowTicks` (default 2500, about one in-game hour), when the pair reaches
-`smallTalkBatchMaxEvents` (default 6), or before saving.
-Each flushed batch becomes one normal pairwise `DiaryEvent`, so generation still uses the same
-paired sequential/single-POV paths as other interactions. Important social groups are not
-batched: for example `DeepTalk` is classified under `heartfelt`, so it records and queues
-immediately.
+**Interaction batching:** an Interaction-domain group can define an optional `<batch>` policy in
+`DiaryInteractionGroupDefs.xml`. Matching social-log rows are buffered instead of queued
+immediately, then flushed when no new matching event arrives for `windowTicks`, when the batch
+reaches `maxEvents`, or before saving. `scope` controls how rows are grouped: `Pair` batches all
+matching interactions for the same pawn pair; `Def` keeps separate batches per `InteractionDef`
+within the pair. `syntheticDefName` and the `*Key` fields choose the combined event identity and
+localized label/header/fallback/instruction text; the classifier automatically treats a group's
+own `syntheticDefName` as matching that group for Diary tab display. `includeInteractionLabel`
+controls whether each numbered line includes the original interaction label. If `windowTicks` or
+`maxEvents` are omitted, the legacy `smallTalkBatchWindowTicks` and `smallTalkBatchMaxEvents`
+tuning values are used as fallbacks.
+
+The shipped `smalltalk` group uses this policy with `scope=Pair`, `windowTicks=2500`, and
+`maxEvents=6`, so `Chitchat`, `Conversation`, `HangOut`, and similar quick logs become one normal
+pairwise `DiaryEvent`. Generation still uses the same paired sequential/single-POV paths as other
+interactions after the batch flushes. Important social groups are not batched unless their own XML
+group opts in; for example `DeepTalk` is classified under `heartfelt`, so it records and queues
+immediately by default.
 
 **Mental states** are captured via the `MentalStateHandler.TryStartMentalState` postfix:
 - `SocialFighting` with an eligible colonist `otherPawn` → a **pairwise** event (both pawns).

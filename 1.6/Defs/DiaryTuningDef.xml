@@ -15,6 +15,7 @@
     <taleDedupTicks>2500</taleDedupTicks>
     <moodEventDedupTicks>2500</moodEventDedupTicks>
     <thoughtDedupTicks>2500</thoughtDedupTicks>
+    <!-- Legacy fallbacks for interaction <batch> policies that omit windowTicks/maxEvents -->
     <smallTalkBatchWindowTicks>2500</smallTalkBatchWindowTicks>
     <smallTalkBatchMaxEvents>6</smallTalkBatchMaxEvents>
 

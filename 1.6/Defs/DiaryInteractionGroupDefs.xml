@@ -14,6 +14,10 @@
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
+    batch          - optional Interaction-domain batching policy:
+                     enabled, windowTicks, maxEvents, scope (Pair or Def), syntheticDefName,
+                     labelKey, briefKey, headerKey, fallbackKey, instructionKey,
+                     includeInteractionLabel
     instruction    - the diary-prompt instruction shared by every event in the group
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
@@ -310,6 +314,18 @@
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
+    <batch>
+      <windowTicks>2500</windowTicks>
+      <maxEvents>6</maxEvents>
+      <scope>Pair</scope>
+      <syntheticDefName>SmallTalkBatch</syntheticDefName>
+      <labelKey>PawnDiary.Event.SmallTalkLabel</labelKey>
+      <briefKey>PawnDiary.Event.SmallTalkBrief</briefKey>
+      <headerKey>PawnDiary.Event.SmallTalkBatchHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.SmallTalk</fallbackKey>
+      <instructionKey>PawnDiary.Event.SmallTalkBatchInstruction</instructionKey>
+      <includeInteractionLabel>true</includeInteractionLabel>
+    </batch>
     <instruction>idle chatter—low-stakes small talk that fills the silence</instruction>
     <matchDefNames>
       <li>Chitchat</li>

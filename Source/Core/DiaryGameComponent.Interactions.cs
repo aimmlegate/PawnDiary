@@ -1,8 +1,8 @@
 // Social interactions — the PlayLog.Add hook's diary flow. The Harmony patch (DiaryPatches.cs)
 // forwards every social-log row here; these RecordInteraction overloads classify it (skip
 // insignificant groups, check per-pawn eligibility), build the fallback text, and hand off to a
-// pairwise/solo DiaryEvent — or, for low-stakes chatter, into the small-talk batcher
-// (RecordSmallTalkInteraction lives in DiaryGameComponent.SmallTalk.cs).
+// pairwise/solo DiaryEvent — or, when the classified group has an XML <batch> policy, into the
+// interaction batcher (RecordBatchedInteraction lives in DiaryGameComponent.InteractionBatching.cs).
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
@@ -104,9 +104,11 @@ namespace PawnDiary
                 recipientText = initiatorText;
             }
 
-            if (IsSmallTalkInteraction(interactionDef))
+            DiaryInteractionGroupDef batchGroup = BatchGroupFor(interactionDef);
+            if (batchGroup != null)
             {
-                RecordSmallTalkInteraction(initiator, recipient, interactionDef, interactionLabel, initiatorText, recipientText, playLogEntryId);
+                RecordBatchedInteraction(batchGroup, initiator, recipient, interactionDef,
+                    interactionLabel, initiatorText, recipientText, playLogEntryId);
                 return;
             }
 
