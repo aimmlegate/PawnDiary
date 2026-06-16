@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (prompt-lab restored for XML-driven testing)**
+  - Restored the standalone `prompt-lab/` Node harness for prompt engineering and removed the
+    old broken behavior by rebuilding it around the current compact prompt schema.
+  - `prompt-lab/run.js` now supports `--from-defs` generation (pairwise v1/v2, solo v1/v2,
+    arrival v1/v2, death v1/v2, and title v1/v2), plus manual fixture mode and model/payload
+    overrides.
+  - Prompt-system templates now live in `prompt-lab/prompts/` (`_system.txt`, `_system_neutral.txt`,
+    `_system_reflection.txt`, `_system_title.txt`) and default to XML-def-derived behavior.
+  - Result markdown snapshots are saved into git-ignored `prompt-lab/results/<model>/` when `--save`
+    is used, so you can compare outputs across model names.
+
 - **2026-06-16 (title and writing indicator animation polish)**
   - Diary card titles now fade in with a subtle accent-color pulse, including titles that arrive
     after the entry text is already visible.

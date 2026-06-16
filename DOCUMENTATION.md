@@ -60,6 +60,7 @@ PawnDiary/
 ├─ Source/                      all C# + PawnDiary.csproj/.slnx (game ignores this)
 │  ├─ Core/ Models/ Generation/ Defs/ Patches/ UI/ Settings/ Util/
 │  └─ Properties/ Libs/
+├─ prompt-lab/                  Node prompt-engineering harness (XML-driven prompt generation + testing)
 ├─ skills/                      shared agent skills (tool-agnostic)
 ├─ AGENTS.md                    shared repo rules for code agents
 ├─ CLAUDE.md                    Claude Code wrapper (shared skill)
@@ -89,6 +90,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo, neutral arrival description, neutral death description, and `BuildTitlePrompt` for title follow-ups). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
+| `prompt-lab/run.js` | Standalone Node harness for constructing prompt payloads from XML defs or fixtures and saving model-specific markdown results. |
 | `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). Includes `IsThoughtEnabled`/`InstructionForThought` for the Thought domain. |
 | `DiaryTuningDef.cs` | Defines `DiaryTuningDef : Def` + `DiaryTuning.Current` (tuning knobs: dedup windows, thresholds, buckets). Data lives in XML; falls back to safe code defaults if the Def is absent. |
 | `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, neutral death/arrival instructions, and the four default system prompts: diary voice / day reflection / neutral chronicle / title). |
@@ -768,6 +770,28 @@ MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 ```
 
 Output: `1.6/Assemblies/PawnDiary.dll`. Restart RimWorld (or the save) to load the new DLL.
+
+### Prompt lab (outside-game prompt testing)
+
+The `prompt-lab/` folder contains a standalone Node.js harness for prompt iteration against the
+same compact schema used at runtime.
+
+- Edit `prompt-lab/prompt-lab.config.json` for defaults (endpoint/model/temperatures/folder names).
+- Generate and run XML-backed variants with:
+
+```
+cd prompt-lab
+npm run from-defs
+```
+
+- Save run output per model for comparison:
+
+```
+node run.js --from-defs --all --save --model <model-name>
+```
+
+Markdown output is written to `prompt-lab/results/<model-name>/<timestamp>.md` by default.
+That folder is git-ignored.
 
 ---
 

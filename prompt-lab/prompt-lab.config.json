@@ -1,0 +1,14 @@
+{
+  "endpoint": "http://localhost:1234/v1",
+  "model": "local-model",
+  "apiKey": "",
+  "temperature": 0.8,
+  "maxTokens": 120,
+  "timeoutSeconds": 60,
+  "defaultSystemPrompt": "prompts/_system.txt",
+  "defaultSystemPromptNeutral": "prompts/_system_neutral.txt",
+  "defaultSystemPromptReflection": "prompts/_system_reflection.txt",
+  "defaultSystemPromptTitle": "prompts/_system_title.txt",
+  "resultFolder": "results",
+  "saveResults": false
+}

@@ -22,3 +22,6 @@ opencode.jsonc
 # Note: 1.6/Assemblies/PawnDiary.dll (and bundled 0Harmony.dll) are committed on purpose
 # so the mod is usable straight from a clone.
 
+# Prompt-lab generated run artifacts
+prompt-lab/results/
+

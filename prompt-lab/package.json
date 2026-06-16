@@ -1,0 +1,12 @@
+{
+  "name": "pawn-diary-prompt-lab",
+  "version": "1.0.0",
+  "description": "Standalone Node prompt lab for testing PawnDiary prompt payloads",
+  "private": true,
+  "scripts": {
+    "start": "node run.js --from-defs --all",
+    "from-defs": "node run.js --from-defs --all",
+    "dry-run": "node run.js --from-defs --all --dry-run",
+    "from-defs:save": "node run.js --from-defs --all --save"
+  }
+}

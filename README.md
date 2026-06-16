@@ -16,4 +16,13 @@ Watches in-game events — social interactions, fights, mental breaks, injuries,
 
 Point the mod at your LLM endpoint in settings. Defaults work out of the box with a local server on `http://localhost:1234`.
 
+For prompt experimentation outside the game, run the `prompt-lab` harness:
+
+```bash
+cd prompt-lab
+npm run from-defs
+```
+
+See `prompt-lab/README.md` for multi-version fixtures and per-model markdown output.
+
 ⚠️ **Experimental / heavy WIP.** Expect rough edges. See `DOCUMENTATION.md` for internals.
