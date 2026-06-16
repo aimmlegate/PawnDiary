@@ -225,7 +225,9 @@ namespace PawnDiary
             Rect endpointRect = new Rect(firstLineRect.x, firstLineRect.y, halfWidth, firstLineRect.height);
             Rect modelRect = new Rect(firstLineRect.x + halfWidth + 8f, firstLineRect.y, halfWidth, firstLineRect.height);
             endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, 68f);
-            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 54f);
+            // "Model name" is wider than "Endpoint", so it needs a wider label column or it wraps
+            // to a second line and gets clipped by the field next to it.
+            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 90f);
 
             Rect secondLineRect = listing.GetRect(28f);
             float buttonWidth = 124f;
