@@ -3,6 +3,10 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (death fallback entries)**
+  - Added a `Pawn.Kill` postfix fallback so condition deaths such as malnutrition/starvation still
+    generate a final neutral death entry when vanilla does not emit a death Tale.
+
 - **2026-06-17 (Diary tab after Needs)**
   - Moved the Diary inspector tab insertion point from after Social to after the vanilla Needs tab.
 

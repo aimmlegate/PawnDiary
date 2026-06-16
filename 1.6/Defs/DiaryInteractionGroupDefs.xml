@@ -456,6 +456,7 @@
       <li>KilledChild</li>
       <li>KilledColonist</li>
       <li>KilledColonyAnimal</li>
+      <li>PawnDiary_DeathFallback</li>
       <li>DefeatedHostileFactionLeader</li>
       <li>CollapseDodged</li>
       <li>WasOnFire</li>

@@ -83,6 +83,15 @@ namespace PawnDiary
         {
             DeathContextCache.Capture(__instance, dinfo, exactCulprit);
         }
+
+        /// <summary>
+        /// Harmony Postfix for Pawn.Kill. Records a neutral final death entry when vanilla did not
+        /// emit a death Tale for this kill path, such as some condition/need deaths.
+        /// </summary>
+        public static void Postfix(Pawn __instance)
+        {
+            DiaryGameComponent.Current?.RecordDeathFallback(__instance);
+        }
     }
 
     // Fires whenever a pawn changes faction. Many vanilla and DLC join paths eventually converge

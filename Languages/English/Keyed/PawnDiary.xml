@@ -181,6 +181,8 @@
   <PawnDiary.Event.TaleSoloWithOther>{0} experienced {1} involving {2}.</PawnDiary.Event.TaleSoloWithOther>
   <PawnDiary.Event.TalePair>{0} and {1} were involved in {2}.</PawnDiary.Event.TalePair>
   <PawnDiary.Event.TaleAttachedDef> Related: {0}.</PawnDiary.Event.TaleAttachedDef>
+  <PawnDiary.Event.DeathFallbackLabel>death</PawnDiary.Event.DeathFallbackLabel>
+  <PawnDiary.Event.DeathFallback>{0} died.</PawnDiary.Event.DeathFallback>
   <PawnDiary.Event.CraftedQualityLabel>{0} craft</PawnDiary.Event.CraftedQualityLabel>
   <PawnDiary.Event.CraftedQuality>{0} created a {1} {2}.</PawnDiary.Event.CraftedQuality>
   <PawnDiary.Event.RelicInstalledLabel>Relic installed</PawnDiary.Event.RelicInstalledLabel>

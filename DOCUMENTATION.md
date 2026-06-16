@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (Diary tab after Needs)_
+_Last updated: 2026-06-17 (Pawn.Kill death fallback)_
 
 ---
 
@@ -162,7 +162,9 @@ captures prior faction, recruiter, pawn kind, creepjoiner flag, and surroundings
 
 Deaths use a `Pawn.Kill` prefix to cache cause details before RimWorld mutates health state. When a
 death TaleDef is accepted, the victim's event is marked `death_description=true`, gets cached death
-facts, and queues the neutral death prompt.
+facts, and queues the neutral death prompt. A `Pawn.Kill` postfix fallback writes the same neutral
+final entry when vanilla does not emit a death Tale, covering natural condition deaths such as
+malnutrition/starvation without duplicating Tale-backed combat deaths.
 
 ### Mood events, thoughts, work, and day reflections
 

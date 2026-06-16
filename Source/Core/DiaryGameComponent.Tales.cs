@@ -42,6 +42,8 @@ namespace PawnDiary
             "KilledColonyAnimal"
         };
 
+        private const string DeathFallbackDefName = "PawnDiary_DeathFallback";
+
         /// <summary>
         /// Records one RimWorld TaleRecorder event. Tales are vanilla's broader notable-history
         /// events: deaths, wounds, surgeries, births, recruitment, research, disasters, and more.
@@ -128,6 +130,38 @@ namespace PawnDiary
             }
 
             QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
+        }
+
+        /// <summary>
+        /// Records a neutral final death entry for kill paths that do not produce a vanilla death
+        /// Tale. The Tale path is preferred when present because it carries killer/weapon context;
+        /// this fallback only runs after Pawn.Kill and no-ops if a final death entry already exists.
+        /// </summary>
+        public void RecordDeathFallback(Pawn pawn)
+        {
+            if (pawn == null || PawnDiaryMod.Settings == null || !IsDeathDescriptionEligible(pawn))
+            {
+                return;
+            }
+
+            if (HasDeathDescriptionFor(pawn))
+            {
+                return;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(GroupDomain.Tale, DeathFallbackDefName);
+            if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
+            {
+                return;
+            }
+
+            string label = "PawnDiary.Event.DeathFallbackLabel".Translate().Resolve();
+            string text = "PawnDiary.Event.DeathFallback".Translate(pawn.LabelShortCap).Resolve();
+            string gameContext = BuildDeathFallbackContext(pawn, label);
+            DiaryEvent deathEvent = AddSoloEvent(pawn, null, DeathFallbackDefName, label, text,
+                PawnDiaryMod.Settings.InstructionForGroup(group), gameContext);
+            AddDeathEventRef(pawn, deathEvent.eventId);
+            QueueDeathDescription(deathEvent);
         }
 
         /// <summary>
@@ -277,6 +311,28 @@ namespace PawnDiary
             return string.Join("; ", parts.ToArray());
         }
 
+        private static string BuildDeathFallbackContext(Pawn pawn, string label)
+        {
+            List<string> parts = new List<string>
+            {
+                "tale=" + DeathFallbackDefName,
+                "label=" + DiaryContextBuilder.CleanLine(label),
+                "taleClass=PawnKillFallback",
+                "death_description=true",
+                "death_victim=" + DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
+                "death_victim_id=" + pawn.GetUniqueLoadID(),
+                "death_victim_role=" + DiaryEvent.InitiatorRole
+            };
+
+            string deathFacts = DeathContextCache.ConsumeOrBuild(pawn);
+            if (!string.IsNullOrWhiteSpace(deathFacts))
+            {
+                parts.Add(deathFacts);
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
         /// <summary>
         /// Returns the pawn who died for TaleDefs that represent deaths. Vanilla's TaleDefs do not
         /// use one consistent pawn order, so this method keeps that mapping in one place.
@@ -318,6 +374,32 @@ namespace PawnDiary
             return pawn != null
                 && IsHumanlike(pawn)
                 && (pawn.IsColonist || pawn.Faction == Faction.OfPlayer);
+        }
+
+        private bool HasDeathDescriptionFor(Pawn pawn)
+        {
+            string pawnId = pawn?.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (diary?.eventIds == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                if (diaryEvent != null && diaryEvent.IsDeathDescriptionFor(pawnId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
