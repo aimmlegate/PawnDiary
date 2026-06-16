@@ -3,6 +3,10 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (pending title indicator alignment)**
+  - Aligned the pending-title dot animation with the future title text start instead of drifting
+    toward the right edge of the diary card header.
+
 - **2026-06-17 (staged situational thought generation)**
   - Added a lightweight scanner for staged situational thoughts that do not fire
     `MemoryThoughtHandler.TryGainMemory`, covering malnourishment/starvation progression,

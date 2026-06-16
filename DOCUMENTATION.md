@@ -262,9 +262,9 @@ Title generation defaults on. After a successful main entry, `QueueTitleRequest`
 plus `DiaryPromptDef.titleUserInstruction`, capped at `TitleMaxTokens = 40`, pinned to the main
 entry's lane when possible. Stored titles render as `date — title`; entries without stored titles
 render date-only. While a title follow-up is still pending, completed entries keep the date visible
-and show an animated header placeholder instead of looking fully settled. There is no first-line
-fallback. Title statuses are separate from main-entry statuses so orphan recovery does not touch
-them.
+and show an animated header placeholder aligned to the title's future starting point instead of
+looking fully settled. There is no first-line fallback. Title statuses are separate from main-entry
+statuses so orphan recovery does not touch them.
 
 ---
 
@@ -304,8 +304,8 @@ enablement, persona picker, pending rows, raw/failure rows, prompt/status diagno
 dot indicators. Generated cards show date/title, group accent and chip, a faint warm page tint with
 a hairline header rule and a soft accent-spine highlight, a
 subtle model id, linked previews for the other pawn's POV on pairwise events, and a header-level
-loading animation when the follow-up title request has not finished yet. Body text is rendered as
-rich text by `DiaryTextFormat`: light markdown (`**bold**`, `*italic*`, headings, bullets, block
+loading animation aligned where the follow-up title text will appear. Body text is rendered as rich
+text by `DiaryTextFormat`: light markdown (`**bold**`, `*italic*`, headings, bullets, block
 quotes) is converted to tags, and quoted speech is colored inline with the pawn's favorite color
 (brightened to a readable luminance) while the surrounding narration stays muted prose. Social-tab
 log rows can

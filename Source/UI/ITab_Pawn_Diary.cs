@@ -687,19 +687,22 @@ namespace PawnDiary
             const float dotsWidth = WritingDotSize * 3f + WritingDotGap * 2f;
             string prefix = string.IsNullOrWhiteSpace(entry?.Date)
                 ? string.Empty
-                : (entry.Date + " \u2014");
+                : (entry.Date + " \u2014 ");
 
             Color oldColor = GUI.color;
             float dotsX = rect.x;
             if (!string.IsNullOrWhiteSpace(prefix))
             {
-                float prefixWidth = Mathf.Max(0f, rect.width - dotsWidth - 10f);
+                // Measure the date prefix itself so the dots sit at the title's future left edge,
+                // not at the far side of a mostly empty LabelFit rectangle.
+                float availablePrefixWidth = Mathf.Max(0f, rect.width - dotsWidth);
+                float prefixWidth = Mathf.Min(Text.CalcSize(prefix).x, availablePrefixWidth);
                 if (prefixWidth > 0f)
                 {
                     Rect prefixRect = new Rect(rect.x, rect.y, prefixWidth, rect.height);
                     GUI.color = new Color(0.86f, 0.86f, 0.86f, 0.95f);
                     Widgets.LabelFit(prefixRect, prefix);
-                    dotsX = prefixRect.xMax + 6f;
+                    dotsX = prefixRect.xMax;
                 }
             }
 
