@@ -80,7 +80,7 @@ namespace PawnDiary
             // height that was too short once enough event groups were listed, which pushed the
             // bottom controls (the per-group prompt editor) outside the scroll area where they
             // could not be reached or clicked.
-            float viewHeight = Mathf.Max(lastSettingsContentHeight, inRect.height);
+            float viewHeight = Mathf.Max(lastSettingsContentHeight, EstimateSettingsContentHeight(), inRect.height);
             Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight); // 16px reserved for the scrollbar
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
@@ -113,7 +113,8 @@ namespace PawnDiary
             Widgets.EndScrollView();
 
             // Remember the real content height so next frame's scroll view fits it exactly.
-            lastSettingsContentHeight = listing.CurHeight;
+            lastSettingsContentHeight = Mathf.Max(listing.CurHeight + 24f, inRect.height);
+            settingsScrollPosition.y = Mathf.Clamp(settingsScrollPosition.y, 0f, Mathf.Max(0f, lastSettingsContentHeight - outRect.height));
             Settings.ClampValues();
         }
 
@@ -146,6 +147,11 @@ namespace PawnDiary
             if (Widgets.ButtonText(toggleRect, toggleKey.Translate()))
             {
                 Settings.showApiSettings = !Settings.showApiSettings;
+                // The model editor changes the content height by several rows. Reset the cached
+                // height immediately so the scroll view does not spend a frame using the collapsed
+                // size, which can leave RimWorld's scrollbar in a bad state after the first click.
+                lastSettingsContentHeight = EstimateSettingsContentHeight();
+                settingsScrollPosition.y = 0f;
             }
             listing.GapLine(6f);
 
@@ -200,14 +206,23 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws a compact API/model row using two thin field lines instead of three tall labeled
-        /// entries, so adding several models stays readable in RimWorld's narrow settings window.
+        /// Draws one API/model lane as a small framed block. The row is intentionally taller than
+        /// the old compact version: full-width endpoint/key fields avoid the clipped labels and
+        /// cramped text boxes that made the settings window hard to scan.
         /// </summary>
         private void DrawCompactApiEndpointRow(Listing_Standard listing, int index, ApiEndpointConfig endpoint, ref int removeIndex)
         {
+            bool showStatus = fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus);
+            Rect blockRect = listing.GetRect(showStatus ? 174f : 148f);
+            Widgets.DrawMenuSection(blockRect);
+
+            Rect innerRect = blockRect.ContractedBy(8f);
+            float lineHeight = 28f;
+            float gap = 5f;
+
             // Row header: "API N" on the left, then Enabled and Remove controls on the right.
-            Rect headerRect = listing.GetRect(28f);
-            Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, headerRect.width - 230f, headerRect.height);
+            Rect headerRect = new Rect(innerRect.x, innerRect.y, innerRect.width, lineHeight);
+            Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, headerRect.width - 240f, headerRect.height);
             Widgets.Label(headerLabelRect, "PawnDiary.Settings.ApiLabel".Translate(index + 1));
             Rect enabledRect = new Rect(headerRect.xMax - 220f, headerRect.y, 110f, headerRect.height);
             Widgets.CheckboxLabeled(enabledRect, "PawnDiary.Settings.ApiEnabled".Translate(), ref endpoint.enabled);
@@ -220,30 +235,33 @@ namespace PawnDiary
                 }
             }
 
-            Rect firstLineRect = listing.GetRect(28f);
-            float halfWidth = firstLineRect.width / 2f - 4f;
-            Rect endpointRect = new Rect(firstLineRect.x, firstLineRect.y, halfWidth, firstLineRect.height);
-            Rect modelRect = new Rect(firstLineRect.x + halfWidth + 8f, firstLineRect.y, halfWidth, firstLineRect.height);
-            endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, 68f);
-            // "Model name" is wider than "Endpoint", so it needs a wider label column or it wraps
-            // to a second line and gets clipped by the field next to it.
-            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 90f);
+            float y = headerRect.yMax + gap;
+            Rect endpointRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+            endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, 94f);
 
-            Rect secondLineRect = listing.GetRect(28f);
-            float buttonWidth = 124f;
-            Rect keyRect = new Rect(secondLineRect.x, secondLineRect.y, secondLineRect.width - buttonWidth * 2f - 16f, secondLineRect.height);
-            Rect fetchRect = new Rect(keyRect.xMax + 8f, secondLineRect.y, buttonWidth, secondLineRect.height);
-            Rect pickRect = new Rect(fetchRect.xMax + 8f, secondLineRect.y, buttonWidth, secondLineRect.height);
-            endpoint.apiKey = DrawCompactTextField(keyRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 60f);
+            y += lineHeight + gap;
+            Rect modelLineRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+            float buttonWidth = 112f;
+            Rect pickRect = new Rect(modelLineRect.xMax - buttonWidth, modelLineRect.y, buttonWidth, modelLineRect.height);
+            Rect fetchRect = new Rect(pickRect.x - gap - buttonWidth, modelLineRect.y, buttonWidth, modelLineRect.height);
+            Rect modelRect = new Rect(modelLineRect.x, modelLineRect.y, fetchRect.x - modelLineRect.x - gap, modelLineRect.height);
+            endpoint.model = DrawCompactTextField(modelRect, "PawnDiary.Settings.ModelName".Translate(), endpoint.model, 94f);
             DrawModelButtons(fetchRect, pickRect, index, endpoint);
 
-            // Show the fetch status under the row that triggered the fetch.
-            if (fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus))
+            y += lineHeight + gap;
+            Rect keyRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+            endpoint.apiKey = DrawCompactTextField(keyRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 94f);
+
+            // Show the fetch status under the row that triggered the fetch, inside the framed lane
+            // so it cannot push later controls sideways or overlap adjacent rows.
+            if (showStatus)
             {
-                listing.Label(fetchStatus);
+                y += lineHeight + gap;
+                Rect statusRect = new Rect(innerRect.x + 94f, y, innerRect.width - 94f, 22f);
+                DrawMutedLabel(statusRect, fetchStatus);
             }
 
-            listing.GapLine();
+            listing.Gap(6f);
         }
 
         /// <summary>
@@ -256,6 +274,15 @@ namespace PawnDiary
             Rect fieldRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
             Widgets.Label(labelRect, label);
             return Widgets.TextField(fieldRect, value ?? string.Empty);
+        }
+
+        /// <summary>Draws one muted status label without changing the caller's font or color.</summary>
+        private static void DrawMutedLabel(Rect rect, string text)
+        {
+            Color previousColor = GUI.color;
+            GUI.color = HintColor;
+            Widgets.Label(rect, text);
+            GUI.color = previousColor;
         }
 
         /// <summary>
@@ -415,6 +442,65 @@ namespace PawnDiary
             {
                 Settings.SetGroupEnabled(group.defName, enabled);
             }
+        }
+
+        /// <summary>
+        /// Returns a conservative current-frame height for the settings scroll view. The exact
+        /// height is still measured from <see cref="Listing_Standard.CurHeight"/> after drawing,
+        /// but this estimate prevents one-frame stale heights when the API/model editor is opened.
+        /// </summary>
+        private float EstimateSettingsContentHeight()
+        {
+            Settings.EnsureEndpointsList();
+
+            float height = 4f;
+
+            // Connection section. API rows are framed blocks; one may include a fetch status line.
+            height += Text.LineHeight + 20f;
+            if (Settings.showApiSettings)
+            {
+                height += 38f; // hint text plus its small gap
+                height += Settings.apiEndpoints.Count * 180f;
+                height += 38f; // Add API / Reset row
+            }
+            else
+            {
+                height += 34f; // compact summary
+            }
+
+            // Generation and system-prompt sections.
+            height += 150f;
+            height += 210f;
+
+            // Events section: two-column group toggles, domain subheaders, and the prompt editor.
+            height += 70f;
+            GroupDomain[] domains =
+            {
+                GroupDomain.Interaction,
+                GroupDomain.MentalState,
+                GroupDomain.Tale,
+                GroupDomain.MoodEvent,
+                GroupDomain.Thought
+            };
+
+            foreach (GroupDomain domain in domains)
+            {
+                int groupCount = InteractionGroups.All.Count(group => group.domain == domain);
+                if (groupCount == 0)
+                {
+                    continue;
+                }
+
+                if (domain != GroupDomain.Interaction)
+                {
+                    height += 28f;
+                }
+
+                height += Mathf.Ceil(groupCount / 2f) * 30f;
+            }
+
+            height += 240f;
+            return height + 160f; // breathing room for translated labels and RimWorld skin variance
         }
 
         /// <summary>

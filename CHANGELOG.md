@@ -4,6 +4,16 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (settings API editor polish + scroll fix)**
+  - Reworked each API/model lane in the mod settings window from a cramped two-line layout into a
+    framed block with full-width endpoint and API-key fields, a clearer model row, and contained
+    fetch status text. This prevents the "Endpoint" / "Model name" / button controls from crowding
+    each other when several APIs are configured.
+  - Fixed the first-click **Show models** scroll break. The settings scroll view now combines the
+    measured `listing.CurHeight` with a current-layout estimate (`EstimateSettingsContentHeight`),
+    resets the cached height when the API/model editor is toggled, and clamps the scroll position
+    after drawing so expanding/collapsing the model section cannot leave the scrollbar stuck.
+
 - **2026-06-16 (mod settings window: fix clipped layout + restyle)**
   - **Fixed the broken layout and the unreachable per-group prompt editor.** The settings scroll
     view used a hardcoded inner height (`1300f + apiEditorHeight`) that was shorter than the real
