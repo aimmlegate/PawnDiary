@@ -20,7 +20,6 @@
 
   <!-- ===== Diary tab UI ===== -->
   <PawnDiary.Tab.DiaryHeader>{0}'s Diary</PawnDiary.Tab.DiaryHeader>
-  <PawnDiary.Tab.DiarySubtitle>Pages from the days they survived.</PawnDiary.Tab.DiarySubtitle>
   <PawnDiary.Tab.NoEntries>No pages have been written yet.</PawnDiary.Tab.NoEntries>
   <PawnDiary.Tab.NoGeneratedEntries>No finished pages yet.</PawnDiary.Tab.NoGeneratedEntries>
   <PawnDiary.Tab.GenerateForPawn>Write diary pages for this pawn</PawnDiary.Tab.GenerateForPawn>
@@ -34,8 +33,6 @@
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.GeneratingCount>{0} writing</PawnDiary.Tab.GeneratingCount>
   <PawnDiary.Tab.WritingCount>{0} writing</PawnDiary.Tab.WritingCount>
-  <PawnDiary.Tab.EntryHeader>{0}: {1}</PawnDiary.Tab.EntryHeader>
-  <PawnDiary.Tab.EntrySubjectFallback>A page from today</PawnDiary.Tab.EntrySubjectFallback>
   <PawnDiary.Tab.Important>important</PawnDiary.Tab.Important>
   <PawnDiary.Tab.Quiet>quiet</PawnDiary.Tab.Quiet>
   <PawnDiary.Tab.LinkedInitiator>{0}'s perspective (initiator):</PawnDiary.Tab.LinkedInitiator>

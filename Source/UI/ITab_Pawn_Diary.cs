@@ -24,7 +24,6 @@ namespace PawnDiary
         private const float EntryTitleHeight = 28f;
         private const float EntryTextTop = 38f;
         private const float EntryBottomPadding = 10f;
-        private const float SubtitleHeight = 24f;
         private const float StatusBadgeWidth = 136f;
         private const float StatusBadgeHeight = 24f;
         private const float StatusBadgeRightPadding = 24f;
@@ -153,17 +152,15 @@ namespace PawnDiary
             Widgets.Label(headerRect, "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
             Text.Font = GameFont.Small;
 
+            // In normal play the header stands alone; the dev-only controls (and the space they
+            // need) appear only when RimWorld dev mode is on. PawnControlsHeight() returns 0 outside
+            // dev mode, so entries sit directly under the header.
             float controlsY = rect.y + 36f;
             float controlsHeight = PawnControlsHeight();
             if (Prefs.DevMode)
             {
                 Rect controlsRect = new Rect(rect.x, controlsY, rect.width, controlsHeight);
                 DrawPawnControls(pawn, component, controlsRect);
-            }
-            else
-            {
-                DrawDiarySubtitle(new Rect(rect.x, controlsY, rect.width, SubtitleHeight));
-                controlsHeight = SubtitleHeight;
             }
 
             // The controls are part of the diary tab, so reserve fixed space before the scroll view.
@@ -467,22 +464,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the normal-play subtitle that replaces the dev-only generation controls.
-        /// </summary>
-        private static void DrawDiarySubtitle(Rect rect)
-        {
-            TextAnchor oldAnchor = Text.Anchor;
-            Color oldColor = GUI.color;
-
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = new Color(0.80f, 0.80f, 0.74f);
-            Widgets.LabelFit(rect, "PawnDiary.Tab.DiarySubtitle".Translate());
-
-            GUI.color = oldColor;
-            Text.Anchor = oldAnchor;
-        }
-
-        /// <summary>
         /// True when an entry has actual LLM output ready for the production diary list.
         /// </summary>
         private static bool IsGenerated(DiaryEntryView entry)
@@ -567,14 +548,15 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Produces the compact header shown on each entry card: date plus a diary-like subject.
+        /// Produces the compact header shown on each entry card. For now this is just the date:
+        /// the old "date: subject" form leaked technical event-group names ("Animal handling")
+        /// into the UI. A future version will replace this with an LLM-generated title, the way
+        /// a chat assistant names a conversation. (The event group still lives on
+        /// <see cref="DiaryEntryView.GroupLabel"/> for that work.)
         /// </summary>
         private static string EntryHeader(DiaryEntryView entry)
         {
-            string subject = string.IsNullOrWhiteSpace(entry.GroupLabel)
-                ? "PawnDiary.Tab.EntrySubjectFallback".Translate().ToString()
-                : entry.GroupLabel;
-            return "PawnDiary.Tab.EntryHeader".Translate(entry.Date, subject);
+            return entry?.Date ?? string.Empty;
         }
 
         /// <summary>

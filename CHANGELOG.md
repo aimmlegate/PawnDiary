@@ -4,6 +4,18 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (streamlined entry headers — date only)**
+  - Each diary card header now shows just the date instead of `date: subject`. The old subject was
+    the event-group label (e.g. "Animal handling", "Passing thoughts"), which leaked technical
+    category names into the UI. `EntryHeader` (`ITab_Pawn_Diary`) returns `entry.Date`; the header
+    slot is reserved for a future LLM-generated title (like a chat name). `DiaryEntryView.GroupLabel`
+    is still populated for that work. Removed the now-unused Keyed strings `PawnDiary.Tab.EntryHeader`
+    and `PawnDiary.Tab.EntrySubjectFallback`. No card layout/height changes.
+  - Removed the normal-play subtitle ("Pages from the days they survived.") under the diary header.
+    Entries now sit directly beneath the `{pawn}'s Diary` header. Dropped `DrawDiarySubtitle`, the
+    `SubtitleHeight` constant, and the `PawnDiary.Tab.DiarySubtitle` Keyed string. (Dev-mode controls
+    in that slot are unchanged.)
+
 - **2026-06-16 (per-mode system prompts + per-event tone)**
   - Split the single system prompt into three by narrative mode, chosen per event type at dispatch
     (`SystemPromptForEvent`): diary voice (first-person entries), day reflection (first-person

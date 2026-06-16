@@ -689,8 +689,11 @@ dev mode shows a "Show persona settings" toggle, and normal mode hides persona e
 - **Inspector tab** (`ITab_Pawn_Diary`), injected immediately after the vanilla **Social** tab on all
 humanlike pawn defs at startup. The tab is **visible only for free colonists**
 (`pawn.IsColonist`); animals, prisoners, slaves, enemies, and visitors never see it.
-Renders newest-first: each card uses a diary-like `date: subject` header plus the generated diary
-text. The text is drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking
+Renders newest-first: each card's header shows just the entry **date**, plus the generated diary
+text. (The header deliberately no longer appends the event-group label — names like "Animal
+handling" read as technical category tags. The group still lives on `DiaryEntryView.GroupLabel`;
+the header slot is reserved for a future LLM-generated title, the way a chat assistant names a
+conversation.) The text is drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking
 lines are bold/italic and colored with the pawn's RimWorld favorite color. Each generated card ends
 with a tiny, low-contrast model id so multi-model output can be traced without making the card feel
 technical. Pending, failed-without-output, raw fallback, debug, and persona-editing details are
