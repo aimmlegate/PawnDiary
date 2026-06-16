@@ -4,7 +4,7 @@
 > happens now". Whenever the mod's behavior or structure changes, update the relevant section
 > here **and** add a dated line to [`CHANGELOG.md`](CHANGELOG.md), in the same change.
 
-_Last updated: 2026-06-16 (optional LLM titling for diary entries)_
+_Last updated: 2026-06-16 (arrival/death diary boundaries)_
 
 ---
 
@@ -170,7 +170,9 @@ Two additional narrow hooks feed the same event pipeline:
 UI actions. `GameComponentTick` runs `QueueAllPendingGenerations` every ~2 seconds (120 ticks),
 scanning all `not_generated` events and queueing any whose pawns have generation enabled.
 This also fires immediately on game load and when a player re-enables generation for a pawn.
-Opening the diary tab (`EntriesFor`) is a pure read with no side effects.
+Opening the diary tab (`EntriesFor`) is a pure read with no side effects. Per-pawn arrival and
+death boundary checks are shared with generation, so entries outside a pawn's diary lifespan do
+not appear just because the tab was opened.
 
 ---
 
@@ -226,6 +228,10 @@ interaction batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for no
   only the `neutral` role through `BuildArrivalDescriptionPrompt`, using
   `DiaryPromptDef.arrivalDescriptionInstruction`. `DiaryEvent.ToViewFor` shows this neutral entry
   only in the arriving pawn's diary.
+- An arrival description is the first visible entry for that pawn. `EntriesFor`, social-log click
+  lookups, pending-generation scans, and queue-time generation checks suppress entries that fall
+  before the first arrival page. The boundary uses the saved event-id order when available, so
+  same-tick startup thoughts recorded before the arrival page still stay hidden.
 
 ### Colonist death descriptions
 - `Pawn.Kill` is patched with a prefix that caches the killing `DamageInfo`, exact culprit hediff,
@@ -239,9 +245,11 @@ interaction batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for no
   or relationship continuity, and asks for one short third-person description of how the colonist
   died. In the deceased pawn's diary, `DiaryEvent.ToViewFor` shows the neutral death text instead
   of a first-person victim POV.
-- A death description is terminal for that pawn. `EntriesFor`, pending-generation scans, and new
-  event-reference adds all suppress that pawn's events with ticks later than the final death
-  description, so nothing generates or displays after the death entry.
+- A death description is terminal for that pawn. `EntriesFor`, social-log click lookups,
+  pending-generation scans, title follow-up queueing, and new event-reference adds all suppress
+  that pawn's events after the final death description. The boundary also uses the saved event-id
+  order when available, so same-tick hooks that fire after the death page still stay hidden and
+  ungenerated.
 
 All paths share the same per-event context fields. The **system prompt is chosen by narrative
 mode** at dispatch (`SystemPromptForEvent` in `DiaryGameComponent.Generation.cs`), so the model's

@@ -4,6 +4,15 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (arrival/death diary boundaries)**
+  - Arrival descriptions are now enforced as the first visible/generated diary entry for each pawn:
+    entries recorded before the arrival page are hidden from the diary tab, ignored by social-log
+    jump lookups, and skipped by generation scans.
+  - Death descriptions remain terminal, but the guard now also uses the pawn's saved event order so
+    same-tick events recorded after the death page cannot appear or queue title/main generation.
+  - New-game startup generation is held until founding-colonist arrival pages are written, preventing
+    startup thoughts from racing ahead of the neutral first page.
+
 - **2026-06-16 (legacy cleanup)**
   - Removed the unsupported `prompt-lab/` Node harness and its ignored generated result files.
     Prompt/persona data now lives only in the RimWorld XML defs and runtime source.

@@ -92,14 +92,14 @@ namespace PawnDiary
                 }
 
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole)
-                    && !EventFallsAfterFinalDeathForPawn(diaryEvent, diaryEvent.initiatorPawnId))
+                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.initiatorPawnId))
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole);
                 }
 
                 if (!diaryEvent.solo
                     && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole)
-                    && !EventFallsAfterFinalDeathForPawn(diaryEvent, diaryEvent.recipientPawnId))
+                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.recipientPawnId))
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole);
                 }
@@ -188,7 +188,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (EventFallsAfterFinalDeathForPawn(diaryEvent, pawnId))
+                if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId))
                 {
                     continue;
                 }
@@ -665,6 +665,11 @@ namespace PawnDiary
                 return;
             }
 
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
+            {
+                return;
+            }
+
             PawnDiarySettings settings = PawnDiaryMod.Settings;
             if (settings == null)
             {
@@ -767,7 +772,12 @@ namespace PawnDiary
                 return true;
             }
 
-            if (EventFallsAfterFinalDeathForPawn(diaryEvent, pawnId))
+            if (initialArrivalScanPending && !diaryEvent.HasArrivalDescription())
+            {
+                return false;
+            }
+
+            if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId))
             {
                 return false;
             }

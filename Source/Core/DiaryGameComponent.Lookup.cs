@@ -1,8 +1,8 @@
 // Lookups and bookkeeping over the saved data: cross-referencing events onto pawn diary records,
-// finding events/records by id, the "final death" rules that make a colonist's death entry terminal
-// (anything later is hidden and never generated), per-pawn eligibility checks, the dedup gate shared
-// by every Record* hook, persona seeding/defaulting, and the shared empty-list singleton. These are
-// the small, mostly-pure helpers the other partial files lean on.
+// finding events/records by id, the "arrival first / death last" rules that make a colonist's
+// arrival and death entries hard diary boundaries, per-pawn eligibility checks, the dedup gate
+// shared by every Record* hook, persona seeding/defaulting, and the shared empty-list singleton.
+// These are the small, mostly-pure helpers the other partial files lean on.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
@@ -62,8 +62,9 @@ namespace PawnDiary
                 return;
             }
 
+            string pawnId = pawn.GetUniqueLoadID();
             DiaryEvent diaryEvent = FindEvent(eventId);
-            if (EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawn.GetUniqueLoadID(), diary)))
+            if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
             {
                 return;
             }
@@ -97,8 +98,9 @@ namespace PawnDiary
                 return;
             }
 
+            string pawnId = pawn.GetUniqueLoadID();
             DiaryEvent diaryEvent = FindEvent(eventId);
-            if (EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawn.GetUniqueLoadID(), diary)))
+            if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
             {
                 return;
             }
@@ -144,7 +146,58 @@ namespace PawnDiary
             return finalDeathTick;
         }
 
-        private bool EventFallsAfterFinalDeathForPawn(DiaryEvent diaryEvent, string pawnId)
+        /// <summary>
+        /// Returns the tick of the first neutral arrival-description event for a pawn. That event is
+        /// the first diary page: anything earlier is suppressed from display and generation.
+        /// </summary>
+        private int? FirstArrivalTickFor(string pawnId, PawnDiaryRecord diary)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            int? firstArrivalTick = null;
+            if (diary?.eventIds != null)
+            {
+                for (int i = 0; i < diary.eventIds.Count; i++)
+                {
+                    DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                    if (diaryEvent == null || !diaryEvent.IsArrivalDescriptionFor(pawnId))
+                    {
+                        continue;
+                    }
+
+                    if (!firstArrivalTick.HasValue || diaryEvent.tick < firstArrivalTick.Value)
+                    {
+                        firstArrivalTick = diaryEvent.tick;
+                    }
+                }
+            }
+
+            // Be forgiving of old/odd saves where an arrival event exists but was not present in
+            // the pawn's event-id list: the boundary is still known from the event itself.
+            if (!firstArrivalTick.HasValue && diaryEvents != null)
+            {
+                for (int i = 0; i < diaryEvents.Count; i++)
+                {
+                    DiaryEvent diaryEvent = diaryEvents[i];
+                    if (diaryEvent == null || !diaryEvent.IsArrivalDescriptionFor(pawnId))
+                    {
+                        continue;
+                    }
+
+                    if (!firstArrivalTick.HasValue || diaryEvent.tick < firstArrivalTick.Value)
+                    {
+                        firstArrivalTick = diaryEvent.tick;
+                    }
+                }
+            }
+
+            return firstArrivalTick;
+        }
+
+        private bool EventFallsOutsideDiaryBoundsForPawn(DiaryEvent diaryEvent, string pawnId)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
             {
@@ -152,12 +205,127 @@ namespace PawnDiary
             }
 
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
-            return EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawnId, diary));
+            return EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary);
+        }
+
+        /// <summary>
+        /// True when an event would sit outside this pawn's diary lifespan. Arrival and death entries
+        /// themselves are kept; entries before the arrival or after the death are hidden and skipped.
+        /// </summary>
+        private bool EventFallsOutsideDiaryBounds(DiaryEvent diaryEvent, string pawnId, PawnDiaryRecord diary)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            if (EventFallsOutsideDiaryBoundsByIndex(diaryEvent, pawnId, diary))
+            {
+                return true;
+            }
+
+            return EventFallsBeforeFirstArrival(diaryEvent, FirstArrivalTickFor(pawnId, diary))
+                || EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawnId, diary));
+        }
+
+        /// <summary>
+        /// Uses the pawn's saved event-id order as the hard boundary. This catches same-tick cases
+        /// where a startup thought was recorded before the arrival page, or a hook fires after death.
+        /// </summary>
+        private bool EventFallsOutsideDiaryBoundsByIndex(DiaryEvent diaryEvent, string pawnId, PawnDiaryRecord diary)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId) || diary?.eventIds == null)
+            {
+                return false;
+            }
+
+            int eventIndex = EventIndexInDiary(diary, diaryEvent.eventId);
+            if (eventIndex < 0)
+            {
+                return false;
+            }
+
+            int firstArrivalIndex = FirstArrivalIndexFor(pawnId, diary);
+            if (firstArrivalIndex >= 0 && eventIndex < firstArrivalIndex)
+            {
+                return true;
+            }
+
+            int finalDeathIndex = FinalDeathIndexFor(pawnId, diary);
+            return finalDeathIndex >= 0 && eventIndex > finalDeathIndex;
+        }
+
+        private int FirstArrivalIndexFor(string pawnId, PawnDiaryRecord diary)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || diary?.eventIds == null)
+            {
+                return -1;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                if (diaryEvent != null && diaryEvent.IsArrivalDescriptionFor(pawnId))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int FinalDeathIndexFor(string pawnId, PawnDiaryRecord diary)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || diary?.eventIds == null)
+            {
+                return -1;
+            }
+
+            int finalDeathIndex = -1;
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                if (diaryEvent != null && diaryEvent.IsDeathDescriptionFor(pawnId))
+                {
+                    finalDeathIndex = i;
+                }
+            }
+
+            return finalDeathIndex;
+        }
+
+        private static int EventIndexInDiary(PawnDiaryRecord diary, string eventId)
+        {
+            if (string.IsNullOrWhiteSpace(eventId) || diary?.eventIds == null)
+            {
+                return -1;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                if (diary.eventIds[i] == eventId)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static bool EventFallsBeforeFirstArrival(DiaryEvent diaryEvent, int? firstArrivalTick)
+        {
+            return diaryEvent != null
+                && firstArrivalTick.HasValue
+                && !diaryEvent.HasArrivalDescription()
+                && diaryEvent.tick < firstArrivalTick.Value;
         }
 
         private static bool EventFallsAfterFinalDeath(DiaryEvent diaryEvent, int? finalDeathTick)
         {
-            return diaryEvent != null && finalDeathTick.HasValue && diaryEvent.tick > finalDeathTick.Value;
+            return diaryEvent != null
+                && finalDeathTick.HasValue
+                && !diaryEvent.HasDeathDescription()
+                && diaryEvent.tick > finalDeathTick.Value;
         }
 
         /// <summary>

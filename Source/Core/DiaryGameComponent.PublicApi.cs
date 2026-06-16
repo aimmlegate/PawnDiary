@@ -12,7 +12,7 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         /// <summary>
-        /// Returns the diary entries to render for a pawn (newest data first as stored).
+        /// Returns the diary entries to render for a pawn, bounded by that pawn's arrival and death pages.
         /// Pure read — no side effects. Generation is driven entirely by the background tick scan.
         /// </summary>
         public IReadOnlyList<DiaryEntryView> EntriesFor(Pawn pawn)
@@ -31,14 +31,13 @@ namespace PawnDiary
             }
 
             List<DiaryEntryView> views = new List<DiaryEntryView>();
-            int? finalDeathTick = FinalDeathTickFor(pawnId, diary);
 
             if (diary.eventIds != null)
             {
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
                     DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
-                    if (EventFallsAfterFinalDeath(diaryEvent, finalDeathTick))
+                    if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
                     {
                         continue;
                     }
@@ -77,6 +76,11 @@ namespace PawnDiary
             {
                 DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
                 if (diaryEvent == null || !diaryEvent.MatchesPlayLogEntry(playLogEntryId))
+                {
+                    continue;
+                }
+
+                if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
                 {
                     continue;
                 }
