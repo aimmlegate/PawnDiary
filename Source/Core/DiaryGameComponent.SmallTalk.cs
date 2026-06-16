@@ -1,19 +1,60 @@
 // Small-talk batching. Low-stakes chatter (the "smalltalk" interaction group) would flood the
 // diary one line at a time, so instead each pawn-pair accumulates a PendingSmallTalkBatch keyed by
-// PairKey. A batch is flushed — turned into one merged DiaryEvent — when it hits the max-events cap
-// or its time window lapses (checked each tick via FlushReadySmallTalkBatches), and unconditionally
-// on save (FlushAllSmallTalkBatches) so transient batches are never lost. The rest are helpers that
-// format the merged text/instruction and carry the originating PlayLog ids onto the event.
+// PairKey. RecordSmallTalkInteraction (called from RecordInteraction in
+// DiaryGameComponent.Interactions.cs when the interaction is small talk) opens/appends to the batch;
+// a batch is flushed — turned into one merged DiaryEvent — when it hits the max-events cap or its
+// time window lapses (checked each tick via FlushReadySmallTalkBatches), and unconditionally on save
+// (FlushAllSmallTalkBatches) so transient batches are never lost. The rest are helpers that format
+// the merged text/instruction and carry the originating PlayLog ids onto the event.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using Verse;
 
 namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
+        /// <summary>
+        /// Opens or appends to the pending small-talk batch for this pawn pair. Called by
+        /// RecordInteraction when the interaction belongs to the low-stakes "smalltalk" group, so the
+        /// chatter is merged into one diary entry instead of flooding the diary line by line.
+        /// </summary>
+        private void RecordSmallTalkInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef,
+            string interactionLabel, string initiatorText, string recipientText, int playLogEntryId)
+        {
+            string key = PairKey(initiator, recipient);
+            PendingSmallTalkBatch batch;
+            if (!pendingSmallTalkBatches.TryGetValue(key, out batch))
+            {
+                int now = Find.TickManager.TicksGame;
+                batch = new PendingSmallTalkBatch
+                {
+                    initiator = initiator,
+                    recipient = recipient,
+                    initiatorPawnId = initiator.GetUniqueLoadID(),
+                    recipientPawnId = recipient.GetUniqueLoadID(),
+                    firstTick = now,
+                    lastTick = now,
+                    firstDefName = interactionDef.defName,
+                    firstLabel = interactionLabel,
+                    instruction = InteractionInstruction(interactionDef)
+                };
+                pendingSmallTalkBatches[key] = batch;
+            }
+
+            AppendSmallTalkBatchLine(batch, initiator, interactionLabel, initiatorText, recipientText);
+            AddPlayLogEntryId(batch.playLogEntryIds, playLogEntryId);
+            batch.lastTick = Find.TickManager.TicksGame;
+
+            if (batch.Count >= SmallTalkBatchMaxEvents)
+            {
+                FlushSmallTalkBatch(key, batch);
+            }
+        }
+
         /// <summary>
         /// Called each tick: flushes any batch that has exceeded the time window or hit the max-events cap.
         /// </summary>

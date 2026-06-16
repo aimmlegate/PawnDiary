@@ -9,14 +9,21 @@
 // A `partial` class is one class whose members are spread over multiple files; the compiler
 // stitches them back together, so every file shares the same fields and private methods exactly
 // as if they were one file. The split is purely organizational (no behavior change). Map:
-//   DiaryGameComponent.cs              — this file: state, lifecycle hooks (tick/save/load)
-//   DiaryGameComponent.PublicApi.cs    — read/write entry points the UI calls
-//   DiaryGameComponent.Recording.cs    — Record* hooks that turn game events into DiaryEvents
-//   DiaryGameComponent.Arrivals.cs     — the neutral "how this pawn joined" first entry
-//   DiaryGameComponent.EventFactory.cs — building DiaryEvents + their fallback/context text
-//   DiaryGameComponent.SmallTalk.cs    — batching low-stakes chatter into one merged entry
-//   DiaryGameComponent.Generation.cs   — prompt building, API lane selection, LLM dispatch/apply
-//   DiaryGameComponent.Lookup.cs       — finding diary records/events + eligibility helpers
+//   DiaryGameComponent.cs                — this file: state, lifecycle hooks (tick/save/load)
+//   DiaryGameComponent.PublicApi.cs      — read/write entry points the UI calls
+//   ── one file per event we listen for (Record* hook + that event's text/context helpers) ──
+//   DiaryGameComponent.Interactions.cs   — social interactions (PlayLog.Add)
+//   DiaryGameComponent.MentalStates.cs   — social fights + mental breaks (TryStartMentalState)
+//   DiaryGameComponent.Tales.cs          — notable-history tales (TaleRecorder.RecordTale)
+//   DiaryGameComponent.CraftedAndRelics.cs — masterwork/legendary crafts + relic installs
+//   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
+//   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
+//   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
+//   DiaryGameComponent.SmallTalk.cs      — batching low-stakes chatter into one merged entry
+//   ──
+//   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
+//   DiaryGameComponent.Generation.cs     — prompt building, API lane selection, LLM dispatch/apply
+//   DiaryGameComponent.Lookup.cs         — finding diary records/events + eligibility helpers
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,30 +78,6 @@ namespace PawnDiary
         // generations, and the next tick that scan is allowed to run.
         private const int GenerationScanIntervalTicks = 120;
         private int nextGenerationScanTick;
-
-        // These TaleDefs mirror events we already capture through more specific hooks. Skipping
-        // them avoids two diary entries for one social fight or mental break.
-        private static readonly HashSet<string> TaleDefsCoveredElsewhere = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "SocialFight",
-            "MentalStateBerserk",
-            "MentalStateGaveUp"
-        };
-
-        // TaleDefs where one involved pawn died. RimWorld uses different first/second pawn roles
-        // depending on the tale, so DeathVictimForTale below resolves the victim explicitly.
-        private static readonly HashSet<string> DeathTaleDefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "KilledBy",
-            "KilledCapacity",
-            "KilledLongRange",
-            "KilledMajorThreat",
-            "KilledMelee",
-            "KilledMortar",
-            "KilledChild",
-            "KilledColonist",
-            "KilledColonyAnimal"
-        };
 
         public DiaryGameComponent(Game game)
         {

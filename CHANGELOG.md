@@ -4,6 +4,20 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (split recording into one file per event)**
+  - Reorganized the `DiaryGameComponent` partial class so each game event we listen for owns its
+    own file, instead of bundling all seven `Record*` hooks in `.Recording.cs` and scattering their
+    helpers across `.EventFactory.cs`. **No logic changes** (partials merge into the identical
+    class; build verified). Removed `Source/Core/DiaryGameComponent.Recording.cs`; added
+    `.Interactions.cs`, `.MentalStates.cs` (+ `BuildMentalBreakText`/`ReasonSuffix`), `.Tales.cs`
+    (+ all tale/death helpers and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets, moved from
+    `DiaryGameComponent.cs`), `.CraftedAndRelics.cs`, `.MoodEvents.cs`, and `.Thoughts.cs`
+    (+ `MatchesAnyToken`/`GetThoughtMoodOffset`). `.EventFactory.cs` now holds only the generic
+    `AddPairwiseEvent`/`AddSoloEvent`; `RecordSmallTalkInteraction` moved into `.SmallTalk.cs`
+    alongside the rest of the batching logic. Because events and diary-entry types are 1:1 here,
+    "per event" and "per entry type" are the same split. Updated each file's header comment, the
+    `DiaryGameComponent.cs` file-map, and the §2 file map.
+
 - **2026-06-16 (extract MoodImpact helper)**
   - Removed the duplicated mood-direction logic. The literal tokens `"positive"`/`"negative"`/
     `"neutral"`, the ±0.5 classification threshold, and the three-branch "pick positive/negative/
