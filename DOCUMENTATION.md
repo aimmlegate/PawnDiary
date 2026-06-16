@@ -70,7 +70,7 @@ Important files:
 |---|---|
 | `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Social. |
 | `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, map discoveries, mood events, thoughts, and hediff day-summary signals. |
-| `DiaryGameComponent*.cs` | Orchestrates recording, batching, generation scans, save/load, lookups, and public UI access. Event-source partials own their `Record*` method. |
+| `DiaryGameComponent*.cs` | Orchestrates recording, batching, generation scans, save/load, lookups, and public UI access. Event-source partials own their `Record*` method; `ThoughtProgression` scans staged situational thoughts. |
 | `DiaryEvent.cs` | Saved event model: raw text, context, statuses, generated text, LLM metadata, titles, source ids, and save/load. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, passion, and opener context. |
@@ -164,7 +164,11 @@ facts, and queues the neutral death prompt.
 Mood events are mood-affecting game conditions recorded once per eligible colonist on affected maps.
 Thoughts are temporary memories filtered by XML tuning: ignored tokens, bypass tokens, eating
 thresholds, minimum mood offset, ambient tokens, and dedup windows. Ambient thoughts can be folded
-into the end-of-day reflection.
+into the end-of-day reflection. Situational need thoughts that never pass through the memory hook
+are scanned by current stage: severe food states, tired/exhausted, trapped/entombed underground, and
+chemical hunger/starvation. The scanner records the first tracked stage in an active episode and any
+later worsening stage once; it clears its episode state when the thought disappears but does not
+write a recovery entry.
 
 Work recording is sampled periodically rather than hook-based. It looks at
 `CurJob.workGiverDef.workType`, skips social and violent work, applies XML-configured odds and
@@ -202,9 +206,9 @@ multiplier is applied to that promotion roll. These signals are numeric/game-sta
 localized text matching.
 
 `1.6/Defs/DiaryTuningDef.xml` holds dedup windows, scanner intervals, mood/health/beauty buckets,
-thought thresholds, work odds/cooldowns, and day-reflection weights. Nearby-context tuning includes the
-radial search radius plus the nearby-object candidate cap. Code defaults keep the mod usable if XML fails
-to load.
+thought thresholds, staged thought-progression rules, work odds/cooldowns, and day-reflection weights.
+Nearby-context tuning includes the radial search radius plus the nearby-object candidate cap. Code
+defaults keep the mod usable if XML fails to load.
 
 ---
 

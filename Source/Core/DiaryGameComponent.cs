@@ -19,6 +19,7 @@
 //   DiaryGameComponent.CraftedAndRelics.cs — masterwork/legendary crafts + relic installs
 //   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
+//   DiaryGameComponent.ThoughtProgression.cs — staged situational need thoughts (hunger, rest, etc.)
 //   DiaryGameComponent.GameEvents.cs     — synthetic map/story discoveries (ancient danger, monoliths)
 //   DiaryGameComponent.Work.cs           — occasional solo notes about current pawn work
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
@@ -170,6 +171,7 @@ namespace PawnDiary
             initialArrivalScanPending = true;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
+            ResetThoughtProgressionState(false);
         }
 
         public override void LoadedGame()
@@ -195,6 +197,7 @@ namespace PawnDiary
             initialArrivalScanPending = false;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
+            ResetThoughtProgressionState(true);
             QueueAllPendingGenerations();
         }
 
@@ -256,6 +259,13 @@ namespace PawnDiary
             {
                 nextWorkScanTick = now + Math.Max(250, DiaryTuning.Current.workScanIntervalTicks);
                 ScanPawnWorkForDiaryEvents();
+            }
+
+            if (!initialArrivalScanPending && now >= nextThoughtProgressionScanTick)
+            {
+                nextThoughtProgressionScanTick = now + Math.Max(250, DiaryTuning.Current.thoughtProgressionScanIntervalTicks);
+                ScanThoughtProgressionsForDiaryEvents(baselineThoughtProgressionsOnNextScan);
+                baselineThoughtProgressionsOnNextScan = false;
             }
 
             if (now >= nextGenerationScanTick)

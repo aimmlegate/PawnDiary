@@ -100,6 +100,57 @@
     <thoughtAmbientMinEventsToWrite>2</thoughtAmbientMinEventsToWrite>
     <thoughtAmbientMaxSampleLines>5</thoughtAmbientMaxSampleLines>
 
+    <!-- Situational thought progression scanner. These thoughts are active need/environment
+         stages, not temporary memories, so they are scanned by current stage. Severity is ordered
+         low -> high even when the vanilla stage list is not. -->
+    <thoughtProgressionScanIntervalTicks>250</thoughtProgressionScanIntervalTicks>
+    <thoughtProgressionDedupTicks>2500</thoughtProgressionDedupTicks>
+    <thoughtProgressionRules>
+      <li>
+        <categoryKey>food</categoryKey>
+        <thoughtDefName>NeedFood</thoughtDefName>
+        <stages>
+          <li><stageIndex>2</stageIndex><severity>1</severity></li> <!-- malnourished -->
+          <li><stageIndex>3</stageIndex><severity>2</severity></li> <!-- badly malnourished -->
+          <li><stageIndex>4</stageIndex><severity>3</severity></li> <!-- starving -->
+          <li><stageIndex>5</stageIndex><severity>4</severity></li> <!-- advanced starvation -->
+          <li><stageIndex>6</stageIndex><severity>5</severity></li> <!-- extreme starvation -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>rest</categoryKey>
+        <thoughtDefName>NeedRest</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- tired -->
+          <li><stageIndex>2</stageIndex><severity>2</severity></li> <!-- exhausted -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>outdoors</categoryKey>
+        <thoughtDefName>NeedOutdoors</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- trapped underground -->
+          <li><stageIndex>0</stageIndex><severity>2</severity></li> <!-- entombed underground -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>chemical</categoryKey>
+        <thoughtDefName>DrugDesireInterest</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- chemical hunger -->
+          <li><stageIndex>2</stageIndex><severity>2</severity></li> <!-- chemical starvation -->
+        </stages>
+      </li>
+      <li>
+        <categoryKey>chemical</categoryKey>
+        <thoughtDefName>DrugDesireFascination</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li> <!-- chemical hunger -->
+          <li><stageIndex>2</stageIndex><severity>2</severity></li> <!-- chemical starvation -->
+        </stages>
+      </li>
+    </thoughtProgressionRules>
+
     <!-- Work diary sampling. Work has no one-shot event hook, so the mod periodically samples
          current colonist jobs, then applies chance and cooldown gates. -->
     <workScanIntervalTicks>2500</workScanIntervalTicks>

@@ -760,6 +760,13 @@
     <instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood offset: minor irritations get a passing mention, severe ones get raw emotion and weight</instruction>
     <!-- TODO: Some tokens (Bad, Sad, Hot, Cold) are broad substring matches that may
          misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
+    <matchDefNames>
+      <li>NeedFood</li>
+      <li>NeedRest</li>
+      <li>NeedOutdoors</li>
+      <li>DrugDesireInterest</li>
+      <li>DrugDesireFascination</li>
+    </matchDefNames>
     <matchTokens>
       <li>Pain</li>
       <li>Ugly</li>

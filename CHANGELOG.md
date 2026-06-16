@@ -3,6 +3,14 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (staged situational thought generation)**
+  - Added a lightweight scanner for staged situational thoughts that do not fire
+    `MemoryThoughtHandler.TryGainMemory`, covering malnourishment/starvation progression,
+    tired/exhausted, trapped/entombed underground, and chemical hunger/starvation.
+  - Added XML-tunable progression rules with per-category deduping so an active episode can write
+    worsening stages once without repeating the same state, and skips recovery pages when the food
+    thought disappears.
+
 - **2026-06-16 (map discovery diary events)**
   - Added synthetic GameEvent diary entries for pawn-caused map discoveries, including ancient mech
     threat reveals, nearby `CompLetterOnRevealed` objects, and void/fallen monolith investigation

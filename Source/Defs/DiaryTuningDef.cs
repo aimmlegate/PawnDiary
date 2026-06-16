@@ -7,6 +7,28 @@ using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// One tracked stage in a situational ThoughtDef progression. RimWorld exposes hunger, rest,
+    /// outdoors, and chemical need moods as stages inside a single ThoughtDef, so XML gives each
+    /// stage an explicit severity rank. Higher severity means "worse" for diary progression.
+    /// </summary>
+    public class ThoughtProgressionStage
+    {
+        public int stageIndex = -1;
+        public int severity = 0;
+    }
+
+    /// <summary>
+    /// XML tuning for one staged situational ThoughtDef, grouped by category so related def/stage
+    /// changes dedupe together. New to C#/RimWorld? See AGENTS.md ("Defs").
+    /// </summary>
+    public class ThoughtProgressionRule
+    {
+        public string categoryKey;
+        public string thoughtDefName;
+        public List<ThoughtProgressionStage> stages;
+    }
+
     // One instance of this Def is expected, with defName "Diary_Tuning". Read it via
     // DiaryTuning.Current (which falls back to safe defaults if the Def is absent).
     public class DiaryTuningDef : Def
@@ -86,6 +108,68 @@ namespace PawnDiary
         public int thoughtAmbientMinEventsToWrite = 2;
         // Keep at most this many thought evidence lines in the prompt.
         public int thoughtAmbientMaxSampleLines = 5;
+
+        // ---- Thought progression scanner ----
+        // Situational need thoughts (food/rest/outdoors/chemical desire) are not gained through
+        // MemoryThoughtHandler.TryGainMemory, so a lightweight scan watches their active stages.
+        public int thoughtProgressionScanIntervalTicks = 250;
+        public int thoughtProgressionDedupTicks = 2500;
+        public List<ThoughtProgressionRule> thoughtProgressionRules = new List<ThoughtProgressionRule>
+        {
+            new ThoughtProgressionRule
+            {
+                categoryKey = "food",
+                thoughtDefName = "NeedFood",
+                stages = new List<ThoughtProgressionStage>
+                {
+                    new ThoughtProgressionStage { stageIndex = 2, severity = 1 },
+                    new ThoughtProgressionStage { stageIndex = 3, severity = 2 },
+                    new ThoughtProgressionStage { stageIndex = 4, severity = 3 },
+                    new ThoughtProgressionStage { stageIndex = 5, severity = 4 },
+                    new ThoughtProgressionStage { stageIndex = 6, severity = 5 }
+                }
+            },
+            new ThoughtProgressionRule
+            {
+                categoryKey = "rest",
+                thoughtDefName = "NeedRest",
+                stages = new List<ThoughtProgressionStage>
+                {
+                    new ThoughtProgressionStage { stageIndex = 1, severity = 1 },
+                    new ThoughtProgressionStage { stageIndex = 2, severity = 2 }
+                }
+            },
+            new ThoughtProgressionRule
+            {
+                categoryKey = "outdoors",
+                thoughtDefName = "NeedOutdoors",
+                stages = new List<ThoughtProgressionStage>
+                {
+                    new ThoughtProgressionStage { stageIndex = 1, severity = 1 },
+                    new ThoughtProgressionStage { stageIndex = 0, severity = 2 }
+                }
+            },
+            new ThoughtProgressionRule
+            {
+                categoryKey = "chemical",
+                thoughtDefName = "DrugDesireInterest",
+                stages = new List<ThoughtProgressionStage>
+                {
+                    new ThoughtProgressionStage { stageIndex = 1, severity = 1 },
+                    new ThoughtProgressionStage { stageIndex = 2, severity = 2 }
+                }
+            },
+            new ThoughtProgressionRule
+            {
+                categoryKey = "chemical",
+                thoughtDefName = "DrugDesireFascination",
+                stages = new List<ThoughtProgressionStage>
+                {
+                    new ThoughtProgressionStage { stageIndex = 1, severity = 1 },
+                    new ThoughtProgressionStage { stageIndex = 2, severity = 2 }
+                }
+            }
+        };
 
         // ---- Work recording ----
         // Periodic scanner interval for colonists' current work jobs. Work has no clean one-shot

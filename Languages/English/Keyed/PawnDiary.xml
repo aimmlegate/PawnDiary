@@ -198,6 +198,8 @@
   <PawnDiary.Event.Thought>{0} had a thought: {1}.</PawnDiary.Event.Thought>
   <PawnDiary.Event.ThoughtPositive>{0} was cheered by {1}.</PawnDiary.Event.ThoughtPositive>
   <PawnDiary.Event.ThoughtNegative>{0} was troubled by {1}.</PawnDiary.Event.ThoughtNegative>
+  <PawnDiary.Event.ThoughtProgressionNegative>{0}'s condition worsened: {1}.</PawnDiary.Event.ThoughtProgressionNegative>
+  <PawnDiary.Event.ThoughtProgressionInstruction>this is a worsening stage of an ongoing need or situation; write about the current severity, do not treat it as a brand-new unrelated thought, and do not repeat earlier stages</PawnDiary.Event.ThoughtProgressionInstruction>
 
   <!-- Game-event text (synthetic map/story discovery diary entries) -->
   <PawnDiary.Event.AncientMechRevealedLabel>Ancient mech threat revealed</PawnDiary.Event.AncientMechRevealedLabel>
