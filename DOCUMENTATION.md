@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (Diary year paging)_
+_Last updated: 2026-06-17 (dev mock diary filler)_
 
 ---
 
@@ -307,17 +307,20 @@ cards, and the group editor card leaves extra bottom space so the restore action
 frame.
 
 The Diary tab production view shows only finished generated pages. Dev mode reveals per-pawn writing
-enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, and in-progress
-dot indicators. Long histories are paged by in-game year above the diary list, showing the full set
-of visible entries for one year at a time rather than one unbounded scroll view. The year comes from
-the saved display date that every old entry already has; malformed or missing dates fall back to an
-undated page so old saves do not lose reachable entries. Within a year page, the newest 15 visible
-entries open in full by default and older entries collapse to compact date/title header rows with a
-clean border and accent strip at the same height as an expanded card header. Clicking a header
-toggles that page with a lightweight height animation, and the choice is kept as session UI state so
-manually opened older pages stay open while the tab lives. Collapsed and animating rows keep
-hover/click feedback bounded to their visible height, so hidden full-card body space never lights up
-neighboring rows. Generated cards show
+enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, in-progress
+dot indicators, and a test button that tops the selected pawn up to 360 completed mock pages spread
+across many saved display dates without calling an LLM. Long histories are paged by in-game year
+above the diary list, showing the full set of visible entries for one year at a time rather than one
+unbounded scroll view. The year comes from the saved display date that every old entry already has;
+malformed or missing dates fall back to an undated page so old saves do not lose reachable entries.
+Within a year page, the newest 15 visible entries open in full by default and older entries collapse
+to compact date/title header rows with a clean border and accent strip at the same height as an
+expanded card header including its menu-section border. Compact rendering takes over only once the
+height animation is fully closed, so the border and header framing do not swap midway through the
+collapse. Clicking a header toggles that page with a lightweight height animation, and the choice is
+kept as session UI state so manually opened older pages stay open while the tab lives. Collapsed and
+animating rows keep hover/click feedback bounded to their visible height, so hidden full-card body
+space never lights up neighboring rows. Generated cards show
 date/title, group accent and chip, a faint warm page tint with a hairline header rule and a soft
 accent-spine highlight, a subtle model id, linked previews for the other pawn's POV on pairwise
 events, and a header-level loading animation aligned where the follow-up title text will appear.

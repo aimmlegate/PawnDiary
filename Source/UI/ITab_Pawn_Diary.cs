@@ -31,7 +31,9 @@ namespace PawnDiary
         private const float RoleplayParagraphGap = 8f;
         private const float EntryGap = 8f;
         private const int AutoExpandedEntryCount = 15;
-        private const float CollapsedEntryHeight = EntryTitleHeight;
+        private const int DevMockDiaryTargetCount = 360;
+        private const float CollapsedEntryChromePadding = 2f;
+        private const float CollapsedEntryHeight = EntryTitleHeight + CollapsedEntryChromePadding;
         private const float ExpansionAnimationSpeed = 5.5f;
         private const float LinkedEntryPadding = 8f;
         private const float LinkedEntryLabelHeight = 20f;
@@ -309,7 +311,9 @@ namespace PawnDiary
                 GUI.BeginGroup(entryRect);
                 Rect localEntryRect = new Rect(0f, 0f, entryRect.width, fullHeight);
                 Rect visibleEntryRect = new Rect(0f, 0f, entryRect.width, height);
-                bool compactCollapsed = !expanded && BodyExpansionAlpha(expansionBlend) <= 0f;
+                // Keep the full-card chrome while a row is still animating. Swapping to the compact
+                // renderer early made the border/header framing appear to jump near the closed state.
+                bool compactCollapsed = !expanded && expansionBlend <= 0f;
                 if (compactCollapsed)
                 {
                     DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend);
@@ -888,7 +892,7 @@ namespace PawnDiary
                 return 0f;
             }
 
-            float lines = 1f; // generation toggle
+            float lines = 2f; // generation toggle + dev-only mock-history filler
             if (PawnDiaryMod.Settings != null)
             {
                 lines += 3f; // dev toggles: persona controls, LLM diagnostics, show generating
@@ -972,6 +976,30 @@ namespace PawnDiary
                     writeGlobalSettings = true;
                 }
             }
+
+            Rect mockButtonRect = listing.GetRect(ControlLineHeight);
+            if (Widgets.ButtonText(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
+            {
+                int added = component.FillMockDiaryEntriesForDev(pawn, DevMockDiaryTargetCount);
+                if (added > 0)
+                {
+                    Messages.Message(
+                        "PawnDiary.Tab.MockEntriesAdded".Translate(added, pawn.LabelShortCap),
+                        MessageTypeDefOf.PositiveEvent,
+                        false);
+                }
+                else
+                {
+                    Messages.Message(
+                        "PawnDiary.Tab.MockEntriesAlreadyFilled".Translate(DevMockDiaryTargetCount, pawn.LabelShortCap),
+                        MessageTypeDefOf.NeutralEvent,
+                        false);
+                }
+            }
+
+            TooltipHandler.TipRegion(
+                mockButtonRect,
+                "PawnDiary.Tab.FillMockEntriesTip".Translate(DevMockDiaryTargetCount));
 
             // Persona picker. Options come from DiaryPersonaDefs.xml so new presets can be added
             // without touching UI code; the choice is saved per pawn and used for future generations.

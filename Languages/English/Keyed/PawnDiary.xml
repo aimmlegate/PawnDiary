@@ -30,6 +30,10 @@
   <PawnDiary.Tab.ShowLlmDebugInfoTip>Show raw, pending, and failed entries with endpoint, model, status, error, and prompt diagnostics.</PawnDiary.Tab.ShowLlmDebugInfoTip>
   <PawnDiary.Tab.ShowGeneratingEntries>Show pages still being written</PawnDiary.Tab.ShowGeneratingEntries>
   <PawnDiary.Tab.ShowGeneratingEntriesTip>Reveal pages still being written or stuck on "writing..." so you can see which events never finished. Lighter than the full LLM debug view.</PawnDiary.Tab.ShowGeneratingEntriesTip>
+  <PawnDiary.Tab.FillMockEntries>Fill with {0} test pages</PawnDiary.Tab.FillMockEntries>
+  <PawnDiary.Tab.FillMockEntriesTip>Dev-only: adds completed mock pages across many in-game dates so long-history scrolling, year paging, and collapse behavior can be tested without calling an LLM.</PawnDiary.Tab.FillMockEntriesTip>
+  <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
+  <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.GeneratingCount>{0} writing</PawnDiary.Tab.GeneratingCount>
   <PawnDiary.Tab.WritingCount>{0} writing</PawnDiary.Tab.WritingCount>
@@ -196,6 +200,12 @@
   <PawnDiary.Event.ArrivalLabel>Arrival</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0} was one of the colony's founding colonists.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0} joined the colony.</PawnDiary.Event.JoinedArrival>
+
+  <!-- Dev-mode mock entries used only by the Diary tab stress-test button. -->
+  <PawnDiary.Dev.MockLabel>Diary UI test</PawnDiary.Dev.MockLabel>
+  <PawnDiary.Dev.MockTitle>Mock page {0}</PawnDiary.Dev.MockTitle>
+  <PawnDiary.Dev.MockRawText>{0} received mock diary event {1}.</PawnDiary.Dev.MockRawText>
+  <PawnDiary.Dev.MockBody>Mock diary page {0}. {1} carried this deliberately artificial memory through the day so the diary can be tested with a long, multi-year history.</PawnDiary.Dev.MockBody>
 
   <!-- Mood-event text (GameCondition diary entries) -->
   <PawnDiary.Event.MoodEvent>{0} experienced {1}.</PawnDiary.Event.MoodEvent>

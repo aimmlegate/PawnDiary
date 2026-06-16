@@ -8,6 +8,9 @@ Dated history of every change to the mod. Add an entry here with each change, ne
     are included in the scrollbar range.
   - Added an in-game-year pager above the Diary list, using each entry's saved display date so old
     saves remain pageable without requiring a new absolute-tick field.
+  - Added a dev-mode Diary tab button that tops the selected pawn up to 360 completed mock pages
+    across many saved display dates for long-history, year-paging, and collapse testing without
+    calling an LLM.
   - Collapsed older entries to their date/title headers by default, kept the newest 15 visible
     entries open, and added click-to-toggle expansion with lightweight height animation plus
     session-local manual state.
@@ -17,6 +20,8 @@ Dated history of every change to the mod. Add an entry here with each change, ne
     hidden full-height card is still open.
   - Matched collapsed row height to the expanded card header height so closing a page no longer
     jumps into a taller final row.
+  - Included the menu-section border in collapsed row height and kept full-card chrome during the
+    final collapse frames so closing no longer snaps into a shorter-looking row.
 
 - **2026-06-17 (death fallback entries)**
   - Added a `Pawn.Kill` postfix fallback so condition deaths such as malnutrition/starvation still
