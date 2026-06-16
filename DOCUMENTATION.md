@@ -615,11 +615,11 @@ does not add a second surgery hook that would duplicate successful operations.
 | `endpointUrl` / `apiKey` / `modelName` | localhost / _(empty)_ / `local-model` | **Legacy** single-endpoint fields, kept only to seed `apiEndpoints` on first load. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight **per API**; the rest queue on that API. Different APIs always run in parallel. **Use 1 for a single local model.** |
-| `maxTokens` | 160 | 32–2048. Applied to each one-entry request. |
+| `maxTokens` | 100 | 32–2048. Applied to each one-entry request, and also enforced locally as a hard response cap if a model ignores API-side `max_tokens`. |
 | `temperature` | 0.8 | 0–2. |
 | `dualPovGeneration` | true | Paired sequential vs. independent single-POV requests for both sides (§4). |
 | `generateTitles` | false | Opt-in LLM-titling master toggle. **OFF by default** — no extra request, no extra cost; the diary card title is the first sentence of the generated text. When ON, every successful main entry queues a small follow-up title call (`TitleMaxTokens = 40`) with a focused system prompt asking for a 3-8 word title, no quotes, no period; the result is stored per POV on the event and takes precedence over the first-sentence fallback. If the title call fails, the first-sentence fallback renders instead. See §4 "Title generation". |
-| `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` / `systemPromptTitle` | from `DiaryPromptDef` XML | The system prompts (diary voice / day reflection / neutral chronicle / title), chosen per request type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). `systemPromptTitle` is only sent by the opt-in title follow-up; main entries are unaffected by changes to it. |
+| `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` / `systemPromptTitle` | from `DiaryPromptDef` XML | The system prompts (diary voice / day reflection / neutral chronicle / title), chosen per request type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). The default diary `systemPrompt` also explicitly tells the model to stay within the request token limit. `systemPromptTitle` is only sent by the opt-in title follow-up; main entries are unaffected by changes to it. |
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
 
@@ -693,6 +693,9 @@ dev mode shows a "Show persona settings" toggle, and normal mode hides persona e
   in-flight check prevents double-sending a request that is still running.
 - **Retries:** up to 3 attempts per lane for transient errors (429, 5xx, network) within that
   lane's deadline; permanent errors (other 4xx, empty content) skip straight to the next lane.
+- **Hard output cap:** `SendOnce` applies `TrimToMaxTokens` to every successful response before it
+  is enqueued. This locally enforces the request's `maxTokens` budget (whitespace-delimited token
+  count) even when a model ignores `max_tokens`, preventing overlong saved diary entries.
 
 ---
 

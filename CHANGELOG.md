@@ -4,6 +4,19 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (hard cap for overlong diary responses)**
+  - Added a local hard response cap in `LlmClient.SendOnce`: after a successful API response,
+    `TrimToMaxTokens` now enforces the request's `maxTokens` budget by counting
+    whitespace-delimited tokens and truncating overflow with `...`.
+  - This guards against RP-tuned or non-compliant models that ignore `max_tokens`, so saved diary
+    event text cannot grow unbounded even if the endpoint returns excessively long completions.
+
+- **2026-06-16 (default XML diary prompt token-limit guidance)**
+  - Updated `1.6/Defs/DiaryPromptDef.xml` so the default diary `systemPrompt` now includes the same
+    "stay within the request token limit" instruction as the code default guidance.
+  - Updated `DOCUMENTATION.md` settings table to note that this token-limit instruction is part of
+    the default diary `systemPrompt`.
+
 - **2026-06-16 (optional LLM titling for diary entries)**
   - Diary card headers now show `date — title` instead of just the date. By default the title is the
     first sentence of the LLM-generated text — no extra request, no extra cost, works for every
