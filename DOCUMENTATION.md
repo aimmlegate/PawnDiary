@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (prompt customization settings pass)_
+_Last updated: 2026-06-16 (random generation weight settings)_
 
 ---
 
@@ -153,7 +153,8 @@ into the end-of-day reflection.
 
 Work recording is sampled periodically rather than hook-based. It looks at
 `CurJob.workGiverDef.workType`, skips social and violent work, applies XML-configured odds and
-cooldowns, then classifies the moment as passionate, straining, routine, or dark-study work.
+cooldowns plus the `workGenerationWeight` settings multiplier, then classifies the moment as
+passionate, straining, routine, or dark-study work.
 
 When `daySummaryEnabled` is true, sleep/rest triggers one `DayReflection` candidate per pawn using a
 weighted selection of major day events, opinion shifts, major new afflictions, and low-weight filler.
@@ -180,7 +181,8 @@ groups last. Settings store per-group enabled flags and instruction overrides ke
 Batch policies are XML data on groups. `PairEvent` merges quick rows for a pawn pair or def; 
 `AmbientDayNote` accumulates low-stakes rows per pawn/day into one solo memory. Promotion policies
 can let batched interactions escape into immediate pairwise events based on opinion intensity,
-opinion asymmetry, low needs, or extreme mood. These signals are numeric/game-state based, not
+opinion asymmetry, low needs, or extreme mood, then the settings `socialGenerationWeight`
+multiplier is applied to that promotion roll. These signals are numeric/game-state based, not
 localized text matching.
 
 `1.6/Defs/DiaryTuningDef.xml` holds dedup windows, scanner intervals, mood/health/beauty buckets,
@@ -251,6 +253,8 @@ Global settings live in `PawnDiarySettings`:
 | `maxTokens` | 100 | API `max_tokens` plus local hard response cap. |
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
+| `workGenerationWeight` | 1 | 0-5 multiplier for random work-sampling diary pages. |
+| `socialGenerationWeight` | 1 | 0-5 multiplier for batched social promotion into immediate diary pages. |
 | `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
 | `singlePovInstruction` / `recipientFollowupInstruction` / `deathDescriptionInstruction` / `arrivalDescriptionInstruction` / `titleUserInstruction` | XML defaults | Def-backed user-message prompt texts appended after structured context. |
 | `groupEnabled` / `groupInstructions` | XML defaults | Per-group recording toggles and instruction overrides. |

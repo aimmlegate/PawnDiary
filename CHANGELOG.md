@@ -3,6 +3,11 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (random generation weight settings)**
+  - Added saved settings sliders for work and social random generation weights, defaulting to 1x.
+  - Wired work weight into periodic work-sampling odds and social weight into batched interaction
+    promotion odds, with 0x suppressing that random source and 5x as the settings cap.
+
 - **2026-06-16 (README and mod description refresh)**
   - Rewrote the README as a player-facing overview covering the Diary tab, event coverage, LLM
     setup, experimental status, and prompt-lab workflow.

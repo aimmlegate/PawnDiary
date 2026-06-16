@@ -38,7 +38,8 @@ namespace PawnDiary
                 return false;
             }
 
-            return Rand.Chance(PromotionChance(group.promotion, initiator, recipient));
+            float weight = PawnDiaryMod.Settings?.socialGenerationWeight ?? 1f;
+            return Rand.Chance(Mathf.Clamp01(PromotionChance(group.promotion, initiator, recipient) * weight));
         }
 
         /// <summary>

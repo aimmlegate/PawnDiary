@@ -71,6 +71,10 @@
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
   <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
+  <PawnDiary.Settings.WorkGenerationWeight>Work random weight: {0}x</PawnDiary.Settings.WorkGenerationWeight>
+  <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
+  <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>
+  <PawnDiary.Settings.SocialGenerationWeightHelp>Multiplies the random chance that batched low-stakes social moments are promoted into immediate pairwise diary pages. 1x uses the XML tuning defaults; 0x keeps them batched.</PawnDiary.Settings.SocialGenerationWeightHelp>
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>

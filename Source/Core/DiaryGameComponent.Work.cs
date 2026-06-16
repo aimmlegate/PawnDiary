@@ -173,7 +173,8 @@ namespace PawnDiary
                 chance *= Math.Max(0f, DiaryTuning.Current.workDarkStudyChanceMultiplier);
             }
 
-            return chance;
+            float weight = PawnDiaryMod.Settings?.workGenerationWeight ?? 1f;
+            return chance * weight;
         }
 
         private bool HasRecentWorkEvent(Pawn pawn, string currentWorkTypeDefName, int windowTicks, bool sameWorkOnly)

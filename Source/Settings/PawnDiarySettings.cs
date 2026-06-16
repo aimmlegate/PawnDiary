@@ -100,6 +100,10 @@ namespace PawnDiary
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
         public bool generateTitles = true;
+        // Player-facing multipliers for the two random entry gates:
+        // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
+        public float workGenerationWeight = 1f;
+        public float socialGenerationWeight = 1f;
 
         // Per interaction-group settings, keyed by InteractionGroup.defName.
         // groupEnabled: whether interactions in the group are recorded at all.
@@ -164,6 +168,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref arrivalDescriptionInstruction, "arrivalDescriptionInstruction", DefaultArrivalDescriptionInstruction);
             Scribe_Values.Look(ref titleUserInstruction, "titleUserInstruction", DefaultTitleUserInstruction);
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
+            Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
+            Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
 
@@ -590,6 +596,8 @@ namespace PawnDiary
             maxConcurrentRequests = Mathf.Clamp(maxConcurrentRequests, 1, 16);
             maxTokens = Mathf.Clamp(maxTokens, 32, 2048);
             temperature = Mathf.Clamp(temperature, 0f, 2f);
+            workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
+            socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
         }
 
         /// <summary>

@@ -151,6 +151,12 @@ namespace PawnDiary
                 "PawnDiary.Settings.GenerateTitles".Translate(),
                 ref Settings.generateTitles,
                 "PawnDiary.Settings.GenerateTitlesTip".Translate());
+            listing.Label("PawnDiary.Settings.WorkGenerationWeight".Translate(Settings.workGenerationWeight.ToString("0.##")));
+            Settings.workGenerationWeight = listing.Slider(Settings.workGenerationWeight, 0f, 5f);
+            DrawHint(listing, "PawnDiary.Settings.WorkGenerationWeightHelp".Translate());
+            listing.Label("PawnDiary.Settings.SocialGenerationWeight".Translate(Settings.socialGenerationWeight.ToString("0.##")));
+            Settings.socialGenerationWeight = listing.Slider(Settings.socialGenerationWeight, 0f, 5f);
+            DrawHint(listing, "PawnDiary.Settings.SocialGenerationWeightHelp".Translate());
             listing.Label("PawnDiary.Settings.MaxConcurrent".Translate(Settings.maxConcurrentRequests));
             Settings.maxConcurrentRequests = Mathf.RoundToInt(listing.Slider(Settings.maxConcurrentRequests, 1f, 16f));
             DrawHint(listing, "PawnDiary.Settings.MaxConcurrentHelp".Translate());
@@ -836,7 +842,7 @@ namespace PawnDiary
             }
 
             // Generation controls plus the single-card prompt studio.
-            height += 160f;
+            height += 250f;
             height += 470f;
 
             // Events section: two-column group toggles, domain subheaders, and the prompt editor.
