@@ -11,6 +11,10 @@ Dated history of every change to the mod. Add an entry here with each change, ne
   - Collapsed older entries to their date/title headers by default, kept the newest 15 visible
     entries open, and added click-to-toggle expansion with lightweight height animation plus
     session-local manual state.
+  - Cleaned up the collapsed-row rendering so closed entries use a compact header-only border
+    instead of clipped full-card body chrome.
+  - Fixed collapsed/animating row hover hitboxes so a closed entry no longer highlights like its
+    hidden full-height card is still open.
 
 - **2026-06-17 (death fallback entries)**
   - Added a `Pawn.Kill` postfix fallback so condition deaths such as malnutrition/starvation still

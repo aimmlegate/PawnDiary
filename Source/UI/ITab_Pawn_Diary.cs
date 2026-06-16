@@ -31,7 +31,7 @@ namespace PawnDiary
         private const float RoleplayParagraphGap = 8f;
         private const float EntryGap = 8f;
         private const int AutoExpandedEntryCount = 15;
-        private const float CollapsedEntryHeight = EntryTitleHeight + 6f;
+        private const float CollapsedEntryHeight = 36f;
         private const float ExpansionAnimationSpeed = 5.5f;
         private const float LinkedEntryPadding = 8f;
         private const float LinkedEntryLabelHeight = 20f;
@@ -308,6 +308,21 @@ namespace PawnDiary
                 Color accentColor = EntryAccentColor(entry);
                 GUI.BeginGroup(entryRect);
                 Rect localEntryRect = new Rect(0f, 0f, entryRect.width, fullHeight);
+                Rect visibleEntryRect = new Rect(0f, 0f, entryRect.width, height);
+                bool compactCollapsed = !expanded && BodyExpansionAlpha(expansionBlend) <= 0f;
+                if (compactCollapsed)
+                {
+                    DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend);
+                    if (Widgets.ButtonInvisible(visibleEntryRect, false))
+                    {
+                        SetEntryExpanded(entry, true);
+                    }
+
+                    GUI.EndGroup();
+                    curY += height + EntryGap;
+                    continue;
+                }
+
                 Widgets.DrawMenuSection(localEntryRect);
                 // Faint warm "page" wash behind the body text, drawn under the hover highlight so
                 // mouseover still reads. Starts below the title bar and inside the accent strip.
@@ -317,7 +332,7 @@ namespace PawnDiary
                     Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 4f),
                     Mathf.Max(0f, localEntryRect.height - EntryTitleHeight - 2f));
                 Widgets.DrawBoxSolid(pageRect, PageTintColor);
-                Widgets.DrawHighlightIfMouseover(localEntryRect);
+                Widgets.DrawHighlightIfMouseover(visibleEntryRect);
 
                 Rect titleRect = new Rect(localEntryRect.x, localEntryRect.y, localEntryRect.width, EntryTitleHeight);
                 Widgets.DrawTitleBG(titleRect);
@@ -352,13 +367,6 @@ namespace PawnDiary
                 }
 
                 TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
-
-                if (!expanded && BodyExpansionAlpha(expansionBlend) <= 0f)
-                {
-                    GUI.EndGroup();
-                    curY += height + EntryGap;
-                    continue;
-                }
 
                 // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
                 // recipient (shows the initiator's perspective first). When this pawn is the
@@ -415,6 +423,40 @@ namespace PawnDiary
                 curY += height + EntryGap;
             }
             Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// Draws a closed diary page as a deliberate compact row: one bordered header, one accent
+        /// strip, and no body tint/rule. This keeps collapsed histories readable instead of looking
+        /// like clipped full cards.
+        /// </summary>
+        private static void DrawCollapsedEntry(DiaryEntryView entry, Rect rect, Color accent, bool expanded, float expansionBlend)
+        {
+            Widgets.DrawMenuSection(rect);
+            Widgets.DrawTitleBG(rect);
+            Widgets.DrawHighlightIfMouseover(rect);
+
+            Rect accentRect = new Rect(rect.x + 1f, rect.y + 1f, EntryAccentWidth, rect.height - 2f);
+            Widgets.DrawBoxSolid(accentRect, accent);
+            Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
+
+            Rect groupRect = GroupLabelRect(rect, entry?.GroupLabel);
+            if (groupRect.width > 0f)
+            {
+                groupRect.y = rect.y + (rect.height - groupRect.height) * 0.5f;
+                DrawGroupLabel(groupRect, entry.GroupLabel, accent);
+            }
+
+            float headerRight = groupRect.width > 0f ? groupRect.x - 6f : rect.xMax - 8f;
+            Rect headerRect = new Rect(
+                rect.x + 34f,
+                rect.y + (rect.height - 22f) * 0.5f,
+                Mathf.Max(80f, headerRight - rect.x - 34f),
+                22f);
+            DrawEntryHeader(headerRect, entry, accent);
+            DrawExpansionIndicator(rect, expanded, expansionBlend, accent);
+
+            TooltipHandler.TipRegion(rect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
         }
 
         /// <summary>
@@ -538,7 +580,7 @@ namespace PawnDiary
         /// </summary>
         private static void DrawExpansionIndicator(Rect titleRect, bool expanded, float expansionBlend, Color accent)
         {
-            Rect indicatorRect = new Rect(titleRect.x + 8f, titleRect.y + 4f, 18f, 20f);
+            Rect indicatorRect = new Rect(titleRect.x + 8f, titleRect.y + (titleRect.height - 20f) * 0.5f, 18f, 20f);
             Color oldColor = GUI.color;
             TextAnchor oldAnchor = Text.Anchor;
             GameFont oldFont = Text.Font;
