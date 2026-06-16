@@ -98,13 +98,37 @@ namespace PawnDiary
             Settings.maxConcurrentRequests = Mathf.RoundToInt(listing.Slider(Settings.maxConcurrentRequests, 1f, 16f));
             DrawHint(listing, "PawnDiary.Settings.MaxConcurrentHelp".Translate());
 
+            // Diary voice: first-person, in-character entries (the main system prompt).
             SectionTitle(listing, "PawnDiary.Settings.SystemPrompt".Translate());
+            DrawHint(listing, "PawnDiary.Settings.SystemPromptHelp".Translate());
             Rect systemPromptRect = listing.GetRect(120f);
             Settings.systemPrompt = Widgets.TextArea(systemPromptRect, Settings.systemPrompt ?? string.Empty);
             listing.Gap(4f);
             if (listing.ButtonText("PawnDiary.Settings.RestoreSystemPrompt".Translate()))
             {
                 Settings.systemPrompt = PawnDiarySettings.DefaultSystemPrompt;
+            }
+
+            // Day reflection: first-person, looking back on the whole day.
+            SectionTitle(listing, "PawnDiary.Settings.SystemPromptReflection".Translate());
+            DrawHint(listing, "PawnDiary.Settings.SystemPromptReflectionHelp".Translate());
+            Rect reflectionPromptRect = listing.GetRect(120f);
+            Settings.systemPromptReflection = Widgets.TextArea(reflectionPromptRect, Settings.systemPromptReflection ?? string.Empty);
+            listing.Gap(4f);
+            if (listing.ButtonText("PawnDiary.Settings.RestoreSystemPromptReflection".Translate()))
+            {
+                Settings.systemPromptReflection = PawnDiarySettings.DefaultSystemPromptReflection;
+            }
+
+            // Neutral chronicle: third-person factual notes (death + arrival descriptions).
+            SectionTitle(listing, "PawnDiary.Settings.SystemPromptNeutral".Translate());
+            DrawHint(listing, "PawnDiary.Settings.SystemPromptNeutralHelp".Translate());
+            Rect neutralPromptRect = listing.GetRect(120f);
+            Settings.systemPromptNeutral = Widgets.TextArea(neutralPromptRect, Settings.systemPromptNeutral ?? string.Empty);
+            listing.Gap(4f);
+            if (listing.ButtonText("PawnDiary.Settings.RestoreSystemPromptNeutral".Translate()))
+            {
+                Settings.systemPromptNeutral = PawnDiarySettings.DefaultSystemPromptNeutral;
             }
 
             DrawInteractionGroupsEditor(listing);

@@ -4,6 +4,18 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (per-mode system prompts + per-event tone)**
+  - Split the single system prompt into three by narrative mode, chosen per event type at dispatch
+    (`SystemPromptForEvent`): diary voice (first-person entries), day reflection (first-person
+    end-of-day), and neutral chronicle (third-person, no persona — death/arrival descriptions). This
+    removes the old contradiction where the first-person system prompt rode along with third-person
+    death/arrival instructions. All three are player-editable in mod settings (each with its own
+    restore-default) and default from `DiaryPromptDef.xml`.
+  - Added a per-event `tone` field on interaction groups (e.g. anomaly = "with creeping dread",
+    small talk = "with light, easy familiarity"), sent to the LLM as a `tone:` line on first-person
+    entries. It is event-driven and orthogonal to the existing pawn-state atmosphere (kept as-is), so
+    a raid reads tense and a prank light regardless of the writer's mood. Localized via DefInjected.
+
 - **2026-06-16 (reflective end-of-day summary)**
   - Reworked the end-of-day memory: instead of building a thin note from low-stakes filler, a pawn
     bedding down now writes one reflective `DayReflection` entry drawn from a weighted-random

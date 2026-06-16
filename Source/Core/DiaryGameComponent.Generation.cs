@@ -408,7 +408,7 @@ namespace PawnDiary
             {
                 eventId = diaryEvent.eventId,
                 povRole = povRole,
-                systemPrompt = PawnDiaryMod.Settings.systemPrompt,
+                systemPrompt = SystemPromptForEvent(diaryEvent),
                 rawText = rawText,
                 endpointUrl = target.url,
                 modelName = target.model,
@@ -419,6 +419,27 @@ namespace PawnDiary
                 maxTokens = PawnDiaryMod.Settings.maxTokens,
                 temperature = PawnDiaryMod.Settings.temperature
             });
+        }
+
+        /// <summary>
+        /// Picks the system prompt by narrative mode: a neutral third-person chronicle for colonist
+        /// death/arrival descriptions, the end-of-day reflection prompt for day summaries, and the
+        /// first-person diary voice for everything else. Each is player-editable in settings.
+        /// </summary>
+        private static string SystemPromptForEvent(DiaryEvent diaryEvent)
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (diaryEvent.HasDeathDescription() || diaryEvent.HasArrivalDescription())
+            {
+                return settings.systemPromptNeutral;
+            }
+
+            if (diaryEvent.IsDayReflection())
+            {
+                return settings.systemPromptReflection;
+            }
+
+            return settings.systemPrompt;
         }
 
         /// <summary>

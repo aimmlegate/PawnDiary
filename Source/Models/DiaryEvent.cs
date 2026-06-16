@@ -681,6 +681,27 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns true when this event is an end-of-day reflection (see DiaryGameComponent.DaySummary.cs).
+        /// Used to pick the reflection system prompt at dispatch.
+        /// </summary>
+        public bool IsDayReflection()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("day_reflection=true", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// The emotional-register cue for this event's group (e.g. "with creeping dread"), or empty
+        /// when the group sets no tone. Event-driven and distinct from the pawn-state atmosphere; it
+        /// is appended to the user prompt as a "tone:" field for first-person entries.
+        /// </summary>
+        public string ToneDirective()
+        {
+            DiaryInteractionGroupDef group = GroupForDisplay();
+            return group != null ? group.tone : string.Empty;
+        }
+
+        /// <summary>
         /// Remembers the RimWorld social-log row(s) that were folded into this diary event.
         /// Small-talk batching can add several ids to one event; direct interactions add one.
         /// </summary>

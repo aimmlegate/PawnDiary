@@ -33,6 +33,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the heat of desire—an explicit sexual encounter. Keep it in-character, sensory, not clinical</instruction>
+    <tone>with raw, sensory heat</tone>
     <matchDefNames>
       <li>Necro_Vaginal</li>
     </matchDefNames>
@@ -52,6 +53,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</instruction>
+    <tone>with tender, fluttering warmth</tone>
     <matchDefNames>
       <li>RomanceAttempt</li>
       <li>MarriageProposal</li>
@@ -103,6 +105,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the weight of chains—suppression by an overseer or the first spark of defiance</instruction>
+    <tone>with grim, heavy unease</tone>
     <matchDefNames>
       <li>Suppress</li>
       <li>SparkSlaveRebellion</li>
@@ -150,6 +153,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</instruction>
+    <tone>with tense, formal pressure</tone>
     <matchDefNames>
       <li>Trial_Accuse</li>
       <li>Trial_Defend</li>
@@ -167,6 +171,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>something wrong—an unsettling exchange that leaves unease lingering. Don't explain it away</instruction>
+    <tone>with creeping dread; never resolve the wrongness</tone>
     <matchDefNames>
       <li>DarkDialogue</li>
       <li>CreepyWords</li>
@@ -195,6 +200,7 @@
     <defaultEnabled>true</defaultEnabled>
     <combat>true</combat>
     <instruction>the sting of contempt—an insult, a slight, or fists about to fly</instruction>
+    <tone>with sharp, stinging heat</tone>
     <matchDefNames>
       <li>Insult</li>
       <li>Slight</li>
@@ -217,6 +223,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>a solemn public moment—ritual, ceremony, or address. The colony watches</instruction>
+    <tone>with solemn, ceremonial weight</tone>
     <matchDefNames>
       <li>SpeechUtility</li>
       <li>Speech_Duel</li>
@@ -262,6 +269,7 @@
       <maxSampleLines>5</maxSampleLines>
     </batch>
     <instruction>a quiet bond—chatting with an animal, taming, training, or letting one go</instruction>
+    <tone>with quiet, gentle fondness</tone>
     <matchDefNames>
       <li>AnimalChat</li>
       <li>TameAttempt</li>
@@ -285,6 +293,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</instruction>
+    <tone>with soft, tender warmth</tone>
     <matchDefNames>
       <li>DeepTalk</li>
       <li>KindWords</li>
@@ -368,6 +377,7 @@
       <moodLowThreshold>0.25</moodLowThreshold>
     </promotion>
     <instruction>idle chatter—low-stakes small talk that fills the silence</instruction>
+    <tone>with light, easy familiarity</tone>
     <matchDefNames>
       <li>Chitchat</li>
       <li>Conversation</li>
@@ -397,6 +407,7 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
+    <tone>with a quiet, settling, end-of-day calm</tone>
     <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
     <matchDefNames>
       <li>DayReflection</li>
@@ -423,6 +434,7 @@
     <domain>MentalState</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>tempers snapped—two people came to blows. Write it as heat and impact</instruction>
+    <tone>with raw, adrenal fury</tone>
     <matchDefNames>
       <li>SocialFighting</li>
     </matchDefNames>
@@ -435,6 +447,7 @@
     <domain>MentalState</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the mind breaking—write the pawn's inner storm and what they did</instruction>
+    <tone>with frayed, overwhelmed intensity</tone>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -448,6 +461,7 @@
     <defaultEnabled>true</defaultEnabled>
     <combat>true</combat>
     <instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</instruction>
+    <tone>with fear and visceral danger</tone>
     <matchDefNames>
       <li>Downed</li>
       <li>Wounded</li>
@@ -473,6 +487,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the body's fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</instruction>
+    <tone>with fragile fear and relief</tone>
     <matchDefNames>
       <li>DidSurgery</li>
       <li>HealedMe</li>
@@ -492,6 +507,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>a turning point—birth, capture, bonding, or a new beginning. Write it as a life changed</instruction>
+    <tone>with the quiet weight of a turning point</tone>
     <matchDefNames>
       <li>GaveBirth</li>
       <li>Captured</li>
@@ -517,6 +533,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>hands that made something lasting—pride, exhaustion, and the weight of creation</instruction>
+    <tone>with proud, bone-tired satisfaction</tone>
     <matchDefNames>
       <li>CraftedMasterwork</li>
       <li>CraftedLegendary</li>
@@ -531,6 +548,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>a sacred object placed with reverence—a solemn, culturally weighty moment</instruction>
+    <tone>with hushed reverence</tone>
     <matchDefNames>
       <li>RelicInstalled</li>
     </matchDefNames>
@@ -561,6 +579,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</instruction>
+    <tone>with dread and the uncanny; leave it unexplained</tone>
     <matchDefNames>
       <li>StudiedEntity</li>
       <li>MutatedMyArm</li>
@@ -580,6 +599,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</instruction>
+    <tone>with shaken, crisis-pitched tension</tone>
     <matchDefNames>
       <li>Raid</li>
       <li>Infestation</li>
@@ -622,6 +642,7 @@
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
     <instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</instruction>
+    <tone>with small, private quiet</tone>
     <matchDefNames>
       <li>AteRawHumanlikeMeat</li>
       <li>AttendedConcert</li>
@@ -660,6 +681,7 @@
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>something lifted—a positive colony-wide event that eases the heart</instruction>
+    <tone>with a lifted, eased spirit</tone>
     <matchDefNames>
       <li>Aurora</li>
       <li>Party</li>
@@ -674,6 +696,7 @@
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>something weighing—a negative colony-wide event that strains the spirit</instruction>
+    <tone>with a weighed-down strain</tone>
     <matchDefNames>
       <li>Eclipse</li>
       <li>PsychicDrone</li>

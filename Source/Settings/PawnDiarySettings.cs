@@ -90,8 +90,13 @@ namespace PawnDiary
         // stuck on "writing...") in the pawn Diary tab, without the full LLM diagnostic block. Lets a
         // player see which events never finished generating. Normal mode always hides them.
         public bool showGeneratingEntries = false;
-        // System message sent with each LLM request to set the model's behavior.
+        // System messages sent with each LLM request to set the model's behavior. One per narrative
+        // mode; the request's event type chooses which (see DiaryGameComponent.Generation.cs).
+        // systemPrompt = first-person diary voice; Reflection = first-person end-of-day reflection;
+        // Neutral = third-person factual chronicle (death/arrival descriptions).
         public string systemPrompt = DefaultSystemPrompt;
+        public string systemPromptReflection = DefaultSystemPromptReflection;
+        public string systemPromptNeutral = DefaultSystemPromptNeutral;
 
         // Per interaction-group settings, keyed by InteractionGroup.defName.
         // groupEnabled: whether interactions in the group are recorded at all.
@@ -115,6 +120,8 @@ namespace PawnDiary
         // isn't loaded yet during early startup, the field initializer in DiaryPromptDef
         // provides the same hardcoded text as a fallback.
         public static string DefaultSystemPrompt => DiaryPrompts.Current.systemPrompt;
+        public static string DefaultSystemPromptReflection => DiaryPrompts.Current.systemPromptReflection;
+        public static string DefaultSystemPromptNeutral => DiaryPrompts.Current.systemPromptNeutral;
 
         public override void ExposeData()
         {
@@ -138,6 +145,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
             Scribe_Values.Look(ref showGeneratingEntries, "showGeneratingEntries", false);
             Scribe_Values.Look(ref systemPrompt, "systemPrompt", DefaultSystemPrompt);
+            Scribe_Values.Look(ref systemPromptReflection, "systemPromptReflection", DefaultSystemPromptReflection);
+            Scribe_Values.Look(ref systemPromptNeutral, "systemPromptNeutral", DefaultSystemPromptNeutral);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
 
@@ -511,6 +520,16 @@ namespace PawnDiary
             if (systemPrompt == null)
             {
                 systemPrompt = string.Empty;
+            }
+
+            if (systemPromptReflection == null)
+            {
+                systemPromptReflection = string.Empty;
+            }
+
+            if (systemPromptNeutral == null)
+            {
+                systemPromptNeutral = string.Empty;
             }
 
             timeoutSeconds = Mathf.Clamp(timeoutSeconds, 5, 300);

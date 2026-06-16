@@ -106,6 +106,8 @@ namespace PawnDiary
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
             // Atmosphere is a short emotional anchor combining mood + relationship context.
             AppendField(lines, "atmosphere", diaryEvent.AtmosphereForRole(povRole));
+            // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
+            AppendField(lines, "tone", diaryEvent.ToneDirective());
             AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
             AppendField(lines, "my last opener (not repeat)", diaryEvent.LastOpenerForRole(povRole));
             // Burning passion only for important events (not chit chat etc.)
@@ -143,6 +145,8 @@ namespace PawnDiary
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
             // Atmosphere is a short emotional anchor for the model.
             AppendField(lines, "atmosphere", diaryEvent.initiatorAtmosphere);
+            // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
+            AppendField(lines, "tone", diaryEvent.ToneDirective());
             AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
             AppendField(lines, "my last opener (not repeat)", diaryEvent.initiatorLastOpener);
             // Burning passion only for important events (not chit chat etc.)

@@ -92,12 +92,12 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
 | `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). Includes `IsThoughtEnabled`/`InstructionForThought` for the Thought domain. |
 | `DiaryTuningDef.cs` | Defines `DiaryTuningDef : Def` + `DiaryTuning.Current` (tuning knobs: dedup windows, thresholds, buckets). Data lives in XML; falls back to safe code defaults if the Def is absent. |
-| `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, legacy dual markers, and the default system prompt). |
+| `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, legacy dual markers, and the three default system prompts: diary voice / day reflection / neutral chronicle). |
 | `DiaryPersonaDef.cs` | Defines `DiaryPersonaDef : Def` + `DiaryPersonas` lookup/fallback helpers. Data lives in XML and is selected per pawn. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
 | `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries with roleplay styling, importance markers, linked-entry cross-pawn previews (click-to-navigate), and that pawn's generation toggle. |
 | `DiaryEntry.cs` | `DiaryEntry` (legacy stored entry), `DiaryEntryView` (display model: `DisplayText`/`StatusText`/`DebugText`), and `LinkedEntryView` (truncated preview of the other pawn's entry for cross-linking). |
-| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, tale, mood-event, and thought groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers including thought thresholds/token lists), `DiaryPromptDef.xml` (prompt instructions, legacy markers, system prompt/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
+| `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, tale, mood-event, and thought groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers including thought thresholds/token lists), `DiaryPromptDef.xml` (prompt instructions, legacy markers, the three system prompts/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
 | `AGENTS.md` | Guide for code agents: the working rules (docs, localization, comments, build), skill-routing rules, and the C#/RimWorld→JS/TS primer (Defs/`DefDatabase`, `IExposable`, Harmony, `ref`/`out`, `async`, LINQ, …). Start here. |
 | `CLAUDE.md` | Thin Claude Code wrapper pointing to the shared PawnDiary skill and AGENTS constraints. |
@@ -250,7 +250,18 @@ interaction batches. The inspector tab (`ITab_Pawn_Diary`) is also hidden for no
   event-reference adds all suppress that pawn's events with ticks later than the final death
   description, so nothing generates or displays after the death entry.
 
-All paths share the same per-event context fields and the system prompt.
+All paths share the same per-event context fields. The **system prompt is chosen by narrative
+mode** at dispatch (`SystemPromptForEvent` in `DiaryGameComponent.Generation.cs`), so the model's
+framing matches the entry type instead of one prompt fighting the per-type instruction:
+- **Diary voice** (`systemPrompt`) — first-person, in-character: interactions, mental states, tales,
+  mood events, thoughts, and the day reflection's underlying entries.
+- **Day reflection** (`systemPromptReflection`) — first-person, looking back on the whole day; used
+  when the event is a `DayReflection` (`IsDayReflection()`).
+- **Neutral chronicle** (`systemPromptNeutral`) — third-person, factual, no persona; used for
+  colonist death and arrival descriptions (`HasDeathDescription()` / `HasArrivalDescription()`).
+
+All three are player-editable in mod settings (each with its own "restore default"), default from
+`DiaryPromptDef.xml`, and are saved per-game.
 
 ### Per-pawn persona and generation toggle
 - Each `PawnDiaryRecord` saves `personaDefName` and `diaryGenerationEnabled`.
@@ -292,7 +303,12 @@ there's nothing worth saying, so the model never spends tokens on noise:
 - **Atmosphere** (`BuildAtmosphere`): a short emotional anchor combining the pawn's mood bucket
   and their opinion-based relationship tone (e.g., "tense friction", "bright warmth", "bleak
   hostility"). Helps small models establish emotional tone without complex inference. Empty
-  for neutral moods and neutral opinions.
+  for neutral moods and neutral opinions. This is **pawn-state** driven.
+- **Tone** (`DiaryEvent.ToneDirective()` → group `tone`): the **event's** emotional register, set
+  per group in `DiaryInteractionGroupDefs.xml` (e.g. anomaly = "with creeping dread", small talk =
+  "with light, easy familiarity"). Orthogonal to atmosphere — a terrified pawn can still write about
+  a funny moment — and sent as a `tone:` line on first-person entries only (not neutral chronicles).
+  Empty leaves the tone neutral.
 - **Pawn summary** (`BuildPawnSummary`): compact profile — `sex=`, `age=`, then DLC identity
   (each omitted without its DLC, via `DlcContext`): `xenotype=` (Biotech; skips plain Baseliner),
   `title=` (Royalty; highest title), `faith=` (Ideology; ideoligion + role) — then `mood=`
@@ -570,7 +586,7 @@ does not add a second surgery hook that would duplicate successful operations.
 | `maxTokens` | 160 | 32–2048. Applied to each one-entry request. |
 | `temperature` | 0.8 | 0–2. |
 | `dualPovGeneration` | true | Paired sequential vs. independent single-POV requests for both sides (§4). |
-| `systemPrompt` | from `DiaryPromptDef` XML | Sent as a `system` message; edit `1.6/Defs/DiaryPromptDef.xml` then click "Restore default" to apply (existing saves persist their saved value). |
+| `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` | from `DiaryPromptDef` XML | The three system prompts (diary voice / day reflection / neutral chronicle), chosen per event type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). |
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
 
@@ -732,7 +748,7 @@ stray English biases the model toward writing in English when the player runs a 
 **Kept in English on purpose — a stable machine "schema", not prose:**
 - The structured prompt **field labels** in `DiaryPromptBuilder` (`event:`, `pov:`, `role:`,
   `with:`, `what you saw:`, `what happened:`, `you:`, `persona:`, `setting:`, `atmosphere:`,
-  `relationship:`, `my last opener (not repeat):`, `burning passion:`, `instruction:`,
+  `tone:`, `relationship:`, `my last opener (not repeat):`, `burning passion:`, `instruction:`,
   `initiator diary (hidden context):`) and the `key=` summary sub-keys in
   `BuildPawnSummary` (`sex=`, `age=`, `mood=`, `health=`, `low_capacities=`, `thoughts=`, …).
 - The `initiator` / `recipient` role words, and the `none` / `n/a` / `unknown` skip-sentinels
@@ -746,8 +762,8 @@ These read like JSON keys; the (translated) instruction drives the output langua
 each entry, and `LlmClient` network-error messages — the latter are built on background threads,
 where `.Translate()` is not thread-safe.
 
-**Def-based text** (persona `rule`, group `label` / `instruction`, and `DiaryPromptDef`'s
-`systemPrompt` + wrapped instructions) is localized the RimWorld way — via
+**Def-based text** (persona `rule`, group `label` / `instruction` / `tone`, and `DiaryPromptDef`'s
+three system prompts + wrapped instructions) is localized the RimWorld way — via
 `Languages/<lang>/DefInjected/…`, not Keyed. The English in `1.6/Defs/*.xml` (and the C# field
 defaults) is the source/fallback.
 

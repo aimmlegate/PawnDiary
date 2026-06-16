@@ -77,8 +77,15 @@
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
-  <PawnDiary.Settings.SystemPrompt>System prompt</PawnDiary.Settings.SystemPrompt>
-  <PawnDiary.Settings.RestoreSystemPrompt>Restore default system prompt</PawnDiary.Settings.RestoreSystemPrompt>
+  <PawnDiary.Settings.SystemPrompt>System prompt — diary voice</PawnDiary.Settings.SystemPrompt>
+  <PawnDiary.Settings.SystemPromptHelp>First-person, in-character entries: social interactions, mental breaks, tales, mood events, and thoughts.</PawnDiary.Settings.SystemPromptHelp>
+  <PawnDiary.Settings.RestoreSystemPrompt>Restore default diary-voice prompt</PawnDiary.Settings.RestoreSystemPrompt>
+  <PawnDiary.Settings.SystemPromptReflection>System prompt — day reflection</PawnDiary.Settings.SystemPromptReflection>
+  <PawnDiary.Settings.SystemPromptReflectionHelp>First-person end-of-day reflection that looks back on the whole day and weaves its highlights together.</PawnDiary.Settings.SystemPromptReflectionHelp>
+  <PawnDiary.Settings.RestoreSystemPromptReflection>Restore default reflection prompt</PawnDiary.Settings.RestoreSystemPromptReflection>
+  <PawnDiary.Settings.SystemPromptNeutral>System prompt — neutral chronicle</PawnDiary.Settings.SystemPromptNeutral>
+  <PawnDiary.Settings.SystemPromptNeutralHelp>Third-person factual notes with no persona: colonist death and arrival descriptions.</PawnDiary.Settings.SystemPromptNeutralHelp>
+  <PawnDiary.Settings.RestoreSystemPromptNeutral>Restore default neutral prompt</PawnDiary.Settings.RestoreSystemPromptNeutral>
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsSectionTitle>Events</PawnDiary.Settings.EventsSectionTitle>
