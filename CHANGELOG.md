@@ -9,6 +9,12 @@ Dated history of every change to the mod. Add an entry here with each change, ne
   - Added a creepjoiner-only first-roll bonus for void-tagged personas so creepjoiners strongly
     prefer those voices without making them common for ordinary colonists.
 
+- **2026-06-16 (pending title header animation)**
+  - Exposed per-entry title-pending state in `DiaryEntryView` so the UI can distinguish "page is
+    written" from "short title follow-up is still running."
+  - Added a header-level animated placeholder for diary cards whose title request is still pending,
+    keeping the date visible until the stored title arrives.
+
 - **2026-06-16 (first-release group catalog cleanup)**
   - Dropped an unreleased placeholder interaction group from the XML catalog and kept prompt-lab
     generated fixtures aligned with the first-release group set.

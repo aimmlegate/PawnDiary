@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (creepjoiner void persona bias)_
+_Last updated: 2026-06-16 (pending title header animation)_
 
 ---
 
@@ -216,8 +216,10 @@ control.
 Title generation defaults on. After a successful main entry, `QueueTitleRequest` sends the entry text
 plus `DiaryPromptDef.titleUserInstruction`, capped at `TitleMaxTokens = 40`, pinned to the main
 entry's lane when possible. Stored titles render as `date — title`; entries without stored titles
-render date-only. There is no first-line fallback. Title statuses are separate from main-entry
-statuses so orphan recovery does not touch them.
+render date-only. While a title follow-up is still pending, completed entries keep the date visible
+and show an animated header placeholder instead of looking fully settled. There is no first-line
+fallback. Title statuses are separate from main-entry statuses so orphan recovery does not touch
+them.
 
 ---
 
@@ -246,8 +248,9 @@ section shows grouped toggles by domain plus one per-group prompt editor.
 The Diary tab production view shows only finished generated pages. Dev mode reveals per-pawn writing
 enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, and in-progress
 dot indicators. Generated cards show date/title, group accent and chip, roleplay text styling, a
-subtle model id, and linked previews for the other pawn's POV on pairwise events. Social-tab log rows
-can jump to matching diary entries.
+subtle model id, linked previews for the other pawn's POV on pairwise events, and a header-level
+loading animation when the follow-up title request has not finished yet. Social-tab log rows can
+jump to matching diary entries.
 
 ---
 

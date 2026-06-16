@@ -70,6 +70,10 @@ namespace PawnDiary
         // Short chat-style subject: stored LLM-generated title only. Empty when no title has
         // been generated or title generation is disabled.
         public readonly string Title;
+        // True while the separate title follow-up is still queued/running and no stored title has
+        // arrived yet. The Diary tab uses this to animate the header without pretending the title
+        // already exists.
+        public readonly bool TitlePending;
 
         public DiaryEntryView(
             int tick,
@@ -86,7 +90,8 @@ namespace PawnDiary
             string groupLabel,
             bool important,
             LinkedEntryView linkedEntry = null,
-            string title = null)
+            string title = null,
+            bool titlePending = false)
         {
             Tick = tick;
             Date = date;
@@ -103,6 +108,7 @@ namespace PawnDiary
             Important = important;
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;
+            TitlePending = titlePending;
         }
 
         /// <summary>

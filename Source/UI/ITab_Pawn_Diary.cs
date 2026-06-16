@@ -563,6 +563,18 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Title follow-ups run after the main entry succeeds, so a completed diary page can still
+        /// be waiting on its short header title. This flag drives the small header-only animation.
+        /// </summary>
+        private static bool IsTitleGenerating(DiaryEntryView entry)
+        {
+            return entry != null
+                && TitlesEnabled()
+                && entry.TitlePending
+                && string.IsNullOrWhiteSpace(entry.Title);
+        }
+
+        /// <summary>
         /// True when an entry has a model id worth showing as a quiet provenance hint.
         /// </summary>
         private static bool HasModelName(DiaryEntryView entry)
@@ -591,11 +603,18 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the date/title line. Titled entries get a short fade and a very soft color pulse,
-        /// which gives new diary subjects a little life without constantly shifting layout.
+        /// Draws the date/title line. Finished titles get a short fade and a soft color pulse;
+        /// pending title follow-ups keep the date visible and animate a tiny placeholder where the
+        /// subject will appear.
         /// </summary>
         private static void DrawEntryHeader(Rect rect, DiaryEntryView entry, Color accent)
         {
+            if (IsTitleGenerating(entry))
+            {
+                DrawPendingTitleHeader(rect, entry, accent);
+                return;
+            }
+
             string header = EntryHeader(entry);
             if (string.IsNullOrWhiteSpace(header))
             {
@@ -619,6 +638,47 @@ namespace PawnDiary
             }
 
             Widgets.LabelFit(rect, header);
+            GUI.color = oldColor;
+        }
+
+        /// <summary>
+        /// Keeps the completed date readable while the cheaper title follow-up is still in flight.
+        /// The animated dots occupy the future title slot so the card still feels active.
+        /// </summary>
+        private static void DrawPendingTitleHeader(Rect rect, DiaryEntryView entry, Color accent)
+        {
+            if (rect.width <= 0f)
+            {
+                return;
+            }
+
+            const float dotsWidth = WritingDotSize * 3f + WritingDotGap * 2f;
+            string prefix = string.IsNullOrWhiteSpace(entry?.Date)
+                ? string.Empty
+                : (entry.Date + " \u2014");
+
+            Color oldColor = GUI.color;
+            float dotsX = rect.x;
+            if (!string.IsNullOrWhiteSpace(prefix))
+            {
+                float prefixWidth = Mathf.Max(0f, rect.width - dotsWidth - 10f);
+                if (prefixWidth > 0f)
+                {
+                    Rect prefixRect = new Rect(rect.x, rect.y, prefixWidth, rect.height);
+                    GUI.color = new Color(0.86f, 0.86f, 0.86f, 0.95f);
+                    Widgets.LabelFit(prefixRect, prefix);
+                    dotsX = prefixRect.xMax + 6f;
+                }
+            }
+
+            if (dotsX + dotsWidth > rect.xMax)
+            {
+                dotsX = Mathf.Max(rect.x, rect.xMax - dotsWidth);
+            }
+
+            Color dotColor = Color.Lerp(new Color(0.68f, 0.72f, 0.76f), accent, 0.45f);
+            Rect dotsRect = new Rect(dotsX, rect.y + rect.height * 0.5f - 3f, dotsWidth, 8f);
+            DrawWritingDots(dotsRect, dotColor, 1.1f);
             GUI.color = oldColor;
         }
 

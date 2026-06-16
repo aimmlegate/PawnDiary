@@ -638,6 +638,7 @@ namespace PawnDiary
             // Title for this pawn's POV: stored LLM title only. When empty, EntryHeader renders
             // the date alone with no separator.
             string titleForPov = TitleForRole(povRole);
+            bool titlePendingForPov = string.IsNullOrWhiteSpace(titleForPov) && IsTitlePending(povRole);
 
             // Build a linked entry for the other pawn in a paired event.
             // Solo events (mental breaks) have no link.
@@ -682,7 +683,8 @@ namespace PawnDiary
                 group?.label ?? interactionLabel ?? string.Empty,
                 group == null || group.important,
                 linkedEntry,
-                titleForPov);
+                titleForPov,
+                titlePendingForPov);
         }
 
         /// <summary>
