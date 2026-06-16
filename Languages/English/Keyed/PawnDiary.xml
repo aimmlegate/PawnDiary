@@ -40,6 +40,12 @@
   <PawnDiary.Tab.LinkedNotGenerated>[not written yet]</PawnDiary.Tab.LinkedNotGenerated>
   <PawnDiary.Tab.LinkedNoText>[no text yet]</PawnDiary.Tab.LinkedNoText>
   <PawnDiary.Tab.LinkedTooltip>Click to view {0}'s diary entry for this event</PawnDiary.Tab.LinkedTooltip>
+  <PawnDiary.Tab.NewerYear>Newer year</PawnDiary.Tab.NewerYear>
+  <PawnDiary.Tab.OlderYear>Older year</PawnDiary.Tab.OlderYear>
+  <PawnDiary.Tab.YearFilter>{0} - {1} pages</PawnDiary.Tab.YearFilter>
+  <PawnDiary.Tab.YearLabel>Year {0}</PawnDiary.Tab.YearLabel>
+  <PawnDiary.Tab.UnknownYear>Undated</PawnDiary.Tab.UnknownYear>
+  <PawnDiary.Tab.ExpandCollapseTip>Click the header to expand or collapse this page.</PawnDiary.Tab.ExpandCollapseTip>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->

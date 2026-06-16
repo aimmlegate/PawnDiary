@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (Pawn.Kill death fallback)_
+_Last updated: 2026-06-17 (Diary year paging)_
 
 ---
 
@@ -308,15 +308,21 @@ frame.
 
 The Diary tab production view shows only finished generated pages. Dev mode reveals per-pawn writing
 enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, and in-progress
-dot indicators. Generated cards show date/title, group accent and chip, a faint warm page tint with
-a hairline header rule and a soft accent-spine highlight, a
-subtle model id, linked previews for the other pawn's POV on pairwise events, and a header-level
-loading animation aligned where the follow-up title text will appear. Body text is rendered as rich
-text by `DiaryTextFormat`: light markdown (`**bold**`, `*italic*`, headings, bullets, block
-quotes) is converted to tags, and quoted speech is colored inline with the pawn's favorite color
-(brightened to a readable luminance) while the surrounding narration stays muted prose. Social-tab
-log rows can
-jump to matching diary entries.
+dot indicators. Long histories are paged by in-game year above the diary list, showing the full set
+of visible entries for one year at a time rather than one unbounded scroll view. The year comes from
+the saved display date that every old entry already has; malformed or missing dates fall back to an
+undated page so old saves do not lose reachable entries. Within a year page, the newest 15 visible
+entries open in full by default and older entries collapse to their date/title headers. Clicking a
+header toggles that page with a lightweight height animation, and the choice is kept as session UI
+state so manually opened older pages stay open while the tab lives. Generated cards show date/title,
+group accent and chip, a faint warm page tint with a hairline header rule and a soft accent-spine
+highlight, a subtle model id, linked previews for the other pawn's POV on pairwise events, and a
+header-level loading animation aligned where the follow-up title text will appear. Body text is
+rendered as rich text by `DiaryTextFormat`: light markdown (`**bold**`, `*italic*`, headings,
+bullets, block quotes) is converted to tags, and quoted speech is colored inline with the pawn's
+favorite color (brightened to a readable luminance) while the surrounding narration stays muted
+prose. Social-tab log rows can jump to matching diary entries, including entries in older year
+pages.
 
 ---
 

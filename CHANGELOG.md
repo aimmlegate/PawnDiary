@@ -3,6 +3,15 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (Diary tab year paging)**
+  - Enlarged the Diary inspector tab and fixed the scrollable content height so inter-entry gaps
+    are included in the scrollbar range.
+  - Added an in-game-year pager above the Diary list, using each entry's saved display date so old
+    saves remain pageable without requiring a new absolute-tick field.
+  - Collapsed older entries to their date/title headers by default, kept the newest 15 visible
+    entries open, and added click-to-toggle expansion with lightweight height animation plus
+    session-local manual state.
+
 - **2026-06-17 (death fallback entries)**
   - Added a `Pawn.Kill` postfix fallback so condition deaths such as malnutrition/starvation still
     generate a final neutral death entry when vanilla does not emit a death Tale.

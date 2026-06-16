@@ -11,7 +11,7 @@ using Verse;
 namespace PawnDiary
 {
     // Inspector tab that shows the selected pawn's diary. Replaces the old standalone
-    // Diary window/gizmo and is injected immediately after the vanilla Social tab at startup.
+    // Diary window/gizmo and is injected immediately after the vanilla Needs tab at startup.
     public class ITab_Pawn_Diary : ITab
     {
         // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
@@ -29,10 +29,17 @@ namespace PawnDiary
         private const float StatusBadgeRightPadding = 24f;
         private const float RoleplayLineGap = 5f;
         private const float RoleplayParagraphGap = 8f;
+        private const float EntryGap = 8f;
+        private const int AutoExpandedEntryCount = 15;
+        private const float CollapsedEntryHeight = EntryTitleHeight + 6f;
+        private const float ExpansionAnimationSpeed = 5.5f;
         private const float LinkedEntryPadding = 8f;
         private const float LinkedEntryLabelHeight = 20f;
         private const float LinkedEntryTextHeight = 36f;
         private const float LinkedEntryTotalHeight = 64f;
+        private const float YearFilterHeight = 32f;
+        private const float YearFilterGap = 6f;
+        private const float YearButtonWidth = 112f;
         private const float ModelNameTopPadding = 4f;
         private const float ModelNameHeight = 20f;
         private const float DebugTextTopPadding = 8f;
@@ -82,9 +89,21 @@ namespace PawnDiary
         // the only visible effect is that currently-shown cards fade in once more, which is rare (it
         // takes hundreds of distinct entry states to trigger) and harmless.
         private const int MaxFirstSeenEntries = 512;
+        // Old saves have only the display date, not an absolute tick. Use this sentinel when a
+        // date cannot be grouped into a game year; such entries stay reachable on an "undated" page.
+        private const int UnknownYear = int.MinValue;
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
+        // The Diary tab pages history by in-game year so one enormous save cannot create one
+        // enormous Unity scroll view. Stored per tab instance, and reset when the selected pawn changes.
+        private string yearFilterPawnId;
+        private int selectedYear = UnknownYear;
+        // Manual expand/collapse choices are session UI state. The default is "newest 15 open,
+        // older pages collapsed", but a player's click on a specific card wins until the tab dies.
+        private readonly Dictionary<string, bool> entryExpansionOverrides = new Dictionary<string, bool>();
+        private readonly Dictionary<string, float> entryExpansionBlend = new Dictionary<string, float>();
+        private float lastExpansionAnimationSeconds;
         // Set by the Social-tab click patch before opening this tab. FillTab consumes it once
         // the relevant pawn's generated entry list is available.
         private static string pendingScrollPawnId;
@@ -92,7 +111,7 @@ namespace PawnDiary
 
         public ITab_Pawn_Diary()
         {
-            size = new Vector2(600f, 500f);
+            size = new Vector2(720f, 650f);
             labelKey = "PawnDiaryTabLabel";
         }
 
@@ -194,14 +213,39 @@ namespace PawnDiary
                 DrawPawnControls(pawn, component, controlsRect);
             }
 
-            // The controls are part of the diary tab, so reserve fixed space before the scroll view.
-            float entriesY = controlsY + controlsHeight + 8f;
-            Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
-
             // Production view: show only completed LLM output. Dev mode can reveal raw/pending
             // rows plus the diagnostic prompt/status block for troubleshooting.
-            List<DiaryEntryView> ordered = entries
+            List<DiaryEntryView> visibleEntries = entries
                 .Where(entry => showLlmDebugInfo || IsGenerated(entry) || (showGeneratingEntries && IsGenerating(entry)))
+                .ToList();
+
+            // The controls and optional year pager are part of the diary tab, so reserve their
+            // space before the scroll view. The year pager is intentionally based on visible entries
+            // only: production view pages finished diary text, while dev mode can page raw/pending
+            // troubleshooting rows.
+            float entriesY = controlsY + controlsHeight + EntryGap;
+            Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
+
+            if (visibleEntries.Count == 0)
+            {
+                Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
+                return;
+            }
+
+            List<int> years = YearsFor(visibleEntries);
+            EnsureSelectedYear(pawn, years);
+            SelectYearForPendingScroll(pawn, visibleEntries);
+
+            if (years.Count > 1)
+            {
+                Rect yearRect = new Rect(rect.x, entriesY, rect.width, YearFilterHeight);
+                DrawYearFilter(yearRect, years, CountEntriesForYear(visibleEntries, selectedYear));
+                entriesY = yearRect.yMax + YearFilterGap;
+                outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
+            }
+
+            List<DiaryEntryView> ordered = visibleEntries
+                .Where(entry => EntryYear(entry) == selectedYear)
                 .OrderByDescending(entry => entry.Tick)
                 .ToList();
 
@@ -216,16 +260,38 @@ namespace PawnDiary
             // Measure each card once per frame and reuse the result for the scroll-height sum, the
             // pending-scroll jump, and the draw loop. Wrapping height is otherwise recomputed two or
             // three times per entry every frame.
+            float animationDelta = ExpansionAnimationDelta();
+            bool[] expandedTargets = new bool[ordered.Count];
+            float[] expansionBlends = new float[ordered.Count];
+            float[] fullHeights = new float[ordered.Count];
             float[] heights = new float[ordered.Count];
             float viewHeight = 12f; // includes 12f bottom padding
             for (int i = 0; i < ordered.Count; i++)
             {
-                heights[i] = EntryHeight(ordered[i], viewWidth, showLlmDebugInfo);
+                DiaryEntryView entry = ordered[i];
+                string entryKey = EntryKey(entry);
+                bool expanded = IsEntryExpanded(entry, i);
+                float expansionBlend = ExpansionBlendFor(entryKey, expanded, animationDelta);
+                // Fully collapsed cards only need header height, so avoid expensive wrapped-text
+                // measurement until they are expanding or open.
+                float fullHeight = (expanded || expansionBlend > 0f)
+                    ? EntryHeight(entry, viewWidth, showLlmDebugInfo)
+                    : CollapsedEntryHeight;
+
+                expandedTargets[i] = expanded;
+                expansionBlends[i] = expansionBlend;
+                fullHeights[i] = fullHeight;
+                heights[i] = AnimatedEntryHeight(fullHeight, expansionBlend);
                 viewHeight += heights[i];
+                if (i < ordered.Count - 1)
+                {
+                    viewHeight += EntryGap;
+                }
             }
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
 
             TryApplyPendingScroll(pawn, ordered, heights, viewHeight, outRect.height);
+            scrollPosition.y = Mathf.Clamp(scrollPosition.y, 0f, Mathf.Max(0f, viewHeight - outRect.height));
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
             float curY = 0f;
@@ -233,34 +299,39 @@ namespace PawnDiary
             for (int i = 0; i < ordered.Count; i++)
             {
                 DiaryEntryView entry = ordered[i];
+                bool expanded = expandedTargets[i];
+                float expansionBlend = expansionBlends[i];
+                float fullHeight = fullHeights[i];
                 float height = heights[i];
                 Rect entryRect = new Rect(0f, curY, viewRect.width, height);
 
                 Color accentColor = EntryAccentColor(entry);
-                Widgets.DrawMenuSection(entryRect);
+                GUI.BeginGroup(entryRect);
+                Rect localEntryRect = new Rect(0f, 0f, entryRect.width, fullHeight);
+                Widgets.DrawMenuSection(localEntryRect);
                 // Faint warm "page" wash behind the body text, drawn under the hover highlight so
                 // mouseover still reads. Starts below the title bar and inside the accent strip.
                 Rect pageRect = new Rect(
-                    entryRect.x + EntryAccentWidth + 2f,
-                    entryRect.y + EntryTitleHeight,
-                    Mathf.Max(0f, entryRect.width - EntryAccentWidth - 4f),
-                    Mathf.Max(0f, entryRect.height - EntryTitleHeight - 2f));
+                    localEntryRect.x + EntryAccentWidth + 2f,
+                    localEntryRect.y + EntryTitleHeight,
+                    Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 4f),
+                    Mathf.Max(0f, localEntryRect.height - EntryTitleHeight - 2f));
                 Widgets.DrawBoxSolid(pageRect, PageTintColor);
-                Widgets.DrawHighlightIfMouseover(entryRect);
+                Widgets.DrawHighlightIfMouseover(localEntryRect);
 
-                Rect titleRect = new Rect(entryRect.x, entryRect.y, entryRect.width, EntryTitleHeight);
+                Rect titleRect = new Rect(localEntryRect.x, localEntryRect.y, localEntryRect.width, EntryTitleHeight);
                 Widgets.DrawTitleBG(titleRect);
 
                 // Group "spine" down the left edge, with a soft inner highlight for depth, then a warm
                 // hairline under the header so the body reads as its own page block.
-                Rect accentRect = new Rect(entryRect.x + 1f, entryRect.y + 1f, EntryAccentWidth, entryRect.height - 2f);
+                Rect accentRect = new Rect(localEntryRect.x + 1f, localEntryRect.y + 1f, EntryAccentWidth, localEntryRect.height - 2f);
                 Widgets.DrawBoxSolid(accentRect, accentColor);
                 Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
                 Widgets.DrawBoxSolid(
                     new Rect(
-                        entryRect.x + EntryAccentWidth + 8f,
-                        entryRect.y + EntryTitleHeight,
-                        Mathf.Max(0f, entryRect.width - EntryAccentWidth - 20f),
+                        localEntryRect.x + EntryAccentWidth + 8f,
+                        localEntryRect.y + EntryTitleHeight,
+                        Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 20f),
                         1f),
                     HeaderRuleColor);
 
@@ -269,66 +340,464 @@ namespace PawnDiary
                 {
                     DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
                 }
-                float headerRight = groupRect.width > 0f ? groupRect.x - 6f : entryRect.xMax - 8f;
+                float headerRight = groupRect.width > 0f ? groupRect.x - 6f : localEntryRect.xMax - 8f;
                 DrawEntryHeader(
-                    new Rect(entryRect.x + 14f, entryRect.y + 5f, Mathf.Max(80f, headerRight - entryRect.x - 14f), 22f),
+                    new Rect(localEntryRect.x + 34f, localEntryRect.y + 5f, Mathf.Max(80f, headerRight - localEntryRect.x - 34f), 22f),
                     entry,
                     accentColor);
+                DrawExpansionIndicator(titleRect, expanded, expansionBlend, accentColor);
+                if (Widgets.ButtonInvisible(titleRect, false))
+                {
+                    SetEntryExpanded(entry, !expanded);
+                }
+
+                TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
+
+                if (!expanded && BodyExpansionAlpha(expansionBlend) <= 0f)
+                {
+                    GUI.EndGroup();
+                    curY += height + EntryGap;
+                    continue;
+                }
 
                 // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
                 // recipient (shows the initiator's perspective first). When this pawn is the
                 // initiator, the linked recipient entry goes AFTER the main text instead.
-                float textY = entryRect.y + EntryTextTop;
+                float textY = localEntryRect.y + EntryTextTop;
                 LinkedEntryView linked = entry.LinkedEntry;
                 bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
                 bool linkedAfter = linked != null && !linkedBefore;
                 bool showModelName = HasModelName(entry);
                 string bodyText = EntryBodyText(entry, showLlmDebugInfo);
                 string debugText = showLlmDebugInfo ? entry.DebugText : string.Empty;
-                float innerTextWidth = entryRect.width - 20f;
+                float innerTextWidth = localEntryRect.width - 20f;
                 float mainTextHeight = RoleplayTextHeight(bodyText, innerTextWidth);
                 float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
 
                 if (linkedBefore)
                 {
-                    Rect linkedRect = new Rect(entryRect.x + 10f, textY, entryRect.width - 20f, LinkedEntryTotalHeight);
+                    Rect linkedRect = new Rect(localEntryRect.x + 10f, textY, localEntryRect.width - 20f, LinkedEntryTotalHeight);
                     DrawLinkedEntry(linked, linkedRect, pawn);
                     textY = linkedRect.yMax + LinkedEntryPadding;
                 }
 
-                Rect textRect = new Rect(entryRect.x + 12f, textY, entryRect.width - 20f, mainTextHeight);
+                Rect textRect = new Rect(localEntryRect.x + 12f, textY, localEntryRect.width - 20f, mainTextHeight);
                 if (IsGenerating(entry))
                 {
                     DrawWritingPlaceholder(textRect);
                 }
                 else
                 {
-                    DrawRoleplayText(textRect, bodyText, dialogueColor, EntryTextAlpha(entry));
+                    DrawRoleplayText(textRect, bodyText, dialogueColor, EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend));
                 }
                 float afterTextY = textRect.yMax;
 
                 if (linkedAfter)
                 {
-                    Rect linkedRect = new Rect(entryRect.x + 10f, afterTextY + LinkedEntryPadding, entryRect.width - 20f, LinkedEntryTotalHeight);
+                    Rect linkedRect = new Rect(localEntryRect.x + 10f, afterTextY + LinkedEntryPadding, localEntryRect.width - 20f, LinkedEntryTotalHeight);
                     DrawLinkedEntry(linked, linkedRect, pawn);
                     afterTextY = linkedRect.yMax;
                 }
 
                 if (debugTextHeight > 0f)
                 {
-                    Rect debugRect = new Rect(entryRect.x + 12f, afterTextY + DebugTextTopPadding, entryRect.width - 20f, debugTextHeight);
+                    Rect debugRect = new Rect(localEntryRect.x + 12f, afterTextY + DebugTextTopPadding, localEntryRect.width - 20f, debugTextHeight);
                     DrawDebugText(debugRect, debugText);
                 }
 
                 if (showModelName)
                 {
-                    Rect modelRect = new Rect(entryRect.x + 12f, entryRect.yMax - EntryBottomPadding - ModelNameHeight, entryRect.width - 24f, ModelNameHeight);
+                    Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
                     DrawModelName(modelRect, entry.LlmModel);
                 }
 
-                curY += height + 8f;
+                GUI.EndGroup();
+                curY += height + EntryGap;
             }
             Widgets.EndScrollView();
+        }
+
+        /// <summary>
+        /// Returns the per-entry key used for session expand/collapse state. Event id plus POV role
+        /// is stable for saved entries; the fallback keeps damaged entries clickable without throwing.
+        /// </summary>
+        private static string EntryKey(DiaryEntryView entry)
+        {
+            if (entry == null)
+            {
+                return string.Empty;
+            }
+
+            string eventPart = string.IsNullOrWhiteSpace(entry.EventId)
+                ? ((entry.Date ?? string.Empty) + "|" + entry.Tick)
+                : entry.EventId;
+            return eventPart + "|" + (entry.PovRole ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Default policy: keep the newest visible pages open, collapse the rest. A manual click on
+        /// a specific entry stores an override and wins over this automatic rule.
+        /// </summary>
+        private bool IsEntryExpanded(DiaryEntryView entry, int orderedIndex)
+        {
+            bool expanded;
+            if (entryExpansionOverrides.TryGetValue(EntryKey(entry), out expanded))
+            {
+                return expanded;
+            }
+
+            return orderedIndex < AutoExpandedEntryCount;
+        }
+
+        /// <summary>
+        /// Stores a manual expansion choice and keeps the current animation position if one exists.
+        /// </summary>
+        private void SetEntryExpanded(DiaryEntryView entry, bool expanded)
+        {
+            string key = EntryKey(entry);
+            if (string.IsNullOrEmpty(key))
+            {
+                return;
+            }
+
+            entryExpansionOverrides[key] = expanded;
+        }
+
+        /// <summary>
+        /// Frame delta for the cheap expand/collapse animation. Capped so alt-tabbing or a long hitch
+        /// does not make every visible card jump through a huge simulated time step.
+        /// </summary>
+        private float ExpansionAnimationDelta()
+        {
+            float now = Time.realtimeSinceStartup;
+            if (lastExpansionAnimationSeconds <= 0f)
+            {
+                lastExpansionAnimationSeconds = now;
+                return 0f;
+            }
+
+            float delta = Mathf.Clamp(now - lastExpansionAnimationSeconds, 0f, 0.05f);
+            lastExpansionAnimationSeconds = now;
+            return delta;
+        }
+
+        /// <summary>
+        /// Moves one entry's cached animation blend toward its target. New entries start at the
+        /// target state so opening a tab does not animate every old page at once.
+        /// </summary>
+        private float ExpansionBlendFor(string entryKey, bool expanded, float delta)
+        {
+            if (string.IsNullOrEmpty(entryKey))
+            {
+                return expanded ? 1f : 0f;
+            }
+
+            float target = expanded ? 1f : 0f;
+            float current;
+            if (!entryExpansionBlend.TryGetValue(entryKey, out current))
+            {
+                current = target;
+            }
+            else if (delta > 0f)
+            {
+                current = Mathf.MoveTowards(current, target, delta * ExpansionAnimationSpeed);
+            }
+
+            entryExpansionBlend[entryKey] = current;
+            return current;
+        }
+
+        /// <summary>
+        /// Converts the raw 0..1 blend into a smoother ease curve for height and text alpha.
+        /// </summary>
+        private static float SmoothExpansionBlend(float blend)
+        {
+            blend = Mathf.Clamp01(blend);
+            return blend * blend * (3f - 2f * blend);
+        }
+
+        /// <summary>
+        /// Height used by the scroll view for this frame.
+        /// </summary>
+        private static float AnimatedEntryHeight(float fullHeight, float expansionBlend)
+        {
+            return Mathf.Lerp(CollapsedEntryHeight, fullHeight, SmoothExpansionBlend(expansionBlend));
+        }
+
+        /// <summary>
+        /// Extra fade for body prose during expand/collapse. The title stays fully readable.
+        /// </summary>
+        private static float BodyExpansionAlpha(float expansionBlend)
+        {
+            return Mathf.Clamp01((SmoothExpansionBlend(expansionBlend) - 0.12f) / 0.88f);
+        }
+
+        /// <summary>
+        /// Draws the small plus/minus affordance in the card header. The expanding height is the
+        /// actual animation; this indicator simply gives the click target a familiar hint.
+        /// </summary>
+        private static void DrawExpansionIndicator(Rect titleRect, bool expanded, float expansionBlend, Color accent)
+        {
+            Rect indicatorRect = new Rect(titleRect.x + 8f, titleRect.y + 4f, 18f, 20f);
+            Color oldColor = GUI.color;
+            TextAnchor oldAnchor = Text.Anchor;
+            GameFont oldFont = Text.Font;
+
+            float glow = Mathf.Lerp(0.42f, 0.75f, SmoothExpansionBlend(expansionBlend));
+            GUI.color = Color.Lerp(new Color(0.62f, 0.65f, 0.68f, 0.85f), accent, glow);
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Small;
+            Widgets.Label(indicatorRect, expanded ? "-" : "+");
+
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Draws the one-year-at-a-time pager above the diary list. The buttons move through years
+        /// that actually have visible entries, newest first; all entries for the selected year are
+        /// shown in the scroll view below.
+        /// </summary>
+        private void DrawYearFilter(Rect rect, List<int> years, int entryCount)
+        {
+            if (years == null || years.Count <= 1)
+            {
+                return;
+            }
+
+            Widgets.DrawMenuSection(rect);
+            Rect inner = rect.ContractedBy(4f);
+            int index = years.IndexOf(selectedYear);
+            if (index < 0)
+            {
+                index = 0;
+                selectedYear = years[0];
+            }
+
+            Rect newerRect = new Rect(inner.x, inner.y, YearButtonWidth, inner.height);
+            Rect olderRect = new Rect(inner.xMax - YearButtonWidth, inner.y, YearButtonWidth, inner.height);
+            Rect labelRect = new Rect(newerRect.xMax + 8f, inner.y, olderRect.x - newerRect.xMax - 16f, inner.height);
+
+            if (DrawYearButton(newerRect, "PawnDiary.Tab.NewerYear", index > 0))
+            {
+                SelectYear(years[index - 1]);
+            }
+
+            if (DrawYearButton(olderRect, "PawnDiary.Tab.OlderYear", index < years.Count - 1))
+            {
+                SelectYear(years[index + 1]);
+            }
+
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = new Color(0.86f, 0.86f, 0.80f);
+            Widgets.LabelFit(labelRect, "PawnDiary.Tab.YearFilter".Translate(YearLabel(selectedYear), entryCount));
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Draws a pager button with a disabled visual state while keeping all text localizable.
+        /// </summary>
+        private static bool DrawYearButton(Rect rect, string labelKey, bool enabled)
+        {
+            bool oldEnabled = GUI.enabled;
+            Color oldColor = GUI.color;
+            GUI.enabled = enabled;
+            if (!enabled)
+            {
+                GUI.color = new Color(1f, 1f, 1f, 0.42f);
+            }
+
+            bool clicked = Widgets.ButtonText(rect, labelKey.Translate());
+            GUI.enabled = oldEnabled;
+            GUI.color = oldColor;
+            return enabled && clicked;
+        }
+
+        /// <summary>
+        /// Converts a year key into the short label shown by the pager.
+        /// </summary>
+        private static string YearLabel(int year)
+        {
+            if (year == UnknownYear)
+            {
+                return "PawnDiary.Tab.UnknownYear".Translate().ToString();
+            }
+
+            return "PawnDiary.Tab.YearLabel".Translate(year).ToString();
+        }
+
+        /// <summary>
+        /// Changes the visible diary year and returns the scroll position to the top of that year.
+        /// </summary>
+        private void SelectYear(int year)
+        {
+            selectedYear = year;
+            scrollPosition.y = 0f;
+        }
+
+        /// <summary>
+        /// Keeps the selected year valid for the current pawn. New pawns open on their newest
+        /// available year, which is the first item because <see cref="YearsFor"/> sorts descending.
+        /// </summary>
+        private void EnsureSelectedYear(Pawn pawn, List<int> years)
+        {
+            if (years == null || years.Count == 0)
+            {
+                selectedYear = UnknownYear;
+                yearFilterPawnId = null;
+                scrollPosition.y = 0f;
+                return;
+            }
+
+            string pawnId = pawn?.GetUniqueLoadID();
+            if (yearFilterPawnId != pawnId || !years.Contains(selectedYear))
+            {
+                yearFilterPawnId = pawnId;
+                SelectYear(years[0]);
+            }
+        }
+
+        /// <summary>
+        /// A Social-tab or linked-entry jump may target an older year. Switch the pager first so
+        /// TryApplyPendingScroll can find the event in the filtered list and place it on screen.
+        /// </summary>
+        private void SelectYearForPendingScroll(Pawn pawn, List<DiaryEntryView> visibleEntries)
+        {
+            if (pawn == null || visibleEntries == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
+            {
+                return;
+            }
+
+            if (pawn.GetUniqueLoadID() != pendingScrollPawnId)
+            {
+                return;
+            }
+
+            for (int i = 0; i < visibleEntries.Count; i++)
+            {
+                DiaryEntryView entry = visibleEntries[i];
+                if (entry != null && entry.EventId == pendingScrollEventId)
+                {
+                    selectedYear = EntryYear(entry);
+                    yearFilterPawnId = pendingScrollPawnId;
+                    SetEntryExpanded(entry, true);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the distinct in-game years represented by the entries, newest first. Entries with
+        /// a missing/malformed display date use an "undated" page so old saves remain reachable
+        /// instead of disappearing.
+        /// </summary>
+        private static List<int> YearsFor(List<DiaryEntryView> entries)
+        {
+            List<int> years = new List<int>();
+            if (entries == null)
+            {
+                years.Add(UnknownYear);
+                return years;
+            }
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                int year = EntryYear(entries[i]);
+                if (!years.Contains(year))
+                {
+                    years.Add(year);
+                }
+            }
+
+            if (years.Count == 0)
+            {
+                years.Add(UnknownYear);
+            }
+
+            years.Sort((left, right) => right.CompareTo(left));
+            return years;
+        }
+
+        /// <summary>
+        /// Counts the entries that will appear on a year page for the pager label.
+        /// </summary>
+        private static int CountEntriesForYear(List<DiaryEntryView> entries, int year)
+        {
+            if (entries == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (EntryYear(entries[i]) == year)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Extracts the game year from the saved display date. Existing saves store game ticks
+        /// (`TicksGame`) plus this formatted date, not absolute ticks, so the date is the stable
+        /// old-save-compatible source for year paging.
+        /// </summary>
+        private static int EntryYear(DiaryEntryView entry)
+        {
+            return ExtractYear(entry?.Date);
+        }
+
+        /// <summary>
+        /// Finds the final run of digits in RimWorld's full date string (for example the 5503 in
+        /// "1st of Aprimay, 5503"). Reading from the end keeps this tolerant of localized month names
+        /// and day ordinals earlier in the string.
+        /// </summary>
+        private static int ExtractYear(string date)
+        {
+            if (string.IsNullOrWhiteSpace(date))
+            {
+                return UnknownYear;
+            }
+
+            int end = -1;
+            for (int i = date.Length - 1; i >= 0; i--)
+            {
+                if (char.IsDigit(date[i]))
+                {
+                    end = i;
+                    break;
+                }
+            }
+
+            if (end < 0)
+            {
+                return UnknownYear;
+            }
+
+            int start = end;
+            while (start > 0 && char.IsDigit(date[start - 1]))
+            {
+                start--;
+            }
+
+            string yearText = date.Substring(start, end - start + 1);
+            int year;
+            if (int.TryParse(yearText, out year))
+            {
+                return year;
+            }
+
+            return UnknownYear;
         }
 
         /// <summary>
@@ -360,7 +829,7 @@ namespace PawnDiary
                     return;
                 }
 
-                curY += heights[i] + 8f;
+                curY += heights[i] + EntryGap;
             }
 
             ClearPendingScrollRequest();
