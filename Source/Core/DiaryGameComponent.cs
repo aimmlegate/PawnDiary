@@ -55,6 +55,13 @@ namespace PawnDiary
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
         // All diary events across every pawn. Persisted via ExposeData.
         private List<DiaryEvent> diaryEvents = new List<DiaryEvent>();
+        // O(1) lookup index (eventId -> DiaryEvent) mirroring diaryEvents. NOT saved: rebuilt from
+        // diaryEvents after load (RebuildEventIndex) and kept in sync as events are created
+        // (RegisterDiaryEvent). FindEvent used to linear-scan diaryEvents; cheap per call, but it is
+        // called inside per-event loops — the diary tab redraws every frame and the arrival/death
+        // boundary checks loop a pawn's events — so the scan made those hot paths grow quadratically
+        // with colony history. This index keeps the lookups constant-time. See Lookup.cs.
+        private readonly Dictionary<string, DiaryEvent> eventsById = new Dictionary<string, DiaryEvent>();
         // Interaction batches still accumulating lines; keyed by group/pair/optional def. Not saved
         // because ExposeData flushes first.
         private readonly Dictionary<string, PendingInteractionBatch> pendingInteractionBatches = new Dictionary<string, PendingInteractionBatch>();
@@ -206,6 +213,11 @@ namespace PawnDiary
                 {
                     diaryEvents = new List<DiaryEvent>();
                 }
+
+                // The lookup index is not serialized; rebuild it from the loaded events so FindEvent
+                // works immediately (the first generation scan and any UI draw run before any new
+                // event is recorded this session).
+                RebuildEventIndex();
             }
         }
 

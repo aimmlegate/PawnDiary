@@ -119,7 +119,7 @@ namespace PawnDiary
         {
             get
             {
-                if (LlmStatus == "pending" && string.IsNullOrWhiteSpace(GeneratedText))
+                if (LlmStatus == DiaryEvent.PendingStatus && string.IsNullOrWhiteSpace(GeneratedText))
                 {
                     return "PawnDiary.Status.WritingEllipsis".Translate();
                 }
@@ -140,12 +140,12 @@ namespace PawnDiary
         {
             get
             {
-                if (LlmStatus == "pending")
+                if (LlmStatus == DiaryEvent.PendingStatus)
                 {
                     return "PawnDiary.Status.Writing".Translate();
                 }
 
-                if (LlmStatus == "failed")
+                if (LlmStatus == DiaryEvent.FailedStatus)
                 {
                     return "PawnDiary.Status.GenerationFailed".Translate();
                 }

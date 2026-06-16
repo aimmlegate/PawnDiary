@@ -27,8 +27,14 @@ namespace PawnDiary
         private bool isFetchingModels;
         // Which API row the current/last fetch targets, so its status + picker show on that row.
         private int fetchTargetIndex = -1;
-        // Human-readable status line shown below the Fetch button.
+        // Human-readable status line shown below the Fetch button. Written only on the main thread.
         private string fetchStatus;
+        // Result handed back from the (possibly background-thread) FetchModels await continuation,
+        // assigned as a single reference write and drained on the main thread by
+        // ApplyPendingFetchResult. RimWorld's runtime may resume awaits off the main thread, and
+        // .Translate() plus shared-collection edits are main-thread-only (see AGENTS.md / LlmClient),
+        // so the continuation must not touch them directly.
+        private volatile ModelFetchResult pendingFetchResult;
         // DefName of the interaction group currently selected in the instruction editor.
         private string selectedGroupKey;
         // Scroll position for the settings window scroll view.
@@ -73,6 +79,8 @@ namespace PawnDiary
         public override void DoSettingsWindowContents(Rect inRect)
         {
             Settings.EnsureEndpointsList();
+            // Apply any model-fetch result that completed since the last frame, on the main thread.
+            ApplyPendingFetchResult();
 
             Rect outRect = inRect;
             // Self-measuring scroll height: render the content, then remember how tall it actually
@@ -625,49 +633,111 @@ namespace PawnDiary
             int generation = ++fetchGeneration; // capture current generation to detect stale completions
             isFetchingModels = true;
             fetchTargetIndex = index;
-            fetchStatus = "PawnDiary.Settings.FetchingModels".Translate();
+            fetchStatus = "PawnDiary.Settings.FetchingModels".Translate(); // main thread here
+
+            // Snapshot the inputs on the main thread. The await continuation may resume on a
+            // background thread in RimWorld's runtime, so it must not read game state, call
+            // .Translate(), or edit shared collections — it only hands a result back via
+            // pendingFetchResult, which the main-thread draw (ApplyPendingFetchResult) consumes.
+            if (index < 0 || index >= Settings.apiEndpoints.Count)
+            {
+                isFetchingModels = false;
+                return;
+            }
+
+            ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
+            string url = endpoint.url;
+            string apiKey = endpoint.apiKey;
+            int timeoutSeconds = Settings.timeoutSeconds;
 
             try
             {
-                if (index < 0 || index >= Settings.apiEndpoints.Count)
+                List<string> models = await ModelListClient.FetchModels(url, apiKey, timeoutSeconds);
+                pendingFetchResult = new ModelFetchResult
                 {
-                    return;
-                }
-
-                ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
-                List<string> models = await ModelListClient.FetchModels(endpoint.url, endpoint.apiKey, Settings.timeoutSeconds);
-
-                if (generation != fetchGeneration)
-                    return;
-
-                fetchedModels.Clear();
-                fetchedModels.AddRange(models);
-
-                if (models.Count == 0)
-                {
-                    fetchStatus = "PawnDiary.Settings.NoModelsReturned".Translate();
-                }
-                else
-                {
-                    fetchStatus = "PawnDiary.Settings.ModelsFound".Translate(models.Count);
-                    if (string.IsNullOrWhiteSpace(endpoint.model) || endpoint.model == PawnDiarySettings.DefaultModelName)
-                    {
-                        endpoint.model = models[0];
-                    }
-                }
+                    generation = generation,
+                    targetIndex = index,
+                    success = true,
+                    models = models
+                };
             }
             catch (Exception ex)
             {
-                if (generation != fetchGeneration)
-                    return;
+                pendingFetchResult = new ModelFetchResult
+                {
+                    generation = generation,
+                    targetIndex = index,
+                    success = false,
+                    errorDetail = ex.Message
+                };
+            }
+        }
 
-                fetchStatus = "PawnDiary.Settings.FetchFailed".Translate(ex.Message);
-            }
-            finally
+        /// <summary>
+        /// Drains a completed model fetch on the main thread: applies the localized status line, the
+        /// fetched model list, and the optional auto-fill of a blank model. Called at the top of
+        /// DoSettingsWindowContents so the (possibly background-thread) FetchModels continuation never
+        /// touches RimWorld state, localization, or the shared model list itself.
+        /// </summary>
+        private void ApplyPendingFetchResult()
+        {
+            ModelFetchResult result = pendingFetchResult;
+            if (result == null)
             {
-                if (generation == fetchGeneration)
-                    isFetchingModels = false;
+                return;
             }
+
+            pendingFetchResult = null;
+
+            // Ignore a result from a superseded fetch (Reset or a newer fetch bumped the generation).
+            if (result.generation != fetchGeneration)
+            {
+                return;
+            }
+
+            isFetchingModels = false;
+
+            if (!result.success)
+            {
+                fetchStatus = "PawnDiary.Settings.FetchFailed".Translate(result.errorDetail ?? string.Empty);
+                return;
+            }
+
+            fetchedModels.Clear();
+            if (result.models != null)
+            {
+                fetchedModels.AddRange(result.models);
+            }
+
+            if (fetchedModels.Count == 0)
+            {
+                fetchStatus = "PawnDiary.Settings.NoModelsReturned".Translate();
+                return;
+            }
+
+            fetchStatus = "PawnDiary.Settings.ModelsFound".Translate(fetchedModels.Count);
+
+            // Auto-fill only a blank/placeholder model, and only if the target row still exists.
+            if (result.targetIndex >= 0 && result.targetIndex < Settings.apiEndpoints.Count)
+            {
+                ApiEndpointConfig endpoint = Settings.apiEndpoints[result.targetIndex];
+                if (endpoint != null
+                    && (string.IsNullOrWhiteSpace(endpoint.model) || endpoint.model == PawnDiarySettings.DefaultModelName))
+                {
+                    endpoint.model = fetchedModels[0];
+                }
+            }
+        }
+
+        // Result of one model fetch, handed from the await continuation to the main-thread draw.
+        // Never mutated after construction; assigned to pendingFetchResult as a single reference write.
+        private sealed class ModelFetchResult
+        {
+            public int generation;
+            public int targetIndex;
+            public bool success;
+            public List<string> models;   // immutable snapshot returned by ModelListClient
+            public string errorDetail;    // raw, untranslated exception message
         }
     }
 

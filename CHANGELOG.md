@@ -3,6 +3,20 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (performance & robustness pass)**
+  - Added an `eventId -> DiaryEvent` lookup index (`eventsById`) so `FindEvent` is O(1); all event
+    creation routes through `RegisterDiaryEvent` and the index is rebuilt on load (`RebuildEventIndex`).
+    The diary tab now computes each pawn's arrival/death boundary once per draw (`ComputeDiaryBounds`)
+    instead of re-deriving it per event, removing the quadratic per-frame cost that froze the tab on
+    long-running colonies.
+  - Raised `ServicePointManager.DefaultConnectionLimit` so `maxConcurrentRequests` is no longer
+    silently throttled to 2 connections per host by the transport layer.
+  - Made the settings model-fetch hand its result back to the main thread for application instead of
+    calling `.Translate()` / mutating settings in the (possibly background-thread) await continuation.
+  - Hardened the LLM send loop against unexpected exceptions (reports a failure result instead of an
+    unobserved task exception), bounded the diary tab's first-seen fade cache, capped the death/arrival
+    context caches, and replaced magic LLM status strings with the `DiaryEvent` constants.
+
 - **2026-06-16 (creepjoiner void persona bias)**
   - Added four dark, void, and unsettling persona presets and tagged them with the new internal
     `void` theme.

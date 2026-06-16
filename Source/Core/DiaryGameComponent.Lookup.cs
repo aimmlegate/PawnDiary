@@ -229,6 +229,118 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// A pawn's arrival/death boundary, as both list index and tick. The single-event
+        /// <see cref="EventFallsOutsideDiaryBounds(DiaryEvent,string,PawnDiaryRecord)"/> overload
+        /// re-derives this for every event; computing it once with <see cref="ComputeDiaryBounds"/>
+        /// and reusing it (see <see cref="EntriesFor"/>) turns the per-frame diary redraw from
+        /// O(events^2) into O(events).
+        /// </summary>
+        private struct DiaryBounds
+        {
+            public int firstArrivalIndex;
+            public int finalDeathIndex;
+            public int? firstArrivalTick;
+            public int? finalDeathTick;
+        }
+
+        /// <summary>
+        /// Computes a pawn's arrival/death boundary in a single pass over its saved event-id list,
+        /// instead of the four separate scans the per-event helpers run. Mirrors the semantics of
+        /// FirstArrivalIndexFor / FinalDeathIndexFor / FirstArrivalTickFor / FinalDeathTickFor
+        /// (first arrival in list order, last death in list order; min arrival tick, max death tick).
+        /// </summary>
+        private DiaryBounds ComputeDiaryBounds(string pawnId, PawnDiaryRecord diary)
+        {
+            DiaryBounds bounds = new DiaryBounds { firstArrivalIndex = -1, finalDeathIndex = -1 };
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return bounds;
+            }
+
+            if (diary?.eventIds != null)
+            {
+                for (int i = 0; i < diary.eventIds.Count; i++)
+                {
+                    DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                    if (diaryEvent == null)
+                    {
+                        continue;
+                    }
+
+                    if (diaryEvent.IsArrivalDescriptionFor(pawnId))
+                    {
+                        if (bounds.firstArrivalIndex < 0)
+                        {
+                            bounds.firstArrivalIndex = i; // first in list order
+                        }
+
+                        if (!bounds.firstArrivalTick.HasValue || diaryEvent.tick < bounds.firstArrivalTick.Value)
+                        {
+                            bounds.firstArrivalTick = diaryEvent.tick;
+                        }
+                    }
+
+                    if (diaryEvent.IsDeathDescriptionFor(pawnId))
+                    {
+                        bounds.finalDeathIndex = i; // last in list order
+                        if (!bounds.finalDeathTick.HasValue || diaryEvent.tick > bounds.finalDeathTick.Value)
+                        {
+                            bounds.finalDeathTick = diaryEvent.tick;
+                        }
+                    }
+                }
+            }
+
+            // Forgiving fallback (mirrors FirstArrivalTickFor): an arrival event that exists but was
+            // never added to this pawn's event-id list still defines the tick boundary.
+            if (!bounds.firstArrivalTick.HasValue && diaryEvents != null)
+            {
+                for (int i = 0; i < diaryEvents.Count; i++)
+                {
+                    DiaryEvent diaryEvent = diaryEvents[i];
+                    if (diaryEvent != null
+                        && diaryEvent.IsArrivalDescriptionFor(pawnId)
+                        && (!bounds.firstArrivalTick.HasValue || diaryEvent.tick < bounds.firstArrivalTick.Value))
+                    {
+                        bounds.firstArrivalTick = diaryEvent.tick;
+                    }
+                }
+            }
+
+            return bounds;
+        }
+
+        /// <summary>
+        /// Boundary check against a precomputed <see cref="DiaryBounds"/> and the event's already-known
+        /// index in the pawn's list. Same rules as the per-event
+        /// <see cref="EventFallsOutsideDiaryBounds(DiaryEvent,string,PawnDiaryRecord)"/> overload, but
+        /// without re-deriving the boundary for every event.
+        /// </summary>
+        private static bool EventFallsOutsideDiaryBounds(DiaryEvent diaryEvent, int eventIndex, DiaryBounds bounds)
+        {
+            if (diaryEvent == null)
+            {
+                return false;
+            }
+
+            if (eventIndex >= 0)
+            {
+                if (bounds.firstArrivalIndex >= 0 && eventIndex < bounds.firstArrivalIndex)
+                {
+                    return true;
+                }
+
+                if (bounds.finalDeathIndex >= 0 && eventIndex > bounds.finalDeathIndex)
+                {
+                    return true;
+                }
+            }
+
+            return EventFallsBeforeFirstArrival(diaryEvent, bounds.firstArrivalTick)
+                || EventFallsAfterFinalDeath(diaryEvent, bounds.finalDeathTick);
+        }
+
+        /// <summary>
         /// Uses the pawn's saved event-id order as the hard boundary. This catches same-tick cases
         /// where a startup thought was recorded before the arrival page, or a hook fires after death.
         /// </summary>
@@ -329,24 +441,67 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Locates a DiaryEvent by its unique ID.
+        /// Locates a DiaryEvent by its unique ID via the O(1) lookup index (see
+        /// <see cref="eventsById"/>). The index is kept in sync by <see cref="RegisterDiaryEvent"/>
+        /// and rebuilt on load by <see cref="RebuildEventIndex"/>.
         /// </summary>
         private DiaryEvent FindEvent(string eventId)
         {
-            if (string.IsNullOrWhiteSpace(eventId) || diaryEvents == null)
+            if (string.IsNullOrWhiteSpace(eventId))
             {
                 return null;
             }
 
-            for (int i = 0; i < diaryEvents.Count; i++)
+            DiaryEvent diaryEvent;
+            return eventsById.TryGetValue(eventId, out diaryEvent) ? diaryEvent : null;
+        }
+
+        /// <summary>
+        /// Adds a freshly created event to both the master list and the O(1) lookup index, keeping the
+        /// two in sync. Every event-creation path funnels through here (see AddPairwiseEvent /
+        /// AddSoloEvent) so <see cref="FindEvent"/> can stay a constant-time dictionary lookup.
+        /// </summary>
+        private void RegisterDiaryEvent(DiaryEvent diaryEvent)
+        {
+            if (diaryEvent == null)
             {
-                if (diaryEvents[i].eventId == eventId)
-                {
-                    return diaryEvents[i];
-                }
+                return;
             }
 
-            return null;
+            diaryEvents.Add(diaryEvent);
+            if (!string.IsNullOrWhiteSpace(diaryEvent.eventId) && !eventsById.ContainsKey(diaryEvent.eventId))
+            {
+                eventsById[diaryEvent.eventId] = diaryEvent;
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the eventId -> event index from the loaded master list. Called once after a save
+        /// loads (the index itself is never serialized). First occurrence wins, matching the old
+        /// linear FindEvent scan — duplicate ids are not expected (eventIds are GUIDs) but this keeps
+        /// behavior identical if any occur, and it tolerates null entries from odd saves.
+        /// </summary>
+        private void RebuildEventIndex()
+        {
+            eventsById.Clear();
+            if (diaryEvents == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = diaryEvents[i];
+                if (diaryEvent == null || string.IsNullOrWhiteSpace(diaryEvent.eventId))
+                {
+                    continue;
+                }
+
+                if (!eventsById.ContainsKey(diaryEvent.eventId))
+                {
+                    eventsById[diaryEvent.eventId] = diaryEvent;
+                }
+            }
         }
 
         /// <summary>

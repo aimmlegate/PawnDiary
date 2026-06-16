@@ -34,10 +34,15 @@ namespace PawnDiary
 
             if (diary.eventIds != null)
             {
+                // This runs every frame the tab is open. Compute the arrival/death boundary once for
+                // the pawn, then reuse it for every event below — re-deriving it per event made this
+                // call grow with the square of the pawn's entry count. i is the event's own index in
+                // the pawn's list, so we can pass it straight to the bounds check.
+                DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
                     DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
-                    if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
+                    if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
                     {
                         continue;
                     }

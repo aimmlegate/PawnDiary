@@ -159,6 +159,28 @@ namespace PawnDiary
         // Incremented atomically because requests may be enqueued from different threads.
         private static int roundRobinCounter = -1;
 
+        static LlmClient()
+        {
+            // .NET / Mono throttle outbound connections per host through
+            // ServicePointManager.DefaultConnectionLimit (default 2). Without raising it, a
+            // maxConcurrentRequests above 2 has no real effect for a single endpoint — extra
+            // requests queue at the transport layer behind two connections. Raise the floor so the
+            // per-lane SemaphoreSlim is the only thing limiting in-flight requests to one host.
+            // This is a process-global setting; we only ever raise it, never lower it, so we don't
+            // shrink a limit another mod may have already widened.
+            try
+            {
+                if (System.Net.ServicePointManager.DefaultConnectionLimit < MaxConcurrencyCap)
+                {
+                    System.Net.ServicePointManager.DefaultConnectionLimit = MaxConcurrencyCap;
+                }
+            }
+            catch
+            {
+                // Non-fatal: if the platform refuses the change, fall back to the default behavior.
+            }
+        }
+
         /// <summary>
         /// Starts a new session, cancelling all in-flight requests from the previous one
         /// and resetting the concurrency gate and result queue. Called on game load.
@@ -413,6 +435,28 @@ namespace PawnDiary
                     isTitleRequest = request.isTitleRequest
                 });
                 LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(lastError));
+            }
+            catch (Exception ex)
+            {
+                // This runs as a fire-and-forget Task.Run, so an unexpected throw outside the per-lane
+                // handling (e.g. building the attempt list) would otherwise become an unobserved task
+                // exception and leave the entry stuck on "pending" until orphan recovery. Report it as
+                // a normal failure instead, unless the session ended (then nobody is listening).
+                if (!request.cancellationToken.IsCancellationRequested
+                    && request.sessionId == Interlocked.Read(ref currentSessionId))
+                {
+                    Completed.Enqueue(new LlmGenerationResult
+                    {
+                        eventId = request.eventId,
+                        povRole = request.povRole,
+                        sessionId = request.sessionId,
+                        success = false,
+                        error = ex.Message,
+                        isTitleRequest = request.isTitleRequest
+                    });
+                }
+
+                LogDebug("Unexpected send error event=" + request.eventId + " role=" + request.povRole + " error=" + TrimForLog(ex.Message));
             }
             finally
             {

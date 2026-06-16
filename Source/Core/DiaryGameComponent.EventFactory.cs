@@ -62,7 +62,7 @@ namespace PawnDiary
                 neutralStatus = DiaryEvent.NotGeneratedStatus
             };
 
-            diaryEvents.Add(diaryEvent);
+            RegisterDiaryEvent(diaryEvent);
             AddEventRef(initiator, diaryEvent.eventId);
             AddEventRef(recipient, diaryEvent.eventId);
             return diaryEvent;
@@ -111,7 +111,7 @@ namespace PawnDiary
                 neutralStatus = DiaryEvent.NotGeneratedStatus
             };
 
-            diaryEvents.Add(diaryEvent);
+            RegisterDiaryEvent(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId);
             return diaryEvent;
         }

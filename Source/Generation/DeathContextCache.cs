@@ -18,6 +18,12 @@ namespace PawnDiary
     {
         private static readonly Dictionary<string, string> CachedByPawnId = new Dictionary<string, string>();
 
+        // Death facts are consumed within the same Pawn.Kill call (the death Tale fires
+        // synchronously). A leftover entry only happens when no death tale is recorded for the pawn
+        // (e.g. the Tale group is disabled in settings), so any lingering entries are already stale.
+        // Cap the cache so those can't accumulate over a long game.
+        private const int MaxCachedEntries = 64;
+
         /// <summary>
         /// Records the killing blow and visible fatal health context before RimWorld finishes
         /// killing the pawn. This runs on the main thread from the Pawn.Kill Harmony prefix.
@@ -56,6 +62,11 @@ namespace PawnDiary
             if (parts.Count == 0)
             {
                 parts.Add("death_facts=unknown");
+            }
+
+            if (CachedByPawnId.Count >= MaxCachedEntries && !CachedByPawnId.ContainsKey(pawnId))
+            {
+                CachedByPawnId.Clear(); // drop stale, never-consumed entries before growing further
             }
 
             CachedByPawnId[pawnId] = string.Join("; ", parts.ToArray());
