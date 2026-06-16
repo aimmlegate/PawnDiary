@@ -79,7 +79,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `Source/PawnDiary.csproj` | Build config (.NET Framework 4.7.2; recursive `**\*.cs` glob, so new files need no project edit), outputs to `1.6/Assemblies/PawnDiary.dll`. `Source/PawnDiary.slnx` is the solution. |
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions); `MemoryThoughtHandler.TryGainMemory` → `RecordThought` (temporary thoughts with expiration). |
-| `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.InteractionBatching.cs` (XML-configured batching for quick social logs — `RecordBatchedInteraction` + `PendingInteractionBatch`). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
+| `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.InteractionBatching.cs` (XML-configured batching for quick social logs — `RecordBatchedInteraction` + `PendingInteractionBatch`), `.AmbientThoughts.cs` (day-note batching for low-impact temporary thoughts). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
 | `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
@@ -400,9 +400,20 @@ temporary thoughts (`durationDays > 0`) are considered. Filtering rules are conf
 - `thoughtEatingTokens`: substring tokens for eating thoughts, which use a higher threshold.
 - `thoughtMinMoodOffset` (default ±5): minimum absolute mood offset for general thoughts.
 - `thoughtEatingMinMoodOffset` (default ±15): minimum absolute mood offset for eating thoughts.
+- `thoughtAmbientTokens`: substring tokens for threshold-passing thoughts that should become
+  background mood material instead of immediate entries (e.g. nuzzling, party/concert attendance,
+  speech reactions, bad barracks, rotting corpse observations).
+- `thoughtAmbientWindowTicks`, `thoughtAmbientMinEventsToWrite`, `thoughtAmbientMaxSampleLines`:
+  day-note timing, minimum count, and prompt evidence cap for ambient thought notes.
 
 The prompt instruction for thought groups tells the LLM to match dramatism to the mood offset
 magnitude: minor offsets get a passing mention, strong offsets get raw emotion and detail.
+Thoughts matching `thoughtAmbientTokens` still pass through the normal ignore, threshold, and dedup
+filters first; they then accumulate per pawn/day into one solo `ThoughtAmbientDay` entry whose
+prompt asks for emotional texture rather than a thought-by-thought report. If the note has enough
+material, it can flush when the pawn settles into RimWorld's `LayDown` or `LayDownResting` job
+(normal sleep or rest). Otherwise the quiet window, day change, or save-time flush remains the
+fallback.
 
 To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, `label`, `order`,
 `domain`, `defaultEnabled`, `important`, `combat`, optional `batch`, `instruction`,
@@ -423,20 +434,31 @@ any field changes nothing.
 
 **Interaction batching:** an Interaction-domain group can define an optional `<batch>` policy in
 `DiaryInteractionGroupDefs.xml`. Matching social-log rows are buffered instead of queued
-immediately, then flushed when no new matching event arrives for `windowTicks`, when the batch
-reaches `maxEvents`, or before saving. `scope` controls how rows are grouped: `Pair` batches all
-matching interactions for the same pawn pair; `Def` keeps separate batches per `InteractionDef`
-within the pair. `syntheticDefName` and the `*Key` fields choose the combined event identity and
-localized label/header/fallback/instruction text; the classifier automatically treats a group's
-own `syntheticDefName` as matching that group for Diary tab display. `includeInteractionLabel`
-controls whether each numbered line includes the original interaction label. If `windowTicks` or
-`maxEvents` are omitted, the legacy `smallTalkBatchWindowTicks` and `smallTalkBatchMaxEvents`
-tuning values are used as fallbacks.
+immediately. `mode` chooses the output shape:
 
-The shipped `smalltalk` group uses this policy with `scope=Pair`, `windowTicks=2500`, and
-`maxEvents=6`, so `Chitchat`, `Conversation`, `HangOut`, and similar quick logs become one normal
-pairwise `DiaryEvent`. Generation still uses the same paired sequential/single-POV paths as other
-interactions after the batch flushes. Important social groups are not batched unless their own XML
+- `PairEvent` is the original merged-entry behavior. Rows flush when no new matching event arrives
+  for `windowTicks`, when the batch reaches `maxEvents`, or before saving. `scope=Pair` batches all
+  matching interactions for the same pawn pair; `scope=Def` keeps separate batches per
+  `InteractionDef` within the pair. Flushed batches become normal pairwise or solo `DiaryEvent`s.
+- `AmbientDayNote` treats low-stakes interactions as background texture. Rows accumulate per
+  pawn/group/in-game day and flush into one solo diary memory, with no pawn-pawn POV chain. Once
+  the configured `minEventsToWrite` is met, the note can flush when the pawn starts RimWorld's
+  `LayDown` or `LayDownResting` job, which makes bedtime/rest feel like the natural diary-writing
+  moment. Thin notes stay pending instead of being forced into the diary. `maxSampleLines` caps how
+  much evidence is passed to the LLM; `windowTicks=60000` keeps normal flushing aligned with the day
+  boundary while save-time flushing still prevents data loss.
+
+`syntheticDefName` and the `*Key` fields choose the combined event identity and localized
+label/header/fallback/instruction text; the classifier automatically treats a group's own
+`syntheticDefName` as matching that group for Diary tab display. `includeInteractionLabel` controls
+whether each numbered line includes the original interaction label. If `windowTicks` or `maxEvents`
+are omitted, the legacy `smallTalkBatchWindowTicks` and `smallTalkBatchMaxEvents` tuning values are
+used as fallbacks.
+
+The shipped `smalltalk`, `animal`, and `teaching` groups use `AmbientDayNote`. `smalltalk` writes
+only after at least three low-stakes social moments for a pawn in the day; animal handling and
+teaching write only after at least two. The prompt wording tells the LLM to write a natural diary
+recollection, not a list or report. Important social groups are not batched unless their own XML
 group opts in; for example `DeepTalk` is classified under `heartfelt`, so it records and queues
 immediately by default.
 

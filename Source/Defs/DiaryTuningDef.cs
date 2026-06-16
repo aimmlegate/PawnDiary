@@ -80,6 +80,16 @@ namespace PawnDiary
         // Substring tokens: a ThoughtDef defName containing any token (case-insensitive) is classified
         // as an eating thought and uses thoughtEatingMinMoodOffset instead of thoughtMinMoodOffset.
         public List<string> thoughtEatingTokens;
+
+        // Substring tokens: a ThoughtDef defName containing any token (case-insensitive) becomes
+        // ambient day-note material instead of an immediate solo entry, after normal thresholds/dedup.
+        public List<string> thoughtAmbientTokens;
+        // Ambient temporary thoughts collect until the day changes or this quiet window passes.
+        public int thoughtAmbientWindowTicks = 60000;
+        // Drop ambient thought notes unless at least this many matching thoughts accumulated.
+        public int thoughtAmbientMinEventsToWrite = 2;
+        // Keep at most this many thought evidence lines in the prompt.
+        public int thoughtAmbientMaxSampleLines = 5;
     }
 
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default

@@ -82,6 +82,24 @@
       <li>Cannibalism</li>
       <li>RawFood</li>
     </thoughtEatingTokens>
+
+    <!-- Temporary thoughts folded into one ambient day note instead of immediate entries -->
+    <thoughtAmbientTokens>
+      <li>Nuzzled</li>
+      <li>KindWordsMood</li>
+      <li>InsultedMood</li>
+      <li>AttendedParty</li>
+      <li>AttendedConcert</li>
+      <li>HeldConcert</li>
+      <li>EncouragingSpeech</li>
+      <li>InspirationalSpeech</li>
+      <li>TerribleSpeech</li>
+      <li>SleptInBarracks</li>
+      <li>ObservedLayingRottingCorpse</li>
+    </thoughtAmbientTokens>
+    <thoughtAmbientWindowTicks>60000</thoughtAmbientWindowTicks>
+    <thoughtAmbientMinEventsToWrite>2</thoughtAmbientMinEventsToWrite>
+    <thoughtAmbientMaxSampleLines>5</thoughtAmbientMaxSampleLines>
   </PawnDiary.DiaryTuningDef>
 
 </Defs>

@@ -15,9 +15,10 @@
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
     batch          - optional Interaction-domain batching policy:
-                     enabled, windowTicks, maxEvents, scope (Pair or Def), syntheticDefName,
-                     labelKey, briefKey, headerKey, fallbackKey, instructionKey,
-                     includeInteractionLabel
+                     enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
+                     scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
+                     fallbackKey, instructionKey, includeInteractionLabel, minEventsToWrite,
+                     maxSampleLines
     instruction    - the diary-prompt instruction shared by every event in the group
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
@@ -248,6 +249,18 @@
     <order>100</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>AnimalAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientAnimalLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientAnimalHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientAnimalFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientAnimalInstruction</instructionKey>
+      <minEventsToWrite>2</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
     <instruction>a quiet bond—chatting with an animal, taming, training, or letting one go</instruction>
     <matchDefNames>
       <li>AnimalChat</li>
@@ -295,6 +308,18 @@
     <domain>Interaction</domain>
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>TeachingAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientTeachingLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientTeachingHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientTeachingFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientTeachingInstruction</instructionKey>
+      <minEventsToWrite>2</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
     <instruction>a lesson passed down—an adult teaching or playing with a child</instruction>
     <matchDefNames>
       <li>BabyPlay</li>
@@ -315,16 +340,16 @@
     <defaultEnabled>false</defaultEnabled>
     <important>false</important>
     <batch>
-      <windowTicks>2500</windowTicks>
-      <maxEvents>6</maxEvents>
-      <scope>Pair</scope>
-      <syntheticDefName>SmallTalkBatch</syntheticDefName>
-      <labelKey>PawnDiary.Event.SmallTalkLabel</labelKey>
-      <briefKey>PawnDiary.Event.SmallTalkBrief</briefKey>
-      <headerKey>PawnDiary.Event.SmallTalkBatchHeader</headerKey>
-      <fallbackKey>PawnDiary.Event.SmallTalk</fallbackKey>
-      <instructionKey>PawnDiary.Event.SmallTalkBatchInstruction</instructionKey>
-      <includeInteractionLabel>true</includeInteractionLabel>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SmallTalkAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>3</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
     </batch>
     <instruction>idle chatter—low-stakes small talk that fills the silence</instruction>
     <matchDefNames>

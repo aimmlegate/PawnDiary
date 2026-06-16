@@ -77,6 +77,12 @@ namespace PawnDiary
 
             string moodImpact = MoodImpact.Classify(moodOffset);
 
+            if (MatchesAnyToken(thought.def, DiaryTuning.Current.thoughtAmbientTokens))
+            {
+                RecordAmbientThought(pawn, thought.def, label, moodOffset, moodImpact, instruction);
+                return;
+            }
+
             string gameContext = "thought=" + thoughtDefName
                 + "; label=" + label
                 + "; mood_impact=" + moodImpact

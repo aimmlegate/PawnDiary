@@ -1,8 +1,9 @@
 // XML-configured interaction batching. Some social PlayLog rows can fire in bursts (small talk,
 // repeated chatter from mods, etc.); creating one diary entry per row floods the diary and the LLM
 // queue. Interaction groups can opt into a <batch> policy in DiaryInteractionGroupDefs.xml. Matching
-// rows accumulate here by group + pawn pair (and optionally InteractionDef), then flush into one
-// normal DiaryEvent when the quiet window lapses, the max count is reached, or the game saves.
+// rows either accumulate here by group + pawn pair (and optionally InteractionDef), then flush into
+// one normal pairwise DiaryEvent; or, for AmbientDayNote mode, accumulate per pawn/day and flush
+// into one solo diary memory that uses chatter as background texture instead of a log.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,13 @@ namespace PawnDiary
         {
             if (group == null || group.batch == null)
             {
+                return;
+            }
+
+            if (group.batch.mode == InteractionBatchMode.AmbientDayNote)
+            {
+                RecordAmbientInteraction(group, initiator, recipient, interactionDef, interactionLabel,
+                    initiatorText, recipientText, playLogEntryId);
                 return;
             }
 
@@ -72,7 +80,7 @@ namespace PawnDiary
         /// </summary>
         private void FlushReadyInteractionBatches()
         {
-            if (pendingInteractionBatches.Count == 0)
+            if (pendingInteractionBatches.Count == 0 && pendingAmbientInteractionNotes.Count == 0)
             {
                 return;
             }
@@ -92,6 +100,7 @@ namespace PawnDiary
             }
 
             FlushInteractionBatches(keysToFlush);
+            FlushReadyAmbientInteractionNotes(now);
         }
 
         /// <summary>
@@ -99,12 +108,189 @@ namespace PawnDiary
         /// </summary>
         private void FlushAllInteractionBatches()
         {
-            if (pendingInteractionBatches.Count == 0)
+            if (pendingInteractionBatches.Count == 0 && pendingAmbientInteractionNotes.Count == 0)
             {
                 return;
             }
 
             FlushInteractionBatches(new List<string>(pendingInteractionBatches.Keys));
+            FlushAmbientInteractionNotes(new List<string>(pendingAmbientInteractionNotes.Keys));
+        }
+
+        /// <summary>
+        /// Records low-stakes interaction evidence as solo per-pawn day notes rather than pairwise entries.
+        /// </summary>
+        private void RecordAmbientInteraction(DiaryInteractionGroupDef group, Pawn initiator, Pawn recipient,
+            InteractionDef interactionDef, string interactionLabel, string initiatorText, string recipientText,
+            int playLogEntryId)
+        {
+            if (IsDiaryEligible(initiator))
+            {
+                AppendAmbientInteraction(group, initiator, recipient, interactionDef, interactionLabel,
+                    initiatorText, playLogEntryId);
+            }
+
+            if (IsDiaryEligible(recipient))
+            {
+                AppendAmbientInteraction(group, recipient, initiator, interactionDef, interactionLabel,
+                    recipientText, playLogEntryId);
+            }
+        }
+
+        /// <summary>
+        /// Adds one interaction moment to the given pawn's ambient day-note batch.
+        /// </summary>
+        private void AppendAmbientInteraction(DiaryInteractionGroupDef group, Pawn pawn, Pawn otherPawn,
+            InteractionDef interactionDef, string interactionLabel, string pawnText, int playLogEntryId)
+        {
+            string key = AmbientInteractionKey(group, pawn, CurrentDayIndex);
+            if (writtenAmbientInteractionNotes.Contains(key))
+            {
+                return;
+            }
+
+            PendingAmbientInteractionNote note;
+            if (!pendingAmbientInteractionNotes.TryGetValue(key, out note))
+            {
+                int now = Find.TickManager.TicksGame;
+                note = new PendingAmbientInteractionNote
+                {
+                    key = key,
+                    group = group,
+                    policy = group.batch,
+                    pawn = pawn,
+                    pawnId = pawn.GetUniqueLoadID(),
+                    dayIndex = CurrentDayIndex,
+                    firstTick = now,
+                    lastTick = now,
+                    instruction = InteractionInstruction(interactionDef)
+                };
+                pendingAmbientInteractionNotes[key] = note;
+            }
+
+            note.eventCount++;
+            note.lastTick = Find.TickManager.TicksGame;
+            AddPlayLogEntryId(note.playLogEntryIds, playLogEntryId);
+            AddAmbientParticipant(note, otherPawn);
+
+            if (note.sampleLines.Count < AmbientMaxSampleLines(note.policy))
+            {
+                note.sampleLines.Add(AmbientInteractionLine(otherPawn, interactionLabel, pawnText));
+            }
+
+            if (note.eventCount >= BatchMaxEvents(note.policy))
+            {
+                FlushAmbientInteractionNote(key, note);
+            }
+        }
+
+        /// <summary>
+        /// Flushes ambient notes when the day changes, their quiet window expires, or max count is reached.
+        /// </summary>
+        private void FlushReadyAmbientInteractionNotes(int now)
+        {
+            if (pendingAmbientInteractionNotes.Count == 0)
+            {
+                return;
+            }
+
+            int currentDay = CurrentDayIndex;
+            List<string> keysToFlush = new List<string>();
+            foreach (KeyValuePair<string, PendingAmbientInteractionNote> pair in pendingAmbientInteractionNotes)
+            {
+                PendingAmbientInteractionNote note = pair.Value;
+                if (note == null
+                    || note.dayIndex != currentDay
+                    || note.eventCount >= BatchMaxEvents(note.policy)
+                    || now - note.lastTick >= BatchWindowTicks(note.policy))
+                {
+                    keysToFlush.Add(pair.Key);
+                }
+            }
+
+            FlushAmbientInteractionNotes(keysToFlush);
+        }
+
+        /// <summary>
+        /// Flushes each ambient day-note identified by its key.
+        /// </summary>
+        private void FlushAmbientInteractionNotes(List<string> keysToFlush)
+        {
+            if (keysToFlush == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < keysToFlush.Count; i++)
+            {
+                PendingAmbientInteractionNote note;
+                if (pendingAmbientInteractionNotes.TryGetValue(keysToFlush[i], out note))
+                {
+                    FlushAmbientInteractionNote(keysToFlush[i], note);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Flushes only this pawn's ambient interaction notes that already meet their minimum count.
+        /// Used when the pawn starts resting, so bedtime can become the natural diary-writing moment.
+        /// </summary>
+        private void FlushAmbientInteractionNotesForPawn(Pawn pawn)
+        {
+            if (pawn == null || pendingAmbientInteractionNotes.Count == 0)
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            List<string> keysToFlush = new List<string>();
+            foreach (KeyValuePair<string, PendingAmbientInteractionNote> pair in pendingAmbientInteractionNotes)
+            {
+                PendingAmbientInteractionNote note = pair.Value;
+                if (note != null
+                    && string.Equals(note.pawnId, pawnId, StringComparison.Ordinal)
+                    && note.eventCount >= AmbientMinEventsToWrite(note.policy))
+                {
+                    keysToFlush.Add(pair.Key);
+                }
+            }
+
+            FlushAmbientInteractionNotes(keysToFlush);
+        }
+
+        /// <summary>
+        /// Turns an ambient day-note batch into one solo diary event, or drops it if it stayed too thin.
+        /// </summary>
+        private void FlushAmbientInteractionNote(string key, PendingAmbientInteractionNote note)
+        {
+            pendingAmbientInteractionNotes.Remove(key);
+
+            if (note == null || note.pawn == null || !IsDiaryEligible(note.pawn))
+            {
+                return;
+            }
+
+            if (note.eventCount < AmbientMinEventsToWrite(note.policy))
+            {
+                return;
+            }
+
+            string label = AmbientLabel(note);
+            string defName = AmbientDefName(note);
+            string text = BuildAmbientInteractionText(note);
+            string instruction = AmbientInstruction(note);
+            string gameContext = "group=" + note.GroupKey
+                + "; batch=ambient_day_note"
+                + "; events=" + note.eventCount
+                + "; day=" + note.dayIndex
+                + "; participants=" + string.Join(", ", note.participantNames.ToArray())
+                + "; first_tick=" + note.firstTick
+                + "; last_tick=" + note.lastTick;
+
+            DiaryEvent diaryEvent = AddSoloEvent(note.pawn, null, defName, label, text, instruction, gameContext);
+            AddPlayLogEntryIds(diaryEvent, note.playLogEntryIds);
+            writtenAmbientInteractionNotes.Add(key);
+            QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
         }
 
         /// <summary>
@@ -260,6 +446,33 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Formats the raw evidence for an ambient note. The LLM instruction tells it not to write a list.
+        /// </summary>
+        private static string BuildAmbientInteractionText(PendingAmbientInteractionNote note)
+        {
+            if (note.sampleLines.Count == 0)
+            {
+                return AmbientFallback(note);
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(TranslateAmbientKey(note, note.policy?.headerKey,
+                "PawnDiary.Event.AmbientDayHeader"));
+            for (int i = 0; i < note.sampleLines.Count; i++)
+            {
+                builder.Append("\n").Append(i + 1).Append(". ").Append(note.sampleLines[i]);
+            }
+
+            if (note.eventCount > note.sampleLines.Count)
+            {
+                builder.Append("\n").Append("... ")
+                    .Append("PawnDiary.Event.AmbientDayMore".Translate(note.eventCount - note.sampleLines.Count).Resolve());
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
         /// Formats one batched moment as "label: text" (or just text if no label should be shown).
         /// </summary>
         private static string InteractionBatchLine(string interactionLabel, string text)
@@ -299,6 +512,25 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Player-facing label for an ambient day note.
+        /// </summary>
+        private static string AmbientLabel(PendingAmbientInteractionNote note)
+        {
+            return TranslateAmbientKey(note, note.policy?.labelKey, "PawnDiary.Event.AmbientDayLabel");
+        }
+
+        /// <summary>
+        /// Natural-language fallback text for an ambient note with no usable sample lines.
+        /// </summary>
+        private static string AmbientFallback(PendingAmbientInteractionNote note)
+        {
+            string key = string.IsNullOrWhiteSpace(note.policy?.fallbackKey)
+                ? "PawnDiary.Event.AmbientDayFallback"
+                : note.policy.fallbackKey;
+            return key.Translate(note.pawn.LabelShortCap, AmbientGroupLabel(note)).Resolve();
+        }
+
+        /// <summary>
         /// Fallback game text when a batch has no usable lines for the eligible pawn.
         /// </summary>
         private static string BatchFallback(PendingInteractionBatch batch, Pawn eligiblePawn, Pawn otherPawn)
@@ -323,6 +555,35 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Synthetic defName for an ambient day note.
+        /// </summary>
+        private static string AmbientDefName(PendingAmbientInteractionNote note)
+        {
+            if (note.policy != null && !string.IsNullOrWhiteSpace(note.policy.syntheticDefName))
+            {
+                return note.policy.syntheticDefName;
+            }
+
+            return note.GroupKey + "AmbientDay";
+        }
+
+        /// <summary>
+        /// Appends the ambient-note instruction that protects the diary illusion.
+        /// </summary>
+        private static string AmbientInstruction(PendingAmbientInteractionNote note)
+        {
+            string instruction = DiaryContextBuilder.CleanLine(note.instruction);
+            string ambientInstruction = TranslateAmbientKey(note, note.policy?.instructionKey,
+                "PawnDiary.Event.AmbientDayInstruction");
+            if (string.IsNullOrWhiteSpace(instruction))
+            {
+                return ambientInstruction;
+            }
+
+            return instruction + "; " + ambientInstruction;
+        }
+
+        /// <summary>
         /// Shared translator for policy-specific keys. Generic fallback keys receive the group label as {0}.
         /// </summary>
         private static string TranslateBatchKey(PendingInteractionBatch batch, string policyKey, string fallbackKey)
@@ -332,11 +593,28 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Shared translator for ambient policy keys. Generic fallback keys receive the group label as {0}.
+        /// </summary>
+        private static string TranslateAmbientKey(PendingAmbientInteractionNote note, string policyKey, string fallbackKey)
+        {
+            string key = string.IsNullOrWhiteSpace(policyKey) ? fallbackKey : policyKey;
+            return key.Translate(AmbientGroupLabel(note)).Resolve();
+        }
+
+        /// <summary>
         /// Localized group label used in generic batch text.
         /// </summary>
         private static string BatchGroupLabel(PendingInteractionBatch batch)
         {
             return batch.group == null ? string.Empty : batch.group.LabelCap.Resolve();
+        }
+
+        /// <summary>
+        /// Localized group label used in generic ambient note text.
+        /// </summary>
+        private static string AmbientGroupLabel(PendingAmbientInteractionNote note)
+        {
+            return note.group == null ? string.Empty : note.group.LabelCap.Resolve();
         }
 
         /// <summary>
@@ -366,6 +644,32 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Minimum event count before an ambient day note is worth writing.
+        /// </summary>
+        private static int AmbientMinEventsToWrite(InteractionBatchPolicy policy)
+        {
+            if (policy != null && policy.minEventsToWrite > 0)
+            {
+                return policy.minEventsToWrite;
+            }
+
+            return 1;
+        }
+
+        /// <summary>
+        /// Maximum number of evidence lines passed to the LLM for one ambient day note.
+        /// </summary>
+        private static int AmbientMaxSampleLines(InteractionBatchPolicy policy)
+        {
+            if (policy != null && policy.maxSampleLines > 0)
+            {
+                return policy.maxSampleLines;
+            }
+
+            return 5;
+        }
+
+        /// <summary>
         /// Produces a deterministic key for the configured batch scope.
         /// </summary>
         private static string InteractionBatchKey(DiaryInteractionGroupDef group, InteractionDef interactionDef,
@@ -378,6 +682,72 @@ namespace PawnDiary
             }
 
             return key + "|" + PairKey(first, second);
+        }
+
+        /// <summary>
+        /// Key for one group's ambient note for one pawn on one in-game day.
+        /// </summary>
+        private static string AmbientInteractionKey(DiaryInteractionGroupDef group, Pawn pawn, int dayIndex)
+        {
+            return group.defName + "|ambient|" + pawn.GetUniqueLoadID() + "|" + dayIndex;
+        }
+
+        /// <summary>
+        /// Adds the other participant to the ambient note once, for prompt context.
+        /// </summary>
+        private static void AddAmbientParticipant(PendingAmbientInteractionNote note, Pawn otherPawn)
+        {
+            if (note == null || otherPawn == null)
+            {
+                return;
+            }
+
+            string id = otherPawn.GetUniqueLoadID();
+            if (note.participantIds.Contains(id))
+            {
+                return;
+            }
+
+            note.participantIds.Add(id);
+            note.participantNames.Add(DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap));
+        }
+
+        /// <summary>
+        /// Builds one compact evidence line for an ambient note from this pawn's point of view.
+        /// </summary>
+        private static string AmbientInteractionLine(Pawn otherPawn, string interactionLabel, string text)
+        {
+            string cleanText = DiaryContextBuilder.CleanLine(text);
+            string cleanLabel = DiaryContextBuilder.CleanLine(interactionLabel);
+            string otherName = otherPawn == null ? string.Empty : DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap);
+
+            StringBuilder builder = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(otherName))
+            {
+                builder.Append("with ").Append(otherName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(cleanLabel))
+            {
+                if (builder.Length > 0)
+                {
+                    builder.Append(" - ");
+                }
+
+                builder.Append(cleanLabel);
+            }
+
+            if (!string.IsNullOrWhiteSpace(cleanText))
+            {
+                if (builder.Length > 0)
+                {
+                    builder.Append(": ");
+                }
+
+                builder.Append(cleanText);
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>
@@ -434,6 +804,35 @@ namespace PawnDiary
                 get
                 {
                     return initiatorLines.Count;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Accumulates low-stakes interaction evidence for one pawn/day, then writes one solo memory.
+        /// </summary>
+        private class PendingAmbientInteractionNote
+        {
+            public string key;
+            public DiaryInteractionGroupDef group;
+            public InteractionBatchPolicy policy;
+            public Pawn pawn;
+            public string pawnId;
+            public int dayIndex;
+            public int firstTick;
+            public int lastTick;
+            public string instruction;
+            public int eventCount;
+            public readonly List<string> sampleLines = new List<string>();
+            public readonly List<string> participantIds = new List<string>();
+            public readonly List<string> participantNames = new List<string>();
+            public readonly List<int> playLogEntryIds = new List<int>();
+
+            public string GroupKey
+            {
+                get
+                {
+                    return group == null ? "unknown" : group.defName;
                 }
             }
         }

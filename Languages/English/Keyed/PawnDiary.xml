@@ -109,6 +109,27 @@
   <PawnDiary.Event.BatchBrief>A brief {0} exchange.</PawnDiary.Event.BatchBrief>
   <PawnDiary.Event.BatchHeader>Several {0} moments happened:</PawnDiary.Event.BatchHeader>
   <PawnDiary.Event.BatchInstruction>write one diary entry for the overall {0} exchange, not separate entries for each listed moment</PawnDiary.Event.BatchInstruction>
+  <PawnDiary.Event.AmbientDayLabel>{0}</PawnDiary.Event.AmbientDayLabel>
+  <PawnDiary.Event.AmbientDayHeader>Low-stakes {0} moments colored the day:</PawnDiary.Event.AmbientDayHeader>
+  <PawnDiary.Event.AmbientDayMore>{0} more quiet moment(s) happened.</PawnDiary.Event.AmbientDayMore>
+  <PawnDiary.Event.AmbientDayFallback>{0} had a few quiet {1} moments today.</PawnDiary.Event.AmbientDayFallback>
+  <PawnDiary.Event.AmbientDayInstruction>write one natural diary paragraph about the background texture of the day; do not summarize it as a log, do not list every moment, do not mention counts, and use names only when they feel emotionally relevant</PawnDiary.Event.AmbientDayInstruction>
+  <PawnDiary.Event.AmbientSocialLabel>A social day</PawnDiary.Event.AmbientSocialLabel>
+  <PawnDiary.Event.AmbientSocialHeader>Passing social moments colored the day:</PawnDiary.Event.AmbientSocialHeader>
+  <PawnDiary.Event.AmbientSocialFallback>{0} drifted through a few small social moments today.</PawnDiary.Event.AmbientSocialFallback>
+  <PawnDiary.Event.AmbientSocialInstruction>write one natural diary paragraph about the social atmosphere of the day; treat the listed conversations as background evidence, not events to report; do not list names or counts unless a name carries emotional weight</PawnDiary.Event.AmbientSocialInstruction>
+  <PawnDiary.Event.AmbientAnimalLabel>Animal handling</PawnDiary.Event.AmbientAnimalLabel>
+  <PawnDiary.Event.AmbientAnimalHeader>Animal-handling moments colored the day:</PawnDiary.Event.AmbientAnimalHeader>
+  <PawnDiary.Event.AmbientAnimalFallback>{0} spent part of the day around the colony's animals.</PawnDiary.Event.AmbientAnimalFallback>
+  <PawnDiary.Event.AmbientAnimalInstruction>write one natural diary paragraph about the feel of working around animals today; do not turn the moments into a training log, and only name animals or handlers if it feels personal</PawnDiary.Event.AmbientAnimalInstruction>
+  <PawnDiary.Event.AmbientTeachingLabel>Teaching moments</PawnDiary.Event.AmbientTeachingLabel>
+  <PawnDiary.Event.AmbientTeachingHeader>Teaching and learning moments colored the day:</PawnDiary.Event.AmbientTeachingHeader>
+  <PawnDiary.Event.AmbientTeachingFallback>{0} spent part of the day around teaching and learning.</PawnDiary.Event.AmbientTeachingFallback>
+  <PawnDiary.Event.AmbientTeachingInstruction>write one natural diary paragraph about the feeling of teaching or learning today; avoid lesson-by-lesson reporting and focus on the relationship or mood it left behind</PawnDiary.Event.AmbientTeachingInstruction>
+  <PawnDiary.Event.AmbientThoughtLabel>Passing feelings</PawnDiary.Event.AmbientThoughtLabel>
+  <PawnDiary.Event.AmbientThoughtHeader>Small feelings and impressions colored the day:</PawnDiary.Event.AmbientThoughtHeader>
+  <PawnDiary.Event.AmbientThoughtFallback>{0} carried a few passing feelings through the day.</PawnDiary.Event.AmbientThoughtFallback>
+  <PawnDiary.Event.AmbientThoughtInstruction>write one natural diary paragraph about the emotional texture these passing feelings left behind; do not list each thought, do not mention counts, and only name the source of a feeling if it would matter to the pawn</PawnDiary.Event.AmbientThoughtInstruction>
   <PawnDiary.Event.TaleSolo>{0} experienced {1}.</PawnDiary.Event.TaleSolo>
   <PawnDiary.Event.TaleSoloWithOther>{0} experienced {1} involving {2}.</PawnDiary.Event.TaleSoloWithOther>
   <PawnDiary.Event.TalePair>{0} and {1} were involved in {2}.</PawnDiary.Event.TalePair>

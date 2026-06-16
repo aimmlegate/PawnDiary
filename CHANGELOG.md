@@ -4,6 +4,22 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (ambient day notes for noisy interactions)**
+  - Added an `AmbientDayNote` interaction batch mode that accumulates low-stakes social-log rows per
+    pawn/group/day and flushes them as one solo diary memory, avoiding paired POV chains and
+    log-like summaries.
+  - Switched `smalltalk`, `animal`, and `teaching` groups to ambient notes with per-group minimum
+    event counts and capped sample lines, so common chatter, handling, and lessons become diary
+    texture instead of many individual entries.
+  - Added ambient thought notes for configurable low-impact `ThoughtDef` tokens (nuzzling,
+    speech reactions, party/concert attendance, bad barracks, rotting corpse observations), after
+    the existing ignore/threshold/dedup filters.
+  - Ambient interaction and thought notes now opportunistically flush when the pawn starts sleeping
+    or resting (`LayDown` / `LayDownResting`), while still dropping notes that do not meet the
+    configured minimum event count.
+  - Added localized ambient-note labels, raw evidence headers, fallbacks, and prompt instructions
+    that explicitly ask for natural diary recollection rather than lists or counts.
+
 - **2026-06-16 (configurable interaction batching)**
   - Replaced the hard-coded small-talk batcher with XML-configured Interaction-domain batching:
     groups can opt into `<batch>` with per-group `windowTicks`, `maxEvents`, `scope` (`Pair` or

@@ -33,6 +33,15 @@ namespace PawnDiary
         Def
     }
 
+    // Which kind of diary event an Interaction-domain batch eventually produces.
+    // PairEvent keeps the old behavior: one merged pairwise event. AmbientDayNote treats the
+    // low-stakes interactions as background material and writes one solo diary note per pawn/day.
+    public enum InteractionBatchMode
+    {
+        PairEvent,
+        AmbientDayNote
+    }
+
     // Optional batching policy embedded in a DiaryInteractionGroupDef. RimWorld can populate this
     // from a nested <batch> XML node. It currently applies to social InteractionDefs because those
     // arrive as pairwise PlayLog rows; other domains have different event shapes.
@@ -40,6 +49,8 @@ namespace PawnDiary
     {
         // Set false in XML to leave a documented policy disabled without deleting it.
         public bool enabled = true;
+        // PairEvent = old pairwise merged event; AmbientDayNote = one solo low-stakes memory per pawn/day.
+        public InteractionBatchMode mode = InteractionBatchMode.PairEvent;
         // How long the batch waits after the last matching event before flushing. A negative value
         // falls back to DiaryTuning's legacy small-talk number for compatibility.
         public int windowTicks = -1;
@@ -58,6 +69,10 @@ namespace PawnDiary
         public string instructionKey;
         // When true, each line is "Interaction label: original log text"; false keeps only log text.
         public bool includeInteractionLabel = true;
+        // AmbientDayNote only: drop the note if fewer than this many moments happened.
+        public int minEventsToWrite = 1;
+        // AmbientDayNote only: keep at most this many evidence lines in the raw prompt text.
+        public int maxSampleLines = 5;
     }
 
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in

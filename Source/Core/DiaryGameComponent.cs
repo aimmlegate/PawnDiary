@@ -20,6 +20,7 @@
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
 //   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
+//   DiaryGameComponent.AmbientThoughts.cs — day-note batching for low-impact temporary thoughts
 //   ──
 //   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
 //   DiaryGameComponent.Generation.cs     — prompt building, API lane selection, LLM dispatch/apply
@@ -56,6 +57,16 @@ namespace PawnDiary
         // Interaction batches still accumulating lines; keyed by group/pair/optional def. Not saved
         // because ExposeData flushes first.
         private readonly Dictionary<string, PendingInteractionBatch> pendingInteractionBatches = new Dictionary<string, PendingInteractionBatch>();
+        // Ambient interaction notes still accumulating low-stakes social texture; keyed by
+        // group+pawn+day. Also transient and flushed before saving.
+        private readonly Dictionary<string, PendingAmbientInteractionNote> pendingAmbientInteractionNotes = new Dictionary<string, PendingAmbientInteractionNote>();
+        // Prevents an ambient group from writing twice for the same pawn/day after an early save or
+        // max-count flush in the same play session.
+        private readonly HashSet<string> writtenAmbientInteractionNotes = new HashSet<string>();
+        // Ambient temporary thoughts still accumulating into one per-pawn day memory. Not saved;
+        // flushed before saving just like interaction batches.
+        private readonly Dictionary<string, PendingAmbientThoughtNote> pendingAmbientThoughtNotes = new Dictionary<string, PendingAmbientThoughtNote>();
+        private readonly HashSet<string> writtenAmbientThoughtNotes = new HashSet<string>();
 
         // Transient (not saved) guard against duplicate mental-state events, e.g. the two
         // mirrored SocialFighting starts, or a break that re-triggers quickly.
@@ -82,6 +93,22 @@ namespace PawnDiary
         private const int GenerationScanIntervalTicks = 120;
         private int nextGenerationScanTick;
 
+        // Ambient notes read like end-of-day memories, so when a pawn goes to sleep or rests we try
+        // to write any sufficiently full low-stakes note for that pawn. This is only a periodic scan
+        // rather than a Harmony patch because the pending note dictionaries already decide what is
+        // worth writing.
+        private const int AmbientSleepFlushScanIntervalTicks = 250;
+        private int nextAmbientSleepFlushScanTick;
+
+        // Current absolute in-game day. Uses TicksAbs so day-note batching follows the world calendar.
+        private static int CurrentDayIndex
+        {
+            get
+            {
+                return Find.TickManager.TicksAbs / GenDate.TicksPerDay;
+            }
+        }
+
         public DiaryGameComponent(Game game)
         {
             // One LLM session spans the lifetime of one loaded Game, and this constructor is the
@@ -105,6 +132,10 @@ namespace PawnDiary
         public override void StartedNewGame()
         {
             pendingInteractionBatches.Clear();
+            pendingAmbientInteractionNotes.Clear();
+            writtenAmbientInteractionNotes.Clear();
+            pendingAmbientThoughtNotes.Clear();
+            writtenAmbientThoughtNotes.Clear();
             recentMentalEvents.Clear();
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
@@ -115,12 +146,17 @@ namespace PawnDiary
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
             // their diary entries stuck on "Generating" with no way to re-queue them this session.
             nextGenerationScanTick = 0;
+            nextAmbientSleepFlushScanTick = 0;
             initialArrivalScanPending = true;
         }
 
         public override void LoadedGame()
         {
             pendingInteractionBatches.Clear();
+            pendingAmbientInteractionNotes.Clear();
+            writtenAmbientInteractionNotes.Clear();
+            pendingAmbientThoughtNotes.Clear();
+            writtenAmbientThoughtNotes.Clear();
             recentMentalEvents.Clear();
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
@@ -131,6 +167,7 @@ namespace PawnDiary
             // "pending" status normalized back to "not generated" (DiaryEvent.NormalizeLoadedStatus),
             // so the scan below re-queues them in the current session.
             nextGenerationScanTick = 0;
+            nextAmbientSleepFlushScanTick = 0;
             initialArrivalScanPending = false;
             QueueAllPendingGenerations();
         }
@@ -140,6 +177,7 @@ namespace PawnDiary
             if (Scribe.mode == LoadSaveMode.Saving)
             {
                 FlushAllInteractionBatches();
+                FlushAllAmbientThoughtNotes();
             }
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
@@ -162,13 +200,20 @@ namespace PawnDiary
         public override void GameComponentTick()
         {
             FlushReadyInteractionBatches();
+            FlushReadyAmbientThoughtNotes();
+
+            int now = Find.TickManager.TicksGame;
+            if (now >= nextAmbientSleepFlushScanTick)
+            {
+                nextAmbientSleepFlushScanTick = now + AmbientSleepFlushScanIntervalTicks;
+                FlushAmbientNotesForSleepingPawns();
+            }
 
             if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
             {
                 initialArrivalScanPending = false;
             }
 
-            int now = Find.TickManager.TicksGame;
             if (now >= nextGenerationScanTick)
             {
                 nextGenerationScanTick = now + GenerationScanIntervalTicks;
@@ -185,6 +230,38 @@ namespace PawnDiary
             // Background send workers can't call Log.Message safely (it's main-thread only), so they
             // queue debug lines; flush them here, on the main thread. See LlmClient.LogDebug.
             LlmClient.FlushPendingLogs();
+        }
+
+        /// <summary>
+        /// Writes ambient day notes at a natural diary moment: when the pawn has settled down to
+        /// sleep or rest. Thin notes stay pending so one stray chat does not become a forced entry.
+        /// </summary>
+        private void FlushAmbientNotesForSleepingPawns()
+        {
+            if (pendingAmbientInteractionNotes.Count == 0 && pendingAmbientThoughtNotes.Count == 0)
+            {
+                return;
+            }
+
+            foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonists)
+            {
+                if (IsRestingForAmbientFlush(pawn))
+                {
+                    FlushAmbientInteractionNotesForPawn(pawn);
+                    FlushAmbientThoughtNotesForPawn(pawn);
+                }
+            }
+        }
+
+        /// <summary>
+        /// RimWorld uses LayDown for normal sleep and LayDownResting for medical/bed rest. LayDownAwake
+        /// is deliberately ignored because it is often ritual/idling behavior rather than "end my day".
+        /// </summary>
+        private static bool IsRestingForAmbientFlush(Pawn pawn)
+        {
+            string jobDefName = pawn?.CurJobDef?.defName;
+            return string.Equals(jobDefName, "LayDown", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(jobDefName, "LayDownResting", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
