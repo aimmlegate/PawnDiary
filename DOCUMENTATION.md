@@ -476,6 +476,7 @@ does not add a second surgery hook that would duplicate successful operations.
 | `showApiSettings` | true | UI-only preference for whether the compact API/model setup block is expanded in mod settings. |
 | `showPersonaSettings` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this reveals the manual persona picker in the pawn Diary tab. Normal mode always hides persona controls. |
 | `showLlmDebugInfo` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this shows raw/pending/failed entries plus the LLM endpoint/model/status/error/prompt diagnostic block in the pawn Diary tab. Normal mode always hides it. |
+| `showGeneratingEntries` | false | Dev-mode-only UI preference. When RimWorld dev mode is on, this reveals entries still in the generation pipeline (in-progress or stuck on "writing...") in the pawn Diary tab — without the full diagnostic block — so a stuck event is visible instead of only counted by the badge. Implied by `showLlmDebugInfo` (which already shows pending rows). Normal mode always hides them. |
 | `endpointUrl` / `apiKey` / `modelName` | localhost / _(empty)_ / `local-model` | **Legacy** single-endpoint fields, kept only to seed `apiEndpoints` on first load. |
 | `timeoutSeconds` | 30 | 5–300. **Per-request deadline** — also the "stuck request" purge window (§7). |
 | `maxConcurrentRequests` | 4 | 1–16. Max requests in flight **per API**; the rest queue on that API. Different APIs always run in parallel. **Use 1 for a single local model.** |
@@ -569,10 +570,12 @@ drawn in a roleplay-log style: narration is muted/italic, and dialogue-looking l
 bold/italic and colored with the pawn's RimWorld favorite color. Each generated card ends with
 a tiny, low-contrast model id so multi-model output can be traced without making the card feel
 technical. Pending, failed-without-output, raw fallback, debug, and persona-editing details are
-hidden from the production tab. In RimWorld dev mode, the tab adds toggles for persona controls
-and LLM diagnostics; the debug toggle reveals raw/pending/failed rows plus the existing diagnostic
-block with endpoint, model, status, error, and prompt. A compact generating badge appears in the
-tab while pending entries exist.
+hidden from the production tab. In RimWorld dev mode, the tab adds toggles for persona controls,
+LLM diagnostics, and showing in-progress entries; the debug toggle reveals raw/pending/failed rows
+plus the existing diagnostic block with endpoint, model, status, error, and prompt. The lighter
+"Show entries being generated" toggle reveals only the in-progress/stuck rows (rendered with the
+"writing..." placeholder) without that diagnostic block, so a stuck event can be inspected rather
+than only counted. A compact generating badge appears in the tab while pending entries exist.
 - Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
   matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
   continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can

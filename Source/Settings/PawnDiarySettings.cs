@@ -86,6 +86,10 @@ namespace PawnDiary
         public bool showPersonaSettings = false;
         // Dev-mode UI preference: shows raw/pending entries and the LLM prompt/status diagnostic block.
         public bool showLlmDebugInfo = false;
+        // Dev-mode UI preference: reveals entries still in the generation pipeline (in-progress or
+        // stuck on "writing...") in the pawn Diary tab, without the full LLM diagnostic block. Lets a
+        // player see which events never finished generating. Normal mode always hides them.
+        public bool showGeneratingEntries = false;
         // System message sent with each LLM request to set the model's behavior.
         public string systemPrompt = DefaultSystemPrompt;
 
@@ -132,6 +136,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
+            Scribe_Values.Look(ref showGeneratingEntries, "showGeneratingEntries", false);
             Scribe_Values.Look(ref systemPrompt, "systemPrompt", DefaultSystemPrompt);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);

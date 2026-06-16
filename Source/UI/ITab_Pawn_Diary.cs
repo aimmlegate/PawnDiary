@@ -129,6 +129,9 @@ namespace PawnDiary
             IReadOnlyList<DiaryEntryView> entries = component?.EntriesFor(pawn) ?? EmptyList;
             int generatingCount = entries.Count(IsGenerating);
             bool showLlmDebugInfo = ShouldShowLlmDebugInfo();
+            // Dev-mode-only: when on, reveal in-progress/stuck entries in the list (the full debug
+            // toggle already shows them, so this only matters when debug info is off).
+            bool showGeneratingEntries = ShouldShowGeneratingEntries();
 
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(rect.x, rect.y, rect.width, 34f), "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
@@ -149,7 +152,7 @@ namespace PawnDiary
             // Production view: show only completed LLM output. Dev mode can reveal raw/pending
             // rows plus the diagnostic prompt/status block for troubleshooting.
             List<DiaryEntryView> ordered = entries
-                .Where(entry => showLlmDebugInfo || IsGenerated(entry))
+                .Where(entry => showLlmDebugInfo || IsGenerated(entry) || (showGeneratingEntries && IsGenerating(entry)))
                 .OrderByDescending(entry => entry.Tick)
                 .ToList();
 
@@ -288,7 +291,7 @@ namespace PawnDiary
             float lines = 1f; // generation toggle
             if (Prefs.DevMode && PawnDiaryMod.Settings != null)
             {
-                lines += 2f; // dev toggles for persona controls and LLM diagnostics
+                lines += 3f; // dev toggles: persona controls, LLM diagnostics, show generating
                 if (ShouldShowPersonaSettings())
                 {
                     lines += 1f; // persona picker
@@ -349,6 +352,18 @@ namespace PawnDiary
                 if (showLlmDebugInfo != showDebugBefore)
                 {
                     settings.showLlmDebugInfo = showLlmDebugInfo;
+                    writeGlobalSettings = true;
+                }
+
+                bool showGeneratingEntries = settings.showGeneratingEntries;
+                bool showGeneratingBefore = showGeneratingEntries;
+                listing.CheckboxLabeled(
+                    "PawnDiary.Tab.ShowGeneratingEntries".Translate(),
+                    ref showGeneratingEntries,
+                    "PawnDiary.Tab.ShowGeneratingEntriesTip".Translate());
+                if (showGeneratingEntries != showGeneratingBefore)
+                {
+                    settings.showGeneratingEntries = showGeneratingEntries;
                     writeGlobalSettings = true;
                 }
             }
@@ -442,6 +457,15 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dev-mode preference gate for revealing entries still in the LLM generation pipeline
+        /// (in-progress or stuck), without the full prompt/status diagnostic block.
+        /// </summary>
+        private static bool ShouldShowGeneratingEntries()
+        {
+            return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.showGeneratingEntries;
+        }
+
+        /// <summary>
         /// Persists global mod UI preferences changed from this pawn tab.
         /// </summary>
         private static void WriteGlobalSettings()
@@ -464,7 +488,16 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return showLlmDebugInfo ? entry.DisplayText : entry.GeneratedText;
+            // Generating entries (revealed by the debug toggle OR the dev-only "show generating"
+            // toggle) use DisplayText so an in-progress card shows the "writing..." placeholder /
+            // raw text instead of rendering blank. Both the measure and draw passes call this, so
+            // card height stays consistent.
+            if (showLlmDebugInfo || IsGenerating(entry))
+            {
+                return entry.DisplayText;
+            }
+
+            return entry.GeneratedText;
         }
 
         /// <summary>

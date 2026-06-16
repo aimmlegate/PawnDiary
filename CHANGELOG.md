@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (dev toggle: show generating entries)**
+  - Added a dev-mode-only "Show entries being generated" toggle to the pawn Diary tab so stuck /
+    in-progress events can be seen instead of only counted by the generating badge. New setting
+    `PawnDiarySettings.showGeneratingEntries` (default false, dev-mode-gated like the persona and
+    LLM-debug toggles).
+  - `ITab_Pawn_Diary` now includes pending entries in the list when the toggle is on
+    (`IsGenerating`), and `EntryBodyText` falls back to `DisplayText` for any generating card so it
+    renders the "writing..." placeholder instead of a blank body. Reserved control height bumped to
+    three dev rows.
+  - Added keyed strings `PawnDiary.Tab.ShowGeneratingEntries` / `...Tip`.
+
 - **2026-06-16 (thread-safe debug logging)**
   - Fixed a `System.InvalidOperationException: Collection was modified` crash in the in-game log
     window (`EditWindow_Log.DoMessagesListing`). `LlmClient`'s background send workers (the
