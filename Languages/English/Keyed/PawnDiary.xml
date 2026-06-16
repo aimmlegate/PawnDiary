@@ -29,7 +29,7 @@
   <PawnDiary.Tab.ShowLlmDebugInfo>Show LLM debug info</PawnDiary.Tab.ShowLlmDebugInfo>
   <PawnDiary.Tab.ShowLlmDebugInfoTip>Show raw, pending, and failed entries with endpoint, model, status, error, and prompt diagnostics.</PawnDiary.Tab.ShowLlmDebugInfoTip>
   <PawnDiary.Tab.ShowGeneratingEntries>Show pages still being written</PawnDiary.Tab.ShowGeneratingEntries>
-  <PawnDiary.Tab.ShowGeneratingEntriesTip>Reveal entries still in the generation pipeline (in progress or stuck on "writing...") so you can see which events never finished. Lighter than the full LLM debug view.</PawnDiary.Tab.ShowGeneratingEntriesTip>
+  <PawnDiary.Tab.ShowGeneratingEntriesTip>Reveal pages still being written or stuck on "writing..." so you can see which events never finished. Lighter than the full LLM debug view.</PawnDiary.Tab.ShowGeneratingEntriesTip>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.GeneratingCount>{0} writing</PawnDiary.Tab.GeneratingCount>
   <PawnDiary.Tab.WritingCount>{0} writing</PawnDiary.Tab.WritingCount>
@@ -37,7 +37,7 @@
   <PawnDiary.Tab.Quiet>quiet</PawnDiary.Tab.Quiet>
   <PawnDiary.Tab.LinkedInitiator>{0}'s perspective (initiator):</PawnDiary.Tab.LinkedInitiator>
   <PawnDiary.Tab.LinkedRecipient>{0}'s perspective (recipient):</PawnDiary.Tab.LinkedRecipient>
-  <PawnDiary.Tab.LinkedNotGenerated>[not yet generated]</PawnDiary.Tab.LinkedNotGenerated>
+  <PawnDiary.Tab.LinkedNotGenerated>[not written yet]</PawnDiary.Tab.LinkedNotGenerated>
   <PawnDiary.Tab.LinkedNoText>[no text yet]</PawnDiary.Tab.LinkedNoText>
   <PawnDiary.Tab.LinkedTooltip>Click to view {0}'s diary entry for this event</PawnDiary.Tab.LinkedTooltip>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
@@ -46,12 +46,12 @@
   <PawnDiary.Status.Generating>writing</PawnDiary.Status.Generating>
   <PawnDiary.Status.Writing>writing</PawnDiary.Status.Writing>
   <PawnDiary.Status.WritingEllipsis>writing...</PawnDiary.Status.WritingEllipsis>
-  <PawnDiary.Status.GenerationFailed>generation failed</PawnDiary.Status.GenerationFailed>
+  <PawnDiary.Status.GenerationFailed>writing failed</PawnDiary.Status.GenerationFailed>
 
   <!-- ===== Mod settings window ===== -->
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Connection</PawnDiary.Settings.Connection>
-  <PawnDiary.Settings.GenerationHeader>Generation</PawnDiary.Settings.GenerationHeader>
+  <PawnDiary.Settings.GenerationHeader>Diary writing</PawnDiary.Settings.GenerationHeader>
   <PawnDiary.Settings.ApisHeader>APIs — enabled rows run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
   <PawnDiary.Settings.ShowModelSettings>Show models</PawnDiary.Settings.ShowModelSettings>
   <PawnDiary.Settings.HideModelSettings>Hide models</PawnDiary.Settings.HideModelSettings>
@@ -69,8 +69,8 @@
   <PawnDiary.Settings.NoModelsReturned>No models returned.</PawnDiary.Settings.NoModelsReturned>
   <PawnDiary.Settings.ModelsFound>Found {0} model(s).</PawnDiary.Settings.ModelsFound>
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
-  <PawnDiary.Settings.GenerateTitles>Generate LLM titles for diary entries</PawnDiary.Settings.GenerateTitles>
-  <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to produce a short title after the main entry is written. Adds latency and one extra token bill per entry. When disabled, no new title is generated and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
+  <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
+  <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
@@ -84,7 +84,7 @@
   <PawnDiary.Settings.SystemPromptNeutralHelp>Third-person factual notes with no persona: colonist death and arrival descriptions.</PawnDiary.Settings.SystemPromptNeutralHelp>
   <PawnDiary.Settings.RestoreSystemPromptNeutral>Restore default neutral prompt</PawnDiary.Settings.RestoreSystemPromptNeutral>
   <PawnDiary.Settings.SystemPromptTitle>System prompt — diary title</PawnDiary.Settings.SystemPromptTitle>
-  <PawnDiary.Settings.SystemPromptTitleHelp>Short chat-style subject (3-8 words) for an existing diary entry. Sent only by the "Generate LLM titles" follow-up; main entries are unaffected.</PawnDiary.Settings.SystemPromptTitleHelp>
+  <PawnDiary.Settings.SystemPromptTitleHelp>Short chat-style subject (3-8 words) for an existing diary entry. Sent only by the title-writing follow-up; main entries are unaffected.</PawnDiary.Settings.SystemPromptTitleHelp>
   <PawnDiary.Settings.RestoreSystemPromptTitle>Restore default title prompt</PawnDiary.Settings.RestoreSystemPromptTitle>
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
@@ -169,7 +169,7 @@
   <PawnDiary.Event.ThoughtNegative>{0} was troubled by {1}.</PawnDiary.Event.ThoughtNegative>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
-  <PawnDiary.Error.SkippedInitiatorFailed>Skipped because initiator diary generation failed.</PawnDiary.Error.SkippedInitiatorFailed>
+  <PawnDiary.Error.SkippedInitiatorFailed>Skipped because the initiator diary page failed to write.</PawnDiary.Error.SkippedInitiatorFailed>
   <PawnDiary.Error.NoLlmSettings>LLM settings are not available.</PawnDiary.Error.NoLlmSettings>
   <PawnDiary.Error.NoApiConfigured>No API is configured. Add an endpoint and model in the mod settings.</PawnDiary.Error.NoApiConfigured>
   <PawnDiary.Error.TitleEmptyResponse>Title follow-up returned no usable text.</PawnDiary.Error.TitleEmptyResponse>

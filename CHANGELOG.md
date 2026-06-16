@@ -4,6 +4,14 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (diary UI polish)**
+  - Diary cards now use stable group-based accent colors plus small group-label chips, with quiet
+    groups rendered more softly and important groups kept brighter.
+  - Newly visible finished diary text fades in, and pending writing indicators use lightweight
+    pulsing dots in both the header badge and dev-mode pending rows.
+  - Player-facing Diary/settings wording now talks about writing diary pages and titles instead of
+    "generation" language.
+
 - **2026-06-16 (arrival/death diary boundaries)**
   - Arrival descriptions are now enforced as the first visible/generated diary entry for each pawn:
     entries recorded before the arrival page are hidden from the diary tab, ignored by social-log

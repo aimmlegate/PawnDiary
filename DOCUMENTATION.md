@@ -94,7 +94,7 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryPromptDef.cs` | Defines `DiaryPromptDef : Def` + `DiaryPrompts.Current` (single-entry instructions, recipient follow-up instruction, neutral death/arrival instructions, and the four default system prompts: diary voice / day reflection / neutral chronicle / title). |
 | `DiaryPersonaDef.cs` | Defines `DiaryPersonaDef : Def` + `DiaryPersonas` lookup/fallback helpers. Data lives in XML and is selected per pawn. |
 | `PawnDiaryMod.cs` | `Mod` class, settings UI, `ModelListClient` (fetch model list), `EndpointUtility` (URL building). |
-| `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries with roleplay styling, importance markers, linked-entry cross-pawn previews (click-to-navigate), and that pawn's generation toggle. |
+| `ITab_Pawn_Diary.cs` | The inspector tab that renders a pawn's generated diary entries with roleplay styling, color-coded group markers, linked-entry cross-pawn previews (click-to-navigate), subtle text/writing animations, and that pawn's generation toggle. |
 | `DiaryEntry.cs` | `DiaryEntryView` (display model: `Date`/`Title`/`GeneratedText`/`LlmStatus`/`DebugText`) and `LinkedEntryView` (truncated preview of the other pawn's entry for cross-linking, including the other pawn's title). |
 | `1.6/Defs/*.xml` | **Editable data Defs** loaded at startup (no recompile): `DiaryInteractionGroupDefs.xml` (interaction, mental-state, tale, mood-event, and thought groups + matchers + prompts), `DiaryTuningDef.xml` (tuning numbers including thought thresholds/token lists), `DiaryPromptDef.xml` (prompt instructions, the four system prompts/default persona), and `DiaryPersonaDefs.xml` (selectable writing personas). |
 | `skills/pawndiary-engineering/SKILL.md` | Shared source-of-truth skill workflow for this repo (used by Claude Code, Codex, and OpenCode wrappers). |
@@ -467,8 +467,8 @@ To add/retune groups, edit `1.6/Defs/DiaryInteractionGroupDefs.xml` (`defName`, 
 — no recompile. `order` controls classification order within a domain (lowest first; keep the
 catch-all highest). Group `defName`s are the stable keys player settings save overrides under, so
 don't rename them.
-The Diary tab uses `important` only as a display hint: important groups get a warm marker,
-while quiet groups get a muted marker. It does not affect recording or generation. `important`
+The Diary tab uses each entry's group label to pick a stable accent color and header chip, while
+`important` controls how bright that accent appears. It does not affect recording or generation. `important`
 also gates the `burning passion:` prompt field; `combat` (data-driven, default false) gates the
 `weapon:` field — together they decide whether the equipped weapon is added to the prompt.
 
@@ -622,7 +622,7 @@ Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`, organized into med
 (`SectionTitle`) with muted hint text (`DrawHint`): **Connection** (the hideable **API lanes
 editor** — `DrawApiEndpointsEditor` — each lane is a framed block with an enabled toggle,
 endpoint/model/API-key fields, per-row "Fetch" + "Pick", and **+ Add API** / **− Remove** /
-**Reset** buttons), **Generation** (title toggle + per-API concurrency slider), **System
+**Reset** buttons), **Diary writing** (title toggle + per-API concurrency slider), **System
 prompt** (editor + restore), and **Events** (the event-group editor). The group editor draws the
 ~30 enable toggles in **two columns** per domain (`DrawGroupTogglesForDomain` / `DrawGroupToggle`,
 each showing its prompt as a hover tooltip), followed by a per-group prompt editor — an "Editing
@@ -726,7 +726,10 @@ Titles come from the LLM-titling flow (§4 "Title generation"); there is no firs
 `LabelFit` shrinks long titles to fit;
 the existing `EntryTitleHeight = 28f` is unchanged. The text is drawn in a roleplay-log style:
 narration is muted/italic, and dialogue-looking lines are bold/italic and colored with the
-pawn's RimWorld favorite color. Each generated card ends with a tiny, low-contrast model id so
+pawn's RimWorld favorite color. Each card also gets a deterministic group-color accent strip and
+a small group-label chip in the header; quiet groups use a dimmer version of their palette color
+while important groups stay brighter. Newly visible finished text fades in over a short, cheap
+UI-time animation, and pending rows shown in dev mode use a pulsing writing placeholder. Each generated card ends with a tiny, low-contrast model id so
 multi-model output can be traced without making the card feel technical. Pending, failed-without-output,
 raw fallback, debug, and persona-editing details are hidden from the production tab. In RimWorld
 dev mode, the tab adds the per-pawn writing checkbox, toggles for persona controls, LLM
@@ -735,7 +738,7 @@ plus the existing diagnostic block with endpoint, model, status, error, and prom
 "Show pages still being written" toggle reveals only the in-progress/stuck rows (rendered with
 the "writing..." placeholder) without that diagnostic block, so a stuck event can be inspected
 rather than only counted. A compact writing badge appears in the tab while pending entries
-exist.
+exist, with the same pulsing-dot animation.
 - Clicking a vanilla Social-tab interaction log row opens the Diary tab and scrolls to the
   matching generated entry when that row maps to one; otherwise RimWorld's normal click behavior
   continues. Small-talk batches keep every represented PlayLog id, so any row in the batch can

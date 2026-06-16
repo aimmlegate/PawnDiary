@@ -36,8 +36,12 @@ namespace PawnDiary
         private const float ModelNameTopPadding = 4f;
         private const float ModelNameHeight = 20f;
         private const float DebugTextTopPadding = 8f;
+        private const float EntryAccentWidth = 6f;
+        private const float EntryLabelMaxWidth = 148f;
+        private const float EntryFadeDurationSeconds = 0.55f;
+        private const float WritingDotSize = 4f;
+        private const float WritingDotGap = 5f;
 
-        private static readonly Color ImportantColor = new Color(0.96f, 0.62f, 0.22f);
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
         private static readonly Color NarrativeColor = new Color(0.78f, 0.78f, 0.72f);
         private static readonly Color FallbackDialogueColor = new Color(0.58f, 0.80f, 1f);
@@ -45,12 +49,26 @@ namespace PawnDiary
         private static readonly Color LinkedEntryBorderColor = new Color(0.35f, 0.45f, 0.55f);
         private static readonly Color LinkedEntryTextColor = new Color(0.65f, 0.70f, 0.75f);
         private static readonly Color LinkedEntryHoverColor = new Color(0.25f, 0.30f, 0.38f, 0.90f);
+        // Pleasant, readable accents for group-coded diary cards. The group label selects the color
+        // deterministically, so old entries get the same marker every time without adding save data.
+        private static readonly Color[] EntryAccentPalette =
+        {
+            new Color(0.95f, 0.58f, 0.32f),
+            new Color(0.84f, 0.70f, 0.34f),
+            new Color(0.48f, 0.72f, 0.50f),
+            new Color(0.38f, 0.70f, 0.72f),
+            new Color(0.45f, 0.63f, 0.92f),
+            new Color(0.70f, 0.56f, 0.88f),
+            new Color(0.86f, 0.50f, 0.66f),
+            new Color(0.62f, 0.68f, 0.76f)
+        };
 
         // Cached roleplay text styles, reused every frame to avoid allocating a fresh GUIStyle per
         // line. Built once from the active font, then refreshed (font size + color) on each use so
         // they still track UI-scale changes. Shared by the measure pass and the draw pass.
         private static GUIStyle dialogueStyle;
         private static GUIStyle narrativeStyle;
+        private static readonly Dictionary<string, float> EntryFirstSeenSeconds = new Dictionary<string, float>();
 
         // Unity scroll position; persists across frames so the user's scroll offset isn't lost on redraw.
         private Vector2 scrollPosition;
@@ -205,15 +223,22 @@ namespace PawnDiary
                 float height = heights[i];
                 Rect entryRect = new Rect(0f, curY, viewRect.width, height);
 
+                Color accentColor = EntryAccentColor(entry);
                 Widgets.DrawMenuSection(entryRect);
                 Widgets.DrawHighlightIfMouseover(entryRect);
 
                 Rect titleRect = new Rect(entryRect.x, entryRect.y, entryRect.width, EntryTitleHeight);
                 Widgets.DrawTitleBG(titleRect);
-                Widgets.DrawBoxSolid(new Rect(entryRect.x + 1f, entryRect.y + 1f, 5f, entryRect.height - 2f), ImportanceColor(entry));
+                Widgets.DrawBoxSolid(new Rect(entryRect.x + 1f, entryRect.y + 1f, EntryAccentWidth, entryRect.height - 2f), accentColor);
 
+                Rect groupRect = GroupLabelRect(titleRect, entry.GroupLabel);
+                if (groupRect.width > 0f)
+                {
+                    DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
+                }
+                float headerRight = groupRect.width > 0f ? groupRect.x - 6f : entryRect.xMax - 8f;
                 GUI.color = new Color(0.86f, 0.86f, 0.86f);
-                Widgets.LabelFit(new Rect(entryRect.x + 12f, entryRect.y + 5f, entryRect.width - 20f, 22f), EntryHeader(entry));
+                Widgets.LabelFit(new Rect(entryRect.x + 14f, entryRect.y + 5f, Mathf.Max(80f, headerRight - entryRect.x - 14f), 22f), EntryHeader(entry));
                 GUI.color = Color.white;
 
                 // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
@@ -238,7 +263,14 @@ namespace PawnDiary
                 }
 
                 Rect textRect = new Rect(entryRect.x + 12f, textY, entryRect.width - 20f, mainTextHeight);
-                DrawRoleplayText(textRect, bodyText, dialogueColor);
+                if (IsGenerating(entry))
+                {
+                    DrawWritingPlaceholder(textRect);
+                }
+                else
+                {
+                    DrawRoleplayText(textRect, bodyText, dialogueColor, EntryTextAlpha(entry));
+                }
                 float afterTextY = textRect.yMax;
 
                 if (linkedAfter)
@@ -450,14 +482,20 @@ namespace PawnDiary
                 ? "PawnDiary.Status.Writing".Translate()
                 : "PawnDiary.Tab.WritingCount".Translate(count);
 
-            Widgets.DrawBoxSolidWithOutline(rect, new Color(0.12f, 0.14f, 0.12f, 0.86f), new Color(0.42f, 0.68f, 0.42f), 1);
+            float pulse = WritingPulse(0f);
+            Color borderColor = Color.Lerp(new Color(0.34f, 0.56f, 0.48f), new Color(0.56f, 0.86f, 0.70f), pulse);
+            Color backgroundColor = Color.Lerp(new Color(0.11f, 0.13f, 0.12f, 0.86f), new Color(0.14f, 0.19f, 0.16f, 0.92f), pulse);
+            Widgets.DrawBoxSolidWithOutline(rect, backgroundColor, borderColor, 1);
             GameFont oldFont = Text.Font;
             TextAnchor oldAnchor = Text.Anchor;
             Color oldColor = GUI.color;
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.MiddleCenter;
             GUI.color = new Color(0.78f, 0.95f, 0.78f);
-            Widgets.LabelFit(rect.ContractedBy(4f), label);
+            Rect labelRect = rect.ContractedBy(4f);
+            labelRect.width -= 22f;
+            Widgets.LabelFit(labelRect, label);
+            DrawWritingDots(new Rect(rect.xMax - 25f, rect.y + rect.height * 0.5f - 2f, 20f, 8f), new Color(0.78f, 0.95f, 0.78f), 0f);
             GUI.color = oldColor;
             Text.Anchor = oldAnchor;
             Text.Font = oldFont;
@@ -577,11 +615,128 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the color strip used to mark whether an entry belongs to an important group.
+        /// Returns the color strip used to mark the entry group. Important groups keep the palette
+        /// color bright; quieter groups use a softer version so the diary stays calm at a glance.
         /// </summary>
-        private static Color ImportanceColor(DiaryEntryView entry)
+        private static Color EntryAccentColor(DiaryEntryView entry)
         {
-            return entry != null && entry.Important ? ImportantColor : QuietColor;
+            Color accent = PaletteColor(entry?.GroupLabel);
+            if (entry == null || entry.Important)
+            {
+                return accent;
+            }
+
+            return Color.Lerp(QuietColor, accent, 0.42f);
+        }
+
+        /// <summary>
+        /// Picks a stable palette color from a localized group label without relying on runtime
+        /// string hash behavior. New to hashing? It turns text into a repeatable number.
+        /// </summary>
+        private static Color PaletteColor(string label)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return EntryAccentPalette[EntryAccentPalette.Length - 1];
+            }
+
+            int hash = 17;
+            for (int i = 0; i < label.Length; i++)
+            {
+                hash = hash * 31 + char.ToLowerInvariant(label[i]);
+            }
+
+            if (hash < 0)
+            {
+                hash = ~hash;
+            }
+
+            return EntryAccentPalette[hash % EntryAccentPalette.Length];
+        }
+
+        /// <summary>
+        /// Reserves a small right-side label for the event group, leaving the date/title room to
+        /// shrink gracefully on narrow tabs.
+        /// </summary>
+        private static Rect GroupLabelRect(Rect titleRect, string groupLabel)
+        {
+            if (string.IsNullOrWhiteSpace(groupLabel) || titleRect.width < 240f)
+            {
+                return new Rect(0f, 0f, 0f, 0f);
+            }
+
+            GameFont oldFont = Text.Font;
+            Text.Font = GameFont.Tiny;
+            float width = Mathf.Min(EntryLabelMaxWidth, Text.CalcSize(groupLabel).x + 18f);
+            Text.Font = oldFont;
+
+            return new Rect(titleRect.xMax - width - 8f, titleRect.y + 5f, width, 18f);
+        }
+
+        /// <summary>
+        /// Draws the color-coded group name as a quiet chip in the card header.
+        /// </summary>
+        private static void DrawGroupLabel(Rect rect, string label, Color accent)
+        {
+            if (rect.width <= 0f)
+            {
+                return;
+            }
+
+            Widgets.DrawBoxSolidWithOutline(
+                rect,
+                new Color(accent.r * 0.23f, accent.g * 0.23f, accent.b * 0.23f, 0.72f),
+                new Color(accent.r, accent.g, accent.b, 0.92f),
+                1);
+
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+            Text.Font = GameFont.Tiny;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            GUI.color = Color.Lerp(accent, Color.white, 0.55f);
+            Widgets.LabelFit(new Rect(rect.x + 4f, rect.y + 1f, rect.width - 8f, rect.height - 2f), label);
+            GUI.color = oldColor;
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// New cards fade their text in the first time this tab sees the finished entry. The key
+        /// includes the status so a row seen as "writing" can still animate when the page completes.
+        /// </summary>
+        private static float EntryTextAlpha(DiaryEntryView entry)
+        {
+            if (entry == null)
+            {
+                return 1f;
+            }
+
+            float firstSeen = EntryFirstSeenAt(entry);
+            return Mathf.Clamp01((Time.realtimeSinceStartup - firstSeen) / EntryFadeDurationSeconds);
+        }
+
+        private static float EntryFirstSeenAt(DiaryEntryView entry)
+        {
+            string key = (entry.EventId ?? string.Empty)
+                + "|"
+                + (entry.PovRole ?? string.Empty)
+                + "|"
+                + (IsGenerated(entry) ? "written" : entry.LlmStatus ?? string.Empty);
+
+            float firstSeen;
+            if (!EntryFirstSeenSeconds.TryGetValue(key, out firstSeen))
+            {
+                firstSeen = Time.realtimeSinceStartup;
+                EntryFirstSeenSeconds[key] = firstSeen;
+            }
+
+            return firstSeen;
+        }
+
+        private static float WritingPulse(float phaseOffset)
+        {
+            return (Mathf.Sin(Time.realtimeSinceStartup * 5.5f + phaseOffset) + 1f) * 0.5f;
         }
 
         /// <summary>
@@ -648,7 +803,7 @@ namespace PawnDiary
         /// Draws generated text in a light roleplay style: narration is muted/italic, while
         /// dialogue-looking lines are bold and colored with the pawn's preferred color.
         /// </summary>
-        private static void DrawRoleplayText(Rect rect, string text, Color dialogueColor)
+        private static void DrawRoleplayText(Rect rect, string text, Color dialogueColor, float alpha)
         {
             GameFont oldFont = Text.Font;
             Color oldColor = GUI.color;
@@ -665,7 +820,7 @@ namespace PawnDiary
                 }
 
                 bool dialogue = IsDialogueLine(line);
-                GUIStyle style = RoleplayStyle(dialogue, dialogueColor);
+                GUIStyle style = RoleplayStyle(dialogue, dialogueColor, alpha);
                 float height = style.CalcHeight(new GUIContent(line), rect.width);
                 GUI.Label(new Rect(rect.x, curY, rect.width, height), line, style);
                 curY += height + RoleplayLineGap;
@@ -673,6 +828,46 @@ namespace PawnDiary
 
             GUI.color = oldColor;
             Text.Font = oldFont;
+        }
+
+        /// <summary>
+        /// Draws a soft "writing" placeholder for dev-mode pending rows. The dots are simple
+        /// rectangles, which keeps the animation cheap in RimWorld's immediate-mode GUI.
+        /// </summary>
+        private static void DrawWritingPlaceholder(Rect rect)
+        {
+            GameFont oldFont = Text.Font;
+            Color oldColor = GUI.color;
+            Text.Font = GameFont.Small;
+
+            string label = "PawnDiary.Status.Writing".Translate();
+            Color textColor = Color.Lerp(new Color(0.58f, 0.72f, 0.66f), new Color(0.80f, 0.96f, 0.84f), WritingPulse(0f));
+            GUIStyle style = RoleplayStyle(false, textColor, 1f);
+            style.normal.textColor = textColor;
+            GUI.Label(rect, label, style);
+
+            float labelWidth = style.CalcSize(new GUIContent(label)).x;
+            Rect dotsRect = new Rect(rect.x + labelWidth + 8f, rect.y + Text.LineHeight * 0.5f - 1f, 28f, 8f);
+            DrawWritingDots(dotsRect, textColor, 0.4f);
+
+            GUI.color = oldColor;
+            Text.Font = oldFont;
+        }
+
+        private static void DrawWritingDots(Rect rect, Color color, float phaseOffset)
+        {
+            Color oldColor = GUI.color;
+            for (int i = 0; i < 3; i++)
+            {
+                float pulse = WritingPulse(phaseOffset - i * 0.75f);
+                Color dotColor = new Color(color.r, color.g, color.b, Mathf.Lerp(0.25f, 0.95f, pulse));
+                float yOffset = Mathf.Lerp(2f, -1f, pulse);
+                Widgets.DrawBoxSolid(
+                    new Rect(rect.x + i * (WritingDotSize + WritingDotGap), rect.y + yOffset, WritingDotSize, WritingDotSize),
+                    dotColor);
+            }
+
+            GUI.color = oldColor;
         }
 
         /// <summary>
@@ -697,7 +892,7 @@ namespace PawnDiary
 
             // Left-side accent strip colored by the linked role
             Color stripColor = DiaryEvent.RoleEquals(link.OtherRole, DiaryEvent.InitiatorRole)
-                ? ImportantColor : QuietColor;
+                ? EntryAccentPalette[0] : EntryAccentPalette[4];
             Widgets.DrawBoxSolid(new Rect(rect.x + 1f, rect.y + 1f, 4f, rect.height - 2f), stripColor);
 
             // Label line: "Alice's perspective (initiator):"
@@ -884,7 +1079,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                GUIStyle style = RoleplayStyle(IsDialogueLine(line), FallbackDialogueColor);
+                GUIStyle style = RoleplayStyle(IsDialogueLine(line), FallbackDialogueColor, 1f);
                 height += style.CalcHeight(new GUIContent(line), width) + RoleplayLineGap;
             }
 
@@ -931,7 +1126,7 @@ namespace PawnDiary
         /// <summary>
         /// Creates an isolated GUIStyle so line colors/font styles do not leak into other RimWorld UI.
         /// </summary>
-        private static GUIStyle RoleplayStyle(bool dialogue, Color dialogueColor)
+        private static GUIStyle RoleplayStyle(bool dialogue, Color dialogueColor, float alpha)
         {
             GUIStyle baseStyle = Text.CurFontStyle;
             GUIStyle style;
@@ -955,7 +1150,9 @@ namespace PawnDiary
             // Refresh the bits that can change at runtime (UI scale) without reallocating the style.
             style.font = baseStyle.font;
             style.fontSize = baseStyle.fontSize;
-            style.normal.textColor = dialogue ? dialogueColor : NarrativeColor;
+            Color color = dialogue ? dialogueColor : NarrativeColor;
+            color.a *= Mathf.Clamp01(alpha);
+            style.normal.textColor = color;
             return style;
         }
     }
