@@ -571,9 +571,57 @@ namespace PawnDiary
                             throw new LlmPermanentException("The endpoint returned no message content.");
                         }
 
-                    return generatedText.Trim();
+                    // Some RP-tuned models ignore max_tokens and return very long entries anyway.
+                    // Enforce a local hard cap (by whitespace-token count) so saved diary events
+                    // never exceed the request's token budget, even when the endpoint misbehaves.
+                    return TrimToMaxTokens(generatedText, request.maxTokens);
                 }
             }
+        }
+
+        /// <summary>
+        /// Enforces a hard upper bound on response length by counting whitespace-delimited tokens.
+        /// This is a local safety net for endpoints/models that do not honor max_tokens.
+        /// </summary>
+        private static string TrimToMaxTokens(string text, int maxTokens)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = text.Trim();
+            if (maxTokens <= 0)
+            {
+                return trimmed;
+            }
+
+            bool insideToken = false;
+            int tokenCount = 0;
+            for (int i = 0; i < trimmed.Length; i++)
+            {
+                char c = trimmed[i];
+                if (char.IsWhiteSpace(c))
+                {
+                    insideToken = false;
+                    continue;
+                }
+
+                if (insideToken)
+                {
+                    continue;
+                }
+
+                insideToken = true;
+                tokenCount++;
+                if (tokenCount > maxTokens)
+                {
+                    string capped = trimmed.Substring(0, i).TrimEnd();
+                    return string.IsNullOrEmpty(capped) ? string.Empty : capped + "...";
+                }
+            }
+
+            return trimmed;
         }
 
         /// <summary>
