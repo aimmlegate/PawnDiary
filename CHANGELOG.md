@@ -22,6 +22,34 @@ doc itself describes only "what happens now".
   - Keyed strings: added `GenerationHeader`, `EventsSectionTitle`, `EditingPromptFor`,
     `ChangeGroup`; reused `Connection`/`SystemPrompt` as section titles; removed the now-unused
     `PromptForGroup`. No settings data or save format changed.
+- **2026-06-16 (remove dead CancelSession; add orphan-pending recovery backstop)**
+  - Removed `LlmClient.CancelSession()` — it had no callers (a manual-cancel entry point that was
+    never wired up).
+  - Added a safety net so an entry can never get permanently stuck on "Generating" again, whatever
+    the cause. Each generation scan, `RecoverOrphanedPendingGenerations` (in
+    `DiaryGameComponent.Generation.cs`) resets any POV that is `pending` but has no in-flight request
+    back to not-generated, and the existing `QueueAllPendingGenerations` pass re-queues it. Two guards
+    prevent double-sending: the new `LlmClient.IsInFlight(eventId, povRole)` skips anything whose
+    session-keyed request key is still present, and an entry must be seen orphaned on **two
+    consecutive scans** before recovery acts — so a request that merely completed between scans (its
+    result still waiting in the main-thread drain) is never mistaken for an orphan. New `DiaryEvent`
+    helpers `IsPending`/`ResetPendingToNotGenerated`; transient `orphanCandidatesLastScan` set tracks
+    the previous scan. Build verified; updated the §7 "Orphan recovery" note in `DOCUMENTATION.md`.
+
+- **2026-06-16 (fix: founding-colonist thought entries stuck on "Generating")**
+  - Starting-colonist thoughts that `GiveAllStartingPlayerPawnsThought` hands out during
+    `Game.InitNewGame` were queued for generation in the session opened by the `DiaryGameComponent`
+    constructor, then **cancelled** moments later when `StartedNewGame()` called
+    `LlmClient.BeginSession()` a second time. A cancelled-mid-flight request enqueues no result, so
+    those entries stayed at status `pending` ("Generating") forever and were never re-queued
+    (`CanQueueGeneration` rejects `pending`). Confirmed from `[PawnDiary debug]` logs: the three
+    `role=initiator` startup entries showed `Trying lane` → `Cancelled`, while every entry queued
+    after the game started succeeded. Fix: `BeginSession()` is now called **only** from the
+    constructor (which already runs first on both new game and load, cancelling any previous Game's
+    requests); `StartedNewGame()` and `LoadedGame()` no longer restart the session. Loaded saves
+    still recover any stale `pending` via `DiaryEvent.NormalizeLoadedStatus`. Build verified; updated
+    the §7 "Stale-session purge" note in `DOCUMENTATION.md` and the lifecycle comments in
+    `DiaryGameComponent.cs`.
 
 - **2026-06-16 (split recording into one file per event)**
   - Reorganized the `DiaryGameComponent` partial class so each game event we listen for owns its

@@ -70,6 +70,12 @@ namespace PawnDiary
         private readonly Dictionary<string, int> recentMoodEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against the same pawn+thought being recorded repeatedly.
         private readonly Dictionary<string, int> recentThoughtEvents = new Dictionary<string, int>();
+        // Transient (not saved): event-role keys ("eventId|role") seen pending-but-not-in-flight on the
+        // previous generation scan. An entry must look orphaned on two consecutive scans before the
+        // orphan recovery re-queues it, so a request that merely finished between scans (its result
+        // still queued for the main thread) is never mistaken for an orphan. See
+        // RecoverOrphanedPendingGenerations.
+        private HashSet<string> orphanCandidatesLastScan = new HashSet<string>();
         // New games build maps after StartedNewGame. This flag lets the first tick with maps create
         // founding-colonist arrival entries using scenario context.
         private bool initialArrivalScanPending;
@@ -81,6 +87,13 @@ namespace PawnDiary
 
         public DiaryGameComponent(Game game)
         {
+            // One LLM session spans the lifetime of one loaded Game, and this constructor is the
+            // single place that starts it. Constructing a Game (new game OR loading a save) runs this
+            // ctor first, so BeginSession here cancels any requests still running from a previous Game
+            // before this one queues anything. StartedNewGame/LoadedGame deliberately do NOT call
+            // BeginSession again: by the time they run, this Game has already queued its own startup
+            // entries (e.g. founding-colonist starting thoughts queued during InitNewGame), and a
+            // second BeginSession would cancel those mid-flight and strand them forever on "Generating".
             LlmClient.BeginSession();
         }
 
@@ -99,7 +112,11 @@ namespace PawnDiary
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
-            LlmClient.BeginSession();
+            orphanCandidatesLastScan.Clear();
+            // Do NOT BeginSession here: the constructor already started this Game's session, and the
+            // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
+            // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
+            // their diary entries stuck on "Generating" with no way to re-queue them this session.
             nextGenerationScanTick = 0;
             initialArrivalScanPending = true;
         }
@@ -111,7 +128,11 @@ namespace PawnDiary
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
-            LlmClient.BeginSession();
+            orphanCandidatesLastScan.Clear();
+            // Do NOT BeginSession here: the constructor already started this Game's session and
+            // cancelled any requests left over from a previous Game. Loaded events have had their
+            // "pending" status normalized back to "not generated" (DiaryEvent.NormalizeLoadedStatus),
+            // so the scan below re-queues them in the current session.
             nextGenerationScanTick = 0;
             initialArrivalScanPending = false;
             QueueAllPendingGenerations();
@@ -154,6 +175,7 @@ namespace PawnDiary
             if (now >= nextGenerationScanTick)
             {
                 nextGenerationScanTick = now + GenerationScanIntervalTicks;
+                RecoverOrphanedPendingGenerations();
                 QueueAllPendingGenerations();
             }
 

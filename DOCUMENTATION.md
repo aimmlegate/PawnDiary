@@ -540,8 +540,20 @@ dev mode shows a "Show persona settings" toggle, and normal mode hides persona e
   `"Timed out waiting for the model."` and the slot is freed. The deadline clock starts only after
   leaving the queue, so waiting in line does not count against it. (Worst-case total wait ≈ lanes ×
   `timeoutSeconds`.)
-- **Stale-session purge:** `BeginSession` (new game / load) bumps a session id and cancels
-  the old token. Requests from an ended session are dropped instead of wasting a slot.
+- **Stale-session purge:** `BeginSession` bumps a session id and cancels the old token; requests
+  from an ended session are dropped instead of wasting a slot. It is called **once per loaded Game,
+  from the `DiaryGameComponent` constructor** — which runs first on both new game and load, so it
+  purges any requests left over from a previous Game. `StartedNewGame`/`LoadedGame` deliberately do
+  **not** call it again: by the time they run, this Game has already queued startup entries (e.g.
+  founding-colonist starting thoughts from `GiveAllStartingPlayerPawnsThought` during `InitNewGame`),
+  and a second `BeginSession` would cancel those mid-flight and strand them on "Generating".
+- **Orphan recovery (backstop):** each generation scan, `RecoverOrphanedPendingGenerations` resets
+  any POV that is `pending` but has no in-flight request (`LlmClient.IsInFlight` false) back to
+  not-generated, so the queue pass that follows re-drives it. This catches an entry left on
+  "Generating" if a request is ever dropped without reporting a result (e.g. a future session
+  cancel). It only acts on an entry seen orphaned for **two consecutive scans**, so a request that
+  merely finished between scans (result still queued for the main thread) is never re-sent, and the
+  in-flight check prevents double-sending a request that is still running.
 - **Retries:** up to 3 attempts per lane for transient errors (429, 5xx, network) within that
   lane's deadline; permanent errors (other 4xx, empty content) skip straight to the next lane.
 
