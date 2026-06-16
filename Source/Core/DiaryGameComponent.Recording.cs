@@ -461,19 +461,9 @@ namespace PawnDiary
                     string moodImpact = DiaryContextBuilder.DetermineMoodImpact(condition, pawn, conditionThoughtOffset);
                     string perPawnContext = baseContext + "; mood_impact=" + moodImpact;
 
-                    string text;
-                    if (string.Equals(moodImpact, "positive", StringComparison.OrdinalIgnoreCase))
-                    {
-                        text = "PawnDiary.Event.MoodEventPositive".Translate(pawn.LabelShortCap, conditionLabel).Resolve();
-                    }
-                    else if (string.Equals(moodImpact, "negative", StringComparison.OrdinalIgnoreCase))
-                    {
-                        text = "PawnDiary.Event.MoodEventNegative".Translate(pawn.LabelShortCap, conditionLabel).Resolve();
-                    }
-                    else
-                    {
-                        text = "PawnDiary.Event.MoodEvent".Translate(pawn.LabelShortCap, conditionLabel).Resolve();
-                    }
+                    string text = MoodImpact.PickText(moodImpact,
+                        "PawnDiary.Event.MoodEventPositive", "PawnDiary.Event.MoodEventNegative", "PawnDiary.Event.MoodEvent",
+                        pawn.LabelShortCap, conditionLabel);
 
                     DiaryEvent moodEvent = AddSoloEvent(pawn, null, conditionDefName, conditionLabel,
                         text, instruction, perPawnContext);
@@ -542,7 +532,7 @@ namespace PawnDiary
             string label = DiaryContextBuilder.CleanLine(thought.def.LabelCap.Resolve());
             string instruction = PawnDiaryMod.Settings.InstructionForThought(thought.def);
 
-            string moodImpact = moodOffset > 0.5f ? "positive" : moodOffset < -0.5f ? "negative" : "neutral";
+            string moodImpact = MoodImpact.Classify(moodOffset);
 
             string gameContext = "thought=" + thoughtDefName
                 + "; label=" + label
@@ -550,19 +540,9 @@ namespace PawnDiary
                 + "; mood_offset=" + moodOffset.ToString("F1")
                 + "; duration_days=" + thought.def.durationDays.ToString("F1");
 
-            string text;
-            if (string.Equals(moodImpact, "positive", StringComparison.OrdinalIgnoreCase))
-            {
-                text = "PawnDiary.Event.ThoughtPositive".Translate(pawn.LabelShortCap, label).Resolve();
-            }
-            else if (string.Equals(moodImpact, "negative", StringComparison.OrdinalIgnoreCase))
-            {
-                text = "PawnDiary.Event.ThoughtNegative".Translate(pawn.LabelShortCap, label).Resolve();
-            }
-            else
-            {
-                text = "PawnDiary.Event.Thought".Translate(pawn.LabelShortCap, label).Resolve();
-            }
+            string text = MoodImpact.PickText(moodImpact,
+                "PawnDiary.Event.ThoughtPositive", "PawnDiary.Event.ThoughtNegative", "PawnDiary.Event.Thought",
+                pawn.LabelShortCap, label);
 
             DiaryEvent thoughtEvent = AddSoloEvent(pawn, null, thoughtDefName, label, text, instruction, gameContext);
             thoughtEvent.moodImpact = moodImpact;

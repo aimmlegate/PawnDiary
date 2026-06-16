@@ -951,7 +951,7 @@ namespace PawnDiary
         {
             if (condition == null || condition.def == null || pawn == null)
             {
-                return "neutral";
+                return MoodImpact.Neutral;
             }
 
             GameConditionDef def = condition.def;
@@ -963,7 +963,7 @@ namespace PawnDiary
             {
                 if (emanationCondition.gender != pawn.gender)
                 {
-                    return "neutral";
+                    return MoodImpact.Neutral;
                 }
             }
 
@@ -972,7 +972,7 @@ namespace PawnDiary
             {
                 if (suppressionCondition.gender != pawn.gender)
                 {
-                    return "neutral";
+                    return MoodImpact.Neutral;
                 }
             }
 
@@ -987,32 +987,34 @@ namespace PawnDiary
                 bestOffset = pawnOffset;
             }
 
-            // If we found a meaningful mood offset, return the direction.
-            if (bestOffset > 0.5f)
+            // If we found a meaningful mood offset, return the direction. (We can't use
+            // MoodImpact.Classify here because a within-threshold offset must fall through to the
+            // name-based heuristics below rather than short-circuit to neutral.)
+            if (bestOffset > MoodImpact.MeaningfulThreshold)
             {
-                return "positive";
+                return MoodImpact.Positive;
             }
 
-            if (bestOffset < -0.5f)
+            if (bestOffset < -MoodImpact.MeaningfulThreshold)
             {
-                return "negative";
+                return MoodImpact.Negative;
             }
 
             // If no thought offsets found (some conditions apply thoughts programmatically),
             // fall back to name-based heuristics for known condition families.
             if (IsKnownPositiveCondition(defName))
             {
-                return "positive";
+                return MoodImpact.Positive;
             }
 
             if (IsKnownNegativeCondition(defName))
             {
-                return "negative";
+                return MoodImpact.Negative;
             }
 
             // If we can't determine the impact, default to neutral. The LLM will use the
             // condition label and gameContext to figure out how the pawn feels.
-            return "neutral";
+            return MoodImpact.Neutral;
         }
 
         // Scans DefDatabase<ThoughtDef> for any thoughts that reference the given
