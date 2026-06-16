@@ -98,14 +98,12 @@ namespace PawnDiary
         public string systemPromptReflection = DefaultSystemPromptReflection;
         public string systemPromptNeutral = DefaultSystemPromptNeutral;
         // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
-        // Used only by the opt-in title flow; main entries never send this prompt.
+        // Used only by the title follow-up flow; main entries never send this prompt.
         public string systemPromptTitle = DefaultSystemPromptTitle;
 
-        // Master toggle for the opt-in LLM-titling flow. When false, no extra LLM call is made
-        // and the diary card header falls back to the first sentence of the generated entry
-        // (see DiaryEvent.ToViewFor / DiaryContextBuilder.ExtractFirstSentence). Default OFF
-        // so existing users see no behavior or cost change.
-        public bool generateTitles = false;
+        // Master toggle for the LLM-titling flow. When false, no extra title call is made and
+        // diary card headers stay date-only.
+        public bool generateTitles = true;
 
         // Per interaction-group settings, keyed by InteractionGroup.defName.
         // groupEnabled: whether interactions in the group are recorded at all.
@@ -158,7 +156,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref systemPromptReflection, "systemPromptReflection", DefaultSystemPromptReflection);
             Scribe_Values.Look(ref systemPromptNeutral, "systemPromptNeutral", DefaultSystemPromptNeutral);
             Scribe_Values.Look(ref systemPromptTitle, "systemPromptTitle", DefaultSystemPromptTitle);
-            Scribe_Values.Look(ref generateTitles, "generateTitles", false);
+            Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
 

@@ -153,7 +153,7 @@ namespace PawnDiary
         public readonly string TruncatedText;
         /// <summary>Whether the other pawn's entry has finished LLM generation.</summary>
         public readonly bool Generated;
-        /// <summary>Short chat-style subject for the other pawn's entry (stored LLM title, else first sentence of the generated text). Empty for legacy entries.</summary>
+        /// <summary>Short chat-style subject for the other pawn's entry. Empty when no LLM title has been stored.</summary>
         public readonly string Title;
 
         public LinkedEntryView(
@@ -195,8 +195,8 @@ namespace PawnDiary
         public readonly string GroupLabel;  // Human-readable event group shown in the entry header
         public readonly bool Important;     // Visual importance marker derived from the event group
         public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo/legacy)
-        // Short chat-style subject: stored LLM-generated title (opt-in flow) or the first sentence
-        // of the generated text (free fallback). Empty when neither is available, e.g. legacy entries.
+        // Short chat-style subject: stored LLM-generated title only. Empty when no title has
+        // been generated, e.g. legacy entries or title generation disabled.
         public readonly string Title;
 
         public DiaryEntryView(

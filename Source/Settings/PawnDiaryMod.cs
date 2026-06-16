@@ -136,7 +136,7 @@ namespace PawnDiary
             }
 
             // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
-            // Used only by the opt-in title flow; main entries never send this prompt.
+            // Used only by the title follow-up flow; main entries never send this prompt.
             SectionTitle(listing, "PawnDiary.Settings.SystemPromptTitle".Translate());
             DrawHint(listing, "PawnDiary.Settings.SystemPromptTitleHelp".Translate());
             Rect titlePromptRect = listing.GetRect(80f);

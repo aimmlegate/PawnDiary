@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (LLM titles default on, no fallback)**
+  - `generateTitles` now defaults ON for new settings, so successful diary entries queue the small
+    title follow-up unless the player disables it. When disabled, diary headers render date-only;
+    existing stored titles are kept and show again if the setting is re-enabled.
+  - Removed the first-sentence/first-line title fallback from `DiaryEvent.ToViewFor`. Entries
+    without a stored per-POV title now render a date-only header instead of deriving a title from
+    generated text.
+  - Removed `DiaryPromptBuilder.CleanTitle` and the 80-character title cleanup/truncation step.
+    Successful title responses are stored from the LLM result path directly; empty/whitespace
+    title responses still mark the title request failed.
+
 - **2026-06-16 (hard cap for overlong diary responses)**
   - Added a local hard response cap in `LlmClient.SendOnce`: after a successful API response,
     `TrimToMaxTokens` now enforces the request's `maxTokens` budget by counting

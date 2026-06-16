@@ -548,11 +548,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Produces the compact header shown on each entry card: the date, then a chat-style
-        /// subject ("date — title"). The title is the opt-in LLM-generated one when present,
-        /// otherwise the first sentence of the generated text (free fallback). When neither is
-        /// available (e.g. legacy entries, no generated text yet), the header is just the date
-        /// — no dangling separator. <see cref="Widgets.LabelFit"/> shrinks long titles to fit.
+        /// Produces the compact header shown on each entry card: the date, then a stored
+        /// LLM-generated subject ("date — title") when title display is enabled and one exists.
+        /// Otherwise entries show just the date — no dangling separator.
         /// </summary>
         private static string EntryHeader(DiaryEntryView entry)
         {
@@ -561,12 +559,21 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            if (string.IsNullOrWhiteSpace(entry.Title))
+            if (!TitlesEnabled() || string.IsNullOrWhiteSpace(entry.Title))
             {
                 return entry.Date ?? string.Empty;
             }
 
             return (entry.Date ?? string.Empty) + " \u2014 " + entry.Title;
+        }
+
+        /// <summary>
+        /// The title-generation setting doubles as the display toggle: disabling it means no
+        /// titles in card headers, even if older entries already have stored titles.
+        /// </summary>
+        private static bool TitlesEnabled()
+        {
+            return PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.generateTitles;
         }
 
         /// <summary>

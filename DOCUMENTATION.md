@@ -80,14 +80,14 @@ The table lists files by name; all `.cs` live under `Source/<area>/` per the tre
 | `DiaryModStartup.cs` | `[StaticConstructorOnStartup]`: applies Harmony patches and injects the Diary `ITab` after the vanilla Social tab on humanlike pawn defs. |
 | `DiaryPatches.cs` | Harmony patches: `PlayLog.Add` → `RecordInteraction`; `MentalStateHandler.TryStartMentalState` → `RecordMentalState` (social fights + mental breaks); `TaleRecorder.RecordTale` → `RecordTale` (notable non-social history events); `Pawn.Kill` → `DeathContextCache` (killing blow/cause details for colonist death descriptions); `Pawn.SetFaction` → `ArrivalContextCache` / `RecordColonistArrival` (later colony joins, including DLC/modded paths that become `Faction.OfPlayer`); `QualityUtility.SendCraftNotification` → `RecordCraftedQuality` (masterwork/legendary crafts); `JobDriver_InstallRelic` completion → `RecordRelicInstalled`; `GameConditionManager.RegisterCondition` → `RecordMoodEvent` (mood-affecting game conditions); `MemoryThoughtHandler.TryGainMemory` → `RecordThought` (temporary thoughts with expiration); `Pawn_HealthTracker.AddHediff` → `RecordHediffAppeared` (major new afflictions, for the day reflection). |
 | `DiaryGameComponent*.cs` | Orchestrator: recording (interactions, mental states, tales, mood events, thoughts), generation queueing, applying results, save/load, lookups. (Context/prompt building and the data models were split into the files below.) The class is one `partial class` split across files — no behavior change, the compiler merges them. There is **one file per event we listen for**, each owning its `Record*` hook plus that event's text/context helpers: `.Interactions.cs` (social interactions), `.MentalStates.cs` (social fights + mental breaks, incl. break text/`ReasonSuffix`), `.Tales.cs` (notable-history tales — `RecordTale`, the tale/death helpers, and the `TaleDefsCoveredElsewhere`/`DeathTaleDefs` sets), `.CraftedAndRelics.cs` (masterwork/legendary crafts + relic installs — synthetic `tale=` events), `.MoodEvents.cs` (mood-affecting game conditions), `.Thoughts.cs` (temporary memory thoughts), `.Arrivals.cs` (neutral first-entry colony arrivals), `.InteractionBatching.cs` (XML-configured batching for quick social logs — `RecordBatchedInteraction` + `PendingInteractionBatch`), `.AmbientThoughts.cs` (day-note batching for low-impact temporary thoughts), `.DaySummary.cs` (the end-of-day reflection — collectors for major events/opinion shifts/new afflictions/filler, the weighted-random highlight selector, and the `DayReflection` emit, flushed when a pawn beds down). The remaining files hold cross-event machinery: `DiaryGameComponent.cs` (state + lifecycle tick/save/load), `.PublicApi.cs` (UI read/write entry points), `.EventFactory.cs` (`AddSoloEvent`/`AddPairwiseEvent` build + register every event funnels through), `.Generation.cs` (prompt build, API-lane selection, LLM dispatch/apply), `.Lookup.cs` (find records/events, eligibility, dedup, persona seeding). |
-| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse); per-POV opt-in title fields and helpers (`SetTitle` / `TitleForRole` / `MarkTitleQueued` / `MarkTitleFailed` / `IsTitlePending`). |
+| `DiaryEvent.cs` | The `DiaryEvent` model: per-POV text, context, prompts, generated text, status, originating PlayLog ids; save/load; applying LLM results (incl. legacy dual-POV parse); per-POV title fields and helpers (`SetTitle` / `TitleForRole` / `MarkTitleQueued` / `MarkTitleFailed` / `IsTitlePending`). |
 | `PawnDiaryRecord.cs` | The `PawnDiaryRecord` model: one pawn's event-id index + legacy entries + saved persona/generation toggle; save/load. |
 | `DiaryContextBuilder.cs` | Static helpers turning game state into the compact context strings (pawn profile, surroundings, atmosphere, relationship/continuity, opinions) + formatting/bucket helpers. |
 | `MoodImpact.cs` | Single home for the mood-direction tokens (`"positive"`/`"negative"`/`"neutral"`) shared by mood-event and thought entries: the constants (saved on `DiaryEvent.moodImpact` and embedded in `gameContext`), the ±0.5 `Classify` threshold, and `PickText` (picks the positive/negative/neutral translation key). Replaces the literals/blocks that were duplicated across `DiaryGameComponent` and `DiaryContextBuilder`. |
 | `ArrivalContextCache.cs` | Transient bridge around `Pawn.SetFaction`: captures prior faction, recruiter, pawn kind, creepjoiner flag, and nearby context for neutral first-entry colony-arrival descriptions. |
 | `DeathContextCache.cs` | Transient bridge between `Pawn.Kill` and `TaleRecorder.RecordTale`: captures `DamageInfo`, culprit hediff, damaged/destroyed body parts, lethal conditions, and nearby context for neutral colonist death descriptions. |
 | `DlcContext.cs` | The single, double-guarded home for reading DLC-gated pawn data (Biotech `xenotype=`, Royalty `title=`, Ideology `faith=`). Each accessor checks `ModsConfig.<Dlc>Active` + null and returns empty when the DLC/trait is absent, so a no-DLC game never breaks. See §8 and AGENTS.md ("DLC-safety"). |
-| `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo, neutral arrival description, neutral death description, and the opt-in `BuildTitlePrompt`); plus `CleanTitle` for stripping noise from the title-generation response. |
+| `DiaryPromptBuilder.cs` | Static helpers that assemble the final prompt text (single, paired sequential, solo, neutral arrival description, neutral death description, and `BuildTitlePrompt` for title follow-ups). |
 | `LlmClient.cs` | Async HTTP client to the endpoint: queueing, concurrency gate, timeouts, retries, request/response JSON. Defines `LlmGenerationRequest` / `LlmGenerationResult`. |
 | `MiniJson.cs` | Dependency-free JSON parser (see §8). |
 | `PawnDiarySettings.cs` | All mod settings + clamping + save/load, including per-group enable/instruction overrides (keyed by group `defName`). Includes `IsThoughtEnabled`/`InstructionForThought` for the Thought domain. |
@@ -293,24 +293,21 @@ generated entries.
 - In paired sequential mode, if the initiator has generation disabled but the recipient does not,
   the recipient can still generate from the base event prompt without hidden initiator context.
 
-### Title generation (opt-in)
-- Diary card headers show `date — title`. The title is derived in one of two ways, chosen by the
-  `generateTitles` setting (default **OFF**):
-  - **Default (free):** no extra LLM request, no extra format instructions sent to the model.
-    `DiaryEvent.ToViewFor` falls back to `DiaryContextBuilder.ExtractFirstSentence(generatedText)`
-    when no stored title is present, so the header is always populated for finished entries.
-  - **Opt-in:** when `generateTitles` is on, `ApplyLlmResult` queues a follow-up title call
-    (`QueueTitleRequest` in `DiaryGameComponent.Generation.cs`) after every successful main
-    entry. The request reuses the main entry's lane (matched via the recorded
-    `LlmEndpointForRole` + `LlmModelForRole`), is capped at `TitleMaxTokens = 40`, and uses
-    `DiaryPrompts.Current.titleSystemPrompt` (or the player's `systemPromptTitle` override) as
-    the system message. The user message is the diary entry text (generated when available, raw
-    fallback) plus a fixed English trailer asking for a 3-8 word title with no quotes or
-    period. `DiaryPromptBuilder.CleanTitle` strips a leading/trailing quote, a leading markdown
-    bullet, a trailing period, and truncates to 80 characters before storing. If the call
-    fails (no API, timeout, model returned nothing), the per-POV title is left empty and the
-    view falls back to the first sentence — so the user-facing header is never blank for a
-    completed main entry.
+### Title generation
+- Diary card headers show `date — title` only when `generateTitles` is enabled and the event has
+  a stored per-POV title. When title generation is disabled, or when no title is stored, the
+  header is just the date; there is no first-line or first-sentence fallback. Disabling the
+  setting hides stored titles in the UI but does not delete them from saves.
+- `generateTitles` defaults **ON**. When enabled, `ApplyLlmResult` queues a follow-up title call
+  (`QueueTitleRequest` in `DiaryGameComponent.Generation.cs`) after every successful main entry
+  that does not already have a title. The request reuses the main entry's lane (matched via the
+  recorded `LlmEndpointForRole` + `LlmModelForRole`), is capped at `TitleMaxTokens = 40`, and
+  uses `DiaryPrompts.Current.titleSystemPrompt` (or the player's `systemPromptTitle` override)
+  as the system message. The user message is the diary entry text (generated when available, raw
+  fallback) plus a fixed English trailer asking for a 3-8 word title with no quotes or period.
+  Successful title responses are stored as returned by the LLM result path. If the title call
+  fails (no API, timeout, model returned nothing), the per-POV title is left empty and the card
+  remains date-only.
 - The title's per-POV status is tracked in a separate `initiatorTitleStatus` / `recipientTitleStatus`
   / `neutralTitleStatus` set (with matching `*TitleError` fields) so the main-entry recovery
   scan never touches it. The `LlmClient.PendingKey` includes an `isTitleRequest` bit so a
@@ -618,8 +615,8 @@ does not add a second surgery hook that would duplicate successful operations.
 | `maxTokens` | 100 | 32–2048. Applied to each one-entry request, and also enforced locally as a hard response cap if a model ignores API-side `max_tokens`. |
 | `temperature` | 0.8 | 0–2. |
 | `dualPovGeneration` | true | Paired sequential vs. independent single-POV requests for both sides (§4). |
-| `generateTitles` | false | Opt-in LLM-titling master toggle. **OFF by default** — no extra request, no extra cost; the diary card title is the first sentence of the generated text. When ON, every successful main entry queues a small follow-up title call (`TitleMaxTokens = 40`) with a focused system prompt asking for a 3-8 word title, no quotes, no period; the result is stored per POV on the event and takes precedence over the first-sentence fallback. If the title call fails, the first-sentence fallback renders instead. See §4 "Title generation". |
-| `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` / `systemPromptTitle` | from `DiaryPromptDef` XML | The system prompts (diary voice / day reflection / neutral chronicle / title), chosen per request type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). The default diary `systemPrompt` also explicitly tells the model to stay within the request token limit. `systemPromptTitle` is only sent by the opt-in title follow-up; main entries are unaffected by changes to it. |
+| `generateTitles` | true | LLM-titling master toggle. **ON by default**: every successful main entry queues a small follow-up title call (`TitleMaxTokens = 40`) with a focused system prompt asking for a 3-8 word title, no quotes, no period. The result is stored per POV on the event. When OFF, no new title request is made and diary headers render date-only; stored titles are kept and show again if the setting is re-enabled. See §4 "Title generation". |
+| `systemPrompt` / `systemPromptReflection` / `systemPromptNeutral` / `systemPromptTitle` | from `DiaryPromptDef` XML | The system prompts (diary voice / day reflection / neutral chronicle / title), chosen per request type at dispatch. Each is sent as the `system` message and editable in mod settings; edit `1.6/Defs/DiaryPromptDef.xml` then click that prompt's "Restore default" to apply (existing saves persist their saved value). The default diary `systemPrompt` also explicitly tells the model to stay within the request token limit. `systemPromptTitle` is only sent by the title follow-up; main entries are unaffected by changes to it. |
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
 
@@ -725,11 +722,10 @@ dev mode shows a "Show persona settings" toggle, and normal mode hides persona e
 - **Inspector tab** (`ITab_Pawn_Diary`), injected immediately after the vanilla **Social** tab on all
 humanlike pawn defs at startup. The tab is **visible only for free colonists**
 (`pawn.IsColonist`); animals, prisoners, slaves, enemies, and visitors never see it.
-Renders newest-first: each card's header shows **`date — title`** (the entry's date plus a
-short chat-style subject). The title comes from the opt-in LLM-titling flow when enabled
-(§4 "Title generation"), otherwise the **first sentence of the LLM-generated text** — no extra
-request, no extra cost. When neither is available (legacy entries, no generated text yet) the
-header is just the date, with no dangling separator. `LabelFit` shrinks long titles to fit;
+Renders newest-first: each card's header shows **`date — title`** only when title generation is
+enabled and a stored title exists; otherwise it shows only the date, with no dangling separator.
+Titles come from the LLM-titling flow (§4 "Title generation"); there is no first-line fallback.
+`LabelFit` shrinks long titles to fit;
 the existing `EntryTitleHeight = 28f` is unchanged. The text is drawn in a roleplay-log style:
 narration is muted/italic, and dialogue-looking lines are bold/italic and colored with the
 pawn's RimWorld favorite color. Each generated card ends with a tiny, low-contrast model id so

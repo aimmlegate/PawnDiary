@@ -24,7 +24,7 @@ namespace PawnDiary
 
         // Max tokens the title follow-up is allowed to emit. A title is 3-8 words; 40 is generous
         // for a chat-style subject plus a stray word or two, and small enough to keep the call
-        // cheap when the opt-in toggle is on. Reused from the same field on the main-entry
+        // cheap when the title toggle is on. Reused from the same field on the main-entry
         // request — we do NOT add a player setting for it.
         private const int TitleMaxTokens = 40;
 
@@ -612,10 +612,9 @@ namespace PawnDiary
 
             QueueRecipientAfterInitiatorResult(diaryEvent, result);
 
-            // Opt-in title follow-up: if Generate LLM titles is on and the main entry produced
-            // text but the role has no stored title yet, queue a small title call. The title is
-            // tiny (3-8 words), the request is capped to TitleMaxTokens, and the toggle is OFF
-            // by default — existing users pay nothing.
+            // Title follow-up: if Generate LLM titles is on and the main entry produced text
+            // but the role has no stored title yet, queue a small title call. The title is tiny
+            // (3-8 words), and the request is capped to TitleMaxTokens.
             if (result.success
                 && PawnDiaryMod.Settings != null
                 && PawnDiaryMod.Settings.generateTitles
@@ -627,10 +626,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Applies a title-generation result to the event: stores the cleaned title on success
+        /// Applies a title-generation result to the event: stores the returned title on success
         /// or records the failure. Uses a separate per-POV status field so the main-entry
-        /// recovery scan never touches it. The view layer's first-sentence fallback covers the
-        /// case where the title call fails — the diary card just shows the entry's opening line.
+        /// recovery scan never touches it. If the title call fails, entries without an older
+        /// stored title keep a date-only card header.
         /// </summary>
         private static void ApplyTitleResult(DiaryEvent diaryEvent, LlmGenerationResult result)
         {
@@ -641,7 +640,7 @@ namespace PawnDiary
 
             if (result.success)
             {
-                string title = DiaryPromptBuilder.CleanTitle(result.generatedText);
+                string title = result.generatedText;
                 if (string.IsNullOrWhiteSpace(title))
                 {
                     diaryEvent.MarkTitleFailed(result.povRole, "PawnDiary.Error.TitleEmptyResponse".Translate());
@@ -658,12 +657,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Queues the opt-in title-generation follow-up for the given POV. Mirrors the
+        /// Queues the title-generation follow-up for the given POV. Mirrors the
         /// <see cref="QueuePrompt"/> shape: pick a lane (pin to the same lane the main entry
         /// used so a sequential pair stays on one model), mark the title status as pending, and
         /// enqueue an <see cref="LlmGenerationRequest"/> with <c>isTitleRequest = true</c>.
-        /// On failure (no API configured, lane unavailable) the per-POV title is left untouched
-        /// — the view layer falls back to the first sentence of the generated text.
+        /// On failure (no API configured, lane unavailable) the per-POV title is left untouched.
         /// </summary>
         private void QueueTitleRequest(DiaryEvent diaryEvent, string povRole, ApiEndpointConfig primaryOverride)
         {

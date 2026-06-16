@@ -79,9 +79,9 @@ namespace PawnDiary
         public string llmModel; // legacy flat field, migrated to per-POV fields on load
         public bool solo; // true for events with a single POV (e.g. mental breaks)
         // Per-POV title: short chat-style subject (3-8 words) derived from the generated entry.
-        // Populated by the opt-in "Generate LLM titles" follow-up call; empty otherwise (the
-        // diary card header falls back to the first sentence of the generated text). Separate
-        // from the per-POV status fields so the main-entry recovery logic is untouched.
+        // Populated by the "Generate LLM titles" follow-up call; empty means the diary card
+        // header stays date-only. Separate from the per-POV status fields so the main-entry
+        // recovery logic is untouched.
         public string initiatorTitle;
         public string recipientTitle;
         public string neutralTitle;
@@ -289,8 +289,8 @@ namespace PawnDiary
                 }
 
                 // Title backfill for older saves that pre-date the title feature. All values
-                // default to empty (not_generated status is implied by absence) so a saved event
-                // just falls back to the free first-sentence title.
+                // default to empty (not_generated status is implied by absence), so saved events
+                // with no generated title render a date-only card header.
                 if (initiatorTitle == null)
                 {
                     initiatorTitle = string.Empty;
@@ -425,9 +425,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Stores the opt-in LLM-generated title for a specific POV role. Mirrors
-        /// <see cref="SetLlmMeta"/>; an empty string clears the stored title so the view can
-        /// fall back to the first sentence of the generated text.
+        /// Stores the LLM-generated title for a specific POV role. Mirrors
+        /// <see cref="SetLlmMeta"/>; an empty string clears the stored title so the view renders
+        /// a date-only card header.
         /// </summary>
         public void SetTitle(string povRole, string title)
         {
@@ -451,9 +451,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the stored opt-in LLM title for a POV role, or empty string when none has
-        /// been set yet. The view layer combines this with the first-sentence fallback to render
-        /// the diary card header. Public because the title-queue decision in
+        /// Returns the stored LLM title for a POV role, or empty string when none has been set
+        /// yet. Public because the title-queue decision in
         /// <c>DiaryGameComponent.Generation.cs</c> reads the same field.
         /// </summary>
         public string TitleForRole(string povRole)
@@ -484,7 +483,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Marks a POV role's title follow-up as failed and records the error message.
-        /// The view still falls back to the first sentence of the generated text in that case.
+        /// If no previous title exists, the view keeps the card header date-only.
         /// </summary>
         public void MarkTitleFailed(string povRole, string error)
         {
@@ -533,8 +532,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Public read accessor for the recorded LLM endpoint of a POV role. Used by the
-        /// opt-in title queueing logic to pin a follow-up title to the same lane the main
-        /// entry used (so a paired event stays on one model).
+        /// title queueing logic to pin a follow-up title to the same lane the main entry used
+        /// (so a paired event stays on one model).
         /// </summary>
         public string LlmEndpointForRole(string povRole)
         {
@@ -712,15 +711,9 @@ namespace PawnDiary
 
             DiaryInteractionGroupDef group = GroupForDisplay();
 
-            // Title for this pawn's POV: stored opt-in LLM title, else the first sentence of
-            // the generated text, else empty. The view layer only renders a header when it's
-            // non-empty, so legacy entries (no generated text yet) and unfinished events stay
-            // header-less.
+            // Title for this pawn's POV: stored LLM title only. When empty, EntryHeader renders
+            // the date alone with no separator.
             string titleForPov = TitleForRole(povRole);
-            if (string.IsNullOrWhiteSpace(titleForPov))
-            {
-                titleForPov = DiaryContextBuilder.ExtractFirstSentence(GeneratedTextFor(povRole));
-            }
 
             // Build a linked entry for the other pawn in a paired event.
             // Solo events (mental breaks) and legacy entries have no link.
@@ -736,14 +729,9 @@ namespace PawnDiary
                     ? otherGeneratedText
                     : TextFor(otherRole));
 
-                // Title for the OTHER pawn's POV — same logic as the main view, mirrored onto
-                // the linked preview so the click target also shows a "We sat by the fire"-style
-                // subject. The other pawn's stored title (when present) takes precedence.
+                // Title for the OTHER pawn's POV, mirrored onto the linked preview when the
+                // title-generation follow-up has stored one.
                 string otherTitle = TitleForRole(otherRole);
-                if (string.IsNullOrWhiteSpace(otherTitle))
-                {
-                    otherTitle = DiaryContextBuilder.ExtractFirstSentence(otherGeneratedText);
-                }
 
                 linkedEntry = new LinkedEntryView(
                     otherPawnId,
