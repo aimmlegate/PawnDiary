@@ -117,7 +117,7 @@ namespace PawnDiary
     // 1.6/Defs/DiaryInteractionGroupDefs.xml — no code change needed.
     //
     // `Def` (the base class) already supplies two fields we rely on:
-    //   - defName : the stable key (e.g. "nsfw"). Settings store per-group overrides under it,
+    //   - defName : the stable key (e.g. "romance"). Settings store per-group overrides under it,
     //               so renaming a defName would orphan a player's saved settings.
     //   - label   : the human-readable name shown in the settings UI.
     public class DiaryInteractionGroupDef : Def

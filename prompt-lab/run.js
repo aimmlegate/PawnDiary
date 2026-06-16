@@ -38,6 +38,7 @@ const DEFAULTS = {
   generated: {
     includeGroups: 4,
     includePersonas: 4,
+    excludeGroupDefNames: ['nsfw'],
   },
   saveResults: false,
 };
@@ -456,8 +457,11 @@ function buildGeneratedFixtureSet(promptData, config, options) {
     ? Math.max(1, options.includePersonas)
     : config.generated.includePersonas;
 
+  const excludedGroupNames = new Set((config.generated.excludeGroupDefNames || [])
+    .map((name) => String(name || '').toLowerCase())
+    .filter(Boolean));
   const personas = pickRandom(personasFromData(promptData.personas), personaLimit);
-  const groups = sortAndTrimGroups(promptData.groups).slice(0, Math.max(1, groupLimit));
+  const groups = sortAndTrimGroups(promptData.groups, excludedGroupNames).slice(0, Math.max(1, groupLimit));
   const cases = [];
 
   const pairGroups = groups.filter((group) => {
@@ -752,9 +756,10 @@ function personasFromData(personas) {
   return personas;
 }
 
-function sortAndTrimGroups(groups) {
+function sortAndTrimGroups(groups, excludedGroupNames = new Set()) {
   return [...groups]
     .filter((group) => group && group.defName)
+    .filter((group) => !excludedGroupNames.has(String(group.defName).toLowerCase()))
     .sort((a, b) => {
       if (a.domain !== b.domain) {
         return String(a.domain).localeCompare(String(b.domain));

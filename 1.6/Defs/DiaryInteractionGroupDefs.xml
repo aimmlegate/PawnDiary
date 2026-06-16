@@ -28,26 +28,6 @@
 <Defs>
 
   <PawnDiary.DiaryInteractionGroupDef>
-    <defName>nsfw</defName>
-    <label>NSFW / RJW</label>
-    <order>10</order>
-    <domain>Interaction</domain>
-    <defaultEnabled>true</defaultEnabled>
-    <instruction>the heat of desire—an explicit sexual encounter. Keep it in-character, sensory, not clinical</instruction>
-    <tone>with raw, sensory heat</tone>
-    <matchDefNames>
-      <li>Necro_Vaginal</li>
-    </matchDefNames>
-    <matchTokens>
-      <li>Sex_</li>
-      <li>Rape</li>
-      <li>Necro</li>
-      <li>SexTame</li>
-      <li>Speech_sex</li>
-    </matchTokens>
-  </PawnDiary.DiaryInteractionGroupDef>
-
-  <PawnDiary.DiaryInteractionGroupDef>
     <defName>romance</defName>
     <label>Romance &amp; dating</label>
     <order>20</order>

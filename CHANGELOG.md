@@ -3,6 +3,11 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (first-release group catalog cleanup)**
+  - Dropped an unreleased placeholder interaction group from the XML catalog and kept prompt-lab
+    generated fixtures aligned with the first-release group set.
+  - Updated docs and a stale source comment example to describe the shipped group catalog cleanly.
+
 - **2026-06-16 (documentation compaction and parity audit)**
   - Re-reviewed `DOCUMENTATION.md` against the current source, corrected the stale tab-placement
     overview to Social-tab placement, and compacted the design doc into a current-state guide.

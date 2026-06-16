@@ -23,6 +23,9 @@ and generates multiple versions for:
 - death descriptions,
 - title follow-ups.
 
+Generated fixtures are derived from the current XML catalog and honor the harness's configured
+group exclusions.
+
 Use:
 
 ```bash

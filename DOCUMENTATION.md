@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (documentation compaction and parity audit)_
+_Last updated: 2026-06-16 (first-release group catalog cleanup)_
 
 ---
 
