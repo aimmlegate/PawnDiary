@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (diary text readability pass)_
+_Last updated: 2026-06-16 (prompt customization settings pass)_
 
 ---
 
@@ -81,7 +81,7 @@ Important files:
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for initial persona selection. |
 | `DlcContext.cs` | One guarded home for DLC-gated pawn data (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
-| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Mod settings, API lane editor, model-list fetcher, group prompt editor. |
+| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Mod settings, API lane editor, Prompt Studio, model-list fetcher, and group prompt editor. |
 | `ITab_Pawn_Diary.cs` | Production diary view, dev diagnostics, linked-entry previews, animations, and click targets. |
 | `DiaryTextFormat.cs` | Formats one diary line into Unity rich text: markdown emphasis, headings/bullets, and inline-colored quoted speech. |
 | `MiniJson.cs` | Dependency-free JSON parser compatible with RimWorld's Unity Mono runtime. |
@@ -214,6 +214,14 @@ Narrative mode chooses the system prompt at dispatch:
 - `systemPromptNeutral` for neutral arrival/death chronicles
 - `systemPromptTitle` for title follow-ups only
 
+The short user-message prompt texts that come after the structured context are also Def-backed and
+player-customizable through settings:
+- `singlePovInstruction` for normal solo or initiator diary pages
+- `recipientFollowupInstruction` for the recipient step in sequential paired generation
+- `deathDescriptionInstruction` for neutral death notes
+- `arrivalDescriptionInstruction` for neutral arrival notes
+- `titleUserInstruction` for the short title follow-up request
+
 Persona presets are `DiaryPersonaDef` XML. A new pawn's first persona is selected with
 `DiaryPersonas.WeightedStartingPersona`: every persona has base weight, matching trait/backstory
 themes add weight through `PersonaAffinity`, void-tagged personas get a large extra first-roll
@@ -244,14 +252,20 @@ Global settings live in `PawnDiarySettings`:
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
 | `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
+| `singlePovInstruction` / `recipientFollowupInstruction` / `deathDescriptionInstruction` / `arrivalDescriptionInstruction` / `titleUserInstruction` | XML defaults | Def-backed user-message prompt texts appended after structured context. |
 | `groupEnabled` / `groupInstructions` | XML defaults | Per-group recording toggles and instruction overrides. |
 | `showApiSettings` | true | Settings-window API editor expansion state. |
 | `showPersonaSettings` / `showLlmDebugInfo` / `showGeneratingEntries` | false | Dev-mode Diary-tab preferences. |
 | `enableLlm` / `keepRawEntryOnFailure` | true | Currently forced on by `ClampValues`. |
 
-The settings window has Connection, Diary writing, System prompt, and Events sections. The API editor
-supports multiple lanes, model fetching/picking, row enablement, add/remove, and reset. The Events
-section shows grouped toggles by domain plus one per-group prompt editor.
+The settings window has Connection, Diary writing, Prompt Studio, and Events sections. The API editor
+supports multiple lanes, model fetching/picking, row enablement, add/remove, and reset. Prompt
+Studio edits one prompt at a time from a curated list so every Def-backed prompt text is reachable
+without turning the page into a giant wall of text areas, and it supports per-prompt or full reset
+back to XML defaults. The Events section shows grouped toggles by domain, quick Edit buttons for each
+group, a summary card, and one per-group prompt editor for instruction overrides. Long prompt-reset
+and group-save actions use full-width button rows so translated labels do not clip inside the framed
+cards.
 
 The Diary tab production view shows only finished generated pages. Dev mode reveals per-pawn writing
 enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, and in-progress

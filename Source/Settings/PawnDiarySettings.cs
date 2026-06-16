@@ -1,7 +1,8 @@
-// All mod settings (connection, generation options, and per-group enable/instruction overrides)
-// plus value clamping and save/load. ExposeData persists them — see AGENTS.md ("IExposable").
-// The group catalog itself now lives in XML Defs (see InteractionGroups.cs); this file only
-// stores the player's per-group overrides, keyed by group defName.
+// All mod settings (connection, generation options, prompt-text overrides, and per-group
+// enable/instruction overrides) plus value clamping and save/load. ExposeData persists them — see
+// AGENTS.md ("IExposable"). The group catalog itself now lives in XML Defs (see
+// InteractionGroups.cs); this file only stores the player's per-group overrides, keyed by
+// group defName.
 using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
@@ -87,6 +88,14 @@ namespace PawnDiary
         // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
         // Used only by the title follow-up flow; main entries never send this prompt.
         public string systemPromptTitle = DefaultSystemPromptTitle;
+        // User-message prompt text appended after the structured context for the main diary flows.
+        public string singlePovInstruction = DefaultSinglePovInstruction;
+        public string recipientFollowupInstruction = DefaultRecipientFollowupInstruction;
+        // Neutral user-message prompt text for one-off chronicled events.
+        public string deathDescriptionInstruction = DefaultDeathDescriptionInstruction;
+        public string arrivalDescriptionInstruction = DefaultArrivalDescriptionInstruction;
+        // User-message suffix for the separate title-generation follow-up call.
+        public string titleUserInstruction = DefaultTitleUserInstruction;
 
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
@@ -117,6 +126,20 @@ namespace PawnDiary
         public static string DefaultSystemPromptReflection => DiaryPrompts.Current.systemPromptReflection;
         public static string DefaultSystemPromptNeutral => DiaryPrompts.Current.systemPromptNeutral;
         public static string DefaultSystemPromptTitle => DiaryPrompts.Current.titleSystemPrompt;
+        public static string DefaultSinglePovInstruction => DiaryPrompts.Current.singlePovInstruction;
+        public static string DefaultRecipientFollowupInstruction => DiaryPrompts.Current.recipientFollowupInstruction;
+        public static string DefaultDeathDescriptionInstruction => DiaryPrompts.Current.deathDescriptionInstruction;
+        public static string DefaultArrivalDescriptionInstruction => DiaryPrompts.Current.arrivalDescriptionInstruction;
+        public static string DefaultTitleUserInstruction => DiaryPrompts.Current.titleUserInstruction;
+
+        // Static helpers so generation code can read the live settings safely even before a settings
+        // window has ever been opened. Blank strings are intentional player choices; only null falls
+        // back to the XML-defined default.
+        public static string CurrentSinglePovInstruction => PawnDiaryMod.Settings?.singlePovInstruction ?? DefaultSinglePovInstruction;
+        public static string CurrentRecipientFollowupInstruction => PawnDiaryMod.Settings?.recipientFollowupInstruction ?? DefaultRecipientFollowupInstruction;
+        public static string CurrentDeathDescriptionInstruction => PawnDiaryMod.Settings?.deathDescriptionInstruction ?? DefaultDeathDescriptionInstruction;
+        public static string CurrentArrivalDescriptionInstruction => PawnDiaryMod.Settings?.arrivalDescriptionInstruction ?? DefaultArrivalDescriptionInstruction;
+        public static string CurrentTitleUserInstruction => PawnDiaryMod.Settings?.titleUserInstruction ?? DefaultTitleUserInstruction;
 
         public override void ExposeData()
         {
@@ -135,6 +158,11 @@ namespace PawnDiary
             Scribe_Values.Look(ref systemPromptReflection, "systemPromptReflection", DefaultSystemPromptReflection);
             Scribe_Values.Look(ref systemPromptNeutral, "systemPromptNeutral", DefaultSystemPromptNeutral);
             Scribe_Values.Look(ref systemPromptTitle, "systemPromptTitle", DefaultSystemPromptTitle);
+            Scribe_Values.Look(ref singlePovInstruction, "singlePovInstruction", DefaultSinglePovInstruction);
+            Scribe_Values.Look(ref recipientFollowupInstruction, "recipientFollowupInstruction", DefaultRecipientFollowupInstruction);
+            Scribe_Values.Look(ref deathDescriptionInstruction, "deathDescriptionInstruction", DefaultDeathDescriptionInstruction);
+            Scribe_Values.Look(ref arrivalDescriptionInstruction, "arrivalDescriptionInstruction", DefaultArrivalDescriptionInstruction);
+            Scribe_Values.Look(ref titleUserInstruction, "titleUserInstruction", DefaultTitleUserInstruction);
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
@@ -151,6 +179,23 @@ namespace PawnDiary
             {
                 new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName)
             };
+        }
+
+        /// <summary>
+        /// Restores every prompt-text field back to the current XML-defined defaults.
+        /// This leaves event-group overrides alone because they are tuned separately.
+        /// </summary>
+        public void ResetPromptTextDefaults()
+        {
+            systemPrompt = DefaultSystemPrompt;
+            systemPromptReflection = DefaultSystemPromptReflection;
+            systemPromptNeutral = DefaultSystemPromptNeutral;
+            systemPromptTitle = DefaultSystemPromptTitle;
+            singlePovInstruction = DefaultSinglePovInstruction;
+            recipientFollowupInstruction = DefaultRecipientFollowupInstruction;
+            deathDescriptionInstruction = DefaultDeathDescriptionInstruction;
+            arrivalDescriptionInstruction = DefaultArrivalDescriptionInstruction;
+            titleUserInstruction = DefaultTitleUserInstruction;
         }
 
         // ---- API endpoint helpers ----
@@ -514,6 +559,31 @@ namespace PawnDiary
             if (systemPromptTitle == null)
             {
                 systemPromptTitle = string.Empty;
+            }
+
+            if (singlePovInstruction == null)
+            {
+                singlePovInstruction = string.Empty;
+            }
+
+            if (recipientFollowupInstruction == null)
+            {
+                recipientFollowupInstruction = string.Empty;
+            }
+
+            if (deathDescriptionInstruction == null)
+            {
+                deathDescriptionInstruction = string.Empty;
+            }
+
+            if (arrivalDescriptionInstruction == null)
+            {
+                arrivalDescriptionInstruction = string.Empty;
+            }
+
+            if (titleUserInstruction == null)
+            {
+                titleUserInstruction = string.Empty;
             }
 
             timeoutSeconds = Mathf.Clamp(timeoutSeconds, 5, 300);

@@ -3,6 +3,19 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (prompt customization settings pass)**
+  - Added saved mod-settings overrides for every Def-backed prompt text that actually reaches LLM
+    generation: the single-entry instruction, recipient follow-up instruction, neutral death/arrival
+    instructions, and the title follow-up instruction, alongside the existing system prompts.
+  - Switched prompt generation to read those live settings-backed values instead of the XML defs
+    directly, so in-game customization now affects diary, neutral chronicle, and title requests
+    without a restart.
+  - Reworked the settings window into a more user-friendly prompt workflow: a new Prompt Studio
+    summary + picker/editor for all prompt texts, plus prettier event-group cards with quick Edit
+    buttons, override summaries, and a framed per-group instruction editor.
+  - Followed up on clipping in that UI by widening the model-fetch button and moving the long
+    prompt-reset and group save/restore actions onto full-width rows inside their cards.
+
 - **2026-06-16 (prompt context handling guidance)**
   - Tightened diary and reflection system prompts so structured context is treated as private
     evidence for voice/subtext instead of echoed as a checklist.

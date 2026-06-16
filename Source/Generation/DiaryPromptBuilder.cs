@@ -59,7 +59,7 @@ namespace PawnDiary
             AppendField(lines, "deceased pawn", PawnSummaryForContextRole(diaryEvent, victimRole));
             AppendField(lines, "setting", SurroundingsForContextRole(diaryEvent, victimRole));
 
-            return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.deathDescriptionInstruction;
+            return string.Join("\n", lines.ToArray()) + "\n\n" + PawnDiarySettings.CurrentDeathDescriptionInstruction;
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace PawnDiary
             AppendField(lines, "colonist pawn", diaryEvent.initiatorPawnSummary);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
 
-            return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.arrivalDescriptionInstruction;
+            return string.Join("\n", lines.ToArray()) + "\n\n" + PawnDiarySettings.CurrentArrivalDescriptionInstruction;
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace PawnDiary
         {
             if (diaryEvent == null)
             {
-                return DiaryPrompts.Current.titleUserInstruction;
+                return PawnDiarySettings.CurrentTitleUserInstruction;
             }
 
             // Prefer the polished LLM output; fall back to the raw game text when the main entry
@@ -106,10 +106,10 @@ namespace PawnDiary
             string entryText = diaryEvent.DisplayTextForRole(povRole);
             if (string.IsNullOrWhiteSpace(entryText))
             {
-                return DiaryPrompts.Current.titleUserInstruction;
+                return PawnDiarySettings.CurrentTitleUserInstruction;
             }
 
-            return entryText + "\n\n" + DiaryPrompts.Current.titleUserInstruction;
+            return entryText + "\n\n" + PawnDiarySettings.CurrentTitleUserInstruction;
         }
 
         private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule)
@@ -148,10 +148,9 @@ namespace PawnDiary
 
             AppendField(lines, "initiator diary (hidden context)", initiatorEntry);
 
-            DiaryPromptDef p = DiaryPrompts.Current;
             string instruction = string.IsNullOrWhiteSpace(initiatorEntry)
-                ? p.singlePovInstruction
-                : p.recipientFollowupInstruction;
+                ? PawnDiarySettings.CurrentSinglePovInstruction
+                : PawnDiarySettings.CurrentRecipientFollowupInstruction;
 
             return string.Join("\n", lines.ToArray()) + "\n\n" + instruction;
         }
@@ -183,7 +182,7 @@ namespace PawnDiary
                 AppendField(lines, "weapon", diaryEvent.initiatorWeapon);
             }
 
-            return string.Join("\n", lines.ToArray()) + "\n\n" + DiaryPrompts.Current.singlePovInstruction;
+            return string.Join("\n", lines.ToArray()) + "\n\n" + PawnDiarySettings.CurrentSinglePovInstruction;
         }
 
         private static string EventNoun(DiaryEvent diaryEvent)
