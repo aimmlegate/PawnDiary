@@ -4,6 +4,17 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (extract MoodImpact helper)**
+  - Removed the duplicated mood-direction logic. The literal tokens `"positive"`/`"negative"`/
+    `"neutral"`, the ±0.5 classification threshold, and the three-branch "pick positive/negative/
+    neutral text key" block were copy-pasted across `RecordMoodEvent`, `RecordThought`, and
+    `DiaryContextBuilder.DetermineMoodImpact`. New `Source/Generation/MoodImpact.cs` centralizes
+    them as `MoodImpact.Positive/Negative/Neutral` constants, `MoodImpact.MeaningfulThreshold`,
+    `Classify(moodOffset)`, and `PickText(...)`. Call sites now route through it; the
+    `DiaryEvent` old-save default also uses the constant. **No behavior change** — the token
+    strings and threshold are identical, so saved `moodImpact`/`gameContext` values are unchanged
+    (build verified). Updated the §2 file map.
+
 - **2026-06-16 (split DiaryGameComponent into partial files)**
   - Decomposed the ~2.5k-line `Source/Core/DiaryGameComponent.cs` into one `partial class`
     spread across eight files grouped by concern, with **no logic changes** (the compiler merges

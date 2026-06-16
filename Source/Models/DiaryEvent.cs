@@ -256,7 +256,7 @@ namespace PawnDiary
                 // "positive"/"negative" are set at record time for mood-event entries.
                 if (string.IsNullOrWhiteSpace(moodImpact))
                 {
-                    moodImpact = "neutral";
+                    moodImpact = MoodImpact.Neutral;
                 }
 
                 if (neutralStatus == null)
