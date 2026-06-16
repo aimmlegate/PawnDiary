@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-16 (random generation weight settings)_
+_Last updated: 2026-06-16 (tick-time colonist scan snapshots)_
 
 ---
 
@@ -106,6 +106,9 @@ All event sources funnel into `DiaryGameComponent`:
 Background generation is driven from `GameComponentTick`. Every ~120 ticks it drains completed LLM
 results, flushes queued debug logs, recovers orphaned pending entries, and queues pending diary work.
 Loading a game normalizes pending statuses back to not-generated so they can be retried.
+Tick-time colonist scans use short-lived snapshots of RimWorld's live free-colonist list before
+recording entries, so a pawn joining, leaving, dying, or changing maps during diary work cannot
+invalidate an active enumeration.
 
 ---
 

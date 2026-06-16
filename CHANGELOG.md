@@ -3,6 +3,11 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (tick-time colonist scan snapshots)**
+  - Changed scheduled diary scans to iterate one-tick snapshots of RimWorld's free-colonist list,
+    preventing `Collection was modified` errors if pawn membership changes while tick work records
+    sleep reflections, work entries, or persona counts.
+
 - **2026-06-16 (random generation weight settings)**
   - Added saved settings sliders for work and social random generation weights, defaulting to 1x.
   - Wired work weight into periodic work-sampling odds and social weight into batched interaction

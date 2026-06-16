@@ -212,8 +212,10 @@ namespace PawnDiary
             int threshold = Math.Max(1, tuning.daySummaryOpinionDeltaThreshold);
             string pawnId = pawn.GetUniqueLoadID();
 
-            foreach (Pawn other in PawnsFinder.AllMaps_FreeColonists)
+            List<Pawn> colonists = SnapshotFreeColonists();
+            for (int i = 0; i < colonists.Count; i++)
             {
+                Pawn other = colonists[i];
                 if (other == null || other == pawn)
                 {
                     continue;
@@ -451,7 +453,7 @@ namespace PawnDiary
         private void SnapshotDayStartOpinions()
         {
             dayStartOpinions.Clear();
-            List<Pawn> colonists = new List<Pawn>(PawnsFinder.AllMaps_FreeColonists);
+            List<Pawn> colonists = SnapshotFreeColonists();
             for (int i = 0; i < colonists.Count; i++)
             {
                 Pawn from = colonists[i];

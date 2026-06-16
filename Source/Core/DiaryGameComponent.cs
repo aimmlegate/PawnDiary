@@ -285,8 +285,10 @@ namespace PawnDiary
                 return;
             }
 
-            foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonists)
+            List<Pawn> colonists = SnapshotFreeColonists();
+            for (int i = 0; i < colonists.Count; i++)
             {
+                Pawn pawn = colonists[i];
                 if (!IsRestingForAmbientFlush(pawn))
                 {
                     continue;

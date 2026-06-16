@@ -47,6 +47,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns a one-tick snapshot of the live free-colonist list. RimWorld may change that list
+        /// while diary tick work records entries, so scheduled scans should loop this copy instead of
+        /// enumerating <see cref="PawnsFinder.AllMaps_FreeColonists"/> directly.
+        /// </summary>
+        private static List<Pawn> SnapshotFreeColonists()
+        {
+            return new List<Pawn>(PawnsFinder.AllMaps_FreeColonists);
+        }
+
+        /// <summary>
         /// Adds an event ID to a pawn's diary, creating the diary record if necessary.
         /// </summary>
         private void AddEventRef(Pawn pawn, string eventId)
@@ -569,8 +579,10 @@ namespace PawnDiary
             // The set of pawn IDs that are colonists right now, so persona "use" reflects the
             // living colony rather than every record ever created.
             HashSet<string> colonistIds = new HashSet<string>();
-            foreach (Pawn colonist in PawnsFinder.AllMaps_FreeColonists)
+            List<Pawn> colonists = SnapshotFreeColonists();
+            for (int i = 0; i < colonists.Count; i++)
             {
+                Pawn colonist = colonists[i];
                 if (colonist != null)
                 {
                     colonistIds.Add(colonist.GetUniqueLoadID());
