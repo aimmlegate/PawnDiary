@@ -3,6 +3,13 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-16 (map discovery diary events)**
+  - Added synthetic GameEvent diary entries for pawn-caused map discoveries, including ancient mech
+    threat reveals, nearby `CompLetterOnRevealed` objects, and void/fallen monolith investigation
+    or activation.
+  - Added a `gameDiscovery` XML group with ominous discovery tone/instruction plus localized raw
+    event text, so discovered events generate from the pawn who found or activated them.
+
 - **2026-06-16 (stricter prompt length contract)**
   - Tightened the default diary, reflection, neutral, and appended user instructions with explicit
     complete-sentence and word-count limits, plus "prefer shorter complete output" wording.

@@ -919,9 +919,11 @@ namespace PawnDiary
                     ? GroupDomain.MoodEvent
                     : IsThoughtEvent()
                         ? GroupDomain.Thought
-                        : IsWorkEvent()
-                            ? GroupDomain.Work
-                            : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
+                        : IsGameEvent()
+                            ? GroupDomain.GameEvent
+                            : IsWorkEvent()
+                                ? GroupDomain.Work
+                                : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, interactionDefName);
         }
 
@@ -1000,6 +1002,16 @@ namespace PawnDiary
         {
             return !string.IsNullOrWhiteSpace(gameContext)
                 && gameContext.IndexOf("thought=", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Synthetic game events store their event key in interactionDefName; their context starts
+        /// with a stable game_event field, which lets UI classification pick the GameEvent domain.
+        /// </summary>
+        private bool IsGameEvent()
+        {
+            return !string.IsNullOrWhiteSpace(gameContext)
+                && gameContext.IndexOf("game_event=", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>

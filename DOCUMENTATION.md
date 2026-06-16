@@ -21,6 +21,7 @@ Recorded sources:
 - later colony arrivals from `Pawn.SetFaction`
 - colonist deaths using `Pawn.Kill` plus death TaleDefs
 - masterwork/legendary crafts and relic installs from narrow hooks
+- map/story discoveries from fog reveals and monolith investigation/activation
 - mood-affecting game conditions from `GameConditionManager.RegisterCondition`
 - temporary thoughts from `MemoryThoughtHandler.TryGainMemory`
 - sampled work moments from current Work-tab jobs
@@ -68,14 +69,14 @@ Important files:
 | File | Role |
 |---|---|
 | `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Social. |
-| `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff day-summary signals. |
+| `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, map discoveries, mood events, thoughts, and hediff day-summary signals. |
 | `DiaryGameComponent*.cs` | Orchestrates recording, batching, generation scans, save/load, lookups, and public UI access. Event-source partials own their `Record*` method. |
 | `DiaryEvent.cs` | Saved event model: raw text, context, statuses, generated text, LLM metadata, titles, source ids, and save/load. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, passion, and opener context. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, and title prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug log handoff. |
-| `InteractionGroups.cs` | `DiaryInteractionGroupDef` and classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, and Work domains. |
+| `InteractionGroups.cs` | `DiaryInteractionGroupDef` and classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, GameEvent, and Work domains. |
 | `DiaryTuningDef.cs` | XML-backed thresholds/cooldowns/weights with safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed instructions and system prompts. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for initial persona selection. |
@@ -137,6 +138,17 @@ Synthetic tale-style events cover:
 - masterwork and legendary crafts from `QualityUtility.SendCraftNotification`
 - ideology relic installation from `JobDriver_InstallRelic`
 
+### Game events and map discoveries
+
+Synthetic GameEvent entries cover meaningful map/story discoveries that vanilla does not expose as
+TaleDefs. Fog reveals use `FogGrid.Notify_PawnEnteringDoor` to cache the entering colonist briefly,
+then `FogGrid.NotifyAreaRevealed` records the reveal from that pawn's point of view when it exposes
+an ancient mech threat or a nearby `CompLetterOnRevealed` object. The recorder deduplicates by
+map/object so the same ancient danger reveal does not become several diary pages.
+
+Void/fallen monolith beats are recorded directly from `Building_VoidMonolith.Investigate(Pawn)` and
+`Building_VoidMonolith.Activate(Pawn)`, so the investigator or activator is the diary author.
+
 ### Arrivals and deaths
 
 Starting colonists receive neutral arrival pages after maps/free-colonist lists exist. Later joins
@@ -166,7 +178,7 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 
 ## 5. Groups, batching, and tuning
 
-`1.6/Defs/DiaryInteractionGroupDefs.xml` defines groups for six domains:
+`1.6/Defs/DiaryInteractionGroupDefs.xml` defines groups for seven domains:
 
 | Domain | Classifier | Typical groups |
 |---|---|---|
@@ -175,6 +187,7 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 | Tale | `ClassifyTale(TaleDef)` | combat/death, health/medicine, milestones, crafts, relics, raids, anomaly horror |
 | MoodEvent | `ClassifyMoodEvent(GameConditionDef)` | positive, negative, mixed, passing moods |
 | Thought | `ClassifyThought(ThoughtDef)` | positive, negative, passing thoughts |
+| GameEvent | `ClassifyGameEvent(string)` | map discoveries, ancient mech threats, monoliths |
 | Work | `ClassifyWork(string)` | dark study, passionate, straining, routine |
 
 Matching is domain-scoped by exact `defName` or substring token. XML order matters, with catch-all
