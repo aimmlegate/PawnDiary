@@ -488,11 +488,18 @@ does not add a second surgery hook that would duplicate successful operations.
 | `groupEnabled` / `groupInstructions` | per-group defaults | Maps keyed by `InteractionGroup.Key` (see §5). Absent key = use the group's default enabled state / default instruction. |
 | `enableLlm`, `keepRawEntryOnFailure`, `sendApiKeyAsBearerToken` | true | Currently forced on in `ClampValues`. |
 
-Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`: the compact, hideable **API lanes editor**
-(`DrawApiEndpointsEditor` — per-row enabled toggle + endpoint/key/model with per-row "Fetch" + "Pick",
-**+ Add API** / **− Remove** / **Reset** buttons), paired-POV toggle, per-API concurrency slider,
-system prompt editor, and the event-group editor (a checkbox per group plus a prompt editor
-for the selected group). The scroll-view height grows with the number of API rows.
+Settings UI lives in `PawnDiaryMod.DoSettingsWindowContents`, organized into medium-font **sections**
+(`SectionTitle`) with muted hint text (`DrawHint`): **Connection** (the compact, hideable **API lanes
+editor** — `DrawApiEndpointsEditor` — per-row enabled toggle + endpoint/key/model with per-row
+"Fetch" + "Pick", **+ Add API** / **− Remove** / **Reset** buttons), **Generation** (paired-POV
+toggle + per-API concurrency slider), **System prompt** (editor + restore), and **Events** (the
+event-group editor). The group editor draws the ~30 enable toggles in **two columns** per domain
+(`DrawGroupTogglesForDomain` / `DrawGroupToggle`, each showing its prompt as a hover tooltip),
+followed by a per-group prompt editor — an "Editing prompt for: X" header with a **Change group**
+picker, the instruction text area, and Save/Restore. The scroll view is **self-measuring**: it sizes
+its inner rect to the previous frame's `listing.CurHeight` (`lastSettingsContentHeight`), so every
+control stays scrollable and clickable no matter how many groups are listed (this replaced a
+hardcoded height that clipped the bottom controls once enough groups appeared).
 
 Per-pawn diary controls live in `ITab_Pawn_Diary`, not the global mod settings window. They are
 stored in each pawn's `PawnDiaryRecord`: persona preset and `diaryGenerationEnabled` (default

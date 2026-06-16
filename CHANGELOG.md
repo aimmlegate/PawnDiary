@@ -4,6 +4,25 @@ Dated history of every change to the mod. **Add an entry here with each change**
 This is the single history file that `DOCUMENTATION.md` and `AGENTS.md` both point to; the design
 doc itself describes only "what happens now".
 
+- **2026-06-16 (mod settings window: fix clipped layout + restyle)**
+  - **Fixed the broken layout and the unreachable per-group prompt editor.** The settings scroll
+    view used a hardcoded inner height (`1300f + apiEditorHeight`) that was shorter than the real
+    content once the ~30 event groups were listed, so everything below it — including the prompt
+    text area and its Save/Restore buttons — was drawn outside the scrollable region and could not
+    be scrolled to or clicked. Replaced it with a self-measuring height: the view now sizes itself
+    to `listing.CurHeight` from the previous frame (`lastSettingsContentHeight`), so no control can
+    clip regardless of how many groups exist.
+  - **Restyled the window** (`DoSettingsWindowContents`, `DrawApiEndpointsEditor`,
+    `DrawInteractionGroupsEditor`): added medium-font **section titles** with divider lines
+    (Connection / Generation / System prompt / Events), moved long help text into muted "hint"
+    sub-text (`DrawHint`), and laid the event-group enable toggles out in **two columns**
+    (`DrawGroupTogglesForDomain`/`DrawGroupToggle`) with the prompt shown as a hover tooltip. The
+    prompt editor now has an "Editing prompt for: X" header with a **Change group** button and
+    Save/Restore side by side.
+  - Keyed strings: added `GenerationHeader`, `EventsSectionTitle`, `EditingPromptFor`,
+    `ChangeGroup`; reused `Connection`/`SystemPrompt` as section titles; removed the now-unused
+    `PromptForGroup`. No settings data or save format changed.
+
 - **2026-06-16 (split recording into one file per event)**
   - Reorganized the `DiaryGameComponent` partial class so each game event we listen for owns its
     own file, instead of bundling all seven `Record*` hooks in `.Recording.cs` and scattering their
