@@ -15,8 +15,8 @@ namespace PawnDiary
     {
         /// <summary>
         /// Draws generated text as light roleplay prose. Each line is formatted to rich text by
-        /// <see cref="DiaryTextFormat"/> so markdown emphasis renders and quoted speech is colored
-        /// inline with the pawn's dialogue color, while the surrounding narration stays muted prose.
+        /// <see cref="DiaryTextFormat"/> so markdown emphasis renders, direct-speech marker blocks
+        /// become separate colored lines, and ordinary quoted speech is colored inline.
         /// The fade-in alpha is applied through GUI.color so inline-colored spans fade with the rest.
         /// </summary>
         private static void DrawRoleplayText(
@@ -26,6 +26,7 @@ namespace PawnDiary
             float alpha,
             string atmosphereCue,
             int staggeredIntensity,
+            bool allowDirectSpeechBlocks,
             bool distortDirectSpeech,
             int seed)
         {
@@ -38,7 +39,7 @@ namespace PawnDiary
 
             GUIStyle style = BodyStyle();
             float curY = rect.y;
-            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue))
+            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue, allowDirectSpeechBlocks))
             {
                 curY += block.extraTopGap;
                 if (string.IsNullOrWhiteSpace(block.line))
@@ -53,11 +54,28 @@ namespace PawnDiary
                 style.alignment = block.alignment;
                 string rich = RoleplayRichText(block, dialogueColor, staggeredIntensity, distortDirectSpeech, seed, style.fontSize);
                 float lineWidth = Mathf.Max(80f, rect.width - block.leftInset - block.rightInset);
-                float height = style.CalcHeight(new GUIContent(rich), lineWidth);
-                GUI.Label(new Rect(rect.x + block.leftInset, curY, lineWidth, height), rich, style);
+                float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
+                float blockHeight = textHeight;
+                Rect labelRect = new Rect(rect.x + block.leftInset, curY, lineWidth, textHeight);
+                if (block.directSpeech)
+                {
+                    blockHeight += SpeechBlockVerticalPadding * 2f;
+                    Rect speechRect = new Rect(
+                        labelRect.x - 8f,
+                        curY,
+                        lineWidth + 12f,
+                        blockHeight);
+                    Widgets.DrawBoxSolid(speechRect, SpeechBlockBgColor);
+                    Widgets.DrawBoxSolid(
+                        new Rect(speechRect.x, speechRect.y, 3f, speechRect.height),
+                        new Color(dialogueColor.r, dialogueColor.g, dialogueColor.b, 0.72f));
+                    labelRect.y += SpeechBlockVerticalPadding;
+                }
+
+                GUI.Label(labelRect, rich, style);
                 style.alignment = oldAlignment;
                 style.fontStyle = oldStyle;
-                curY += height + RoleplayLineGap + block.extraBottomGap;
+                curY += blockHeight + RoleplayLineGap + block.extraBottomGap;
             }
 
             GUI.color = oldColor;
@@ -102,12 +120,13 @@ namespace PawnDiary
             float width,
             string atmosphereCue,
             int staggeredIntensity,
+            bool allowDirectSpeechBlocks,
             bool distortDirectSpeech,
             int seed)
         {
             GUIStyle style = BodyStyle();
             float height = 0f;
-            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue))
+            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue, allowDirectSpeechBlocks))
             {
                 height += block.extraTopGap;
                 if (string.IsNullOrWhiteSpace(block.line))
@@ -122,7 +141,13 @@ namespace PawnDiary
                 style.alignment = block.alignment;
                 string rich = RoleplayRichText(block, FallbackDialogueColor, staggeredIntensity, distortDirectSpeech, seed, style.fontSize);
                 float lineWidth = Mathf.Max(80f, width - block.leftInset - block.rightInset);
-                height += style.CalcHeight(new GUIContent(rich), lineWidth) + RoleplayLineGap + block.extraBottomGap;
+                float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
+                if (block.directSpeech)
+                {
+                    textHeight += SpeechBlockVerticalPadding * 2f;
+                }
+
+                height += textHeight + RoleplayLineGap + block.extraBottomGap;
                 style.alignment = oldAlignment;
                 style.fontStyle = oldStyle;
             }
@@ -138,7 +163,9 @@ namespace PawnDiary
             int seed,
             int baseFontSize)
         {
-            string rich = DiaryTextFormat.ToRichText(block?.line ?? string.Empty, dialogueColor, distortDirectSpeech, seed ^ block.seedSalt);
+            string rich = block != null && block.directSpeech
+                ? DiaryTextFormat.ToSpeechBlockRichText(block.line, dialogueColor, distortDirectSpeech, seed ^ block.seedSalt)
+                : DiaryTextFormat.ToRichText(block?.line ?? string.Empty, dialogueColor, distortDirectSpeech, seed ^ block.seedSalt);
             if (staggeredIntensity > 0)
             {
                 rich = DiaryTextFormat.ApplyStaggeredWordSizes(
@@ -151,11 +178,11 @@ namespace PawnDiary
             return rich;
         }
 
-        private static IEnumerable<RoleplayLineBlock> RoleplayBlocks(string text, string atmosphereCue)
+        private static IEnumerable<RoleplayLineBlock> RoleplayBlocks(string text, string atmosphereCue, bool allowDirectSpeechBlocks)
         {
             if (string.Equals(atmosphereCue, DiaryEntryView.AtmosphereMemorial, StringComparison.Ordinal))
             {
-                foreach (RoleplayLineBlock block in MemorialRoleplayBlocks(text))
+                foreach (RoleplayLineBlock block in MemorialRoleplayBlocks(text, allowDirectSpeechBlocks))
                 {
                     yield return block;
                 }
@@ -165,7 +192,7 @@ namespace PawnDiary
 
             if (string.Equals(atmosphereCue, DiaryEntryView.AtmosphereUnsettled, StringComparison.Ordinal))
             {
-                foreach (RoleplayLineBlock block in UnsettledRoleplayBlocks(text))
+                foreach (RoleplayLineBlock block in UnsettledRoleplayBlocks(text, allowDirectSpeechBlocks))
                 {
                     yield return block;
                 }
@@ -175,7 +202,7 @@ namespace PawnDiary
 
             if (string.Equals(atmosphereCue, DiaryEntryView.AtmosphereFractured, StringComparison.Ordinal))
             {
-                foreach (RoleplayLineBlock block in FracturedRoleplayBlocks(text))
+                foreach (RoleplayLineBlock block in FracturedRoleplayBlocks(text, allowDirectSpeechBlocks))
                 {
                     yield return block;
                 }
@@ -183,33 +210,41 @@ namespace PawnDiary
                 yield break;
             }
 
-            foreach (RoleplayLineBlock block in NormalRoleplayBlocks(text))
+            foreach (RoleplayLineBlock block in NormalRoleplayBlocks(text, allowDirectSpeechBlocks))
             {
                 yield return block;
             }
         }
 
-        private static IEnumerable<RoleplayLineBlock> NormalRoleplayBlocks(string text)
+        private static IEnumerable<RoleplayLineBlock> NormalRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (string line in RoleplayLines(text))
+            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
-                yield return MakeRoleplayBlock(line, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                yield return line.directSpeech
+                    ? MakeSpeechRoleplayBlock(line.line, index++)
+                    : MakeRoleplayBlock(line.line, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
             }
         }
 
-        private static IEnumerable<RoleplayLineBlock> FracturedRoleplayBlocks(string text)
+        private static IEnumerable<RoleplayLineBlock> FracturedRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (string line in RoleplayLines(text))
+            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
-                if (string.IsNullOrWhiteSpace(line))
+                if (line.directSpeech)
+                {
+                    yield return MakeSpeechRoleplayBlock(line.line, index++);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(line.line))
                 {
                     yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
                     continue;
                 }
 
-                List<string> fragments = SentenceFragments(line);
+                List<string> fragments = SentenceFragments(line.line);
                 for (int i = 0; i < fragments.Count; i++)
                 {
                     float indent = index % 3 == 1 ? AtmosphereInset : (index % 3 == 2 ? AtmosphereInset * 0.45f : 0f);
@@ -219,12 +254,18 @@ namespace PawnDiary
             }
         }
 
-        private static IEnumerable<RoleplayLineBlock> UnsettledRoleplayBlocks(string text)
+        private static IEnumerable<RoleplayLineBlock> UnsettledRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (string line in RoleplayLines(text))
+            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
-                if (string.IsNullOrWhiteSpace(line))
+                if (line.directSpeech)
+                {
+                    yield return MakeSpeechRoleplayBlock(line.line, index++);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(line.line))
                 {
                     yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
                     continue;
@@ -233,22 +274,28 @@ namespace PawnDiary
                 float leftInset = index % 3 == 0 ? AtmosphereInset : (index % 3 == 1 ? AtmosphereInset * 1.7f : AtmosphereInset * 0.55f);
                 float rightInset = AtmosphereInset;
                 FontStyle fontStyle = index % 2 == 1 ? FontStyle.Italic : FontStyle.Normal;
-                yield return MakeRoleplayBlock(line, leftInset, rightInset, index == 0 ? 0f : 2f, 2f, fontStyle, TextAnchor.UpperLeft, index++);
+                yield return MakeRoleplayBlock(line.line, leftInset, rightInset, index == 0 ? 0f : 2f, 2f, fontStyle, TextAnchor.UpperLeft, index++);
             }
         }
 
-        private static IEnumerable<RoleplayLineBlock> MemorialRoleplayBlocks(string text)
+        private static IEnumerable<RoleplayLineBlock> MemorialRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (string line in RoleplayLines(text))
+            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
-                if (string.IsNullOrWhiteSpace(line))
+                if (line.directSpeech)
+                {
+                    yield return MakeSpeechRoleplayBlock(line.line, index++);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(line.line))
                 {
                     yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperCenter, index++);
                     continue;
                 }
 
-                List<string> fragments = SentenceFragments(line);
+                List<string> fragments = SentenceFragments(line.line);
                 for (int i = 0; i < fragments.Count; i++)
                 {
                     yield return MakeRoleplayBlock(
@@ -274,6 +321,20 @@ namespace PawnDiary
             TextAnchor alignment,
             int seedSalt)
         {
+            return MakeRoleplayBlock(line, leftInset, rightInset, extraTopGap, extraBottomGap, fontStyle, alignment, seedSalt, false);
+        }
+
+        private static RoleplayLineBlock MakeRoleplayBlock(
+            string line,
+            float leftInset,
+            float rightInset,
+            float extraTopGap,
+            float extraBottomGap,
+            FontStyle fontStyle,
+            TextAnchor alignment,
+            int seedSalt,
+            bool directSpeech)
+        {
             return new RoleplayLineBlock
             {
                 line = line ?? string.Empty,
@@ -283,8 +344,23 @@ namespace PawnDiary
                 extraBottomGap = extraBottomGap,
                 fontStyle = fontStyle,
                 alignment = alignment,
-                seedSalt = seedSalt * 7919
+                seedSalt = seedSalt * 7919,
+                directSpeech = directSpeech
             };
+        }
+
+        private static RoleplayLineBlock MakeSpeechRoleplayBlock(string line, int seedSalt)
+        {
+            return MakeRoleplayBlock(
+                line,
+                SpeechBlockLeftInset,
+                SpeechBlockLeftInset * 0.5f,
+                seedSalt == 0 ? 2f : 4f,
+                6f,
+                FontStyle.Italic,
+                TextAnchor.UpperLeft,
+                seedSalt,
+                true);
         }
 
         private static List<string> SentenceFragments(string line)
@@ -372,7 +448,7 @@ namespace PawnDiary
         /// <summary>
         /// Splits generated text into author-provided lines while preserving blank paragraph breaks.
         /// </summary>
-        private static IEnumerable<string> RoleplayLines(string text)
+        private static IEnumerable<ParsedRoleplayLine> RoleplayLines(string text, bool allowDirectSpeechBlocks)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -383,8 +459,89 @@ namespace PawnDiary
             string[] lines = normalized.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {
-                yield return lines[i].Trim();
+                string line = lines[i].Trim();
+                if (!allowDirectSpeechBlocks)
+                {
+                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(line), false);
+                    continue;
+                }
+
+                int openIndex = IndexOfSpeechMarker(line, SpeechBlockOpenMarker, 0);
+                if (openIndex < 0)
+                {
+                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(line), false);
+                    continue;
+                }
+
+                int contentStart = openIndex + SpeechBlockOpenMarker.Length;
+                int closeSameLine = IndexOfSpeechMarker(line, SpeechBlockCloseMarker, contentStart);
+                if (closeSameLine < 0)
+                {
+                    // If the model forgot the closing marker, hide the marker but keep the line as
+                    // ordinary prose instead of letting an unclosed block consume later lines.
+                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(line), false);
+                    continue;
+                }
+
+                string before = line.Substring(0, openIndex).Trim();
+                if (!string.IsNullOrWhiteSpace(before))
+                {
+                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(before), false);
+                }
+
+                string speech = line.Substring(contentStart, closeSameLine - contentStart).Trim();
+                if (!string.IsNullOrWhiteSpace(speech))
+                {
+                    yield return MakeParsedRoleplayLine(speech, true);
+                }
+
+                string after = line.Substring(closeSameLine + SpeechBlockCloseMarker.Length).Trim();
+                if (!string.IsNullOrWhiteSpace(after))
+                {
+                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(after), false);
+                }
             }
+        }
+
+        private static ParsedRoleplayLine MakeParsedRoleplayLine(string line, bool directSpeech)
+        {
+            return new ParsedRoleplayLine
+            {
+                line = line ?? string.Empty,
+                directSpeech = directSpeech
+            };
+        }
+
+        private static int IndexOfSpeechMarker(string line, string marker, int startIndex)
+        {
+            if (string.IsNullOrEmpty(line) || string.IsNullOrEmpty(marker) || startIndex >= line.Length)
+            {
+                return -1;
+            }
+
+            return line.IndexOf(marker, Math.Max(0, startIndex), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string RemoveSpeechMarkers(string line)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                return line ?? string.Empty;
+            }
+
+            return RemoveSpeechMarker(RemoveSpeechMarker(line, SpeechBlockOpenMarker), SpeechBlockCloseMarker).Trim();
+        }
+
+        private static string RemoveSpeechMarker(string line, string marker)
+        {
+            int index = IndexOfSpeechMarker(line, marker, 0);
+            while (index >= 0)
+            {
+                line = line.Remove(index, marker.Length);
+                index = IndexOfSpeechMarker(line, marker, index);
+            }
+
+            return line;
         }
 
         /// <summary>

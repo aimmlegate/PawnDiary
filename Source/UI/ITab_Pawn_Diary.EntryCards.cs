@@ -200,6 +200,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Recipient POVs should stay prose-only. If a model leaks [[speech]] markers into that
+        /// second-perspective entry anyway, the roleplay parser strips the markers and renders the
+        /// words as ordinary text instead of a dedicated speech block.
+        /// </summary>
+        private static bool EntryAllowDirectSpeechBlocks(DiaryEntryView entry)
+        {
+            return entry != null && !DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
+        }
+
+        /// <summary>
         /// Returns the color strip used to mark the entry group. The saved cue key follows
         /// RimWorld-like meaning (hostile red, mental-break green, quiet gray) instead of hashing
         /// localized group labels.
@@ -570,6 +580,7 @@ namespace PawnDiary
                 innerWidth,
                 EntryAtmosphereCue(entry),
                 EntryStaggeredIntensity(entry),
+                EntryAllowDirectSpeechBlocks(entry),
                 EntryDistortDirectSpeech(entry),
                 StableTextSeed(EntryKey(entry)));
             Text.Font = oldFont;

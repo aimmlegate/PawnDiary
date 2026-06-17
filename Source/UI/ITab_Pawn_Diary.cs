@@ -32,6 +32,8 @@ namespace PawnDiary
         private const float StatusBadgeRightPadding = 24f;
         private const float RoleplayLineGap = 5f;
         private const float RoleplayParagraphGap = 8f;
+        private const float SpeechBlockLeftInset = 24f;
+        private const float SpeechBlockVerticalPadding = 3f;
         private const float EntryGap = 8f;
         private const int AutoExpandedEntryCount = 15;
         private const int DevMockDiaryTargetCount = 360;
@@ -56,10 +58,13 @@ namespace PawnDiary
         private const float WritingDotGap = 5f;
         private const float AtmosphereInset = 18f;
         private const float MemorialInset = 34f;
+        private const string SpeechBlockOpenMarker = "[[speech]]";
+        private const string SpeechBlockCloseMarker = "[[/speech]]";
 
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
         private static readonly Color NarrativeColor = new Color(0.78f, 0.78f, 0.72f);
         private static readonly Color FallbackDialogueColor = new Color(0.58f, 0.80f, 1f);
+        private static readonly Color SpeechBlockBgColor = new Color(0.10f, 0.14f, 0.16f, 0.55f);
         // Faint warm wash painted behind each card's body text to suggest a journal page. Kept at a
         // very low alpha so it tints the dark RimWorld card chrome without muddying it.
         private static readonly Color PageTintColor = new Color(0.91f, 0.83f, 0.66f, 0.07f);
@@ -137,6 +142,13 @@ namespace PawnDiary
             public FontStyle fontStyle = FontStyle.Normal;
             public TextAnchor alignment = TextAnchor.UpperLeft;
             public int seedSalt;
+            public bool directSpeech;
+        }
+
+        private sealed class ParsedRoleplayLine
+        {
+            public string line;
+            public bool directSpeech;
         }
 
         public ITab_Pawn_Diary()
@@ -413,6 +425,7 @@ namespace PawnDiary
                 float innerTextWidth = localEntryRect.width - 20f;
                 string atmosphereCue = EntryAtmosphereCue(entry);
                 int staggeredIntensity = EntryStaggeredIntensity(entry);
+                bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
                 bool distortDirectSpeech = EntryDistortDirectSpeech(entry);
                 int roleplaySeed = StableTextSeed(EntryKey(entry));
                 float mainTextHeight = RoleplayTextHeight(
@@ -420,6 +433,7 @@ namespace PawnDiary
                     innerTextWidth,
                     atmosphereCue,
                     staggeredIntensity,
+                    allowDirectSpeechBlocks,
                     distortDirectSpeech,
                     roleplaySeed);
                 float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
@@ -445,6 +459,7 @@ namespace PawnDiary
                         EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend),
                         atmosphereCue,
                         staggeredIntensity,
+                        allowDirectSpeechBlocks,
                         distortDirectSpeech,
                         roleplaySeed);
                 }

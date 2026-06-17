@@ -755,7 +755,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            string normalized = StripSpeechMarkersForPreview(text).Replace("\r\n", "\n").Replace('\r', '\n');
             int newlineIdx = normalized.IndexOf('\n');
             string firstLine = newlineIdx >= 0 ? normalized.Substring(0, newlineIdx) : normalized;
             firstLine = firstLine.Trim();
@@ -767,6 +767,29 @@ namespace PawnDiary
             }
 
             return firstLine;
+        }
+
+        private static string StripSpeechMarkersForPreview(string text)
+        {
+            string stripped = RemoveSpeechMarkerForPreview(text, "[[speech]]");
+            return RemoveSpeechMarkerForPreview(stripped, "[[/speech]]");
+        }
+
+        private static string RemoveSpeechMarkerForPreview(string text, string marker)
+        {
+            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(marker))
+            {
+                return text ?? string.Empty;
+            }
+
+            int index = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            while (index >= 0)
+            {
+                text = text.Remove(index, marker.Length);
+                index = text.IndexOf(marker, index, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return text;
         }
 
         /// <summary>

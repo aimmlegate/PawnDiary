@@ -3,6 +3,13 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (direct speech blocks)**
+  - Changed interaction direct-speech prompting to use closed `[[speech]]...[[/speech]]` marker
+    lines for initiator/single-POV speech, while recipient follow-up prompts now forbid speech
+    blocks and stay plain prose.
+  - Rendered closed non-recipient speech markers as separate colored diary lines, stripped unclosed
+    or recipient markers back to ordinary prose, and removed markers from linked-entry previews.
+
 - **2026-06-18 (API connection test)**
   - Added a per-API Test button that sends a tiny localized prompt through the selected endpoint,
     model, key, compatibility mode, reasoning, and Ollama thinking settings.

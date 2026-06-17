@@ -80,7 +80,7 @@ Key files:
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, and group editor. |
 | `EndpointUtility.cs` / `ModelListClient.cs` | Settings/generation endpoint URL normalization and settings-time model discovery (`/models` or Ollama `/api/tags`). |
 | `ITab_Pawn_Diary*.cs` | Production diary view split as one partial class: orchestration, dev controls, year paging, entry cards, expansion state, linked previews, and roleplay text layout. |
-| `DiaryTextFormat.cs` | Escapes raw generated rich-text tags, then converts light markdown and quoted speech into Unity rich text. |
+| `DiaryTextFormat.cs` | Escapes raw generated rich-text tags, then converts light markdown, inline quoted speech, and closed direct-speech marker blocks into Unity rich text. |
 | `MiniJson.cs` | Dependency-free JSON parser compatible with RimWorld's Unity Mono runtime. |
 
 ---
@@ -377,14 +377,15 @@ symbols, threats, promises, consequences, or off-screen actions. Compact good/ba
 small local models see the intended transformation.
 
 Paired two-pawn interaction prompts append separate localized direct-speech rules for initiator and
-recipient POVs. Each rule names the current POV pawn and the opposite pawn, then allows quoted
-speech only for words plausibly spoken by the current POV pawn. The opposite pawn's words must be
-paraphrased without quotation marks, and the prompt must not invent POV speech just to add dialogue.
-The appended cues include short good/wrong examples. Single-POV interaction prompts get the same
-name-specific POV-only cue. Non-interaction solo entries do not get that cue; the prompt builder
-explicitly rejects neutral arrival/death, dev mock, mental-state, tale, mood, thought, inspiration,
-work, hediff, day-reflection, and ambient-day contexts before checking whether an event's defName is
-a real RimWorld `InteractionDef`.
+recipient POVs. Initiator prompts may put spoken words on their own line inside a closed
+`[[speech]]...[[/speech]]` marker block, but only for words plausibly spoken aloud by the current POV
+pawn; the opposite pawn's words must be paraphrased without quotation marks or speech tags. Recipient
+follow-up prompts explicitly forbid `[[speech]]` blocks so the second-perspective linked entry stays
+plain prose. Single-POV interaction prompts get the same marker-block cue as initiator prompts. The
+appended cues include short good/wrong examples. Non-interaction solo entries do not get that cue; the
+prompt builder explicitly rejects neutral arrival/death, dev mock, mental-state, tale, mood, thought,
+inspiration, work, hediff, day-reflection, and ambient-day contexts before checking whether an event's
+defName is a real RimWorld `InteractionDef`.
 
 Player-customizable, Def-backed user-message instructions:
 
@@ -476,9 +477,13 @@ manual state. UI caches for first-seen fades and expansion blends are capped and
 
 Generated cards show date/title, semantic color accent and group chip, page tint, a subtle model id,
 linked previews for the other pawn's POV, and title-pending animation. `DiaryTextFormat` converts
-light markdown (`**bold**`, `*italic*`, headings, bullets, block quotes) and inline quoted speech to
-Unity rich text after replacing raw generated `<...>` brackets with safe visible brackets, so model
-output cannot inject Unity rich-text tags. When `enableAtmosphericFormatting` is on, only extreme
+light markdown (`**bold**`, `*italic*`, headings, bullets, block quotes), inline quoted speech, and
+closed same-line `[[speech]]...[[/speech]]` blocks to Unity rich text after replacing raw generated
+`<...>` brackets with safe visible brackets, so model output cannot inject Unity rich-text tags.
+Speech blocks render as separate colored lines only outside recipient POVs; unclosed markers and all
+recipient markers are stripped and displayed as ordinary prose. Linked-entry previews also strip
+speech markers before truncating so the small preview card never exposes raw tags. When
+`enableAtmosphericFormatting` is on, only extreme
 entries get additional
 display-only typography: mental-break pages can be split into fractured sentence blocks,
 anomaly/dark pages can render with uneasy insets/italics, death-description chronicle pages can

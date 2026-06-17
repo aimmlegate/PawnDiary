@@ -1,8 +1,9 @@
 // Turns one line of generated diary text into Unity rich text for the diary tab.
-// LLMs emit light markdown (*italic*, **bold**, "# " headings, "- " bullets) and quoted speech; the
-// vanilla label renderer would print those markers literally. This helper rewrites the common cases
-// into rich-text tags (<b>, <i>, <color>) so the page reads cleanly. Raw model output is escaped
-// first so a generated "<size=999>" or "</color>" cannot take over the UI. New to C#/RimWorld?
+// LLMs emit light markdown (*italic*, **bold**, "# " headings, "- " bullets), quoted speech, and
+// [[speech]] marker blocks; the vanilla label renderer would print those markers literally. This
+// helper rewrites the common cases into rich-text tags (<b>, <i>, <color>) so the page reads cleanly.
+// Raw model output is escaped first so a generated "<size=999>" or "</color>" cannot take over the UI.
+// New to C#/RimWorld?
 // Unity's IMGUI labels understand a small HTML-like markup when the GUIStyle has richText enabled
 // (see ITab_Pawn_Diary.BodyStyle). Kept deliberately conservative so ordinary prose is never mangled.
 using System;
@@ -128,6 +129,54 @@ namespace PawnDiary
             });
 
             return s;
+        }
+
+        /// <summary>
+        /// Formats the contents of a closed [[speech]] marker block. The markers have already been
+        /// removed by the tab parser, so this treats the whole line as spoken text instead of looking
+        /// for quotation marks inside the line.
+        /// </summary>
+        public static string ToSpeechBlockRichText(string line, Color quoteColor, bool distortQuotedSpeech, int seed)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                return line ?? string.Empty;
+            }
+
+            string speech = StripOuterSpeechQuotes(line);
+            if (distortQuotedSpeech)
+            {
+                speech = ApplyLightZalgo(speech, seed);
+            }
+
+            string s = EscapeRawRichText(speech);
+            s = BoldPattern.Replace(s, "<b>$1</b>");
+            s = ItalicPattern.Replace(s, "<i>$1</i>");
+
+            return "<color=#" + ColorUtility.ToHtmlStringRGB(quoteColor) + "><b>"
+                + LeftQuote
+                + s
+                + RightQuote
+                + "</b></color>";
+        }
+
+        private static string StripOuterSpeechQuotes(string text)
+        {
+            string trimmed = text?.Trim() ?? string.Empty;
+            if (trimmed.Length < 2)
+            {
+                return trimmed;
+            }
+
+            char first = trimmed[0];
+            char last = trimmed[trimmed.Length - 1];
+            if ((first == '"' && last == '"')
+                || (first == (char)0x201C && last == (char)0x201D))
+            {
+                return trimmed.Substring(1, trimmed.Length - 2).Trim();
+            }
+
+            return trimmed;
         }
 
         private static string EscapeRawRichText(string text)
