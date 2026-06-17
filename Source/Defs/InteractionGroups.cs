@@ -11,12 +11,11 @@ using Verse;
 
 namespace PawnDiary
 {
-    // Which kind of game event a group classifies. Interaction groups match InteractionDefs
+    // Which kind of event a group classifies. Interaction groups match InteractionDefs
     // (social log entries); MentalState groups match MentalStateDefs (breaks, social fights);
     // Tale groups match TaleDefs (RimWorld's notable-history events); MoodEvent groups match
     // GameConditionDefs that affect colonist mood (aurora, eclipse, psychic drone, etc.);
-    // GameEvent groups classify synthetic map/story discoveries that are not TaleDefs; Work groups
-    // classify the synthetic work diary events emitted by the periodic work scanner.
+    // Work groups classify the synthetic work diary events emitted by the periodic work scanner.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -25,7 +24,6 @@ namespace PawnDiary
         Tale,
         MoodEvent,
         Thought,
-        GameEvent,
         Work
     }
 
@@ -291,12 +289,6 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyThought(ThoughtDef thoughtDef)
         {
             return ClassifyIn(GroupDomain.Thought, thoughtDef?.defName);
-        }
-
-        // First GameEvent-domain group that matches the synthetic discovery/event defName.
-        public static DiaryInteractionGroupDef ClassifyGameEvent(string gameEventDefName)
-        {
-            return ClassifyIn(GroupDomain.GameEvent, gameEventDefName);
         }
 
         // First Work-domain group that matches the synthetic work diary defName.

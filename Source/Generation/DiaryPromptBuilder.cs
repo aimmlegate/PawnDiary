@@ -301,7 +301,7 @@ namespace PawnDiary
                 return policy;
             }
 
-            // Major solo tales / discoveries still benefit from grounding, but avoid the old broad
+            // Major solo events still benefit from grounding, but avoid the old broad
             // relationship/opener pile-up.
             if (important)
             {

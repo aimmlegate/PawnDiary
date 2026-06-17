@@ -470,34 +470,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Same as IsInteractionEnabled but for synthetic game events, such as map discoveries
-        /// and special objects that vanilla exposes through direct hooks rather than TaleDefs.
-        /// </summary>
-        public bool IsGameEventEnabled(string gameEventDefName)
-        {
-            if (string.IsNullOrWhiteSpace(gameEventDefName))
-            {
-                return false;
-            }
-
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyGameEvent(gameEventDefName);
-            return group != null && IsGroupEnabled(group.defName);
-        }
-
-        /// <summary>
-        /// Returns the per-group prompt instruction for a synthetic game event.
-        /// </summary>
-        public string InstructionForGameEvent(string gameEventDefName)
-        {
-            if (string.IsNullOrWhiteSpace(gameEventDefName))
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyGameEvent(gameEventDefName));
-        }
-
-        /// <summary>
         /// Same as IsInteractionEnabled but for synthetic work events emitted by the work scanner.
         /// The scanner picks the group first (passion, strain, routine, dark study), because those
         /// groups depend on pawn state as well as the WorkTypeDef.

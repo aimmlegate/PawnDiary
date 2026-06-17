@@ -22,8 +22,7 @@ the initiator page supplied as hidden continuity context.
 
 Active recorded sources include social interactions, social fights, mental breaks, vanilla tales,
 arrivals, deaths, quality crafts, relic installs, mood-affecting game conditions, temporary and
-scanned staged thoughts, sampled work moments, and end-of-day reflections. Discovery/GameEvent
-recording code exists but is intentionally disabled until the RimWorld 1.6 hook path is repaired.
+scanned staged thoughts, sampled work moments, and end-of-day reflections.
 
 Arrivals and deaths are neutral chronicle entries, not persona-based first-person pages. Arrival
 pages are forced to be a pawn's first visible/generated entry. Death pages are terminal; later
@@ -63,7 +62,6 @@ Key files:
 |---|---|
 | `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Needs. |
 | `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
-| `DiscoveryPatches.cs` | Quarantined, unregistered discovery hook experiments. |
 | `DiaryGameComponent*.cs` | Recording, batching, generation scans, save/load, lookup indexes, and public UI access. Event-source partials own their `Record*` methods. |
 | `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
@@ -71,7 +69,7 @@ Key files:
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
 | `PromptEnchantments.cs` | Weighted hediff matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
-| `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, GameEvent, and Work domains. |
+| `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, and Work domains. |
 | `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
@@ -142,16 +140,6 @@ TaleDefs are skipped so they record once through MoodEvent.
 Synthetic tale-style hooks cover masterwork/legendary crafts from
 `QualityUtility.SendCraftNotification` and ideology relic installation from `JobDriver_InstallRelic`.
 
-### Game Events And Discoveries
-
-The GameEvent recorder was built for map/story discoveries such as ancient dangers, ancient mech
-threats, hidden revealed things, and monolith beats. It is currently disabled:
-
-- attempted Harmony hook classes live in `Source/Patches/DiscoveryPatches.cs` without `[HarmonyPatch]`
-  attributes, so `PatchAll` does not register them;
-- `DiaryGameComponent.DiscoveryEventsEnabled` returns `false`;
-- recorder methods and disabled stubs guard on that flag and no-op before creating events.
-
 ### Arrivals And Deaths
 
 Starting colonists receive neutral arrival pages after maps/free-colonist lists exist. Later joins
@@ -196,7 +184,6 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 | Tale | `ClassifyTale(TaleDef)` | combat/death, health/medicine, milestones, crafts, relics, raids, anomaly horror |
 | MoodEvent | `ClassifyMoodEvent(GameConditionDef)` | positive, negative, mixed, passing moods |
 | Thought | `ClassifyThought(ThoughtDef)` | positive, negative, passing thoughts |
-| GameEvent | `ClassifyGameEvent(string)` | map discoveries, ancient mech threats, monoliths |
 | Work | `ClassifyWork(string)` | dark study, passionate, straining, routine |
 
 Matching is domain-scoped by exact `defName` or substring token. XML order matters; catch-all groups
@@ -236,7 +223,7 @@ per-event context policy:
   weapon, hidden initiator context, and the same optional prompt enchantment path.
 - End-of-day reflections add pawn summary and last-opener continuity to the selected highlights,
   but skip setting, relationship, and weapon.
-- Major solo tales/discoveries add pawn summary, setting, tone, and last-opener continuity, but skip
+- Major solo events add pawn summary, setting, tone, and last-opener continuity, but skip
   relationship and weapon unless combat.
 
 Pawn summaries may contain DLC identity lines, life stage, mood, health, low capacities, and top

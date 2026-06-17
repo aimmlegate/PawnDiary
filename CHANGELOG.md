@@ -3,6 +3,12 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (discovery event removal)**
+  - Removed the non-functioning discovery event generation path: disabled Harmony stubs, recorder
+    partial, GameEvent classifier/settings helpers, XML group, and unused Keyed strings.
+  - Updated documentation so the active event-source list no longer advertises quarantined
+    discovery generation.
+
 - **2026-06-17 (low-consciousness persona rules)**
   - Kept the below-11% Consciousness generation guard intact while routing still-conscious impaired
     pawns through clouded, fading, and barely-conscious prompt states.

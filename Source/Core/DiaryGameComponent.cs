@@ -1,5 +1,5 @@
 // The orchestrator. Owns the saved diary data and drives the whole flow: record an event
-// (RecordInteraction / RecordMentalState / RecordTale / RecordMoodEvent / RecordGameEvent)
+// (RecordInteraction / RecordMentalState / RecordTale / RecordMoodEvent / RecordWork)
 // -> build a DiaryEvent with context -> queue an LLM
 // request -> apply the result each tick -> hand views to the UI. Context/prompt building live in
 // DiaryContextBuilder / DiaryPromptBuilder; the saved data models in DiaryEvent / PawnDiaryRecord.
@@ -20,7 +20,6 @@
 //   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
 //   DiaryGameComponent.ThoughtProgression.cs — staged situational need thoughts (hunger, rest, etc.)
-//   DiaryGameComponent.GameEvents.cs     — synthetic map/story discoveries (ancient danger, monoliths)
 //   DiaryGameComponent.Work.cs           — occasional solo notes about current pawn work
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
 //   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
@@ -92,9 +91,6 @@ namespace PawnDiary
         private readonly Dictionary<string, int> recentMoodEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against the same pawn+thought being recorded repeatedly.
         private readonly Dictionary<string, int> recentThoughtEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against synthetic discovery hooks double-reporting the same
-        // map/object event when vanilla reveal logic fires several callbacks in quick succession.
-        private readonly Dictionary<string, int> recentGameEvents = new Dictionary<string, int>();
         // Transient (not saved): event-role keys ("eventId|role") seen pending-but-not-in-flight on the
         // previous generation scan. An entry must look orphaned on two consecutive scans before the
         // orphan recovery re-queues it, so a request that merely finished between scans (its result
@@ -162,7 +158,6 @@ namespace PawnDiary
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
-            recentGameEvents.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
@@ -188,7 +183,6 @@ namespace PawnDiary
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
-            recentGameEvents.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their

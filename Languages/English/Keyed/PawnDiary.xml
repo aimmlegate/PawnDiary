@@ -254,18 +254,6 @@
   <PawnDiary.Event.ThoughtProgressionNegative>{0}'s condition worsened: {1}.</PawnDiary.Event.ThoughtProgressionNegative>
   <PawnDiary.Event.ThoughtProgressionInstruction>this is a worsening stage of an ongoing need or situation; write about the current severity, do not treat it as a brand-new unrelated thought, and do not repeat earlier stages</PawnDiary.Event.ThoughtProgressionInstruction>
 
-  <!-- Game-event text (synthetic map/story discovery diary entries) -->
-  <PawnDiary.Event.AncientMechRevealedLabel>Ancient mech threat revealed</PawnDiary.Event.AncientMechRevealedLabel>
-  <PawnDiary.Event.AncientMechRevealed>{0} discovered an ancient mechanized threat in the dark.</PawnDiary.Event.AncientMechRevealed>
-  <PawnDiary.Event.AncientDangerRevealedLabel>Ancient danger revealed</PawnDiary.Event.AncientDangerRevealedLabel>
-  <PawnDiary.Event.AncientDangerRevealed>{0} discovered an ancient danger hidden nearby.</PawnDiary.Event.AncientDangerRevealed>
-  <PawnDiary.Event.RevealedThingLabel>Hidden thing revealed</PawnDiary.Event.RevealedThingLabel>
-  <PawnDiary.Event.RevealedThing>{0} discovered {1}.</PawnDiary.Event.RevealedThing>
-  <PawnDiary.Event.MonolithInvestigatedLabel>Monolith investigated</PawnDiary.Event.MonolithInvestigatedLabel>
-  <PawnDiary.Event.MonolithInvestigated>{0} investigated {1}.</PawnDiary.Event.MonolithInvestigated>
-  <PawnDiary.Event.MonolithActivatedLabel>Monolith activated</PawnDiary.Event.MonolithActivatedLabel>
-  <PawnDiary.Event.MonolithActivated>{0} activated {1}.</PawnDiary.Event.MonolithActivated>
-
   <!-- Work text (periodic sampled WorkTypeDef diary entries) -->
   <PawnDiary.Event.WorkPositive>{PAWN} found real satisfaction in {WORK}.</PawnDiary.Event.WorkPositive>
   <PawnDiary.Event.WorkNeutral>{PAWN} spent time on {WORK}.</PawnDiary.Event.WorkNeutral>
