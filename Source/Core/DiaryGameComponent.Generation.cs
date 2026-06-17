@@ -423,7 +423,7 @@ namespace PawnDiary
                 + " reason=" + selectionReason
                 + " failovers=[" + LaneList(failoverTargets) + "]");
 
-            diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildChatCompletionsUrl(target.url), target.model);
+            diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildGenerationUrl(target.url, target.apiMode), target.model);
             diaryEvent.MarkQueued(povRole);
 
             LlmClient.Enqueue(new LlmGenerationRequest
@@ -435,6 +435,9 @@ namespace PawnDiary
                 endpointUrl = target.url,
                 modelName = target.model,
                 apiKey = target.apiKey,
+                apiMode = target.apiMode,
+                reasoningEffort = target.reasoningEffort,
+                ollamaThink = target.ollamaThink,
                 // The other configured lanes, tried in order if this one errors ("use next model").
                 failoverTargets = failoverTargets,
                 timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
@@ -483,7 +486,7 @@ namespace PawnDiary
                 {
                     foreach (ApiEndpointConfig candidate in targets)
                     {
-                        if (string.Equals(EndpointUtility.BuildChatCompletionsUrl(candidate.url), initiatorEndpoint, StringComparison.OrdinalIgnoreCase)
+                        if (string.Equals(EndpointUtility.BuildGenerationUrl(candidate.url, candidate.apiMode), initiatorEndpoint, StringComparison.OrdinalIgnoreCase)
                             && string.Equals(candidate.model, initiatorModel, StringComparison.Ordinal))
                         {
                             reason = "recipient pinned to initiator lane";
@@ -570,8 +573,10 @@ namespace PawnDiary
             }
 
             return (string.IsNullOrWhiteSpace(lane.model) ? "<blank-model>" : lane.model)
-                + " @ "
-                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildChatCompletionsUrl(lane.url));
+                + " ["
+                + lane.apiMode
+                + "] @ "
+                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildGenerationUrl(lane.url, lane.apiMode));
         }
 
 
@@ -628,7 +633,7 @@ namespace PawnDiary
             // accurate and lets a paired recipient pin to the model the initiator really used.
             if (result.success && !string.IsNullOrWhiteSpace(result.endpointUrl) && !string.IsNullOrWhiteSpace(result.modelName))
             {
-                diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildChatCompletionsUrl(result.endpointUrl), result.modelName);
+                diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildGenerationUrl(result.endpointUrl, result.apiMode), result.modelName);
             }
 
             QueueRecipientAfterInitiatorResult(diaryEvent, result);
@@ -736,7 +741,7 @@ namespace PawnDiary
                 {
                     foreach (ApiEndpointConfig candidate in targets)
                     {
-                        if (string.Equals(EndpointUtility.BuildChatCompletionsUrl(candidate.url), mainEndpoint, StringComparison.OrdinalIgnoreCase)
+                        if (string.Equals(EndpointUtility.BuildGenerationUrl(candidate.url, candidate.apiMode), mainEndpoint, StringComparison.OrdinalIgnoreCase)
                             && string.Equals(candidate.model, mainModel, StringComparison.Ordinal))
                         {
                             target = candidate;
@@ -764,6 +769,9 @@ namespace PawnDiary
                 endpointUrl = target.url,
                 modelName = target.model,
                 apiKey = target.apiKey,
+                apiMode = target.apiMode,
+                reasoningEffort = target.reasoningEffort,
+                ollamaThink = target.ollamaThink,
                 failoverTargets = BuildFailoverTargets(targets, target),
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = TitleMaxTokens,

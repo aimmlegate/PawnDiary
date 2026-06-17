@@ -66,6 +66,7 @@ namespace PawnDiary
         public readonly string LlmEndpoint; // API endpoint used for the LLM call
         public readonly string LlmModel;    // LLM model identifier
         public readonly string LlmPrompt;  // Full prompt sent to the LLM
+        public readonly string LlmRawResponse; // Final-answer text before local length/sentence cleanup
         public readonly string EventId;     // Identifier of the backing DiaryEvent
         public readonly string PovRole;     // Role/perspective this view represents.
         public readonly string GroupLabel;  // Human-readable event group shown in the entry header
@@ -108,7 +109,8 @@ namespace PawnDiary
             bool important,
             LinkedEntryView linkedEntry = null,
             string title = null,
-            bool titlePending = false)
+            bool titlePending = false,
+            string llmRawResponse = null)
         {
             Tick = tick;
             Date = date;
@@ -119,6 +121,7 @@ namespace PawnDiary
             LlmEndpoint = llmEndpoint;
             LlmModel = llmModel;
             LlmPrompt = llmPrompt;
+            LlmRawResponse = llmRawResponse;
             EventId = eventId;
             PovRole = povRole;
             GroupLabel = groupLabel;
@@ -181,7 +184,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Diagnostic block showing event ID, POV, endpoint, model, status, error, and the prompt.
+        /// Diagnostic block showing event ID, POV, endpoint, model, status, error, prompt, and raw response.
         /// Used for in-game debugging of LLM generation issues in the view context.
         /// </summary>
         public string DebugText
@@ -221,6 +224,12 @@ namespace PawnDiary
                 }
 
                 debug += "\nPrompt:\n" + (LlmPrompt ?? Text ?? string.Empty);
+
+                if (!string.IsNullOrWhiteSpace(LlmRawResponse))
+                {
+                    debug += "\nRaw response:\n" + LlmRawResponse;
+                }
+
                 return debug;
             }
         }

@@ -15,7 +15,7 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Describes a single chat-completion request to an OpenAI-compatible LLM endpoint.
+    /// Describes a single generation request to a compatible LLM endpoint.
     /// Populated by the diary system and passed to <see cref="LlmClient.Enqueue"/>.
     /// </summary>
     public class LlmGenerationRequest
@@ -35,7 +35,7 @@ namespace PawnDiary
         /// <summary>Raw narrative text describing the game event, sent as the user message.</summary>
         public string rawText;
 
-        /// <summary>Full base URL of the OpenAI-compatible API (e.g. "https://api.openai.com/v1").</summary>
+        /// <summary>Base URL of the compatible API (e.g. "https://api.openai.com/v1").</summary>
         public string endpointUrl;
 
         /// <summary>Model identifier accepted by the API (e.g. "gpt-4o-mini").</summary>
@@ -43,6 +43,15 @@ namespace PawnDiary
 
         /// <summary>Bearer token for API authentication; may be empty for local endpoints.</summary>
         public string apiKey;
+
+        /// <summary>Request/response compatibility mode for this lane.</summary>
+        public ApiCompatibilityMode apiMode;
+
+        /// <summary>OpenAI Responses reasoning effort. "default" means no reasoning override.</summary>
+        public string reasoningEffort;
+
+        /// <summary>Ollama native chat: whether to request the model's separate thinking stream.</summary>
+        public bool ollamaThink;
 
         /// <summary>
         /// Ordered alternate lanes (endpoint + key + model) to try if the primary lane above errors —
@@ -92,6 +101,10 @@ namespace PawnDiary
         /// <summary>The model's generated text when <see cref="success"/> is true.</summary>
         public string generatedText;
 
+        /// <summary>The extracted final-answer text before local length/sentence cleanup.
+        /// Known reasoning blocks are stripped before this is stored for debug-only UI inspection.</summary>
+        public string rawResponse;
+
         /// <summary>Human-readable error message when <see cref="success"/> is false.</summary>
         public string error;
 
@@ -101,6 +114,9 @@ namespace PawnDiary
 
         /// <summary>Model of the API lane that actually produced the text (see <see cref="endpointUrl"/>).</summary>
         public string modelName;
+
+        /// <summary>Compatibility mode of the lane that actually produced the text.</summary>
+        public ApiCompatibilityMode apiMode;
 
         /// <summary>Mirror of <see cref="LlmGenerationRequest.isTitleRequest"/>. The dispatcher
         /// branches on this to route the result to the title handler instead of the main-entry
@@ -249,7 +265,7 @@ namespace PawnDiary
         {
             string endpoint = (request.endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
             string model = (request.modelName ?? string.Empty).Trim();
-            return endpoint + "\n" + model;
+            return request.apiMode + "\n" + endpoint + "\n" + model;
         }
 
         /// <summary>
@@ -350,8 +366,19 @@ namespace PawnDiary
         {
             public bool Success;
             public string Text;
+            public string RawText;
             public string Error;
             public bool Cancelled; // session ended mid-flight — abort entirely, no failover
+        }
+
+        /// <summary>
+        /// Parsed endpoint response split into local-cleaned text for saving and final-answer text
+        /// before local length/sentence cleanup for debug inspection.
+        /// </summary>
+        private sealed class SendResponse
+        {
+            public string CleanText;
+            public string RawText;
         }
 
         /// <summary>
@@ -381,6 +408,9 @@ namespace PawnDiary
                     request.endpointUrl = target.url;
                     request.apiKey = target.apiKey;
                     request.modelName = target.model;
+                    request.apiMode = target.apiMode;
+                    request.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(target.reasoningEffort);
+                    request.ollamaThink = target.ollamaThink;
                     string laneLabel = LaneLabel(request);
 
                     // Reuse the gate captured at enqueue for the first lane; create per-lane gates
@@ -417,21 +447,23 @@ namespace PawnDiary
                             return; // session cancelled mid-flight: drop quietly
                         }
 
-                        if (outcome.Success)
-                        {
-                            LogDebug("Lane succeeded event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
-                            Completed.Enqueue(new LlmGenerationResult
+                            if (outcome.Success)
                             {
-                                eventId = request.eventId,
-                                povRole = request.povRole,
-                                sessionId = request.sessionId,
-                                success = true,
-                                generatedText = outcome.Text,
-                                endpointUrl = request.endpointUrl,
-                                modelName = request.modelName,
-                                isTitleRequest = request.isTitleRequest
-                            });
-                            return;
+                                LogDebug("Lane succeeded event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
+                                Completed.Enqueue(new LlmGenerationResult
+                                {
+                                    eventId = request.eventId,
+                                    povRole = request.povRole,
+                                    sessionId = request.sessionId,
+                                    success = true,
+                                    generatedText = outcome.Text,
+                                    rawResponse = outcome.RawText,
+                                    endpointUrl = request.endpointUrl,
+                                    modelName = request.modelName,
+                                    apiMode = request.apiMode,
+                                    isTitleRequest = request.isTitleRequest
+                                });
+                                return;
                         }
 
                         lastError = outcome.Error; // this lane failed — fall through to the next one
@@ -507,8 +539,8 @@ namespace PawnDiary
                 {
                     try
                     {
-                        string generatedText = await SendOnce(request, deadline.Token);
-                        return new LaneResult { Success = true, Text = generatedText };
+                        SendResponse response = await SendOnce(request, deadline.Token);
+                        return new LaneResult { Success = true, Text = response.CleanText, RawText = response.RawText };
                     }
                     catch (LlmPermanentException ex)
                     {
@@ -567,6 +599,11 @@ namespace PawnDiary
             List<ApiEndpointConfig> targets = new List<ApiEndpointConfig>
             {
                 new ApiEndpointConfig(request.endpointUrl, request.apiKey, request.modelName)
+                {
+                    apiMode = request.apiMode,
+                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort),
+                    ollamaThink = request.ollamaThink
+                }
             };
 
             if (request.failoverTargets != null)
@@ -583,7 +620,8 @@ namespace PawnDiary
                     foreach (ApiEndpointConfig existing in targets)
                     {
                         if (string.Equals(existing.url, candidate.url, StringComparison.OrdinalIgnoreCase)
-                            && string.Equals(existing.model, candidate.model, StringComparison.Ordinal))
+                            && string.Equals(existing.model, candidate.model, StringComparison.Ordinal)
+                            && existing.apiMode == candidate.apiMode)
                         {
                             duplicate = true;
                             break;
@@ -592,7 +630,7 @@ namespace PawnDiary
 
                     if (!duplicate)
                     {
-                        targets.Add(new ApiEndpointConfig(candidate.url, candidate.apiKey, candidate.model));
+                        targets.Add(candidate.Copy());
                     }
                     else
                     {
@@ -609,9 +647,9 @@ namespace PawnDiary
         /// Throws <see cref="LlmTransientException"/> for retryable HTTP errors and
         /// <see cref="LlmPermanentException"/> for non-retryable ones.
         /// </summary>
-        private static async Task<string> SendOnce(LlmGenerationRequest request, CancellationToken cancellationToken)
+        private static async Task<SendResponse> SendOnce(LlmGenerationRequest request, CancellationToken cancellationToken)
         {
-            using (HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, EndpointUtility.BuildChatCompletionsUrl(request.endpointUrl)))
+            using (HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, EndpointUtility.BuildGenerationUrl(request.endpointUrl, request.apiMode)))
             {
                 if (!string.IsNullOrWhiteSpace(request.apiKey))
                 {
@@ -633,8 +671,9 @@ namespace PawnDiary
                             throw new LlmPermanentException(error);
                         }
 
-                        string generatedText = ParseGeneratedText(responseJson);
-                        if (string.IsNullOrWhiteSpace(generatedText))
+                        string generatedText = ParseGeneratedText(responseJson, request.apiMode);
+                        string visibleText = StripReasoningTextBlocks(generatedText);
+                        if (string.IsNullOrWhiteSpace(visibleText))
                         {
                             throw new LlmPermanentException("The endpoint returned no message content.");
                         }
@@ -646,7 +685,11 @@ namespace PawnDiary
                     // fragment that is already under our local cap; clean that up for main diary
                     // text too. Titles are exempt because they should not end with sentence
                     // punctuation.
-                    return CleanGeneratedText(generatedText, request.maxTokens, request.isTitleRequest);
+                    return new SendResponse
+                    {
+                        RawText = visibleText,
+                        CleanText = CleanGeneratedText(visibleText, request.maxTokens, request.isTitleRequest)
+                    };
                 }
             }
         }
@@ -807,16 +850,65 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Builds the JSON body for a chat-completion request using manual concatenation
+        /// Builds the JSON body for the selected compatibility mode using manual concatenation
         /// rather than System.Text.Json, which may not be available in all RimWorld runtimes.
         /// </summary>
         private static string BuildRequestJson(LlmGenerationRequest request)
         {
+            switch (request.apiMode)
+            {
+                case ApiCompatibilityMode.OpenAIResponses:
+                    return BuildOpenAIResponsesRequestJson(request);
+                case ApiCompatibilityMode.OllamaNativeChat:
+                    return BuildOllamaChatRequestJson(request);
+                default:
+                    return BuildOpenAIChatRequestJson(request);
+            }
+        }
+
+        private static string BuildOpenAIChatRequestJson(LlmGenerationRequest request)
+        {
             return "{"
                 + "\"model\":\"" + JsonEscape(request.modelName) + "\","
                 + "\"messages\":[" + BuildMessagesJson(request) + "],"
-                + "\"temperature\":" + request.temperature.ToString(System.Globalization.CultureInfo.InvariantCulture) + ","
+                + "\"temperature\":" + JsonNumber(request.temperature) + ","
                 + "\"max_tokens\":" + request.maxTokens
+                + "}";
+        }
+
+        private static string BuildOpenAIResponsesRequestJson(LlmGenerationRequest request)
+        {
+            string json = "{"
+                + "\"model\":\"" + JsonEscape(request.modelName) + "\","
+                + "\"input\":\"" + JsonEscape(request.rawText) + "\","
+                + "\"temperature\":" + JsonNumber(request.temperature) + ","
+                + "\"max_output_tokens\":" + MaxOutputTokensForRequest(request);
+
+            if (!string.IsNullOrWhiteSpace(request.systemPrompt))
+            {
+                json += ",\"instructions\":\"" + JsonEscape(request.systemPrompt.Trim()) + "\"";
+            }
+
+            string reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort);
+            if (HasExplicitReasoningEffort(reasoningEffort))
+            {
+                json += ",\"reasoning\":{\"effort\":\"" + JsonEscape(reasoningEffort) + "\"}";
+            }
+
+            return json + "}";
+        }
+
+        private static string BuildOllamaChatRequestJson(LlmGenerationRequest request)
+        {
+            return "{"
+                + "\"model\":\"" + JsonEscape(request.modelName) + "\","
+                + "\"messages\":[" + BuildMessagesJson(request) + "],"
+                + "\"think\":" + (request.ollamaThink ? "true" : "false") + ","
+                + "\"stream\":false,"
+                + "\"options\":{"
+                    + "\"temperature\":" + JsonNumber(request.temperature) + ","
+                    + "\"num_predict\":" + request.maxTokens
+                + "}"
                 + "}";
         }
 
@@ -837,12 +929,30 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Extracts the generated text from an OpenAI-style chat completion response.
-        /// Supports the standard <c>choices[0].message.content</c> shape.
+        /// Extracts the generated text from a compatible endpoint response.
         /// </summary>
-        private static string ParseGeneratedText(string json)
+        private static string ParseGeneratedText(string json, ApiCompatibilityMode mode)
         {
             Dictionary<string, object> root = MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
+            if (root == null)
+            {
+                return null;
+            }
+
+            switch (mode)
+            {
+                case ApiCompatibilityMode.OpenAIResponses:
+                    return ParseOpenAIResponsesText(root) ?? ParseOpenAIChatText(root);
+                case ApiCompatibilityMode.OllamaNativeChat:
+                    return ParseOllamaChatText(root);
+                default:
+                    return ParseOpenAIChatText(root);
+            }
+        }
+
+        /// <summary>Supports the standard choices[0].message.content chat-completions shape.</summary>
+        private static string ParseOpenAIChatText(Dictionary<string, object> root)
+        {
             if (root == null || !root.TryGetValue("choices", out object choicesObject))
             {
                 return null;
@@ -870,6 +980,379 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Supports OpenAI Responses' output array, plus the convenience output_text field when a
+        /// compatible proxy includes it.
+        /// </summary>
+        private static string ParseOpenAIResponsesText(Dictionary<string, object> root)
+        {
+            if (root.TryGetValue("output_text", out object outputTextObject))
+            {
+                string outputText = outputTextObject as string;
+                if (!string.IsNullOrWhiteSpace(outputText))
+                {
+                    return outputText;
+                }
+            }
+
+            if (!root.TryGetValue("output", out object outputObject))
+            {
+                return null;
+            }
+
+            object[] output = outputObject as object[];
+            if (output == null)
+            {
+                return null;
+            }
+
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < output.Length; i++)
+            {
+                Dictionary<string, object> item = output[i] as Dictionary<string, object>;
+                if (IsReasoningResponseItem(item))
+                {
+                    continue;
+                }
+
+                if (item == null || !item.TryGetValue("content", out object contentObject))
+                {
+                    continue;
+                }
+
+                object[] content = contentObject as object[];
+                if (content == null)
+                {
+                    continue;
+                }
+
+                for (int c = 0; c < content.Length; c++)
+                {
+                    Dictionary<string, object> part = content[c] as Dictionary<string, object>;
+                    if (IsReasoningResponseItem(part))
+                    {
+                        continue;
+                    }
+
+                    if (part == null || !part.TryGetValue("text", out object partTextObject))
+                    {
+                        continue;
+                    }
+
+                    string partText = partTextObject as string;
+                    if (string.IsNullOrWhiteSpace(partText))
+                    {
+                        continue;
+                    }
+
+                    if (text.Length > 0)
+                    {
+                        text.Append("\n");
+                    }
+
+                    text.Append(partText);
+                }
+            }
+
+            return text.Length > 0 ? text.ToString() : null;
+        }
+
+        private static bool IsReasoningResponseItem(Dictionary<string, object> item)
+        {
+            if (item == null || !item.TryGetValue("type", out object typeObject))
+            {
+                return false;
+            }
+
+            string type = (typeObject as string ?? string.Empty).Trim().ToLowerInvariant();
+            return type == "reasoning"
+                || type == "reasoning_text"
+                || type == "summary_text"
+                || type == "thinking"
+                || type == "analysis";
+        }
+
+        /// <summary>Supports Ollama native /api/chat with stream=false: message.content.</summary>
+        private static string ParseOllamaChatText(Dictionary<string, object> root)
+        {
+            if (root.TryGetValue("message", out object messageObject))
+            {
+                Dictionary<string, object> message = messageObject as Dictionary<string, object>;
+                if (message != null && message.TryGetValue("content", out object contentObject))
+                {
+                    return contentObject as string;
+                }
+            }
+
+            if (root.TryGetValue("response", out object responseObject))
+            {
+                return responseObject as string;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Removes reasoning/transcript blocks that some "compatible" APIs place inside normal
+        /// message content. The request is already complete at this point; this keeps private
+        /// thinking text out of saved diary pages and debug-visible raw response fields.
+        /// </summary>
+        private static string StripReasoningTextBlocks(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            string cleaned = StripTaggedReasoningBlocks(text);
+            cleaned = StripReasoningFencedBlocks(cleaned);
+            cleaned = StripReasoningHeadingPrefix(cleaned);
+            return CompactReasoningCleanupWhitespace(cleaned).Trim();
+        }
+
+        private static string StripTaggedReasoningBlocks(string text)
+        {
+            string[] tags = { "think", "thinking", "reasoning", "analysis" };
+            for (int i = 0; i < tags.Length; i++)
+            {
+                string tag = tags[i];
+                string closeNeedle = "</" + tag + ">";
+                int guard = 0;
+                while (guard++ < 32)
+                {
+                    int open = IndexOfOpeningTag(text, tag);
+                    if (open < 0)
+                    {
+                        break;
+                    }
+
+                    int openEnd = text.IndexOf('>', open);
+                    if (openEnd < 0)
+                    {
+                        break;
+                    }
+
+                    int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, openEnd + 1);
+                    if (close < 0)
+                    {
+                        break;
+                    }
+
+                    int closeEnd = close + closeNeedle.Length;
+                    text = text.Remove(open, closeEnd - open);
+                }
+            }
+
+            return text;
+        }
+
+        private static int IndexOfOpeningTag(string text, string tag)
+        {
+            string needle = "<" + tag;
+            int start = 0;
+            while (start < text.Length)
+            {
+                int index = IndexOfOrdinalIgnoreCase(text, needle, start);
+                if (index < 0)
+                {
+                    return -1;
+                }
+
+                int after = index + needle.Length;
+                if (after < text.Length && (text[after] == '>' || char.IsWhiteSpace(text[after])))
+                {
+                    return index;
+                }
+
+                start = after;
+            }
+
+            return -1;
+        }
+
+        private static string StripReasoningFencedBlocks(string text)
+        {
+            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            string[] lines = normalized.Split('\n');
+            StringBuilder builder = new StringBuilder(text.Length);
+            bool skipping = false;
+            bool changed = false;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                string trimmed = line.TrimStart();
+                if (IsFenceLine(trimmed))
+                {
+                    if (skipping)
+                    {
+                        skipping = false;
+                        changed = true;
+                        continue;
+                    }
+
+                    if (IsReasoningFenceLine(trimmed))
+                    {
+                        skipping = true;
+                        changed = true;
+                        continue;
+                    }
+                }
+
+                if (skipping)
+                {
+                    changed = true;
+                    continue;
+                }
+
+                if (builder.Length > 0)
+                {
+                    builder.Append('\n');
+                }
+
+                builder.Append(line);
+            }
+
+            return changed ? builder.ToString() : text;
+        }
+
+        private static bool IsFenceLine(string trimmedLine)
+        {
+            return trimmedLine.StartsWith("```", StringComparison.Ordinal)
+                || trimmedLine.StartsWith("~~~", StringComparison.Ordinal);
+        }
+
+        private static bool IsReasoningFenceLine(string trimmedLine)
+        {
+            if (!IsFenceLine(trimmedLine) || trimmedLine.Length <= 3)
+            {
+                return false;
+            }
+
+            string info = trimmedLine.Substring(3).Trim().ToLowerInvariant();
+            return StartsWithAny(info, ReasoningFenceLabels());
+        }
+
+        private static string StripReasoningHeadingPrefix(string text)
+        {
+            string trimmedStart = text.TrimStart();
+            if (!StartsWithAny(trimmedStart.ToLowerInvariant(), ReasoningHeadingLabels()))
+            {
+                return text;
+            }
+
+            int labelLength;
+            int finalIndex = FindLineStartingWithAny(trimmedStart, FinalAnswerLabels(), out labelLength);
+            if (finalIndex < 0)
+            {
+                return text;
+            }
+
+            return trimmedStart.Substring(finalIndex + labelLength).TrimStart();
+        }
+
+        private static int FindLineStartingWithAny(string text, string[] labels, out int labelLength)
+        {
+            int lineStart = 0;
+            while (lineStart < text.Length)
+            {
+                int lineEnd = text.IndexOf('\n', lineStart);
+                if (lineEnd < 0)
+                {
+                    lineEnd = text.Length;
+                }
+
+                int leading = 0;
+                while (lineStart + leading < lineEnd && char.IsWhiteSpace(text[lineStart + leading]))
+                {
+                    leading++;
+                }
+
+                string comparable = text.Substring(lineStart + leading, lineEnd - lineStart - leading).ToLowerInvariant();
+                for (int i = 0; i < labels.Length; i++)
+                {
+                    if (comparable.StartsWith(labels[i], StringComparison.Ordinal))
+                    {
+                        labelLength = leading + labels[i].Length;
+                        return lineStart;
+                    }
+                }
+
+                lineStart = lineEnd + 1;
+            }
+
+            labelLength = 0;
+            return -1;
+        }
+
+        private static bool StartsWithAny(string value, string[] labels)
+        {
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (value.StartsWith(labels[i], StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int IndexOfOrdinalIgnoreCase(string value, string needle, int startIndex)
+        {
+            return value.IndexOf(needle, startIndex, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string[] ReasoningFenceLabels()
+        {
+            return new[] { "think", "thinking", "reasoning", "analysis", "chain-of-thought", "chain of thought", "cot" };
+        }
+
+        private static string[] ReasoningHeadingLabels()
+        {
+            return new[] { "thinking:", "reasoning:", "analysis:", "chain-of-thought:", "chain of thought:" };
+        }
+
+        private static string[] FinalAnswerLabels()
+        {
+            return new[] { "final:", "final answer:", "answer:", "response:", "diary:", "entry:", "output:" };
+        }
+
+        private static string CompactReasoningCleanupWhitespace(string text)
+        {
+            while (text.Contains("\n\n\n"))
+            {
+                text = text.Replace("\n\n\n", "\n\n");
+            }
+
+            return text;
+        }
+
+        private static string JsonNumber(float value)
+        {
+            return value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private static bool HasExplicitReasoningEffort(string effort)
+        {
+            return !string.Equals(PawnDiarySettings.NormalizeReasoningEffort(effort), PawnDiarySettings.DefaultReasoningEffort, StringComparison.Ordinal);
+        }
+
+        private static int MaxOutputTokensForRequest(LlmGenerationRequest request)
+        {
+            if (request.apiMode == ApiCompatibilityMode.OpenAIResponses
+                && HasExplicitReasoningEffort(request.reasoningEffort)
+                && !string.Equals(PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort), "none", StringComparison.Ordinal))
+            {
+                // Responses counts hidden reasoning tokens against max_output_tokens. Keep the
+                // saved diary text locally capped to maxTokens, but give reasoning models enough
+                // room to think and still produce visible text.
+                return Math.Max(request.maxTokens + 128, request.maxTokens * 3);
+            }
+
+            return request.maxTokens;
         }
 
         /// <summary>
@@ -1044,8 +1527,10 @@ namespace PawnDiary
             }
 
             return (string.IsNullOrWhiteSpace(lane.model) ? "<blank-model>" : lane.model)
-                + " @ "
-                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildChatCompletionsUrl(lane.url));
+                + " ["
+                + lane.apiMode
+                + "] @ "
+                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildGenerationUrl(lane.url, lane.apiMode));
         }
 
         private static string LaneLabel(LlmGenerationRequest request)
@@ -1056,8 +1541,10 @@ namespace PawnDiary
             }
 
             return (string.IsNullOrWhiteSpace(request.modelName) ? "<blank-model>" : request.modelName)
-                + " @ "
-                + (string.IsNullOrWhiteSpace(request.endpointUrl) ? "<blank-url>" : EndpointUtility.BuildChatCompletionsUrl(request.endpointUrl));
+                + " ["
+                + request.apiMode
+                + "] @ "
+                + (string.IsNullOrWhiteSpace(request.endpointUrl) ? "<blank-url>" : EndpointUtility.BuildGenerationUrl(request.endpointUrl, request.apiMode));
         }
 
         /// <summary>Drains all results from the completed queue, discarding them. Used on session transitions.</summary>

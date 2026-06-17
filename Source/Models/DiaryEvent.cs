@@ -67,6 +67,9 @@ namespace PawnDiary
         public string initiatorGeneratedText; // text returned by the LLM for initiator POV
         public string recipientGeneratedText; // text returned by the LLM for recipient POV
         public string neutralGeneratedText; // text returned by the LLM for neutral POV
+        public string initiatorRawResponse; // pre-length-cleanup final-answer text for initiator POV debug
+        public string recipientRawResponse; // pre-length-cleanup final-answer text for recipient POV debug
+        public string neutralRawResponse; // pre-length-cleanup final-answer text for neutral POV debug
         public string initiatorStatus; // generation status for initiator POV
         public string recipientStatus; // generation status for recipient POV
         public string neutralStatus; // generation status for neutral POV
@@ -143,6 +146,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref initiatorGeneratedText, "initiatorGeneratedText");
             Scribe_Values.Look(ref recipientGeneratedText, "recipientGeneratedText");
             Scribe_Values.Look(ref neutralGeneratedText, "neutralGeneratedText");
+            Scribe_Values.Look(ref initiatorRawResponse, "initiatorRawResponse");
+            Scribe_Values.Look(ref recipientRawResponse, "recipientRawResponse");
+            Scribe_Values.Look(ref neutralRawResponse, "neutralRawResponse");
             Scribe_Values.Look(ref initiatorStatus, "initiatorStatus");
             Scribe_Values.Look(ref recipientStatus, "recipientStatus");
             Scribe_Values.Look(ref neutralStatus, "neutralStatus");
@@ -196,6 +202,21 @@ namespace PawnDiary
                     neutralText = string.Equals(initiatorText, recipientText, StringComparison.OrdinalIgnoreCase)
                         ? initiatorText
                         : initiatorName + ": " + initiatorText + "\n" + recipientName + ": " + recipientText;
+                }
+
+                if (initiatorRawResponse == null)
+                {
+                    initiatorRawResponse = string.Empty;
+                }
+
+                if (recipientRawResponse == null)
+                {
+                    recipientRawResponse = string.Empty;
+                }
+
+                if (neutralRawResponse == null)
+                {
+                    neutralRawResponse = string.Empty;
                 }
 
                 if (string.IsNullOrWhiteSpace(gameContext))
@@ -698,7 +719,7 @@ namespace PawnDiary
                     otherTitle);
             }
 
-            return new DiaryEntryView(
+                return new DiaryEntryView(
                 tick,
                 date,
                 TextFor(povRole),
@@ -718,7 +739,8 @@ namespace PawnDiary
                 group == null || group.important,
                 linkedEntry,
                 titleForPov,
-                titlePendingForPov);
+                titlePendingForPov,
+                RawResponseFor(povRole));
         }
 
         /// <summary>
@@ -1485,11 +1507,27 @@ namespace PawnDiary
             return neutralPrompt;
         }
 
+        private string RawResponseFor(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                return initiatorRawResponse;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientRawResponse;
+            }
+
+            return neutralRawResponse;
+        }
+
         private void ApplyLlmResultToInitiator(LlmGenerationResult result)
         {
             if (result.success)
             {
                 initiatorGeneratedText = result.generatedText;
+                initiatorRawResponse = result.rawResponse;
                 initiatorStatus = CompleteStatus;
                 initiatorError = null;
             }
@@ -1505,6 +1543,7 @@ namespace PawnDiary
             if (result.success)
             {
                 recipientGeneratedText = result.generatedText;
+                recipientRawResponse = result.rawResponse;
                 recipientStatus = CompleteStatus;
                 recipientError = null;
             }
@@ -1520,6 +1559,7 @@ namespace PawnDiary
             if (result.success)
             {
                 neutralGeneratedText = result.generatedText;
+                neutralRawResponse = result.rawResponse;
                 neutralStatus = CompleteStatus;
                 neutralError = null;
             }

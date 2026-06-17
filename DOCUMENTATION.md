@@ -3,14 +3,14 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (role-slot extraction TODO)_
+_Last updated: 2026-06-17 (reasoning block scrub)_
 
 ---
 
 ## 1. Purpose
 
-Pawn Diary records meaningful moments for free colonists and asks an OpenAI-compatible
-`/chat/completions` endpoint to rewrite them as short diary pages. RimWorld loads the compiled DLL
+Pawn Diary records meaningful moments for free colonists and asks a configured compatible LLM API
+lane to rewrite them as short diary pages. RimWorld loads the compiled DLL
 at startup; there is no `main()`. Harmony patches, game components, Defs, and inspector tabs are
 discovered by RimWorld and called during normal game lifecycle events.
 
@@ -78,7 +78,7 @@ Key files:
 | `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, and group editor. |
-| `EndpointUtility.cs` / `ModelListClient.cs` | Settings/generation endpoint URL normalization and settings-time `/models` discovery. |
+| `EndpointUtility.cs` / `ModelListClient.cs` | Settings/generation endpoint URL normalization and settings-time model discovery (`/models` or Ollama `/api/tags`). |
 | `ITab_Pawn_Diary*.cs` | Production diary view split as one partial class: orchestration, dev controls, year paging, entry cards, expansion state, linked previews, and roleplay text layout. |
 | `DiaryTextFormat.cs` | Escapes raw generated rich-text tags, then converts light markdown and quoted speech into Unity rich text. |
 | `MiniJson.cs` | Dependency-free JSON parser compatible with RimWorld's Unity Mono runtime. |
@@ -433,7 +433,7 @@ Core settings:
 
 | Setting | Default | Notes |
 |---|---:|---|
-| `apiEndpoints` | one enabled local lane | URL, model, key, enabled flag; blank-model or disabled rows are skipped. |
+| `apiEndpoints` | one enabled local lane | URL, model, key, enabled flag, compatibility mode, and optional mode-specific knobs; blank-model or disabled rows are skipped. |
 | `timeoutSeconds` | 30 | 5-300; per-lane-attempt deadline after a request leaves the queue. |
 | `maxConcurrentRequests` | 4 | 1-16 per API lane; use 1 for a single local model. |
 | `maxTokens` | 100 | API cap plus local sentence-aware response trimming. |
@@ -449,12 +449,16 @@ Core settings:
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
 
 The settings window contains Connection, Diary writing, Prompt Studio, Persona presets, and Events
-sections. It supports multiple API lanes, model fetching/picking, prompt resets, persona selection
+sections. It supports multiple API lanes, compatibility-mode selection, model fetching/picking,
+prompt resets, persona selection
 through a compact selector menu, single-card persona editing, custom persona creation/deletion,
 low-Consciousness persona modifier editing, grouped event toggles, and one per-group instruction
-editor. Model-list fetches are generation-stamped and tied to the endpoint row's URL/API-key
-snapshot, so removing, resetting, or editing rows while a request is in flight cannot auto-fill a
-different row.
+editor. Each API lane can speak OpenAI-compatible chat completions, OpenAI Responses, or native
+Ollama chat; Responses lanes can send a reasoning-effort override, and Ollama lanes can request
+native thinking output while saving only final message content. Known reasoning/thinking transcript
+blocks embedded in normal content are stripped before anything is persisted. Model-list fetches are
+generation-stamped and tied to the endpoint row's URL/API-key/mode snapshot, so removing, resetting,
+or editing rows while a request is in flight cannot auto-fill a different row.
 
 The production Diary tab shows only completed generated pages. Dev mode adds writing enablement,
 persona picker, pending rows, raw/failure rows, prompt/status diagnostics, in-progress indicators,
@@ -492,6 +496,8 @@ Social-tab log rows can jump to matching diary entries, including older year pag
 
 `LlmClient` treats each enabled endpoint+model row as an API lane:
 
+- each lane chooses its own request URL, payload, and response parser from its compatibility mode:
+  `/chat/completions`, `/responses`, or Ollama `/api/chat`;
 - new requests are assigned round-robin;
 - recipient pairwise requests and title follow-ups pin to the lane that produced the prior text when
   possible;
@@ -502,7 +508,12 @@ Social-tab log rows can jump to matching diary entries, including older year pag
   retries, timeout, or empty content;
 - transient errors retry up to three times per lane;
 - responses are locally trimmed to `maxTokens`, preferring the last complete sentence, with dangling
-  final fragments removed for main diary/note responses;
+  final fragments removed for main diary/note responses. OpenAI Responses reasoning lanes get extra
+  API output-token headroom because that API counts hidden reasoning tokens against
+  `max_output_tokens`; the saved text is still capped locally;
+- structured Responses reasoning items and common text transcript blocks (`<think>...</think>`,
+  reasoning/thinking fences, and `Reasoning: ... Final:` prefixes) are removed after the endpoint
+  completes and before debug/saved entry text is stored;
 - background debug logs are queued and flushed on the main thread only when the dev LLM debug toggle
   is enabled;
 - stale sessions are cancelled when a new `DiaryGameComponent` is constructed;
@@ -518,9 +529,10 @@ raw text is kept when configured.
 `DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. The `eventId -> DiaryEvent`
 lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 
-`DiaryEvent` saves raw text, generated text, statuses/errors, context, source ids, LLM metadata,
-semantic `colorCue`, per-POV titles, and per-POV staggered text intensity. Full prompt strings are
-not persisted; dev diagnostics can show prompts built during the current session.
+`DiaryEvent` saves raw event text, generated text, statuses/errors, context, source ids, LLM
+metadata, semantic `colorCue`, per-POV titles, per-POV staggered text intensity, and per-POV
+pre-length-cleanup final-answer text for debug inspection. Full prompt strings are still not
+persisted; dev diagnostics can show prompts built during the current session.
 Tale/mental/source classification is inferred from stable `gameContext` fields such as `tale=`,
 `mental_state=`, `mood_event=`, `thought=`, `inspiration=`, `work=`, and `hediff=`. Exact key/value
 lookups go through `DiaryContextFields`, so pawn ids and other field values do not collide by

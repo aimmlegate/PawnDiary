@@ -1,18 +1,19 @@
-// URL helpers for OpenAI-compatible endpoints. Kept outside PawnDiaryMod so settings UI code
+// URL helpers for compatible LLM endpoints. Kept outside PawnDiaryMod so settings UI code
 // stays focused on drawing controls while generation code can reuse the same normalization rules.
 using System;
 
 namespace PawnDiary
 {
     /// <summary>
-    /// Static helpers to normalize endpoint URLs and build the /models and /chat/completions paths
-    /// expected by OpenAI-compatible APIs.
+    /// Static helpers to normalize endpoint URLs and build the paths expected by each supported
+    /// compatibility mode.
     /// </summary>
     public static class EndpointUtility
     {
         /// <summary>
-        /// Strips trailing slashes and any /chat/completions suffix so the endpoint can be used as a
-        /// clean base for path construction. Falls back to the default endpoint when input is empty.
+        /// Strips trailing slashes and known generation/model suffixes so the endpoint can be used
+        /// as a clean base for path construction. Falls back to the default endpoint when input is
+        /// empty.
         /// </summary>
         public static string NormalizeBaseEndpoint(string endpoint)
         {
@@ -23,18 +24,47 @@ namespace PawnDiary
 
             string normalized = endpoint.Trim().TrimEnd('/');
 
-            if (normalized.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
+            string[] suffixes =
             {
-                normalized = normalized.Substring(0, normalized.Length - "/chat/completions".Length);
+                "/chat/completions",
+                "/responses",
+                "/api/chat",
+                "/api/generate",
+                "/models",
+                "/api/tags"
+            };
+
+            for (int i = 0; i < suffixes.Length; i++)
+            {
+                string suffix = suffixes[i];
+                if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
+                    break;
+                }
             }
 
             return normalized;
         }
 
-        /// <summary>Builds the full /models URL for model discovery.</summary>
-        public static string BuildModelsUrl(string endpoint)
+        /// <summary>Builds the full model-list URL for the selected compatibility mode.</summary>
+        public static string BuildModelsUrl(string endpoint, ApiCompatibilityMode mode)
         {
-            return NormalizeBaseEndpoint(endpoint) + "/models";
+            return NormalizeBaseEndpoint(endpoint) + (mode == ApiCompatibilityMode.OllamaNativeChat ? "/api/tags" : "/models");
+        }
+
+        /// <summary>Builds the full generation URL for the selected compatibility mode.</summary>
+        public static string BuildGenerationUrl(string endpoint, ApiCompatibilityMode mode)
+        {
+            switch (mode)
+            {
+                case ApiCompatibilityMode.OpenAIResponses:
+                    return NormalizeBaseEndpoint(endpoint) + "/responses";
+                case ApiCompatibilityMode.OllamaNativeChat:
+                    return NormalizeBaseEndpoint(endpoint) + "/api/chat";
+                default:
+                    return BuildChatCompletionsUrl(endpoint);
+            }
         }
 
         /// <summary>Builds the full /chat/completions URL for LLM requests.</summary>

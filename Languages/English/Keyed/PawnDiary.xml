@@ -71,6 +71,21 @@
   <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>API key</PawnDiary.Settings.ApiKey>
   <PawnDiary.Settings.ModelName>Model name</PawnDiary.Settings.ModelName>
+  <PawnDiary.Settings.ApiCompatibility>Type</PawnDiary.Settings.ApiCompatibility>
+  <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-compatible</PawnDiary.Settings.ApiCompatibility.Chat>
+  <PawnDiary.Settings.ApiCompatibility.Responses>OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
+  <PawnDiary.Settings.ApiCompatibility.Ollama>Ollama native chat</PawnDiary.Settings.ApiCompatibility.Ollama>
+  <PawnDiary.Settings.ReasoningEffort>Reasoning</PawnDiary.Settings.ReasoningEffort>
+  <PawnDiary.Settings.ReasoningEffort.Default>API default</PawnDiary.Settings.ReasoningEffort.Default>
+  <PawnDiary.Settings.ReasoningEffort.None>None</PawnDiary.Settings.ReasoningEffort.None>
+  <PawnDiary.Settings.ReasoningEffort.Minimal>Minimal</PawnDiary.Settings.ReasoningEffort.Minimal>
+  <PawnDiary.Settings.ReasoningEffort.Low>Low</PawnDiary.Settings.ReasoningEffort.Low>
+  <PawnDiary.Settings.ReasoningEffort.Medium>Medium</PawnDiary.Settings.ReasoningEffort.Medium>
+  <PawnDiary.Settings.ReasoningEffort.High>High</PawnDiary.Settings.ReasoningEffort.High>
+  <PawnDiary.Settings.ReasoningEffort.XHigh>Extra high</PawnDiary.Settings.ReasoningEffort.XHigh>
+  <PawnDiary.Settings.OllamaThinking>Thinking</PawnDiary.Settings.OllamaThinking>
+  <PawnDiary.Settings.ToggleOn>On</PawnDiary.Settings.ToggleOn>
+  <PawnDiary.Settings.ToggleOff>Off</PawnDiary.Settings.ToggleOff>
   <PawnDiary.Settings.FetchModels>Fetch</PawnDiary.Settings.FetchModels>
   <PawnDiary.Settings.FetchingModels>Fetching models...</PawnDiary.Settings.FetchingModels>
   <PawnDiary.Settings.NoModelsReturned>No models returned.</PawnDiary.Settings.NoModelsReturned>

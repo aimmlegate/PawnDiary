@@ -3,6 +3,24 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (reasoning block scrub)**
+  - Kept non-streaming LLM calls waiting for complete responses, then stripped structured Responses
+    reasoning items and common text reasoning blocks before storing debug text or diary entries.
+  - Updated raw-response comments/docs to clarify they store pre-length-cleanup final-answer text,
+    not model reasoning transcripts.
+
+- **2026-06-17 (compatible API modes)**
+  - Added per-API compatibility modes for OpenAI-style chat completions, OpenAI Responses, and
+    native Ollama chat so users can add common compatible APIs from the settings UI.
+  - Added OpenAI Responses reasoning-effort selection and Ollama native thinking on/off per lane,
+    with mode-aware generation URLs, response parsing, model fetching, failover, and lane pinning.
+
+- **2026-06-17 (diary UI debug raw response)**
+  - Added raw LLM responses to `LlmGenerationResult` and persisted them per-POV in
+    `DiaryEvent` so they survive save/load.
+  - Threaded raw responses into `DiaryEntryView` and displayed them in the existing diary-tab
+    debug text block, giving an in-game view of untrimmed model output.
+
 - **2026-06-17 (role-slot extraction TODO)**
   - Documented a safe migration outline for extracting repeated `DiaryEvent` initiator,
     recipient, and neutral field families into saved role slots.

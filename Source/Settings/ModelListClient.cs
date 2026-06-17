@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 namespace PawnDiary
 {
     /// <summary>
-    /// Async HTTP client that fetches available model IDs from an OpenAI-compatible /models endpoint
-    /// and parses the JSON response with the mod's Mono-safe MiniJson helper.
+    /// Async HTTP client that fetches available model IDs from a compatible endpoint and parses the
+    /// JSON response with the mod's Mono-safe MiniJson helper.
     /// </summary>
     public static class ModelListClient
     {
@@ -22,13 +22,13 @@ namespace PawnDiary
         };
 
         /// <summary>
-        /// Sends a GET request to the /models endpoint, authenticates with the given API key, and
-        /// returns a sorted, deduplicated list of model IDs.
+        /// Sends a GET request to the selected mode's model-list endpoint, authenticates with the
+        /// given API key when present, and returns a sorted, deduplicated list of model IDs.
         /// </summary>
-        public static async Task<List<string>> FetchModels(string endpoint, string apiKey, int timeoutSeconds)
+        public static async Task<List<string>> FetchModels(string endpoint, string apiKey, ApiCompatibilityMode mode, int timeoutSeconds)
         {
             using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
-            using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, EndpointUtility.BuildModelsUrl(endpoint)))
+            using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, EndpointUtility.BuildModelsUrl(endpoint, mode)))
             {
                 if (!string.IsNullOrWhiteSpace(apiKey))
                 {
@@ -43,7 +43,9 @@ namespace PawnDiary
                         throw new InvalidOperationException($"HTTP {(int)response.StatusCode}: {TrimForStatus(json)}");
                     }
 
-                    return ParseModelIds(json);
+                    return mode == ApiCompatibilityMode.OllamaNativeChat
+                        ? ParseOllamaModelNames(json)
+                        : ParseOpenAIModelIds(json);
                 }
             }
         }
@@ -52,7 +54,7 @@ namespace PawnDiary
         /// Extracts the "id" strings from the "data" array of an OpenAI-style /models JSON response,
         /// returning distinct, sorted model IDs.
         /// </summary>
-        private static List<string> ParseModelIds(string json)
+        private static List<string> ParseOpenAIModelIds(string json)
         {
             List<string> models = new List<string>();
             Dictionary<string, object> root = MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
@@ -79,6 +81,52 @@ namespace PawnDiary
                 if (!string.IsNullOrWhiteSpace(id))
                 {
                     models.Add(id);
+                }
+            }
+
+            return models.Distinct().OrderBy(model => model).ToList();
+        }
+
+        /// <summary>
+        /// Extracts model names from Ollama's native /api/tags shape: { models: [{ name: ... }] }.
+        /// </summary>
+        private static List<string> ParseOllamaModelNames(string json)
+        {
+            List<string> models = new List<string>();
+            Dictionary<string, object> root = MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
+            if (root == null || !root.TryGetValue("models", out object modelsObject))
+            {
+                return models;
+            }
+
+            object[] data = modelsObject as object[];
+            if (data == null)
+            {
+                return models;
+            }
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                Dictionary<string, object> model = data[i] as Dictionary<string, object>;
+                if (model == null)
+                {
+                    continue;
+                }
+
+                string name = null;
+                if (model.TryGetValue("name", out object nameObject))
+                {
+                    name = nameObject as string;
+                }
+
+                if (string.IsNullOrWhiteSpace(name) && model.TryGetValue("model", out object modelObject))
+                {
+                    name = modelObject as string;
+                }
+
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    models.Add(name);
                 }
             }
 

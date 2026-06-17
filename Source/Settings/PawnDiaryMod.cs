@@ -279,7 +279,7 @@ namespace PawnDiary
         private void DrawCompactApiEndpointRow(Listing_Standard listing, int index, ApiEndpointConfig endpoint, ref int removeIndex)
         {
             bool showStatus = fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus);
-            Rect blockRect = listing.GetRect(showStatus ? 174f : 148f);
+            Rect blockRect = listing.GetRect(ApiEndpointRowHeight(endpoint, showStatus));
             Widgets.DrawMenuSection(blockRect);
 
             Rect innerRect = blockRect.ContractedBy(8f);
@@ -302,6 +302,10 @@ namespace PawnDiary
             }
 
             float y = headerRect.yMax + gap;
+            Rect modeRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+            DrawCompatibilityModeRow(modeRect, endpoint, 94f);
+
+            y += lineHeight + gap;
             Rect endpointRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
             endpoint.url = DrawCompactTextField(endpointRect, "PawnDiary.Settings.Endpoint".Translate(), endpoint.url, 94f);
 
@@ -319,6 +323,13 @@ namespace PawnDiary
             Rect keyRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
             endpoint.apiKey = DrawCompactTextField(keyRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 94f);
 
+            if (HasApiAdvancedRow(endpoint))
+            {
+                y += lineHeight + gap;
+                Rect advancedRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+                DrawApiAdvancedRow(advancedRect, endpoint, 94f);
+            }
+
             // Show the fetch status under the row that triggered the fetch, inside the framed lane
             // so it cannot push later controls sideways or overlap adjacent rows.
             if (showStatus)
@@ -329,6 +340,145 @@ namespace PawnDiary
             }
 
             listing.Gap(6f);
+        }
+
+        /// <summary>
+        /// Returns the fixed height needed by one framed API row. Kept as a helper so drawing and
+        /// scroll-height estimation agree when reasoning/thinking controls appear.
+        /// </summary>
+        private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, bool showStatus)
+        {
+            float height = HasApiAdvancedRow(endpoint) ? 214f : 181f;
+            return showStatus ? height + 26f : height;
+        }
+
+        private static bool HasApiAdvancedRow(ApiEndpointConfig endpoint)
+        {
+            return endpoint != null
+                && (endpoint.apiMode == ApiCompatibilityMode.OpenAIResponses
+                    || endpoint.apiMode == ApiCompatibilityMode.OllamaNativeChat);
+        }
+
+        /// <summary>
+        /// Draws the compatibility-mode selector for one API lane.
+        /// </summary>
+        private static void DrawCompatibilityModeRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ApiCompatibility".Translate());
+            if (Widgets.ButtonText(buttonRect, ApiCompatibilityLabel(endpoint.apiMode).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>
+                {
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIChatCompletions),
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIResponses),
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OllamaNativeChat)
+                };
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private static FloatMenuOption ApiCompatibilityOption(ApiEndpointConfig endpoint, ApiCompatibilityMode mode)
+        {
+            return new FloatMenuOption(ApiCompatibilityLabel(mode).Translate(), delegate
+            {
+                ApiCompatibilityMode oldMode = endpoint.apiMode;
+                endpoint.apiMode = mode;
+                endpoint.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
+
+                // A fresh default row should become useful immediately when the user picks Ollama.
+                if (oldMode != ApiCompatibilityMode.OllamaNativeChat
+                    && mode == ApiCompatibilityMode.OllamaNativeChat
+                    && string.Equals(endpoint.url, PawnDiarySettings.DefaultEndpointUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    endpoint.url = PawnDiarySettings.DefaultOllamaEndpointUrl;
+                }
+                else if (oldMode == ApiCompatibilityMode.OllamaNativeChat
+                    && mode != ApiCompatibilityMode.OllamaNativeChat
+                    && string.Equals(endpoint.url, PawnDiarySettings.DefaultOllamaEndpointUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    endpoint.url = PawnDiarySettings.DefaultEndpointUrl;
+                }
+            });
+        }
+
+        private static string ApiCompatibilityLabel(ApiCompatibilityMode mode)
+        {
+            switch (mode)
+            {
+                case ApiCompatibilityMode.OpenAIResponses:
+                    return "PawnDiary.Settings.ApiCompatibility.Responses";
+                case ApiCompatibilityMode.OllamaNativeChat:
+                    return "PawnDiary.Settings.ApiCompatibility.Ollama";
+                default:
+                    return "PawnDiary.Settings.ApiCompatibility.Chat";
+            }
+        }
+
+        /// <summary>
+        /// Draws the small mode-specific option row: reasoning effort for OpenAI Responses, or
+        /// native thinking output for Ollama.
+        /// </summary>
+        private static void DrawApiAdvancedRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+
+            if (endpoint.apiMode == ApiCompatibilityMode.OllamaNativeChat)
+            {
+                Widgets.LabelFit(labelRect, "PawnDiary.Settings.OllamaThinking".Translate());
+                string labelKey = endpoint.ollamaThink ? "PawnDiary.Settings.ToggleOn" : "PawnDiary.Settings.ToggleOff";
+                if (Widgets.ButtonText(buttonRect, labelKey.Translate()))
+                {
+                    endpoint.ollamaThink = !endpoint.ollamaThink;
+                }
+
+                return;
+            }
+
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ReasoningEffort".Translate());
+            if (Widgets.ButtonText(buttonRect, ReasoningEffortLabel(endpoint.reasoningEffort).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>();
+                AddReasoningOption(options, endpoint, PawnDiarySettings.DefaultReasoningEffort);
+                AddReasoningOption(options, endpoint, "none");
+                AddReasoningOption(options, endpoint, "minimal");
+                AddReasoningOption(options, endpoint, "low");
+                AddReasoningOption(options, endpoint, "medium");
+                AddReasoningOption(options, endpoint, "high");
+                AddReasoningOption(options, endpoint, "xhigh");
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private static void AddReasoningOption(List<FloatMenuOption> options, ApiEndpointConfig endpoint, string effort)
+        {
+            options.Add(new FloatMenuOption(ReasoningEffortLabel(effort).Translate(), delegate
+            {
+                endpoint.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(effort);
+            }));
+        }
+
+        private static string ReasoningEffortLabel(string effort)
+        {
+            switch (PawnDiarySettings.NormalizeReasoningEffort(effort))
+            {
+                case "none":
+                    return "PawnDiary.Settings.ReasoningEffort.None";
+                case "minimal":
+                    return "PawnDiary.Settings.ReasoningEffort.Minimal";
+                case "low":
+                    return "PawnDiary.Settings.ReasoningEffort.Low";
+                case "medium":
+                    return "PawnDiary.Settings.ReasoningEffort.Medium";
+                case "high":
+                    return "PawnDiary.Settings.ReasoningEffort.High";
+                case "xhigh":
+                    return "PawnDiary.Settings.ReasoningEffort.XHigh";
+                default:
+                    return "PawnDiary.Settings.ReasoningEffort.Default";
+            }
         }
 
         /// <summary>
@@ -1251,7 +1401,10 @@ namespace PawnDiary
             if (Settings.showApiSettings)
             {
                 height += 38f; // hint text plus its small gap
-                height += Settings.apiEndpoints.Count * 180f;
+                foreach (ApiEndpointConfig endpoint in Settings.apiEndpoints)
+                {
+                    height += ApiEndpointRowHeight(endpoint, false) + 6f;
+                }
                 height += 38f; // Add API / Reset row
             }
             else
@@ -1424,11 +1577,12 @@ namespace PawnDiary
             ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
             string url = endpoint.url;
             string apiKey = endpoint.apiKey;
+            ApiCompatibilityMode apiMode = endpoint.apiMode;
             int timeoutSeconds = Settings.timeoutSeconds;
 
             try
             {
-                List<string> models = await ModelListClient.FetchModels(url, apiKey, timeoutSeconds);
+                List<string> models = await ModelListClient.FetchModels(url, apiKey, apiMode, timeoutSeconds);
                 pendingFetchResult = new ModelFetchResult
                 {
                     generation = generation,
@@ -1436,7 +1590,8 @@ namespace PawnDiary
                     success = true,
                     models = models,
                     endpointUrl = url,
-                    apiKey = apiKey
+                    apiKey = apiKey,
+                    apiMode = apiMode
                 };
             }
             catch (Exception ex)
@@ -1448,7 +1603,8 @@ namespace PawnDiary
                     success = false,
                     errorDetail = ex.Message,
                     endpointUrl = url,
-                    apiKey = apiKey
+                    apiKey = apiKey,
+                    apiMode = apiMode
                 };
             }
         }
@@ -1543,7 +1699,8 @@ namespace PawnDiary
             ApiEndpointConfig endpoint = Settings.apiEndpoints[result.targetIndex];
             return endpoint != null
                 && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
-                && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal);
+                && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
+                && endpoint.apiMode == result.apiMode;
         }
 
         // Result of one model fetch, handed from the await continuation to the main-thread draw.
@@ -1557,6 +1714,7 @@ namespace PawnDiary
             public string errorDetail;    // raw, untranslated exception message
             public string endpointUrl;     // row URL snapshot used to reject stale row edits
             public string apiKey;          // row key snapshot; never logged or shown
+            public ApiCompatibilityMode apiMode; // row mode snapshot; changing modes changes model-list shape
         }
     }
 

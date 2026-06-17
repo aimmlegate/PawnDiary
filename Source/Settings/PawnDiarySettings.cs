@@ -13,15 +13,27 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// One configured API "lane": a single OpenAI-compatible endpoint, its optional key, and the
-    /// one model it serves. Many of these can be listed (see <see cref="PawnDiarySettings.apiEndpoints"/>)
+    /// Which request/response shape an API lane speaks. Most providers that advertise
+    /// "OpenAI-compatible" should use <see cref="OpenAIChatCompletions"/>; the other modes cover
+    /// newer OpenAI reasoning models and Ollama's native thinking-model endpoint.
+    /// </summary>
+    public enum ApiCompatibilityMode
+    {
+        OpenAIChatCompletions,
+        OpenAIResponses,
+        OllamaNativeChat
+    }
+
+    /// <summary>
+    /// One configured API "lane": a single compatible endpoint, its optional key, and the one
+    /// model it serves. Many of these can be listed (see <see cref="PawnDiarySettings.apiEndpoints"/>)
     /// so diary generation is spread across them in parallel. We keep it to one model per row on
     /// purpose — to use several models you just add several rows (possibly sharing an endpoint).
     /// Implements <see cref="IExposable"/> so RimWorld can save/load it — see AGENTS.md ("IExposable").
     /// </summary>
     public class ApiEndpointConfig : IExposable
     {
-        // Base URL of the OpenAI-compatible chat completions endpoint (e.g. http://localhost:1234/v1).
+        // Base URL of the API. EndpointUtility adds the mode-specific path at send time.
         public string url = PawnDiarySettings.DefaultEndpointUrl;
         // Model name sent in the request payload. Required — a row with no model is ignored.
         public string model = string.Empty;
@@ -29,6 +41,12 @@ namespace PawnDiary
         public string apiKey = string.Empty;
         // When false, keep this row configured but exclude it from generation and failover.
         public bool enabled = true;
+        // Request/response compatibility mode. Default preserves existing OpenAI-compatible setups.
+        public ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
+        // OpenAI Responses reasoning effort. "default" means omit the reasoning object entirely.
+        public string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
+        // Ollama native chat: opt into the model's separate thinking stream when supported.
+        public bool ollamaThink;
 
         public ApiEndpointConfig()
         {
@@ -41,6 +59,21 @@ namespace PawnDiary
             this.model = model;
         }
 
+        /// <summary>
+        /// Returns a detached copy for in-flight requests so failover can mutate the active lane
+        /// without editing the player's saved settings row.
+        /// </summary>
+        public ApiEndpointConfig Copy()
+        {
+            return new ApiEndpointConfig(url, apiKey, model)
+            {
+                enabled = enabled,
+                apiMode = apiMode,
+                reasoningEffort = reasoningEffort,
+                ollamaThink = ollamaThink
+            };
+        }
+
         // Reads/writes the row fields on save and load (Scribe is RimWorld's serializer).
         public void ExposeData()
         {
@@ -48,6 +81,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref model, "model", string.Empty);
             Scribe_Values.Look(ref apiKey, "apiKey", string.Empty);
             Scribe_Values.Look(ref enabled, "enabled", true);
+            Scribe_Values.Look(ref apiMode, "apiMode", ApiCompatibilityMode.OpenAIChatCompletions);
+            Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
+            Scribe_Values.Look(ref ollamaThink, "ollamaThink", false);
         }
     }
 
@@ -195,10 +231,25 @@ namespace PawnDiary
         private List<string> groupInstructionKeys;
         private List<string> groupInstructionValues;
 
-        // Default local LLM server endpoint (LM Studio / Ollama typical port).
+        // Default local LLM server endpoint (LM Studio/OpenAI-compatible local servers).
         public const string DefaultEndpointUrl = "http://localhost:1234/v1";
+        // Default native Ollama endpoint used when a user switches a fresh row to Ollama mode.
+        public const string DefaultOllamaEndpointUrl = "http://localhost:11434";
         // Placeholder model name; real value depends on the local server's loaded model.
         public const string DefaultModelName = "local-model";
+        // Sentinel value stored in settings to mean "do not send a reasoning override".
+        public const string DefaultReasoningEffort = "default";
+
+        private static readonly HashSet<string> ValidReasoningEfforts = new HashSet<string>
+        {
+            DefaultReasoningEffort,
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+        };
 
         // Known old defaults used only for save migration. Settings store prompt text in the save
         // file, so players who never customized prompts would otherwise keep the weaker defaults
@@ -448,7 +499,7 @@ namespace PawnDiary
                 apiEndpoints.Add(new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName));
             }
 
-            // Normalize each row's URL before it is used for /models or /chat/completions.
+            // Normalize each row's URL before it is used for model discovery or generation.
             foreach (ApiEndpointConfig endpoint in apiEndpoints)
             {
                 if (endpoint == null)
@@ -466,6 +517,8 @@ namespace PawnDiary
                 {
                     endpoint.model = string.Empty;
                 }
+
+                endpoint.reasoningEffort = NormalizeReasoningEffort(endpoint.reasoningEffort);
             }
         }
 
@@ -490,6 +543,16 @@ namespace PawnDiary
             }
 
             return active;
+        }
+
+        /// <summary>
+        /// Keeps the saved reasoning value to the small set understood by OpenAI Responses.
+        /// Unknown values fall back to "default", which sends no reasoning object at all.
+        /// </summary>
+        public static string NormalizeReasoningEffort(string effort)
+        {
+            string normalized = (effort ?? DefaultReasoningEffort).Trim().ToLowerInvariant();
+            return ValidReasoningEfforts.Contains(normalized) ? normalized : DefaultReasoningEffort;
         }
 
         // ---- Interaction group helpers ----
