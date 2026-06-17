@@ -1201,7 +1201,9 @@ namespace PawnDiary
                             ? GroupDomain.Inspiration
                             : IsWorkEvent(context)
                                 ? GroupDomain.Work
-                                : IsMentalStateEvent(context) ? GroupDomain.MentalState : GroupDomain.Interaction;
+                                : IsHediffEvent(context)
+                                    ? GroupDomain.Hediff
+                                    : IsMentalStateEvent(context) ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, defName);
         }
 
@@ -1324,6 +1326,20 @@ namespace PawnDiary
         private static bool IsWorkEvent(string context)
         {
             return HasContextMarker(context, "work=");
+        }
+
+        /// <summary>
+        /// Hediff events store their HediffDef defName in interactionDefName; their context starts
+        /// with a stable hediff field, which lets UI classification pick the Hediff domain.
+        /// </summary>
+        private bool IsHediffEvent()
+        {
+            return IsHediffEvent(gameContext);
+        }
+
+        private static bool IsHediffEvent(string context)
+        {
+            return HasContextMarker(context, "hediff=");
         }
 
         private static bool HasContextMarker(string context, string marker)

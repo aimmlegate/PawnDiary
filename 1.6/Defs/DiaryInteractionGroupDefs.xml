@@ -11,7 +11,8 @@
     order          - lower numbers are classified first ("first match wins"); catch-all highest
     domain         - Interaction (matches InteractionDefs), MentalState (matches MentalStateDefs),
                      Tale (matches TaleDefs from RimWorld's notable-history system), MoodEvent,
-                     Thought, Inspiration, or Work (matches synthetic work diary defNames)
+                     Thought, Inspiration, Work (matches synthetic work diary defNames), or Hediff
+                     (matches HediffDefs from health conditions)
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
@@ -22,6 +23,11 @@
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
                      fallbackKey, instructionKey, includeInteractionLabel, minEventsToWrite,
                      maxSampleLines
+    hediff         - optional Hediff-domain policy:
+                     enabled, mode (DayReflection or Immediate), visibleOnly, badOnly,
+                     excludeInjuries, minSeverity, chronicAlways, sickThoughtAlways,
+                     addictionAlways, missingPartAlways, recordOnAdd,
+                     recordOnSeverityIncrease, severityStep, dedupTicks, dayReflectionWeight
     instruction    - the diary-prompt instruction shared by every event in the group
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
@@ -979,6 +985,39 @@
     <matchDefNames>
       <li>PawnDiary_WorkRoutine</li>
     </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Hediff domain: generic health-condition signals ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffMajorHealth</defName>
+    <label>Major health changes</label>
+    <order>700</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a new or worsening health condition that stayed with the pawn through the day</instruction>
+    <tone>with bodily unease and vulnerability</tone>
+    <!-- Built-in fallback preserving the old major-affliction behavior: bad non-injury hediffs only,
+         with chronic/sick/addiction/missing-part conditions accepted even below the severity gate.
+         Mod support XML should add lower-order Hediff groups for specific modded conditions. -->
+    <hediff>
+      <mode>DayReflection</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>true</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0.3</minSeverity>
+      <chronicAlways>true</chronicAlways>
+      <sickThoughtAlways>true</sickThoughtAlways>
+      <addictionAlways>true</addictionAlways>
+      <missingPartAlways>true</missingPartAlways>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>true</recordOnSeverityIncrease>
+      <severityStep>0.25</severityStep>
+      <dedupTicks>60000</dedupTicks>
+      <dayReflectionWeight>0.8</dayReflectionWeight>
+    </hediff>
+    <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
 </Defs>

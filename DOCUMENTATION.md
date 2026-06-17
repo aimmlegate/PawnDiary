@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (POV-only quoted speech)_
+_Last updated: 2026-06-17 (XML hediff mod support)_
 
 ---
 
@@ -22,7 +22,8 @@ the initiator page supplied as hidden continuity context.
 
 Active recorded sources include social interactions, social fights, mental breaks, vanilla tales,
 arrivals, deaths, quality crafts, relic installs, mood-affecting game conditions, temporary and
-scanned staged thoughts, sampled work moments, and end-of-day reflections.
+scanned staged thoughts, XML-driven hediff health signals, sampled work moments, and end-of-day
+reflections.
 
 Arrivals and deaths are neutral chronicle entries, not persona-based first-person pages. Arrival
 pages are forced to be a pawn's first visible/generated entry. Death pages are terminal; later
@@ -69,8 +70,8 @@ Key files:
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
 | `PromptEnchantments.cs` | Weighted hediff matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
-| `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, Inspiration, and Work domains. |
-| `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, and safe code defaults. |
+| `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, Inspiration, Work, and Hediff domains. |
+| `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, hediff progression scans, and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
 | `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
@@ -159,7 +160,7 @@ A `Pawn.Kill` postfix fallback writes the same kind of final entry when vanilla 
 covering natural condition deaths such as malnutrition/starvation without duplicating Tale-backed
 combat deaths.
 
-### Mood Events, Thoughts, Inspirations, Work, And Day Reflections
+### Mood Events, Thoughts, Inspirations, Health, Work, And Day Reflections
 
 Mood events are mood-affecting game conditions recorded once per eligible colonist on affected maps.
 Thoughts are temporary memories filtered by XML tuning: ignored tokens, bypass tokens, eating
@@ -177,6 +178,14 @@ new inspiration. The target pawn receives a solo entry with an `inspiration=` co
 classified as a social ritual interaction in this mod; the resulting target inspiration is the diary
 event.
 
+Health-condition signals are driven by the Hediff domain in
+`1.6/Defs/DiaryInteractionGroupDefs.xml`. `Pawn_HealthTracker.AddHediff` catches new hediffs, and a
+lightweight scanner watches active matched hediffs for XML-configured severity-step increases. The
+default `hediffMajorHealth` catch-all preserves the old behavior: bad non-injury hediffs can become
+day-reflection candidates when they are chronic, sickness-causing, addiction/missing-part hediffs,
+or pass the XML severity gate. Mod support XML can add lower-order Hediff groups for specific
+modded hediff defNames and choose `DayReflection` or `Immediate` output without C# patches.
+
 Work recording samples current Work-tab jobs periodically. It reads `CurJob.workGiverDef.workType`,
 skips social and violent work, applies XML odds/cooldowns plus the `workGenerationWeight` multiplier,
 then classifies the moment as passionate, straining, routine, or dark-study work.
@@ -188,7 +197,7 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 
 ## 5. Groups, Batching, And Tuning
 
-`1.6/Defs/DiaryInteractionGroupDefs.xml` defines eight classifier domains:
+`1.6/Defs/DiaryInteractionGroupDefs.xml` defines nine classifier domains:
 
 | Domain | Classifier | Typical groups |
 |---|---|---|
@@ -199,10 +208,17 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 | Thought | `ClassifyThought(ThoughtDef)` | positive, negative, passing thoughts |
 | Inspiration | `ClassifyInspiration(InspirationDef)` | pawn inspirations |
 | Work | `ClassifyWork(string)` | dark study, passionate, straining, routine |
+| Hediff | `ClassifyHediff(HediffDef)` | major health changes, modded health signals |
 
 Matching is domain-scoped by exact `defName` or substring token. XML order matters; catch-all groups
 go last. Settings store per-group enabled flags and instruction overrides keyed by group `defName`;
 missing settings use XML defaults.
+
+Social-interaction compatibility should stay XML-only when the other mod extends RimWorld's normal
+social system. If the mod emits `InteractionDef` rows through the play log, add a new
+Interaction-domain group or patch `matchDefNames`/`matchTokens`, `batch`, `promotion`,
+`instruction`, `tone`, and `defaultEnabled`. A C# adapter is only needed when a mod bypasses
+RimWorld's `PlayLogEntry_Interaction`, thoughts, tales, mental states, or hediff trackers entirely.
 
 Groups may also set a `colorCue`, which is saved on new `DiaryEvent`s and drives only the Diary
 tab's accent strip/chip. The UI maps cues to RimWorld-like colors: combat uses hostile red, social
@@ -220,9 +236,39 @@ Batch policies live on groups:
 - Promotion policies let batched interactions escape into immediate pairwise events based on opinion
   intensity, opinion asymmetry, low needs, or extreme mood, then apply `socialGenerationWeight`.
 
+Hediff policies live on Hediff-domain groups. The optional `<hediff>` block controls output mode
+(`DayReflection` or `Immediate`), visible/bad/injury gates, severity thresholds, special always
+qualifiers (`chronicAlways`, `sickThoughtAlways`, `addictionAlways`, `missingPartAlways`),
+`recordOnAdd`, `recordOnSeverityIncrease`, `severityStep`, `dedupTicks`, and
+`dayReflectionWeight`. This is the generic mod-support layer: a compatibility patch can add:
+
+```xml
+<PawnDiary.DiaryInteractionGroupDef>
+  <defName>myModMutationHediffs</defName>
+  <label>My Mod mutations</label>
+  <order>690</order>
+  <domain>Hediff</domain>
+  <defaultEnabled>true</defaultEnabled>
+  <instruction>a body changing in a way the pawn cannot ignore</instruction>
+  <hediff>
+    <mode>Immediate</mode>
+    <visibleOnly>true</visibleOnly>
+    <badOnly>false</badOnly>
+    <minSeverity>0.2</minSeverity>
+    <recordOnAdd>true</recordOnAdd>
+    <recordOnSeverityIncrease>true</recordOnSeverityIncrease>
+    <severityStep>0.25</severityStep>
+  </hediff>
+  <matchDefNames>
+    <li>MyMod_Mutation</li>
+  </matchDefNames>
+</PawnDiary.DiaryInteractionGroupDef>
+```
+
 `1.6/Defs/DiaryTuningDef.xml` holds dedup windows, scanner intervals, mood/health/beauty buckets,
-thought thresholds, staged thought rules, work odds/cooldowns, day-reflection weights, and
-nearby-context tuning. Code defaults keep the mod usable if XML fails to load.
+thought thresholds, staged thought rules, the hediff progression scan interval, work odds/cooldowns,
+day-reflection weights, and nearby-context tuning. Code defaults keep the mod usable if XML fails
+to load.
 
 ---
 
@@ -439,7 +485,7 @@ semantic `colorCue`, per-POV titles, and per-POV staggered text intensity. Full 
 not persisted; dev diagnostics can show prompts built during the current session.
 Tale/mental/source classification is inferred from
 stable `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`, `thought=`,
-`inspiration=`, and `work=`.
+`inspiration=`, `work=`, and `hediff=`.
 
 Pending requests are not persisted. On load, pending main statuses reset to not-generated, and stale
 pending title statuses without stored titles are cleared.

@@ -171,6 +171,12 @@ namespace PawnDiary
             }
         };
 
+        // ---- Hediff progression scanner ----
+        // AddHediff catches new health conditions. This scanner watches active matched hediffs for
+        // XML-configured severity-step increases, so modded conditions can worsen into diary signals
+        // without a per-mod Harmony patch.
+        public int hediffProgressionScanIntervalTicks = 2500;
+
         // ---- Work recording ----
         // Periodic scanner interval for colonists' current work jobs. Work has no clean one-shot
         // RimWorld event for "this was a diary-worthy work moment", so the scanner samples rarely

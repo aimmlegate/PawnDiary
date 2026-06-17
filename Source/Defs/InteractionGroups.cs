@@ -16,7 +16,8 @@ namespace PawnDiary
     // Tale groups match TaleDefs (RimWorld's notable-history events); MoodEvent groups match
     // GameConditionDefs that affect colonist mood (aurora, eclipse, psychic drone, etc.);
     // Inspiration groups match InspirationDefs when a pawn gains an inspiration;
-    // Work groups classify the synthetic work diary events emitted by the periodic work scanner.
+    // Work groups classify the synthetic work diary events emitted by the periodic work scanner;
+    // Hediff groups match HediffDefs when a health condition appears or worsens.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -26,7 +27,8 @@ namespace PawnDiary
         MoodEvent,
         Thought,
         Inspiration,
-        Work
+        Work,
+        Hediff
     }
 
     // How an Interaction-domain batch is keyed. Pair means "all matching interactions for this
@@ -113,6 +115,52 @@ namespace PawnDiary
         public float moodLowThreshold = 0.25f;
     }
 
+    // How a Hediff-domain group writes a diary signal. DayReflection folds health changes into the
+    // existing end-of-day reflection. Immediate writes a solo diary event as soon as the hediff
+    // appears or crosses a configured severity step.
+    public enum HediffDiaryMode
+    {
+        DayReflection,
+        Immediate
+    }
+
+    // Optional hediff policy embedded in a DiaryInteractionGroupDef. It is intentionally generic:
+    // XML chooses which HediffDef defNames belong to the group and this policy decides whether a
+    // matching live Hediff is important enough to record. Compatibility packs for other mods should
+    // add or patch Hediff-domain groups instead of requiring C# patches.
+    public class HediffSignalPolicy
+    {
+        // Set false in XML to document a policy without enabling it.
+        public bool enabled = true;
+        // DayReflection = save as one candidate in the pawn's end-of-day reflection.
+        // Immediate = write a solo diary page right away.
+        public HediffDiaryMode mode = HediffDiaryMode.DayReflection;
+        // Require hediff.Visible before recording. The default is true for compatibility packs; the
+        // built-in fallback group overrides this to preserve the old major-affliction behavior.
+        public bool visibleOnly = true;
+        // Require HediffDef.isBad. Specific positive/neutral modded hediff groups can set false.
+        public bool badOnly = false;
+        // Plain injuries usually already have Tale/combat coverage, so groups can ignore them.
+        public bool excludeInjuries = true;
+        // Base severity gate. Special "always" flags below can still qualify lower-severity hediffs.
+        public float minSeverity = 0f;
+        public bool chronicAlways = false;
+        public bool sickThoughtAlways = false;
+        public bool addictionAlways = false;
+        public bool missingPartAlways = false;
+        // Event triggers. recordOnAdd is driven by Pawn_HealthTracker.AddHediff; severity increases
+        // are found by the periodic scanner.
+        public bool recordOnAdd = true;
+        public bool recordOnSeverityIncrease = false;
+        // Severity step size for progression recording. A step of 0 disables progression recording
+        // even if recordOnSeverityIncrease is true.
+        public float severityStep = 0.25f;
+        // Dedup window for the same pawn/hediff/source/stage.
+        public int dedupTicks = 60000;
+        // Relative weight when this hediff becomes an end-of-day reflection candidate.
+        public float dayReflectionWeight = 0.8f;
+    }
+
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in
     // settings: an enable toggle (is it recorded?) plus a single diary-prompt instruction
     // shared by every event in it. To add or retune a group, edit
@@ -143,6 +191,10 @@ namespace PawnDiary
         // can win a weighted-random roll to skip batching and become its own immediate pairwise
         // event (see InteractionPromotionPolicy). Only consulted for groups that also batch.
         public InteractionPromotionPolicy promotion;
+
+        // Optional Hediff-domain policy. When present on a Hediff group, matching live hediffs can
+        // become day-reflection signals or immediate solo diary entries without any per-mod C# hook.
+        public HediffSignalPolicy hediff;
 
         // The diary-prompt instruction shared by every event in the group.
         public string instruction;
@@ -240,6 +292,15 @@ namespace PawnDiary
                 return HasBatchPolicy && promotion != null && promotion.enabled;
             }
         }
+
+        // True when this group can record HediffDef matches through the generic health-signal layer.
+        public bool HasHediffPolicy
+        {
+            get
+            {
+                return domain == GroupDomain.Hediff && hediff != null && hediff.enabled;
+            }
+        }
     }
 
     // Static lookup + classification over the loaded DiaryInteractionGroupDefs. (A static class
@@ -307,6 +368,12 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyWork(string workEventDefName)
         {
             return ClassifyIn(GroupDomain.Work, workEventDefName);
+        }
+
+        // First Hediff-domain group that matches a health condition, else the Hediff catch-all.
+        public static DiaryInteractionGroupDef ClassifyHediff(HediffDef hediffDef)
+        {
+            return ClassifyIn(GroupDomain.Hediff, hediffDef?.defName);
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.

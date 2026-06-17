@@ -2,8 +2,9 @@
 // vanilla methods: Postfix hooks record PlayLog.Add social interactions,
 // MentalStateHandler.TryStartMentalState social fights / mental breaks, TaleRecorder
 // notable-history events, InspirationHandler.TryStartInspiration pawn inspirations,
-// Pawn.Kill death details, Pawn.SetFaction colony arrivals, and GameConditionManager.RegisterCondition
-// mood-affecting game conditions after RimWorld handles them. A Prefix hook redirects Social-tab
+// Pawn.Kill death details, Pawn.SetFaction colony arrivals, Pawn_HealthTracker.AddHediff
+// health signals, and GameConditionManager.RegisterCondition mood-affecting game conditions.
+// A Prefix hook redirects Social-tab
 // play-log clicks into the matching Diary entry when one exists. AccessTools.Field reads private
 // vanilla fields via reflection.
 // New to this? See AGENTS.md ("Harmony patches").

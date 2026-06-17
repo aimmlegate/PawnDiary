@@ -40,43 +40,6 @@ namespace PawnDiary
         private readonly HashSet<string> writtenDayReflections = new HashSet<string>();
 
         /// <summary>
-        /// Records a colonist's newly-added hediff for possible inclusion in their day reflection,
-        /// but only if it is "major" enough to be worth remembering. Called from the AddHediff hook.
-        /// </summary>
-        public void RecordHediffAppeared(Pawn pawn, Hediff hediff)
-        {
-            if (!DiaryTuning.Current.daySummaryEnabled || pawn == null || hediff == null)
-            {
-                return;
-            }
-
-            if (!IsDiaryEligible(pawn) || !IsMajorHediff(hediff))
-            {
-                return;
-            }
-
-            string key = DaySummaryKey(pawn.GetUniqueLoadID(), CurrentDayIndex);
-            List<DayHediffRecord> list;
-            if (!pendingDayHediffs.TryGetValue(key, out list))
-            {
-                list = new List<DayHediffRecord>();
-                pendingDayHediffs[key] = list;
-            }
-
-            // Collapse repeats of the same affliction def within the day (e.g. several flu ticks).
-            string defName = hediff.def != null ? hediff.def.defName : hediff.Label;
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (string.Equals(list[i].defName, defName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return;
-                }
-            }
-
-            list.Add(new DayHediffRecord { defName = defName, label = hediff.LabelCap });
-        }
-
-        /// <summary>
         /// Sleep-path entry point: writes this pawn's reflection for the current day (once), weaving
         /// together a weighted-random selection of the day's most notable signals. Quiet days with
         /// nothing worth noting produce no entry. Used in place of the per-source ambient note flush
@@ -253,10 +216,13 @@ namespace PawnDiary
                 return;
             }
 
-            float weight = DiaryTuning.Current.daySummaryWeightHediff;
             for (int i = 0; i < list.Count; i++)
             {
-                string line = "PawnDiary.Event.DayReflectionHediff".Translate(list[i].label).Resolve();
+                string key = list[i].progressed
+                    ? "PawnDiary.Event.DayReflectionHediffProgressed"
+                    : "PawnDiary.Event.DayReflectionHediff";
+                string line = key.Translate(list[i].label).Resolve();
+                float weight = list[i].weight > 0f ? list[i].weight : DiaryTuning.Current.daySummaryWeightHediff;
                 candidates.Add(new DaySummarySignal(weight, line, "hediff:" + list[i].defName));
             }
         }
@@ -351,32 +317,6 @@ namespace PawnDiary
             }
 
             return string.IsNullOrWhiteSpace(label) ? body : label + " — " + body;
-        }
-
-        /// <summary>
-        /// True when a freshly-added hediff is a "major" affliction worth remembering: a disease,
-        /// addiction, lost body part, chronic condition, or anything bad past the severity threshold.
-        /// Plain injuries are excluded — combat/injury tales already surface those as their own entries.
-        /// </summary>
-        private static bool IsMajorHediff(Hediff hediff)
-        {
-            HediffDef def = hediff.def;
-            if (def == null || !def.isBad)
-            {
-                return false;
-            }
-
-            if (hediff is Hediff_Injury)
-            {
-                return false;
-            }
-
-            if (def.chronic || def.makesSickThought || hediff is Hediff_Addiction || hediff is Hediff_MissingPart)
-            {
-                return true;
-            }
-
-            return hediff.Severity >= DiaryTuning.Current.daySummaryHediffMinSeverity;
         }
 
         /// <summary>
@@ -550,6 +490,8 @@ namespace PawnDiary
         {
             public string defName;
             public string label;
+            public float weight;
+            public bool progressed;
         }
 
         /// <summary>One candidate moment competing for a place in the day reflection.</summary>

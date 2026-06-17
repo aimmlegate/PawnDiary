@@ -151,6 +151,10 @@
       </li>
     </thoughtProgressionRules>
 
+    <!-- Hediff progression scan. New hediffs are caught by AddHediff; this slow scan only watches
+         matched active hediffs for XML-configured severity-step increases. -->
+    <hediffProgressionScanIntervalTicks>2500</hediffProgressionScanIntervalTicks>
+
     <!-- Work diary sampling. Work has no one-shot event hook, so the mod periodically samples
          current colonist jobs, then applies chance and cooldown gates. -->
     <workScanIntervalTicks>2500</workScanIntervalTicks>

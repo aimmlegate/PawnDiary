@@ -544,6 +544,36 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Same as IsInteractionEnabled but for HediffDefs recorded by the generic health-signal
+        /// layer. Mod compatibility XML can add Hediff-domain groups; saved settings still use the
+        /// shared per-group dictionary.
+        /// </summary>
+        public bool IsHediffEnabled(HediffDef hediffDef)
+        {
+            if (hediffDef == null)
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyHediff(hediffDef);
+            return group != null && group.HasHediffPolicy && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a hediff diary entry, falling back to the
+        /// group's XML default if no player override is set.
+        /// </summary>
+        public string InstructionForHediff(HediffDef hediffDef)
+        {
+            if (hediffDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(InteractionGroups.ClassifyHediff(hediffDef));
+        }
+
+        /// <summary>
         /// Checks whether an interaction group is enabled, falling back to the group's
         /// defaultEnabled if no player override exists.
         /// </summary>

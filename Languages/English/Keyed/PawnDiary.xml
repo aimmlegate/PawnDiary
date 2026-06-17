@@ -159,6 +159,7 @@
   <PawnDiary.Settings.ThoughtsHeader>Temporary thoughts</PawnDiary.Settings.ThoughtsHeader>
   <PawnDiary.Settings.InspirationsHeader>Inspirations</PawnDiary.Settings.InspirationsHeader>
   <PawnDiary.Settings.WorkHeader>Work moments</PawnDiary.Settings.WorkHeader>
+  <PawnDiary.Settings.HediffsHeader>Health conditions</PawnDiary.Settings.HediffsHeader>
   <PawnDiary.Settings.EditingPromptFor>Editing prompt for: {0}</PawnDiary.Settings.EditingPromptFor>
   <PawnDiary.Settings.ChangeGroup>Change group</PawnDiary.Settings.ChangeGroup>
   <PawnDiary.Settings.EditGroup>Edit</PawnDiary.Settings.EditGroup>
@@ -221,6 +222,9 @@
   <PawnDiary.Event.DayReflectionOpinionWarmed>felt noticeably warmer toward {0}</PawnDiary.Event.DayReflectionOpinionWarmed>
   <PawnDiary.Event.DayReflectionOpinionCooled>grew noticeably colder toward {0}</PawnDiary.Event.DayReflectionOpinionCooled>
   <PawnDiary.Event.DayReflectionHediff>a new affliction took hold: {0}</PawnDiary.Event.DayReflectionHediff>
+  <PawnDiary.Event.DayReflectionHediffProgressed>a health condition worsened: {0}</PawnDiary.Event.DayReflectionHediffProgressed>
+  <PawnDiary.Event.HediffAppeared>{0} developed {1}.</PawnDiary.Event.HediffAppeared>
+  <PawnDiary.Event.HediffProgressed>{0}'s {1} worsened.</PawnDiary.Event.HediffProgressed>
   <PawnDiary.Event.TaleSolo>{0} experienced {1}.</PawnDiary.Event.TaleSolo>
   <PawnDiary.Event.TaleSoloWithOther>{0} experienced {1} involving {2}.</PawnDiary.Event.TaleSoloWithOther>
   <PawnDiary.Event.TalePair>{0} and {1} were involved in {2}.</PawnDiary.Event.TalePair>

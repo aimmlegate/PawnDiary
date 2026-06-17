@@ -946,6 +946,7 @@ namespace PawnDiary
             DrawGroupTogglesForDomain(listing, GroupDomain.Thought, "PawnDiary.Settings.ThoughtsHeader");
             DrawGroupTogglesForDomain(listing, GroupDomain.Inspiration, "PawnDiary.Settings.InspirationsHeader");
             DrawGroupTogglesForDomain(listing, GroupDomain.Work, "PawnDiary.Settings.WorkHeader");
+            DrawGroupTogglesForDomain(listing, GroupDomain.Hediff, "PawnDiary.Settings.HediffsHeader");
 
             listing.GapLine(10f);
 

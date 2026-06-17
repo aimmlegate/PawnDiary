@@ -3,6 +3,15 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (XML hediff mod support)**
+  - Added a generic Hediff event-group domain with XML policies for day-reflection or immediate
+    health-condition diary signals, so modded hediff support can be added with Def patches instead
+    of per-mod C#.
+  - Routed `AddHediff` and a new severity-step scanner through that XML layer while preserving the
+    previous major bad non-injury affliction behavior through the `hediffMajorHealth` catch-all.
+  - Exposed Hediff groups in the Events settings UI and documented XML compatibility examples for
+    extension mods.
+
 - **2026-06-17 (inspiration diary events)**
   - Added solo diary entries for successful pawn inspirations through
     `InspirationHandler.TryStartInspiration`, with a new Inspiration event group and settings

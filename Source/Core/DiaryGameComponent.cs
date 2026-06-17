@@ -21,6 +21,7 @@
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
 //   DiaryGameComponent.Inspirations.cs   — pawn inspirations (TryStartInspiration)
 //   DiaryGameComponent.ThoughtProgression.cs — staged situational need thoughts (hunger, rest, etc.)
+//   DiaryGameComponent.Hediffs.cs        — XML-driven health-condition signals (AddHediff + severity scan)
 //   DiaryGameComponent.Work.cs           — occasional solo notes about current pawn work
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
 //   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
@@ -93,6 +94,8 @@ namespace PawnDiary
         private readonly Dictionary<string, int> recentMoodEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against the same pawn+thought being recorded repeatedly.
         private readonly Dictionary<string, int> recentThoughtEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against repeated hediff appearance/progression signals.
+        private readonly Dictionary<string, int> recentHediffEvents = new Dictionary<string, int>();
         // Transient (not saved): event-role keys ("eventId|role") seen pending-but-not-in-flight on the
         // previous generation scan. An entry must look orphaned on two consecutive scans before the
         // orphan recovery re-queues it, so a request that merely finished between scans (its result
@@ -160,6 +163,7 @@ namespace PawnDiary
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
+            recentHediffEvents.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
@@ -168,10 +172,12 @@ namespace PawnDiary
             nextGenerationScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
+            nextHediffProgressionScanTick = 0;
             initialArrivalScanPending = true;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
             ResetThoughtProgressionState(false);
+            ResetHediffProgressionState(true);
         }
 
         public override void LoadedGame()
@@ -185,6 +191,7 @@ namespace PawnDiary
             recentTaleEvents.Clear();
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
+            recentHediffEvents.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
@@ -193,10 +200,12 @@ namespace PawnDiary
             nextGenerationScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
+            nextHediffProgressionScanTick = 0;
             initialArrivalScanPending = false;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
             ResetThoughtProgressionState(true);
+            ResetHediffProgressionState(true);
             QueueAllPendingGenerations();
         }
 
@@ -265,6 +274,13 @@ namespace PawnDiary
                 nextThoughtProgressionScanTick = now + Math.Max(250, DiaryTuning.Current.thoughtProgressionScanIntervalTicks);
                 ScanThoughtProgressionsForDiaryEvents(baselineThoughtProgressionsOnNextScan);
                 baselineThoughtProgressionsOnNextScan = false;
+            }
+
+            if (!initialArrivalScanPending && now >= nextHediffProgressionScanTick)
+            {
+                nextHediffProgressionScanTick = now + Math.Max(250, DiaryTuning.Current.hediffProgressionScanIntervalTicks);
+                ScanHediffProgressionsForDiaryEvents(baselineHediffProgressionsOnNextScan);
+                baselineHediffProgressionsOnNextScan = false;
             }
 
             if (now >= nextGenerationScanTick)
