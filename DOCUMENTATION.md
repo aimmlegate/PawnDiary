@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (strange chat presentation)_
+_Last updated: 2026-06-17 (strange chat presentation and promotion)_
 
 ---
 
@@ -124,8 +124,10 @@ whether a row records, how it is labeled, whether it batches, and what instructi
 model. The forwarded text is rendered through RimWorld's own play-log POV string, so insult topics
 and other UI-log details are preserved in the `what you saw` prompt field. Insults batch per pawn
 pair for a three-hour quiet window (or eight rows) so insult sprees produce one evidence-rich entry
-instead of one LLM request per jab. Small-talk, animal-handling, and teaching groups are usually
-ambient day notes, with optional promotion for unusually salient moments.
+instead of one LLM request per jab. Small-talk, strange-chat, animal-handling, and teaching groups
+are usually ambient day notes, with optional promotion for unusually salient moments. Strange chat
+uses the same promotion odds as chitchat while keeping its own unsettling instruction and anomaly
+green display cue.
 
 ### Mental States
 
@@ -293,7 +295,11 @@ System prompts are selected by narrative mode:
 
 Default prompt contracts ask for complete, short entries using prose length cues rather than numeric
 word ranges. They tell the model to use structured context as private evidence for voice, focus, and
-subtext, not as a checklist to echo.
+subtext, not as a checklist to echo. Paired two-pawn interaction prompts append one extra localized
+rule that asks for at least one short sentence of direct speech in double quotes, keeping dual-POV
+entries from collapsing into pure description. Single-POV interaction prompts append a softer
+localized cue to use brief quoted speech when it feels natural; non-interaction solo entries do not
+get that cue.
 
 Player-customizable, Def-backed user-message instructions:
 
@@ -377,10 +383,12 @@ render as centered memorial blocks, and first-person pages written while the paw
 intoxicated or low-Consciousness can get deterministic random-looking variable-size words. Higher
 stored stagger intensity affects more words. Anomaly's in-game "strange chat" is the
 `DisturbingChat` InteractionDef; it gives the recipient the `SpokeToDisturbing` social thought and
-`SpokeToDisturbingMood` mood thought ("unsettling conversation"). Only the initiator POV for this
-exact interaction gets the special anomaly-green accent and dramatic distorted direct-speech
-formatting. This formatting is measured and drawn through the same block pipeline so scroll heights
-stay stable, and it never changes prompts or saved generated text.
+`SpokeToDisturbingMood` mood thought ("unsettling conversation"). It has its own exact-match
+interaction group before the broader anomaly group, using chitchat's ambient batching and promotion
+odds so only unusually salient strange chats become immediate pairwise entries. Only the initiator
+POV for promoted exact `DisturbingChat` entries gets the special anomaly-green accent and dramatic
+distorted direct-speech formatting. This formatting is measured and drawn through the same block
+pipeline so scroll heights stay stable, and it never changes prompts or saved generated text.
 Social-tab log rows can jump to matching diary entries, including older year pages.
 
 ---

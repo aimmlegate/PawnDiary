@@ -148,6 +148,47 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>strangechat</defName>
+    <label>Strange chat</label>
+    <order>68</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>something wrong in ordinary conversation--a strange chat that leaves unease lingering. Don't explain it away</instruction>
+    <tone>with creeping dread; never resolve the wrongness</tone>
+    <colorCue>strangeChat</colorCue>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>StrangeChatAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientStrangeChatLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientStrangeChatHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientStrangeChatFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientStrangeChatInstruction</instructionKey>
+      <minEventsToWrite>3</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <!-- Use the same promotion odds as chitchat: most strange chats stay ambient, but the most
+         emotionally loaded moments can still become their own pairwise diary entry. -->
+    <promotion>
+      <baseChance>0.04</baseChance>
+      <maxChance>0.6</maxChance>
+      <opinionStrongBonus>0.25</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.2</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.2</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.2</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <matchDefNames>
+      <li>DisturbingChat</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>anomaly</defName>
     <label>Anomaly &amp; dark</label>
     <order>70</order>
@@ -160,7 +201,6 @@
       <li>DarkDialogue</li>
       <li>CreepyWords</li>
       <li>InhumanRambling</li>
-      <li>DisturbingChat</li>
       <li>OccultTeaching</li>
       <li>PrisonerStudyAnomaly</li>
       <li>InterrogateIdentity</li>

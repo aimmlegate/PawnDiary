@@ -195,6 +195,7 @@ namespace PawnDiary
             string instruction = string.IsNullOrWhiteSpace(effectiveInitiatorEntry)
                 ? PawnDiarySettings.CurrentSinglePovInstruction
                 : PawnDiarySettings.CurrentRecipientFollowupInstruction;
+            instruction = AppendPairDirectSpeechInstruction(diaryEvent, instruction);
 
             return string.Join("\n", lines.ToArray()) + "\n\n" + instruction;
         }
@@ -246,7 +247,10 @@ namespace PawnDiary
                 AppendField(lines, "weapon", diaryEvent.initiatorWeapon);
             }
 
-            return string.Join("\n", lines.ToArray()) + "\n\n" + PawnDiarySettings.CurrentSinglePovInstruction;
+            string instruction = AppendSoloInteractionDirectSpeechInstruction(diaryEvent,
+                PawnDiarySettings.CurrentSinglePovInstruction);
+
+            return string.Join("\n", lines.ToArray()) + "\n\n" + instruction;
         }
 
         private static PromptContextPolicy PolicyFor(DiaryEvent diaryEvent, bool hasOtherPawn)
@@ -399,6 +403,76 @@ namespace PawnDiary
             return diaryEvent != null
                 && !string.IsNullOrWhiteSpace(diaryEvent.gameContext)
                 && diaryEvent.gameContext.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string AppendPairDirectSpeechInstruction(DiaryEvent diaryEvent, string instruction)
+        {
+            if (diaryEvent == null || diaryEvent.solo || !IsInteractionPrompt(diaryEvent))
+            {
+                return instruction;
+            }
+
+            return AppendLocalizedInstruction(instruction, "PawnDiary.Prompt.PairDirectSpeechInstruction");
+        }
+
+        private static string AppendSoloInteractionDirectSpeechInstruction(DiaryEvent diaryEvent, string instruction)
+        {
+            if (!ShouldOfferSoloInteractionDirectSpeech(diaryEvent))
+            {
+                return instruction;
+            }
+
+            return AppendLocalizedInstruction(instruction, "PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction");
+        }
+
+        private static bool ShouldOfferSoloInteractionDirectSpeech(DiaryEvent diaryEvent)
+        {
+            return diaryEvent != null
+                && diaryEvent.solo
+                && IsInteractionPrompt(diaryEvent);
+        }
+
+        private static bool IsInteractionPrompt(DiaryEvent diaryEvent)
+        {
+            if (diaryEvent == null)
+            {
+                return false;
+            }
+
+            if (HasContext(diaryEvent, "batch=ambient_day_note")
+                || HasContext(diaryEvent, "mental_state=")
+                || HasContext(diaryEvent, "tale=")
+                || HasContext(diaryEvent, "mood_event=")
+                || HasContext(diaryEvent, "thought=")
+                || HasContext(diaryEvent, "work=")
+                || HasContext(diaryEvent, "day_reflection="))
+            {
+                return false;
+            }
+
+            // Old saves may only have fallback "def=/label=" context, so verify the saved defName
+            // is still a real InteractionDef before adding dialogue guidance.
+            return HasContext(diaryEvent, "batch=interaction")
+                || DefDatabase<InteractionDef>.GetNamedSilentFail(diaryEvent.interactionDefName) != null;
+        }
+
+        private static string AppendLocalizedInstruction(string instruction, string key)
+        {
+            // Keep this outside the editable base prompt so old saves with custom prompts still get
+            // interaction-specific dialogue cues. Queueing happens on the main thread, so Translate
+            // is safe here.
+            string extraInstruction = key.Translate().Resolve();
+            if (string.IsNullOrWhiteSpace(extraInstruction))
+            {
+                return instruction;
+            }
+
+            if (string.IsNullOrWhiteSpace(instruction))
+            {
+                return extraInstruction;
+            }
+
+            return instruction.TrimEnd() + " " + extraInstruction;
         }
 
         private static string ContextValue(string context, string key)

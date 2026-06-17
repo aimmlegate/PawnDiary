@@ -192,6 +192,10 @@
   <PawnDiary.Event.AmbientSocialHeader>Passing social moments colored the day:</PawnDiary.Event.AmbientSocialHeader>
   <PawnDiary.Event.AmbientSocialFallback>{0} drifted through a few small social moments today.</PawnDiary.Event.AmbientSocialFallback>
   <PawnDiary.Event.AmbientSocialInstruction>write one natural diary paragraph about the social atmosphere of the day; treat the listed conversations as background evidence, not events to report; do not list names or counts unless a name carries emotional weight</PawnDiary.Event.AmbientSocialInstruction>
+  <PawnDiary.Event.AmbientStrangeChatLabel>Unsettling conversations</PawnDiary.Event.AmbientStrangeChatLabel>
+  <PawnDiary.Event.AmbientStrangeChatHeader>Strange chats left unease behind:</PawnDiary.Event.AmbientStrangeChatHeader>
+  <PawnDiary.Event.AmbientStrangeChatFallback>{0} carried the aftertaste of strange conversations today.</PawnDiary.Event.AmbientStrangeChatFallback>
+  <PawnDiary.Event.AmbientStrangeChatInstruction>write one natural diary paragraph about the unease these strange conversations left behind; treat the listed chats as background evidence, not separate reports; keep the wrongness unresolved</PawnDiary.Event.AmbientStrangeChatInstruction>
   <PawnDiary.Event.AmbientAnimalLabel>Animal handling</PawnDiary.Event.AmbientAnimalLabel>
   <PawnDiary.Event.AmbientAnimalHeader>Animal-handling moments colored the day:</PawnDiary.Event.AmbientAnimalHeader>
   <PawnDiary.Event.AmbientAnimalFallback>{0} spent part of the day around the colony's animals.</PawnDiary.Event.AmbientAnimalFallback>
@@ -204,6 +208,8 @@
   <PawnDiary.Event.AmbientThoughtHeader>Small feelings and impressions colored the day:</PawnDiary.Event.AmbientThoughtHeader>
   <PawnDiary.Event.AmbientThoughtFallback>{0} carried a few passing feelings through the day.</PawnDiary.Event.AmbientThoughtFallback>
   <PawnDiary.Event.AmbientThoughtInstruction>write one natural diary paragraph about the emotional texture these passing feelings left behind; do not list each thought, do not mention counts, and only name the source of a feeling if it would matter to the pawn</PawnDiary.Event.AmbientThoughtInstruction>
+  <PawnDiary.Prompt.PairDirectSpeechInstruction>For two-pawn interaction entries, include at least one short sentence with direct speech in double quotes, spoken by the POV pawn or the other pawn. Keep it plausible from the supplied event; do not write a dialogue transcript.</PawnDiary.Prompt.PairDirectSpeechInstruction>
+  <PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>When it feels natural for this single-POV interaction, include one brief direct-speech sentence in double quotes. Do not force dialogue if the moment reads better as private reaction.</PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>
   <!-- Day reflection (end-of-day summary woven from the day's selected highlights) -->
   <PawnDiary.Event.DayReflectionLabel>Looking back on the day</PawnDiary.Event.DayReflectionLabel>
   <PawnDiary.Event.DayReflectionHeader>Of everything today, these stayed with {0}:</PawnDiary.Event.DayReflectionHeader>

@@ -12,6 +12,13 @@ current design; this file records how it got there.
     anomaly-green accent plus dramatic distorted direct-speech formatting.
   - Increased strange-chat direct-speech distortion so quoted words look more visibly uncanny while
     still leaving the saved generated text untouched.
+  - Split `DisturbingChat` into its own strange-chat interaction group and gave it chitchat's
+    ambient batching and promotion odds, so ordinary strange chats stay rare while loaded moments
+    can still become full pairwise entries.
+  - Added a localized paired-interaction prompt rule requiring at least one short direct-speech
+    sentence in double quotes, so two-pawn diary entries read less like pure description.
+  - Added a softer direct-speech cue for single-POV interaction entries, used only when quoted
+    speech fits naturally.
   - Stored per-POV staggered intensity on new diary events so worse impairment affects more words
     without changing prompts or saved generated text.
 
