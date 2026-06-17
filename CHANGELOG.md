@@ -3,6 +3,11 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (Diary tab partial split)**
+  - Split the large `ITab_Pawn_Diary` implementation into focused partial files for dev controls,
+    year paging, entry-card chrome/navigation, expansion state, and roleplay text layout without
+    changing tab behavior.
+
 - **2026-06-17 (review hardening and helper split)**
   - Fixed settings model-list fetch invalidation so removed/reset/edited API rows cannot leave the
     UI stuck fetching or auto-fill a stale result into a shifted row.

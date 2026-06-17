@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (review hardening and helper split)_
+_Last updated: 2026-06-17 (Diary tab partial split)_
 
 ---
 
@@ -79,7 +79,7 @@ Key files:
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, and group editor. |
 | `EndpointUtility.cs` / `ModelListClient.cs` | Settings/generation endpoint URL normalization and settings-time `/models` discovery. |
-| `ITab_Pawn_Diary.cs` | Production diary view, dev diagnostics, linked previews, year paging, collapsed entries, animations, and click targets. |
+| `ITab_Pawn_Diary*.cs` | Production diary view split as one partial class: orchestration, dev controls, year paging, entry cards, expansion state, linked previews, and roleplay text layout. |
 | `DiaryTextFormat.cs` | Escapes raw generated rich-text tags, then converts light markdown and quoted speech into Unity rich text. |
 | `MiniJson.cs` | Dependency-free JSON parser compatible with RimWorld's Unity Mono runtime. |
 
