@@ -34,6 +34,7 @@ namespace PawnDiary
         public const string StrangeChatColorCue = "strangeChat";
         public const string WhiteColorCue = "white";
         public const string QuietColorCue = "quiet";
+        private const int MaxPersistedRawResponseChars = 4000;
 
         public string eventId; // unique ID for this event, stable across saves
         public List<int> playLogEntryIds = new List<int>(); // Verse.LogEntry ids that produced this diary event
@@ -1527,7 +1528,7 @@ namespace PawnDiary
             if (result.success)
             {
                 initiatorGeneratedText = result.generatedText;
-                initiatorRawResponse = result.rawResponse;
+                initiatorRawResponse = TrimPersistedRawResponse(result.rawResponse);
                 initiatorStatus = CompleteStatus;
                 initiatorError = null;
             }
@@ -1543,7 +1544,7 @@ namespace PawnDiary
             if (result.success)
             {
                 recipientGeneratedText = result.generatedText;
-                recipientRawResponse = result.rawResponse;
+                recipientRawResponse = TrimPersistedRawResponse(result.rawResponse);
                 recipientStatus = CompleteStatus;
                 recipientError = null;
             }
@@ -1559,7 +1560,7 @@ namespace PawnDiary
             if (result.success)
             {
                 neutralGeneratedText = result.generatedText;
-                neutralRawResponse = result.rawResponse;
+                neutralRawResponse = TrimPersistedRawResponse(result.rawResponse);
                 neutralStatus = CompleteStatus;
                 neutralError = null;
             }
@@ -1568,6 +1569,23 @@ namespace PawnDiary
                 neutralStatus = FailedStatus;
                 neutralError = result.error;
             }
+        }
+
+        private static string TrimPersistedRawResponse(string rawResponse)
+        {
+            if (string.IsNullOrWhiteSpace(rawResponse))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = rawResponse.Trim();
+            if (trimmed.Length <= MaxPersistedRawResponseChars)
+            {
+                return trimmed;
+            }
+
+            return trimmed.Substring(0, MaxPersistedRawResponseChars).TrimEnd()
+                + "\n[raw response truncated]";
         }
 
         private void SetStatus(string povRole, string status)

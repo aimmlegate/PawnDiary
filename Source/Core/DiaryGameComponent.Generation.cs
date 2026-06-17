@@ -301,7 +301,7 @@ namespace PawnDiary
         /// Dual-POV flow: queues the initiator first, then the recipient once the initiator result arrives
         /// (so the recipient prompt can include the initiator's generated text as hidden continuity context).
         /// </summary>
-        private void QueueSequentialPairwiseRewrite(DiaryEvent diaryEvent)
+        private void QueueSequentialPairwiseRewrite(DiaryEvent diaryEvent, ApiEndpointConfig recipientPrimaryOverride = null)
         {
             if (diaryEvent == null || diaryEvent.solo)
             {
@@ -369,7 +369,7 @@ namespace PawnDiary
                         DiaryEvent.RecipientRole,
                         PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
                         PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole));
-                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, rawText);
+                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, rawText, recipientPrimaryOverride);
             }
         }
 
@@ -377,7 +377,7 @@ namespace PawnDiary
         /// Final step before LLM dispatch: stamps the prompt on the event, records endpoint metadata, marks
         /// the event queued, and enqueues the request to <see cref="LlmClient"/>.
         /// </summary>
-        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, string rawText)
+        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, string rawText, ApiEndpointConfig primaryOverride = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
             {
@@ -414,7 +414,7 @@ namespace PawnDiary
             }
 
             string selectionReason;
-            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, out selectionReason);
+            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride, out selectionReason);
             List<ApiEndpointConfig> failoverTargets = BuildFailoverTargets(targets, target);
             LogApiDebug(
                 "Queue event=" + diaryEvent.eventId
@@ -473,8 +473,15 @@ namespace PawnDiary
         /// by the endpoint+model recorded on the event — so the sequential pair shares one model.
         /// Everything else takes the next lane in round-robin order to spread load across APIs.
         /// </summary>
-        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets, out string reason)
+        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets, ApiEndpointConfig primaryOverride, out string reason)
         {
+            ApiEndpointConfig overrideTarget = FindMatchingActiveLane(targets, primaryOverride);
+            if (overrideTarget != null)
+            {
+                reason = "pinned to successful prior lane";
+                return overrideTarget;
+            }
+
             // Sequential pinning: keep the recipient on the initiator's lane when paired mode ran
             // the initiator first and recorded which endpoint+model it used (after failover, the
             // recorded meta is the lane that actually produced the initiator's entry).
@@ -504,6 +511,44 @@ namespace PawnDiary
             int index = LlmClient.NextRoundRobinIndex() % targets.Count;
             reason = "round-robin index " + index + " of " + targets.Count;
             return targets[index];
+        }
+
+        private static ApiEndpointConfig FindMatchingActiveLane(List<ApiEndpointConfig> targets, ApiEndpointConfig requested)
+        {
+            if (targets == null || requested == null)
+            {
+                return null;
+            }
+
+            foreach (ApiEndpointConfig candidate in targets)
+            {
+                if (SameGenerationLane(candidate, requested, true))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool SameGenerationLane(ApiEndpointConfig left, ApiEndpointConfig right, bool includeApiKey)
+        {
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            bool sameLane = string.Equals(EndpointUtility.BuildGenerationUrl(left.url, left.apiMode), EndpointUtility.BuildGenerationUrl(right.url, right.apiMode), StringComparison.OrdinalIgnoreCase)
+                && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
+                && left.apiMode == right.apiMode;
+
+            return sameLane
+                && (!includeApiKey || string.Equals(NormalizeApiKey(left.apiKey), NormalizeApiKey(right.apiKey), StringComparison.Ordinal));
+        }
+
+        private static string NormalizeApiKey(string apiKey)
+        {
+            return (apiKey ?? string.Empty).Trim();
         }
 
         /// <summary>
@@ -631,12 +676,13 @@ namespace PawnDiary
             // Record the lane that actually produced the text. After failover this may differ from
             // the primary lane chosen at queue time, so updating it here keeps the debug block
             // accurate and lets a paired recipient pin to the model the initiator really used.
+            ApiEndpointConfig successfulLane = SuccessfulLaneFromResult(result);
             if (result.success && !string.IsNullOrWhiteSpace(result.endpointUrl) && !string.IsNullOrWhiteSpace(result.modelName))
             {
                 diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildGenerationUrl(result.endpointUrl, result.apiMode), result.modelName);
             }
 
-            QueueRecipientAfterInitiatorResult(diaryEvent, result);
+            QueueRecipientAfterInitiatorResult(diaryEvent, result, successfulLane);
 
             // Title follow-up: if Generate LLM titles is on and the main entry produced text
             // but the role has no stored title yet, queue a small title call. The title is tiny,
@@ -647,8 +693,24 @@ namespace PawnDiary
                 && !string.IsNullOrWhiteSpace(result.generatedText)
                 && string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(result.povRole)))
             {
-                QueueTitleRequest(diaryEvent, result.povRole, null);
+                QueueTitleRequest(diaryEvent, result.povRole, successfulLane);
             }
+        }
+
+        private static ApiEndpointConfig SuccessfulLaneFromResult(LlmGenerationResult result)
+        {
+            if (result == null
+                || !result.success
+                || string.IsNullOrWhiteSpace(result.endpointUrl)
+                || string.IsNullOrWhiteSpace(result.modelName))
+            {
+                return null;
+            }
+
+            return new ApiEndpointConfig(result.endpointUrl, result.apiKey, result.modelName)
+            {
+                apiMode = result.apiMode
+            };
         }
 
         /// <summary>
@@ -729,7 +791,7 @@ namespace PawnDiary
                 return;
             }
 
-            ApiEndpointConfig target = primaryOverride;
+            ApiEndpointConfig target = FindMatchingActiveLane(targets, primaryOverride);
             if (target == null)
             {
                 // Pin the title to the same lane the main entry used, when available — keeps a
@@ -783,7 +845,7 @@ namespace PawnDiary
         /// After the initiator entry completes, either marks the recipient as failed (if the initiator failed)
         /// or re-evaluates the sequential queue so the recipient can generate with the initiator's text as context.
         /// </summary>
-        private void QueueRecipientAfterInitiatorResult(DiaryEvent diaryEvent, LlmGenerationResult result)
+        private void QueueRecipientAfterInitiatorResult(DiaryEvent diaryEvent, LlmGenerationResult result, ApiEndpointConfig successfulLane)
         {
             if (diaryEvent == null
                 || diaryEvent.solo
@@ -805,7 +867,7 @@ namespace PawnDiary
                 return;
             }
 
-            QueueSequentialPairwiseRewrite(diaryEvent);
+            QueueSequentialPairwiseRewrite(diaryEvent, successfulLane);
         }
 
         /// <summary>

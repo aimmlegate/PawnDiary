@@ -3,6 +3,18 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (API connection test)**
+  - Added a per-API Test button that sends a tiny localized prompt through the selected endpoint,
+    model, key, compatibility mode, reasoning, and Ollama thinking settings.
+  - Shows row-level success/failure status and writes safe RimWorld console debug logs for
+    connection successes/errors without logging API keys.
+
+- **2026-06-18 (LLM client review fixes)**
+  - Kept duplicate failover lanes distinct when they share endpoint/model/mode but use different
+    API keys, and used the successful lane key only in memory for immediate recipient/title pinning.
+  - Surfaced provider-level 200-response errors/incomplete statuses for Responses/Ollama, stripped
+    common unclosed reasoning tags, and capped persisted raw debug responses per POV.
+
 - **2026-06-17 (reasoning block scrub)**
   - Kept non-streaming LLM calls waiting for complete responses, then stripped structured Responses
     reasoning items and common text reasoning blocks before storing debug text or diary entries.

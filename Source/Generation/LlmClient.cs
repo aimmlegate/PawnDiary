@@ -118,6 +118,10 @@ namespace PawnDiary
         /// <summary>Compatibility mode of the lane that actually produced the text.</summary>
         public ApiCompatibilityMode apiMode;
 
+        /// <summary>Bearer token of the lane that actually produced the text.
+        /// Transient only: used for same-session follow-up pinning, never saved or logged.</summary>
+        public string apiKey;
+
         /// <summary>Mirror of <see cref="LlmGenerationRequest.isTitleRequest"/>. The dispatcher
         /// branches on this to route the result to the title handler instead of the main-entry
         /// handler. Defaults to false so existing main-entry results behave exactly as before.</summary>
@@ -245,6 +249,54 @@ namespace PawnDiary
         public static bool DebugLoggingEnabled()
         {
             return debugLoggingEnabled;
+        }
+
+        /// <summary>
+        /// Sends one tiny real generation request through the selected API lane. Used by the
+        /// settings window's "Test" button to prove that URL, model, key, and compatibility mode can
+        /// actually produce text, not merely return a model list. The prompt is built on the main
+        /// thread by the caller because prompt text is localized and .Translate() is not
+        /// background-thread-safe.
+        /// </summary>
+        public static async Task<string> TestConnection(ApiEndpointConfig endpoint, string prompt, int timeoutSeconds, float temperature)
+        {
+            if (endpoint == null)
+            {
+                throw new InvalidOperationException("No API row was selected.");
+            }
+
+            if (string.IsNullOrWhiteSpace(endpoint.url))
+            {
+                throw new InvalidOperationException("The API endpoint URL is blank.");
+            }
+
+            if (string.IsNullOrWhiteSpace(endpoint.model))
+            {
+                throw new InvalidOperationException("The API model name is blank.");
+            }
+
+            using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
+            {
+                SendResponse response = await SendOnce(new LlmGenerationRequest
+                {
+                    eventId = "connection-test",
+                    povRole = "test",
+                    systemPrompt = string.Empty,
+                    rawText = string.IsNullOrWhiteSpace(prompt) ? "Reply with a short confirmation sentence." : prompt,
+                    endpointUrl = endpoint.url,
+                    modelName = endpoint.model,
+                    apiKey = endpoint.apiKey,
+                    apiMode = endpoint.apiMode,
+                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
+                    ollamaThink = endpoint.ollamaThink,
+                    timeoutSeconds = timeoutSeconds,
+                    maxTokens = 32,
+                    temperature = temperature,
+                    isTitleRequest = true
+                }, cancellation.Token);
+
+                return response.CleanText;
+            }
         }
 
         /// <summary>
@@ -461,6 +513,7 @@ namespace PawnDiary
                                     endpointUrl = request.endpointUrl,
                                     modelName = request.modelName,
                                     apiMode = request.apiMode,
+                                    apiKey = request.apiKey,
                                     isTitleRequest = request.isTitleRequest
                                 });
                                 return;
@@ -619,9 +672,7 @@ namespace PawnDiary
                     bool duplicate = false;
                     foreach (ApiEndpointConfig existing in targets)
                     {
-                        if (string.Equals(existing.url, candidate.url, StringComparison.OrdinalIgnoreCase)
-                            && string.Equals(existing.model, candidate.model, StringComparison.Ordinal)
-                            && existing.apiMode == candidate.apiMode)
+                        if (SameAttemptLane(existing, candidate))
                         {
                             duplicate = true;
                             break;
@@ -659,24 +710,34 @@ namespace PawnDiary
                 message.Content = new StringContent(BuildRequestJson(request), Encoding.UTF8, "application/json");
                 using (HttpResponseMessage response = await Client.SendAsync(message, cancellationToken))
                 {
-                        string responseJson = await response.Content.ReadAsStringAsync();
-                        if (!response.IsSuccessStatusCode)
+                    string responseJson = await response.Content.ReadAsStringAsync();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string error = $"HTTP {(int)response.StatusCode}: {TrimForLog(responseJson)}";
+                        if (IsTransientStatusCode((int)response.StatusCode))
                         {
-                            string error = $"HTTP {(int)response.StatusCode}: {TrimForLog(responseJson)}";
-                            if (IsTransientStatusCode((int)response.StatusCode))
-                            {
-                                throw new LlmTransientException(error);
-                            }
-
-                            throw new LlmPermanentException(error);
+                            throw new LlmTransientException(error);
                         }
 
-                        string generatedText = ParseGeneratedText(responseJson, request.apiMode);
-                        string visibleText = StripReasoningTextBlocks(generatedText);
-                        if (string.IsNullOrWhiteSpace(visibleText))
-                        {
-                            throw new LlmPermanentException("The endpoint returned no message content.");
-                        }
+                        throw new LlmPermanentException(error);
+                    }
+
+                    Dictionary<string, object> responseRoot = ParseResponseRoot(responseJson);
+                    string generatedText = ParseGeneratedText(responseRoot, request.apiMode);
+                    string providerError = ExtractProviderError(responseRoot, request.apiMode, !string.IsNullOrWhiteSpace(generatedText));
+                    if (!string.IsNullOrWhiteSpace(providerError))
+                    {
+                        throw new LlmPermanentException(providerError);
+                    }
+
+                    string visibleText = StripReasoningTextBlocks(generatedText);
+                    if (string.IsNullOrWhiteSpace(visibleText))
+                    {
+                        providerError = ExtractProviderError(responseRoot, request.apiMode, false);
+                        throw new LlmPermanentException(string.IsNullOrWhiteSpace(providerError)
+                            ? "The endpoint returned no message content."
+                            : providerError);
+                    }
 
                     // Some RP-tuned models ignore max_tokens and return very long entries anyway.
                     // Enforce a local hard cap (by whitespace-token count) so saved diary events
@@ -931,9 +992,14 @@ namespace PawnDiary
         /// <summary>
         /// Extracts the generated text from a compatible endpoint response.
         /// </summary>
-        private static string ParseGeneratedText(string json, ApiCompatibilityMode mode)
+        private static Dictionary<string, object> ParseResponseRoot(string json)
         {
             Dictionary<string, object> root = MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
+            return root;
+        }
+
+        private static string ParseGeneratedText(Dictionary<string, object> root, ApiCompatibilityMode mode)
+        {
             if (root == null)
             {
                 return null;
@@ -980,6 +1046,190 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Pulls provider-level errors/incomplete statuses from successful HTTP responses before the
+        /// generic "empty message" path hides the useful reason.
+        /// </summary>
+        private static string ExtractProviderError(Dictionary<string, object> root, ApiCompatibilityMode mode, bool hasGeneratedText)
+        {
+            if (root == null)
+            {
+                return "The endpoint did not return a JSON object.";
+            }
+
+            if (root.TryGetValue("error", out object errorObject))
+            {
+                string error = ErrorDetail(errorObject);
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    return "API error: " + error;
+                }
+            }
+
+            switch (mode)
+            {
+                case ApiCompatibilityMode.OpenAIResponses:
+                    return ExtractOpenAIResponsesStatusError(root, hasGeneratedText);
+                case ApiCompatibilityMode.OllamaNativeChat:
+                    return ExtractOllamaStatusError(root, hasGeneratedText);
+                default:
+                    return ExtractOpenAIChatStatusError(root, hasGeneratedText);
+            }
+        }
+
+        private static string ExtractOpenAIResponsesStatusError(Dictionary<string, object> root, bool hasGeneratedText)
+        {
+            string status = StringField(root, "status").Trim().ToLowerInvariant();
+            if (status == "failed" || status == "cancelled")
+            {
+                string detail = ErrorDetailFromField(root, "incomplete_details");
+                return string.IsNullOrWhiteSpace(detail)
+                    ? "Responses API status: " + status + "."
+                    : "Responses API status: " + status + " (" + detail + ").";
+            }
+
+            if (status == "incomplete" && !hasGeneratedText)
+            {
+                string detail = ErrorDetailFromField(root, "incomplete_details");
+                return string.IsNullOrWhiteSpace(detail)
+                    ? "Responses API returned an incomplete response with no message content."
+                    : "Responses API returned an incomplete response with no message content (" + detail + ").";
+            }
+
+            return null;
+        }
+
+        private static string ExtractOpenAIChatStatusError(Dictionary<string, object> root, bool hasGeneratedText)
+        {
+            Dictionary<string, object> firstChoice = FirstChoice(root);
+            if (firstChoice == null)
+            {
+                return null;
+            }
+
+            string finishReason = StringField(firstChoice, "finish_reason").Trim().ToLowerInvariant();
+            if (!hasGeneratedText && (finishReason == "content_filter" || finishReason == "length"))
+            {
+                return "Chat completion finished with no message content (finish_reason=" + finishReason + ").";
+            }
+
+            return null;
+        }
+
+        private static string ExtractOllamaStatusError(Dictionary<string, object> root, bool hasGeneratedText)
+        {
+            if (!hasGeneratedText && OllamaThinkingOnly(root))
+            {
+                return "Ollama returned thinking text but no message content.";
+            }
+
+            object doneObject;
+            if (!hasGeneratedText && root.TryGetValue("done", out doneObject) && doneObject is bool && !(bool)doneObject)
+            {
+                return "Ollama returned an unfinished non-streaming response.";
+            }
+
+            return null;
+        }
+
+        private static bool OllamaThinkingOnly(Dictionary<string, object> root)
+        {
+            if (root == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(StringField(root, "thinking")))
+            {
+                return true;
+            }
+
+            object messageObject;
+            if (!root.TryGetValue("message", out messageObject))
+            {
+                return false;
+            }
+
+            Dictionary<string, object> message = messageObject as Dictionary<string, object>;
+            return message != null && !string.IsNullOrWhiteSpace(StringField(message, "thinking"));
+        }
+
+        private static Dictionary<string, object> FirstChoice(Dictionary<string, object> root)
+        {
+            if (root == null || !root.TryGetValue("choices", out object choicesObject))
+            {
+                return null;
+            }
+
+            object[] choices = choicesObject as object[];
+            if (choices == null || choices.Length == 0)
+            {
+                return null;
+            }
+
+            return choices[0] as Dictionary<string, object>;
+        }
+
+        private static string ErrorDetailFromField(Dictionary<string, object> root, string fieldName)
+        {
+            if (root == null || !root.TryGetValue(fieldName, out object value))
+            {
+                return null;
+            }
+
+            return ErrorDetail(value);
+        }
+
+        private static string ErrorDetail(object value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            string text = value as string;
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return text.Trim();
+            }
+
+            Dictionary<string, object> fields = value as Dictionary<string, object>;
+            if (fields == null)
+            {
+                return null;
+            }
+
+            string message = StringField(fields, "message");
+            string reason = StringField(fields, "reason");
+            string code = StringField(fields, "code");
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                return message.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(reason) && !string.IsNullOrWhiteSpace(code))
+            {
+                return reason.Trim() + ", code=" + code.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                return "reason=" + reason.Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(code) ? null : "code=" + code.Trim();
+        }
+
+        private static string StringField(Dictionary<string, object> fields, string fieldName)
+        {
+            if (fields == null || !fields.TryGetValue(fieldName, out object value))
+            {
+                return string.Empty;
+            }
+
+            return value as string ?? string.Empty;
         }
 
         /// <summary>
@@ -1135,17 +1385,58 @@ namespace PawnDiary
                     }
 
                     int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, openEnd + 1);
-                    if (close < 0)
+                    if (close >= 0)
                     {
-                        break;
+                        int closeEnd = close + closeNeedle.Length;
+                        text = text.Remove(open, closeEnd - open);
+                        continue;
                     }
 
-                    int closeEnd = close + closeNeedle.Length;
-                    text = text.Remove(open, closeEnd - open);
+                    int labelLength;
+                    string remainder = text.Substring(openEnd + 1);
+                    int finalRelative = FindLineStartingWithAny(remainder, FinalAnswerLabels(), out labelLength);
+                    if (finalRelative >= 0)
+                    {
+                        int finalStart = openEnd + 1 + finalRelative;
+                        text = text.Remove(open, finalStart - open);
+                        continue;
+                    }
+
+                    int afterBlankLine = IndexAfterBlankLine(text, openEnd + 1);
+                    if (afterBlankLine >= 0)
+                    {
+                        text = text.Remove(open, afterBlankLine - open);
+                        continue;
+                    }
+
+                    text = text.Remove(open);
+                    break;
                 }
             }
 
             return text;
+        }
+
+        private static int IndexAfterBlankLine(string text, int startIndex)
+        {
+            for (int i = Math.Max(0, startIndex); i < text.Length - 1; i++)
+            {
+                if (text[i] == '\n' && text[i + 1] == '\n')
+                {
+                    return i + 2;
+                }
+
+                if (i < text.Length - 3
+                    && text[i] == '\r'
+                    && text[i + 1] == '\n'
+                    && text[i + 2] == '\r'
+                    && text[i + 3] == '\n')
+                {
+                    return i + 4;
+                }
+            }
+
+            return -1;
         }
 
         private static int IndexOfOpeningTag(string text, string tag)
@@ -1338,6 +1629,24 @@ namespace PawnDiary
         private static bool HasExplicitReasoningEffort(string effort)
         {
             return !string.Equals(PawnDiarySettings.NormalizeReasoningEffort(effort), PawnDiarySettings.DefaultReasoningEffort, StringComparison.Ordinal);
+        }
+
+        private static bool SameAttemptLane(ApiEndpointConfig left, ApiEndpointConfig right)
+        {
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return string.Equals(EndpointUtility.NormalizeBaseEndpoint(left.url), EndpointUtility.NormalizeBaseEndpoint(right.url), StringComparison.OrdinalIgnoreCase)
+                && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
+                && left.apiMode == right.apiMode
+                && string.Equals(NormalizeApiKey(left.apiKey), NormalizeApiKey(right.apiKey), StringComparison.Ordinal);
+        }
+
+        private static string NormalizeApiKey(string apiKey)
+        {
+            return (apiKey ?? string.Empty).Trim();
         }
 
         private static int MaxOutputTokensForRequest(LlmGenerationRequest request)

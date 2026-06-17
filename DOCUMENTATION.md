@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (reasoning block scrub)_
+_Last updated: 2026-06-18 (API connection test)_
 
 ---
 
@@ -449,16 +449,20 @@ Core settings:
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
 
 The settings window contains Connection, Diary writing, Prompt Studio, Persona presets, and Events
-sections. It supports multiple API lanes, compatibility-mode selection, model fetching/picking,
-prompt resets, persona selection
+sections. It supports multiple API lanes, compatibility-mode selection, model fetching/picking, a
+per-row API connection test that sends a tiny localized generation prompt, prompt resets, persona selection
 through a compact selector menu, single-card persona editing, custom persona creation/deletion,
 low-Consciousness persona modifier editing, grouped event toggles, and one per-group instruction
 editor. Each API lane can speak OpenAI-compatible chat completions, OpenAI Responses, or native
 Ollama chat; Responses lanes can send a reasoning-effort override, and Ollama lanes can request
 native thinking output while saving only final message content. Known reasoning/thinking transcript
-blocks embedded in normal content are stripped before anything is persisted. Model-list fetches are
-generation-stamped and tied to the endpoint row's URL/API-key/mode snapshot, so removing, resetting,
-or editing rows while a request is in flight cannot auto-fill a different row.
+blocks embedded in normal content are stripped before anything is persisted, including common
+unclosed `<think>`-style blocks from local models. Model-list fetches are generation-stamped and
+tied to the endpoint row's URL/API-key/mode snapshot, so removing, resetting, or editing rows while
+a request is in flight cannot auto-fill a different row. Connection tests use the same generation
+URL, payload shape, response parser, timeout, reasoning, and Ollama thinking settings as normal
+diary generation, then show a row-level success/failure message and write a safe `[PawnDiary debug]`
+RimWorld console log with the lane and returned sample/error, never the API key.
 
 The production Diary tab shows only completed generated pages. Dev mode adds writing enablement,
 persona picker, pending rows, raw/failure rows, prompt/status diagnostics, in-progress indicators,
@@ -494,19 +498,27 @@ Social-tab log rows can jump to matching diary entries, including older year pag
 
 ## 8. LLM Reliability
 
-`LlmClient` treats each enabled endpoint+model row as an API lane:
+`LlmClient` treats each enabled endpoint+model/mode row as an API lane. Failover duplicate checks
+also include the API key, so two rows pointing at the same model with different credentials remain
+distinct fallback targets; concurrency gates still group by endpoint+model/mode.
 
 - each lane chooses its own request URL, payload, and response parser from its compatibility mode:
   `/chat/completions`, `/responses`, or Ollama `/api/chat`;
+- settings-time connection tests send one small localized prompt through the selected lane's real
+  generation path and log success/errors to the RimWorld console without logging API keys;
 - new requests are assigned round-robin;
 - recipient pairwise requests and title follow-ups pin to the lane that produced the prior text when
-  possible;
+  possible; successful results carry the winning API key only in memory so immediate follow-ups can
+  distinguish duplicate endpoint/model rows without saving or logging secrets;
 - lanes run independently behind per-lane `SemaphoreSlim` guards;
 - `ServicePointManager.DefaultConnectionLimit` is raised so transport limits do not cap concurrency
   at two connections per host;
 - requests carry ordered failover targets and try the next lane after permanent errors, exhausted
   retries, timeout, or empty content;
 - transient errors retry up to three times per lane;
+- mode-specific 200-response errors and incomplete statuses are inspected before text extraction, so
+  failed Responses/Ollama bodies report the provider reason instead of a generic empty-content
+  message;
 - responses are locally trimmed to `maxTokens`, preferring the last complete sentence, with dangling
   final fragments removed for main diary/note responses. OpenAI Responses reasoning lanes get extra
   API output-token headroom because that API counts hidden reasoning tokens against
@@ -531,8 +543,9 @@ lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 
 `DiaryEvent` saves raw event text, generated text, statuses/errors, context, source ids, LLM
 metadata, semantic `colorCue`, per-POV titles, per-POV staggered text intensity, and per-POV
-pre-length-cleanup final-answer text for debug inspection. Full prompt strings are still not
-persisted; dev diagnostics can show prompts built during the current session.
+pre-length-cleanup final-answer text for debug inspection, capped at 4000 characters per POV to
+avoid save bloat. Full prompt strings are still not persisted; dev diagnostics can show prompts
+built during the current session.
 Tale/mental/source classification is inferred from stable `gameContext` fields such as `tale=`,
 `mental_state=`, `mood_event=`, `thought=`, `inspiration=`, `work=`, and `hediff=`. Exact key/value
 lookups go through `DiaryContextFields`, so pawn ids and other field values do not collide by

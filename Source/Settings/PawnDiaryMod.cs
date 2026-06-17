@@ -78,6 +78,13 @@ namespace PawnDiary
         // .Translate() plus shared-collection edits are main-thread-only (see AGENTS.md / LlmClient),
         // so the continuation must not touch them directly.
         private volatile ModelFetchResult pendingFetchResult;
+        // Connection-test state mirrors model fetching: the async HTTP continuation hands a result
+        // back here and the settings window applies UI text and RimWorld log lines on the main thread.
+        private int connectionTestGeneration;
+        private bool isTestingConnection;
+        private int connectionTestTargetIndex = -1;
+        private string connectionTestStatus;
+        private volatile ConnectionTestResult pendingConnectionTestResult;
         // DefName of the interaction group currently selected in the instruction editor.
         private string selectedGroupKey;
         // Which prompt-text card is open in the "Prompt Studio".
@@ -135,6 +142,7 @@ namespace PawnDiary
             Settings.EnsurePersonaPresetList();
             // Apply any model-fetch result that completed since the last frame, on the main thread.
             ApplyPendingFetchResult();
+            ApplyPendingConnectionTestResult();
 
             Rect outRect = inRect;
             // Self-measuring scroll height: render the content, then remember how tall it actually
@@ -253,6 +261,7 @@ namespace PawnDiary
                 Settings.apiEndpoints.RemoveAt(removeIndex);
                 // A removed row shifts indices, so any pending fetch result no longer maps cleanly.
                 CancelModelFetchUiState();
+                CancelConnectionTestUiState();
             }
 
             Rect actionRect = listing.GetRect(28f);
@@ -267,6 +276,7 @@ namespace PawnDiary
             if (Widgets.ButtonText(resetRect, "PawnDiary.Settings.ResetConnection".Translate()))
             {
                 CancelModelFetchUiState();
+                CancelConnectionTestUiState();
                 Settings.ResetConnectionDefaults();
             }
         }
@@ -278,8 +288,8 @@ namespace PawnDiary
         /// </summary>
         private void DrawCompactApiEndpointRow(Listing_Standard listing, int index, ApiEndpointConfig endpoint, ref int removeIndex)
         {
-            bool showStatus = fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus);
-            Rect blockRect = listing.GetRect(ApiEndpointRowHeight(endpoint, showStatus));
+            int statusLineCount = ApiRowStatusLineCount(index);
+            Rect blockRect = listing.GetRect(ApiEndpointRowHeight(endpoint, statusLineCount));
             Widgets.DrawMenuSection(blockRect);
 
             Rect innerRect = blockRect.ContractedBy(8f);
@@ -321,7 +331,11 @@ namespace PawnDiary
 
             y += lineHeight + gap;
             Rect keyRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-            endpoint.apiKey = DrawCompactTextField(keyRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 94f);
+            const float testButtonWidth = 96f;
+            Rect testRect = new Rect(keyRect.xMax - testButtonWidth, keyRect.y, testButtonWidth, keyRect.height);
+            Rect keyFieldRect = new Rect(keyRect.x, keyRect.y, keyRect.width - testButtonWidth - gap, keyRect.height);
+            endpoint.apiKey = DrawCompactTextField(keyFieldRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 94f);
+            DrawConnectionTestButton(testRect, index);
 
             if (HasApiAdvancedRow(endpoint))
             {
@@ -332,11 +346,11 @@ namespace PawnDiary
 
             // Show the fetch status under the row that triggered the fetch, inside the framed lane
             // so it cannot push later controls sideways or overlap adjacent rows.
-            if (showStatus)
+            if (statusLineCount > 0)
             {
                 y += lineHeight + gap;
                 Rect statusRect = new Rect(innerRect.x + 94f, y, innerRect.width - 94f, 22f);
-                DrawMutedLabel(statusRect, fetchStatus);
+                DrawApiRowStatuses(statusRect, index);
             }
 
             listing.Gap(6f);
@@ -346,10 +360,10 @@ namespace PawnDiary
         /// Returns the fixed height needed by one framed API row. Kept as a helper so drawing and
         /// scroll-height estimation agree when reasoning/thinking controls appear.
         /// </summary>
-        private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, bool showStatus)
+        private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, int statusLineCount)
         {
             float height = HasApiAdvancedRow(endpoint) ? 214f : 181f;
-            return showStatus ? height + 26f : height;
+            return height + (Mathf.Max(0, statusLineCount) * 26f);
         }
 
         private static bool HasApiAdvancedRow(ApiEndpointConfig endpoint)
@@ -554,6 +568,47 @@ namespace PawnDiary
                 }
 
                 Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private void DrawConnectionTestButton(Rect rect, int index)
+        {
+            bool testingThis = isTestingConnection && connectionTestTargetIndex == index;
+            string label = testingThis ? "PawnDiary.Settings.TestingConnection" : "PawnDiary.Settings.TestConnection";
+            if (ButtonTextFit(rect, label.Translate()) && !isTestingConnection)
+            {
+                TestApiConnection(index);
+            }
+        }
+
+        private int ApiRowStatusLineCount(int index)
+        {
+            int count = 0;
+            if (fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus))
+            {
+                count++;
+            }
+
+            if (connectionTestTargetIndex == index && !string.IsNullOrEmpty(connectionTestStatus))
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        private void DrawApiRowStatuses(Rect firstLineRect, int index)
+        {
+            Rect lineRect = firstLineRect;
+            if (fetchTargetIndex == index && !string.IsNullOrEmpty(fetchStatus))
+            {
+                DrawMutedLabel(lineRect, fetchStatus);
+                lineRect.y += 24f;
+            }
+
+            if (connectionTestTargetIndex == index && !string.IsNullOrEmpty(connectionTestStatus))
+            {
+                DrawMutedLabel(lineRect, connectionTestStatus);
             }
         }
 
@@ -1403,7 +1458,7 @@ namespace PawnDiary
                 height += 38f; // hint text plus its small gap
                 foreach (ApiEndpointConfig endpoint in Settings.apiEndpoints)
                 {
-                    height += ApiEndpointRowHeight(endpoint, false) + 6f;
+                    height += ApiEndpointRowHeight(endpoint, 0) + 6f;
                 }
                 height += 38f; // Add API / Reset row
             }
@@ -1529,6 +1584,101 @@ namespace PawnDiary
 
             instructionEditGroupKey = selectedGroup.defName;
             instructionEditBuffer = Settings.EditableInstructionForGroup(selectedGroup);
+        }
+
+        /// <summary>
+        /// Sends a tiny real generation request through one API row to verify endpoint, key, model,
+        /// and compatibility mode. All UI/log work stays on the main thread; the await continuation
+        /// only writes a result object for ApplyPendingConnectionTestResult to consume.
+        /// </summary>
+        private async void TestApiConnection(int index)
+        {
+            int generation = ++connectionTestGeneration;
+            isTestingConnection = true;
+            connectionTestTargetIndex = index;
+            connectionTestStatus = "PawnDiary.Settings.TestingConnection".Translate();
+
+            if (index < 0 || index >= Settings.apiEndpoints.Count)
+            {
+                isTestingConnection = false;
+                connectionTestStatus = null;
+                return;
+            }
+
+            ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
+            string url = endpoint.url;
+            string apiKey = endpoint.apiKey;
+            string model = endpoint.model;
+            ApiCompatibilityMode apiMode = endpoint.apiMode;
+            string reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
+            bool ollamaThink = endpoint.ollamaThink;
+            int timeoutSeconds = Settings.timeoutSeconds;
+            float temperature = Settings.temperature;
+            string prompt = "PawnDiary.Settings.ConnectionTestPrompt".Translate();
+            string validationError = ConnectionTestValidationError(url, model);
+            if (!string.IsNullOrWhiteSpace(validationError))
+            {
+                isTestingConnection = false;
+                connectionTestStatus = "PawnDiary.Settings.ConnectionTestFailed".Translate(validationError);
+                Log.Warning("[PawnDiary debug] API connection check failed for " + ConnectionTestLaneLabel(url, model, apiMode)
+                    + ": " + validationError);
+                return;
+            }
+
+            try
+            {
+                string sampleText = await LlmClient.TestConnection(new ApiEndpointConfig(url, apiKey, model)
+                {
+                    apiMode = apiMode,
+                    reasoningEffort = reasoningEffort,
+                    ollamaThink = ollamaThink
+                }, prompt, timeoutSeconds, temperature);
+
+                pendingConnectionTestResult = new ConnectionTestResult
+                {
+                    generation = generation,
+                    targetIndex = index,
+                    success = true,
+                    sampleText = sampleText,
+                    endpointUrl = url,
+                    apiKey = apiKey,
+                    model = model,
+                    apiMode = apiMode,
+                    reasoningEffort = reasoningEffort,
+                    ollamaThink = ollamaThink
+                };
+            }
+            catch (Exception ex)
+            {
+                pendingConnectionTestResult = new ConnectionTestResult
+                {
+                    generation = generation,
+                    targetIndex = index,
+                    success = false,
+                    errorDetail = ex.Message,
+                    endpointUrl = url,
+                    apiKey = apiKey,
+                    model = model,
+                    apiMode = apiMode,
+                    reasoningEffort = reasoningEffort,
+                    ollamaThink = ollamaThink
+                };
+            }
+        }
+
+        private static string ConnectionTestValidationError(string url, string model)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return "PawnDiary.Settings.ConnectionTestMissingEndpoint".Translate();
+            }
+
+            if (string.IsNullOrWhiteSpace(model))
+            {
+                return "PawnDiary.Settings.ConnectionTestMissingModel".Translate();
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1673,6 +1823,46 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Applies a completed API connection test on the main thread: updates the row status and
+        /// writes a concise RimWorld log line with no API key.
+        /// </summary>
+        private void ApplyPendingConnectionTestResult()
+        {
+            ConnectionTestResult result = pendingConnectionTestResult;
+            if (result == null)
+            {
+                return;
+            }
+
+            pendingConnectionTestResult = null;
+            if (result.generation != connectionTestGeneration)
+            {
+                return;
+            }
+
+            isTestingConnection = false;
+            if (!ConnectionTestTargetStillMatches(result))
+            {
+                connectionTestTargetIndex = -1;
+                connectionTestStatus = null;
+                return;
+            }
+
+            if (result.success)
+            {
+                connectionTestStatus = "PawnDiary.Settings.ConnectionTestSucceeded".Translate(TrimForStatus(result.sampleText));
+                Log.Message("[PawnDiary debug] API connection check succeeded for " + ConnectionTestLaneLabel(result)
+                    + " sample=\"" + TrimForLog(result.sampleText) + "\"");
+            }
+            else
+            {
+                connectionTestStatus = "PawnDiary.Settings.ConnectionTestFailed".Translate(TrimForStatus(result.errorDetail));
+                Log.Warning("[PawnDiary debug] API connection check failed for " + ConnectionTestLaneLabel(result)
+                    + ": " + TrimForLog(result.errorDetail));
+            }
+        }
+
+        /// <summary>
         /// Invalidates any in-flight model-list fetch and clears the per-row picker state.
         /// </summary>
         private void CancelModelFetchUiState()
@@ -1683,6 +1873,18 @@ namespace PawnDiary
             pendingFetchResult = null;
             fetchedModels.Clear();
             fetchStatus = null;
+        }
+
+        /// <summary>
+        /// Invalidates any in-flight connection test and clears its row status.
+        /// </summary>
+        private void CancelConnectionTestUiState()
+        {
+            connectionTestGeneration++;
+            isTestingConnection = false;
+            connectionTestTargetIndex = -1;
+            pendingConnectionTestResult = null;
+            connectionTestStatus = null;
         }
 
         /// <summary>
@@ -1703,6 +1905,76 @@ namespace PawnDiary
                 && endpoint.apiMode == result.apiMode;
         }
 
+        /// <summary>
+        /// Returns true when the API row still matches the exact configuration that was tested.
+        /// </summary>
+        private bool ConnectionTestTargetStillMatches(ConnectionTestResult result)
+        {
+            if (result == null || result.targetIndex < 0 || result.targetIndex >= Settings.apiEndpoints.Count)
+            {
+                return false;
+            }
+
+            ApiEndpointConfig endpoint = Settings.apiEndpoints[result.targetIndex];
+            return endpoint != null
+                && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
+                && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
+                && string.Equals(endpoint.model ?? string.Empty, result.model ?? string.Empty, StringComparison.Ordinal)
+                && endpoint.apiMode == result.apiMode
+                && string.Equals(PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort), result.reasoningEffort ?? string.Empty, StringComparison.Ordinal)
+                && endpoint.ollamaThink == result.ollamaThink;
+        }
+
+        private static string ConnectionTestLaneLabel(ConnectionTestResult result)
+        {
+            if (result == null)
+            {
+                return "<null>";
+            }
+
+            return ConnectionTestLaneLabel(result.endpointUrl, result.model, result.apiMode);
+        }
+
+        private static string ConnectionTestLaneLabel(string endpointUrl, string modelName, ApiCompatibilityMode apiMode)
+        {
+            string model = string.IsNullOrWhiteSpace(modelName) ? "<blank-model>" : modelName;
+            string endpoint = string.IsNullOrWhiteSpace(endpointUrl)
+                ? "<blank-url>"
+                : EndpointUtility.BuildGenerationUrl(endpointUrl, apiMode);
+            return model + " [" + apiMode + "] @ " + endpoint;
+        }
+
+        private static string TrimForStatus(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            value = OneLine(value);
+            return value.Length <= 80 ? value : value.Substring(0, 80) + "...";
+        }
+
+        private static string TrimForLog(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            value = OneLine(value);
+            return value.Length <= 180 ? value : value.Substring(0, 180) + "...";
+        }
+
+        private static string OneLine(string value)
+        {
+            return (value ?? string.Empty)
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Replace('\t', ' ')
+                .Trim();
+        }
+
         // Result of one model fetch, handed from the await continuation to the main-thread draw.
         // Never mutated after construction; assigned to pendingFetchResult as a single reference write.
         private sealed class ModelFetchResult
@@ -1715,6 +1987,23 @@ namespace PawnDiary
             public string endpointUrl;     // row URL snapshot used to reject stale row edits
             public string apiKey;          // row key snapshot; never logged or shown
             public ApiCompatibilityMode apiMode; // row mode snapshot; changing modes changes model-list shape
+        }
+
+        // Result of one connection test, handed from the await continuation to the main-thread draw.
+        // Contains the API key only for stale-row matching; it is never displayed or logged.
+        private sealed class ConnectionTestResult
+        {
+            public int generation;
+            public int targetIndex;
+            public bool success;
+            public string sampleText;
+            public string errorDetail;
+            public string endpointUrl;
+            public string apiKey;
+            public string model;
+            public ApiCompatibilityMode apiMode;
+            public string reasoningEffort;
+            public bool ollamaThink;
         }
     }
 
