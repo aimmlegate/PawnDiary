@@ -181,6 +181,20 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <combat>true</combat>
+    <batch>
+      <mode>PairEvent</mode>
+      <!-- RimWorld has 2,500 ticks per in-game hour; 7,500 ticks is a three-hour quiet window. -->
+      <windowTicks>7500</windowTicks>
+      <maxEvents>8</maxEvents>
+      <scope>Pair</scope>
+      <syntheticDefName>InsultBatch</syntheticDefName>
+      <labelKey>PawnDiary.Event.InsultBatchLabel</labelKey>
+      <briefKey>PawnDiary.Event.InsultBatchBrief</briefKey>
+      <headerKey>PawnDiary.Event.InsultBatchHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.InsultBatchFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.InsultBatchInstruction</instructionKey>
+      <includeInteractionLabel>false</includeInteractionLabel>
+    </batch>
     <instruction>the sting of contempt—an insult, a slight, or fists about to fly</instruction>
     <tone>with sharp, stinging heat</tone>
     <matchDefNames>
@@ -419,6 +433,20 @@
     <tone>with raw, adrenal fury</tone>
     <matchDefNames>
       <li>SocialFighting</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>insultspree</defName>
+    <label>Insult sprees</label>
+    <order>205</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>false</defaultEnabled>
+    <important>false</important>
+    <instruction>a pawn breaking into repeated verbal cruelty; prefer the actual insult log entries when they are recorded</instruction>
+    <tone>with sour, needling anger</tone>
+    <matchDefNames>
+      <li>InsultingSpree</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

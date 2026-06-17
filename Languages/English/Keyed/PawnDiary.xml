@@ -187,6 +187,11 @@
   <PawnDiary.Event.BatchBrief>A brief {0} exchange.</PawnDiary.Event.BatchBrief>
   <PawnDiary.Event.BatchHeader>Several {0} moments happened:</PawnDiary.Event.BatchHeader>
   <PawnDiary.Event.BatchInstruction>write one diary entry for the overall {0} exchange, not separate entries for each listed moment</PawnDiary.Event.BatchInstruction>
+  <PawnDiary.Event.InsultBatchLabel>Insults exchanged</PawnDiary.Event.InsultBatchLabel>
+  <PawnDiary.Event.InsultBatchBrief>A sharp insult landed.</PawnDiary.Event.InsultBatchBrief>
+  <PawnDiary.Event.InsultBatchHeader>Several insults landed:</PawnDiary.Event.InsultBatchHeader>
+  <PawnDiary.Event.InsultBatchFallback>{0} and {1} traded several insults.</PawnDiary.Event.InsultBatchFallback>
+  <PawnDiary.Event.InsultBatchInstruction>write one diary entry for the overall conflict, using the listed game log lines as factual evidence; do not report each insult separately</PawnDiary.Event.InsultBatchInstruction>
   <PawnDiary.Event.AmbientDayLabel>{0}</PawnDiary.Event.AmbientDayLabel>
   <PawnDiary.Event.AmbientDayHeader>Low-stakes {0} moments colored the day:</PawnDiary.Event.AmbientDayHeader>
   <PawnDiary.Event.AmbientDayMore>more quiet moments happened.</PawnDiary.Event.AmbientDayMore>

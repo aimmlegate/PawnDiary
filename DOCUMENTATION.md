@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (number-light prompt context)_
+_Last updated: 2026-06-17 (insult-spree batching)_
 
 ---
 
@@ -121,8 +121,11 @@ configured dedup window.
 
 `PlayLog.Add` forwards interaction log rows to `RecordInteraction`. Interaction groups decide
 whether a row records, how it is labeled, whether it batches, and what instruction reaches the
-model. Small-talk, animal-handling, and teaching groups are usually ambient day notes, with optional
-promotion for unusually salient moments.
+model. The forwarded text is rendered through RimWorld's own play-log POV string, so insult topics
+and other UI-log details are preserved in the `what you saw` prompt field. Insults batch per pawn
+pair for a three-hour quiet window (or eight rows) so insult sprees produce one evidence-rich entry
+instead of one LLM request per jab. Small-talk, animal-handling, and teaching groups are usually
+ambient day notes, with optional promotion for unusually salient moments.
 
 ### Mental States
 
@@ -204,6 +207,8 @@ Batch policies live on groups:
 
 - `PairEvent` merges quick rows for a pawn pair or def.
 - `AmbientDayNote` accumulates low-stakes rows per pawn/day into one solo memory.
+- The insults group uses `PairEvent` with `includeInteractionLabel=false`, so each evidence line is
+  the actual game log sentence rather than a repeated "Insult:" prefix.
 - Promotion policies let batched interactions escape into immediate pairwise events based on opinion
   intensity, opinion asymmetry, low needs, or extreme mood, then apply `socialGenerationWeight`.
 

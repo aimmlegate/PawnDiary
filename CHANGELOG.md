@@ -3,6 +3,12 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (insult-spree batching)**
+  - Added a three-in-game-hour pairwise batch policy for insult interactions, preserving RimWorld's
+    own play-log insult text as evidence while producing one diary generation for repeated jabs.
+  - Added a disabled-by-default `InsultingSpree` mental-state group so generic insult-spree break
+    pages do not duplicate the richer batched insult entries unless a player enables them.
+
 - **2026-06-17 (number-light prompt context)**
   - Replaced generated prompt-context numbers with word buckets where practical: life stage instead
     of age, mood/pain/bleeding/opinion/thought impact buckets, and hediff intensity words.
