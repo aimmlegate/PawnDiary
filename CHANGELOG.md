@@ -3,6 +3,14 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (editable persona presets in settings)**
+  - Added a new Persona presets section to mod settings, modeled after Prompt Studio, so players can
+    edit built-in persona label/rule/tag values from one card at a time.
+  - Added settings-backed custom persona creation/deletion; custom presets now merge into the runtime
+    persona catalog and show up in picker/generation flows without XML edits.
+  - Added predefined-tag assignment controls for persona presets and load-time normalization so custom
+    personas always keep at least one allowed weighting tag.
+
 - **2026-06-17 (discovery code quarantine)**
   - Moved the known non-functional discovery hook attempts into `Source/Patches/DiscoveryPatches.cs`
     without Harmony registration attributes, keeping the reference code isolated from the main patch

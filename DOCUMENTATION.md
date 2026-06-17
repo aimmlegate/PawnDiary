@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (discovery code quarantine)_
+_Last updated: 2026-06-17 (editable persona presets in settings)_
 
 ---
 
@@ -82,7 +82,7 @@ Important files:
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for initial persona selection. |
 | `DlcContext.cs` | One guarded home for DLC-gated pawn data (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
-| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Mod settings, API lane editor, Prompt Studio, model-list fetcher, and group prompt editor. |
+| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Mod settings, API lane editor, Prompt Studio, Persona Presets editor, model-list fetcher, and group prompt editor. |
 | `ITab_Pawn_Diary.cs` | Production diary view, dev diagnostics, linked-entry previews, animations, and click targets. |
 | `DiaryTextFormat.cs` | Formats one diary line into Unity rich text: markdown emphasis, headings/bullets, and inline-colored quoted speech. |
 | `MiniJson.cs` | Dependency-free JSON parser compatible with RimWorld's Unity Mono runtime. |
@@ -253,12 +253,16 @@ Existing saves store prompt overrides in `PawnDiarySettings`; players who alread
 text can use Prompt Studio's reset action for a prompt (or reset all prompts) to pick up new XML
 defaults after an update.
 
-Persona presets are `DiaryPersonaDef` XML. A new pawn's first persona is selected with
-`DiaryPersonas.WeightedStartingPersona`: every persona has base weight, matching trait/backstory
-themes add weight through `PersonaAffinity`, void-tagged personas get a large extra first-roll
-bonus for creepjoiners, and voices already used by living free colonists get a soft duplicate
-penalty. Existing records keep their saved persona. Manual persona editing is a dev-mode Diary-tab
-control.
+Persona presets start from `DiaryPersonaDef` XML, then `PawnDiarySettings.personaPresets` can layer
+built-in overrides and fully custom personas from mod settings. A new pawn's first persona is
+selected with `DiaryPersonas.WeightedStartingPersona`: every persona has base weight, matching
+trait/backstory themes add weight through `PersonaAffinity`, void-tagged personas get a large extra
+first-roll bonus for creepjoiners, and voices already used by living free colonists get a soft
+duplicate penalty. Custom personas must use predefined theme tags
+(`grim`, `warm`, `hostile`, `anxious`, `analytical`, `dramatic`, `social`, `whimsical`, `noble`,
+`void`) and keep at least one tag, so weighting remains compatible with `PersonaAffinity`. Existing
+records keep their saved persona defName; if a saved persona disappears, records fall back to the
+current default persona.
 
 Title generation defaults on. After a successful main entry, `QueueTitleRequest` sends the entry text
 plus `DiaryPromptDef.titleUserInstruction`, capped at `TitleMaxTokens = 40`, pinned to the main
@@ -287,19 +291,22 @@ Global settings live in `PawnDiarySettings`:
 | `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
 | `singlePovInstruction` / `recipientFollowupInstruction` / `deathDescriptionInstruction` / `arrivalDescriptionInstruction` / `titleUserInstruction` | XML defaults | Def-backed user-message prompt texts appended after structured context. |
 | `groupEnabled` / `groupInstructions` | XML defaults | Per-group recording toggles and instruction overrides. |
+| `personaPresets` | empty (no overrides) | Built-in persona overrides plus custom persona presets created from settings. |
 | `showApiSettings` | true | Settings-window API editor expansion state. |
 | `showPersonaSettings` / `showLlmDebugInfo` / `showGeneratingEntries` | false | Dev-mode Diary-tab preferences. |
 | `enableLlm` / `keepRawEntryOnFailure` | true | Currently forced on by `ClampValues`. |
 
-The settings window has Connection, Diary writing, Prompt Studio, and Events sections. The API editor
-supports multiple lanes, model fetching/picking, row enablement, add/remove, and reset. Prompt
-Studio edits one prompt at a time from a curated list so every Def-backed prompt text is reachable
-without turning the page into a giant wall of text areas, and it supports per-prompt or full reset
-back to XML defaults. The Events section shows grouped toggles by domain, quick Edit buttons for each
-group, a summary card, and one per-group prompt editor for instruction overrides. Long prompt-reset
-and group-save actions use full-width button rows so translated labels do not clip inside the framed
-cards, and the group editor card leaves extra bottom space so the restore action stays inside the
-frame.
+The settings window has Connection, Diary writing, Prompt Studio, Persona presets, and Events
+sections. The API editor supports multiple lanes, model fetching/picking, row enablement, add/remove,
+and reset. Prompt Studio edits one prompt at a time from a curated list so every Def-backed prompt
+text is reachable without turning the page into a giant wall of text areas, and it supports
+per-prompt or full reset back to XML defaults. Persona presets uses the same single-card flow:
+pick one preset, edit label/rule/tags, restore built-ins, add/delete custom presets, and keep custom
+tags limited to predefined weighting tags. The Events section shows grouped toggles by domain, quick
+Edit buttons for each group, a summary card, and one per-group prompt editor for instruction
+overrides. Long prompt-reset and group-save actions use full-width button rows so translated labels do
+not clip inside the framed cards, and the group editor card leaves extra bottom space so the restore
+action stays inside the frame.
 
 The Diary tab production view shows only finished generated pages. Dev mode reveals per-pawn writing
 enablement, persona picker, pending rows, raw/failure rows, prompt/status diagnostics, in-progress

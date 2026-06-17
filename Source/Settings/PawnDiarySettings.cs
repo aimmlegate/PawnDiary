@@ -3,7 +3,9 @@
 // AGENTS.md ("IExposable"). The group catalog itself now lives in XML Defs (see
 // InteractionGroups.cs); this file only stores the player's per-group overrides, keyed by
 // group defName.
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -46,6 +48,47 @@ namespace PawnDiary
             Scribe_Values.Look(ref model, "model", string.Empty);
             Scribe_Values.Look(ref apiKey, "apiKey", string.Empty);
             Scribe_Values.Look(ref enabled, "enabled", true);
+        }
+    }
+
+    /// <summary>
+    /// One editable persona preset row persisted in settings. Rows are either:
+    /// - an override of an XML persona Def (custom = false, defName matches the Def), or
+    /// - a fully custom persona created in settings (custom = true).
+    /// </summary>
+    public class PersonaPresetConfig : IExposable
+    {
+        // Stable key used everywhere personas are referenced (per-pawn record, prompt context, picker).
+        public string defName = string.Empty;
+        // Human-readable picker label shown in UI.
+        public string label = string.Empty;
+        // Writing-style rule appended to prompts as the persona voice target.
+        public string rule = string.Empty;
+        // Internal theme tags used for weighted first-roll persona selection.
+        public List<string> themes = new List<string>();
+        // True when this row is a user-created persona (not an override of an XML Def).
+        public bool custom;
+
+        public PersonaPresetConfig()
+        {
+        }
+
+        public PersonaPresetConfig(string defName, string label, string rule, IEnumerable<string> themes, bool custom)
+        {
+            this.defName = defName ?? string.Empty;
+            this.label = label ?? string.Empty;
+            this.rule = rule ?? string.Empty;
+            this.themes = NormalizeThemes(themes);
+            this.custom = custom;
+        }
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref defName, "defName", string.Empty);
+            Scribe_Values.Look(ref label, "label", string.Empty);
+            Scribe_Values.Look(ref rule, "rule", string.Empty);
+            Scribe_Collections.Look(ref themes, "themes", LookMode.Value);
+            Scribe_Values.Look(ref custom, "custom", false);
         }
     }
 
@@ -110,6 +153,8 @@ namespace PawnDiary
         // groupInstructions: optional override of the group's default diary prompt.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
         public Dictionary<string, string> groupInstructions = new Dictionary<string, string>();
+        // Persona preset edits made in settings: XML override rows plus user-created custom personas.
+        public List<PersonaPresetConfig> personaPresets = new List<PersonaPresetConfig>();
 
         // Parallel lists used by Scribe_Collections for serializing the dictionaries (Unity's
         // serialization cannot handle Dictionary directly).
@@ -172,6 +217,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
+            Scribe_Collections.Look(ref personaPresets, "personaPresets", LookMode.Deep);
 
             ClampValues();
         }
@@ -572,6 +618,7 @@ namespace PawnDiary
             keepRawEntryOnFailure = true;
 
             EnsureGroupDictionaries();
+            EnsurePersonaPresetList();
 
             EnsureEndpointsList();
 
@@ -626,6 +673,7 @@ namespace PawnDiary
             temperature = Mathf.Clamp(temperature, 0f, 2f);
             workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
             socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
+            NormalizePersonaPresets();
         }
 
         /// <summary>
@@ -642,6 +690,220 @@ namespace PawnDiary
             {
                 groupInstructions = new Dictionary<string, string>();
             }
+        }
+
+        /// <summary>
+        /// Ensures the persona preset edit list is non-null (defensive against deserialization gaps).
+        /// </summary>
+        public void EnsurePersonaPresetList()
+        {
+            if (personaPresets == null)
+            {
+                personaPresets = new List<PersonaPresetConfig>();
+            }
+        }
+
+        /// <summary>
+        /// Finds an override row for an XML persona Def by defName.
+        /// </summary>
+        public PersonaPresetConfig PersonaOverrideFor(string defName)
+        {
+            EnsurePersonaPresetList();
+            return personaPresets.FirstOrDefault(preset =>
+                preset != null
+                && !preset.custom
+                && preset.defName == defName);
+        }
+
+        /// <summary>
+        /// Finds a custom persona row by defName.
+        /// </summary>
+        public PersonaPresetConfig CustomPersonaFor(string defName)
+        {
+            EnsurePersonaPresetList();
+            return personaPresets.FirstOrDefault(preset =>
+                preset != null
+                && preset.custom
+                && preset.defName == defName);
+        }
+
+        /// <summary>
+        /// Returns only user-created personas (custom=true) for catalog merging and UI.
+        /// </summary>
+        public List<PersonaPresetConfig> CustomPersonas()
+        {
+            EnsurePersonaPresetList();
+            return personaPresets
+                .Where(preset => preset != null && preset.custom)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Upserts an override row for an XML persona Def.
+        /// </summary>
+        public void SetPersonaOverride(string defName, string label, string rule, IEnumerable<string> themes)
+        {
+            if (string.IsNullOrWhiteSpace(defName))
+            {
+                return;
+            }
+
+            EnsurePersonaPresetList();
+            PersonaPresetConfig existing = PersonaOverrideFor(defName);
+            if (existing == null)
+            {
+                existing = new PersonaPresetConfig(defName, label, rule, themes, false);
+                personaPresets.Add(existing);
+            }
+            else
+            {
+                existing.label = label ?? string.Empty;
+                existing.rule = rule ?? string.Empty;
+                existing.themes = NormalizeThemes(themes);
+                existing.custom = false;
+            }
+        }
+
+        /// <summary>
+        /// Removes an override row for an XML persona Def, restoring XML defaults.
+        /// </summary>
+        public void ResetPersonaOverride(string defName)
+        {
+            if (string.IsNullOrWhiteSpace(defName) || personaPresets == null)
+            {
+                return;
+            }
+
+            personaPresets.RemoveAll(preset => preset != null && !preset.custom && preset.defName == defName);
+        }
+
+        /// <summary>
+        /// Adds a new custom persona row and returns its generated defName.
+        /// </summary>
+        public string AddCustomPersona()
+        {
+            EnsurePersonaPresetList();
+            string defName = NextCustomPersonaDefName();
+            personaPresets.Add(new PersonaPresetConfig(
+                defName,
+                "New Persona",
+                string.Empty,
+                new[] { DiaryPersonas.PredefinedThemeTags[0] },
+                true));
+            return defName;
+        }
+
+        /// <summary>
+        /// Deletes one user-created persona row.
+        /// </summary>
+        public void RemoveCustomPersona(string defName)
+        {
+            if (string.IsNullOrWhiteSpace(defName) || personaPresets == null)
+            {
+                return;
+            }
+
+            personaPresets.RemoveAll(preset => preset != null && preset.custom && preset.defName == defName);
+        }
+
+        /// <summary>
+        /// Removes all persona overrides and custom personas, restoring pure XML persona defs.
+        /// </summary>
+        public void ResetPersonaPresets()
+        {
+            EnsurePersonaPresetList();
+            personaPresets.Clear();
+        }
+
+        // Generates deterministic custom persona keys so they are stable across saves and merges.
+        private string NextCustomPersonaDefName()
+        {
+            const string prefix = "DiaryPersona_Custom_";
+            int next = 1;
+            HashSet<string> used = new HashSet<string>(StringComparer.Ordinal);
+
+            List<DiaryPersonaDef> defs = DefDatabase<DiaryPersonaDef>.AllDefsListForReading;
+            if (defs != null)
+            {
+                for (int i = 0; i < defs.Count; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(defs[i]?.defName))
+                    {
+                        used.Add(defs[i].defName);
+                    }
+                }
+            }
+
+            for (int i = 0; i < personaPresets.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(personaPresets[i]?.defName))
+                {
+                    used.Add(personaPresets[i].defName);
+                }
+            }
+
+            while (used.Contains(prefix + next))
+            {
+                next++;
+            }
+
+            return prefix + next;
+        }
+
+        // Keeps persona preset edits safe and deterministic after load:
+        // - strips invalid/unknown tags
+        // - guarantees custom personas keep at least one predefined tag
+        // - drops malformed rows and duplicate keys
+        private void NormalizePersonaPresets()
+        {
+            EnsurePersonaPresetList();
+
+            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+            List<PersonaPresetConfig> normalized = new List<PersonaPresetConfig>();
+            for (int i = 0; i < personaPresets.Count; i++)
+            {
+                PersonaPresetConfig preset = personaPresets[i];
+                if (preset == null || string.IsNullOrWhiteSpace(preset.defName))
+                {
+                    continue;
+                }
+
+                if (!seen.Add(preset.defName))
+                {
+                    continue;
+                }
+
+                preset.label = preset.label ?? string.Empty;
+                preset.rule = preset.rule ?? string.Empty;
+                if (preset.themes == null)
+                {
+                    preset.themes = new List<string>();
+                }
+
+                preset.themes = NormalizeThemes(preset.themes);
+
+                if (preset.custom && preset.themes.Count == 0)
+                {
+                    preset.themes.Add(DiaryPersonas.PredefinedThemeTags[0]);
+                }
+
+                normalized.Add(preset);
+            }
+
+            personaPresets = normalized;
+        }
+
+        private static List<string> NormalizeThemes(IEnumerable<string> themes)
+        {
+            HashSet<string> allowedTags = new HashSet<string>(DiaryPersonas.PredefinedThemeTags, StringComparer.Ordinal);
+            return themes == null
+                ? new List<string>()
+                : themes
+                    .Where(theme => !string.IsNullOrWhiteSpace(theme))
+                    .Select(theme => theme.Trim().ToLowerInvariant())
+                    .Where(theme => allowedTags.Contains(theme))
+                    .Distinct()
+                    .ToList();
         }
     }
 }

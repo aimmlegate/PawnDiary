@@ -25,6 +25,22 @@ namespace PawnDiary
     // 1.6/Defs/DiaryPersonaDefs.xml; the hardcoded fallback keeps saves usable if XML is missing.
     public static class DiaryPersonas
     {
+        // Fixed vocabulary used by PersonaAffinity and the persona-settings editor. Players can
+        // assign only these tags to custom personas, which keeps weighting behavior predictable.
+        public static readonly string[] PredefinedThemeTags =
+        {
+            "grim",
+            "warm",
+            "hostile",
+            "anxious",
+            "analytical",
+            "dramatic",
+            "social",
+            "whimsical",
+            "noble",
+            "void"
+        };
+
         // Hardcoded fallback used when no XML Defs are loaded at all (e.g. during early startup or missing mod files).
         private static readonly DiaryPersonaDef Fallback = new DiaryPersonaDef
         {
@@ -44,7 +60,8 @@ namespace PawnDiary
             get
             {
                 List<DiaryPersonaDef> defs = DefDatabase<DiaryPersonaDef>.AllDefsListForReading;
-                return defs != null && defs.Count > 0 ? defs : FallbackList;
+                IReadOnlyList<DiaryPersonaDef> baseList = defs != null && defs.Count > 0 ? defs : FallbackList;
+                return MergeWithSettings(baseList);
             }
         }
 
@@ -155,8 +172,7 @@ namespace PawnDiary
                 return null;
             }
 
-            return DefDatabase<DiaryPersonaDef>.GetNamedSilentFail(defName)
-                ?? All.FirstOrDefault(persona => persona.defName == defName);
+            return All.FirstOrDefault(persona => persona.defName == defName);
         }
 
         /// <summary>
@@ -182,6 +198,73 @@ namespace PawnDiary
             }
 
             return persona.label + ": " + (persona.rule ?? string.Empty);
+        }
+
+        // Builds the effective runtime catalog from XML defs plus settings-based edits/custom rows.
+        private static IReadOnlyList<DiaryPersonaDef> MergeWithSettings(IReadOnlyList<DiaryPersonaDef> baseList)
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (settings == null)
+            {
+                return baseList;
+            }
+
+            settings.EnsurePersonaPresetList();
+            if (settings.personaPresets == null || settings.personaPresets.Count == 0)
+            {
+                return baseList;
+            }
+
+            List<DiaryPersonaDef> merged = new List<DiaryPersonaDef>();
+            for (int i = 0; i < baseList.Count; i++)
+            {
+                DiaryPersonaDef source = baseList[i];
+                if (source == null || string.IsNullOrWhiteSpace(source.defName))
+                {
+                    continue;
+                }
+
+                PersonaPresetConfig overridePreset = settings.PersonaOverrideFor(source.defName);
+                merged.Add(BuildPersona(source, overridePreset));
+            }
+
+            List<PersonaPresetConfig> custom = settings.CustomPersonas();
+            for (int i = 0; i < custom.Count; i++)
+            {
+                PersonaPresetConfig customPreset = custom[i];
+                if (customPreset == null || string.IsNullOrWhiteSpace(customPreset.defName))
+                {
+                    continue;
+                }
+
+                merged.Add(BuildPersona(null, customPreset));
+            }
+
+            return merged.Count > 0 ? merged : FallbackList;
+        }
+
+        private static DiaryPersonaDef BuildPersona(DiaryPersonaDef source, PersonaPresetConfig settingsPreset)
+        {
+            DiaryPersonaDef persona = new DiaryPersonaDef();
+            persona.defName = settingsPreset?.defName ?? source?.defName ?? string.Empty;
+            persona.label = settingsPreset?.label ?? source?.label ?? string.Empty;
+            persona.rule = settingsPreset?.rule ?? source?.rule ?? string.Empty;
+            persona.themes = new List<string>();
+
+            List<string> themes = settingsPreset?.themes ?? source?.themes;
+            if (themes != null)
+            {
+                for (int i = 0; i < themes.Count; i++)
+                {
+                    string theme = themes[i];
+                    if (!string.IsNullOrWhiteSpace(theme))
+                    {
+                        persona.themes.Add(theme);
+                    }
+                }
+            }
+
+            return persona;
         }
     }
 }
