@@ -110,6 +110,8 @@ namespace PawnDiary
         private static readonly Color SelectedRowColor = new Color(0.86f, 0.94f, 0.88f);
         private const float PersonaTagRowHeight = 24f;
         private const float PersonaTagRowGap = 4f;
+        private const float PersonaRuleTextAreaHeight = 112f;
+        private const float PersonaConsciousnessRuleTextAreaHeight = 64f;
 
         /// <summary>
         /// Initializes the mod, loading persisted settings from the save/config store.
@@ -641,10 +643,23 @@ namespace PawnDiary
             PersonaPresetConfig overridePreset = custom ? Settings.CustomPersonaFor(selected.defName) : Settings.PersonaOverrideFor(selected.defName);
             string currentLabel = overridePreset?.label ?? baseDef?.label ?? string.Empty;
             string currentRule = overridePreset?.rule ?? baseDef?.rule ?? string.Empty;
+            string currentCloudedRule = CurrentPersonaConsciousnessRule(
+                overridePreset,
+                overridePreset?.cloudedConsciousnessRule,
+                baseDef?.cloudedConsciousnessRule);
+            string currentFadingRule = CurrentPersonaConsciousnessRule(
+                overridePreset,
+                overridePreset?.fadingConsciousnessRule,
+                baseDef?.fadingConsciousnessRule);
+            string currentBarelyRule = CurrentPersonaConsciousnessRule(
+                overridePreset,
+                overridePreset?.barelyConsciousRule,
+                baseDef?.barelyConsciousRule);
             List<string> currentThemes = new List<string>(overridePreset?.themes ?? baseDef?.themes ?? new List<string>());
 
             float tagPickerHeight = PersonaTagPickerHeight();
-            Rect cardRect = listing.GetRect(306f + tagPickerHeight);
+            float consciousnessRulesHeight = PersonaConsciousnessRulesHeight();
+            Rect cardRect = listing.GetRect(306f + tagPickerHeight + consciousnessRulesHeight);
             Widgets.DrawMenuSection(cardRect);
             Rect innerRect = cardRect.ContractedBy(10f);
 
@@ -671,10 +686,33 @@ namespace PawnDiary
             Rect ruleLabelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
             DrawHint(ruleLabelRect, "PawnDiary.Settings.PersonaRule".Translate());
             y += 22f;
-            Rect ruleRect = new Rect(innerRect.x, y, innerRect.width, 112f);
+            Rect ruleRect = new Rect(innerRect.x, y, innerRect.width, PersonaRuleTextAreaHeight);
             string editedRule = Widgets.TextArea(ruleRect, currentRule);
 
-            y += 120f;
+            y += PersonaRuleTextAreaHeight + 8f;
+            Rect consciousnessHeaderRect = new Rect(innerRect.x, y, innerRect.width, 28f);
+            DrawHint(consciousnessHeaderRect, "PawnDiary.Settings.PersonaConsciousnessRules".Translate());
+            y += 34f;
+
+            string editedCloudedRule = DrawPersonaRuleTextArea(
+                innerRect,
+                ref y,
+                "PawnDiary.Settings.PersonaCloudedConsciousnessRule".Translate(),
+                currentCloudedRule,
+                PersonaConsciousnessRuleTextAreaHeight);
+            string editedFadingRule = DrawPersonaRuleTextArea(
+                innerRect,
+                ref y,
+                "PawnDiary.Settings.PersonaFadingConsciousnessRule".Translate(),
+                currentFadingRule,
+                PersonaConsciousnessRuleTextAreaHeight);
+            string editedBarelyRule = DrawPersonaRuleTextArea(
+                innerRect,
+                ref y,
+                "PawnDiary.Settings.PersonaBarelyConsciousRule".Translate(),
+                currentBarelyRule,
+                PersonaConsciousnessRuleTextAreaHeight);
+
             Rect tagsLabelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
             DrawHint(tagsLabelRect, "PawnDiary.Settings.PersonaTags".Translate());
             y += 22f;
@@ -682,6 +720,9 @@ namespace PawnDiary
 
             bool changed = !string.Equals(editedLabel, currentLabel, StringComparison.Ordinal)
                 || !string.Equals(editedRule, currentRule, StringComparison.Ordinal)
+                || !string.Equals(editedCloudedRule, currentCloudedRule, StringComparison.Ordinal)
+                || !string.Equals(editedFadingRule, currentFadingRule, StringComparison.Ordinal)
+                || !string.Equals(editedBarelyRule, currentBarelyRule, StringComparison.Ordinal)
                 || !editedThemes.SequenceEqual(currentThemes);
             if (changed)
             {
@@ -692,14 +733,23 @@ namespace PawnDiary
                     {
                         customPreset.label = editedLabel ?? string.Empty;
                         customPreset.rule = editedRule ?? string.Empty;
+                        customPreset.cloudedConsciousnessRule = editedCloudedRule ?? string.Empty;
+                        customPreset.fadingConsciousnessRule = editedFadingRule ?? string.Empty;
+                        customPreset.barelyConsciousRule = editedBarelyRule ?? string.Empty;
+                        customPreset.hasConsciousnessRuleOverrides = true;
                         customPreset.themes = editedThemes;
                         DiaryPersonas.InvalidateCache();
                     }
                 }
                 else
                 {
+                    bool consciousnessRulesMatchDefault =
+                        string.Equals(editedCloudedRule, baseDef?.cloudedConsciousnessRule ?? string.Empty, StringComparison.Ordinal)
+                        && string.Equals(editedFadingRule, baseDef?.fadingConsciousnessRule ?? string.Empty, StringComparison.Ordinal)
+                        && string.Equals(editedBarelyRule, baseDef?.barelyConsciousRule ?? string.Empty, StringComparison.Ordinal);
                     bool matchesDefault = string.Equals(editedLabel, baseDef?.label ?? string.Empty, StringComparison.Ordinal)
                         && string.Equals(editedRule, baseDef?.rule ?? string.Empty, StringComparison.Ordinal)
+                        && consciousnessRulesMatchDefault
                         && editedThemes.SequenceEqual(baseDef?.themes ?? new List<string>());
                     if (matchesDefault)
                     {
@@ -707,7 +757,15 @@ namespace PawnDiary
                     }
                     else
                     {
-                        Settings.SetPersonaOverride(selected.defName, editedLabel, editedRule, editedThemes);
+                        Settings.SetPersonaOverride(
+                            selected.defName,
+                            editedLabel,
+                            editedRule,
+                            editedCloudedRule,
+                            editedFadingRule,
+                            editedBarelyRule,
+                            editedThemes,
+                            !consciousnessRulesMatchDefault);
                     }
                 }
             }
@@ -729,6 +787,28 @@ namespace PawnDiary
                     Settings.ResetPersonaOverride(selected.defName);
                 }
             }
+        }
+
+        private static string CurrentPersonaConsciousnessRule(PersonaPresetConfig preset, string presetRule, string baseRule)
+        {
+            if (preset != null && (preset.custom || preset.hasConsciousnessRuleOverrides))
+            {
+                return presetRule ?? string.Empty;
+            }
+
+            return baseRule ?? string.Empty;
+        }
+
+        private static string DrawPersonaRuleTextArea(Rect innerRect, ref float y, string label, string value, float textAreaHeight)
+        {
+            Rect labelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
+            DrawHint(labelRect, label);
+            y += 22f;
+
+            Rect textRect = new Rect(innerRect.x, y, innerRect.width, textAreaHeight);
+            string edited = Widgets.TextArea(textRect, value ?? string.Empty);
+            y += textAreaHeight + 8f;
+            return edited;
         }
 
         private List<string> DrawPersonaTagPicker(Rect rect, List<string> themes, bool requireAtLeastOneTag)
@@ -835,6 +915,11 @@ namespace PawnDiary
         {
             float rows = Mathf.Ceil(DiaryPersonas.PredefinedThemeTags.Length / 2f);
             return Mathf.Max(PersonaTagRowHeight, (rows * PersonaTagRowHeight) + (Mathf.Max(0f, rows - 1f) * PersonaTagRowGap));
+        }
+
+        private static float PersonaConsciousnessRulesHeight()
+        {
+            return 34f + (3f * (20f + PersonaConsciousnessRuleTextAreaHeight + 10f));
         }
 
         /// <summary>
@@ -1177,7 +1262,7 @@ namespace PawnDiary
             // Generation controls, prompt studio, and persona-preset studio.
             height += 280f;
             height += 470f;
-            height += 590f + PersonaTagPickerHeight();
+            height += 590f + PersonaTagPickerHeight() + PersonaConsciousnessRulesHeight();
 
             // Events section: two-column group toggles, domain subheaders, and the prompt editor.
             height += 140f;

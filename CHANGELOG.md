@@ -3,6 +3,12 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (persona consciousness modifier settings)**
+  - Extended Persona presets settings so built-in and custom personas can edit their clouded,
+    fading, and barely-conscious voice modifiers.
+  - Preserved XML inheritance for old built-in persona overrides until a player changes those
+    modifier fields, avoiding silent loss of existing low-Consciousness tuning.
+
 - **2026-06-17 (route cleanup)**
   - Added an explicit `arrival` interaction group for `PawnDiary_Arrival`, so arrival pages use the
     Arrival chip, important styling, and Events toggle instead of the `other` catch-all.

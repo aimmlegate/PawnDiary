@@ -128,6 +128,10 @@
   <PawnDiary.Settings.PersonaBadgeCustom>Custom preset</PawnDiary.Settings.PersonaBadgeCustom>
   <PawnDiary.Settings.PersonaLabel>Label</PawnDiary.Settings.PersonaLabel>
   <PawnDiary.Settings.PersonaRule>Voice rule (used as prompt persona text)</PawnDiary.Settings.PersonaRule>
+  <PawnDiary.Settings.PersonaConsciousnessRules>Low Consciousness voice modifiers replace the normal rule when the pawn is impaired but still able to write.</PawnDiary.Settings.PersonaConsciousnessRules>
+  <PawnDiary.Settings.PersonaCloudedConsciousnessRule>Clouded rule (&lt;55% Consciousness)</PawnDiary.Settings.PersonaCloudedConsciousnessRule>
+  <PawnDiary.Settings.PersonaFadingConsciousnessRule>Fading rule (&lt;35% Consciousness)</PawnDiary.Settings.PersonaFadingConsciousnessRule>
+  <PawnDiary.Settings.PersonaBarelyConsciousRule>Barely conscious rule (&lt;20% Consciousness)</PawnDiary.Settings.PersonaBarelyConsciousRule>
   <PawnDiary.Settings.PersonaTags>Theme tags (first-roll weighting)</PawnDiary.Settings.PersonaTags>
   <PawnDiary.Settings.RestorePersonaPreset>Restore this preset default</PawnDiary.Settings.RestorePersonaPreset>
   <PawnDiary.Settings.DeletePersonaPreset>Delete this custom persona</PawnDiary.Settings.DeletePersonaPreset>

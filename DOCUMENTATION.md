@@ -309,8 +309,10 @@ settings-backed personas change or are normalized after load.
 Each built-in `DiaryPersonaDef` can also define `cloudedConsciousnessRule`,
 `fadingConsciousnessRule`, and `barelyConsciousRule`. When a live pawn is conscious enough to write
 but impaired, generation keeps the same persona label and swaps the normal persona text for that
-persona's matching low-Consciousness rule. Built-in settings overrides edit the normal rule only;
-their low-Consciousness rules still come from XML. Custom personas fall back to their normal rule.
+persona's matching low-Consciousness rule. Persona settings can override those three modifiers for
+built-in personas, while unchanged built-in rows continue inheriting XML so old saves and future XML
+edits do not lose their default impaired-voice tuning. Custom personas can define their own modifier
+text; blank custom modifier boxes fall back to the persona's normal rule.
 
 Title generation defaults on. Successful main entries queue `QueueTitleRequest`, capped at
 `TitleMaxTokens = 40` and pinned to the producing lane when possible. Stored titles render as
@@ -342,7 +344,8 @@ Core settings:
 The settings window contains Connection, Diary writing, Prompt Studio, Persona presets, and Events
 sections. It supports multiple API lanes, model fetching/picking, prompt resets, persona selection
 through a compact selector menu, single-card persona editing, custom persona creation/deletion,
-grouped event toggles, and one per-group instruction editor.
+low-Consciousness persona modifier editing, grouped event toggles, and one per-group instruction
+editor.
 
 The production Diary tab shows only completed generated pages. Dev mode adds writing enablement,
 persona picker, pending rows, raw/failure rows, prompt/status diagnostics, in-progress indicators,

@@ -331,9 +331,9 @@ namespace PawnDiary
             persona.defName = settingsPreset?.defName ?? source?.defName ?? string.Empty;
             persona.label = settingsPreset?.label ?? source?.label ?? string.Empty;
             persona.rule = settingsPreset?.rule ?? source?.rule ?? string.Empty;
-            persona.cloudedConsciousnessRule = source?.cloudedConsciousnessRule ?? string.Empty;
-            persona.fadingConsciousnessRule = source?.fadingConsciousnessRule ?? string.Empty;
-            persona.barelyConsciousRule = source?.barelyConsciousRule ?? string.Empty;
+            persona.cloudedConsciousnessRule = ConsciousnessRuleFor(settingsPreset, settingsPreset?.cloudedConsciousnessRule, source?.cloudedConsciousnessRule);
+            persona.fadingConsciousnessRule = ConsciousnessRuleFor(settingsPreset, settingsPreset?.fadingConsciousnessRule, source?.fadingConsciousnessRule);
+            persona.barelyConsciousRule = ConsciousnessRuleFor(settingsPreset, settingsPreset?.barelyConsciousRule, source?.barelyConsciousRule);
             persona.themes = new List<string>();
 
             List<string> themes = settingsPreset?.themes ?? source?.themes;
@@ -350,6 +350,21 @@ namespace PawnDiary
             }
 
             return persona;
+        }
+
+        private static string ConsciousnessRuleFor(PersonaPresetConfig settingsPreset, string settingsRule, string sourceRule)
+        {
+            if (settingsPreset == null)
+            {
+                return sourceRule ?? string.Empty;
+            }
+
+            if (!settingsPreset.custom && !settingsPreset.hasConsciousnessRuleOverrides)
+            {
+                return sourceRule ?? string.Empty;
+            }
+
+            return settingsRule ?? string.Empty;
         }
     }
 }

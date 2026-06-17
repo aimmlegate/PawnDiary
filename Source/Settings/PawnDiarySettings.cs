@@ -64,6 +64,13 @@ namespace PawnDiary
         public string label = string.Empty;
         // Writing-style rule appended to prompts as the persona voice target.
         public string rule = string.Empty;
+        // Optional low-Consciousness replacements for the normal writing rule. Built-in overrides
+        // inherit XML values until hasConsciousnessRuleOverrides is true, which keeps old saves from
+        // accidentally erasing rules that did not exist in settings yet.
+        public string cloudedConsciousnessRule;
+        public string fadingConsciousnessRule;
+        public string barelyConsciousRule;
+        public bool hasConsciousnessRuleOverrides;
         // Internal theme tags used for weighted first-roll persona selection.
         public List<string> themes = new List<string>();
         // True when this row is a user-created persona (not an override of an XML Def).
@@ -74,10 +81,28 @@ namespace PawnDiary
         }
 
         public PersonaPresetConfig(string defName, string label, string rule, IEnumerable<string> themes, bool custom)
+            : this(defName, label, rule, null, null, null, themes, custom, false)
+        {
+        }
+
+        public PersonaPresetConfig(
+            string defName,
+            string label,
+            string rule,
+            string cloudedConsciousnessRule,
+            string fadingConsciousnessRule,
+            string barelyConsciousRule,
+            IEnumerable<string> themes,
+            bool custom,
+            bool hasConsciousnessRuleOverrides)
         {
             this.defName = defName ?? string.Empty;
             this.label = label ?? string.Empty;
             this.rule = rule ?? string.Empty;
+            this.cloudedConsciousnessRule = cloudedConsciousnessRule;
+            this.fadingConsciousnessRule = fadingConsciousnessRule;
+            this.barelyConsciousRule = barelyConsciousRule;
+            this.hasConsciousnessRuleOverrides = hasConsciousnessRuleOverrides;
             this.themes = PawnDiarySettings.NormalizeThemes(themes);
             this.custom = custom;
         }
@@ -87,6 +112,10 @@ namespace PawnDiary
             Scribe_Values.Look(ref defName, "defName", string.Empty);
             Scribe_Values.Look(ref label, "label", string.Empty);
             Scribe_Values.Look(ref rule, "rule", string.Empty);
+            Scribe_Values.Look(ref cloudedConsciousnessRule, "cloudedConsciousnessRule");
+            Scribe_Values.Look(ref fadingConsciousnessRule, "fadingConsciousnessRule");
+            Scribe_Values.Look(ref barelyConsciousRule, "barelyConsciousRule");
+            Scribe_Values.Look(ref hasConsciousnessRuleOverrides, "hasConsciousnessRuleOverrides", false);
             Scribe_Collections.Look(ref themes, "themes", LookMode.Value);
             Scribe_Values.Look(ref custom, "custom", false);
         }
@@ -714,6 +743,22 @@ namespace PawnDiary
         /// </summary>
         public void SetPersonaOverride(string defName, string label, string rule, IEnumerable<string> themes)
         {
+            SetPersonaOverride(defName, label, rule, null, null, null, themes, false);
+        }
+
+        /// <summary>
+        /// Upserts an override row for an XML persona Def, including optional low-Consciousness rules.
+        /// </summary>
+        public void SetPersonaOverride(
+            string defName,
+            string label,
+            string rule,
+            string cloudedConsciousnessRule,
+            string fadingConsciousnessRule,
+            string barelyConsciousRule,
+            IEnumerable<string> themes,
+            bool hasConsciousnessRuleOverrides)
+        {
             if (string.IsNullOrWhiteSpace(defName))
             {
                 return;
@@ -723,13 +768,26 @@ namespace PawnDiary
             PersonaPresetConfig existing = PersonaOverrideFor(defName);
             if (existing == null)
             {
-                existing = new PersonaPresetConfig(defName, label, rule, themes, false);
+                existing = new PersonaPresetConfig(
+                    defName,
+                    label,
+                    rule,
+                    cloudedConsciousnessRule,
+                    fadingConsciousnessRule,
+                    barelyConsciousRule,
+                    themes,
+                    false,
+                    hasConsciousnessRuleOverrides);
                 personaPresets.Add(existing);
             }
             else
             {
                 existing.label = label ?? string.Empty;
                 existing.rule = rule ?? string.Empty;
+                existing.cloudedConsciousnessRule = hasConsciousnessRuleOverrides ? cloudedConsciousnessRule ?? string.Empty : null;
+                existing.fadingConsciousnessRule = hasConsciousnessRuleOverrides ? fadingConsciousnessRule ?? string.Empty : null;
+                existing.barelyConsciousRule = hasConsciousnessRuleOverrides ? barelyConsciousRule ?? string.Empty : null;
+                existing.hasConsciousnessRuleOverrides = hasConsciousnessRuleOverrides;
                 existing.themes = NormalizeThemes(themes);
                 existing.custom = false;
             }
@@ -856,6 +914,19 @@ namespace PawnDiary
 
                 preset.label = preset.label ?? string.Empty;
                 preset.rule = preset.rule ?? string.Empty;
+                if (preset.custom || preset.hasConsciousnessRuleOverrides)
+                {
+                    preset.cloudedConsciousnessRule = preset.cloudedConsciousnessRule ?? string.Empty;
+                    preset.fadingConsciousnessRule = preset.fadingConsciousnessRule ?? string.Empty;
+                    preset.barelyConsciousRule = preset.barelyConsciousRule ?? string.Empty;
+                }
+                else
+                {
+                    preset.cloudedConsciousnessRule = null;
+                    preset.fadingConsciousnessRule = null;
+                    preset.barelyConsciousRule = null;
+                }
+
                 if (preset.themes == null)
                 {
                     preset.themes = new List<string>();
