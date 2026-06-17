@@ -3,6 +3,12 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (active map context in settings)**
+  - Added visible active map conditions to the first-person prompt `setting:` line, capped at three
+    labels so long-running conditions can color entries without creating new diary events.
+  - Added a fresh recent-threat hint from RimWorld's letter archive while a player-home map remains
+    in danger, bounded by age and archive scan limits to avoid stale raid context.
+
 - **2026-06-17 (low-creative-reach prompt guard)**
   - Added first-person and reflection system-prompt guardrails for roleplay-tuned models that
     over-expand sparse context, forbidding new names, places, backstory, symbols, and off-screen

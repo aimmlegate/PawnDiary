@@ -14,6 +14,10 @@ namespace PawnDiary
 {
     public static class DiaryContextBuilder
     {
+        private const int MaxActiveMapConditions = 3;
+        private const int MaxThreatLetterScanBack = 30;
+        private const int RecentThreatTimeoutTicks = 7500;
+
         public static string BuildGameContextSummary(InteractionDef interactionDef, string interactionLabel)
         {
             if (interactionDef == null)
@@ -283,6 +287,18 @@ namespace PawnDiary
                 parts.Add("PawnDiary.Ctx.Surroundings".Translate(BeautyBucket(beauty)));
             }
 
+            string activeConditions = BuildActiveMapConditionsSummary(pawn.Map);
+            if (!string.IsNullOrWhiteSpace(activeConditions))
+            {
+                parts.Add("PawnDiary.Ctx.ActiveConditions".Translate(activeConditions));
+            }
+
+            string recentThreat = BuildRecentThreatSummary(pawn.Map);
+            if (!string.IsNullOrWhiteSpace(recentThreat))
+            {
+                parts.Add("PawnDiary.Ctx.RecentThreat".Translate(recentThreat));
+            }
+
             string nearby = BuildNearbyThingsSummary(pawn);
             if (!string.IsNullOrWhiteSpace(nearby))
             {
@@ -300,6 +316,125 @@ namespace PawnDiary
             }
 
             return string.Join(", ", parts.ToArray());
+        }
+
+        // Returns visible, map-wide conditions that are active right now. These are prompt context,
+        // not diary events: they color the entry without creating duplicate records for conditions
+        // already handled by the GameCondition start patch.
+        private static string BuildActiveMapConditionsSummary(Map map)
+        {
+            List<GameCondition> conditions = map?.gameConditionManager?.ActiveConditions;
+            if (conditions == null || conditions.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            List<string> labels = new List<string>();
+            HashSet<string> seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < conditions.Count && labels.Count < MaxActiveMapConditions; i++)
+            {
+                GameCondition condition = conditions[i];
+                if (condition?.def == null || !condition.def.displayOnUI)
+                {
+                    continue;
+                }
+
+                string label = CleanLine(condition.Label);
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    label = CleanLine(condition.def.LabelCap.Resolve());
+                }
+
+                if (!string.IsNullOrWhiteSpace(label) && seenLabels.Add(label))
+                {
+                    labels.Add(label);
+                }
+            }
+
+            return string.Join(", ", labels.ToArray());
+        }
+
+        // Reads RimWorld's letter archive for the newest fresh threat letter while the home map is
+        // still in danger. This keeps raid/siege/manhunter context near the event but avoids stale
+        // archive messages becoming background flavor hours later.
+        private static string BuildRecentThreatSummary(Map map)
+        {
+            if (map == null
+                || !map.IsPlayerHome
+                || map.dangerWatcher == null
+                || map.dangerWatcher.DangerRating == StoryDanger.None
+                || Find.Archive == null)
+            {
+                return string.Empty;
+            }
+
+            List<IArchivable> archivables = Find.Archive.ArchivablesListForReading;
+            if (archivables == null || archivables.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            int nowTicks = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
+            int scanned = 0;
+            for (int i = archivables.Count - 1; i >= 0 && scanned < MaxThreatLetterScanBack; i--, scanned++)
+            {
+                IArchivable archivable = archivables[i];
+                Letter letter = archivable as Letter;
+                if (letter?.def == null)
+                {
+                    continue;
+                }
+
+                if (letter.def != LetterDefOf.ThreatBig && letter.def != LetterDefOf.ThreatSmall)
+                {
+                    continue;
+                }
+
+                if (ThreatLetterIsStale(archivable, nowTicks))
+                {
+                    return string.Empty;
+                }
+
+                string label = SafeArchivedLabel(archivable);
+                return label;
+            }
+
+            return string.Empty;
+        }
+
+        private static bool ThreatLetterIsStale(IArchivable archivable, int nowTicks)
+        {
+            if (archivable == null || nowTicks < 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                int createdTicks = archivable.CreatedTicksGame;
+                return createdTicks > 0 && nowTicks - createdTicks > RecentThreatTimeoutTicks;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string SafeArchivedLabel(IArchivable archivable)
+        {
+            if (archivable == null)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return CleanLine(archivable.ArchivedLabel);
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         public static string BuildPawnSummary(Pawn pawn)

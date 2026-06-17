@@ -310,9 +310,11 @@ bucketed into words. Surroundings include a couple of nearby objects chosen with
 selection, favoring important context such as fire, corpses, and buildings without making every entry
 identical. First-person prompts now include `setting:` whenever the pawn has a spawned-map
 surroundings summary. The surroundings line always says whether the pawn is indoors or outdoors;
-weather and biome are appended only when the room is psychologically outdoors. Neutral
-arrival/death prompts parse curated facts from `gameContext` instead of dumping the whole metadata
-string.
+weather and biome are appended only when the room is psychologically outdoors. The same setting
+line may also include up to three visible active map conditions and one fresh recent threat letter
+while a player-home map is still in a danger state. These are context hints for the current diary
+entry, not standalone diary events. Neutral arrival/death prompts parse curated facts from
+`gameContext` instead of dumping the whole metadata string.
 
 Prompt enchantments are weighted hediff matchers in
 `1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When `enablePromptEnchantments` is on, every

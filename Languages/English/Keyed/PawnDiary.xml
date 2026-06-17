@@ -309,6 +309,8 @@
   <PawnDiary.Ctx.Cold>cold</PawnDiary.Ctx.Cold>
   <PawnDiary.Ctx.Hot>hot</PawnDiary.Ctx.Hot>
   <PawnDiary.Ctx.Surroundings>{0} surroundings</PawnDiary.Ctx.Surroundings>
+  <PawnDiary.Ctx.ActiveConditions>active conditions: {0}</PawnDiary.Ctx.ActiveConditions>
+  <PawnDiary.Ctx.RecentThreat>recent threat: {0}</PawnDiary.Ctx.RecentThreat>
   <PawnDiary.Ctx.Near>near {0}</PawnDiary.Ctx.Near>
   <PawnDiary.Ctx.Doing>doing: {0}</PawnDiary.Ctx.Doing>
   <PawnDiary.Ctx.Downed>downed</PawnDiary.Ctx.Downed>
