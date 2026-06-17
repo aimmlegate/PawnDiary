@@ -56,7 +56,6 @@ function parseArgs(argv) {
   const options = {
     configPath: DEFAULT_CONFIG_PATH,
     caseFilter: null,
-    runAll: false,
     dryRun: false,
     saveResults: false,
     verbose: false,
@@ -95,10 +94,6 @@ function parseArgs(argv) {
     if (arg === '--result-folder') {
       options.resultFolder = resolvePath(argv[i + 1]);
       i++;
-      continue;
-    }
-    if (arg === '--all') {
-      options.runAll = true;
       continue;
     }
     if (arg === '--dry-run') {
@@ -178,7 +173,7 @@ function parseArgs(argv) {
 function usage() {
   return [
     'Usage:',
-    '  node run.js --from-defs [--save] [--case <id>] [--all]',
+    '  node run.js --from-defs [--save] [--case <id>]',
     '  node run.js --case <id-or-file> [--fixtures <dir>] [--save]',
     '',
     'Options:',
@@ -186,7 +181,6 @@ function usage() {
     '  --case <id-or-file>          Run one generated case or one fixture file',
     '  --fixtures <dir>             Manual fixture directory (default prompts/fixtures)',
     '  --result-folder <dir>         Save results under this root folder',
-    '  --all                        Run all manual fixtures',
     '  --from-defs                   Build cases from XML defs',
     '  --include-groups <n>         Number of XML interaction groups to include in generated cases',
     '  --include-personas <n>        Number of XML personas used when building variants',
@@ -1139,13 +1133,9 @@ async function main() {
     }
   } else {
     const loaded = loadManualFixtures(args.fixtureDir);
-    if (args.caseFilter) {
-      fixtures = loaded.filter((entry) => shouldRunFixture(entry, args.caseFilter));
-    } else if (args.runAll) {
-      fixtures = loaded;
-    } else {
-      fixtures = loaded;
-    }
+    fixtures = args.caseFilter
+      ? loaded.filter((entry) => shouldRunFixture(entry, args.caseFilter))
+      : loaded;
   }
 
   if (!fixtures || fixtures.length === 0) {

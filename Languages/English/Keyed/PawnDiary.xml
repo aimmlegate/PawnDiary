@@ -35,10 +35,6 @@
   <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
-  <PawnDiary.Tab.GeneratingCount>{0} writing</PawnDiary.Tab.GeneratingCount>
-  <PawnDiary.Tab.WritingCount>{0} writing</PawnDiary.Tab.WritingCount>
-  <PawnDiary.Tab.Important>important</PawnDiary.Tab.Important>
-  <PawnDiary.Tab.Quiet>quiet</PawnDiary.Tab.Quiet>
   <PawnDiary.Tab.LinkedInitiator>{0}'s perspective (initiator):</PawnDiary.Tab.LinkedInitiator>
   <PawnDiary.Tab.LinkedRecipient>{0}'s perspective (recipient):</PawnDiary.Tab.LinkedRecipient>
   <PawnDiary.Tab.LinkedNotGenerated>[not written yet]</PawnDiary.Tab.LinkedNotGenerated>
@@ -54,7 +50,6 @@
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->
-  <PawnDiary.Status.Generating>writing</PawnDiary.Status.Generating>
   <PawnDiary.Status.Writing>writing</PawnDiary.Status.Writing>
   <PawnDiary.Status.WritingEllipsis>writing...</PawnDiary.Status.WritingEllipsis>
   <PawnDiary.Status.GenerationFailed>writing failed</PawnDiary.Status.GenerationFailed>
@@ -78,7 +73,6 @@
   <PawnDiary.Settings.ModelName>Model name</PawnDiary.Settings.ModelName>
   <PawnDiary.Settings.FetchModels>Fetch</PawnDiary.Settings.FetchModels>
   <PawnDiary.Settings.FetchingModels>Fetching models...</PawnDiary.Settings.FetchingModels>
-  <PawnDiary.Settings.ModelsNotFetched>Models not fetched.</PawnDiary.Settings.ModelsNotFetched>
   <PawnDiary.Settings.NoModelsReturned>No models returned.</PawnDiary.Settings.NoModelsReturned>
   <PawnDiary.Settings.ModelsFound>Found {0} model(s).</PawnDiary.Settings.ModelsFound>
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
@@ -95,16 +89,12 @@
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
   <PawnDiary.Settings.SystemPrompt>System prompt — diary voice</PawnDiary.Settings.SystemPrompt>
   <PawnDiary.Settings.SystemPromptHelp>First-person, in-character entries: social interactions, mental breaks, tales, mood events, and thoughts.</PawnDiary.Settings.SystemPromptHelp>
-  <PawnDiary.Settings.RestoreSystemPrompt>Restore default diary-voice prompt</PawnDiary.Settings.RestoreSystemPrompt>
   <PawnDiary.Settings.SystemPromptReflection>System prompt — day reflection</PawnDiary.Settings.SystemPromptReflection>
   <PawnDiary.Settings.SystemPromptReflectionHelp>First-person end-of-day reflection that looks back on the whole day and weaves its highlights together.</PawnDiary.Settings.SystemPromptReflectionHelp>
-  <PawnDiary.Settings.RestoreSystemPromptReflection>Restore default reflection prompt</PawnDiary.Settings.RestoreSystemPromptReflection>
   <PawnDiary.Settings.SystemPromptNeutral>System prompt — neutral chronicle</PawnDiary.Settings.SystemPromptNeutral>
   <PawnDiary.Settings.SystemPromptNeutralHelp>Third-person factual notes with no persona: colonist death and arrival descriptions.</PawnDiary.Settings.SystemPromptNeutralHelp>
-  <PawnDiary.Settings.RestoreSystemPromptNeutral>Restore default neutral prompt</PawnDiary.Settings.RestoreSystemPromptNeutral>
   <PawnDiary.Settings.SystemPromptTitle>System prompt — diary title</PawnDiary.Settings.SystemPromptTitle>
   <PawnDiary.Settings.SystemPromptTitleHelp>Short chat-style subject of three to eight words for an existing diary entry. Sent only by the title-writing follow-up; main entries are unaffected.</PawnDiary.Settings.SystemPromptTitleHelp>
-  <PawnDiary.Settings.RestoreSystemPromptTitle>Restore default title prompt</PawnDiary.Settings.RestoreSystemPromptTitle>
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
   <PawnDiary.Settings.PromptStudioHelp>Edit every Def-backed prompt text from one place. This covers both system prompts and the shorter instruction text appended to structured context.</PawnDiary.Settings.PromptStudioHelp>
   <PawnDiary.Settings.PromptStudioSummary>{0} prompt texts available, {1} customized</PawnDiary.Settings.PromptStudioSummary>
@@ -177,11 +167,6 @@
   <PawnDiary.Event.MentalBreak>{0} had a mental break ({1})</PawnDiary.Event.MentalBreak>
   <PawnDiary.Event.DirectedAt>, directed at {0}</PawnDiary.Event.DirectedAt>
   <PawnDiary.Event.ReasonSuffix>. Reason: {0}</PawnDiary.Event.ReasonSuffix>
-  <PawnDiary.Event.SmallTalk>{0} had small talk with {1}.</PawnDiary.Event.SmallTalk>
-  <PawnDiary.Event.SmallTalkLabel>Small talk</PawnDiary.Event.SmallTalkLabel>
-  <PawnDiary.Event.SmallTalkBrief>A brief small-talk exchange.</PawnDiary.Event.SmallTalkBrief>
-  <PawnDiary.Event.SmallTalkBatchHeader>Several small-talk moments happened:</PawnDiary.Event.SmallTalkBatchHeader>
-  <PawnDiary.Event.SmallTalkBatchInstruction>write one diary entry for the overall small-talk exchange, not separate entries for each listed moment</PawnDiary.Event.SmallTalkBatchInstruction>
   <PawnDiary.Event.BatchFallback>{0} had several {2} moments with {1}.</PawnDiary.Event.BatchFallback>
   <PawnDiary.Event.BatchLabel>{0}</PawnDiary.Event.BatchLabel>
   <PawnDiary.Event.BatchBrief>A brief {0} exchange.</PawnDiary.Event.BatchBrief>
@@ -345,14 +330,5 @@
   <PawnDiary.Bucket.Effect.StrongPositive>strong positive</PawnDiary.Bucket.Effect.StrongPositive>
   <PawnDiary.Bucket.Effect.Negative>negative</PawnDiary.Bucket.Effect.Negative>
   <PawnDiary.Bucket.Effect.StrongNegative>strong negative</PawnDiary.Bucket.Effect.StrongNegative>
-
-  <!-- Atmosphere words (short evocative modifiers for the "atmosphere:" prompt field) -->
-  <PawnDiary.Atmosphere.Mood.Bright>bright</PawnDiary.Atmosphere.Mood.Bright>
-  <PawnDiary.Atmosphere.Mood.Tense>tense</PawnDiary.Atmosphere.Mood.Tense>
-  <PawnDiary.Atmosphere.Mood.Bleak>bleak</PawnDiary.Atmosphere.Mood.Bleak>
-  <PawnDiary.Atmosphere.Opinion.Devotion>devotion</PawnDiary.Atmosphere.Opinion.Devotion>
-  <PawnDiary.Atmosphere.Opinion.Warmth>warmth</PawnDiary.Atmosphere.Opinion.Warmth>
-  <PawnDiary.Atmosphere.Opinion.Friction>friction</PawnDiary.Atmosphere.Opinion.Friction>
-  <PawnDiary.Atmosphere.Opinion.Hostility>hostility</PawnDiary.Atmosphere.Opinion.Hostility>
 
 </LanguageData>

@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (low-consciousness persona rules)_
+_Last updated: 2026-06-17 (route cleanup)_
 
 ---
 
@@ -145,6 +145,9 @@ Synthetic tale-style hooks cover masterwork/legendary crafts from
 Starting colonists receive neutral arrival pages after maps/free-colonist lists exist. Later joins
 are detected through `Pawn.SetFaction` when a humanlike pawn becomes `Faction.OfPlayer`; cached
 context includes prior faction, recruiter, pawn kind, creepjoiner flag, and surroundings.
+The synthetic `arrival` interaction group matches `PawnDiary_Arrival`, so arrival pages have their
+own chip, importance state, and Events toggle instead of falling through to the interaction
+catch-all. Arrival generation still uses the dedicated `arrivalDescriptionInstruction` prompt text.
 
 Deaths use a `Pawn.Kill` prefix to cache cause details before RimWorld mutates health state. Accepted
 death TaleDefs mark the victim event as `death_description=true` and queue the neutral death prompt.
@@ -335,7 +338,6 @@ Core settings:
 | `groupEnabled` / `groupInstructions` | XML defaults | Per-group recording toggles and instructions. |
 | `personaPresets` | empty | Built-in overrides plus custom personas. |
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
-| `enableLlm` / `keepRawEntryOnFailure` | true | Currently forced on by `ClampValues`. |
 
 The settings window contains Connection, Diary writing, Prompt Studio, Persona presets, and Events
 sections. It supports multiple API lanes, model fetching/picking, prompt resets, persona selection

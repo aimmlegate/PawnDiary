@@ -29,13 +29,13 @@ group exclusions.
 Use:
 
 ```bash
-npm run from-defs -- --from-defs --all
+npm run from-defs
 ```
 
 ### Save per-model markdown results
 
 ```bash
-node run.js --from-defs --all --save --model local-model
+node run.js --from-defs --save --model local-model
 ```
 
 Saved files:

@@ -410,6 +410,19 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>arrival</defName>
+    <label>Arrival</label>
+    <order>136</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <!-- Synthetic defName emitted by the colony-arrival flow (DiaryGameComponent.Arrivals.cs). -->
+    <matchDefNames>
+      <li>PawnDiary_Arrival</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>other</defName>
     <label>A quiet day</label>
     <order>140</order>

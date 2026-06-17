@@ -3,6 +3,13 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (route cleanup)**
+  - Added an explicit `arrival` interaction group for `PawnDiary_Arrival`, so arrival pages use the
+    Arrival chip, important styling, and Events toggle instead of the `other` catch-all.
+  - Removed inert legacy `enableLlm` and `keepRawEntryOnFailure` settings fields.
+  - Removed stale Keyed strings from old status, restore-prompt, small-talk, and atmosphere paths.
+  - Dropped the no-op prompt-lab `--all` switch from CLI help, package scripts, and README examples.
+
 - **2026-06-17 (discovery event removal)**
   - Removed the non-functioning discovery event generation path: disabled Harmony stubs, recorder
     partial, GameEvent classifier/settings helpers, XML group, and unused Keyed strings.

@@ -54,6 +54,7 @@ namespace PawnDiary
         private const string TaleQualityGroupKey = "talequality";
         private const string TaleRelicGroupKey = "talerelic";
         // Synthetic event used for the neutral first entry that explains how a pawn joined.
+        private const string ArrivalGroupKey = "arrival";
         private const string ArrivalDefName = "PawnDiary_Arrival";
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.

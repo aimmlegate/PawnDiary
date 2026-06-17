@@ -59,6 +59,12 @@ namespace PawnDiary
                 return;
             }
 
+            DiaryInteractionGroupDef arrivalGroup = InteractionGroups.ByKey(ArrivalGroupKey);
+            if (arrivalGroup != null && !PawnDiaryMod.Settings.IsGroupEnabled(arrivalGroup.defName))
+            {
+                return;
+            }
+
             bool startingPawn = !string.IsNullOrWhiteSpace(arrivalContext)
                 && arrivalContext.IndexOf("arrival_source=game_start", StringComparison.OrdinalIgnoreCase) >= 0;
             string label = "PawnDiary.Event.ArrivalLabel".Translate().Resolve();

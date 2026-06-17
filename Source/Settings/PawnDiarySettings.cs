@@ -94,8 +94,6 @@ namespace PawnDiary
 
     public class PawnDiarySettings : ModSettings
     {
-        // Master toggle: when false, no LLM requests are made (events are still recorded).
-        public bool enableLlm = true;
         // The configured API lanes used for generation. Requests are distributed across these
         // round-robin and run in parallel (one in-flight request per lane, see LlmClient).
         public List<ApiEndpointConfig> apiEndpoints = new List<ApiEndpointConfig>();
@@ -109,8 +107,6 @@ namespace PawnDiary
         public int maxTokens = 100;
         // Sampling temperature — higher values produce more creative/varied entries.
         public float temperature = 0.8f;
-        // When true, raw game-text entries are kept even if LLM generation fails, so no history is lost.
-        public bool keepRawEntryOnFailure = true;
         // UI preference: when false, the compact API/model setup block is collapsed in mod settings.
         public bool showApiSettings = true;
         // Dev-mode UI preference: shows the per-pawn persona picker in the Diary inspector tab.
@@ -195,13 +191,11 @@ namespace PawnDiary
 
         public override void ExposeData()
         {
-            Scribe_Values.Look(ref enableLlm, "enableLlm", true);
             Scribe_Collections.Look(ref apiEndpoints, "apiEndpoints", LookMode.Deep);
             Scribe_Values.Look(ref timeoutSeconds, "timeoutSeconds", 30);
             Scribe_Values.Look(ref maxConcurrentRequests, "maxConcurrentRequests", 4);
             Scribe_Values.Look(ref maxTokens, "maxTokens", 100);
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
-            Scribe_Values.Look(ref keepRawEntryOnFailure, "keepRawEntryOnFailure", true);
             Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
@@ -594,9 +588,6 @@ namespace PawnDiary
         /// </summary>
         public void ClampValues()
         {
-            enableLlm = true;
-            keepRawEntryOnFailure = true;
-
             EnsureGroupDictionaries();
             EnsurePersonaPresetList();
 

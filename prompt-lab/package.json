@@ -4,9 +4,9 @@
   "description": "Standalone Node prompt lab for testing PawnDiary prompt payloads",
   "private": true,
   "scripts": {
-    "start": "node run.js --from-defs --all",
-    "from-defs": "node run.js --from-defs --all",
-    "dry-run": "node run.js --from-defs --all --dry-run",
-    "from-defs:save": "node run.js --from-defs --all --save"
+    "start": "node run.js --from-defs",
+    "from-defs": "node run.js --from-defs",
+    "dry-run": "node run.js --from-defs --dry-run",
+    "from-defs:save": "node run.js --from-defs --save"
   }
 }
