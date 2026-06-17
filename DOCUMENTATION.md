@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (prompt-lab prompt-policy sync)_
+_Last updated: 2026-06-17 (low-creative-reach prompt guard)_
 
 ---
 
@@ -292,14 +292,14 @@ Main first-person prompts no longer use one broad template. `DiaryPromptBuilder`
 per-event context policy:
 
 - Routine/internal entries (work, thoughts, mood events, ambient/batched notes) send the event, POV,
-  group instruction, persona, last-opener continuity, and possibly one compact live health cue, then
-  skip broad pawn state, setting, relationship, hidden initiator text, and weapon.
-- Meaningful non-batched social entries add relationship continuity, tone when the group is
-  important, and hidden initiator context only for important paired recipient follow-ups.
+  group instruction, persona, setting, last-opener continuity, and possibly one compact live health
+  cue, then skip broad pawn state, relationship, hidden initiator text, and weapon.
+- Meaningful non-batched social entries also carry setting, relationship continuity, tone when the
+  group is important, and hidden initiator context only for important paired recipient follow-ups.
 - Combat/crisis entries add pawn summary, setting, tone, relationship for paired events, current POV
   weapon, hidden initiator context, and the same optional prompt enchantment path.
-- End-of-day reflections add pawn summary and last-opener continuity to the selected highlights,
-  but skip setting, relationship, and weapon.
+- End-of-day reflections add pawn summary, setting, and last-opener continuity to the selected
+  highlights, but skip relationship and weapon.
 - Major solo events add pawn summary, setting, tone, and last-opener continuity, but skip
   relationship and weapon unless combat.
 
@@ -308,8 +308,11 @@ thoughts when the policy includes `you:`. Generated structured context avoids se
 scores where possible: age, mood, pain, bleeding, opinion, thought impact, and hediff severity are
 bucketed into words. Surroundings include a couple of nearby objects chosen with weighted random
 selection, favoring important context such as fire, corpses, and buildings without making every entry
-identical. Neutral arrival/death prompts parse curated facts from `gameContext` instead of dumping
-the whole metadata string.
+identical. First-person prompts now include `setting:` whenever the pawn has a spawned-map
+surroundings summary. The surroundings line always says whether the pawn is indoors or outdoors;
+weather and biome are appended only when the room is psychologically outdoors. Neutral
+arrival/death prompts parse curated facts from `gameContext` instead of dumping the whole metadata
+string.
 
 Prompt enchantments are weighted hediff matchers in
 `1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When `enablePromptEnchantments` is on, every
@@ -328,10 +331,12 @@ The prompt text itself is a compact priority cue built from RimWorld's live data
 `important health: high priority; <urgency> <condition> [in <body part>]; <top impact cues>`.
 Impact cues are capped so the model sees only the strongest reasons, such as life-threatening,
 bleeding, severe pain, body weakness, addiction pressure, or mood pressure. The first-person system
-prompts explicitly tell the model to treat this field as high-priority body/mood pressure without
-reciting it mechanically. The `important health:` field key remains an English schema label by the
-localization carve-out, but every natural-language word in its value comes from Keyed translations
-or RimWorld's localized hediff/body-part labels.
+prompts explicitly tell the model that health is physical/mood pressure, not the subject, unless the
+actual event is medical. They also cap health mentions to one short phrase so a wound cue cannot
+turn a conversion, insult, work moment, or thought into an invented treatment scene. The
+`important health:` field key remains an English schema label by the localization carve-out, but
+every natural-language word in its value comes from Keyed translations or RimWorld's localized
+hediff/body-part labels.
 
 Visible hediff matchers can define optional `hediffSeverityTiers`. Four fixed code levels are
 available: minor, moderate, major, and critical. Code-owned numeric thresholds decide which tier
@@ -357,10 +362,15 @@ System prompts are selected by narrative mode:
 | Title follow-up | `systemPromptTitle` |
 
 Default prompt contracts ask for complete, short entries using prose length cues rather than numeric
-word ranges. They tell the model to use structured context as private evidence for voice, focus, and
-subtext, not as a checklist to echo. The first-person diary and day-reflection system prompts also
-require at least one concrete supplied detail, warn against vague filler, and include compact
-good/bad examples so small local models see the intended transformation.
+word ranges. They now name the actual event (`event`, `what you saw` / `what happened`,
+`instruction`, POV, and role) as the subject that must drive the entry. Persona, relationship,
+setting, weapon, mood, thought, health, hidden entries, and last-opener fields are supporting
+context for voice, focus, and subtext, not alternate scenes to write instead. The first-person diary
+and day-reflection system prompts also require at least one concrete event detail, warn against
+vague filler and invented props/treatment/dialogue. They now include an explicit low-creative-reach
+guard for roleplay-tuned models: do not add new names, factions, places, backstory, memories,
+symbols, threats, promises, consequences, or off-screen actions. Compact good/bad examples help
+small local models see the intended transformation.
 
 Paired two-pawn interaction prompts append separate localized direct-speech rules for initiator and
 recipient POVs. Each rule names the current POV pawn and the opposite pawn, then allows quoted

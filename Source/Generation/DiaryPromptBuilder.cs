@@ -261,11 +261,12 @@ namespace PawnDiary
                 return policy;
             }
 
-            // Every first-person prompt carries persona, so it can also carry the compact continuity
-            // cue that prevents repeated openings and one compact live hediff hint. The rest of this
+            // Every first-person prompt carries persona, current surroundings, a compact continuity
+            // cue that prevents repeated openings, and one compact live hediff hint. The rest of this
             // policy only decides which broader context fields join them.
             policy.includeLastOpener = true;
             policy.includePromptEnchantment = true;
+            policy.includeSetting = true;
 
             bool combat = diaryEvent.ShouldShowWeapon();
             bool important = diaryEvent.IsImportant();

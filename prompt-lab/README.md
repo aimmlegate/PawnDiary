@@ -27,10 +27,11 @@ Generated fixtures are derived from the current XML catalog and honor the harnes
 group exclusions.
 
 Generated first-person fixtures mirror the in-game `DiaryPromptBuilder` context policy: persona and
-last-opener cues are always present, one sample `important health:` cue appears on selected cases,
-and broader pawn/setting/tone/relationship/weapon/hidden-initiator fields only appear for the same
-combat, important, batched, reflection, and internal-state branches used in game. Interaction
-fixtures also append the current Keyed direct-speech cue for the active POV pawn.
+last-opener cues are always present, `setting:` is included whenever fixture data supplies it, one
+sample `important health:` cue appears on selected cases, and broader
+pawn/tone/relationship/weapon/hidden-initiator fields only appear for the same combat, important,
+batched, reflection, and internal-state branches used in game. Interaction fixtures also append the
+current Keyed direct-speech cue for the active POV pawn.
 
 Use:
 

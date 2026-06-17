@@ -568,7 +568,7 @@ function generatedContextForGroup(group, kind) {
 function promptPolicyFor(group, context, hasOtherPawn) {
   const policy = {
     includePawnSummary: false,
-    includeSetting: false,
+    includeSetting: true,
     includeTone: false,
     includeRelationship: false,
     includeLastOpener: true,

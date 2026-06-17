@@ -3,6 +3,28 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (low-creative-reach prompt guard)**
+  - Added first-person and reflection system-prompt guardrails for roleplay-tuned models that
+    over-expand sparse context, forbidding new names, places, backstory, symbols, and off-screen
+    actions not present in the notes.
+  - Added the previous event-subject prompt defaults to saved-settings migration so untouched
+    Prompt Studio text upgrades to the new guard automatically.
+
+- **2026-06-17 (always-on setting context)**
+  - Changed first-person prompt policy so `setting:` is sent for every prompt when surroundings are
+    available, including social, batched, internal-state, and reflection entries.
+  - Confirmed weather/biome remain gated to outdoor surroundings, while indoor prompts still carry
+    room role and `indoors`.
+  - Synced the prompt-lab policy mirror and documentation with the new always-on setting behavior.
+
+- **2026-06-17 (prompt event-subject guardrails)**
+  - Reworded first-person and reflection prompt defaults so the actual event stays the subject and
+    optional context fields only color voice, focus, and subtext.
+  - Demoted `important health:` from a high-priority story target to physical/mood pressure unless
+    the event itself is medical, with explicit guards against invented treatment scenes.
+  - Updated single-POV and recipient follow-up instructions to keep health, setting, weapon,
+    relationship, persona, and hidden continuity from becoming alternate scenes.
+
 - **2026-06-17 (prompt lab prompt-policy sync)**
   - Updated prompt-lab generated fixtures to mirror `DiaryPromptBuilder`'s compact context policy,
     including optional `important health:` cues, last-opener cues, combat context, hidden initiator
