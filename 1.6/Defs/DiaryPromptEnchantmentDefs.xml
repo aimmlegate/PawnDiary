@@ -1,8 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
-  Optional prompt enchantments add ONE extra "prompt_enchantment:" line to selected
-  first-person diary prompts. The text comes from the live hediff's game label, severity, body
-  part, and description; this XML only controls which hediffs are eligible and how often they win.
+  Optional prompt enchantments add ONE extra "important health:" line to selected
+  first-person diary prompts. The text comes from the live hediff's game label, body part,
+  urgency bucket, and strongest impact cues; this XML only controls which hediffs are eligible and
+  how often they win.
 
   Tuning fields:
     chance / frequency  - per-prompt appearance chance after matching, 0..1. frequency is an alias.

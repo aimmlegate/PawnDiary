@@ -3,6 +3,15 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (compact important-health prompt cues)**
+  - Changed hediff prompt enchantments from a generic `prompt_enchantment:` metadata line to a
+    compact `important health:` cue with urgency, condition/body part, and capped impact reasons.
+  - Added first-person system-prompt guidance that important health cues are high-priority body and
+    mood pressure, not checklist text to recite.
+  - Moved the generated important-health cue words into Keyed translations, leaving only stable XML
+    tuning tokens hardcoded in the resolver.
+  - Localized the ambient interaction `with {pawn}` prompt-context connector.
+
 - **2026-06-17 (persona settings selector)**
   - Replaced the Persona Presets button grid with a compact selector menu and expanded the persona
     editor layout so long labels and all theme tags fit without clipping.

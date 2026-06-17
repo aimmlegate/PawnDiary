@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (persona settings selector)_
+_Last updated: 2026-06-17 (localized prompt-context cue words)_
 
 ---
 
@@ -69,7 +69,7 @@ Key files:
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
-| `PromptEnchantments.cs` | Weighted hediff matcher that may append one live health-condition `prompt_enchantment:` line to persona-bearing first-person prompts. |
+| `PromptEnchantments.cs` | Weighted hediff matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
 | `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, GameEvent, and Work domains. |
 | `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, and safe code defaults. |
@@ -228,8 +228,8 @@ Main first-person prompts no longer use one broad template. `DiaryPromptBuilder`
 per-event context policy:
 
 - Routine/internal entries (work, thoughts, mood events, ambient/batched notes) send the event, POV,
-  group instruction, persona, last-opener continuity, and possibly one live hediff prompt
-  enchantment, then skip broad pawn state, setting, relationship, hidden initiator text, and weapon.
+  group instruction, persona, last-opener continuity, and possibly one compact live health cue, then
+  skip broad pawn state, setting, relationship, hidden initiator text, and weapon.
 - Meaningful non-batched social entries add relationship continuity, tone when the group is
   important, and hidden initiator context only for important paired recipient follow-ups.
 - Combat/crisis entries add pawn summary, setting, tone, relationship for paired events, current POV
@@ -249,7 +249,7 @@ the whole metadata string.
 
 Prompt enchantments are weighted hediff matchers in
 `1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When `enablePromptEnchantments` is on, every
-first-person prompt that includes `persona:` may add exactly one `prompt_enchantment:` field next to
+first-person prompt that includes `persona:` may add exactly one `important health:` field next to
 it. The field is still omitted when no configured visible hediff matches or the selected match fails
 its chance roll. Neutral arrival/death prompts and title follow-ups never use prompt enchantments.
 
@@ -257,8 +257,14 @@ XML no longer contains prompt prose for hediffs. It only lists eligible `hediffD
 `minHediffSeverity`, `chance`/`frequency`, `weight`, and the weight-multiplier `severity`. Matching
 live hediffs first pass their chance roll, then one winner is selected by configured weight plus
 live urgency signals such as severity, life-threatening state, bleeding, pain, and health impact.
-The prompt text itself is built from RimWorld's live data:
-`condition=<label>; part=<body part>; intensity=<minor/moderate/major/critical>; description=<hediff description>`.
+The prompt text itself is a compact priority cue built from RimWorld's live data:
+`important health: high priority; <urgency> <condition> [in <body part>]; <top impact cues>`.
+Impact cues are capped so the model sees only the strongest reasons, such as life-threatening,
+bleeding, severe pain, body weakness, addiction pressure, or mood pressure. The first-person system
+prompts explicitly tell the model to treat this field as high-priority body/mood pressure without
+reciting it mechanically. The `important health:` field key remains an English schema label by the
+localization carve-out, but every natural-language word in its value comes from Keyed translations
+or RimWorld's localized hediff/body-part labels.
 
 Visible hediff matchers can define optional `hediffSeverityTiers`. Four fixed code levels are
 available: minor, moderate, major, and critical. Code-owned numeric thresholds decide which tier
@@ -326,7 +332,7 @@ Core settings:
 | `maxTokens` | 100 | API cap plus local sentence-aware response trimming. |
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
-| `enablePromptEnchantments` | true | Allows weighted live hediff context to append one first-person `prompt_enchantment:` line. |
+| `enablePromptEnchantments` | true | Allows weighted live hediff context to append one first-person `important health:` cue. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for sampled work and batched-social promotion. |
 | `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
 | prompt instruction overrides | XML defaults | User-message prompt texts listed in section 6. |
@@ -418,8 +424,10 @@ pending title statuses without stored titles are cleared.
 
 Player-facing UI strings and natural-language prompt text are Keyed entries in
 `Languages/English/Keyed/PawnDiary.xml`, resolved with `.Translate()` on the main thread. Def text
-(`label`, `instruction`, `tone`, persona `rule`, prompt defs, and the game hediff descriptions used
-by prompt enchantments) localizes through DefInjected files.
+(`label`, `instruction`, `tone`, persona `rule`, prompt defs, and hediff labels/body-part labels used
+by prompt enchantments) localizes through DefInjected files. The health-cue words generated by
+`PromptEnchantments.cs` localize through Keyed `PawnDiary.Prompt.Health.*` entries; other generated
+prompt-context connector words localize through `PawnDiary.Ctx.*` entries.
 
 Kept in English intentionally:
 

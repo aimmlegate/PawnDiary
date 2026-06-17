@@ -85,7 +85,7 @@
   <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Use health-condition prompt hints</PawnDiary.Settings.EnablePromptEnchantments>
-  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one live health condition. XML only controls which hediffs match and how often they appear; the prompt text comes from the game's hediff label, text intensity, and description.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live health cue. XML only controls which hediffs match and how often they appear; the prompt text stays compact and uses the game's hediff label, urgency, body part, and strongest impact cues.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.WorkGenerationWeight>Work random weight: {0}x</PawnDiary.Settings.WorkGenerationWeight>
   <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
   <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>
@@ -281,10 +281,27 @@
   <!-- ===== Prompt context: descriptive words the model reads (the field KEYS stay English) ===== -->
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
+  <PawnDiary.Prompt.Health.HighPriority>high priority</PawnDiary.Prompt.Health.HighPriority>
+  <PawnDiary.Prompt.Health.ConditionFallback>health condition</PawnDiary.Prompt.Health.ConditionFallback>
+  <PawnDiary.Prompt.Health.ConditionInPart>{0} in {1}</PawnDiary.Prompt.Health.ConditionInPart>
+  <PawnDiary.Prompt.Health.IntensityCondition>{0} {1}</PawnDiary.Prompt.Health.IntensityCondition>
+  <PawnDiary.Prompt.Health.Intensity.Minor>minor</PawnDiary.Prompt.Health.Intensity.Minor>
+  <PawnDiary.Prompt.Health.Intensity.Moderate>moderate</PawnDiary.Prompt.Health.Intensity.Moderate>
+  <PawnDiary.Prompt.Health.Intensity.Major>major</PawnDiary.Prompt.Health.Intensity.Major>
+  <PawnDiary.Prompt.Health.Intensity.Critical>critical</PawnDiary.Prompt.Health.Intensity.Critical>
+  <PawnDiary.Prompt.Health.Cue.LifeThreatening>life-threatening</PawnDiary.Prompt.Health.Cue.LifeThreatening>
+  <PawnDiary.Prompt.Health.Cue.Bleeding>bleeding</PawnDiary.Prompt.Health.Cue.Bleeding>
+  <PawnDiary.Prompt.Health.Cue.HeavyBleeding>heavy bleeding</PawnDiary.Prompt.Health.Cue.HeavyBleeding>
+  <PawnDiary.Prompt.Health.Cue.Pain>pain</PawnDiary.Prompt.Health.Cue.Pain>
+  <PawnDiary.Prompt.Health.Cue.SeverePain>severe pain</PawnDiary.Prompt.Health.Cue.SeverePain>
+  <PawnDiary.Prompt.Health.Cue.WeakensBody>weakens body</PawnDiary.Prompt.Health.Cue.WeakensBody>
+  <PawnDiary.Prompt.Health.Cue.AddictionPressure>addiction pressure</PawnDiary.Prompt.Health.Cue.AddictionPressure>
+  <PawnDiary.Prompt.Health.Cue.HurtsMood>hurts mood</PawnDiary.Prompt.Health.Cue.HurtsMood>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>
   <PawnDiary.Ctx.LastWrote>last wrote: "{0}"</PawnDiary.Ctx.LastWrote>
+  <PawnDiary.Ctx.With>with {0}</PawnDiary.Ctx.With>
   <PawnDiary.Ctx.Outdoors>outdoors</PawnDiary.Ctx.Outdoors>
   <PawnDiary.Ctx.Indoors>indoors</PawnDiary.Ctx.Indoors>
   <PawnDiary.Ctx.Cold>cold</PawnDiary.Ctx.Cold>

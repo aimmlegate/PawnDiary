@@ -800,7 +800,7 @@ namespace PawnDiary
             StringBuilder builder = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(otherName))
             {
-                builder.Append("with ").Append(otherName);
+                builder.Append("PawnDiary.Ctx.With".Translate(otherName).Resolve());
             }
 
             if (!string.IsNullOrWhiteSpace(cleanLabel))

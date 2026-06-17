@@ -159,7 +159,7 @@ namespace PawnDiary
             // Prompt enchantments are optional live health-condition hints chosen from weighted XML.
             if (policy.includePromptEnchantment)
             {
-                AppendField(lines, "prompt_enchantment", promptEnchantment);
+                AppendField(lines, "important health", promptEnchantment);
             }
 
             if (policy.includeSetting)
@@ -217,7 +217,7 @@ namespace PawnDiary
             // Prompt enchantments are optional live health-condition hints chosen from weighted XML.
             if (policy.includePromptEnchantment)
             {
-                AppendField(lines, "prompt_enchantment", promptEnchantment);
+                AppendField(lines, "important health", promptEnchantment);
             }
 
             if (policy.includeSetting)

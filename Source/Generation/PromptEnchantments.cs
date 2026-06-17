@@ -3,6 +3,7 @@
 // only controls which hediffs are eligible and how strongly each one is weighted.
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -25,7 +26,7 @@ namespace PawnDiary
 
     /// <summary>
     /// XML-configured weighting rule for live hediff prompt context. The prompt text itself comes
-    /// from RimWorld's hediff label, severity, body part, and description.
+    /// from RimWorld's hediff label, body part, urgency, and strongest live impact cues.
     /// </summary>
     public class DiaryPromptEnchantmentDef : Def
     {
@@ -82,7 +83,7 @@ namespace PawnDiary
         private const float ModerateHediffSeverity = 0.25f;
         private const float MajorHediffSeverity = 0.50f;
         private const float CriticalHediffSeverity = 0.75f;
-        private const int MaxDescriptionChars = 180;
+        private const int MaxImpactCues = 3;
 
         /// <summary>
         /// Returns one live hediff prompt for this pawn, or empty when disabled/no match.
@@ -176,36 +177,82 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            List<string> parts = new List<string>();
-            AppendPart(parts, "condition", hediff.LabelCap);
-            if (hediff.Part != null)
+            List<string> parts = new List<string>
             {
-                AppendPart(parts, "part", hediff.Part.LabelCap);
-            }
+                PromptText("PawnDiary.Prompt.Health.HighPriority"),
+                CompactCondition(hediff)
+            };
 
-            AppendPart(parts, "intensity", HediffIntensity(hediff));
-            AppendPart(parts, "description", TrimForPrompt(hediff.def?.description, MaxDescriptionChars));
+            AddImpactCues(parts, hediff);
             return string.Join("; ", parts.ToArray());
         }
 
-        private static void AppendPart(List<string> parts, string label, string value)
+        private static string CompactCondition(Hediff hediff)
         {
-            string cleaned = DiaryContextBuilder.CleanLine(value);
-            if (!string.IsNullOrWhiteSpace(cleaned))
+            string condition = DiaryContextBuilder.CleanLine(hediff.LabelCap);
+            if (string.IsNullOrWhiteSpace(condition))
             {
-                parts.Add(label + "=" + cleaned);
+                condition = DiaryContextBuilder.CleanLine(hediff.def?.label);
+            }
+
+            if (string.IsNullOrWhiteSpace(condition))
+            {
+                condition = PromptText("PawnDiary.Prompt.Health.ConditionFallback");
+            }
+
+            string part = hediff.Part == null ? string.Empty : DiaryContextBuilder.CleanLine(hediff.Part.LabelCap);
+            if (!string.IsNullOrWhiteSpace(part))
+            {
+                condition = PromptText("PawnDiary.Prompt.Health.ConditionInPart", condition, part);
+            }
+
+            string intensity = HediffIntensity(hediff);
+            return string.IsNullOrWhiteSpace(intensity)
+                ? condition
+                : PromptText("PawnDiary.Prompt.Health.IntensityCondition", intensity, condition);
+        }
+
+        private static void AddImpactCues(List<string> parts, Hediff hediff)
+        {
+            List<string> cues = new List<string>();
+            AppendCue(cues, hediff.IsCurrentlyLifeThreatening, PromptText("PawnDiary.Prompt.Health.Cue.LifeThreatening"));
+            AppendCue(cues, hediff.Bleeding, BleedingCue(hediff));
+            AppendCue(cues, hediff.PainOffset > 0.05f, PainCue(hediff));
+            AppendCue(cues, hediff.SummaryHealthPercentImpact < -0.05f, PromptText("PawnDiary.Prompt.Health.Cue.WeakensBody"));
+            AppendCue(cues, hediff is Hediff_Addiction, PromptText("PawnDiary.Prompt.Health.Cue.AddictionPressure"));
+            AppendCue(cues, hediff.def != null && hediff.def.makesSickThought, PromptText("PawnDiary.Prompt.Health.Cue.HurtsMood"));
+
+            if (cues.Count > 0)
+            {
+                while (cues.Count > MaxImpactCues)
+                {
+                    cues.RemoveAt(cues.Count - 1);
+                }
+
+                parts.Add(string.Join(", ", cues.ToArray()));
             }
         }
 
-        private static string TrimForPrompt(string value, int maxChars)
+        private static void AppendCue(List<string> cues, bool include, string value)
         {
-            string cleaned = DiaryContextBuilder.CleanLine(value);
-            if (string.IsNullOrWhiteSpace(cleaned) || cleaned.Length <= maxChars)
+            if (include && !string.IsNullOrWhiteSpace(value))
             {
-                return cleaned;
+                cues.Add(value);
             }
+        }
 
-            return cleaned.Substring(0, maxChars).TrimEnd() + "...";
+        private static string BleedingCue(Hediff hediff)
+        {
+            return hediff.BleedRate >= 0.45f
+                ? PromptText("PawnDiary.Prompt.Health.Cue.HeavyBleeding")
+                : PromptText("PawnDiary.Prompt.Health.Cue.Bleeding");
+        }
+
+        private static string PainCue(Hediff hediff)
+        {
+            return hediff.PainOffset >= 0.20f
+                ? PromptText("PawnDiary.Prompt.Health.Cue.SeverePain")
+                : PromptText("PawnDiary.Prompt.Health.Cue.Pain");
         }
 
         private static bool VisibleHediff(Hediff hediff)
@@ -285,20 +332,20 @@ namespace PawnDiary
 
             if (hediff.IsCurrentlyLifeThreatening || hediff.Severity >= CriticalHediffSeverity)
             {
-                return "critical";
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Critical");
             }
 
             if (hediff.Severity >= MajorHediffSeverity)
             {
-                return "major";
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Major");
             }
 
             if (hediff.Severity >= ModerateHediffSeverity)
             {
-                return "moderate";
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Moderate");
             }
 
-            return "minor";
+            return PromptText("PawnDiary.Prompt.Health.Intensity.Minor");
         }
 
         private static PromptEnchantmentSeverityTier TierForHediffSeverity(List<PromptEnchantmentSeverityTier> tiers, float hediffSeverity)
@@ -342,6 +389,8 @@ namespace PawnDiary
                 return false;
             }
 
+            // These are XML tuning tokens, not prompt text. Keep them stable so Def authors do not
+            // have to rewrite configs when translating the model-facing words above.
             if (string.Equals(level, "minor", StringComparison.OrdinalIgnoreCase))
             {
                 threshold = MinorHediffSeverity;
@@ -387,6 +436,16 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        private static string PromptText(string key)
+        {
+            return key.Translate().Resolve();
+        }
+
+        private static string PromptText(string key, string arg0, string arg1)
+        {
+            return key.Translate(arg0, arg1).Resolve();
         }
     }
 }
