@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (insult-spree batching)_
+_Last updated: 2026-06-17 (persona settings selector)_
 
 ---
 
@@ -336,9 +336,9 @@ Core settings:
 | `enableLlm` / `keepRawEntryOnFailure` | true | Currently forced on by `ClampValues`. |
 
 The settings window contains Connection, Diary writing, Prompt Studio, Persona presets, and Events
-sections. It supports multiple API lanes, model fetching/picking, prompt resets, single-card persona
-editing, custom persona creation/deletion, grouped event toggles, and one per-group instruction
-editor.
+sections. It supports multiple API lanes, model fetching/picking, prompt resets, persona selection
+through a compact selector menu, single-card persona editing, custom persona creation/deletion,
+grouped event toggles, and one per-group instruction editor.
 
 The production Diary tab shows only completed generated pages. Dev mode adds writing enablement,
 persona picker, pending rows, raw/failure rows, prompt/status diagnostics, in-progress indicators,
