@@ -3,6 +3,15 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (prompt context policy streamlining)**
+  - Added event-type prompt context policies so routine/internal entries send minimal first-person
+    prompts, social entries keep relationship context, and combat/crisis entries keep pawn state,
+    setting, current POV weapon, hidden initiator context, and optional prompt enchantments.
+  - Curated neutral arrival/death fact lines instead of dumping full `gameContext` metadata into the
+    prompt.
+  - Removed unused opinion summary, atmosphere, and burning-passion prompt plumbing from event
+    creation and `DiaryEvent` persistence.
+
 - **2026-06-17 (consciousness prompt enchantments)**
   - Added XML `capacityBelow` matchers for pawn capacities, with optional `minValue` for exclusive
     ranges.

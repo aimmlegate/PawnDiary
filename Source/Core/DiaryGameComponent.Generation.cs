@@ -906,6 +906,11 @@ namespace PawnDiary
         /// </summary>
         private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole)
         {
+            if (!DiaryPromptBuilder.ShouldResolvePromptEnchantment(diaryEvent))
+            {
+                return string.Empty;
+            }
+
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             Pawn pawn = FindLivePawnByLoadId(pawnId);
             return PromptEnchantments.RuleFor(pawn);

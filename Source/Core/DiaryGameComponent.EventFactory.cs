@@ -1,6 +1,6 @@
 // The DiaryEvent factory: the two constructors every Record* hook funnels through.
 // AddPairwiseEvent/AddSoloEvent stamp a new DiaryEvent with an id, date, the fallback game text, and
-// all the per-POV context summaries (pawn, surroundings, opinions, continuity, atmosphere, …),
+// the per-POV context summaries used by prompt policies (pawn, surroundings, continuity, weapon),
 // register it in diaryEvents, and cross-reference the involved pawns' records. The per-event text and
 // context builders that feed these (tale helpers, mental-break text, …) live in each event's own
 // file — DiaryGameComponent.Tales.cs, .MentalStates.cs, etc.
@@ -46,17 +46,12 @@ namespace PawnDiary
                 recipientPawnSummary = DiaryContextBuilder.BuildPawnSummary(recipient),
                 initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(initiator),
                 recipientSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(recipient),
-                opinionsSummary = DiaryContextBuilder.BuildOpinionsSummary(initiator, recipient),
                 initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, diaryEvents),
                 recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, diaryEvents),
                 initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), diaryEvents),
                 recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), diaryEvents),
-                initiatorBurningPassion = DiaryContextBuilder.RandomBurningPassion(initiator),
-                recipientBurningPassion = DiaryContextBuilder.RandomBurningPassion(recipient),
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(initiator),
                 recipientWeapon = DiaryContextBuilder.EquippedWeapon(recipient),
-                initiatorAtmosphere = DiaryContextBuilder.BuildAtmosphere(initiator, recipient, instruction),
-                recipientAtmosphere = DiaryContextBuilder.BuildAtmosphere(recipient, initiator, instruction),
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
                 recipientStatus = DiaryEvent.NotGeneratedStatus,
                 neutralStatus = DiaryEvent.NotGeneratedStatus
@@ -96,17 +91,12 @@ namespace PawnDiary
                 recipientPawnSummary = "n/a",
                 initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn),
                 recipientSurroundings = "n/a",
-                opinionsSummary = otherPawn != null ? DiaryContextBuilder.BuildOpinionsSummary(pawn, otherPawn) : "n/a",
                 initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, diaryEvents),
                 recipientContinuity = "none",
                 initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), diaryEvents),
                 recipientLastOpener = string.Empty,
-                initiatorBurningPassion = DiaryContextBuilder.RandomBurningPassion(pawn),
-                recipientBurningPassion = string.Empty,
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(pawn),
                 recipientWeapon = string.Empty,
-                initiatorAtmosphere = DiaryContextBuilder.BuildAtmosphere(pawn, otherPawn, instruction),
-                recipientAtmosphere = string.Empty,
                 solo = true,
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
                 recipientStatus = DiaryEvent.NotGeneratedStatus,

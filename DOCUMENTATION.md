@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (consciousness capacity enchantments)_
+_Last updated: 2026-06-17 (prompt context policy streamlining)_
 
 ---
 
@@ -67,9 +67,9 @@ Key files:
 | `DiaryGameComponent*.cs` | Recording, batching, generation scans, save/load, lookup indexes, and public UI access. Event-source partials own their `Record*` methods. |
 | `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
-| `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, passion, and opener context. |
-| `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts. |
-| `PromptEnchantments.cs` | XML-driven state matcher that may append one weighted-random `prompt_enchantment:` line to first-person prompts. |
+| `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
+| `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
+| `PromptEnchantments.cs` | XML-driven state matcher that may append one weighted-random `prompt_enchantment:` line to policy-selected first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
 | `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, GameEvent, and Work domains. |
 | `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, and safe code defaults. |
@@ -219,19 +219,36 @@ Prompts are compact `key: value` lines. `AppendField` drops empty values and `no
 `unknown` sentinels. Numeric structured context uses invariant dot-decimal formatting so prompts do
 not vary by player OS locale.
 
-Main context may include event/POV/role fields, group instruction, pawn summary, DLC identity lines,
-mood, health, low capacities, top thoughts, persona rule, surroundings, relationship continuity,
-prompt enchantment, event tone, latest opener, and important/combat-only details such as burning passion or weapon.
-Surroundings include 1-2 nearby objects chosen with weighted random selection, favoring important
-context such as fire, corpses, and buildings without making every entry identical.
+Main first-person prompts no longer use one broad template. `DiaryPromptBuilder` applies a small
+per-event context policy:
+
+- Routine/internal entries (work, thoughts, mood events, ambient/batched notes) send the event, POV,
+  group instruction, and persona, then skip broad pawn state, setting, relationship, opener, hidden
+  initiator text, weapon, and prompt enchantments.
+- Meaningful non-batched social entries add relationship continuity, tone when the group is
+  important, and hidden initiator context only for important paired recipient follow-ups.
+- Combat/crisis entries add pawn summary, setting, tone, relationship for paired events, current POV
+  weapon, hidden initiator context, and optional prompt enchantment.
+- End-of-day reflections add pawn summary to the selected highlights, but skip setting,
+  relationship, opener, weapon, and prompt enchantment.
+- Major solo tales/discoveries add pawn summary, setting, and tone, but skip relationship/opener,
+  weapon unless combat, and prompt enchantment unless combat.
+
+Pawn summaries may contain DLC identity lines, mood, health, low capacities, and top thoughts when
+the policy includes `you:`. Surroundings include 1-2 nearby objects chosen with weighted random
+selection, favoring important context such as fire, corpses, and buildings without making every entry
+identical. Neutral arrival/death prompts parse curated facts from `gameContext` instead of dumping
+the whole metadata string.
 
 Prompt enchantments are XML Defs in `1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When
-`enablePromptEnchantments` is on, first-person prompts (solo, pairwise, sequential recipient, and day
-reflection) may add exactly one `prompt_enchantment:` field after `persona:`. Each Def can match live
-pawn state by visible hediff defName, active gene defName, highest royal-title defName, or pawn
-`StatDef` / `PawnCapacityDef` below a threshold. Capacity thresholds can include `minValue` to make
-exclusive ranges, such as Consciousness bands. Matching Defs first pass their `chance`/`frequency`
-roll, then one winner is selected by `weight * severity`.
+`enablePromptEnchantments` is on, only policy-selected first-person prompts (currently
+combat/crisis prompts) resolve enchantments and may add exactly one `prompt_enchantment:` field
+after `persona:`.
+Routine prompts do not scan enchantment Defs or consume a random enchantment roll. Each Def can
+match live pawn state by visible hediff defName, active gene defName, highest royal-title defName, or
+pawn `StatDef` / `PawnCapacityDef` below a threshold. Capacity thresholds can include `minValue` to
+make exclusive ranges, such as Consciousness bands. Matching Defs first pass their
+`chance`/`frequency` roll, then one winner is selected by `weight * severity`.
 
 Visible hediff matchers can define optional `hediffSeverityTiers`. Four fixed code levels are
 available: `minor` at severity 0.05, `moderate` at 0.25, `major` at 0.50, and `critical` at 0.75.
@@ -363,9 +380,9 @@ raw text is kept when configured.
 lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 
 `DiaryEvent` saves raw text, generated text, statuses/errors, context, source ids, LLM metadata, and
-per-POV titles. Prompts are rebuilt on demand instead of saved. Tale/mental/source classification is
-inferred from stable `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`,
-`thought=`, and `work=`.
+per-POV titles. Full prompt strings are not persisted; dev diagnostics can show prompts built during
+the current session. Tale/mental/source classification is inferred from stable `gameContext` markers
+such as `tale=`, `mental_state=`, `mood_event=`, `thought=`, and `work=`.
 
 Pending requests are not persisted. On load, pending main statuses reset to not-generated, and stale
 pending title statuses without stored titles are cleared.

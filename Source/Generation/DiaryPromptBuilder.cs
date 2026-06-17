@@ -12,6 +12,18 @@ namespace PawnDiary
 {
     public static class DiaryPromptBuilder
     {
+        private sealed class PromptContextPolicy
+        {
+            public bool includePawnSummary;
+            public bool includeSetting;
+            public bool includeTone;
+            public bool includeRelationship;
+            public bool includeLastOpener;
+            public bool includePromptEnchantment;
+            public bool includeWeapon;
+            public bool includeHiddenInitiatorEntry;
+        }
+
         // Prompts intentionally omit any field that is empty or "normal" (see AppendField),
         // so the model only ever sees signal — no "health: healthy", no weather indoors, etc.
         public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule, string promptEnchantment)
@@ -55,7 +67,7 @@ namespace PawnDiary
             List<string> lines = new List<string> { "event: colonist death" };
             AppendField(lines, "deceased", victimName);
             AppendField(lines, "what happened", diaryEvent.neutralText);
-            AppendField(lines, "death facts", diaryEvent.gameContext);
+            AppendField(lines, "death facts", BuildDeathFacts(diaryEvent.gameContext));
             AppendField(lines, "deceased pawn", PawnSummaryForContextRole(diaryEvent, victimRole));
             AppendField(lines, "setting", SurroundingsForContextRole(diaryEvent, victimRole));
 
@@ -78,7 +90,7 @@ namespace PawnDiary
             List<string> lines = new List<string> { "event: colonist arrival" };
             AppendField(lines, "colonist", pawnName);
             AppendField(lines, "what happened", diaryEvent.neutralText);
-            AppendField(lines, "arrival facts", diaryEvent.gameContext);
+            AppendField(lines, "arrival facts", BuildArrivalFacts(diaryEvent.gameContext));
             AppendField(lines, "colonist pawn", diaryEvent.initiatorPawnSummary);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
 
@@ -112,12 +124,24 @@ namespace PawnDiary
             return entryText + "\n\n" + PawnDiarySettings.CurrentTitleUserInstruction;
         }
 
+        /// <summary>
+        /// Returns true when this event's prompt policy can use a live prompt enchantment. The
+        /// generation queue checks this before resolving enchantments so routine prompts do not pay
+        /// for state-rule scans or consume a random roll.
+        /// </summary>
+        public static bool ShouldResolvePromptEnchantment(DiaryEvent diaryEvent)
+        {
+            return PolicyFor(diaryEvent, diaryEvent != null && !diaryEvent.solo).includePromptEnchantment;
+        }
+
         private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule, string promptEnchantment)
         {
             bool isInitiator = string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase);
             string otherName = isInitiator ? diaryEvent.recipientName : diaryEvent.initiatorName;
             string povText = diaryEvent.TextForRole(povRole);
             string povSummary = isInitiator ? diaryEvent.initiatorPawnSummary : diaryEvent.recipientPawnSummary;
+            PromptContextPolicy policy = PolicyFor(diaryEvent, hasOtherPawn: true);
+            string effectiveInitiatorEntry = policy.includeHiddenInitiatorEntry ? initiatorEntry : null;
 
             List<string> lines = new List<string> { "event: " + EventNoun(diaryEvent) };
 
@@ -126,32 +150,51 @@ namespace PawnDiary
             AppendField(lines, "with", otherName);
             AppendField(lines, "what you saw", povText);
             AppendField(lines, "instruction", diaryEvent.instruction);
-            AppendField(lines, "you", povSummary);
+            if (policy.includePawnSummary)
+            {
+                AppendField(lines, "you", povSummary);
+            }
+
             // Persona is a writing-style rule from the pawn's saved preset, not a gameplay fact.
             AppendField(lines, "persona", personaRule);
             // Prompt enchantments are optional, XML-driven state rules that lightly bend the voice
             // for this one request without changing the pawn's saved persona.
-            AppendField(lines, "prompt_enchantment", promptEnchantment);
-            AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
-            // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
-            AppendField(lines, "tone", diaryEvent.ToneDirective());
-            AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
-            AppendField(lines, "my last opener (not repeat)", diaryEvent.LastOpenerForRole(povRole));
-            // Burning passion only for important events (not chit chat etc.)
-            if (diaryEvent.IsImportant())
+            if (policy.includePromptEnchantment)
             {
-                AppendField(lines, "burning passion", isInitiator ? diaryEvent.initiatorBurningPassion : diaryEvent.recipientBurningPassion);
+                AppendField(lines, "prompt_enchantment", promptEnchantment);
             }
 
-            // Weapon only for important or combat events
-            if (diaryEvent.ShouldShowWeapon())
+            if (policy.includeSetting)
+            {
+                AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
+            }
+
+            // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
+            if (policy.includeTone)
+            {
+                AppendField(lines, "tone", diaryEvent.ToneDirective());
+            }
+
+            if (policy.includeRelationship)
+            {
+                AppendField(lines, "relationship", diaryEvent.ContinuityForRole(povRole));
+            }
+
+            if (policy.includeLastOpener)
+            {
+                AppendField(lines, "my last opener (not repeat)", diaryEvent.LastOpenerForRole(povRole));
+            }
+
+            // Weapon context is deliberately narrow: it helps combat entries, but distracts routine
+            // small-model prompts.
+            if (policy.includeWeapon)
             {
                 AppendField(lines, "weapon", isInitiator ? diaryEvent.initiatorWeapon : diaryEvent.recipientWeapon);
             }
 
-            AppendField(lines, "initiator diary (hidden context)", initiatorEntry);
+            AppendField(lines, "initiator diary (hidden context)", effectiveInitiatorEntry);
 
-            string instruction = string.IsNullOrWhiteSpace(initiatorEntry)
+            string instruction = string.IsNullOrWhiteSpace(effectiveInitiatorEntry)
                 ? PawnDiarySettings.CurrentSinglePovInstruction
                 : PawnDiarySettings.CurrentRecipientFollowupInstruction;
 
@@ -160,35 +203,112 @@ namespace PawnDiary
 
         private static string BuildSoloPrompt(DiaryEvent diaryEvent, string personaRule, string promptEnchantment)
         {
+            PromptContextPolicy policy = PolicyFor(diaryEvent, hasOtherPawn: false);
             List<string> lines = new List<string> { "event: " + EventNoun(diaryEvent) };
 
             AppendField(lines, "pov", diaryEvent.initiatorName);
             AppendField(lines, "what happened", diaryEvent.initiatorText);
             AppendField(lines, "instruction", diaryEvent.instruction);
-            AppendField(lines, "you", diaryEvent.initiatorPawnSummary);
+            if (policy.includePawnSummary)
+            {
+                AppendField(lines, "you", diaryEvent.initiatorPawnSummary);
+            }
+
             // Solo events use the same persona field as pairwise entries for prompt consistency.
             AppendField(lines, "persona", personaRule);
             // Prompt enchantments are optional, XML-driven state rules that lightly bend the voice
             // for this one request without changing the pawn's saved persona.
-            AppendField(lines, "prompt_enchantment", promptEnchantment);
-            AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
-            // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
-            AppendField(lines, "tone", diaryEvent.ToneDirective());
-            AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
-            AppendField(lines, "my last opener (not repeat)", diaryEvent.initiatorLastOpener);
-            // Burning passion only for important events (not chit chat etc.)
-            if (diaryEvent.IsImportant())
+            if (policy.includePromptEnchantment)
             {
-                AppendField(lines, "burning passion", diaryEvent.initiatorBurningPassion);
+                AppendField(lines, "prompt_enchantment", promptEnchantment);
             }
 
-            // Weapon only for important or combat events
-            if (diaryEvent.ShouldShowWeapon())
+            if (policy.includeSetting)
+            {
+                AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
+            }
+
+            // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
+            if (policy.includeTone)
+            {
+                AppendField(lines, "tone", diaryEvent.ToneDirective());
+            }
+
+            if (policy.includeRelationship)
+            {
+                AppendField(lines, "relationship", diaryEvent.initiatorContinuity);
+            }
+
+            if (policy.includeLastOpener)
+            {
+                AppendField(lines, "my last opener (not repeat)", diaryEvent.initiatorLastOpener);
+            }
+
+            if (policy.includeWeapon)
             {
                 AppendField(lines, "weapon", diaryEvent.initiatorWeapon);
             }
 
             return string.Join("\n", lines.ToArray()) + "\n\n" + PawnDiarySettings.CurrentSinglePovInstruction;
+        }
+
+        private static PromptContextPolicy PolicyFor(DiaryEvent diaryEvent, bool hasOtherPawn)
+        {
+            PromptContextPolicy policy = new PromptContextPolicy();
+            if (diaryEvent == null)
+            {
+                return policy;
+            }
+
+            bool combat = diaryEvent.ShouldShowWeapon();
+            bool important = diaryEvent.IsImportant();
+            bool batched = HasContext(diaryEvent, "batch=");
+            bool dayReflection = diaryEvent.IsDayReflection();
+            bool internalState = HasContext(diaryEvent, "mood_event=")
+                || HasContext(diaryEvent, "thought=")
+                || HasContext(diaryEvent, "work=");
+
+            if (combat)
+            {
+                policy.includePawnSummary = true;
+                policy.includeSetting = true;
+                policy.includeTone = true;
+                policy.includeRelationship = hasOtherPawn;
+                policy.includePromptEnchantment = true;
+                policy.includeWeapon = true;
+                policy.includeHiddenInitiatorEntry = true;
+                return policy;
+            }
+
+            if (dayReflection)
+            {
+                policy.includePawnSummary = true;
+                return policy;
+            }
+
+            if (hasOtherPawn && !batched)
+            {
+                policy.includeRelationship = true;
+                policy.includeTone = important;
+                policy.includeHiddenInitiatorEntry = important;
+                return policy;
+            }
+
+            if (internalState || batched)
+            {
+                return policy;
+            }
+
+            // Major solo tales / discoveries still benefit from grounding, but avoid the old
+            // relationship/opener/enchantment pile-up.
+            if (important)
+            {
+                policy.includePawnSummary = true;
+                policy.includeSetting = true;
+                policy.includeTone = true;
+            }
+
+            return policy;
         }
 
         private static string EventNoun(DiaryEvent diaryEvent)
@@ -230,6 +350,53 @@ namespace PawnDiary
             }
 
             return diaryEvent.initiatorSurroundings;
+        }
+
+        private static string BuildDeathFacts(string context)
+        {
+            List<string> parts = new List<string>();
+            AddContextFact(parts, context, "damage", "damage");
+            AddContextFact(parts, context, "hitPart", "hit part");
+            AddContextFact(parts, context, "instigator", "instigator");
+            AddContextFact(parts, context, "weapon", "weapon");
+            AddContextFact(parts, context, "tool", "tool");
+            AddContextFact(parts, context, "culprit", "condition");
+            AddContextFact(parts, context, "culpritPart", "condition part");
+            AddContextFact(parts, context, "destroyed_or_missing_parts", "destroyed/missing");
+            AddContextFact(parts, context, "other_lethal_conditions", "other conditions");
+            AddContextFact(parts, context, "other_pawn", "other pawn");
+            AddContextFact(parts, context, "death_surroundings", "surroundings");
+            return string.Join("; ", parts.ToArray());
+        }
+
+        private static string BuildArrivalFacts(string context)
+        {
+            List<string> parts = new List<string>();
+            AddContextFact(parts, context, "arrival_source", "source");
+            AddContextFact(parts, context, "scenario_name", "scenario");
+            AddContextFact(parts, context, "scenario_description", "scenario detail");
+            AddContextFact(parts, context, "priorFaction", "prior faction");
+            AddContextFact(parts, context, "pawnKind", "pawn kind");
+            AddContextFact(parts, context, "recruiter", "recruiter");
+            AddContextFact(parts, context, "creepjoiner", "creepjoiner");
+            AddContextFact(parts, context, "arrival_surroundings", "surroundings");
+            return string.Join("; ", parts.ToArray());
+        }
+
+        private static void AddContextFact(List<string> parts, string context, string key, string label)
+        {
+            string value = ContextValue(context, key);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                parts.Add(label + "=" + value);
+            }
+        }
+
+        private static bool HasContext(DiaryEvent diaryEvent, string marker)
+        {
+            return diaryEvent != null
+                && !string.IsNullOrWhiteSpace(diaryEvent.gameContext)
+                && diaryEvent.gameContext.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string ContextValue(string context, string key)

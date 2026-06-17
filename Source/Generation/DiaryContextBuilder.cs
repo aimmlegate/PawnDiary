@@ -229,20 +229,6 @@ namespace PawnDiary
             return cleaned.Length <= max ? cleaned : cleaned.Substring(0, max) + "...";
         }
 
-        public static string BuildOpinionsSummary(Pawn initiator, Pawn recipient)
-        {
-            if (initiator == null || recipient == null)
-            {
-                return "unknown";
-            }
-
-            int initiatorOpinion = initiator.relations?.OpinionOf(recipient) ?? 0;
-            int recipientOpinion = recipient.relations?.OpinionOf(initiator) ?? 0;
-            return initiator.LabelShortCap + "->" + recipient.LabelShortCap + " "
-                + FormatOpinion(initiatorOpinion) + "; " + recipient.LabelShortCap + "->" + initiator.LabelShortCap + " "
-                + FormatOpinion(recipientOpinion);
-        }
-
         public static string BuildSurroundingsSummary(Pawn pawn)
         {
             if (pawn == null || !pawn.Spawned || pawn.Map == null)
@@ -381,59 +367,6 @@ namespace PawnDiary
             }
 
             return string.Join("; ", parts.ToArray());
-        }
-
-        // Returns a random passion from the pawn's skills, weighted so major passions
-        // are more likely to be chosen. Used for important events only.
-        public static string RandomBurningPassion(Pawn pawn)
-        {
-            if (pawn?.skills?.skills == null)
-            {
-                return string.Empty;
-            }
-
-            List<SkillRecord> passions = new List<SkillRecord>();
-            for (int i = 0; i < pawn.skills.skills.Count; i++)
-            {
-                SkillRecord skill = pawn.skills.skills[i];
-                if (skill != null && (skill.passion == Passion.Major || skill.passion == Passion.Minor))
-                {
-                    passions.Add(skill);
-                }
-            }
-
-            if (passions.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            // Weighted selection: major = 3x weight, minor = 1x weight
-            float totalWeight = 0f;
-            for (int i = 0; i < passions.Count; i++)
-            {
-                totalWeight += passions[i].passion == Passion.Major ? 3f : 1f;
-            }
-
-            float roll = UnityEngine.Random.value * totalWeight;
-            float cumulative = 0f;
-            for (int i = 0; i < passions.Count; i++)
-            {
-                cumulative += passions[i].passion == Passion.Major ? 3f : 1f;
-                if (roll <= cumulative)
-                {
-                    string label = CleanLine(passions[i].def.LabelCap);
-                    return passions[i].passion == Passion.Major
-                        ? label + " (burning)"
-                        : label;
-                }
-            }
-
-            // Fallback
-            SkillRecord last = passions[passions.Count - 1];
-            string lastLabel = CleanLine(last.def.LabelCap);
-            return last.passion == Passion.Major
-                ? lastLabel + " (burning)"
-                : lastLabel;
         }
 
         // Returns the label of the pawn's currently equipped weapon, or empty if unarmed.
@@ -893,92 +826,6 @@ namespace PawnDiary
             }
 
             return "PawnDiary.Bucket.Beauty.Hideous".Translate();
-        }
-
-        // Builds a short atmospheric phrase combining mood + relationship context.
-        // This gives small models an emotional anchor without requiring complex inference.
-        // Example outputs: "tense hostility", "fragile warmth", "bitter resentment"
-        public static string BuildAtmosphere(Pawn povPawn, Pawn otherPawn, string instruction)
-        {
-            if (povPawn == null)
-            {
-                return string.Empty;
-            }
-
-            int moodPercent = povPawn.needs?.mood != null
-                ? Mathf.RoundToInt(povPawn.needs.mood.CurLevelPercentage * 100f)
-                : 50;
-
-            string moodWord = MoodAtmosphereWord(moodPercent);
-            string relationWord = string.Empty;
-
-            if (otherPawn != null && povPawn.relations != null)
-            {
-                int opinion = povPawn.relations.OpinionOf(otherPawn);
-                relationWord = OpinionAtmosphereWord(opinion);
-            }
-
-            // Combine into a short phrase
-            if (!string.IsNullOrWhiteSpace(moodWord) && !string.IsNullOrWhiteSpace(relationWord))
-            {
-                return moodWord + " " + relationWord;
-            }
-
-            if (!string.IsNullOrWhiteSpace(relationWord))
-            {
-                return relationWord;
-            }
-
-            return moodWord;
-        }
-
-        // Maps mood percentage to an evocative atmosphere word
-        private static string MoodAtmosphereWord(int moodPercent)
-        {
-            DiaryTuningDef t = DiaryTuning.Current;
-            if (moodPercent >= t.moodHappy)
-            {
-                return "PawnDiary.Atmosphere.Mood.Bright".Translate();
-            }
-
-            if (moodPercent >= t.moodStable)
-            {
-                return string.Empty; // neutral moods add no atmosphere
-            }
-
-            if (moodPercent >= t.moodStressed)
-            {
-                return "PawnDiary.Atmosphere.Mood.Tense".Translate();
-            }
-
-            return "PawnDiary.Atmosphere.Mood.Bleak".Translate();
-        }
-
-        // Maps opinion to an evocative relationship atmosphere word
-        private static string OpinionAtmosphereWord(int opinion)
-        {
-            DiaryTuningDef t = DiaryTuning.Current;
-            if (opinion >= t.opinionDevoted)
-            {
-                return "PawnDiary.Atmosphere.Opinion.Devotion".Translate();
-            }
-
-            if (opinion >= t.opinionFriendly)
-            {
-                return "PawnDiary.Atmosphere.Opinion.Warmth".Translate();
-            }
-
-            if (opinion > t.opinionNeutralAbove)
-            {
-                return string.Empty; // neutral opinions add no atmosphere
-            }
-
-            if (opinion > t.opinionStrainedAbove)
-            {
-                return "PawnDiary.Atmosphere.Opinion.Friction".Translate();
-            }
-
-            return "PawnDiary.Atmosphere.Opinion.Hostility".Translate();
         }
 
         private static string MoodBucket(int moodPercent)

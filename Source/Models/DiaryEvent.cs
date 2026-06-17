@@ -45,17 +45,12 @@ namespace PawnDiary
         public string recipientPawnSummary; // LLM-oriented summary of recipient's traits/backstory
         public string initiatorSurroundings; // textual description of initiator's surroundings
         public string recipientSurroundings; // textual description of recipient's surroundings
-        public string opinionsSummary; // social opinions between the two involved pawns
         public string initiatorContinuity; // context string carrying forward initiator's prior entries
         public string recipientContinuity; // context string carrying forward recipient's prior entries
         public string initiatorLastOpener; // first sentence of initiator's last diary entry (avoid repeats)
         public string recipientLastOpener; // first sentence of recipient's last diary entry (avoid repeats)
-        public string initiatorBurningPassion; // random burning passion of initiator (important events only)
-        public string recipientBurningPassion; // random burning passion of recipient (important events only)
-        public string initiatorWeapon; // currently equipped weapon of initiator (important/combat only)
-        public string recipientWeapon; // currently equipped weapon of recipient (important/combat only)
-        public string initiatorAtmosphere; // short emotional atmosphere phrase for initiator POV
-        public string recipientAtmosphere; // short emotional atmosphere phrase for recipient POV
+        public string initiatorWeapon; // currently equipped weapon of initiator (combat only)
+        public string recipientWeapon; // currently equipped weapon of recipient (combat only)
         public string initiatorPrompt; // assembled prompt text sent to the LLM for initiator POV
         public string recipientPrompt; // assembled prompt text sent to the LLM for recipient POV
         public string neutralPrompt; // assembled prompt text sent to the LLM for neutral POV
@@ -123,17 +118,12 @@ namespace PawnDiary
             Scribe_Values.Look(ref recipientPawnSummary, "recipientPawnSummary");
             Scribe_Values.Look(ref initiatorSurroundings, "initiatorSurroundings");
             Scribe_Values.Look(ref recipientSurroundings, "recipientSurroundings");
-            Scribe_Values.Look(ref opinionsSummary, "opinionsSummary");
             Scribe_Values.Look(ref initiatorContinuity, "initiatorContinuity");
             Scribe_Values.Look(ref recipientContinuity, "recipientContinuity");
             Scribe_Values.Look(ref initiatorLastOpener, "initiatorLastOpener");
             Scribe_Values.Look(ref recipientLastOpener, "recipientLastOpener");
-            Scribe_Values.Look(ref initiatorBurningPassion, "initiatorBurningPassion");
-            Scribe_Values.Look(ref recipientBurningPassion, "recipientBurningPassion");
             Scribe_Values.Look(ref initiatorWeapon, "initiatorWeapon");
             Scribe_Values.Look(ref recipientWeapon, "recipientWeapon");
-            Scribe_Values.Look(ref initiatorAtmosphere, "initiatorAtmosphere");
-            Scribe_Values.Look(ref recipientAtmosphere, "recipientAtmosphere");
             Scribe_Values.Look(ref initiatorGeneratedText, "initiatorGeneratedText");
             Scribe_Values.Look(ref recipientGeneratedText, "recipientGeneratedText");
             Scribe_Values.Look(ref neutralGeneratedText, "neutralGeneratedText");
@@ -220,11 +210,6 @@ namespace PawnDiary
                     recipientSurroundings = initiatorSurroundings;
                 }
 
-                if (string.IsNullOrWhiteSpace(opinionsSummary))
-                {
-                    opinionsSummary = "unknown";
-                }
-
                 if (string.IsNullOrWhiteSpace(initiatorContinuity))
                 {
                     initiatorContinuity = "none";
@@ -243,16 +228,6 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(recipientLastOpener))
                 {
                     recipientLastOpener = string.Empty;
-                }
-
-                if (string.IsNullOrWhiteSpace(initiatorBurningPassion))
-                {
-                    initiatorBurningPassion = string.Empty;
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientBurningPassion))
-                {
-                    recipientBurningPassion = string.Empty;
                 }
 
                 if (string.IsNullOrWhiteSpace(initiatorWeapon))
@@ -914,19 +889,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the atmospheric tone phrase for the specified POV role.
-        /// </summary>
-        public string AtmosphereForRole(string povRole)
-        {
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientAtmosphere;
-            }
-
-            return initiatorAtmosphere;
-        }
-
-        /// <summary>
         /// Resolves the event group used by the Diary tab for labels and importance coloring.
         /// Saved events only keep the defName string, so this reuses the XML classifiers.
         /// </summary>
@@ -948,7 +910,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns true if this event belongs to an important group (not chit chat, small talk, etc.).
-        /// Used to decide whether to include burning passion in the prompt context.
+        /// Used by prompt policy and the UI's visual importance marker.
         /// </summary>
         public bool IsImportant()
         {
@@ -975,11 +937,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns true if the weapon should be included in the prompt (important or combat events).
+        /// Returns true if the weapon should be included in the prompt.
         /// </summary>
         public bool ShouldShowWeapon()
         {
-            return IsImportant() || IsCombatRelated();
+            return IsCombatRelated();
         }
 
         /// <summary>
