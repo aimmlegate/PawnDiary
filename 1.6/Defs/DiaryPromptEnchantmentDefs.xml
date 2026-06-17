@@ -15,7 +15,8 @@
 
   Matchers are OR-ed: a Def is eligible when any configured matcher matches. All def references
   below are plain strings and fail silently when absent, so DLC/modded content can be mentioned
-  without making the whole mod depend on it.
+  without making the whole mod depend on it. capacityBelow uses PawnCapacityDef names such as
+  Consciousness; optional minValue creates an exclusive range.
 -->
 <Defs>
 
@@ -111,6 +112,547 @@
   </PawnDiary.DiaryPromptEnchantmentDef>
 
   <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AlcoholHigh</defName>
+    <label>alcohol intoxication</label>
+    <chance>0.55</chance>
+    <weight>0.9</weight>
+    <severity>1</severity>
+    <hediffDefNames>
+      <li>AlcoholHigh</li>
+    </hediffDefNames>
+    <rule>Let alcohol loosen the voice a little. The pawn may sound less guarded, less precise, or more impulsive, but the entry should still be coherent.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <rule>Let light alcohol warmth soften the voice. Keep it subtle and coherent.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+        <weight>1.1</weight>
+        <rule>Let alcohol make the voice looser, more candid, or less precise. Do not make the entry unreadable.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.3</weight>
+        <severity>1.2</severity>
+        <rule>Let heavy drunkenness disturb the rhythm and judgment of the voice. Keep the supplied event clear.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.5</weight>
+        <severity>1.4</severity>
+        <rule>Let severe intoxication make the voice blurred, impulsive, and unstable, while still producing a readable diary entry.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Hangover</defName>
+    <label>hangover</label>
+    <chance>0.6</chance>
+    <weight>0.9</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>Hangover</li>
+    </hediffDefNames>
+    <rule>Let hangover misery make the voice brittle, sore, and regretful. Keep the event central and avoid slapstick unless the event itself is comic.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <rule>Let a mild hangover add irritation or dullness to the voice without taking over the entry.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+        <rule>Let the hangover make the pawn sound sore, impatient, and light-sensitive. Keep the event understandable.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.3</weight>
+        <rule>Let a severe hangover press hard on the voice: nausea, shame, headache, and short patience may color the prose.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.5</weight>
+        <severity>1.4</severity>
+        <rule>Let an extreme hangover make the entry strained, sick, and remorseful, but still grounded in the supplied event.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_LuciferiumHigh</defName>
+    <label>luciferium high</label>
+    <chance>0.45</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>LuciferiumHigh</li>
+    </hediffDefNames>
+    <rule>Let luciferium sharpen the voice with unnatural clarity, confidence, and a faint edge of dependence. Do not explain the drug unless the event already mentions it.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_LuciferiumDependency</defName>
+    <label>luciferium dependency</label>
+    <chance>0.75</chance>
+    <weight>1.2</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>LuciferiumAddiction</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <rule>Let luciferium need add a controlled desperation under the prose. The pawn should sound aware that their body is bargaining with them.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.45</chance>
+        <rule>Let luciferium dependence sit as a quiet pressure under the voice.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.75</chance>
+        <weight>1.3</weight>
+        <rule>Let luciferium need make the pawn sound focused, tense, and watchful for the next dose.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.95</chance>
+        <weight>1.6</weight>
+        <severity>1.6</severity>
+        <rule>Let luciferium dependency press hard on the entry. The pawn may sound controlled on the surface and frightened underneath.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+        <rule>Let luciferium need become urgent and existential. Keep the event clear, but let every thought feel measured against survival.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ChemicalCraving</defName>
+    <label>chemical craving</label>
+    <chance>0.55</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>AlcoholAddiction</li>
+      <li>AlcoholWithdrawal</li>
+      <li>AmbrosiaAddiction</li>
+      <li>AmbrosiaWithdrawal</li>
+      <li>SmokeleafAddiction</li>
+      <li>SmokeleafWithdrawal</li>
+      <li>PsychiteAddiction</li>
+      <li>PsychiteWithdrawal</li>
+      <li>WakeUpAddiction</li>
+      <li>WakeUpWithdrawal</li>
+      <li>GoJuiceAddiction</li>
+      <li>GoJuiceWithdrawal</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <rule>Let chemical craving put hunger, bargaining, irritability, or restless calculation under the voice. Keep it as subtext unless the event directly involves drugs.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.3</chance>
+        <rule>Let chemical craving sit faintly under the voice as impatience, distraction, or a private bargain.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.6</chance>
+        <weight>1.1</weight>
+        <rule>Let chemical need make the pawn restless, persuasive with themself, or sharp-edged.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.85</chance>
+        <weight>1.4</weight>
+        <severity>1.3</severity>
+        <rule>Let strong chemical craving pull at the prose. The pawn may rationalize, fixate, resent interruption, or measure the day against the next dose.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.6</severity>
+        <rule>Let severe chemical craving make the voice hungry, brittle, and compulsive, while keeping the supplied event understandable.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychiteHigh</defName>
+    <label>hard psychite high</label>
+    <chance>0.65</chance>
+    <weight>1</weight>
+    <severity>1.15</severity>
+    <hediffDefNames>
+      <li>FlakeHigh</li>
+      <li>YayoHigh</li>
+    </hediffDefNames>
+    <rule>Let flake or yayo make the voice bright, fast, confident, and a little brittle. Do not let the high drown out the event.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_SmokeleafHigh</defName>
+    <label>smokeleaf high</label>
+    <chance>0.55</chance>
+    <weight>0.8</weight>
+    <severity>1</severity>
+    <hediffDefNames>
+      <li>SmokeleafHigh</li>
+    </hediffDefNames>
+    <rule>Let smokeleaf slow and soften the voice. The pawn may sound hazy, relaxed, distracted, or unusually accepting, but keep the entry readable.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychicHangover</defName>
+    <label>psychic hangover</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.25</severity>
+    <hediffDefNames>
+      <li>PsychicHangover</li>
+    </hediffDefNames>
+    <rule>Let psychic hangover make the voice feel overexposed, raw, and mentally bruised. Keep the event concrete.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.4</chance>
+        <rule>Let a mild psychic hangover add mental fatigue and sensitivity to the voice.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.7</chance>
+        <rule>Let psychic hangover make the pawn sound mentally bruised, exposed, or headache-sharp.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.4</weight>
+        <severity>1.4</severity>
+        <rule>Let severe psychic hangover distort the voice with raw nerves and intrusive afterimages, while keeping the event clear.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.6</severity>
+        <rule>Let extreme psychic hangover make the entry fragile, painful, and overloaded. Avoid abstract mysticism; anchor it in the event.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Blindness</defName>
+    <label>blindness</label>
+    <chance>0.75</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>Blindness</li>
+    </hediffDefNames>
+    <rule>Let blindness shape the entry through touch, sound, memory, uncertainty, or trust. Do not over-explain the condition.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_MemoryDecay</defName>
+    <label>dementia or alzheimer's</label>
+    <chance>0.8</chance>
+    <weight>1.2</weight>
+    <severity>1.3</severity>
+    <hediffDefNames>
+      <li>Dementia</li>
+      <li>Alzheimers</li>
+    </hediffDefNames>
+    <rule>Let memory trouble affect the voice through uncertainty, repetition, missing names, or sudden clarity. Keep the entry respectful and understandable.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_TraumaSavant</defName>
+    <label>trauma savant</label>
+    <chance>0.75</chance>
+    <weight>1.1</weight>
+    <severity>1.15</severity>
+    <hediffDefNames>
+      <li>TraumaSavant</li>
+    </hediffDefNames>
+    <rule>Let trauma savant alter the voice with intense focus, damaged social warmth, and unexpected precision. Do not make it sound like a superpower explanation.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ResurrectionPsychosis</defName>
+    <label>resurrection psychosis</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <hediffDefNames>
+      <li>ResurrectionPsychosis</li>
+    </hediffDefNames>
+    <rule>Let resurrection psychosis make the voice unstable, haunted, and suspicious of reality. Keep the event legible and avoid random nonsense.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.55</chance>
+        <rule>Let resurrection psychosis add faint unreality, unease, or broken continuity to the voice.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.85</chance>
+        <rule>Let resurrection psychosis make the pawn sound haunted, dislocated, and unsure what should still be true.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.7</severity>
+        <rule>Let severe resurrection psychosis fracture confidence in memory and reality. Keep sentences readable and tied to the event.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+        <rule>Let extreme resurrection psychosis make the entry urgent, haunted, and reality-bent, but not incoherent.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Joywire</defName>
+    <label>joywire</label>
+    <chance>0.55</chance>
+    <weight>0.9</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>Joywire</li>
+    </hediffDefNames>
+    <rule>Let the joywire add a pleasant artificial haze or inappropriate cheer under the voice. Keep any happiness slightly uncanny rather than cartoonish.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ParalyticAbasia</defName>
+    <label>paralytic abasia</label>
+    <chance>0.75</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>Abasia</li>
+    </hediffDefNames>
+    <rule>Let paralysis and helpless waiting shape the voice. The pawn may notice dependence, stillness, frustration, or vulnerability.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Mindscrew</defName>
+    <label>mindscrew</label>
+    <chance>0.65</chance>
+    <weight>1.2</weight>
+    <severity>1.3</severity>
+    <hediffDefNames>
+      <li>Mindscrew</li>
+    </hediffDefNames>
+    <rule>Let constant artificial pain sharpen the voice with irritation, endurance, and a private edge. Do not turn the entry into only pain description.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Pregnancy</defName>
+    <label>pregnancy</label>
+    <chance>0.45</chance>
+    <weight>0.9</weight>
+    <severity>1</severity>
+    <hediffDefNames>
+      <li>Pregnant</li>
+      <li>PregnantHuman</li>
+    </hediffDefNames>
+    <rule>Let pregnancy quietly affect the voice through bodily awareness, caution, future-thinking, or protectiveness. Avoid reducing the pawn to pregnancy.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_HemogenCraving</defName>
+    <label>hemogen craving</label>
+    <chance>0.75</chance>
+    <weight>1.2</weight>
+    <severity>1.35</severity>
+    <hediffDefNames>
+      <li>HemogenCraving</li>
+    </hediffDefNames>
+    <rule>Let hemogen craving make the voice hungry, controlled, and aware of bodies nearby. Keep it as subtext unless the event directly involves blood or feeding.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.4</chance>
+        <rule>Let hemogen craving sit faintly under the voice as thirst, restraint, or sharpened attention.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.75</chance>
+        <rule>Let hemogen craving make the pawn sound controlled but hungry, with attention drawn toward living bodies.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.95</chance>
+        <weight>1.5</weight>
+        <severity>1.5</severity>
+        <rule>Let strong hemogen craving press against the voice. The pawn may sound restrained, predatory, ashamed, or desperate.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.8</weight>
+        <severity>1.8</severity>
+        <rule>Let extreme hemogen craving make the entry tense and dangerous, with hunger barely held back. Keep the event grounded.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychicBondTorn</defName>
+    <label>psychic bond torn</label>
+    <chance>0.8</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>PsychicBondTorn</li>
+    </hediffDefNames>
+    <rule>Let a torn psychic bond make the voice feel bereaved, hollow, or painfully incomplete. Do not over-explain the bond.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_BlissLobotomy</defName>
+    <label>bliss lobotomy</label>
+    <chance>0.65</chance>
+    <weight>1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>BlissLobotomy</li>
+    </hediffDefNames>
+    <rule>Let bliss lobotomy make the voice placid, blunted, or disturbingly content. Keep the entry simple without making the pawn sound childish.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CubeInterest</defName>
+    <label>cube interest</label>
+    <chance>0.55</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>CubeInterest</li>
+    </hediffDefNames>
+    <rule>Let cube fascination intrude as a private fixation or comparison. The pawn should still write about the supplied event, not only the cube.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CubeWithdrawal</defName>
+    <label>cube withdrawal</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <hediffDefNames>
+      <li>CubeWithdrawal</li>
+    </hediffDefNames>
+    <rule>Let cube withdrawal make the voice anxious, deprived, and compulsively circling back to what is missing. Keep the event clear.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.5</chance>
+        <rule>Let cube withdrawal add an uneasy sense that something important is missing.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.85</chance>
+        <rule>Let cube withdrawal make the pawn distracted, anxious, and pulled toward one absent object.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>1</chance>
+        <weight>1.7</weight>
+        <severity>1.7</severity>
+        <rule>Let severe cube withdrawal make the entry tense and compulsive, with the event struggling against fixation.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+        <rule>Let extreme cube withdrawal make the voice urgent, needy, and obsessive, while still producing a readable event entry.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CubeRage</defName>
+    <label>cube rage</label>
+    <chance>1</chance>
+    <weight>1.8</weight>
+    <severity>1.8</severity>
+    <hediffDefNames>
+      <li>CubeRage</li>
+    </hediffDefNames>
+    <rule>Let cube rage make the voice sharp, possessive, and volatile. Use controlled intensity, not incoherent shouting.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_VoidShockOrTouched</defName>
+    <label>void shock or touched</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <hediffDefNames>
+      <li>VoidShock</li>
+      <li>VoidTouched</li>
+    </hediffDefNames>
+    <rule>Let void exposure make the voice feel alienated, shaken, or drawn toward something vast and wrong. Keep the event concrete and avoid lore exposition.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CorpseTorment</defName>
+    <label>corpse torment</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <hediffDefNames>
+      <li>CorpseTorment</li>
+    </hediffDefNames>
+    <rule>Let corpse torment make the voice haunted by bodies, guilt, disgust, or accusation. Do not make the entry gratuitous.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Inhumanized</defName>
+    <label>inhumanized</label>
+    <chance>0.7</chance>
+    <weight>1.2</weight>
+    <severity>1.3</severity>
+    <hediffDefNames>
+      <li>Inhumanized</li>
+    </hediffDefNames>
+    <rule>Let inhumanization cool the voice: less ordinary empathy, more distance, purpose, or alien calm. Keep the pawn recognizably writing from their own perspective.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_FleshMutation</defName>
+    <label>flesh tentacle or whip</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>Tentacle</li>
+      <li>FleshTentacle</li>
+      <li>FleshWhip</li>
+    </hediffDefNames>
+    <rule>Let the unnatural flesh appendage affect body awareness, shame, power, revulsion, or unwanted usefulness. Keep the supplied event as the focus.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
     <defName>DiaryEnchant_GeneEdge</defName>
     <label>gene edge</label>
     <chance>0.45</chance>
@@ -127,22 +669,67 @@
   </PawnDiary.DiaryPromptEnchantmentDef>
 
   <PawnDiary.DiaryPromptEnchantmentDef>
-    <defName>DiaryEnchant_RoyalBearing</defName>
-    <label>royal bearing</label>
-    <chance>0.5</chance>
-    <weight>0.9</weight>
+    <defName>DiaryEnchant_ConsciousnessDimmed</defName>
+    <label>dimmed consciousness</label>
+    <chance>0.35</chance>
+    <weight>0.8</weight>
     <severity>1</severity>
-    <royalTitleDefNames>
-      <li>Yeoman</li>
-      <li>Acolyte</li>
-      <li>Knight</li>
-      <li>Praetor</li>
-      <li>Baron</li>
-      <li>Count</li>
-      <li>Duke</li>
-      <li>Stellarch</li>
-    </royalTitleDefNames>
-    <rule>Let status and dignity lightly affect word choice. The pawn may notice respect, insult, duty, or propriety, but should not become pompous unless their persona already is.</rule>
+    <capacityBelow>
+      <li>
+        <capacityDefName>Consciousness</capacityDefName>
+        <minValue>0.7</minValue>
+        <value>0.85</value>
+      </li>
+    </capacityBelow>
+    <rule>Let slightly reduced consciousness make the voice slower, foggier, or more effortful. Keep the entry clear and do not overplay it.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessClouded</defName>
+    <label>clouded consciousness</label>
+    <chance>0.6</chance>
+    <weight>1.1</weight>
+    <severity>1.15</severity>
+    <capacityBelow>
+      <li>
+        <capacityDefName>Consciousness</capacityDefName>
+        <minValue>0.45</minValue>
+        <value>0.7</value>
+      </li>
+    </capacityBelow>
+    <rule>Let clouded consciousness make the pawn sound drowsy, confused, or mentally heavy. The supplied event should remain understandable.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessFading</defName>
+    <label>fading consciousness</label>
+    <chance>0.85</chance>
+    <weight>1.45</weight>
+    <severity>1.45</severity>
+    <capacityBelow>
+      <li>
+        <capacityDefName>Consciousness</capacityDefName>
+        <minValue>0.25</minValue>
+        <value>0.45</value>
+      </li>
+    </capacityBelow>
+    <rule>Let fading consciousness make the entry clipped, heavy, and difficult to hold together. Keep it readable and anchored in the event.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessBarelyThere</defName>
+    <label>barely conscious</label>
+    <chance>1</chance>
+    <weight>1.8</weight>
+    <severity>1.8</severity>
+    <capacityBelow>
+      <li>
+        <capacityDefName>Consciousness</capacityDefName>
+        <minValue>0.11</minValue>
+        <value>0.25</value>
+      </li>
+    </capacityBelow>
+    <rule>Let near-unconsciousness make the voice fragile, fragmentary, and urgent. Do not make it incoherent; the event still needs to be readable.</rule>
   </PawnDiary.DiaryPromptEnchantmentDef>
 
   <PawnDiary.DiaryPromptEnchantmentDef>

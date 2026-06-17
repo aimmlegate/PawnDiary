@@ -20,6 +20,17 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// One pawn-capacity threshold matcher used by <see cref="DiaryPromptEnchantmentDef"/>. Capacities
+    /// are things like Consciousness, Moving, Sight, and Manipulation, expressed as 0..1-ish levels.
+    /// </summary>
+    public class PromptEnchantmentCapacityThreshold
+    {
+        public string capacityDefName;
+        public float minValue = -1f;
+        public float value;
+    }
+
+    /// <summary>
     /// Optional hediff-severity override for a prompt enchantment. XML authors name one of the fixed
     /// levels understood by <see cref="PromptEnchantments"/>; the code owns the numeric thresholds so
     /// tuning stays consistent across Defs.
@@ -68,6 +79,9 @@ namespace PawnDiary
 
         // Pawn StatDefs whose current value must be below the configured threshold.
         public List<PromptEnchantmentStatThreshold> statBelow = new List<PromptEnchantmentStatThreshold>();
+
+        // PawnCapacityDefs whose current health capacity must be below the configured threshold.
+        public List<PromptEnchantmentCapacityThreshold> capacityBelow = new List<PromptEnchantmentCapacityThreshold>();
     }
 
     /// <summary>
@@ -213,6 +227,14 @@ namespace PawnDiary
             if (def.statBelow != null && def.statBelow.Count > 0)
             {
                 if (MatchesStatBelow(def.statBelow, pawn))
+                {
+                    return MatchFrom(def, null);
+                }
+            }
+
+            if (def.capacityBelow != null && def.capacityBelow.Count > 0)
+            {
+                if (MatchesCapacityBelow(def.capacityBelow, pawn))
                 {
                     return MatchFrom(def, null);
                 }
@@ -382,6 +404,45 @@ namespace PawnDiary
                 {
                     // Some StatDefs are not meaningful for pawns. Treat XML experiments that pick
                     // those stats as a non-match rather than logging errors during generation.
+                }
+            }
+
+            return false;
+        }
+
+        private static bool MatchesCapacityBelow(List<PromptEnchantmentCapacityThreshold> thresholds, Pawn pawn)
+        {
+            if (thresholds == null || pawn?.health?.capacities == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < thresholds.Count; i++)
+            {
+                PromptEnchantmentCapacityThreshold threshold = thresholds[i];
+                if (threshold == null || string.IsNullOrWhiteSpace(threshold.capacityDefName))
+                {
+                    continue;
+                }
+
+                PawnCapacityDef capacityDef = DefDatabase<PawnCapacityDef>.GetNamedSilentFail(threshold.capacityDefName);
+                if (capacityDef == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    float level = pawn.health.capacities.GetLevel(capacityDef);
+                    if (level < threshold.value && (threshold.minValue < 0f || level >= threshold.minValue))
+                    {
+                        return true;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Some capacity Defs can be unsuitable for unusual pawns. Bad XML should simply
+                    // fail to match instead of interrupting diary generation.
                 }
             }
 

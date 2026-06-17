@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (prompt enchantment severity tiers)_
+_Last updated: 2026-06-17 (consciousness capacity enchantments)_
 
 ---
 
@@ -229,8 +229,9 @@ Prompt enchantments are XML Defs in `1.6/Defs/DiaryPromptEnchantmentDefs.xml`. W
 `enablePromptEnchantments` is on, first-person prompts (solo, pairwise, sequential recipient, and day
 reflection) may add exactly one `prompt_enchantment:` field after `persona:`. Each Def can match live
 pawn state by visible hediff defName, active gene defName, highest royal-title defName, or pawn
-`StatDef` below a threshold. Matching Defs first pass their `chance`/`frequency` roll, then one winner
-is selected by `weight * severity`.
+`StatDef` / `PawnCapacityDef` below a threshold. Capacity thresholds can include `minValue` to make
+exclusive ranges, such as Consciousness bands. Matching Defs first pass their `chance`/`frequency`
+roll, then one winner is selected by `weight * severity`.
 
 Visible hediff matchers can define optional `hediffSeverityTiers`. Four fixed code levels are
 available: `minor` at severity 0.05, `moderate` at 0.25, `major` at 0.50, and `critical` at 0.75.
@@ -238,6 +239,15 @@ The highest configured level at or below the live hediff severity wins and may o
 `chance`/`frequency`, `weight`, and the weight-multiplier `severity`; omitted tier fields inherit
 from the parent Def. If no tier matches, the parent Def is used. Neutral arrival/death prompts and
 title follow-ups never use prompt enchantments.
+
+The bundled starter catalog covers illness, blood loss, drug highs, non-luciferium chemical
+addictions/withdrawals, luciferium dependency, chronic cognitive/sensory conditions, pregnancy,
+hemogen craving, psychic bond trauma, and Royalty/Biotech/Anomaly hediffs such as abasia,
+mindscrew, cube states, void exposure, corpse torment, inhumanization, and flesh appendages. Missing
+body parts are intentionally not matched by the starter catalog. Royalty titles are sent through the
+normal pawn-summary `title=` line rather than starter title enchantments. The starter enchantments do
+include Consciousness capacity bands from dimmed awareness down to barely conscious; the separate
+below-11% guard still skips generation before these prompt rules can apply.
 
 System prompts are selected by narrative mode:
 

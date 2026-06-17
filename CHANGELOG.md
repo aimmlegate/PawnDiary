@@ -3,6 +3,19 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (consciousness prompt enchantments)**
+  - Added XML `capacityBelow` matchers for pawn capacities, with optional `minValue` for exclusive
+    ranges.
+  - Added starter Consciousness-band enchantments while leaving Royalty titles as regular
+    pawn-summary `title=` context instead of title-specific enchantment Defs.
+
+- **2026-06-17 (starter prompt enchantment catalog)**
+  - Expanded `DiaryPromptEnchantmentDefs.xml` with starter hediff enchantments for alcohol,
+    hangover, luciferium, chemical addiction/withdrawal cravings, flake/yayo, smokeleaf, psychic
+    hangover, blindness, dementia/Alzheimer's, trauma savant, resurrection psychosis, joywire,
+    abasia, mindscrew, pregnancy, hemogen craving, psychic bond torn, and Anomaly conditions.
+  - Left missing body parts out of the starter catalog after review.
+
 - **2026-06-17 (hediff severity prompt tiers)**
   - Added four fixed hediff severity levels for prompt enchantments: XML `hediffSeverityTiers` can
     override prompt text, chance/frequency, selection weight, and urgency weighting per level.
