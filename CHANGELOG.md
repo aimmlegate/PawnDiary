@@ -3,6 +3,10 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (role-slot extraction TODO)**
+  - Documented a safe migration outline for extracting repeated `DiaryEvent` initiator,
+    recipient, and neutral field families into saved role slots.
+
 - **2026-06-17 (Diary tab partial split)**
   - Split the large `ITab_Pawn_Diary` implementation into focused partial files for dev controls,
     year paging, entry-card chrome/navigation, expansion state, and roleplay text layout without

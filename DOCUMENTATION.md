@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (Diary tab partial split)_
+_Last updated: 2026-06-17 (role-slot extraction TODO)_
 
 ---
 
@@ -529,6 +529,44 @@ substring prefix.
 Pending requests are not persisted. On load, pending main statuses reset to not-generated, and stale
 pending title statuses without stored titles are cleared. Short-lived death/arrival context caches
 are also cleared when a new `DiaryGameComponent` starts a game session.
+
+### TODO: Full `DiaryEvent` Role-Slot Extraction
+
+The current saved event shape is still role-by-field: `initiator*`, `recipient*`, and `neutral*`
+fields each carry their own pawn id, display text, generated text, status, title, prompt/debug data,
+LLM metadata, surroundings, continuity, opener, weapon, and staggered-text state. A future cleanup
+should extract those repeated field families into explicit saved role slots while preserving old
+saves.
+
+Rough safe-route outline:
+
+- Add a small `DiaryEventRoleSlot : IExposable` model with a stable `role` string
+  (`initiator`, `recipient`, `neutral`), optional `pawnId`, display `pawnName`, raw/source text,
+  generated text, status/error, prompt/debug text, title fields, LLM endpoint/model metadata,
+  pawn summary, surroundings, continuity, last opener, weapon, and staggered-text intensity.
+- Add `List<DiaryEventRoleSlot> roleSlots` to `DiaryEvent` as an additive saved field. Keep all
+  existing `initiator*`, `recipient*`, and `neutral*` fields during the migration; old saves should
+  load exactly as they do now.
+- In `DiaryEvent.ExposeData`, after loading legacy fields, hydrate missing role slots from the
+  legacy field families. Also backfill legacy fields from slots while callers are still mixed, so
+  either representation can be read during the transition.
+- Keep role constants and prompt schema labels unchanged. Existing prompt text and localization
+  carve-outs depend on `initiator`, `recipient`, and `neutral` staying stable.
+- Add slot accessors first: `SlotForRole`, `SlotForPawn`, `NameForRole`, `TextForRole`,
+  `GeneratedTextFor`, `StatusFor`, `TitleForRole`, `SurroundingsForRole`, `ContinuityForRole`,
+  `LastOpenerForRole`, `StaggeredIntensityForRole`, and status/title mutation helpers. Make current
+  public methods delegate to slots instead of duplicating switch logic.
+- Change event creation (`AddSoloEvent`, `AddPairwiseEvent`, neutral arrival/death/reflection
+  creation) to create role slots while still filling legacy fields. Do not broaden semantics in the
+  same pass: this is a storage/refactor step, not arbitrary multi-participant event support yet.
+- Move `DiaryPromptBuilder`, generation queueing, `ApplyLlmResult`, title queueing, and diary tab
+  view creation onto slot accessors. Keep old field names out of new code except inside migration
+  and compatibility shims.
+- Only after all readers/writers use slots, consider retiring direct legacy-field writes. Removing
+  the old saved fields should be a separate compatibility decision, not part of the first extraction.
+- Validate with at least these manual scenarios: load an old save; create a new pairwise social
+  event; create a solo event; generate arrival/death neutral descriptions; queue title follow-ups;
+  handle a skipped low-Consciousness POV; navigate linked entries in the Diary tab; save and reload.
 
 ---
 
