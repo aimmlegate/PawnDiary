@@ -3,6 +3,10 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (persona settings selector)**
+  - Replaced the Persona Presets button grid with a compact selector menu and expanded the persona
+    editor layout so long labels and all theme tags fit without clipping.
+
 - **2026-06-17 (insult-spree batching)**
   - Added a three-in-game-hour pairwise batch policy for insult interactions, preserving RimWorld's
     own play-log insult text as evidence while producing one diary generation for repeated jabs.
