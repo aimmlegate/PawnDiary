@@ -78,7 +78,7 @@ namespace PawnDiary
             this.defName = defName ?? string.Empty;
             this.label = label ?? string.Empty;
             this.rule = rule ?? string.Empty;
-            this.themes = NormalizeThemes(themes);
+            this.themes = PawnDiarySettings.NormalizeThemes(themes);
             this.custom = custom;
         }
 
@@ -893,7 +893,7 @@ namespace PawnDiary
             personaPresets = normalized;
         }
 
-        private static List<string> NormalizeThemes(IEnumerable<string> themes)
+        internal static List<string> NormalizeThemes(IEnumerable<string> themes)
         {
             HashSet<string> allowedTags = new HashSet<string>(DiaryPersonas.PredefinedThemeTags, StringComparer.Ordinal);
             return themes == null
