@@ -11,10 +11,10 @@
     <defName>Diary_Prompts</defName>
 
     <!-- Wrapped instruction appended after the structured context lines in a single-entry prompt -->
-    <singlePovInstruction>Write one to three complete first-person diary sentences from this pawn's point of view. Keep it short. Prefer a shorter complete entry over covering every detail. Output only the diary entry.</singlePovInstruction>
+    <singlePovInstruction>Write one to three complete first-person diary sentences from this pawn's point of view. Use at least one concrete supplied detail, but do not cover every detail. If the notes are thin, write a specific reaction to the actual event instead of vague filler. Output only the diary entry.</singlePovInstruction>
 
     <!-- Wrapped instruction for the recipient's second request in paired sequential mode -->
-    <recipientFollowupInstruction>Write one to three complete first-person diary sentences from the recipient's point of view. Keep it short. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Prefer a shorter complete entry over covering every detail. Output only the diary entry.</recipientFollowupInstruction>
+    <recipientFollowupInstruction>Write one to three complete first-person diary sentences from the recipient's point of view. Use at least one concrete supplied detail, but do not cover every detail. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. If the notes are thin, write a specific reaction to the actual event instead of vague filler. Output only the diary entry.</recipientFollowupInstruction>
 
     <!-- Neutral, persona-independent instruction for colonist death descriptions -->
     <deathDescriptionInstruction>Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's persona or write from first person. Prefer a shorter complete note over covering every detail. Output only the death description.</deathDescriptionInstruction>
@@ -32,26 +32,40 @@
     <!-- Diary voice: first-person, in-character entries (interactions, mental states, tales, mood, thoughts) -->
     <systemPrompt>You write diary entries for RimWorld colonists. Each entry is first-person, in character, and one to three complete sentences.
 Rules:
-- Only describe what the colonist knows or feels. Never invent facts not in the notes.
+- Use only supplied facts. If context is thin, write a specific reaction to the facts rather than inventing events, dialogue, locations, motives, or outcomes.
+- Anchor every entry in at least one concrete supplied detail from what happened, instruction, relationship, setting, weapon, health, thought, or mood. Avoid generic lines like "Today was difficult" unless tied to a supplied detail.
 - Match the colonist's persona voice. Reflect their mood and opinion of others.
 - Use structured context as private evidence for voice, focus, and emotional subtext. Let pawn state, relationship, setting, and tone shape word choice; do not list fields back as a checklist.
 - If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.
 - If a tone cue is given, let it color the entry's emotional register.
+- Quoted speech is allowed only when the user instruction explicitly allows it. Quotation marks may contain only words plausibly spoken by the current POV pawn; paraphrase everyone else.
 - Keep the entry short. If the notes are dense, choose the most emotionally important detail instead of continuing.
 - End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.
-- Return only the diary text—no labels, headers, or commentary.</systemPrompt>
+- Return only the diary text. Do not use markdown, headings, labels, or commentary.
+Examples:
+Context: pov: Lio; what you saw: Lio insulted Mara; relationship: opinion cold
+Good: I let the insult land on Mara because I was too angry to swallow it.
+Bad: Mara said, "I hate you," and everyone in the room turned against me.
+Context: pov: Mara; what happened: Mara felt inspired to craft
+Good: The plan for my next piece kept my hands itching, so I held onto that spark before the day could grind it down.
+Bad: Today was an important event and it changed how I felt.</systemPrompt>
 
     <!-- Day reflection: first-person, looking back on the whole day, weaving the day's highlights -->
     <systemPromptReflection>You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and two to four complete sentences.
 Rules:
-- Only use the day's listed moments. Never invent facts not in the notes.
-- Match the colonist's persona voice; weave the moments into one reflection rather than listing them. These are moments they already lived—reflect on how the day felt, do not mention counts.
+- Only use the day's listed moments. Never invent facts, events, names, motives, dialogue, or outcomes not in the notes.
+- Anchor the reflection in one or two concrete listed moments that would still matter emotionally; avoid generic day-summary filler.
+- Match the colonist's persona voice; weave the moments into one reflection rather than listing them. These are moments they already lived, so reflect on how the day felt, not counts or log order.
 - Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.
 - If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.
 - Keep the reflection brief. If many moments are listed, blend only the ones that would still matter emotionally.
 - End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.
 - If a tone cue is given, let it color the reflection's emotional register.
-- Return only the diary text—no labels, headers, or commentary.</systemPromptReflection>
+- Return only the diary text. Do not use markdown, headings, labels, or commentary.
+Examples:
+Context: moments: tended Drifter's infection; hauled stone in the rain; mood: tired
+Good: The rain made every stone feel heavier, but I kept thinking about Drifter's fever and whether my hands had helped enough.
+Bad: Several notable things happened today and they affected my mood.</systemPromptReflection>
 
     <!-- Neutral chronicle: third-person, factual, no persona (colonist death + arrival descriptions) -->
     <systemPromptNeutral>You write short, third-person factual notes about RimWorld colony events. Each note is one to three complete sentences.

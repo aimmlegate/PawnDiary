@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (role-specific direct speech prompts)_
+_Last updated: 2026-06-17 (concrete prompt examples and default migration)_
 
 ---
 
@@ -353,15 +353,19 @@ System prompts are selected by narrative mode:
 
 Default prompt contracts ask for complete, short entries using prose length cues rather than numeric
 word ranges. They tell the model to use structured context as private evidence for voice, focus, and
-subtext, not as a checklist to echo. Paired two-pawn interaction prompts append separate localized
-direct-speech rules for initiator and recipient POVs. Each rule names the current POV pawn and the
-opposite pawn, then allows quoted speech only for words plausibly spoken by the current POV pawn.
-The opposite pawn's words must be paraphrased without quotation marks, and the prompt must not
-invent POV speech just to add dialogue. Single-POV interaction prompts get the same name-specific
-POV-only cue. Non-interaction solo entries do not get that cue; the prompt builder explicitly
-rejects neutral arrival/death, dev mock, mental-state, tale, mood, thought, inspiration, work,
-hediff, day-reflection, and ambient-day contexts before checking whether an event's defName is a
-real RimWorld `InteractionDef`.
+subtext, not as a checklist to echo. The first-person diary and day-reflection system prompts also
+require at least one concrete supplied detail, warn against vague filler, and include compact
+good/bad examples so small local models see the intended transformation.
+
+Paired two-pawn interaction prompts append separate localized direct-speech rules for initiator and
+recipient POVs. Each rule names the current POV pawn and the opposite pawn, then allows quoted
+speech only for words plausibly spoken by the current POV pawn. The opposite pawn's words must be
+paraphrased without quotation marks, and the prompt must not invent POV speech just to add dialogue.
+The appended cues include short good/wrong examples. Single-POV interaction prompts get the same
+name-specific POV-only cue. Non-interaction solo entries do not get that cue; the prompt builder
+explicitly rejects neutral arrival/death, dev mock, mental-state, tale, mood, thought, inspiration,
+work, hediff, day-reflection, and ambient-day contexts before checking whether an event's defName is
+a real RimWorld `InteractionDef`.
 
 Player-customizable, Def-backed user-message instructions:
 
@@ -372,7 +376,9 @@ Player-customizable, Def-backed user-message instructions:
 - `titleUserInstruction`
 
 Existing saves keep prompt overrides in `PawnDiarySettings`; Prompt Studio can reset one prompt or
-all prompts to current XML defaults.
+all prompts to current XML defaults. During `PostLoadInit`, settings migrate only prompt fields that
+exactly match known older shipped defaults, after newline normalization, so default users receive
+prompt-quality fixes while custom Prompt Studio text is preserved.
 
 Persona presets start from `DiaryPersonaDef` XML, then settings may layer built-in overrides and
 custom personas. `DiaryPersonas.WeightedStartingPersona` uses base weight, trait/backstory theme

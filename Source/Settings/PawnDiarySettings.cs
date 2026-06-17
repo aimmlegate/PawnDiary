@@ -200,6 +200,67 @@ namespace PawnDiary
         // Placeholder model name; real value depends on the local server's loaded model.
         public const string DefaultModelName = "local-model";
 
+        // Known old defaults used only for save migration. Settings store prompt text in the save
+        // file, so players who never customized prompts would otherwise keep the weaker defaults
+        // forever. Custom text is left alone because it will not match these exact strings after
+        // newline normalization.
+        private const string LegacySinglePovInstruction =
+            "Write one to three complete first-person diary sentences from this pawn's point of view. Keep it short. Prefer a shorter complete entry over covering every detail. Output only the diary entry.";
+
+        private const string LegacyRecipientFollowupInstruction =
+            "Write one to three complete first-person diary sentences from the recipient's point of view. Keep it short. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Prefer a shorter complete entry over covering every detail. Output only the diary entry.";
+
+        private const string LegacySystemPromptXml =
+            "You write diary entries for RimWorld colonists. Each entry is first-person, in character, and one to three complete sentences.\n"
+            + "Rules:\n"
+            + "- Only describe what the colonist knows or feels. Never invent facts not in the notes.\n"
+            + "- Match the colonist's persona voice. Reflect their mood and opinion of others.\n"
+            + "- Use structured context as private evidence for voice, focus, and emotional subtext. Let pawn state, relationship, setting, and tone shape word choice; do not list fields back as a checklist.\n"
+            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
+            + "- If a tone cue is given, let it color the entry's emotional register.\n"
+            + "- Keep the entry short. If the notes are dense, choose the most emotionally important detail instead of continuing.\n"
+            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
+            + "- Return only the diary text\u2014no labels, headers, or commentary.";
+
+        private const string LegacySystemPromptCode =
+            "You are the diary-writer for a RimWorld colony. You receive structured notes about a social interaction between colonists and write short, first-person diary entries in the voice of the colonist whose point of view is requested. Each entry is one to three complete sentences.\n"
+            + "Rules:\n"
+            + "- Write only what that colonist could plausibly know, see, or feel. Never invent events, names, places, or facts that are not in the notes.\n"
+            + "- Stay in first person and in character. Reflect the colonist's persona, mood, and their opinion of the other pawn.\n"
+            + "- Use structured context as private evidence for voice, focus, and emotional subtext. Let pawn state, relationship, setting, and tone shape word choice; do not list fields back as a checklist.\n"
+            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
+            + "- Keep the entry short. If the notes are dense, choose the most emotionally important detail instead of continuing.\n"
+            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
+            + "- Be concrete and grounded in the provided context; do not moralize or summarize game mechanics.\n"
+            + "- If another pawn's diary entry is included as hidden context, use it only for continuity and contrast; the current pawn has not read it unless the notes say so.\n"
+            + "- If a tone cue is given, let it color the entry's emotional register.\n"
+            + "- Return only the diary text. Do not use markdown, headings, labels, or commentary.";
+
+        private const string LegacySystemPromptReflectionXml =
+            "You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and two to four complete sentences.\n"
+            + "Rules:\n"
+            + "- Only use the day's listed moments. Never invent facts not in the notes.\n"
+            + "- Match the colonist's persona voice; weave the moments into one reflection rather than listing them. These are moments they already lived\u2014reflect on how the day felt, do not mention counts.\n"
+            + "- Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.\n"
+            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
+            + "- Keep the reflection brief. If many moments are listed, blend only the ones that would still matter emotionally.\n"
+            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
+            + "- If a tone cue is given, let it color the reflection's emotional register.\n"
+            + "- Return only the diary text\u2014no labels, headers, or commentary.";
+
+        private const string LegacySystemPromptReflectionCode =
+            "You are the diary-writer for a RimWorld colony. You receive a short list of one colonist's most notable moments from the day and write a brief, first-person end-of-day reflection in that colonist's voice, looking back on the day as a whole. Each reflection is two to four complete sentences.\n"
+            + "Rules:\n"
+            + "- Use only the listed moments. Never invent events, names, places, or facts that are not in the notes.\n"
+            + "- Stay in first person and in character; reflect the colonist's persona and mood. Weave the moments together rather than listing them.\n"
+            + "- Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.\n"
+            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
+            + "- These are moments the colonist already lived through, so reflect on how the day felt rather than re-reporting each one. Do not mention counts.\n"
+            + "- Keep the reflection brief. If many moments are listed, blend only the ones that would still matter emotionally.\n"
+            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
+            + "- If a tone cue is given, let it color the reflection's emotional register.\n"
+            + "- Return only the diary text. Do not use markdown, headings, labels, or commentary.";
+
         // Default comes from the DiaryPromptDef XML (editable without recompiling). If the Def
         // isn't loaded yet during early startup, the field initializer in DiaryPromptDef
         // provides the same hardcoded text as a fallback.
@@ -254,8 +315,48 @@ namespace PawnDiary
             ClampValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                UpgradeUntouchedPromptDefaults();
                 DiaryPersonas.InvalidateCache();
             }
+        }
+
+        /// <summary>
+        /// Moves saved prompt fields from known old defaults to the current XML defaults. This lets
+        /// default users receive prompt-quality fixes while preserving any custom Prompt Studio text.
+        /// </summary>
+        private void UpgradeUntouchedPromptDefaults()
+        {
+            UpgradePromptIfLegacyDefault(ref singlePovInstruction, DefaultSinglePovInstruction,
+                LegacySinglePovInstruction);
+            UpgradePromptIfLegacyDefault(ref recipientFollowupInstruction, DefaultRecipientFollowupInstruction,
+                LegacyRecipientFollowupInstruction);
+            UpgradePromptIfLegacyDefault(ref systemPrompt, DefaultSystemPrompt,
+                LegacySystemPromptXml, LegacySystemPromptCode);
+            UpgradePromptIfLegacyDefault(ref systemPromptReflection, DefaultSystemPromptReflection,
+                LegacySystemPromptReflectionXml, LegacySystemPromptReflectionCode);
+        }
+
+        private static void UpgradePromptIfLegacyDefault(ref string value, string currentDefault, params string[] legacyDefaults)
+        {
+            if (value == null || legacyDefaults == null)
+            {
+                return;
+            }
+
+            string normalizedValue = NormalizePromptText(value);
+            for (int i = 0; i < legacyDefaults.Length; i++)
+            {
+                if (string.Equals(normalizedValue, NormalizePromptText(legacyDefaults[i]), StringComparison.Ordinal))
+                {
+                    value = currentDefault;
+                    return;
+                }
+            }
+        }
+
+        private static string NormalizePromptText(string value)
+        {
+            return (value ?? string.Empty).Replace("\r\n", "\n").Trim();
         }
 
         /// <summary>

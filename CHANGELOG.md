@@ -3,6 +3,13 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (concrete prompt examples)**
+  - Tightened first-person diary and day-reflection prompts to require concrete supplied details,
+    avoid vague filler, and include compact good/bad examples for small local models.
+  - Added short good/wrong examples to interaction direct-speech cues so quoted dialogue stays tied
+    to the current POV pawn.
+  - Migrated untouched saved prompt defaults on load while preserving customized Prompt Studio text.
+
 - **2026-06-17 (role-specific direct-speech prompts)**
   - Split paired interaction direct-speech guidance into separate initiator and recipient prompt
     cues, each naming the current POV pawn and the opposite pawn.
