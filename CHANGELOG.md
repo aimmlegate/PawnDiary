@@ -3,6 +3,14 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (verse persona presets)**
+  - Added restrained `plainspoken-poet` and `lowkey-rapper` diary persona presets, with
+    low-Consciousness variants and rules that avoid overdone lyricism or forced rhyme.
+
+- **2026-06-17 (fragmented persona presets)**
+  - Added `fractured-pattern-seer` and `word-salad-oracle` diary persona presets for readable
+    fragmented-association and controlled word-salad voices, including low-Consciousness variants.
+
 - **2026-06-17 (rare atmosphere formatting)**
   - Added a default-on `enableAtmosphericFormatting` setting for display-only diary typography.
   - Limited unusual layout to extreme entries: fractured mental-break prose, unsettled anomaly/dark

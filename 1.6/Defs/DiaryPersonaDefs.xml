@@ -287,6 +287,60 @@
     </themes>
   </PawnDiary.DiaryPersonaDef>
 
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_FracturedPatternSeer</defName>
+    <label>fractured-pattern-seer</label>
+    <rule>writes in jump-cut associations, convinced small details are connected by hidden patterns. Lets objects, numbers, sounds, and other people's words echo each other. Opens with a strange connection or omen. Uses fragmented but readable sentences, repeated motifs, and sudden certainty; never name a diagnosis.</rule>
+    <cloudedConsciousnessRule>writes with pattern-seeing blurred by fog. Connections arrive too fast, but the entry still leaves one clear emotional fact.</cloudedConsciousnessRule>
+    <fadingConsciousnessRule>writes as broken omens and repeated signals. Hidden meanings keep surfacing while ordinary sequence fails.</fadingConsciousnessRule>
+    <barelyConsciousRule>writes in tiny pattern fragments: a number, a color, a phrase, a warning. Keep the connection uncanny but barely held.</barelyConsciousRule>
+    <themes>
+      <li>anxious</li>
+      <li>whimsical</li>
+      <li>void</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_WordSaladOracle</defName>
+    <label>word-salad-oracle</label>
+    <rule>writes with controlled word-salad texture: nouns collide, metaphors braid, grammar bends, and meaning flickers at the edge of sense. Opens with a vivid impossible phrase. Keep one concrete event detail and one emotional truth clear so the diary remains readable; never turn the whole entry into nonsense.</rule>
+    <cloudedConsciousnessRule>writes with word-salad pressure under mental fog. Images collide harder, but one event detail should remain recognizable.</cloudedConsciousnessRule>
+    <fadingConsciousnessRule>writes as language coming apart: bright fragments, repeated sounds, and half-meanings around one fading feeling.</fadingConsciousnessRule>
+    <barelyConsciousRule>writes in near-wordless fragments and sound clusters. Keep only a few warped images tied to the event.</barelyConsciousRule>
+    <themes>
+      <li>whimsical</li>
+      <li>dramatic</li>
+      <li>void</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_PlainspokenPoet</defName>
+    <label>plainspoken-poet</label>
+    <rule>writes with quiet poetic attention, using one or two concrete images to carry feeling. Keeps the voice plain and human rather than ornate. Opens with a sensory detail or small metaphor. Avoids overdone lyricism, forced beauty, and stacked metaphors.</rule>
+    <cloudedConsciousnessRule>writes in simple images under fog. Poetry becomes smaller and more bodily, with one clear sensation doing most of the work.</cloudedConsciousnessRule>
+    <fadingConsciousnessRule>writes as a fading poem: a few plain images, softened rhythm, and a feeling that cannot fully finish.</fadingConsciousnessRule>
+    <barelyConsciousRule>writes in sparse poetic fragments. Keep only one image, one feeling, and very little decoration.</barelyConsciousRule>
+    <themes>
+      <li>dramatic</li>
+      <li>whimsical</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_LowKeyRapper</defName>
+    <label>lowkey-rapper</label>
+    <rule>writes with conversational rhythm, understated swagger, and occasional internal rhyme. Turns events into compact lines with a pulse, but stays diary-like and sincere. Opens with a grounded punchy observation. Do not force every sentence to rhyme, do not write a full verse, and avoid cartoon slang.</rule>
+    <cloudedConsciousnessRule>writes with rhythm still present but softened by fog. A small rhyme or cadence may appear, but clarity and bodily feeling matter more.</cloudedConsciousnessRule>
+    <fadingConsciousnessRule>writes as a beat losing tempo: short lines, a faint rhyme, and pride or hurt slipping through.</fadingConsciousnessRule>
+    <barelyConsciousRule>writes in broken rhythmic fragments. Keep one compact phrase or rhyme if it fits, but let the voice run out of breath.</barelyConsciousRule>
+    <themes>
+      <li>social</li>
+      <li>dramatic</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
   <!--
     Void personas are especially likely for creepjoiners. They remain available to other pawns at
     normal catalog weight, but the internal "void" theme gets a large creepjoiner-only bonus in

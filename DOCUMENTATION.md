@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (strange chat presentation and promotion)_
+_Last updated: 2026-06-17 (verse persona presets)_
 
 ---
 
@@ -319,7 +319,11 @@ penalty for voices already used by living free colonists. Custom personas must k
 allowed tag: `grim`, `warm`, `hostile`, `anxious`, `analytical`, `dramatic`, `social`,
 `whimsical`, `noble`, or `void`. Saved records keep their persona defName and fall back to the
 current default if it disappears. The merged effective catalog is cached and invalidated when
-settings-backed personas change or are normalized after load.
+settings-backed personas change or are normalized after load. The built-in catalog includes readable
+extreme voices such as `fractured-pattern-seer` and `word-salad-oracle`; their rules ask for
+fragmented association or controlled word-salad texture while preserving at least one clear event
+detail. It also includes restrained verse-flavored voices such as `plainspoken-poet` and
+`lowkey-rapper`, tuned for light imagery or cadence rather than constant rhyme.
 
 Each built-in `DiaryPersonaDef` can also define `cloudedConsciousnessRule`,
 `fadingConsciousnessRule`, and `barelyConsciousRule`. When a live pawn is conscious enough to write
