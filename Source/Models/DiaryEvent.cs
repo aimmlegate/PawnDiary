@@ -1197,9 +1197,11 @@ namespace PawnDiary
                     ? GroupDomain.MoodEvent
                     : IsThoughtEvent(context)
                         ? GroupDomain.Thought
-                        : IsWorkEvent(context)
-                            ? GroupDomain.Work
-                            : IsMentalStateEvent(context) ? GroupDomain.MentalState : GroupDomain.Interaction;
+                        : IsInspirationEvent(context)
+                            ? GroupDomain.Inspiration
+                            : IsWorkEvent(context)
+                                ? GroupDomain.Work
+                                : IsMentalStateEvent(context) ? GroupDomain.MentalState : GroupDomain.Interaction;
             return InteractionGroups.ClassifyDefName(domain, defName);
         }
 
@@ -1294,6 +1296,20 @@ namespace PawnDiary
         private static bool IsThoughtEvent(string context)
         {
             return HasContextMarker(context, "thought=");
+        }
+
+        /// <summary>
+        /// Inspiration events store their InspirationDef defName in interactionDefName; their context
+        /// starts with a stable inspiration field, which lets UI classification pick the Inspiration domain.
+        /// </summary>
+        private bool IsInspirationEvent()
+        {
+            return IsInspirationEvent(gameContext);
+        }
+
+        private static bool IsInspirationEvent(string context)
+        {
+            return HasContextMarker(context, "inspiration=");
         }
 
         /// <summary>

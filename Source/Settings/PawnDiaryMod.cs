@@ -944,6 +944,7 @@ namespace PawnDiary
             DrawGroupTogglesForDomain(listing, GroupDomain.Tale, "PawnDiary.Settings.TalesHeader");
             DrawGroupTogglesForDomain(listing, GroupDomain.MoodEvent, "PawnDiary.Settings.MoodEventsHeader");
             DrawGroupTogglesForDomain(listing, GroupDomain.Thought, "PawnDiary.Settings.ThoughtsHeader");
+            DrawGroupTogglesForDomain(listing, GroupDomain.Inspiration, "PawnDiary.Settings.InspirationsHeader");
             DrawGroupTogglesForDomain(listing, GroupDomain.Work, "PawnDiary.Settings.WorkHeader");
 
             listing.GapLine(10f);
@@ -1277,6 +1278,7 @@ namespace PawnDiary
                 GroupDomain.Tale,
                 GroupDomain.MoodEvent,
                 GroupDomain.Thought,
+                GroupDomain.Inspiration,
                 GroupDomain.Work
             };
 

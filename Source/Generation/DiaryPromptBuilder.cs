@@ -273,6 +273,7 @@ namespace PawnDiary
             bool dayReflection = diaryEvent.IsDayReflection();
             bool internalState = HasContext(diaryEvent, "mood_event=")
                 || HasContext(diaryEvent, "thought=")
+                || HasContext(diaryEvent, "inspiration=")
                 || HasContext(diaryEvent, "work=");
 
             if (combat)
@@ -444,6 +445,7 @@ namespace PawnDiary
                 || HasContext(diaryEvent, "tale=")
                 || HasContext(diaryEvent, "mood_event=")
                 || HasContext(diaryEvent, "thought=")
+                || HasContext(diaryEvent, "inspiration=")
                 || HasContext(diaryEvent, "work=")
                 || HasContext(diaryEvent, "day_reflection="))
             {

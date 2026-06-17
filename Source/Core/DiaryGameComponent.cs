@@ -19,6 +19,7 @@
 //   DiaryGameComponent.CraftedAndRelics.cs — masterwork/legendary crafts + relic installs
 //   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
+//   DiaryGameComponent.Inspirations.cs   — pawn inspirations (TryStartInspiration)
 //   DiaryGameComponent.ThoughtProgression.cs — staged situational need thoughts (hunger, rest, etc.)
 //   DiaryGameComponent.Work.cs           — occasional solo notes about current pawn work
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry

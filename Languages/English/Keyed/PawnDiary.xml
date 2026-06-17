@@ -157,6 +157,7 @@
   <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
   <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
   <PawnDiary.Settings.ThoughtsHeader>Temporary thoughts</PawnDiary.Settings.ThoughtsHeader>
+  <PawnDiary.Settings.InspirationsHeader>Inspirations</PawnDiary.Settings.InspirationsHeader>
   <PawnDiary.Settings.WorkHeader>Work moments</PawnDiary.Settings.WorkHeader>
   <PawnDiary.Settings.EditingPromptFor>Editing prompt for: {0}</PawnDiary.Settings.EditingPromptFor>
   <PawnDiary.Settings.ChangeGroup>Change group</PawnDiary.Settings.ChangeGroup>
@@ -171,6 +172,7 @@
   <PawnDiary.Event.Interaction>{0} had a {1} interaction with {2}.</PawnDiary.Event.Interaction>
   <PawnDiary.Event.SocialFight>{0} and {1} lost their tempers and came to blows.</PawnDiary.Event.SocialFight>
   <PawnDiary.Event.MentalBreak>{0} had a mental break ({1})</PawnDiary.Event.MentalBreak>
+  <PawnDiary.Event.Inspiration>{0} became inspired: {1}</PawnDiary.Event.Inspiration>
   <PawnDiary.Event.DirectedAt>, directed at {0}</PawnDiary.Event.DirectedAt>
   <PawnDiary.Event.ReasonSuffix>. Reason: {0}</PawnDiary.Event.ReasonSuffix>
   <PawnDiary.Event.BatchFallback>{0} had several {2} moments with {1}.</PawnDiary.Event.BatchFallback>

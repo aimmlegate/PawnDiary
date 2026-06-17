@@ -1,8 +1,8 @@
 // Harmony patches — our hooks into vanilla RimWorld. We don't own the game's code, so we "patch"
 // vanilla methods: Postfix hooks record PlayLog.Add social interactions,
 // MentalStateHandler.TryStartMentalState social fights / mental breaks, TaleRecorder
-// notable-history events, Pawn.Kill death details, Pawn.SetFaction colony arrivals,
-// and GameConditionManager.RegisterCondition
+// notable-history events, InspirationHandler.TryStartInspiration pawn inspirations,
+// Pawn.Kill death details, Pawn.SetFaction colony arrivals, and GameConditionManager.RegisterCondition
 // mood-affecting game conditions after RimWorld handles them. A Prefix hook redirects Social-tab
 // play-log clicks into the matching Diary entry when one exists. AccessTools.Field reads private
 // vanilla fields via reflection.
@@ -246,6 +246,26 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.Current?.RecordMentalState(pawn, stateDef, otherPawn, reason);
+        }
+    }
+
+    // Fires whenever RimWorld accepts a pawn inspiration, whether it came from the random inspiration
+    // system or another vanilla source such as a psycast, ritual, or drug effect.
+    [HarmonyPatch(typeof(InspirationHandler), nameof(InspirationHandler.TryStartInspiration))]
+    public static class InspirationStartPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for InspirationHandler.TryStartInspiration. Records only successful
+        /// inspiration starts, after vanilla has accepted and applied the inspiration.
+        /// </summary>
+        public static void Postfix(bool __result, InspirationHandler __instance, InspirationDef def, string reason)
+        {
+            if (!__result || __instance == null || __instance.pawn == null || def == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordInspiration(__instance.pawn, def, reason);
         }
     }
 

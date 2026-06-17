@@ -498,6 +498,34 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Same as IsInteractionEnabled but for InspirationDefs when a pawn gains an inspiration.
+        /// </summary>
+        public bool IsInspirationEnabled(InspirationDef inspirationDef)
+        {
+            if (inspirationDef == null)
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyInspiration(inspirationDef);
+            return group != null && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for an inspiration diary entry,
+        /// falling back to the group's default if no override is set.
+        /// </summary>
+        public string InstructionForInspiration(InspirationDef inspirationDef)
+        {
+            if (inspirationDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(InteractionGroups.ClassifyInspiration(inspirationDef));
+        }
+
+        /// <summary>
         /// Same as IsInteractionEnabled but for synthetic work events emitted by the work scanner.
         /// The scanner picks the group first (passion, strain, routine, dark study), because those
         /// groups depend on pawn state as well as the WorkTypeDef.

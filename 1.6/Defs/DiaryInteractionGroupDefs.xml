@@ -11,7 +11,7 @@
     order          - lower numbers are classified first ("first match wins"); catch-all highest
     domain         - Interaction (matches InteractionDefs), MentalState (matches MentalStateDefs),
                      Tale (matches TaleDefs from RimWorld's notable-history system), MoodEvent,
-                     Thought, or Work (matches synthetic work diary defNames)
+                     Thought, Inspiration, or Work (matches synthetic work diary defNames)
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
@@ -280,11 +280,9 @@
       <li>WordOfJoy</li>
       <li>WordOfLove</li>
       <li>WordOfSerenity</li>
-      <li>WordOfInspiration</li>
     </matchDefNames>
     <matchTokens>
       <li>Speech</li>
-      <li>WordOf</li>
       <li>Ritual</li>
     </matchTokens>
   </PawnDiary.DiaryInteractionGroupDef>
@@ -900,6 +898,29 @@
     <important>false</important>
     <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood effect</instruction>
     <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Inspiration domain: pawn inspiration starts ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>inspiration</defName>
+    <label>Inspirations</label>
+    <order>550</order>
+    <domain>Inspiration</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a sudden useful clarity—write the pawn's mind catching fire with purpose, grounded in the specific kind of inspiration and any reason the game gives</instruction>
+    <tone>with bright, focused momentum</tone>
+    <matchDefNames>
+      <li>Frenzy_Work</li>
+      <li>Frenzy_Go</li>
+      <li>Frenzy_Shoot</li>
+      <li>Inspired_Trade</li>
+      <li>Inspired_Recruitment</li>
+      <li>Inspired_Taming</li>
+      <li>Inspired_Surgery</li>
+      <li>Inspired_Creativity</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- ===== Work domain: occasional sampled solo entries from pawn WorkTypeDef jobs ===== -->

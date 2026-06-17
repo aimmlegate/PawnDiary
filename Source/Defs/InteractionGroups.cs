@@ -15,6 +15,7 @@ namespace PawnDiary
     // (social log entries); MentalState groups match MentalStateDefs (breaks, social fights);
     // Tale groups match TaleDefs (RimWorld's notable-history events); MoodEvent groups match
     // GameConditionDefs that affect colonist mood (aurora, eclipse, psychic drone, etc.);
+    // Inspiration groups match InspirationDefs when a pawn gains an inspiration;
     // Work groups classify the synthetic work diary events emitted by the periodic work scanner.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
@@ -24,6 +25,7 @@ namespace PawnDiary
         Tale,
         MoodEvent,
         Thought,
+        Inspiration,
         Work
     }
 
@@ -155,8 +157,8 @@ namespace PawnDiary
         // key (for example "combat" or "socialFight"), not translated player-facing text.
         public string colorCue;
 
-        // Interaction (InteractionDef) vs MentalState (MentalStateDef). Classification is scoped
-        // to a domain so the two never cross-match.
+        // Which event source this group classifies. Classification is scoped to a domain so
+        // unrelated Def types with the same defName never cross-match.
         public GroupDomain domain = GroupDomain.Interaction;
 
         // Exact defName matches (case-insensitive). Optional in XML.
@@ -293,6 +295,12 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyThought(ThoughtDef thoughtDef)
         {
             return ClassifyIn(GroupDomain.Thought, thoughtDef?.defName);
+        }
+
+        // First Inspiration-domain group that matches the InspirationDef, else the Inspiration catch-all.
+        public static DiaryInteractionGroupDef ClassifyInspiration(InspirationDef inspirationDef)
+        {
+            return ClassifyIn(GroupDomain.Inspiration, inspirationDef?.defName);
         }
 
         // First Work-domain group that matches the synthetic work diary defName.

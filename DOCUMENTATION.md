@@ -61,7 +61,7 @@ Key files:
 | File | Role |
 |---|---|
 | `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Needs. |
-| `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
+| `DiaryPatches.cs` | Patch entry points for interactions, mental states, inspirations, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
 | `DiaryGameComponent*.cs` | Recording, batching, generation scans, save/load, lookup indexes, and public UI access. Event-source partials own their `Record*` methods. |
 | `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, staggered text intensity, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
@@ -69,7 +69,7 @@ Key files:
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
 | `PromptEnchantments.cs` | Weighted hediff matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
-| `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, and Work domains. |
+| `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, Inspiration, and Work domains. |
 | `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
@@ -159,7 +159,7 @@ A `Pawn.Kill` postfix fallback writes the same kind of final entry when vanilla 
 covering natural condition deaths such as malnutrition/starvation without duplicating Tale-backed
 combat deaths.
 
-### Mood Events, Thoughts, Work, And Day Reflections
+### Mood Events, Thoughts, Inspirations, Work, And Day Reflections
 
 Mood events are mood-affecting game conditions recorded once per eligible colonist on affected maps.
 Thoughts are temporary memories filtered by XML tuning: ignored tokens, bypass tokens, eating
@@ -170,6 +170,12 @@ end-of-day reflection.
 severe food states, tired/exhausted, trapped/entombed underground, and chemical hunger/starvation.
 It records the first tracked stage in an episode and any later worsening stage once; clearing the
 thought ends the episode without writing a recovery entry.
+
+Inspirations are recorded through `InspirationHandler.TryStartInspiration` after vanilla accepts the
+new inspiration. The target pawn receives a solo entry with an `inspiration=` context marker, the
+`InspirationDef` label, duration, and any reason RimWorld supplied. `WordOfInspiration` is not
+classified as a social ritual interaction in this mod; the resulting target inspiration is the diary
+event.
 
 Work recording samples current Work-tab jobs periodically. It reads `CurJob.workGiverDef.workType`,
 skips social and violent work, applies XML odds/cooldowns plus the `workGenerationWeight` multiplier,
@@ -182,7 +188,7 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 
 ## 5. Groups, Batching, And Tuning
 
-`1.6/Defs/DiaryInteractionGroupDefs.xml` defines seven classifier domains:
+`1.6/Defs/DiaryInteractionGroupDefs.xml` defines eight classifier domains:
 
 | Domain | Classifier | Typical groups |
 |---|---|---|
@@ -191,6 +197,7 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 | Tale | `ClassifyTale(TaleDef)` | combat/death, health/medicine, milestones, crafts, relics, raids, anomaly horror |
 | MoodEvent | `ClassifyMoodEvent(GameConditionDef)` | positive, negative, mixed, passing moods |
 | Thought | `ClassifyThought(ThoughtDef)` | positive, negative, passing thoughts |
+| Inspiration | `ClassifyInspiration(InspirationDef)` | pawn inspirations |
 | Work | `ClassifyWork(string)` | dark study, passionate, straining, routine |
 
 Matching is domain-scoped by exact `defName` or substring token. XML order matters; catch-all groups
@@ -431,8 +438,8 @@ lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 semantic `colorCue`, per-POV titles, and per-POV staggered text intensity. Full prompt strings are
 not persisted; dev diagnostics can show prompts built during the current session.
 Tale/mental/source classification is inferred from
-stable `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`, `thought=`, and
-`work=`.
+stable `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`, `thought=`,
+`inspiration=`, and `work=`.
 
 Pending requests are not persisted. On load, pending main statuses reset to not-generated, and stale
 pending title statuses without stored titles are cleared.
@@ -469,7 +476,7 @@ health-cue words generated by `PromptEnchantments.cs` localize through Keyed
 
 Kept in English intentionally:
 
-- prompt schema labels such as `event:`, `role:`, `sex=`, `thought=`;
+- prompt schema labels such as `event:`, `role:`, `sex=`, `thought=`, `inspiration=`;
 - role/sentinel words such as `initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`;
 - internal defNames, trait keys, backstory categories, and persona theme tags;
 - background-thread `LlmClient` error strings and dev/debug diagnostics.

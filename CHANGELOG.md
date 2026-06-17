@@ -3,6 +3,13 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (inspiration diary events)**
+  - Added solo diary entries for successful pawn inspirations through
+    `InspirationHandler.TryStartInspiration`, with a new Inspiration event group and settings
+    header.
+  - Removed Royalty `WordOfInspiration` from the ritual/social interaction matcher so the target's
+    resulting inspiration is recorded as the diary event.
+
 - **2026-06-17 (POV-only quoted speech)**
   - Tightened interaction prompt dialogue rules so quoted direct speech can only come from the
     current POV pawn; other pawns' speech should be paraphrased without quotes.
