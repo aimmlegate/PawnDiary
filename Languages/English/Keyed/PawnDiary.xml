@@ -122,6 +122,31 @@
   <PawnDiary.Settings.ArrivalDescriptionInstructionHelp>Appended to the neutral colony-arrival prompt. This writes the first entry about how a pawn joined the colony.</PawnDiary.Settings.ArrivalDescriptionInstructionHelp>
   <PawnDiary.Settings.TitleUserInstruction>Prompt text — title request</PawnDiary.Settings.TitleUserInstruction>
   <PawnDiary.Settings.TitleUserInstructionHelp>Appended after an existing diary entry for the separate title-generation follow-up call. Main diary entries are unaffected.</PawnDiary.Settings.TitleUserInstructionHelp>
+  <PawnDiary.Settings.PersonaStudioTitle>Persona presets</PawnDiary.Settings.PersonaStudioTitle>
+  <PawnDiary.Settings.PersonaStudioHelp>Edit built-in persona presets and add your own. Persona tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
+  <PawnDiary.Settings.PersonaStudioSummary>{0} personas total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>
+  <PawnDiary.Settings.PersonaStudioTagsHelp>Custom personas must keep at least one predefined tag.</PawnDiary.Settings.PersonaStudioTagsHelp>
+  <PawnDiary.Settings.AddPersonaPreset>Add custom persona</PawnDiary.Settings.AddPersonaPreset>
+  <PawnDiary.Settings.ResetPersonaPresets>Restore all persona defaults</PawnDiary.Settings.ResetPersonaPresets>
+  <PawnDiary.Settings.PersonaPickerHeader>Choose a persona to edit</PawnDiary.Settings.PersonaPickerHeader>
+  <PawnDiary.Settings.EditingPersona>Editing persona: {0}</PawnDiary.Settings.EditingPersona>
+  <PawnDiary.Settings.PersonaBadgeBuiltIn>Built-in preset</PawnDiary.Settings.PersonaBadgeBuiltIn>
+  <PawnDiary.Settings.PersonaBadgeCustom>Custom preset</PawnDiary.Settings.PersonaBadgeCustom>
+  <PawnDiary.Settings.PersonaLabel>Label</PawnDiary.Settings.PersonaLabel>
+  <PawnDiary.Settings.PersonaRule>Voice rule (used as prompt persona text)</PawnDiary.Settings.PersonaRule>
+  <PawnDiary.Settings.PersonaTags>Theme tags (first-roll weighting)</PawnDiary.Settings.PersonaTags>
+  <PawnDiary.Settings.RestorePersonaPreset>Restore this preset default</PawnDiary.Settings.RestorePersonaPreset>
+  <PawnDiary.Settings.DeletePersonaPreset>Delete this custom persona</PawnDiary.Settings.DeletePersonaPreset>
+  <PawnDiary.Settings.PersonaTag.grim>grim</PawnDiary.Settings.PersonaTag.grim>
+  <PawnDiary.Settings.PersonaTag.warm>warm</PawnDiary.Settings.PersonaTag.warm>
+  <PawnDiary.Settings.PersonaTag.hostile>hostile</PawnDiary.Settings.PersonaTag.hostile>
+  <PawnDiary.Settings.PersonaTag.anxious>anxious</PawnDiary.Settings.PersonaTag.anxious>
+  <PawnDiary.Settings.PersonaTag.analytical>analytical</PawnDiary.Settings.PersonaTag.analytical>
+  <PawnDiary.Settings.PersonaTag.dramatic>dramatic</PawnDiary.Settings.PersonaTag.dramatic>
+  <PawnDiary.Settings.PersonaTag.social>social</PawnDiary.Settings.PersonaTag.social>
+  <PawnDiary.Settings.PersonaTag.whimsical>whimsical</PawnDiary.Settings.PersonaTag.whimsical>
+  <PawnDiary.Settings.PersonaTag.noble>noble</PawnDiary.Settings.PersonaTag.noble>
+  <PawnDiary.Settings.PersonaTag.void>void</PawnDiary.Settings.PersonaTag.void>
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsSectionTitle>Events</PawnDiary.Settings.EventsSectionTitle>

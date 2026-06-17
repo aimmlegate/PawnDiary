@@ -85,6 +85,8 @@ namespace PawnDiary
         private string selectedGroupKey;
         // Which prompt-text card is open in the "Prompt Studio".
         private PromptEditorKind selectedPromptKind = PromptEditorKind.SystemDiary;
+        // Which persona card is open in the settings "Persona Presets" section.
+        private string selectedPersonaKey;
         // Scroll position for the settings window scroll view.
         private Vector2 settingsScrollPosition;
         // Ephemeral text buffer for the per-group instruction text area.
@@ -128,6 +130,7 @@ namespace PawnDiary
         public override void DoSettingsWindowContents(Rect inRect)
         {
             Settings.EnsureEndpointsList();
+            Settings.EnsurePersonaPresetList();
             // Apply any model-fetch result that completed since the last frame, on the main thread.
             ApplyPendingFetchResult();
 
@@ -162,6 +165,7 @@ namespace PawnDiary
             DrawHint(listing, "PawnDiary.Settings.MaxConcurrentHelp".Translate());
 
             DrawPromptStudio(listing);
+            DrawPersonaStudio(listing);
 
             DrawInteractionGroupsEditor(listing);
 
@@ -505,6 +509,293 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Draws the editable persona catalog section in mod settings: existing XML presets can be
+        /// overridden, and players can add/delete custom presets with predefined theme tags.
+        /// </summary>
+        private void DrawPersonaStudio(Listing_Standard listing)
+        {
+            SectionTitle(listing, "PawnDiary.Settings.PersonaStudioTitle".Translate());
+            DrawHint(listing, "PawnDiary.Settings.PersonaStudioHelp".Translate());
+            DrawPersonaStudioSummary(listing);
+            listing.Gap(6f);
+            DrawPersonaPicker(listing);
+            listing.Gap(6f);
+            DrawSelectedPersonaEditor(listing);
+        }
+
+        private void DrawPersonaStudioSummary(Listing_Standard listing)
+        {
+            int total = DiaryPersonas.All.Count;
+            int custom = Settings.CustomPersonas().Count;
+            int customized = Settings.personaPresets == null ? 0 : Settings.personaPresets.Count(preset => preset != null && !preset.custom);
+
+            Rect cardRect = listing.GetRect(120f);
+            Widgets.DrawMenuSection(cardRect);
+            Rect innerRect = cardRect.ContractedBy(8f);
+            Widgets.Label(
+                new Rect(innerRect.x, innerRect.y, innerRect.width, 24f),
+                "PawnDiary.Settings.PersonaStudioSummary".Translate(total, custom, customized));
+            DrawMutedLabel(
+                new Rect(innerRect.x, innerRect.y + 24f, innerRect.width, 20f),
+                "PawnDiary.Settings.PersonaStudioTagsHelp".Translate());
+
+            Rect addRect = new Rect(innerRect.x, innerRect.y + 48f, innerRect.width, 30f);
+            if (Widgets.ButtonText(addRect, "PawnDiary.Settings.AddPersonaPreset".Translate()))
+            {
+                selectedPersonaKey = Settings.AddCustomPersona();
+            }
+
+            Rect clearRect = new Rect(innerRect.x, addRect.yMax + 6f, innerRect.width, 30f);
+            if (Widgets.ButtonText(clearRect, "PawnDiary.Settings.ResetPersonaPresets".Translate()))
+            {
+                Settings.ResetPersonaPresets();
+                selectedPersonaKey = null;
+            }
+        }
+
+        private void DrawPersonaPicker(Listing_Standard listing)
+        {
+            IReadOnlyList<DiaryPersonaDef> personas = DiaryPersonas.All
+                .OrderBy(PersonaLabelForUi)
+                .ToList();
+            float rows = Mathf.Ceil(personas.Count / 2f);
+            Rect cardRect = listing.GetRect(36f + (rows * 34f));
+            Widgets.DrawMenuSection(cardRect);
+
+            Rect innerRect = cardRect.ContractedBy(8f);
+            Widgets.Label(new Rect(innerRect.x, innerRect.y, innerRect.width, 22f), "PawnDiary.Settings.PersonaPickerHeader".Translate());
+
+            const float gap = 8f;
+            float columnWidth = (innerRect.width - gap) / 2f;
+            float y = innerRect.y + 26f;
+            for (int i = 0; i < personas.Count; i += 2)
+            {
+                DrawPersonaPickerButton(new Rect(innerRect.x, y, columnWidth, 28f), personas[i]);
+                if (i + 1 < personas.Count)
+                {
+                    DrawPersonaPickerButton(new Rect(innerRect.x + columnWidth + gap, y, columnWidth, 28f), personas[i + 1]);
+                }
+
+                y += 34f;
+            }
+        }
+
+        private void DrawPersonaPickerButton(Rect rect, DiaryPersonaDef persona)
+        {
+            if (persona == null)
+            {
+                return;
+            }
+
+            Color previousColor = GUI.color;
+            if (persona.defName == selectedPersonaKey)
+            {
+                GUI.color = SelectedRowColor;
+            }
+
+            string label = PersonaLabelForUi(persona);
+            if (IsPersonaCustomized(persona.defName))
+            {
+                label += " *";
+            }
+
+            if (Widgets.ButtonText(rect, label))
+            {
+                selectedPersonaKey = persona.defName;
+            }
+
+            GUI.color = previousColor;
+        }
+
+        private void DrawSelectedPersonaEditor(Listing_Standard listing)
+        {
+            DiaryPersonaDef selected = SelectedPersonaForSettings();
+            if (selected == null)
+            {
+                return;
+            }
+
+            bool custom = Settings.CustomPersonaFor(selected.defName) != null;
+            DiaryPersonaDef baseDef = BasePersonaForSettings(selected);
+            PersonaPresetConfig overridePreset = custom ? Settings.CustomPersonaFor(selected.defName) : Settings.PersonaOverrideFor(selected.defName);
+            string currentLabel = overridePreset?.label ?? baseDef?.label ?? string.Empty;
+            string currentRule = overridePreset?.rule ?? baseDef?.rule ?? string.Empty;
+            List<string> currentThemes = new List<string>(overridePreset?.themes ?? baseDef?.themes ?? new List<string>());
+
+            Rect cardRect = listing.GetRect(356f);
+            Widgets.DrawMenuSection(cardRect);
+            Rect innerRect = cardRect.ContractedBy(10f);
+
+            Widgets.Label(new Rect(innerRect.x, innerRect.y, innerRect.width - 132f, 24f), "PawnDiary.Settings.EditingPersona".Translate(PersonaLabelForUi(selected)));
+            DrawAccentLabel(
+                new Rect(innerRect.xMax - 124f, innerRect.y, 124f, 24f),
+                (custom
+                    ? "PawnDiary.Settings.PersonaBadgeCustom"
+                    : "PawnDiary.Settings.PersonaBadgeBuiltIn").Translate());
+
+            DrawMutedLabel(
+                new Rect(innerRect.x, innerRect.y + 22f, innerRect.width, 18f),
+                (IsPersonaCustomized(selected.defName)
+                    ? "PawnDiary.Settings.PromptStatusCustomized"
+                    : "PawnDiary.Settings.PromptStatusDefault").Translate());
+
+            Rect labelFieldRect = new Rect(innerRect.x, innerRect.y + 46f, innerRect.width, 28f);
+            string editedLabel = DrawCompactTextField(labelFieldRect, "PawnDiary.Settings.PersonaLabel".Translate(), currentLabel, 86f);
+
+            Rect ruleLabelRect = new Rect(innerRect.x, innerRect.y + 78f, innerRect.width, 20f);
+            DrawHint(ruleLabelRect, "PawnDiary.Settings.PersonaRule".Translate());
+            Rect ruleRect = new Rect(innerRect.x, innerRect.y + 98f, innerRect.width, 112f);
+            string editedRule = Widgets.TextArea(ruleRect, currentRule);
+
+            Rect tagsLabelRect = new Rect(innerRect.x, ruleRect.yMax + 6f, innerRect.width, 18f);
+            DrawHint(tagsLabelRect, "PawnDiary.Settings.PersonaTags".Translate());
+            List<string> editedThemes = DrawPersonaTagPicker(new Rect(innerRect.x, tagsLabelRect.yMax + 2f, innerRect.width, 72f), currentThemes, custom);
+
+            bool changed = !string.Equals(editedLabel, currentLabel, StringComparison.Ordinal)
+                || !string.Equals(editedRule, currentRule, StringComparison.Ordinal)
+                || !editedThemes.SequenceEqual(currentThemes);
+            if (changed)
+            {
+                if (custom)
+                {
+                    PersonaPresetConfig customPreset = Settings.CustomPersonaFor(selected.defName);
+                    if (customPreset != null)
+                    {
+                        customPreset.label = editedLabel ?? string.Empty;
+                        customPreset.rule = editedRule ?? string.Empty;
+                        customPreset.themes = editedThemes;
+                    }
+                }
+                else
+                {
+                    bool matchesDefault = string.Equals(editedLabel, baseDef?.label ?? string.Empty, StringComparison.Ordinal)
+                        && string.Equals(editedRule, baseDef?.rule ?? string.Empty, StringComparison.Ordinal)
+                        && editedThemes.SequenceEqual(baseDef?.themes ?? new List<string>());
+                    if (matchesDefault)
+                    {
+                        Settings.ResetPersonaOverride(selected.defName);
+                    }
+                    else
+                    {
+                        Settings.SetPersonaOverride(selected.defName, editedLabel, editedRule, editedThemes);
+                    }
+                }
+            }
+
+            Rect actionRect = new Rect(innerRect.x, innerRect.yMax - 30f, innerRect.width, 30f);
+            if (custom)
+            {
+                if (Widgets.ButtonText(actionRect, "PawnDiary.Settings.DeletePersonaPreset".Translate()))
+                {
+                    Settings.RemoveCustomPersona(selected.defName);
+                    selectedPersonaKey = null;
+                }
+            }
+            else
+            {
+                if (Widgets.ButtonText(actionRect, "PawnDiary.Settings.RestorePersonaPreset".Translate()))
+                {
+                    Settings.ResetPersonaOverride(selected.defName);
+                }
+            }
+        }
+
+        private List<string> DrawPersonaTagPicker(Rect rect, List<string> themes, bool requireAtLeastOneTag)
+        {
+            List<string> selected = themes == null ? new List<string>() : new List<string>(themes);
+            float rowHeight = 22f;
+            float gap = 8f;
+            float columnWidth = (rect.width - gap) / 2f;
+            float y = rect.y;
+            for (int i = 0; i < DiaryPersonas.PredefinedThemeTags.Length; i += 2)
+            {
+                DrawPersonaTagToggle(new Rect(rect.x, y, columnWidth, rowHeight), DiaryPersonas.PredefinedThemeTags[i], selected, requireAtLeastOneTag);
+                if (i + 1 < DiaryPersonas.PredefinedThemeTags.Length)
+                {
+                    DrawPersonaTagToggle(new Rect(rect.x + columnWidth + gap, y, columnWidth, rowHeight), DiaryPersonas.PredefinedThemeTags[i + 1], selected, requireAtLeastOneTag);
+                }
+
+                y += rowHeight + 2f;
+            }
+
+            return selected;
+        }
+
+        private static void DrawPersonaTagToggle(Rect rect, string tag, List<string> selected, bool requireAtLeastOneTag)
+        {
+            bool enabled = selected.Contains(tag);
+            bool before = enabled;
+            Widgets.CheckboxLabeled(rect, PersonaTagLabel(tag), ref enabled);
+            if (enabled == before)
+            {
+                return;
+            }
+
+            if (enabled)
+            {
+                if (!selected.Contains(tag))
+                {
+                    selected.Add(tag);
+                }
+            }
+            else
+            {
+                if (!requireAtLeastOneTag || selected.Count > 1)
+                {
+                    selected.Remove(tag);
+                }
+            }
+        }
+
+        private DiaryPersonaDef SelectedPersonaForSettings()
+        {
+            DiaryPersonaDef selected = DiaryPersonas.All.FirstOrDefault(persona => persona.defName == selectedPersonaKey);
+            if (selected != null)
+            {
+                return selected;
+            }
+
+            selected = DiaryPersonas.All.FirstOrDefault();
+            selectedPersonaKey = selected?.defName;
+            return selected;
+        }
+
+        private static DiaryPersonaDef BasePersonaForSettings(DiaryPersonaDef effective)
+        {
+            if (effective == null || string.IsNullOrWhiteSpace(effective.defName))
+            {
+                return effective;
+            }
+
+            return DefDatabase<DiaryPersonaDef>.GetNamedSilentFail(effective.defName) ?? effective;
+        }
+
+        private bool IsPersonaCustomized(string defName)
+        {
+            if (string.IsNullOrWhiteSpace(defName))
+            {
+                return false;
+            }
+
+            return Settings.PersonaOverrideFor(defName) != null || Settings.CustomPersonaFor(defName) != null;
+        }
+
+        private static string PersonaLabelForUi(DiaryPersonaDef persona)
+        {
+            if (persona == null)
+            {
+                return "PawnDiary.Persona.DefaultLabel".Translate();
+            }
+
+            return string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label;
+        }
+
+        private static string PersonaTagLabel(string tag)
+        {
+            return ("PawnDiary.Settings.PersonaTag." + tag).Translate();
+        }
+
+        /// <summary>
         /// Draws per-group enable checkboxes and, for the currently selected group,
         /// an editable instruction text area with save/restore buttons.
         /// </summary>
@@ -841,9 +1132,11 @@ namespace PawnDiary
                 height += 34f; // compact summary
             }
 
-            // Generation controls plus the single-card prompt studio.
+            // Generation controls, prompt studio, and persona-preset studio.
             height += 250f;
             height += 470f;
+            int personaCount = DiaryPersonas.All.Count;
+            height += 560f + (Mathf.Ceil(personaCount / 2f) * 34f);
 
             // Events section: two-column group toggles, domain subheaders, and the prompt editor.
             height += 140f;
