@@ -20,8 +20,8 @@ namespace PawnDiary
             Progressed
         }
 
-        // Active hediff severity baselines, keyed by pawn + HediffDef. Transient: rebuilt by scanner
-        // after load so existing conditions do not suddenly become new diary pages.
+        // Active hediff severity baselines, keyed by pawn + HediffDef + body part. Transient:
+        // rebuilt by scanner after load so existing conditions do not suddenly become new diary pages.
         private readonly Dictionary<string, ActiveHediffProgressionState> activeHediffProgressions =
             new Dictionary<string, ActiveHediffProgressionState>();
         private int nextHediffProgressionScanTick;
@@ -80,7 +80,7 @@ namespace PawnDiary
                         continue;
                     }
 
-                    string stateKey = HediffProgressionStateKey(pawnId, match.defName);
+                    string stateKey = HediffProgressionStateKey(pawnId, match.defName, match.partKey);
                     HediffProgressionMatch existing;
                     if (activeByStateKey.TryGetValue(stateKey, out existing)
                         && existing.stage >= match.stage)
@@ -155,6 +155,7 @@ namespace PawnDiary
                 pawn = pawn,
                 hediff = hediff,
                 defName = HediffDefName(hediff),
+                partKey = HediffPartKey(hediff),
                 stage = HediffSeverityStage(hediff, policy),
                 recordable = ShouldRecordHediff(policy, hediff)
             };
@@ -221,7 +222,10 @@ namespace PawnDiary
                 return;
             }
 
-            string stateKey = HediffProgressionStateKey(pawn.GetUniqueLoadID(), HediffDefName(hediff));
+            string stateKey = HediffProgressionStateKey(
+                pawn.GetUniqueLoadID(),
+                HediffDefName(hediff),
+                HediffPartKey(hediff));
             activeHediffProgressions[stateKey] = new ActiveHediffProgressionState
             {
                 currentStage = HediffSeverityStage(hediff, policy)
@@ -391,6 +395,7 @@ namespace PawnDiary
             return "hediff|" + source.ToString().ToLowerInvariant()
                 + "|" + pawn.GetUniqueLoadID()
                 + "|" + HediffDefName(hediff)
+                + "|" + HediffPartKey(hediff)
                 + "|" + stage.ToString(CultureInfo.InvariantCulture);
         }
 
@@ -435,9 +440,21 @@ namespace PawnDiary
             return string.IsNullOrWhiteSpace(label) ? HediffDefName(hediff) : label;
         }
 
-        private static string HediffProgressionStateKey(string pawnId, string defName)
+        private static string HediffPartKey(Hediff hediff)
         {
-            return pawnId + "|" + defName;
+            BodyPartRecord part = hediff?.Part;
+            if (part == null)
+            {
+                return "whole_body";
+            }
+
+            string defName = part.def?.defName ?? "part";
+            return defName + "#" + part.GetHashCode().ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string HediffProgressionStateKey(string pawnId, string defName, string partKey)
+        {
+            return pawnId + "|" + defName + "|" + partKey;
         }
 
         private class ActiveHediffProgressionState
@@ -450,6 +467,7 @@ namespace PawnDiary
             public Pawn pawn;
             public Hediff hediff;
             public string defName;
+            public string partKey;
             public int stage;
             public bool recordable;
         }

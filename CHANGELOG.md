@@ -3,6 +3,14 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (hediff mod support fixes)**
+  - Made hediff progression and immediate-event dedup keys body-part aware, so same-def conditions
+    on different parts do not mask each other.
+  - Removed the obsolete `daySummaryHediffMinSeverity` tuning field; Hediff group `<minSeverity>`
+    is now the single severity gate.
+  - Included Hediff groups in the settings height estimate so larger compatibility catalogs remain
+    scrollable.
+
 - **2026-06-17 (XML hediff mod support)**
   - Added a generic Hediff event-group domain with XML policies for day-reflection or immediate
     health-condition diary signals, so modded hediff support can be added with Def patches instead

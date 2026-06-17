@@ -1280,7 +1280,8 @@ namespace PawnDiary
                 GroupDomain.MoodEvent,
                 GroupDomain.Thought,
                 GroupDomain.Inspiration,
-                GroupDomain.Work
+                GroupDomain.Work,
+                GroupDomain.Hediff
             };
 
             foreach (GroupDomain domain in domains)

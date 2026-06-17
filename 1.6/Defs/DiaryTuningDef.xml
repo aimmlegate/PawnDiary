@@ -172,7 +172,6 @@
     <daySummaryEnabled>true</daySummaryEnabled>
     <daySummaryMaxHighlights>3</daySummaryMaxHighlights>
     <daySummaryOpinionDeltaThreshold>15</daySummaryOpinionDeltaThreshold>
-    <daySummaryHediffMinSeverity>0.3</daySummaryHediffMinSeverity>
     <daySummaryWeightCriticalEvent>1</daySummaryWeightCriticalEvent>
     <daySummaryWeightMajorEvent>0.7</daySummaryWeightMajorEvent>
     <daySummaryWeightHediff>0.8</daySummaryWeightHediff>

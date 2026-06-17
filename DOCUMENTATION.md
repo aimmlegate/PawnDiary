@@ -185,13 +185,16 @@ default `hediffMajorHealth` catch-all preserves the old behavior: bad non-injury
 day-reflection candidates when they are chronic, sickness-causing, addiction/missing-part hediffs,
 or pass the XML severity gate. Mod support XML can add lower-order Hediff groups for specific
 modded hediff defNames and choose `DayReflection` or `Immediate` output without C# patches.
+Progression and immediate-event dedup keys include the body part, so same-def hediffs on different
+parts do not suppress each other; day reflections still collapse same-def health signals into one
+readable daily highlight.
 
 Work recording samples current Work-tab jobs periodically. It reads `CurJob.workGiverDef.workType`,
 skips social and violent work, applies XML odds/cooldowns plus the `workGenerationWeight` multiplier,
 then classifies the moment as passionate, straining, routine, or dark-study work.
 
 When `daySummaryEnabled` is true, sleep/rest triggers one `DayReflection` candidate per pawn using a
-weighted selection of major day events, opinion shifts, major new afflictions, and low-weight filler.
+weighted selection of major day events, opinion shifts, health-condition signals, and low-weight filler.
 
 ---
 
@@ -240,7 +243,9 @@ Hediff policies live on Hediff-domain groups. The optional `<hediff>` block cont
 (`DayReflection` or `Immediate`), visible/bad/injury gates, severity thresholds, special always
 qualifiers (`chronicAlways`, `sickThoughtAlways`, `addictionAlways`, `missingPartAlways`),
 `recordOnAdd`, `recordOnSeverityIncrease`, `severityStep`, `dedupTicks`, and
-`dayReflectionWeight`. This is the generic mod-support layer: a compatibility patch can add:
+`dayReflectionWeight`. The policy's `<minSeverity>` is the recording gate for that group; the
+general tuning Def only controls the scanner interval and reflection selection weight. This is the
+generic mod-support layer: a compatibility patch can add:
 
 ```xml
 <PawnDiary.DiaryInteractionGroupDef>
@@ -267,8 +272,8 @@ qualifiers (`chronicAlways`, `sickThoughtAlways`, `addictionAlways`, `missingPar
 
 `1.6/Defs/DiaryTuningDef.xml` holds dedup windows, scanner intervals, mood/health/beauty buckets,
 thought thresholds, staged thought rules, the hediff progression scan interval, work odds/cooldowns,
-day-reflection weights, and nearby-context tuning. Code defaults keep the mod usable if XML fails
-to load.
+day-reflection weights, and nearby-context tuning. Hediff severity gates live on Hediff-domain group
+policies, not in this tuning Def. Code defaults keep the mod usable if XML fails to load.
 
 ---
 

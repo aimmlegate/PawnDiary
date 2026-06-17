@@ -206,13 +206,10 @@ namespace PawnDiary
         // A colonist→colonist opinion swing of at least this many points (vs the day-start snapshot)
         // becomes a social-dynamic signal.
         public int daySummaryOpinionDeltaThreshold = 15;
-        // A newly-appeared hediff counts as "major" at/above this severity (or if chronic / an
-        // addiction / makes a sick thought — any one qualifies regardless of severity).
-        public float daySummaryHediffMinSeverity = 0.3f;
         // Relative selection weights (higher = more likely to survive selection).
         public float daySummaryWeightCriticalEvent = 1f;   // combat / mental-state day events
         public float daySummaryWeightMajorEvent = 0.7f;    // other "important" day events
-        public float daySummaryWeightHediff = 0.8f;        // a major new hediff
+        public float daySummaryWeightHediff = 0.8f;        // a hediff health signal
         public float daySummaryWeightOpinionShift = 0.6f;  // base; scaled up by swing magnitude
         public float daySummaryWeightFiller = 0.15f;       // background small talk / passing feelings
     }
