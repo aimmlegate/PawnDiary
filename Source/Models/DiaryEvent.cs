@@ -25,6 +25,13 @@ namespace PawnDiary
         public const string CompleteStatus = "complete";
         public const string FailedStatus = "failed";
         public const string SkippedStatus = "skipped";
+        public const string CombatColorCue = "combat";
+        public const string SocialFightColorCue = "socialFight";
+        public const string MentalBreakColorCue = "mentalBreak";
+        public const string DazeColorCue = "daze";
+        public const string ExtremeDarkColorCue = "extremeDark";
+        public const string WhiteColorCue = "white";
+        public const string QuietColorCue = "quiet";
 
         public string eventId; // unique ID for this event, stable across saves
         public List<int> playLogEntryIds = new List<int>(); // Verse.LogEntry ids that produced this diary event
@@ -41,6 +48,7 @@ namespace PawnDiary
         public string neutralText; // merged description combining both POVs for neutral view
         public string gameContext; // metadata string describing game state at event time
         public string instruction; // group-specific prompt instruction appended to LLM calls
+        public string colorCue; // stable semantic UI color key; empty older saves derive it from group/context
         public string initiatorPawnSummary; // LLM-oriented summary of initiator's traits/backstory
         public string recipientPawnSummary; // LLM-oriented summary of recipient's traits/backstory
         public string initiatorSurroundings; // textual description of initiator's surroundings
@@ -114,6 +122,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref neutralText, "neutralText");
             Scribe_Values.Look(ref gameContext, "gameContext");
             Scribe_Values.Look(ref instruction, "instruction");
+            Scribe_Values.Look(ref colorCue, "colorCue");
             Scribe_Values.Look(ref initiatorPawnSummary, "initiatorPawnSummary");
             Scribe_Values.Look(ref recipientPawnSummary, "recipientPawnSummary");
             Scribe_Values.Look(ref initiatorSurroundings, "initiatorSurroundings");
@@ -188,6 +197,11 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(instruction))
                 {
                     instruction = interactionLabel;
+                }
+
+                if (string.IsNullOrWhiteSpace(colorCue))
+                {
+                    colorCue = ResolveColorCue(interactionDefName, gameContext);
                 }
 
                 if (string.IsNullOrWhiteSpace(initiatorPawnSummary))
@@ -675,6 +689,7 @@ namespace PawnDiary
                 eventId,
                 povRole,
                 group?.label ?? interactionLabel ?? string.Empty,
+                ColorCueForDisplay(),
                 group == null || group.important,
                 linkedEntry,
                 titleForPov,
@@ -889,21 +904,85 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resolves the event group used by the Diary tab for labels and importance coloring.
-        /// Saved events only keep the defName string, so this reuses the XML classifiers.
+        /// Resolves the event group used by the Diary tab for labels, importance, and color cue
+        /// fallback. Saved events keep only source markers and defName, so this reuses the XML
+        /// classifiers instead of storing localized labels.
         /// </summary>
         private DiaryInteractionGroupDef GroupForDisplay()
         {
-            GroupDomain domain = IsTaleEvent()
+            return GroupForDisplay(gameContext, interactionDefName);
+        }
+
+        /// <summary>
+        /// Returns the saved semantic color cue, deriving one for old saves that predate colorCue.
+        /// </summary>
+        private string ColorCueForDisplay()
+        {
+            return string.IsNullOrWhiteSpace(colorCue)
+                ? ResolveColorCue(interactionDefName, gameContext)
+                : colorCue;
+        }
+
+        /// <summary>
+        /// Chooses the stable display color key for a diary event. This is intentionally based on
+        /// source defNames and XML group metadata, not localized labels or LLM-generated titles.
+        /// </summary>
+        public static string ResolveColorCue(string defName, string context)
+        {
+            if (IsMentalStateEvent(context))
+            {
+                if (string.Equals(defName, "SocialFighting", StringComparison.OrdinalIgnoreCase))
+                {
+                    return SocialFightColorCue;
+                }
+
+                if (IsDazeMentalStateDefName(defName))
+                {
+                    return DazeColorCue;
+                }
+            }
+
+            if (IsExtremeDarkDefName(defName))
+            {
+                return ExtremeDarkColorCue;
+            }
+
+            DiaryInteractionGroupDef group = GroupForDisplay(context, defName);
+            if (!string.IsNullOrWhiteSpace(group?.colorCue))
+            {
+                return group.colorCue;
+            }
+
+            if (group != null && group.combat)
+            {
+                return CombatColorCue;
+            }
+
+            if (IsMentalStateEvent(context))
+            {
+                return MentalBreakColorCue;
+            }
+
+            if (group != null && !group.important)
+            {
+                return QuietColorCue;
+            }
+
+            return string.Empty;
+        }
+
+        private static DiaryInteractionGroupDef GroupForDisplay(string context, string defName)
+        {
+            GroupDomain domain = IsTaleEvent(context)
                 ? GroupDomain.Tale
-                : IsMoodEventEvent()
+                : IsMoodEventEvent(context)
                     ? GroupDomain.MoodEvent
-                    : IsThoughtEvent()
+                    : IsThoughtEvent(context)
                         ? GroupDomain.Thought
-                        : IsWorkEvent()
+                        : IsWorkEvent(context)
                             ? GroupDomain.Work
-                            : IsMentalStateEvent() ? GroupDomain.MentalState : GroupDomain.Interaction;
-            return InteractionGroups.ClassifyDefName(domain, interactionDefName);
+                            : IsMentalStateEvent(context) ? GroupDomain.MentalState : GroupDomain.Interaction;
+            return InteractionGroups.ClassifyDefName(domain, defName);
         }
 
         /// <summary>
@@ -948,8 +1027,12 @@ namespace PawnDiary
         /// </summary>
         private bool IsMentalStateEvent()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("mental_state=", StringComparison.OrdinalIgnoreCase) >= 0;
+            return IsMentalStateEvent(gameContext);
+        }
+
+        private static bool IsMentalStateEvent(string context)
+        {
+            return HasContextMarker(context, "mental_state=");
         }
 
         /// <summary>
@@ -958,8 +1041,12 @@ namespace PawnDiary
         /// </summary>
         private bool IsTaleEvent()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("tale=", StringComparison.OrdinalIgnoreCase) >= 0;
+            return IsTaleEvent(gameContext);
+        }
+
+        private static bool IsTaleEvent(string context)
+        {
+            return HasContextMarker(context, "tale=");
         }
 
         /// <summary>
@@ -969,8 +1056,12 @@ namespace PawnDiary
         /// </summary>
         private bool IsMoodEventEvent()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("mood_event=", StringComparison.OrdinalIgnoreCase) >= 0;
+            return IsMoodEventEvent(gameContext);
+        }
+
+        private static bool IsMoodEventEvent(string context)
+        {
+            return HasContextMarker(context, "mood_event=");
         }
 
         /// <summary>
@@ -979,8 +1070,12 @@ namespace PawnDiary
         /// </summary>
         private bool IsThoughtEvent()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("thought=", StringComparison.OrdinalIgnoreCase) >= 0;
+            return IsThoughtEvent(gameContext);
+        }
+
+        private static bool IsThoughtEvent(string context)
+        {
+            return HasContextMarker(context, "thought=");
         }
 
         /// <summary>
@@ -989,8 +1084,32 @@ namespace PawnDiary
         /// </summary>
         private bool IsWorkEvent()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("work=", StringComparison.OrdinalIgnoreCase) >= 0;
+            return IsWorkEvent(gameContext);
+        }
+
+        private static bool IsWorkEvent(string context)
+        {
+            return HasContextMarker(context, "work=");
+        }
+
+        private static bool HasContextMarker(string context, string marker)
+        {
+            return !string.IsNullOrWhiteSpace(context)
+                && context.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsDazeMentalStateDefName(string defName)
+        {
+            return !string.IsNullOrWhiteSpace(defName)
+                && (defName.IndexOf("Daze", StringComparison.OrdinalIgnoreCase) >= 0
+                    || defName.IndexOf("Wander", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool IsExtremeDarkDefName(string defName)
+        {
+            return !string.IsNullOrWhiteSpace(defName)
+                && (defName.IndexOf("UnnaturalDarkness", StringComparison.OrdinalIgnoreCase) >= 0
+                    || defName.IndexOf("Darkness", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         /// <summary>

@@ -66,8 +66,8 @@ namespace PawnDiary
         private static readonly Color LinkedEntryBorderColor = new Color(0.35f, 0.45f, 0.55f);
         private static readonly Color LinkedEntryTextColor = new Color(0.65f, 0.70f, 0.75f);
         private static readonly Color LinkedEntryHoverColor = new Color(0.25f, 0.30f, 0.38f, 0.90f);
-        // Pleasant, readable accents for group-coded diary cards. The group label selects the color
-        // deterministically, so old entries get the same marker every time without adding save data.
+        // Legacy accent colors still used by linked-entry role strips. Diary card group colors now
+        // come from DiaryEvent.colorCue so localized labels and generated titles never affect them.
         private static readonly Color[] EntryAccentPalette =
         {
             new Color(0.95f, 0.58f, 0.32f),
@@ -79,6 +79,13 @@ namespace PawnDiary
             new Color(0.86f, 0.50f, 0.66f),
             new Color(0.62f, 0.68f, 0.76f)
         };
+        private static readonly Color DefaultCueColor = ColoredText.NameColor;
+        private static readonly Color WhiteCueColor = new Color(0.92f, 0.92f, 0.86f);
+        private static readonly Color QuietCueColor = new Color(0.74f, 0.74f, 0.70f);
+        private static readonly Color MentalBreakCueColor = ColoredText.FactionColor_Ally;
+        private static readonly Color DazeCueColor = ColoredText.GeneColor;
+        private static readonly Color SocialFightCueColor = new Color(1f, 0.52f, 0.16f);
+        private static readonly Color ExtremeDarkCueColor = new Color(0.58f, 0.05f, 0.08f);
 
         // Cached roleplay body style, reused every frame to avoid allocating a fresh GUIStyle per
         // line. Built once from the active font, then refreshed (font size + color) on each use so it
@@ -1291,43 +1298,47 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the color strip used to mark the entry group. Important groups keep the palette
-        /// color bright; quieter groups use a softer version so the diary stays calm at a glance.
+        /// Returns the color strip used to mark the entry group. The saved cue key follows
+        /// RimWorld-like meaning (hostile red, mental-break green, quiet gray) instead of hashing
+        /// localized group labels.
         /// </summary>
         private static Color EntryAccentColor(DiaryEntryView entry)
         {
-            Color accent = PaletteColor(entry?.GroupLabel);
-            if (entry == null || entry.Important)
-            {
-                return accent;
-            }
-
-            return Color.Lerp(QuietColor, accent, 0.42f);
+            return entry == null
+                ? DefaultCueColor
+                : ColorForCue(entry.ColorCue, entry.Important);
         }
 
         /// <summary>
-        /// Picks a stable palette color from a localized group label without relying on runtime
-        /// string hash behavior. New to hashing? It turns text into a repeatable number.
+        /// Maps stable diary color cues onto RimWorld-style UI colors. Empty cues fall back to a
+        /// warm neutral for important entries and light gray for non-important ones.
         /// </summary>
-        private static Color PaletteColor(string label)
+        private static Color ColorForCue(string cue, bool important)
         {
-            if (string.IsNullOrWhiteSpace(label))
+            if (string.IsNullOrWhiteSpace(cue))
             {
-                return EntryAccentPalette[EntryAccentPalette.Length - 1];
+                return important ? DefaultCueColor : QuietCueColor;
             }
 
-            int hash = 17;
-            for (int i = 0; i < label.Length; i++)
+            switch (cue.Trim())
             {
-                hash = hash * 31 + char.ToLowerInvariant(label[i]);
+                case DiaryEvent.CombatColorCue:
+                    return ColoredText.FactionColor_Hostile;
+                case DiaryEvent.SocialFightColorCue:
+                    return SocialFightCueColor;
+                case DiaryEvent.MentalBreakColorCue:
+                    return MentalBreakCueColor;
+                case DiaryEvent.DazeColorCue:
+                    return DazeCueColor;
+                case DiaryEvent.ExtremeDarkColorCue:
+                    return ExtremeDarkCueColor;
+                case DiaryEvent.WhiteColorCue:
+                    return WhiteCueColor;
+                case DiaryEvent.QuietColorCue:
+                    return QuietCueColor;
+                default:
+                    return important ? DefaultCueColor : QuietCueColor;
             }
-
-            if (hash < 0)
-            {
-                hash = ~hash;
-            }
-
-            return EntryAccentPalette[hash % EntryAccentPalette.Length];
         }
 
         /// <summary>

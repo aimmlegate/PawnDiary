@@ -151,6 +151,10 @@ namespace PawnDiary
         // Localized via DefInjected like `instruction` (it reaches the prompt), not Keyed.
         public string tone;
 
+        // Optional stable UI color cue stored on new DiaryEvents. This is deliberately an internal
+        // key (for example "combat" or "socialFight"), not translated player-facing text.
+        public string colorCue;
+
         // Interaction (InteractionDef) vs MentalState (MentalStateDef). Classification is scoped
         // to a domain so the two never cross-match.
         public GroupDomain domain = GroupDomain.Interaction;
@@ -298,7 +302,8 @@ namespace PawnDiary
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.
-        // The Diary tab uses this to color-mark old and new entries without adding save fields.
+        // The Diary tab and save migration helpers use this to recover labels, importance, and
+        // semantic color cues for older entries.
         public static DiaryInteractionGroupDef ClassifyDefName(GroupDomain domain, string defName)
         {
             return ClassifyIn(domain, defName);

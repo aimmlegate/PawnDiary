@@ -63,7 +63,7 @@ Key files:
 | `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Needs. |
 | `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
 | `DiaryGameComponent*.cs` | Recording, batching, generation scans, save/load, lookup indexes, and public UI access. Event-source partials own their `Record*` methods. |
-| `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, and Scribe persistence. |
+| `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
@@ -89,8 +89,9 @@ All sources funnel into `DiaryGameComponent`:
 1. A Harmony hook or periodic scanner sees a candidate moment.
 2. The source method checks group enablement, pawn eligibility, dedup windows, and source-specific
    filters.
-3. `AddSoloEvent` or `AddPairwiseEvent` creates a `DiaryEvent`, registers it in `diaryEvents` and
-   `eventsById`, and stores the id in each eligible pawn's `PawnDiaryRecord`.
+3. `AddSoloEvent` or `AddPairwiseEvent` creates a `DiaryEvent`, stamps its semantic color cue,
+   registers it in `diaryEvents` and `eventsById`, and stores the id in each eligible pawn's
+   `PawnDiaryRecord`.
 4. Generation queues immediately when possible and is retried by background scans.
 5. `LlmClient` sends requests on selected API lanes and returns results to the main thread.
 6. `ApplyLlmResult` stores generated text or failure state; successful main entries may queue a
@@ -192,6 +193,13 @@ weighted selection of major day events, opinion shifts, major new afflictions, a
 Matching is domain-scoped by exact `defName` or substring token. XML order matters; catch-all groups
 go last. Settings store per-group enabled flags and instruction overrides keyed by group `defName`;
 missing settings use XML defaults.
+
+Groups may also set a `colorCue`, which is saved on new `DiaryEvent`s and drives only the Diary
+tab's accent strip/chip. The UI maps cues to RimWorld-like colors: combat uses hostile red, social
+fights/insult-fight rows use orange, generic mental breaks use green, daze/wander breaks use light
+blue, anomaly/dark-study events use deep red, deep talk and day reflection use white, and
+non-important entries without a specific cue use light white-gray. Older saves without `colorCue`
+derive the same cue from saved `gameContext` markers and XML group classification.
 
 Batch policies live on groups:
 
@@ -357,8 +365,8 @@ year page, the newest 15 visible entries open by default and older entries colla
 date/title headers. Header clicks toggle expansion with lightweight animation and session-local
 manual state. UI caches for first-seen fades and expansion blends are capped and periodically cleared.
 
-Generated cards show date/title, group accent and chip, page tint, a subtle model id, linked previews
-for the other pawn's POV, and title-pending animation. `DiaryTextFormat` converts light markdown
+Generated cards show date/title, semantic color accent and group chip, page tint, a subtle model id,
+linked previews for the other pawn's POV, and title-pending animation. `DiaryTextFormat` converts light markdown
 (`**bold**`, `*italic*`, headings, bullets, block quotes) and inline quoted speech to Unity rich
 text. Social-tab log rows can jump to matching diary entries, including older year pages.
 
@@ -393,10 +401,11 @@ raw text is kept when configured.
 `DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. The `eventId -> DiaryEvent`
 lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 
-`DiaryEvent` saves raw text, generated text, statuses/errors, context, source ids, LLM metadata, and
-per-POV titles. Full prompt strings are not persisted; dev diagnostics can show prompts built during
-the current session. Tale/mental/source classification is inferred from stable `gameContext` markers
-such as `tale=`, `mental_state=`, `mood_event=`, `thought=`, and `work=`.
+`DiaryEvent` saves raw text, generated text, statuses/errors, context, source ids, LLM metadata,
+semantic `colorCue`, and per-POV titles. Full prompt strings are not persisted; dev diagnostics can
+show prompts built during the current session. Tale/mental/source classification is inferred from
+stable `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`, `thought=`, and
+`work=`.
 
 Pending requests are not persisted. On load, pending main statuses reset to not-generated, and stale
 pending title statuses without stored titles are cleared.

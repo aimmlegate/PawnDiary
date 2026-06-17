@@ -65,6 +65,7 @@ namespace PawnDiary
         public readonly string EventId;     // Identifier of the backing DiaryEvent
         public readonly string PovRole;     // Role/perspective this view represents.
         public readonly string GroupLabel;  // Human-readable event group shown in the entry header
+        public readonly string ColorCue;    // Stable semantic cue used for the card's color strip/chip
         public readonly bool Important;     // Visual importance marker derived from the event group
         public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo).
         // Short chat-style subject: stored LLM-generated title only. Empty when no title has
@@ -88,6 +89,7 @@ namespace PawnDiary
             string eventId,
             string povRole,
             string groupLabel,
+            string colorCue,
             bool important,
             LinkedEntryView linkedEntry = null,
             string title = null,
@@ -105,6 +107,7 @@ namespace PawnDiary
             EventId = eventId;
             PovRole = povRole;
             GroupLabel = groupLabel;
+            ColorCue = colorCue ?? string.Empty;
             Important = important;
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;

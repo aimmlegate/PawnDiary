@@ -15,6 +15,8 @@
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
+    colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
+                     combat, socialFight, mentalBreak, daze, extremeDark, white, quiet
     batch          - optional Interaction-domain batching policy:
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
@@ -153,6 +155,7 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>something wrong—an unsettling exchange that leaves unease lingering. Don't explain it away</instruction>
     <tone>with creeping dread; never resolve the wrongness</tone>
+    <colorCue>extremeDark</colorCue>
     <matchDefNames>
       <li>DarkDialogue</li>
       <li>CreepyWords</li>
@@ -180,6 +183,7 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <combat>true</combat>
+    <colorCue>socialFight</colorCue>
     <batch>
       <mode>PairEvent</mode>
       <!-- RimWorld has 2,500 ticks per in-game hour; 7,500 ticks is a three-hour quiet window. -->
@@ -289,6 +293,7 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</instruction>
     <tone>with soft, tender warmth</tone>
+    <colorCue>white</colorCue>
     <matchDefNames>
       <li>DeepTalk</li>
       <li>KindWords</li>
@@ -403,6 +408,7 @@
     <important>true</important>
     <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
     <tone>with a quiet, settling, end-of-day calm</tone>
+    <colorCue>white</colorCue>
     <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
     <matchDefNames>
       <li>DayReflection</li>
@@ -443,6 +449,7 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>tempers snapped—two people came to blows. Write it as heat and impact</instruction>
     <tone>with raw, adrenal fury</tone>
+    <colorCue>socialFight</colorCue>
     <matchDefNames>
       <li>SocialFighting</li>
     </matchDefNames>
@@ -470,6 +477,7 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>the mind breaking—write the pawn's inner storm and what they did</instruction>
     <tone>with frayed, overwhelmed intensity</tone>
+    <colorCue>mentalBreak</colorCue>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -482,6 +490,7 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <combat>true</combat>
+    <colorCue>combat</colorCue>
     <instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</instruction>
     <tone>with fear and visceral danger</tone>
     <matchDefNames>
@@ -601,6 +610,7 @@
     <order>335</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
+    <colorCue>extremeDark</colorCue>
     <instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</instruction>
     <tone>with dread and the uncanny; leave it unexplained</tone>
     <matchDefNames>
@@ -621,6 +631,7 @@
     <order>340</order>
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
+    <colorCue>combat</colorCue>
     <instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</instruction>
     <tone>with shaken, crisis-pitched tension</tone>
     <matchDefNames>
@@ -862,6 +873,7 @@
     <important>true</important>
     <instruction>dark research that should feel unsettling every time—write the work as intimate contact with something wrong; keep it spooky, sensory, and unresolved</instruction>
     <tone>with creeping, unresolved dread</tone>
+    <colorCue>extremeDark</colorCue>
     <matchDefNames>
       <li>PawnDiary_WorkDarkStudy</li>
     </matchDefNames>

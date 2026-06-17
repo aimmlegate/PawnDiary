@@ -3,6 +3,14 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (diary color cue consistency)**
+  - Added a saved `colorCue` key for diary events so card accents no longer depend on localized
+    group labels or generated titles.
+  - Retuned Diary tab accents toward RimWorld-like colors: hostile red for combat/crisis, orange for
+    social fights, green for mental breaks, light blue for daze/wander breaks, deep red for dark or
+    anomaly entries, white for deep talk and day reflections, and light white-gray for non-important
+    entries.
+
 - **2026-06-17 (persona consciousness modifier settings)**
   - Extended Persona presets settings so built-in and custom personas can edit their clouded,
     fading, and barely-conscious voice modifiers.
