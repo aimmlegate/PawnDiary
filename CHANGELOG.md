@@ -3,6 +3,10 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (POV-only quoted speech)**
+  - Tightened interaction prompt dialogue rules so quoted direct speech can only come from the
+    current POV pawn; other pawns' speech should be paraphrased without quotes.
+
 - **2026-06-17 (verse persona presets)**
   - Added restrained `plainspoken-poet` and `lowkey-rapper` diary persona presets, with
     low-Consciousness variants and rules that avoid overdone lyricism or forced rhyme.

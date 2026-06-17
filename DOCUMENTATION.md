@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (verse persona presets)_
+_Last updated: 2026-06-17 (POV-only quoted speech)_
 
 ---
 
@@ -297,9 +297,10 @@ Default prompt contracts ask for complete, short entries using prose length cues
 word ranges. They tell the model to use structured context as private evidence for voice, focus, and
 subtext, not as a checklist to echo. Paired two-pawn interaction prompts append one extra localized
 rule that asks for at least one short sentence of direct speech in double quotes, keeping dual-POV
-entries from collapsing into pure description. Single-POV interaction prompts append a softer
-localized cue to use brief quoted speech when it feels natural; non-interaction solo entries do not
-get that cue.
+entries from collapsing into pure description. Quoted speech must belong only to the current POV
+pawn; the other pawn's words are paraphrased without quotes. Single-POV interaction prompts append
+a softer localized cue to use brief quoted speech from the POV pawn when it feels natural;
+non-interaction solo entries do not get that cue.
 
 Player-customizable, Def-backed user-message instructions:
 
