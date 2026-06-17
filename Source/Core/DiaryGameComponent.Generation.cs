@@ -538,6 +538,11 @@ namespace PawnDiary
 
         private static void LogApiDebug(string message)
         {
+            if (!LlmClient.DebugLoggingEnabled())
+            {
+                return;
+            }
+
             Log.Message("[PawnDiary debug] " + message);
         }
 
@@ -663,7 +668,7 @@ namespace PawnDiary
                 }
                 else
                 {
-                    diaryEvent.SetTitle(result.povRole, title);
+                    diaryEvent.MarkTitleComplete(result.povRole, title);
                 }
             }
             else

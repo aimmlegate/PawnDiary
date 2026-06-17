@@ -57,8 +57,8 @@ namespace PawnDiary
         /// </summary>
         public static string BuildDeathDescriptionPrompt(DiaryEvent diaryEvent)
         {
-            string victimRole = ContextValue(diaryEvent.gameContext, "death_victim_role");
-            string victimName = ContextValue(diaryEvent.gameContext, "death_victim");
+            string victimRole = DiaryContextFields.Value(diaryEvent.gameContext, "death_victim_role");
+            string victimName = DiaryContextFields.Value(diaryEvent.gameContext, "death_victim");
             if (string.IsNullOrWhiteSpace(victimName))
             {
                 victimName = NameForContextRole(diaryEvent, victimRole);
@@ -81,7 +81,7 @@ namespace PawnDiary
         /// </summary>
         public static string BuildArrivalDescriptionPrompt(DiaryEvent diaryEvent)
         {
-            string pawnName = ContextValue(diaryEvent.gameContext, "arrival_pawn");
+            string pawnName = DiaryContextFields.Value(diaryEvent.gameContext, "arrival_pawn");
             if (string.IsNullOrWhiteSpace(pawnName))
             {
                 pawnName = diaryEvent.initiatorName;
@@ -393,7 +393,7 @@ namespace PawnDiary
 
         private static void AddContextFact(List<string> parts, string context, string key, string label)
         {
-            string value = ContextValue(context, key);
+            string value = DiaryContextFields.Value(context, key);
             if (!string.IsNullOrWhiteSpace(value))
             {
                 parts.Add(label + "=" + value);
@@ -403,8 +403,7 @@ namespace PawnDiary
         private static bool HasContext(DiaryEvent diaryEvent, string marker)
         {
             return diaryEvent != null
-                && !string.IsNullOrWhiteSpace(diaryEvent.gameContext)
-                && diaryEvent.gameContext.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0;
+                && DiaryContextFields.HasMarker(diaryEvent.gameContext, marker);
         }
 
         private static string AppendPairDirectSpeechInstruction(DiaryEvent diaryEvent, string povRole, string instruction)
@@ -501,27 +500,6 @@ namespace PawnDiary
             }
 
             return instruction.TrimEnd() + " " + extraInstruction;
-        }
-
-        private static string ContextValue(string context, string key)
-        {
-            if (string.IsNullOrWhiteSpace(context) || string.IsNullOrWhiteSpace(key))
-            {
-                return string.Empty;
-            }
-
-            string prefix = key + "=";
-            string[] parts = context.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-            for (int i = 0; i < parts.Length; i++)
-            {
-                string part = parts[i].Trim();
-                if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    return part.Substring(prefix.Length).Trim();
-                }
-            }
-
-            return string.Empty;
         }
 
         // Adds "key: value" only when the value carries real signal. Empty strings and

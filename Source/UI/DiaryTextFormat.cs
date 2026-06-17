@@ -1,9 +1,10 @@
 // Turns one line of generated diary text into Unity rich text for the diary tab.
 // LLMs emit light markdown (*italic*, **bold**, "# " headings, "- " bullets) and quoted speech; the
 // vanilla label renderer would print those markers literally. This helper rewrites the common cases
-// into rich-text tags (<b>, <i>, <color>) so the page reads cleanly. New to C#/RimWorld? Unity's
-// IMGUI labels understand a small HTML-like markup when the GUIStyle has richText enabled (see
-// ITab_Pawn_Diary.BodyStyle). Kept deliberately conservative so ordinary prose is never mangled.
+// into rich-text tags (<b>, <i>, <color>) so the page reads cleanly. Raw model output is escaped
+// first so a generated "<size=999>" or "</color>" cannot take over the UI. New to C#/RimWorld?
+// Unity's IMGUI labels understand a small HTML-like markup when the GUIStyle has richText enabled
+// (see ITab_Pawn_Diary.BodyStyle). Kept deliberately conservative so ordinary prose is never mangled.
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -26,6 +27,8 @@ namespace PawnDiary
         private static readonly string LeftQuote = ((char)0x201C).ToString();
         private static readonly string RightQuote = ((char)0x201D).ToString();
         private static readonly string Bullet = ((char)0x2022).ToString();
+        private static readonly string SafeLessThan = ((char)0x2039).ToString();
+        private static readonly string SafeGreaterThan = ((char)0x203A).ToString();
         private static readonly char[] LightZalgoMarks =
         {
             (char)0x0307, // dot above
@@ -74,7 +77,7 @@ namespace PawnDiary
                 return line ?? string.Empty;
             }
 
-            string s = line;
+            string s = EscapeRawRichText(line);
 
             // Line-level markers first, so inline emphasis runs on the visible remainder only.
             bool heading = false;
@@ -125,6 +128,16 @@ namespace PawnDiary
             });
 
             return s;
+        }
+
+        private static string EscapeRawRichText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text ?? string.Empty;
+            }
+
+            return text.Replace("<", SafeLessThan).Replace(">", SafeGreaterThan);
         }
 
         private static string FormatQuoteText(string text, bool distort, int seed, int quoteIndex)

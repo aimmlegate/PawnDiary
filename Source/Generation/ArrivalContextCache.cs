@@ -23,6 +23,14 @@ namespace PawnDiary
         private const int MaxCachedEntries = 64;
 
         /// <summary>
+        /// Clears stale, unsaved arrival facts when RimWorld starts or loads a different Game.
+        /// </summary>
+        public static void Clear()
+        {
+            CachedByPawnId.Clear();
+        }
+
+        /// <summary>
         /// Runs before Pawn.SetFaction mutates the pawn, so we can see the prior faction and whether
         /// this is a real transition into the player colony.
         /// </summary>

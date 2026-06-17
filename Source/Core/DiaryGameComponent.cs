@@ -142,6 +142,8 @@ namespace PawnDiary
             // entries (e.g. founding-colonist starting thoughts queued during InitNewGame), and a
             // second BeginSession would cancel those mid-flight and strand them forever on "Generating".
             LlmClient.BeginSession();
+            DeathContextCache.Clear();
+            ArrivalContextCache.Clear();
         }
 
         public static DiaryGameComponent Current

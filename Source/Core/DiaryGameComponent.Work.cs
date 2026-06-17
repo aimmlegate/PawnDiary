@@ -213,28 +213,12 @@ namespace PawnDiary
 
         private static bool IsWorkContext(string gameContext)
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("work=", StringComparison.OrdinalIgnoreCase) >= 0;
+            return DiaryContextFields.HasField(gameContext, "work");
         }
 
         private static string WorkTypeFromContext(string gameContext)
         {
-            if (string.IsNullOrWhiteSpace(gameContext))
-            {
-                return string.Empty;
-            }
-
-            string[] parts = gameContext.Split(';');
-            for (int i = 0; i < parts.Length; i++)
-            {
-                string part = parts[i].Trim();
-                if (part.StartsWith("work=", StringComparison.OrdinalIgnoreCase))
-                {
-                    return part.Substring("work=".Length).Trim();
-                }
-            }
-
-            return string.Empty;
+            return DiaryContextFields.Value(gameContext, "work");
         }
 
         private static bool HasPassionForWork(Pawn pawn, WorkTypeDef workTypeDef)

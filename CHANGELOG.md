@@ -3,6 +3,17 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (review hardening and helper split)**
+  - Fixed settings model-list fetch invalidation so removed/reset/edited API rows cannot leave the
+    UI stuck fetching or auto-fill a stale result into a shifted row.
+  - Added shared exact `gameContext` field parsing and used it for arrival/death ownership, work
+    deduplication, prompt context facts, and source markers.
+  - Escaped raw generated angle-bracket tags before diary rich-text formatting, marked successful
+    title follow-ups complete immediately, gated verbose API logs behind the dev LLM debug toggle,
+    and cleared transient arrival/death context caches at game-session start.
+  - Split endpoint URL helpers and settings-time model discovery out of `PawnDiaryMod.cs` into
+    focused `EndpointUtility` and `ModelListClient` files.
+
 - **2026-06-17 (active map context in settings)**
   - Added visible active map conditions to the first-person prompt `setting:` line, capped at three
     labels so long-running conditions can color entries without creating new diary events.

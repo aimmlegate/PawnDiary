@@ -26,6 +26,14 @@ namespace PawnDiary
         private const int MaxCachedEntries = 64;
 
         /// <summary>
+        /// Clears stale, unsaved death facts when RimWorld starts or loads a different Game.
+        /// </summary>
+        public static void Clear()
+        {
+            CachedByPawnId.Clear();
+        }
+
+        /// <summary>
         /// Records the killing blow and visible fatal health context before RimWorld finishes
         /// killing the pawn. This runs on the main thread from the Pawn.Kill Harmony prefix.
         /// </summary>

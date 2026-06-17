@@ -447,6 +447,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Stores a successful title and marks the title follow-up complete for the same POV role.
+        /// </summary>
+        public void MarkTitleComplete(string povRole, string title)
+        {
+            SetTitle(povRole, title);
+            SetTitleStatus(povRole, CompleteStatus);
+            SetTitleError(povRole, null);
+        }
+
+        /// <summary>
         /// Marks a POV role's title follow-up as failed and records the error message.
         /// If no previous title exists, the view keeps the card header date-only.
         /// </summary>
@@ -772,7 +782,7 @@ namespace PawnDiary
             }
 
             return HasDeathDescription()
-                && gameContext.IndexOf("death_victim_id=" + pawnId, StringComparison.OrdinalIgnoreCase) >= 0;
+                && string.Equals(DiaryContextFields.Value(gameContext, "death_victim_id"), pawnId, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -780,8 +790,7 @@ namespace PawnDiary
         /// </summary>
         public bool HasDeathDescription()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("death_description=true", StringComparison.OrdinalIgnoreCase) >= 0;
+            return DiaryContextFields.IsTrue(gameContext, "death_description");
         }
 
         /// <summary>
@@ -796,7 +805,7 @@ namespace PawnDiary
             }
 
             return HasArrivalDescription()
-                && gameContext.IndexOf("arrival_pawn_id=" + pawnId, StringComparison.OrdinalIgnoreCase) >= 0;
+                && string.Equals(DiaryContextFields.Value(gameContext, "arrival_pawn_id"), pawnId, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -804,8 +813,7 @@ namespace PawnDiary
         /// </summary>
         public bool HasArrivalDescription()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("arrival_description=true", StringComparison.OrdinalIgnoreCase) >= 0;
+            return DiaryContextFields.IsTrue(gameContext, "arrival_description");
         }
 
         /// <summary>
@@ -814,8 +822,7 @@ namespace PawnDiary
         /// </summary>
         public bool IsDayReflection()
         {
-            return !string.IsNullOrWhiteSpace(gameContext)
-                && gameContext.IndexOf("day_reflection=true", StringComparison.OrdinalIgnoreCase) >= 0;
+            return DiaryContextFields.IsTrue(gameContext, "day_reflection");
         }
 
         /// <summary>
@@ -1344,8 +1351,7 @@ namespace PawnDiary
 
         private static bool HasContextMarker(string context, string marker)
         {
-            return !string.IsNullOrWhiteSpace(context)
-                && context.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0;
+            return DiaryContextFields.HasMarker(context, marker);
         }
 
         private static bool IsDazeMentalStateDefName(string defName)

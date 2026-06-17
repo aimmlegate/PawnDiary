@@ -66,7 +66,7 @@ namespace PawnDiary
         /// <summary>True when this is a follow-up title-generation request (not a main diary entry).
         /// The result dispatcher uses the flag to route the response to the right handler: main
         /// entries call <see cref="DiaryEvent.ApplyLlmResult"/>, title calls call
-        /// <see cref="DiaryEvent.SetTitle"/> / <see cref="DiaryEvent.MarkTitleFailed"/>. Defaults
+        /// <see cref="DiaryEvent.MarkTitleComplete"/> / <see cref="DiaryEvent.MarkTitleFailed"/>. Defaults
         /// to false so the existing main-entry path is unchanged.</summary>
         public bool isTitleRequest;
     }
@@ -134,6 +134,12 @@ namespace PawnDiary
         /// </summary>
         private static readonly ConcurrentQueue<string> PendingLogs = new ConcurrentQueue<string>();
 
+        /// <summary>
+        /// Cached from settings on the main thread. Background send workers read this volatile flag
+        /// before queueing diagnostics so normal play does not fill RimWorld's log.
+        /// </summary>
+        private static volatile bool debugLoggingEnabled;
+
         /// <summary>Tracks in-flight request keys to prevent duplicate submissions for the same event + session.</summary>
         private static readonly ConcurrentDictionary<string, byte> PendingKeys = new ConcurrentDictionary<string, byte>();
 
@@ -187,6 +193,7 @@ namespace PawnDiary
         /// </summary>
         public static void BeginSession()
         {
+            ApplyDebugLoggingSetting();
             CancellationTokenSource oldCancellation = sessionCancellation;
             sessionCancellation = new CancellationTokenSource();
             sendGates = new ConcurrentDictionary<string, SemaphoreSlim>(); // fresh per-lane gates at the current limit
@@ -205,6 +212,23 @@ namespace PawnDiary
             // Safe to swap at any time: in-flight workers hold their own gate reference
             // and release that one, so they never touch these new gates.
             sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+        }
+
+        /// <summary>
+        /// Refreshes the cached debug-log gate from settings. Call this from main-thread settings
+        /// paths after the player changes the dev debug toggle.
+        /// </summary>
+        public static void ApplyDebugLoggingSetting()
+        {
+            debugLoggingEnabled = PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.showLlmDebugInfo;
+        }
+
+        /// <summary>
+        /// Returns true when verbose API/LLM diagnostics should be written to the RimWorld log.
+        /// </summary>
+        public static bool DebugLoggingEnabled()
+        {
+            return debugLoggingEnabled;
         }
 
         /// <summary>
@@ -959,6 +983,11 @@ namespace PawnDiary
         /// </summary>
         private static void LogDebug(string message)
         {
+            if (!debugLoggingEnabled)
+            {
+                return;
+            }
+
             if (UnityData.IsInMainThread)
             {
                 Log.Message("[PawnDiary debug] " + message);
@@ -976,6 +1005,15 @@ namespace PawnDiary
         public static void FlushPendingLogs()
         {
             string message;
+            if (!debugLoggingEnabled)
+            {
+                while (PendingLogs.TryDequeue(out message))
+                {
+                }
+
+                return;
+            }
+
             while (PendingLogs.TryDequeue(out message))
             {
                 Log.Message("[PawnDiary debug] " + message);

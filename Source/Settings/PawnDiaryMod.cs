@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -119,6 +116,7 @@ namespace PawnDiary
         public PawnDiaryMod(ModContentPack content) : base(content)
         {
             Settings = GetSettings<PawnDiarySettings>();
+            LlmClient.ApplyDebugLoggingSetting();
         }
 
         /// <summary>Returns the title shown in the RimWorld mod-settings list.</summary>
@@ -198,6 +196,7 @@ namespace PawnDiary
         {
             Settings.ClampValues();
             LlmClient.ApplyConcurrency();
+            LlmClient.ApplyDebugLoggingSetting();
             base.WriteSettings();
         }
 
@@ -253,9 +252,7 @@ namespace PawnDiary
             {
                 Settings.apiEndpoints.RemoveAt(removeIndex);
                 // A removed row shifts indices, so any pending fetch result no longer maps cleanly.
-                fetchTargetIndex = -1;
-                fetchedModels.Clear();
-                fetchStatus = null;
+                CancelModelFetchUiState();
             }
 
             Rect actionRect = listing.GetRect(28f);
@@ -269,11 +266,8 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(resetRect, "PawnDiary.Settings.ResetConnection".Translate()))
             {
-                fetchGeneration++;
+                CancelModelFetchUiState();
                 Settings.ResetConnectionDefaults();
-                fetchTargetIndex = -1;
-                fetchedModels.Clear();
-                fetchStatus = null;
             }
         }
 
@@ -1440,7 +1434,9 @@ namespace PawnDiary
                     generation = generation,
                     targetIndex = index,
                     success = true,
-                    models = models
+                    models = models,
+                    endpointUrl = url,
+                    apiKey = apiKey
                 };
             }
             catch (Exception ex)
@@ -1450,7 +1446,9 @@ namespace PawnDiary
                     generation = generation,
                     targetIndex = index,
                     success = false,
-                    errorDetail = ex.Message
+                    errorDetail = ex.Message,
+                    endpointUrl = url,
+                    apiKey = apiKey
                 };
             }
         }
@@ -1478,6 +1476,13 @@ namespace PawnDiary
             }
 
             isFetchingModels = false;
+            if (!FetchTargetStillMatches(result))
+            {
+                fetchTargetIndex = -1;
+                fetchedModels.Clear();
+                fetchStatus = null;
+                return;
+            }
 
             if (!result.success)
             {
@@ -1511,6 +1516,36 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Invalidates any in-flight model-list fetch and clears the per-row picker state.
+        /// </summary>
+        private void CancelModelFetchUiState()
+        {
+            fetchGeneration++;
+            isFetchingModels = false;
+            fetchTargetIndex = -1;
+            pendingFetchResult = null;
+            fetchedModels.Clear();
+            fetchStatus = null;
+        }
+
+        /// <summary>
+        /// Returns true when the row that requested a model list still points at the same endpoint.
+        /// A user can edit or remove rows while the HTTP request is in flight.
+        /// </summary>
+        private bool FetchTargetStillMatches(ModelFetchResult result)
+        {
+            if (result == null || result.targetIndex < 0 || result.targetIndex >= Settings.apiEndpoints.Count)
+            {
+                return false;
+            }
+
+            ApiEndpointConfig endpoint = Settings.apiEndpoints[result.targetIndex];
+            return endpoint != null
+                && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
+                && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal);
+        }
+
         // Result of one model fetch, handed from the await continuation to the main-thread draw.
         // Never mutated after construction; assigned to pendingFetchResult as a single reference write.
         private sealed class ModelFetchResult
@@ -1520,136 +1555,9 @@ namespace PawnDiary
             public bool success;
             public List<string> models;   // immutable snapshot returned by ModelListClient
             public string errorDetail;    // raw, untranslated exception message
+            public string endpointUrl;     // row URL snapshot used to reject stale row edits
+            public string apiKey;          // row key snapshot; never logged or shown
         }
     }
 
-    /// <summary>
-    /// Static helpers to normalize endpoint URLs and build the
-    /// /models and /chat/completions paths expected by OpenAI-compatible APIs.
-    /// </summary>
-    public static class EndpointUtility
-    {
-        /// <summary>
-        /// Strips trailing slashes and any /chat/completions suffix so the
-        /// endpoint can be used as a clean base for path construction.
-        /// Falls back to the default endpoint when the input is empty.
-        /// </summary>
-        public static string NormalizeBaseEndpoint(string endpoint)
-        {
-            if (string.IsNullOrWhiteSpace(endpoint))
-            {
-                return PawnDiarySettings.DefaultEndpointUrl;
-            }
-
-            string normalized = endpoint.Trim().TrimEnd('/');
-
-            if (normalized.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
-            {
-                normalized = normalized.Substring(0, normalized.Length - "/chat/completions".Length);
-            }
-
-            return normalized;
-        }
-
-        /// <summary>Builds the full /models URL for model discovery.</summary>
-        public static string BuildModelsUrl(string endpoint)
-        {
-            return NormalizeBaseEndpoint(endpoint) + "/models";
-        }
-
-        /// <summary>Builds the full /chat/completions URL for LLM requests.</summary>
-        public static string BuildChatCompletionsUrl(string endpoint)
-        {
-            return NormalizeBaseEndpoint(endpoint) + "/chat/completions";
-        }
-    }
-
-    /// <summary>
-    /// Async HTTP client that fetches available model IDs from an
-    /// OpenAI-compatible /models endpoint and parses the JSON response.
-    /// </summary>
-    public static class ModelListClient
-    {
-        // Shared HttpClient with no built-in timeout; per-request timeouts are set via CancellationTokenSource.
-        private static readonly HttpClient Client = new HttpClient
-        {
-            Timeout = Timeout.InfiniteTimeSpan
-        };
-
-        /// <summary>
-        /// Sends a GET request to the /models endpoint, authenticates with the
-        /// given API key, and returns a sorted, deduplicated list of model IDs.
-        /// </summary>
-        public static async Task<List<string>> FetchModels(string endpoint, string apiKey, int timeoutSeconds)
-        {
-            using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
-            using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, EndpointUtility.BuildModelsUrl(endpoint)))
-            {
-                if (!string.IsNullOrWhiteSpace(apiKey))
-                {
-                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey.Trim());
-                }
-
-                using (HttpResponseMessage response = await Client.SendAsync(request, cancellation.Token))
-                {
-                    string json = await response.Content.ReadAsStringAsync();
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        throw new InvalidOperationException($"HTTP {(int)response.StatusCode}: {TrimForStatus(json)}");
-                    }
-
-                    return ParseModelIds(json);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Extracts the "id" strings from the "data" array of an OpenAI-style
-        /// /models JSON response, returning distinct, sorted model IDs.
-        /// </summary>
-        private static List<string> ParseModelIds(string json)
-        {
-            List<string> models = new List<string>();
-            Dictionary<string, object> root = MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
-            if (root == null || !root.TryGetValue("data", out object dataObject))
-            {
-                return models;
-            }
-
-            object[] data = dataObject as object[];
-            if (data == null)
-            {
-                return models;
-            }
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                Dictionary<string, object> model = data[i] as Dictionary<string, object>;
-                if (model == null || !model.TryGetValue("id", out object idObject))
-                {
-                    continue;
-                }
-
-                string id = idObject as string;
-                if (!string.IsNullOrWhiteSpace(id))
-                {
-                    models.Add(id);
-                }
-            }
-
-            return models.Distinct().OrderBy(model => model).ToList();
-        }
-
-        /// <summary>Truncates a string to 120 chars for display in error status messages.</summary>
-        private static string TrimForStatus(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            value = value.Trim();
-            return value.Length <= 120 ? value : value.Substring(0, 120) + "...";
-        }
-    }
 }

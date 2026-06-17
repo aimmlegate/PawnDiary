@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (low-creative-reach prompt guard)_
+_Last updated: 2026-06-17 (review hardening and helper split)_
 
 ---
 
@@ -67,6 +67,7 @@ Key files:
 | `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, staggered text intensity, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
+| `DiaryContextFields.cs` | Exact parser for saved semicolon-delimited `gameContext` key/value fields. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
 | `PromptEnchantments.cs` | Weighted hediff matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
@@ -76,9 +77,10 @@ Key files:
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
 | `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
-| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, model-list fetching, and group editor. |
+| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, and group editor. |
+| `EndpointUtility.cs` / `ModelListClient.cs` | Settings/generation endpoint URL normalization and settings-time `/models` discovery. |
 | `ITab_Pawn_Diary.cs` | Production diary view, dev diagnostics, linked previews, year paging, collapsed entries, animations, and click targets. |
-| `DiaryTextFormat.cs` | Converts light markdown and quoted speech into Unity rich text. |
+| `DiaryTextFormat.cs` | Escapes raw generated rich-text tags, then converts light markdown and quoted speech into Unity rich text. |
 | `MiniJson.cs` | Dependency-free JSON parser compatible with RimWorld's Unity Mono runtime. |
 
 ---
@@ -100,9 +102,9 @@ All sources funnel into `DiaryGameComponent`:
    short title follow-up.
 7. `EntriesFor` reads saved events for the tab without triggering generation.
 
-`GameComponentTick` drains completed LLM results, flushes queued debug logs, recovers orphaned
-pending entries, and queues pending diary work every ~120 ticks. On load, pending statuses reset to
-not-generated so interrupted work can retry.
+`GameComponentTick` drains completed LLM results, flushes queued debug logs when dev LLM diagnostics
+are enabled, recovers orphaned pending entries, and queues pending diary work every ~120 ticks. On
+load, pending statuses reset to not-generated so interrupted work can retry.
 
 Generation checks the POV pawn's live Consciousness before creating or queueing first-person work.
 Non-neutral POVs below 11% Consciousness are marked `skipped`, so they do not fill the retry backlog
@@ -450,7 +452,9 @@ The settings window contains Connection, Diary writing, Prompt Studio, Persona p
 sections. It supports multiple API lanes, model fetching/picking, prompt resets, persona selection
 through a compact selector menu, single-card persona editing, custom persona creation/deletion,
 low-Consciousness persona modifier editing, grouped event toggles, and one per-group instruction
-editor.
+editor. Model-list fetches are generation-stamped and tied to the endpoint row's URL/API-key
+snapshot, so removing, resetting, or editing rows while a request is in flight cannot auto-fill a
+different row.
 
 The production Diary tab shows only completed generated pages. Dev mode adds writing enablement,
 persona picker, pending rows, raw/failure rows, prompt/status diagnostics, in-progress indicators,
@@ -465,7 +469,9 @@ manual state. UI caches for first-seen fades and expansion blends are capped and
 Generated cards show date/title, semantic color accent and group chip, page tint, a subtle model id,
 linked previews for the other pawn's POV, and title-pending animation. `DiaryTextFormat` converts
 light markdown (`**bold**`, `*italic*`, headings, bullets, block quotes) and inline quoted speech to
-Unity rich text. When `enableAtmosphericFormatting` is on, only extreme entries get additional
+Unity rich text after replacing raw generated `<...>` brackets with safe visible brackets, so model
+output cannot inject Unity rich-text tags. When `enableAtmosphericFormatting` is on, only extreme
+entries get additional
 display-only typography: mental-break pages can be split into fractured sentence blocks,
 anomaly/dark pages can render with uneasy insets/italics, death-description chronicle pages can
 render as centered memorial blocks, and first-person pages written while the pawn was severely
@@ -497,7 +503,8 @@ Social-tab log rows can jump to matching diary entries, including older year pag
 - transient errors retry up to three times per lane;
 - responses are locally trimmed to `maxTokens`, preferring the last complete sentence, with dangling
   final fragments removed for main diary/note responses;
-- background debug logs are queued and flushed on the main thread;
+- background debug logs are queued and flushed on the main thread only when the dev LLM debug toggle
+  is enabled;
 - stale sessions are cancelled when a new `DiaryGameComponent` is constructed;
 - pending entries with no in-flight request reset only after two consecutive orphan scans.
 
@@ -514,12 +521,14 @@ lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 `DiaryEvent` saves raw text, generated text, statuses/errors, context, source ids, LLM metadata,
 semantic `colorCue`, per-POV titles, and per-POV staggered text intensity. Full prompt strings are
 not persisted; dev diagnostics can show prompts built during the current session.
-Tale/mental/source classification is inferred from
-stable `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`, `thought=`,
-`inspiration=`, `work=`, and `hediff=`.
+Tale/mental/source classification is inferred from stable `gameContext` fields such as `tale=`,
+`mental_state=`, `mood_event=`, `thought=`, `inspiration=`, `work=`, and `hediff=`. Exact key/value
+lookups go through `DiaryContextFields`, so pawn ids and other field values do not collide by
+substring prefix.
 
 Pending requests are not persisted. On load, pending main statuses reset to not-generated, and stale
-pending title statuses without stored titles are cleared.
+pending title statuses without stored titles are cleared. Short-lived death/arrival context caches
+are also cleared when a new `DiaryGameComponent` starts a game session.
 
 ---
 
