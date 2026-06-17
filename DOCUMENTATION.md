@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (concrete prompt examples and default migration)_
+_Last updated: 2026-06-17 (prompt-lab prompt-policy sync)_
 
 ---
 
@@ -567,8 +567,15 @@ Prompt lab:
 ```
 cd prompt-lab
 npm run from-defs
-node run.js --from-defs --all --save --model <model-name>
+node run.js --from-defs --save --model <model-name>
 ```
+
+The prompt lab reads `DiaryPromptDef.xml`, `DiaryPersonaDefs.xml`,
+`DiaryInteractionGroupDefs.xml`, and the English Keyed direct-speech prompt cues. Generated
+first-person fixtures mirror `DiaryPromptBuilder`'s compact context policy: persona, optional
+`important health:`, last-opener, relationship, tone, setting, weapon, and hidden initiator fields
+appear only in the same branches as the in-game prompt builder. Title fixtures and title follow-ups
+use `DiaryPromptDef.titleUserInstruction`.
 
 Saved prompt-lab results go to `prompt-lab/results/<model-name>/<timestamp>.md`, which is ignored by
 git.

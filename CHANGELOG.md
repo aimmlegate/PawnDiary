@@ -3,6 +3,15 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (prompt lab prompt-policy sync)**
+  - Updated prompt-lab generated fixtures to mirror `DiaryPromptBuilder`'s compact context policy,
+    including optional `important health:` cues, last-opener cues, combat context, hidden initiator
+    context, and XML/Keyed direct-speech instructions.
+  - Fixed prompt-lab XML boolean parsing for `important`, `combat`, and `catchAll` group flags, and
+    restored XML order as the generated group sampling order.
+  - Switched prompt-lab title fixtures and title follow-ups to read
+    `DiaryPromptDef.titleUserInstruction` instead of using a stale hardcoded title trailer.
+
 - **2026-06-17 (pregnancy diary events)**
   - Added dedicated Pregnancy and Labor Hediff groups for pregnancy start, trimester-style severity
     progression, and labor start/pushing signals.

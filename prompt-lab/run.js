@@ -17,7 +17,7 @@ const ROOT = path.dirname(process.argv[1]);
 const DEFAULT_CONFIG_PATH = path.join(ROOT, 'prompt-lab.config.json');
 const DEFAULT_FIXTURE_DIR = path.join(ROOT, 'prompts', 'fixtures');
 const DEFAULT_RESULT_RELATIVE_DIR = 'results';
-const TITLE_TRAILER = 'Return one short title (3-8 words) for this diary entry. Output only the title -- no quotes, no period, no labels, no commentary.';
+const DEFAULT_TITLE_USER_INSTRUCTION = 'Return one short title of three to eight words for this diary entry. Output only the title -- no quotes, no period, no labels, no commentary.';
 const TITLE_MAX_TOKENS = 40;
 
 const DEFAULTS = {
@@ -34,6 +34,7 @@ const DEFAULTS = {
   promptDefFile: path.join('..', '1.6', 'Defs', 'DiaryPromptDef.xml'),
   personaDefFile: path.join('..', '1.6', 'Defs', 'DiaryPersonaDefs.xml'),
   interactionGroupDefFile: path.join('..', '1.6', 'Defs', 'DiaryInteractionGroupDefs.xml'),
+  keyedFile: path.join('..', 'Languages', 'English', 'Keyed', 'PawnDiary.xml'),
   resultFolder: DEFAULT_RESULT_RELATIVE_DIR,
   generated: {
     includeGroups: 4,
@@ -275,6 +276,23 @@ function parsePromptDefsFromXml(config) {
     systemPromptReflection: extractTag(raw, 'systemPromptReflection'),
     systemPromptNeutral: extractTag(raw, 'systemPromptNeutral'),
     titleSystemPrompt: extractTag(raw, 'titleSystemPrompt'),
+    titleUserInstruction: extractTag(raw, 'titleUserInstruction'),
+  };
+}
+
+function parseKeyedPromptText(config) {
+  const defaults = {
+    pairInitiatorDirectSpeech: 'Initiator POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
+    pairRecipientDirectSpeech: 'Recipient POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
+    soloInteractionDirectSpeech: 'Single-POV interaction for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
+  };
+  const raw = readIfExists(resolvePath(config.keyedFile));
+  if (!raw) return defaults;
+
+  return {
+    pairInitiatorDirectSpeech: extractTag(raw, 'PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator') || defaults.pairInitiatorDirectSpeech,
+    pairRecipientDirectSpeech: extractTag(raw, 'PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient') || defaults.pairRecipientDirectSpeech,
+    soloInteractionDirectSpeech: extractTag(raw, 'PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction') || defaults.soloInteractionDirectSpeech,
   };
 }
 
@@ -298,6 +316,7 @@ function parseInteractionGroupsFromXml(config) {
   const blocks = extractBlocks(raw, 'PawnDiary.DiaryInteractionGroupDef');
   return blocks.map((block) => {
     const orderValue = parseInt(extractTag(block, 'order'), 10);
+    const batchBlock = extractTag(block, 'batch');
     return {
       defName: extractTag(block, 'defName'),
       label: extractTag(block, 'label'),
@@ -305,9 +324,11 @@ function parseInteractionGroupsFromXml(config) {
       order: Number.isFinite(orderValue) ? orderValue : 999,
       instruction: extractTag(block, 'instruction'),
       tone: extractTag(block, 'tone'),
-      combat: /\b<combat>\s*true\s*<\/combat>/i.test(block),
-      important: /\b<important>\s*true\s*<\/important>/i.test(block),
-      catchAll: /\b<catchAll>\s*true\s*<\/catchAll>/i.test(block),
+      combat: /<combat>\s*true\s*<\/combat>/i.test(block),
+      important: /<important>\s*true\s*<\/important>/i.test(block),
+      catchAll: /<catchAll>\s*true\s*<\/catchAll>/i.test(block),
+      hasBatch: !!batchBlock && !/<enabled>\s*false\s*<\/enabled>/i.test(batchBlock),
+      batchMode: batchBlock ? (extractTag(batchBlock, 'mode') || 'PairEvent') : '',
       matchTokens: extractMultiTag(block, 'li'),
     };
   });
@@ -316,17 +337,19 @@ function parseInteractionGroupsFromXml(config) {
 function loadPromptData(config) {
   return {
     promptDefs: parsePromptDefsFromXml(config) || {
-      singlePovInstruction: "Write 1-3 complete first-person diary sentences from this pawn's point of view, 35-75 words total. Prefer a shorter complete entry over covering every detail. Output only the diary entry.",
-      recipientFollowupInstruction: "Write 1-3 complete first-person diary sentences from the recipient's point of view, 35-75 words total. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Prefer a shorter complete entry over covering every detail. Output only the diary entry.",
-      deathDescriptionInstruction: 'Write 1-3 complete third-person death-description sentences, 25-65 words total. State how the colonist died using only the supplied facts.',
-      arrivalDescriptionInstruction: 'Write 1-3 complete third-person colony-arrival sentences, 25-75 words total. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts.',
-      systemPrompt: 'You write diary entries for RimWorld colonists. Each entry is first-person, in character, and exactly 1-3 complete sentences. Hard length limit: 35-75 words total. Do not exceed 75 words.',
-      systemPromptReflection: 'You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and exactly 2-4 complete sentences. Hard length limit: 50-90 words total. Do not exceed 90 words.',
-      systemPromptNeutral: 'You write short, third-person factual notes about RimWorld colony events. Each note is exactly 1-3 complete sentences. Hard length limit: 25-65 words total. Do not exceed 65 words.',
+      singlePovInstruction: "Write one to three complete first-person diary sentences from this pawn's point of view. Use at least one concrete supplied detail, but do not cover every detail. Output only the diary entry.",
+      recipientFollowupInstruction: "Write one to three complete first-person diary sentences from the recipient's point of view. Use at least one concrete supplied detail, but do not cover every detail. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.",
+      deathDescriptionInstruction: 'Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts. Output only the death description.',
+      arrivalDescriptionInstruction: 'Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. Output only the arrival description.',
+      systemPrompt: 'You write diary entries for RimWorld colonists. Each entry is first-person, in character, and one to three complete sentences. Use only supplied facts, anchor in concrete detail, match persona, and return only the diary text.',
+      systemPromptReflection: 'You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and two to four complete sentences. Use only the listed moments and return only the diary text.',
+      systemPromptNeutral: 'You write short, third-person factual notes about RimWorld colony events. Each note is one to three complete sentences. Use only supplied facts and return only the note text.',
       titleSystemPrompt: 'You write short, evocative titles (3 to 8 words) for RimWorld diary entries. Return only the title — no quotes, no period, no markdown, no labels, no commentary.',
+      titleUserInstruction: DEFAULT_TITLE_USER_INSTRUCTION,
     },
     personas: parsePersonaDefsFromXml(config),
     groups: parseInteractionGroupsFromXml(config),
+    keyedPromptText: parseKeyedPromptText(config),
   };
 }
 
@@ -443,6 +466,356 @@ function shouldRunFixture(entry, filter) {
   );
 }
 
+function titleUserInstruction(promptData) {
+  return promptData.promptDefs.titleUserInstruction || DEFAULT_TITLE_USER_INSTRUCTION;
+}
+
+function firstPersonFieldOrder(hasOtherPawn) {
+  const fields = hasOtherPawn
+    ? ['event', 'pov', 'role', 'with', 'what you saw', 'instruction']
+    : ['event', 'pov', 'what happened', 'instruction'];
+  return fields.concat([
+    'you',
+    'persona',
+    'important health',
+    'setting',
+    'tone',
+    'relationship',
+    'my last opener (not repeat)',
+    'weapon',
+    'initiator diary (hidden context)',
+  ]);
+}
+
+function domainOf(group) {
+  return String((group && group.domain) || 'Interaction');
+}
+
+function defNameOf(group) {
+  return String((group && group.defName) || 'default');
+}
+
+function generatedGroupLabel(group, fallback) {
+  return isSkippable(group && group.label) ? fallback : group.label;
+}
+
+function hasContext(context, marker) {
+  return String(context || '').toLowerCase().includes(String(marker || '').toLowerCase());
+}
+
+function hasAnyContext(context, markers) {
+  return markers.some((marker) => hasContext(context, marker));
+}
+
+function isAmbientBatch(group) {
+  return !!group
+    && group.hasBatch
+    && String(group.batchMode || '').toLowerCase() === 'ambientdaynote';
+}
+
+function isPairBatch(group) {
+  return !!group
+    && group.hasBatch
+    && String(group.batchMode || '').toLowerCase() !== 'ambientdaynote';
+}
+
+function isDayReflectionGroup(group, context) {
+  return defNameOf(group).toLowerCase() === 'dayreflection' || hasContext(context, 'day_reflection=');
+}
+
+function generatedContextForGroup(group, kind) {
+  const defName = defNameOf(group);
+  const label = cleanValue(generatedGroupLabel(group, defName));
+  const domain = domainOf(group);
+
+  if (isDayReflectionGroup(group, '')) {
+    return `day_reflection=true; label=${label}`;
+  }
+
+  if (isAmbientBatch(group)) {
+    return `batch=ambient_day_note; group=${defName}; label=${label}`;
+  }
+
+  if (kind === 'pair' && isPairBatch(group)) {
+    return `batch=interaction; group=${defName}; label=${label}`;
+  }
+
+  if (domain === 'MentalState') {
+    return `mental_state=${defName}; label=${label}`;
+  }
+  if (domain === 'Tale') {
+    return `tale=${defName}; label=${label}`;
+  }
+  if (domain === 'MoodEvent') {
+    return `mood_event=${defName}; label=${label}`;
+  }
+  if (domain === 'Thought') {
+    return `thought=${defName}; label=${label}`;
+  }
+  if (domain === 'Inspiration') {
+    return `inspiration=${defName}; label=${label}`;
+  }
+  if (domain === 'Work') {
+    return `work=${defName}; label=${label}`;
+  }
+  if (domain === 'Hediff') {
+    return `hediff=${defName}; label=${label}`;
+  }
+
+  return `def=${defName}; label=${label}`;
+}
+
+function promptPolicyFor(group, context, hasOtherPawn) {
+  const policy = {
+    includePawnSummary: false,
+    includeSetting: false,
+    includeTone: false,
+    includeRelationship: false,
+    includeLastOpener: true,
+    includePromptEnchantment: true,
+    includeWeapon: false,
+    includeHiddenInitiatorEntry: false,
+  };
+
+  const combat = !!(group && group.combat);
+  const important = !!(group && group.important);
+  const batched = hasContext(context, 'batch=');
+  const dayReflection = isDayReflectionGroup(group, context);
+  const internalState = hasAnyContext(context, ['mood_event=', 'thought=', 'inspiration=', 'work=']);
+
+  if (combat) {
+    policy.includePawnSummary = true;
+    policy.includeSetting = true;
+    policy.includeTone = true;
+    policy.includeRelationship = hasOtherPawn;
+    policy.includeWeapon = true;
+    policy.includeHiddenInitiatorEntry = true;
+    return policy;
+  }
+
+  if (dayReflection) {
+    policy.includePawnSummary = true;
+    return policy;
+  }
+
+  if (hasOtherPawn && !batched) {
+    policy.includeRelationship = true;
+    policy.includeTone = important;
+    policy.includeHiddenInitiatorEntry = important;
+    return policy;
+  }
+
+  if (internalState || batched) {
+    return policy;
+  }
+
+  if (important) {
+    policy.includePawnSummary = true;
+    policy.includeSetting = true;
+    policy.includeTone = true;
+  }
+
+  return policy;
+}
+
+function addPolicyFields(fields, policy, values) {
+  if (policy.includePawnSummary) {
+    fields.you = values.pawnSummary;
+  }
+
+  fields.persona = values.persona;
+
+  if (policy.includePromptEnchantment) {
+    fields['important health'] = values.promptEnchantment;
+  }
+  if (policy.includeSetting) {
+    fields.setting = values.setting;
+  }
+  if (policy.includeTone) {
+    fields.tone = values.tone;
+  }
+  if (policy.includeRelationship) {
+    fields.relationship = values.relationship;
+  }
+  if (policy.includeLastOpener) {
+    fields['my last opener (not repeat)'] = values.lastOpener;
+  }
+  if (policy.includeWeapon) {
+    fields.weapon = values.weapon;
+  }
+  if (policy.includeHiddenInitiatorEntry) {
+    fields['initiator diary (hidden context)'] = values.initiatorEntry;
+  }
+}
+
+function appendInstructionText(instruction, extraInstruction) {
+  if (isSkippable(extraInstruction)) {
+    return instruction;
+  }
+  if (isSkippable(instruction)) {
+    return extraInstruction;
+  }
+  return `${String(instruction).trimEnd()} ${String(extraInstruction).trim()}`;
+}
+
+function formatInstructionTemplate(template, args) {
+  return String(template || '').replace(/\{(\d+)\}/g, (match, index) => {
+    const value = args[Number.parseInt(index, 10)];
+    return value == null ? match : value;
+  });
+}
+
+function isInteractionPromptForLab(group, context) {
+  if (hasAnyContext(context, [
+    'batch=ambient_day_note',
+    'arrival_description=',
+    'death_description=',
+    'dev_mock=',
+    'mental_state=',
+    'tale=',
+    'mood_event=',
+    'thought=',
+    'inspiration=',
+    'work=',
+    'hediff=',
+    'day_reflection=',
+  ])) {
+    return false;
+  }
+
+  return hasContext(context, 'batch=interaction')
+    || (domainOf(group) === 'Interaction'
+      && defNameOf(group).toLowerCase() !== 'arrival'
+      && defNameOf(group).toLowerCase() !== 'dayreflection');
+}
+
+function pairInstructionForFixture(promptData, group, context, role, povName, otherName, baseInstruction) {
+  if (!isInteractionPromptForLab(group, context)) {
+    return baseInstruction;
+  }
+
+  const key = role === 'initiator' ? 'pairInitiatorDirectSpeech' : 'pairRecipientDirectSpeech';
+  const template = promptData.keyedPromptText[key];
+  return appendInstructionText(baseInstruction, formatInstructionTemplate(template, [povName, otherName]));
+}
+
+function soloInstructionForFixture(promptData, group, context, povName, baseInstruction) {
+  if (!isInteractionPromptForLab(group, context)) {
+    return baseInstruction;
+  }
+
+  const template = promptData.keyedPromptText.soloInteractionDirectSpeech;
+  return appendInstructionText(baseInstruction, formatInstructionTemplate(template, [povName]));
+}
+
+function isGeneratedPairGroup(group) {
+  const domain = domainOf(group);
+  const defName = defNameOf(group).toLowerCase();
+  if (domain === 'MentalState' && defName === 'socialfight') {
+    return true;
+  }
+  return domain === 'Interaction'
+    && defName !== 'arrival'
+    && defName !== 'dayreflection'
+    && !isAmbientBatch(group);
+}
+
+function isGeneratedSoloGroup(group) {
+  return !!group && !isGeneratedPairGroup(group) && defNameOf(group).toLowerCase() !== 'arrival';
+}
+
+function buildPairFixture(promptData, group, options) {
+  const context = generatedContextForGroup(group, 'pair');
+  const policy = promptPolicyFor(group, context, true);
+  const hiddenInitiatorEntry = options.role === 'recipient' ? options.initiatorEntry : '';
+  const usesFollowupInstruction = policy.includeHiddenInitiatorEntry && !isSkippable(hiddenInitiatorEntry);
+  const baseInstruction = usesFollowupInstruction
+    ? promptData.promptDefs.recipientFollowupInstruction
+    : promptData.promptDefs.singlePovInstruction;
+  const append = pairInstructionForFixture(
+    promptData,
+    group,
+    context,
+    options.role,
+    options.pov,
+    options.other,
+    baseInstruction,
+  );
+
+  const fields = {
+    event: options.event,
+    pov: options.pov,
+    role: options.role,
+    with: options.other,
+    'what you saw': options.whatYouSaw,
+    instruction: options.instruction,
+  };
+
+  addPolicyFields(fields, policy, {
+    pawnSummary: options.pawnSummary,
+    persona: options.persona,
+    promptEnchantment: options.promptEnchantment,
+    setting: options.setting,
+    tone: options.tone,
+    relationship: options.relationship,
+    lastOpener: options.lastOpener,
+    weapon: options.weapon,
+    initiatorEntry: hiddenInitiatorEntry,
+  });
+
+  return {
+    id: options.id,
+    promptFieldOrder: firstPersonFieldOrder(true),
+    promptFields: fields,
+    append,
+    systemMode: 'diary',
+    type: 'pair',
+    gameContext: context,
+    version: options.version,
+  };
+}
+
+function buildSoloFixture(promptData, group, options) {
+  const context = generatedContextForGroup(group, 'solo');
+  const policy = promptPolicyFor(group, context, false);
+  const append = soloInstructionForFixture(
+    promptData,
+    group,
+    context,
+    options.pov,
+    promptData.promptDefs.singlePovInstruction,
+  );
+  const fields = {
+    event: options.event,
+    pov: options.pov,
+    'what happened': options.whatHappened,
+    instruction: options.instruction,
+  };
+
+  addPolicyFields(fields, policy, {
+    pawnSummary: options.pawnSummary,
+    persona: options.persona,
+    promptEnchantment: options.promptEnchantment,
+    setting: options.setting,
+    tone: options.tone,
+    relationship: '',
+    lastOpener: options.lastOpener,
+    weapon: options.weapon,
+    initiatorEntry: '',
+  });
+
+  return {
+    id: options.id,
+    systemMode: isDayReflectionGroup(group, context) ? 'reflection' : 'diary',
+    promptFieldOrder: firstPersonFieldOrder(false),
+    promptFields: fields,
+    append,
+    type: 'solo',
+    gameContext: context,
+    version: options.version,
+  };
+}
+
 function buildGeneratedFixtureSet(promptData, config, options) {
   const groupLimit = Number.isFinite(options.includeGroups)
     ? Math.max(1, options.includeGroups)
@@ -458,11 +831,8 @@ function buildGeneratedFixtureSet(promptData, config, options) {
   const groups = sortAndTrimGroups(promptData.groups, excludedGroupNames).slice(0, Math.max(1, groupLimit));
   const cases = [];
 
-  const pairGroups = groups.filter((group) => {
-    if (group.domain === 'Interaction') return true;
-    return group.domain === 'MentalState' && group.defName === 'socialfight';
-  });
-  const soloGroups = groups.filter((group) => !pairGroups.includes(group));
+  const pairGroups = groups.filter(isGeneratedPairGroup);
+  const soloGroups = groups.filter(isGeneratedSoloGroup);
   const fallbackGroup = groups[0] || { defName: 'default', label: 'quiet colonist moment', instruction: 'a tense social moment', tone: 'tense but clear', domain: 'Interaction', combat: false };
 
   // Paired prompts (initiator + recipient), two versions each.
@@ -476,105 +846,85 @@ function buildGeneratedFixtureSet(promptData, config, options) {
       ? 'a charged social exchange between two colonists'
       : group.instruction;
 
-    const pairBase = {
-      promptFieldOrder: [
-        'event', 'pov', 'role', 'with', 'what you saw', 'instruction', 'you', 'persona',
-        'setting', 'tone', 'relationship', 'my last opener (not repeat)', 'burning passion', 'weapon',
-      ],
-      append: promptData.promptDefs.singlePovInstruction,
-      systemMode: 'diary',
-      type: 'pair',
-    };
-
-    cases.push({
-      ...pairBase,
+    cases.push(buildPairFixture(promptData, group, {
       id: `pair-${group.defName}-initiator-v1`,
-      promptFields: {
-        event: label.toLowerCase(),
-        pov: 'Cass',
-        role: 'initiator',
-        with: 'Juno',
-        'what you saw': `A tense exchange started over a practical disagreement. ${label} shifted the room's mood.`,
-        instruction: coreInstruction,
-        you: 'age=31; mood=tense; health=healthy; thoughts=restless',
-        persona: primaryPersona.rule,
-        setting: 'Biome=temperate forest; Weather=overcast; Time=sunset',
-        tone: tone,
-        relationship: 'shared history: familiar, protective distance',
-        'my last opener (not repeat)': 'The quiet had lasted too long.',
-        'burning passion': group.important ? 'anger 7/10' : '',
-        weapon: group.combat ? 'short spear' : '',
-      },
+      event: label.toLowerCase(),
+      pov: 'Cass',
+      role: 'initiator',
+      other: 'Juno',
+      whatYouSaw: `A tense exchange started over a practical disagreement. ${label} shifted the room's mood.`,
+      instruction: coreInstruction,
+      pawnSummary: 'sex=female; life_stage=adult; mood=tense; thoughts=restless',
+      persona: primaryPersona.rule,
+      promptEnchantment: '',
+      setting: 'outdoors, overcast, temperate forest, doing guard duty',
+      tone,
+      relationship: 'opinion=cold; because insulted recently; last wrote: I kept my mouth shut too long.',
+      lastOpener: 'The quiet had lasted too long.',
+      weapon: group.combat ? 'short spear' : '',
+      initiatorEntry: '',
       version: 'v1',
-    });
+    }));
 
-    cases.push({
-      ...pairBase,
+    cases.push(buildPairFixture(promptData, group, {
       id: `pair-${group.defName}-initiator-v2`,
-      promptFields: {
-        event: label.toLowerCase(),
-        pov: 'Cass',
-        role: 'initiator',
-        with: 'Juno',
-        'what you saw': `They did not expect this in public. ${label} left everyone off balance for the rest of the watch.`,
-        instruction: `${coreInstruction}. Keep it brief, with a practical register.`,
-        you: 'age=31; mood=alert; health=healthy; thoughts=anticipating trouble',
-        persona: primaryPersona.rule,
-        setting: 'Biome=temperate forest; Weather=rain; Time=dusk',
-        tone: `${tone}; restrained`,
-        relationship: 'shared history: familiar but testing boundaries',
-        'my last opener (not repeat)': 'I kept it professional.',
-        'burning passion': group.important ? 'frustration 5/10' : '',
-        weapon: group.combat ? 'short spear' : '',
-      },
+      event: label.toLowerCase(),
+      pov: 'Cass',
+      role: 'initiator',
+      other: 'Juno',
+      whatYouSaw: `They did not expect this in public. ${label} left everyone off balance for the rest of the watch.`,
+      instruction: `${coreInstruction}. Keep it brief, with a practical register.`,
+      pawnSummary: 'sex=female; life_stage=adult; mood=alert; thoughts=anticipating trouble',
+      persona: primaryPersona.rule,
+      promptEnchantment: 'high priority; moderate bruise in left arm; pain',
+      setting: 'outdoors, rain, temperate forest, doing perimeter watch',
+      tone: `${tone}; restrained`,
+      relationship: 'opinion=wary; because tested boundaries; last wrote: I kept it professional.',
+      lastOpener: 'I kept it professional.',
+      weapon: group.combat ? 'short spear' : '',
+      initiatorEntry: '',
       version: 'v2',
-    });
+    }));
 
-    cases.push({
-      ...pairBase,
+    cases.push(buildPairFixture(promptData, group, {
       id: `pair-${group.defName}-recipient-v1`,
-      promptFields: {
-        event: label.toLowerCase(),
-        pov: 'Juno',
-        role: 'recipient',
-        with: 'Cass',
-        'what you saw': `${label} was already half-decided before Cass spoke. She had to keep a calm face.`,
-        instruction: coreInstruction,
-        you: 'age=28; mood=cautious; health=healthy; thoughts=calculating',
-        persona: secondaryPersona.rule,
-        setting: 'Biome=temperate forest; Weather=overcast; Time=sunset',
-        tone: tone,
-        relationship: 'shared history: practical loyalty',
-        'my last opener (not repeat)': 'A private note was due later.',
-        'burning passion': group.important ? 'pressure 6/10' : '',
-        weapon: group.combat ? 'short spear' : '',
-      },
-      append: promptData.promptDefs.recipientFollowupInstruction,
+      event: label.toLowerCase(),
+      pov: 'Juno',
+      role: 'recipient',
+      other: 'Cass',
+      whatYouSaw: `${label} was already half-decided before Cass spoke. Juno had to keep a calm face.`,
+      instruction: coreInstruction,
+      pawnSummary: 'sex=female; life_stage=adult; mood=cautious; thoughts=calculating',
+      persona: secondaryPersona.rule,
+      promptEnchantment: '',
+      setting: 'outdoors, overcast, temperate forest, hauling medicine',
+      tone,
+      relationship: 'opinion=guarded; because practical loyalty; last wrote: I would rather finish the job.',
+      lastOpener: 'A private note was due later.',
+      weapon: group.combat ? 'short spear' : '',
+      initiatorEntry: 'I pushed the point because waiting would only make the room colder.',
       version: 'v1',
-    });
+    }));
 
-    cases.push({
-      ...pairBase,
+    cases.push(buildPairFixture(promptData, group, {
       id: `pair-${group.defName}-recipient-v2`,
-      promptFields: {
-        event: label.toLowerCase(),
-        pov: 'Juno',
-        role: 'recipient',
-        with: 'Cass',
-        'what you saw': `${label} ended with a careful line that both could repeat publicly.`,
-        instruction: `${coreInstruction}, but keep the emotional beat small and concrete.`,
-        you: 'age=28; mood=steady; health=healthy; thoughts=resolved',
-        persona: secondaryPersona.rule,
-        setting: 'Biome=temperate forest; Weather=rain; Time=dusk',
-        tone: `${tone}; restrained`,
-        relationship: 'shared history: practical and formal',
-        'my last opener (not repeat)': 'I let the smallest word do the work.',
-        'burning passion': '',
-        weapon: group.combat ? 'short spear' : '',
-      },
-      append: promptData.promptDefs.recipientFollowupInstruction,
+      event: label.toLowerCase(),
+      pov: 'Juno',
+      role: 'recipient',
+      other: 'Cass',
+      whatYouSaw: `${label} ended with a careful line that both could repeat publicly.`,
+      instruction: `${coreInstruction}, but keep the emotional beat small and concrete.`,
+      pawnSummary: 'sex=female; life_stage=adult; mood=steady; thoughts=resolved',
+      persona: secondaryPersona.rule,
+      promptEnchantment: 'high priority; major blood loss in torso; heavy bleeding, severe pain',
+      setting: 'outdoors, rain, temperate forest, tending a wound',
+      tone: `${tone}; restrained`,
+      relationship: 'opinion=formal; because recent tension; last wrote: I let the smallest word do the work.',
+      lastOpener: 'I let the smallest word do the work.',
+      weapon: group.combat ? 'short spear' : '',
+      initiatorEntry: 'I kept my voice low and still made sure Cass understood me.',
       version: 'v2',
-    });
+    }));
   }
 
   // Solo prompts from non-interaction and non-catchall groups, two versions.
@@ -588,54 +938,37 @@ function buildGeneratedFixtureSet(promptData, config, options) {
       ? 'a private moment that changes the tone of the day'
       : group.instruction;
 
-    const soloBase = {
-      systemMode: group.defName === 'dayreflection' ? 'reflection' : 'diary',
-      promptFieldOrder: [
-        'event', 'pov', 'what happened', 'instruction', 'you', 'persona', 'setting',
-        'tone', 'relationship', 'my last opener (not repeat)', 'burning passion',
-      ],
-      append: promptData.promptDefs.singlePovInstruction,
-      type: 'solo',
-    };
-
-    cases.push({
-      ...soloBase,
+    cases.push(buildSoloFixture(promptData, group, {
       id: `solo-${group.defName}-v1`,
-      promptFields: {
-        event: label.toLowerCase(),
-        pov: i === 0 ? 'Cass' : 'Juno',
-        'what happened': `${label} hit suddenly and left a physical trace in mood and movement.`,
-        instruction: `${baseInstruction}; keep it immediate and grounded.`,
-        you: `age=${30 + i}; mood=alert; health=healthy; thoughts=complicated`,
-        persona: persona.rule,
-        setting: 'Biome=arid hills; Weather=clear; Time=midday',
-        tone: tone,
-        relationship: 'self: only',
-        'my last opener (not repeat)': 'Nothing needed to be said out loud.',
-        'burning passion': group.important ? 'strain 4/10' : '',
-      },
+      event: label.toLowerCase(),
+      pov: i === 0 ? 'Cass' : 'Juno',
+      whatHappened: `${label} hit suddenly and left a physical trace in mood and movement.`,
+      instruction: `${baseInstruction}; keep it immediate and grounded.`,
+      pawnSummary: `sex=${i === 0 ? 'female' : 'male'}; life_stage=adult; mood=alert; thoughts=complicated`,
+      persona: persona.rule,
+      promptEnchantment: 'high priority; critical consciousness; near collapse, thoughts fragmented, barely awake',
+      setting: 'outdoors, clear, arid hills, doing field work',
+      tone,
+      lastOpener: 'Nothing needed to be said out loud.',
+      weapon: '',
       version: 'v1',
-    });
+    }));
 
-    cases.push({
-      ...soloBase,
+    cases.push(buildSoloFixture(promptData, group, {
       id: `solo-${group.defName}-v2`,
-      promptFields: {
-        event: label.toLowerCase(),
-        pov: i === 0 ? 'Cass' : 'Juno',
-        'what happened': `${label} unfolded over a long minute, then cooled into routine.`,
-        instruction: `${baseInstruction} with a calm aftertaste.`,
-        you: `age=${31 + i}; mood=measured; health=healthy; thoughts=reflective`,
-        persona: persona.rule,
-        setting: 'Biome=desert; Weather=windy; Time=dusk',
-        tone: `${tone}; practical`,
-        relationship: 'self: only',
-        'my last opener (not repeat)': 'This is the part they will not remember well.',
-        'burning passion': group.important ? 'relief 3/10' : '',
-      },
-      append: promptData.promptDefs.singlePovInstruction,
+      event: label.toLowerCase(),
+      pov: i === 0 ? 'Cass' : 'Juno',
+      whatHappened: `${label} unfolded over a long minute, then cooled into routine.`,
+      instruction: `${baseInstruction} with a calm aftertaste.`,
+      pawnSummary: `sex=${i === 0 ? 'female' : 'male'}; life_stage=adult; mood=measured; thoughts=reflective`,
+      persona: persona.rule,
+      promptEnchantment: '',
+      setting: 'outdoors, windy, desert, returning to camp',
+      tone: `${tone}; practical`,
+      lastOpener: 'This is the part they will not remember well.',
+      weapon: '',
       version: 'v2',
-    });
+    }));
   }
 
   // Neutral descriptions (third-person, no persona).
@@ -711,13 +1044,13 @@ function buildGeneratedFixtureSet(promptData, config, options) {
     version: 'v2',
   });
 
-  // Title follow-ups use the same entry payload plus fixed title trailer.
+  // Title follow-ups use the same entry payload plus the XML-backed title instruction.
   cases.push({
     id: 'title-followup-v1',
     type: 'title',
     systemMode: 'title',
     promptText: 'I snapped at him when the work order came in too late. The room went quiet, and then everyone blamed everyone.',
-    append: TITLE_TRAILER,
+    append: titleUserInstruction(promptData),
     version: 'v1',
   });
 
@@ -726,7 +1059,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
     type: 'title',
     systemMode: 'title',
     promptText: 'The storm came while I was still on watch. I kept a lamp lit and made choices nobody asked me to make.',
-    append: TITLE_TRAILER,
+    append: titleUserInstruction(promptData),
     version: 'v2',
   });
 
@@ -749,10 +1082,14 @@ function sortAndTrimGroups(groups, excludedGroupNames = new Set()) {
     .filter((group) => group && group.defName)
     .filter((group) => !excludedGroupNames.has(String(group.defName).toLowerCase()))
     .sort((a, b) => {
+      const orderDiff = (a.order || 9999) - (b.order || 9999);
+      if (orderDiff !== 0) {
+        return orderDiff;
+      }
       if (a.domain !== b.domain) {
         return String(a.domain).localeCompare(String(b.domain));
       }
-      return (a.order || 9999) - (b.order || 9999);
+      return String(a.defName || '').localeCompare(String(b.defName || ''));
     });
 }
 
@@ -937,7 +1274,7 @@ async function runTitleFollowUp(fixture, mainText, requestConfig, config, prompt
     systemMode: 'title',
     system: null,
     systemText: null,
-    append: TITLE_TRAILER,
+    append: titleUserInstruction(promptData),
     model: fixture.model,
     endpoint: fixture.endpoint,
     apiKey: fixture.apiKey,

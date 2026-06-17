@@ -26,6 +26,12 @@ and generates multiple versions for:
 Generated fixtures are derived from the current XML catalog and honor the harness's configured
 group exclusions.
 
+Generated first-person fixtures mirror the in-game `DiaryPromptBuilder` context policy: persona and
+last-opener cues are always present, one sample `important health:` cue appears on selected cases,
+and broader pawn/setting/tone/relationship/weapon/hidden-initiator fields only appear for the same
+combat, important, batched, reflection, and internal-state branches used in game. Interaction
+fixtures also append the current Keyed direct-speech cue for the active POV pawn.
+
 Use:
 
 ```bash
@@ -53,6 +59,7 @@ The title is generated with:
 
 - same endpoint and model as the main call
 - temperature copied from the main request
+- title user instruction read from `DiaryPromptDef.titleUserInstruction`
 - title tokens capped to `40` (same as in-game)
 
 Disable title follow-up locally with:
