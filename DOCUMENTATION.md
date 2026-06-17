@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (XML hediff mod support)_
+_Last updated: 2026-06-17 (role-specific direct speech prompts)_
 
 ---
 
@@ -353,12 +353,15 @@ System prompts are selected by narrative mode:
 
 Default prompt contracts ask for complete, short entries using prose length cues rather than numeric
 word ranges. They tell the model to use structured context as private evidence for voice, focus, and
-subtext, not as a checklist to echo. Paired two-pawn interaction prompts append one extra localized
-rule that asks for at least one short sentence of direct speech in double quotes, keeping dual-POV
-entries from collapsing into pure description. Quoted speech must belong only to the current POV
-pawn; the other pawn's words are paraphrased without quotes. Single-POV interaction prompts append
-a softer localized cue to use brief quoted speech from the POV pawn when it feels natural;
-non-interaction solo entries do not get that cue.
+subtext, not as a checklist to echo. Paired two-pawn interaction prompts append separate localized
+direct-speech rules for initiator and recipient POVs. Each rule names the current POV pawn and the
+opposite pawn, then allows quoted speech only for words plausibly spoken by the current POV pawn.
+The opposite pawn's words must be paraphrased without quotation marks, and the prompt must not
+invent POV speech just to add dialogue. Single-POV interaction prompts get the same name-specific
+POV-only cue. Non-interaction solo entries do not get that cue; the prompt builder explicitly
+rejects neutral arrival/death, dev mock, mental-state, tale, mood, thought, inspiration, work,
+hediff, day-reflection, and ambient-day contexts before checking whether an event's defName is a
+real RimWorld `InteractionDef`.
 
 Player-customizable, Def-backed user-message instructions:
 

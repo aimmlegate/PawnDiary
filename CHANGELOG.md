@@ -3,6 +3,21 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (role-specific direct-speech prompts)**
+  - Split paired interaction direct-speech guidance into separate initiator and recipient prompt
+    cues, each naming the current POV pawn and the opposite pawn.
+  - Updated single-POV interaction guidance to name the POV pawn and forbid quoted dialogue when
+    that pawn did not speak.
+  - Hardened the interaction-prompt detector so neutral, dev mock, mental-state, tale, mood,
+    thought, inspiration, work, hediff, and day-reflection entries cannot receive direct-speech cues
+    through a future defName collision.
+
+- **2026-06-17 (direct-speech POV guard)**
+  - Reworded the interaction direct-speech prompt cues so quotes are conditional, never forced, and
+    can only represent words plausibly spoken by the current POV pawn.
+  - Told paired and single-POV prompts to paraphrase the other pawn without quotes, or use no quoted
+    dialogue when the current POV pawn did not speak.
+
 - **2026-06-17 (hediff mod support fixes)**
   - Made hediff progression and immediate-event dedup keys body-part aware, so same-def conditions
     on different parts do not mask each other.

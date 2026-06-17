@@ -195,7 +195,7 @@ namespace PawnDiary
             string instruction = string.IsNullOrWhiteSpace(effectiveInitiatorEntry)
                 ? PawnDiarySettings.CurrentSinglePovInstruction
                 : PawnDiarySettings.CurrentRecipientFollowupInstruction;
-            instruction = AppendPairDirectSpeechInstruction(diaryEvent, instruction);
+            instruction = AppendPairDirectSpeechInstruction(diaryEvent, povRole, instruction);
 
             return string.Join("\n", lines.ToArray()) + "\n\n" + instruction;
         }
@@ -406,14 +406,20 @@ namespace PawnDiary
                 && diaryEvent.gameContext.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        private static string AppendPairDirectSpeechInstruction(DiaryEvent diaryEvent, string instruction)
+        private static string AppendPairDirectSpeechInstruction(DiaryEvent diaryEvent, string povRole, string instruction)
         {
             if (diaryEvent == null || diaryEvent.solo || !IsInteractionPrompt(diaryEvent))
             {
                 return instruction;
             }
 
-            return AppendLocalizedInstruction(instruction, "PawnDiary.Prompt.PairDirectSpeechInstruction");
+            bool isInitiator = string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase);
+            string povName = diaryEvent.NameForRole(povRole);
+            string otherName = isInitiator ? diaryEvent.recipientName : diaryEvent.initiatorName;
+            string key = isInitiator
+                ? "PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator"
+                : "PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient";
+            return AppendLocalizedInstruction(instruction, key, povName, otherName);
         }
 
         private static string AppendSoloInteractionDirectSpeechInstruction(DiaryEvent diaryEvent, string instruction)
@@ -423,7 +429,8 @@ namespace PawnDiary
                 return instruction;
             }
 
-            return AppendLocalizedInstruction(instruction, "PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction");
+            return AppendLocalizedInstruction(instruction, "PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction",
+                diaryEvent.initiatorName);
         }
 
         private static bool ShouldOfferSoloInteractionDirectSpeech(DiaryEvent diaryEvent)
@@ -441,12 +448,16 @@ namespace PawnDiary
             }
 
             if (HasContext(diaryEvent, "batch=ambient_day_note")
+                || HasContext(diaryEvent, "arrival_description=")
+                || HasContext(diaryEvent, "death_description=")
+                || HasContext(diaryEvent, "dev_mock=")
                 || HasContext(diaryEvent, "mental_state=")
                 || HasContext(diaryEvent, "tale=")
                 || HasContext(diaryEvent, "mood_event=")
                 || HasContext(diaryEvent, "thought=")
                 || HasContext(diaryEvent, "inspiration=")
                 || HasContext(diaryEvent, "work=")
+                || HasContext(diaryEvent, "hediff=")
                 || HasContext(diaryEvent, "day_reflection="))
             {
                 return false;
@@ -463,7 +474,21 @@ namespace PawnDiary
             // Keep this outside the editable base prompt so old saves with custom prompts still get
             // interaction-specific dialogue cues. Queueing happens on the main thread, so Translate
             // is safe here.
-            string extraInstruction = key.Translate().Resolve();
+            return AppendInstructionText(instruction, key.Translate().Resolve());
+        }
+
+        private static string AppendLocalizedInstruction(string instruction, string key, string arg0)
+        {
+            return AppendInstructionText(instruction, key.Translate(arg0).Resolve());
+        }
+
+        private static string AppendLocalizedInstruction(string instruction, string key, string arg0, string arg1)
+        {
+            return AppendInstructionText(instruction, key.Translate(arg0, arg1).Resolve());
+        }
+
+        private static string AppendInstructionText(string instruction, string extraInstruction)
+        {
             if (string.IsNullOrWhiteSpace(extraInstruction))
             {
                 return instruction;
