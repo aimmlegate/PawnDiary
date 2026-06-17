@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (prompt context policy streamlining)_
+_Last updated: 2026-06-17 (number-light prompt context)_
 
 ---
 
@@ -69,13 +69,13 @@ Key files:
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
-| `PromptEnchantments.cs` | XML-driven state matcher that may append one weighted-random `prompt_enchantment:` line to policy-selected first-person prompts. |
+| `PromptEnchantments.cs` | Weighted hediff matcher that may append one live health-condition `prompt_enchantment:` line to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
 | `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, GameEvent, and Work domains. |
 | `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
-| `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`) and DLC-safe prompt-enchantment matchers. |
+| `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, model-list fetching, and group editor. |
 | `ITab_Pawn_Diary.cs` | Production diary view, dev diagnostics, linked previews, year paging, collapsed entries, animations, and click targets. |
@@ -165,7 +165,7 @@ combat deaths.
 
 Mood events are mood-affecting game conditions recorded once per eligible colonist on affected maps.
 Thoughts are temporary memories filtered by XML tuning: ignored tokens, bypass tokens, eating
-thresholds, minimum mood offset, ambient tokens, and dedup windows. Ambient thoughts can fold into
+thresholds, minimum mood-effect thresholds, ambient tokens, and dedup windows. Ambient thoughts can fold into
 end-of-day reflection.
 
 `ThoughtProgression` scans staged situational thoughts that do not pass through the memory hook:
@@ -223,48 +223,51 @@ Main first-person prompts no longer use one broad template. `DiaryPromptBuilder`
 per-event context policy:
 
 - Routine/internal entries (work, thoughts, mood events, ambient/batched notes) send the event, POV,
-  group instruction, and persona, then skip broad pawn state, setting, relationship, opener, hidden
-  initiator text, weapon, and prompt enchantments.
+  group instruction, persona, last-opener continuity, and possibly one live hediff prompt
+  enchantment, then skip broad pawn state, setting, relationship, hidden initiator text, and weapon.
 - Meaningful non-batched social entries add relationship continuity, tone when the group is
   important, and hidden initiator context only for important paired recipient follow-ups.
 - Combat/crisis entries add pawn summary, setting, tone, relationship for paired events, current POV
-  weapon, hidden initiator context, and optional prompt enchantment.
-- End-of-day reflections add pawn summary to the selected highlights, but skip setting,
-  relationship, opener, weapon, and prompt enchantment.
-- Major solo tales/discoveries add pawn summary, setting, and tone, but skip relationship/opener,
-  weapon unless combat, and prompt enchantment unless combat.
+  weapon, hidden initiator context, and the same optional prompt enchantment path.
+- End-of-day reflections add pawn summary and last-opener continuity to the selected highlights,
+  but skip setting, relationship, and weapon.
+- Major solo tales/discoveries add pawn summary, setting, tone, and last-opener continuity, but skip
+  relationship and weapon unless combat.
 
-Pawn summaries may contain DLC identity lines, mood, health, low capacities, and top thoughts when
-the policy includes `you:`. Surroundings include 1-2 nearby objects chosen with weighted random
+Pawn summaries may contain DLC identity lines, life stage, mood, health, low capacities, and top
+thoughts when the policy includes `you:`. Generated structured context avoids sending numeric
+scores where possible: age, mood, pain, bleeding, opinion, thought impact, and hediff severity are
+bucketed into words. Surroundings include a couple of nearby objects chosen with weighted random
 selection, favoring important context such as fire, corpses, and buildings without making every entry
 identical. Neutral arrival/death prompts parse curated facts from `gameContext` instead of dumping
 the whole metadata string.
 
-Prompt enchantments are XML Defs in `1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When
-`enablePromptEnchantments` is on, only policy-selected first-person prompts (currently
-combat/crisis prompts) resolve enchantments and may add exactly one `prompt_enchantment:` field
-after `persona:`.
-Routine prompts do not scan enchantment Defs or consume a random enchantment roll. Each Def can
-match live pawn state by visible hediff defName, active gene defName, highest royal-title defName, or
-pawn `StatDef` / `PawnCapacityDef` below a threshold. Capacity thresholds can include `minValue` to
-make exclusive ranges, such as Consciousness bands. Matching Defs first pass their
-`chance`/`frequency` roll, then one winner is selected by `weight * severity`.
+Prompt enchantments are weighted hediff matchers in
+`1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When `enablePromptEnchantments` is on, every
+first-person prompt that includes `persona:` may add exactly one `prompt_enchantment:` field next to
+it. The field is still omitted when no configured visible hediff matches or the selected match fails
+its chance roll. Neutral arrival/death prompts and title follow-ups never use prompt enchantments.
+
+XML no longer contains prompt prose for hediffs. It only lists eligible `hediffDefNames`,
+`minHediffSeverity`, `chance`/`frequency`, `weight`, and the weight-multiplier `severity`. Matching
+live hediffs first pass their chance roll, then one winner is selected by configured weight plus
+live urgency signals such as severity, life-threatening state, bleeding, pain, and health impact.
+The prompt text itself is built from RimWorld's live data:
+`condition=<label>; part=<body part>; intensity=<minor/moderate/major/critical>; description=<hediff description>`.
 
 Visible hediff matchers can define optional `hediffSeverityTiers`. Four fixed code levels are
-available: `minor` at severity 0.05, `moderate` at 0.25, `major` at 0.50, and `critical` at 0.75.
-The highest configured level at or below the live hediff severity wins and may override `rule`,
+available: minor, moderate, major, and critical. Code-owned numeric thresholds decide which tier
+wins without exposing those numbers to the prompt. The highest configured level at or below the live
+hediff severity wins and may override
 `chance`/`frequency`, `weight`, and the weight-multiplier `severity`; omitted tier fields inherit
-from the parent Def. If no tier matches, the parent Def is used. Neutral arrival/death prompts and
-title follow-ups never use prompt enchantments.
+from the parent Def.
 
 The bundled starter catalog covers illness, blood loss, drug highs, non-luciferium chemical
 addictions/withdrawals, luciferium dependency, chronic cognitive/sensory conditions, pregnancy,
 hemogen craving, psychic bond trauma, and Royalty/Biotech/Anomaly hediffs such as abasia,
 mindscrew, cube states, void exposure, corpse torment, inhumanization, and flesh appendages. Missing
-body parts are intentionally not matched by the starter catalog. Royalty titles are sent through the
-normal pawn-summary `title=` line rather than starter title enchantments. The starter enchantments do
-include Consciousness capacity bands from dimmed awareness down to barely conscious; the separate
-below-11% guard still skips generation before these prompt rules can apply.
+body parts are intentionally not matched by the starter catalog. Royalty titles and xenotypes remain
+normal pawn-summary context, not prompt enchantments.
 
 System prompts are selected by narrative mode:
 
@@ -275,10 +278,9 @@ System prompts are selected by narrative mode:
 | Arrival/death chronicle | `systemPromptNeutral` |
 | Title follow-up | `systemPromptTitle` |
 
-Default prompt contracts ask for complete, short entries: diary pages 1-3 sentences / 35-75 words,
-reflections 2-4 sentences / 50-90 words, neutral notes 1-3 sentences / 25-65 words. They tell the
-model to use structured context as private evidence for voice, focus, and subtext, not as a checklist
-to echo.
+Default prompt contracts ask for complete, short entries using prose length cues rather than numeric
+word ranges. They tell the model to use structured context as private evidence for voice, focus, and
+subtext, not as a checklist to echo.
 
 Player-customizable, Def-backed user-message instructions:
 
@@ -319,7 +321,7 @@ Core settings:
 | `maxTokens` | 100 | API cap plus local sentence-aware response trimming. |
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
-| `enablePromptEnchantments` | true | Allows XML state rules to append one first-person `prompt_enchantment:` line. |
+| `enablePromptEnchantments` | true | Allows weighted live hediff context to append one first-person `prompt_enchantment:` line. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for sampled work and batched-social promotion. |
 | `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
 | prompt instruction overrides | XML defaults | User-message prompt texts listed in section 6. |
@@ -411,8 +413,8 @@ pending title statuses without stored titles are cleared.
 
 Player-facing UI strings and natural-language prompt text are Keyed entries in
 `Languages/English/Keyed/PawnDiary.xml`, resolved with `.Translate()` on the main thread. Def text
-(`label`, `instruction`, `tone`, persona `rule`, prompt-enchantment `rule`, prompt defs) localizes
-through DefInjected files.
+(`label`, `instruction`, `tone`, persona `rule`, prompt defs, and the game hediff descriptions used
+by prompt enchantments) localizes through DefInjected files.
 
 Kept in English intentionally:
 

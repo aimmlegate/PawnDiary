@@ -128,7 +128,7 @@ namespace PawnDiary
         public string systemPrompt = DefaultSystemPrompt;
         public string systemPromptReflection = DefaultSystemPromptReflection;
         public string systemPromptNeutral = DefaultSystemPromptNeutral;
-        // Title generation: short chat-style subject (3-8 words) for an existing diary entry.
+        // Title generation: short chat-style subject for an existing diary entry.
         // Used only by the title follow-up flow; main entries never send this prompt.
         public string systemPromptTitle = DefaultSystemPromptTitle;
         // User-message prompt text appended after the structured context for the main diary flows.
@@ -143,8 +143,8 @@ namespace PawnDiary
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
         public bool generateTitles = true;
-        // Master toggle for XML-driven prompt enchantments. When true, first-person prompts may get
-        // one extra state-based writing directive chosen from DiaryPromptEnchantmentDefs.xml.
+        // Master toggle for hediff-based prompt enchantments. When true, first-person diary prompts
+        // may get one live health-condition hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
         // Player-facing multipliers for the two random entry gates:
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.

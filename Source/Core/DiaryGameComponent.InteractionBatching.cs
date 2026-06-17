@@ -507,7 +507,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Formats accumulated lines into a single description string; uses a numbered list when multiple.
+        /// Formats accumulated lines into a single description string without numeric list markers.
         /// </summary>
         private static string BuildInteractionBatchText(PendingInteractionBatch batch, List<string> lines)
         {
@@ -525,7 +525,7 @@ namespace PawnDiary
             builder.Append(TranslateBatchKey(batch, batch.policy?.headerKey, "PawnDiary.Event.BatchHeader"));
             for (int i = 0; i < lines.Count; i++)
             {
-                builder.Append("\n").Append(i + 1).Append(". ").Append(lines[i]);
+                builder.Append("\n").Append("- ").Append(lines[i]);
             }
 
             return builder.ToString();
@@ -546,13 +546,13 @@ namespace PawnDiary
                 "PawnDiary.Event.AmbientDayHeader"));
             for (int i = 0; i < note.sampleLines.Count; i++)
             {
-                builder.Append("\n").Append(i + 1).Append(". ").Append(note.sampleLines[i]);
+                builder.Append("\n").Append("- ").Append(note.sampleLines[i]);
             }
 
             if (note.eventCount > note.sampleLines.Count)
             {
                 builder.Append("\n").Append("... ")
-                    .Append("PawnDiary.Event.AmbientDayMore".Translate(note.eventCount - note.sampleLines.Count).Resolve());
+                    .Append("PawnDiary.Event.AmbientDayMore".Translate().Resolve());
             }
 
             return builder.ToString();

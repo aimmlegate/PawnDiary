@@ -84,8 +84,8 @@
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
   <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
-  <PawnDiary.Settings.EnablePromptEnchantments>Use state-based prompt enchantments</PawnDiary.Settings.EnablePromptEnchantments>
-  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, XML rules may add one extra state-based writing directive to first-person diary prompts. XML controls which conditions match and how often they appear.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.EnablePromptEnchantments>Use health-condition prompt hints</PawnDiary.Settings.EnablePromptEnchantments>
+  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one live health condition. XML only controls which hediffs match and how often they appear; the prompt text comes from the game's hediff label, text intensity, and description.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.WorkGenerationWeight>Work random weight: {0}x</PawnDiary.Settings.WorkGenerationWeight>
   <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
   <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>
@@ -103,7 +103,7 @@
   <PawnDiary.Settings.SystemPromptNeutralHelp>Third-person factual notes with no persona: colonist death and arrival descriptions.</PawnDiary.Settings.SystemPromptNeutralHelp>
   <PawnDiary.Settings.RestoreSystemPromptNeutral>Restore default neutral prompt</PawnDiary.Settings.RestoreSystemPromptNeutral>
   <PawnDiary.Settings.SystemPromptTitle>System prompt — diary title</PawnDiary.Settings.SystemPromptTitle>
-  <PawnDiary.Settings.SystemPromptTitleHelp>Short chat-style subject (3-8 words) for an existing diary entry. Sent only by the title-writing follow-up; main entries are unaffected.</PawnDiary.Settings.SystemPromptTitleHelp>
+  <PawnDiary.Settings.SystemPromptTitleHelp>Short chat-style subject of three to eight words for an existing diary entry. Sent only by the title-writing follow-up; main entries are unaffected.</PawnDiary.Settings.SystemPromptTitleHelp>
   <PawnDiary.Settings.RestoreSystemPromptTitle>Restore default title prompt</PawnDiary.Settings.RestoreSystemPromptTitle>
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
   <PawnDiary.Settings.PromptStudioHelp>Edit every Def-backed prompt text from one place. This covers both system prompts and the shorter instruction text appended to structured context.</PawnDiary.Settings.PromptStudioHelp>
@@ -189,7 +189,7 @@
   <PawnDiary.Event.BatchInstruction>write one diary entry for the overall {0} exchange, not separate entries for each listed moment</PawnDiary.Event.BatchInstruction>
   <PawnDiary.Event.AmbientDayLabel>{0}</PawnDiary.Event.AmbientDayLabel>
   <PawnDiary.Event.AmbientDayHeader>Low-stakes {0} moments colored the day:</PawnDiary.Event.AmbientDayHeader>
-  <PawnDiary.Event.AmbientDayMore>{0} more quiet moment(s) happened.</PawnDiary.Event.AmbientDayMore>
+  <PawnDiary.Event.AmbientDayMore>more quiet moments happened.</PawnDiary.Event.AmbientDayMore>
   <PawnDiary.Event.AmbientDayFallback>{0} had a few quiet {1} moments today.</PawnDiary.Event.AmbientDayFallback>
   <PawnDiary.Event.AmbientDayInstruction>write one natural diary paragraph about the background texture of the day; do not summarize it as a log, do not list every moment, do not mention counts, and use names only when they feel emotionally relevant</PawnDiary.Event.AmbientDayInstruction>
   <PawnDiary.Event.AmbientSocialLabel>A social day</PawnDiary.Event.AmbientSocialLabel>
@@ -282,8 +282,8 @@
   <PawnDiary.Ctx.LastWrote>last wrote: "{0}"</PawnDiary.Ctx.LastWrote>
   <PawnDiary.Ctx.Outdoors>outdoors</PawnDiary.Ctx.Outdoors>
   <PawnDiary.Ctx.Indoors>indoors</PawnDiary.Ctx.Indoors>
-  <PawnDiary.Ctx.Cold>cold ({0}C)</PawnDiary.Ctx.Cold>
-  <PawnDiary.Ctx.Hot>hot ({0}C)</PawnDiary.Ctx.Hot>
+  <PawnDiary.Ctx.Cold>cold</PawnDiary.Ctx.Cold>
+  <PawnDiary.Ctx.Hot>hot</PawnDiary.Ctx.Hot>
   <PawnDiary.Ctx.Surroundings>{0} surroundings</PawnDiary.Ctx.Surroundings>
   <PawnDiary.Ctx.Near>near {0}</PawnDiary.Ctx.Near>
   <PawnDiary.Ctx.Doing>doing: {0}</PawnDiary.Ctx.Doing>
@@ -292,7 +292,7 @@
   <PawnDiary.Ctx.Fire>fire</PawnDiary.Ctx.Fire>
   <PawnDiary.Ctx.Corpse>corpse of {0}</PawnDiary.Ctx.Corpse>
 
-  <!-- Capacity keywords (shown when sub-optimal, <80%) -->
+  <!-- Capacity keywords (shown when sub-optimal) -->
   <PawnDiary.Capacity.Moving>impaired movement</PawnDiary.Capacity.Moving>
   <PawnDiary.Capacity.Talking>impaired speech</PawnDiary.Capacity.Talking>
   <PawnDiary.Capacity.Sight>impaired sight</PawnDiary.Capacity.Sight>
@@ -311,11 +311,23 @@
   <PawnDiary.Bucket.Pain.Minor>minor</PawnDiary.Bucket.Pain.Minor>
   <PawnDiary.Bucket.Pain.Moderate>moderate</PawnDiary.Bucket.Pain.Moderate>
   <PawnDiary.Bucket.Pain.Severe>severe</PawnDiary.Bucket.Pain.Severe>
+  <PawnDiary.Bucket.Bleeding.Minor>minor</PawnDiary.Bucket.Bleeding.Minor>
+  <PawnDiary.Bucket.Bleeding.Moderate>moderate</PawnDiary.Bucket.Bleeding.Moderate>
+  <PawnDiary.Bucket.Bleeding.Severe>severe</PawnDiary.Bucket.Bleeding.Severe>
   <PawnDiary.Bucket.Opinion.Devoted>devoted</PawnDiary.Bucket.Opinion.Devoted>
   <PawnDiary.Bucket.Opinion.Friendly>friendly</PawnDiary.Bucket.Opinion.Friendly>
   <PawnDiary.Bucket.Opinion.Neutral>neutral</PawnDiary.Bucket.Opinion.Neutral>
   <PawnDiary.Bucket.Opinion.Strained>strained</PawnDiary.Bucket.Opinion.Strained>
   <PawnDiary.Bucket.Opinion.Hostile>hostile</PawnDiary.Bucket.Opinion.Hostile>
+  <PawnDiary.Bucket.Age.Child>child</PawnDiary.Bucket.Age.Child>
+  <PawnDiary.Bucket.Age.Teen>teenager</PawnDiary.Bucket.Age.Teen>
+  <PawnDiary.Bucket.Age.Adult>adult</PawnDiary.Bucket.Age.Adult>
+  <PawnDiary.Bucket.Age.OlderAdult>older adult</PawnDiary.Bucket.Age.OlderAdult>
+  <PawnDiary.Bucket.Age.Elder>elder</PawnDiary.Bucket.Age.Elder>
+  <PawnDiary.Bucket.Effect.Positive>positive</PawnDiary.Bucket.Effect.Positive>
+  <PawnDiary.Bucket.Effect.StrongPositive>strong positive</PawnDiary.Bucket.Effect.StrongPositive>
+  <PawnDiary.Bucket.Effect.Negative>negative</PawnDiary.Bucket.Effect.Negative>
+  <PawnDiary.Bucket.Effect.StrongNegative>strong negative</PawnDiary.Bucket.Effect.StrongNegative>
 
   <!-- Atmosphere words (short evocative modifiers for the "atmosphere:" prompt field) -->
   <PawnDiary.Atmosphere.Mood.Bright>bright</PawnDiary.Atmosphere.Mood.Bright>

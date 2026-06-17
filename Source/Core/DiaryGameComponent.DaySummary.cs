@@ -317,7 +317,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Formats the selected highlights into the raw evidence text. The instruction tells the LLM
-        /// to reflect rather than list, so this is a numbered set of cues, not the final prose.
+        /// to reflect rather than list, so this is a small set of cues, not the final prose.
         /// </summary>
         private static string BuildDayReflectionText(Pawn pawn, List<DaySummarySignal> highlights)
         {
@@ -330,7 +330,7 @@ namespace PawnDiary
             builder.Append("PawnDiary.Event.DayReflectionHeader".Translate(pawn.LabelShortCap).Resolve());
             for (int i = 0; i < highlights.Count; i++)
             {
-                builder.Append("\n").Append(i + 1).Append(". ").Append(highlights[i].evidenceLine);
+                builder.Append("\n").Append("- ").Append(highlights[i].evidenceLine);
             }
 
             return builder.ToString();

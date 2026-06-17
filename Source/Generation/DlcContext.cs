@@ -11,8 +11,6 @@
 // returns string.Empty when the DLC (or the trait) is absent. Callers can therefore append the
 // result unconditionally: a no-DLC game simply omits the line. New DLC-gated pawn reads belong
 // here, in the same shape. See AGENTS.md ("DLC-safety").
-using System;
-using System.Collections.Generic;
 using RimWorld;
 using Verse;
 
@@ -65,46 +63,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Biotech: true when the pawn has one of the requested active gene defNames. Used by
-        /// prompt enchantment XML. The matcher accepts strings so XML can mention DLC genes without
-        /// creating hard def references that break no-DLC games.
-        /// </summary>
-        public static bool HasActiveGene(Pawn pawn, IEnumerable<string> geneDefNames)
-        {
-            if (!ModsConfig.BiotechActive || pawn?.genes?.GenesListForReading == null || geneDefNames == null)
-            {
-                return false;
-            }
-
-            List<Gene> genes = pawn.genes.GenesListForReading;
-            for (int i = 0; i < genes.Count; i++)
-            {
-                Gene gene = genes[i];
-                if (gene != null && gene.Active && DefNameMatches(gene.def?.defName, geneDefNames))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Royalty: true when the pawn's highest title defName appears in the requested string list.
-        /// Empty without Royalty or when the pawn has no title.
-        /// </summary>
-        public static bool HasRoyalTitleDef(Pawn pawn, IEnumerable<string> royalTitleDefNames)
-        {
-            if (!ModsConfig.RoyaltyActive || pawn?.royalty == null || royalTitleDefNames == null)
-            {
-                return false;
-            }
-
-            RoyalTitleDef titleDef = pawn.royalty.MostSeniorTitle?.def;
-            return DefNameMatches(titleDef?.defName, royalTitleDefNames);
-        }
-
-        /// <summary>
         /// Ideology: the pawn's ideoligion name plus their role if they have one (e.g.
         /// "Hidden Truth (Acolyte)"). Empty without Ideology or for a pawn with no ideo.
         /// </summary>
@@ -127,24 +85,6 @@ namespace PawnDiary
             Precept_Role role = ideo.GetRole(pawn);
             string roleLabel = role != null ? DiaryContextBuilder.CleanLine(role.LabelForPawn(pawn)) : string.Empty;
             return string.IsNullOrWhiteSpace(roleLabel) ? faith : faith + " (" + roleLabel + ")";
-        }
-
-        private static bool DefNameMatches(string defName, IEnumerable<string> requestedDefNames)
-        {
-            if (string.IsNullOrWhiteSpace(defName) || requestedDefNames == null)
-            {
-                return false;
-            }
-
-            foreach (string requested in requestedDefNames)
-            {
-                if (string.Equals(defName, requested, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

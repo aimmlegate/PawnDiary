@@ -1,10 +1,9 @@
 // Builds the compact context strings sent to the LLM (pawn profile, surroundings,
-// relationship/continuity, opinions) plus the text/number formatting helpers and the
+// relationship/continuity, opinions) plus the text/bucket formatting helpers and the
 // mood-impact determination for GameCondition entries. Static helpers, no state.
 // Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RimWorld;
@@ -87,8 +86,8 @@ namespace PawnDiary
             return parts.Count == 0 ? "none" : string.Join("; ", parts.ToArray());
         }
 
-        // The standing social memories that drive the opinion, aggregated by kind and signed
-        // (e.g. "shared kind words +12, slept in a poor bedroom -4"). This intentionally reads
+        // The standing social memories that drive the opinion, aggregated by kind and direction
+        // (e.g. "shared kind words (positive), insulted (strong negative)"). This intentionally reads
         // stored memories only: RimWorld's broader GetSocialThoughts helper also recalculates
         // situational social thoughts, and some vanilla thought workers assume a humanlike "other"
         // pawn. Animal interactions such as Nuzzle can otherwise produce harmless-but-loud log
@@ -125,7 +124,7 @@ namespace PawnDiary
                 .Where(pair => Mathf.Abs(pair.Value) >= 1f)
                 .OrderByDescending(pair => Mathf.Abs(pair.Value))
                 .Take(3)
-                .Select(pair => pair.Key + " " + FormatSignedNumber(Mathf.RoundToInt(pair.Value)))
+                .Select(pair => pair.Key + " (" + EffectBucket(pair.Value) + ")")
                 .ToArray());
         }
 
@@ -270,11 +269,11 @@ namespace PawnDiary
             float temperature = pawn.AmbientTemperature;
             if (temperature <= DiaryTuning.Current.coldBelowC)
             {
-                parts.Add("PawnDiary.Ctx.Cold".Translate(temperature.ToString("0")));
+                parts.Add("PawnDiary.Ctx.Cold".Translate());
             }
             else if (temperature >= DiaryTuning.Current.hotAboveC)
             {
-                parts.Add("PawnDiary.Ctx.Hot".Translate(temperature.ToString("0")));
+                parts.Add("PawnDiary.Ctx.Hot".Translate());
             }
 
             // Beauty only when it's notably nice or grim.
@@ -315,15 +314,16 @@ namespace PawnDiary
                 "sex=" + pawn.gender.ToString().ToLowerInvariant()
             };
 
-            if (pawn.ageTracker != null)
+            string age = AgeBucket(pawn);
+            if (!string.IsNullOrWhiteSpace(age))
             {
-                parts.Add("age=" + pawn.ageTracker.AgeBiologicalYears);
+                parts.Add("life_stage=" + age);
             }
 
             // DLC identity (Biotech xenotype / Royalty title / Ideology faith). Each accessor
             // returns empty without its DLC, so a no-DLC game simply omits these lines — see
             // DlcContext and AGENTS.md ("DLC-safety"). The labels are structured prompt schema
-            // (like sex=/age=), so they stay English per the localization carve-out.
+            // (like sex=/life_stage=), so they stay English per the localization carve-out.
             string xenotype = DlcContext.Xenotype(pawn);
             if (!string.IsNullOrWhiteSpace(xenotype))
             {
@@ -416,7 +416,7 @@ namespace PawnDiary
             }
 
             int moodPercent = Mathf.RoundToInt(pawn.needs.mood.CurLevelPercentage * 100f);
-            return MoodBucket(moodPercent) + " " + moodPercent + "%";
+            return MoodBucket(moodPercent);
         }
 
         private static string BuildHealthSummary(Pawn pawn)
@@ -441,13 +441,13 @@ namespace PawnDiary
             float pain = pawn.health.hediffSet?.PainTotal ?? 0f;
             if (pain > DiaryTuning.Current.painVisibleAbove)
             {
-                parts.Add("pain=" + PainBucket(pain) + " " + Mathf.RoundToInt(pain * 100f) + "%");
+                parts.Add("pain=" + PainBucket(pain));
             }
 
             float bleedRate = pawn.health.hediffSet?.BleedRateTotal ?? 0f;
             if (bleedRate > DiaryTuning.Current.bleedVisibleAbove)
             {
-                parts.Add("bleeding=" + bleedRate.ToString("0.##", CultureInfo.InvariantCulture) + "/day");
+                parts.Add("bleeding=" + BleedingBucket(bleedRate));
             }
 
             string notableHediffs = BuildNotableHediffsSummary(pawn);
@@ -601,13 +601,13 @@ namespace PawnDiary
                 cumulative += Mathf.Abs(thoughts[i].MoodOffset());
                 if (roll <= cumulative)
                 {
-                    return CleanLine(thoughts[i].LabelCap) + " " + FormatSignedNumber(Mathf.RoundToInt(thoughts[i].MoodOffset()));
+                    return CleanLine(thoughts[i].LabelCap) + " (" + EffectBucket(thoughts[i].MoodOffset()) + ")";
                 }
             }
 
             // Fallback: return the last one (shouldn't reach here normally)
             Thought last = thoughts[thoughts.Count - 1];
-            return CleanLine(last.LabelCap) + " " + FormatSignedNumber(Mathf.RoundToInt(last.MoodOffset()));
+            return CleanLine(last.LabelCap) + " (" + EffectBucket(last.MoodOffset()) + ")";
         }
 
         private static string BuildNearbyThingsSummary(Pawn pawn)
@@ -793,13 +793,7 @@ namespace PawnDiary
 
         private static string FormatOpinion(int opinion)
         {
-            string sign = opinion > 0 ? "+" : string.Empty;
-            return sign + opinion + " (" + OpinionBucket(opinion) + ")";
-        }
-
-        private static string FormatSignedNumber(int value)
-        {
-            return (value > 0 ? "+" : string.Empty) + value;
+            return OpinionBucket(opinion);
         }
 
         private static string BeautyBucket(float beauty)
@@ -865,6 +859,21 @@ namespace PawnDiary
             return "PawnDiary.Bucket.Pain.Minor".Translate();
         }
 
+        private static string BleedingBucket(float bleedRate)
+        {
+            if (bleedRate >= 2f)
+            {
+                return "PawnDiary.Bucket.Bleeding.Severe".Translate();
+            }
+
+            if (bleedRate >= 1f)
+            {
+                return "PawnDiary.Bucket.Bleeding.Moderate".Translate();
+            }
+
+            return "PawnDiary.Bucket.Bleeding.Minor".Translate();
+        }
+
         private static string OpinionBucket(int opinion)
         {
             DiaryTuningDef t = DiaryTuning.Current;
@@ -889,6 +898,57 @@ namespace PawnDiary
             }
 
             return "PawnDiary.Bucket.Opinion.Hostile".Translate();
+        }
+
+        private static string AgeBucket(Pawn pawn)
+        {
+            if (pawn?.ageTracker == null)
+            {
+                return string.Empty;
+            }
+
+            int years = pawn.ageTracker.AgeBiologicalYears;
+            if (years < 13)
+            {
+                return "PawnDiary.Bucket.Age.Child".Translate();
+            }
+
+            if (years < 20)
+            {
+                return "PawnDiary.Bucket.Age.Teen".Translate();
+            }
+
+            if (years < 45)
+            {
+                return "PawnDiary.Bucket.Age.Adult".Translate();
+            }
+
+            if (years < 65)
+            {
+                return "PawnDiary.Bucket.Age.OlderAdult".Translate();
+            }
+
+            return "PawnDiary.Bucket.Age.Elder".Translate();
+        }
+
+        private static string EffectBucket(float effect)
+        {
+            if (effect >= 8f)
+            {
+                return "PawnDiary.Bucket.Effect.StrongPositive".Translate();
+            }
+
+            if (effect > 0f)
+            {
+                return "PawnDiary.Bucket.Effect.Positive".Translate();
+            }
+
+            if (effect <= -8f)
+            {
+                return "PawnDiary.Bucket.Effect.StrongNegative".Translate();
+            }
+
+            return "PawnDiary.Bucket.Effect.Negative".Translate();
         }
 
         // Determines whether a GameCondition has a positive, negative, or neutral mood impact

@@ -723,7 +723,7 @@
     <domain>Thought</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
-    <instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood offset: minor joys get a quiet note, strong ones get warmth and detail</instruction>
+    <instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood effect: minor joys get a quiet note, strong ones get warmth and detail</instruction>
     <!-- TODO: Some tokens (Good, Nice, Love, Social) are broad substring matches that may
          misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
     <matchTokens>
@@ -758,7 +758,7 @@
     <domain>Thought</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
-    <instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood offset: minor irritations get a passing mention, severe ones get raw emotion and weight</instruction>
+    <instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood effect: minor irritations get a passing mention, severe ones get raw emotion and weight</instruction>
     <!-- TODO: Some tokens (Bad, Sad, Hot, Cold) are broad substring matches that may
          misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
     <matchDefNames>
@@ -807,7 +807,7 @@
     <domain>Thought</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
-    <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood offset</instruction>
+    <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood effect</instruction>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 

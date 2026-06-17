@@ -3,6 +3,23 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (number-light prompt context)**
+  - Replaced generated prompt-context numbers with word buckets where practical: life stage instead
+    of age, mood/pain/bleeding/opinion/thought impact buckets, and hediff intensity words.
+  - Removed numeric list markers from batched/ambient prompt evidence and changed the "more quiet
+    moments" line to avoid exact counts.
+  - Reworded default prompt instructions and thought-event instructions to use prose length/effect
+    guidance instead of digit ranges or mood-offset language.
+
+- **2026-06-17 (hediff-weight prompt enchantments)**
+  - Replaced XML-authored prompt-enchantment prose with live hediff context built from the game's
+    condition label, body part, severity, and description.
+  - Kept `DiaryPromptEnchantmentDefs.xml` as a weighting/eligibility table for visible hediffs and
+    removed gene/title/stat/capacity enchantment matchers from the runtime path.
+  - Broadened prompt-enchantment resolution so every first-person prompt with `persona:` may include
+    one weighted live health-condition hint; neutral chronicle/title prompts still omit it.
+  - Kept `my last opener (not repeat)` in first-person prompts as a compact anti-repetition cue.
+
 - **2026-06-17 (prompt context policy streamlining)**
   - Added event-type prompt context policies so routine/internal entries send minimal first-person
     prompts, social entries keep relationship context, and combat/crisis entries keep pawn state,

@@ -70,7 +70,7 @@ namespace PawnDiary
         public string recipientLlmModel; // LLM model name used for recipient POV generation
         public string neutralLlmModel; // LLM model name used for neutral POV generation
         public bool solo; // true for events with a single POV (e.g. mental breaks)
-        // Per-POV title: short chat-style subject (3-8 words) derived from the generated entry.
+        // Per-POV title: short chat-style subject derived from the generated entry.
         // Populated by the "Generate LLM titles" follow-up call; empty means the diary card
         // header stays date-only. Separate from the per-POV status fields so the main-entry
         // recovery logic is untouched.

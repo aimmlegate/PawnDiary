@@ -125,9 +125,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns true when this event's prompt policy can use a live prompt enchantment. The
-        /// generation queue checks this before resolving enchantments so routine prompts do not pay
-        /// for state-rule scans or consume a random roll.
+        /// Returns true when this non-neutral prompt can use a live prompt enchantment. These health
+        /// hints travel with persona, while neutral chronicle/title prompts stay persona-free.
         /// </summary>
         public static bool ShouldResolvePromptEnchantment(DiaryEvent diaryEvent)
         {
@@ -157,8 +156,7 @@ namespace PawnDiary
 
             // Persona is a writing-style rule from the pawn's saved preset, not a gameplay fact.
             AppendField(lines, "persona", personaRule);
-            // Prompt enchantments are optional, XML-driven state rules that lightly bend the voice
-            // for this one request without changing the pawn's saved persona.
+            // Prompt enchantments are optional live health-condition hints chosen from weighted XML.
             if (policy.includePromptEnchantment)
             {
                 AppendField(lines, "prompt_enchantment", promptEnchantment);
@@ -216,8 +214,7 @@ namespace PawnDiary
 
             // Solo events use the same persona field as pairwise entries for prompt consistency.
             AppendField(lines, "persona", personaRule);
-            // Prompt enchantments are optional, XML-driven state rules that lightly bend the voice
-            // for this one request without changing the pawn's saved persona.
+            // Prompt enchantments are optional live health-condition hints chosen from weighted XML.
             if (policy.includePromptEnchantment)
             {
                 AppendField(lines, "prompt_enchantment", promptEnchantment);
@@ -260,6 +257,12 @@ namespace PawnDiary
                 return policy;
             }
 
+            // Every first-person prompt carries persona, so it can also carry the compact continuity
+            // cue that prevents repeated openings and one compact live hediff hint. The rest of this
+            // policy only decides which broader context fields join them.
+            policy.includeLastOpener = true;
+            policy.includePromptEnchantment = true;
+
             bool combat = diaryEvent.ShouldShowWeapon();
             bool important = diaryEvent.IsImportant();
             bool batched = HasContext(diaryEvent, "batch=");
@@ -274,7 +277,6 @@ namespace PawnDiary
                 policy.includeSetting = true;
                 policy.includeTone = true;
                 policy.includeRelationship = hasOtherPawn;
-                policy.includePromptEnchantment = true;
                 policy.includeWeapon = true;
                 policy.includeHiddenInitiatorEntry = true;
                 return policy;
@@ -299,8 +301,8 @@ namespace PawnDiary
                 return policy;
             }
 
-            // Major solo tales / discoveries still benefit from grounding, but avoid the old
-            // relationship/opener/enchantment pile-up.
+            // Major solo tales / discoveries still benefit from grounding, but avoid the old broad
+            // relationship/opener pile-up.
             if (important)
             {
                 policy.includePawnSummary = true;

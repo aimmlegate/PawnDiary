@@ -1,44 +1,20 @@
-// XML-driven prompt enchantments: optional, one-shot writing directives chosen from live pawn
-// state right before a first-person prompt is queued. These do not replace personas; they add one
-// extra "prompt_enchantment:" line when a matching Def wins its chance and weight rolls.
+// Hediff-based prompt enchantments: optional, one-shot health context chosen from live pawn
+// state right before a first-person prompt is queued. XML no longer writes prompt prose here; it
+// only controls which hediffs are eligible and how strongly each one is weighted.
 using System;
 using System.Collections.Generic;
-using RimWorld;
 using UnityEngine;
 using Verse;
 
 namespace PawnDiary
 {
     /// <summary>
-    /// One stat-threshold matcher used by <see cref="DiaryPromptEnchantmentDef"/>. XML stores the
-    /// stat by defName string so bad or mod-removed stats can fail silently instead of crashing.
-    /// </summary>
-    public class PromptEnchantmentStatThreshold
-    {
-        public string statDefName;
-        public float value;
-    }
-
-    /// <summary>
-    /// One pawn-capacity threshold matcher used by <see cref="DiaryPromptEnchantmentDef"/>. Capacities
-    /// are things like Consciousness, Moving, Sight, and Manipulation, expressed as 0..1-ish levels.
-    /// </summary>
-    public class PromptEnchantmentCapacityThreshold
-    {
-        public string capacityDefName;
-        public float minValue = -1f;
-        public float value;
-    }
-
-    /// <summary>
-    /// Optional hediff-severity override for a prompt enchantment. XML authors name one of the fixed
-    /// levels understood by <see cref="PromptEnchantments"/>; the code owns the numeric thresholds so
-    /// tuning stays consistent across Defs.
+    /// Optional hediff-severity override for a prompt enchantment. XML authors name one of the
+    /// fixed levels understood by <see cref="PromptEnchantments"/> and may retune chance/weight.
     /// </summary>
     public class PromptEnchantmentSeverityTier
     {
         public string level;
-        public string rule;
 
         // Defaults below zero mean "inherit the parent Def's value".
         public float chance = -1f;
@@ -48,89 +24,77 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// XML-configured prompt modifier. A matching Def may append its <see cref="rule"/> to the LLM
-    /// prompt as "prompt_enchantment:" for a single request.
+    /// XML-configured weighting rule for live hediff prompt context. The prompt text itself comes
+    /// from RimWorld's hediff label, severity, body part, and description.
     /// </summary>
     public class DiaryPromptEnchantmentDef : Def
     {
-        // Natural-language directive for the model. This is Def text, so translators can override it
-        // via DefInjected rather than Keyed strings.
-        public string rule;
-
-        // Chance/frequency controls whether a matching Def appears on this prompt at all.
-        // "chance" is the documented XML name. "frequency" is accepted as an alias for authors who
-        // think about this as appearance frequency; when set to 0 or greater it overrides chance.
+        // Chance/frequency controls whether a matching hediff appears on this prompt at all.
+        // "frequency" is accepted as an alias; when set to 0 or greater it overrides chance.
         public float chance = 1f;
         public float frequency = -1f;
 
-        // Selection controls once several matching Defs pass their chance roll. Severity multiplies
-        // weight so XML can make urgent states dominate without exposing every match to the model.
+        // Selection controls once several matching hediffs pass their chance roll.
         public float weight = 1f;
         public float severity = 1f;
 
-        // Base-game health conditions. Matches visible hediffs by defName string.
+        // Visible hediffs matched by defName string. String matching keeps DLC/modded names safe:
+        // absent defs simply never appear on a pawn and therefore never match.
         public List<string> hediffDefNames = new List<string>();
         public float minHediffSeverity = 0f;
         public List<PromptEnchantmentSeverityTier> hediffSeverityTiers = new List<PromptEnchantmentSeverityTier>();
-
-        // DLC-safe string matchers. The actual pawn tracker reads live in DlcContext.
-        public List<string> geneDefNames = new List<string>();
-        public List<string> royalTitleDefNames = new List<string>();
-
-        // Pawn StatDefs whose current value must be below the configured threshold.
-        public List<PromptEnchantmentStatThreshold> statBelow = new List<PromptEnchantmentStatThreshold>();
-
-        // PawnCapacityDefs whose current health capacity must be below the configured threshold.
-        public List<PromptEnchantmentCapacityThreshold> capacityBelow = new List<PromptEnchantmentCapacityThreshold>();
     }
 
     /// <summary>
-    /// Runtime resolver for prompt enchantment Defs. It deliberately returns only one rule per
-    /// prompt so pawn state adds flavor without flooding small local models with competing orders.
+    /// Runtime resolver for hediff prompt context. It deliberately returns only one health
+    /// condition per prompt so small local models get a clear signal instead of a medical dump.
     /// </summary>
     public static class PromptEnchantments
     {
         private sealed class Candidate
         {
-            public readonly string rule;
+            public readonly Hediff hediff;
             public readonly float weight;
 
-            public Candidate(string rule, float weight)
+            public Candidate(Hediff hediff, float weight)
             {
-                this.rule = rule;
+                this.hediff = hediff;
                 this.weight = weight;
             }
         }
 
-        private sealed class PromptEnchantmentMatch
+        private sealed class MatchTuning
         {
-            public readonly string rule;
             public readonly float chance;
             public readonly float weight;
             public readonly float severity;
 
-            public PromptEnchantmentMatch(string rule, float chance, float weight, float severity)
+            public MatchTuning(float chance, float weight, float severity)
             {
-                this.rule = rule;
                 this.chance = chance;
                 this.weight = weight;
                 this.severity = severity;
             }
         }
 
-        // Fixed hediff severity bands. These are intentionally code-owned so XML Defs pick named
-        // levels instead of each inventing different numeric thresholds.
+        // Fixed hediff severity bands. XML selects names; code owns the thresholds.
         private const float MinorHediffSeverity = 0.05f;
         private const float ModerateHediffSeverity = 0.25f;
         private const float MajorHediffSeverity = 0.50f;
         private const float CriticalHediffSeverity = 0.75f;
+        private const int MaxDescriptionChars = 180;
 
         /// <summary>
-        /// Returns one matching enchantment rule for this pawn, or empty when disabled/no match.
+        /// Returns one live hediff prompt for this pawn, or empty when disabled/no match.
         /// </summary>
         public static string RuleFor(Pawn pawn)
         {
             if (pawn == null || PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
+            {
+                return string.Empty;
+            }
+
+            if (pawn.health?.hediffSet?.hediffs == null)
             {
                 return string.Empty;
             }
@@ -143,29 +107,41 @@ namespace PawnDiary
 
             float totalWeight = 0f;
             List<Candidate> candidates = new List<Candidate>();
-            for (int i = 0; i < defs.Count; i++)
+            List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+            for (int hediffIndex = 0; hediffIndex < hediffs.Count; hediffIndex++)
             {
-                DiaryPromptEnchantmentDef def = defs[i];
-                PromptEnchantmentMatch match = MatchFor(def, pawn);
-                if (match == null || string.IsNullOrWhiteSpace(match.rule))
+                Hediff hediff = hediffs[hediffIndex];
+                if (!VisibleHediff(hediff))
                 {
                     continue;
                 }
 
-                float chance = ChanceFor(match.chance);
-                if (chance <= 0f || Rand.Range(0f, 1f) > chance)
+                for (int defIndex = 0; defIndex < defs.Count; defIndex++)
                 {
-                    continue;
-                }
+                    DiaryPromptEnchantmentDef def = defs[defIndex];
+                    if (!MatchesHediff(def, hediff))
+                    {
+                        continue;
+                    }
 
-                float effectiveWeight = Mathf.Max(0f, match.weight) * Mathf.Max(0f, match.severity);
-                if (effectiveWeight <= 0f)
-                {
-                    continue;
-                }
+                    MatchTuning tuning = TuningFor(def, hediff.Severity);
+                    float chance = ChanceFor(tuning.chance);
+                    if (chance <= 0f || Rand.Range(0f, 1f) > chance)
+                    {
+                        continue;
+                    }
 
-                candidates.Add(new Candidate(match.rule, effectiveWeight));
-                totalWeight += effectiveWeight;
+                    float effectiveWeight = Mathf.Max(0f, tuning.weight)
+                        * Mathf.Max(0f, tuning.severity)
+                        * LiveSeverityWeight(hediff);
+                    if (effectiveWeight <= 0f)
+                    {
+                        continue;
+                    }
+
+                    candidates.Add(new Candidate(hediff, effectiveWeight));
+                    totalWeight += effectiveWeight;
+                }
             }
 
             if (candidates.Count == 0 || totalWeight <= 0f)
@@ -173,6 +149,11 @@ namespace PawnDiary
                 return string.Empty;
             }
 
+            return BuildPromptText(PickWeighted(candidates, totalWeight));
+        }
+
+        private static Candidate PickWeighted(List<Candidate> candidates, float totalWeight)
+        {
             float roll = Rand.Range(0f, totalWeight);
             float cumulative = 0f;
             for (int i = 0; i < candidates.Count; i++)
@@ -180,79 +161,73 @@ namespace PawnDiary
                 cumulative += candidates[i].weight;
                 if (roll <= cumulative)
                 {
-                    return candidates[i].rule ?? string.Empty;
+                    return candidates[i];
                 }
             }
 
-            return candidates[candidates.Count - 1].rule ?? string.Empty;
+            return candidates[candidates.Count - 1];
         }
 
-        private static float ChanceFor(float configured)
+        private static string BuildPromptText(Candidate candidate)
         {
-            return Mathf.Clamp01(configured);
+            Hediff hediff = candidate?.hediff;
+            if (hediff == null)
+            {
+                return string.Empty;
+            }
+
+            List<string> parts = new List<string>();
+            AppendPart(parts, "condition", hediff.LabelCap);
+            if (hediff.Part != null)
+            {
+                AppendPart(parts, "part", hediff.Part.LabelCap);
+            }
+
+            AppendPart(parts, "intensity", HediffIntensity(hediff));
+            AppendPart(parts, "description", TrimForPrompt(hediff.def?.description, MaxDescriptionChars));
+            return string.Join("; ", parts.ToArray());
         }
 
-        private static PromptEnchantmentMatch MatchFor(DiaryPromptEnchantmentDef def, Pawn pawn)
+        private static void AppendPart(List<string> parts, string label, string value)
         {
-            if (def == null)
+            string cleaned = DiaryContextBuilder.CleanLine(value);
+            if (!string.IsNullOrWhiteSpace(cleaned))
             {
-                return null;
+                parts.Add(label + "=" + cleaned);
             }
-
-            if (HasItems(def.hediffDefNames))
-            {
-                float hediffSeverity;
-                if (TryMatchedHediffSeverity(def, pawn, out hediffSeverity))
-                {
-                    return MatchFrom(def, TierForHediffSeverity(def.hediffSeverityTiers, hediffSeverity));
-                }
-            }
-
-            if (HasItems(def.geneDefNames))
-            {
-                if (DlcContext.HasActiveGene(pawn, def.geneDefNames))
-                {
-                    return MatchFrom(def, null);
-                }
-            }
-
-            if (HasItems(def.royalTitleDefNames))
-            {
-                if (DlcContext.HasRoyalTitleDef(pawn, def.royalTitleDefNames))
-                {
-                    return MatchFrom(def, null);
-                }
-            }
-
-            if (def.statBelow != null && def.statBelow.Count > 0)
-            {
-                if (MatchesStatBelow(def.statBelow, pawn))
-                {
-                    return MatchFrom(def, null);
-                }
-            }
-
-            if (def.capacityBelow != null && def.capacityBelow.Count > 0)
-            {
-                if (MatchesCapacityBelow(def.capacityBelow, pawn))
-                {
-                    return MatchFrom(def, null);
-                }
-            }
-
-            return null;
         }
 
-        private static PromptEnchantmentMatch MatchFrom(DiaryPromptEnchantmentDef def, PromptEnchantmentSeverityTier tier)
+        private static string TrimForPrompt(string value, int maxChars)
         {
-            string rule = tier != null && !string.IsNullOrWhiteSpace(tier.rule)
-                ? tier.rule
-                : def.rule;
+            string cleaned = DiaryContextBuilder.CleanLine(value);
+            if (string.IsNullOrWhiteSpace(cleaned) || cleaned.Length <= maxChars)
+            {
+                return cleaned;
+            }
 
+            return cleaned.Substring(0, maxChars).TrimEnd() + "...";
+        }
+
+        private static bool VisibleHediff(Hediff hediff)
+        {
+            return hediff != null && hediff.def != null && hediff.Visible;
+        }
+
+        private static bool MatchesHediff(DiaryPromptEnchantmentDef def, Hediff hediff)
+        {
+            return def != null
+                && hediff != null
+                && DefNameInList(hediff.def?.defName, def.hediffDefNames)
+                && hediff.Severity >= Mathf.Max(0f, def.minHediffSeverity);
+        }
+
+        private static MatchTuning TuningFor(DiaryPromptEnchantmentDef def, float hediffSeverity)
+        {
+            PromptEnchantmentSeverityTier tier = TierForHediffSeverity(def.hediffSeverityTiers, hediffSeverity);
             float chance = ResolvedChance(def, tier);
             float weight = tier != null && tier.weight >= 0f ? tier.weight : def.weight;
             float severity = tier != null && tier.severity >= 0f ? tier.severity : def.severity;
-            return new PromptEnchantmentMatch(rule, chance, weight, severity);
+            return new MatchTuning(chance, weight, severity);
         }
 
         private static float ResolvedChance(DiaryPromptEnchantmentDef def, PromptEnchantmentSeverityTier tier)
@@ -273,33 +248,57 @@ namespace PawnDiary
             return def.frequency >= 0f ? def.frequency : def.chance;
         }
 
-        private static bool TryMatchedHediffSeverity(DiaryPromptEnchantmentDef def, Pawn pawn, out float matchedSeverity)
+        private static float ChanceFor(float configured)
         {
-            matchedSeverity = 0f;
-            if (pawn?.health?.hediffSet?.hediffs == null)
+            return Mathf.Clamp01(configured);
+        }
+
+        private static float LiveSeverityWeight(Hediff hediff)
+        {
+            if (hediff == null)
             {
-                return false;
+                return 1f;
             }
 
-            bool matched = false;
-            List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
-            for (int i = 0; i < hediffs.Count; i++)
+            float weight = 1f + Mathf.Clamp(hediff.Severity, 0f, 2f) * 0.5f;
+            if (hediff.IsCurrentlyLifeThreatening)
             {
-                Hediff hediff = hediffs[i];
-                if (hediff == null || hediff.def == null || !hediff.Visible)
-                {
-                    continue;
-                }
-
-                if (DefNameInList(hediff.def.defName, def.hediffDefNames)
-                    && hediff.Severity >= Mathf.Max(0f, def.minHediffSeverity))
-                {
-                    matched = true;
-                    matchedSeverity = Mathf.Max(matchedSeverity, hediff.Severity);
-                }
+                weight += 1.5f;
             }
 
-            return matched;
+            if (hediff.Bleeding)
+            {
+                weight += Mathf.Clamp(hediff.BleedRate, 0f, 2f) * 0.5f;
+            }
+
+            weight += Mathf.Clamp(hediff.PainOffset, 0f, 1f);
+            weight += Mathf.Clamp(-hediff.SummaryHealthPercentImpact, 0f, 1f);
+            return Mathf.Max(0.1f, weight);
+        }
+
+        private static string HediffIntensity(Hediff hediff)
+        {
+            if (hediff == null)
+            {
+                return string.Empty;
+            }
+
+            if (hediff.IsCurrentlyLifeThreatening || hediff.Severity >= CriticalHediffSeverity)
+            {
+                return "critical";
+            }
+
+            if (hediff.Severity >= MajorHediffSeverity)
+            {
+                return "major";
+            }
+
+            if (hediff.Severity >= ModerateHediffSeverity)
+            {
+                return "moderate";
+            }
+
+            return "minor";
         }
 
         private static PromptEnchantmentSeverityTier TierForHediffSeverity(List<PromptEnchantmentSeverityTier> tiers, float hediffSeverity)
@@ -367,101 +366,6 @@ namespace PawnDiary
             {
                 threshold = CriticalHediffSeverity;
                 return true;
-            }
-
-            return false;
-        }
-
-        private static bool MatchesStatBelow(List<PromptEnchantmentStatThreshold> thresholds, Pawn pawn)
-        {
-            if (thresholds == null || pawn == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < thresholds.Count; i++)
-            {
-                PromptEnchantmentStatThreshold threshold = thresholds[i];
-                if (threshold == null || string.IsNullOrWhiteSpace(threshold.statDefName))
-                {
-                    continue;
-                }
-
-                StatDef statDef = DefDatabase<StatDef>.GetNamedSilentFail(threshold.statDefName);
-                if (statDef == null)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    if (pawn.GetStatValue(statDef) < threshold.value)
-                    {
-                        return true;
-                    }
-                }
-                catch (Exception)
-                {
-                    // Some StatDefs are not meaningful for pawns. Treat XML experiments that pick
-                    // those stats as a non-match rather than logging errors during generation.
-                }
-            }
-
-            return false;
-        }
-
-        private static bool MatchesCapacityBelow(List<PromptEnchantmentCapacityThreshold> thresholds, Pawn pawn)
-        {
-            if (thresholds == null || pawn?.health?.capacities == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < thresholds.Count; i++)
-            {
-                PromptEnchantmentCapacityThreshold threshold = thresholds[i];
-                if (threshold == null || string.IsNullOrWhiteSpace(threshold.capacityDefName))
-                {
-                    continue;
-                }
-
-                PawnCapacityDef capacityDef = DefDatabase<PawnCapacityDef>.GetNamedSilentFail(threshold.capacityDefName);
-                if (capacityDef == null)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    float level = pawn.health.capacities.GetLevel(capacityDef);
-                    if (level < threshold.value && (threshold.minValue < 0f || level >= threshold.minValue))
-                    {
-                        return true;
-                    }
-                }
-                catch (Exception)
-                {
-                    // Some capacity Defs can be unsuitable for unusual pawns. Bad XML should simply
-                    // fail to match instead of interrupting diary generation.
-                }
-            }
-
-            return false;
-        }
-
-        private static bool HasItems(List<string> values)
-        {
-            if (values == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < values.Count; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(values[i]))
-                {
-                    return true;
-                }
             }
 
             return false;

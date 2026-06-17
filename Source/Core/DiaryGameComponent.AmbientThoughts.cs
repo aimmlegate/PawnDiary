@@ -196,13 +196,13 @@ namespace PawnDiary
             builder.Append("PawnDiary.Event.AmbientThoughtHeader".Translate().Resolve());
             for (int i = 0; i < note.sampleLines.Count; i++)
             {
-                builder.Append("\n").Append(i + 1).Append(". ").Append(note.sampleLines[i]);
+                builder.Append("\n").Append("- ").Append(note.sampleLines[i]);
             }
 
             if (note.eventCount > note.sampleLines.Count)
             {
                 builder.Append("\n").Append("... ")
-                    .Append("PawnDiary.Event.AmbientDayMore".Translate(note.eventCount - note.sampleLines.Count).Resolve());
+                    .Append("PawnDiary.Event.AmbientDayMore".Translate().Resolve());
             }
 
             return builder.ToString();

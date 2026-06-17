@@ -15,8 +15,8 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        // Max tokens the title follow-up is allowed to emit. A title is 3-8 words; 40 is generous
-        // for a chat-style subject plus a stray word or two, and small enough to keep the call
+        // Max tokens the title follow-up is allowed to emit. A title is only a few words, and this
+        // cap is generous for a chat-style subject plus a stray word or two while keeping the call
         // cheap when the title toggle is on. Reused from the same field on the main-entry
         // request — we do NOT add a player setting for it.
         private const int TitleMaxTokens = 40;
@@ -257,7 +257,7 @@ namespace PawnDiary
             }
 
             // Persona and prompt enchantment are resolved at queue time so changing a pawn or XML
-            // settings affects future generations without rewriting prompts already sent or saved
+            // weights affects future generations without rewriting prompts already sent or saved
             // for debugging.
             string rawText = DiaryPromptBuilder.BuildInteractionPrompt(
                 diaryEvent,
@@ -629,8 +629,8 @@ namespace PawnDiary
             QueueRecipientAfterInitiatorResult(diaryEvent, result);
 
             // Title follow-up: if Generate LLM titles is on and the main entry produced text
-            // but the role has no stored title yet, queue a small title call. The title is tiny
-            // (3-8 words), and the request is capped to TitleMaxTokens.
+            // but the role has no stored title yet, queue a small title call. The title is tiny,
+            // and the request is capped to TitleMaxTokens.
             if (result.success
                 && PawnDiaryMod.Settings != null
                 && PawnDiaryMod.Settings.generateTitles
@@ -901,7 +901,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resolves the optional XML-driven prompt enchantment for the POV pawn. Missing live pawn
+        /// Resolves the optional hediff-based prompt enchantment for the POV pawn. Missing live pawn
         /// data simply means no enchantment, preserving neutral death/arrival and title flows.
         /// </summary>
         private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole)
