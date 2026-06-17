@@ -896,8 +896,9 @@ namespace PawnDiary
         {
             // Missing records fall back to the XML default persona.
             string pawnId = PawnIdForRole(diaryEvent, povRole);
+            Pawn pawn = FindLivePawnByLoadId(pawnId);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
-            return DiaryPersonas.RuleFor(diary?.personaDefName);
+            return DiaryPersonas.RuleFor(diary?.personaDefName, PromptEnchantments.ConsciousnessPersonaStateFor(pawn));
         }
 
         /// <summary>

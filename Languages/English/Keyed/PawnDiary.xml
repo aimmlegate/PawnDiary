@@ -282,6 +282,7 @@
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
   <PawnDiary.Prompt.Health.HighPriority>high priority</PawnDiary.Prompt.Health.HighPriority>
+  <PawnDiary.Prompt.Health.ConsciousnessFallback>consciousness</PawnDiary.Prompt.Health.ConsciousnessFallback>
   <PawnDiary.Prompt.Health.ConditionFallback>health condition</PawnDiary.Prompt.Health.ConditionFallback>
   <PawnDiary.Prompt.Health.ConditionInPart>{0} in {1}</PawnDiary.Prompt.Health.ConditionInPart>
   <PawnDiary.Prompt.Health.IntensityCondition>{0} {1}</PawnDiary.Prompt.Health.IntensityCondition>
@@ -297,6 +298,12 @@
   <PawnDiary.Prompt.Health.Cue.WeakensBody>weakens body</PawnDiary.Prompt.Health.Cue.WeakensBody>
   <PawnDiary.Prompt.Health.Cue.AddictionPressure>addiction pressure</PawnDiary.Prompt.Health.Cue.AddictionPressure>
   <PawnDiary.Prompt.Health.Cue.HurtsMood>hurts mood</PawnDiary.Prompt.Health.Cue.HurtsMood>
+  <PawnDiary.Prompt.Health.Cue.DulledAwareness>dulled awareness</PawnDiary.Prompt.Health.Cue.DulledAwareness>
+  <PawnDiary.Prompt.Health.Cue.FoggedAwareness>fogged awareness</PawnDiary.Prompt.Health.Cue.FoggedAwareness>
+  <PawnDiary.Prompt.Health.Cue.SluggishThoughts>sluggish thoughts</PawnDiary.Prompt.Health.Cue.SluggishThoughts>
+  <PawnDiary.Prompt.Health.Cue.NearCollapse>near collapse</PawnDiary.Prompt.Health.Cue.NearCollapse>
+  <PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>thoughts fragmented</PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>
+  <PawnDiary.Prompt.Health.Cue.BarelyAwake>barely awake</PawnDiary.Prompt.Health.Cue.BarelyAwake>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>

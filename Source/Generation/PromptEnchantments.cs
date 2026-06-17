@@ -52,6 +52,14 @@ namespace PawnDiary
     /// </summary>
     public static class PromptEnchantments
     {
+        private enum ConsciousnessPromptBand
+        {
+            None,
+            Clouded,
+            Fading,
+            BarelyConscious
+        }
+
         private sealed class Candidate
         {
             public readonly Hediff hediff;
@@ -83,6 +91,9 @@ namespace PawnDiary
         private const float ModerateHediffSeverity = 0.25f;
         private const float MajorHediffSeverity = 0.50f;
         private const float CriticalHediffSeverity = 0.75f;
+        private const float CloudedConsciousnessBelow = 0.55f;
+        private const float FadingConsciousnessBelow = 0.35f;
+        private const float BarelyConsciousBelow = 0.20f;
         private const int MaxImpactCues = 3;
 
         /// <summary>
@@ -93,6 +104,12 @@ namespace PawnDiary
             if (pawn == null || PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
             {
                 return string.Empty;
+            }
+
+            string consciousnessPrompt = ConsciousnessPromptText(pawn);
+            if (!string.IsNullOrWhiteSpace(consciousnessPrompt))
+            {
+                return consciousnessPrompt;
             }
 
             if (pawn.health?.hediffSet?.hediffs == null)
@@ -153,6 +170,32 @@ namespace PawnDiary
             return BuildPromptText(PickWeighted(candidates, totalWeight));
         }
 
+        /// <summary>
+        /// Returns an internal persona-state token for low Consciousness, or empty for normal voice.
+        /// The hard below-11% generation skip still lives in DiaryGameComponent.Generation.cs; this
+        /// only tunes prompts for pawns who are impaired but still conscious enough to write.
+        /// </summary>
+        public static string ConsciousnessPersonaStateFor(Pawn pawn)
+        {
+            ConsciousnessPromptBand band = ConsciousnessBandFor(pawn);
+            if (band == ConsciousnessPromptBand.BarelyConscious)
+            {
+                return DiaryPersonas.ConsciousnessStateBarelyConscious;
+            }
+
+            if (band == ConsciousnessPromptBand.Fading)
+            {
+                return DiaryPersonas.ConsciousnessStateFading;
+            }
+
+            if (band == ConsciousnessPromptBand.Clouded)
+            {
+                return DiaryPersonas.ConsciousnessStateClouded;
+            }
+
+            return string.Empty;
+        }
+
         private static Candidate PickWeighted(List<Candidate> candidates, float totalWeight)
         {
             float roll = Rand.Range(0f, totalWeight);
@@ -185,6 +228,107 @@ namespace PawnDiary
 
             AddImpactCues(parts, hediff);
             return string.Join("; ", parts.ToArray());
+        }
+
+        private static string ConsciousnessPromptText(Pawn pawn)
+        {
+            ConsciousnessPromptBand band = ConsciousnessBandFor(pawn);
+            if (band == ConsciousnessPromptBand.None)
+            {
+                return string.Empty;
+            }
+
+            List<string> parts = new List<string>
+            {
+                PromptText("PawnDiary.Prompt.Health.HighPriority"),
+                PromptText(
+                    "PawnDiary.Prompt.Health.IntensityCondition",
+                    ConsciousnessIntensity(band),
+                    ConsciousnessLabel())
+            };
+
+            AddConsciousnessCues(parts, band);
+            return string.Join("; ", parts.ToArray());
+        }
+
+        private static void AddConsciousnessCues(List<string> parts, ConsciousnessPromptBand band)
+        {
+            List<string> cues = new List<string>();
+            if (band == ConsciousnessPromptBand.BarelyConscious)
+            {
+                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.NearCollapse"));
+                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.ThoughtsFragmented"));
+                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.BarelyAwake"));
+            }
+            else if (band == ConsciousnessPromptBand.Fading)
+            {
+                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.FoggedAwareness"));
+                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.SluggishThoughts"));
+            }
+            else if (band == ConsciousnessPromptBand.Clouded)
+            {
+                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.DulledAwareness"));
+            }
+
+            if (cues.Count > 0)
+            {
+                parts.Add(string.Join(", ", cues.ToArray()));
+            }
+        }
+
+        private static string ConsciousnessIntensity(ConsciousnessPromptBand band)
+        {
+            if (band == ConsciousnessPromptBand.BarelyConscious)
+            {
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Critical");
+            }
+
+            if (band == ConsciousnessPromptBand.Fading)
+            {
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Major");
+            }
+
+            return PromptText("PawnDiary.Prompt.Health.Intensity.Moderate");
+        }
+
+        private static string ConsciousnessLabel()
+        {
+            if (PawnCapacityDefOf.Consciousness != null)
+            {
+                string label = DiaryContextBuilder.CleanLine(PawnCapacityDefOf.Consciousness.LabelCap.Resolve());
+                if (!string.IsNullOrWhiteSpace(label))
+                {
+                    return label;
+                }
+            }
+
+            return PromptText("PawnDiary.Prompt.Health.ConsciousnessFallback");
+        }
+
+        private static ConsciousnessPromptBand ConsciousnessBandFor(Pawn pawn)
+        {
+            if (pawn?.health?.capacities == null || PawnCapacityDefOf.Consciousness == null)
+            {
+                return ConsciousnessPromptBand.None;
+            }
+
+            float level = pawn.health.capacities.GetLevel(PawnCapacityDefOf.Consciousness);
+            if (level < BarelyConsciousBelow)
+            {
+                return ConsciousnessPromptBand.BarelyConscious;
+            }
+
+            if (level < FadingConsciousnessBelow)
+            {
+                return ConsciousnessPromptBand.Fading;
+            }
+
+            if (level < CloudedConsciousnessBelow)
+            {
+                return ConsciousnessPromptBand.Clouded;
+            }
+
+            return ConsciousnessPromptBand.None;
         }
 
         private static string CompactCondition(Hediff hediff)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +13,13 @@ namespace PawnDiary
         // The writing rule injected into the LLM prompt as "persona:" so the model adopts a consistent voice.
         public string rule;
 
+        // Optional replacement rules used when Consciousness is low but still above the hard
+        // generation skip floor. They live in XML beside the normal persona rule so translated
+        // persona catalogs can localize the impaired voice descriptions through DefInjected.
+        public string cloudedConsciousnessRule;
+        public string fadingConsciousnessRule;
+        public string barelyConsciousRule;
+
         // Coarse internal keyword tags (e.g. "grim", "warm", "anxious", "void") used only to bias the
         // *initial* persona roll toward a fitting voice for the pawn's traits/backstory. They are
         // matched against PersonaAffinity's pawn -> theme logic; "void" also gets a creepjoiner-only
@@ -25,6 +33,12 @@ namespace PawnDiary
     // 1.6/Defs/DiaryPersonaDefs.xml; the hardcoded fallback keeps saves usable if XML is missing.
     public static class DiaryPersonas
     {
+        // Internal state tokens passed between prompt-generation code and persona resolution. These
+        // are never sent to the model directly; the XML persona fields provide the model-facing text.
+        public const string ConsciousnessStateClouded = "clouded";
+        public const string ConsciousnessStateFading = "fading";
+        public const string ConsciousnessStateBarelyConscious = "barelyConscious";
+
         // Fixed vocabulary used by PersonaAffinity and the persona-settings editor. Players can
         // assign only these tags to custom personas, which keeps weighting behavior predictable.
         public static readonly string[] PredefinedThemeTags =
@@ -46,7 +60,10 @@ namespace PawnDiary
         {
             defName = "DiaryPersona_StoicSurvivor",
             label = "stoic-survivor",
-            rule = "writes in terse, matter-of-fact sentences. Avoids self-pity; focuses on what needs doing next. Opens with blunt observations about the situation. Uses short declarative sentences."
+            rule = "writes in terse, matter-of-fact sentences. Avoids self-pity; focuses on what needs doing next. Opens with blunt observations about the situation. Uses short declarative sentences.",
+            cloudedConsciousnessRule = "writes in clipped, practical fragments. Stays focused on one immediate fact because wider thinking is slow.",
+            fadingConsciousnessRule = "writes as a failing field note: short, plain, and narrowed to what the body can still register.",
+            barelyConsciousRule = "writes in minimal, broken observations. Persona confidence collapses into survival focus; use only a few clear fragments."
         };
 
         // Wrapped in a list so All can return a non-null IReadOnlyList even with zero XML defs.
@@ -214,18 +231,55 @@ namespace PawnDiary
         // Include the label in the prompt so debug output clearly shows which preset was used.
         public static string RuleFor(string defName)
         {
+            return RuleFor(defName, string.Empty);
+        }
+
+        /// <summary>
+        /// Returns the normal persona rule or a persona-specific low-Consciousness replacement.
+        /// </summary>
+        public static string RuleFor(string defName, string consciousnessState)
+        {
             DiaryPersonaDef persona = Resolve(defName);
             if (persona == null)
             {
                 return string.Empty;
             }
 
+            string rule = RuleTextForState(persona, consciousnessState);
             if (string.IsNullOrWhiteSpace(persona.label))
             {
-                return persona.rule ?? string.Empty;
+                return rule;
             }
 
-            return persona.label + ": " + (persona.rule ?? string.Empty);
+            return persona.label + ": " + rule;
+        }
+
+        private static string RuleTextForState(DiaryPersonaDef persona, string consciousnessState)
+        {
+            if (persona == null)
+            {
+                return string.Empty;
+            }
+
+            if (string.Equals(consciousnessState, ConsciousnessStateBarelyConscious, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(persona.barelyConsciousRule))
+            {
+                return persona.barelyConsciousRule;
+            }
+
+            if (string.Equals(consciousnessState, ConsciousnessStateFading, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(persona.fadingConsciousnessRule))
+            {
+                return persona.fadingConsciousnessRule;
+            }
+
+            if (string.Equals(consciousnessState, ConsciousnessStateClouded, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(persona.cloudedConsciousnessRule))
+            {
+                return persona.cloudedConsciousnessRule;
+            }
+
+            return persona.rule ?? string.Empty;
         }
 
         // Builds the effective runtime catalog from XML defs plus settings-based edits/custom rows.
@@ -277,6 +331,9 @@ namespace PawnDiary
             persona.defName = settingsPreset?.defName ?? source?.defName ?? string.Empty;
             persona.label = settingsPreset?.label ?? source?.label ?? string.Empty;
             persona.rule = settingsPreset?.rule ?? source?.rule ?? string.Empty;
+            persona.cloudedConsciousnessRule = source?.cloudedConsciousnessRule ?? string.Empty;
+            persona.fadingConsciousnessRule = source?.fadingConsciousnessRule ?? string.Empty;
+            persona.barelyConsciousRule = source?.barelyConsciousRule ?? string.Empty;
             persona.themes = new List<string>();
 
             List<string> themes = settingsPreset?.themes ?? source?.themes;

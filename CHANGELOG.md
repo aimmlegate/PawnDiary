@@ -3,6 +3,13 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (low-consciousness persona rules)**
+  - Kept the below-11% Consciousness generation guard intact while routing still-conscious impaired
+    pawns through clouded, fading, and barely-conscious prompt states.
+  - Replaced the generic barely-conscious persona override with persona-specific XML rules on every
+    built-in `DiaryPersonaDef`, so translators and persona authors can tune each impaired voice.
+  - Added localized Keyed words for the compact Consciousness `important health:` cue.
+
 - **2026-06-17 (compact important-health prompt cues)**
   - Changed hediff prompt enchantments from a generic `prompt_enchantment:` metadata line to a
     compact `important health:` cue with urgency, condition/body part, and capped impact reasons.
