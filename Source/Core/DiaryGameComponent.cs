@@ -48,6 +48,9 @@ namespace PawnDiary
     public partial class DiaryGameComponent : GameComponent
     {
         // Dedup windows live in DiaryTuningDef (editable XML); see DiaryTuning.Current.
+        // The transient dedup dictionaries keep only recent keys. Once any dictionary crosses this
+        // size, the shared gate sweeps entries outside that source's configured dedup window.
+        private const int RecentEventPruneThreshold = 512;
         // Synthetic Tale-domain groups for notable events vanilla does not expose as TaleDefs.
         private const string TaleQualityGroupKey = "talequality";
         private const string TaleRelicGroupKey = "talerelic";

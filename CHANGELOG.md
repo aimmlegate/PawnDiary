@@ -3,6 +3,17 @@
 Dated history of every change to the mod. Add an entry here with each change, newest first.
 `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+- **2026-06-17 (bounded transient caches and persona catalog cache)**
+  - Added opportunistic expiry pruning to the shared recent-event dedup dictionaries so high-cardinality
+    craft, relic, thought, and similar keys do not accumulate for an entire play session.
+  - Capped the Diary tab's expansion animation blend cache alongside the existing first-seen fade cache.
+  - Cached the merged persona catalog and invalidated it when settings-backed persona presets change,
+    and normalized model-facing numeric context to invariant dot-decimal formatting.
+
+- **2026-06-17 (preview title refresh)**
+  - Updated the mod preview image with a RimWorld-style `Pawn Diary` title treatment, using the
+    installed RimWord font plus a restrained metallic gradient, outline, and border frame.
+
 - **2026-06-17 (editable persona presets in settings)**
   - Added a new Persona presets section to mod settings, modeled after Prompt Studio, so players can
     edit built-in persona label/rule/tag values from one card at a time.

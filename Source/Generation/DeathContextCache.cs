@@ -4,6 +4,7 @@
 // New to C#/RimWorld? See AGENTS.md ("Harmony patches").
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using RimWorld;
 using Verse;
 
@@ -115,7 +116,7 @@ namespace PawnDiary
 
             if (info.Amount > 0f)
             {
-                parts.Add("damageAmount=" + info.Amount.ToString("0.#"));
+                parts.Add("damageAmount=" + info.Amount.ToString("0.#", CultureInfo.InvariantCulture));
             }
 
             BodyPartRecord hitPart = info.HitPart;
@@ -165,7 +166,7 @@ namespace PawnDiary
 
             if (exactCulprit.Severity > 0f)
             {
-                parts.Add("culpritSeverity=" + exactCulprit.Severity.ToString("0.##"));
+                parts.Add("culpritSeverity=" + exactCulprit.Severity.ToString("0.##", CultureInfo.InvariantCulture));
             }
         }
 

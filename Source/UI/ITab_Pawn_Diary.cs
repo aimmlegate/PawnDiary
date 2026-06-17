@@ -91,6 +91,9 @@ namespace PawnDiary
         // the only visible effect is that currently-shown cards fade in once more, which is rare (it
         // takes hundreds of distinct entry states to trigger) and harmless.
         private const int MaxFirstSeenEntries = 512;
+        // Same idea for per-card expand/collapse animation blends. The tab object is long-lived and
+        // shared across pawns, so stale animation keys should not accumulate forever.
+        private const int MaxExpansionBlendEntries = MaxFirstSeenEntries;
         // Old saves have only the display date, not an absolute tick. Use this sentinel when a
         // date cannot be grouped into a game year; such entries stay reachable on an "undated" page.
         private const int UnknownYear = int.MinValue;
@@ -549,6 +552,11 @@ namespace PawnDiary
             float current;
             if (!entryExpansionBlend.TryGetValue(entryKey, out current))
             {
+                if (entryExpansionBlend.Count >= MaxExpansionBlendEntries)
+                {
+                    entryExpansionBlend.Clear();
+                }
+
                 current = target;
             }
             else if (delta > 0f)

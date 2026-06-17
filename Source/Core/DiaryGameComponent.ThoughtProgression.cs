@@ -6,6 +6,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -171,7 +172,7 @@ namespace PawnDiary
                 + "; stage_index=" + match.stageIndex.ToString()
                 + "; severity=" + match.severity.ToString()
                 + "; mood_impact=" + moodImpact
-                + "; mood_offset=" + match.moodOffset.ToString("F1");
+                + "; mood_offset=" + match.moodOffset.ToString("F1", CultureInfo.InvariantCulture);
 
             string text = "PawnDiary.Event.ThoughtProgressionNegative".Translate(
                 pawn.LabelShortCap, match.label).Resolve();

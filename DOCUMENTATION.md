@@ -3,7 +3,7 @@
 > Living design doc for the current mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (editable persona presets in settings)_
+_Last updated: 2026-06-17 (bounded transient caches and persona catalog cache)_
 
 ---
 
@@ -110,6 +110,9 @@ Loading a game normalizes pending statuses back to not-generated so they can be 
 Tick-time colonist scans use short-lived snapshots of RimWorld's live free-colonist list before
 recording entries, so a pawn joining, leaving, dying, or changing maps during diary work cannot
 invalidate an active enumeration.
+Transient dedup dictionaries are also bounded in practice: once one reaches 512 entries, the shared
+dedup gate prunes keys older than that source's configured window because they can no longer prevent
+duplicates.
 
 ---
 
@@ -217,7 +220,8 @@ defaults keep the mod usable if XML fails to load.
 ## 6. Prompts, personas, and titles
 
 Prompts are compact `key: value` lines. `AppendField` drops empty values and `none` / `n/a` /
-`unknown` sentinels so the model does not spend tokens on filler.
+`unknown` sentinels so the model does not spend tokens on filler. Numeric structured context uses
+invariant dot-decimal formatting so prompts stay stable across player OS locales.
 
 Main prompt context can include:
 - `event`, `pov`, `role`, `with`, `what you saw` / `what happened`, and group `instruction`
@@ -262,7 +266,8 @@ duplicate penalty. Custom personas must use predefined theme tags
 (`grim`, `warm`, `hostile`, `anxious`, `analytical`, `dramatic`, `social`, `whimsical`, `noble`,
 `void`) and keep at least one tag, so weighting remains compatible with `PersonaAffinity`. Existing
 records keep their saved persona defName; if a saved persona disappears, records fall back to the
-current default persona.
+current default persona. The merged effective catalog is cached after XML and settings rows are
+combined, then invalidated when settings-backed persona presets are edited or normalized after load.
 
 Title generation defaults on. After a successful main entry, `QueueTitleRequest` sends the entry text
 plus `DiaryPromptDef.titleUserInstruction`, capped at `TitleMaxTokens = 40`, pinned to the main
@@ -324,7 +329,9 @@ and the hairline rule, and compact rendering takes over only once the height ani
 closed. Clicking a header toggles that page with a lightweight height animation, and the choice is
 kept as session UI state so manually opened older pages stay open while the tab lives. Collapsed and
 animating rows keep hover/click feedback bounded to their visible height, so hidden full-card body
-space never lights up neighboring rows. Generated cards show
+space never lights up neighboring rows. First-seen fade times and expansion animation blends are
+capped and cleared wholesale after hundreds of distinct keys, preventing long-lived Diary-tab UI
+state from growing without bound. Generated cards show
 date/title, group accent and chip, a faint warm page tint with a hairline header rule and a soft
 accent-spine highlight, a subtle model id, linked previews for the other pawn's POV on pairwise
 events, and a header-level loading animation aligned where the follow-up title text will appear.

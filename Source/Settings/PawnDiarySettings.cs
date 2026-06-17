@@ -220,6 +220,10 @@ namespace PawnDiary
             Scribe_Collections.Look(ref personaPresets, "personaPresets", LookMode.Deep);
 
             ClampValues();
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                DiaryPersonas.InvalidateCache();
+            }
         }
 
         /// <summary>
@@ -762,6 +766,8 @@ namespace PawnDiary
                 existing.themes = NormalizeThemes(themes);
                 existing.custom = false;
             }
+
+            DiaryPersonas.InvalidateCache();
         }
 
         /// <summary>
@@ -774,7 +780,10 @@ namespace PawnDiary
                 return;
             }
 
-            personaPresets.RemoveAll(preset => preset != null && !preset.custom && preset.defName == defName);
+            if (personaPresets.RemoveAll(preset => preset != null && !preset.custom && preset.defName == defName) > 0)
+            {
+                DiaryPersonas.InvalidateCache();
+            }
         }
 
         /// <summary>
@@ -790,6 +799,7 @@ namespace PawnDiary
                 string.Empty,
                 new[] { DiaryPersonas.PredefinedThemeTags[0] },
                 true));
+            DiaryPersonas.InvalidateCache();
             return defName;
         }
 
@@ -803,7 +813,10 @@ namespace PawnDiary
                 return;
             }
 
-            personaPresets.RemoveAll(preset => preset != null && preset.custom && preset.defName == defName);
+            if (personaPresets.RemoveAll(preset => preset != null && preset.custom && preset.defName == defName) > 0)
+            {
+                DiaryPersonas.InvalidateCache();
+            }
         }
 
         /// <summary>
@@ -813,6 +826,7 @@ namespace PawnDiary
         {
             EnsurePersonaPresetList();
             personaPresets.Clear();
+            DiaryPersonas.InvalidateCache();
         }
 
         // Generates deterministic custom persona keys so they are stable across saves and merges.

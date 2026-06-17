@@ -51,6 +51,10 @@ namespace PawnDiary
 
         // Wrapped in a list so All can return a non-null IReadOnlyList even with zero XML defs.
         private static readonly List<DiaryPersonaDef> FallbackList = new List<DiaryPersonaDef> { Fallback };
+        private static IReadOnlyList<DiaryPersonaDef> cachedAll;
+        private static IReadOnlyList<DiaryPersonaDef> cachedBaseList;
+        private static int cachedBaseCount = -1;
+        private static PawnDiarySettings cachedSettings;
 
         /// <summary>
         /// All loaded persona defs, or the hardcoded fallback list if none exist in XML.
@@ -61,8 +65,32 @@ namespace PawnDiary
             {
                 List<DiaryPersonaDef> defs = DefDatabase<DiaryPersonaDef>.AllDefsListForReading;
                 IReadOnlyList<DiaryPersonaDef> baseList = defs != null && defs.Count > 0 ? defs : FallbackList;
-                return MergeWithSettings(baseList);
+                PawnDiarySettings settings = PawnDiaryMod.Settings;
+                if (cachedAll != null
+                    && ReferenceEquals(cachedBaseList, baseList)
+                    && cachedBaseCount == baseList.Count
+                    && ReferenceEquals(cachedSettings, settings))
+                {
+                    return cachedAll;
+                }
+
+                cachedBaseList = baseList;
+                cachedBaseCount = baseList.Count;
+                cachedSettings = settings;
+                cachedAll = MergeWithSettings(baseList, settings);
+                return cachedAll;
             }
+        }
+
+        /// <summary>
+        /// Clears the merged persona catalog after settings-backed preset edits or load-time cleanup.
+        /// </summary>
+        public static void InvalidateCache()
+        {
+            cachedAll = null;
+            cachedBaseList = null;
+            cachedBaseCount = -1;
+            cachedSettings = null;
         }
 
         /// <summary>
@@ -201,9 +229,9 @@ namespace PawnDiary
         }
 
         // Builds the effective runtime catalog from XML defs plus settings-based edits/custom rows.
-        private static IReadOnlyList<DiaryPersonaDef> MergeWithSettings(IReadOnlyList<DiaryPersonaDef> baseList)
+        private static IReadOnlyList<DiaryPersonaDef> MergeWithSettings(IReadOnlyList<DiaryPersonaDef> baseList,
+            PawnDiarySettings settings)
         {
-            PawnDiarySettings settings = PawnDiaryMod.Settings;
             if (settings == null)
             {
                 return baseList;

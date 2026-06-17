@@ -664,6 +664,7 @@ namespace PawnDiary
                         customPreset.label = editedLabel ?? string.Empty;
                         customPreset.rule = editedRule ?? string.Empty;
                         customPreset.themes = editedThemes;
+                        DiaryPersonas.InvalidateCache();
                     }
                 }
                 else

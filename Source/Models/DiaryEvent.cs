@@ -271,7 +271,7 @@ namespace PawnDiary
                     moodImpact = MoodImpact.Neutral;
                 }
 
-                if (neutralStatus == null)
+                if (string.IsNullOrWhiteSpace(neutralStatus))
                 {
                     neutralStatus = NotGeneratedStatus;
                 }

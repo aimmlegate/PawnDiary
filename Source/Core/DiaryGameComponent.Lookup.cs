@@ -19,7 +19,14 @@ namespace PawnDiary
         /// </summary>
         private bool RecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
         {
+            if (recentEvents == null || string.IsNullOrEmpty(key))
+            {
+                return false;
+            }
+
             int now = Find.TickManager.TicksGame;
+            PruneRecentEvents(recentEvents, now, windowTicks);
+
             int last;
             if (recentEvents.TryGetValue(key, out last) && now - last < windowTicks)
             {
@@ -28,6 +35,42 @@ namespace PawnDiary
 
             recentEvents[key] = now;
             return false;
+        }
+
+        /// <summary>
+        /// Removes dedup keys that are older than their useful window. The dictionaries are transient
+        /// and only answer "did this just happen?", so old keys should not survive a long play session.
+        /// </summary>
+        private static void PruneRecentEvents(Dictionary<string, int> recentEvents, int now, int windowTicks)
+        {
+            if (recentEvents == null || recentEvents.Count < RecentEventPruneThreshold)
+            {
+                return;
+            }
+
+            List<string> expiredKeys = null;
+            foreach (KeyValuePair<string, int> pair in recentEvents)
+            {
+                if (windowTicks <= 0 || now - pair.Value >= windowTicks)
+                {
+                    if (expiredKeys == null)
+                    {
+                        expiredKeys = new List<string>();
+                    }
+
+                    expiredKeys.Add(pair.Key);
+                }
+            }
+
+            if (expiredKeys == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < expiredKeys.Count; i++)
+            {
+                recentEvents.Remove(expiredKeys[i]);
+            }
         }
 
         /// <summary>

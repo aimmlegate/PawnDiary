@@ -4,6 +4,7 @@
 // entry per thought. Major thoughts still flow through DiaryGameComponent.Thoughts.cs immediately.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using RimWorld;
 using Verse;
@@ -168,7 +169,7 @@ namespace PawnDiary
                 + "; events=" + note.eventCount
                 + "; day=" + note.dayIndex
                 + "; mood_impact=" + moodImpact
-                + "; mood_offset_sum=" + note.totalMoodOffset.ToString("F1")
+                + "; mood_offset_sum=" + note.totalMoodOffset.ToString("F1", CultureInfo.InvariantCulture)
                 + "; first_tick=" + note.firstTick
                 + "; last_tick=" + note.lastTick;
 
@@ -265,7 +266,7 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientThoughtLine(string label, float moodOffset)
         {
-            return DiaryContextBuilder.CleanLine(label) + " (" + moodOffset.ToString("F1") + ")";
+            return DiaryContextBuilder.CleanLine(label) + " (" + moodOffset.ToString("F1", CultureInfo.InvariantCulture) + ")";
         }
 
         /// <summary>

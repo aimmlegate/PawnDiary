@@ -7,6 +7,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using RimWorld;
 using UnityEngine;
@@ -86,8 +87,8 @@ namespace PawnDiary
             string gameContext = "thought=" + thoughtDefName
                 + "; label=" + label
                 + "; mood_impact=" + moodImpact
-                + "; mood_offset=" + moodOffset.ToString("F1")
-                + "; duration_days=" + thought.def.durationDays.ToString("F1");
+                + "; mood_offset=" + moodOffset.ToString("F1", CultureInfo.InvariantCulture)
+                + "; duration_days=" + thought.def.durationDays.ToString("F1", CultureInfo.InvariantCulture);
 
             string text = MoodImpact.PickText(moodImpact,
                 "PawnDiary.Event.ThoughtPositive", "PawnDiary.Event.ThoughtNegative", "PawnDiary.Event.Thought",

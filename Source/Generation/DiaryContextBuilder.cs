@@ -4,6 +4,7 @@
 // Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RimWorld;
@@ -513,7 +514,7 @@ namespace PawnDiary
             float bleedRate = pawn.health.hediffSet?.BleedRateTotal ?? 0f;
             if (bleedRate > DiaryTuning.Current.bleedVisibleAbove)
             {
-                parts.Add("bleeding=" + bleedRate.ToString("0.##") + "/day");
+                parts.Add("bleeding=" + bleedRate.ToString("0.##", CultureInfo.InvariantCulture) + "/day");
             }
 
             string notableHediffs = BuildNotableHediffsSummary(pawn);
