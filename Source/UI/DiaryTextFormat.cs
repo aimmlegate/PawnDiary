@@ -5,6 +5,7 @@
 // IMGUI labels understand a small HTML-like markup when the GUIStyle has richText enabled (see
 // ITab_Pawn_Diary.BodyStyle). Kept deliberately conservative so ordinary prose is never mangled.
 using System;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -25,6 +26,14 @@ namespace PawnDiary
         private static readonly string LeftQuote = ((char)0x201C).ToString();
         private static readonly string RightQuote = ((char)0x201D).ToString();
         private static readonly string Bullet = ((char)0x2022).ToString();
+        private static readonly char[] LightZalgoMarks =
+        {
+            (char)0x0307, // dot above
+            (char)0x0301, // acute accent
+            (char)0x0323, // dot below
+            (char)0x0315, // comma above right
+            (char)0x0336  // long stroke overlay
+        };
 
         // **bold** and *italic*. Each marker must hug non-space text, so arithmetic like "a * b" or a
         // lone stray asterisk is left alone instead of being read as emphasis.
@@ -45,6 +54,15 @@ namespace PawnDiary
         /// Returns the line unchanged when there is nothing to format.
         /// </summary>
         public static string ToRichText(string line, Color quoteColor)
+        {
+            return ToRichText(line, quoteColor, false, 0);
+        }
+
+        /// <summary>
+        /// Rewrites one already-trimmed line into rich text, optionally adding a very light
+        /// deterministic distortion to quoted direct speech for strange-chat anomaly pages.
+        /// </summary>
+        public static string ToRichText(string line, Color quoteColor, bool distortQuotedSpeech, int seed)
         {
             if (string.IsNullOrEmpty(line))
             {
@@ -89,10 +107,146 @@ namespace PawnDiary
             // handled first; the straight pass then cannot re-wrap the smart quotes this inserts.
             string open = "<color=#" + ColorUtility.ToHtmlStringRGB(quoteColor) + "><b>" + LeftQuote;
             string close = RightQuote + "</b></color>";
-            s = SmartQuotePattern.Replace(s, open + "$1" + close);
-            s = StraightQuotePattern.Replace(s, open + "$1" + close);
+            int quoteIndex = 0;
+            s = SmartQuotePattern.Replace(s, match =>
+            {
+                string quote = FormatQuoteText(match.Groups[1].Value, distortQuotedSpeech, seed, quoteIndex++);
+                return open + quote + close;
+            });
+            s = StraightQuotePattern.Replace(s, match =>
+            {
+                string quote = FormatQuoteText(match.Groups[1].Value, distortQuotedSpeech, seed, quoteIndex++);
+                return open + quote + close;
+            });
 
             return s;
+        }
+
+        private static string FormatQuoteText(string text, bool distort, int seed, int quoteIndex)
+        {
+            return distort ? ApplyLightZalgo(text, seed ^ (quoteIndex * 1103515245)) : text;
+        }
+
+        private static string ApplyLightZalgo(string text, int seed)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text ?? string.Empty;
+            }
+
+            StringBuilder result = new StringBuilder(text.Length + 8);
+            int visibleIndex = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                result.Append(c);
+                if (char.IsLetter(c))
+                {
+                    int hash = PositiveHash(MixHash(seed, visibleIndex, c));
+                    if (hash % 7 == 0)
+                    {
+                        result.Append(LightZalgoMarks[hash % LightZalgoMarks.Length]);
+                    }
+
+                    visibleIndex++;
+                }
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Adds deterministic variable-size words for staggered low-Consciousness/intoxication entries.
+        /// The input is already rich text, so this walks past existing tags and only wraps visible
+        /// words. The seed makes the result random-looking but stable across the measure and draw pass.
+        /// </summary>
+        public static string ApplyStaggeredWordSizes(string rich, int intensity, int seed, int baseFontSize)
+        {
+            intensity = intensity < 0 ? 0 : (intensity > 4 ? 4 : intensity);
+            if (string.IsNullOrEmpty(rich) || intensity <= 0)
+            {
+                return rich ?? string.Empty;
+            }
+
+            if (baseFontSize <= 0)
+            {
+                baseFontSize = 13;
+            }
+
+            int selectionModulo = intensity >= 4 ? 3 : (intensity == 3 ? 4 : (intensity == 2 ? 6 : 9));
+            int maxDelta = Math.Max(1, intensity + 1);
+            StringBuilder result = new StringBuilder(rich.Length + 32);
+            int wordIndex = 0;
+
+            for (int i = 0; i < rich.Length;)
+            {
+                char c = rich[i];
+                if (c == '<')
+                {
+                    int tagEnd = rich.IndexOf('>', i);
+                    if (tagEnd >= 0)
+                    {
+                        result.Append(rich, i, tagEnd - i + 1);
+                        i = tagEnd + 1;
+                        continue;
+                    }
+                }
+
+                if (char.IsLetterOrDigit(c))
+                {
+                    int start = i;
+                    i++;
+                    while (i < rich.Length && char.IsLetterOrDigit(rich[i]))
+                    {
+                        i++;
+                    }
+
+                    int length = i - start;
+                    string word = rich.Substring(start, length);
+                    int hash = PositiveHash(MixHash(seed, wordIndex, length));
+                    if (length > 2 && hash % selectionModulo == 0)
+                    {
+                        int magnitude = 1 + (PositiveHash(hash / 17) % maxDelta);
+                        int direction = (hash & 2) == 0 ? -1 : 1;
+                        int size = Math.Max(8, baseFontSize + direction * magnitude);
+                        result.Append("<size=");
+                        result.Append(size);
+                        result.Append(">");
+                        result.Append(word);
+                        result.Append("</size>");
+                    }
+                    else
+                    {
+                        result.Append(word);
+                    }
+
+                    wordIndex++;
+                    continue;
+                }
+
+                result.Append(c);
+                i++;
+            }
+
+            return result.ToString();
+        }
+
+        private static int MixHash(int seed, int wordIndex, int length)
+        {
+            unchecked
+            {
+                int hash = seed;
+                hash = (hash * 397) ^ wordIndex;
+                hash = (hash * 397) ^ length;
+                hash ^= hash >> 13;
+                hash *= 1274126177;
+                return hash;
+            }
+        }
+
+        private static int PositiveHash(int value)
+        {
+            return value & 0x7fffffff;
         }
     }
 }

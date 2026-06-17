@@ -168,6 +168,10 @@ namespace PawnDiary
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
         public bool generateTitles = true;
+        // Display-only diary page atmosphere. When true, rare extreme entries can use unusual
+        // spacing or staggered word sizes in the Diary tab. This never changes prompts or saved
+        // generated text.
+        public bool enableAtmosphericFormatting = true;
         // Master toggle for hediff-based prompt enchantments. When true, first-person diary prompts
         // may get one live health-condition hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
@@ -239,6 +243,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref arrivalDescriptionInstruction, "arrivalDescriptionInstruction", DefaultArrivalDescriptionInstruction);
             Scribe_Values.Look(ref titleUserInstruction, "titleUserInstruction", DefaultTitleUserInstruction);
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
+            Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);

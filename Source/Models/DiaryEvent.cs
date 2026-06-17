@@ -3,6 +3,7 @@
 // and prompt/result plumbing. Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
 using System.Collections.Generic;
+using RimWorld;
 using Verse;
 
 namespace PawnDiary
@@ -30,6 +31,7 @@ namespace PawnDiary
         public const string MentalBreakColorCue = "mentalBreak";
         public const string DazeColorCue = "daze";
         public const string ExtremeDarkColorCue = "extremeDark";
+        public const string StrangeChatColorCue = "strangeChat";
         public const string WhiteColorCue = "white";
         public const string QuietColorCue = "quiet";
 
@@ -99,6 +101,11 @@ namespace PawnDiary
         // "neutral" for female pawns). Used in gameContext (mood_impact=) and to select text keys.
         // Empty string for non-mood events.
         public string moodImpact;
+        // Display-only typography intensity captured from the live POV pawn at record time.
+        // 0 = normal; 1..4 = increasingly staggered variable-size words for intoxication or low
+        // Consciousness. This does not alter prompts or generated text.
+        public int initiatorStaggeredIntensity;
+        public int recipientStaggeredIntensity;
 
         // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
         // keys written to the save file — renaming one breaks saved games. The PostLoadInit
@@ -158,6 +165,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref initiatorTitleError, "initiatorTitleError");
             Scribe_Values.Look(ref recipientTitleError, "recipientTitleError");
             Scribe_Values.Look(ref neutralTitleError, "neutralTitleError");
+            Scribe_Values.Look(ref initiatorStaggeredIntensity, "initiatorStaggeredIntensity", 0);
+            Scribe_Values.Look(ref recipientStaggeredIntensity, "recipientStaggeredIntensity", 0);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -324,6 +333,9 @@ namespace PawnDiary
                 initiatorTitleStatus = NormalizeLoadedTitleStatus(initiatorTitleStatus, initiatorTitle);
                 recipientTitleStatus = NormalizeLoadedTitleStatus(recipientTitleStatus, recipientTitle);
                 neutralTitleStatus = NormalizeLoadedTitleStatus(neutralTitleStatus, neutralTitle);
+
+                initiatorStaggeredIntensity = ClampStaggeredIntensity(initiatorStaggeredIntensity);
+                recipientStaggeredIntensity = ClampStaggeredIntensity(recipientStaggeredIntensity);
 
             }
         }
@@ -690,6 +702,9 @@ namespace PawnDiary
                 povRole,
                 group?.label ?? interactionLabel ?? string.Empty,
                 ColorCueForDisplay(),
+                AtmosphereCueForDisplay(povRole),
+                StaggeredIntensityForRole(povRole),
+                DistortDirectSpeechForDisplay(povRole),
                 group == null || group.important,
                 linkedEntry,
                 titleForPov,
@@ -918,9 +933,207 @@ namespace PawnDiary
         /// </summary>
         private string ColorCueForDisplay()
         {
+            if (IsStrangeChatDefName(interactionDefName))
+            {
+                return StrangeChatColorCue;
+            }
+
             return string.IsNullOrWhiteSpace(colorCue)
                 ? ResolveColorCue(interactionDefName, gameContext)
                 : colorCue;
+        }
+
+        /// <summary>
+        /// Returns the rare display-only layout cue for this entry. This is intentionally derived
+        /// from saved event facts, not generated prose, so it never rewrites the page or changes
+        /// prompts. Only extreme entries opt in.
+        /// </summary>
+        private string AtmosphereCueForDisplay(string povRole)
+        {
+            if (RoleEquals(povRole, NeutralRole) && HasDeathDescription())
+            {
+                return DiaryEntryView.AtmosphereMemorial;
+            }
+
+            string cue = ColorCueForDisplay();
+            if (string.Equals(cue, StrangeChatColorCue, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(cue, ExtremeDarkColorCue, StringComparison.OrdinalIgnoreCase))
+            {
+                return DiaryEntryView.AtmosphereUnsettled;
+            }
+
+            if (string.Equals(cue, MentalBreakColorCue, StringComparison.OrdinalIgnoreCase))
+            {
+                return DiaryEntryView.AtmosphereFractured;
+            }
+
+            return string.Empty;
+        }
+
+        private bool DistortDirectSpeechForDisplay(string povRole)
+        {
+            return RoleEquals(povRole, InitiatorRole) && IsStrangeChatDefName(interactionDefName);
+        }
+
+        /// <summary>
+        /// Captures the display-only "staggered handwriting" severity for a POV pawn at record time.
+        /// New to C#/RimWorld? The live Pawn object is not saved with the event, so we store the small
+        /// 0..4 result here while the pawn's health state is available.
+        /// </summary>
+        public void CaptureStaggeredIntensity(string povRole, Pawn pawn)
+        {
+            int intensity = StaggeredIntensityForPawn(pawn);
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                initiatorStaggeredIntensity = intensity;
+                return;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                recipientStaggeredIntensity = intensity;
+            }
+        }
+
+        private int StaggeredIntensityForRole(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                return ClampStaggeredIntensity(initiatorStaggeredIntensity);
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return ClampStaggeredIntensity(recipientStaggeredIntensity);
+            }
+
+            // Neutral chronicle pages are not written by the pawn, so they never get staggered words.
+            return 0;
+        }
+
+        private static int StaggeredIntensityForPawn(Pawn pawn)
+        {
+            if (pawn == null || pawn.health == null)
+            {
+                return 0;
+            }
+
+            int intensity = LowConsciousnessStaggeredIntensity(pawn);
+            int intoxication = IntoxicationStaggeredIntensity(pawn);
+            return ClampStaggeredIntensity(Math.Max(intensity, intoxication));
+        }
+
+        private static int LowConsciousnessStaggeredIntensity(Pawn pawn)
+        {
+            if (pawn?.health?.capacities == null)
+            {
+                return 0;
+            }
+
+            float consciousness = pawn.health.capacities.GetLevel(PawnCapacityDefOf.Consciousness);
+            if (consciousness < 0.14f)
+            {
+                return 4;
+            }
+
+            if (consciousness < 0.20f)
+            {
+                return 3;
+            }
+
+            if (consciousness < 0.35f)
+            {
+                return 2;
+            }
+
+            if (consciousness < 0.55f)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+
+        private static int IntoxicationStaggeredIntensity(Pawn pawn)
+        {
+            List<Hediff> hediffs = pawn?.health?.hediffSet?.hediffs;
+            if (hediffs == null)
+            {
+                return 0;
+            }
+
+            int intensity = 0;
+            for (int i = 0; i < hediffs.Count; i++)
+            {
+                Hediff hediff = hediffs[i];
+                if (!IsIntoxicatingHediff(hediff))
+                {
+                    continue;
+                }
+
+                intensity = Math.Max(intensity, IntoxicationSeverityToIntensity(hediff.Severity));
+            }
+
+            return intensity;
+        }
+
+        private static bool IsIntoxicatingHediff(Hediff hediff)
+        {
+            if (hediff == null || !hediff.Visible)
+            {
+                return false;
+            }
+
+            string defName = hediff.def?.defName ?? string.Empty;
+            string label = hediff.Label ?? string.Empty;
+            string text = (defName + " " + label).ToLowerInvariant();
+            return text.Contains("drunk")
+                || text.Contains("alcohol")
+                || text.Contains("hangover")
+                || text.Contains("smokeleaf")
+                || text.Contains("psychite")
+                || text.Contains("yayo")
+                || text.Contains("flake")
+                || text.Contains("gojuice")
+                || text.Contains("go-juice")
+                || text.Contains("wake-up")
+                || text.Contains("wakeup")
+                || defName.EndsWith("High", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int IntoxicationSeverityToIntensity(float severity)
+        {
+            if (severity >= 1.05f)
+            {
+                return 4;
+            }
+
+            if (severity >= 0.80f)
+            {
+                return 3;
+            }
+
+            if (severity >= 0.55f)
+            {
+                return 2;
+            }
+
+            if (severity >= 0.30f)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+
+        private static int ClampStaggeredIntensity(int intensity)
+        {
+            if (intensity < 0)
+            {
+                return 0;
+            }
+
+            return intensity > 4 ? 4 : intensity;
         }
 
         /// <summary>
@@ -929,6 +1142,11 @@ namespace PawnDiary
         /// </summary>
         public static string ResolveColorCue(string defName, string context)
         {
+            if (IsStrangeChatDefName(defName))
+            {
+                return StrangeChatColorCue;
+            }
+
             if (IsMentalStateEvent(context))
             {
                 if (string.Equals(defName, "SocialFighting", StringComparison.OrdinalIgnoreCase))
@@ -1110,6 +1328,11 @@ namespace PawnDiary
             return !string.IsNullOrWhiteSpace(defName)
                 && (defName.IndexOf("UnnaturalDarkness", StringComparison.OrdinalIgnoreCase) >= 0
                     || defName.IndexOf("Darkness", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool IsStrangeChatDefName(string defName)
+        {
+            return string.Equals(defName, "DisturbingChat", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

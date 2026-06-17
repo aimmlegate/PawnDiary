@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (route cleanup)_
+_Last updated: 2026-06-17 (strange chat presentation)_
 
 ---
 
@@ -63,7 +63,7 @@ Key files:
 | `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Needs. |
 | `DiaryPatches.cs` | Patch entry points for interactions, mental states, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
 | `DiaryGameComponent*.cs` | Recording, batching, generation scans, save/load, lookup indexes, and public UI access. Event-source partials own their `Record*` methods. |
-| `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, and Scribe persistence. |
+| `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, staggered text intensity, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
@@ -89,7 +89,8 @@ All sources funnel into `DiaryGameComponent`:
 1. A Harmony hook or periodic scanner sees a candidate moment.
 2. The source method checks group enablement, pawn eligibility, dedup windows, and source-specific
    filters.
-3. `AddSoloEvent` or `AddPairwiseEvent` creates a `DiaryEvent`, stamps its semantic color cue,
+3. `AddSoloEvent` or `AddPairwiseEvent` creates a `DiaryEvent`, stamps its semantic color cue and
+   any low-Consciousness/intoxication staggered-text intensity,
    registers it in `diaryEvents` and `eventsById`, and stores the id in each eligible pawn's
    `PawnDiaryRecord`.
 4. Generation queues immediately when possible and is retried by background scans.
@@ -197,7 +198,7 @@ missing settings use XML defaults.
 Groups may also set a `colorCue`, which is saved on new `DiaryEvent`s and drives only the Diary
 tab's accent strip/chip. The UI maps cues to RimWorld-like colors: combat uses hostile red, social
 fights/insult-fight rows use orange, generic mental breaks use green, daze/wander breaks use light
-blue, anomaly/dark-study events use deep red, deep talk and day reflection use white, and
+blue, strange chat uses anomaly green, anomaly/dark-study events use deep red, deep talk and day reflection use white, and
 non-important entries without a specific cue use light white-gray. Older saves without `colorCue`
 derive the same cue from saved `gameContext` markers and XML group classification.
 
@@ -341,6 +342,7 @@ Core settings:
 | `maxTokens` | 100 | API cap plus local sentence-aware response trimming. |
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
+| `enableAtmosphericFormatting` | true | Allows rare display-only text layout effects for extreme entries. |
 | `enablePromptEnchantments` | true | Allows weighted live hediff context to append one first-person `important health:` cue. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for sampled work and batched-social promotion. |
 | `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
@@ -366,9 +368,20 @@ date/title headers. Header clicks toggle expansion with lightweight animation an
 manual state. UI caches for first-seen fades and expansion blends are capped and periodically cleared.
 
 Generated cards show date/title, semantic color accent and group chip, page tint, a subtle model id,
-linked previews for the other pawn's POV, and title-pending animation. `DiaryTextFormat` converts light markdown
-(`**bold**`, `*italic*`, headings, bullets, block quotes) and inline quoted speech to Unity rich
-text. Social-tab log rows can jump to matching diary entries, including older year pages.
+linked previews for the other pawn's POV, and title-pending animation. `DiaryTextFormat` converts
+light markdown (`**bold**`, `*italic*`, headings, bullets, block quotes) and inline quoted speech to
+Unity rich text. When `enableAtmosphericFormatting` is on, only extreme entries get additional
+display-only typography: mental-break pages can be split into fractured sentence blocks,
+anomaly/dark pages can render with uneasy insets/italics, death-description chronicle pages can
+render as centered memorial blocks, and first-person pages written while the pawn was severely
+intoxicated or low-Consciousness can get deterministic random-looking variable-size words. Higher
+stored stagger intensity affects more words. Anomaly's in-game "strange chat" is the
+`DisturbingChat` InteractionDef; it gives the recipient the `SpokeToDisturbing` social thought and
+`SpokeToDisturbingMood` mood thought ("unsettling conversation"). Only the initiator POV for this
+exact interaction gets the special anomaly-green accent and very light distorted direct-speech
+formatting. This formatting is measured and drawn through the same block pipeline so scroll heights
+stay stable, and it never changes prompts or saved generated text.
+Social-tab log rows can jump to matching diary entries, including older year pages.
 
 ---
 
@@ -402,8 +415,9 @@ raw text is kept when configured.
 lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 
 `DiaryEvent` saves raw text, generated text, statuses/errors, context, source ids, LLM metadata,
-semantic `colorCue`, and per-POV titles. Full prompt strings are not persisted; dev diagnostics can
-show prompts built during the current session. Tale/mental/source classification is inferred from
+semantic `colorCue`, per-POV titles, and per-POV staggered text intensity. Full prompt strings are
+not persisted; dev diagnostics can show prompts built during the current session.
+Tale/mental/source classification is inferred from
 stable `gameContext` markers such as `tale=`, `mental_state=`, `mood_event=`, `thought=`, and
 `work=`.
 

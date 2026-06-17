@@ -51,6 +51,8 @@ namespace PawnDiary
         private const float TitleFadeDurationSeconds = 0.8f;
         private const float WritingDotSize = 4f;
         private const float WritingDotGap = 5f;
+        private const float AtmosphereInset = 18f;
+        private const float MemorialInset = 34f;
 
         private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
         private static readonly Color NarrativeColor = new Color(0.78f, 0.78f, 0.72f);
@@ -86,6 +88,7 @@ namespace PawnDiary
         private static readonly Color DazeCueColor = ColoredText.GeneColor;
         private static readonly Color SocialFightCueColor = new Color(1f, 0.52f, 0.16f);
         private static readonly Color ExtremeDarkCueColor = new Color(0.58f, 0.05f, 0.08f);
+        private static readonly Color StrangeChatCueColor = new Color(0.42f, 0.96f, 0.50f);
 
         // Cached roleplay body style, reused every frame to avoid allocating a fresh GUIStyle per
         // line. Built once from the active font, then refreshed (font size + color) on each use so it
@@ -120,6 +123,18 @@ namespace PawnDiary
         // the relevant pawn's generated entry list is available.
         private static string pendingScrollPawnId;
         private static string pendingScrollEventId;
+
+        private sealed class RoleplayLineBlock
+        {
+            public string line;
+            public float leftInset;
+            public float rightInset;
+            public float extraTopGap;
+            public float extraBottomGap;
+            public FontStyle fontStyle = FontStyle.Normal;
+            public TextAnchor alignment = TextAnchor.UpperLeft;
+            public int seedSalt;
+        }
 
         public ITab_Pawn_Diary()
         {
@@ -393,7 +408,17 @@ namespace PawnDiary
                 string bodyText = EntryBodyText(entry, showLlmDebugInfo);
                 string debugText = showLlmDebugInfo ? entry.DebugText : string.Empty;
                 float innerTextWidth = localEntryRect.width - 20f;
-                float mainTextHeight = RoleplayTextHeight(bodyText, innerTextWidth);
+                string atmosphereCue = EntryAtmosphereCue(entry);
+                int staggeredIntensity = EntryStaggeredIntensity(entry);
+                bool distortDirectSpeech = EntryDistortDirectSpeech(entry);
+                int roleplaySeed = StableTextSeed(EntryKey(entry));
+                float mainTextHeight = RoleplayTextHeight(
+                    bodyText,
+                    innerTextWidth,
+                    atmosphereCue,
+                    staggeredIntensity,
+                    distortDirectSpeech,
+                    roleplaySeed);
                 float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
 
                 if (linkedBefore)
@@ -410,7 +435,15 @@ namespace PawnDiary
                 }
                 else
                 {
-                    DrawRoleplayText(textRect, bodyText, dialogueColor, EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend));
+                    DrawRoleplayText(
+                        textRect,
+                        bodyText,
+                        dialogueColor,
+                        EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend),
+                        atmosphereCue,
+                        staggeredIntensity,
+                        distortDirectSpeech,
+                        roleplaySeed);
                 }
                 float afterTextY = textRect.yMax;
 
@@ -1298,6 +1331,29 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Master display toggle for rare extreme-entry typography. Defaults on for old settings.
+        /// </summary>
+        private static bool AtmosphericFormattingEnabled()
+        {
+            return PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.enableAtmosphericFormatting;
+        }
+
+        private static string EntryAtmosphereCue(DiaryEntryView entry)
+        {
+            return AtmosphericFormattingEnabled() ? (entry?.AtmosphereCue ?? string.Empty) : string.Empty;
+        }
+
+        private static int EntryStaggeredIntensity(DiaryEntryView entry)
+        {
+            return AtmosphericFormattingEnabled() && entry != null ? entry.StaggeredIntensity : 0;
+        }
+
+        private static bool EntryDistortDirectSpeech(DiaryEntryView entry)
+        {
+            return AtmosphericFormattingEnabled() && entry != null && entry.DistortDirectSpeech;
+        }
+
+        /// <summary>
         /// Returns the color strip used to mark the entry group. The saved cue key follows
         /// RimWorld-like meaning (hostile red, mental-break green, quiet gray) instead of hashing
         /// localized group labels.
@@ -1332,6 +1388,8 @@ namespace PawnDiary
                     return DazeCueColor;
                 case DiaryEvent.ExtremeDarkColorCue:
                     return ExtremeDarkCueColor;
+                case DiaryEvent.StrangeChatColorCue:
+                    return StrangeChatCueColor;
                 case DiaryEvent.WhiteColorCue:
                     return WhiteCueColor;
                 case DiaryEvent.QuietColorCue:
@@ -1517,7 +1575,15 @@ namespace PawnDiary
         /// inline with the pawn's dialogue color, while the surrounding narration stays muted prose.
         /// The fade-in alpha is applied through GUI.color so inline-colored spans fade with the rest.
         /// </summary>
-        private static void DrawRoleplayText(Rect rect, string text, Color dialogueColor, float alpha)
+        private static void DrawRoleplayText(
+            Rect rect,
+            string text,
+            Color dialogueColor,
+            float alpha,
+            string atmosphereCue,
+            int staggeredIntensity,
+            bool distortDirectSpeech,
+            int seed)
         {
             GameFont oldFont = Text.Font;
             Color oldColor = GUI.color;
@@ -1528,18 +1594,26 @@ namespace PawnDiary
 
             GUIStyle style = BodyStyle();
             float curY = rect.y;
-            foreach (string line in RoleplayLines(text))
+            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue))
             {
-                if (string.IsNullOrWhiteSpace(line))
+                curY += block.extraTopGap;
+                if (string.IsNullOrWhiteSpace(block.line))
                 {
                     curY += RoleplayParagraphGap;
                     continue;
                 }
 
-                string rich = DiaryTextFormat.ToRichText(line, dialogueColor);
-                float height = style.CalcHeight(new GUIContent(rich), rect.width);
-                GUI.Label(new Rect(rect.x, curY, rect.width, height), rich, style);
-                curY += height + RoleplayLineGap;
+                FontStyle oldStyle = style.fontStyle;
+                TextAnchor oldAlignment = style.alignment;
+                style.fontStyle = block.fontStyle;
+                style.alignment = block.alignment;
+                string rich = RoleplayRichText(block, dialogueColor, staggeredIntensity, distortDirectSpeech, seed, style.fontSize);
+                float lineWidth = Mathf.Max(80f, rect.width - block.leftInset - block.rightInset);
+                float height = style.CalcHeight(new GUIContent(rich), lineWidth);
+                GUI.Label(new Rect(rect.x + block.leftInset, curY, lineWidth, height), rich, style);
+                style.alignment = oldAlignment;
+                style.fontStyle = oldStyle;
+                curY += height + RoleplayLineGap + block.extraBottomGap;
             }
 
             GUI.color = oldColor;
@@ -1723,7 +1797,13 @@ namespace PawnDiary
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Small;
-            float textHeight = RoleplayTextHeight(EntryBodyText(entry, showLlmDebugInfo), innerWidth);
+            float textHeight = RoleplayTextHeight(
+                EntryBodyText(entry, showLlmDebugInfo),
+                innerWidth,
+                EntryAtmosphereCue(entry),
+                EntryStaggeredIntensity(entry),
+                EntryDistortDirectSpeech(entry),
+                StableTextSeed(EntryKey(entry)));
             Text.Font = oldFont;
 
             float height = EntryTextTop + textHeight + EntryBottomPadding;
@@ -1774,23 +1854,276 @@ namespace PawnDiary
         /// color is irrelevant to height (only the bold spans matter, and those are applied here too),
         /// so a fixed fallback color is passed.
         /// </summary>
-        private static float RoleplayTextHeight(string text, float width)
+        private static float RoleplayTextHeight(
+            string text,
+            float width,
+            string atmosphereCue,
+            int staggeredIntensity,
+            bool distortDirectSpeech,
+            int seed)
         {
             GUIStyle style = BodyStyle();
             float height = 0f;
-            foreach (string line in RoleplayLines(text))
+            foreach (RoleplayLineBlock block in RoleplayBlocks(text, atmosphereCue))
             {
-                if (string.IsNullOrWhiteSpace(line))
+                height += block.extraTopGap;
+                if (string.IsNullOrWhiteSpace(block.line))
                 {
                     height += RoleplayParagraphGap;
                     continue;
                 }
 
-                string rich = DiaryTextFormat.ToRichText(line, FallbackDialogueColor);
-                height += style.CalcHeight(new GUIContent(rich), width) + RoleplayLineGap;
+                FontStyle oldStyle = style.fontStyle;
+                TextAnchor oldAlignment = style.alignment;
+                style.fontStyle = block.fontStyle;
+                style.alignment = block.alignment;
+                string rich = RoleplayRichText(block, FallbackDialogueColor, staggeredIntensity, distortDirectSpeech, seed, style.fontSize);
+                float lineWidth = Mathf.Max(80f, width - block.leftInset - block.rightInset);
+                height += style.CalcHeight(new GUIContent(rich), lineWidth) + RoleplayLineGap + block.extraBottomGap;
+                style.alignment = oldAlignment;
+                style.fontStyle = oldStyle;
             }
 
             return Mathf.Max(Text.LineHeight, height);
+        }
+
+        private static string RoleplayRichText(
+            RoleplayLineBlock block,
+            Color dialogueColor,
+            int staggeredIntensity,
+            bool distortDirectSpeech,
+            int seed,
+            int baseFontSize)
+        {
+            string rich = DiaryTextFormat.ToRichText(block?.line ?? string.Empty, dialogueColor, distortDirectSpeech, seed ^ block.seedSalt);
+            if (staggeredIntensity > 0)
+            {
+                rich = DiaryTextFormat.ApplyStaggeredWordSizes(
+                    rich,
+                    staggeredIntensity,
+                    seed ^ block.seedSalt,
+                    baseFontSize);
+            }
+
+            return rich;
+        }
+
+        private static IEnumerable<RoleplayLineBlock> RoleplayBlocks(string text, string atmosphereCue)
+        {
+            if (string.Equals(atmosphereCue, DiaryEntryView.AtmosphereMemorial, StringComparison.Ordinal))
+            {
+                foreach (RoleplayLineBlock block in MemorialRoleplayBlocks(text))
+                {
+                    yield return block;
+                }
+
+                yield break;
+            }
+
+            if (string.Equals(atmosphereCue, DiaryEntryView.AtmosphereUnsettled, StringComparison.Ordinal))
+            {
+                foreach (RoleplayLineBlock block in UnsettledRoleplayBlocks(text))
+                {
+                    yield return block;
+                }
+
+                yield break;
+            }
+
+            if (string.Equals(atmosphereCue, DiaryEntryView.AtmosphereFractured, StringComparison.Ordinal))
+            {
+                foreach (RoleplayLineBlock block in FracturedRoleplayBlocks(text))
+                {
+                    yield return block;
+                }
+
+                yield break;
+            }
+
+            foreach (RoleplayLineBlock block in NormalRoleplayBlocks(text))
+            {
+                yield return block;
+            }
+        }
+
+        private static IEnumerable<RoleplayLineBlock> NormalRoleplayBlocks(string text)
+        {
+            int index = 0;
+            foreach (string line in RoleplayLines(text))
+            {
+                yield return MakeRoleplayBlock(line, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+            }
+        }
+
+        private static IEnumerable<RoleplayLineBlock> FracturedRoleplayBlocks(string text)
+        {
+            int index = 0;
+            foreach (string line in RoleplayLines(text))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                    continue;
+                }
+
+                List<string> fragments = SentenceFragments(line);
+                for (int i = 0; i < fragments.Count; i++)
+                {
+                    float indent = index % 3 == 1 ? AtmosphereInset : (index % 3 == 2 ? AtmosphereInset * 0.45f : 0f);
+                    float topGap = index == 0 ? 0f : (fragments[i].Length <= 28 ? 3f : 1f);
+                    yield return MakeRoleplayBlock(fragments[i], indent, 0f, topGap, 1f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                }
+            }
+        }
+
+        private static IEnumerable<RoleplayLineBlock> UnsettledRoleplayBlocks(string text)
+        {
+            int index = 0;
+            foreach (string line in RoleplayLines(text))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                    continue;
+                }
+
+                float leftInset = index % 3 == 0 ? AtmosphereInset : (index % 3 == 1 ? AtmosphereInset * 1.7f : AtmosphereInset * 0.55f);
+                float rightInset = AtmosphereInset;
+                FontStyle fontStyle = index % 2 == 1 ? FontStyle.Italic : FontStyle.Normal;
+                yield return MakeRoleplayBlock(line, leftInset, rightInset, index == 0 ? 0f : 2f, 2f, fontStyle, TextAnchor.UpperLeft, index++);
+            }
+        }
+
+        private static IEnumerable<RoleplayLineBlock> MemorialRoleplayBlocks(string text)
+        {
+            int index = 0;
+            foreach (string line in RoleplayLines(text))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperCenter, index++);
+                    continue;
+                }
+
+                List<string> fragments = SentenceFragments(line);
+                for (int i = 0; i < fragments.Count; i++)
+                {
+                    yield return MakeRoleplayBlock(
+                        fragments[i],
+                        MemorialInset,
+                        MemorialInset,
+                        index == 0 ? 5f : 3f,
+                        4f,
+                        FontStyle.Normal,
+                        TextAnchor.UpperCenter,
+                        index++);
+                }
+            }
+        }
+
+        private static RoleplayLineBlock MakeRoleplayBlock(
+            string line,
+            float leftInset,
+            float rightInset,
+            float extraTopGap,
+            float extraBottomGap,
+            FontStyle fontStyle,
+            TextAnchor alignment,
+            int seedSalt)
+        {
+            return new RoleplayLineBlock
+            {
+                line = line ?? string.Empty,
+                leftInset = leftInset,
+                rightInset = rightInset,
+                extraTopGap = extraTopGap,
+                extraBottomGap = extraBottomGap,
+                fontStyle = fontStyle,
+                alignment = alignment,
+                seedSalt = seedSalt * 7919
+            };
+        }
+
+        private static List<string> SentenceFragments(string line)
+        {
+            List<string> fragments = new List<string>();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return fragments;
+            }
+
+            int start = 0;
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                if (c != '.' && c != '!' && c != '?')
+                {
+                    continue;
+                }
+
+                int end = i + 1;
+                while (end < line.Length && IsClosingSentenceMark(line[end]))
+                {
+                    end++;
+                }
+
+                AddSentenceFragment(fragments, line.Substring(start, end - start));
+                start = end;
+                while (start < line.Length && char.IsWhiteSpace(line[start]))
+                {
+                    start++;
+                }
+
+                i = start - 1;
+            }
+
+            if (start < line.Length)
+            {
+                AddSentenceFragment(fragments, line.Substring(start));
+            }
+
+            if (fragments.Count == 0)
+            {
+                fragments.Add(line.Trim());
+            }
+
+            return fragments;
+        }
+
+        private static void AddSentenceFragment(List<string> fragments, string fragment)
+        {
+            fragment = fragment?.Trim();
+            if (!string.IsNullOrWhiteSpace(fragment))
+            {
+                fragments.Add(fragment);
+            }
+        }
+
+        private static bool IsClosingSentenceMark(char c)
+        {
+            return c == '"'
+                || c == '\''
+                || c == ')'
+                || c == ']'
+                || c == '\u2019'
+                || c == '\u201d';
+        }
+
+        private static int StableTextSeed(string text)
+        {
+            unchecked
+            {
+                int hash = 17;
+                if (!string.IsNullOrEmpty(text))
+                {
+                    for (int i = 0; i < text.Length; i++)
+                    {
+                        hash = hash * 31 + text[i];
+                    }
+                }
+
+                return hash == 0 ? 17 : hash;
+            }
         }
 
         /// <summary>
@@ -1829,6 +2162,8 @@ namespace PawnDiary
             // Refresh the bits that can change at runtime (UI scale) without reallocating the style.
             bodyStyle.font = baseStyle.font;
             bodyStyle.fontSize = baseStyle.fontSize;
+            bodyStyle.fontStyle = FontStyle.Normal;
+            bodyStyle.alignment = TextAnchor.UpperLeft;
             bodyStyle.normal.textColor = NarrativeColor;
             return bodyStyle;
         }

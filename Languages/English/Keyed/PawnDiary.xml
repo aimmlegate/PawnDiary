@@ -78,6 +78,8 @@
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
   <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
+  <PawnDiary.Settings.EnableAtmosphericFormatting>Use rare atmosphere formatting</PawnDiary.Settings.EnableAtmosphericFormatting>
+  <PawnDiary.Settings.EnableAtmosphericFormattingTip>When enabled, only extreme diary pages can use unusual spacing, staggered variable-size words, or light strange-chat speech distortion. Mental breaks, anomaly/dark entries, death descriptions, and pages written while heavily impaired may be affected. Prompts and saved diary text are unchanged.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Use health-condition prompt hints</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live health cue. XML only controls which hediffs match and how often they appear; the prompt text stays compact and uses the game's hediff label, urgency, body part, and strongest impact cues.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.WorkGenerationWeight>Work random weight: {0}x</PawnDiary.Settings.WorkGenerationWeight>

@@ -159,6 +159,10 @@ namespace PawnDiary
                 ref Settings.generateTitles,
                 "PawnDiary.Settings.GenerateTitlesTip".Translate());
             listing.CheckboxLabeled(
+                "PawnDiary.Settings.EnableAtmosphericFormatting".Translate(),
+                ref Settings.enableAtmosphericFormatting,
+                "PawnDiary.Settings.EnableAtmosphericFormattingTip".Translate());
+            listing.CheckboxLabeled(
                 "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
                 ref Settings.enablePromptEnchantments,
                 "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());

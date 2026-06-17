@@ -3,6 +3,16 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (rare atmosphere formatting)**
+  - Added a default-on `enableAtmosphericFormatting` setting for display-only diary typography.
+  - Limited unusual layout to extreme entries: fractured mental-break prose, unsettled anomaly/dark
+    prose, centered memorial death descriptions, and staggered variable-size words for first-person
+    pages recorded while the pawn was severely intoxicated or low-Consciousness.
+  - Mapped Anomaly's in-game "strange chat" to `DisturbingChat` and gave only the initiator POV an
+    anomaly-green accent plus light distorted direct-speech formatting.
+  - Stored per-POV staggered intensity on new diary events so worse impairment affects more words
+    without changing prompts or saved generated text.
+
 - **2026-06-17 (diary color cue consistency)**
   - Added a saved `colorCue` key for diary events so card accents no longer depend on localized
     group labels or generated titles.

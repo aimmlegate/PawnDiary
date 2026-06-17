@@ -16,7 +16,7 @@
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
     colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
-                     combat, socialFight, mentalBreak, daze, extremeDark, white, quiet
+                     combat, socialFight, mentalBreak, daze, extremeDark, strangeChat, white, quiet
     batch          - optional Interaction-domain batching policy:
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
