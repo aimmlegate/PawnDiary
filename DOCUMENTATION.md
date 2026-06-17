@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-17 (documentation and changelog compaction)_
+_Last updated: 2026-06-17 (prompt enchantment severity tiers)_
 
 ---
 
@@ -41,7 +41,7 @@ PawnDiary/
 |-- About/                       mod metadata and preview image
 |-- 1.6/
 |   |-- Assemblies/PawnDiary.dll  committed build output
-|   `-- Defs/                     groups, tuning, prompts, personas
+|   `-- Defs/                     groups, tuning, prompts, personas, prompt enchantments
 |-- Languages/                   Keyed and DefInjected localization
 |-- Source/
 |   |-- Core/                    DiaryGameComponent partials and event pipeline
@@ -69,12 +69,13 @@ Key files:
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, passion, and opener context. |
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts. |
+| `PromptEnchantments.cs` | XML-driven state matcher that may append one weighted-random `prompt_enchantment:` line to first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
 | `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, GameEvent, and Work domains. |
 | `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
-| `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
+| `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`) and DLC-safe prompt-enchantment matchers. |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, model-list fetching, and group editor. |
 | `ITab_Pawn_Diary.cs` | Production diary view, dev diagnostics, linked previews, year paging, collapsed entries, animations, and click targets. |
@@ -101,6 +102,11 @@ All sources funnel into `DiaryGameComponent`:
 `GameComponentTick` drains completed LLM results, flushes queued debug logs, recovers orphaned
 pending entries, and queues pending diary work every ~120 ticks. On load, pending statuses reset to
 not-generated so interrupted work can retry.
+
+Generation checks the POV pawn's live Consciousness before creating or queueing first-person work.
+Non-neutral POVs below 11% Consciousness are marked `skipped`, so they do not fill the retry backlog
+or LLM queue. Neutral arrival/death descriptions bypass this guard, and a healthy pawn in a paired
+event can still write even if the other POV was skipped.
 
 Scheduled scans take short-lived snapshots of RimWorld's live free-colonist list before recording
 entries, preventing collection-modified errors if pawns join, leave, die, or change maps mid-scan.
@@ -215,9 +221,23 @@ not vary by player OS locale.
 
 Main context may include event/POV/role fields, group instruction, pawn summary, DLC identity lines,
 mood, health, low capacities, top thoughts, persona rule, surroundings, relationship continuity,
-event tone, latest opener, and important/combat-only details such as burning passion or weapon.
+prompt enchantment, event tone, latest opener, and important/combat-only details such as burning passion or weapon.
 Surroundings include 1-2 nearby objects chosen with weighted random selection, favoring important
 context such as fire, corpses, and buildings without making every entry identical.
+
+Prompt enchantments are XML Defs in `1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When
+`enablePromptEnchantments` is on, first-person prompts (solo, pairwise, sequential recipient, and day
+reflection) may add exactly one `prompt_enchantment:` field after `persona:`. Each Def can match live
+pawn state by visible hediff defName, active gene defName, highest royal-title defName, or pawn
+`StatDef` below a threshold. Matching Defs first pass their `chance`/`frequency` roll, then one winner
+is selected by `weight * severity`.
+
+Visible hediff matchers can define optional `hediffSeverityTiers`. Four fixed code levels are
+available: `minor` at severity 0.05, `moderate` at 0.25, `major` at 0.50, and `critical` at 0.75.
+The highest configured level at or below the live hediff severity wins and may override `rule`,
+`chance`/`frequency`, `weight`, and the weight-multiplier `severity`; omitted tier fields inherit
+from the parent Def. If no tier matches, the parent Def is used. Neutral arrival/death prompts and
+title follow-ups never use prompt enchantments.
 
 System prompts are selected by narrative mode:
 
@@ -272,6 +292,7 @@ Core settings:
 | `maxTokens` | 100 | API cap plus local sentence-aware response trimming. |
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
+| `enablePromptEnchantments` | true | Allows XML state rules to append one first-person `prompt_enchantment:` line. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for sampled work and batched-social promotion. |
 | `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
 | prompt instruction overrides | XML defaults | User-message prompt texts listed in section 6. |
@@ -363,7 +384,8 @@ pending title statuses without stored titles are cleared.
 
 Player-facing UI strings and natural-language prompt text are Keyed entries in
 `Languages/English/Keyed/PawnDiary.xml`, resolved with `.Translate()` on the main thread. Def text
-(`label`, `instruction`, `tone`, persona `rule`, prompt defs) localizes through DefInjected files.
+(`label`, `instruction`, `tone`, persona `rule`, prompt-enchantment `rule`, prompt defs) localizes
+through DefInjected files.
 
 Kept in English intentionally:
 

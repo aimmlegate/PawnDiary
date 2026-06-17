@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace PawnDiary
@@ -19,10 +20,19 @@ namespace PawnDiary
         // cheap when the title toggle is on. Reused from the same field on the main-entry
         // request — we do NOT add a player setting for it.
         private const int TitleMaxTokens = 40;
+        // Pawns below 11% Consciousness should not write first-person entries. Events still record,
+        // and neutral death/arrival descriptions still generate, but non-neutral LLM work waits
+        // until the pawn is conscious enough again.
+        private const float MinimumConsciousnessForFirstPersonGeneration = 0.11f;
 
         private void EnsureGenerationQueued(DiaryEvent diaryEvent, string povRole)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            if (TryMarkIncapacitatedPovSkipped(diaryEvent, povRole))
             {
                 return;
             }
@@ -246,9 +256,14 @@ namespace PawnDiary
                 return;
             }
 
-            // Persona is resolved at queue time so changing a pawn affects future generations
-            // without rewriting prompts that were already sent or saved for debugging.
-            string rawText = DiaryPromptBuilder.BuildInteractionPrompt(diaryEvent, povRole, PersonaRuleFor(diaryEvent, povRole));
+            // Persona and prompt enchantment are resolved at queue time so changing a pawn or XML
+            // settings affects future generations without rewriting prompts already sent or saved
+            // for debugging.
+            string rawText = DiaryPromptBuilder.BuildInteractionPrompt(
+                diaryEvent,
+                povRole,
+                PersonaRuleFor(diaryEvent, povRole),
+                PromptEnchantmentRuleFor(diaryEvent, povRole));
             QueuePrompt(diaryEvent, povRole, rawText);
         }
 
@@ -293,14 +308,23 @@ namespace PawnDiary
                 return;
             }
 
+            TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole);
+            TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.RecipientRole);
+
             bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole);
             bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole);
+            bool initiatorSkipped = diaryEvent.IsSkipped(DiaryEvent.InitiatorRole);
+            bool initiatorContextExpected = initiatorEnabled && !initiatorSkipped;
 
             // Normal paired flow: initiator writes first, then recipient can receive that entry
             // as hidden continuity context.
             if (initiatorEnabled && diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
             {
-                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.InitiatorRole, PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole));
+                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(
+                    diaryEvent,
+                    DiaryEvent.InitiatorRole,
+                    PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole),
+                    PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole));
                 QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, rawText);
                 return;
             }
@@ -312,7 +336,7 @@ namespace PawnDiary
             }
 
             // Keep the old paired behavior when the initiator was supposed to generate but failed.
-            if (initiatorEnabled && string.Equals(diaryEvent.initiatorStatus, DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase))
+            if (initiatorContextExpected && string.Equals(diaryEvent.initiatorStatus, DiaryEvent.FailedStatus, StringComparison.OrdinalIgnoreCase))
             {
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
                 {
@@ -324,7 +348,7 @@ namespace PawnDiary
 
             // Wait for initiator context only when the initiator is enabled. If the initiator is
             // disabled, the recipient can still generate from the base event prompt.
-            if (initiatorEnabled
+            if (initiatorContextExpected
                 && (!string.Equals(diaryEvent.initiatorStatus, DiaryEvent.CompleteStatus, StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(diaryEvent.initiatorGeneratedText)))
             {
@@ -334,9 +358,17 @@ namespace PawnDiary
             if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
             {
                 // Recipient prompt includes hidden initiator context only when that context exists.
-                string rawText = initiatorEnabled
-                    ? DiaryPromptBuilder.BuildSequentialInteractionPrompt(diaryEvent, DiaryEvent.RecipientRole, PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole))
-                    : DiaryPromptBuilder.BuildInteractionPrompt(diaryEvent, DiaryEvent.RecipientRole, PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole));
+                string rawText = initiatorContextExpected
+                    ? DiaryPromptBuilder.BuildSequentialInteractionPrompt(
+                        diaryEvent,
+                        DiaryEvent.RecipientRole,
+                        PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
+                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole))
+                    : DiaryPromptBuilder.BuildInteractionPrompt(
+                        diaryEvent,
+                        DiaryEvent.RecipientRole,
+                        PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
+                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole));
                 QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, rawText);
             }
         }
@@ -670,6 +702,11 @@ namespace PawnDiary
                 return;
             }
 
+            if (ShouldSkipFirstPersonGenerationForIncapacitation(FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole))))
+            {
+                return;
+            }
+
             PawnDiarySettings settings = PawnDiaryMod.Settings;
             if (settings == null)
             {
@@ -786,6 +823,73 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns false only for a live pawn whose Consciousness capacity is below the hard
+        /// first-person generation floor. Missing pawn/capacity data is treated as allowed so
+        /// off-map or unusual saves do not permanently strand queued work.
+        /// </summary>
+        private static bool PawnConsciousEnoughForGeneration(Pawn pawn)
+        {
+            if (pawn?.health?.capacities == null || PawnCapacityDefOf.Consciousness == null)
+            {
+                return true;
+            }
+
+            return pawn.health.capacities.GetLevel(PawnCapacityDefOf.Consciousness)
+                >= MinimumConsciousnessForFirstPersonGeneration;
+        }
+
+        /// <summary>
+        /// Marks a non-neutral POV as skipped when its live pawn is below the Consciousness floor.
+        /// Returns true when generation should stop for this POV.
+        /// </summary>
+        private bool TryMarkIncapacitatedPovSkipped(DiaryEvent diaryEvent, string povRole)
+        {
+            if (diaryEvent == null
+                || !DiaryEvent.RoleIsInitiatorOrRecipient(povRole)
+                || !diaryEvent.CanQueueGeneration(povRole))
+            {
+                return false;
+            }
+
+            Pawn pawn = FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole));
+            if (!ShouldSkipFirstPersonGenerationForIncapacitation(pawn))
+            {
+                return false;
+            }
+
+            diaryEvent.MarkSkipped(povRole, IncapacitatedSkipReason());
+            return true;
+        }
+
+        /// <summary>
+        /// Shared event-factory hook: skips first-person generation immediately when the event is
+        /// recorded for a pawn who is already too incapacitated to write.
+        /// </summary>
+        private static void MarkIncapacitatedPovSkipped(DiaryEvent diaryEvent, string povRole, Pawn pawn)
+        {
+            if (diaryEvent == null || !DiaryEvent.RoleIsInitiatorOrRecipient(povRole))
+            {
+                return;
+            }
+
+            if (ShouldSkipFirstPersonGenerationForIncapacitation(pawn))
+            {
+                diaryEvent.MarkSkipped(povRole, IncapacitatedSkipReason());
+            }
+        }
+
+        private static bool ShouldSkipFirstPersonGenerationForIncapacitation(Pawn pawn)
+        {
+            return pawn != null && !PawnConsciousEnoughForGeneration(pawn);
+        }
+
+        private static string IncapacitatedSkipReason()
+        {
+            return "PawnDiary.Error.SkippedIncapacitated".Translate(
+                Mathf.RoundToInt(MinimumConsciousnessForFirstPersonGeneration * 100f)).Resolve();
+        }
+
+        /// <summary>
         /// Resolves the LLM persona rule string for a given POV in an event, falling back to the XML default.
         /// </summary>
         private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole)
@@ -794,6 +898,62 @@ namespace PawnDiary
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             return DiaryPersonas.RuleFor(diary?.personaDefName);
+        }
+
+        /// <summary>
+        /// Resolves the optional XML-driven prompt enchantment for the POV pawn. Missing live pawn
+        /// data simply means no enchantment, preserving neutral death/arrival and title flows.
+        /// </summary>
+        private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole)
+        {
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            Pawn pawn = FindLivePawnByLoadId(pawnId);
+            return PromptEnchantments.RuleFor(pawn);
+        }
+
+        /// <summary>
+        /// Finds a currently loaded pawn by RimWorld's stable unique load ID. Diary events save IDs,
+        /// not Pawn references, so prompt-time state checks need this small lookup.
+        /// </summary>
+        private static Pawn FindLivePawnByLoadId(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            if (Find.Maps != null)
+            {
+                for (int mapIndex = 0; mapIndex < Find.Maps.Count; mapIndex++)
+                {
+                    Map map = Find.Maps[mapIndex];
+                    if (map?.mapPawns?.AllPawns == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (Pawn pawn in map.mapPawns.AllPawns)
+                    {
+                        if (pawn != null && pawn.GetUniqueLoadID() == pawnId)
+                        {
+                            return pawn;
+                        }
+                    }
+                }
+            }
+
+            if (Find.WorldPawns?.AllPawnsAlive != null)
+            {
+                foreach (Pawn pawn in Find.WorldPawns.AllPawnsAlive)
+                {
+                    if (pawn != null && pawn.GetUniqueLoadID() == pawnId)
+                    {
+                        return pawn;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

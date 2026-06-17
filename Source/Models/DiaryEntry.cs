@@ -150,6 +150,11 @@ namespace PawnDiary
                     return "PawnDiary.Status.GenerationFailed".Translate();
                 }
 
+                if (LlmStatus == DiaryEvent.SkippedStatus)
+                {
+                    return "PawnDiary.Status.Skipped".Translate();
+                }
+
                 return string.Empty;
             }
         }

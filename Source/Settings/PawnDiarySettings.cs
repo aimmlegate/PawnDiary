@@ -143,6 +143,9 @@ namespace PawnDiary
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
         public bool generateTitles = true;
+        // Master toggle for XML-driven prompt enchantments. When true, first-person prompts may get
+        // one extra state-based writing directive chosen from DiaryPromptEnchantmentDefs.xml.
+        public bool enablePromptEnchantments = true;
         // Player-facing multipliers for the two random entry gates:
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
@@ -213,6 +216,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref arrivalDescriptionInstruction, "arrivalDescriptionInstruction", DefaultArrivalDescriptionInstruction);
             Scribe_Values.Look(ref titleUserInstruction, "titleUserInstruction", DefaultTitleUserInstruction);
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
+            Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);

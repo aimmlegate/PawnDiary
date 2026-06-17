@@ -14,28 +14,28 @@ namespace PawnDiary
     {
         // Prompts intentionally omit any field that is empty or "normal" (see AppendField),
         // so the model only ever sees signal — no "health: healthy", no weather indoors, etc.
-        public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule)
+        public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule, string promptEnchantment)
         {
             if (diaryEvent.solo)
             {
-                return BuildSoloPrompt(diaryEvent, personaRule);
+                return BuildSoloPrompt(diaryEvent, personaRule, promptEnchantment);
             }
 
             string initiatorEntry = string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase)
                 ? DiaryContextBuilder.CleanLine(diaryEvent.initiatorGeneratedText)
                 : null;
 
-            return BuildPairPrompt(diaryEvent, povRole, initiatorEntry, personaRule);
+            return BuildPairPrompt(diaryEvent, povRole, initiatorEntry, personaRule, promptEnchantment);
         }
 
-        public static string BuildInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule)
+        public static string BuildInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule, string promptEnchantment)
         {
             if (diaryEvent.solo)
             {
-                return BuildSoloPrompt(diaryEvent, personaRule);
+                return BuildSoloPrompt(diaryEvent, personaRule, promptEnchantment);
             }
 
-            return BuildPairPrompt(diaryEvent, povRole, null, personaRule);
+            return BuildPairPrompt(diaryEvent, povRole, null, personaRule, promptEnchantment);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace PawnDiary
             return entryText + "\n\n" + PawnDiarySettings.CurrentTitleUserInstruction;
         }
 
-        private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule)
+        private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule, string promptEnchantment)
         {
             bool isInitiator = string.Equals(povRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase);
             string otherName = isInitiator ? diaryEvent.recipientName : diaryEvent.initiatorName;
@@ -129,6 +129,9 @@ namespace PawnDiary
             AppendField(lines, "you", povSummary);
             // Persona is a writing-style rule from the pawn's saved preset, not a gameplay fact.
             AppendField(lines, "persona", personaRule);
+            // Prompt enchantments are optional, XML-driven state rules that lightly bend the voice
+            // for this one request without changing the pawn's saved persona.
+            AppendField(lines, "prompt_enchantment", promptEnchantment);
             AppendField(lines, "setting", diaryEvent.SurroundingsForRole(povRole));
             // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
             AppendField(lines, "tone", diaryEvent.ToneDirective());
@@ -155,7 +158,7 @@ namespace PawnDiary
             return string.Join("\n", lines.ToArray()) + "\n\n" + instruction;
         }
 
-        private static string BuildSoloPrompt(DiaryEvent diaryEvent, string personaRule)
+        private static string BuildSoloPrompt(DiaryEvent diaryEvent, string personaRule, string promptEnchantment)
         {
             List<string> lines = new List<string> { "event: " + EventNoun(diaryEvent) };
 
@@ -165,6 +168,9 @@ namespace PawnDiary
             AppendField(lines, "you", diaryEvent.initiatorPawnSummary);
             // Solo events use the same persona field as pairwise entries for prompt consistency.
             AppendField(lines, "persona", personaRule);
+            // Prompt enchantments are optional, XML-driven state rules that lightly bend the voice
+            // for this one request without changing the pawn's saved persona.
+            AppendField(lines, "prompt_enchantment", promptEnchantment);
             AppendField(lines, "setting", diaryEvent.initiatorSurroundings);
             // Tone is the event's emotional register (terrifying, funny, tender...), set per group.
             AppendField(lines, "tone", diaryEvent.ToneDirective());

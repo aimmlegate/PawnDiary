@@ -3,6 +3,24 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (hediff severity prompt tiers)**
+  - Added four fixed hediff severity levels for prompt enchantments: XML `hediffSeverityTiers` can
+    override prompt text, chance/frequency, selection weight, and urgency weighting per level.
+  - Updated the starter sickness and blood-loss enchantments so higher severity can appear more
+    often and use stronger instructions without asking the model to choose the severity.
+
+- **2026-06-17 (consciousness generation guard)**
+  - Blocked new non-neutral main/title LLM generation while the POV pawn is below 11%
+    Consciousness by marking that POV `skipped`, while still allowing neutral arrival/death
+    descriptions and healthy paired POVs.
+
+- **2026-06-17 (prompt enchantments)**
+  - Added XML-driven prompt enchantments: first-person prompts may append one weighted-random,
+    chance-gated `prompt_enchantment:` rule based on visible hediffs, active genes, royal titles, or
+    pawn stat thresholds.
+  - Added an enabled-by-default settings toggle, starter enchantment Defs, DLC-safe gene/title
+    matchers in `DlcContext`, and rebuilt the committed assembly.
+
 - **2026-06-17 (documentation and changelog compaction)**
   - Compacted `DOCUMENTATION.md` and this changelog while preserving current architecture, runtime
     constraints, localization rules, event coverage, settings behavior, and historical milestones.

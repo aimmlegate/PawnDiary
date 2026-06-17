@@ -58,6 +58,8 @@
   <PawnDiary.Status.Writing>writing</PawnDiary.Status.Writing>
   <PawnDiary.Status.WritingEllipsis>writing...</PawnDiary.Status.WritingEllipsis>
   <PawnDiary.Status.GenerationFailed>writing failed</PawnDiary.Status.GenerationFailed>
+  <PawnDiary.Status.Skipped>writing skipped</PawnDiary.Status.Skipped>
+  <PawnDiary.Error.SkippedIncapacitated>Skipped because the pawn was below {0}% Consciousness when generation would have started.</PawnDiary.Error.SkippedIncapacitated>
 
   <!-- ===== Mod settings window ===== -->
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
@@ -82,6 +84,8 @@
   <PawnDiary.Settings.FetchFailed>Fetch failed: {0}</PawnDiary.Settings.FetchFailed>
   <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
+  <PawnDiary.Settings.EnablePromptEnchantments>Use state-based prompt enchantments</PawnDiary.Settings.EnablePromptEnchantments>
+  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, XML rules may add one extra state-based writing directive to first-person diary prompts. XML controls which conditions match and how often they appear.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.WorkGenerationWeight>Work random weight: {0}x</PawnDiary.Settings.WorkGenerationWeight>
   <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
   <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>

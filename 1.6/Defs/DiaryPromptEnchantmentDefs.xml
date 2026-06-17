@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Optional prompt enchantments add ONE extra "prompt_enchantment:" line to first-person diary
+  prompts when the POV pawn matches live state. They do not replace the pawn's persona.
+
+  Tuning fields:
+    chance / frequency  - per-prompt appearance chance after matching, 0..1. frequency is an alias.
+    weight              - relative random weight when several enchantments pass their chance roll.
+    severity            - multiplier for weight; use it to make urgent states win more often.
+
+  Hediff severity tiers:
+    hediffSeverityTiers may override rule/chance/frequency/weight/severity for visible matching
+    hediffs. Levels are fixed in C#: minor >= 0.05, moderate >= 0.25, major >= 0.50,
+    critical >= 0.75. The highest configured level at or below the live severity wins.
+
+  Matchers are OR-ed: a Def is eligible when any configured matcher matches. All def references
+  below are plain strings and fail silently when absent, so DLC/modded content can be mentioned
+  without making the whole mod depend on it.
+-->
+<Defs>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_FeverishBody</defName>
+    <label>feverish body</label>
+    <chance>0.65</chance>
+    <weight>1.2</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>Flu</li>
+      <li>Malaria</li>
+      <li>Plague</li>
+      <li>GutWorms</li>
+      <li>MuscleParasites</li>
+      <li>FoodPoisoning</li>
+      <li>ToxicBuildup</li>
+      <li>WoundInfection</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <rule>Let sickness, pain, or bodily weakness subtly color the voice. Keep the event understandable; do not turn the entry into a medical report.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <weight>0.9</weight>
+        <rule>Let a faint sickness or bodily drag lightly tint the voice. Keep it understated and do not make the entry about symptoms unless the event already points there.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+        <weight>1.2</weight>
+        <rule>Let sickness, pain, or bodily weakness noticeably color the voice. Keep the event understandable; do not turn the entry into a medical report.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.85</chance>
+        <weight>1.5</weight>
+        <severity>1.3</severity>
+        <rule>Let serious illness or physical misery press on the prose. The pawn may sound strained, distracted, or worn down, but the supplied event must remain the focus.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>1.8</weight>
+        <severity>1.6</severity>
+        <rule>Let life-threatening sickness or bodily collapse make the voice urgent and fragile. Keep it short, grounded, and focused on the supplied event rather than medical detail.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_BloodLossUrgency</defName>
+    <label>blood loss urgency</label>
+    <chance>0.75</chance>
+    <weight>1.4</weight>
+    <severity>1.6</severity>
+    <hediffDefNames>
+      <li>BloodLoss</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <rule>Let physical danger and urgency tighten the prose. Use shorter, more immediate sentences, but stay grounded in the supplied event.</rule>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.25</chance>
+        <weight>0.8</weight>
+        <severity>1</severity>
+        <rule>Let blood loss register as a faint physical unease. Keep it subtle and do not overstate danger.</rule>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.65</chance>
+        <weight>1.2</weight>
+        <severity>1.3</severity>
+        <rule>Let blood loss make the voice tenser and more immediate. Use compact sentences, but keep the event clear.</rule>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.6</weight>
+        <severity>1.7</severity>
+        <rule>Let heavy blood loss put fear, weakness, and urgency into the prose. The pawn should sound focused on getting through the moment.</rule>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>2</severity>
+        <rule>Let catastrophic blood loss make the entry clipped, immediate, and fragile. Keep it grounded in the supplied event and avoid melodrama.</rule>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_GeneEdge</defName>
+    <label>gene edge</label>
+    <chance>0.45</chance>
+    <weight>1</weight>
+    <severity>1</severity>
+    <geneDefNames>
+      <li>Aggressive</li>
+      <li>VeryAggressive</li>
+      <li>Bloodfeeder</li>
+      <li>Hemogenic</li>
+      <li>PsychicallyHypersensitive</li>
+    </geneDefNames>
+    <rule>Let the pawn's unusual biology sharpen the voice. Suggest instinct, appetite, or heightened perception only as subtext; do not name genes unless the notes already do.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_RoyalBearing</defName>
+    <label>royal bearing</label>
+    <chance>0.5</chance>
+    <weight>0.9</weight>
+    <severity>1</severity>
+    <royalTitleDefNames>
+      <li>Yeoman</li>
+      <li>Acolyte</li>
+      <li>Knight</li>
+      <li>Praetor</li>
+      <li>Baron</li>
+      <li>Count</li>
+      <li>Duke</li>
+      <li>Stellarch</li>
+    </royalTitleDefNames>
+    <rule>Let status and dignity lightly affect word choice. The pawn may notice respect, insult, duty, or propriety, but should not become pompous unless their persona already is.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_SlowBody</defName>
+    <label>slow body</label>
+    <chance>0.7</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <statBelow>
+      <li>
+        <statDefName>MoveSpeed</statDefName>
+        <value>3.2</value>
+      </li>
+    </statBelow>
+    <rule>Let fatigue, slowness, or physical drag influence the rhythm of the entry. Mention it only if it naturally fits the event.</rule>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+</Defs>

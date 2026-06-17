@@ -24,6 +24,7 @@ namespace PawnDiary
         public const string PendingStatus = "pending";
         public const string CompleteStatus = "complete";
         public const string FailedStatus = "failed";
+        public const string SkippedStatus = "skipped";
 
         public string eventId; // unique ID for this event, stable across saves
         public List<int> playLogEntryIds = new List<int>(); // Verse.LogEntry ids that produced this diary event
@@ -514,12 +515,21 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns true if this POV role can be queued for LLM generation (not already pending/complete/failed).
+        /// Returns true if this POV role can be queued for LLM generation
+        /// (not already pending/complete/failed/skipped).
         /// </summary>
         public bool CanQueueGeneration(string povRole)
         {
             string status = StatusFor(povRole);
             return string.IsNullOrWhiteSpace(status) || RoleEquals(status, NotGeneratedStatus);
+        }
+
+        /// <summary>
+        /// Returns true when this POV was intentionally skipped and should not be retried.
+        /// </summary>
+        public bool IsSkipped(string povRole)
+        {
+            return RoleEquals(StatusFor(povRole), SkippedStatus);
         }
 
         /// <summary>
@@ -568,6 +578,15 @@ namespace PawnDiary
         {
             SetStatus(povRole, FailedStatus);
             SetError(povRole, error);
+        }
+
+        /// <summary>
+        /// Marks a POV role as intentionally skipped, so background scans do not retry it.
+        /// </summary>
+        public void MarkSkipped(string povRole, string reason)
+        {
+            SetStatus(povRole, SkippedStatus);
+            SetError(povRole, reason);
         }
 
         /// <summary>
