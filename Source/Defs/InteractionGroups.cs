@@ -159,6 +159,10 @@ namespace PawnDiary
         public int dedupTicks = 60000;
         // Relative weight when this hediff becomes an end-of-day reflection candidate.
         public float dayReflectionWeight = 0.8f;
+        // Optional Keyed fallback text for Immediate mode. Keys receive pawn label and hediff label
+        // as {0} and {1}; blank falls back to the generic health-condition text.
+        public string appearedTextKey;
+        public string progressedTextKey;
     }
 
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in

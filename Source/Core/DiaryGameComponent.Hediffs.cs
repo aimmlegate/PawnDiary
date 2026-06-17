@@ -237,15 +237,28 @@ namespace PawnDiary
         {
             string defName = HediffDefName(hediff);
             string label = HediffLabel(hediff);
-            string textKey = source == HediffSignalSource.Progressed
-                ? "PawnDiary.Event.HediffProgressed"
-                : "PawnDiary.Event.HediffAppeared";
+            string textKey = ImmediateHediffTextKey(policy, source);
             string text = textKey.Translate(pawn.LabelShortCap, label).Resolve();
             string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
             string gameContext = BuildHediffGameContext(hediff, group, policy, source);
 
             DiaryEvent diaryEvent = AddSoloEvent(pawn, null, defName, label, text, instruction, gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+        }
+
+        private static string ImmediateHediffTextKey(HediffSignalPolicy policy, HediffSignalSource source)
+        {
+            string configured = source == HediffSignalSource.Progressed
+                ? policy?.progressedTextKey
+                : policy?.appearedTextKey;
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                return configured;
+            }
+
+            return source == HediffSignalSource.Progressed
+                ? "PawnDiary.Event.HediffProgressed"
+                : "PawnDiary.Event.HediffAppeared";
         }
 
         private void RecordDayReflectionHediffSignal(Pawn pawn, Hediff hediff, HediffSignalPolicy policy,
@@ -413,6 +426,12 @@ namespace PawnDiary
             builder.Append("; mode=").Append(policy.mode.ToString());
             builder.Append("; severity=").Append(hediff.Severity.ToString("F2", CultureInfo.InvariantCulture));
             builder.Append("; stage=").Append(HediffSeverityStage(hediff, policy).ToString(CultureInfo.InvariantCulture));
+
+            string stageLabel = DiaryContextBuilder.CleanLine(hediff.CurStage?.label);
+            if (!string.IsNullOrWhiteSpace(stageLabel))
+            {
+                builder.Append("; stage_label=").Append(stageLabel);
+            }
 
             string part = hediff.Part == null ? string.Empty : DiaryContextBuilder.CleanLine(hediff.Part.LabelCap);
             if (!string.IsNullOrWhiteSpace(part))

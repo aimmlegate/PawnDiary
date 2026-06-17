@@ -226,6 +226,9 @@
   <PawnDiary.Event.DayReflectionHediffProgressed>a health condition worsened: {0}</PawnDiary.Event.DayReflectionHediffProgressed>
   <PawnDiary.Event.HediffAppeared>{0} developed {1}.</PawnDiary.Event.HediffAppeared>
   <PawnDiary.Event.HediffProgressed>{0}'s {1} worsened.</PawnDiary.Event.HediffProgressed>
+  <PawnDiary.Event.PregnancyAppeared>{0} became pregnant.</PawnDiary.Event.PregnancyAppeared>
+  <PawnDiary.Event.PregnancyProgressed>{0}'s pregnancy advanced.</PawnDiary.Event.PregnancyProgressed>
+  <PawnDiary.Event.LaborAppeared>{0} went into {1}.</PawnDiary.Event.LaborAppeared>
   <PawnDiary.Event.TaleSolo>{0} experienced {1}.</PawnDiary.Event.TaleSolo>
   <PawnDiary.Event.TaleSoloWithOther>{0} experienced {1} involving {2}.</PawnDiary.Event.TaleSoloWithOther>
   <PawnDiary.Event.TalePair>{0} and {1} were involved in {2}.</PawnDiary.Event.TalePair>

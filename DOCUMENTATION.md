@@ -187,7 +187,10 @@ or pass the XML severity gate. Mod support XML can add lower-order Hediff groups
 modded hediff defNames and choose `DayReflection` or `Immediate` output without C# patches.
 Progression and immediate-event dedup keys include the body part, so same-def hediffs on different
 parts do not suppress each other; day reflections still collapse same-def health signals into one
-readable daily highlight.
+readable daily highlight. Pregnancy and labor use dedicated immediate Hediff groups keyed by
+`Pregnant`, `PregnantHuman`, `PregnancyLabor`, and `PregnancyLaborPushing`; birth itself still flows
+through the `GaveBirth` TaleDef in the Life milestones group. Pregnancy termination, stillbirth, and
+miscarriage memories are classified by a dedicated Thought group.
 
 Work recording samples current Work-tab jobs periodically. It reads `CurJob.workGiverDef.workType`,
 skips social and violent work, applies XML odds/cooldowns plus the `workGenerationWeight` multiplier,
@@ -208,10 +211,10 @@ weighted selection of major day events, opinion shifts, health-condition signals
 | MentalState | `ClassifyMentalState(MentalStateDef)` | social fights, mental breaks |
 | Tale | `ClassifyTale(TaleDef)` | combat/death, health/medicine, milestones, crafts, relics, raids, anomaly horror |
 | MoodEvent | `ClassifyMoodEvent(GameConditionDef)` | positive, negative, mixed, passing moods |
-| Thought | `ClassifyThought(ThoughtDef)` | positive, negative, passing thoughts |
+| Thought | `ClassifyThought(ThoughtDef)` | pregnancy memories, positive, negative, passing thoughts |
 | Inspiration | `ClassifyInspiration(InspirationDef)` | pawn inspirations |
 | Work | `ClassifyWork(string)` | dark study, passionate, straining, routine |
-| Hediff | `ClassifyHediff(HediffDef)` | major health changes, modded health signals |
+| Hediff | `ClassifyHediff(HediffDef)` | pregnancy, labor, major health changes, modded health signals |
 
 Matching is domain-scoped by exact `defName` or substring token. XML order matters; catch-all groups
 go last. Settings store per-group enabled flags and instruction overrides keyed by group `defName`;
@@ -243,7 +246,9 @@ Hediff policies live on Hediff-domain groups. The optional `<hediff>` block cont
 (`DayReflection` or `Immediate`), visible/bad/injury gates, severity thresholds, special always
 qualifiers (`chronicAlways`, `sickThoughtAlways`, `addictionAlways`, `missingPartAlways`),
 `recordOnAdd`, `recordOnSeverityIncrease`, `severityStep`, `dedupTicks`, and
-`dayReflectionWeight`. The policy's `<minSeverity>` is the recording gate for that group; the
+`dayReflectionWeight`. Immediate-mode policies can also set `appearedTextKey` and
+`progressedTextKey`, localized Keyed fallback strings that receive the pawn label as `{0}` and the
+hediff label as `{1}`. The policy's `<minSeverity>` is the recording gate for that group; the
 general tuning Def only controls the scanner interval and reflection selection weight. This is the
 generic mod-support layer: a compatibility patch can add:
 

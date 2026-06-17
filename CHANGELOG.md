@@ -3,6 +3,14 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-17 (pregnancy diary events)**
+  - Added dedicated Pregnancy and Labor Hediff groups for pregnancy start, trimester-style severity
+    progression, and labor start/pushing signals.
+  - Added optional immediate-Hediff fallback text keys so XML groups can use natural localized event
+    text instead of the generic health-condition wording.
+  - Added a pregnancy-memory Thought group for pregnancy termination, stillbirth, miscarriage, and
+    partner miscarriage memories.
+
 - **2026-06-17 (concrete prompt examples)**
   - Tightened first-person diary and day-reflection prompts to require concrete supplied details,
     avoid vague filler, and include compact good/bad examples for small local models.

@@ -27,7 +27,8 @@
                      enabled, mode (DayReflection or Immediate), visibleOnly, badOnly,
                      excludeInjuries, minSeverity, chronicAlways, sickThoughtAlways,
                      addictionAlways, missingPartAlways, recordOnAdd,
-                     recordOnSeverityIncrease, severityStep, dedupTicks, dayReflectionWeight
+                     recordOnSeverityIncrease, severityStep, dedupTicks, dayReflectionWeight,
+                     appearedTextKey, progressedTextKey
     instruction    - the diary-prompt instruction shared by every event in the group
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
@@ -812,6 +813,24 @@
   <!-- ===== Thought domain: temporary thoughts with expiration ===== -->
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>thoughtPregnancyFamily</defName>
+    <label>Pregnancy memories</label>
+    <order>490</order>
+    <domain>Thought</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>pregnancy, birth loss, or the end of a pregnancy as intimate family news; write with restraint and do not assume the pawn feels only one simple emotion</instruction>
+    <tone>with intimate, restrained weight</tone>
+    <matchDefNames>
+      <li>PregnancyTerminated</li>
+      <li>PregnancyEnded</li>
+      <li>Stillbirth</li>
+      <li>Miscarried</li>
+      <li>PartnerMiscarried</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>thoughtPositive</defName>
     <label>Positive thoughts</label>
     <order>500</order>
@@ -988,6 +1007,60 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- ===== Hediff domain: generic health-condition signals ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPregnancy</defName>
+    <label>Pregnancy</label>
+    <order>680</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>pregnancy as a life-changing beginning; write the pawn noticing the body, future, fear, hope, or uncertainty without assuming joy</instruction>
+    <tone>with intimate uncertainty and quiet weight</tone>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>true</recordOnSeverityIncrease>
+      <severityStep>0.34</severityStep>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.PregnancyAppeared</appearedTextKey>
+      <progressedTextKey>PawnDiary.Event.PregnancyProgressed</progressedTextKey>
+    </hediff>
+    <matchDefNames>
+      <li>PregnantHuman</li>
+      <li>Pregnant</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffLabor</defName>
+    <label>Labor</label>
+    <order>685</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>labor and birth approaching; write urgency, pain, fear, care, and the threshold before birth without skipping ahead to the baby unless supplied</instruction>
+    <tone>with urgent bodily strain</tone>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>15000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.LaborAppeared</appearedTextKey>
+    </hediff>
+    <matchDefNames>
+      <li>PregnancyLabor</li>
+      <li>PregnancyLaborPushing</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffMajorHealth</defName>
