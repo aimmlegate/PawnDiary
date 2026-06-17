@@ -30,7 +30,12 @@ namespace PawnDiary
         {
             (char)0x0307, // dot above
             (char)0x0301, // acute accent
+            (char)0x0300, // grave accent
+            (char)0x0302, // circumflex
+            (char)0x0303, // tilde
             (char)0x0323, // dot below
+            (char)0x0324, // diaeresis below
+            (char)0x0331, // macron below
             (char)0x0315, // comma above right
             (char)0x0336  // long stroke overlay
         };
@@ -59,7 +64,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Rewrites one already-trimmed line into rich text, optionally adding a very light
+        /// Rewrites one already-trimmed line into rich text, optionally adding a dramatic
         /// deterministic distortion to quoted direct speech for strange-chat anomaly pages.
         /// </summary>
         public static string ToRichText(string line, Color quoteColor, bool distortQuotedSpeech, int seed)
@@ -134,7 +139,7 @@ namespace PawnDiary
                 return text ?? string.Empty;
             }
 
-            StringBuilder result = new StringBuilder(text.Length + 8);
+            StringBuilder result = new StringBuilder(text.Length + text.Length / 2);
             int visibleIndex = 0;
             for (int i = 0; i < text.Length; i++)
             {
@@ -143,9 +148,13 @@ namespace PawnDiary
                 if (char.IsLetter(c))
                 {
                     int hash = PositiveHash(MixHash(seed, visibleIndex, c));
-                    if (hash % 7 == 0)
+                    if (hash % 3 != 1)
                     {
                         result.Append(LightZalgoMarks[hash % LightZalgoMarks.Length]);
+                        if ((hash / 11) % 4 == 0)
+                        {
+                            result.Append(LightZalgoMarks[(hash / 97) % LightZalgoMarks.Length]);
+                        }
                     }
 
                     visibleIndex++;

@@ -9,7 +9,9 @@ current design; this file records how it got there.
     prose, centered memorial death descriptions, and staggered variable-size words for first-person
     pages recorded while the pawn was severely intoxicated or low-Consciousness.
   - Mapped Anomaly's in-game "strange chat" to `DisturbingChat` and gave only the initiator POV an
-    anomaly-green accent plus light distorted direct-speech formatting.
+    anomaly-green accent plus dramatic distorted direct-speech formatting.
+  - Increased strange-chat direct-speech distortion so quoted words look more visibly uncanny while
+    still leaving the saved generated text untouched.
   - Stored per-POV staggered intensity on new diary events so worse impairment affects more words
     without changing prompts or saved generated text.
 

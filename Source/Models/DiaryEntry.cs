@@ -76,7 +76,7 @@ namespace PawnDiary
         // intoxication at record time. Zero means no staggered words.
         public readonly int StaggeredIntensity;
         // True only for the initiator POV of strange anomaly chat. The Diary tab uses it to add a
-        // very light distortion to quoted direct speech without changing the saved generated text.
+        // dramatic distortion to quoted direct speech without changing the saved generated text.
         public readonly bool DistortDirectSpeech;
         public readonly bool Important;     // Visual importance marker derived from the event group
         public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo).

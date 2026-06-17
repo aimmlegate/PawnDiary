@@ -378,7 +378,7 @@ intoxicated or low-Consciousness can get deterministic random-looking variable-s
 stored stagger intensity affects more words. Anomaly's in-game "strange chat" is the
 `DisturbingChat` InteractionDef; it gives the recipient the `SpokeToDisturbing` social thought and
 `SpokeToDisturbingMood` mood thought ("unsettling conversation"). Only the initiator POV for this
-exact interaction gets the special anomaly-green accent and very light distorted direct-speech
+exact interaction gets the special anomaly-green accent and dramatic distorted direct-speech
 formatting. This formatting is measured and drawn through the same block pipeline so scroll heights
 stay stable, and it never changes prompts or saved generated text.
 Social-tab log rows can jump to matching diary entries, including older year pages.
