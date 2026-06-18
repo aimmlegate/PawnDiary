@@ -33,7 +33,7 @@
 
     <!-- Diary voice: first-person, in-character entries (interactions, mental states, tales, mood, thoughts).
          Atmosphere-led and trimmed of the old prohibition wall; the pawn's persona voice is appended
-         to this system prompt at dispatch (see DiaryPromptBuilder.ComposeSystemPrompt), so it is no
+         to this system prompt at dispatch (see DiaryPromptPlanner.Build / PromptAssembler.ComposeSystem), so it is no
          longer a user-message field. -->
     <systemPrompt>You write first-person diary entries for RimWorld colonists. Each entry is one to three sentences in the colonist's own voice.
 Write toward atmosphere:

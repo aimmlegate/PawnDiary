@@ -55,8 +55,6 @@ namespace PawnDiary
         public string weapon;
         public bool generationAllowed = true;
         public string skipReason;
-        public int staggeredIntensity;
-        public DiaryTextDecorationContext textDecorationContext;
     }
 
     /// <summary>
@@ -66,8 +64,6 @@ namespace PawnDiary
     public class DiaryDisplayPayload
     {
         public string colorCue;
-        public string atmosphereCue;
-        public bool distortDirectSpeech;
         public bool important = true;
     }
 
@@ -222,12 +218,6 @@ namespace PawnDiary
         public string eventId;
         public string targetRole;
         public bool isTitle;
-        public bool allowDirectSpeechBlocks = true;
-        public bool recipientPlainProseOnly;
-        public string atmosphereCue;
-        public bool distortDirectSpeech;
-        public int staggeredIntensity;
-        public DiaryTextDecorationContext textDecorationContext;
         public int maxTokens;
         public bool trimIncompleteSentence = true;
 

@@ -435,6 +435,7 @@ namespace PawnDiary
         /// </summary>
         public void SetTitle(string povRole, string title)
         {
+            DiaryStateVersion.Bump();
             string value = title ?? string.Empty;
             if (RoleEquals(povRole, InitiatorRole))
             {
@@ -649,6 +650,10 @@ namespace PawnDiary
             {
                 return;
             }
+
+            // A result changes generated text/status, which the diary tab renders. Invalidate its
+            // per-frame view cache (see DiaryRenderToken).
+            DiaryStateVersion.Bump();
 
             if (RoleEquals(result.povRole, InitiatorRole))
             {
@@ -1743,6 +1748,9 @@ namespace PawnDiary
 
         private void SetStatus(string povRole, string status)
         {
+            // Status drives which entries the tab shows and its "writing…" indicator; invalidate the
+            // tab's per-frame view cache (see DiaryRenderToken).
+            DiaryStateVersion.Bump();
             if (RoleEquals(povRole, InitiatorRole))
             {
                 initiatorStatus = status;
@@ -1783,6 +1791,7 @@ namespace PawnDiary
 
         private void SetTitleStatus(string povRole, string status)
         {
+            DiaryStateVersion.Bump();
             if (RoleEquals(povRole, InitiatorRole))
             {
                 initiatorTitleStatus = status;

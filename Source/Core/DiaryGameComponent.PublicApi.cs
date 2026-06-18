@@ -59,6 +59,19 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Cheap per-frame cache key for a pawn's rendered diary. It changes whenever the pawn gains an
+        /// event (events are append-only, so the count only rises) or any event's rendered state
+        /// changes (<see cref="DiaryStateVersion"/>). The diary tab compares this between frames and
+        /// rebuilds its <see cref="DiaryEntryView"/> list only when it differs, so it does not
+        /// re-classify and re-parse every entry on every frame. See ITab_Pawn_Diary.FillTab.
+        /// </summary>
+        public DiaryRenderToken RenderTokenFor(Pawn pawn)
+        {
+            PawnDiaryRecord diary = pawn == null ? null : FindDiary(pawn, false);
+            return new DiaryRenderToken(diary?.eventIds?.Count ?? 0, DiaryStateVersion.Current);
+        }
+
+        /// <summary>
         /// Finds the generated diary entry that belongs to a clicked RimWorld social-log row.
         /// Returns null when the event was not recorded, belongs to another pawn, or has not
         /// produced visible LLM text yet; callers should keep vanilla click behavior in that case.
@@ -77,6 +90,10 @@ namespace PawnDiary
                 return null;
             }
 
+            // Compute the arrival/death boundary once and reuse the index-based check, mirroring
+            // EntriesFor. The per-event (pawnId, diary) overload re-derives the boundary on every
+            // call, which made this loop grow with the square of the pawn's entry count.
+            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
                 DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
@@ -85,7 +102,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
+                if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
                 {
                     continue;
                 }

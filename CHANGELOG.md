@@ -3,6 +3,37 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (diary tab per-frame view cache)**
+  - The diary tab no longer rebuilds a `DiaryEntryView` for every event on every frame. It now caches
+    the built list and reuses it until the pawn's render token changes, where the token is the pawn's
+    event count plus a new `DiaryStateVersion` counter. `DiaryEvent` bumps that counter from its
+    status/text/title setters (`SetStatus`, `ApplyLlmResult`, `SetTitle`, `SetTitleStatus`), so every
+    rendered change still invalidates the cache; event additions are caught by the count. New
+    `Source/Models/DiaryRenderToken.cs` and `DiaryGameComponent.RenderTokenFor`.
+  - `GeneratedEntryForPlayLogEntry` (social-log click lookup) now hoists `ComputeDiaryBounds` out of
+    its loop and uses the index-based bounds check, mirroring `EntriesFor` — removing the per-event
+    boundary re-derivation (previously O(E²) per click).
+
+- **2026-06-18 (pipeline refactor cleanup)**
+  - Removed the dead pre-pipeline rendering engine from `DiaryPromptBuilder.cs` (~400 lines): the
+    legacy prompt-string wrappers, `ComposeSystemPrompt`/`SystemPromptForEvent`/`TitleSystemPrompt`,
+    and the render/facts/direct-speech/persona helpers that `DiaryPromptPlanner` now owns. The file
+    is now a thin facade over the pure pipeline.
+  - Routed `ShouldResolvePromptEnchantment` through `DiaryPromptPlanner.TemplateKeyFor` so the
+    enchantment gate and the shipped prompt share one template-selection source and can no longer
+    drift (previously a duplicate selector).
+  - Dropped vestigial `DiaryResponseRules` fields that nothing consumed (`allowDirectSpeechBlocks`,
+    `recipientPlainProseOnly`, `atmosphereCue`, `distortDirectSpeech`, `staggeredIntensity`,
+    `textDecorationContext`) plus their unread payload feeders; the planner now builds response rules
+    through the single `DiaryResponseRules.ForRequest` path. The UI still reads display state from the
+    saved `DiaryEvent`, unchanged.
+  - `DiaryTextDecorationDefs.CurrentRules` now caches the code fallback and resolves the Def lookup
+    once, instead of re-querying `DefDatabase` and re-allocating the fallback list on every call when
+    the XML Def is absent (this getter runs per text block per frame).
+  - Added `LlmResponseParser` tests for the previously-untested no-closing-tag branches of
+    `StripTaggedReasoningBlocks` (final-answer marker, blank-line split, remove-to-end) and the
+    multi-tag loop.
+
 - **2026-06-18 (settings temperature slider)**
   - Added a localized Generation settings slider for the saved LLM `temperature` value, exposing the
     existing 0-2 request sampling control without editing config files.

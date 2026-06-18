@@ -129,9 +129,7 @@ namespace PawnDiary
                 lastOpener = diaryEvent.LastOpenerForRole(role),
                 weapon = recipient ? diaryEvent.recipientWeapon : diaryEvent.initiatorWeapon,
                 generationAllowed = !diaryEvent.IsSkipped(role),
-                skipReason = string.Empty,
-                staggeredIntensity = recipient ? diaryEvent.recipientStaggeredIntensity : diaryEvent.initiatorStaggeredIntensity,
-                textDecorationContext = diaryEvent.TextDecorationContextForRole(role)
+                skipReason = string.Empty
             };
         }
 

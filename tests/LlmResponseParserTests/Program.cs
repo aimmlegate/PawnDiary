@@ -13,6 +13,7 @@ namespace LlmResponseParserTests
             TestResponseTextExtraction();
             TestProviderErrors();
             TestReasoningScrub();
+            TestReasoningScrubNoCloseTag();
             TestGeneratedTextCleanup();
 
             Console.WriteLine("LlmResponseParserTests passed " + assertions + " assertions.");
@@ -113,6 +114,37 @@ namespace LlmResponseParserTests
                 "reasoning heading",
                 "Visible.",
                 LlmResponseParser.StripReasoningTextBlocks("Thinking:\nsecret\nAnswer: Visible."));
+        }
+
+        // Covers the trickier fallback branches of StripTaggedReasoningBlocks: an opening reasoning
+        // tag that never closes (the chat template ate the close tag, or the model just forgot it).
+        // These are the highest-risk branches and were previously untested.
+        private static void TestReasoningScrubNoCloseTag()
+        {
+            // No close tag, but a "final answer" marker line: trim reasoning up to that line. The
+            // marker line itself is kept by design (the cut stops at the start of the marker line).
+            AssertEqual(
+                "no-close final-answer marker",
+                "final answer: We held the line.",
+                LlmResponseParser.StripReasoningTextBlocks("<think>\nweigh options\nfinal answer: We held the line."));
+
+            // No close tag and no marker, but a blank line separates reasoning from the answer.
+            AssertEqual(
+                "no-close blank-line split",
+                "The harvest came in early.",
+                LlmResponseParser.StripReasoningTextBlocks("<think>\ndeliberating quietly\n\nThe harvest came in early."));
+
+            // No close tag, no marker, no blank line: drop everything from the open tag to the end.
+            AssertEqual(
+                "no-close remove to end",
+                "Visible intro.",
+                LlmResponseParser.StripReasoningTextBlocks("Visible intro. <think>then only private reasoning until the end"));
+
+            // Two paired blocks with different tag names exercise the outer per-tag loop.
+            AssertEqual(
+                "multiple paired tags",
+                "Held the gate. Bob smiled.",
+                LlmResponseParser.StripReasoningTextBlocks("<think>plan</think>Held the gate.<reasoning>why</reasoning> Bob smiled."));
         }
 
         private static void TestGeneratedTextCleanup()

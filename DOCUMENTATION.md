@@ -68,9 +68,10 @@ Key files:
 | `DiaryGameComponent*.cs` | Recording, batching, generation scans, save/load, lookup indexes, and public UI access. Event-source partials own their `Record*` methods. |
 | `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, text-decoration facts, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
+| `DiaryRenderToken.cs` | Cheap render-invalidation token (`DiaryStateVersion` + `DiaryRenderToken`) the diary tab compares each frame to skip rebuilding entry views when nothing changed. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
 | `DiaryContextFields.cs` | Exact parser for saved semicolon-delimited `gameContext` key/value fields. |
-| `DiaryPromptBuilder.cs` | Compatibility facade for building typed prompt plans and legacy prompt strings. |
+| `DiaryPromptBuilder.cs` | Thin facade: projects a `DiaryEvent` into a typed request via `DiaryPipelineAdapters` and runs `DiaryPromptPlanner` to produce a `DiaryPromptPlan`. Also gates prompt-enchantment resolution off the planner's own template selection. |
 | `DiaryPipelineContracts.cs` | Plain DTO contracts for event payloads, XML policy snapshots, prompt requests/plans, and response rules. These are the generation layer boundaries. |
 | `DiaryPipelineAdapters.cs` | Impure bridge from `DiaryEvent`, XML Defs, localization, and RimWorld lookups into plain pipeline contracts. |
 | `DiaryPromptPlanner.cs` | Pure prompt planner: selects a template key, renders user/system prompts, and captures response rules from a plain request. |
@@ -114,7 +115,10 @@ All sources funnel into `DiaryGameComponent`:
    response rules through `DiaryResponsePostprocessor`, and returns results to the main thread.
 7. `ApplyLlmResult` stores generated text or failure state; successful main entries may queue a
    short title follow-up.
-8. `EntriesFor` reads saved events for the tab without triggering generation.
+8. `EntriesFor` reads saved events for the tab without triggering generation. The tab caches the
+   built views and reuses them between frames until the pawn's `RenderTokenFor` token changes (a new
+   event, or an entry's status/text/title), so it does not re-classify and re-parse every entry on
+   every frame.
 
 `GameComponentTick` drains completed LLM results, flushes queued debug logs when dev LLM diagnostics
 are enabled, recovers orphaned pending entries, and queues pending diary work every ~120 ticks. On
@@ -433,7 +437,7 @@ prompts and final instructions. The in-game Prompt Studio is now a status view t
 template defs. Saved prompt text from older versions is not used by generation.
 
 The selected persona's `rule` text is injected into the system prompt at dispatch (see
-`ComposeSystemPrompt` above), not rendered as a user-message field. Each POV in a paired event
+`PromptAssembler.ComposeSystem`), not rendered as a user-message field. Each POV in a paired event
 resolves its own persona, so the initiator and recipient requests carry different system prompts.
 
 Persona presets start from `DiaryPersonaDef` XML, then settings may layer built-in overrides and
@@ -745,7 +749,7 @@ node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 
 The prompt lab reads `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`,
 `DiaryPersonaDefs.xml`, `DiaryInteractionGroupDefs.xml`, and the English Keyed direct-speech
-prompt cues. Generated fixtures select the same template keys as `DiaryPromptBuilder`, then render
+prompt cues. Generated fixtures select the same template keys as `DiaryPromptPlanner`, then render
 field order and field inclusion from XML source tokens. Title fixtures and title follow-ups use the
 `Title` template and fall back to `DiaryPromptDef.titleUserInstruction` when the template does not
 override the final instruction.

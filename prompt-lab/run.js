@@ -559,7 +559,7 @@ function resultRootFolder(config) {
   return path.isAbsolute(configured) ? configured : path.join(ROOT, configured);
 }
 
-// Mirrors DiaryPromptBuilder.ComposeSystemPrompt: append the pawn's persona voice to the system
+// Mirrors PromptAssembler.ComposeSystem (run from DiaryPromptPlanner.Build): append the pawn's persona voice to the system
 // prompt (so the voice governs HOW the entry is written) unless the template opts out via
 // includePersona. The neutral death/arrival chronicles and the title flow stay persona-free.
 function appendPersonaToSystem(baseSystem, template, personaRule, keyed) {

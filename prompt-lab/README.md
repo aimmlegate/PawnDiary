@@ -33,7 +33,7 @@ render field order and inclusion from `DiaryPromptTemplateDefs.xml`. Interaction
 append the current Keyed direct-speech cue for the active POV pawn when the template allows it.
 
 First-person fixtures append the pawn's persona voice to the **system prompt** (wrapped by the
-`PawnDiary.Prompt.PersonaVoice` Keyed string), mirroring `DiaryPromptBuilder.ComposeSystemPrompt` —
+`PawnDiary.Prompt.PersonaVoice` Keyed string), mirroring `PromptAssembler.ComposeSystem` —
 persona is no longer a user-message field. Templates with `includePersona=false` (the neutral
 death/arrival chronicles and the title follow-up) stay persona-free.
 

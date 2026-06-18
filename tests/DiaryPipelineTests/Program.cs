@@ -42,7 +42,6 @@ namespace DiaryPipelineTests
             AssertContains("combat user weapon", plan.userPrompt, "weapon: knife");
             AssertContains("combat direct speech instruction", plan.userPrompt, "Use direct speech only for exact lines.");
             AssertEqual("combat rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
-            AssertTrue("combat allows direct blocks", plan.responseRules.allowDirectSpeechBlocks);
             AssertEqual("combat max tokens", 40, plan.responseRules.maxTokens);
         }
 
@@ -65,8 +64,6 @@ namespace DiaryPipelineTests
             AssertContains("solo text", plan.userPrompt, "what happened: Alice repaired the generator alone.");
             AssertContains("solo health", plan.userPrompt, "important health: Her hands shake.");
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
-            AssertTrue("solo allows direct speech blocks", plan.responseRules.allowDirectSpeechBlocks);
-            AssertEqual("solo staggered rule", 3, plan.responseRules.staggeredIntensity);
         }
 
         private static void TestDualPovPromptPlans()
@@ -96,15 +93,12 @@ namespace DiaryPipelineTests
             AssertContains("dual initiator pov", initiator.userPrompt, "pov: Alice");
             AssertContains("dual initiator text", initiator.userPrompt, "what happened: Alice accused Bob of stealing medicine.");
             AssertEqual("dual initiator rules", DiaryPipelineRoles.Initiator, initiator.responseRules.targetRole);
-            AssertTrue("dual initiator speech allowed", initiator.responseRules.allowDirectSpeechBlocks);
 
             AssertEqual("dual recipient template", DiaryPipelineTemplates.PairImportant, recipient.templateKey);
             AssertContains("dual recipient pov", recipient.userPrompt, "pov: Bob");
             AssertContains("dual recipient text", recipient.userPrompt, "what happened: Bob denied it.");
             AssertContains("dual recipient context", recipient.userPrompt, "initiator entry: I knew Bob had taken it.");
             AssertEqual("dual recipient rules", DiaryPipelineRoles.Recipient, recipient.responseRules.targetRole);
-            AssertTrue("dual recipient plain prose", recipient.responseRules.recipientPlainProseOnly);
-            AssertTrue("dual recipient speech blocked", !recipient.responseRules.allowDirectSpeechBlocks);
         }
 
         private static void TestRecipientFollowupPlan()
@@ -122,8 +116,6 @@ namespace DiaryPipelineTests
             AssertEqual("recipient default template", DiaryPipelineTemplates.PairDefault, plan.templateKey);
             AssertContains("recipient followup entry", plan.userPrompt, "initiator entry: Alice wrote first.");
             AssertContains("recipient followup instruction", plan.userPrompt, "Recipient followup. Keep quoted speech brief.");
-            AssertTrue("recipient plain prose", plan.responseRules.recipientPlainProseOnly);
-            AssertTrue("recipient disallows direct blocks", !plan.responseRules.allowDirectSpeechBlocks);
         }
 
         private static void TestNeutralGenerationPlans()
@@ -253,8 +245,7 @@ namespace DiaryPipelineTests
                     surroundings = "cold hallway",
                     continuity = "rivals",
                     lastOpener = "I should have waited.",
-                    weapon = "knife",
-                    staggeredIntensity = 2
+                    weapon = "knife"
                 },
                 recipient = new DiaryPovPayload
                 {
@@ -264,8 +255,7 @@ namespace DiaryPipelineTests
                     pawnSummary = "Bob is careful.",
                     surroundings = "cold hallway",
                     continuity = "rivals",
-                    weapon = "club",
-                    staggeredIntensity = 1
+                    weapon = "club"
                 },
                 display = new DiaryDisplayPayload { important = true }
             };
@@ -286,8 +276,7 @@ namespace DiaryPipelineTests
                     rawText = text,
                     pawnSummary = "Alice is brave.",
                     surroundings = "workshop",
-                    lastOpener = "The workshop was quiet.",
-                    staggeredIntensity = 3
+                    lastOpener = "The workshop was quiet."
                 },
                 display = new DiaryDisplayPayload { important = true }
             };

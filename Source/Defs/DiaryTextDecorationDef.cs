@@ -22,17 +22,29 @@ namespace PawnDiary
     public static class DiaryTextDecorationDefs
     {
         private static DiaryTextDecorationDef cached;
+        // Defs load once at startup, so we resolve the lookup a single time. `resolved` lets us
+        // remember a genuine "Def absent" result instead of re-querying DefDatabase on every access.
+        private static bool resolved;
+        private static List<DiaryTextDecorationRule> fallbackCached;
 
         public static List<DiaryTextDecorationRule> CurrentRules
         {
             get
             {
-                if (cached == null)
+                if (!resolved)
                 {
                     cached = DefDatabase<DiaryTextDecorationDef>.GetNamedSilentFail("Diary_TextDecorations");
+                    resolved = true;
                 }
 
-                return cached != null && cached.rules != null ? cached.rules : FallbackRules();
+                if (cached != null && cached.rules != null)
+                {
+                    return cached.rules;
+                }
+
+                // This getter runs per text block per frame from the diary UI, so build the fallback
+                // list once and reuse it rather than re-allocating every call when the Def is absent.
+                return fallbackCached ?? (fallbackCached = FallbackRules());
             }
         }
 

@@ -20,6 +20,14 @@ namespace PawnDiary
         // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
         private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
 
+        // Per-frame cache for the heaviest part of drawing the tab: rebuilding a DiaryEntryView for
+        // every one of the pawn's events (each runs group classification + gameContext parsing). The
+        // built list is reused until the pawn's render token changes — a new event, or an entry's
+        // status/text/title changing — so a tab that is merely being read does no rebuild work.
+        private Pawn cachedEntriesPawn;
+        private DiaryRenderToken cachedEntriesToken;
+        private IReadOnlyList<DiaryEntryView> cachedEntries = EmptyList;
+
         // Diary tab presentation values are XML-backed via DiaryUiStyleDef. These accessors keep the
         // drawing code readable while letting modders retune spacing/colors without recompiling.
         private static DiaryUiStyleDef UiStyle => DiaryUiStyles.Current;
@@ -196,7 +204,25 @@ namespace PawnDiary
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Current;
 
-            IReadOnlyList<DiaryEntryView> entries = component?.EntriesFor(pawn) ?? EmptyList;
+            // Only rebuild the entry views when something actually changed; otherwise the tab would
+            // re-classify and re-parse every entry ~60 times a second while it is just being read.
+            IReadOnlyList<DiaryEntryView> entries;
+            if (component == null)
+            {
+                entries = EmptyList;
+            }
+            else
+            {
+                DiaryRenderToken token = component.RenderTokenFor(pawn);
+                if (pawn != cachedEntriesPawn || !token.Equals(cachedEntriesToken) || cachedEntries == null)
+                {
+                    cachedEntries = component.EntriesFor(pawn);
+                    cachedEntriesPawn = pawn;
+                    cachedEntriesToken = token;
+                }
+
+                entries = cachedEntries;
+            }
             int generatingCount = entries.Count(IsGenerating);
             bool showLlmDebugInfo = ShouldShowLlmDebugInfo();
             // Dev-mode-only: when on, reveal in-progress/stuck entries in the list (the full debug

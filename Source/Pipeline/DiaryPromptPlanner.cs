@@ -46,7 +46,7 @@ namespace PawnDiary
                 systemPrompt = systemPrompt,
                 userPrompt = userPrompt,
                 debugLabel = templateKey + ":" + (request.povRole ?? string.Empty),
-                responseRules = ResponseRulesFor(payload, request)
+                responseRules = DiaryResponseRules.ForRequest(payload.eventId, request.povRole, request.titleRequest, request.maxTokens)
             };
         }
 
@@ -213,26 +213,6 @@ namespace PawnDiary
             }
 
             return result;
-        }
-
-        private static DiaryResponseRules ResponseRulesFor(DiaryEventPayload payload, DiaryPromptRequest request)
-        {
-            DiaryPovPayload pov = payload.Pov(request.povRole);
-            bool recipient = string.Equals(request.povRole, DiaryPipelineRoles.Recipient, StringComparison.OrdinalIgnoreCase);
-            return new DiaryResponseRules
-            {
-                eventId = payload.eventId,
-                targetRole = request.povRole,
-                isTitle = request.titleRequest,
-                allowDirectSpeechBlocks = !recipient,
-                recipientPlainProseOnly = recipient,
-                atmosphereCue = payload.display?.atmosphereCue,
-                distortDirectSpeech = payload.display != null && payload.display.distortDirectSpeech,
-                staggeredIntensity = pov == null ? 0 : pov.staggeredIntensity,
-                textDecorationContext = pov == null ? null : pov.textDecorationContext,
-                maxTokens = request.maxTokens,
-                trimIncompleteSentence = !request.titleRequest
-            };
         }
 
         private static DiaryPovPayload OtherPov(DiaryEventPayload payload, string role)
