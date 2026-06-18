@@ -445,7 +445,9 @@ can speak OpenAI-compatible chat completions, OpenAI Responses, or native
 Ollama chat; Responses lanes can send a reasoning-effort override, and Ollama lanes can request
 native thinking output while saving only final message content. Known reasoning/thinking transcript
 blocks embedded in normal content are stripped before anything is persisted, including common
-unclosed `<think>`-style blocks from local models. Model-list fetches are generation-stamped and
+unclosed `<think>`-style blocks and the inverse case (a lone closing `</think>` with no opening tag,
+emitted by R1-style models whose chat template injects the opening tag into the prompt). Model-list
+fetches are generation-stamped and
 tied to the endpoint row's URL/API-key/mode snapshot, so removing, resetting, or editing rows while
 a request is in flight cannot auto-fill a different row. Connection tests use the same generation
 URL, payload shape, response parser, timeout, reasoning, and Ollama thinking settings as normal
@@ -516,8 +518,8 @@ distinct fallback targets; concurrency gates still group by endpoint+model/mode.
   API output-token headroom because that API counts hidden reasoning tokens against
   `max_output_tokens`; the saved text is still capped locally;
 - structured Responses reasoning items and common text transcript blocks (`<think>...</think>`,
-  reasoning/thinking fences, and `Reasoning: ... Final:` prefixes) are removed after the endpoint
-  completes and before debug/saved entry text is stored;
+  a lone leading `</think>` with no opening tag, reasoning/thinking fences, and `Reasoning: ... Final:`
+  prefixes) are removed after the endpoint completes and before debug/saved entry text is stored;
 - background debug logs are queued and flushed on the main thread only when the dev LLM debug toggle
   is enabled;
 - stale sessions are cancelled when a new `DiaryGameComponent` is constructed;

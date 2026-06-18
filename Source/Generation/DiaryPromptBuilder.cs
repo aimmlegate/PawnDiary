@@ -313,13 +313,8 @@ namespace PawnDiary
 
         private static string RenderTemplate(string templateKey, PromptRenderContext context, string instruction)
         {
-            DiaryPromptTemplateDef template = DiaryPromptTemplates.ForKey(templateKey);
             List<string> lines = new List<string>();
-            List<DiaryPromptFieldDef> fields = template.fields;
-            if (fields == null || fields.Count == 0)
-            {
-                fields = DiaryPromptTemplates.ForKey(templateKey).fields;
-            }
+            List<DiaryPromptFieldDef> fields = DiaryPromptTemplates.FieldsFor(templateKey);
 
             for (int i = 0; i < fields.Count; i++)
             {

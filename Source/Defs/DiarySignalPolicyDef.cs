@@ -171,6 +171,12 @@ namespace PawnDiary
             get { return IntOrFallback(ForKey(Work).lowSkillThreshold, DiaryTuning.Current.workLowSkillThreshold); }
         }
 
+        // Fallback policies are cached per key so a missing/renamed Def does not allocate a new
+        // object on every getter call. The real Def always wins because ForKey scans the
+        // DefDatabase first and only reaches the cache on a miss.
+        private static readonly Dictionary<string, DiarySignalPolicyDef> FallbackCache =
+            new Dictionary<string, DiarySignalPolicyDef>(StringComparer.OrdinalIgnoreCase);
+
         public static DiarySignalPolicyDef ForKey(string signalKey)
         {
             List<DiarySignalPolicyDef> defs = DefDatabase<DiarySignalPolicyDef>.AllDefsListForReading;
@@ -192,11 +198,20 @@ namespace PawnDiary
                 }
             }
 
-            return new DiarySignalPolicyDef
+            string key = signalKey ?? "Unknown";
+            DiarySignalPolicyDef fallback;
+            if (FallbackCache.TryGetValue(key, out fallback))
             {
-                defName = "DiarySignalPolicy_Fallback_" + (signalKey ?? "Unknown"),
+                return fallback;
+            }
+
+            fallback = new DiarySignalPolicyDef
+            {
+                defName = "DiarySignalPolicy_Fallback_" + key,
                 signalKey = signalKey
             };
+            FallbackCache[key] = fallback;
+            return fallback;
         }
 
         private static int IntOrFallback(int configured, int fallback)

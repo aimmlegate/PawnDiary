@@ -93,6 +93,22 @@ namespace PawnDiary
             }
         }
 
+        /// <summary>
+        /// Returns the field list to render for a template key: the XML template's fields when it
+        /// has any, otherwise the code-defined fallback fields for that shape. This keeps a template
+        /// shipped (or patched) with an empty &lt;fields&gt; list from rendering an empty prompt body.
+        /// </summary>
+        public static List<DiaryPromptFieldDef> FieldsFor(string templateKey)
+        {
+            DiaryPromptTemplateDef template = ForKey(templateKey);
+            if (template?.fields != null && template.fields.Count > 0)
+            {
+                return template.fields;
+            }
+
+            return FallbackFieldsFor(templateKey);
+        }
+
         public static string SystemPromptFor(string templateKey)
         {
             DiaryPromptTemplateDef template = ForKey(templateKey);
@@ -344,11 +360,23 @@ namespace PawnDiary
             return false;
         }
 
+        // Fallback policies are cached per key so a missing/renamed Def does not allocate a new
+        // object on every Enabled/Format/MaxItems call. The real Def always wins because ForKey
+        // scans the DefDatabase first and only reaches the cache on a miss.
+        private static readonly Dictionary<string, DiaryContextReactionDef> FallbackCache =
+            new Dictionary<string, DiaryContextReactionDef>(StringComparer.OrdinalIgnoreCase);
+
         private static DiaryContextReactionDef Fallback(string reactionKey)
         {
-            if (string.Equals(reactionKey, RecentThreatLetter, StringComparison.OrdinalIgnoreCase))
+            string key = reactionKey ?? string.Empty;
+            DiaryContextReactionDef cached;
+            if (FallbackCache.TryGetValue(key, out cached))
             {
-                return new DiaryContextReactionDef
+                return cached;
+            }
+
+            DiaryContextReactionDef fallback = string.Equals(reactionKey, RecentThreatLetter, StringComparison.OrdinalIgnoreCase)
+                ? new DiaryContextReactionDef
                 {
                     defName = "DiaryContextReaction_Fallback_RecentThreatLetter",
                     reactionKey = RecentThreatLetter,
@@ -358,17 +386,18 @@ namespace PawnDiary
                     requireHomeMap = true,
                     requireDanger = true,
                     letterDefNames = new List<string> { "ThreatBig", "ThreatSmall" }
+                }
+                : new DiaryContextReactionDef
+                {
+                    defName = "DiaryContextReaction_Fallback_ActiveMapConditions",
+                    reactionKey = ActiveMapConditions,
+                    textKey = "PawnDiary.Ctx.ActiveConditions",
+                    maxItems = 3,
+                    displayOnUiOnly = true
                 };
-            }
 
-            return new DiaryContextReactionDef
-            {
-                defName = "DiaryContextReaction_Fallback_ActiveMapConditions",
-                reactionKey = ActiveMapConditions,
-                textKey = "PawnDiary.Ctx.ActiveConditions",
-                maxItems = 3,
-                displayOnUiOnly = true
-            };
+            FallbackCache[key] = fallback;
+            return fallback;
         }
     }
 }

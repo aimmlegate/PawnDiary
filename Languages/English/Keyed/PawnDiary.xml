@@ -114,7 +114,7 @@
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
   <PawnDiary.Settings.PromptStudioXmlHelp>Prompt wording and field lists are controlled by XML defs. Edit DiaryPromptTemplateDefs.xml and DiaryPromptDef.xml, then restart RimWorld.</PawnDiary.Settings.PromptStudioXmlHelp>
   <PawnDiary.Settings.PromptStudioXmlSummary>{0} prompt templates loaded from XML</PawnDiary.Settings.PromptStudioXmlSummary>
-  <PawnDiary.Settings.PromptStudioXmlNote>Saved games no longer override prompt text. This screen is a status view so XML tuning is the single source of truth.</PawnDiary.Settings.PromptStudioXmlNote>
+  <PawnDiary.Settings.PromptStudioXmlNote>If you customized prompt text in an older version, those in-game edits are no longer applied — wording now comes only from the XML files above. This screen is a read-only status view.</PawnDiary.Settings.PromptStudioXmlNote>
   <PawnDiary.Settings.PromptStatusCustomized>Customized from the XML default</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Using the XML default</PawnDiary.Settings.PromptStatusDefault>
   <PawnDiary.Settings.PersonaStudioTitle>Persona presets</PawnDiary.Settings.PersonaStudioTitle>

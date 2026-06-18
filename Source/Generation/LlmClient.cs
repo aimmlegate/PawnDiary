@@ -1357,6 +1357,7 @@ namespace PawnDiary
             }
 
             string cleaned = StripTaggedReasoningBlocks(text);
+            cleaned = StripOrphanClosingReasoningTags(cleaned);
             cleaned = StripReasoningFencedBlocks(cleaned);
             cleaned = StripReasoningHeadingPrefix(cleaned);
             return CompactReasoningCleanupWhitespace(cleaned).Trim();
@@ -1412,6 +1413,47 @@ namespace PawnDiary
                     text = text.Remove(open);
                     break;
                 }
+            }
+
+            return text;
+        }
+
+        /// <summary>
+        /// Handles reasoning models (DeepSeek-R1 distills and similar) whose chat template emits the
+        /// opening &lt;think&gt; tag as part of the *prompt*, so the completion begins already inside
+        /// the reasoning block: it contains the reasoning, a closing &lt;/think&gt;, then the real
+        /// answer — with no opening tag for <see cref="StripTaggedReasoningBlocks"/> to anchor on
+        /// (its needle "&lt;think" never matches "&lt;/think&gt;"). A lone closing reasoning tag is
+        /// treated as the end of a hidden reasoning prefix, so everything up to and including it is
+        /// dropped. If nothing follows, the empty result falls through to the normal "no message
+        /// content" error in <see cref="SendOnce"/> rather than the reasoning being saved.
+        /// </summary>
+        private static string StripOrphanClosingReasoningTags(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+
+            string[] tags = { "think", "thinking", "reasoning", "analysis" };
+            for (int i = 0; i < tags.Length; i++)
+            {
+                string closeNeedle = "</" + tags[i] + ">";
+                int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, 0);
+                if (close < 0)
+                {
+                    continue;
+                }
+
+                // If a real opening tag precedes this close, it was a normal paired block that
+                // StripTaggedReasoningBlocks already removed — don't over-trim the answer here.
+                int open = IndexOfOpeningTag(text, tags[i]);
+                if (open >= 0 && open < close)
+                {
+                    continue;
+                }
+
+                text = text.Substring(close + closeNeedle.Length);
             }
 
             return text;
