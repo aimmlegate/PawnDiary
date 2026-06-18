@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Prompt templates control the structured fields sent to the LLM for each event shape.
+  `source` values are stable internal tokens; `label` is the model-facing field name.
+  System prompts and final instructions may be overridden here. When blank, DiaryPromptDef.xml
+  supplies the shared default text.
+-->
+<Defs>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_PairDefault</defName>
+    <templateKey>PairDefault</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>role</label><source>PovRole</source></li>
+      <li><label>with</label><source>OtherPawnName</source></li>
+      <li><label>what you saw</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>relationship</label><source>Relationship</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_PairImportant</defName>
+    <templateKey>PairImportant</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>role</label><source>PovRole</source></li>
+      <li><label>with</label><source>OtherPawnName</source></li>
+      <li><label>what you saw</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
+      <li><label>relationship</label><source>Relationship</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>initiator diary (hidden context)</label><source>HiddenInitiatorEntry</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_PairCombat</defName>
+    <templateKey>PairCombat</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>role</label><source>PovRole</source></li>
+      <li><label>with</label><source>OtherPawnName</source></li>
+      <li><label>what you saw</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
+      <li><label>relationship</label><source>Relationship</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>weapon</label><source>Weapon</source></li>
+      <li><label>initiator diary (hidden context)</label><source>HiddenInitiatorEntry</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_PairBatched</defName>
+    <templateKey>PairBatched</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>role</label><source>PovRole</source></li>
+      <li><label>with</label><source>OtherPawnName</source></li>
+      <li><label>what you saw</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloDefault</defName>
+    <templateKey>SoloDefault</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>what happened</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloImportant</defName>
+    <templateKey>SoloImportant</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>what happened</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloInternalState</defName>
+    <templateKey>SoloInternalState</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>what happened</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloBatched</defName>
+    <templateKey>SoloBatched</templateKey>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>what happened</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloDayReflection</defName>
+    <templateKey>SoloDayReflection</templateKey>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>what happened</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>persona</label><source>Persona</source></li>
+      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_DeathDescription</defName>
+    <templateKey>DeathDescription</templateKey>
+    <includePromptEnchantment>false</includePromptEnchantment>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>deceased</label><source>DeathVictim</source></li>
+      <li><label>what happened</label><source>NeutralText</source></li>
+      <li><label>death facts</label><source>DeathFacts</source></li>
+      <li><label>deceased pawn</label><source>DeathPawnSummary</source></li>
+      <li><label>setting</label><source>DeathSetting</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_ArrivalDescription</defName>
+    <templateKey>ArrivalDescription</templateKey>
+    <includePromptEnchantment>false</includePromptEnchantment>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>colonist</label><source>ArrivalPawn</source></li>
+      <li><label>what happened</label><source>NeutralText</source></li>
+      <li><label>arrival facts</label><source>ArrivalFacts</source></li>
+      <li><label>colonist pawn</label><source>PawnSummary</source></li>
+      <li><label>setting</label><source>Setting</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_Title</defName>
+    <templateKey>Title</templateKey>
+    <includePromptEnchantment>false</includePromptEnchantment>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <fields>
+      <li><label>entry</label><source>EntryText</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+</Defs>

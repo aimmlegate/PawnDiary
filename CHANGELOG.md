@@ -3,6 +3,32 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (reasoning leak fix)**
+  - Fixed reasoning/thinking text leaking into saved diary entries from R1-style models whose chat
+    template emits the opening `<think>` in the prompt, so the completion begins inside the reasoning
+    block and contains only a closing `</think>` before the answer. `LlmClient` now drops a lone
+    closing reasoning tag (and everything before it) when there is no matching opening tag, alongside
+    the existing paired/unclosed `<think>` handling.
+  - Prompt templates with an empty `<fields>` list now render the code-defined fallback fields for
+    that shape (via `DiaryPromptTemplates.FieldsFor`) instead of an empty body; removed a dead
+    re-fetch in `DiaryPromptBuilder.RenderTemplate`.
+  - `DiarySignalPolicy`/`DiaryContextReaction` fallbacks are cached per key instead of allocating a
+    new object on every accessor call when a Def is missing.
+  - Prompt Studio status note now states plainly that prompt customizations from older versions are
+    no longer applied and wording comes only from XML.
+
+- **2026-06-18 (XML prompt and signal architecture)**
+  - Added XML `DiaryPromptTemplateDef`, `DiaryContextReactionDef`, and `DiarySignalPolicyDef`
+    layers so prompt field lists, context reactions, thought/work tracker tuning, and prompt
+    template instructions can be adjusted without C# changes.
+  - Routed temporary thoughts, ambient thought batching, staged thought progression, sampled work,
+    recent threat-letter context, and active map-condition context through XML policies.
+  - Moved low Consciousness from persona-specific rules into weighted capacity prompt
+    enchantments, and removed persona consciousness settings from XML/runtime/settings UI.
+  - Made Prompt Studio and event group instruction views XML-only status/previews, removed saved
+    prompt/group-instruction overrides, and updated prompt-lab generated fixtures to render
+    `DiaryPromptTemplateDefs.xml`.
+
 - **2026-06-18 (direct speech blocks)**
   - Changed interaction direct-speech prompting to use closed `[[speech]]...[[/speech]]` marker
     lines for initiator/single-POV speech, while recipient follow-up prompts now forbid speech

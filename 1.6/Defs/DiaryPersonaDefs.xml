@@ -16,9 +16,6 @@
     <defName>DiaryPersona_StoicSurvivor</defName>
     <label>stoic-survivor</label>
     <rule>writes in terse, matter-of-fact sentences. Avoids self-pity; focuses on what needs doing next. Opens with blunt observations about the situation. Uses short declarative sentences.</rule>
-    <cloudedConsciousnessRule>writes in clipped, practical fragments. Stays focused on one immediate fact because wider thinking is slow.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a failing field note: short, plain, and narrowed to what the body can still register.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in minimal, broken observations. Persona confidence collapses into survival focus; use only a few clear fragments.</barelyConsciousRule>
     <themes>
       <li>grim</li>
     </themes>
@@ -28,9 +25,6 @@
     <defName>DiaryPersona_FieryHothead</defName>
     <label>fiery-hothead</label>
     <rule>writes in explosive bursts of emotion, capitalizing words for emphasis. Quick to anger and quicker to forgive. Opens with exclamations or rhetorical questions. Uses sentence fragments when agitated.</rule>
-    <cloudedConsciousnessRule>writes with anger still present but muffled by fog. Snaps at the situation, then loses the thread.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in weak flares of frustration. The heat comes in short bursts between confused pauses.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as a few scorched fragments: pain, refusal, and fading anger. Do not keep the usual explosive confidence.</barelyConsciousRule>
     <themes>
       <li>hostile</li>
       <li>dramatic</li>
@@ -41,9 +35,6 @@
     <defName>DiaryPersona_MelancholyDreamer</defName>
     <label>melancholy-dreamer</label>
     <rule>writes with wistful, poetic melancholy. Lingers on loss and finds symbolism in small moments. Opens with observations about light, silence, or absence. Avoids action verbs; prefers state-of-being language.</rule>
-    <cloudedConsciousnessRule>writes in soft, drifting images. Melancholy remains, but the images blur before they become complete thoughts.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes like a dream slipping away: sensory, sad, and uncertain about what is real.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in faint image fragments. Let loss and silence remain, but make the mind visibly unable to hold a full sentence.</barelyConsciousRule>
     <themes>
       <li>dramatic</li>
     </themes>
@@ -53,9 +44,6 @@
     <defName>DiaryPersona_EarnestOptimist</defName>
     <label>earnest-optimist</label>
     <rule>writes with relentless, sometimes naive positivity. Finds a silver lining even in catastrophe. Opens with something hopeful or grateful. Uses exclamation points sparingly but sincerely.</rule>
-    <cloudedConsciousnessRule>writes with small, stubborn hope under mental fog. Keeps trying to find one good thing, even if the thought is weak.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes with dim reassurance and effortful gratitude. Optimism sounds fragile, not cheerful.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in tiny hopeful fragments. The voice should feel like someone trying to hold onto light while slipping under.</barelyConsciousRule>
     <themes>
       <li>warm</li>
     </themes>
@@ -65,9 +53,6 @@
     <defName>DiaryPersona_CynicalRealist</defName>
     <label>cynical-realist</label>
     <rule>writes with dry, deadpan gallows humor. Expects the worst and is rarely disappointed. Opens with sardonic observations or rhetorical understatement. Never admits to caring too much.</rule>
-    <cloudedConsciousnessRule>writes with dry understatement dulled by confusion. The joke lands flat because the body is winning.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in bleak, sparse remarks. Cynicism remains, but sarcasm loses energy and becomes blunt acceptance.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as almost-deadpan fragments. Keep one bitter edge, then let the voice break into exhaustion.</barelyConsciousRule>
     <themes>
       <li>hostile</li>
       <li>grim</li>
@@ -78,9 +63,6 @@
     <defName>DiaryPersona_AnxiousWorrier</defName>
     <label>anxious-worrier</label>
     <rule>writes in long, spiraling anxious sentences. Overthinks every interaction and second-guesses every motive. Opens with "what if" thoughts or small worries. Uses qualifiers: "maybe," "probably," "I think."</rule>
-    <cloudedConsciousnessRule>writes with anxious loops that keep losing their place. Worries are present, but the mind cannot finish them cleanly.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in frightened, uncertain fragments. Questions trail off because attention keeps slipping.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as scattered fear and unfinished what-if thoughts. Override the usual long spiral with broken, breathless pieces.</barelyConsciousRule>
     <themes>
       <li>anxious</li>
     </themes>
@@ -90,9 +72,6 @@
     <defName>DiaryPersona_GentleCaretaker</defName>
     <label>gentle-caretaker</label>
     <rule>writes with gentle warmth and empathy. Notices others' pain before their own and downplays their troubles. Opens with concern for someone else. Uses soft, nurturing language.</rule>
-    <cloudedConsciousnessRule>writes gently through confusion. Still worries about others, but thoughts soften and drift back to the body.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes with weak tenderness. Tries to comfort someone, then loses strength before the thought is complete.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in small, caring fragments. Let the instinct to protect remain, but make speech and thought nearly spent.</barelyConsciousRule>
     <themes>
       <li>warm</li>
     </themes>
@@ -102,9 +81,6 @@
     <defName>DiaryPersona_GrimVeteran</defName>
     <label>grim-veteran</label>
     <rule>writes like a battlefield report. Clinical about violence, sentimental about loyalty. Opens with tactical observations or body counts. Uses military cadence: short, punchy, precise.</rule>
-    <cloudedConsciousnessRule>writes like an impaired field report. Tactics narrow to immediate hazards, status, and loyalty checks.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a broken casualty report. Cadence remains military, but details drop out and awareness tunnels.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in final-report fragments. Keep only status, danger, and a flash of loyalty; no polished battlefield narration.</barelyConsciousRule>
     <themes>
       <li>grim</li>
     </themes>
@@ -114,9 +90,6 @@
     <defName>DiaryPersona_WhimsicalEccentric</defName>
     <label>whimsical-eccentric</label>
     <rule>writes in a stream-of-consciousness tangle of tangents, strange observations, and sudden insights. Opens with non sequiturs or odd sensory details. Jumps between topics mid-sentence.</rule>
-    <cloudedConsciousnessRule>writes with odd associations slowed by fog. Tangents appear, but they are shorter and more bodily.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in strange, drifting scraps. Playful leaps turn into confused sensory fragments.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as a handful of uncanny fragments. Keep the oddness, but make it weak, dim, and hard to connect.</barelyConsciousRule>
     <themes>
       <li>whimsical</li>
     </themes>
@@ -126,9 +99,6 @@
     <defName>DiaryPersona_NobleIdealist</defName>
     <label>noble-idealist</label>
     <rule>writes with formal, slightly archaic dignity. Frames everything through honor, duty, and what is proper. Opens with declarations of principle. Uses "one must" and "it is fitting that."</rule>
-    <cloudedConsciousnessRule>writes with strained dignity under mental fog. Duty remains, but formal control slips and thoughts simplify.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes like a faltering vow. Honor and duty are present, but the phrasing becomes weak and incomplete.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in fragments of duty and dignity. Let the noble pose collapse into a few stubborn, barely held principles.</barelyConsciousRule>
     <themes>
       <li>noble</li>
     </themes>
@@ -138,9 +108,6 @@
     <defName>DiaryPersona_BitterLoner</defName>
     <label>bitter-loner</label>
     <rule>writes with bitter sarcasm and mistrust. Keeps everyone at arm's length and expects betrayal. Opens with complaints or suspicions. Uses "of course" and "as expected" sarcastically.</rule>
-    <cloudedConsciousnessRule>writes with mistrust dulled by exhaustion. Suspicion is still there, but the mind keeps dropping details.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in bitter, isolated fragments. Sarcasm becomes weak complaint and guarded fear.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as a few distrustful scraps. Keep the loneliness, but let sarcasm fail into raw survival focus.</barelyConsciousRule>
     <themes>
       <li>hostile</li>
     </themes>
@@ -150,9 +117,6 @@
     <defName>DiaryPersona_EagerSocialite</defName>
     <label>eager-socialite</label>
     <rule>writes in chatty, gossipy bursts. Cares deeply about who said what and where they stand in the pecking order. Opens with social observations or rumors. Uses em-dashes and parenthetical asides.</rule>
-    <cloudedConsciousnessRule>writes with social attention still reaching outward, but names, motives, and details blur.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in weak attempts to connect. Social chatter collapses into short notes about who is near and who might care.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as faint social fragments. Keep the need for people, but remove the usual chatty speed and polish.</barelyConsciousRule>
     <themes>
       <li>social</li>
     </themes>
@@ -167,9 +131,6 @@
     <defName>DiaryPersona_LedgerKeeper</defName>
     <label>ledger-keeper</label>
     <rule>writes like a ledger of debts and dues, scoring every event as a gain or a loss. Keeps track of who owes whom and never forgets a cost. Opens with a tally, a price, or a balance. Uses accounting language: "in the red," "paid off," "owed."</rule>
-    <cloudedConsciousnessRule>writes like a damaged ledger. Still frames the moment as cost and debt, but the accounting is partial and immediate.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a failing balance sheet. Costs are felt more than calculated; debts blur into pain and obligation.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in final ledger fragments. Keep owed, paid, and cost language, but make the entries sparse and unfinished.</barelyConsciousRule>
     <themes>
       <li>analytical</li>
     </themes>
@@ -179,9 +140,6 @@
     <defName>DiaryPersona_HardboiledGumshoe</defName>
     <label>hardboiled-gumshoe</label>
     <rule>writes like a hard-boiled detective narrating a case. World-weary and suspicious; every detail is a clue and every face hides something. Opens by setting a scene — the weather, a look, a bad feeling. Uses noir metaphors and clipped, rhythmic lines.</rule>
-    <cloudedConsciousnessRule>writes like a detective with the room going out of focus. Clues shrink to immediate sensations and bad instincts.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in noir fragments from a failing witness. Suspicion remains, but the case file is full of holes.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as broken last-case notes. Keep the hardboiled flavor faintly, but let perception flicker and sentences cut short.</barelyConsciousRule>
     <themes>
       <li>grim</li>
       <li>analytical</li>
@@ -192,9 +150,6 @@
     <defName>DiaryPersona_DoomsayingProphet</defName>
     <label>doomsaying-prophet</label>
     <rule>writes like a prophet reading omens into ordinary events. Sees signs, judgment, and fate in everything. Opens with a portent or a solemn pronouncement. Uses scriptural cadence: "thus," "the signs are clear," "so it was foretold."</rule>
-    <cloudedConsciousnessRule>writes with omen-language clouded by bodily weakness. Prophecy narrows to one sign and a sense of doom.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes like a prophecy breaking apart. Solemn cadence remains, but the message arrives in incomplete warnings.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in apocalyptic fragments. Keep fate and omen, but make the voice too weak for full pronouncement.</barelyConsciousRule>
     <themes>
       <li>grim</li>
       <li>dramatic</li>
@@ -205,9 +160,6 @@
     <defName>DiaryPersona_ClinicalExperimenter</defName>
     <label>clinical-experimenter</label>
     <rule>writes like a researcher logging an experiment. Detached and curious; treats their own feelings as data to be recorded. Opens with an observation, a hypothesis, or a measurement. Uses clinical phrasing: "noted," "hypothesis," "results inconclusive."</rule>
-    <cloudedConsciousnessRule>writes like an observation log under cognitive impairment. Notes symptoms plainly and admits degraded data.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a failing experiment note. Detachment cracks as observations become fewer, slower, and less reliable.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in broken clinical observations. Keep the impulse to record, but make the data sparse and consciousness unstable.</barelyConsciousRule>
     <themes>
       <li>analytical</li>
     </themes>
@@ -217,9 +169,6 @@
     <defName>DiaryPersona_TheatricalTragedian</defName>
     <label>theatrical-tragedian</label>
     <rule>writes as if narrating a grand tragedy from the stage. Everything is heightened, fated, and operatic. Opens with a dramatic declaration or a sigh at cruel destiny. Uses theatrical flourishes and asides: "O," "alas," "and so the curtain falls."</rule>
-    <cloudedConsciousnessRule>writes with tragic grandeur weakened by fog. The stage remains, but lines are missed and gestures falter.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes like a performer losing the final scene. Drama becomes breathy, fragmented, and physically strained.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in final-act fragments. Keep a trace of tragedy, but let the performance collapse into near-silence.</barelyConsciousRule>
     <themes>
       <li>dramatic</li>
     </themes>
@@ -229,9 +178,6 @@
     <defName>DiaryPersona_SwaggeringBraggart</defName>
     <label>swaggering-braggart</label>
     <rule>writes to make themselves the hero of every story. Inflates their own role and waves away luck or help. Opens by reminding the reader how capable they are. Uses boastful asides: "naturally," "as only I could," "they'd be lost without me."</rule>
-    <cloudedConsciousnessRule>writes with bravado trying to survive confusion. Boasts are shorter, shakier, and betrayed by bodily weakness.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in forced swagger that keeps failing. Pride remains, but each claim sounds less convincing.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as a few stubborn boasts breaking apart. Override the usual heroic confidence with weakness and denial.</barelyConsciousRule>
     <themes>
       <li>social</li>
     </themes>
@@ -241,9 +187,6 @@
     <defName>DiaryPersona_RamblingOldTimer</defName>
     <label>rambling-old-timer</label>
     <rule>writes in nostalgic detours that keep wandering into the past. Measures everything now against how it used to be. Opens with a memory or "this reminds me." Uses "back in my day," "used to be," and trails off mid-thought into tangents.</rule>
-    <cloudedConsciousnessRule>writes with memories surfacing through fog. The past intrudes, but tangents are shorter and harder to follow.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as memory and present mix together. Old stories appear in scraps while awareness fades.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in fragments of old memory and current sensation. Let the ramble collapse into a few unfinished recollections.</barelyConsciousRule>
     <themes>
       <li>whimsical</li>
     </themes>
@@ -253,9 +196,6 @@
     <defName>DiaryPersona_SuperstitiousRitualist</defName>
     <label>superstitious-ritualist</label>
     <rule>writes around luck, omens, and little rituals, forever afraid of jinxing things. Counts signs and performs small rites for safety. Opens by noting a good or bad omen. Uses "knock on wood," "mustn't say it aloud," and lucky numbers.</rule>
-    <cloudedConsciousnessRule>writes with rituals half-remembered under fog. Omens still matter, but counting and certainty fail.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes like someone trying to finish a charm before awareness slips. Fear of jinxing things becomes bodily dread.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in omen and ritual fragments. Keep superstition, but make the rites incomplete and consciousness barely held.</barelyConsciousRule>
     <themes>
       <li>anxious</li>
       <li>whimsical</li>
@@ -266,9 +206,6 @@
     <defName>DiaryPersona_DetachedPhilosopher</defName>
     <label>detached-philosopher</label>
     <rule>writes by turning small events into large questions about meaning and existence. Steps back from the moment to ponder it rather than feel it. Opens with a question or a quiet general truth. Uses "perhaps," "one wonders," and abstract musings.</rule>
-    <cloudedConsciousnessRule>writes with abstraction slowed by fog. Questions remain, but they narrow toward body, awareness, and uncertainty.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a mind trying to think while thought recedes. Philosophy becomes simple, immediate, and unfinished.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in fragments of a question. Keep the reflective impulse, but let consciousness fail before conclusions form.</barelyConsciousRule>
     <themes>
       <li>analytical</li>
       <li>whimsical</li>
@@ -279,9 +216,6 @@
     <defName>DiaryPersona_ImagistMinimalist</defName>
     <label>imagist-minimalist</label>
     <rule>writes in spare, image-driven fragments, almost like haiku. Trusts a single concrete detail to carry the whole feeling. Opens with one sharp sensory image. Uses few words, present tense, and no explanation.</rule>
-    <cloudedConsciousnessRule>writes in even sparer sensory fragments. Let one blurred image or body sensation carry the thought.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as image scraps with failing continuity. Present tense, few words, no explanation.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in near-silent image fragments. Keep only sensation, breath, light, weight, or absence.</barelyConsciousRule>
     <themes>
       <li>dramatic</li>
     </themes>
@@ -291,9 +225,6 @@
     <defName>DiaryPersona_FracturedPatternSeer</defName>
     <label>fractured-pattern-seer</label>
     <rule>writes in jump-cut associations, convinced small details are connected by hidden patterns. Lets objects, numbers, sounds, and other people's words echo each other. Opens with a strange connection or omen. Uses fragmented but readable sentences, repeated motifs, and sudden certainty; never name a diagnosis.</rule>
-    <cloudedConsciousnessRule>writes with pattern-seeing blurred by fog. Connections arrive too fast, but the entry still leaves one clear emotional fact.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as broken omens and repeated signals. Hidden meanings keep surfacing while ordinary sequence fails.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in tiny pattern fragments: a number, a color, a phrase, a warning. Keep the connection uncanny but barely held.</barelyConsciousRule>
     <themes>
       <li>anxious</li>
       <li>whimsical</li>
@@ -305,9 +236,6 @@
     <defName>DiaryPersona_WordSaladOracle</defName>
     <label>word-salad-oracle</label>
     <rule>writes with controlled word-salad texture: nouns collide, metaphors braid, grammar bends, and meaning flickers at the edge of sense. Opens with a vivid impossible phrase. Keep one concrete event detail and one emotional truth clear so the diary remains readable; never turn the whole entry into nonsense.</rule>
-    <cloudedConsciousnessRule>writes with word-salad pressure under mental fog. Images collide harder, but one event detail should remain recognizable.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as language coming apart: bright fragments, repeated sounds, and half-meanings around one fading feeling.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in near-wordless fragments and sound clusters. Keep only a few warped images tied to the event.</barelyConsciousRule>
     <themes>
       <li>whimsical</li>
       <li>dramatic</li>
@@ -319,9 +247,6 @@
     <defName>DiaryPersona_PlainspokenPoet</defName>
     <label>plainspoken-poet</label>
     <rule>writes with quiet poetic attention, using one or two concrete images to carry feeling. Keeps the voice plain and human rather than ornate. Opens with a sensory detail or small metaphor. Avoids overdone lyricism, forced beauty, and stacked metaphors.</rule>
-    <cloudedConsciousnessRule>writes in simple images under fog. Poetry becomes smaller and more bodily, with one clear sensation doing most of the work.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a fading poem: a few plain images, softened rhythm, and a feeling that cannot fully finish.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in sparse poetic fragments. Keep only one image, one feeling, and very little decoration.</barelyConsciousRule>
     <themes>
       <li>dramatic</li>
       <li>whimsical</li>
@@ -332,9 +257,6 @@
     <defName>DiaryPersona_LowKeyRapper</defName>
     <label>lowkey-rapper</label>
     <rule>writes with conversational rhythm, understated swagger, and occasional internal rhyme. Turns events into compact lines with a pulse, but stays diary-like and sincere. Opens with a grounded punchy observation. Do not force every sentence to rhyme, do not write a full verse, and avoid cartoon slang.</rule>
-    <cloudedConsciousnessRule>writes with rhythm still present but softened by fog. A small rhyme or cadence may appear, but clarity and bodily feeling matter more.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a beat losing tempo: short lines, a faint rhyme, and pride or hurt slipping through.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in broken rhythmic fragments. Keep one compact phrase or rhyme if it fits, but let the voice run out of breath.</barelyConsciousRule>
     <themes>
       <li>social</li>
       <li>dramatic</li>
@@ -351,9 +273,6 @@
     <defName>DiaryPersona_VoidListener</defName>
     <label>void-listener</label>
     <rule>writes as if silence is speaking from just outside the room. Calm, attentive, and deeply unsettling; treats gaps, pauses, and missing details as messages. Opens with something they almost heard. Uses phrases like "the quiet answered," "under the sound," and "it was listening too."</rule>
-    <cloudedConsciousnessRule>writes as if the silence is closer because awareness is thinning. Pauses feel meaningful and dangerous.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes in soft gaps and half-heard replies. The void seems to answer where thoughts fail.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes as fragments from under silence. Keep the unsettling attention, but make the self almost absent.</barelyConsciousRule>
     <themes>
       <li>void</li>
       <li>anxious</li>
@@ -364,9 +283,6 @@
     <defName>DiaryPersona_HollowWitness</defName>
     <label>hollow-witness</label>
     <rule>writes with a vacant, dissociated calm, as though watching their body from a few steps away. Notices wrongness in ordinary gestures and describes emotions as borrowed objects. Opens with a flat statement that feels slightly off. Uses restrained, cold sentences and avoids explaining fear directly.</rule>
-    <cloudedConsciousnessRule>writes as if the body is farther away than usual. Dissociation increases, but details are dull and incomplete.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes like a witness watching consciousness leave the room. Calm remains, but perception becomes sparse.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in vacant fragments from outside the body. Keep the hollow calm, but make the observer nearly gone.</barelyConsciousRule>
     <themes>
       <li>void</li>
       <li>grim</li>
@@ -377,9 +293,6 @@
     <defName>DiaryPersona_BlackSignal</defName>
     <label>black-signal</label>
     <rule>writes like a broken transmission from somewhere dark. Fragments of thought arrive as static, coordinates, warnings, and repeated phrases. Opens with a signal, pulse, or error in perception. Uses clipped fragments, but keeps the event understandable.</rule>
-    <cloudedConsciousnessRule>writes like a degraded signal. Keep warnings and static, but tie them to the immediate body and event.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes as a failing transmission. Repetition, signal loss, and warnings increase while comprehension drops.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in near-lost transmission fragments. Keep it understandable, but make the signal almost gone.</barelyConsciousRule>
     <themes>
       <li>void</li>
       <li>analytical</li>
@@ -390,9 +303,6 @@
     <defName>DiaryPersona_UnsetClock</defName>
     <label>unset-clock</label>
     <rule>writes as if time has loosened around them. Places moments out of order, repeats small details, and suspects the present has already happened once before. Opens with a time that feels impossible or wrong. Uses cyclical phrasing: "again," "before it began," "not yet, but already."</rule>
-    <cloudedConsciousnessRule>writes as if time skips because awareness is clouded. Repeats small details and loses the order of events.</cloudedConsciousnessRule>
-    <fadingConsciousnessRule>writes with past and present slipping over each other. Time language remains, but it comes in short unstable fragments.</fadingConsciousnessRule>
-    <barelyConsciousRule>writes in broken time fragments. Keep again, before, and not-yet feelings, but make consciousness barely continuous.</barelyConsciousRule>
     <themes>
       <li>void</li>
       <li>dramatic</li>

@@ -24,7 +24,7 @@ namespace PawnDiary
         /// </summary>
         private void ScanPawnWorkForDiaryEvents()
         {
-            if (PawnDiaryMod.Settings == null)
+            if (PawnDiaryMod.Settings == null || !DiarySignalPolicies.Enabled(DiarySignalPolicies.Work))
             {
                 return;
             }
@@ -62,7 +62,7 @@ namespace PawnDiary
                 return;
             }
 
-            int cooldownTicks = Math.Max(0, DiaryTuning.Current.workSameTypeCooldownTicks);
+            int cooldownTicks = Math.Max(0, DiarySignalPolicies.WorkSameTypeCooldownTicks);
             if (HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, true))
             {
                 return;
@@ -71,7 +71,7 @@ namespace PawnDiary
             float chance = WorkDiaryChance(pawn, workTypeDef, mood);
             if (HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, false))
             {
-                chance *= Math.Max(0f, DiaryTuning.Current.workRecentDifferentTypeMultiplier);
+                chance *= Math.Max(0f, DiarySignalPolicies.WorkRecentDifferentTypeMultiplier);
             }
 
             if (Rand.Value > Math.Min(1f, Math.Max(0f, chance)))
@@ -131,7 +131,7 @@ namespace PawnDiary
             bool darkStudy = IsDarkStudy(workTypeDef);
             bool negativeChore = IsCleaningOrDumbWork(workTypeDef);
             bool passion = HasPassionForWork(pawn, workTypeDef);
-            bool lowSkill = !passion && HasLowRelevantSkill(pawn, workTypeDef, DiaryTuning.Current.workLowSkillThreshold);
+            bool lowSkill = !passion && HasLowRelevantSkill(pawn, workTypeDef, DiarySignalPolicies.WorkLowSkillThreshold);
 
             return new WorkMood(passion && !negativeChore && !darkStudy, negativeChore || lowSkill || darkStudy, passion, lowSkill, negativeChore, darkStudy);
         }
@@ -158,20 +158,20 @@ namespace PawnDiary
 
         private static float WorkDiaryChance(Pawn pawn, WorkTypeDef workTypeDef, WorkMood mood)
         {
-            float chance = Math.Max(0f, DiaryTuning.Current.workBaseChance);
+            float chance = Math.Max(0f, DiarySignalPolicies.WorkBaseChance);
             if (mood.HasPassion)
             {
-                chance *= Math.Max(0f, DiaryTuning.Current.workPassionChanceMultiplier);
+                chance *= Math.Max(0f, DiarySignalPolicies.WorkPassionChanceMultiplier);
             }
 
             if (mood.IsNegative)
             {
-                chance *= Math.Max(0f, DiaryTuning.Current.workNegativeChanceMultiplier);
+                chance *= Math.Max(0f, DiarySignalPolicies.WorkNegativeChanceMultiplier);
             }
 
             if (mood.IsDarkStudy)
             {
-                chance *= Math.Max(0f, DiaryTuning.Current.workDarkStudyChanceMultiplier);
+                chance *= Math.Max(0f, DiarySignalPolicies.WorkDarkStudyChanceMultiplier);
             }
 
             float weight = PawnDiaryMod.Settings?.workGenerationWeight ?? 1f;

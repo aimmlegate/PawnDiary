@@ -44,6 +44,21 @@ namespace PawnDiary
         public List<string> hediffDefNames = new List<string>();
         public float minHediffSeverity = 0f;
         public List<PromptEnchantmentSeverityTier> hediffSeverityTiers = new List<PromptEnchantmentSeverityTier>();
+
+        // Optional non-hediff source. "Capacity" lets XML add live pawn capacities such as
+        // Consciousness into the same weighted random pool as hediffs.
+        public string source = "Hediff";
+        public string capacityDefName;
+        public float minCapacity = -1f;
+        public float maxCapacity = -1f;
+
+        // Optional model-facing text controls. Keys are Keyed translations; empty values use the
+        // same generic health wording as hediff enchantments.
+        public string conditionKey;
+        public string conditionLabel;
+        public string intensityKey;
+        public string priorityKey;
+        public List<string> cueKeys = new List<string>();
     }
 
     /// <summary>
@@ -52,22 +67,26 @@ namespace PawnDiary
     /// </summary>
     public static class PromptEnchantments
     {
-        private enum ConsciousnessPromptBand
-        {
-            None,
-            Clouded,
-            Fading,
-            BarelyConscious
-        }
-
         private sealed class Candidate
         {
+            public readonly DiaryPromptEnchantmentDef def;
             public readonly Hediff hediff;
+            public readonly float capacityLevel;
+            public readonly string capacityLabel;
             public readonly float weight;
 
-            public Candidate(Hediff hediff, float weight)
+            public Candidate(DiaryPromptEnchantmentDef def, Hediff hediff, float weight)
             {
+                this.def = def;
                 this.hediff = hediff;
+                this.weight = weight;
+            }
+
+            public Candidate(DiaryPromptEnchantmentDef def, float capacityLevel, string capacityLabel, float weight)
+            {
+                this.def = def;
+                this.capacityLevel = capacityLevel;
+                this.capacityLabel = capacityLabel;
                 this.weight = weight;
             }
         }
@@ -106,17 +125,6 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            string consciousnessPrompt = ConsciousnessPromptText(pawn);
-            if (!string.IsNullOrWhiteSpace(consciousnessPrompt))
-            {
-                return consciousnessPrompt;
-            }
-
-            if (pawn.health?.hediffSet?.hediffs == null)
-            {
-                return string.Empty;
-            }
-
             List<DiaryPromptEnchantmentDef> defs = DefDatabase<DiaryPromptEnchantmentDef>.AllDefsListForReading;
             if (defs == null || defs.Count == 0)
             {
@@ -125,40 +133,35 @@ namespace PawnDiary
 
             float totalWeight = 0f;
             List<Candidate> candidates = new List<Candidate>();
-            List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
-            for (int hediffIndex = 0; hediffIndex < hediffs.Count; hediffIndex++)
+            List<Hediff> hediffs = pawn.health?.hediffSet?.hediffs;
+            for (int defIndex = 0; defIndex < defs.Count; defIndex++)
             {
-                Hediff hediff = hediffs[hediffIndex];
-                if (!VisibleHediff(hediff))
+                DiaryPromptEnchantmentDef def = defs[defIndex];
+                if (def == null)
                 {
                     continue;
                 }
 
-                for (int defIndex = 0; defIndex < defs.Count; defIndex++)
+                if (IsCapacitySource(def))
                 {
-                    DiaryPromptEnchantmentDef def = defs[defIndex];
-                    if (!MatchesHediff(def, hediff))
+                    AddCapacityCandidate(pawn, def, candidates, ref totalWeight);
+                    continue;
+                }
+
+                if (hediffs == null)
+                {
+                    continue;
+                }
+
+                for (int hediffIndex = 0; hediffIndex < hediffs.Count; hediffIndex++)
+                {
+                    Hediff hediff = hediffs[hediffIndex];
+                    if (!VisibleHediff(hediff) || !MatchesHediff(def, hediff))
                     {
                         continue;
                     }
 
-                    MatchTuning tuning = TuningFor(def, hediff.Severity);
-                    float chance = ChanceFor(tuning.chance);
-                    if (chance <= 0f || Rand.Range(0f, 1f) > chance)
-                    {
-                        continue;
-                    }
-
-                    float effectiveWeight = Mathf.Max(0f, tuning.weight)
-                        * Mathf.Max(0f, tuning.severity)
-                        * LiveSeverityWeight(hediff);
-                    if (effectiveWeight <= 0f)
-                    {
-                        continue;
-                    }
-
-                    candidates.Add(new Candidate(hediff, effectiveWeight));
-                    totalWeight += effectiveWeight;
+                    AddHediffCandidate(def, hediff, candidates, ref totalWeight);
                 }
             }
 
@@ -170,30 +173,65 @@ namespace PawnDiary
             return BuildPromptText(PickWeighted(candidates, totalWeight));
         }
 
-        /// <summary>
-        /// Returns an internal persona-state token for low Consciousness, or empty for normal voice.
-        /// The hard below-11% generation skip still lives in DiaryGameComponent.Generation.cs; this
-        /// only tunes prompts for pawns who are impaired but still conscious enough to write.
-        /// </summary>
-        public static string ConsciousnessPersonaStateFor(Pawn pawn)
+        private static void AddHediffCandidate(DiaryPromptEnchantmentDef def, Hediff hediff,
+            List<Candidate> candidates, ref float totalWeight)
         {
-            ConsciousnessPromptBand band = ConsciousnessBandFor(pawn);
-            if (band == ConsciousnessPromptBand.BarelyConscious)
+            MatchTuning tuning = TuningFor(def, hediff.Severity);
+            float chance = ChanceFor(tuning.chance);
+            if (chance <= 0f || Rand.Range(0f, 1f) > chance)
             {
-                return DiaryPersonas.ConsciousnessStateBarelyConscious;
+                return;
             }
 
-            if (band == ConsciousnessPromptBand.Fading)
+            float effectiveWeight = Mathf.Max(0f, tuning.weight)
+                * Mathf.Max(0f, tuning.severity)
+                * LiveSeverityWeight(hediff);
+            if (effectiveWeight <= 0f)
             {
-                return DiaryPersonas.ConsciousnessStateFading;
+                return;
             }
 
-            if (band == ConsciousnessPromptBand.Clouded)
+            candidates.Add(new Candidate(def, hediff, effectiveWeight));
+            totalWeight += effectiveWeight;
+        }
+
+        private static void AddCapacityCandidate(Pawn pawn, DiaryPromptEnchantmentDef def,
+            List<Candidate> candidates, ref float totalWeight)
+        {
+            PawnCapacityDef capacityDef = CapacityDefFor(def);
+            if (pawn?.health?.capacities == null || capacityDef == null)
             {
-                return DiaryPersonas.ConsciousnessStateClouded;
+                return;
             }
 
-            return string.Empty;
+            float level = pawn.health.capacities.GetLevel(capacityDef);
+            if (def.minCapacity >= 0f && level < def.minCapacity)
+            {
+                return;
+            }
+
+            if (def.maxCapacity >= 0f && level >= def.maxCapacity)
+            {
+                return;
+            }
+
+            float chance = ChanceFor(def.frequency >= 0f ? def.frequency : def.chance);
+            if (chance <= 0f || Rand.Range(0f, 1f) > chance)
+            {
+                return;
+            }
+
+            float effectiveWeight = Mathf.Max(0f, def.weight)
+                * Mathf.Max(0f, def.severity)
+                * CapacitySeverityWeight(level);
+            if (effectiveWeight <= 0f)
+            {
+                return;
+            }
+
+            string label = DiaryContextBuilder.CleanLine(capacityDef.LabelCap.Resolve());
+            candidates.Add(new Candidate(def, level, label, effectiveWeight));
+            totalWeight += effectiveWeight;
         }
 
         private static Candidate PickWeighted(List<Candidate> candidates, float totalWeight)
@@ -214,6 +252,11 @@ namespace PawnDiary
 
         private static string BuildPromptText(Candidate candidate)
         {
+            if (candidate != null && candidate.hediff == null && IsCapacitySource(candidate.def))
+            {
+                return BuildCapacityPromptText(candidate);
+            }
+
             Hediff hediff = candidate?.hediff;
             if (hediff == null)
             {
@@ -222,113 +265,115 @@ namespace PawnDiary
 
             List<string> parts = new List<string>
             {
-                PromptText("PawnDiary.Prompt.Health.HighPriority"),
+                PriorityText(candidate.def),
                 CompactCondition(hediff)
             };
 
             AddImpactCues(parts, hediff);
+            AddConfiguredCues(parts, candidate.def);
             return string.Join("; ", parts.ToArray());
         }
 
-        private static string ConsciousnessPromptText(Pawn pawn)
+        private static string BuildCapacityPromptText(Candidate candidate)
         {
-            ConsciousnessPromptBand band = ConsciousnessBandFor(pawn);
-            if (band == ConsciousnessPromptBand.None)
+            if (candidate == null || candidate.def == null)
             {
                 return string.Empty;
             }
 
+            string condition = CapacityConditionLabel(candidate);
+            string intensity = CapacityIntensity(candidate);
             List<string> parts = new List<string>
             {
-                PromptText("PawnDiary.Prompt.Health.HighPriority"),
-                PromptText(
-                    "PawnDiary.Prompt.Health.IntensityCondition",
-                    ConsciousnessIntensity(band),
-                    ConsciousnessLabel())
+                PriorityText(candidate.def),
+                string.IsNullOrWhiteSpace(intensity)
+                    ? condition
+                    : PromptText("PawnDiary.Prompt.Health.IntensityCondition", intensity, condition)
             };
 
-            AddConsciousnessCues(parts, band);
+            AddConfiguredCues(parts, candidate.def);
             return string.Join("; ", parts.ToArray());
         }
 
-        private static void AddConsciousnessCues(List<string> parts, ConsciousnessPromptBand band)
+        private static string PriorityText(DiaryPromptEnchantmentDef def)
         {
+            return !string.IsNullOrWhiteSpace(def?.priorityKey)
+                ? PromptText(def.priorityKey)
+                : PromptText("PawnDiary.Prompt.Health.HighPriority");
+        }
+
+        private static string CapacityConditionLabel(Candidate candidate)
+        {
+            DiaryPromptEnchantmentDef def = candidate.def;
+            if (!string.IsNullOrWhiteSpace(def.conditionLabel))
+            {
+                return def.conditionLabel;
+            }
+
+            if (!string.IsNullOrWhiteSpace(def.conditionKey))
+            {
+                return PromptText(def.conditionKey);
+            }
+
+            if (!string.IsNullOrWhiteSpace(candidate.capacityLabel))
+            {
+                return candidate.capacityLabel;
+            }
+
+            return PromptText("PawnDiary.Prompt.Health.ConditionFallback");
+        }
+
+        private static string CapacityIntensity(Candidate candidate)
+        {
+            if (!string.IsNullOrWhiteSpace(candidate.def?.intensityKey))
+            {
+                return PromptText(candidate.def.intensityKey);
+            }
+
+            float level = candidate.capacityLevel;
+            if (level < BarelyConsciousBelow)
+            {
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Critical");
+            }
+
+            if (level < FadingConsciousnessBelow)
+            {
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Major");
+            }
+
+            if (level < CloudedConsciousnessBelow)
+            {
+                return PromptText("PawnDiary.Prompt.Health.Intensity.Moderate");
+            }
+
+            return string.Empty;
+        }
+
+        private static void AddConfiguredCues(List<string> parts, DiaryPromptEnchantmentDef def)
+        {
+            if (def?.cueKeys == null || def.cueKeys.Count == 0)
+            {
+                return;
+            }
+
             List<string> cues = new List<string>();
-            if (band == ConsciousnessPromptBand.BarelyConscious)
+            for (int i = 0; i < def.cueKeys.Count && cues.Count < MaxImpactCues; i++)
             {
-                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.NearCollapse"));
-                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.ThoughtsFragmented"));
-                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.BarelyAwake"));
-            }
-            else if (band == ConsciousnessPromptBand.Fading)
-            {
-                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.FoggedAwareness"));
-                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.SluggishThoughts"));
-            }
-            else if (band == ConsciousnessPromptBand.Clouded)
-            {
-                cues.Add(PromptText("PawnDiary.Prompt.Health.Cue.DulledAwareness"));
+                string key = def.cueKeys[i];
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    string cue = PromptText(key);
+                    if (!string.IsNullOrWhiteSpace(cue))
+                    {
+                        cues.Add(cue);
+                    }
+                }
             }
 
             if (cues.Count > 0)
             {
                 parts.Add(string.Join(", ", cues.ToArray()));
             }
-        }
-
-        private static string ConsciousnessIntensity(ConsciousnessPromptBand band)
-        {
-            if (band == ConsciousnessPromptBand.BarelyConscious)
-            {
-                return PromptText("PawnDiary.Prompt.Health.Intensity.Critical");
-            }
-
-            if (band == ConsciousnessPromptBand.Fading)
-            {
-                return PromptText("PawnDiary.Prompt.Health.Intensity.Major");
-            }
-
-            return PromptText("PawnDiary.Prompt.Health.Intensity.Moderate");
-        }
-
-        private static string ConsciousnessLabel()
-        {
-            if (PawnCapacityDefOf.Consciousness != null)
-            {
-                string label = DiaryContextBuilder.CleanLine(PawnCapacityDefOf.Consciousness.LabelCap.Resolve());
-                if (!string.IsNullOrWhiteSpace(label))
-                {
-                    return label;
-                }
-            }
-
-            return PromptText("PawnDiary.Prompt.Health.ConsciousnessFallback");
-        }
-
-        private static ConsciousnessPromptBand ConsciousnessBandFor(Pawn pawn)
-        {
-            if (pawn?.health?.capacities == null || PawnCapacityDefOf.Consciousness == null)
-            {
-                return ConsciousnessPromptBand.None;
-            }
-
-            float level = pawn.health.capacities.GetLevel(PawnCapacityDefOf.Consciousness);
-            if (level < BarelyConsciousBelow)
-            {
-                return ConsciousnessPromptBand.BarelyConscious;
-            }
-
-            if (level < FadingConsciousnessBelow)
-            {
-                return ConsciousnessPromptBand.Fading;
-            }
-
-            if (level < CloudedConsciousnessBelow)
-            {
-                return ConsciousnessPromptBand.Clouded;
-            }
-
-            return ConsciousnessPromptBand.None;
         }
 
         private static string CompactCondition(Hediff hediff)
@@ -408,8 +453,40 @@ namespace PawnDiary
         {
             return def != null
                 && hediff != null
+                && !IsCapacitySource(def)
                 && DefNameInList(hediff.def?.defName, def.hediffDefNames)
                 && hediff.Severity >= Mathf.Max(0f, def.minHediffSeverity);
+        }
+
+        private static bool IsCapacitySource(DiaryPromptEnchantmentDef def)
+        {
+            return def != null
+                && (!string.IsNullOrWhiteSpace(def.capacityDefName)
+                    || string.Equals(def.source, "Capacity", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static PawnCapacityDef CapacityDefFor(DiaryPromptEnchantmentDef def)
+        {
+            if (def == null)
+            {
+                return null;
+            }
+
+            string defName = string.IsNullOrWhiteSpace(def.capacityDefName)
+                ? "Consciousness"
+                : def.capacityDefName;
+            if (string.Equals(defName, "Consciousness", StringComparison.OrdinalIgnoreCase)
+                && PawnCapacityDefOf.Consciousness != null)
+            {
+                return PawnCapacityDefOf.Consciousness;
+            }
+
+            return DefDatabase<PawnCapacityDef>.GetNamedSilentFail(defName);
+        }
+
+        private static float CapacitySeverityWeight(float level)
+        {
+            return 1f + Mathf.Clamp01(1f - level) * 2f;
         }
 
         private static MatchTuning TuningFor(DiaryPromptEnchantmentDef def, float hediffSeverity)

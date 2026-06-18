@@ -15,6 +15,7 @@ Thumbs.db
 
 # Local agent/editor/tooling config and indexes
 .codegraph/
+.codex-worktrees/
 .mcp.json
 .vscode/
 opencode.jsonc

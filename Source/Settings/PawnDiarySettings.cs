@@ -1,8 +1,6 @@
-// All mod settings (connection, generation options, prompt-text overrides, and per-group
-// enable/instruction overrides) plus value clamping and save/load. ExposeData persists them — see
-// AGENTS.md ("IExposable"). The group catalog itself now lives in XML Defs (see
-// InteractionGroups.cs); this file only stores the player's per-group overrides, keyed by
-// group defName.
+// All mod settings (connection, generation options, per-group enable overrides, and persona edits)
+// plus value clamping and save/load. Prompt text, prompt templates, signal policies, and per-group
+// instructions are XML Defs, not save settings.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -100,13 +98,6 @@ namespace PawnDiary
         public string label = string.Empty;
         // Writing-style rule appended to prompts as the persona voice target.
         public string rule = string.Empty;
-        // Optional low-Consciousness replacements for the normal writing rule. Built-in overrides
-        // inherit XML values until hasConsciousnessRuleOverrides is true, which keeps old saves from
-        // accidentally erasing rules that did not exist in settings yet.
-        public string cloudedConsciousnessRule;
-        public string fadingConsciousnessRule;
-        public string barelyConsciousRule;
-        public bool hasConsciousnessRuleOverrides;
         // Internal theme tags used for weighted first-roll persona selection.
         public List<string> themes = new List<string>();
         // True when this row is a user-created persona (not an override of an XML Def).
@@ -117,28 +108,10 @@ namespace PawnDiary
         }
 
         public PersonaPresetConfig(string defName, string label, string rule, IEnumerable<string> themes, bool custom)
-            : this(defName, label, rule, null, null, null, themes, custom, false)
-        {
-        }
-
-        public PersonaPresetConfig(
-            string defName,
-            string label,
-            string rule,
-            string cloudedConsciousnessRule,
-            string fadingConsciousnessRule,
-            string barelyConsciousRule,
-            IEnumerable<string> themes,
-            bool custom,
-            bool hasConsciousnessRuleOverrides)
         {
             this.defName = defName ?? string.Empty;
             this.label = label ?? string.Empty;
             this.rule = rule ?? string.Empty;
-            this.cloudedConsciousnessRule = cloudedConsciousnessRule;
-            this.fadingConsciousnessRule = fadingConsciousnessRule;
-            this.barelyConsciousRule = barelyConsciousRule;
-            this.hasConsciousnessRuleOverrides = hasConsciousnessRuleOverrides;
             this.themes = PawnDiarySettings.NormalizeThemes(themes);
             this.custom = custom;
         }
@@ -148,10 +121,6 @@ namespace PawnDiary
             Scribe_Values.Look(ref defName, "defName", string.Empty);
             Scribe_Values.Look(ref label, "label", string.Empty);
             Scribe_Values.Look(ref rule, "rule", string.Empty);
-            Scribe_Values.Look(ref cloudedConsciousnessRule, "cloudedConsciousnessRule");
-            Scribe_Values.Look(ref fadingConsciousnessRule, "fadingConsciousnessRule");
-            Scribe_Values.Look(ref barelyConsciousRule, "barelyConsciousRule");
-            Scribe_Values.Look(ref hasConsciousnessRuleOverrides, "hasConsciousnessRuleOverrides", false);
             Scribe_Collections.Look(ref themes, "themes", LookMode.Value);
             Scribe_Values.Look(ref custom, "custom", false);
         }
@@ -182,25 +151,6 @@ namespace PawnDiary
         // stuck on "writing...") in the pawn Diary tab, without the full LLM diagnostic block. Lets a
         // player see which events never finished generating. Normal mode always hides them.
         public bool showGeneratingEntries = false;
-        // System messages sent with each LLM request to set the model's behavior. One per narrative
-        // mode; the request's event type chooses which (see DiaryGameComponent.Generation.cs).
-        // systemPrompt = first-person diary voice; Reflection = first-person end-of-day reflection;
-        // Neutral = third-person factual chronicle (death/arrival descriptions).
-        public string systemPrompt = DefaultSystemPrompt;
-        public string systemPromptReflection = DefaultSystemPromptReflection;
-        public string systemPromptNeutral = DefaultSystemPromptNeutral;
-        // Title generation: short chat-style subject for an existing diary entry.
-        // Used only by the title follow-up flow; main entries never send this prompt.
-        public string systemPromptTitle = DefaultSystemPromptTitle;
-        // User-message prompt text appended after the structured context for the main diary flows.
-        public string singlePovInstruction = DefaultSinglePovInstruction;
-        public string recipientFollowupInstruction = DefaultRecipientFollowupInstruction;
-        // Neutral user-message prompt text for one-off chronicled events.
-        public string deathDescriptionInstruction = DefaultDeathDescriptionInstruction;
-        public string arrivalDescriptionInstruction = DefaultArrivalDescriptionInstruction;
-        // User-message suffix for the separate title-generation follow-up call.
-        public string titleUserInstruction = DefaultTitleUserInstruction;
-
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
         public bool generateTitles = true;
@@ -217,10 +167,9 @@ namespace PawnDiary
         public float socialGenerationWeight = 1f;
 
         // Per interaction-group settings, keyed by InteractionGroup.defName.
-        // groupEnabled: whether interactions in the group are recorded at all.
-        // groupInstructions: optional override of the group's default diary prompt.
+        // groupEnabled: whether interactions in the group are recorded at all. Prompt wording is
+        // XML-only and lives on DiaryInteractionGroupDef / DiaryPromptTemplateDef.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
-        public Dictionary<string, string> groupInstructions = new Dictionary<string, string>();
         // Persona preset edits made in settings: XML override rows plus user-created custom personas.
         public List<PersonaPresetConfig> personaPresets = new List<PersonaPresetConfig>();
 
@@ -228,8 +177,6 @@ namespace PawnDiary
         // serialization cannot handle Dictionary directly).
         private List<string> groupEnabledKeys;
         private List<bool> groupEnabledValues;
-        private List<string> groupInstructionKeys;
-        private List<string> groupInstructionValues;
 
         // Default local LLM server endpoint (LM Studio/OpenAI-compatible local servers).
         public const string DefaultEndpointUrl = "http://localhost:1234/v1";
@@ -251,132 +198,6 @@ namespace PawnDiary
             "xhigh"
         };
 
-        // Known old defaults used only for save migration. Settings store prompt text in the save
-        // file, so players who never customized prompts would otherwise keep the weaker defaults
-        // forever. Custom text is left alone because it will not match these exact strings after
-        // newline normalization.
-        private const string LegacySinglePovInstruction =
-            "Write one to three complete first-person diary sentences from this pawn's point of view. Keep it short. Prefer a shorter complete entry over covering every detail. Output only the diary entry.";
-
-        private const string LegacyRecipientFollowupInstruction =
-            "Write one to three complete first-person diary sentences from the recipient's point of view. Keep it short. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Prefer a shorter complete entry over covering every detail. Output only the diary entry.";
-
-        private const string LegacySystemPromptXml =
-            "You write diary entries for RimWorld colonists. Each entry is first-person, in character, and one to three complete sentences.\n"
-            + "Rules:\n"
-            + "- Only describe what the colonist knows or feels. Never invent facts not in the notes.\n"
-            + "- Match the colonist's persona voice. Reflect their mood and opinion of others.\n"
-            + "- Use structured context as private evidence for voice, focus, and emotional subtext. Let pawn state, relationship, setting, and tone shape word choice; do not list fields back as a checklist.\n"
-            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
-            + "- If a tone cue is given, let it color the entry's emotional register.\n"
-            + "- Keep the entry short. If the notes are dense, choose the most emotionally important detail instead of continuing.\n"
-            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
-            + "- Return only the diary text\u2014no labels, headers, or commentary.";
-
-        private const string LegacySystemPromptCode =
-            "You are the diary-writer for a RimWorld colony. You receive structured notes about a social interaction between colonists and write short, first-person diary entries in the voice of the colonist whose point of view is requested. Each entry is one to three complete sentences.\n"
-            + "Rules:\n"
-            + "- Write only what that colonist could plausibly know, see, or feel. Never invent events, names, places, or facts that are not in the notes.\n"
-            + "- Stay in first person and in character. Reflect the colonist's persona, mood, and their opinion of the other pawn.\n"
-            + "- Use structured context as private evidence for voice, focus, and emotional subtext. Let pawn state, relationship, setting, and tone shape word choice; do not list fields back as a checklist.\n"
-            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
-            + "- Keep the entry short. If the notes are dense, choose the most emotionally important detail instead of continuing.\n"
-            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
-            + "- Be concrete and grounded in the provided context; do not moralize or summarize game mechanics.\n"
-            + "- If another pawn's diary entry is included as hidden context, use it only for continuity and contrast; the current pawn has not read it unless the notes say so.\n"
-            + "- If a tone cue is given, let it color the entry's emotional register.\n"
-            + "- Return only the diary text. Do not use markdown, headings, labels, or commentary.";
-
-        private const string LegacySystemPromptReflectionXml =
-            "You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and two to four complete sentences.\n"
-            + "Rules:\n"
-            + "- Only use the day's listed moments. Never invent facts not in the notes.\n"
-            + "- Match the colonist's persona voice; weave the moments into one reflection rather than listing them. These are moments they already lived\u2014reflect on how the day felt, do not mention counts.\n"
-            + "- Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.\n"
-            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
-            + "- Keep the reflection brief. If many moments are listed, blend only the ones that would still matter emotionally.\n"
-            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
-            + "- If a tone cue is given, let it color the reflection's emotional register.\n"
-            + "- Return only the diary text\u2014no labels, headers, or commentary.";
-
-        private const string LegacySystemPromptReflectionCode =
-            "You are the diary-writer for a RimWorld colony. You receive a short list of one colonist's most notable moments from the day and write a brief, first-person end-of-day reflection in that colonist's voice, looking back on the day as a whole. Each reflection is two to four complete sentences.\n"
-            + "Rules:\n"
-            + "- Use only the listed moments. Never invent events, names, places, or facts that are not in the notes.\n"
-            + "- Stay in first person and in character; reflect the colonist's persona and mood. Weave the moments together rather than listing them.\n"
-            + "- Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.\n"
-            + "- If important health is supplied, treat it as high-priority body and mood pressure. Weave it in only when it naturally matters; do not recite the field.\n"
-            + "- These are moments the colonist already lived through, so reflect on how the day felt rather than re-reporting each one. Do not mention counts.\n"
-            + "- Keep the reflection brief. If many moments are listed, blend only the ones that would still matter emotionally.\n"
-            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
-            + "- If a tone cue is given, let it color the reflection's emotional register.\n"
-            + "- Return only the diary text. Do not use markdown, headings, labels, or commentary.";
-
-        private const string LegacySystemPromptEventSubjectGuard =
-            "You write diary entries for RimWorld colonists. Each entry is first-person, in character, and one to three complete sentences.\n"
-            + "Rules:\n"
-            + "- The subject is the current diary event: event, what you saw/what happened, instruction, and current POV/role. Use or clearly paraphrase at least one concrete event fact.\n"
-            + "- Use only supplied facts. Do not invent events, dialogue, locations, job shifts, treatment, weapons, time passing, motives, outcomes, or props.\n"
-            + "- Treat persona, relationship, setting, weapon, mood, thought, health, hidden diary, and last-opener fields as supporting context for voice, focus, and emotional subtext. They may color the event; they must not become a new scene.\n"
-            + "- If context is thin, write a specific reaction to the actual event rather than vague filler.\n"
-            + "- Match the colonist's persona voice. Reflect their mood and opinion of others.\n"
-            + "- If important health is supplied, use it only as physical or mood pressure unless the actual event is medical. Mention it, at most, in one short phrase; do not invent bandages, infirmary trips, treatment, or weapon handling from health alone.\n"
-            + "- If another pawn's diary entry is included as hidden context, use it only for continuity and contrast; the current pawn has not read it unless the notes say so.\n"
-            + "- If a tone cue is given, let it color the entry's emotional register.\n"
-            + "- Quoted speech is allowed only when the user instruction explicitly allows it. Quotation marks may contain only words plausibly spoken by the current POV pawn; paraphrase everyone else.\n"
-            + "- Keep the entry short. If the notes are dense, choose the main event and one supporting detail instead of continuing.\n"
-            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
-            + "- Return only the diary text. Do not use markdown, headings, labels, or commentary.\n"
-            + "Examples:\n"
-            + "Context: pov: Lio; what you saw: Lio insulted Mara; relationship: opinion cold\n"
-            + "Good: I let the insult land on Mara because I was too angry to swallow it.\n"
-            + "Bad: Mara said, \"I hate you,\" and everyone in the room turned against me.\n"
-            + "Context: event: ideology & conversion; pov: Juno; with: Cass; what you saw: conversion ended with a careful public line; important health: severe bleeding\n"
-            + "Good: Cass pressed faith against faith while my torso burned, so I held to the careful line we could both repeat.\n"
-            + "Bad: I changed my bandages, set down my rifle, and tried to reach the infirmary.\n"
-            + "Context: pov: Mara; what happened: Mara felt inspired to craft\n"
-            + "Good: The plan for my next piece kept my hands itching, so I held onto that spark before the day could grind it down.\n"
-            + "Bad: Today was an important event and it changed how I felt.";
-
-        private const string LegacySystemPromptReflectionEventSubjectGuard =
-            "You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and two to four complete sentences.\n"
-            + "Rules:\n"
-            + "- Only use the day's listed moments. Never invent facts, events, names, motives, dialogue, or outcomes not in the notes.\n"
-            + "- The chosen listed moments, not optional context, are the subject of the reflection. Anchor the reflection in one or two concrete listed moments that would still matter emotionally; avoid generic day-summary filler.\n"
-            + "- Match the colonist's persona voice; weave the moments into one reflection rather than listing them. These are moments they already lived, so reflect on how the day felt, not counts or log order.\n"
-            + "- Treat structured context as private evidence for voice, focus, and emotional subtext; do not list fields back as a checklist.\n"
-            + "- If important health is supplied, use it only as physical or mood pressure unless a listed moment is medical. Mention it, at most, in one short phrase; do not invent bandages, infirmary trips, treatment, or new medical scenes from health alone.\n"
-            + "- Keep the reflection brief. If many moments are listed, blend only the ones that would still matter emotionally.\n"
-            + "- End with normal sentence punctuation (period, exclamation point, or question mark). Do not end with a fragment, cliffhanger, ellipsis, or trailing comma.\n"
-            + "- If a tone cue is given, let it color the reflection's emotional register.\n"
-            + "- Return only the diary text. Do not use markdown, headings, labels, or commentary.\n"
-            + "Examples:\n"
-            + "Context: moments: tended Drifter's infection; hauled stone in the rain; mood: tired\n"
-            + "Good: The rain made every stone feel heavier, but I kept thinking about Drifter's fever and whether my hands had helped enough.\n"
-            + "Bad: Several notable things happened today and they affected my mood.";
-
-        // Default comes from the DiaryPromptDef XML (editable without recompiling). If the Def
-        // isn't loaded yet during early startup, the field initializer in DiaryPromptDef
-        // provides the same hardcoded text as a fallback.
-        public static string DefaultSystemPrompt => DiaryPrompts.Current.systemPrompt;
-        public static string DefaultSystemPromptReflection => DiaryPrompts.Current.systemPromptReflection;
-        public static string DefaultSystemPromptNeutral => DiaryPrompts.Current.systemPromptNeutral;
-        public static string DefaultSystemPromptTitle => DiaryPrompts.Current.titleSystemPrompt;
-        public static string DefaultSinglePovInstruction => DiaryPrompts.Current.singlePovInstruction;
-        public static string DefaultRecipientFollowupInstruction => DiaryPrompts.Current.recipientFollowupInstruction;
-        public static string DefaultDeathDescriptionInstruction => DiaryPrompts.Current.deathDescriptionInstruction;
-        public static string DefaultArrivalDescriptionInstruction => DiaryPrompts.Current.arrivalDescriptionInstruction;
-        public static string DefaultTitleUserInstruction => DiaryPrompts.Current.titleUserInstruction;
-
-        // Static helpers so generation code can read the live settings safely even before a settings
-        // window has ever been opened. Blank strings are intentional player choices; only null falls
-        // back to the XML-defined default.
-        public static string CurrentSinglePovInstruction => PawnDiaryMod.Settings?.singlePovInstruction ?? DefaultSinglePovInstruction;
-        public static string CurrentRecipientFollowupInstruction => PawnDiaryMod.Settings?.recipientFollowupInstruction ?? DefaultRecipientFollowupInstruction;
-        public static string CurrentDeathDescriptionInstruction => PawnDiaryMod.Settings?.deathDescriptionInstruction ?? DefaultDeathDescriptionInstruction;
-        public static string CurrentArrivalDescriptionInstruction => PawnDiaryMod.Settings?.arrivalDescriptionInstruction ?? DefaultArrivalDescriptionInstruction;
-        public static string CurrentTitleUserInstruction => PawnDiaryMod.Settings?.titleUserInstruction ?? DefaultTitleUserInstruction;
-
         public override void ExposeData()
         {
             Scribe_Collections.Look(ref apiEndpoints, "apiEndpoints", LookMode.Deep);
@@ -388,69 +209,19 @@ namespace PawnDiary
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
             Scribe_Values.Look(ref showGeneratingEntries, "showGeneratingEntries", false);
-            Scribe_Values.Look(ref systemPrompt, "systemPrompt", DefaultSystemPrompt);
-            Scribe_Values.Look(ref systemPromptReflection, "systemPromptReflection", DefaultSystemPromptReflection);
-            Scribe_Values.Look(ref systemPromptNeutral, "systemPromptNeutral", DefaultSystemPromptNeutral);
-            Scribe_Values.Look(ref systemPromptTitle, "systemPromptTitle", DefaultSystemPromptTitle);
-            Scribe_Values.Look(ref singlePovInstruction, "singlePovInstruction", DefaultSinglePovInstruction);
-            Scribe_Values.Look(ref recipientFollowupInstruction, "recipientFollowupInstruction", DefaultRecipientFollowupInstruction);
-            Scribe_Values.Look(ref deathDescriptionInstruction, "deathDescriptionInstruction", DefaultDeathDescriptionInstruction);
-            Scribe_Values.Look(ref arrivalDescriptionInstruction, "arrivalDescriptionInstruction", DefaultArrivalDescriptionInstruction);
-            Scribe_Values.Look(ref titleUserInstruction, "titleUserInstruction", DefaultTitleUserInstruction);
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
-            Scribe_Collections.Look(ref groupInstructions, "interactionGroupInstructions", LookMode.Value, LookMode.Value, ref groupInstructionKeys, ref groupInstructionValues);
             Scribe_Collections.Look(ref personaPresets, "personaPresets", LookMode.Deep);
 
             ClampValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                UpgradeUntouchedPromptDefaults();
                 DiaryPersonas.InvalidateCache();
             }
-        }
-
-        /// <summary>
-        /// Moves saved prompt fields from known old defaults to the current XML defaults. This lets
-        /// default users receive prompt-quality fixes while preserving any custom Prompt Studio text.
-        /// </summary>
-        private void UpgradeUntouchedPromptDefaults()
-        {
-            UpgradePromptIfLegacyDefault(ref singlePovInstruction, DefaultSinglePovInstruction,
-                LegacySinglePovInstruction);
-            UpgradePromptIfLegacyDefault(ref recipientFollowupInstruction, DefaultRecipientFollowupInstruction,
-                LegacyRecipientFollowupInstruction);
-            UpgradePromptIfLegacyDefault(ref systemPrompt, DefaultSystemPrompt,
-                LegacySystemPromptXml, LegacySystemPromptCode, LegacySystemPromptEventSubjectGuard);
-            UpgradePromptIfLegacyDefault(ref systemPromptReflection, DefaultSystemPromptReflection,
-                LegacySystemPromptReflectionXml, LegacySystemPromptReflectionCode, LegacySystemPromptReflectionEventSubjectGuard);
-        }
-
-        private static void UpgradePromptIfLegacyDefault(ref string value, string currentDefault, params string[] legacyDefaults)
-        {
-            if (value == null || legacyDefaults == null)
-            {
-                return;
-            }
-
-            string normalizedValue = NormalizePromptText(value);
-            for (int i = 0; i < legacyDefaults.Length; i++)
-            {
-                if (string.Equals(normalizedValue, NormalizePromptText(legacyDefaults[i]), StringComparison.Ordinal))
-                {
-                    value = currentDefault;
-                    return;
-                }
-            }
-        }
-
-        private static string NormalizePromptText(string value)
-        {
-            return (value ?? string.Empty).Replace("\r\n", "\n").Trim();
         }
 
         /// <summary>
@@ -462,23 +233,6 @@ namespace PawnDiary
             {
                 new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName)
             };
-        }
-
-        /// <summary>
-        /// Restores every prompt-text field back to the current XML-defined defaults.
-        /// This leaves event-group overrides alone because they are tuned separately.
-        /// </summary>
-        public void ResetPromptTextDefaults()
-        {
-            systemPrompt = DefaultSystemPrompt;
-            systemPromptReflection = DefaultSystemPromptReflection;
-            systemPromptNeutral = DefaultSystemPromptNeutral;
-            systemPromptTitle = DefaultSystemPromptTitle;
-            singlePovInstruction = DefaultSinglePovInstruction;
-            recipientFollowupInstruction = DefaultRecipientFollowupInstruction;
-            deathDescriptionInstruction = DefaultDeathDescriptionInstruction;
-            arrivalDescriptionInstruction = DefaultArrivalDescriptionInstruction;
-            titleUserInstruction = DefaultTitleUserInstruction;
         }
 
         // ---- API endpoint helpers ----
@@ -807,8 +561,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the effective prompt instruction for a group: the player's override if
-        /// set and non-blank, otherwise the group's XML-defined default.
+        /// Returns the effective prompt instruction for a group. Prompt wording is XML-only so
+        /// tuning stays in Defs instead of save settings.
         /// </summary>
         public string InstructionForGroup(DiaryInteractionGroupDef group)
         {
@@ -817,21 +571,11 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            EnsureGroupDictionaries();
-
-            string instruction;
-            if (groupInstructions.TryGetValue(group.defName, out instruction) && !string.IsNullOrWhiteSpace(instruction))
-            {
-                return instruction.Trim();
-            }
-
             return group.instruction;
         }
 
         /// <summary>
-        /// Returns the instruction text as-is for editing in the settings UI. Unlike
-        /// InstructionForGroup, this returns the stored string even if blank so the
-        /// player can see and edit an empty override.
+        /// Returns the XML instruction text for settings preview. It is no longer editable in saves.
         /// </summary>
         public string EditableInstructionForGroup(DiaryInteractionGroupDef group)
         {
@@ -840,35 +584,21 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            EnsureGroupDictionaries();
-
-            string instruction;
-            if (groupInstructions.TryGetValue(group.defName, out instruction))
-            {
-                return instruction;
-            }
-
             return group.instruction;
         }
 
         /// <summary>
-        /// Stores a player override instruction for a group.
+        /// Obsolete compatibility shim. Prompt instructions are XML-only.
         /// </summary>
         public void SetGroupInstruction(string groupKey, string instruction)
         {
-            EnsureGroupDictionaries();
-            groupInstructions[groupKey] = instruction ?? string.Empty;
         }
 
         /// <summary>
-        /// Removes the player's instruction override so the group falls back to its XML default.
+        /// Obsolete compatibility shim. Prompt instructions are XML-only.
         /// </summary>
         public void ResetGroupInstruction(string groupKey)
         {
-            if (groupInstructions != null)
-            {
-                groupInstructions.Remove(groupKey);
-            }
         }
 
         /// <summary>
@@ -878,7 +608,6 @@ namespace PawnDiary
         {
             EnsureGroupDictionaries();
             groupEnabled.Clear();
-            groupInstructions.Clear();
         }
 
         /// <summary>
@@ -891,51 +620,6 @@ namespace PawnDiary
             EnsurePersonaPresetList();
 
             EnsureEndpointsList();
-
-            if (systemPrompt == null)
-            {
-                systemPrompt = string.Empty;
-            }
-
-            if (systemPromptReflection == null)
-            {
-                systemPromptReflection = string.Empty;
-            }
-
-            if (systemPromptNeutral == null)
-            {
-                systemPromptNeutral = string.Empty;
-            }
-
-            if (systemPromptTitle == null)
-            {
-                systemPromptTitle = string.Empty;
-            }
-
-            if (singlePovInstruction == null)
-            {
-                singlePovInstruction = string.Empty;
-            }
-
-            if (recipientFollowupInstruction == null)
-            {
-                recipientFollowupInstruction = string.Empty;
-            }
-
-            if (deathDescriptionInstruction == null)
-            {
-                deathDescriptionInstruction = string.Empty;
-            }
-
-            if (arrivalDescriptionInstruction == null)
-            {
-                arrivalDescriptionInstruction = string.Empty;
-            }
-
-            if (titleUserInstruction == null)
-            {
-                titleUserInstruction = string.Empty;
-            }
 
             timeoutSeconds = Mathf.Clamp(timeoutSeconds, 5, 300);
             maxConcurrentRequests = Mathf.Clamp(maxConcurrentRequests, 1, 16);
@@ -954,11 +638,6 @@ namespace PawnDiary
             if (groupEnabled == null)
             {
                 groupEnabled = new Dictionary<string, bool>();
-            }
-
-            if (groupInstructions == null)
-            {
-                groupInstructions = new Dictionary<string, string>();
             }
         }
 
@@ -1013,22 +692,6 @@ namespace PawnDiary
         /// </summary>
         public void SetPersonaOverride(string defName, string label, string rule, IEnumerable<string> themes)
         {
-            SetPersonaOverride(defName, label, rule, null, null, null, themes, false);
-        }
-
-        /// <summary>
-        /// Upserts an override row for an XML persona Def, including optional low-Consciousness rules.
-        /// </summary>
-        public void SetPersonaOverride(
-            string defName,
-            string label,
-            string rule,
-            string cloudedConsciousnessRule,
-            string fadingConsciousnessRule,
-            string barelyConsciousRule,
-            IEnumerable<string> themes,
-            bool hasConsciousnessRuleOverrides)
-        {
             if (string.IsNullOrWhiteSpace(defName))
             {
                 return;
@@ -1042,22 +705,14 @@ namespace PawnDiary
                     defName,
                     label,
                     rule,
-                    cloudedConsciousnessRule,
-                    fadingConsciousnessRule,
-                    barelyConsciousRule,
                     themes,
-                    false,
-                    hasConsciousnessRuleOverrides);
+                    false);
                 personaPresets.Add(existing);
             }
             else
             {
                 existing.label = label ?? string.Empty;
                 existing.rule = rule ?? string.Empty;
-                existing.cloudedConsciousnessRule = hasConsciousnessRuleOverrides ? cloudedConsciousnessRule ?? string.Empty : null;
-                existing.fadingConsciousnessRule = hasConsciousnessRuleOverrides ? fadingConsciousnessRule ?? string.Empty : null;
-                existing.barelyConsciousRule = hasConsciousnessRuleOverrides ? barelyConsciousRule ?? string.Empty : null;
-                existing.hasConsciousnessRuleOverrides = hasConsciousnessRuleOverrides;
                 existing.themes = NormalizeThemes(themes);
                 existing.custom = false;
             }
@@ -1184,18 +839,6 @@ namespace PawnDiary
 
                 preset.label = preset.label ?? string.Empty;
                 preset.rule = preset.rule ?? string.Empty;
-                if (preset.custom || preset.hasConsciousnessRuleOverrides)
-                {
-                    preset.cloudedConsciousnessRule = preset.cloudedConsciousnessRule ?? string.Empty;
-                    preset.fadingConsciousnessRule = preset.fadingConsciousnessRule ?? string.Empty;
-                    preset.barelyConsciousRule = preset.barelyConsciousRule ?? string.Empty;
-                }
-                else
-                {
-                    preset.cloudedConsciousnessRule = null;
-                    preset.fadingConsciousnessRule = null;
-                    preset.barelyConsciousRule = null;
-                }
 
                 if (preset.themes == null)
                 {

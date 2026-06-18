@@ -34,7 +34,9 @@ namespace PawnDiary
                 return;
             }
 
-            if (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.IsThoughtEnabled(thought.def))
+            if (PawnDiaryMod.Settings == null
+                || !DiarySignalPolicies.Enabled(DiarySignalPolicies.Thought)
+                || !PawnDiaryMod.Settings.IsThoughtEnabled(thought.def))
             {
                 return;
             }
@@ -44,22 +46,22 @@ namespace PawnDiary
                 return;
             }
 
-            if (MatchesAnyToken(thought.def, DiaryTuning.Current.thoughtIgnoreTokens))
+            if (MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtIgnoreTokens))
             {
                 return;
             }
 
             float moodOffset = GetThoughtMoodOffset(thought);
-            bool isEatingThought = MatchesAnyToken(thought.def, DiaryTuning.Current.thoughtEatingTokens);
-            bool bypassThreshold = MatchesAnyToken(thought.def, DiaryTuning.Current.thoughtBypassThresholdTokens);
+            bool isEatingThought = MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtEatingTokens);
+            bool bypassThreshold = MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtBypassThresholdTokens);
 
             // Bypass thoughts (death, banishment, etc.) are always recorded regardless of magnitude.
             // Everything else must clear its threshold; eating thoughts use the higher bar.
             if (!bypassThreshold)
             {
                 float minMoodOffset = isEatingThought
-                    ? DiaryTuning.Current.thoughtEatingMinMoodOffset
-                    : DiaryTuning.Current.thoughtMinMoodOffset;
+                    ? DiarySignalPolicies.ThoughtEatingMinMoodOffset
+                    : DiarySignalPolicies.ThoughtMinMoodOffset;
                 if (Mathf.Abs(moodOffset) < minMoodOffset)
                 {
                     return;
@@ -67,7 +69,7 @@ namespace PawnDiary
             }
 
             string dedupKey = "thought|" + pawn.GetUniqueLoadID() + "|" + thought.def.defName;
-            if (RecentlyRecorded(recentThoughtEvents, dedupKey, DiaryTuning.Current.thoughtDedupTicks))
+            if (RecentlyRecorded(recentThoughtEvents, dedupKey, DiarySignalPolicies.ThoughtDedupTicks))
             {
                 return;
             }
@@ -78,7 +80,8 @@ namespace PawnDiary
 
             string moodImpact = MoodImpact.Classify(moodOffset);
 
-            if (MatchesAnyToken(thought.def, DiaryTuning.Current.thoughtAmbientTokens))
+            if (DiarySignalPolicies.Enabled(DiarySignalPolicies.AmbientThought)
+                && MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtAmbientTokens))
             {
                 RecordAmbientThought(pawn, thought.def, label, moodOffset, moodImpact, instruction);
                 return;

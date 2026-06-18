@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Signal policies tune C# event trackers without moving tracker code into settings.
+  C# tracks facts such as temporary thoughts, staged need thoughts, and current work.
+  XML decides thresholds, token lists, cooldowns, and weights.
+-->
+<Defs>
+
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_Thought</defName>
+    <signalKey>Thought</signalKey>
+    <enabled>true</enabled>
+    <dedupTicks>2500</dedupTicks>
+    <minMoodOffset>5</minMoodOffset>
+    <eatingMinMoodOffset>15</eatingMinMoodOffset>
+    <ignoreTokens>
+      <li>Room</li>
+      <li>Environment</li>
+      <li>ObservedCorpse</li>
+    </ignoreTokens>
+    <bypassThresholdTokens>
+      <li>Death</li>
+      <li>Died</li>
+      <li>Killed</li>
+      <li>Executed</li>
+      <li>Banished</li>
+      <li>Abandoned</li>
+    </bypassThresholdTokens>
+    <eatingTokens>
+      <li>Ate</li>
+      <li>Food</li>
+      <li>Meal</li>
+      <li>Cannibalism</li>
+      <li>RawFood</li>
+    </eatingTokens>
+    <ambientTokens>
+      <li>Nuzzled</li>
+      <li>KindWordsMood</li>
+      <li>InsultedMood</li>
+      <li>AttendedParty</li>
+      <li>AttendedConcert</li>
+      <li>HeldConcert</li>
+      <li>EncouragingSpeech</li>
+      <li>InspirationalSpeech</li>
+      <li>TerribleSpeech</li>
+      <li>SleptInBarracks</li>
+      <li>ObservedLayingRottingCorpse</li>
+    </ambientTokens>
+  </PawnDiary.DiarySignalPolicyDef>
+
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_AmbientThought</defName>
+    <signalKey>AmbientThought</signalKey>
+    <enabled>true</enabled>
+    <ambientWindowTicks>60000</ambientWindowTicks>
+    <ambientMinEventsToWrite>2</ambientMinEventsToWrite>
+    <ambientMaxSampleLines>5</ambientMaxSampleLines>
+  </PawnDiary.DiarySignalPolicyDef>
+
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_ThoughtProgression</defName>
+    <signalKey>ThoughtProgression</signalKey>
+    <enabled>true</enabled>
+    <scanIntervalTicks>250</scanIntervalTicks>
+    <dedupTicks>2500</dedupTicks>
+    <thoughtProgressionRules>
+      <li>
+        <categoryKey>food</categoryKey>
+        <thoughtDefName>NeedFood</thoughtDefName>
+        <stages>
+          <li><stageIndex>2</stageIndex><severity>1</severity></li>
+          <li><stageIndex>3</stageIndex><severity>2</severity></li>
+          <li><stageIndex>4</stageIndex><severity>3</severity></li>
+          <li><stageIndex>5</stageIndex><severity>4</severity></li>
+          <li><stageIndex>6</stageIndex><severity>5</severity></li>
+        </stages>
+      </li>
+      <li>
+        <categoryKey>rest</categoryKey>
+        <thoughtDefName>NeedRest</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li>
+          <li><stageIndex>2</stageIndex><severity>2</severity></li>
+        </stages>
+      </li>
+      <li>
+        <categoryKey>outdoors</categoryKey>
+        <thoughtDefName>NeedOutdoors</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li>
+          <li><stageIndex>0</stageIndex><severity>2</severity></li>
+        </stages>
+      </li>
+      <li>
+        <categoryKey>chemical</categoryKey>
+        <thoughtDefName>DrugDesireInterest</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li>
+          <li><stageIndex>2</stageIndex><severity>2</severity></li>
+        </stages>
+      </li>
+      <li>
+        <categoryKey>chemical</categoryKey>
+        <thoughtDefName>DrugDesireFascination</thoughtDefName>
+        <stages>
+          <li><stageIndex>1</stageIndex><severity>1</severity></li>
+          <li><stageIndex>2</stageIndex><severity>2</severity></li>
+        </stages>
+      </li>
+    </thoughtProgressionRules>
+  </PawnDiary.DiarySignalPolicyDef>
+
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_Work</defName>
+    <signalKey>Work</signalKey>
+    <enabled>true</enabled>
+    <scanIntervalTicks>2500</scanIntervalTicks>
+    <baseChance>0.08</baseChance>
+    <sameTypeCooldownTicks>180000</sameTypeCooldownTicks>
+    <recentDifferentTypeMultiplier>0.5</recentDifferentTypeMultiplier>
+    <passionChanceMultiplier>1.4</passionChanceMultiplier>
+    <negativeChanceMultiplier>1.2</negativeChanceMultiplier>
+    <darkStudyChanceMultiplier>1.5</darkStudyChanceMultiplier>
+    <lowSkillThreshold>4</lowSkillThreshold>
+  </PawnDiary.DiarySignalPolicyDef>
+
+</Defs>

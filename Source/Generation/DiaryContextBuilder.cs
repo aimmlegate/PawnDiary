@@ -290,13 +290,13 @@ namespace PawnDiary
             string activeConditions = BuildActiveMapConditionsSummary(pawn.Map);
             if (!string.IsNullOrWhiteSpace(activeConditions))
             {
-                parts.Add("PawnDiary.Ctx.ActiveConditions".Translate(activeConditions));
+                parts.Add(DiaryContextReactions.Format(DiaryContextReactions.ActiveMapConditions, activeConditions));
             }
 
             string recentThreat = BuildRecentThreatSummary(pawn.Map);
             if (!string.IsNullOrWhiteSpace(recentThreat))
             {
-                parts.Add("PawnDiary.Ctx.RecentThreat".Translate(recentThreat));
+                parts.Add(DiaryContextReactions.Format(DiaryContextReactions.RecentThreatLetter, recentThreat));
             }
 
             string nearby = BuildNearbyThingsSummary(pawn);
@@ -323,6 +323,12 @@ namespace PawnDiary
         // already handled by the GameCondition start patch.
         private static string BuildActiveMapConditionsSummary(Map map)
         {
+            DiaryContextReactionDef policy = DiaryContextReactions.ForKey(DiaryContextReactions.ActiveMapConditions);
+            if (!policy.enabled)
+            {
+                return string.Empty;
+            }
+
             List<GameCondition> conditions = map?.gameConditionManager?.ActiveConditions;
             if (conditions == null || conditions.Count == 0)
             {
@@ -331,10 +337,13 @@ namespace PawnDiary
 
             List<string> labels = new List<string>();
             HashSet<string> seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < conditions.Count && labels.Count < MaxActiveMapConditions; i++)
+            int maxConditions = Math.Max(0, DiaryContextReactions.MaxItems(
+                DiaryContextReactions.ActiveMapConditions,
+                MaxActiveMapConditions));
+            for (int i = 0; i < conditions.Count && labels.Count < maxConditions; i++)
             {
                 GameCondition condition = conditions[i];
-                if (condition?.def == null || !condition.def.displayOnUI)
+                if (condition?.def == null || (policy.displayOnUiOnly && !condition.def.displayOnUI))
                 {
                     continue;
                 }
@@ -359,11 +368,19 @@ namespace PawnDiary
         // archive messages becoming background flavor hours later.
         private static string BuildRecentThreatSummary(Map map)
         {
-            if (map == null
-                || !map.IsPlayerHome
-                || map.dangerWatcher == null
-                || map.dangerWatcher.DangerRating == StoryDanger.None
-                || Find.Archive == null)
+            DiaryContextReactionDef policy = DiaryContextReactions.ForKey(DiaryContextReactions.RecentThreatLetter);
+            if (!policy.enabled || map == null || Find.Archive == null)
+            {
+                return string.Empty;
+            }
+
+            if (policy.requireHomeMap && !map.IsPlayerHome)
+            {
+                return string.Empty;
+            }
+
+            if (policy.requireDanger
+                && (map.dangerWatcher == null || map.dangerWatcher.DangerRating == StoryDanger.None))
             {
                 return string.Empty;
             }
@@ -375,8 +392,14 @@ namespace PawnDiary
             }
 
             int nowTicks = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
+            int scanBack = Math.Max(0, DiaryContextReactions.ScanBack(
+                DiaryContextReactions.RecentThreatLetter,
+                MaxThreatLetterScanBack));
+            int timeoutTicks = Math.Max(0, DiaryContextReactions.TimeoutTicks(
+                DiaryContextReactions.RecentThreatLetter,
+                RecentThreatTimeoutTicks));
             int scanned = 0;
-            for (int i = archivables.Count - 1; i >= 0 && scanned < MaxThreatLetterScanBack; i--, scanned++)
+            for (int i = archivables.Count - 1; i >= 0 && scanned < scanBack; i--, scanned++)
             {
                 IArchivable archivable = archivables[i];
                 Letter letter = archivable as Letter;
@@ -385,12 +408,12 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (letter.def != LetterDefOf.ThreatBig && letter.def != LetterDefOf.ThreatSmall)
+                if (!DiaryContextReactions.LetterDefAllowed(policy, letter.def.defName))
                 {
                     continue;
                 }
 
-                if (ThreatLetterIsStale(archivable, nowTicks))
+                if (ThreatLetterIsStale(archivable, nowTicks, timeoutTicks))
                 {
                     return string.Empty;
                 }
@@ -402,9 +425,9 @@ namespace PawnDiary
             return string.Empty;
         }
 
-        private static bool ThreatLetterIsStale(IArchivable archivable, int nowTicks)
+        private static bool ThreatLetterIsStale(IArchivable archivable, int nowTicks, int timeoutTicks)
         {
-            if (archivable == null || nowTicks < 0)
+            if (archivable == null || nowTicks < 0 || timeoutTicks <= 0)
             {
                 return false;
             }
@@ -412,7 +435,7 @@ namespace PawnDiary
             try
             {
                 int createdTicks = archivable.CreatedTicksGame;
-                return createdTicks > 0 && nowTicks - createdTicks > RecentThreatTimeoutTicks;
+                return createdTicks > 0 && nowTicks - createdTicks > timeoutTicks;
             }
             catch
             {

@@ -267,13 +267,13 @@ namespace PawnDiary
 
             if (!initialArrivalScanPending && now >= nextWorkScanTick)
             {
-                nextWorkScanTick = now + Math.Max(250, DiaryTuning.Current.workScanIntervalTicks);
+                nextWorkScanTick = now + Math.Max(250, DiarySignalPolicies.WorkScanIntervalTicks);
                 ScanPawnWorkForDiaryEvents();
             }
 
             if (!initialArrivalScanPending && now >= nextThoughtProgressionScanTick)
             {
-                nextThoughtProgressionScanTick = now + Math.Max(250, DiaryTuning.Current.thoughtProgressionScanIntervalTicks);
+                nextThoughtProgressionScanTick = now + Math.Max(250, DiarySignalPolicies.ThoughtProgressionScanIntervalTicks);
                 ScanThoughtProgressionsForDiaryEvents(baselineThoughtProgressionsOnNextScan);
                 baselineThoughtProgressionsOnNextScan = false;
             }

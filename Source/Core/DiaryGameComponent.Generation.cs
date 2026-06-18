@@ -453,18 +453,17 @@ namespace PawnDiary
         /// </summary>
         private static string SystemPromptForEvent(DiaryEvent diaryEvent)
         {
-            PawnDiarySettings settings = PawnDiaryMod.Settings;
             if (diaryEvent.HasDeathDescription() || diaryEvent.HasArrivalDescription())
             {
-                return settings.systemPromptNeutral;
+                return DiaryPromptBuilder.SystemPromptForEvent(diaryEvent);
             }
 
             if (diaryEvent.IsDayReflection())
             {
-                return settings.systemPromptReflection;
+                return DiaryPromptBuilder.SystemPromptForEvent(diaryEvent);
             }
 
-            return settings.systemPrompt;
+            return DiaryPromptBuilder.SystemPromptForEvent(diaryEvent);
         }
 
         /// <summary>
@@ -826,7 +825,7 @@ namespace PawnDiary
                 eventId = diaryEvent.eventId,
                 povRole = povRole,
                 isTitleRequest = true,
-                systemPrompt = settings.systemPromptTitle,
+                systemPrompt = DiaryPromptBuilder.TitleSystemPrompt(),
                 rawText = DiaryPromptBuilder.BuildTitlePrompt(diaryEvent, povRole),
                 endpointUrl = target.url,
                 modelName = target.model,
@@ -971,9 +970,8 @@ namespace PawnDiary
         {
             // Missing records fall back to the XML default persona.
             string pawnId = PawnIdForRole(diaryEvent, povRole);
-            Pawn pawn = FindLivePawnByLoadId(pawnId);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
-            return DiaryPersonas.RuleFor(diary?.personaDefName, PromptEnchantments.ConsciousnessPersonaStateFor(pawn));
+            return DiaryPersonas.RuleFor(diary?.personaDefName);
         }
 
         /// <summary>
