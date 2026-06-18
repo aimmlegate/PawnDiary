@@ -29,3 +29,6 @@ prompt-lab/results/
 # Clean Workshop payload produced by scripts/publish.ps1
 dist/
 
+# Steam Workshop item id (account/local-specific; publish.ps1 copies it into dist/ regardless)
+About/PublishedFileId.txt
+
