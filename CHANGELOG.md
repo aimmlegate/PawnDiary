@@ -3,6 +3,13 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (all event groups enabled by default)**
+  - Enabled every shipped `DiaryInteractionGroupDef` by default, including teaching, small talk,
+    catch-all interaction/tale groups, insult-spree mental states, work-achievement tales, and quiet
+    personal tales.
+  - Updated the docs to describe event filtering as XML-owned policy with all bundled groups on by
+    default.
+
 - **2026-06-18 (combat tale batching)**
   - Added delayed per-pawn solo batching for non-death `talecombat` TaleRecorder events. Wounds,
     downings, hostile kills, fire/collapse scares, and similar combat bursts now wait for a

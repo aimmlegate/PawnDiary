@@ -244,8 +244,9 @@ weighted selection of major day events, opinion shifts, health-condition signals
 | Hediff | `ClassifyHediff(HediffDef)` | pregnancy, labor, major health changes, modded health signals |
 
 Matching is domain-scoped by exact `defName` or substring token. XML order matters; catch-all groups
-go last. Settings store only per-group enabled flags keyed by group `defName`; prompt instructions
-come from XML group/template defs.
+go last. All shipped groups default to enabled through XML, including catch-all and low-stakes
+ambient groups, so event filtering is now an XML policy edit rather than a saved settings toggle.
+Prompt instructions come from XML group/template defs.
 
 Social-interaction compatibility should stay XML-only when the other mod extends RimWorld's normal
 social system. If the mod emits `InteractionDef` rows through the play log, add a new
@@ -495,7 +496,7 @@ Core settings:
 | prompt XML defs | XML defaults | `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`, and group instructions remain the prompt source of truth for templates, final instructions, and event-specific wording. |
 | UI style XML def | XML defaults | `DiaryUiStyleDef.xml` controls Diary tab dimensions, card spacing, speech marker tags, accent palettes, and color-cue mappings. |
 | text decoration XML def | XML defaults | `DiaryTextDecorationDefs.xml` controls direct-speech/body text decorations, including hediff/trait/event matching, order, and intensity. |
-| event filters | XML defaults | `DiaryInteractionGroupDefs.xml` owns group matching and `defaultEnabled`; old saved group toggles are ignored. |
+| event filters | XML defaults | `DiaryInteractionGroupDefs.xml` owns group matching and default enablement; all shipped groups default on, and old saved group toggles are ignored. |
 | `personaPresets` | empty | Built-in overrides plus custom personas. |
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
 

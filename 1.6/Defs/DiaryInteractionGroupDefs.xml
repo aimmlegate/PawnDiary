@@ -361,7 +361,7 @@
     <label>Teaching &amp; lessons</label>
     <order>120</order>
     <domain>Interaction</domain>
-    <defaultEnabled>false</defaultEnabled>
+    <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <batch>
       <mode>AmbientDayNote</mode>
@@ -392,7 +392,7 @@
     <label>Small talk</label>
     <order>130</order>
     <domain>Interaction</domain>
-    <defaultEnabled>false</defaultEnabled>
+    <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <batch>
       <mode>AmbientDayNote</mode>
@@ -479,7 +479,7 @@
     <label>A quiet day</label>
     <order>140</order>
     <domain>Interaction</domain>
-    <defaultEnabled>false</defaultEnabled>
+    <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a social interaction between the pawns</instruction>
     <catchAll>true</catchAll>
@@ -506,7 +506,7 @@
     <label>Insult sprees</label>
     <order>205</order>
     <domain>MentalState</domain>
-    <defaultEnabled>false</defaultEnabled>
+    <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a pawn breaking into repeated verbal cruelty; prefer the actual insult log entries when they are recorded</instruction>
     <tone>with sour, needling anger</tone>
@@ -651,7 +651,7 @@
     <label>Work &amp; achievements</label>
     <order>330</order>
     <domain>Tale</domain>
-    <defaultEnabled>false</defaultEnabled>
+    <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</instruction>
     <matchDefNames>
@@ -733,7 +733,7 @@
     <label>Quiet personal moments</label>
     <order>350</order>
     <domain>Tale</domain>
-    <defaultEnabled>false</defaultEnabled>
+    <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</instruction>
     <tone>with small, private quiet</tone>
@@ -760,7 +760,7 @@
     <label>A notable day</label>
     <order>390</order>
     <domain>Tale</domain>
-    <defaultEnabled>false</defaultEnabled>
+    <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a notable non-social RimWorld tale involving the pawn</instruction>
     <catchAll>true</catchAll>
