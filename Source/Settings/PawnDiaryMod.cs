@@ -123,6 +123,9 @@ namespace PawnDiary
                 "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
                 ref Settings.enablePromptEnchantments,
                 "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
+            listing.Label("PawnDiary.Settings.Temperature".Translate(Settings.temperature.ToString("0.00")));
+            Settings.temperature = listing.Slider(Settings.temperature, 0f, 2f);
+            DrawHint(listing, "PawnDiary.Settings.TemperatureHelp".Translate());
             listing.Label("PawnDiary.Settings.WorkGenerationWeight".Translate(Settings.workGenerationWeight.ToString("0.##")));
             Settings.workGenerationWeight = listing.Slider(Settings.workGenerationWeight, 0f, 5f);
             DrawHint(listing, "PawnDiary.Settings.WorkGenerationWeightHelp".Translate());
@@ -1083,7 +1086,7 @@ namespace PawnDiary
             }
 
             // Generation controls, prompt studio, and persona-preset studio.
-            height += 280f;
+            height += 330f;
             height += 150f;
             height += 590f + PersonaTagPickerHeight();
 

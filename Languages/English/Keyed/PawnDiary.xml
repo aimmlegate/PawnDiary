@@ -104,6 +104,8 @@
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>When enabled, only extreme diary pages can use unusual spacing, staggered variable-size words, or dramatic strange-chat speech distortion. Mental breaks, anomaly/dark entries, death descriptions, and pages written while heavily impaired may be affected. Prompts and saved diary text are unchanged.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Use health-condition prompt hints</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live health cue. XML only controls which hediffs match and how often they appear; the prompt text stays compact and uses the game's hediff label, urgency, body part, and strongest impact cues.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.Temperature>LLM temperature: {0}</PawnDiary.Settings.Temperature>
+  <PawnDiary.Settings.TemperatureHelp>Controls model randomness for diary and title requests. Lower values are steadier and more literal; higher values are more varied and atmospheric but can drift from supplied facts.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.WorkGenerationWeight>Work random weight: {0}x</PawnDiary.Settings.WorkGenerationWeight>
   <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
   <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>

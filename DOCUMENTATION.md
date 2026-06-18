@@ -470,7 +470,7 @@ Core settings:
 | `timeoutSeconds` | 30 | 5-300; per-lane-attempt deadline after a request leaves the queue. |
 | `maxConcurrentRequests` | 4 | 1-16 per API lane; use 1 for a single local model. |
 | `maxTokens` | 100 | API cap plus local sentence-aware response trimming. |
-| `temperature` | 0.8 | 0-2. |
+| `temperature` | 0.8 | 0-2 sampling temperature, exposed as an LLM temperature slider in Generation settings. Lower is steadier; higher is more varied. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
 | `enableAtmosphericFormatting` | true | Allows rare display-only text layout effects for extreme entries. |
 | `enablePromptEnchantments` | true | Allows weighted live hediff/capacity context to append one first-person `important health:` cue. |
@@ -482,8 +482,9 @@ Core settings:
 | `personaPresets` | empty | Built-in overrides plus custom personas. |
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
 
-The settings window contains Connection, Diary writing, Prompt Studio, Persona presets, and Events
-sections. It supports multiple API lanes, compatibility-mode selection, model fetching/picking, a
+The settings window contains Connection, Generation, Prompt Studio, Persona presets, and Events
+sections. Generation controls include title/enchantment toggles, the LLM temperature slider, and
+sampling-frequency/concurrency sliders. It supports multiple API lanes, compatibility-mode selection, model fetching/picking, a
 per-row API connection test that sends a tiny localized generation prompt, an XML prompt-template
 status view, persona selection through a compact selector menu, single-card persona editing, custom
 persona creation/deletion, grouped event toggles, and XML group-instruction previews. Each API lane

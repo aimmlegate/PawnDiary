@@ -3,6 +3,10 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (settings temperature slider)**
+  - Added a localized Generation settings slider for the saved LLM `temperature` value, exposing the
+    existing 0-2 request sampling control without editing config files.
+
 - **2026-06-18 (prompt-lab exhaustive stability runs)**
   - Added `prompt-lab/run.js --all-variants` to build every eligible XML event group with stable
     initiator/recipient or solo cases crossed against a fixed prompt-enchantment matrix: baseline,
