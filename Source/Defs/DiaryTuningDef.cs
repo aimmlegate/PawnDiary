@@ -29,6 +29,17 @@ namespace PawnDiary
         public List<ThoughtProgressionStage> stages;
     }
 
+    /// <summary>
+    /// XML tuning for one weather's diary-mention chance: the <c>weather</c> WeatherDef defName and
+    /// the <c>chance</c> (0..1) that an outdoor entry notes it. Weathers absent from the list fall
+    /// back to the favorability-keyed chances on <see cref="DiaryTuningDef"/>.
+    /// </summary>
+    public class WeatherMentionRule
+    {
+        public string weather;
+        public float chance;
+    }
+
     // One instance of this Def is expected, with defName "Diary_Tuning". Read it via
     // DiaryTuning.Current (which falls back to safe defaults if the Def is absent).
     public class DiaryTuningDef : Def
@@ -51,6 +62,40 @@ namespace PawnDiary
         public int maxNearbyThings = 6;       // cap on nearby candidates considered before weighted pick
         public float coldBelowC = 0f;         // report "cold" at or below this temperature (°C)
         public float hotAboveC = 32f;         // report "hot" at or above this temperature (°C)
+
+        // ---- Weather mentions ----
+        // Chance (0..1) an outdoor entry mentions the current weather, per weather. Clear is 0 so it
+        // is never noted; mild weather is low and dramatic weather high, to keep weather from
+        // dominating diary openings. Weathers absent here use the favorability fallbacks below, so
+        // DLC/modded weather still scales with severity. Keyed by WeatherDef.defName.
+        public List<WeatherMentionRule> weatherMentionChances = new List<WeatherMentionRule>
+        {
+            new WeatherMentionRule { weather = "Clear", chance = 0f },
+            new WeatherMentionRule { weather = "Overcast", chance = 0.2f },        // Odyssey
+            new WeatherMentionRule { weather = "Fog", chance = 0.25f },
+            new WeatherMentionRule { weather = "SnowGentle", chance = 0.3f },
+            new WeatherMentionRule { weather = "Rain", chance = 0.35f },
+            new WeatherMentionRule { weather = "Windy", chance = 0.45f },          // Odyssey
+            new WeatherMentionRule { weather = "FoggyRain", chance = 0.45f },
+            new WeatherMentionRule { weather = "BlindFog", chance = 0.6f },        // Odyssey
+            new WeatherMentionRule { weather = "SnowHard", chance = 0.7f },
+            new WeatherMentionRule { weather = "ToxRain", chance = 0.85f },        // Odyssey
+            new WeatherMentionRule { weather = "TorrentialRain", chance = 0.85f }, // Odyssey
+            new WeatherMentionRule { weather = "DryThunderstorm", chance = 0.9f },
+            new WeatherMentionRule { weather = "RainyThunderstorm", chance = 0.9f },
+            new WeatherMentionRule { weather = "Sandstorm", chance = 0.9f },       // Odyssey
+            new WeatherMentionRule { weather = "Blizzard", chance = 0.95f },       // Odyssey
+            new WeatherMentionRule { weather = "BloodRain", chance = 1f },         // Anomaly
+            new WeatherMentionRule { weather = "GrayPall", chance = 1f },          // Anomaly
+            new WeatherMentionRule { weather = "DeathPall", chance = 1f },         // Anomaly
+        };
+
+        // Fallback mention chances for weathers not in weatherMentionChances, keyed by the
+        // WeatherDef's favorability. Good/OuterSpace (and anything unmatched) use weatherChanceDefault.
+        public float weatherChanceVeryBad = 0.9f;
+        public float weatherChanceBad = 0.5f;
+        public float weatherChanceNeutral = 0.25f;
+        public float weatherChanceDefault = 0f;
 
         // ---- Health ----
         public float painVisibleAbove = 0.03f;     // report pain only above this fraction

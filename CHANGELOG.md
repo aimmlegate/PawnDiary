@@ -4,6 +4,28 @@ Newest first. `DOCUMENTATION.md` describes the current design; this file records
 
 ## 2026-06-18
 
+- **Small-model persona retune:** rewrote every `DiaryPersonaDef` rule to lead with one dominant,
+  imitable voice signature (shorter, positive phrasing, mechanically distinct) and appended a short
+  in-voice example (`For example: "..."`) to each, so small local models (Gemma, Mistral Nemo, small
+  Qwen) keep the personas distinct instead of collapsing into one generic atmospheric voice. Synced
+  the hardcoded `DiaryPersonas` fallback rule; the prompt-lab harness reads the same XML, so no lab
+  code change was needed.
+- **Prompt lab indoor coverage:** the default `--from-defs` set now includes indoor pair/solo cases
+  (no weather token in `setting:`) so a standard run also exercises the outdoors-gated setting path
+  and shows whether entry openings still diverge by persona without the weather anchor.
+- **Weighted weather mentions:** outdoor entries now note the weather only on a severity-weighted
+  roll instead of always — clear is never mentioned, mild weather rarely, dramatic weather almost
+  always — to stop weather from dominating diary openings. The per-weather chances are XML-tunable in
+  `DiaryTuningDef.xml` (`weatherMentionChances`), with favorability-keyed fallbacks for unlisted
+  DLC/modded weather.
+- **Beta release prep:** new `About/Preview.png` banner; refreshed `About.xml` description and
+  `README.md` to the current feature set and marked the mod as a beta/WIP hidden Steam Workshop
+  release (name shows "Pawn Diary (Beta)"; `packageId` unchanged).
+- **Voice-spanning few-shot:** the first-person `systemPrompt` examples now span three registers
+  (clipped, warm, lyrical) instead of all lyrical, with a "match the colonist's voice, not these
+  examples" framing, so small models stop defaulting every persona to elegiac prose. Each example
+  still teaches its point (concrete anchor vs flat summary, health pressing without a medical scene,
+  the speech mechanic).
 - **All event groups enabled by default:** every shipped `DiaryInteractionGroupDef` now defaults on,
   including former low-stakes, catch-all, insult-spree, work-achievement, and quiet-tale groups.
 - **Combat tale batching:** non-death combat tales now batch per pawn into delayed solo entries;

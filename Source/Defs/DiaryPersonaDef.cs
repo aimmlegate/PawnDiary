@@ -47,7 +47,7 @@ namespace PawnDiary
         {
             defName = "DiaryPersona_StoicSurvivor",
             label = "stoic-survivor",
-            rule = "writes in terse, matter-of-fact sentences. Avoids self-pity; focuses on what needs doing next. Opens with blunt observations about the situation. Uses short declarative sentences."
+            rule = "writes in short, flat sentences and ends on the next task to do. States the plain fact and skips the feeling. For example: \"Wall's patched. Two breaches left. Rest can wait.\""
         };
 
         // Wrapped in a list so All can return a non-null IReadOnlyList even with zero XML defs.

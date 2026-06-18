@@ -26,3 +26,6 @@ opencode.jsonc
 # Prompt-lab generated run artifacts
 prompt-lab/results/
 
+# Clean Workshop payload produced by scripts/publish.ps1
+dist/
+
