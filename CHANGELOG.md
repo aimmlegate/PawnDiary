@@ -3,6 +3,14 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (pure LLM response parser)**
+  - Moved provider response extraction, provider-status error surfacing, reasoning/thinking block
+    stripping, and local max-token/sentence cleanup out of `LlmClient` into pure
+    `LlmResponseParser`, leaving `LlmClient` focused on HTTP lanes, retry/failover, deadlines, and
+    main-thread result/log handoff.
+  - Added a standalone `tests/LlmResponseParserTests` console harness covering OpenAI Chat,
+    OpenAI Responses, Ollama, reasoning scrub cases, provider errors, and title-vs-entry cleanup.
+
 - **2026-06-18 (atmosphere-led prompts + persona in system prompt)**
   - Rewrote the first-person and reflection system prompts (`DiaryPromptDef.xml` and the matching C#
     defaults in `DiaryPromptDef.cs`) to lead with a positive "write toward atmosphere" block —

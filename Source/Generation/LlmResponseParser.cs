@@ -1,0 +1,840 @@
+// Pure model-response parsing and cleanup. LlmClient owns HTTP, retries, failover, and thread
+// handoff; this file owns the deterministic text work after a response body has been received.
+//
+// "Pure" here means: no RimWorld / Verse / Unity types, no DefDatabase, no .Translate(), no RNG,
+// no IO. Tests can compile this file with MiniJson alone, without loading the game assemblies.
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace PawnDiary
+{
+    /// <summary>
+    /// The response shape an API lane speaks. Kept separate from the settings enum so this parser
+    /// stays independent from RimWorld settings/save-load types.
+    /// </summary>
+    public enum LlmResponseMode
+    {
+        OpenAIChatCompletions,
+        OpenAIResponses,
+        OllamaNativeChat
+    }
+
+    /// <summary>
+    /// Stateless helpers that extract visible model text, surface provider errors, strip known
+    /// reasoning blocks, and apply the local length/sentence cleanup before diary text is saved.
+    /// </summary>
+    public static class LlmResponseParser
+    {
+        /// <summary>
+        /// Parses the endpoint JSON body into the dictionary shape used by the response extractor.
+        /// Returns null when the body is valid JSON but not an object.
+        /// </summary>
+        public static Dictionary<string, object> ParseResponseRoot(string json)
+        {
+            return MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
+        }
+
+        /// <summary>
+        /// Extracts the generated text from a compatible endpoint response.
+        /// </summary>
+        public static string ParseGeneratedText(Dictionary<string, object> root, LlmResponseMode mode)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            switch (mode)
+            {
+                case LlmResponseMode.OpenAIResponses:
+                    return ParseOpenAIResponsesText(root) ?? ParseOpenAIChatText(root);
+                case LlmResponseMode.OllamaNativeChat:
+                    return ParseOllamaChatText(root);
+                default:
+                    return ParseOpenAIChatText(root);
+            }
+        }
+
+        /// <summary>
+        /// Pulls provider-level errors/incomplete statuses from successful HTTP responses before the
+        /// generic "empty message" path hides the useful reason.
+        /// </summary>
+        public static string ExtractProviderError(Dictionary<string, object> root, LlmResponseMode mode, bool hasGeneratedText)
+        {
+            if (root == null)
+            {
+                return "The endpoint did not return a JSON object.";
+            }
+
+            if (root.TryGetValue("error", out object errorObject))
+            {
+                string error = ErrorDetail(errorObject);
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    return "API error: " + error;
+                }
+            }
+
+            switch (mode)
+            {
+                case LlmResponseMode.OpenAIResponses:
+                    return ExtractOpenAIResponsesStatusError(root, hasGeneratedText);
+                case LlmResponseMode.OllamaNativeChat:
+                    return ExtractOllamaStatusError(root, hasGeneratedText);
+                default:
+                    return ExtractOpenAIChatStatusError(root, hasGeneratedText);
+            }
+        }
+
+        /// <summary>
+        /// Removes reasoning/transcript blocks that some "compatible" APIs place inside normal
+        /// message content. This keeps private thinking text out of saved diary pages and debug UI.
+        /// </summary>
+        public static string StripReasoningTextBlocks(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            string cleaned = StripTaggedReasoningBlocks(text);
+            cleaned = StripOrphanClosingReasoningTags(cleaned);
+            cleaned = StripReasoningFencedBlocks(cleaned);
+            cleaned = StripReasoningHeadingPrefix(cleaned);
+            return CompactReasoningCleanupWhitespace(cleaned).Trim();
+        }
+
+        /// <summary>
+        /// Applies local response cleanup before text is saved: length cap first, then trailing
+        /// fragment removal for diary/note text. Title requests skip sentence-fragment trimming.
+        /// </summary>
+        public static string CleanGeneratedText(string text, int maxTokens, bool isTitleRequest)
+        {
+            string capped = TrimToMaxTokens(text, maxTokens);
+            return isTitleRequest ? capped : TrimTrailingIncompleteSentence(capped);
+        }
+
+        /// <summary>Supports the standard choices[0].message.content chat-completions shape.</summary>
+        private static string ParseOpenAIChatText(Dictionary<string, object> root)
+        {
+            Dictionary<string, object> firstChoice = FirstChoice(root);
+            if (firstChoice == null)
+            {
+                return null;
+            }
+
+            if (firstChoice.TryGetValue("message", out object messageObject))
+            {
+                Dictionary<string, object> message = messageObject as Dictionary<string, object>;
+                if (message != null && message.TryGetValue("content", out object contentObject))
+                {
+                    return contentObject as string;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Supports OpenAI Responses' output array, plus the convenience output_text field when a
+        /// compatible proxy includes it.
+        /// </summary>
+        private static string ParseOpenAIResponsesText(Dictionary<string, object> root)
+        {
+            if (root.TryGetValue("output_text", out object outputTextObject))
+            {
+                string outputText = outputTextObject as string;
+                if (!string.IsNullOrWhiteSpace(outputText))
+                {
+                    return outputText;
+                }
+            }
+
+            if (!root.TryGetValue("output", out object outputObject))
+            {
+                return null;
+            }
+
+            object[] output = outputObject as object[];
+            if (output == null)
+            {
+                return null;
+            }
+
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < output.Length; i++)
+            {
+                Dictionary<string, object> item = output[i] as Dictionary<string, object>;
+                if (IsReasoningResponseItem(item))
+                {
+                    continue;
+                }
+
+                if (item == null || !item.TryGetValue("content", out object contentObject))
+                {
+                    continue;
+                }
+
+                object[] content = contentObject as object[];
+                if (content == null)
+                {
+                    continue;
+                }
+
+                for (int c = 0; c < content.Length; c++)
+                {
+                    Dictionary<string, object> part = content[c] as Dictionary<string, object>;
+                    if (IsReasoningResponseItem(part))
+                    {
+                        continue;
+                    }
+
+                    if (part == null || !part.TryGetValue("text", out object partTextObject))
+                    {
+                        continue;
+                    }
+
+                    string partText = partTextObject as string;
+                    if (string.IsNullOrWhiteSpace(partText))
+                    {
+                        continue;
+                    }
+
+                    if (text.Length > 0)
+                    {
+                        text.Append("\n");
+                    }
+
+                    text.Append(partText);
+                }
+            }
+
+            return text.Length > 0 ? text.ToString() : null;
+        }
+
+        /// <summary>Supports Ollama native /api/chat with stream=false: message.content.</summary>
+        private static string ParseOllamaChatText(Dictionary<string, object> root)
+        {
+            if (root.TryGetValue("message", out object messageObject))
+            {
+                Dictionary<string, object> message = messageObject as Dictionary<string, object>;
+                if (message != null && message.TryGetValue("content", out object contentObject))
+                {
+                    return contentObject as string;
+                }
+            }
+
+            if (root.TryGetValue("response", out object responseObject))
+            {
+                return responseObject as string;
+            }
+
+            return null;
+        }
+
+        private static string ExtractOpenAIResponsesStatusError(Dictionary<string, object> root, bool hasGeneratedText)
+        {
+            string status = StringField(root, "status").Trim().ToLowerInvariant();
+            if (status == "failed" || status == "cancelled")
+            {
+                string detail = ErrorDetailFromField(root, "incomplete_details");
+                return string.IsNullOrWhiteSpace(detail)
+                    ? "Responses API status: " + status + "."
+                    : "Responses API status: " + status + " (" + detail + ").";
+            }
+
+            if (status == "incomplete" && !hasGeneratedText)
+            {
+                string detail = ErrorDetailFromField(root, "incomplete_details");
+                return string.IsNullOrWhiteSpace(detail)
+                    ? "Responses API returned an incomplete response with no message content."
+                    : "Responses API returned an incomplete response with no message content (" + detail + ").";
+            }
+
+            return null;
+        }
+
+        private static string ExtractOpenAIChatStatusError(Dictionary<string, object> root, bool hasGeneratedText)
+        {
+            Dictionary<string, object> firstChoice = FirstChoice(root);
+            if (firstChoice == null)
+            {
+                return null;
+            }
+
+            string finishReason = StringField(firstChoice, "finish_reason").Trim().ToLowerInvariant();
+            if (!hasGeneratedText && (finishReason == "content_filter" || finishReason == "length"))
+            {
+                return "Chat completion finished with no message content (finish_reason=" + finishReason + ").";
+            }
+
+            return null;
+        }
+
+        private static string ExtractOllamaStatusError(Dictionary<string, object> root, bool hasGeneratedText)
+        {
+            if (!hasGeneratedText && OllamaThinkingOnly(root))
+            {
+                return "Ollama returned thinking text but no message content.";
+            }
+
+            object doneObject;
+            if (!hasGeneratedText && root.TryGetValue("done", out doneObject) && doneObject is bool && !(bool)doneObject)
+            {
+                return "Ollama returned an unfinished non-streaming response.";
+            }
+
+            return null;
+        }
+
+        private static bool OllamaThinkingOnly(Dictionary<string, object> root)
+        {
+            if (root == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(StringField(root, "thinking")))
+            {
+                return true;
+            }
+
+            object messageObject;
+            if (!root.TryGetValue("message", out messageObject))
+            {
+                return false;
+            }
+
+            Dictionary<string, object> message = messageObject as Dictionary<string, object>;
+            return message != null && !string.IsNullOrWhiteSpace(StringField(message, "thinking"));
+        }
+
+        private static Dictionary<string, object> FirstChoice(Dictionary<string, object> root)
+        {
+            if (root == null || !root.TryGetValue("choices", out object choicesObject))
+            {
+                return null;
+            }
+
+            object[] choices = choicesObject as object[];
+            if (choices == null || choices.Length == 0)
+            {
+                return null;
+            }
+
+            return choices[0] as Dictionary<string, object>;
+        }
+
+        private static string ErrorDetailFromField(Dictionary<string, object> root, string fieldName)
+        {
+            if (root == null || !root.TryGetValue(fieldName, out object value))
+            {
+                return null;
+            }
+
+            return ErrorDetail(value);
+        }
+
+        private static string ErrorDetail(object value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            string text = value as string;
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return text.Trim();
+            }
+
+            Dictionary<string, object> fields = value as Dictionary<string, object>;
+            if (fields == null)
+            {
+                return null;
+            }
+
+            string message = StringField(fields, "message");
+            string reason = StringField(fields, "reason");
+            string code = StringField(fields, "code");
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                return message.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(reason) && !string.IsNullOrWhiteSpace(code))
+            {
+                return reason.Trim() + ", code=" + code.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                return "reason=" + reason.Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(code) ? null : "code=" + code.Trim();
+        }
+
+        private static string StringField(Dictionary<string, object> fields, string fieldName)
+        {
+            if (fields == null || !fields.TryGetValue(fieldName, out object value))
+            {
+                return string.Empty;
+            }
+
+            return value as string ?? string.Empty;
+        }
+
+        private static bool IsReasoningResponseItem(Dictionary<string, object> item)
+        {
+            if (item == null || !item.TryGetValue("type", out object typeObject))
+            {
+                return false;
+            }
+
+            string type = (typeObject as string ?? string.Empty).Trim().ToLowerInvariant();
+            return type == "reasoning"
+                || type == "reasoning_text"
+                || type == "summary_text"
+                || type == "thinking"
+                || type == "analysis";
+        }
+
+        private static string StripTaggedReasoningBlocks(string text)
+        {
+            string[] tags = { "think", "thinking", "reasoning", "analysis" };
+            for (int i = 0; i < tags.Length; i++)
+            {
+                string tag = tags[i];
+                string closeNeedle = "</" + tag + ">";
+                int guard = 0;
+                while (guard++ < 32)
+                {
+                    int open = IndexOfOpeningTag(text, tag);
+                    if (open < 0)
+                    {
+                        break;
+                    }
+
+                    int openEnd = text.IndexOf('>', open);
+                    if (openEnd < 0)
+                    {
+                        break;
+                    }
+
+                    int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, openEnd + 1);
+                    if (close >= 0)
+                    {
+                        int closeEnd = close + closeNeedle.Length;
+                        text = text.Remove(open, closeEnd - open);
+                        continue;
+                    }
+
+                    int labelLength;
+                    string remainder = text.Substring(openEnd + 1);
+                    int finalRelative = FindLineStartingWithAny(remainder, FinalAnswerLabels(), out labelLength);
+                    if (finalRelative >= 0)
+                    {
+                        int finalStart = openEnd + 1 + finalRelative;
+                        text = text.Remove(open, finalStart - open);
+                        continue;
+                    }
+
+                    int afterBlankLine = IndexAfterBlankLine(text, openEnd + 1);
+                    if (afterBlankLine >= 0)
+                    {
+                        text = text.Remove(open, afterBlankLine - open);
+                        continue;
+                    }
+
+                    text = text.Remove(open);
+                    break;
+                }
+            }
+
+            return text;
+        }
+
+        /// <summary>
+        /// Handles reasoning models whose chat template emits the opening think tag as part of the
+        /// prompt, so the completion begins inside the reasoning block and only returns a closing tag.
+        /// </summary>
+        private static string StripOrphanClosingReasoningTags(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+
+            string[] tags = { "think", "thinking", "reasoning", "analysis" };
+            for (int i = 0; i < tags.Length; i++)
+            {
+                string closeNeedle = "</" + tags[i] + ">";
+                int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, 0);
+                if (close < 0)
+                {
+                    continue;
+                }
+
+                // If a real opening tag precedes this close, StripTaggedReasoningBlocks already
+                // handled it. Do not over-trim the visible answer here.
+                int open = IndexOfOpeningTag(text, tags[i]);
+                if (open >= 0 && open < close)
+                {
+                    continue;
+                }
+
+                text = text.Substring(close + closeNeedle.Length);
+            }
+
+            return text;
+        }
+
+        private static int IndexAfterBlankLine(string text, int startIndex)
+        {
+            for (int i = Math.Max(0, startIndex); i < text.Length - 1; i++)
+            {
+                if (text[i] == '\n' && text[i + 1] == '\n')
+                {
+                    return i + 2;
+                }
+
+                if (i < text.Length - 3
+                    && text[i] == '\r'
+                    && text[i + 1] == '\n'
+                    && text[i + 2] == '\r'
+                    && text[i + 3] == '\n')
+                {
+                    return i + 4;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int IndexOfOpeningTag(string text, string tag)
+        {
+            string needle = "<" + tag;
+            int start = 0;
+            while (start < text.Length)
+            {
+                int index = IndexOfOrdinalIgnoreCase(text, needle, start);
+                if (index < 0)
+                {
+                    return -1;
+                }
+
+                int after = index + needle.Length;
+                if (after < text.Length && (text[after] == '>' || char.IsWhiteSpace(text[after])))
+                {
+                    return index;
+                }
+
+                start = after;
+            }
+
+            return -1;
+        }
+
+        private static string StripReasoningFencedBlocks(string text)
+        {
+            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            string[] lines = normalized.Split('\n');
+            StringBuilder builder = new StringBuilder(text.Length);
+            bool skipping = false;
+            bool changed = false;
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                string trimmed = line.TrimStart();
+                if (IsFenceLine(trimmed))
+                {
+                    if (skipping)
+                    {
+                        skipping = false;
+                        changed = true;
+                        continue;
+                    }
+
+                    if (IsReasoningFenceLine(trimmed))
+                    {
+                        skipping = true;
+                        changed = true;
+                        continue;
+                    }
+                }
+
+                if (skipping)
+                {
+                    changed = true;
+                    continue;
+                }
+
+                if (builder.Length > 0)
+                {
+                    builder.Append('\n');
+                }
+
+                builder.Append(line);
+            }
+
+            return changed ? builder.ToString() : text;
+        }
+
+        private static bool IsFenceLine(string trimmedLine)
+        {
+            return trimmedLine.StartsWith("```", StringComparison.Ordinal)
+                || trimmedLine.StartsWith("~~~", StringComparison.Ordinal);
+        }
+
+        private static bool IsReasoningFenceLine(string trimmedLine)
+        {
+            if (!IsFenceLine(trimmedLine) || trimmedLine.Length <= 3)
+            {
+                return false;
+            }
+
+            string info = trimmedLine.Substring(3).Trim().ToLowerInvariant();
+            return StartsWithAny(info, ReasoningFenceLabels());
+        }
+
+        private static string StripReasoningHeadingPrefix(string text)
+        {
+            string trimmedStart = text.TrimStart();
+            if (!StartsWithAny(trimmedStart.ToLowerInvariant(), ReasoningHeadingLabels()))
+            {
+                return text;
+            }
+
+            int labelLength;
+            int finalIndex = FindLineStartingWithAny(trimmedStart, FinalAnswerLabels(), out labelLength);
+            if (finalIndex < 0)
+            {
+                return text;
+            }
+
+            return trimmedStart.Substring(finalIndex + labelLength).TrimStart();
+        }
+
+        private static int FindLineStartingWithAny(string text, string[] labels, out int labelLength)
+        {
+            int lineStart = 0;
+            while (lineStart < text.Length)
+            {
+                int lineEnd = text.IndexOf('\n', lineStart);
+                if (lineEnd < 0)
+                {
+                    lineEnd = text.Length;
+                }
+
+                int leading = 0;
+                while (lineStart + leading < lineEnd && char.IsWhiteSpace(text[lineStart + leading]))
+                {
+                    leading++;
+                }
+
+                string comparable = text.Substring(lineStart + leading, lineEnd - lineStart - leading).ToLowerInvariant();
+                for (int i = 0; i < labels.Length; i++)
+                {
+                    if (comparable.StartsWith(labels[i], StringComparison.Ordinal))
+                    {
+                        labelLength = leading + labels[i].Length;
+                        return lineStart;
+                    }
+                }
+
+                lineStart = lineEnd + 1;
+            }
+
+            labelLength = 0;
+            return -1;
+        }
+
+        private static bool StartsWithAny(string value, string[] labels)
+        {
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (value.StartsWith(labels[i], StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int IndexOfOrdinalIgnoreCase(string value, string needle, int startIndex)
+        {
+            return value.IndexOf(needle, startIndex, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string[] ReasoningFenceLabels()
+        {
+            return new[] { "think", "thinking", "reasoning", "analysis", "chain-of-thought", "chain of thought", "cot" };
+        }
+
+        private static string[] ReasoningHeadingLabels()
+        {
+            return new[] { "thinking:", "reasoning:", "analysis:", "chain-of-thought:", "chain of thought:" };
+        }
+
+        private static string[] FinalAnswerLabels()
+        {
+            return new[] { "final:", "final answer:", "answer:", "response:", "diary:", "entry:", "output:" };
+        }
+
+        private static string CompactReasoningCleanupWhitespace(string text)
+        {
+            while (text.Contains("\n\n\n"))
+            {
+                text = text.Replace("\n\n\n", "\n\n");
+            }
+
+            return text;
+        }
+
+        /// <summary>
+        /// Enforces a hard upper bound on response length by counting whitespace-delimited tokens,
+        /// preferring to end at the last complete sentence before the cap.
+        /// </summary>
+        private static string TrimToMaxTokens(string text, int maxTokens)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = text.Trim();
+            if (maxTokens <= 0)
+            {
+                return trimmed;
+            }
+
+            bool insideToken = false;
+            int tokenCount = 0;
+            for (int i = 0; i < trimmed.Length; i++)
+            {
+                char c = trimmed[i];
+                if (char.IsWhiteSpace(c))
+                {
+                    insideToken = false;
+                    continue;
+                }
+
+                if (insideToken)
+                {
+                    continue;
+                }
+
+                insideToken = true;
+                tokenCount++;
+                if (tokenCount > maxTokens)
+                {
+                    int sentenceEnd = LastSentenceEndBefore(trimmed, i);
+                    if (sentenceEnd > 0)
+                    {
+                        return trimmed.Substring(0, sentenceEnd).TrimEnd();
+                    }
+
+                    string capped = trimmed.Substring(0, i).TrimEnd();
+                    return string.IsNullOrEmpty(capped) ? string.Empty : capped + "...";
+                }
+            }
+
+            return trimmed;
+        }
+
+        /// <summary>
+        /// Removes a dangling final sentence fragment from main diary/note output. This catches the
+        /// common API-stop case where the model obeys max_tokens by cutting off mid-sentence.
+        /// </summary>
+        private static string TrimTrailingIncompleteSentence(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = text.Trim();
+            if (EndsWithCompleteSentence(trimmed))
+            {
+                return trimmed;
+            }
+
+            int sentenceEnd = LastSentenceEndBefore(trimmed, trimmed.Length);
+            if (sentenceEnd > 0)
+            {
+                return trimmed.Substring(0, sentenceEnd).TrimEnd();
+            }
+
+            return trimmed;
+        }
+
+        /// <summary>
+        /// Finds a sentence boundary that fits inside the token cap. This deliberately uses a small
+        /// punctuation heuristic rather than culture-heavy sentence parsing.
+        /// </summary>
+        private static int LastSentenceEndBefore(string text, int maxEndExclusive)
+        {
+            if (string.IsNullOrEmpty(text) || maxEndExclusive <= 0)
+            {
+                return -1;
+            }
+
+            int cappedEnd = Math.Min(maxEndExclusive, text.Length);
+            for (int i = cappedEnd - 1; i >= 0; i--)
+            {
+                if (!IsSentenceEndingPunctuation(text[i]))
+                {
+                    continue;
+                }
+
+                int end = i + 1;
+                while (end < cappedEnd && IsSentenceClosingCharacter(text[end]))
+                {
+                    end++;
+                }
+
+                if (end == text.Length || end == cappedEnd || char.IsWhiteSpace(text[end]))
+                {
+                    return end;
+                }
+            }
+
+            return -1;
+        }
+
+        private static bool EndsWithCompleteSentence(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            int i = text.Length - 1;
+            while (i >= 0 && char.IsWhiteSpace(text[i]))
+            {
+                i--;
+            }
+
+            while (i >= 0 && IsSentenceClosingCharacter(text[i]))
+            {
+                i--;
+            }
+
+            return i >= 0 && IsSentenceEndingPunctuation(text[i]);
+        }
+
+        private static bool IsSentenceEndingPunctuation(char c)
+        {
+            return c == '.' || c == '!' || c == '?';
+        }
+
+        private static bool IsSentenceClosingCharacter(char c)
+        {
+            return c == '"' || c == '\'' || c == ')' || c == ']' || c == '}';
+        }
+    }
+}

@@ -53,6 +53,7 @@ PawnDiary/
 |   |-- UI/                      Diary inspector tab
 |   `-- Util/                    MiniJson
 |-- prompt-lab/                  Node prompt-testing harness
+|-- tests/                       standalone pure-helper tests
 |-- skills/                      repo workflow skills
 `-- *.md                         repo docs
 ```
@@ -71,6 +72,7 @@ Key files:
 | `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts from XML `DiaryPromptTemplateDef` field lists. |
 | `PromptEnchantments.cs` | Weighted hediff/capacity matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
+| `LlmResponseParser.cs` | Pure provider response parser/normalizer: text extraction, provider-error surfacing, reasoning-block stripping, and local length/sentence cleanup. |
 | `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, Inspiration, Work, and Hediff domains. |
 | `DiarySignalPolicyDef.cs` / `DiaryTuningDef.cs` | XML signal policies for thought/work providers, plus legacy/shared tuning fallbacks and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
@@ -510,6 +512,8 @@ Social-tab log rows can jump to matching diary entries, including older year pag
 `LlmClient` treats each enabled endpoint+model/mode row as an API lane. Failover duplicate checks
 also include the API key, so two rows pointing at the same model with different credentials remain
 distinct fallback targets; concurrency gates still group by endpoint+model/mode.
+`LlmResponseParser` owns the pure response-normalization work after an HTTP body is received, keeping
+provider JSON shape handling and text cleanup testable without RimWorld assemblies.
 
 - each lane chooses its own request URL, payload, and response parser from its compatibility mode:
   `/chat/completions`, `/responses`, or Ollama `/api/chat`;
@@ -644,7 +648,7 @@ optionally add DefInjected translations for XML Def text.
 
 ---
 
-## 12. Build And Prompt Lab
+## 12. Build, Tests, And Prompt Lab
 
 Build:
 
@@ -654,6 +658,15 @@ MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 
 Output is `1.6/Assemblies/PawnDiary.dll`. If `MSBuild` is not on `PATH`, use `vswhere` to locate it
 or build from a Visual Studio Developer PowerShell.
+
+Pure helper tests:
+
+```
+dotnet run --project tests/LlmResponseParserTests/LlmResponseParserTests.csproj
+```
+
+These tests compile only `LlmResponseParser.cs` and `MiniJson.cs`, so response parsing and cleanup can
+be verified without loading RimWorld/Unity assemblies.
 
 Prompt lab:
 
