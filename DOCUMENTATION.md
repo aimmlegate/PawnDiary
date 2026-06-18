@@ -739,6 +739,7 @@ Prompt lab:
 cd prompt-lab
 npm run from-defs
 node run.js --from-defs --save --model <model-name>
+node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 ```
 
 The prompt lab reads `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`,
@@ -747,6 +748,12 @@ prompt cues. Generated fixtures select the same template keys as `DiaryPromptBui
 field order and field inclusion from XML source tokens. Title fixtures and title follow-ups use the
 `Title` template and fall back to `DiaryPromptDef.titleUserInstruction` when the template does not
 override the final instruction.
+
+`--all-variants` builds every eligible XML event group after configured exclusions, crosses
+first-person cases with a deterministic prompt-enchantment matrix (baseline, pain, blood loss,
+consciousness, fever, intoxication, sensory loss), and writes compact markdown by default when saved:
+one full chat prompt plus one parsed response per case. `--passes <n>` repeats the same prompt set
+with `pass-XX-` ids so repeated generations and different models can be compared by stable case id.
 
 Saved prompt-lab results go to `prompt-lab/results/<model-name>/<timestamp>.md`, which is ignored by
 git.

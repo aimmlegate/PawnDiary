@@ -3,6 +3,17 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (prompt-lab exhaustive stability runs)**
+  - Added `prompt-lab/run.js --all-variants` to build every eligible XML event group with stable
+    initiator/recipient or solo cases crossed against a fixed prompt-enchantment matrix: baseline,
+    pain, blood loss, consciousness, fever, intoxication, and sensory loss.
+  - Added `--passes` for repeated identical prompt sets, compact markdown saving (`Prompt` +
+    `Parsed result` per case), configurable prompt-enchantment variants, and support for
+    `--include-groups all` / `--include-personas all`.
+  - Fixed generated prompt-lab rendering so pair/solo assembler fixtures and static template
+    fixtures actually render through the shared `assembler.js` mirror before requests are sent, and
+    fixed absolute `--result-folder` save paths.
+
 - **2026-06-18 (local verification hooks)**
   - Added tracked `.githooks/pre-commit`, `.githooks/pre-push`, and `.githooks/verify.ps1` so local
     commits and pushes can automatically run whitespace checks, XML parsing, pure test projects, and

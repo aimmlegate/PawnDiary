@@ -43,6 +43,54 @@ Use:
 npm run from-defs
 ```
 
+## Run every event group with fixed prompt-enchantment variants
+
+Use exhaustive mode when comparing model stability across repeated passes or across different
+models:
+
+```bash
+node run.js --all-variants --passes 2 --save --no-title --model local-model
+```
+
+`--all-variants` reads every eligible XML interaction/event group after configured exclusions and
+builds deterministic cases for:
+
+- paired groups: initiator and recipient POV,
+- solo groups: one POV,
+- neutral arrival/death fixtures,
+- title fixtures.
+
+First-person cases are crossed with the fixed prompt-enchantment matrix:
+
+- no prompt enchantment,
+- moderate pain,
+- major blood loss,
+- critical consciousness,
+- feverish sickness,
+- intoxication,
+- sensory loss.
+
+The same case ids and prompt contexts are reused on every run. `--passes <n>` repeats each case with
+the same prompt and a `pass-XX-` id prefix, making same-model stability comparisons straightforward.
+
+Saved `--all-variants` runs default to compact markdown. Each case stores:
+
+- `Prompt` - the full chat prompt (`system` and `user`),
+- `Parsed result` - the generated text extracted from the compatible chat response.
+
+Override the prompt-enchantment matrix in `prompt-lab.config.json` with:
+
+```json
+{
+  "generated": {
+    "promptEnchantmentVariants": [
+      { "key": "none", "label": "no prompt enchantment", "promptEnchantment": "" },
+      { "key": "pain", "label": "moderate pain", "promptEnchantment": "high priority; moderate bruise in left arm; pain" }
+    ]
+  }
+}
+```
+
 ### Save per-model markdown results
 
 ```bash
@@ -82,8 +130,12 @@ node run.js --from-defs --no-title
 - `--temperature <float>`
 - `--max-tokens <int>`
 - `--timeout <seconds>`
-- `--include-groups <n>`
-- `--include-personas <n>`
+- `--include-groups <n|all>`
+- `--include-personas <n|all>`
+- `--all-variants` (all event groups crossed with fixed prompt-enchantment variants)
+- `--passes <n>` (repeat the same prompt set for stability checks)
+- `--compact` / `--compact-md` (save prompt + parsed result only)
+- `--full-md` (save the older verbose markdown format)
 - `--case <fixture-id>` (single case filter)
 - `--no-title` (skip title follow-up generation)
 - `--dry-run` (build prompt only)

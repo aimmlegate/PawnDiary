@@ -23,6 +23,64 @@ const DEFAULT_FIXTURE_DIR = path.join(ROOT, 'prompts', 'fixtures');
 const DEFAULT_RESULT_RELATIVE_DIR = 'results';
 const DEFAULT_TITLE_USER_INSTRUCTION = 'Return one short title of three to eight words for this diary entry. Output only the title -- no quotes, no period, no labels, no commentary.';
 const TITLE_MAX_TOKENS = 40;
+const DEFAULT_PROMPT_ENCHANTMENT_VARIANTS = [
+  {
+    key: 'none',
+    label: 'no prompt enchantment',
+    promptEnchantment: '',
+    pawnSummaryCue: 'health=healthy',
+    setting: 'outdoors, overcast, temperate forest, doing steady colony work',
+    toneSuffix: 'grounded',
+  },
+  {
+    key: 'pain',
+    label: 'moderate pain',
+    promptEnchantment: 'high priority; moderate bruise in left arm; pain',
+    pawnSummaryCue: 'health=moderate pain',
+    setting: 'outdoors, cold rain, returning from perimeter work',
+    toneSuffix: 'pain held back',
+  },
+  {
+    key: 'blood-loss',
+    label: 'major blood loss',
+    promptEnchantment: 'high priority; major blood loss in torso; heavy bleeding, severe pain',
+    pawnSummaryCue: 'health=major blood loss',
+    setting: 'indoors, crowded medical room, waiting for treatment',
+    toneSuffix: 'urgent',
+  },
+  {
+    key: 'consciousness',
+    label: 'critical consciousness',
+    promptEnchantment: 'high priority; critical consciousness; near collapse, thoughts fragmented, barely awake',
+    pawnSummaryCue: 'health=barely conscious',
+    setting: 'indoors, dim barracks, half awake after treatment',
+    toneSuffix: 'fragmented',
+  },
+  {
+    key: 'fever',
+    label: 'feverish sickness',
+    promptEnchantment: 'high priority; major flu in whole body; fever, weakness, fogged awareness',
+    pawnSummaryCue: 'health=feverish',
+    setting: 'indoors, warm sickroom, medicine nearby',
+    toneSuffix: 'feverish',
+  },
+  {
+    key: 'intoxicated',
+    label: 'intoxication',
+    promptEnchantment: 'high priority; moderate alcohol high; dulled awareness, loose balance',
+    pawnSummaryCue: 'health=intoxicated',
+    setting: 'indoors, noisy rec room, late evening',
+    toneSuffix: 'unsteady',
+  },
+  {
+    key: 'sensory-loss',
+    label: 'sensory loss',
+    promptEnchantment: 'high priority; major blindness in both eyes; impaired sight, disoriented',
+    pawnSummaryCue: 'health=impaired senses',
+    setting: 'indoors, narrow hallway, moving by touch and memory',
+    toneSuffix: 'disoriented',
+  },
+];
 
 const DEFAULTS = {
   endpoint: 'http://localhost:1234/v1',
@@ -41,10 +99,12 @@ const DEFAULTS = {
   interactionGroupDefFile: path.join('..', '1.6', 'Defs', 'DiaryInteractionGroupDefs.xml'),
   keyedFile: path.join('..', 'Languages', 'English', 'Keyed', 'PawnDiary.xml'),
   resultFolder: DEFAULT_RESULT_RELATIVE_DIR,
+  compactResults: false,
   generated: {
     includeGroups: 4,
     includePersonas: 4,
     excludeGroupDefNames: ['nsfw'],
+    promptEnchantmentVariants: DEFAULT_PROMPT_ENCHANTMENT_VARIANTS,
   },
   saveResults: false,
 };
@@ -58,15 +118,26 @@ function safePathName(value) {
     .slice(0, 64) || 'model';
 }
 
+function parsePositiveIntegerOrAll(value) {
+  if (String(value || '').trim().toLowerCase() === 'all') {
+    return 'all';
+  }
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? Math.max(1, parsed) : null;
+}
+
 function parseArgs(argv) {
   const options = {
     configPath: DEFAULT_CONFIG_PATH,
     caseFilter: null,
     dryRun: false,
     saveResults: false,
+    compactResults: null,
     verbose: false,
     fromXml: false,
+    allVariants: false,
     skipTitle: false,
+    passes: 1,
     endpoint: null,
     model: null,
     apiKey: null,
@@ -110,6 +181,14 @@ function parseArgs(argv) {
       options.saveResults = true;
       continue;
     }
+    if (arg === '--compact' || arg === '--compact-md') {
+      options.compactResults = true;
+      continue;
+    }
+    if (arg === '--full-md') {
+      options.compactResults = false;
+      continue;
+    }
     if (arg === '--verbose') {
       options.verbose = true;
       continue;
@@ -118,19 +197,28 @@ function parseArgs(argv) {
       options.fromXml = true;
       continue;
     }
+    if (arg === '--all-variants') {
+      options.fromXml = true;
+      options.allVariants = true;
+      continue;
+    }
     if (arg === '--no-title') {
       options.skipTitle = true;
       continue;
     }
-    if (arg === '--include-groups') {
+    if (arg === '--passes') {
       const value = parseInt(argv[i + 1], 10);
-      options.includeGroups = Number.isFinite(value) ? Math.max(1, value) : null;
+      options.passes = Number.isFinite(value) ? Math.max(1, value) : 1;
+      i++;
+      continue;
+    }
+    if (arg === '--include-groups') {
+      options.includeGroups = parsePositiveIntegerOrAll(argv[i + 1]);
       i++;
       continue;
     }
     if (arg === '--include-personas') {
-      const value = parseInt(argv[i + 1], 10);
-      options.includePersonas = Number.isFinite(value) ? Math.max(1, value) : null;
+      options.includePersonas = parsePositiveIntegerOrAll(argv[i + 1]);
       i++;
       continue;
     }
@@ -180,6 +268,7 @@ function usage() {
   return [
     'Usage:',
     '  node run.js --from-defs [--save] [--case <id>]',
+    '  node run.js --all-variants [--passes <n>] [--save] [--compact]',
     '  node run.js --case <id-or-file> [--fixtures <dir>] [--save]',
     '',
     'Options:',
@@ -188,10 +277,14 @@ function usage() {
     '  --fixtures <dir>             Manual fixture directory (default prompts/fixtures)',
     '  --result-folder <dir>         Save results under this root folder',
     '  --from-defs                   Build cases from XML defs',
-    '  --include-groups <n>         Number of XML interaction groups to include in generated cases',
-    '  --include-personas <n>        Number of XML personas used when building variants',
+    '  --all-variants                Build every XML event group across the prompt-enchantment matrix',
+    '  --passes <n>                  Repeat each case with identical prompts for stability checks',
+    '  --include-groups <n|all>      Number of XML interaction groups to include in sampled cases',
+    '  --include-personas <n|all>    Number of XML personas used when building variants',
     '  --dry-run                     Print prompt payload only',
     '  --save                        Save outputs to prompt-lab/results/<model>/YYYY-mm-ddTHH-MM-SS.mmmZ.md',
+    '  --compact, --compact-md       Save compact markdown: prompt + parsed result per case',
+    '  --full-md                     Save the older verbose markdown format',
     '  --verbose                     Print request payloads',
     '  --no-title                    Skip follow-up title generation',
     '  --endpoint <url>              Override endpoint',
@@ -421,6 +514,10 @@ function buildPromptText(fixture) {
     return appendTrailer(fixture.promptLines.map((line) => String(line).trim()).join('\n'), fixture.append);
   }
 
+  if (fixture.assembler) {
+    return (assembler.render(fixture.assembler).userPrompt || '').trim();
+  }
+
   const fields = fixture.promptFields || {};
   const ordered = Array.isArray(fixture.promptFieldOrder) && fixture.promptFieldOrder.length > 0
     ? fixture.promptFieldOrder
@@ -455,6 +552,11 @@ function normalizeEndpoint(endpoint) {
 
 function toChatUrl(endpoint) {
   return `${normalizeEndpoint(endpoint)}/chat/completions`;
+}
+
+function resultRootFolder(config) {
+  const configured = config.resultFolder || DEFAULT_RESULT_RELATIVE_DIR;
+  return path.isAbsolute(configured) ? configured : path.join(ROOT, configured);
 }
 
 // Mirrors DiaryPromptBuilder.ComposeSystemPrompt: append the pawn's persona voice to the system
@@ -686,6 +788,28 @@ function assemblerInputFor(template, values, finalInstruction) {
     values: toAssemblerValues(values),
     finalInstruction,
   };
+}
+
+function fieldsFromTemplate(template, values) {
+  const fields = {};
+  const order = [];
+  const assemblerValues = toAssemblerValues(values);
+  const sourceFields = (template && template.fields) || [];
+
+  for (const field of sourceFields) {
+    if (!field || field.enabled === false) {
+      continue;
+    }
+    const label = isSkippable(field.label) ? field.source : field.label;
+    const value = assembler.resolveSource(field, assemblerValues);
+    if (isSkippable(label) || isSkippable(value)) {
+      continue;
+    }
+    fields[label] = cleanValue(value);
+    order.push(label);
+  }
+
+  return { fields, order };
 }
 
 function domainOf(group) {
@@ -968,18 +1092,19 @@ function buildStaticTemplateFixture(promptData, options) {
 }
 
 function buildGeneratedFixtureSet(promptData, config, options) {
-  const groupLimit = Number.isFinite(options.includeGroups)
-    ? Math.max(1, options.includeGroups)
-    : config.generated.includeGroups;
-  const personaLimit = Number.isFinite(options.includePersonas)
-    ? Math.max(1, options.includePersonas)
-    : config.generated.includePersonas;
-
   const excludedGroupNames = new Set((config.generated.excludeGroupDefNames || [])
     .map((name) => String(name || '').toLowerCase())
     .filter(Boolean));
-  const personas = pickRandom(personasFromData(promptData.personas), personaLimit);
-  const groups = sortAndTrimGroups(promptData.groups, excludedGroupNames).slice(0, Math.max(1, groupLimit));
+  const allPersonas = personasFromData(promptData.personas);
+  const allGroups = sortAndTrimGroups(promptData.groups, excludedGroupNames);
+  if (options.allVariants) {
+    return buildAllVariantFixtureSet(promptData, config, options, allGroups, allPersonas);
+  }
+
+  const groupLimit = resolveGeneratedLimit(options.includeGroups, config.generated.includeGroups, allGroups.length);
+  const personaLimit = resolveGeneratedLimit(options.includePersonas, config.generated.includePersonas, allPersonas.length);
+  const personas = pickRandom(allPersonas, personaLimit);
+  const groups = allGroups.slice(0, groupLimit);
   const cases = [];
 
   const pairGroups = groups.filter(isGeneratedPairGroup);
@@ -1199,6 +1324,176 @@ function buildGeneratedFixtureSet(promptData, config, options) {
   return cases;
 }
 
+function buildAllVariantFixtureSet(promptData, config, options, groups, allPersonas) {
+  const personaLimit = resolveGeneratedLimit(options.includePersonas, config.generated.includePersonas, allPersonas.length);
+  const personas = pickRandom(allPersonas, personaLimit);
+  const variants = promptEnchantmentVariantsFor(config);
+  const sourceGroups = groups.length > 0
+    ? groups
+    : [{ defName: 'default', label: 'quiet colonist moment', instruction: 'a tense social moment', tone: 'tense but clear', domain: 'Interaction', combat: false }];
+  const cases = [];
+  const pairGroups = sourceGroups.filter(isGeneratedPairGroup);
+  const soloGroups = sourceGroups.filter(isGeneratedSoloGroup);
+
+  for (let i = 0; i < pairGroups.length; i++) {
+    const group = pairGroups[i];
+    const primaryPersona = pickPersona(personas, i);
+    const secondaryPersona = pickPersona(personas, i + 1);
+    const tone = isSkippable(group.tone) ? 'tense but clear' : group.tone;
+    const label = isSkippable(group.label) ? `social event ${group.defName}` : group.label;
+    const coreInstruction = isSkippable(group.instruction)
+      ? 'a charged social exchange between two colonists'
+      : group.instruction;
+
+    for (const variant of variants) {
+      cases.push(buildPairFixture(promptData, group, {
+        id: `pair-${group.defName}-initiator-${variant.key}`,
+        event: label.toLowerCase(),
+        pov: 'Cass',
+        role: 'initiator',
+        other: 'Juno',
+        whatYouSaw: `Cass started the ${label.toLowerCase()} after a practical disagreement. The fixed lab context is ${variant.label}.`,
+        instruction: coreInstruction,
+        pawnSummary: pawnSummaryForVariant('female', 'tense', 'restless', variant),
+        persona: primaryPersona.rule,
+        promptEnchantment: variant.promptEnchantment,
+        setting: settingForVariant(variant, 'outdoors, overcast, temperate forest, doing guard duty'),
+        tone: toneForVariant(tone, variant),
+        relationship: 'opinion=cold; because insulted recently; last wrote: I kept my mouth shut too long.',
+        lastOpener: 'The quiet had lasted too long.',
+        weapon: group.combat ? 'short spear' : '',
+        initiatorEntry: '',
+        version: variant.key,
+      }));
+
+      cases.push(buildPairFixture(promptData, group, {
+        id: `pair-${group.defName}-recipient-${variant.key}`,
+        event: label.toLowerCase(),
+        pov: 'Juno',
+        role: 'recipient',
+        other: 'Cass',
+        whatYouSaw: `Juno received the ${label.toLowerCase()} with everyone close enough to notice. The fixed lab context is ${variant.label}.`,
+        instruction: coreInstruction,
+        pawnSummary: pawnSummaryForVariant('female', 'cautious', 'calculating', variant),
+        persona: secondaryPersona.rule,
+        promptEnchantment: variant.promptEnchantment,
+        setting: settingForVariant(variant, 'outdoors, overcast, temperate forest, hauling medicine'),
+        tone: toneForVariant(tone, variant),
+        relationship: 'opinion=guarded; because practical loyalty; last wrote: I would rather finish the job.',
+        lastOpener: 'A private note was due later.',
+        weapon: group.combat ? 'short spear' : '',
+        initiatorEntry: 'I pushed the point because waiting would only make the room colder.',
+        version: variant.key,
+      }));
+    }
+  }
+
+  for (let i = 0; i < soloGroups.length; i++) {
+    const group = soloGroups[i];
+    const persona = pickPersona(personas, i);
+    const tone = isSkippable(group.tone) ? 'nervous but grounded' : group.tone;
+    const label = isSkippable(group.label) ? `solo moment ${group.defName}` : group.label;
+    const baseInstruction = isSkippable(group.instruction)
+      ? 'a private moment that changes the tone of the day'
+      : group.instruction;
+
+    for (const variant of variants) {
+      cases.push(buildSoloFixture(promptData, group, {
+        id: `solo-${group.defName}-${variant.key}`,
+        event: label.toLowerCase(),
+        pov: i % 2 === 0 ? 'Cass' : 'Juno',
+        whatHappened: `${label} landed as a private colony moment. The fixed lab context is ${variant.label}.`,
+        instruction: `${baseInstruction}; keep it immediate and grounded.`,
+        pawnSummary: pawnSummaryForVariant(i % 2 === 0 ? 'female' : 'male', 'alert', 'complicated', variant),
+        persona: persona.rule,
+        promptEnchantment: variant.promptEnchantment,
+        setting: settingForVariant(variant, 'outdoors, clear, arid hills, doing field work'),
+        tone: toneForVariant(tone, variant),
+        lastOpener: 'Nothing needed to be said out loud.',
+        weapon: '',
+        version: variant.key,
+      }));
+    }
+  }
+
+  appendStaticGeneratedFixtures(cases, promptData);
+  return cases;
+}
+
+function appendStaticGeneratedFixtures(cases, promptData) {
+  cases.push(buildStaticTemplateFixture(promptData, {
+    id: 'arrival-colonist-v1',
+    type: 'arrival',
+    templateKey: 'ArrivalDescription',
+    event: 'colonist arrival',
+    arrivalPawn: 'Rowan',
+    neutralText: 'Founders settled on a ruined outpost and began rebuilding.',
+    arrivalFacts: 'arrival_pawn=Rowan; scenario=Stormbound Rescue; recruiter=warden Nia',
+    pawnSummary: 'age=27; role=farmer; mood=hopeful; sex=female; health=healthy',
+    setting: 'Biome=temperate; Weather=rain; Time=night',
+    gameContext: 'arrival_description=true; arrival_pawn=Rowan; scenario=Stormbound Rescue; recruiter=warden Nia',
+    version: 'v1',
+  }));
+
+  cases.push(buildStaticTemplateFixture(promptData, {
+    id: 'arrival-colonist-v2',
+    type: 'arrival',
+    templateKey: 'ArrivalDescription',
+    event: 'colonist arrival',
+    arrivalPawn: 'Mira',
+    neutralText: 'Joined the colony late as an emergency transfer after a caravan event.',
+    arrivalFacts: 'arrival_pawn=Mira; scenario=Emergency Evac; recruiter=caravan captain',
+    pawnSummary: 'age=25; role=smith; mood=alert; sex=female; health=healthy',
+    setting: 'Biome=ice; Weather=blizzard; Time=night',
+    gameContext: 'arrival_description=true; arrival_pawn=Mira; scenario=Emergency Evac; recruiter=caravan captain',
+    version: 'v2',
+  }));
+
+  cases.push(buildStaticTemplateFixture(promptData, {
+    id: 'death-colonist-v1',
+    type: 'death',
+    templateKey: 'DeathDescription',
+    event: 'colonist death',
+    deathVictim: 'Vale',
+    neutralText: 'The colonist was cut down during a raid wave.',
+    deathFacts: 'death_victim=Vale; death_victim_role=initiator; cause=knife wound; destroyed_parts=right arm; nearby=outer gate',
+    deathPawnSummary: 'age=29; mood=exhausted; health=critical before death; sex=male',
+    deathSetting: 'Biome=marsh; Weather=storm; Time=night',
+    gameContext: 'death_description=true; death_victim=Vale; death_victim_role=initiator; cause=knife wound; destroyed_parts=right arm; nearby=outer gate',
+    version: 'v1',
+  }));
+
+  cases.push(buildStaticTemplateFixture(promptData, {
+    id: 'death-colonist-v2',
+    type: 'death',
+    templateKey: 'DeathDescription',
+    event: 'colonist death',
+    deathVictim: 'Arlo',
+    neutralText: 'A sudden infection spread too fast for treatment.',
+    deathFacts: 'death_victim=Arlo; death_victim_role=recipient; cause=toxin fever; organs=lungs; nearby=medical bay',
+    deathPawnSummary: 'age=34; mood=pained; health=critical; sex=male',
+    deathSetting: 'Biome=desert; Weather=clear; Time=dawn',
+    gameContext: 'death_description=true; death_victim=Arlo; death_victim_role=recipient; cause=toxin fever; organs=lungs; nearby=medical bay',
+    version: 'v2',
+  }));
+
+  cases.push(buildStaticTemplateFixture(promptData, {
+    id: 'title-followup-v1',
+    type: 'title',
+    templateKey: 'Title',
+    entryText: 'I snapped at him when the work order came in too late. The room went quiet, and then everyone blamed everyone.',
+    version: 'v1',
+  }));
+
+  cases.push(buildStaticTemplateFixture(promptData, {
+    id: 'title-followup-v2',
+    type: 'title',
+    templateKey: 'Title',
+    entryText: 'The storm came while I was still on watch. I kept a lamp lit and made choices nobody asked me to make.',
+    version: 'v2',
+  }));
+}
+
 function personasFromData(personas) {
   if (!personas || personas.length === 0) {
     return [{
@@ -1208,6 +1503,24 @@ function personasFromData(personas) {
     }];
   }
   return personas;
+}
+
+function isAllLimit(value) {
+  return String(value || '').trim().toLowerCase() === 'all';
+}
+
+function resolveGeneratedLimit(optionValue, fallbackValue, totalCount) {
+  if (totalCount <= 0) {
+    return 0;
+  }
+  if (isAllLimit(optionValue) || isAllLimit(fallbackValue)) {
+    return totalCount;
+  }
+
+  const candidate = Number.isFinite(optionValue)
+    ? optionValue
+    : (Number.isFinite(fallbackValue) ? fallbackValue : totalCount);
+  return Math.max(1, Math.min(totalCount, Math.floor(candidate)));
 }
 
 function sortAndTrimGroups(groups, excludedGroupNames = new Set()) {
@@ -1228,6 +1541,79 @@ function sortAndTrimGroups(groups, excludedGroupNames = new Set()) {
 
 function pickRandom(entries, limit) {
   return [...entries].slice(0, Math.max(1, limit));
+}
+
+function promptEnchantmentVariantsFor(config) {
+  const configured = config
+    && config.generated
+    && Array.isArray(config.generated.promptEnchantmentVariants)
+    ? config.generated.promptEnchantmentVariants
+    : DEFAULT_PROMPT_ENCHANTMENT_VARIANTS;
+  const variants = configured
+    .map((entry, index) => normalizePromptEnchantmentVariant(entry, index))
+    .filter(Boolean);
+
+  if (!variants.some((variant) => variant.promptEnchantment === '')) {
+    variants.unshift(normalizePromptEnchantmentVariant(DEFAULT_PROMPT_ENCHANTMENT_VARIANTS[0], 0));
+  }
+  return variants.length > 0
+    ? variants
+    : [normalizePromptEnchantmentVariant(DEFAULT_PROMPT_ENCHANTMENT_VARIANTS[0], 0)];
+}
+
+function normalizePromptEnchantmentVariant(entry, index) {
+  if (typeof entry === 'string') {
+    return {
+      key: safePathName(entry || `variant-${index + 1}`),
+      label: entry || `variant ${index + 1}`,
+      promptEnchantment: cleanValue(entry),
+      pawnSummaryCue: '',
+      setting: '',
+      toneSuffix: '',
+    };
+  }
+
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const promptEnchantment = cleanValue(entry.promptEnchantment ?? entry.text ?? entry.value ?? '');
+  const rawKey = entry.key || entry.id || entry.label || promptEnchantment || `variant-${index + 1}`;
+  return {
+    key: safePathName(rawKey),
+    label: cleanValue(entry.label || rawKey || `variant ${index + 1}`),
+    promptEnchantment,
+    pawnSummaryCue: cleanValue(entry.pawnSummaryCue || ''),
+    setting: cleanValue(entry.setting || ''),
+    toneSuffix: cleanValue(entry.toneSuffix || ''),
+  };
+}
+
+function pawnSummaryForVariant(sex, mood, thoughts, variant) {
+  const parts = [
+    `sex=${sex}`,
+    'life_stage=adult',
+    `mood=${mood}`,
+    `thoughts=${thoughts}`,
+  ];
+  if (variant && !isSkippable(variant.pawnSummaryCue)) {
+    parts.push(variant.pawnSummaryCue);
+  }
+  return parts.join('; ');
+}
+
+function settingForVariant(variant, fallback) {
+  return variant && !isSkippable(variant.setting) ? variant.setting : fallback;
+}
+
+function toneForVariant(tone, variant) {
+  if (!variant || isSkippable(variant.toneSuffix)) {
+    return tone;
+  }
+  if (isSkippable(tone)) {
+    return variant.toneSuffix;
+  }
+  return `${tone}; ${variant.toneSuffix}`;
 }
 
 function buildRequestConfig(fixture, options, config) {
@@ -1325,6 +1711,27 @@ function loadManualFixtures(dir) {
     .filter(Boolean);
 }
 
+function expandGenerationPasses(fixtures, passes) {
+  const count = Number.isFinite(passes) ? Math.max(1, Math.floor(passes)) : 1;
+  if (count <= 1) {
+    return fixtures;
+  }
+
+  const width = String(count).length;
+  const expanded = [];
+  for (let pass = 1; pass <= count; pass++) {
+    const passLabel = `pass-${String(pass).padStart(width, '0')}`;
+    for (const fixture of fixtures) {
+      expanded.push({
+        ...fixture,
+        id: `${passLabel}-${fixtureId(fixture, expanded.length)}`,
+        pass,
+      });
+    }
+  }
+  return expanded;
+}
+
 function buildMarkdownOutput(runConfig) {
   const chunks = [];
   chunks.push('# Prompt-lab run result');
@@ -1380,6 +1787,51 @@ function buildMarkdownOutput(runConfig) {
   }
 
   return chunks.join('\n');
+}
+
+function buildCompactMarkdownOutput(runConfig) {
+  const chunks = [];
+  chunks.push('# Prompt-lab compact results');
+  chunks.push(`- Timestamp: ${runConfig.timestamp}`);
+  chunks.push(`- Endpoint: ${runConfig.endpoint}`);
+  chunks.push(`- Model: ${runConfig.model}`);
+  chunks.push(`- Temperature: ${runConfig.temperature}`);
+  chunks.push(`- Max tokens: ${runConfig.maxTokens}`);
+  chunks.push(`- Cases: ${runConfig.entries.length}`);
+  chunks.push('');
+
+  for (const entry of runConfig.entries) {
+    chunks.push(`## ${entry.id}`);
+    chunks.push(`- status: ${entry.status}`);
+    if (entry.error) {
+      chunks.push(`- error: ${entry.error}`);
+    }
+    if (entry.title) {
+      chunks.push(`- title: ${entry.title.trim()}`);
+    }
+    chunks.push('');
+    chunks.push('### Prompt');
+    chunks.push('```text');
+    chunks.push(compactPromptText(entry));
+    chunks.push('```');
+    chunks.push('');
+    chunks.push('### Parsed result');
+    chunks.push('```text');
+    chunks.push((entry.generated || '').trim() || '(empty)');
+    chunks.push('```');
+    chunks.push('');
+  }
+
+  return chunks.join('\n');
+}
+
+function compactPromptText(entry) {
+  const parts = [];
+  if (!isSkippable(entry.systemText)) {
+    parts.push(`system:\n${entry.systemText.trim()}`);
+  }
+  parts.push(`user:\n${(entry.prompt || '').trim() || '(empty)'}`);
+  return parts.join('\n\n');
 }
 
 function isSuccessfulResponse(result) {
@@ -1596,10 +2048,16 @@ async function main() {
   if (args.apiKey) config.apiKey = args.apiKey;
   if (args.includeGroups) config.generated.includeGroups = args.includeGroups;
   if (args.includePersonas) config.generated.includePersonas = args.includePersonas;
+  if (args.allVariants) config.generated.allVariants = true;
   if (Number.isFinite(args.temperature)) config.temperature = args.temperature;
   if (Number.isFinite(args.maxTokens)) config.maxTokens = args.maxTokens;
   if (Number.isFinite(args.timeoutSeconds)) config.timeoutSeconds = args.timeoutSeconds;
   if (typeof args.saveResults === 'boolean') config.saveResults = args.saveResults;
+  if (typeof args.compactResults === 'boolean') {
+    config.compactResults = args.compactResults;
+  } else if (args.allVariants) {
+    config.compactResults = true;
+  }
 
   const promptData = loadPromptData(config);
   let fixtures = [];
@@ -1615,6 +2073,8 @@ async function main() {
       ? loaded.filter((entry) => shouldRunFixture(entry, args.caseFilter))
       : loaded;
   }
+
+  fixtures = expandGenerationPasses(fixtures, args.passes);
 
   if (!fixtures || fixtures.length === 0) {
     console.log('No cases matched your filters.');
@@ -1635,17 +2095,20 @@ async function main() {
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const modelFolder = safePathName(args.model || config.model || 'default');
-  const folder = path.join(ROOT, config.resultFolder || DEFAULT_RESULT_RELATIVE_DIR, modelFolder);
+  const folder = path.join(resultRootFolder(config), modelFolder);
   fs.mkdirSync(folder, { recursive: true });
   const outPath = path.join(folder, `${timestamp}.md`);
-  const md = buildMarkdownOutput({
+  const markdownConfig = {
     timestamp,
     endpoint: toChatUrl(config.endpoint || DEFAULTS.endpoint),
     model: args.model || config.model || DEFAULTS.model,
     temperature: args.temperature ?? config.temperature,
     maxTokens: args.maxTokens ?? config.maxTokens,
     entries: runEntries,
-  });
+  };
+  const md = config.compactResults
+    ? buildCompactMarkdownOutput(markdownConfig)
+    : buildMarkdownOutput(markdownConfig);
   fs.writeFileSync(outPath, md, 'utf8');
   console.log(`Saved markdown results to ${outPath}`);
 }
