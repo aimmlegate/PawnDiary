@@ -1,19 +1,22 @@
 <#
 .SYNOPSIS
-  Build the mod and prepare the publish-ready About.xml payload.
+  Build the mod and prepare an uploadable Workshop payload in dist.
 
 .DESCRIPTION
-  This script performs only two steps:
+  This script performs a two-phase publish prep:
 
     1. Build PawnDiary.dll into a throwaway temp folder.
-    2. Copy About/About.xml into a clean output folder and normalize the published name and
-       packageId for release publishing.
+    2. Assemble a clean payload folder (About, 1.6/Defs, Languages, assemblies, docs) and
+       normalize the published mod name/packageId by stripping "(development)" markers.
+
+  Branch/tag creation from earlier versions is intentionally disabled; this keeps the script focused
+  on local payload prep and is suitable for simple, repeatable Workshop uploads.
 
 .PARAMETER Version
   Optional version stamp used for the temp build folder name. Defaults to beta-<today>.
 
 .PARAMETER OutDir
-  Output folder for the release payload metadata. Defaults to <repo>/dist/<published packageId>.
+  Output folder for the release payload. Defaults to <repo>/dist/<published packageId>.
 
 .PARAMETER Configuration
   MSBuild configuration for PawnDiary.dll. Default: Release.
@@ -112,6 +115,19 @@ function Get-SafeFolderName {
     return $folderName
 }
 
+function Copy-Payload {
+    param([string]$RelPath, [switch]$Required)
+    $src = Join-Path $repoRoot $RelPath
+    if (-not (Test-Path -LiteralPath $src)) {
+        if ($Required) { throw "Required path missing: $RelPath" }
+        return $false
+    }
+    $dest = Join-Path $OutDir $RelPath
+    New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null
+    Copy-Item -LiteralPath $src -Destination $dest -Recurse -Force
+    return $true
+}
+
 $repoRoot = (& git rev-parse --show-toplevel).Trim()
 if (-not $repoRoot) { throw "Not inside a git repository." }
 Set-Location -LiteralPath $repoRoot
@@ -149,8 +165,8 @@ if ($SkipBranch -or $Force) {
 }
 
 Write-Step "Build PawnDiary.dll ($Configuration)"
-$msbuild   = Find-MSBuild
-$buildOut  = Join-Path ([System.IO.Path]::GetTempPath()) "pawndiary-build-$Version"
+$msbuild = Find-MSBuild
+$buildOut = Join-Path ([System.IO.Path]::GetTempPath()) "pawndiary-build-$Version"
 if (Test-Path $buildOut) { Remove-Item -Recurse -Force $buildOut }
 New-Item -ItemType Directory -Force -Path $buildOut | Out-Null
 
@@ -166,13 +182,20 @@ Invoke-Native $msbuild @(
 $builtDll = Join-Path $buildOut "PawnDiary.dll"
 if (-not (Test-Path $builtDll)) { throw "Build reported success but PawnDiary.dll was not produced in $buildOut." }
 
-Write-Step "Prepare About.xml"
+Write-Step "Prepare dist payload"
 if (Test-Path $OutDir) { Remove-Item -Recurse -Force $OutDir }
-New-Item -ItemType Directory -Force -Path (Join-Path $OutDir "About") | Out-Null
-$aboutSource = Join-Path $repoRoot "About\About.xml"
-$aboutDest = Join-Path $OutDir "About\About.xml"
-Copy-Item -LiteralPath $aboutSource -Destination $aboutDest
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
+# About metadata + preview + published-file-id, all required for Workshop updates.
+Copy-Payload "About\About.xml" -Required | Out-Null
+Copy-Payload "About\Preview.png" -Required | Out-Null
+Copy-Payload "About\PublishedFileId.txt" | Out-Null
+
+# Core runtime assets.
+Copy-Payload "1.6\Defs" -Required | Out-Null
+Copy-Payload "Languages" | Out-Null
+
+$aboutDest = Join-Path $OutDir "About\About.xml"
 $aboutText = [System.IO.File]::ReadAllText($aboutDest)
 
 $payloadModName = Get-AboutValue $aboutText "name"
@@ -213,10 +236,29 @@ if (-not [string]::IsNullOrWhiteSpace($Author)) {
 }
 
 [System.IO.File]::WriteAllText($aboutDest, $aboutText, (New-Object System.Text.UTF8Encoding($false)))
+
+# Assemblies for Workshop release.
+$asmDir = Join-Path $OutDir "1.6\Assemblies"
+New-Item -ItemType Directory -Force -Path $asmDir | Out-Null
+Copy-Item -LiteralPath $builtDll -Destination $asmDir -Force
+$harmony = Join-Path $buildOut "0Harmony.dll"
+if (Test-Path $harmony) {
+    Copy-Item -LiteralPath $harmony -Destination $asmDir -Force
+} else {
+    Copy-Payload "1.6\Assemblies\0Harmony.dll" -Required | Out-Null
+}
+
+foreach ($doc in @("README.md", "CHANGELOG.md", "LICENSE", "LICENSE.txt", "LICENSE.md")) {
+    Copy-Payload $doc | Out-Null
+}
+
 Remove-Item -Recurse -Force $buildOut -ErrorAction SilentlyContinue
 
+$payloadFiles = Get-ChildItem -Recurse -File $OutDir
+$payloadBytes = ($payloadFiles | Measure-Object -Property Length -Sum).Sum
 Write-Step "Done"
-Write-Host "Metadata payload prepared:"
+Write-Host "Uploadable payload prepared:" -ForegroundColor Green
 Write-Host "  $OutDir"
 Write-Host "  Built DLL: $builtDll"
 Write-Host "  Prepared About.xml: $aboutDest"
+Write-Host ("  shipped {0} files, {1:N2} MB" -f $payloadFiles.Count, ($payloadBytes / 1MB))
