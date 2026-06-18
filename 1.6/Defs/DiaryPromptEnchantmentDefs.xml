@@ -21,6 +21,59 @@
 <Defs>
 
   <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessClouded</defName>
+    <label>clouded consciousness</label>
+    <source>Capacity</source>
+    <capacityDefName>Consciousness</capacityDefName>
+    <minCapacity>0.35</minCapacity>
+    <maxCapacity>0.55</maxCapacity>
+    <chance>1</chance>
+    <weight>2.2</weight>
+    <severity>1.2</severity>
+    <conditionKey>PawnDiary.Prompt.Health.ConsciousnessFallback</conditionKey>
+    <intensityKey>PawnDiary.Prompt.Health.Intensity.Moderate</intensityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.DulledAwareness</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessFading</defName>
+    <label>fading consciousness</label>
+    <source>Capacity</source>
+    <capacityDefName>Consciousness</capacityDefName>
+    <minCapacity>0.20</minCapacity>
+    <maxCapacity>0.35</maxCapacity>
+    <chance>1</chance>
+    <weight>3.2</weight>
+    <severity>1.5</severity>
+    <conditionKey>PawnDiary.Prompt.Health.ConsciousnessFallback</conditionKey>
+    <intensityKey>PawnDiary.Prompt.Health.Intensity.Major</intensityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.FoggedAwareness</li>
+      <li>PawnDiary.Prompt.Health.Cue.SluggishThoughts</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_ConsciousnessBarelyAwake</defName>
+    <label>barely conscious</label>
+    <source>Capacity</source>
+    <capacityDefName>Consciousness</capacityDefName>
+    <maxCapacity>0.20</maxCapacity>
+    <chance>1</chance>
+    <weight>5</weight>
+    <severity>2</severity>
+    <conditionKey>PawnDiary.Prompt.Health.ConsciousnessFallback</conditionKey>
+    <intensityKey>PawnDiary.Prompt.Health.Intensity.Critical</intensityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.NearCollapse</li>
+      <li>PawnDiary.Prompt.Health.Cue.ThoughtsFragmented</li>
+      <li>PawnDiary.Prompt.Health.Cue.BarelyAwake</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
     <defName>DiaryEnchant_FeverishBody</defName>
     <label>feverish body</label>
     <chance>0.65</chance>

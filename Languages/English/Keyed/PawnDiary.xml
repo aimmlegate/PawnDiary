@@ -111,35 +111,12 @@
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
-  <PawnDiary.Settings.SystemPrompt>System prompt — diary voice</PawnDiary.Settings.SystemPrompt>
-  <PawnDiary.Settings.SystemPromptHelp>First-person, in-character entries: social interactions, mental breaks, tales, mood events, and thoughts.</PawnDiary.Settings.SystemPromptHelp>
-  <PawnDiary.Settings.SystemPromptReflection>System prompt — day reflection</PawnDiary.Settings.SystemPromptReflection>
-  <PawnDiary.Settings.SystemPromptReflectionHelp>First-person end-of-day reflection that looks back on the whole day and weaves its highlights together.</PawnDiary.Settings.SystemPromptReflectionHelp>
-  <PawnDiary.Settings.SystemPromptNeutral>System prompt — neutral chronicle</PawnDiary.Settings.SystemPromptNeutral>
-  <PawnDiary.Settings.SystemPromptNeutralHelp>Third-person factual notes with no persona: colonist death and arrival descriptions.</PawnDiary.Settings.SystemPromptNeutralHelp>
-  <PawnDiary.Settings.SystemPromptTitle>System prompt — diary title</PawnDiary.Settings.SystemPromptTitle>
-  <PawnDiary.Settings.SystemPromptTitleHelp>Short chat-style subject of three to eight words for an existing diary entry. Sent only by the title-writing follow-up; main entries are unaffected.</PawnDiary.Settings.SystemPromptTitleHelp>
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
-  <PawnDiary.Settings.PromptStudioHelp>Edit every Def-backed prompt text from one place. This covers both system prompts and the shorter instruction text appended to structured context.</PawnDiary.Settings.PromptStudioHelp>
-  <PawnDiary.Settings.PromptStudioSummary>{0} prompt texts available, {1} customized</PawnDiary.Settings.PromptStudioSummary>
-  <PawnDiary.Settings.PromptStudioLiveNote>Prompt text edits save when you close mod settings. Structured context fields still come from gameplay automatically.</PawnDiary.Settings.PromptStudioLiveNote>
-  <PawnDiary.Settings.RestoreAllPromptDefaults>Restore all prompt defaults</PawnDiary.Settings.RestoreAllPromptDefaults>
-  <PawnDiary.Settings.PromptPickerHeader>Choose a prompt to edit</PawnDiary.Settings.PromptPickerHeader>
-  <PawnDiary.Settings.PromptBadgeSystem>System prompt</PawnDiary.Settings.PromptBadgeSystem>
-  <PawnDiary.Settings.PromptBadgeInstruction>Prompt text</PawnDiary.Settings.PromptBadgeInstruction>
+  <PawnDiary.Settings.PromptStudioXmlHelp>Prompt wording and field lists are controlled by XML defs. Edit DiaryPromptTemplateDefs.xml and DiaryPromptDef.xml, then restart RimWorld.</PawnDiary.Settings.PromptStudioXmlHelp>
+  <PawnDiary.Settings.PromptStudioXmlSummary>{0} prompt templates loaded from XML</PawnDiary.Settings.PromptStudioXmlSummary>
+  <PawnDiary.Settings.PromptStudioXmlNote>Saved games no longer override prompt text. This screen is a status view so XML tuning is the single source of truth.</PawnDiary.Settings.PromptStudioXmlNote>
   <PawnDiary.Settings.PromptStatusCustomized>Customized from the XML default</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Using the XML default</PawnDiary.Settings.PromptStatusDefault>
-  <PawnDiary.Settings.RestorePromptDefault>Restore this prompt default</PawnDiary.Settings.RestorePromptDefault>
-  <PawnDiary.Settings.SinglePovInstruction>Prompt text — single diary entry</PawnDiary.Settings.SinglePovInstruction>
-  <PawnDiary.Settings.SinglePovInstructionHelp>Appended after the structured context for one short first-person diary entry from the requested pawn's point of view.</PawnDiary.Settings.SinglePovInstructionHelp>
-  <PawnDiary.Settings.RecipientFollowupInstruction>Prompt text — recipient follow-up</PawnDiary.Settings.RecipientFollowupInstruction>
-  <PawnDiary.Settings.RecipientFollowupInstructionHelp>Appended for the recipient's turn in sequential paired generation, where the initiator's entry is hidden continuity context only.</PawnDiary.Settings.RecipientFollowupInstructionHelp>
-  <PawnDiary.Settings.DeathDescriptionInstruction>Prompt text — death description</PawnDiary.Settings.DeathDescriptionInstruction>
-  <PawnDiary.Settings.DeathDescriptionInstructionHelp>Appended to the neutral colonist-death prompt. This writes a short third-person factual death note.</PawnDiary.Settings.DeathDescriptionInstructionHelp>
-  <PawnDiary.Settings.ArrivalDescriptionInstruction>Prompt text — arrival description</PawnDiary.Settings.ArrivalDescriptionInstruction>
-  <PawnDiary.Settings.ArrivalDescriptionInstructionHelp>Appended to the neutral colony-arrival prompt. This writes the first entry about how a pawn joined the colony.</PawnDiary.Settings.ArrivalDescriptionInstructionHelp>
-  <PawnDiary.Settings.TitleUserInstruction>Prompt text — title request</PawnDiary.Settings.TitleUserInstruction>
-  <PawnDiary.Settings.TitleUserInstructionHelp>Appended after an existing diary entry for the separate title-generation follow-up call. Main diary entries are unaffected.</PawnDiary.Settings.TitleUserInstructionHelp>
   <PawnDiary.Settings.PersonaStudioTitle>Persona presets</PawnDiary.Settings.PersonaStudioTitle>
   <PawnDiary.Settings.PersonaStudioHelp>Edit built-in persona presets and add your own. Persona tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
   <PawnDiary.Settings.PersonaStudioSummary>{0} personas total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>
@@ -152,10 +129,6 @@
   <PawnDiary.Settings.PersonaBadgeCustom>Custom preset</PawnDiary.Settings.PersonaBadgeCustom>
   <PawnDiary.Settings.PersonaLabel>Label</PawnDiary.Settings.PersonaLabel>
   <PawnDiary.Settings.PersonaRule>Voice rule (used as prompt persona text)</PawnDiary.Settings.PersonaRule>
-  <PawnDiary.Settings.PersonaConsciousnessRules>Low Consciousness voice modifiers replace the normal rule when the pawn is impaired but still able to write.</PawnDiary.Settings.PersonaConsciousnessRules>
-  <PawnDiary.Settings.PersonaCloudedConsciousnessRule>Clouded rule (&lt;55% Consciousness)</PawnDiary.Settings.PersonaCloudedConsciousnessRule>
-  <PawnDiary.Settings.PersonaFadingConsciousnessRule>Fading rule (&lt;35% Consciousness)</PawnDiary.Settings.PersonaFadingConsciousnessRule>
-  <PawnDiary.Settings.PersonaBarelyConsciousRule>Barely conscious rule (&lt;20% Consciousness)</PawnDiary.Settings.PersonaBarelyConsciousRule>
   <PawnDiary.Settings.PersonaTags>Theme tags (first-roll weighting)</PawnDiary.Settings.PersonaTags>
   <PawnDiary.Settings.RestorePersonaPreset>Restore this preset default</PawnDiary.Settings.RestorePersonaPreset>
   <PawnDiary.Settings.DeletePersonaPreset>Delete this custom persona</PawnDiary.Settings.DeletePersonaPreset>
@@ -172,9 +145,10 @@
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.EventsSectionTitle>Events</PawnDiary.Settings.EventsSectionTitle>
-  <PawnDiary.Settings.EventsHeader>Enable event groups and edit the diary prompt each one uses.</PawnDiary.Settings.EventsHeader>
+  <PawnDiary.Settings.EventsHeader>Enable event groups and preview the XML prompt instruction each one uses.</PawnDiary.Settings.EventsHeader>
   <PawnDiary.Settings.EventGroupSummary>{0} groups enabled out of {1}, {2} prompt overrides saved</PawnDiary.Settings.EventGroupSummary>
-  <PawnDiary.Settings.EventGroupHelp>Use the Edit buttons to jump straight into a group's diary prompt. Hover a row to preview the group's default instruction.</PawnDiary.Settings.EventGroupHelp>
+  <PawnDiary.Settings.EventGroupSummaryXml>{0} groups enabled out of {1}; prompt instructions come from XML</PawnDiary.Settings.EventGroupSummaryXml>
+  <PawnDiary.Settings.EventGroupHelp>Use View to inspect a group's XML instruction. Hover a row to preview it.</PawnDiary.Settings.EventGroupHelp>
   <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
   <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
   <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
@@ -185,9 +159,12 @@
   <PawnDiary.Settings.EditingPromptFor>Editing prompt for: {0}</PawnDiary.Settings.EditingPromptFor>
   <PawnDiary.Settings.ChangeGroup>Change group</PawnDiary.Settings.ChangeGroup>
   <PawnDiary.Settings.EditGroup>Edit</PawnDiary.Settings.EditGroup>
+  <PawnDiary.Settings.ViewGroup>View</PawnDiary.Settings.ViewGroup>
   <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
   <PawnDiary.Settings.GroupStatusCustomized>Custom instruction saved for this group</PawnDiary.Settings.GroupStatusCustomized>
   <PawnDiary.Settings.GroupStatusDefault>Using this group's XML default instruction</PawnDiary.Settings.GroupStatusDefault>
+  <PawnDiary.Settings.GroupStatusXml>Instruction loaded from XML</PawnDiary.Settings.GroupStatusXml>
+  <PawnDiary.Settings.GroupInstructionXmlOnly>Diary prompt instruction for this group (XML-only)</PawnDiary.Settings.GroupInstructionXmlOnly>
   <PawnDiary.Settings.SaveInstruction>Save instruction</PawnDiary.Settings.SaveInstruction>
   <PawnDiary.Settings.RestoreGroupDefault>Restore this group's default</PawnDiary.Settings.RestoreGroupDefault>
 

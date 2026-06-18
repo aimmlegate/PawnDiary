@@ -12,6 +12,7 @@ npm start
 This reads:
 
 - `1.6/Defs/DiaryPromptDef.xml`
+- `1.6/Defs/DiaryPromptTemplateDefs.xml`
 - `1.6/Defs/DiaryPersonaDefs.xml`
 - `1.6/Defs/DiaryInteractionGroupDefs.xml`
 
@@ -26,12 +27,10 @@ and generates multiple versions for:
 Generated fixtures are derived from the current XML catalog and honor the harness's configured
 group exclusions.
 
-Generated first-person fixtures mirror the in-game `DiaryPromptBuilder` context policy: persona and
-last-opener cues are always present, `setting:` is included whenever fixture data supplies it, one
-sample `important health:` cue appears on selected cases, and broader
-pawn/tone/relationship/weapon/hidden-initiator fields only appear for the same combat, important,
-batched, reflection, and internal-state branches used in game. Interaction fixtures also append the
-current Keyed direct-speech cue for the active POV pawn.
+Generated fixtures select the same template keys as the in-game `DiaryPromptBuilder`
+(`PairDefault`, `PairImportant`, `SoloInternalState`, `DeathDescription`, `Title`, and so on), then
+render field order and inclusion from `DiaryPromptTemplateDefs.xml`. Interaction fixtures also
+append the current Keyed direct-speech cue for the active POV pawn when the template allows it.
 
 Use:
 
@@ -60,7 +59,8 @@ The title is generated with:
 
 - same endpoint and model as the main call
 - temperature copied from the main request
-- title user instruction read from `DiaryPromptDef.titleUserInstruction`
+- title fields rendered from the XML `Title` template
+- title user instruction read from the template, falling back to `DiaryPromptDef.titleUserInstruction`
 - title tokens capped to `40` (same as in-game)
 
 Disable title follow-up locally with:

@@ -3,6 +3,18 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (XML prompt and signal architecture)**
+  - Added XML `DiaryPromptTemplateDef`, `DiaryContextReactionDef`, and `DiarySignalPolicyDef`
+    layers so prompt field lists, context reactions, thought/work tracker tuning, and prompt
+    template instructions can be adjusted without C# changes.
+  - Routed temporary thoughts, ambient thought batching, staged thought progression, sampled work,
+    recent threat-letter context, and active map-condition context through XML policies.
+  - Moved low Consciousness from persona-specific rules into weighted capacity prompt
+    enchantments, and removed persona consciousness settings from XML/runtime/settings UI.
+  - Made Prompt Studio and event group instruction views XML-only status/previews, removed saved
+    prompt/group-instruction overrides, and updated prompt-lab generated fixtures to render
+    `DiaryPromptTemplateDefs.xml`.
+
 - **2026-06-18 (direct speech blocks)**
   - Changed interaction direct-speech prompting to use closed `[[speech]]...[[/speech]]` marker
     lines for initiator/single-POV speech, while recipient follow-up prompts now forbid speech

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Context reactions decide how live map signals tracked in C# become prompt context.
+  Add a new C# tracker with a reactionKey, then tune its visibility here.
+-->
+<Defs>
+
+  <PawnDiary.DiaryContextReactionDef>
+    <defName>DiaryContextReaction_ActiveMapConditions</defName>
+    <reactionKey>ActiveMapConditions</reactionKey>
+    <enabled>true</enabled>
+    <textKey>PawnDiary.Ctx.ActiveConditions</textKey>
+    <maxItems>3</maxItems>
+    <displayOnUiOnly>true</displayOnUiOnly>
+  </PawnDiary.DiaryContextReactionDef>
+
+  <PawnDiary.DiaryContextReactionDef>
+    <defName>DiaryContextReaction_RecentThreatLetter</defName>
+    <reactionKey>RecentThreatLetter</reactionKey>
+    <enabled>true</enabled>
+    <textKey>PawnDiary.Ctx.RecentThreat</textKey>
+    <scanBack>30</scanBack>
+    <timeoutTicks>7500</timeoutTicks>
+    <requireHomeMap>true</requireHomeMap>
+    <requireDanger>true</requireDanger>
+    <letterDefNames>
+      <li>ThreatBig</li>
+      <li>ThreatSmall</li>
+    </letterDefNames>
+  </PawnDiary.DiaryContextReactionDef>
+
+</Defs>

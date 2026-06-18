@@ -38,12 +38,12 @@ namespace PawnDiary
         /// </summary>
         private void ScanThoughtProgressionsForDiaryEvents(bool snapshotOnly)
         {
-            if (PawnDiaryMod.Settings == null)
+            if (PawnDiaryMod.Settings == null || !DiarySignalPolicies.Enabled(DiarySignalPolicies.ThoughtProgression))
             {
                 return;
             }
 
-            List<ThoughtProgressionRule> rules = DiaryTuning.Current.thoughtProgressionRules;
+            List<ThoughtProgressionRule> rules = DiarySignalPolicies.ThoughtProgressionRules;
             if (rules == null || rules.Count == 0)
             {
                 activeThoughtProgressions.Clear();
@@ -157,7 +157,7 @@ namespace PawnDiary
             string pawnId = pawn.GetUniqueLoadID();
             string dedupKey = "thoughtprogression|" + pawnId + "|" + match.categoryKey + "|"
                 + match.thoughtDefName + "|" + match.stageIndex.ToString();
-            if (RecentlyRecorded(recentThoughtEvents, dedupKey, DiaryTuning.Current.thoughtProgressionDedupTicks))
+            if (RecentlyRecorded(recentThoughtEvents, dedupKey, DiarySignalPolicies.ThoughtProgressionDedupTicks))
             {
                 return false;
             }

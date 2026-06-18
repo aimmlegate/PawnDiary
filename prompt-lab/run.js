@@ -32,6 +32,7 @@ const DEFAULTS = {
   defaultSystemPromptReflection: path.join('prompts', '_system_reflection.txt'),
   defaultSystemPromptTitle: path.join('prompts', '_system_title.txt'),
   promptDefFile: path.join('..', '1.6', 'Defs', 'DiaryPromptDef.xml'),
+  promptTemplateDefFile: path.join('..', '1.6', 'Defs', 'DiaryPromptTemplateDefs.xml'),
   personaDefFile: path.join('..', '1.6', 'Defs', 'DiaryPersonaDefs.xml'),
   interactionGroupDefFile: path.join('..', '1.6', 'Defs', 'DiaryInteractionGroupDefs.xml'),
   keyedFile: path.join('..', 'Languages', 'English', 'Keyed', 'PawnDiary.xml'),
@@ -280,6 +281,40 @@ function parsePromptDefsFromXml(config) {
   };
 }
 
+function extractBool(block, tagName, fallback) {
+  const value = extractTag(block, tagName);
+  if (value === '') return fallback;
+  return /^true$/i.test(value.trim());
+}
+
+function parsePromptTemplateDefsFromXml(config) {
+  const raw = readIfExists(resolvePath(config.promptTemplateDefFile));
+  if (!raw) return [];
+
+  const blocks = extractBlocks(raw, 'PawnDiary.DiaryPromptTemplateDef');
+  return blocks.map((block) => {
+    const fieldsBlock = extractTag(block, 'fields');
+    const fieldBlocks = fieldsBlock ? extractBlocks(fieldsBlock, 'li') : [];
+    const defName = extractTag(block, 'defName');
+    return {
+      defName,
+      templateKey: extractTag(block, 'templateKey') || defName,
+      systemPrompt: extractTag(block, 'systemPrompt'),
+      finalInstruction: extractTag(block, 'finalInstruction'),
+      recipientFinalInstruction: extractTag(block, 'recipientFinalInstruction'),
+      includePromptEnchantment: extractBool(block, 'includePromptEnchantment', true),
+      appendDirectSpeechInstruction: extractBool(block, 'appendDirectSpeechInstruction', true),
+      fields: fieldBlocks
+        .map((fieldBlock) => ({
+          enabled: extractBool(fieldBlock, 'enabled', true),
+          label: extractTag(fieldBlock, 'label'),
+          source: extractTag(fieldBlock, 'source'),
+        }))
+        .filter((field) => field.enabled && field.label && field.source),
+    };
+  }).filter((template) => template.templateKey && template.fields.length > 0);
+}
+
 function parseKeyedPromptText(config) {
   const defaults = {
     pairInitiatorDirectSpeech: 'Initiator POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
@@ -347,6 +382,7 @@ function loadPromptData(config) {
       titleSystemPrompt: 'You write short, evocative titles (3 to 8 words) for RimWorld diary entries. Return only the title — no quotes, no period, no markdown, no labels, no commentary.',
       titleUserInstruction: DEFAULT_TITLE_USER_INSTRUCTION,
     },
+    promptTemplates: parsePromptTemplateDefsFromXml(config),
     personas: parsePersonaDefsFromXml(config),
     groups: parseInteractionGroupsFromXml(config),
     keyedPromptText: parseKeyedPromptText(config),
@@ -414,6 +450,9 @@ function toChatUrl(endpoint) {
 
 function getSystemForFixture(fixture, config, promptData) {
   if (fixture.systemText) return fixture.systemText;
+  if (fixture.templateKey) {
+    return fixture.system || systemPromptForTemplate(promptData, config, fixture.templateKey);
+  }
   const promptDefs = promptData.promptDefs;
   const selectedMode = String(fixture.systemMode || 'diary').toLowerCase();
   if (selectedMode === 'neutral') {
@@ -470,21 +509,157 @@ function titleUserInstruction(promptData) {
   return promptData.promptDefs.titleUserInstruction || DEFAULT_TITLE_USER_INSTRUCTION;
 }
 
-function firstPersonFieldOrder(hasOtherPawn) {
-  const fields = hasOtherPawn
-    ? ['event', 'pov', 'role', 'with', 'what you saw', 'instruction']
-    : ['event', 'pov', 'what happened', 'instruction'];
-  return fields.concat([
-    'you',
-    'persona',
-    'important health',
-    'setting',
-    'tone',
-    'relationship',
-    'my last opener (not repeat)',
-    'weapon',
-    'initiator diary (hidden context)',
-  ]);
+function templateForKey(promptData, key) {
+  const normalized = String(key || '').toLowerCase();
+  const templates = promptData.promptTemplates || [];
+  return templates.find((template) =>
+    String(template.templateKey || '').toLowerCase() === normalized
+    || String(template.defName || '').toLowerCase() === normalized);
+}
+
+function fallbackTemplateFields(key) {
+  if (key === 'DeathDescription') {
+    return [
+      ['event', 'EventNoun'],
+      ['deceased', 'DeathVictim'],
+      ['what happened', 'NeutralText'],
+      ['death facts', 'DeathFacts'],
+      ['deceased pawn', 'DeathPawnSummary'],
+      ['setting', 'DeathSetting'],
+    ];
+  }
+  if (key === 'ArrivalDescription') {
+    return [
+      ['event', 'EventNoun'],
+      ['colonist', 'ArrivalPawn'],
+      ['what happened', 'NeutralText'],
+      ['arrival facts', 'ArrivalFacts'],
+      ['colonist pawn', 'PawnSummary'],
+      ['setting', 'Setting'],
+    ];
+  }
+  if (key === 'Title') {
+    return [['entry', 'EntryText']];
+  }
+  return [
+    ['event', 'EventNoun'],
+    ['pov', 'PovName'],
+    ['what happened', 'PovText'],
+    ['instruction', 'Instruction'],
+    ['persona', 'Persona'],
+    ['important health', 'PromptEnchantment'],
+    ['setting', 'Setting'],
+    ['my last opener (not repeat)', 'LastOpener'],
+  ];
+}
+
+function resolvedTemplate(promptData, key) {
+  return templateForKey(promptData, key) || {
+    templateKey: key,
+    includePromptEnchantment: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title',
+    appendDirectSpeechInstruction: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title' && key !== 'SoloDayReflection',
+    fields: fallbackTemplateFields(key).map(([label, source]) => ({ label, source, enabled: true })),
+  };
+}
+
+function templateKeyForFixture(group, context, hasOtherPawn) {
+  const combat = !!(group && group.combat);
+  const important = !!(group && group.important);
+  const batched = hasContext(context, 'batch=');
+  const dayReflection = isDayReflectionGroup(group, context);
+  const internalState = hasAnyContext(context, ['mood_event=', 'thought=', 'inspiration=', 'work=', 'hediff=']);
+
+  if (hasOtherPawn) {
+    if (combat) return 'PairCombat';
+    if (batched) return 'PairBatched';
+    return important ? 'PairImportant' : 'PairDefault';
+  }
+
+  if (dayReflection) return 'SoloDayReflection';
+  if (internalState) return 'SoloInternalState';
+  if (batched) return 'SoloBatched';
+  return important ? 'SoloImportant' : 'SoloDefault';
+}
+
+function systemPromptForTemplate(promptData, config, templateKey) {
+  const template = resolvedTemplate(promptData, templateKey);
+  if (!isSkippable(template.systemPrompt)) {
+    return template.systemPrompt;
+  }
+  if (templateKey === 'DeathDescription' || templateKey === 'ArrivalDescription') {
+    return promptData.promptDefs.systemPromptNeutral;
+  }
+  if (templateKey === 'SoloDayReflection') {
+    return promptData.promptDefs.systemPromptReflection;
+  }
+  if (templateKey === 'Title') {
+    return promptData.promptDefs.titleSystemPrompt || readIfExists(resolvePath(config.defaultSystemPromptTitle)) || '';
+  }
+  return promptData.promptDefs.systemPrompt;
+}
+
+function finalInstructionForTemplate(promptData, templateKey) {
+  const template = resolvedTemplate(promptData, templateKey);
+  if (!isSkippable(template.finalInstruction)) {
+    return template.finalInstruction;
+  }
+  if (templateKey === 'Title') return titleUserInstruction(promptData);
+  if (templateKey === 'DeathDescription') return promptData.promptDefs.deathDescriptionInstruction;
+  if (templateKey === 'ArrivalDescription') return promptData.promptDefs.arrivalDescriptionInstruction;
+  return promptData.promptDefs.singlePovInstruction;
+}
+
+function recipientInstructionForTemplate(promptData, templateKey) {
+  const template = resolvedTemplate(promptData, templateKey);
+  if (!isSkippable(template.recipientFinalInstruction)) {
+    return template.recipientFinalInstruction;
+  }
+  return promptData.promptDefs.recipientFollowupInstruction;
+}
+
+function sourceValue(source, values) {
+  switch (source) {
+    case 'EventNoun': return values.event;
+    case 'PovName': return values.pov;
+    case 'PovRole': return values.role;
+    case 'OtherPawnName': return values.other;
+    case 'PovText':
+    case 'WhatHappened':
+    case 'WhatYouSaw': return values.povText;
+    case 'NeutralText': return values.neutralText;
+    case 'Instruction': return values.instruction;
+    case 'PawnSummary': return values.pawnSummary;
+    case 'Persona': return values.persona;
+    case 'PromptEnchantment': return values.includePromptEnchantment === false ? '' : values.promptEnchantment;
+    case 'Setting': return values.setting;
+    case 'Tone': return values.tone;
+    case 'Relationship': return values.relationship;
+    case 'LastOpener': return values.lastOpener;
+    case 'Weapon': return values.weapon;
+    case 'HiddenInitiatorEntry': return values.initiatorEntry;
+    case 'DeathVictim': return values.deathVictim;
+    case 'DeathFacts': return values.deathFacts;
+    case 'DeathPawnSummary': return values.deathPawnSummary;
+    case 'DeathSetting': return values.deathSetting || values.setting;
+    case 'ArrivalPawn': return values.arrivalPawn;
+    case 'ArrivalFacts': return values.arrivalFacts;
+    case 'EntryText': return values.entryText;
+    case 'GameContext': return values.gameContext;
+    default: return '';
+  }
+}
+
+function fieldsFromTemplate(template, values) {
+  const fields = {};
+  const order = [];
+  for (const field of template.fields || []) {
+    if (!field || !field.label || !field.source || field.enabled === false) {
+      continue;
+    }
+    fields[field.label] = sourceValue(field.source, values);
+    order.push(field.label);
+  }
+  return { fields, order };
 }
 
 function domainOf(group) {
@@ -565,89 +740,6 @@ function generatedContextForGroup(group, kind) {
   return `def=${defName}; label=${label}`;
 }
 
-function promptPolicyFor(group, context, hasOtherPawn) {
-  const policy = {
-    includePawnSummary: false,
-    includeSetting: true,
-    includeTone: false,
-    includeRelationship: false,
-    includeLastOpener: true,
-    includePromptEnchantment: true,
-    includeWeapon: false,
-    includeHiddenInitiatorEntry: false,
-  };
-
-  const combat = !!(group && group.combat);
-  const important = !!(group && group.important);
-  const batched = hasContext(context, 'batch=');
-  const dayReflection = isDayReflectionGroup(group, context);
-  const internalState = hasAnyContext(context, ['mood_event=', 'thought=', 'inspiration=', 'work=']);
-
-  if (combat) {
-    policy.includePawnSummary = true;
-    policy.includeSetting = true;
-    policy.includeTone = true;
-    policy.includeRelationship = hasOtherPawn;
-    policy.includeWeapon = true;
-    policy.includeHiddenInitiatorEntry = true;
-    return policy;
-  }
-
-  if (dayReflection) {
-    policy.includePawnSummary = true;
-    return policy;
-  }
-
-  if (hasOtherPawn && !batched) {
-    policy.includeRelationship = true;
-    policy.includeTone = important;
-    policy.includeHiddenInitiatorEntry = important;
-    return policy;
-  }
-
-  if (internalState || batched) {
-    return policy;
-  }
-
-  if (important) {
-    policy.includePawnSummary = true;
-    policy.includeSetting = true;
-    policy.includeTone = true;
-  }
-
-  return policy;
-}
-
-function addPolicyFields(fields, policy, values) {
-  if (policy.includePawnSummary) {
-    fields.you = values.pawnSummary;
-  }
-
-  fields.persona = values.persona;
-
-  if (policy.includePromptEnchantment) {
-    fields['important health'] = values.promptEnchantment;
-  }
-  if (policy.includeSetting) {
-    fields.setting = values.setting;
-  }
-  if (policy.includeTone) {
-    fields.tone = values.tone;
-  }
-  if (policy.includeRelationship) {
-    fields.relationship = values.relationship;
-  }
-  if (policy.includeLastOpener) {
-    fields['my last opener (not repeat)'] = values.lastOpener;
-  }
-  if (policy.includeWeapon) {
-    fields.weapon = values.weapon;
-  }
-  if (policy.includeHiddenInitiatorEntry) {
-    fields['initiator diary (hidden context)'] = values.initiatorEntry;
-  }
-}
-
 function appendInstructionText(instruction, extraInstruction) {
   if (isSkippable(extraInstruction)) {
     return instruction;
@@ -726,35 +818,36 @@ function isGeneratedSoloGroup(group) {
 
 function buildPairFixture(promptData, group, options) {
   const context = generatedContextForGroup(group, 'pair');
-  const policy = promptPolicyFor(group, context, true);
+  const templateKey = templateKeyForFixture(group, context, true);
+  const template = resolvedTemplate(promptData, templateKey);
   const hiddenInitiatorEntry = options.role === 'recipient' ? options.initiatorEntry : '';
-  const usesFollowupInstruction = policy.includeHiddenInitiatorEntry && !isSkippable(hiddenInitiatorEntry);
+  const usesFollowupInstruction = options.role === 'recipient' && !isSkippable(hiddenInitiatorEntry);
   const baseInstruction = usesFollowupInstruction
-    ? promptData.promptDefs.recipientFollowupInstruction
-    : promptData.promptDefs.singlePovInstruction;
-  const append = pairInstructionForFixture(
-    promptData,
-    group,
-    context,
-    options.role,
-    options.pov,
-    options.other,
-    baseInstruction,
-  );
+    ? recipientInstructionForTemplate(promptData, templateKey)
+    : finalInstructionForTemplate(promptData, templateKey);
+  const append = template.appendDirectSpeechInstruction
+    ? pairInstructionForFixture(
+      promptData,
+      group,
+      context,
+      options.role,
+      options.pov,
+      options.other,
+      baseInstruction,
+    )
+    : baseInstruction;
 
-  const fields = {
+  const rendered = fieldsFromTemplate(template, {
     event: options.event,
     pov: options.pov,
     role: options.role,
-    with: options.other,
-    'what you saw': options.whatYouSaw,
+    other: options.other,
+    povText: options.whatYouSaw,
     instruction: options.instruction,
-  };
-
-  addPolicyFields(fields, policy, {
     pawnSummary: options.pawnSummary,
     persona: options.persona,
     promptEnchantment: options.promptEnchantment,
+    includePromptEnchantment: template.includePromptEnchantment,
     setting: options.setting,
     tone: options.tone,
     relationship: options.relationship,
@@ -765,10 +858,10 @@ function buildPairFixture(promptData, group, options) {
 
   return {
     id: options.id,
-    promptFieldOrder: firstPersonFieldOrder(true),
-    promptFields: fields,
+    templateKey,
+    promptFieldOrder: rendered.order,
+    promptFields: rendered.fields,
     append,
-    systemMode: 'diary',
     type: 'pair',
     gameContext: context,
     version: options.version,
@@ -777,25 +870,27 @@ function buildPairFixture(promptData, group, options) {
 
 function buildSoloFixture(promptData, group, options) {
   const context = generatedContextForGroup(group, 'solo');
-  const policy = promptPolicyFor(group, context, false);
-  const append = soloInstructionForFixture(
-    promptData,
-    group,
-    context,
-    options.pov,
-    promptData.promptDefs.singlePovInstruction,
-  );
-  const fields = {
+  const templateKey = templateKeyForFixture(group, context, false);
+  const template = resolvedTemplate(promptData, templateKey);
+  const baseInstruction = finalInstructionForTemplate(promptData, templateKey);
+  const append = template.appendDirectSpeechInstruction
+    ? soloInstructionForFixture(
+      promptData,
+      group,
+      context,
+      options.pov,
+      baseInstruction,
+    )
+    : baseInstruction;
+  const rendered = fieldsFromTemplate(template, {
     event: options.event,
     pov: options.pov,
-    'what happened': options.whatHappened,
+    povText: options.whatHappened,
     instruction: options.instruction,
-  };
-
-  addPolicyFields(fields, policy, {
     pawnSummary: options.pawnSummary,
     persona: options.persona,
     promptEnchantment: options.promptEnchantment,
+    includePromptEnchantment: template.includePromptEnchantment,
     setting: options.setting,
     tone: options.tone,
     relationship: '',
@@ -806,12 +901,42 @@ function buildSoloFixture(promptData, group, options) {
 
   return {
     id: options.id,
-    systemMode: isDayReflectionGroup(group, context) ? 'reflection' : 'diary',
-    promptFieldOrder: firstPersonFieldOrder(false),
-    promptFields: fields,
+    templateKey,
+    promptFieldOrder: rendered.order,
+    promptFields: rendered.fields,
     append,
     type: 'solo',
     gameContext: context,
+    version: options.version,
+  };
+}
+
+function buildStaticTemplateFixture(promptData, options) {
+  const template = resolvedTemplate(promptData, options.templateKey);
+  const rendered = fieldsFromTemplate(template, {
+    event: options.event,
+    neutralText: options.neutralText,
+    pawnSummary: options.pawnSummary,
+    setting: options.setting,
+    deathVictim: options.deathVictim,
+    deathFacts: options.deathFacts,
+    deathPawnSummary: options.deathPawnSummary,
+    deathSetting: options.deathSetting,
+    arrivalPawn: options.arrivalPawn,
+    arrivalFacts: options.arrivalFacts,
+    entryText: options.entryText,
+    includePromptEnchantment: template.includePromptEnchantment,
+    gameContext: options.gameContext,
+  });
+
+  return {
+    id: options.id,
+    type: options.type,
+    templateKey: options.templateKey,
+    promptFieldOrder: rendered.order,
+    promptFields: rendered.fields,
+    append: finalInstructionForTemplate(promptData, options.templateKey),
+    gameContext: options.gameContext || '',
     version: options.version,
   };
 }
@@ -972,96 +1097,78 @@ function buildGeneratedFixtureSet(promptData, config, options) {
   }
 
   // Neutral descriptions (third-person, no persona).
-  cases.push({
+  cases.push(buildStaticTemplateFixture(promptData, {
     id: 'arrival-colonist-v1',
     type: 'arrival',
-    systemMode: 'neutral',
-    promptText: null,
-    promptFieldOrder: ['event', 'colonist', 'what happened', 'arrival facts', 'colonist pawn', 'setting'],
-    promptFields: {
-      event: 'colonist arrival',
-      colonist: 'Rowan',
-      'what happened': 'Founders settled on a ruined outpost and began rebuilding.',
-      'arrival facts': 'arrival_pawn=Rowan; scenario=Stormbound Rescue; recruiter=warden Nia',
-      'colonist pawn': 'age=27; role=farmer; mood=hopeful; sex=female; health=healthy',
-      setting: 'Biome=temperate; Weather=rain; Time=night',
-    },
-    append: promptData.promptDefs.arrivalDescriptionInstruction,
+    templateKey: 'ArrivalDescription',
+    event: 'colonist arrival',
+    arrivalPawn: 'Rowan',
+    neutralText: 'Founders settled on a ruined outpost and began rebuilding.',
+    arrivalFacts: 'arrival_pawn=Rowan; scenario=Stormbound Rescue; recruiter=warden Nia',
+    pawnSummary: 'age=27; role=farmer; mood=hopeful; sex=female; health=healthy',
+    setting: 'Biome=temperate; Weather=rain; Time=night',
+    gameContext: 'arrival_description=true; arrival_pawn=Rowan; scenario=Stormbound Rescue; recruiter=warden Nia',
     version: 'v1',
-  });
+  }));
 
-  cases.push({
+  cases.push(buildStaticTemplateFixture(promptData, {
     id: 'arrival-colonist-v2',
     type: 'arrival',
-    systemMode: 'neutral',
-    promptText: null,
-    promptFieldOrder: ['event', 'colonist', 'what happened', 'arrival facts', 'colonist pawn', 'setting'],
-    promptFields: {
-      event: 'colonist arrival',
-      colonist: 'Mira',
-      'what happened': 'Joined the colony late as an emergency transfer after a caravan event.',
-      'arrival facts': 'arrival_pawn=Mira; scenario=Emergency Evac; recruiter=caravan captain',
-      'colonist pawn': 'age=25; role=smith; mood=alert; sex=female; health=healthy',
-      setting: 'Biome=ice; Weather=blizzard; Time=night',
-    },
-    append: promptData.promptDefs.arrivalDescriptionInstruction,
+    templateKey: 'ArrivalDescription',
+    event: 'colonist arrival',
+    arrivalPawn: 'Mira',
+    neutralText: 'Joined the colony late as an emergency transfer after a caravan event.',
+    arrivalFacts: 'arrival_pawn=Mira; scenario=Emergency Evac; recruiter=caravan captain',
+    pawnSummary: 'age=25; role=smith; mood=alert; sex=female; health=healthy',
+    setting: 'Biome=ice; Weather=blizzard; Time=night',
+    gameContext: 'arrival_description=true; arrival_pawn=Mira; scenario=Emergency Evac; recruiter=caravan captain',
     version: 'v2',
-  });
+  }));
 
-  cases.push({
+  cases.push(buildStaticTemplateFixture(promptData, {
     id: 'death-colonist-v1',
     type: 'death',
-    systemMode: 'neutral',
-    promptText: null,
-    promptFieldOrder: ['event', 'deceased', 'what happened', 'death facts', 'deceased pawn', 'setting'],
-    promptFields: {
-      event: 'colonist death',
-      deceased: 'Vale',
-      'what happened': 'The colonist was cut down during a raid wave.',
-      'death facts': 'death_victim=Vale; death_victim_role=initiator; cause=knife wound; destroyed_parts=right arm; nearby=outer gate',
-      'deceased pawn': 'age=29; mood=exhausted; health=critical before death; sex=male',
-      setting: 'Biome=marsh; Weather=storm; Time=night',
-    },
-    append: promptData.promptDefs.deathDescriptionInstruction,
+    templateKey: 'DeathDescription',
+    event: 'colonist death',
+    deathVictim: 'Vale',
+    neutralText: 'The colonist was cut down during a raid wave.',
+    deathFacts: 'death_victim=Vale; death_victim_role=initiator; cause=knife wound; destroyed_parts=right arm; nearby=outer gate',
+    deathPawnSummary: 'age=29; mood=exhausted; health=critical before death; sex=male',
+    deathSetting: 'Biome=marsh; Weather=storm; Time=night',
+    gameContext: 'death_description=true; death_victim=Vale; death_victim_role=initiator; cause=knife wound; destroyed_parts=right arm; nearby=outer gate',
     version: 'v1',
-  });
+  }));
 
-  cases.push({
+  cases.push(buildStaticTemplateFixture(promptData, {
     id: 'death-colonist-v2',
     type: 'death',
-    systemMode: 'neutral',
-    promptText: null,
-    promptFieldOrder: ['event', 'deceased', 'what happened', 'death facts', 'deceased pawn', 'setting'],
-    promptFields: {
-      event: 'colonist death',
-      deceased: 'Arlo',
-      'what happened': 'A sudden infection spread too fast for treatment.',
-      'death facts': 'death_victim=Arlo; death_victim_role=recipient; cause=toxin fever; organs=lungs; nearby=medical bay',
-      'deceased pawn': 'age=34; mood=pained; health=critical; sex=male',
-      setting: 'Biome=desert; Weather=clear; Time=dawn',
-    },
-    append: promptData.promptDefs.deathDescriptionInstruction,
+    templateKey: 'DeathDescription',
+    event: 'colonist death',
+    deathVictim: 'Arlo',
+    neutralText: 'A sudden infection spread too fast for treatment.',
+    deathFacts: 'death_victim=Arlo; death_victim_role=recipient; cause=toxin fever; organs=lungs; nearby=medical bay',
+    deathPawnSummary: 'age=34; mood=pained; health=critical; sex=male',
+    deathSetting: 'Biome=desert; Weather=clear; Time=dawn',
+    gameContext: 'death_description=true; death_victim=Arlo; death_victim_role=recipient; cause=toxin fever; organs=lungs; nearby=medical bay',
     version: 'v2',
-  });
+  }));
 
   // Title follow-ups use the same entry payload plus the XML-backed title instruction.
-  cases.push({
+  cases.push(buildStaticTemplateFixture(promptData, {
     id: 'title-followup-v1',
     type: 'title',
-    systemMode: 'title',
-    promptText: 'I snapped at him when the work order came in too late. The room went quiet, and then everyone blamed everyone.',
-    append: titleUserInstruction(promptData),
+    templateKey: 'Title',
+    entryText: 'I snapped at him when the work order came in too late. The room went quiet, and then everyone blamed everyone.',
     version: 'v1',
-  });
+  }));
 
-  cases.push({
+  cases.push(buildStaticTemplateFixture(promptData, {
     id: 'title-followup-v2',
     type: 'title',
-    systemMode: 'title',
-    promptText: 'The storm came while I was still on watch. I kept a lamp lit and made choices nobody asked me to make.',
-    append: titleUserInstruction(promptData),
+    templateKey: 'Title',
+    entryText: 'The storm came while I was still on watch. I kept a lamp lit and made choices nobody asked me to make.',
     version: 'v2',
-  });
+  }));
 
   return cases;
 }
@@ -1258,23 +1365,31 @@ function shouldRunTitle(fixture, options, mainResult) {
   if (options.skipTitle) return false;
   if (!mainResult || mainResult.error) return false;
   if (!mainResult.generated || !mainResult.generated.trim()) return false;
-  const selectedMode = String(fixture.systemMode || 'diary').toLowerCase();
-  if (selectedMode === 'title') return false;
+  if (isTitleFixture(fixture)) return false;
   if (fixture.skipTitle === true) return false;
   return true;
 }
 
+function isTitleFixture(fixture) {
+  return String((fixture && fixture.systemMode) || '').toLowerCase() === 'title'
+    || String((fixture && fixture.templateKey) || '').toLowerCase() === 'title'
+    || String((fixture && fixture.type) || '').toLowerCase() === 'title';
+}
+
 async function runTitleFollowUp(fixture, mainText, requestConfig, config, promptData, options, runState) {
+  const titleTemplate = resolvedTemplate(promptData, 'Title');
+  const renderedTitle = fieldsFromTemplate(titleTemplate, { entryText: mainText });
   const titleFixture = {
     ...fixture,
-    promptText: mainText,
+    templateKey: 'Title',
+    promptText: undefined,
     promptLines: undefined,
-    promptFields: undefined,
-    promptFieldOrder: undefined,
-    systemMode: 'title',
+    promptFields: renderedTitle.fields,
+    promptFieldOrder: renderedTitle.order,
+    systemMode: undefined,
     system: null,
     systemText: null,
-    append: titleUserInstruction(promptData),
+    append: finalInstructionForTemplate(promptData, 'Title'),
     model: fixture.model,
     endpoint: fixture.endpoint,
     apiKey: fixture.apiKey,
@@ -1419,7 +1534,7 @@ async function runOneFixture(fixture, config, promptData, options, runState) {
     } else {
       resultEntry.titleStatus = 'not-generated';
       resultEntry.title = '';
-      if (fixture.systemMode && String(fixture.systemMode).toLowerCase() === 'title') {
+      if (isTitleFixture(fixture)) {
         resultEntry.titleError = 'Skipped: fixture is already title mode';
       } else if (!resultEntry.generated || !resultEntry.generated.trim()) {
         resultEntry.titleError = 'Skipped: empty main response';

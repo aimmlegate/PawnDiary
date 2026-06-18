@@ -16,52 +16,6 @@ namespace PawnDiary
         /// <summary>Shared settings instance available throughout the mod.</summary>
         public static PawnDiarySettings Settings;
 
-        // Which prompt-text card is currently open in the settings "Prompt Studio".
-        private enum PromptEditorKind
-        {
-            SystemDiary,
-            SystemReflection,
-            SystemNeutral,
-            SystemTitle,
-            SinglePov,
-            RecipientFollowup,
-            DeathDescription,
-            ArrivalDescription,
-            TitleUser
-        }
-
-        // Static metadata for one editable prompt text in the settings UI.
-        private sealed class PromptEditorDescriptor
-        {
-            public readonly PromptEditorKind kind;
-            public readonly string labelKey;
-            public readonly string helpKey;
-            public readonly float textAreaHeight;
-            public readonly bool systemPrompt;
-
-            public PromptEditorDescriptor(PromptEditorKind kind, string labelKey, string helpKey, float textAreaHeight, bool systemPrompt)
-            {
-                this.kind = kind;
-                this.labelKey = labelKey;
-                this.helpKey = helpKey;
-                this.textAreaHeight = textAreaHeight;
-                this.systemPrompt = systemPrompt;
-            }
-        }
-
-        private static readonly PromptEditorDescriptor[] PromptEditors =
-        {
-            new PromptEditorDescriptor(PromptEditorKind.SystemDiary, "PawnDiary.Settings.SystemPrompt", "PawnDiary.Settings.SystemPromptHelp", 120f, true),
-            new PromptEditorDescriptor(PromptEditorKind.SystemReflection, "PawnDiary.Settings.SystemPromptReflection", "PawnDiary.Settings.SystemPromptReflectionHelp", 120f, true),
-            new PromptEditorDescriptor(PromptEditorKind.SystemNeutral, "PawnDiary.Settings.SystemPromptNeutral", "PawnDiary.Settings.SystemPromptNeutralHelp", 96f, true),
-            new PromptEditorDescriptor(PromptEditorKind.SystemTitle, "PawnDiary.Settings.SystemPromptTitle", "PawnDiary.Settings.SystemPromptTitleHelp", 72f, true),
-            new PromptEditorDescriptor(PromptEditorKind.SinglePov, "PawnDiary.Settings.SinglePovInstruction", "PawnDiary.Settings.SinglePovInstructionHelp", 72f, false),
-            new PromptEditorDescriptor(PromptEditorKind.RecipientFollowup, "PawnDiary.Settings.RecipientFollowupInstruction", "PawnDiary.Settings.RecipientFollowupInstructionHelp", 84f, false),
-            new PromptEditorDescriptor(PromptEditorKind.DeathDescription, "PawnDiary.Settings.DeathDescriptionInstruction", "PawnDiary.Settings.DeathDescriptionInstructionHelp", 96f, false),
-            new PromptEditorDescriptor(PromptEditorKind.ArrivalDescription, "PawnDiary.Settings.ArrivalDescriptionInstruction", "PawnDiary.Settings.ArrivalDescriptionInstructionHelp", 96f, false),
-            new PromptEditorDescriptor(PromptEditorKind.TitleUser, "PawnDiary.Settings.TitleUserInstruction", "PawnDiary.Settings.TitleUserInstructionHelp", 72f, false)
-        };
-
         // Model IDs retrieved from the remote endpoint via FetchModels().
         private readonly List<string> fetchedModels = new List<string>();
         // Incremented on each FetchModels call so stale async results are discarded.
@@ -87,8 +41,6 @@ namespace PawnDiary
         private volatile ConnectionTestResult pendingConnectionTestResult;
         // DefName of the interaction group currently selected in the instruction editor.
         private string selectedGroupKey;
-        // Which prompt-text card is open in the "Prompt Studio".
-        private PromptEditorKind selectedPromptKind = PromptEditorKind.SystemDiary;
         // Which persona card is open in the settings "Persona Presets" section.
         private string selectedPersonaKey;
         // Scroll position for the settings window scroll view.
@@ -115,7 +67,6 @@ namespace PawnDiary
         private const float PersonaTagRowHeight = 24f;
         private const float PersonaTagRowGap = 4f;
         private const float PersonaRuleTextAreaHeight = 112f;
-        private const float PersonaConsciousnessRuleTextAreaHeight = 64f;
 
         /// <summary>
         /// Initializes the mod, loading persisted settings from the save/config store.
@@ -619,127 +570,17 @@ namespace PawnDiary
         private void DrawPromptStudio(Listing_Standard listing)
         {
             SectionTitle(listing, "PawnDiary.Settings.PromptStudioTitle".Translate());
-            DrawHint(listing, "PawnDiary.Settings.PromptStudioHelp".Translate());
+            DrawHint(listing, "PawnDiary.Settings.PromptStudioXmlHelp".Translate());
 
-            DrawPromptStudioSummary(listing);
-            listing.Gap(6f);
-            DrawPromptPicker(listing);
-            listing.Gap(6f);
-            DrawSelectedPromptEditor(listing);
-        }
-
-        /// <summary>
-        /// Draws a compact overview card for the prompt studio so the player can immediately see
-        /// how many prompt texts exist and how many differ from the XML defaults.
-        /// </summary>
-        private void DrawPromptStudioSummary(Listing_Standard listing)
-        {
-            Rect cardRect = listing.GetRect(88f);
+            Rect cardRect = listing.GetRect(82f);
             Widgets.DrawMenuSection(cardRect);
-
             Rect innerRect = cardRect.ContractedBy(8f);
-            Rect labelRect = new Rect(innerRect.x, innerRect.y, innerRect.width, 24f);
-            Widgets.Label(labelRect, "PawnDiary.Settings.PromptStudioSummary".Translate(PromptEditors.Length, CustomizedPromptCount()));
-            Rect noteRect = new Rect(innerRect.x, innerRect.y + 24f, innerRect.width, 20f);
-            DrawMutedLabel(noteRect, "PawnDiary.Settings.PromptStudioLiveNote".Translate());
-
-            Rect restoreRect = new Rect(innerRect.x, innerRect.y + 46f, innerRect.width, 30f);
-            if (Widgets.ButtonText(restoreRect, "PawnDiary.Settings.RestoreAllPromptDefaults".Translate()))
-            {
-                Settings.ResetPromptTextDefaults();
-            }
-        }
-
-        /// <summary>
-        /// Draws the prompt picker as a two-column grid of small buttons. Editing one prompt at a
-        /// time keeps the settings screen readable while still exposing every Def-backed text.
-        /// </summary>
-        private void DrawPromptPicker(Listing_Standard listing)
-        {
-            float rows = Mathf.Ceil(PromptEditors.Length / 2f);
-            Rect cardRect = listing.GetRect(36f + (rows * 34f));
-            Widgets.DrawMenuSection(cardRect);
-
-            Rect innerRect = cardRect.ContractedBy(8f);
-            Widgets.Label(new Rect(innerRect.x, innerRect.y, innerRect.width, 22f), "PawnDiary.Settings.PromptPickerHeader".Translate());
-
-            const float gap = 8f;
-            float columnWidth = (innerRect.width - gap) / 2f;
-            float y = innerRect.y + 26f;
-            for (int i = 0; i < PromptEditors.Length; i += 2)
-            {
-                DrawPromptPickerButton(new Rect(innerRect.x, y, columnWidth, 28f), PromptEditors[i]);
-                if (i + 1 < PromptEditors.Length)
-                {
-                    DrawPromptPickerButton(new Rect(innerRect.x + columnWidth + gap, y, columnWidth, 28f), PromptEditors[i + 1]);
-                }
-
-                y += 34f;
-            }
-        }
-
-        /// <summary>
-        /// Draws one prompt-selection button. Selected prompts are lightly tinted so the current
-        /// editor card is obvious at a glance.
-        /// </summary>
-        private void DrawPromptPickerButton(Rect rect, PromptEditorDescriptor descriptor)
-        {
-            Color previousColor = GUI.color;
-            if (descriptor.kind == selectedPromptKind)
-            {
-                GUI.color = SelectedRowColor;
-            }
-
-            string label = descriptor.labelKey.Translate();
-            if (IsPromptCustomized(descriptor.kind))
-            {
-                label += " *";
-            }
-
-            if (Widgets.ButtonText(rect, label))
-            {
-                selectedPromptKind = descriptor.kind;
-            }
-
-            GUI.color = previousColor;
-        }
-
-        /// <summary>
-        /// Draws the editor card for the currently selected prompt text.
-        /// </summary>
-        private void DrawSelectedPromptEditor(Listing_Standard listing)
-        {
-            PromptEditorDescriptor descriptor = SelectedPromptDescriptor();
-            float cardHeight = descriptor.textAreaHeight + 126f;
-            Rect cardRect = listing.GetRect(cardHeight);
-            Widgets.DrawMenuSection(cardRect);
-
-            Rect innerRect = cardRect.ContractedBy(10f);
-            Rect titleRect = new Rect(innerRect.x, innerRect.y, innerRect.width - 140f, 26f);
-            Widgets.Label(titleRect, descriptor.labelKey.Translate());
-
-            string badgeKey = descriptor.systemPrompt ? "PawnDiary.Settings.PromptBadgeSystem" : "PawnDiary.Settings.PromptBadgeInstruction";
-            Rect badgeRect = new Rect(innerRect.xMax - 132f, innerRect.y, 132f, 24f);
-            DrawAccentLabel(badgeRect, badgeKey.Translate());
-
-            Rect statusRect = new Rect(innerRect.x, innerRect.y + 24f, innerRect.width, 18f);
+            Widgets.LabelFit(
+                new Rect(innerRect.x, innerRect.y, innerRect.width, 24f),
+                "PawnDiary.Settings.PromptStudioXmlSummary".Translate(DiaryPromptTemplates.LoadedTemplateCount));
             DrawMutedLabel(
-                statusRect,
-                (IsPromptCustomized(descriptor.kind)
-                    ? "PawnDiary.Settings.PromptStatusCustomized"
-                    : "PawnDiary.Settings.PromptStatusDefault").Translate());
-
-            Rect helpRect = new Rect(innerRect.x, innerRect.y + 42f, innerRect.width, 34f);
-            DrawHint(helpRect, descriptor.helpKey.Translate());
-
-            Rect textAreaRect = new Rect(innerRect.x, innerRect.y + 74f, innerRect.width, descriptor.textAreaHeight);
-            SetPromptValue(descriptor.kind, Widgets.TextArea(textAreaRect, GetPromptValue(descriptor.kind)));
-
-            Rect restoreRect = new Rect(innerRect.x, textAreaRect.yMax + 8f, innerRect.width, 30f);
-            if (Widgets.ButtonText(restoreRect, "PawnDiary.Settings.RestorePromptDefault".Translate()))
-            {
-                SetPromptValue(descriptor.kind, DefaultPromptValue(descriptor.kind));
-            }
+                new Rect(innerRect.x, innerRect.y + 28f, innerRect.width, 40f),
+                "PawnDiary.Settings.PromptStudioXmlNote".Translate());
         }
 
         /// <summary>
@@ -846,23 +687,10 @@ namespace PawnDiary
             PersonaPresetConfig overridePreset = custom ? Settings.CustomPersonaFor(selected.defName) : Settings.PersonaOverrideFor(selected.defName);
             string currentLabel = overridePreset?.label ?? baseDef?.label ?? string.Empty;
             string currentRule = overridePreset?.rule ?? baseDef?.rule ?? string.Empty;
-            string currentCloudedRule = CurrentPersonaConsciousnessRule(
-                overridePreset,
-                overridePreset?.cloudedConsciousnessRule,
-                baseDef?.cloudedConsciousnessRule);
-            string currentFadingRule = CurrentPersonaConsciousnessRule(
-                overridePreset,
-                overridePreset?.fadingConsciousnessRule,
-                baseDef?.fadingConsciousnessRule);
-            string currentBarelyRule = CurrentPersonaConsciousnessRule(
-                overridePreset,
-                overridePreset?.barelyConsciousRule,
-                baseDef?.barelyConsciousRule);
             List<string> currentThemes = new List<string>(overridePreset?.themes ?? baseDef?.themes ?? new List<string>());
 
             float tagPickerHeight = PersonaTagPickerHeight();
-            float consciousnessRulesHeight = PersonaConsciousnessRulesHeight();
-            Rect cardRect = listing.GetRect(306f + tagPickerHeight + consciousnessRulesHeight);
+            Rect cardRect = listing.GetRect(306f + tagPickerHeight);
             Widgets.DrawMenuSection(cardRect);
             Rect innerRect = cardRect.ContractedBy(10f);
 
@@ -893,29 +721,6 @@ namespace PawnDiary
             string editedRule = Widgets.TextArea(ruleRect, currentRule);
 
             y += PersonaRuleTextAreaHeight + 8f;
-            Rect consciousnessHeaderRect = new Rect(innerRect.x, y, innerRect.width, 28f);
-            DrawHint(consciousnessHeaderRect, "PawnDiary.Settings.PersonaConsciousnessRules".Translate());
-            y += 34f;
-
-            string editedCloudedRule = DrawPersonaRuleTextArea(
-                innerRect,
-                ref y,
-                "PawnDiary.Settings.PersonaCloudedConsciousnessRule".Translate(),
-                currentCloudedRule,
-                PersonaConsciousnessRuleTextAreaHeight);
-            string editedFadingRule = DrawPersonaRuleTextArea(
-                innerRect,
-                ref y,
-                "PawnDiary.Settings.PersonaFadingConsciousnessRule".Translate(),
-                currentFadingRule,
-                PersonaConsciousnessRuleTextAreaHeight);
-            string editedBarelyRule = DrawPersonaRuleTextArea(
-                innerRect,
-                ref y,
-                "PawnDiary.Settings.PersonaBarelyConsciousRule".Translate(),
-                currentBarelyRule,
-                PersonaConsciousnessRuleTextAreaHeight);
-
             Rect tagsLabelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
             DrawHint(tagsLabelRect, "PawnDiary.Settings.PersonaTags".Translate());
             y += 22f;
@@ -923,9 +728,6 @@ namespace PawnDiary
 
             bool changed = !string.Equals(editedLabel, currentLabel, StringComparison.Ordinal)
                 || !string.Equals(editedRule, currentRule, StringComparison.Ordinal)
-                || !string.Equals(editedCloudedRule, currentCloudedRule, StringComparison.Ordinal)
-                || !string.Equals(editedFadingRule, currentFadingRule, StringComparison.Ordinal)
-                || !string.Equals(editedBarelyRule, currentBarelyRule, StringComparison.Ordinal)
                 || !editedThemes.SequenceEqual(currentThemes);
             if (changed)
             {
@@ -936,23 +738,14 @@ namespace PawnDiary
                     {
                         customPreset.label = editedLabel ?? string.Empty;
                         customPreset.rule = editedRule ?? string.Empty;
-                        customPreset.cloudedConsciousnessRule = editedCloudedRule ?? string.Empty;
-                        customPreset.fadingConsciousnessRule = editedFadingRule ?? string.Empty;
-                        customPreset.barelyConsciousRule = editedBarelyRule ?? string.Empty;
-                        customPreset.hasConsciousnessRuleOverrides = true;
                         customPreset.themes = editedThemes;
                         DiaryPersonas.InvalidateCache();
                     }
                 }
                 else
                 {
-                    bool consciousnessRulesMatchDefault =
-                        string.Equals(editedCloudedRule, baseDef?.cloudedConsciousnessRule ?? string.Empty, StringComparison.Ordinal)
-                        && string.Equals(editedFadingRule, baseDef?.fadingConsciousnessRule ?? string.Empty, StringComparison.Ordinal)
-                        && string.Equals(editedBarelyRule, baseDef?.barelyConsciousRule ?? string.Empty, StringComparison.Ordinal);
                     bool matchesDefault = string.Equals(editedLabel, baseDef?.label ?? string.Empty, StringComparison.Ordinal)
                         && string.Equals(editedRule, baseDef?.rule ?? string.Empty, StringComparison.Ordinal)
-                        && consciousnessRulesMatchDefault
                         && editedThemes.SequenceEqual(baseDef?.themes ?? new List<string>());
                     if (matchesDefault)
                     {
@@ -964,11 +757,7 @@ namespace PawnDiary
                             selected.defName,
                             editedLabel,
                             editedRule,
-                            editedCloudedRule,
-                            editedFadingRule,
-                            editedBarelyRule,
-                            editedThemes,
-                            !consciousnessRulesMatchDefault);
+                            editedThemes);
                     }
                 }
             }
@@ -990,28 +779,6 @@ namespace PawnDiary
                     Settings.ResetPersonaOverride(selected.defName);
                 }
             }
-        }
-
-        private static string CurrentPersonaConsciousnessRule(PersonaPresetConfig preset, string presetRule, string baseRule)
-        {
-            if (preset != null && (preset.custom || preset.hasConsciousnessRuleOverrides))
-            {
-                return presetRule ?? string.Empty;
-            }
-
-            return baseRule ?? string.Empty;
-        }
-
-        private static string DrawPersonaRuleTextArea(Rect innerRect, ref float y, string label, string value, float textAreaHeight)
-        {
-            Rect labelRect = new Rect(innerRect.x, y, innerRect.width, 20f);
-            DrawHint(labelRect, label);
-            y += 22f;
-
-            Rect textRect = new Rect(innerRect.x, y, innerRect.width, textAreaHeight);
-            string edited = Widgets.TextArea(textRect, value ?? string.Empty);
-            y += textAreaHeight + 8f;
-            return edited;
         }
 
         private List<string> DrawPersonaTagPicker(Rect rect, List<string> themes, bool requireAtLeastOneTag)
@@ -1120,11 +887,6 @@ namespace PawnDiary
             return Mathf.Max(PersonaTagRowHeight, (rows * PersonaTagRowHeight) + (Mathf.Max(0f, rows - 1f) * PersonaTagRowGap));
         }
 
-        private static float PersonaConsciousnessRulesHeight()
-        {
-            return 34f + (3f * (20f + PersonaConsciousnessRuleTextAreaHeight + 10f));
-        }
-
         /// <summary>
         /// Draws per-group enable checkboxes and, for the currently selected group,
         /// an editable instruction text area with save/restore buttons.
@@ -1149,7 +911,7 @@ namespace PawnDiary
 
             listing.GapLine(10f);
 
-            // Per-group prompt editor: pick a group, edit its diary-prompt instruction, save/restore.
+            // Per-group prompt preview: pick a group and read its XML diary-prompt instruction.
             DiaryInteractionGroupDef selectedGroup = SelectedGroup();
             if (selectedGroup == null)
             {
@@ -1158,7 +920,7 @@ namespace PawnDiary
 
             EnsureInstructionEditBuffer(selectedGroup);
 
-            Rect cardRect = listing.GetRect(268f);
+            Rect cardRect = listing.GetRect(176f);
             Widgets.DrawMenuSection(cardRect);
 
             Rect innerRect = cardRect.ContractedBy(10f);
@@ -1179,33 +941,13 @@ namespace PawnDiary
             }
 
             Rect stateRect = new Rect(innerRect.x, innerRect.y + 24f, innerRect.width, 18f);
-            DrawMutedLabel(
-                stateRect,
-                (HasGroupInstructionOverride(selectedGroup)
-                    ? "PawnDiary.Settings.GroupStatusCustomized"
-                    : "PawnDiary.Settings.GroupStatusDefault").Translate());
+            DrawMutedLabel(stateRect, "PawnDiary.Settings.GroupStatusXml".Translate());
 
             Rect helpRect = new Rect(innerRect.x, innerRect.y + 42f, innerRect.width, 20f);
-            DrawHint(helpRect, "PawnDiary.Settings.GroupInstructionLabel".Translate());
+            DrawHint(helpRect, "PawnDiary.Settings.GroupInstructionXmlOnly".Translate());
 
-            Rect textAreaRect = new Rect(innerRect.x, innerRect.y + 64f, innerRect.width, 100f);
-            instructionEditBuffer = Widgets.TextArea(textAreaRect, instructionEditBuffer ?? string.Empty);
-
-            Rect saveRect = new Rect(innerRect.x, textAreaRect.yMax + 8f, innerRect.width, 30f);
-            Rect restoreRect = new Rect(innerRect.x, saveRect.yMax + 6f, innerRect.width, 30f);
-            if (Widgets.ButtonText(saveRect, "PawnDiary.Settings.SaveInstruction".Translate()))
-            {
-                Settings.SetGroupInstruction(selectedGroup.defName, instructionEditBuffer);
-                WriteSettings();
-            }
-
-            if (Widgets.ButtonText(restoreRect, "PawnDiary.Settings.RestoreGroupDefault".Translate()))
-            {
-                Settings.ResetGroupInstruction(selectedGroup.defName);
-                instructionEditBuffer = selectedGroup.instruction;
-                instructionEditGroupKey = selectedGroup.defName;
-                WriteSettings();
-            }
+            Rect previewRect = new Rect(innerRect.x, innerRect.y + 66f, innerRect.width, 92f);
+            Widgets.LabelFit(previewRect, instructionEditBuffer ?? string.Empty);
         }
 
         /// <summary>
@@ -1278,7 +1020,7 @@ namespace PawnDiary
                 Settings.SetGroupEnabled(group.defName, enabled);
             }
 
-            if (Widgets.ButtonText(editRect, "PawnDiary.Settings.EditGroup".Translate()))
+            if (Widgets.ButtonText(editRect, "PawnDiary.Settings.ViewGroup".Translate()))
             {
                 selectedGroupKey = group.defName;
                 instructionEditGroupKey = null;
@@ -1292,7 +1034,6 @@ namespace PawnDiary
         private void DrawEventGroupsSummary(Listing_Standard listing)
         {
             int enabledCount = InteractionGroups.All.Count(group => Settings.IsGroupEnabled(group.defName));
-            int overrideCount = InteractionGroups.All.Count(HasGroupInstructionOverride);
 
             Rect cardRect = listing.GetRect(58f);
             Widgets.DrawMenuSection(cardRect);
@@ -1300,134 +1041,10 @@ namespace PawnDiary
             Rect innerRect = cardRect.ContractedBy(8f);
             Widgets.Label(
                 new Rect(innerRect.x, innerRect.y, innerRect.width, 24f),
-                "PawnDiary.Settings.EventGroupSummary".Translate(enabledCount, InteractionGroups.All.Count, overrideCount));
+                "PawnDiary.Settings.EventGroupSummaryXml".Translate(enabledCount, InteractionGroups.All.Count));
             DrawMutedLabel(
                 new Rect(innerRect.x, innerRect.y + 24f, innerRect.width, 20f),
                 "PawnDiary.Settings.EventGroupHelp".Translate());
-        }
-
-        /// <summary>
-        /// Returns the descriptor for the selected prompt, or the first descriptor if something
-        /// invalid slipped into saved UI state.
-        /// </summary>
-        private PromptEditorDescriptor SelectedPromptDescriptor()
-        {
-            PromptEditorDescriptor descriptor = PromptEditors.FirstOrDefault(editor => editor.kind == selectedPromptKind);
-            return descriptor ?? PromptEditors[0];
-        }
-
-        /// <summary>
-        /// Returns the current editable value for one prompt-text field.
-        /// </summary>
-        private string GetPromptValue(PromptEditorKind kind)
-        {
-            switch (kind)
-            {
-                case PromptEditorKind.SystemDiary:
-                    return Settings.systemPrompt ?? string.Empty;
-                case PromptEditorKind.SystemReflection:
-                    return Settings.systemPromptReflection ?? string.Empty;
-                case PromptEditorKind.SystemNeutral:
-                    return Settings.systemPromptNeutral ?? string.Empty;
-                case PromptEditorKind.SystemTitle:
-                    return Settings.systemPromptTitle ?? string.Empty;
-                case PromptEditorKind.SinglePov:
-                    return Settings.singlePovInstruction ?? string.Empty;
-                case PromptEditorKind.RecipientFollowup:
-                    return Settings.recipientFollowupInstruction ?? string.Empty;
-                case PromptEditorKind.DeathDescription:
-                    return Settings.deathDescriptionInstruction ?? string.Empty;
-                case PromptEditorKind.ArrivalDescription:
-                    return Settings.arrivalDescriptionInstruction ?? string.Empty;
-                case PromptEditorKind.TitleUser:
-                    return Settings.titleUserInstruction ?? string.Empty;
-                default:
-                    return string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Writes one prompt-text field back into settings. Changes save when the player closes the
-        /// mod-settings window, matching RimWorld's normal settings behavior.
-        /// </summary>
-        private void SetPromptValue(PromptEditorKind kind, string value)
-        {
-            switch (kind)
-            {
-                case PromptEditorKind.SystemDiary:
-                    Settings.systemPrompt = value;
-                    break;
-                case PromptEditorKind.SystemReflection:
-                    Settings.systemPromptReflection = value;
-                    break;
-                case PromptEditorKind.SystemNeutral:
-                    Settings.systemPromptNeutral = value;
-                    break;
-                case PromptEditorKind.SystemTitle:
-                    Settings.systemPromptTitle = value;
-                    break;
-                case PromptEditorKind.SinglePov:
-                    Settings.singlePovInstruction = value;
-                    break;
-                case PromptEditorKind.RecipientFollowup:
-                    Settings.recipientFollowupInstruction = value;
-                    break;
-                case PromptEditorKind.DeathDescription:
-                    Settings.deathDescriptionInstruction = value;
-                    break;
-                case PromptEditorKind.ArrivalDescription:
-                    Settings.arrivalDescriptionInstruction = value;
-                    break;
-                case PromptEditorKind.TitleUser:
-                    Settings.titleUserInstruction = value;
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Returns the XML-defined default text for a prompt editor card.
-        /// </summary>
-        private static string DefaultPromptValue(PromptEditorKind kind)
-        {
-            switch (kind)
-            {
-                case PromptEditorKind.SystemDiary:
-                    return PawnDiarySettings.DefaultSystemPrompt;
-                case PromptEditorKind.SystemReflection:
-                    return PawnDiarySettings.DefaultSystemPromptReflection;
-                case PromptEditorKind.SystemNeutral:
-                    return PawnDiarySettings.DefaultSystemPromptNeutral;
-                case PromptEditorKind.SystemTitle:
-                    return PawnDiarySettings.DefaultSystemPromptTitle;
-                case PromptEditorKind.SinglePov:
-                    return PawnDiarySettings.DefaultSinglePovInstruction;
-                case PromptEditorKind.RecipientFollowup:
-                    return PawnDiarySettings.DefaultRecipientFollowupInstruction;
-                case PromptEditorKind.DeathDescription:
-                    return PawnDiarySettings.DefaultDeathDescriptionInstruction;
-                case PromptEditorKind.ArrivalDescription:
-                    return PawnDiarySettings.DefaultArrivalDescriptionInstruction;
-                case PromptEditorKind.TitleUser:
-                    return PawnDiarySettings.DefaultTitleUserInstruction;
-                default:
-                    return string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// True when a prompt's saved text differs from its XML default.
-        /// </summary>
-        private bool IsPromptCustomized(PromptEditorKind kind)
-        {
-            return !string.Equals(GetPromptValue(kind), DefaultPromptValue(kind), StringComparison.Ordinal);
-        }
-
-        /// <summary>
-        /// Counts how many prompt cards currently differ from their XML defaults.
-        /// </summary>
-        private int CustomizedPromptCount()
-        {
-            return PromptEditors.Count(editor => IsPromptCustomized(editor.kind));
         }
 
         /// <summary>
@@ -1435,9 +1052,7 @@ namespace PawnDiary
         /// </summary>
         private bool HasGroupInstructionOverride(DiaryInteractionGroupDef group)
         {
-            return group != null
-                && Settings.groupInstructions != null
-                && Settings.groupInstructions.ContainsKey(group.defName);
+            return false;
         }
 
         /// <summary>
@@ -1469,8 +1084,8 @@ namespace PawnDiary
 
             // Generation controls, prompt studio, and persona-preset studio.
             height += 280f;
-            height += 470f;
-            height += 590f + PersonaTagPickerHeight() + PersonaConsciousnessRulesHeight();
+            height += 150f;
+            height += 590f + PersonaTagPickerHeight();
 
             // Events section: two-column group toggles, domain subheaders, and the prompt editor.
             height += 140f;
@@ -1502,7 +1117,7 @@ namespace PawnDiary
                 height += 40f + (Mathf.Ceil(groupCount / 2f) * 30f);
             }
 
-            height += 290f;
+            height += 190f;
             return height + 220f; // breathing room for translated labels and RimWorld skin variance
         }
 

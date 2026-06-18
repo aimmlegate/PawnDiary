@@ -281,7 +281,7 @@ namespace PawnDiary
         {
             get
             {
-                return Math.Max(0, DiaryTuning.Current.thoughtAmbientWindowTicks);
+                return Math.Max(0, DiarySignalPolicies.AmbientThoughtWindowTicks);
             }
         }
 
@@ -289,7 +289,7 @@ namespace PawnDiary
         {
             get
             {
-                return Math.Max(1, DiaryTuning.Current.thoughtAmbientMinEventsToWrite);
+                return Math.Max(1, DiarySignalPolicies.AmbientThoughtMinEventsToWrite);
             }
         }
 
@@ -297,7 +297,7 @@ namespace PawnDiary
         {
             get
             {
-                return Math.Max(1, DiaryTuning.Current.thoughtAmbientMaxSampleLines);
+                return Math.Max(1, DiarySignalPolicies.AmbientThoughtMaxSampleLines);
             }
         }
 

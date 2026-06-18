@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-18 (API connection test)_
+_Last updated: 2026-06-18 (XML prompt and signal architecture)_
 
 ---
 
@@ -41,7 +41,7 @@ PawnDiary/
 |-- About/                       mod metadata and preview image
 |-- 1.6/
 |   |-- Assemblies/PawnDiary.dll  committed build output
-|   `-- Defs/                     groups, tuning, prompts, personas, prompt enchantments
+|   `-- Defs/                     groups, tuning, prompt templates, signals, personas, enchantments
 |-- Languages/                   Keyed and DefInjected localization
 |-- Source/
 |   |-- Core/                    DiaryGameComponent partials and event pipeline
@@ -68,16 +68,16 @@ Key files:
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
 | `DiaryContextFields.cs` | Exact parser for saved semicolon-delimited `gameContext` key/value fields. |
-| `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts, then applies per-event context policies. |
-| `PromptEnchantments.cs` | Weighted hediff matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
+| `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts from XML `DiaryPromptTemplateDef` field lists. |
+| `PromptEnchantments.cs` | Weighted hediff/capacity matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
 | `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, Inspiration, Work, and Hediff domains. |
-| `DiaryTuningDef.cs` | XML thresholds, cooldowns, weights, scanner intervals, hediff progression scans, and safe code defaults. |
+| `DiarySignalPolicyDef.cs` / `DiaryTuningDef.cs` | XML signal policies for thought/work providers, plus legacy/shared tuning fallbacks and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
 | `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
-| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, Prompt Studio, Persona Presets editor, and group editor. |
+| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, XML prompt status view, Persona Presets editor, and event group toggles/previews. |
 | `EndpointUtility.cs` / `ModelListClient.cs` | Settings/generation endpoint URL normalization and settings-time model discovery (`/models` or Ollama `/api/tags`). |
 | `ITab_Pawn_Diary*.cs` | Production diary view split as one partial class: orchestration, dev controls, year paging, entry cards, expansion state, linked previews, and roleplay text layout. |
 | `DiaryTextFormat.cs` | Escapes raw generated rich-text tags, then converts light markdown, inline quoted speech, and closed direct-speech marker blocks into Unity rich text. |
@@ -165,9 +165,9 @@ combat deaths.
 ### Mood Events, Thoughts, Inspirations, Health, Work, And Day Reflections
 
 Mood events are mood-affecting game conditions recorded once per eligible colonist on affected maps.
-Thoughts are temporary memories filtered by XML tuning: ignored tokens, bypass tokens, eating
-thresholds, minimum mood-effect thresholds, ambient tokens, and dedup windows. Ambient thoughts can fold into
-end-of-day reflection.
+Thoughts are temporary memories filtered by XML `DiarySignalPolicyDef` tuning: ignored tokens,
+bypass tokens, eating thresholds, minimum mood-effect thresholds, ambient tokens, and dedup windows.
+Ambient thoughts can fold into end-of-day reflection.
 
 `ThoughtProgression` scans staged situational thoughts that do not pass through the memory hook:
 severe food states, tired/exhausted, trapped/entombed underground, and chemical hunger/starvation.
@@ -195,8 +195,9 @@ through the `GaveBirth` TaleDef in the Life milestones group. Pregnancy terminat
 miscarriage memories are classified by a dedicated Thought group.
 
 Work recording samples current Work-tab jobs periodically. It reads `CurJob.workGiverDef.workType`,
-skips social and violent work, applies XML odds/cooldowns plus the `workGenerationWeight` multiplier,
-then classifies the moment as passionate, straining, routine, or dark-study work.
+skips social and violent work, applies XML `DiarySignalPolicyDef` odds/cooldowns plus the
+`workGenerationWeight` multiplier, then classifies the moment as passionate, straining, routine, or
+dark-study work.
 
 When `daySummaryEnabled` is true, sleep/rest triggers one `DayReflection` candidate per pawn using a
 weighted selection of major day events, opinion shifts, health-condition signals, and low-weight filler.
@@ -219,8 +220,8 @@ weighted selection of major day events, opinion shifts, health-condition signals
 | Hediff | `ClassifyHediff(HediffDef)` | pregnancy, labor, major health changes, modded health signals |
 
 Matching is domain-scoped by exact `defName` or substring token. XML order matters; catch-all groups
-go last. Settings store per-group enabled flags and instruction overrides keyed by group `defName`;
-missing settings use XML defaults.
+go last. Settings store only per-group enabled flags keyed by group `defName`; prompt instructions
+come from XML group/template defs.
 
 Social-interaction compatibility should stay XML-only when the other mod extends RimWorld's normal
 social system. If the mod emits `InteractionDef` rows through the play log, add a new
@@ -277,10 +278,13 @@ generic mod-support layer: a compatibility patch can add:
 </PawnDiary.DiaryInteractionGroupDef>
 ```
 
-`1.6/Defs/DiaryTuningDef.xml` holds dedup windows, scanner intervals, mood/health/beauty buckets,
-thought thresholds, staged thought rules, the hediff progression scan interval, work odds/cooldowns,
-day-reflection weights, and nearby-context tuning. Hediff severity gates live on Hediff-domain group
-policies, not in this tuning Def. Code defaults keep the mod usable if XML fails to load.
+`1.6/Defs/DiarySignalPolicyDefs.xml` is the current home for tracker-specific policy: temporary
+thought thresholds/tokens, ambient thought batching, staged thought progression rules, and sampled
+work scan odds/cooldowns. C# still owns the tracker implementation; XML owns the provider tuning.
+`1.6/Defs/DiaryTuningDef.xml` remains the fallback/shared tuning Def for mood/health/beauty buckets,
+nearby-context tuning, day-reflection weights, and the hediff progression scan interval. Hediff
+severity gates live on Hediff-domain group policies, not in `DiarySignalPolicyDef`. Code defaults
+keep the mod usable if XML fails to load.
 
 ---
 
@@ -290,47 +294,43 @@ Prompts are compact `key: value` lines. `AppendField` drops empty values and `no
 `unknown` sentinels. Numeric structured context uses invariant dot-decimal formatting so prompts do
 not vary by player OS locale.
 
-Main first-person prompts no longer use one broad template. `DiaryPromptBuilder` applies a small
-per-event context policy:
-
-- Routine/internal entries (work, thoughts, mood events, ambient/batched notes) send the event, POV,
-  group instruction, persona, setting, last-opener continuity, and possibly one compact live health
-  cue, then skip broad pawn state, relationship, hidden initiator text, and weapon.
-- Meaningful non-batched social entries also carry setting, relationship continuity, tone when the
-  group is important, and hidden initiator context only for important paired recipient follow-ups.
-- Combat/crisis entries add pawn summary, setting, tone, relationship for paired events, current POV
-  weapon, hidden initiator context, and the same optional prompt enchantment path.
-- End-of-day reflections add pawn summary, setting, and last-opener continuity to the selected
-  highlights, but skip relationship and weapon.
-- Major solo events add pawn summary, setting, tone, and last-opener continuity, but skip
-  relationship and weapon unless combat.
+Main first-person prompts are selected by stable template keys, then rendered from XML field lists
+in `1.6/Defs/DiaryPromptTemplateDefs.xml`. `DiaryPromptBuilder` still classifies the event shape
+(`PairDefault`, `PairImportant`, `PairCombat`, `PairBatched`, `SoloDefault`, `SoloImportant`,
+`SoloInternalState`, `SoloBatched`, `SoloDayReflection`, `DeathDescription`, `ArrivalDescription`,
+or `Title`), but XML controls which structured fields appear for each shape. Template fields can
+include event facts, POV, role, other pawn, group instruction, pawn summary, persona, weighted prompt
+enchantment, setting, tone, relationship continuity, last opener, weapon, hidden initiator entry,
+death/arrival facts, or title source text. Templates may also override their system prompt or final
+instruction; if left blank, `DiaryPromptDef.xml` supplies the shared defaults.
 
 Pawn summaries may contain DLC identity lines, life stage, mood, health, low capacities, and top
 thoughts when the policy includes `you:`. Generated structured context avoids sending numeric
 scores where possible: age, mood, pain, bleeding, opinion, thought impact, and hediff severity are
 bucketed into words. Surroundings include a couple of nearby objects chosen with weighted random
 selection, favoring important context such as fire, corpses, and buildings without making every entry
-identical. First-person prompts now include `setting:` whenever the pawn has a spawned-map
-surroundings summary. The surroundings line always says whether the pawn is indoors or outdoors;
-weather and biome are appended only when the room is psychologically outdoors. The same setting
-line may also include up to three visible active map conditions and one fresh recent threat letter
-while a player-home map is still in a danger state. These are context hints for the current diary
-entry, not standalone diary events. Neutral arrival/death prompts parse curated facts from
-`gameContext` instead of dumping the whole metadata string.
+identical. First-person prompt templates include `setting:` whenever XML keeps that field and the
+pawn has a spawned-map surroundings summary. The surroundings line always says whether the pawn is
+indoors or outdoors; weather and biome are appended only when the room is psychologically outdoors.
+Active map conditions and recent threat-letter hints are tracked in C# but controlled by
+`1.6/Defs/DiaryContextReactionDefs.xml`: XML can enable/disable them, change active-condition caps,
+change threat archive scan depth/freshness, and choose the Keyed formatting text. These are context
+hints for the current diary entry, not standalone diary events. Neutral arrival/death templates parse
+curated facts from `gameContext` instead of dumping the whole metadata string.
 
-Prompt enchantments are weighted hediff matchers in
-`1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When `enablePromptEnchantments` is on, every
-first-person prompt that includes `persona:` may add exactly one `important health:` field next to
-it. The field is still omitted when no configured visible hediff matches or the selected match fails
-its chance roll. Neutral arrival/death prompts and title follow-ups never use prompt enchantments.
-Low Consciousness above the hard skip floor is treated as the most important live health cue:
-clouded, fading, and barely-conscious bands emit compact Keyed `important health:` values before
-normal hediff matching, so a pawn near collapse does not lose that signal to a less important wound.
+Prompt enchantments are weighted live-signal matchers in
+`1.6/Defs/DiaryPromptEnchantmentDefs.xml`. When `enablePromptEnchantments` is on, every first-person
+template with `includePromptEnchantment=true` may add exactly one `important health:` field. The
+field is omitted when no configured signal matches or every matched signal fails its chance roll.
+Neutral arrival/death prompts and title follow-ups set `includePromptEnchantment=false`.
 
-XML no longer contains prompt prose for hediffs. It only lists eligible `hediffDefNames`,
-`minHediffSeverity`, `chance`/`frequency`, `weight`, and the weight-multiplier `severity`. Matching
-live hediffs first pass their chance roll, then one winner is selected by configured weight plus
-live urgency signals such as severity, life-threatening state, bleeding, pain, and health impact.
+Hediff enchantments list eligible `hediffDefNames`, `minHediffSeverity`, `chance`/`frequency`,
+`weight`, and the weight-multiplier `severity`. Matching live hediffs first pass their chance roll,
+then one winner is selected by configured weight plus live urgency signals such as severity,
+life-threatening state, bleeding, pain, and health impact. Capacity enchantments use the same
+weighted pool with `source=Capacity`, `capacityDefName`, `minCapacity`, `maxCapacity`, configured
+chance/weight/severity, and optional Keyed cue text. Low Consciousness is now represented by three
+capacity enchantment Defs (clouded, fading, barely awake), not by persona overrides.
 The prompt text itself is a compact priority cue built from RimWorld's live data:
 `important health: high priority; <urgency> <condition> [in <body part>]; <top impact cues>`.
 Impact cues are capped so the model sees only the strongest reasons, such as life-threatening,
@@ -387,18 +387,10 @@ prompt builder explicitly rejects neutral arrival/death, dev mock, mental-state,
 inspiration, work, hediff, day-reflection, and ambient-day contexts before checking whether an event's
 defName is a real RimWorld `InteractionDef`.
 
-Player-customizable, Def-backed user-message instructions:
-
-- `singlePovInstruction`
-- `recipientFollowupInstruction`
-- `deathDescriptionInstruction`
-- `arrivalDescriptionInstruction`
-- `titleUserInstruction`
-
-Existing saves keep prompt overrides in `PawnDiarySettings`; Prompt Studio can reset one prompt or
-all prompts to current XML defaults. During `PostLoadInit`, settings migrate only prompt fields that
-exactly match known older shipped defaults, after newline normalization, so default users receive
-prompt-quality fixes while custom Prompt Studio text is preserved.
+Prompt tuning is XML-only at runtime. `DiaryPromptTemplateDefs.xml` controls field inclusion and
+per-template system/final-instruction overrides; `DiaryPromptDef.xml` supplies shared default system
+prompts and final instructions. The in-game Prompt Studio is now a status view that reports loaded
+template defs. Saved prompt text from older versions is not used by generation.
 
 Persona presets start from `DiaryPersonaDef` XML, then settings may layer built-in overrides and
 custom personas. `DiaryPersonas.WeightedStartingPersona` uses base weight, trait/backstory theme
@@ -413,13 +405,9 @@ fragmented association or controlled word-salad texture while preserving at leas
 detail. It also includes restrained verse-flavored voices such as `plainspoken-poet` and
 `lowkey-rapper`, tuned for light imagery or cadence rather than constant rhyme.
 
-Each built-in `DiaryPersonaDef` can also define `cloudedConsciousnessRule`,
-`fadingConsciousnessRule`, and `barelyConsciousRule`. When a live pawn is conscious enough to write
-but impaired, generation keeps the same persona label and swaps the normal persona text for that
-persona's matching low-Consciousness rule. Persona settings can override those three modifiers for
-built-in personas, while unchanged built-in rows continue inheriting XML so old saves and future XML
-edits do not lose their default impaired-voice tuning. Custom personas can define their own modifier
-text; blank custom modifier boxes fall back to the persona's normal rule.
+Consciousness no longer changes persona text. If a pawn is conscious enough to write but impaired,
+the prompt keeps the same persona and may add one XML-weighted `important health:` capacity
+enchantment for clouded, fading, or barely-awake Consciousness.
 
 Title generation defaults on. Successful main entries queue `QueueTitleRequest`, capped at
 `TitleMaxTokens = 40` and pinned to the producing lane when possible. Stored titles render as
@@ -441,20 +429,19 @@ Core settings:
 | `temperature` | 0.8 | 0-2. |
 | `generateTitles` | true | Queues title follow-ups for successful main entries. |
 | `enableAtmosphericFormatting` | true | Allows rare display-only text layout effects for extreme entries. |
-| `enablePromptEnchantments` | true | Allows weighted live hediff context to append one first-person `important health:` cue. |
+| `enablePromptEnchantments` | true | Allows weighted live hediff/capacity context to append one first-person `important health:` cue. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for sampled work and batched-social promotion. |
-| `systemPrompt*` | XML defaults | Diary, reflection, neutral, and title system prompts. |
-| prompt instruction overrides | XML defaults | User-message prompt texts listed in section 6. |
-| `groupEnabled` / `groupInstructions` | XML defaults | Per-group recording toggles and instructions. |
+| prompt XML defs | XML defaults | `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`, and group instructions are the prompt source of truth. |
+| `groupEnabled` | XML defaults | Per-group recording toggles; group instructions come only from XML. |
 | `personaPresets` | empty | Built-in overrides plus custom personas. |
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
 
 The settings window contains Connection, Diary writing, Prompt Studio, Persona presets, and Events
 sections. It supports multiple API lanes, compatibility-mode selection, model fetching/picking, a
-per-row API connection test that sends a tiny localized generation prompt, prompt resets, persona selection
-through a compact selector menu, single-card persona editing, custom persona creation/deletion,
-low-Consciousness persona modifier editing, grouped event toggles, and one per-group instruction
-editor. Each API lane can speak OpenAI-compatible chat completions, OpenAI Responses, or native
+per-row API connection test that sends a tiny localized generation prompt, an XML prompt-template
+status view, persona selection through a compact selector menu, single-card persona editing, custom
+persona creation/deletion, grouped event toggles, and XML group-instruction previews. Each API lane
+can speak OpenAI-compatible chat completions, OpenAI Responses, or native
 Ollama chat; Responses lanes can send a reasoning-effort override, and Ollama lanes can request
 native thinking output while saving only final message content. Known reasoning/thinking transcript
 blocks embedded in normal content are stripped before anything is persisted, including common
@@ -622,8 +609,8 @@ Rough safe-route outline:
 
 Player-facing UI strings and natural-language prompt text are Keyed entries in
 `Languages/English/Keyed/PawnDiary.xml`, resolved with `.Translate()` on the main thread. Def text
-(`label`, `instruction`, `tone`, persona `rule`, persona low-Consciousness rules, prompt defs, and
-hediff labels/body-part labels used by prompt enchantments) localizes through DefInjected files. The
+(`label`, `instruction`, `tone`, persona `rule`, prompt defs/templates, and hediff/body-part labels
+used by prompt enchantments) localizes through DefInjected files. The
 health-cue words generated by `PromptEnchantments.cs` localize through Keyed
 `PawnDiary.Prompt.Health.*` entries; other generated prompt-context connector words localize through
 `PawnDiary.Ctx.*` entries.
@@ -659,12 +646,12 @@ npm run from-defs
 node run.js --from-defs --save --model <model-name>
 ```
 
-The prompt lab reads `DiaryPromptDef.xml`, `DiaryPersonaDefs.xml`,
-`DiaryInteractionGroupDefs.xml`, and the English Keyed direct-speech prompt cues. Generated
-first-person fixtures mirror `DiaryPromptBuilder`'s compact context policy: persona, optional
-`important health:`, last-opener, relationship, tone, setting, weapon, and hidden initiator fields
-appear only in the same branches as the in-game prompt builder. Title fixtures and title follow-ups
-use `DiaryPromptDef.titleUserInstruction`.
+The prompt lab reads `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`,
+`DiaryPersonaDefs.xml`, `DiaryInteractionGroupDefs.xml`, and the English Keyed direct-speech
+prompt cues. Generated fixtures select the same template keys as `DiaryPromptBuilder`, then render
+field order and field inclusion from XML source tokens. Title fixtures and title follow-ups use the
+`Title` template and fall back to `DiaryPromptDef.titleUserInstruction` when the template does not
+override the final instruction.
 
 Saved prompt-lab results go to `prompt-lab/results/<model-name>/<timestamp>.md`, which is ignored by
 git.
