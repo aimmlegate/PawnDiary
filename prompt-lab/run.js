@@ -1247,6 +1247,79 @@ function buildGeneratedFixtureSet(promptData, config, options) {
     }));
   }
 
+  // Indoor coverage. Every generated case above is outdoors, so a normal --from-defs run never
+  // exercises the outdoors-gated setting path: the live mod omits weather/biome when a pawn is
+  // indoors (DiaryContextBuilder.BuildSurroundingsSummary). These indoor cases use the real indoor
+  // setting shape ("indoors, <room role>, <activity>") with no weather token, so a standard run also
+  // shows whether entry openings still diverge by persona once the weather anchor is gone.
+  const indoorPairGroup = pairGroups[0] || fallbackGroup;
+  const indoorPairTone = isSkippable(indoorPairGroup.tone) ? 'quiet but charged' : indoorPairGroup.tone;
+  const indoorPairLabel = isSkippable(indoorPairGroup.label)
+    ? `social event ${indoorPairGroup.defName}`
+    : indoorPairGroup.label;
+  const indoorPairInstruction = isSkippable(indoorPairGroup.instruction)
+    ? 'a charged social exchange between two colonists'
+    : indoorPairGroup.instruction;
+  cases.push(buildPairFixture(promptData, indoorPairGroup, {
+    id: 'pair-indoor-initiator-v1',
+    event: indoorPairLabel.toLowerCase(),
+    pov: 'Cass',
+    role: 'initiator',
+    other: 'Juno',
+    whatYouSaw: `A quiet disagreement surfaced over a shared meal. ${indoorPairLabel} changed the mood at the table.`,
+    instruction: indoorPairInstruction,
+    pawnSummary: 'sex=female; life_stage=adult; mood=tense; thoughts=guarded',
+    persona: pickPersona(personas, 0).rule,
+    promptEnchantment: '',
+    setting: 'indoors, dining room, over a late shared meal',
+    tone: indoorPairTone,
+    relationship: 'opinion=cool; because old friction; last wrote: I let it sit.',
+    lastOpener: 'I let it sit.',
+    weapon: '',
+    initiatorEntry: '',
+    version: 'v1',
+  }));
+
+  const indoorSoloGroup = soloGroups[0] || fallbackGroup;
+  const indoorSoloTone = isSkippable(indoorSoloGroup.tone) ? 'low and private' : indoorSoloGroup.tone;
+  const indoorSoloLabel = isSkippable(indoorSoloGroup.label)
+    ? `solo moment ${indoorSoloGroup.defName}`
+    : indoorSoloGroup.label;
+  const indoorSoloInstruction = isSkippable(indoorSoloGroup.instruction)
+    ? 'a private moment that changes the tone of the day'
+    : indoorSoloGroup.instruction;
+  cases.push(buildSoloFixture(promptData, indoorSoloGroup, {
+    id: 'solo-indoor-v1',
+    event: indoorSoloLabel.toLowerCase(),
+    pov: 'Cass',
+    whatHappened: `${indoorSoloLabel} settled in during a long off-shift hour in the barracks.`,
+    instruction: `${indoorSoloInstruction}; keep it immediate and grounded.`,
+    pawnSummary: 'sex=female; life_stage=adult; mood=subdued; thoughts=turning inward',
+    persona: pickPersona(personas, 1).rule,
+    promptEnchantment: '',
+    setting: 'indoors, barracks, lying awake off-shift',
+    tone: indoorSoloTone,
+    lastOpener: 'The lamp was the only thing still working.',
+    weapon: '',
+    version: 'v1',
+  }));
+
+  cases.push(buildSoloFixture(promptData, indoorSoloGroup, {
+    id: 'solo-indoor-v2',
+    event: indoorSoloLabel.toLowerCase(),
+    pov: 'Juno',
+    whatHappened: `${indoorSoloLabel} lingered while recovering in the medical bay.`,
+    instruction: `${indoorSoloInstruction} with a calm aftertaste.`,
+    pawnSummary: 'sex=female; life_stage=adult; mood=tired; thoughts=foggy',
+    persona: pickPersona(personas, 2).rule,
+    promptEnchantment: 'high priority; moderate infection in torso; low fever, aching',
+    setting: 'indoors, medical room, recovering after treatment',
+    tone: `${indoorSoloTone}; practical`,
+    lastOpener: 'I counted the ceiling boards again.',
+    weapon: '',
+    version: 'v2',
+  }));
+
   // Neutral descriptions (third-person, no persona).
   cases.push(buildStaticTemplateFixture(promptData, {
     id: 'arrival-colonist-v1',

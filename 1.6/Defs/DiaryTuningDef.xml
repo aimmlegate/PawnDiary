@@ -24,6 +24,36 @@
     <coldBelowC>0</coldBelowC>
     <hotAboveC>32</hotAboveC>
 
+    <!-- Weather mentions. Chance (0..1) an outdoor entry mentions the current weather, per weather.
+         Clear is 0 (never noted); mild weather low, dramatic weather high, so weather stops
+         dominating diary openings. Weathers not listed use the favorability fallbacks below, so
+         DLC/modded weather still scales with severity. Keyed by WeatherDef.defName. -->
+    <weatherMentionChances>
+      <li><weather>Clear</weather><chance>0</chance></li>
+      <li><weather>Overcast</weather><chance>0.2</chance></li>        <!-- Odyssey -->
+      <li><weather>Fog</weather><chance>0.25</chance></li>
+      <li><weather>SnowGentle</weather><chance>0.3</chance></li>
+      <li><weather>Rain</weather><chance>0.35</chance></li>
+      <li><weather>Windy</weather><chance>0.45</chance></li>          <!-- Odyssey -->
+      <li><weather>FoggyRain</weather><chance>0.45</chance></li>
+      <li><weather>BlindFog</weather><chance>0.6</chance></li>        <!-- Odyssey -->
+      <li><weather>SnowHard</weather><chance>0.7</chance></li>
+      <li><weather>ToxRain</weather><chance>0.85</chance></li>        <!-- Odyssey -->
+      <li><weather>TorrentialRain</weather><chance>0.85</chance></li> <!-- Odyssey -->
+      <li><weather>DryThunderstorm</weather><chance>0.9</chance></li>
+      <li><weather>RainyThunderstorm</weather><chance>0.9</chance></li>
+      <li><weather>Sandstorm</weather><chance>0.9</chance></li>       <!-- Odyssey -->
+      <li><weather>Blizzard</weather><chance>0.95</chance></li>       <!-- Odyssey -->
+      <li><weather>BloodRain</weather><chance>1</chance></li>         <!-- Anomaly -->
+      <li><weather>GrayPall</weather><chance>1</chance></li>          <!-- Anomaly -->
+      <li><weather>DeathPall</weather><chance>1</chance></li>         <!-- Anomaly -->
+    </weatherMentionChances>
+    <!-- Fallbacks for weathers not listed above, by WeatherDef.favorability. -->
+    <weatherChanceVeryBad>0.9</weatherChanceVeryBad>
+    <weatherChanceBad>0.5</weatherChanceBad>
+    <weatherChanceNeutral>0.25</weatherChanceNeutral>
+    <weatherChanceDefault>0</weatherChanceDefault>
+
     <!-- Health -->
     <painVisibleAbove>0.03</painVisibleAbove>
     <bleedVisibleAbove>0.01</bleedVisibleAbove>

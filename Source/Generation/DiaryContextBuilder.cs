@@ -232,6 +232,63 @@ namespace PawnDiary
             return cleaned.Length <= max ? cleaned : cleaned.Substring(0, max) + "...";
         }
 
+        // Cached WeatherDef.defName -> mention chance lookup, rebuilt only when the tuning Def
+        // instance changes. The chances themselves live in DiaryTuningDef (XML-tunable).
+        private static DiaryTuningDef weatherChanceTuning;
+        private static Dictionary<string, float> weatherChanceLookup;
+
+        // Rolls the per-weather chance (from DiaryTuningDef.weatherMentionChances) to decide whether
+        // this outdoor entry mentions the weather. Clear (mapped to 0) never passes; the harshest
+        // weather almost always does. Mild weather was dominating diary openings, so it is weighted low.
+        private static bool ShouldMentionWeather(WeatherDef weather)
+        {
+            return weather != null && Rand.Chance(WeatherMentionChanceFor(weather));
+        }
+
+        private static float WeatherMentionChanceFor(WeatherDef weather)
+        {
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            if (weather.defName != null && WeatherChanceLookup(tuning).TryGetValue(weather.defName, out float chance))
+            {
+                return chance;
+            }
+
+            // Unknown weather (DLC/modded not listed): lean on favorability so severity still drives it.
+            switch (weather.favorability)
+            {
+                case Favorability.VeryBad: return tuning.weatherChanceVeryBad;
+                case Favorability.Bad: return tuning.weatherChanceBad;
+                case Favorability.Neutral: return tuning.weatherChanceNeutral;
+                default: return tuning.weatherChanceDefault; // Good / OuterSpace
+            }
+        }
+
+        private static Dictionary<string, float> WeatherChanceLookup(DiaryTuningDef tuning)
+        {
+            if (ReferenceEquals(weatherChanceTuning, tuning) && weatherChanceLookup != null)
+            {
+                return weatherChanceLookup;
+            }
+
+            Dictionary<string, float> lookup = new Dictionary<string, float>();
+            List<WeatherMentionRule> rules = tuning?.weatherMentionChances;
+            if (rules != null)
+            {
+                for (int i = 0; i < rules.Count; i++)
+                {
+                    WeatherMentionRule rule = rules[i];
+                    if (rule != null && !string.IsNullOrWhiteSpace(rule.weather))
+                    {
+                        lookup[rule.weather] = rule.chance;
+                    }
+                }
+            }
+
+            weatherChanceTuning = tuning;
+            weatherChanceLookup = lookup;
+            return lookup;
+        }
+
         public static string BuildSurroundingsSummary(Pawn pawn)
         {
             if (pawn == null || !pawn.Spawned || pawn.Map == null)
@@ -255,12 +312,16 @@ namespace PawnDiary
 
             parts.Add((outdoors ? "PawnDiary.Ctx.Outdoors" : "PawnDiary.Ctx.Indoors").Translate());
 
-            // Weather and biome only matter when the pawn is exposed to them.
+            // Weather and biome only matter when the pawn is exposed to them, and weather is added
+            // only when a severity-weighted roll passes (see ShouldMentionWeather): clear skies were
+            // dominating diary openings, so mild weather is rarely noted and dramatic weather almost
+            // always is.
             if (outdoors)
             {
-                if (pawn.Map.weatherManager?.CurWeatherPerceived != null)
+                WeatherDef weather = pawn.Map.weatherManager?.CurWeatherPerceived;
+                if (ShouldMentionWeather(weather))
                 {
-                    parts.Add(CleanLine(pawn.Map.weatherManager.CurWeatherPerceived.label));
+                    parts.Add(CleanLine(weather.label));
                 }
 
                 if (pawn.Map.Biome != null)

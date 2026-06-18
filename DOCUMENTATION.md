@@ -143,6 +143,12 @@ progression, ambient batching, scan odds, and cooldowns. `DiaryTuningDef.xml` ke
 tuning for mood/health buckets, nearby context, day-reflection weights, and scanner intervals. Code
 fallbacks keep the mod usable if XML is absent.
 
+Surroundings only include weather when the pawn is outdoors, and then only on a severity-weighted
+roll (`DiaryTuningDef.weatherMentionChances`, keyed by `WeatherDef.defName`): clear skies are never
+noted, mild weather rarely, dramatic weather almost always, so weather stops dominating diary
+openings. Weathers absent from the list fall back to favorability-keyed chances, so DLC/modded
+weather still scales with severity.
+
 ---
 
 ## 6. Prompts, Personas, Titles
@@ -169,7 +175,11 @@ Layer boundaries:
 Personas come from `DiaryPersonaDef` plus settings overrides/custom rows. Weighted first persona
 selection uses base weight, trait/backstory theme matches, creepjoiner bonuses for `void`, and a
 soft duplicate penalty among living free colonists. Persona `rule` text is injected into the system
-prompt for first-person templates. Neutral arrival/death and title prompts are persona-free.
+prompt for first-person templates. Neutral arrival/death and title prompts are persona-free. Each
+`rule` is tuned for small local models: one dominant, imitable voice signature plus a short in-voice
+example (`For example: "..."`) so weak models pattern-match a concrete sample instead of collapsing
+to a generic literary voice. The example demonstrates voice only — the system prompt still requires
+the entry to be built from the supplied event, so example content is never treated as a fact.
 
 Prompt enchantments are XML-weighted live health/capacity cues. When enabled, eligible first-person
 templates may add exactly one localized `important health:` field selected from hediff/capacity
