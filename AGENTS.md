@@ -112,6 +112,16 @@ MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 from a clone — rebuild and stage it whenever you change C#. If `MSBuild` isn't on `PATH`, find it
 with `vswhere -latest -find MSBuild\**\Bin\MSBuild.exe`, or build from a VS "Developer PowerShell."
 
+## Git hooks
+Tracked hooks live in `.githooks/`. Enable them in a clone with:
+```
+git config core.hooksPath .githooks
+```
+`pre-commit` and `pre-push` run `.githooks/verify.ps1`: whitespace checks, XML parsing, pure test
+projects, and the Debug MSBuild build. If the build changes `1.6/Assemblies/PawnDiary.dll`, stage
+the rebuilt DLL and retry. Use `PAWNDIARY_SKIP_VERIFY_HOOKS=1` only for an intentional emergency
+bypass.
+
 ---
 
 ## Pointers

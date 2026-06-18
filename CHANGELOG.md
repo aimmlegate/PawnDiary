@@ -3,6 +3,13 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (local verification hooks)**
+  - Added tracked `.githooks/pre-commit`, `.githooks/pre-push`, and `.githooks/verify.ps1` so local
+    commits and pushes can automatically run whitespace checks, XML parsing, pure test projects, and
+    the Debug MSBuild build.
+  - Documented `git config core.hooksPath .githooks`, the committed-DLL freshness check, and the
+    explicit `PAWNDIARY_SKIP_VERIFY_HOOKS=1` emergency bypass.
+
 - **2026-06-18 (agent architecture guardrails)**
   - Updated the shared `skills/pawndiary-engineering` workflow and top-level `AGENTS.md` rules so
     future changes default to explicit layer boundaries, typed plain-data contracts, pure/testable

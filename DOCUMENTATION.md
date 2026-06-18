@@ -706,6 +706,18 @@ MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 Output is `1.6/Assemblies/PawnDiary.dll`. If `MSBuild` is not on `PATH`, use `vswhere` to locate it
 or build from a Visual Studio Developer PowerShell.
 
+Git hooks:
+
+```
+git config core.hooksPath .githooks
+```
+
+The tracked `.githooks/pre-commit` and `.githooks/pre-push` shims run
+`.githooks/verify.ps1`. Verification checks staged whitespace on commit, XML well-formedness,
+all pure helper test projects, the Debug MSBuild build, and whether the build changed the committed
+`1.6/Assemblies/PawnDiary.dll`. If the DLL changes, stage the rebuilt DLL and retry. Emergency
+bypass is explicit: set `PAWNDIARY_SKIP_VERIFY_HOOKS=1` for that command/session.
+
 Pure helper tests:
 
 ```
