@@ -114,13 +114,18 @@
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
-  <PawnDiary.Settings.PromptStudioXmlHelp>Prompt wording and field lists are controlled by XML defs. Edit DiaryPromptTemplateDefs.xml and DiaryPromptDef.xml, then restart RimWorld.</PawnDiary.Settings.PromptStudioXmlHelp>
-  <PawnDiary.Settings.PromptStudioXmlSummary>{0} prompt templates loaded from XML</PawnDiary.Settings.PromptStudioXmlSummary>
-  <PawnDiary.Settings.PromptStudioXmlNote>If you customized prompt text in an older version, those in-game edits are no longer applied — wording now comes only from the XML files above. This screen is a read-only status view.</PawnDiary.Settings.PromptStudioXmlNote>
+  <PawnDiary.Settings.PromptStudioHelp>Edit only the shared system prompts. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
+  <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates loaded; system prompt overrides below are saved in settings</PawnDiary.Settings.PromptStudioSummary>
+  <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and persona catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
+  <PawnDiary.Settings.SystemPromptDiary>Diary entries system prompt</PawnDiary.Settings.SystemPromptDiary>
+  <PawnDiary.Settings.SystemPromptReflection>Day reflection system prompt</PawnDiary.Settings.SystemPromptReflection>
+  <PawnDiary.Settings.SystemPromptNeutral>Neutral chronicle system prompt</PawnDiary.Settings.SystemPromptNeutral>
+  <PawnDiary.Settings.SystemPromptTitle>Title generation system prompt</PawnDiary.Settings.SystemPromptTitle>
+  <PawnDiary.Settings.RestorePromptDefault>Restore XML default</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Customized from the XML default</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Using the XML default</PawnDiary.Settings.PromptStatusDefault>
   <PawnDiary.Settings.PersonaStudioTitle>Persona presets</PawnDiary.Settings.PersonaStudioTitle>
-  <PawnDiary.Settings.PersonaStudioHelp>Edit built-in persona presets and add your own. Persona tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
+  <PawnDiary.Settings.PersonaStudioHelp>Edit persona labels, voice rules, and theme tags from DiaryPersonaDefs.xml, or add your own. Tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
   <PawnDiary.Settings.PersonaStudioSummary>{0} personas total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>
   <PawnDiary.Settings.PersonaStudioTagsHelp>Custom personas must keep at least one predefined tag.</PawnDiary.Settings.PersonaStudioTagsHelp>
   <PawnDiary.Settings.AddPersonaPreset>Add custom persona</PawnDiary.Settings.AddPersonaPreset>
@@ -146,29 +151,6 @@
   <PawnDiary.Settings.PersonaTag.void>void</PawnDiary.Settings.PersonaTag.void>
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
-  <PawnDiary.Settings.EventsSectionTitle>Events</PawnDiary.Settings.EventsSectionTitle>
-  <PawnDiary.Settings.EventsHeader>Enable event groups and preview the XML prompt instruction each one uses.</PawnDiary.Settings.EventsHeader>
-  <PawnDiary.Settings.EventGroupSummary>{0} groups enabled out of {1}, {2} prompt overrides saved</PawnDiary.Settings.EventGroupSummary>
-  <PawnDiary.Settings.EventGroupSummaryXml>{0} groups enabled out of {1}; prompt instructions come from XML</PawnDiary.Settings.EventGroupSummaryXml>
-  <PawnDiary.Settings.EventGroupHelp>Use View to inspect a group's XML instruction. Hover a row to preview it.</PawnDiary.Settings.EventGroupHelp>
-  <PawnDiary.Settings.MentalStatesHeader>Mental states &amp; breaks</PawnDiary.Settings.MentalStatesHeader>
-  <PawnDiary.Settings.TalesHeader>Notable events</PawnDiary.Settings.TalesHeader>
-  <PawnDiary.Settings.MoodEventsHeader>Mood events (colony conditions)</PawnDiary.Settings.MoodEventsHeader>
-  <PawnDiary.Settings.ThoughtsHeader>Temporary thoughts</PawnDiary.Settings.ThoughtsHeader>
-  <PawnDiary.Settings.InspirationsHeader>Inspirations</PawnDiary.Settings.InspirationsHeader>
-  <PawnDiary.Settings.WorkHeader>Work moments</PawnDiary.Settings.WorkHeader>
-  <PawnDiary.Settings.HediffsHeader>Health conditions</PawnDiary.Settings.HediffsHeader>
-  <PawnDiary.Settings.EditingPromptFor>Editing prompt for: {0}</PawnDiary.Settings.EditingPromptFor>
-  <PawnDiary.Settings.ChangeGroup>Change group</PawnDiary.Settings.ChangeGroup>
-  <PawnDiary.Settings.EditGroup>Edit</PawnDiary.Settings.EditGroup>
-  <PawnDiary.Settings.ViewGroup>View</PawnDiary.Settings.ViewGroup>
-  <PawnDiary.Settings.GroupInstructionLabel>Diary prompt instruction for this group</PawnDiary.Settings.GroupInstructionLabel>
-  <PawnDiary.Settings.GroupStatusCustomized>Custom instruction saved for this group</PawnDiary.Settings.GroupStatusCustomized>
-  <PawnDiary.Settings.GroupStatusDefault>Using this group's XML default instruction</PawnDiary.Settings.GroupStatusDefault>
-  <PawnDiary.Settings.GroupStatusXml>Instruction loaded from XML</PawnDiary.Settings.GroupStatusXml>
-  <PawnDiary.Settings.GroupInstructionXmlOnly>Diary prompt instruction for this group (XML-only)</PawnDiary.Settings.GroupInstructionXmlOnly>
-  <PawnDiary.Settings.SaveInstruction>Save instruction</PawnDiary.Settings.SaveInstruction>
-  <PawnDiary.Settings.RestoreGroupDefault>Restore this group's default</PawnDiary.Settings.RestoreGroupDefault>
 
   <!-- ===== Raw event text (shown in the diary AND fed to the model as "what happened") ===== -->
   <PawnDiary.Event.Interaction>{0} had a {1} interaction with {2}.</PawnDiary.Event.Interaction>

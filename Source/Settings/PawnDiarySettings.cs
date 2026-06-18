@@ -1,6 +1,6 @@
-// All mod settings (connection, generation options, per-group enable overrides, and persona edits)
-// plus value clamping and save/load. Prompt text, prompt templates, signal policies, and per-group
-// instructions are XML Defs, not save settings.
+// All mod settings (connection, generation options, system prompt overrides, per-group enable
+// overrides, and persona edits) plus value clamping and save/load. Prompt templates, signal
+// policies, and per-group instructions are XML Defs, not save settings.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -161,14 +161,21 @@ namespace PawnDiary
         // Master toggle for hediff-based prompt enchantments. When true, first-person diary prompts
         // may get one live health-condition hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
+        // Optional saved overrides for the shared system prompts. Blank means "use the XML default"
+        // from DiaryPromptDef.xml, so XML remains the restore source and template/final instructions
+        // stay Def-owned.
+        public string systemPromptOverride = string.Empty;
+        public string systemPromptReflectionOverride = string.Empty;
+        public string systemPromptNeutralOverride = string.Empty;
+        public string titleSystemPromptOverride = string.Empty;
         // Player-facing multipliers for the two random entry gates:
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
         public float socialGenerationWeight = 1f;
 
-        // Per interaction-group settings, keyed by InteractionGroup.defName.
-        // groupEnabled: whether interactions in the group are recorded at all. Prompt wording is
-        // XML-only and lives on DiaryInteractionGroupDef / DiaryPromptTemplateDef.
+        // Legacy per-interaction-group settings, keyed by InteractionGroup.defName. Event filtering
+        // is now XML-only (DiaryInteractionGroupDef.defaultEnabled); this dictionary remains only so
+        // old configs load without losing unrelated settings.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
         // Persona preset edits made in settings: XML override rows plus user-created custom personas.
         public List<PersonaPresetConfig> personaPresets = new List<PersonaPresetConfig>();
@@ -212,6 +219,10 @@ namespace PawnDiary
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
+            Scribe_Values.Look(ref systemPromptOverride, "systemPromptOverride", string.Empty);
+            Scribe_Values.Look(ref systemPromptReflectionOverride, "systemPromptReflectionOverride", string.Empty);
+            Scribe_Values.Look(ref systemPromptNeutralOverride, "systemPromptNeutralOverride", string.Empty);
+            Scribe_Values.Look(ref titleSystemPromptOverride, "titleSystemPromptOverride", string.Empty);
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
@@ -233,6 +244,121 @@ namespace PawnDiary
             {
                 new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName)
             };
+        }
+
+        // ---- System prompt helpers ----
+
+        /// <summary>Returns the diary-entry system prompt, using a saved override when present.</summary>
+        public string EffectiveSystemPrompt()
+        {
+            return PromptOverrideOrDefault(systemPromptOverride, DiaryPrompts.Current.systemPrompt);
+        }
+
+        /// <summary>Returns the end-of-day reflection system prompt, using a saved override when present.</summary>
+        public string EffectiveReflectionSystemPrompt()
+        {
+            return PromptOverrideOrDefault(systemPromptReflectionOverride, DiaryPrompts.Current.systemPromptReflection);
+        }
+
+        /// <summary>Returns the neutral chronicle system prompt, using a saved override when present.</summary>
+        public string EffectiveNeutralSystemPrompt()
+        {
+            return PromptOverrideOrDefault(systemPromptNeutralOverride, DiaryPrompts.Current.systemPromptNeutral);
+        }
+
+        /// <summary>Returns the title-generation system prompt, using a saved override when present.</summary>
+        public string EffectiveTitleSystemPrompt()
+        {
+            return PromptOverrideOrDefault(titleSystemPromptOverride, DiaryPrompts.Current.titleSystemPrompt);
+        }
+
+        /// <summary>Stores or clears the diary-entry system prompt override.</summary>
+        public void SetSystemPromptOverride(string prompt)
+        {
+            systemPromptOverride = NormalizePromptOverride(prompt, DiaryPrompts.Current.systemPrompt);
+        }
+
+        /// <summary>Stores or clears the reflection system prompt override.</summary>
+        public void SetReflectionSystemPromptOverride(string prompt)
+        {
+            systemPromptReflectionOverride = NormalizePromptOverride(prompt, DiaryPrompts.Current.systemPromptReflection);
+        }
+
+        /// <summary>Stores or clears the neutral chronicle system prompt override.</summary>
+        public void SetNeutralSystemPromptOverride(string prompt)
+        {
+            systemPromptNeutralOverride = NormalizePromptOverride(prompt, DiaryPrompts.Current.systemPromptNeutral);
+        }
+
+        /// <summary>Stores or clears the title-generation system prompt override.</summary>
+        public void SetTitleSystemPromptOverride(string prompt)
+        {
+            titleSystemPromptOverride = NormalizePromptOverride(prompt, DiaryPrompts.Current.titleSystemPrompt);
+        }
+
+        /// <summary>Clears the diary-entry system prompt override so XML supplies the text again.</summary>
+        public void ResetSystemPromptOverride()
+        {
+            systemPromptOverride = string.Empty;
+        }
+
+        /// <summary>Clears the reflection system prompt override so XML supplies the text again.</summary>
+        public void ResetReflectionSystemPromptOverride()
+        {
+            systemPromptReflectionOverride = string.Empty;
+        }
+
+        /// <summary>Clears the neutral chronicle system prompt override so XML supplies the text again.</summary>
+        public void ResetNeutralSystemPromptOverride()
+        {
+            systemPromptNeutralOverride = string.Empty;
+        }
+
+        /// <summary>Clears the title-generation system prompt override so XML supplies the text again.</summary>
+        public void ResetTitleSystemPromptOverride()
+        {
+            titleSystemPromptOverride = string.Empty;
+        }
+
+        /// <summary>True when the diary-entry system prompt differs from the XML default.</summary>
+        public bool HasSystemPromptOverride()
+        {
+            return !string.IsNullOrWhiteSpace(systemPromptOverride);
+        }
+
+        /// <summary>True when the reflection system prompt differs from the XML default.</summary>
+        public bool HasReflectionSystemPromptOverride()
+        {
+            return !string.IsNullOrWhiteSpace(systemPromptReflectionOverride);
+        }
+
+        /// <summary>True when the neutral chronicle system prompt differs from the XML default.</summary>
+        public bool HasNeutralSystemPromptOverride()
+        {
+            return !string.IsNullOrWhiteSpace(systemPromptNeutralOverride);
+        }
+
+        /// <summary>True when the title-generation system prompt differs from the XML default.</summary>
+        public bool HasTitleSystemPromptOverride()
+        {
+            return !string.IsNullOrWhiteSpace(titleSystemPromptOverride);
+        }
+
+        private static string PromptOverrideOrDefault(string overrideText, string xmlDefault)
+        {
+            return string.IsNullOrWhiteSpace(overrideText) ? xmlDefault ?? string.Empty : overrideText;
+        }
+
+        private static string NormalizePromptOverride(string prompt, string xmlDefault)
+        {
+            string value = prompt ?? string.Empty;
+            string defaultValue = xmlDefault ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(value) || string.Equals(value, defaultValue, StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+
+            return value;
         }
 
         // ---- API endpoint helpers ----
@@ -535,29 +661,19 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Checks whether an interaction group is enabled, falling back to the group's
-        /// defaultEnabled if no player override exists.
+        /// Checks whether an interaction group is enabled. Event filters are XML-only now, so saved
+        /// groupEnabled values from older settings files are ignored.
         /// </summary>
         public bool IsGroupEnabled(string groupKey)
         {
-            EnsureGroupDictionaries();
-
-            bool enabled;
-            if (groupEnabled.TryGetValue(groupKey, out enabled))
-            {
-                return enabled;
-            }
-
             return InteractionGroups.ByKey(groupKey)?.defaultEnabled ?? false;
         }
 
         /// <summary>
-        /// Stores a player override for whether an interaction group is enabled.
+        /// Obsolete compatibility shim. Event filters are XML-only.
         /// </summary>
         public void SetGroupEnabled(string groupKey, bool enabled)
         {
-            EnsureGroupDictionaries();
-            groupEnabled[groupKey] = enabled;
         }
 
         /// <summary>
@@ -625,6 +741,10 @@ namespace PawnDiary
             maxConcurrentRequests = Mathf.Clamp(maxConcurrentRequests, 1, 16);
             maxTokens = Mathf.Clamp(maxTokens, 32, 2048);
             temperature = Mathf.Clamp(temperature, 0f, 2f);
+            systemPromptOverride = systemPromptOverride ?? string.Empty;
+            systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;
+            systemPromptNeutralOverride = systemPromptNeutralOverride ?? string.Empty;
+            titleSystemPromptOverride = titleSystemPromptOverride ?? string.Empty;
             workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
             socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
             NormalizePersonaPresets();
@@ -638,6 +758,10 @@ namespace PawnDiary
             if (groupEnabled == null)
             {
                 groupEnabled = new Dictionary<string, bool>();
+            }
+            else
+            {
+                groupEnabled.Clear();
             }
         }
 

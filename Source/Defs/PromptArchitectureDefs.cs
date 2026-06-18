@@ -125,20 +125,28 @@ namespace PawnDiary
             if (string.Equals(templateKey, DeathDescription, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(templateKey, ArrivalDescription, StringComparison.OrdinalIgnoreCase))
             {
-                return DiaryPrompts.Current.systemPromptNeutral;
+                return PawnDiaryMod.Settings == null
+                    ? DiaryPrompts.Current.systemPromptNeutral
+                    : PawnDiaryMod.Settings.EffectiveNeutralSystemPrompt();
             }
 
             if (string.Equals(templateKey, SoloDayReflection, StringComparison.OrdinalIgnoreCase))
             {
-                return DiaryPrompts.Current.systemPromptReflection;
+                return PawnDiaryMod.Settings == null
+                    ? DiaryPrompts.Current.systemPromptReflection
+                    : PawnDiaryMod.Settings.EffectiveReflectionSystemPrompt();
             }
 
             if (string.Equals(templateKey, Title, StringComparison.OrdinalIgnoreCase))
             {
-                return DiaryPrompts.Current.titleSystemPrompt;
+                return PawnDiaryMod.Settings == null
+                    ? DiaryPrompts.Current.titleSystemPrompt
+                    : PawnDiaryMod.Settings.EffectiveTitleSystemPrompt();
             }
 
-            return DiaryPrompts.Current.systemPrompt;
+            return PawnDiaryMod.Settings == null
+                ? DiaryPrompts.Current.systemPrompt
+                : PawnDiaryMod.Settings.EffectiveSystemPrompt();
         }
 
         public static string FinalInstructionFor(string templateKey)

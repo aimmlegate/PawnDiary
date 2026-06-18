@@ -3,6 +3,16 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (settings prompt studio simplification)**
+  - Reworked Prompt Studio to expose only the shared system prompts for diary entries, day
+    reflections, neutral chronicles, and title generation. Saved overrides fall back to
+    `DiaryPromptDef.xml` when cleared.
+  - Removed the Events/filter editor from mod settings. Event group matching, instructions, and
+    default enablement now stay XML-only through `DiaryInteractionGroupDefs.xml`; old saved group
+    toggles are ignored during settings normalization.
+  - Kept Persona presets in settings and aligned the help text with the current
+    `DiaryPersonaDef` XML shape (`label`, `rule`, and `themes`).
+
 - **2026-06-18 (diary tab per-frame view cache)**
   - The diary tab no longer rebuilds a `DiaryEntryView` for every event on every frame. It now caches
     the built list and reuses it until the pawn's render token changes, where the token is the pawn's

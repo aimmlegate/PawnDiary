@@ -27,11 +27,11 @@ namespace PawnDiary
         // Default persona for new/existing pawns that do not have an explicit saved choice.
         public string defaultPersonaDefName = "DiaryPersona_StoicSurvivor";
 
-        // The three system prompts, one per narrative mode. Each is copied into saved settings on
-        // first use and is player-overridable in-game; editing these in XML only affects the
-        // "restore default" action for existing saves. Which one a request uses is chosen by event
-        // type at dispatch (see DiaryGameComponent.Generation.cs). These are the code fallbacks; the
-        // values actually loaded live in DiaryPromptDef.xml.
+        // The three main system prompts, one per narrative mode. Settings can store per-save
+        // overrides for these shared prompts; XML remains the default used by the restore action.
+        // Which one a request uses is chosen by event type at dispatch (see
+        // DiaryGameComponent.Generation.cs). These are the code fallbacks; the values actually
+        // loaded live in DiaryPromptDef.xml.
 
         // Diary voice: first-person, in-character entries (interactions, mental states, tales,
         // mood events, thoughts).

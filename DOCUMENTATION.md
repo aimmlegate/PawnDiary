@@ -88,7 +88,7 @@ Key files:
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
 | `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
-| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, XML prompt status view, Persona Presets editor, and event group toggles/previews. |
+| `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data, API lane editor, saved system-prompt overrides, and Persona Presets editor. |
 | `EndpointUtility.cs` / `ModelListClient.cs` | Settings/generation endpoint URL normalization and settings-time model discovery (`/models` or Ollama `/api/tags`). |
 | `ITab_Pawn_Diary*.cs` | Production diary view split as one partial class: orchestration, dev controls, year paging, entry cards, expansion state, linked previews, and roleplay text layout. |
 | `DiaryTextFormat.cs` | Escapes raw generated rich-text tags, then converts light markdown, inline quoted speech, and closed direct-speech marker blocks into Unity rich text. |
@@ -171,8 +171,8 @@ Starting colonists receive neutral arrival pages after maps/free-colonist lists 
 are detected through `Pawn.SetFaction` when a humanlike pawn becomes `Faction.OfPlayer`; cached
 context includes prior faction, recruiter, pawn kind, creepjoiner flag, and surroundings.
 The synthetic `arrival` interaction group matches `PawnDiary_Arrival`, so arrival pages have their
-own chip, importance state, and Events toggle instead of falling through to the interaction
-catch-all. Arrival generation still uses the dedicated `arrivalDescriptionInstruction` prompt text.
+own chip and importance state instead of falling through to the interaction catch-all. Arrival
+generation still uses the dedicated `arrivalDescriptionInstruction` prompt text.
 
 Deaths use a `Pawn.Kill` prefix to cache cause details before RimWorld mutates health state. Accepted
 death TaleDefs mark the victim event as `death_description=true` and queue the neutral death prompt.
@@ -431,10 +431,13 @@ prompt builder explicitly rejects neutral arrival/death, dev mock, mental-state,
 inspiration, work, hediff, day-reflection, and ambient-day contexts before checking whether an event's
 defName is a real RimWorld `InteractionDef`.
 
-Prompt tuning is XML-only at runtime. `DiaryPromptTemplateDefs.xml` controls field inclusion and
-per-template system/final-instruction overrides; `DiaryPromptDef.xml` supplies shared default system
-prompts and final instructions. The in-game Prompt Studio is now a status view that reports loaded
-template defs. Saved prompt text from older versions is not used by generation.
+Prompt templates and event filters are XML-only at runtime. `DiaryPromptTemplateDefs.xml` controls
+field inclusion and per-template system/final-instruction overrides; `DiaryInteractionGroupDefs.xml`
+controls event matching and default enablement. `DiaryPromptDef.xml` supplies shared default system
+prompts and final instructions. The in-game Prompt Studio exposes only saved overrides for the
+shared system prompts (diary entries, day reflections, neutral chronicles, and title generation);
+clearing an override restores the XML default. Event group filters and group instructions are not
+exposed in settings.
 
 The selected persona's `rule` text is injected into the system prompt at dispatch (see
 `PromptAssembler.ComposeSystem`), not rendered as a user-message field. Each POV in a paired event
@@ -479,19 +482,20 @@ Core settings:
 | `enableAtmosphericFormatting` | true | Allows rare display-only text layout effects for extreme entries. |
 | `enablePromptEnchantments` | true | Allows weighted live hediff/capacity context to append one first-person `important health:` cue. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for sampled work and batched-social promotion. |
-| prompt XML defs | XML defaults | `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`, and group instructions are the prompt source of truth. |
+| system prompt overrides | empty | Optional saved overrides for the four shared system prompts; blank means use `DiaryPromptDef.xml`. |
+| prompt XML defs | XML defaults | `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`, and group instructions remain the prompt source of truth for templates, final instructions, and event-specific wording. |
 | UI style XML def | XML defaults | `DiaryUiStyleDef.xml` controls Diary tab dimensions, card spacing, speech marker tags, accent palettes, and color-cue mappings. |
 | text decoration XML def | XML defaults | `DiaryTextDecorationDefs.xml` controls direct-speech/body text decorations, including hediff/trait/event matching, order, and intensity. |
-| `groupEnabled` | XML defaults | Per-group recording toggles; group instructions come only from XML. |
+| event filters | XML defaults | `DiaryInteractionGroupDefs.xml` owns group matching and `defaultEnabled`; old saved group toggles are ignored. |
 | `personaPresets` | empty | Built-in overrides plus custom personas. |
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
 
-The settings window contains Connection, Generation, Prompt Studio, Persona presets, and Events
-sections. Generation controls include title/enchantment toggles, the LLM temperature slider, and
+The settings window contains Connection, Generation, Prompt Studio, and Persona presets sections.
+Generation controls include title/enchantment toggles, the LLM temperature slider, and
 sampling-frequency/concurrency sliders. It supports multiple API lanes, compatibility-mode selection, model fetching/picking, a
-per-row API connection test that sends a tiny localized generation prompt, an XML prompt-template
-status view, persona selection through a compact selector menu, single-card persona editing, custom
-persona creation/deletion, grouped event toggles, and XML group-instruction previews. Each API lane
+per-row API connection test that sends a tiny localized generation prompt, focused editing for the
+shared system prompts, persona selection through a compact selector menu, single-card persona
+editing, and custom persona creation/deletion. Each API lane
 can speak OpenAI-compatible chat completions, OpenAI Responses, or native
 Ollama chat; Responses lanes can send a reasoning-effort override, and Ollama lanes can request
 native thinking output while saving only final message content. Known reasoning/thinking transcript

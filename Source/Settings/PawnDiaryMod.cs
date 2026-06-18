@@ -8,8 +8,8 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// RimWorld mod entry point. Manages the settings dialog, model discovery,
-    /// and interaction-group configuration for the Pawn Diary mod.
+    /// RimWorld mod entry point. Manages the settings dialog, prompt overrides,
+    /// and model discovery for the Pawn Diary mod.
     /// </summary>
     public class PawnDiaryMod : Mod
     {
@@ -39,31 +39,21 @@ namespace PawnDiary
         private int connectionTestTargetIndex = -1;
         private string connectionTestStatus;
         private volatile ConnectionTestResult pendingConnectionTestResult;
-        // DefName of the interaction group currently selected in the instruction editor.
-        private string selectedGroupKey;
         // Which persona card is open in the settings "Persona Presets" section.
         private string selectedPersonaKey;
         // Scroll position for the settings window scroll view.
         private Vector2 settingsScrollPosition;
-        // Ephemeral text buffer for the per-group instruction text area.
-        private string instructionEditBuffer;
-        // Tracks which group instructionEditBuffer belongs to; when the selected group
-        // changes the buffer is refreshed from settings to avoid stale edits.
-        private string instructionEditGroupKey;
 
         // Measured pixel height of the settings content from the previous frame, used to size the
         // scroll view's inner rect. Starts generous so nothing clips before the first measurement;
         // afterwards it tracks the real content height so every control stays scrollable and
-        // clickable no matter how many event groups are listed. Replaces a brittle hardcoded height
-        // that pushed the bottom controls (the per-group prompt editor) out of reach.
+        // clickable as settings sections expand or collapse.
         private float lastSettingsContentHeight = 5000f;
 
         // Muted colors for secondary text and sub-headers, so the window reads as a hierarchy
         // instead of a flat wall of same-weight labels.
         private static readonly Color HintColor = new Color(0.72f, 0.72f, 0.72f);
-        private static readonly Color SubheaderColor = new Color(0.58f, 0.80f, 0.95f);
         private static readonly Color AccentColor = new Color(0.50f, 0.77f, 0.60f);
-        private static readonly Color SelectedRowColor = new Color(0.86f, 0.94f, 0.88f);
         private const float PersonaTagRowHeight = 24f;
         private const float PersonaTagRowGap = 4f;
         private const float PersonaRuleTextAreaHeight = 112f;
@@ -85,7 +75,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Draws the full settings window: API lanes, generation controls, the prompt-text studio,
-        /// and the per-group event prompt editor.
+        /// and the persona-preset editor.
         /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
@@ -98,9 +88,7 @@ namespace PawnDiary
             Rect outRect = inRect;
             // Self-measuring scroll height: render the content, then remember how tall it actually
             // was (lastSettingsContentHeight) and reuse that next frame. This replaces a hardcoded
-            // height that was too short once enough event groups were listed, which pushed the
-            // bottom controls (the per-group prompt editor) outside the scroll area where they
-            // could not be reached or clicked.
+            // height that was too short once the settings page gained expandable editors.
             float viewHeight = Mathf.Max(lastSettingsContentHeight, EstimateSettingsContentHeight(), inRect.height);
             Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight); // 16px reserved for the scrollbar
             Listing_Standard listing = new Listing_Standard();
@@ -138,8 +126,6 @@ namespace PawnDiary
 
             DrawPromptStudio(listing);
             DrawPersonaStudio(listing);
-
-            DrawInteractionGroupsEditor(listing);
 
             listing.End();
             Widgets.EndScrollView();
@@ -567,23 +553,112 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the prompt-text editor for every Def-backed prompt the player can customize:
-        /// system prompts plus the appended instruction texts used in the user message body.
+        /// Draws focused editors for the shared system prompts. Event filters, field lists, and
+        /// final instructions stay XML-only so the in-game page remains small.
         /// </summary>
         private void DrawPromptStudio(Listing_Standard listing)
         {
             SectionTitle(listing, "PawnDiary.Settings.PromptStudioTitle".Translate());
-            DrawHint(listing, "PawnDiary.Settings.PromptStudioXmlHelp".Translate());
+            DrawHint(listing, "PawnDiary.Settings.PromptStudioHelp".Translate());
 
-            Rect cardRect = listing.GetRect(82f);
+            Rect cardRect = listing.GetRect(72f);
             Widgets.DrawMenuSection(cardRect);
             Rect innerRect = cardRect.ContractedBy(8f);
             Widgets.LabelFit(
                 new Rect(innerRect.x, innerRect.y, innerRect.width, 24f),
-                "PawnDiary.Settings.PromptStudioXmlSummary".Translate(DiaryPromptTemplates.LoadedTemplateCount));
+                "PawnDiary.Settings.PromptStudioSummary".Translate(DiaryPromptTemplates.LoadedTemplateCount));
             DrawMutedLabel(
                 new Rect(innerRect.x, innerRect.y + 28f, innerRect.width, 40f),
                 "PawnDiary.Settings.PromptStudioXmlNote".Translate());
+
+            listing.Gap(6f);
+            DrawSystemPromptEditor(
+                listing,
+                "PawnDiary.Settings.SystemPromptDiary".Translate(),
+                Settings.EffectiveSystemPrompt(),
+                DiaryPrompts.Current.systemPrompt,
+                Settings.HasSystemPromptOverride(),
+                Settings.SetSystemPromptOverride,
+                Settings.ResetSystemPromptOverride);
+            listing.Gap(6f);
+            DrawSystemPromptEditor(
+                listing,
+                "PawnDiary.Settings.SystemPromptReflection".Translate(),
+                Settings.EffectiveReflectionSystemPrompt(),
+                DiaryPrompts.Current.systemPromptReflection,
+                Settings.HasReflectionSystemPromptOverride(),
+                Settings.SetReflectionSystemPromptOverride,
+                Settings.ResetReflectionSystemPromptOverride);
+            listing.Gap(6f);
+            DrawSystemPromptEditor(
+                listing,
+                "PawnDiary.Settings.SystemPromptNeutral".Translate(),
+                Settings.EffectiveNeutralSystemPrompt(),
+                DiaryPrompts.Current.systemPromptNeutral,
+                Settings.HasNeutralSystemPromptOverride(),
+                Settings.SetNeutralSystemPromptOverride,
+                Settings.ResetNeutralSystemPromptOverride);
+            listing.Gap(6f);
+            DrawSystemPromptEditor(
+                listing,
+                "PawnDiary.Settings.SystemPromptTitle".Translate(),
+                Settings.EffectiveTitleSystemPrompt(),
+                DiaryPrompts.Current.titleSystemPrompt,
+                Settings.HasTitleSystemPromptOverride(),
+                Settings.SetTitleSystemPromptOverride,
+                Settings.ResetTitleSystemPromptOverride);
+        }
+
+        /// <summary>
+        /// Draws one system prompt card and stores a saved override only when the text differs from
+        /// the XML default. Clearing the text or restoring the default removes the override.
+        /// </summary>
+        private void DrawSystemPromptEditor(
+            Listing_Standard listing,
+            string label,
+            string currentPrompt,
+            string xmlDefaultPrompt,
+            bool customized,
+            Action<string> setOverride,
+            Action resetOverride)
+        {
+            const float textAreaHeight = 172f;
+            Rect cardRect = listing.GetRect(textAreaHeight + 96f);
+            Widgets.DrawMenuSection(cardRect);
+            Rect innerRect = cardRect.ContractedBy(10f);
+
+            float y = innerRect.y;
+            Widgets.LabelFit(new Rect(innerRect.x, y, innerRect.width, 24f), label);
+            y += 24f;
+            DrawMutedLabel(
+                new Rect(innerRect.x, y, innerRect.width, 20f),
+                (customized
+                    ? "PawnDiary.Settings.PromptStatusCustomized"
+                    : "PawnDiary.Settings.PromptStatusDefault").Translate());
+
+            y += 24f;
+            string before = currentPrompt ?? string.Empty;
+            Rect promptRect = new Rect(innerRect.x, y, innerRect.width, textAreaHeight);
+            string edited = Widgets.TextArea(promptRect, before);
+            if (!string.Equals(edited, before, StringComparison.Ordinal))
+            {
+                if (string.IsNullOrWhiteSpace(edited)
+                    || string.Equals(edited, xmlDefaultPrompt ?? string.Empty, StringComparison.Ordinal))
+                {
+                    resetOverride();
+                }
+                else
+                {
+                    setOverride(edited);
+                }
+            }
+
+            y += textAreaHeight + 8f;
+            Rect restoreRect = new Rect(innerRect.x, y, innerRect.width, 30f);
+            if (ButtonTextFit(restoreRect, "PawnDiary.Settings.RestorePromptDefault".Translate()))
+            {
+                resetOverride();
+            }
         }
 
         /// <summary>
@@ -891,174 +966,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws per-group enable checkboxes and, for the currently selected group,
-        /// an editable instruction text area with save/restore buttons.
-        /// </summary>
-        private void DrawInteractionGroupsEditor(Listing_Standard listing)
-        {
-            SectionTitle(listing, "PawnDiary.Settings.EventsSectionTitle".Translate());
-            DrawHint(listing, "PawnDiary.Settings.EventsHeader".Translate());
-            DrawEventGroupsSummary(listing);
-            listing.Gap(6f);
-
-            // Enable toggles, two per row so the ~30-group catalog stays compact. The Interaction
-            // domain sits directly under the section title; later domains get their own framed card.
-            DrawGroupTogglesForDomain(listing, GroupDomain.Interaction, null);
-            DrawGroupTogglesForDomain(listing, GroupDomain.MentalState, "PawnDiary.Settings.MentalStatesHeader");
-            DrawGroupTogglesForDomain(listing, GroupDomain.Tale, "PawnDiary.Settings.TalesHeader");
-            DrawGroupTogglesForDomain(listing, GroupDomain.MoodEvent, "PawnDiary.Settings.MoodEventsHeader");
-            DrawGroupTogglesForDomain(listing, GroupDomain.Thought, "PawnDiary.Settings.ThoughtsHeader");
-            DrawGroupTogglesForDomain(listing, GroupDomain.Inspiration, "PawnDiary.Settings.InspirationsHeader");
-            DrawGroupTogglesForDomain(listing, GroupDomain.Work, "PawnDiary.Settings.WorkHeader");
-            DrawGroupTogglesForDomain(listing, GroupDomain.Hediff, "PawnDiary.Settings.HediffsHeader");
-
-            listing.GapLine(10f);
-
-            // Per-group prompt preview: pick a group and read its XML diary-prompt instruction.
-            DiaryInteractionGroupDef selectedGroup = SelectedGroup();
-            if (selectedGroup == null)
-            {
-                return;
-            }
-
-            EnsureInstructionEditBuffer(selectedGroup);
-
-            Rect cardRect = listing.GetRect(176f);
-            Widgets.DrawMenuSection(cardRect);
-
-            Rect innerRect = cardRect.ContractedBy(10f);
-            Rect pickLabelRect = new Rect(innerRect.x, innerRect.y, innerRect.width - 120f, 26f);
-            Widgets.Label(pickLabelRect, "PawnDiary.Settings.EditingPromptFor".Translate(selectedGroup.label));
-            Rect changeRect = new Rect(innerRect.xMax - 110f, innerRect.y, 110f, 28f);
-            if (Widgets.ButtonText(changeRect, "PawnDiary.Settings.ChangeGroup".Translate()))
-            {
-                List<FloatMenuOption> options = InteractionGroups.All
-                    .Select(group => new FloatMenuOption(group.label, delegate
-                    {
-                        selectedGroupKey = group.defName;
-                        instructionEditGroupKey = null;
-                    }))
-                    .ToList();
-
-                Find.WindowStack.Add(new FloatMenu(options));
-            }
-
-            Rect stateRect = new Rect(innerRect.x, innerRect.y + 24f, innerRect.width, 18f);
-            DrawMutedLabel(stateRect, "PawnDiary.Settings.GroupStatusXml".Translate());
-
-            Rect helpRect = new Rect(innerRect.x, innerRect.y + 42f, innerRect.width, 20f);
-            DrawHint(helpRect, "PawnDiary.Settings.GroupInstructionXmlOnly".Translate());
-
-            Rect previewRect = new Rect(innerRect.x, innerRect.y + 66f, innerRect.width, 92f);
-            Widgets.LabelFit(previewRect, instructionEditBuffer ?? string.Empty);
-        }
-
-        /// <summary>
-        /// Draws the enable toggles for one event domain as a two-column block, with an optional
-        /// muted sub-header above it. Two columns keep the ~30-group catalog from becoming a tall
-        /// single-column wall (the old layout's main source of wasted height).
-        /// </summary>
-        private void DrawGroupTogglesForDomain(Listing_Standard listing, GroupDomain domain, string headerKey)
-        {
-            List<DiaryInteractionGroupDef> groups = InteractionGroups.All.Where(group => group.domain == domain).ToList();
-            if (groups.Count == 0)
-            {
-                return;
-            }
-
-            float headerHeight = headerKey == null ? 0f : 24f;
-            float rowHeight = 24f;
-            float columnGap = 18f;
-            float blockHeight = headerHeight + (Mathf.Ceil(groups.Count / 2f) * (rowHeight + 6f)) + 16f;
-            Rect blockRect = listing.GetRect(blockHeight);
-            Widgets.DrawMenuSection(blockRect);
-
-            Rect innerRect = blockRect.ContractedBy(8f);
-            float y = innerRect.y;
-            if (headerKey != null)
-            {
-                DrawAccentLabel(new Rect(innerRect.x, y, innerRect.width, 20f), headerKey.Translate());
-                y += 24f;
-            }
-
-            for (int i = 0; i < groups.Count; i += 2)
-            {
-                Rect row = new Rect(innerRect.x, y, innerRect.width, rowHeight);
-                float columnWidth = (row.width - columnGap) / 2f;
-                DrawGroupToggle(new Rect(row.x, row.y, columnWidth, row.height), groups[i]);
-                if (i + 1 < groups.Count)
-                {
-                    DrawGroupToggle(new Rect(row.x + columnWidth + columnGap, row.y, columnWidth, row.height), groups[i + 1]);
-                }
-
-                y += rowHeight + 6f;
-            }
-        }
-
-        /// <summary>
-        /// Draws one group's enable checkbox into the given rect, showing the group's diary-prompt
-        /// instruction as a hover tooltip so the player can preview it without opening the editor.
-        /// </summary>
-        private void DrawGroupToggle(Rect rect, DiaryInteractionGroupDef group)
-        {
-            if (!string.IsNullOrEmpty(group.instruction) && Mouse.IsOver(rect))
-            {
-                TooltipHandler.TipRegion(rect, group.instruction);
-            }
-
-            Rect editRect = new Rect(rect.xMax - 60f, rect.y, 60f, rect.height);
-            Rect toggleRect = new Rect(rect.x, rect.y, rect.width - 68f, rect.height);
-            bool enabled = Settings.IsGroupEnabled(group.defName);
-            bool before = enabled;
-            Color previousColor = GUI.color;
-            if (group.defName == selectedGroupKey)
-            {
-                GUI.color = SelectedRowColor;
-            }
-
-            Widgets.CheckboxLabeled(toggleRect, group.label, ref enabled);
-            GUI.color = previousColor;
-            if (enabled != before)
-            {
-                Settings.SetGroupEnabled(group.defName, enabled);
-            }
-
-            if (Widgets.ButtonText(editRect, "PawnDiary.Settings.ViewGroup".Translate()))
-            {
-                selectedGroupKey = group.defName;
-                instructionEditGroupKey = null;
-            }
-        }
-
-        /// <summary>
-        /// Draws a compact event-group overview so the player can see recording coverage and how
-        /// many groups have custom prompt overrides before scrolling through the catalog.
-        /// </summary>
-        private void DrawEventGroupsSummary(Listing_Standard listing)
-        {
-            int enabledCount = InteractionGroups.All.Count(group => Settings.IsGroupEnabled(group.defName));
-
-            Rect cardRect = listing.GetRect(58f);
-            Widgets.DrawMenuSection(cardRect);
-
-            Rect innerRect = cardRect.ContractedBy(8f);
-            Widgets.Label(
-                new Rect(innerRect.x, innerRect.y, innerRect.width, 24f),
-                "PawnDiary.Settings.EventGroupSummaryXml".Translate(enabledCount, InteractionGroups.All.Count));
-            DrawMutedLabel(
-                new Rect(innerRect.x, innerRect.y + 24f, innerRect.width, 20f),
-                "PawnDiary.Settings.EventGroupHelp".Translate());
-        }
-
-        /// <summary>
-        /// True when the selected group has a saved override entry instead of using its XML prompt.
-        /// </summary>
-        private bool HasGroupInstructionOverride(DiaryInteractionGroupDef group)
-        {
-            return false;
-        }
-
-        /// <summary>
         /// Returns a conservative current-frame height for the settings scroll view. The exact
         /// height is still measured from <see cref="Listing_Standard.CurHeight"/> after drawing,
         /// but this estimate prevents one-frame stale heights when the API/model editor is opened.
@@ -1085,42 +992,11 @@ namespace PawnDiary
                 height += 34f; // compact summary
             }
 
-            // Generation controls, prompt studio, and persona-preset studio.
+            // Generation controls, four system-prompt editor cards, and persona-preset studio.
             height += 330f;
-            height += 150f;
+            height += 1180f;
             height += 590f + PersonaTagPickerHeight();
 
-            // Events section: two-column group toggles, domain subheaders, and the prompt editor.
-            height += 140f;
-            GroupDomain[] domains =
-            {
-                GroupDomain.Interaction,
-                GroupDomain.MentalState,
-                GroupDomain.Tale,
-                GroupDomain.MoodEvent,
-                GroupDomain.Thought,
-                GroupDomain.Inspiration,
-                GroupDomain.Work,
-                GroupDomain.Hediff
-            };
-
-            foreach (GroupDomain domain in domains)
-            {
-                int groupCount = InteractionGroups.All.Count(group => group.domain == domain);
-                if (groupCount == 0)
-                {
-                    continue;
-                }
-
-                if (domain != GroupDomain.Interaction)
-                {
-                    height += 8f;
-                }
-
-                height += 40f + (Mathf.Ceil(groupCount / 2f) * 30f);
-            }
-
-            height += 190f;
             return height + 220f; // breathing room for translated labels and RimWorld skin variance
         }
 
@@ -1180,28 +1056,6 @@ namespace PawnDiary
             Widgets.LabelFit(rect, text ?? string.Empty);
             GUI.color = previousColor;
             Text.Font = previousFont;
-        }
-
-        /// <summary>
-        /// Refreshes the instruction edit buffer when the selected group changes,
-        /// so the text area always shows the correct group's instruction text.
-        /// </summary>
-        private void EnsureInstructionEditBuffer(DiaryInteractionGroupDef selectedGroup)
-        {
-            if (selectedGroup == null)
-            {
-                instructionEditBuffer = string.Empty;
-                instructionEditGroupKey = null;
-                return;
-            }
-
-            if (instructionEditGroupKey == selectedGroup.defName && instructionEditBuffer != null)
-            {
-                return;
-            }
-
-            instructionEditGroupKey = selectedGroup.defName;
-            instructionEditBuffer = Settings.EditableInstructionForGroup(selectedGroup);
         }
 
         /// <summary>
@@ -1297,27 +1151,6 @@ namespace PawnDiary
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Returns the currently selected interaction group, falling back to
-        /// the first available group if the stored key is invalid or null.
-        /// </summary>
-        private DiaryInteractionGroupDef SelectedGroup()
-        {
-            DiaryInteractionGroupDef group = InteractionGroups.ByKey(selectedGroupKey);
-            if (group != null)
-            {
-                return group;
-            }
-
-            group = InteractionGroups.All.FirstOrDefault();
-            if (group != null)
-            {
-                selectedGroupKey = group.defName;
-            }
-
-            return group;
         }
 
         /// <summary>
