@@ -303,7 +303,7 @@ namespace PawnDiary
 
             float glow = Mathf.Lerp(0.42f, 0.75f, SmoothExpansionBlend(expansionBlend));
 
-            GUI.color = Color.Lerp(new Color(0.62f, 0.65f, 0.68f, 0.85f), accent, glow);
+            GUI.color = Color.Lerp(UiStyle.ExpansionIndicatorBaseColor, accent, glow);
 
             Text.Anchor = TextAnchor.MiddleCenter;
 

@@ -62,6 +62,8 @@ namespace PawnDiary
             MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.RecipientRole, recipient);
             diaryEvent.CaptureStaggeredIntensity(DiaryEvent.InitiatorRole, initiator);
             diaryEvent.CaptureStaggeredIntensity(DiaryEvent.RecipientRole, recipient);
+            diaryEvent.CaptureTextDecorationContext(DiaryEvent.InitiatorRole, initiator);
+            diaryEvent.CaptureTextDecorationContext(DiaryEvent.RecipientRole, recipient);
             RegisterDiaryEvent(diaryEvent);
             AddEventRef(initiator, diaryEvent.eventId);
             AddEventRef(recipient, diaryEvent.eventId);
@@ -109,6 +111,7 @@ namespace PawnDiary
 
             MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, pawn);
             diaryEvent.CaptureStaggeredIntensity(DiaryEvent.InitiatorRole, pawn);
+            diaryEvent.CaptureTextDecorationContext(DiaryEvent.InitiatorRole, pawn);
             RegisterDiaryEvent(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId);
             return diaryEvent;

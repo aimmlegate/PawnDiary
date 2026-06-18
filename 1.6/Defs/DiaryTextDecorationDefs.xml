@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Display-only text decoration rules for generated diary prose.
+
+  The C# layer captures live pawn/event facts into plain saved data, then these XML rules decide which
+  deterministic rich-text decorations apply. Rules are applied in ascending <sequence>. By default the
+  rules target only explicit [[speech]] blocks, so narration remains readable.
+
+  Supported decoration values:
+    StaggeredWordSizes - wraps selected visible words in Unity <size=...> rich-text tags.
+    Zalgo              - adds light deterministic combining marks to visible letters.
+
+  Supported scope values:
+    DirectSpeech - explicit [[speech]]...[[/speech]] blocks.
+    Body         - ordinary non-speech diary prose.
+    All          - both scopes.
+
+  <when> categories are ANDed; values within one list are ORed. Omit <when> to apply unconditionally
+  for that scope. Available conditions include anyHediffDefName, anyHediffDefNameContains,
+  anyHediffLabelContains, anyTraitDefName, anyTraitDefNameContains, anyTraitLabelContains,
+  anyColorCue, anyAtmosphereCue, anyDefName, anyDomain, anyEventTag, anyContextKey, and
+  anyContextValueContains.
+-->
+<Defs>
+
+  <PawnDiary.DiaryTextDecorationDef>
+    <defName>Diary_TextDecorations</defName>
+    <rules>
+      <!-- Intoxication/anesthesia makes only direct speech visually staggered. -->
+      <li>
+        <decoration>StaggeredWordSizes</decoration>
+        <scope>DirectSpeech</scope>
+        <sequence>20</sequence>
+        <intensity>2</intensity>
+        <when>
+          <anyHediffDefName>
+            <li>AlcoholHigh</li>
+            <li>SmokeleafHigh</li>
+            <li>PsychiteHigh</li>
+            <li>YayoHigh</li>
+            <li>FlakeHigh</li>
+            <li>WakeUpHigh</li>
+            <li>GoJuiceHigh</li>
+            <li>Anesthetic</li>
+            <li>Anesthesia</li>
+          </anyHediffDefName>
+          <anyHediffDefNameContains>
+            <li>Smokeleaf</li>
+            <li>Psychite</li>
+            <li>Yayo</li>
+            <li>Flake</li>
+            <li>WakeUp</li>
+            <li>Wake-Up</li>
+            <li>GoJuice</li>
+            <li>Go-Juice</li>
+            <li>Anesth</li>
+          </anyHediffDefNameContains>
+          <anyHediffLabelContains>
+            <li>drunk</li>
+            <li>alcohol</li>
+            <li>smokeleaf</li>
+            <li>psychite</li>
+            <li>yayo</li>
+            <li>flake</li>
+            <li>wake-up</li>
+            <li>wakeup</li>
+            <li>go-juice</li>
+            <li>gojuice</li>
+            <li>anesth</li>
+          </anyHediffLabelContains>
+        </when>
+      </li>
+
+      <!-- Disturbing/anomaly-like conversations distort direct speech, not narration. -->
+      <li>
+        <decoration>Zalgo</decoration>
+        <scope>DirectSpeech</scope>
+        <sequence>30</sequence>
+        <intensity>1</intensity>
+        <when>
+          <anyColorCue>
+            <li>strangeChat</li>
+            <li>extremeDark</li>
+          </anyColorCue>
+        </when>
+      </li>
+    </rules>
+  </PawnDiary.DiaryTextDecorationDef>
+
+</Defs>

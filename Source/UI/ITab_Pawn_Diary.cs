@@ -20,83 +20,58 @@ namespace PawnDiary
         // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
         private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
 
-        // Vertical space constants for the per-pawn controls above the scroll view. The actual
-        // height is dynamic because dev-mode controls are hidden during normal play.
-        private const float ControlLineHeight = 28f;
-        private const float ControlGap = 2f;
-        private const float EntryTitleHeight = 28f;
-        private const float EntryTextTop = 42f;
-        private const float EntryBottomPadding = 10f;
-        private const float StatusBadgeWidth = 34f;
-        private const float StatusBadgeHeight = 24f;
-        private const float StatusBadgeRightPadding = 24f;
-        private const float RoleplayLineGap = 5f;
-        private const float RoleplayParagraphGap = 8f;
-        private const float SpeechBlockLeftInset = 24f;
-        private const float SpeechBlockVerticalPadding = 3f;
-        private const float EntryGap = 8f;
-        private const int AutoExpandedEntryCount = 15;
+        // Diary tab presentation values are XML-backed via DiaryUiStyleDef. These accessors keep the
+        // drawing code readable while letting modders retune spacing/colors without recompiling.
+        private static DiaryUiStyleDef UiStyle => DiaryUiStyles.Current;
+        private static float ControlLineHeight => UiStyle.controlLineHeight;
+        private static float ControlGap => UiStyle.controlGap;
+        private static float EntryTitleHeight => UiStyle.entryTitleHeight;
+        private static float EntryTextTop => UiStyle.entryTextTop;
+        private static float EntryBottomPadding => UiStyle.entryBottomPadding;
+        private static float StatusBadgeWidth => UiStyle.statusBadgeWidth;
+        private static float StatusBadgeHeight => UiStyle.statusBadgeHeight;
+        private static float StatusBadgeRightPadding => UiStyle.statusBadgeRightPadding;
+        private static float RoleplayLineGap => UiStyle.roleplayLineGap;
+        private static float RoleplayParagraphGap => UiStyle.roleplayParagraphGap;
+        private static float SpeechBlockLeftInset => UiStyle.speechBlockLeftInset;
+        private static float SpeechBlockVerticalPadding => UiStyle.speechBlockVerticalPadding;
+        private static float EntryGap => UiStyle.entryGap;
+        private static int AutoExpandedEntryCount => UiStyle.autoExpandedEntryCount;
         private const int DevMockDiaryTargetCount = 360;
-        private const float CollapsedEntryChromePadding = 2f;
-        private const float CollapsedEntryHeight = EntryTitleHeight + CollapsedEntryChromePadding;
-        private const float ExpansionAnimationSpeed = 5.5f;
-        private const float LinkedEntryPadding = 8f;
-        private const float LinkedEntryLabelHeight = 20f;
-        private const float LinkedEntryTextHeight = 36f;
-        private const float LinkedEntryTotalHeight = 64f;
-        private const float YearFilterHeight = 32f;
-        private const float YearFilterGap = 6f;
-        private const float YearButtonWidth = 112f;
-        private const float ModelNameTopPadding = 4f;
-        private const float ModelNameHeight = 20f;
-        private const float DebugTextTopPadding = 8f;
-        private const float EntryAccentWidth = 6f;
-        private const float EntryLabelMaxWidth = 148f;
-        private const float EntryFadeDurationSeconds = 0.55f;
-        private const float TitleFadeDurationSeconds = 0.8f;
-        private const float WritingDotSize = 4f;
-        private const float WritingDotGap = 5f;
-        private const float AtmosphereInset = 18f;
-        private const float MemorialInset = 34f;
-        private const string SpeechBlockOpenMarker = "[[speech]]";
-        private const string SpeechBlockCloseMarker = "[[/speech]]";
+        private static float CollapsedEntryHeight => UiStyle.CollapsedEntryHeight;
+        private static float ExpansionAnimationSpeed => UiStyle.expansionAnimationSpeed;
+        private static float LinkedEntryPadding => UiStyle.linkedEntryPadding;
+        private static float LinkedEntryLabelHeight => UiStyle.linkedEntryLabelHeight;
+        private static float LinkedEntryTextHeight => UiStyle.linkedEntryTextHeight;
+        private static float LinkedEntryTotalHeight => UiStyle.linkedEntryTotalHeight;
+        private static float YearFilterHeight => UiStyle.yearFilterHeight;
+        private static float YearFilterGap => UiStyle.yearFilterGap;
+        private static float YearButtonWidth => UiStyle.yearButtonWidth;
+        private static float ModelNameTopPadding => UiStyle.modelNameTopPadding;
+        private static float ModelNameHeight => UiStyle.modelNameHeight;
+        private static float DebugTextTopPadding => UiStyle.debugTextTopPadding;
+        private static float EntryAccentWidth => UiStyle.entryAccentWidth;
+        private static float EntryLabelMaxWidth => UiStyle.entryLabelMaxWidth;
+        private static float EntryFadeDurationSeconds => UiStyle.entryFadeDurationSeconds;
+        private static float TitleFadeDurationSeconds => UiStyle.titleFadeDurationSeconds;
+        private static float WritingDotSize => UiStyle.writingDotSize;
+        private static float WritingDotGap => UiStyle.writingDotGap;
+        private static float AtmosphereInset => UiStyle.atmosphereInset;
+        private static float MemorialInset => UiStyle.memorialInset;
+        private static string SpeechBlockOpenMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockOpenMarker) ? "[[speech]]" : UiStyle.speechBlockOpenMarker;
+        private static string SpeechBlockCloseMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockCloseMarker) ? "[[/speech]]" : UiStyle.speechBlockCloseMarker;
 
-        private static readonly Color QuietColor = new Color(0.42f, 0.48f, 0.52f);
-        private static readonly Color NarrativeColor = new Color(0.78f, 0.78f, 0.72f);
-        private static readonly Color FallbackDialogueColor = new Color(0.58f, 0.80f, 1f);
-        private static readonly Color SpeechBlockBgColor = new Color(0.10f, 0.14f, 0.16f, 0.55f);
-        // Faint warm wash painted behind each card's body text to suggest a journal page. Kept at a
-        // very low alpha so it tints the dark RimWorld card chrome without muddying it.
-        private static readonly Color PageTintColor = new Color(0.91f, 0.83f, 0.66f, 0.07f);
-        // Warm hairline drawn under the header so the page body reads as its own block.
-        private static readonly Color HeaderRuleColor = new Color(0.62f, 0.58f, 0.50f, 0.35f);
-        // Soft inner highlight beside the group "spine" to give the left edge a little depth.
-        private static readonly Color AccentHighlightColor = new Color(1f, 1f, 1f, 0.10f);
-        private static readonly Color LinkedEntryBgColor = new Color(0.15f, 0.17f, 0.20f, 0.85f);
-        private static readonly Color LinkedEntryBorderColor = new Color(0.35f, 0.45f, 0.55f);
-        private static readonly Color LinkedEntryTextColor = new Color(0.65f, 0.70f, 0.75f);
-        private static readonly Color LinkedEntryHoverColor = new Color(0.25f, 0.30f, 0.38f, 0.90f);
-        // Legacy accent colors still used by linked-entry role strips. Diary card group colors now
-        // come from DiaryEvent.colorCue so localized labels and generated titles never affect them.
-        private static readonly Color[] EntryAccentPalette =
-        {
-            new Color(0.95f, 0.58f, 0.32f),
-            new Color(0.84f, 0.70f, 0.34f),
-            new Color(0.48f, 0.72f, 0.50f),
-            new Color(0.38f, 0.70f, 0.72f),
-            new Color(0.45f, 0.63f, 0.92f),
-            new Color(0.70f, 0.56f, 0.88f),
-            new Color(0.86f, 0.50f, 0.66f),
-            new Color(0.62f, 0.68f, 0.76f)
-        };
-        private static readonly Color DefaultCueColor = ColoredText.NameColor;
-        private static readonly Color WhiteCueColor = new Color(0.92f, 0.92f, 0.86f);
-        private static readonly Color QuietCueColor = new Color(0.74f, 0.74f, 0.70f);
-        private static readonly Color MentalBreakCueColor = ColoredText.FactionColor_Ally;
-        private static readonly Color DazeCueColor = ColoredText.GeneColor;
-        private static readonly Color SocialFightCueColor = new Color(1f, 0.52f, 0.16f);
-        private static readonly Color ExtremeDarkCueColor = new Color(0.58f, 0.05f, 0.08f);
-        private static readonly Color StrangeChatCueColor = new Color(0.42f, 0.96f, 0.50f);
+        private static Color QuietColor => UiStyle.QuietTextColor;
+        private static Color NarrativeColor => UiStyle.NarrativeTextColor;
+        private static Color FallbackDialogueColor => UiStyle.FallbackDialogueColor;
+        private static Color SpeechBlockBgColor => UiStyle.SpeechBlockBgColor;
+        private static Color PageTintColor => UiStyle.PageTintColor;
+        private static Color HeaderRuleColor => UiStyle.HeaderRuleColor;
+        private static Color AccentHighlightColor => UiStyle.AccentHighlightColor;
+        private static Color LinkedEntryBgColor => UiStyle.LinkedEntryBgColor;
+        private static Color LinkedEntryBorderColor => UiStyle.LinkedEntryBorderColor;
+        private static Color LinkedEntryTextColor => UiStyle.LinkedEntryTextColor;
+        private static Color LinkedEntryHoverColor => UiStyle.LinkedEntryHoverColor;
 
         // Cached roleplay body style, reused every frame to avoid allocating a fresh GUIStyle per
         // line. Built once from the active font, then refreshed (font size + color) on each use so it
@@ -153,7 +128,7 @@ namespace PawnDiary
 
         public ITab_Pawn_Diary()
         {
-            size = new Vector2(720f, 650f);
+            size = new Vector2(UiStyle.tabWidth, UiStyle.tabHeight);
             labelKey = "PawnDiaryTabLabel";
         }
 
@@ -424,17 +399,15 @@ namespace PawnDiary
                 string debugText = showLlmDebugInfo ? entry.DebugText : string.Empty;
                 float innerTextWidth = localEntryRect.width - 20f;
                 string atmosphereCue = EntryAtmosphereCue(entry);
-                int staggeredIntensity = EntryStaggeredIntensity(entry);
                 bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
-                bool distortDirectSpeech = EntryDistortDirectSpeech(entry);
+                DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
                 int roleplaySeed = StableTextSeed(EntryKey(entry));
                 float mainTextHeight = RoleplayTextHeight(
                     bodyText,
                     innerTextWidth,
                     atmosphereCue,
-                    staggeredIntensity,
                     allowDirectSpeechBlocks,
-                    distortDirectSpeech,
+                    decorationContext,
                     roleplaySeed);
                 float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
 
@@ -458,9 +431,8 @@ namespace PawnDiary
                         dialogueColor,
                         EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend),
                         atmosphereCue,
-                        staggeredIntensity,
                         allowDirectSpeechBlocks,
-                        distortDirectSpeech,
+                        decorationContext,
                         roleplaySeed);
                 }
                 float afterTextY = textRect.yMax;

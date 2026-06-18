@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Display-only style knobs for the pawn Diary inspector tab.
+  Edit values and restart the game to retune visualization without recompiling. Every value here
+  matches the code fallback, so deleting this file or omitting a field keeps the same behavior.
+
+  Color specs accept either:
+    <preset>name</preset> / hostile / ally / gene / white
+  or explicit 0..1 channel floats:
+    <r>0.58</r><g>0.80</g><b>1</b><a>1</a>
+
+  These are UI formatting values only. Saved player settings still control behavior toggles such as
+  showing debug rows, atmospheric formatting on/off, and title generation.
+-->
+<Defs>
+
+  <PawnDiary.DiaryUiStyleDef>
+    <defName>Diary_UiStyle</defName>
+
+    <!-- Tab window -->
+    <tabWidth>720</tabWidth>
+    <tabHeight>650</tabHeight>
+
+    <!-- Header/card dimensions -->
+    <controlLineHeight>28</controlLineHeight>
+    <controlGap>2</controlGap>
+    <entryTitleHeight>28</entryTitleHeight>
+    <entryTextTop>42</entryTextTop>
+    <entryBottomPadding>10</entryBottomPadding>
+    <statusBadgeWidth>34</statusBadgeWidth>
+    <statusBadgeHeight>24</statusBadgeHeight>
+    <statusBadgeRightPadding>24</statusBadgeRightPadding>
+    <entryGap>8</entryGap>
+    <autoExpandedEntryCount>15</autoExpandedEntryCount>
+    <collapsedEntryChromePadding>2</collapsedEntryChromePadding>
+    <expansionAnimationSpeed>5.5</expansionAnimationSpeed>
+    <entryAccentWidth>6</entryAccentWidth>
+    <entryLabelMaxWidth>148</entryLabelMaxWidth>
+    <entryFadeDurationSeconds>0.55</entryFadeDurationSeconds>
+    <titleFadeDurationSeconds>0.8</titleFadeDurationSeconds>
+
+    <!-- Linked-entry preview card -->
+    <linkedEntryPadding>8</linkedEntryPadding>
+    <linkedEntryLabelHeight>20</linkedEntryLabelHeight>
+    <linkedEntryTextHeight>36</linkedEntryTextHeight>
+    <linkedEntryTotalHeight>64</linkedEntryTotalHeight>
+    <linkedInitiatorPaletteIndex>0</linkedInitiatorPaletteIndex>
+    <linkedRecipientPaletteIndex>4</linkedRecipientPaletteIndex>
+
+    <!-- Year pager and diagnostic rows -->
+    <yearFilterHeight>32</yearFilterHeight>
+    <yearFilterGap>6</yearFilterGap>
+    <yearButtonWidth>112</yearButtonWidth>
+    <modelNameTopPadding>4</modelNameTopPadding>
+    <modelNameHeight>20</modelNameHeight>
+    <debugTextTopPadding>8</debugTextTopPadding>
+
+    <!-- Roleplay text and direct-speech blocks -->
+    <roleplayLineGap>5</roleplayLineGap>
+    <roleplayParagraphGap>8</roleplayParagraphGap>
+    <speechBlockLeftInset>24</speechBlockLeftInset>
+    <speechBlockVerticalPadding>3</speechBlockVerticalPadding>
+    <speechBlockOpenMarker>[[speech]]</speechBlockOpenMarker>
+    <speechBlockCloseMarker>[[/speech]]</speechBlockCloseMarker>
+    <atmosphereInset>18</atmosphereInset>
+    <memorialInset>34</memorialInset>
+    <writingDotSize>4</writingDotSize>
+    <writingDotGap>5</writingDotGap>
+    <writingPulseSpeed>5.5</writingPulseSpeed>
+    <writingDotMinAlpha>0.25</writingDotMinAlpha>
+    <writingDotMaxAlpha>0.95</writingDotMaxAlpha>
+    <writingDotLowYOffset>2</writingDotLowYOffset>
+    <writingDotHighYOffset>-1</writingDotHighYOffset>
+
+    <!-- Base colors -->
+    <quietTextColor><r>0.42</r><g>0.48</g><b>0.52</b><a>1</a></quietTextColor>
+    <narrativeTextColor><r>0.78</r><g>0.78</g><b>0.72</b><a>1</a></narrativeTextColor>
+    <fallbackDialogueColor><r>0.58</r><g>0.80</g><b>1</b><a>1</a></fallbackDialogueColor>
+    <speechBlockBgColor><r>0.10</r><g>0.14</g><b>0.16</b><a>0.55</a></speechBlockBgColor>
+    <speechBlockAccentAlpha>0.72</speechBlockAccentAlpha>
+    <pageTintColor><r>0.91</r><g>0.83</g><b>0.66</b><a>0.07</a></pageTintColor>
+    <headerRuleColor><r>0.62</r><g>0.58</g><b>0.50</b><a>0.35</a></headerRuleColor>
+    <accentHighlightColor><r>1</r><g>1</g><b>1</b><a>0.10</a></accentHighlightColor>
+    <titleTextColor><r>0.88</r><g>0.86</g><b>0.79</b><a>1</a></titleTextColor>
+    <pendingTitlePrefixColor><r>0.86</r><g>0.86</g><b>0.86</b><a>0.95</a></pendingTitlePrefixColor>
+    <pendingTitleDotBaseColor><r>0.68</r><g>0.72</g><b>0.76</b><a>1</a></pendingTitleDotBaseColor>
+    <writingPlaceholderLowColor><r>0.58</r><g>0.72</g><b>0.66</b><a>1</a></writingPlaceholderLowColor>
+    <writingPlaceholderHighColor><r>0.80</r><g>0.96</g><b>0.84</b><a>1</a></writingPlaceholderHighColor>
+    <yearDisabledColor><r>1</r><g>1</g><b>1</b><a>0.42</a></yearDisabledColor>
+    <expansionIndicatorBaseColor><r>0.62</r><g>0.65</g><b>0.68</b><a>0.85</a></expansionIndicatorBaseColor>
+    <modelNameColor><r>0.45</r><g>0.48</g><b>0.50</b><a>0.62</a></modelNameColor>
+    <debugTextColor><r>0.54</r><g>0.58</g><b>0.60</b><a>0.90</a></debugTextColor>
+    <linkedEntryLabelColor><r>0.80</r><g>0.85</g><b>0.92</b><a>1</a></linkedEntryLabelColor>
+    <linkedEntryBgColor><r>0.15</r><g>0.17</g><b>0.20</b><a>0.85</a></linkedEntryBgColor>
+    <linkedEntryBorderColor><r>0.35</r><g>0.45</g><b>0.55</b><a>1</a></linkedEntryBorderColor>
+    <linkedEntryTextColor><r>0.65</r><g>0.70</g><b>0.75</b><a>1</a></linkedEntryTextColor>
+    <linkedEntryHoverColor><r>0.25</r><g>0.30</g><b>0.38</b><a>0.90</a></linkedEntryHoverColor>
+    <defaultCueColor><preset>name</preset></defaultCueColor>
+    <quietCueColor><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></quietCueColor>
+
+    <!-- Legacy linked-role accent palette. Diary card colors normally use cueColors below. -->
+    <entryAccentPalette>
+      <li><r>0.95</r><g>0.58</g><b>0.32</b><a>1</a></li>
+      <li><r>0.84</r><g>0.70</g><b>0.34</b><a>1</a></li>
+      <li><r>0.48</r><g>0.72</g><b>0.50</b><a>1</a></li>
+      <li><r>0.38</r><g>0.70</g><b>0.72</b><a>1</a></li>
+      <li><r>0.45</r><g>0.63</g><b>0.92</b><a>1</a></li>
+      <li><r>0.70</r><g>0.56</g><b>0.88</b><a>1</a></li>
+      <li><r>0.86</r><g>0.50</g><b>0.66</b><a>1</a></li>
+      <li><r>0.62</r><g>0.68</g><b>0.76</b><a>1</a></li>
+    </entryAccentPalette>
+
+    <!-- Saved DiaryEvent.colorCue -> card accent color. Cue names come from DiaryInteractionGroupDefs.xml. -->
+    <cueColors>
+      <li><cue>combat</cue><color><preset>hostile</preset></color></li>
+      <li><cue>socialFight</cue><color><r>1</r><g>0.52</g><b>0.16</b><a>1</a></color></li>
+      <li><cue>mentalBreak</cue><color><preset>ally</preset></color></li>
+      <li><cue>daze</cue><color><preset>gene</preset></color></li>
+      <li><cue>extremeDark</cue><color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color></li>
+      <li><cue>strangeChat</cue><color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color></li>
+      <li><cue>white</cue><color><r>0.92</r><g>0.92</g><b>0.86</b><a>1</a></color></li>
+      <li><cue>quiet</cue><color><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></color></li>
+    </cueColors>
+  </PawnDiary.DiaryUiStyleDef>
+
+</Defs>

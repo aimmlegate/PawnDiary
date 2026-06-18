@@ -107,9 +107,15 @@ namespace PawnDiary
         public string moodImpact;
         // Display-only typography intensity captured from the live POV pawn at record time.
         // 0 = normal; 1..4 = increasingly staggered variable-size words for intoxication or low
-        // Consciousness. This does not alter prompts or generated text.
+        // Consciousness. Kept for old saves/prompt contracts; current display decorations are driven
+        // by the XML text-decoration context fields below.
         public int initiatorStaggeredIntensity;
         public int recipientStaggeredIntensity;
+        // Compact serialized hediff/trait facts captured from the POV pawn at record time. The UI
+        // combines these with event metadata and lets XML DiaryTextDecorationDef rules choose visual
+        // text decorations without reading live pawn state.
+        public string initiatorTextDecorationFacts;
+        public string recipientTextDecorationFacts;
 
         // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
         // keys written to the save file — renaming one breaks saved games. The PostLoadInit
@@ -174,6 +180,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref neutralTitleError, "neutralTitleError");
             Scribe_Values.Look(ref initiatorStaggeredIntensity, "initiatorStaggeredIntensity", 0);
             Scribe_Values.Look(ref recipientStaggeredIntensity, "recipientStaggeredIntensity", 0);
+            Scribe_Values.Look(ref initiatorTextDecorationFacts, "initiatorTextDecorationFacts");
+            Scribe_Values.Look(ref recipientTextDecorationFacts, "recipientTextDecorationFacts");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -358,6 +366,15 @@ namespace PawnDiary
 
                 initiatorStaggeredIntensity = ClampStaggeredIntensity(initiatorStaggeredIntensity);
                 recipientStaggeredIntensity = ClampStaggeredIntensity(recipientStaggeredIntensity);
+                if (initiatorTextDecorationFacts == null)
+                {
+                    initiatorTextDecorationFacts = string.Empty;
+                }
+
+                if (recipientTextDecorationFacts == null)
+                {
+                    recipientTextDecorationFacts = string.Empty;
+                }
 
             }
         }
@@ -741,7 +758,8 @@ namespace PawnDiary
                 linkedEntry,
                 titleForPov,
                 titlePendingForPov,
-                RawResponseFor(povRole));
+                RawResponseFor(povRole),
+                TextDecorationContextForRole(povRole));
         }
 
         /// <summary>
@@ -1029,6 +1047,59 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Builds the pure decoration context for a POV. This combines saved pawn facts with stable
+        /// event metadata; callers can select XML rules from the returned data without touching Pawn.
+        /// </summary>
+        public DiaryTextDecorationContext TextDecorationContextForRole(string povRole)
+        {
+            DiaryTextDecorationContext context = new DiaryTextDecorationContext
+            {
+                povRole = povRole,
+                defName = interactionDefName,
+                colorCue = ColorCueForDisplay(),
+                atmosphereCue = AtmosphereCueForDisplay(povRole),
+                domain = DecorationDomainForContext(gameContext),
+                gameContext = gameContext
+            };
+            DiaryTextDecorations.AddEventTagsFromContext(context, gameContext);
+            DiaryTextDecorations.AddSerializedPawnFacts(context, TextDecorationFactsForRole(povRole));
+            return context;
+        }
+
+        private string TextDecorationFactsForRole(string povRole)
+        {
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientTextDecorationFacts ?? string.Empty;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                return string.Empty;
+            }
+
+            return initiatorTextDecorationFacts ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Captures the pawn's hediff/trait names as plain data for later XML text-decoration rules.
+        /// </summary>
+        public void CaptureTextDecorationContext(string povRole, Pawn pawn)
+        {
+            string serialized = DiaryTextDecorations.SerializePawnFacts(PawnTextDecorationContext(pawn));
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                initiatorTextDecorationFacts = serialized;
+                return;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                recipientTextDecorationFacts = serialized;
+            }
+        }
+
+        /// <summary>
         /// Captures the display-only "staggered handwriting" severity for a POV pawn at record time.
         /// New to C#/RimWorld? The live Pawn object is not saved with the event, so we store the small
         /// 0..4 result here while the pawn's health state is available.
@@ -1187,6 +1258,65 @@ namespace PawnDiary
             }
 
             return intensity > 4 ? 4 : intensity;
+        }
+
+        private static DiaryTextDecorationContext PawnTextDecorationContext(Pawn pawn)
+        {
+            DiaryTextDecorationContext context = new DiaryTextDecorationContext();
+            List<Hediff> hediffs = pawn?.health?.hediffSet?.hediffs;
+            if (hediffs != null)
+            {
+                for (int i = 0; i < hediffs.Count; i++)
+                {
+                    Hediff hediff = hediffs[i];
+                    if (hediff == null)
+                    {
+                        continue;
+                    }
+
+                    context.hediffs.Add(new DiaryTextDecorationHediffFact
+                    {
+                        defName = hediff.def?.defName ?? string.Empty,
+                        label = hediff.Label ?? string.Empty,
+                        severity = hediff.Severity,
+                        visible = hediff.Visible
+                    });
+                }
+            }
+
+            List<Trait> traits = pawn?.story?.traits?.allTraits;
+            if (traits != null)
+            {
+                for (int i = 0; i < traits.Count; i++)
+                {
+                    Trait trait = traits[i];
+                    if (trait == null)
+                    {
+                        continue;
+                    }
+
+                    context.traits.Add(new DiaryTextDecorationTraitFact
+                    {
+                        defName = trait.def?.defName ?? string.Empty,
+                        label = trait.LabelCap ?? string.Empty,
+                        degree = trait.Degree
+                    });
+                }
+            }
+
+            return context;
+        }
+
+        private static string DecorationDomainForContext(string context)
+        {
+            if (IsTaleEvent(context)) return GroupDomain.Tale.ToString();
+            if (IsMoodEventEvent(context)) return GroupDomain.MoodEvent.ToString();
+            if (IsThoughtEvent(context)) return GroupDomain.Thought.ToString();
+            if (IsInspirationEvent(context)) return GroupDomain.Inspiration.ToString();
+            if (IsWorkEvent(context)) return GroupDomain.Work.ToString();
+            if (IsHediffEvent(context)) return GroupDomain.Hediff.ToString();
+            if (IsMentalStateEvent(context)) return GroupDomain.MentalState.ToString();
+            return GroupDomain.Interaction.ToString();
         }
 
         /// <summary>

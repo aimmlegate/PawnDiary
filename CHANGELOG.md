@@ -3,6 +3,43 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (agent architecture guardrails)**
+  - Updated the shared `skills/pawndiary-engineering` workflow and top-level `AGENTS.md` rules so
+    future changes default to explicit layer boundaries, typed plain-data contracts, pure/testable
+    helpers where possible, XML-owned tunable constants, and focused pure test coverage.
+
+- **2026-06-18 (XML text decoration rules)**
+  - Added `DiaryTextDecorationDefs.xml`, `DiaryTextDecorationDef.cs`, and pure
+    `DiaryTextDecorations` contracts for XML-defined display text decorations. Rules can match saved
+    hediff facts, trait facts, event tags, color cues, atmosphere cues, defNames, domains, or context
+    keys, then apply ordered `DirectSpeech`, `Body`, or `All` scope decorations.
+  - Reworked staggered word sizes and Zalgo into deterministic pure rich-text transforms. The default
+    XML now applies staggered word sizes only to direct speech for intoxication/anesthesia-like
+    hediffs, and Zalgo only to direct speech for unsettling anomaly/dark cues.
+  - Captured compact per-POV hediff/trait facts on new diary events and carried the decoration
+    context through `DiaryEntryView` and the typed prompt/response contracts. Added
+    `tests/DiaryTextDecorationTests` for matching, ordering, serialization, and transform behavior.
+
+- **2026-06-18 (XML diary UI style)**
+  - Added `DiaryUiStyleDef.xml` and `DiaryUiStyleDef.cs` for display-only Diary tab styling:
+    dimensions, card spacing, linked-entry sizing, default expanded-entry count, speech marker tags,
+    text colors, accent palettes, pending/fade/pulse timings, and saved `colorCue` accent mappings.
+  - Routed Diary tab drawing through `DiaryUiStyles.Current` with code fallbacks, keeping runtime
+    behavior toggles in saved settings while making visual defaults editable from XML.
+
+- **2026-06-18 (typed generation pipeline contracts)**
+  - Added explicit `Source/Pipeline` DTO contracts for event payloads, XML policy snapshots, prompt
+    requests/plans, response rules, and response plans. `DiaryPipelineAdapters` is now the impure
+    RimWorld/XML/localization bridge, while `DiaryPromptPlanner` and `DiaryResponsePostprocessor`
+    are pure and testable.
+  - Routed generation queueing through `DiaryPromptPlan` instead of raw prompt strings, carrying the
+    selected template key, system prompt, user prompt, and prompt-time `DiaryResponseRules` into
+    `LlmGenerationRequest`. `LlmClient` now applies response cleanup through the postprocessor rather
+    than rereading request shape directly.
+  - Added `tests/DiaryPipelineTests`, a standalone pure test harness that compiles without RimWorld
+    assemblies and covers prompt selection, solo first-person plans, dual-POV initiator/recipient
+    plans, neutral death/arrival plans, title plans, and response postprocessing.
+
 - **2026-06-18 (pure LLM response parser)**
   - Moved provider response extraction, provider-status error surfacing, reasoning/thinking block
     stripping, and local max-token/sentence cleanup out of `LlmClient` into pure

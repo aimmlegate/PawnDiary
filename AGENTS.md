@@ -19,7 +19,17 @@ should read easily. Companion files:
 1. **Keep the docs current.** After any change to behavior or structure, update the affected
    section of `DOCUMENTATION.md` **and** add a dated line to `CHANGELOG.md`, in the same change.
    Docs are part of "done."
-2. **Stay localization-friendly.** Never hardcode English that can reach the **UI** or the **LLM
+2. **Respect the architecture barriers by default.** New features should follow the established
+   flow: impure game listener/state collection -> plain typed payload/context -> pure selection,
+   planning, parsing, formatting, or rule application -> impure transport/persistence/UI adapter.
+   If the contract needs more data, extend the plain DTO/Def contract rather than passing live
+   `Pawn`, `Def`, Verse/Unity GUI, settings, or transport objects into pure code. Whenever logic can
+   be pure, make it pure and add/extend a standalone test under `tests/`.
+3. **Put tunable constants in XML.** Prompt text, group policy, thresholds, odds, UI style values,
+   text decoration rules, tags, colors, and similar feature policy belong in XML Defs with safe code
+   fallbacks where needed. Hardcoded C# values are for stable schema/save tokens, defensive caps,
+   parser sentinels, and fallback defaults.
+4. **Stay localization-friendly.** Never hardcode English that can reach the **UI** or the **LLM
    prompt**. New player-facing strings and prompt text become keys in
    `Languages/English/Keyed/PawnDiary.xml`, used via `"My.Key".Translate()` (`{0}`/`{1}` for
    interpolation). Two carve-outs stay English on purpose: structured prompt *schema* labels
@@ -27,12 +37,12 @@ should read easily. Companion files:
    background-thread strings — `.Translate()` is **not thread-safe**, main-thread only. Def text
    (`rule`, `label`, `instruction`, `systemPrompt`) is localized via `DefInjected`, not Keyed. Full
    carve-outs: `DOCUMENTATION.md §12`.
-3. **Comment for novices.** Favor extensive, plain-English comments: every `.cs` file opens with a
+5. **Comment for novices.** Favor extensive, plain-English comments: every `.cs` file opens with a
    header explaining its role; public types/methods get a `///` summary; non-obvious C#/RimWorld
    idioms get a `//` note or a link to the primer below (e.g.
    `// New to C#/RimWorld? See AGENTS.md ("IExposable")`). Update comments when you touch the code.
-4. **Build after every change** to confirm it compiles (see *Building*).
-5. **Don't break a no-DLC game.** This mod targets **base RimWorld** and declares no DLC in
+6. **Build after every change** to confirm it compiles (see *Building*).
+7. **Don't break a no-DLC game.** This mod targets **base RimWorld** and declares no DLC in
    `About/About.xml` — keep it that way. A new feature may *react* to DLC content but must never
    *require* it. Before touching anything from Royalty / Ideology / Biotech / Anomaly, read
    **DLC-safety** below.

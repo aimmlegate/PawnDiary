@@ -130,7 +130,7 @@ namespace PawnDiary
             if (!enabled)
             {
 
-                GUI.color = new Color(1f, 1f, 1f, 0.42f);
+                GUI.color = UiStyle.YearDisabledColor;
 
             }
 

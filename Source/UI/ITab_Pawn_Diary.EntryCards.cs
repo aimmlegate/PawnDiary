@@ -110,13 +110,13 @@ namespace PawnDiary
                 float age = Time.realtimeSinceStartup - TitleFirstSeenAt(entry);
                 float alpha = Mathf.Clamp01(age / TitleFadeDurationSeconds);
                 float pulse = Mathf.Lerp(0.22f, 0.38f, WritingPulse(1.4f));
-                Color titleColor = Color.Lerp(new Color(0.88f, 0.86f, 0.79f), accent, pulse);
+                Color titleColor = Color.Lerp(UiStyle.TitleTextColor, accent, pulse);
                 titleColor.a = alpha;
                 GUI.color = titleColor;
             }
             else
             {
-                GUI.color = new Color(0.88f, 0.86f, 0.79f);
+                GUI.color = UiStyle.TitleTextColor;
             }
 
             Widgets.LabelFit(rect, header);
@@ -134,7 +134,7 @@ namespace PawnDiary
                 return;
             }
 
-            const float dotsWidth = WritingDotSize * 3f + WritingDotGap * 2f;
+            float dotsWidth = WritingDotSize * 3f + WritingDotGap * 2f;
             string prefix = string.IsNullOrWhiteSpace(entry?.Date)
                 ? string.Empty
                 : (entry.Date + " \u2014 ");
@@ -150,7 +150,7 @@ namespace PawnDiary
                 if (prefixWidth > 0f)
                 {
                     Rect prefixRect = new Rect(rect.x, rect.y, prefixWidth, rect.height);
-                    GUI.color = new Color(0.86f, 0.86f, 0.86f, 0.95f);
+                    GUI.color = UiStyle.PendingTitlePrefixColor;
                     Widgets.LabelFit(prefixRect, prefix);
                     dotsX = prefixRect.xMax;
                 }
@@ -161,7 +161,7 @@ namespace PawnDiary
                 dotsX = Mathf.Max(rect.x, rect.xMax - dotsWidth);
             }
 
-            Color dotColor = Color.Lerp(new Color(0.68f, 0.72f, 0.76f), accent, 0.45f);
+            Color dotColor = Color.Lerp(UiStyle.PendingTitleDotBaseColor, accent, 0.45f);
             Rect dotsRect = new Rect(dotsX, rect.y + rect.height * 0.5f - 3f, dotsWidth, 8f);
             DrawWritingDots(dotsRect, dotColor, 1.1f);
             GUI.color = oldColor;
@@ -189,14 +189,9 @@ namespace PawnDiary
             return AtmosphericFormattingEnabled() ? (entry?.AtmosphereCue ?? string.Empty) : string.Empty;
         }
 
-        private static int EntryStaggeredIntensity(DiaryEntryView entry)
+        private static DiaryTextDecorationContext EntryTextDecorationContext(DiaryEntryView entry)
         {
-            return AtmosphericFormattingEnabled() && entry != null ? entry.StaggeredIntensity : 0;
-        }
-
-        private static bool EntryDistortDirectSpeech(DiaryEntryView entry)
-        {
-            return AtmosphericFormattingEnabled() && entry != null && entry.DistortDirectSpeech;
+            return AtmosphericFormattingEnabled() && entry != null ? entry.TextDecorationContext : null;
         }
 
         /// <summary>
@@ -217,7 +212,7 @@ namespace PawnDiary
         private static Color EntryAccentColor(DiaryEntryView entry)
         {
             return entry == null
-                ? DefaultCueColor
+                ? UiStyle.DefaultCueColor
                 : ColorForCue(entry.ColorCue, entry.Important);
         }
 
@@ -227,32 +222,7 @@ namespace PawnDiary
         /// </summary>
         private static Color ColorForCue(string cue, bool important)
         {
-            if (string.IsNullOrWhiteSpace(cue))
-            {
-                return important ? DefaultCueColor : QuietCueColor;
-            }
-
-            switch (cue.Trim())
-            {
-                case DiaryEvent.CombatColorCue:
-                    return ColoredText.FactionColor_Hostile;
-                case DiaryEvent.SocialFightColorCue:
-                    return SocialFightCueColor;
-                case DiaryEvent.MentalBreakColorCue:
-                    return MentalBreakCueColor;
-                case DiaryEvent.DazeColorCue:
-                    return DazeCueColor;
-                case DiaryEvent.ExtremeDarkColorCue:
-                    return ExtremeDarkCueColor;
-                case DiaryEvent.StrangeChatColorCue:
-                    return StrangeChatCueColor;
-                case DiaryEvent.WhiteColorCue:
-                    return WhiteCueColor;
-                case DiaryEvent.QuietColorCue:
-                    return QuietCueColor;
-                default:
-                    return important ? DefaultCueColor : QuietCueColor;
-            }
+            return UiStyle.ColorForCue(cue, important);
         }
 
         /// <summary>
@@ -358,7 +328,7 @@ namespace PawnDiary
 
         private static float WritingPulse(float phaseOffset)
         {
-            return (Mathf.Sin(Time.realtimeSinceStartup * 5.5f + phaseOffset) + 1f) * 0.5f;
+            return (Mathf.Sin(Time.realtimeSinceStartup * UiStyle.writingPulseSpeed + phaseOffset) + 1f) * 0.5f;
         }
 
         /// <summary>
@@ -396,7 +366,7 @@ namespace PawnDiary
 
             Text.Font = GameFont.Tiny;
             Text.Anchor = TextAnchor.MiddleRight;
-            GUI.color = new Color(0.45f, 0.48f, 0.50f, 0.62f);
+            GUI.color = UiStyle.ModelNameColor;
             Widgets.LabelFit(rect, modelName);
 
             GUI.color = oldColor;
@@ -418,7 +388,7 @@ namespace PawnDiary
             Color oldColor = GUI.color;
 
             Text.Font = GameFont.Tiny;
-            GUI.color = new Color(0.54f, 0.58f, 0.60f, 0.90f);
+            GUI.color = UiStyle.DebugTextColor;
             Widgets.Label(rect, debugText);
 
             GUI.color = oldColor;
@@ -447,7 +417,8 @@ namespace PawnDiary
 
             // Left-side accent strip colored by the linked role
             Color stripColor = DiaryEvent.RoleEquals(link.OtherRole, DiaryEvent.InitiatorRole)
-                ? EntryAccentPalette[0] : EntryAccentPalette[4];
+                ? UiStyle.PaletteColor(UiStyle.linkedInitiatorPaletteIndex, new Color(0.95f, 0.58f, 0.32f))
+                : UiStyle.PaletteColor(UiStyle.linkedRecipientPaletteIndex, new Color(0.45f, 0.63f, 0.92f));
             Widgets.DrawBoxSolid(new Rect(rect.x + 1f, rect.y + 1f, 4f, rect.height - 2f), stripColor);
 
             // Label line: "Alice's perspective (initiator):"
@@ -457,7 +428,7 @@ namespace PawnDiary
             GameFont oldFont = Text.Font;
             Color oldColor = GUI.color;
             Text.Font = GameFont.Tiny;
-            GUI.color = new Color(0.80f, 0.85f, 0.92f);
+            GUI.color = UiStyle.LinkedEntryLabelColor;
             Widgets.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - 14f, LinkedEntryLabelHeight), roleLabel);
 
             // Truncated preview text
@@ -579,9 +550,8 @@ namespace PawnDiary
                 EntryBodyText(entry, showLlmDebugInfo),
                 innerWidth,
                 EntryAtmosphereCue(entry),
-                EntryStaggeredIntensity(entry),
                 EntryAllowDirectSpeechBlocks(entry),
-                EntryDistortDirectSpeech(entry),
+                EntryTextDecorationContext(entry),
                 StableTextSeed(EntryKey(entry)));
             Text.Font = oldFont;
 

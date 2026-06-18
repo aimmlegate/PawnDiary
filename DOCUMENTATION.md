@@ -3,7 +3,7 @@
 > Current-state design guide for the mod. When behavior or structure changes, update this file and
 > add a dated entry to [CHANGELOG.md](CHANGELOG.md) in the same change.
 
-_Last updated: 2026-06-18 (XML prompt and signal architecture)_
+_Last updated: 2026-06-18 (typed generation pipeline contracts + XML UI/text decorations)_
 
 ---
 
@@ -49,6 +49,7 @@ PawnDiary/
 |   |-- Generation/              prompt/context/LLM helpers
 |   |-- Models/                  saved/display models
 |   |-- Patches/                 Harmony startup and hooks
+|   |-- Pipeline/                typed pure/impure generation and decoration contracts
 |   |-- Settings/                mod settings and settings UI
 |   |-- UI/                      Diary inspector tab
 |   `-- Util/                    MiniJson
@@ -65,17 +66,24 @@ Key files:
 | `DiaryModStartup.cs` | Applies Harmony patches and injects the Diary tab after Needs. |
 | `DiaryPatches.cs` | Patch entry points for interactions, mental states, inspirations, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
 | `DiaryGameComponent*.cs` | Recording, batching, generation scans, save/load, lookup indexes, and public UI access. Event-source partials own their `Record*` methods. |
-| `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, staggered text intensity, and Scribe persistence. |
+| `DiaryEvent.cs` | Saved event model: raw/generated text, statuses, errors, context, source ids, LLM metadata, titles, semantic color cue, text-decoration facts, and Scribe persistence. |
 | `PawnDiaryRecord.cs` | Per-pawn event index, saved persona preset, and generation toggle. |
 | `DiaryContextBuilder.cs` | Compact pawn, surroundings, relationship, health, weapon, and opener context. |
 | `DiaryContextFields.cs` | Exact parser for saved semicolon-delimited `gameContext` key/value fields. |
-| `DiaryPromptBuilder.cs` | Builds pairwise, solo, neutral arrival/death, reflection, and title prompts from XML `DiaryPromptTemplateDef` field lists. |
+| `DiaryPromptBuilder.cs` | Compatibility facade for building typed prompt plans and legacy prompt strings. |
+| `DiaryPipelineContracts.cs` | Plain DTO contracts for event payloads, XML policy snapshots, prompt requests/plans, and response rules. These are the generation layer boundaries. |
+| `DiaryPipelineAdapters.cs` | Impure bridge from `DiaryEvent`, XML Defs, localization, and RimWorld lookups into plain pipeline contracts. |
+| `DiaryPromptPlanner.cs` | Pure prompt planner: selects a template key, renders user/system prompts, and captures response rules from a plain request. |
+| `DiaryResponsePostprocessor.cs` | Pure response postprocessor: applies prompt-time response rules to parser output before persistence. |
+| `DiaryTextDecorations.cs` | Pure XML-rule selector and deterministic rich-text decorators for direct speech/body text. |
 | `PromptEnchantments.cs` | Weighted hediff/capacity matcher that may append one compact live `important health:` cue to persona-bearing first-person prompts. |
 | `LlmClient.cs` | Background HTTP queue, per-lane concurrency, retries, failover, deadlines, result queue, and main-thread debug-log handoff. |
-| `LlmResponseParser.cs` | Pure provider response parser/normalizer: text extraction, provider-error surfacing, reasoning-block stripping, and local length/sentence cleanup. |
+| `LlmResponseParser.cs` | Pure provider response parser/normalizer: text extraction, provider-error surfacing, reasoning-block stripping, and local length/sentence cleanup helper. |
 | `InteractionGroups.cs` | XML-backed classifiers for Interaction, MentalState, Tale, MoodEvent, Thought, Inspiration, Work, and Hediff domains. |
 | `DiarySignalPolicyDef.cs` / `DiaryTuningDef.cs` | XML signal policies for thought/work providers, plus legacy/shared tuning fallbacks and safe code defaults. |
 | `DiaryPromptDef.cs` | XML-backed prompt instructions and system prompts. |
+| `DiaryUiStyleDef.cs` | XML-backed Diary tab visualization style: dimensions, speech markers, accent colors, and cue-color mappings. |
+| `DiaryTextDecorationDef.cs` | XML-backed diary text-decoration rule root: hediff/trait/event conditions, scopes, order, and intensity. |
 | `DiaryPersonaDef.cs` / `PersonaAffinity.cs` | XML personas plus trait/backstory/theme weighting for first persona selection. |
 | `DlcContext.cs` | One guarded home for optional DLC pawn context (`xenotype=`, `title=`, `faith=`). |
 | `MoodImpact.cs` | Shared positive/negative/neutral mood-impact tokens and classification. |
@@ -95,14 +103,18 @@ All sources funnel into `DiaryGameComponent`:
 2. The source method checks group enablement, pawn eligibility, dedup windows, and source-specific
    filters.
 3. `AddSoloEvent` or `AddPairwiseEvent` creates a `DiaryEvent`, stamps its semantic color cue and
-   any low-Consciousness/intoxication staggered-text intensity,
+   captures plain per-POV hediff/trait facts for XML text-decoration rules,
    registers it in `diaryEvents` and `eventsById`, and stores the id in each eligible pawn's
    `PawnDiaryRecord`.
 4. Generation queues immediately when possible and is retried by background scans.
-5. `LlmClient` sends requests on selected API lanes and returns results to the main thread.
-6. `ApplyLlmResult` stores generated text or failure state; successful main entries may queue a
+5. `DiaryPipelineAdapters` projects the saved event and XML policy into a plain `DiaryPromptRequest`;
+   `DiaryPromptPlanner` returns a pure `DiaryPromptPlan` with system prompt, user prompt, template
+   key, and `DiaryResponseRules`.
+6. `LlmClient` sends requests on selected API lanes, parses provider JSON, applies the captured
+   response rules through `DiaryResponsePostprocessor`, and returns results to the main thread.
+7. `ApplyLlmResult` stores generated text or failure state; successful main entries may queue a
    short title follow-up.
-7. `EntriesFor` reads saved events for the tab without triggering generation.
+8. `EntriesFor` reads saved events for the tab without triggering generation.
 
 `GameComponentTick` drains completed LLM results, flushes queued debug logs when dev LLM diagnostics
 are enabled, recovers orphaned pending entries, and queues pending diary work every ~120 ticks. On
@@ -297,19 +309,34 @@ Prompts are compact `key: value` lines. `AppendField` drops empty values and `no
 not vary by player OS locale.
 
 Main first-person prompts are selected by stable template keys, then rendered from XML field lists
-in `1.6/Defs/DiaryPromptTemplateDefs.xml`. `DiaryPromptBuilder` still classifies the event shape
-(`PairDefault`, `PairImportant`, `PairCombat`, `PairBatched`, `SoloDefault`, `SoloImportant`,
-`SoloInternalState`, `SoloBatched`, `SoloDayReflection`, `DeathDescription`, `ArrivalDescription`,
-or `Title`), but XML controls which structured fields appear for each shape. Template fields can
-include event facts, POV, role, other pawn, group instruction, pawn summary, weighted prompt
-enchantment, setting, tone, relationship continuity, last opener, weapon, hidden initiator entry,
-death/arrival facts, or title source text. Templates may also override their system prompt or final
-instruction; if left blank, `DiaryPromptDef.xml` supplies the shared defaults.
+in `1.6/Defs/DiaryPromptTemplateDefs.xml`. `DiaryPipelineAdapters` copies `DiaryEvent` and XML Def
+state into plain contracts; `DiaryPromptPlanner` classifies the event shape (`PairDefault`,
+`PairImportant`, `PairCombat`, `PairBatched`, `SoloDefault`, `SoloImportant`, `SoloInternalState`,
+`SoloBatched`, `SoloDayReflection`, `DeathDescription`, `ArrivalDescription`, or `Title`) and
+renders the final `DiaryPromptPlan`. XML controls which structured fields appear for each shape.
+Template fields can include event facts, POV, role, other pawn, group instruction, pawn summary,
+weighted prompt enchantment, setting, tone, relationship continuity, last opener, weapon, hidden
+initiator entry, death/arrival facts, or title source text. Templates may also override their system
+prompt or final instruction; if left blank, `DiaryPromptDef.xml` supplies the shared defaults.
 
-The pawn's **persona voice is no longer a user-message field**. `DiaryPromptBuilder.ComposeSystemPrompt`
-appends it to the system prompt at dispatch (wrapped by the `PawnDiary.Prompt.PersonaVoice` Keyed
-string), so the voice governs *how* the colonist writes rather than competing as one `key: value`
-line among many. First-person shapes keep the default `includePersona=true`; neutral death/arrival
+The generation abstraction barriers are explicit:
+
+- Event listeners and `DiaryGameComponent` are impure: they read RimWorld state, mutate saved events,
+  choose API lanes, and schedule work.
+- `DiaryPipelineAdapters` is the impure boundary: it may touch `DiaryEvent`, XML Def helpers,
+  `.Translate()`, `DefDatabase`, and settings-derived strings, then copies those values into DTOs.
+- `DiaryPromptPlanner`, `PromptAssembler`, `DiaryContextFields`, `LlmResponseParser`,
+  `DiaryResponsePostprocessor`, and `DiaryTextDecorations` are pure: no Verse/Unity types, Def
+  lookups, localization, settings, IO, RNG, or saved-game mutation.
+- `LlmClient` is transport code: it sends HTTP requests and calls the pure parser/postprocessor with
+  the `DiaryResponseRules` captured when the prompt was queued.
+- `DiaryEvent.ApplyLlmResult`, title handlers, and the Diary tab are persistence/UI adapters: they
+  consume completed results but do not rebuild prompts or reread XML policy for response cleanup.
+
+The pawn's **persona voice is no longer a user-message field**. The adapter resolves the localized
+`PawnDiary.Prompt.PersonaVoice` block on the main thread, and the pure planner appends it to the
+system prompt when the selected template has `includePersona=true`. This makes the voice govern *how*
+the colonist writes rather than competing as one `key: value` line among many. Neutral death/arrival
 chronicles and the title follow-up set `includePersona=false` to stay persona-free. The `Persona`
 field source still resolves, so a custom template can opt the voice back into the user message.
 
@@ -449,6 +476,8 @@ Core settings:
 | `enablePromptEnchantments` | true | Allows weighted live hediff/capacity context to append one first-person `important health:` cue. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for sampled work and batched-social promotion. |
 | prompt XML defs | XML defaults | `DiaryPromptTemplateDefs.xml`, `DiaryPromptDef.xml`, and group instructions are the prompt source of truth. |
+| UI style XML def | XML defaults | `DiaryUiStyleDef.xml` controls Diary tab dimensions, card spacing, speech marker tags, accent palettes, and color-cue mappings. |
+| text decoration XML def | XML defaults | `DiaryTextDecorationDefs.xml` controls direct-speech/body text decorations, including hediff/trait/event matching, order, and intensity. |
 | `groupEnabled` | XML defaults | Per-group recording toggles; group instructions come only from XML. |
 | `personaPresets` | empty | Built-in overrides plus custom personas. |
 | dev/UI toggles | varies | API/persona/debug/generating-entry visibility. |
@@ -482,26 +511,40 @@ date/title headers. Header clicks toggle expansion with lightweight animation an
 manual state. UI caches for first-seen fades and expansion blends are capped and periodically cleared.
 
 Generated cards show date/title, semantic color accent and group chip, page tint, a subtle model id,
-linked previews for the other pawn's POV, and title-pending animation. `DiaryTextFormat` converts
+linked previews for the other pawn's POV, and title-pending animation. The visual theme values live
+in `1.6/Defs/DiaryUiStyleDef.xml`: tab size, card and linked-card heights/paddings, default expanded
+entry count, expansion/fade/pending-dot timings, speech marker tags (`[[speech]]` / `[[/speech]]` by
+default), text colors, linked-entry colors, the legacy linked-role accent palette, and saved
+`colorCue` -> accent color mappings. C# keeps matching fallbacks so a missing or partial XML Def
+does not break the Diary tab. Runtime preferences such as debug row visibility, generating-row
+visibility, title generation, and the atmospheric-formatting on/off switch remain saved settings.
+`DiaryTextFormat` converts
 light markdown (`**bold**`, `*italic*`, headings, bullets, block quotes), inline quoted speech, and
 closed same-line `[[speech]]...[[/speech]]` blocks to Unity rich text after replacing raw generated
 `<...>` brackets with safe visible brackets, so model output cannot inject Unity rich-text tags.
 Speech blocks render as separate colored lines only outside recipient POVs; unclosed markers and all
 recipient markers are stripped and displayed as ordinary prose. Linked-entry previews also strip
-speech markers before truncating so the small preview card never exposes raw tags. When
-`enableAtmosphericFormatting` is on, only extreme
-entries get additional
-display-only typography: mental-break pages can be split into fractured sentence blocks,
-anomaly/dark pages can render with uneasy insets/italics, death-description chronicle pages can
-render as centered memorial blocks, and first-person pages written while the pawn was severely
-intoxicated or low-Consciousness can get deterministic random-looking variable-size words. Higher
-stored stagger intensity affects more words. Anomaly's in-game "strange chat" is the
+speech markers before truncating so the small preview card never exposes raw tags.
+
+When `enableAtmosphericFormatting` is on, extreme entries can still opt into display-only layout:
+mental-break pages can be split into fractured sentence blocks, anomaly/dark pages can render with
+uneasy insets/italics, and death-description chronicle pages can render as centered memorial blocks.
+Text mutation itself is now XML-driven through `1.6/Defs/DiaryTextDecorationDefs.xml`. Event capture
+stores only plain per-POV hediff and trait facts; the UI combines those saved facts with event
+metadata (`colorCue`, `atmosphereCue`, defName, domain, `gameContext` tags) and the pure
+`DiaryTextDecorations` selector returns ordered rules for the current text scope. Default rules apply
+`StaggeredWordSizes` only to explicit direct speech when the POV pawn had intoxication/anesthesia-like
+hediffs, and `Zalgo` only to direct speech for unsettling anomaly/dark cues. XML can add more
+decorations based on hediffs, traits, event tags, color cues, or context keys, and can choose
+`DirectSpeech`, `Body`, or `All` scope plus sequence/intensity.
+
+Anomaly's in-game "strange chat" is the
 `DisturbingChat` InteractionDef; it gives the recipient the `SpokeToDisturbing` social thought and
 `SpokeToDisturbingMood` mood thought ("unsettling conversation"). It has its own exact-match
 interaction group before the broader anomaly group, using chitchat's ambient batching and promotion
-odds so only unusually salient strange chats become immediate pairwise entries. Only the initiator
-POV for promoted exact `DisturbingChat` entries gets the special anomaly-green accent and dramatic
-distorted direct-speech formatting. This formatting is measured and drawn through the same block
+odds so only unusually salient strange chats become immediate pairwise entries. Promoted exact
+`DisturbingChat` entries get the special anomaly-green accent, and the XML decoration rules can use
+that saved cue to distort direct speech. Formatting is measured and drawn through the same block
 pipeline so scroll heights stay stable, and it never changes prompts or saved generated text.
 Social-tab log rows can jump to matching diary entries, including older year pages.
 
@@ -512,8 +555,9 @@ Social-tab log rows can jump to matching diary entries, including older year pag
 `LlmClient` treats each enabled endpoint+model/mode row as an API lane. Failover duplicate checks
 also include the API key, so two rows pointing at the same model with different credentials remain
 distinct fallback targets; concurrency gates still group by endpoint+model/mode.
-`LlmResponseParser` owns the pure response-normalization work after an HTTP body is received, keeping
-provider JSON shape handling and text cleanup testable without RimWorld assemblies.
+`LlmResponseParser` owns provider JSON shape handling and reasoning-text stripping after an HTTP body
+is received. `DiaryResponsePostprocessor` then applies the `DiaryResponseRules` captured in the
+queued prompt plan, so response cleanup is testable and does not reread game state.
 
 - each lane chooses its own request URL, payload, and response parser from its compatibility mode:
   `/chat/completions`, `/responses`, or Ollama `/api/chat`;
@@ -555,10 +599,12 @@ raw text is kept when configured.
 lookup index is rebuilt from `diaryEvents` on load so `FindEvent` stays O(1).
 
 `DiaryEvent` saves raw event text, generated text, statuses/errors, context, source ids, LLM
-metadata, semantic `colorCue`, per-POV titles, per-POV staggered text intensity, and per-POV
-pre-length-cleanup final-answer text for debug inspection, capped at 4000 characters per POV to
-avoid save bloat. Full prompt strings are still not persisted; dev diagnostics can show prompts
-built during the current session.
+metadata, semantic `colorCue`, per-POV titles, compact per-POV text-decoration facts
+(active hediff/trait names, labels, severity/degree), legacy per-POV staggered text intensity, and
+per-POV pre-length-cleanup final-answer text for debug inspection, capped at 4000 characters per POV
+to avoid save bloat. Full prompt strings are still not persisted; dev diagnostics can show prompts
+built during the current session. Decorated rich text is never saved: the Diary tab reselects XML
+decoration rules from the saved facts and event metadata each time it measures/draws.
 Tale/mental/source classification is inferred from stable `gameContext` fields such as `tale=`,
 `mental_state=`, `mood_event=`, `thought=`, `inspiration=`, `work=`, and `hediff=`. Exact key/value
 lookups go through `DiaryContextFields`, so pawn ids and other field values do not collide by
@@ -572,16 +618,17 @@ are also cleared when a new `DiaryGameComponent` starts a game session.
 
 The current saved event shape is still role-by-field: `initiator*`, `recipient*`, and `neutral*`
 fields each carry their own pawn id, display text, generated text, status, title, prompt/debug data,
-LLM metadata, surroundings, continuity, opener, weapon, and staggered-text state. A future cleanup
-should extract those repeated field families into explicit saved role slots while preserving old
-saves.
+LLM metadata, surroundings, continuity, opener, weapon, staggered-text state, and text-decoration
+facts. A future cleanup should extract those repeated field families into explicit saved role slots
+while preserving old saves.
 
 Rough safe-route outline:
 
 - Add a small `DiaryEventRoleSlot : IExposable` model with a stable `role` string
   (`initiator`, `recipient`, `neutral`), optional `pawnId`, display `pawnName`, raw/source text,
   generated text, status/error, prompt/debug text, title fields, LLM endpoint/model metadata,
-  pawn summary, surroundings, continuity, last opener, weapon, and staggered-text intensity.
+  pawn summary, surroundings, continuity, last opener, weapon, staggered-text intensity, and
+  text-decoration facts.
 - Add `List<DiaryEventRoleSlot> roleSlots` to `DiaryEvent` as an additive saved field. Keep all
   existing `initiator*`, `recipient*`, and `neutral*` fields during the migration; old saves should
   load exactly as they do now.
@@ -592,8 +639,8 @@ Rough safe-route outline:
   carve-outs depend on `initiator`, `recipient`, and `neutral` staying stable.
 - Add slot accessors first: `SlotForRole`, `SlotForPawn`, `NameForRole`, `TextForRole`,
   `GeneratedTextFor`, `StatusFor`, `TitleForRole`, `SurroundingsForRole`, `ContinuityForRole`,
-  `LastOpenerForRole`, `StaggeredIntensityForRole`, and status/title mutation helpers. Make current
-  public methods delegate to slots instead of duplicating switch logic.
+  `LastOpenerForRole`, `StaggeredIntensityForRole`, `TextDecorationContextForRole`, and status/title
+  mutation helpers. Make current public methods delegate to slots instead of duplicating switch logic.
 - Change event creation (`AddSoloEvent`, `AddPairwiseEvent`, neutral arrival/death/reflection
   creation) to create role slots while still filling legacy fields. Do not broaden semantics in the
   same pass: this is a storage/refactor step, not arbitrary multi-participant event support yet.
@@ -663,10 +710,16 @@ Pure helper tests:
 
 ```
 dotnet run --project tests/LlmResponseParserTests/LlmResponseParserTests.csproj
+dotnet run --project tests/DiaryPipelineTests/DiaryPipelineTests.csproj
+dotnet run --project tests/DiaryTextDecorationTests/DiaryTextDecorationTests.csproj
 ```
 
-These tests compile only `LlmResponseParser.cs` and `MiniJson.cs`, so response parsing and cleanup can
-be verified without loading RimWorld/Unity assemblies.
+`LlmResponseParserTests` compile only `LlmResponseParser.cs` and `MiniJson.cs`.
+`DiaryPipelineTests` compile only the pure pipeline contracts/planner/postprocessor plus
+`PromptAssembler`, `DiaryContextFields`, `DiaryTextDecorations`, `LlmResponseParser`, and
+`MiniJson`. `DiaryTextDecorationTests` compile only `DiaryTextDecorations.cs`. These can run without
+RimWorld/Unity assemblies; if a pure layer starts depending on Verse or XML Def types, these tests
+fail at compile time.
 
 Prompt lab:
 

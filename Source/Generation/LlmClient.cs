@@ -78,6 +78,12 @@ namespace PawnDiary
         /// <see cref="DiaryEvent.MarkTitleComplete"/> / <see cref="DiaryEvent.MarkTitleFailed"/>. Defaults
         /// to false so the existing main-entry path is unchanged.</summary>
         public bool isTitleRequest;
+
+        /// <summary>
+        /// Prompt-time response rules. Captured before the request leaves the main thread so the
+        /// background HTTP worker can clean the model text without rereading game state or XML.
+        /// </summary>
+        public DiaryResponseRules responseRules;
     }
 
     /// <summary>
@@ -747,13 +753,41 @@ namespace PawnDiary
                     // fragment that is already under our local cap; clean that up for main diary
                     // text too. Titles are exempt because they should not end with sentence
                     // punctuation.
+                    DiaryResponsePlan responsePlan = DiaryResponsePostprocessor.ApplySuccess(
+                        visibleText,
+                        ResponseRulesForRequest(request));
+
                     return new SendResponse
                     {
-                        RawText = visibleText,
-                        CleanText = LlmResponseParser.CleanGeneratedText(visibleText, request.maxTokens, request.isTitleRequest)
+                        RawText = responsePlan.rawVisibleResponse,
+                        CleanText = responsePlan.generatedText
                     };
                 }
             }
+        }
+
+        private static DiaryResponseRules ResponseRulesForRequest(LlmGenerationRequest request)
+        {
+            DiaryResponseRules rules = request.responseRules
+                ?? DiaryResponseRules.ForRequest(request.eventId, request.povRole, request.isTitleRequest, request.maxTokens);
+            if (string.IsNullOrWhiteSpace(rules.eventId))
+            {
+                rules.eventId = request.eventId;
+            }
+            if (string.IsNullOrWhiteSpace(rules.targetRole))
+            {
+                rules.targetRole = request.povRole;
+            }
+            rules.isTitle = request.isTitleRequest;
+            if (rules.maxTokens <= 0)
+            {
+                rules.maxTokens = request.maxTokens;
+            }
+            if (request.isTitleRequest)
+            {
+                rules.trimIncompleteSentence = false;
+            }
+            return rules;
         }
 
         /// <summary>

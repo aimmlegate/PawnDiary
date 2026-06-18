@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Source\Pipeline\DiaryPipelineContracts.cs" Link="DiaryPipelineContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryPromptPlanner.cs" Link="DiaryPromptPlanner.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryResponsePostprocessor.cs" Link="DiaryResponsePostprocessor.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
+    <Compile Include="..\..\Source\Generation\PromptAssembler.cs" Link="PromptAssembler.cs" />
+    <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
+    <Compile Include="..\..\Source\Generation\LlmResponseParser.cs" Link="LlmResponseParser.cs" />
+    <Compile Include="..\..\Source\Util\MiniJson.cs" Link="MiniJson.cs" />
+  </ItemGroup>
+</Project>

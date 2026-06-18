@@ -25,9 +25,8 @@ namespace PawnDiary
             Color dialogueColor,
             float alpha,
             string atmosphereCue,
-            int staggeredIntensity,
             bool allowDirectSpeechBlocks,
-            bool distortDirectSpeech,
+            DiaryTextDecorationContext decorationContext,
             int seed)
         {
             GameFont oldFont = Text.Font;
@@ -52,7 +51,7 @@ namespace PawnDiary
                 TextAnchor oldAlignment = style.alignment;
                 style.fontStyle = block.fontStyle;
                 style.alignment = block.alignment;
-                string rich = RoleplayRichText(block, dialogueColor, staggeredIntensity, distortDirectSpeech, seed, style.fontSize);
+                string rich = RoleplayRichText(block, dialogueColor, decorationContext, seed, style.fontSize);
                 float lineWidth = Mathf.Max(80f, rect.width - block.leftInset - block.rightInset);
                 float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
                 float blockHeight = textHeight;
@@ -68,7 +67,7 @@ namespace PawnDiary
                     Widgets.DrawBoxSolid(speechRect, SpeechBlockBgColor);
                     Widgets.DrawBoxSolid(
                         new Rect(speechRect.x, speechRect.y, 3f, speechRect.height),
-                        new Color(dialogueColor.r, dialogueColor.g, dialogueColor.b, 0.72f));
+                        new Color(dialogueColor.r, dialogueColor.g, dialogueColor.b, UiStyle.speechBlockAccentAlpha));
                     labelRect.y += SpeechBlockVerticalPadding;
                 }
 
@@ -88,7 +87,7 @@ namespace PawnDiary
         /// </summary>
         private static void DrawWritingPlaceholder(Rect rect)
         {
-            Color textColor = Color.Lerp(new Color(0.58f, 0.72f, 0.66f), new Color(0.80f, 0.96f, 0.84f), WritingPulse(0f));
+            Color textColor = Color.Lerp(UiStyle.WritingPlaceholderLowColor, UiStyle.WritingPlaceholderHighColor, WritingPulse(0f));
             Rect dotsRect = new Rect(rect.x, rect.y + Text.LineHeight * 0.5f - 1f, 28f, 8f);
             DrawWritingDots(dotsRect, textColor, 0.4f);
         }
@@ -99,8 +98,8 @@ namespace PawnDiary
             for (int i = 0; i < 3; i++)
             {
                 float pulse = WritingPulse(phaseOffset - i * 0.75f);
-                Color dotColor = new Color(color.r, color.g, color.b, Mathf.Lerp(0.25f, 0.95f, pulse));
-                float yOffset = Mathf.Lerp(2f, -1f, pulse);
+                Color dotColor = new Color(color.r, color.g, color.b, Mathf.Lerp(UiStyle.writingDotMinAlpha, UiStyle.writingDotMaxAlpha, pulse));
+                float yOffset = Mathf.Lerp(UiStyle.writingDotLowYOffset, UiStyle.writingDotHighYOffset, pulse);
                 Widgets.DrawBoxSolid(
                     new Rect(rect.x + i * (WritingDotSize + WritingDotGap), rect.y + yOffset, WritingDotSize, WritingDotSize),
                     dotColor);
@@ -119,9 +118,8 @@ namespace PawnDiary
             string text,
             float width,
             string atmosphereCue,
-            int staggeredIntensity,
             bool allowDirectSpeechBlocks,
-            bool distortDirectSpeech,
+            DiaryTextDecorationContext decorationContext,
             int seed)
         {
             GUIStyle style = BodyStyle();
@@ -139,7 +137,7 @@ namespace PawnDiary
                 TextAnchor oldAlignment = style.alignment;
                 style.fontStyle = block.fontStyle;
                 style.alignment = block.alignment;
-                string rich = RoleplayRichText(block, FallbackDialogueColor, staggeredIntensity, distortDirectSpeech, seed, style.fontSize);
+                string rich = RoleplayRichText(block, FallbackDialogueColor, decorationContext, seed, style.fontSize);
                 float lineWidth = Mathf.Max(80f, width - block.leftInset - block.rightInset);
                 float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
                 if (block.directSpeech)
@@ -158,24 +156,29 @@ namespace PawnDiary
         private static string RoleplayRichText(
             RoleplayLineBlock block,
             Color dialogueColor,
-            int staggeredIntensity,
-            bool distortDirectSpeech,
+            DiaryTextDecorationContext decorationContext,
             int seed,
             int baseFontSize)
         {
+            DiaryTextDecorationPlan decorations = RoleplayDecorationPlan(decorationContext, block != null && block.directSpeech);
             string rich = block != null && block.directSpeech
-                ? DiaryTextFormat.ToSpeechBlockRichText(block.line, dialogueColor, distortDirectSpeech, seed ^ block.seedSalt)
-                : DiaryTextFormat.ToRichText(block?.line ?? string.Empty, dialogueColor, distortDirectSpeech, seed ^ block.seedSalt);
-            if (staggeredIntensity > 0)
-            {
-                rich = DiaryTextFormat.ApplyStaggeredWordSizes(
-                    rich,
-                    staggeredIntensity,
-                    seed ^ block.seedSalt,
-                    baseFontSize);
-            }
+                ? DiaryTextFormat.ToSpeechBlockRichText(block.line, dialogueColor, decorations, seed ^ block.seedSalt, baseFontSize)
+                : DiaryTextFormat.ToRichText(block?.line ?? string.Empty, dialogueColor, decorations, seed ^ block.seedSalt, baseFontSize);
 
             return rich;
+        }
+
+        private static DiaryTextDecorationPlan RoleplayDecorationPlan(DiaryTextDecorationContext context, bool directSpeech)
+        {
+            if (context == null)
+            {
+                return new DiaryTextDecorationPlan();
+            }
+
+            return DiaryTextDecorations.Select(
+                context,
+                DiaryTextDecorationDefs.CurrentRules,
+                directSpeech ? DiaryTextDecorationScopes.DirectSpeech : DiaryTextDecorationScopes.Body);
         }
 
         private static IEnumerable<RoleplayLineBlock> RoleplayBlocks(string text, string atmosphereCue, bool allowDirectSpeechBlocks)

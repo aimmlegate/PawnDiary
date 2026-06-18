@@ -259,12 +259,12 @@ namespace PawnDiary
             // Persona and prompt enchantment are resolved at queue time so changing a pawn or XML
             // weights affects future generations without rewriting prompts already sent or saved
             // for debugging.
-            string rawText = DiaryPromptBuilder.BuildInteractionPrompt(
+            DiaryPromptPlan promptPlan = DiaryPromptBuilder.BuildInteractionPromptPlan(
                 diaryEvent,
                 povRole,
                 PersonaRuleFor(diaryEvent, povRole),
                 PromptEnchantmentRuleFor(diaryEvent, povRole));
-            QueuePrompt(diaryEvent, povRole, rawText);
+            QueuePrompt(diaryEvent, povRole, promptPlan);
         }
 
         /// <summary>
@@ -278,8 +278,8 @@ namespace PawnDiary
                 return;
             }
 
-            string rawText = DiaryPromptBuilder.BuildDeathDescriptionPrompt(diaryEvent);
-            QueuePrompt(diaryEvent, DiaryEvent.NeutralRole, rawText);
+            DiaryPromptPlan promptPlan = DiaryPromptBuilder.BuildDeathDescriptionPromptPlan(diaryEvent);
+            QueuePrompt(diaryEvent, DiaryEvent.NeutralRole, promptPlan);
         }
 
         /// <summary>
@@ -293,8 +293,8 @@ namespace PawnDiary
                 return;
             }
 
-            string rawText = DiaryPromptBuilder.BuildArrivalDescriptionPrompt(diaryEvent);
-            QueuePrompt(diaryEvent, DiaryEvent.NeutralRole, rawText);
+            DiaryPromptPlan promptPlan = DiaryPromptBuilder.BuildArrivalDescriptionPromptPlan(diaryEvent);
+            QueuePrompt(diaryEvent, DiaryEvent.NeutralRole, promptPlan);
         }
 
         /// <summary>
@@ -320,12 +320,12 @@ namespace PawnDiary
             // as hidden continuity context.
             if (initiatorEnabled && diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole))
             {
-                string rawText = DiaryPromptBuilder.BuildSequentialInteractionPrompt(
+                DiaryPromptPlan promptPlan = DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
                     diaryEvent,
                     DiaryEvent.InitiatorRole,
                     PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole),
                     PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole));
-                QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, rawText);
+                QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, promptPlan);
                 return;
             }
 
@@ -358,28 +358,28 @@ namespace PawnDiary
             if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
             {
                 // Recipient prompt includes hidden initiator context only when that context exists.
-                string rawText = initiatorContextExpected
-                    ? DiaryPromptBuilder.BuildSequentialInteractionPrompt(
+                DiaryPromptPlan promptPlan = initiatorContextExpected
+                    ? DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
                         diaryEvent,
                         DiaryEvent.RecipientRole,
                         PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
                         PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole))
-                    : DiaryPromptBuilder.BuildInteractionPrompt(
+                    : DiaryPromptBuilder.BuildInteractionPromptPlan(
                         diaryEvent,
                         DiaryEvent.RecipientRole,
                         PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
                         PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole));
-                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, rawText, recipientPrimaryOverride);
+                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, promptPlan, recipientPrimaryOverride);
             }
         }
 
         /// <summary>
-        /// Final step before LLM dispatch: stamps the prompt on the event, records endpoint metadata, marks
-        /// the event queued, and enqueues the request to <see cref="LlmClient"/>.
+        /// Final impure step before LLM dispatch: stamps the planned prompt on the event, records
+        /// endpoint metadata, marks the event queued, and enqueues the request to <see cref="LlmClient"/>.
         /// </summary>
-        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, string rawText, ApiEndpointConfig primaryOverride = null)
+        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, DiaryPromptPlan promptPlan, ApiEndpointConfig primaryOverride = null)
         {
-            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlan == null)
             {
                 return;
             }
@@ -394,6 +394,7 @@ namespace PawnDiary
                 return;
             }
 
+            string rawText = promptPlan.userPrompt ?? string.Empty;
             diaryEvent.SetPrompt(povRole, rawText);
 
             if (PawnDiaryMod.Settings == null)
@@ -426,14 +427,26 @@ namespace PawnDiary
             diaryEvent.SetLlmMeta(povRole, EndpointUtility.BuildGenerationUrl(target.url, target.apiMode), target.model);
             diaryEvent.MarkQueued(povRole);
 
+            DiaryResponseRules responseRules = promptPlan.responseRules
+                ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, false, PawnDiaryMod.Settings.maxTokens);
+            if (string.IsNullOrWhiteSpace(responseRules.eventId))
+            {
+                responseRules.eventId = diaryEvent.eventId;
+            }
+            responseRules.targetRole = povRole;
+            responseRules.isTitle = false;
+            if (responseRules.maxTokens <= 0)
+            {
+                responseRules.maxTokens = PawnDiaryMod.Settings.maxTokens;
+            }
+
             LlmClient.Enqueue(new LlmGenerationRequest
             {
                 eventId = diaryEvent.eventId,
                 povRole = povRole,
-                // Persona is folded into the system prompt here (not the user message), so the
-                // colonist's voice governs HOW the entry is written. Neutral death/arrival shapes
-                // opt out via includePersona, so PersonaRuleFor's value is ignored for them.
-                systemPrompt = DiaryPromptBuilder.ComposeSystemPrompt(diaryEvent, PersonaRuleFor(diaryEvent, povRole)),
+                // The pure planner already folded persona and XML template policy into this system
+                // prompt. Queueing should only attach transport metadata and response rules.
+                systemPrompt = promptPlan.systemPrompt,
                 rawText = rawText,
                 endpointUrl = target.url,
                 modelName = target.model,
@@ -445,7 +458,8 @@ namespace PawnDiary
                 failoverTargets = failoverTargets,
                 timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
                 maxTokens = PawnDiaryMod.Settings.maxTokens,
-                temperature = PawnDiaryMod.Settings.temperature
+                temperature = PawnDiaryMod.Settings.temperature,
+                responseRules = responseRules
             });
         }
 
@@ -803,13 +817,25 @@ namespace PawnDiary
 
             diaryEvent.MarkTitleQueued(povRole);
 
+            DiaryPromptPlan titlePlan = DiaryPromptBuilder.BuildTitlePromptPlan(diaryEvent, povRole, TitleMaxTokens);
+            DiaryResponseRules titleRules = titlePlan.responseRules
+                ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, true, TitleMaxTokens);
+            if (string.IsNullOrWhiteSpace(titleRules.eventId))
+            {
+                titleRules.eventId = diaryEvent.eventId;
+            }
+            titleRules.targetRole = povRole;
+            titleRules.isTitle = true;
+            titleRules.maxTokens = TitleMaxTokens;
+            titleRules.trimIncompleteSentence = false;
+
             LlmClient.Enqueue(new LlmGenerationRequest
             {
                 eventId = diaryEvent.eventId,
                 povRole = povRole,
                 isTitleRequest = true,
-                systemPrompt = DiaryPromptBuilder.TitleSystemPrompt(),
-                rawText = DiaryPromptBuilder.BuildTitlePrompt(diaryEvent, povRole),
+                systemPrompt = titlePlan.systemPrompt,
+                rawText = titlePlan.userPrompt,
                 endpointUrl = target.url,
                 modelName = target.model,
                 apiKey = target.apiKey,
@@ -819,7 +845,8 @@ namespace PawnDiary
                 failoverTargets = BuildFailoverTargets(targets, target),
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = TitleMaxTokens,
-                temperature = settings.temperature
+                temperature = settings.temperature,
+                responseRules = titleRules
             });
         }
 

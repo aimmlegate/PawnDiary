@@ -30,20 +30,6 @@ namespace PawnDiary
         private static readonly string Bullet = ((char)0x2022).ToString();
         private static readonly string SafeLessThan = ((char)0x2039).ToString();
         private static readonly string SafeGreaterThan = ((char)0x203A).ToString();
-        private static readonly char[] LightZalgoMarks =
-        {
-            (char)0x0307, // dot above
-            (char)0x0301, // acute accent
-            (char)0x0300, // grave accent
-            (char)0x0302, // circumflex
-            (char)0x0303, // tilde
-            (char)0x0323, // dot below
-            (char)0x0324, // diaeresis below
-            (char)0x0331, // macron below
-            (char)0x0315, // comma above right
-            (char)0x0336  // long stroke overlay
-        };
-
         // **bold** and *italic*. Each marker must hug non-space text, so arithmetic like "a * b" or a
         // lone stray asterisk is left alone instead of being read as emphasis.
         private static readonly Regex BoldPattern = new Regex(@"\*\*(?=\S)(.+?)(?<=\S)\*\*");
@@ -132,6 +118,21 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Rewrites one ordinary prose line and then applies any XML-selected body decorations.
+        /// Direct-speech rules are not passed here; the tab applies those to speech blocks only.
+        /// </summary>
+        public static string ToRichText(
+            string line,
+            Color quoteColor,
+            DiaryTextDecorationPlan decorations,
+            int seed,
+            int baseFontSize)
+        {
+            string rich = ToRichText(line, quoteColor, false, seed);
+            return DiaryTextDecorations.ApplyToRichText(rich, decorations, seed, baseFontSize);
+        }
+
+        /// <summary>
         /// Formats the contents of a closed [[speech]] marker block. The markers have already been
         /// removed by the tab parser, so this treats the whole line as spoken text instead of looking
         /// for quotation marks inside the line.
@@ -146,12 +147,41 @@ namespace PawnDiary
             string speech = StripOuterSpeechQuotes(line);
             if (distortQuotedSpeech)
             {
-                speech = ApplyLightZalgo(speech, seed);
+                speech = DiaryTextDecorations.ApplyZalgoToRichText(speech, 1, seed);
             }
 
             string s = EscapeRawRichText(speech);
             s = BoldPattern.Replace(s, "<b>$1</b>");
             s = ItalicPattern.Replace(s, "<i>$1</i>");
+
+            return "<color=#" + ColorUtility.ToHtmlStringRGB(quoteColor) + "><b>"
+                + LeftQuote
+                + s
+                + RightQuote
+                + "</b></color>";
+        }
+
+        /// <summary>
+        /// Formats one explicit direct-speech block, then applies XML-selected decorations to the
+        /// spoken words before the outer quote/color wrapper is added.
+        /// </summary>
+        public static string ToSpeechBlockRichText(
+            string line,
+            Color quoteColor,
+            DiaryTextDecorationPlan decorations,
+            int seed,
+            int baseFontSize)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                return line ?? string.Empty;
+            }
+
+            string speech = StripOuterSpeechQuotes(line);
+            string s = EscapeRawRichText(speech);
+            s = BoldPattern.Replace(s, "<b>$1</b>");
+            s = ItalicPattern.Replace(s, "<i>$1</i>");
+            s = DiaryTextDecorations.ApplyToRichText(s, decorations, seed, baseFontSize);
 
             return "<color=#" + ColorUtility.ToHtmlStringRGB(quoteColor) + "><b>"
                 + LeftQuote
@@ -191,39 +221,9 @@ namespace PawnDiary
 
         private static string FormatQuoteText(string text, bool distort, int seed, int quoteIndex)
         {
-            return distort ? ApplyLightZalgo(text, seed ^ (quoteIndex * 1103515245)) : text;
-        }
-
-        private static string ApplyLightZalgo(string text, int seed)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return text ?? string.Empty;
-            }
-
-            StringBuilder result = new StringBuilder(text.Length + text.Length / 2);
-            int visibleIndex = 0;
-            for (int i = 0; i < text.Length; i++)
-            {
-                char c = text[i];
-                result.Append(c);
-                if (char.IsLetter(c))
-                {
-                    int hash = PositiveHash(MixHash(seed, visibleIndex, c));
-                    if (hash % 3 != 1)
-                    {
-                        result.Append(LightZalgoMarks[hash % LightZalgoMarks.Length]);
-                        if ((hash / 11) % 4 == 0)
-                        {
-                            result.Append(LightZalgoMarks[(hash / 97) % LightZalgoMarks.Length]);
-                        }
-                    }
-
-                    visibleIndex++;
-                }
-            }
-
-            return result.ToString();
+            return distort
+                ? DiaryTextDecorations.ApplyZalgoToRichText(text, 1, seed ^ (quoteIndex * 1103515245))
+                : text;
         }
 
         /// <summary>
@@ -233,91 +233,7 @@ namespace PawnDiary
         /// </summary>
         public static string ApplyStaggeredWordSizes(string rich, int intensity, int seed, int baseFontSize)
         {
-            intensity = intensity < 0 ? 0 : (intensity > 4 ? 4 : intensity);
-            if (string.IsNullOrEmpty(rich) || intensity <= 0)
-            {
-                return rich ?? string.Empty;
-            }
-
-            if (baseFontSize <= 0)
-            {
-                baseFontSize = 13;
-            }
-
-            int selectionModulo = intensity >= 4 ? 3 : (intensity == 3 ? 4 : (intensity == 2 ? 6 : 9));
-            int maxDelta = Math.Max(1, intensity + 1);
-            StringBuilder result = new StringBuilder(rich.Length + 32);
-            int wordIndex = 0;
-
-            for (int i = 0; i < rich.Length;)
-            {
-                char c = rich[i];
-                if (c == '<')
-                {
-                    int tagEnd = rich.IndexOf('>', i);
-                    if (tagEnd >= 0)
-                    {
-                        result.Append(rich, i, tagEnd - i + 1);
-                        i = tagEnd + 1;
-                        continue;
-                    }
-                }
-
-                if (char.IsLetterOrDigit(c))
-                {
-                    int start = i;
-                    i++;
-                    while (i < rich.Length && char.IsLetterOrDigit(rich[i]))
-                    {
-                        i++;
-                    }
-
-                    int length = i - start;
-                    string word = rich.Substring(start, length);
-                    int hash = PositiveHash(MixHash(seed, wordIndex, length));
-                    if (length > 2 && hash % selectionModulo == 0)
-                    {
-                        int magnitude = 1 + (PositiveHash(hash / 17) % maxDelta);
-                        int direction = (hash & 2) == 0 ? -1 : 1;
-                        int size = Math.Max(8, baseFontSize + direction * magnitude);
-                        result.Append("<size=");
-                        result.Append(size);
-                        result.Append(">");
-                        result.Append(word);
-                        result.Append("</size>");
-                    }
-                    else
-                    {
-                        result.Append(word);
-                    }
-
-                    wordIndex++;
-                    continue;
-                }
-
-                result.Append(c);
-                i++;
-            }
-
-            return result.ToString();
-        }
-
-        private static int MixHash(int seed, int wordIndex, int length)
-        {
-            unchecked
-            {
-                int hash = seed;
-                hash = (hash * 397) ^ wordIndex;
-                hash = (hash * 397) ^ length;
-                hash ^= hash >> 13;
-                hash *= 1274126177;
-                return hash;
-            }
-        }
-
-        private static int PositiveHash(int value)
-        {
-            return value & 0x7fffffff;
+            return DiaryTextDecorations.ApplyStaggeredWordSizes(rich, intensity, seed, baseFontSize);
         }
     }
 }

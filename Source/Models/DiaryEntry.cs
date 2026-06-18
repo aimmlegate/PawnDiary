@@ -78,7 +78,10 @@ namespace PawnDiary
         public readonly int StaggeredIntensity;
         // True only for the initiator POV of strange anomaly chat. The Diary tab uses it to add a
         // dramatic distortion to quoted direct speech without changing the saved generated text.
+        // Kept for compatibility; current display decorations use TextDecorationContext + XML rules.
         public readonly bool DistortDirectSpeech;
+        // Plain saved facts and event metadata used by XML diary text-decoration rules.
+        public readonly DiaryTextDecorationContext TextDecorationContext;
         public readonly bool Important;     // Visual importance marker derived from the event group
         public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo).
         // Short chat-style subject: stored LLM-generated title only. Empty when no title has
@@ -110,7 +113,8 @@ namespace PawnDiary
             LinkedEntryView linkedEntry = null,
             string title = null,
             bool titlePending = false,
-            string llmRawResponse = null)
+            string llmRawResponse = null,
+            DiaryTextDecorationContext textDecorationContext = null)
         {
             Tick = tick;
             Date = date;
@@ -129,6 +133,7 @@ namespace PawnDiary
             AtmosphereCue = atmosphereCue ?? string.Empty;
             StaggeredIntensity = staggeredIntensity < 0 ? 0 : (staggeredIntensity > 4 ? 4 : staggeredIntensity);
             DistortDirectSpeech = distortDirectSpeech;
+            TextDecorationContext = textDecorationContext;
             Important = important;
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;

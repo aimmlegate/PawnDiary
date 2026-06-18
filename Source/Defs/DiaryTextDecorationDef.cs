@@ -1,0 +1,109 @@
+// XML-backed diary text decoration rules.
+//
+// This file is intentionally a thin Def adapter. The rule classes and text transforms live in the
+// pure pipeline layer (DiaryTextDecorations.cs); this Def only lets RimWorld load the rule list from
+// XML and provides a code fallback if the XML is missing.
+using System.Collections.Generic;
+using Verse;
+
+namespace PawnDiary
+{
+    /// <summary>
+    /// Root XML Def for diary text decoration rules.
+    /// </summary>
+    public class DiaryTextDecorationDef : Def
+    {
+        public List<DiaryTextDecorationRule> rules = new List<DiaryTextDecorationRule>();
+    }
+
+    /// <summary>
+    /// Loads the active decoration rules from XML. Falls back to the same defaults if the Def is absent.
+    /// </summary>
+    public static class DiaryTextDecorationDefs
+    {
+        private static DiaryTextDecorationDef cached;
+
+        public static List<DiaryTextDecorationRule> CurrentRules
+        {
+            get
+            {
+                if (cached == null)
+                {
+                    cached = DefDatabase<DiaryTextDecorationDef>.GetNamedSilentFail("Diary_TextDecorations");
+                }
+
+                return cached != null && cached.rules != null ? cached.rules : FallbackRules();
+            }
+        }
+
+        private static List<DiaryTextDecorationRule> FallbackRules()
+        {
+            return new List<DiaryTextDecorationRule>
+            {
+                new DiaryTextDecorationRule
+                {
+                    decoration = DiaryTextDecorationKinds.StaggeredWordSizes,
+                    scope = DiaryTextDecorationScopes.DirectSpeech,
+                    sequence = 20,
+                    intensity = 2,
+                    when = new DiaryTextDecorationCondition
+                    {
+                        anyHediffDefName = new List<string>
+                        {
+                            "AlcoholHigh",
+                            "SmokeleafHigh",
+                            "PsychiteHigh",
+                            "YayoHigh",
+                            "FlakeHigh",
+                            "WakeUpHigh",
+                            "GoJuiceHigh",
+                            "Anesthetic",
+                            "Anesthesia"
+                        },
+                        anyHediffDefNameContains = new List<string>
+                        {
+                            "Smokeleaf",
+                            "Psychite",
+                            "Yayo",
+                            "Flake",
+                            "WakeUp",
+                            "Wake-Up",
+                            "GoJuice",
+                            "Go-Juice",
+                            "Anesth"
+                        },
+                        anyHediffLabelContains = new List<string>
+                        {
+                            "drunk",
+                            "alcohol",
+                            "smokeleaf",
+                            "psychite",
+                            "yayo",
+                            "flake",
+                            "wake-up",
+                            "wakeup",
+                            "go-juice",
+                            "gojuice",
+                            "anesth"
+                        }
+                    }
+                },
+                new DiaryTextDecorationRule
+                {
+                    decoration = DiaryTextDecorationKinds.Zalgo,
+                    scope = DiaryTextDecorationScopes.DirectSpeech,
+                    sequence = 30,
+                    intensity = 1,
+                    when = new DiaryTextDecorationCondition
+                    {
+                        anyColorCue = new List<string>
+                        {
+                            DiaryEvent.StrangeChatColorCue,
+                            DiaryEvent.ExtremeDarkColorCue
+                        }
+                    }
+                }
+            };
+        }
+    }
+}

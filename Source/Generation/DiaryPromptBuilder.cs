@@ -34,28 +34,40 @@ namespace PawnDiary
 
         // Prompts intentionally omit any field that is empty or "normal" (see PromptAssembler.AppendField),
         // so the model only ever sees signal — no "health: healthy", no weather indoors, etc.
-        public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule, string promptEnchantment)
+        public static DiaryPromptPlan BuildSequentialInteractionPromptPlan(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string personaRule,
+            string promptEnchantment,
+            int maxTokens = 0)
         {
-            if (diaryEvent.solo)
-            {
-                return BuildSoloPrompt(diaryEvent, personaRule, promptEnchantment);
-            }
-
-            string initiatorEntry = string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase)
+            string initiatorEntry = diaryEvent != null
+                && !diaryEvent.solo
+                && string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase)
                 ? DiaryContextBuilder.CleanLine(diaryEvent.initiatorGeneratedText)
                 : null;
 
-            return BuildPairPrompt(diaryEvent, povRole, initiatorEntry, personaRule, promptEnchantment);
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, initiatorEntry, null, false, maxTokens);
+        }
+
+        public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule, string promptEnchantment)
+        {
+            return BuildSequentialInteractionPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment).userPrompt;
+        }
+
+        public static DiaryPromptPlan BuildInteractionPromptPlan(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string personaRule,
+            string promptEnchantment,
+            int maxTokens = 0)
+        {
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, null, null, false, maxTokens);
         }
 
         public static string BuildInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule, string promptEnchantment)
         {
-            if (diaryEvent.solo)
-            {
-                return BuildSoloPrompt(diaryEvent, personaRule, promptEnchantment);
-            }
-
-            return BuildPairPrompt(diaryEvent, povRole, null, personaRule, promptEnchantment);
+            return BuildInteractionPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment).userPrompt;
         }
 
         /// <summary>
@@ -63,12 +75,14 @@ namespace PawnDiary
         /// descriptions. It deliberately omits persona, relationship continuity, and first-person
         /// POV fields because this output is a factual death note, not a diary entry.
         /// </summary>
+        public static DiaryPromptPlan BuildDeathDescriptionPromptPlan(DiaryEvent diaryEvent, int maxTokens = 0)
+        {
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, null, null, false, maxTokens);
+        }
+
         public static string BuildDeathDescriptionPrompt(DiaryEvent diaryEvent)
         {
-            return RenderTemplate(
-                DiaryPromptTemplates.DeathDescription,
-                BuildNeutralRenderContext(diaryEvent, DiaryEvent.NeutralRole, null),
-                DiaryPromptTemplates.FinalInstructionFor(DiaryPromptTemplates.DeathDescription));
+            return BuildDeathDescriptionPromptPlan(diaryEvent).userPrompt;
         }
 
         /// <summary>
@@ -76,12 +90,14 @@ namespace PawnDiary
         /// pawn became part of the colony. Starting pawns get scenario context; later pawns get the
         /// SetFaction/join facts captured at runtime.
         /// </summary>
+        public static DiaryPromptPlan BuildArrivalDescriptionPromptPlan(DiaryEvent diaryEvent, int maxTokens = 0)
+        {
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, null, null, false, maxTokens);
+        }
+
         public static string BuildArrivalDescriptionPrompt(DiaryEvent diaryEvent)
         {
-            return RenderTemplate(
-                DiaryPromptTemplates.ArrivalDescription,
-                BuildNeutralRenderContext(diaryEvent, DiaryEvent.InitiatorRole, null),
-                DiaryPromptTemplates.FinalInstructionFor(DiaryPromptTemplates.ArrivalDescription));
+            return BuildArrivalDescriptionPromptPlan(diaryEvent).userPrompt;
         }
 
         /// <summary>
@@ -91,28 +107,15 @@ namespace PawnDiary
         /// else falls back to the raw game text. The title prompt is intentionally small and
         /// cheap — see <see cref="DiaryGameComponent.Generation.QueueTitleRequest"/>.
         /// </summary>
+        public static DiaryPromptPlan BuildTitlePromptPlan(DiaryEvent diaryEvent, string povRole, int maxTokens = 0)
+        {
+            string entryText = diaryEvent == null ? string.Empty : diaryEvent.DisplayTextForRole(povRole);
+            return BuildPromptPlan(diaryEvent, povRole, string.Empty, string.Empty, null, entryText, true, maxTokens);
+        }
+
         public static string BuildTitlePrompt(DiaryEvent diaryEvent, string povRole)
         {
-            if (diaryEvent == null)
-            {
-                return DiaryPromptTemplates.FinalInstructionFor(DiaryPromptTemplates.Title);
-            }
-
-            // Prefer the polished LLM output; fall back to the raw game text when the main entry
-            // hasn't finished yet (rare — the title call is only fired after a successful main
-            // entry, but the fallback keeps the request self-contained).
-            // DisplayTextForRole is the public accessor: returns generated if non-empty, else raw.
-            string entryText = diaryEvent.DisplayTextForRole(povRole);
-            if (string.IsNullOrWhiteSpace(entryText))
-            {
-                return DiaryPromptTemplates.FinalInstructionFor(DiaryPromptTemplates.Title);
-            }
-
-            PromptRenderContext context = BuildNeutralRenderContext(diaryEvent, povRole, entryText);
-            return RenderTemplate(
-                DiaryPromptTemplates.Title,
-                context,
-                DiaryPromptTemplates.FinalInstructionFor(DiaryPromptTemplates.Title));
+            return BuildTitlePromptPlan(diaryEvent, povRole).userPrompt;
         }
 
         /// <summary>
@@ -197,6 +200,28 @@ namespace PawnDiary
         public static string TitleSystemPrompt()
         {
             return DiaryPromptTemplates.SystemPromptFor(DiaryPromptTemplates.Title);
+        }
+
+        private static DiaryPromptPlan BuildPromptPlan(
+            DiaryEvent diaryEvent,
+            string povRole,
+            string personaRule,
+            string promptEnchantment,
+            string priorInitiatorEntry,
+            string entryText,
+            bool titleRequest,
+            int maxTokens)
+        {
+            DiaryPromptRequest request = DiaryPipelineAdapters.BuildPromptRequest(
+                diaryEvent,
+                povRole,
+                personaRule,
+                promptEnchantment,
+                priorInitiatorEntry,
+                entryText,
+                titleRequest,
+                maxTokens);
+            return DiaryPromptPlanner.Build(request);
         }
 
         private static string BuildPairPrompt(DiaryEvent diaryEvent, string povRole, string initiatorEntry, string personaRule, string promptEnchantment)
