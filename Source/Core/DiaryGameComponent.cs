@@ -25,6 +25,7 @@
 //   DiaryGameComponent.Work.cs           — occasional solo notes about current pawn work
 //   DiaryGameComponent.Arrivals.cs       — the neutral "how this pawn joined" first entry
 //   DiaryGameComponent.InteractionBatching.cs — XML-configured batching for quick social logs
+//   DiaryGameComponent.TaleBatching.cs   — delayed solo batches for bursty Tale events
 //   DiaryGameComponent.AmbientThoughts.cs — day-note batching for low-impact temporary thoughts
 //   ──
 //   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
@@ -76,6 +77,9 @@ namespace PawnDiary
         // Ambient interaction notes still accumulating low-stakes social texture; keyed by
         // group+pawn+day. Also transient and flushed before saving.
         private readonly Dictionary<string, PendingAmbientInteractionNote> pendingAmbientInteractionNotes = new Dictionary<string, PendingAmbientInteractionNote>();
+        // Bursty Tale events (notably combat wounds/kills) that are waiting to become one solo entry
+        // per pawn after the configured quiet window. Transient and flushed before saving.
+        private readonly Dictionary<string, PendingTaleBatch> pendingTaleBatches = new Dictionary<string, PendingTaleBatch>();
         // Prevents an ambient group from writing twice for the same pawn/day after an early save or
         // max-count flush in the same play session.
         private readonly HashSet<string> writtenAmbientInteractionNotes = new HashSet<string>();
@@ -158,6 +162,7 @@ namespace PawnDiary
         {
             pendingInteractionBatches.Clear();
             pendingAmbientInteractionNotes.Clear();
+            pendingTaleBatches.Clear();
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
@@ -186,6 +191,7 @@ namespace PawnDiary
         {
             pendingInteractionBatches.Clear();
             pendingAmbientInteractionNotes.Clear();
+            pendingTaleBatches.Clear();
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
@@ -216,6 +222,7 @@ namespace PawnDiary
             if (Scribe.mode == LoadSaveMode.Saving)
             {
                 FlushAllInteractionBatches();
+                FlushAllTaleBatches();
                 FlushAllAmbientThoughtNotes();
             }
 
@@ -244,6 +251,7 @@ namespace PawnDiary
         public override void GameComponentTick()
         {
             FlushReadyInteractionBatches();
+            FlushReadyTaleBatches();
             FlushReadyAmbientThoughtNotes();
 
             // Re-baseline each colonist's opinions at the start of every new day, so the reflection

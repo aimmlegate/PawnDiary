@@ -31,8 +31,8 @@ namespace PawnDiary
         Hediff
     }
 
-    // How an Interaction-domain batch is keyed. Pair means "all matching interactions for this
-    // pawn pair share one batch"; Def keeps separate batches per InteractionDef within the pair.
+    // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
+    // Interaction rows, per pawn for Tale rows); Def keeps separate batches per source defName.
     public enum InteractionBatchScope
     {
         Pair,
@@ -49,8 +49,8 @@ namespace PawnDiary
     }
 
     // Optional batching policy embedded in a DiaryInteractionGroupDef. RimWorld can populate this
-    // from a nested <batch> XML node. It currently applies to social InteractionDefs because those
-    // arrive as pairwise PlayLog rows; other domains have different event shapes.
+    // from a nested <batch> XML node. Interaction-domain groups use the full policy; Tale-domain
+    // groups use it for delayed per-pawn solo batches so bursts of combat tales do not flood the LLM.
     public class InteractionBatchPolicy
     {
         // Set false in XML to leave a documented policy disabled without deleting it.
@@ -187,8 +187,8 @@ namespace PawnDiary
         // whether to add the equipped weapon to the prompt; set per group in XML, default false.
         public bool combat = false;
 
-        // Optional Interaction-domain batching policy. When present and enabled, matching social
-        // log rows are buffered according to this policy instead of immediately becoming entries.
+        // Optional batching policy. Interaction groups can merge or ambient-batch social log rows;
+        // selected Tale groups can delay and merge bursts into one solo event per pawn.
         public InteractionBatchPolicy batch;
 
         // Optional promotion policy. When present and enabled on a batch group, each matching moment
@@ -284,6 +284,15 @@ namespace PawnDiary
             get
             {
                 return domain == GroupDomain.Interaction && batch != null && batch.enabled;
+            }
+        }
+
+        // True when this Tale-domain group should delay matching TaleDefs into per-pawn solo batches.
+        public bool HasTaleBatchPolicy
+        {
+            get
+            {
+                return domain == GroupDomain.Tale && batch != null && batch.enabled;
             }
         }
 

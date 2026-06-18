@@ -115,7 +115,7 @@ namespace PawnDiary
 
             if (batched)
             {
-                return DiaryPipelineTemplates.SoloBatched;
+                return combat ? DiaryPipelineTemplates.SoloImportant : DiaryPipelineTemplates.SoloBatched;
             }
 
             return important ? DiaryPipelineTemplates.SoloImportant : DiaryPipelineTemplates.SoloDefault;

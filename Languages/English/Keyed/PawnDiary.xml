@@ -164,6 +164,16 @@
   <PawnDiary.Event.BatchBrief>A brief {0} exchange.</PawnDiary.Event.BatchBrief>
   <PawnDiary.Event.BatchHeader>Several {0} moments happened:</PawnDiary.Event.BatchHeader>
   <PawnDiary.Event.BatchInstruction>write one diary entry for the overall {0} exchange, not separate entries for each listed moment</PawnDiary.Event.BatchInstruction>
+  <PawnDiary.Event.TaleBatchFallback>{0} lived through a few {1} moments.</PawnDiary.Event.TaleBatchFallback>
+  <PawnDiary.Event.TaleBatchLabel>{0}</PawnDiary.Event.TaleBatchLabel>
+  <PawnDiary.Event.TaleBatchBrief>A {0} moment left a mark.</PawnDiary.Event.TaleBatchBrief>
+  <PawnDiary.Event.TaleBatchHeader>Several {0} moments happened:</PawnDiary.Event.TaleBatchHeader>
+  <PawnDiary.Event.TaleBatchInstruction>write one solo diary entry for the overall {0} stretch, not separate entries for each listed moment</PawnDiary.Event.TaleBatchInstruction>
+  <PawnDiary.Event.CombatBatchLabel>Combat aftermath</PawnDiary.Event.CombatBatchLabel>
+  <PawnDiary.Event.CombatBatchBrief>A dangerous combat moment left a mark.</PawnDiary.Event.CombatBatchBrief>
+  <PawnDiary.Event.CombatBatchHeader>Several combat moments landed:</PawnDiary.Event.CombatBatchHeader>
+  <PawnDiary.Event.CombatBatchFallback>{0} lived through a hard stretch of combat.</PawnDiary.Event.CombatBatchFallback>
+  <PawnDiary.Event.CombatBatchInstruction>write one solo diary entry about the overall fight, using the listed combat log lines as factual evidence; do not report each wound, downing, or kill separately</PawnDiary.Event.CombatBatchInstruction>
   <PawnDiary.Event.InsultBatchLabel>Insults exchanged</PawnDiary.Event.InsultBatchLabel>
   <PawnDiary.Event.InsultBatchBrief>A sharp insult landed.</PawnDiary.Event.InsultBatchBrief>
   <PawnDiary.Event.InsultBatchHeader>Several insults landed:</PawnDiary.Event.InsultBatchHeader>

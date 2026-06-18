@@ -3,6 +3,14 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (combat tale batching)**
+  - Added delayed per-pawn solo batching for non-death `talecombat` TaleRecorder events. Wounds,
+    downings, hostile kills, fire/collapse scares, and similar combat bursts now wait for a
+    three-in-game-hour quiet window (or ten events) before generating one combined solo diary entry.
+  - Kept colonist death-description tales on the immediate neutral death path, and adjusted pure
+    prompt selection so solo combat batches keep the richer solo combat/important tone instead of
+    falling to the generic solo-batched template.
+
 - **2026-06-18 (settings prompt studio simplification)**
   - Reworked Prompt Studio to expose only the shared system prompts for diary entries, day
     reflections, neutral chronicles, and title generation. Saved overrides fall back to

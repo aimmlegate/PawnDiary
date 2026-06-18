@@ -18,11 +18,12 @@
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
     colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
                      combat, socialFight, mentalBreak, daze, extremeDark, strangeChat, white, quiet
-    batch          - optional Interaction-domain batching policy:
+    batch          - optional Interaction/Tale batching policy:
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
                      fallbackKey, instructionKey, includeInteractionLabel, minEventsToWrite,
-                     maxSampleLines
+                     maxSampleLines. Tale batches currently ignore mode and always write delayed
+                     solo entries per pawn.
     hediff         - optional Hediff-domain policy:
                      enabled, mode (DayReflection or Immediate), visibleOnly, badOnly,
                      excludeInjuries, minSeverity, chronicAlways, sickThoughtAlways,
@@ -538,6 +539,20 @@
     <colorCue>combat</colorCue>
     <instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</instruction>
     <tone>with fear and visceral danger</tone>
+    <batch>
+      <!-- RimWorld has 2,500 ticks per in-game hour; 7,500 ticks is a three-hour quiet window. -->
+      <windowTicks>7500</windowTicks>
+      <maxEvents>10</maxEvents>
+      <scope>Pair</scope>
+      <syntheticDefName>TaleCombatBatch</syntheticDefName>
+      <labelKey>PawnDiary.Event.CombatBatchLabel</labelKey>
+      <briefKey>PawnDiary.Event.CombatBatchBrief</briefKey>
+      <headerKey>PawnDiary.Event.CombatBatchHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.CombatBatchFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.CombatBatchInstruction</instructionKey>
+      <includeInteractionLabel>true</includeInteractionLabel>
+      <maxSampleLines>8</maxSampleLines>
+    </batch>
     <matchDefNames>
       <li>Downed</li>
       <li>Wounded</li>

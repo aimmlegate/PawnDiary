@@ -162,6 +162,12 @@ entries. Mirrored social-fight calls and repeated breaks are deduplicated.
 pairwise entries. TaleDefs handled by more precise hooks are skipped, and GameCondition-like
 TaleDefs are skipped so they record once through MoodEvent.
 
+Non-death combat Tales use the `talecombat` XML `<batch>` policy instead of generating
+immediately. Each eligible pawn accumulates Wounded/Downed/kill/rescue-style evidence for the
+configured quiet window, then receives one delayed solo entry with the batch lines as factual
+evidence. Colonist death-description Tales bypass batching and still queue immediately so final
+death pages keep exact chronology and cause context.
+
 Synthetic tale-style hooks cover masterwork/legendary crafts from
 `QualityUtility.SendCraftNotification` and ideology relic installation from `JobDriver_InstallRelic`.
 
@@ -256,8 +262,11 @@ derive the same cue from saved `gameContext` markers and XML group classificatio
 
 Batch policies live on groups:
 
-- `PairEvent` merges quick rows for a pawn pair or def.
-- `AmbientDayNote` accumulates low-stakes rows per pawn/day into one solo memory.
+- Interaction `PairEvent` merges quick rows for a pawn pair or def.
+- Interaction `AmbientDayNote` accumulates low-stakes rows per pawn/day into one solo memory.
+- Tale-domain batches currently write delayed solo entries per pawn; `talecombat` uses a
+  three-in-game-hour quiet window (7,500 ticks) or ten events, whichever comes first, so combat
+  injury/kill bursts become one evidence-rich solo prompt instead of immediate event spam.
 - The insults group uses `PairEvent` with `includeInteractionLabel=false`, so each evidence line is
   the actual game log sentence rather than a repeated "Insult:" prefix.
 - Promotion policies let batched interactions escape into immediate pairwise events based on opinion

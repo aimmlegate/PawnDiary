@@ -1,7 +1,7 @@
 // Tales — the TaleRecorder.RecordTale hook's diary flow. Tales are vanilla's broad notable-history
 // events (deaths, wounds, surgeries, births, recruitment, research, disasters, …). RecordTale skips
 // tales already covered by a more specific hook or shared with a GameCondition, dedups, then records
-// a solo or pairwise DiaryEvent depending on how many eligible colonists are involved. Colonist
+// a solo/pairwise DiaryEvent or hands bursty combat tales to the delayed solo batcher. Colonist
 // deaths take a special "death description" path (a neutral account rather than the dead pawn's POV).
 // The helpers below pull pawns/defs out of the vanilla Tale subclasses, build the fallback text and
 // "tale=" game-context string, and resolve the death victim. The two static sets list TaleDefs we
@@ -100,6 +100,14 @@ namespace PawnDiary
             if (deathDescription)
             {
                 gameContext = AppendDeathDescriptionContext(gameContext, deathVictim, firstPawn, secondPawn);
+            }
+
+            DiaryInteractionGroupDef batchGroup = deathDescription ? null : TaleBatchGroupFor(taleDef);
+            if (batchGroup != null)
+            {
+                RecordBatchedTale(batchGroup, firstPawn, secondPawn, firstEligible, secondEligible,
+                    taleDef, label, attachedDef, instruction);
+                return;
             }
 
             if (firstEligible && secondEligible && firstPawn != secondPawn)

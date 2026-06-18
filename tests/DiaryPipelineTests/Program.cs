@@ -17,6 +17,7 @@ namespace DiaryPipelineTests
             TestNeutralGenerationPlans();
             TestTitlePromptPlan();
             TestSoloSelection();
+            TestSoloBatchSelection();
             TestResponsePostprocessorRules();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
@@ -210,6 +211,31 @@ namespace DiaryPipelineTests
                 povRole = DiaryPipelineRoles.Initiator
             });
             AssertEqual("reflection wins over internal state", DiaryPipelineTemplates.SoloDayReflection, reflectionPlan.templateKey);
+        }
+
+        private static void TestSoloBatchSelection()
+        {
+            DiaryEventPayload quietBatchPayload = SoloPayload("e-batch", "passing conversations",
+                "Several conversations colored the day.");
+            quietBatchPayload.gameContext = "batch=ambient_day_note; events=4";
+            DiaryPromptPlan quietBatchPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = quietBatchPayload,
+                policy = Policy(combat: false, important: false),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("solo noncombat batch selection", DiaryPipelineTemplates.SoloBatched, quietBatchPlan.templateKey);
+
+            DiaryEventPayload combatBatchPayload = SoloPayload("e-combat-batch", "combat aftermath",
+                "Several combat moments landed.");
+            combatBatchPayload.gameContext = "tale=TaleCombatBatch; batch=tale; events=4";
+            DiaryPromptPlan combatBatchPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = combatBatchPayload,
+                policy = Policy(combat: true, important: true),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("solo combat batch selection", DiaryPipelineTemplates.SoloImportant, combatBatchPlan.templateKey);
         }
 
         private static void TestResponsePostprocessorRules()
