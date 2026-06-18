@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tiny standalone console that renders prompt-lab/golden/cases.json through the SAME pure
+    PromptAssembler the mod uses, and writes golden/expected.json. It links the two pure source files
+    directly (they have zero RimWorld/Unity dependencies), so it builds and runs with a plain dotnet
+    SDK - no RimWorld needed. The Node harness mirrors PromptAssembler in assembler.js and asserts
+    identical output, so the C# and JS renderers can never silently drift.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>promptdump</AssemblyName>
+    <RootNamespace>PawnDiary.PromptDump</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Source\Generation\PromptAssembler.cs" />
+    <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" />
+  </ItemGroup>
+
+</Project>

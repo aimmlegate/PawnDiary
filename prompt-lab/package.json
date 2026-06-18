@@ -7,6 +7,9 @@
     "start": "node run.js --from-defs",
     "from-defs": "node run.js --from-defs",
     "dry-run": "node run.js --from-defs --dry-run",
-    "from-defs:save": "node run.js --from-defs --save"
+    "from-defs:save": "node run.js --from-defs --save",
+    "golden": "dotnet run --project dump -- golden/cases.json golden/expected.json",
+    "check-golden": "node check-golden.js",
+    "test": "node check-golden.js"
   }
 }

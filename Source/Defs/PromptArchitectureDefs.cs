@@ -31,6 +31,11 @@ namespace PawnDiary
         public string finalInstruction;
         public string recipientFinalInstruction;
         public bool includePromptEnchantment = true;
+        // When true, the pawn's persona voice rule is appended to the system prompt for this shape
+        // (see DiaryPromptBuilder.ComposeSystemPrompt). Persona now governs the system prompt rather
+        // than competing as one field in the user message, so first-person shapes keep this true and
+        // the neutral chronicle/title shapes set it false to stay persona-free.
+        public bool includePersona = true;
         public bool appendDirectSpeechInstruction = true;
         public List<DiaryPromptFieldDef> fields = new List<DiaryPromptFieldDef>();
     }
@@ -221,12 +226,13 @@ namespace PawnDiary
                 return Fields(Field("entry", "EntryText"));
             }
 
+            // Persona is intentionally absent: it is injected into the system prompt
+            // (DiaryPromptBuilder.ComposeSystemPrompt), not rendered as a user-message field.
             return Fields(
                 Field("event", "EventNoun"),
                 Field("pov", "PovName"),
                 Field("what happened", "PovText"),
                 Field("instruction", "Instruction"),
-                Field("persona", "Persona"),
                 Field("important health", "PromptEnchantment"),
                 Field("setting", "Setting"),
                 Field("my last opener (not repeat)", "LastOpener"));

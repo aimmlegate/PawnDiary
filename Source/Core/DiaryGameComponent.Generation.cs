@@ -430,7 +430,10 @@ namespace PawnDiary
             {
                 eventId = diaryEvent.eventId,
                 povRole = povRole,
-                systemPrompt = SystemPromptForEvent(diaryEvent),
+                // Persona is folded into the system prompt here (not the user message), so the
+                // colonist's voice governs HOW the entry is written. Neutral death/arrival shapes
+                // opt out via includePersona, so PersonaRuleFor's value is ignored for them.
+                systemPrompt = DiaryPromptBuilder.ComposeSystemPrompt(diaryEvent, PersonaRuleFor(diaryEvent, povRole)),
                 rawText = rawText,
                 endpointUrl = target.url,
                 modelName = target.model,
@@ -444,26 +447,6 @@ namespace PawnDiary
                 maxTokens = PawnDiaryMod.Settings.maxTokens,
                 temperature = PawnDiaryMod.Settings.temperature
             });
-        }
-
-        /// <summary>
-        /// Picks the system prompt by narrative mode: a neutral third-person chronicle for colonist
-        /// death/arrival descriptions, the end-of-day reflection prompt for day summaries, and the
-        /// first-person diary voice for everything else. Each is player-editable in settings.
-        /// </summary>
-        private static string SystemPromptForEvent(DiaryEvent diaryEvent)
-        {
-            if (diaryEvent.HasDeathDescription() || diaryEvent.HasArrivalDescription())
-            {
-                return DiaryPromptBuilder.SystemPromptForEvent(diaryEvent);
-            }
-
-            if (diaryEvent.IsDayReflection())
-            {
-                return DiaryPromptBuilder.SystemPromptForEvent(diaryEvent);
-            }
-
-            return DiaryPromptBuilder.SystemPromptForEvent(diaryEvent);
         }
 
         /// <summary>

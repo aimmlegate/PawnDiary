@@ -32,7 +32,7 @@ namespace PawnDiary
             public string entryText;
         }
 
-        // Prompts intentionally omit any field that is empty or "normal" (see AppendField),
+        // Prompts intentionally omit any field that is empty or "normal" (see PromptAssembler.AppendField),
         // so the model only ever sees signal — no "health: healthy", no weather indoors, etc.
         public static string BuildSequentialInteractionPrompt(DiaryEvent diaryEvent, string povRole, string personaRule, string promptEnchantment)
         {
@@ -127,22 +127,68 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns the XML template's system prompt for this event shape, with DiaryPromptDef as the
-        /// fallback source for templates that only specify field lists.
+        /// fallback source for templates that only specify field lists. This is the bare base prompt;
+        /// callers that send a first-person entry should use <see cref="ComposeSystemPrompt"/> so the
+        /// pawn's persona voice is folded in.
         /// </summary>
         public static string SystemPromptForEvent(DiaryEvent diaryEvent)
         {
+            return DiaryPromptTemplates.SystemPromptFor(TemplateKeyForEvent(diaryEvent));
+        }
+
+        /// <summary>
+        /// Builds the system prompt actually sent for an event: the template's base system prompt
+        /// with the pawn's persona voice appended as a standing instruction. Putting persona in the
+        /// system slot makes the voice govern HOW the colonist writes, instead of competing as one
+        /// data field among many in the user message. Neutral chronicle shapes (death/arrival) and
+        /// the title flow opt out via <c>includePersona</c>, so they stay persona-free.
+        /// Call on the main thread: it resolves a localized string (<c>.Translate()</c>).
+        /// </summary>
+        public static string ComposeSystemPrompt(DiaryEvent diaryEvent, string personaRule)
+        {
+            string templateKey = TemplateKeyForEvent(diaryEvent);
+            string baseSystemPrompt = DiaryPromptTemplates.SystemPromptFor(templateKey);
+            bool includePersona = DiaryPromptTemplates.ForKey(templateKey).includePersona;
+            // Resolve the localized persona block here (impure, main-thread .Translate()), then hand
+            // the plain strings to the pure assembler so the compose logic stays game-independent and
+            // shared with the test harness (see PromptAssembler / prompt-lab golden checks).
+            string personaVoiceBlock = includePersona ? PersonaVoiceBlock(personaRule) : string.Empty;
+            return PromptAssembler.ComposeSystem(baseSystemPrompt, personaVoiceBlock, includePersona);
+        }
+
+        /// <summary>
+        /// Resolves the localized persona voice block from a persona rule, or empty when there is no
+        /// rule. Localized here (not in the pure assembler) because <c>.Translate()</c> needs the game.
+        /// </summary>
+        private static string PersonaVoiceBlock(string personaRule)
+        {
+            if (string.IsNullOrWhiteSpace(personaRule))
+            {
+                return string.Empty;
+            }
+
+            return "PawnDiary.Prompt.PersonaVoice".Translate(personaRule.Trim()).Resolve();
+        }
+
+        /// <summary>
+        /// Resolves which prompt template a whole event maps to: the neutral death/arrival chronicles
+        /// when those descriptions apply, otherwise the first-person shape chosen by
+        /// <see cref="TemplateKeyFor"/>. Shared by the system-prompt and persona-injection paths so
+        /// both agree on the shape.
+        /// </summary>
+        private static string TemplateKeyForEvent(DiaryEvent diaryEvent)
+        {
             if (diaryEvent != null && diaryEvent.HasDeathDescription())
             {
-                return DiaryPromptTemplates.SystemPromptFor(DiaryPromptTemplates.DeathDescription);
+                return DiaryPromptTemplates.DeathDescription;
             }
 
             if (diaryEvent != null && diaryEvent.HasArrivalDescription())
             {
-                return DiaryPromptTemplates.SystemPromptFor(DiaryPromptTemplates.ArrivalDescription);
+                return DiaryPromptTemplates.ArrivalDescription;
             }
 
-            return DiaryPromptTemplates.SystemPromptFor(
-                TemplateKeyFor(diaryEvent, diaryEvent != null && !diaryEvent.solo));
+            return TemplateKeyFor(diaryEvent, diaryEvent != null && !diaryEvent.solo);
         }
 
         /// <summary>
@@ -311,174 +357,93 @@ namespace PawnDiary
             };
         }
 
+        // Impure half of rendering: read the event/context (and a couple of localized strings) into a
+        // plain PromptValues bag, then hand it to the pure PromptAssembler. The assembler owns the
+        // field order, skip rules, "key: value" join, and instruction trailer — the exact algorithm
+        // the Node prompt-lab harness mirrors and golden-tests against.
         private static string RenderTemplate(string templateKey, PromptRenderContext context, string instruction)
         {
-            List<string> lines = new List<string>();
-            List<DiaryPromptFieldDef> fields = DiaryPromptTemplates.FieldsFor(templateKey);
+            return PromptAssembler.RenderUserPrompt(
+                ToAssemblerFields(DiaryPromptTemplates.FieldsFor(templateKey)),
+                ProjectValues(templateKey, context),
+                instruction);
+        }
+
+        // Copies the XML field defs into the assembler's plain field type (no Def dependency in the
+        // pure layer).
+        private static List<PromptAssemblerField> ToAssemblerFields(List<DiaryPromptFieldDef> fields)
+        {
+            List<PromptAssemblerField> result = new List<PromptAssemblerField>();
+            if (fields == null)
+            {
+                return result;
+            }
 
             for (int i = 0; i < fields.Count; i++)
             {
                 DiaryPromptFieldDef field = fields[i];
-                if (field == null || !field.enabled)
+                if (field == null)
                 {
                     continue;
                 }
 
-                string label = string.IsNullOrWhiteSpace(field.label) ? field.source : field.label;
-                AppendField(lines, label, ResolveField(field, context));
+                result.Add(new PromptAssemblerField
+                {
+                    label = field.label,
+                    source = field.source,
+                    contextKey = field.contextKey,
+                    enabled = field.enabled
+                });
             }
 
-            string body = string.Join("\n", lines.ToArray());
-            if (string.IsNullOrWhiteSpace(instruction))
-            {
-                return body;
-            }
-
-            if (string.IsNullOrWhiteSpace(body))
-            {
-                return instruction;
-            }
-
-            return body + "\n\n" + instruction;
+            return result;
         }
 
-        private static string ResolveField(DiaryPromptFieldDef field, PromptRenderContext context)
+        // Resolves every field source to a concrete string up front (the old per-source ResolveField
+        // switch, inverted into a data bag). EventNoun localizes via .Translate(), and the death/arrival
+        // helpers parse gameContext, so this must run on the main thread — exactly where queueing runs.
+        private static PromptValues ProjectValues(string templateKey, PromptRenderContext context)
         {
-            if (field == null || context == null)
+            if (context == null)
             {
-                return string.Empty;
+                return new PromptValues();
             }
 
             DiaryEvent diaryEvent = context.diaryEvent;
-            string source = field.source ?? string.Empty;
-            if (source.Equals("EventNoun", StringComparison.OrdinalIgnoreCase))
-            {
-                return EventNoun(diaryEvent);
-            }
+            string victimRole = DiaryContextFields.Value(diaryEvent?.gameContext, "death_victim_role");
+            string victimName = DiaryContextFields.Value(diaryEvent?.gameContext, "death_victim");
+            string arrivalPawnName = DiaryContextFields.Value(diaryEvent?.gameContext, "arrival_pawn");
 
-            if (source.Equals("PovName", StringComparison.OrdinalIgnoreCase))
+            return new PromptValues
             {
-                return context.povName;
-            }
-
-            if (source.Equals("PovRole", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.isInitiator ? "initiator" : "recipient";
-            }
-
-            if (source.Equals("OtherPawnName", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.otherName;
-            }
-
-            if (source.Equals("PovText", StringComparison.OrdinalIgnoreCase)
-                || source.Equals("WhatHappened", StringComparison.OrdinalIgnoreCase)
-                || source.Equals("WhatYouSaw", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.povText;
-            }
-
-            if (source.Equals("NeutralText", StringComparison.OrdinalIgnoreCase))
-            {
-                return diaryEvent?.neutralText;
-            }
-
-            if (source.Equals("Instruction", StringComparison.OrdinalIgnoreCase))
-            {
-                return diaryEvent?.instruction;
-            }
-
-            if (source.Equals("PawnSummary", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.povSummary;
-            }
-
-            if (source.Equals("Persona", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.personaRule;
-            }
-
-            if (source.Equals("PromptEnchantment", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.promptEnchantment;
-            }
-
-            if (source.Equals("Setting", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.setting;
-            }
-
-            if (source.Equals("Tone", StringComparison.OrdinalIgnoreCase))
-            {
-                return diaryEvent?.ToneDirective();
-            }
-
-            if (source.Equals("Relationship", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.relationship;
-            }
-
-            if (source.Equals("LastOpener", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.lastOpener;
-            }
-
-            if (source.Equals("Weapon", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.weapon;
-            }
-
-            if (source.Equals("HiddenInitiatorEntry", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.hiddenInitiatorEntry;
-            }
-
-            if (source.Equals("DeathVictim", StringComparison.OrdinalIgnoreCase))
-            {
-                string victimRole = DiaryContextFields.Value(diaryEvent?.gameContext, "death_victim_role");
-                string victimName = DiaryContextFields.Value(diaryEvent?.gameContext, "death_victim");
-                return string.IsNullOrWhiteSpace(victimName) ? NameForContextRole(diaryEvent, victimRole) : victimName;
-            }
-
-            if (source.Equals("DeathFacts", StringComparison.OrdinalIgnoreCase))
-            {
-                return BuildDeathFacts(diaryEvent?.gameContext);
-            }
-
-            if (source.Equals("DeathPawnSummary", StringComparison.OrdinalIgnoreCase))
-            {
-                string victimRole = DiaryContextFields.Value(diaryEvent?.gameContext, "death_victim_role");
-                return PawnSummaryForContextRole(diaryEvent, victimRole);
-            }
-
-            if (source.Equals("DeathSetting", StringComparison.OrdinalIgnoreCase))
-            {
-                string victimRole = DiaryContextFields.Value(diaryEvent?.gameContext, "death_victim_role");
-                return SurroundingsForContextRole(diaryEvent, victimRole);
-            }
-
-            if (source.Equals("ArrivalPawn", StringComparison.OrdinalIgnoreCase))
-            {
-                string pawnName = DiaryContextFields.Value(diaryEvent?.gameContext, "arrival_pawn");
-                return string.IsNullOrWhiteSpace(pawnName) ? diaryEvent?.initiatorName : pawnName;
-            }
-
-            if (source.Equals("ArrivalFacts", StringComparison.OrdinalIgnoreCase))
-            {
-                return BuildArrivalFacts(diaryEvent?.gameContext);
-            }
-
-            if (source.Equals("EntryText", StringComparison.OrdinalIgnoreCase))
-            {
-                return context.entryText;
-            }
-
-            if (source.Equals("GameContext", StringComparison.OrdinalIgnoreCase))
-            {
-                return DiaryContextFields.Value(diaryEvent?.gameContext, field.contextKey);
-            }
-
-            return string.Empty;
+                eventNoun = EventNoun(diaryEvent),
+                povName = context.povName,
+                // Shipped templates render persona via the system prompt now, but the PovRole/Persona
+                // sources stay resolvable so a custom template can still place them in the user message.
+                povRole = context.isInitiator ? "initiator" : "recipient",
+                otherName = context.otherName,
+                povText = context.povText,
+                neutralText = diaryEvent?.neutralText,
+                instruction = diaryEvent?.instruction,
+                pawnSummary = context.povSummary,
+                persona = context.personaRule,
+                promptEnchantment = context.promptEnchantment,
+                includePromptEnchantment = DiaryPromptTemplates.ForKey(templateKey).includePromptEnchantment,
+                setting = context.setting,
+                tone = diaryEvent?.ToneDirective(),
+                relationship = context.relationship,
+                lastOpener = context.lastOpener,
+                weapon = context.weapon,
+                initiatorEntry = context.hiddenInitiatorEntry,
+                deathVictim = string.IsNullOrWhiteSpace(victimName) ? NameForContextRole(diaryEvent, victimRole) : victimName,
+                deathFacts = BuildDeathFacts(diaryEvent?.gameContext),
+                deathPawnSummary = PawnSummaryForContextRole(diaryEvent, victimRole),
+                deathSetting = SurroundingsForContextRole(diaryEvent, victimRole),
+                arrivalPawn = string.IsNullOrWhiteSpace(arrivalPawnName) ? diaryEvent?.initiatorName : arrivalPawnName,
+                arrivalFacts = BuildArrivalFacts(diaryEvent?.gameContext),
+                entryText = context.entryText,
+                gameContext = diaryEvent?.gameContext
+            };
         }
 
         private static string EventNoun(DiaryEvent diaryEvent)
@@ -682,24 +647,6 @@ namespace PawnDiary
             }
 
             return instruction.TrimEnd() + " " + extraInstruction;
-        }
-
-        // Adds "key: value" only when the value carries real signal. Empty strings and
-        // placeholder values ("none", "n/a", "unknown") are skipped so they cost no tokens.
-        private static void AppendField(List<string> lines, string key, string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return;
-            }
-
-            string trimmed = value.Trim();
-            if (trimmed == "none" || trimmed == "n/a" || trimmed == "unknown")
-            {
-                return;
-            }
-
-            lines.Add(key + ": " + trimmed);
         }
     }
 }

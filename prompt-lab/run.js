@@ -12,6 +12,10 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
+// Shared pure renderer, mirrored from the C# PromptAssembler and locked to it by the golden check
+// (npm run check-golden). Generated fixtures render through this so the harness exercises the exact
+// algorithm the mod ships, instead of a separate copy that could drift.
+const assembler = require('./assembler');
 
 const ROOT = path.dirname(process.argv[1]);
 const DEFAULT_CONFIG_PATH = path.join(ROOT, 'prompt-lab.config.json');
@@ -303,12 +307,14 @@ function parsePromptTemplateDefsFromXml(config) {
       finalInstruction: extractTag(block, 'finalInstruction'),
       recipientFinalInstruction: extractTag(block, 'recipientFinalInstruction'),
       includePromptEnchantment: extractBool(block, 'includePromptEnchantment', true),
+      includePersona: extractBool(block, 'includePersona', true),
       appendDirectSpeechInstruction: extractBool(block, 'appendDirectSpeechInstruction', true),
       fields: fieldBlocks
         .map((fieldBlock) => ({
           enabled: extractBool(fieldBlock, 'enabled', true),
           label: extractTag(fieldBlock, 'label'),
           source: extractTag(fieldBlock, 'source'),
+          contextKey: extractTag(fieldBlock, 'contextKey'),
         }))
         .filter((field) => field.enabled && field.label && field.source),
     };
@@ -320,6 +326,8 @@ function parseKeyedPromptText(config) {
     pairInitiatorDirectSpeech: 'Initiator POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
     pairRecipientDirectSpeech: 'Recipient POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
     soloInteractionDirectSpeech: 'Single-POV interaction for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
+    // Mirrors PawnDiary.Prompt.PersonaVoice: the persona voice block appended to the system prompt.
+    personaVoice: "Write in this colonist's own voice — someone who {0} Let this voice shape word choice, rhythm, and which details they notice, not only what happens.",
   };
   const raw = readIfExists(resolvePath(config.keyedFile));
   if (!raw) return defaults;
@@ -328,6 +336,7 @@ function parseKeyedPromptText(config) {
     pairInitiatorDirectSpeech: extractTag(raw, 'PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator') || defaults.pairInitiatorDirectSpeech,
     pairRecipientDirectSpeech: extractTag(raw, 'PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient') || defaults.pairRecipientDirectSpeech,
     soloInteractionDirectSpeech: extractTag(raw, 'PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction') || defaults.soloInteractionDirectSpeech,
+    personaVoice: extractTag(raw, 'PawnDiary.Prompt.PersonaVoice') || defaults.personaVoice,
   };
 }
 
@@ -372,12 +381,12 @@ function parseInteractionGroupsFromXml(config) {
 function loadPromptData(config) {
   return {
     promptDefs: parsePromptDefsFromXml(config) || {
-      singlePovInstruction: "Write one to three complete first-person diary sentences from this pawn's point of view. Use at least one concrete supplied detail, but do not cover every detail. Output only the diary entry.",
-      recipientFollowupInstruction: "Write one to three complete first-person diary sentences from the recipient's point of view. Use at least one concrete supplied detail, but do not cover every detail. The initiator diary entry is hidden continuity context; do not write as if the recipient read it. Output only the diary entry.",
+      singlePovInstruction: 'Write one to three first-person diary sentences as this colonist, about the event above. If the notes are thin, react specifically to what happened rather than inventing detail. Output only the diary entry.',
+      recipientFollowupInstruction: "Write one to three first-person diary sentences from the recipient's point of view, about the event above. The initiator's diary entry is hidden continuity context — do not write as if the recipient read it. If the notes are thin, react specifically to what happened rather than inventing detail. Output only the diary entry.",
       deathDescriptionInstruction: 'Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts. Output only the death description.',
       arrivalDescriptionInstruction: 'Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. Output only the arrival description.',
-      systemPrompt: 'You write diary entries for RimWorld colonists. Each entry is first-person, in character, and one to three complete sentences. Use only supplied facts, anchor in concrete detail, match persona, and return only the diary text.',
-      systemPromptReflection: 'You write end-of-day diary reflections for RimWorld colonists. Each is first-person, in character, looking back on the whole day, and two to four complete sentences. Use only the listed moments and return only the diary text.',
+      systemPrompt: "You write first-person diary entries for RimWorld colonists, one to three sentences in the colonist's own voice. Anchor each entry in one concrete sensation or detail from the supplied context, let mood/health/setting/tone color the subtext, invent nothing not supplied, and return only the diary text. (Persona voice is appended separately.)",
+      systemPromptReflection: "You write end-of-day diary reflections for RimWorld colonists, first-person, two to four sentences in the colonist's voice. Anchor the reflection in one or two of the day's listed moments that still weigh on them, reflect on how the day felt, invent nothing not in the notes, and return only the diary text.",
       systemPromptNeutral: 'You write short, third-person factual notes about RimWorld colony events. Each note is one to three complete sentences. Use only supplied facts and return only the note text.',
       titleSystemPrompt: 'You write short, evocative titles (3 to 8 words) for RimWorld diary entries. Return only the title — no quotes, no period, no markdown, no labels, no commentary.',
       titleUserInstruction: DEFAULT_TITLE_USER_INSTRUCTION,
@@ -448,10 +457,26 @@ function toChatUrl(endpoint) {
   return `${normalizeEndpoint(endpoint)}/chat/completions`;
 }
 
+// Mirrors DiaryPromptBuilder.ComposeSystemPrompt: append the pawn's persona voice to the system
+// prompt (so the voice governs HOW the entry is written) unless the template opts out via
+// includePersona. The neutral death/arrival chronicles and the title flow stay persona-free.
+function appendPersonaToSystem(baseSystem, template, personaRule, keyed) {
+  if (template && template.includePersona === false) return baseSystem;
+  const rule = cleanValue(personaRule);
+  const voiceTemplate = keyed && keyed.personaVoice;
+  if (isSkippable(rule) || isSkippable(voiceTemplate)) return baseSystem;
+  const block = formatInstructionTemplate(voiceTemplate, [rule]);
+  if (isSkippable(block)) return baseSystem;
+  if (isSkippable(baseSystem)) return block;
+  return `${String(baseSystem).trimEnd()}\n\n${block}`;
+}
+
 function getSystemForFixture(fixture, config, promptData) {
   if (fixture.systemText) return fixture.systemText;
   if (fixture.templateKey) {
-    return fixture.system || systemPromptForTemplate(promptData, config, fixture.templateKey);
+    const baseSystem = fixture.system || systemPromptForTemplate(promptData, config, fixture.templateKey);
+    const template = resolvedTemplate(promptData, fixture.templateKey);
+    return appendPersonaToSystem(baseSystem, template, fixture.personaRule, promptData.keyedPromptText);
   }
   const promptDefs = promptData.promptDefs;
   const selectedMode = String(fixture.systemMode || 'diary').toLowerCase();
@@ -541,12 +566,12 @@ function fallbackTemplateFields(key) {
   if (key === 'Title') {
     return [['entry', 'EntryText']];
   }
+  // Persona is injected into the system prompt (see appendPersonaToSystem), not a user field.
   return [
     ['event', 'EventNoun'],
     ['pov', 'PovName'],
     ['what happened', 'PovText'],
     ['instruction', 'Instruction'],
-    ['persona', 'Persona'],
     ['important health', 'PromptEnchantment'],
     ['setting', 'Setting'],
     ['my last opener (not repeat)', 'LastOpener'],
@@ -557,6 +582,7 @@ function resolvedTemplate(promptData, key) {
   return templateForKey(promptData, key) || {
     templateKey: key,
     includePromptEnchantment: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title',
+    includePersona: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title',
     appendDirectSpeechInstruction: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title' && key !== 'SoloDayReflection',
     fields: fallbackTemplateFields(key).map(([label, source]) => ({ label, source, enabled: true })),
   };
@@ -617,49 +643,49 @@ function recipientInstructionForTemplate(promptData, templateKey) {
   return promptData.promptDefs.recipientFollowupInstruction;
 }
 
-function sourceValue(source, values) {
-  switch (source) {
-    case 'EventNoun': return values.event;
-    case 'PovName': return values.pov;
-    case 'PovRole': return values.role;
-    case 'OtherPawnName': return values.other;
-    case 'PovText':
-    case 'WhatHappened':
-    case 'WhatYouSaw': return values.povText;
-    case 'NeutralText': return values.neutralText;
-    case 'Instruction': return values.instruction;
-    case 'PawnSummary': return values.pawnSummary;
-    case 'Persona': return values.persona;
-    case 'PromptEnchantment': return values.includePromptEnchantment === false ? '' : values.promptEnchantment;
-    case 'Setting': return values.setting;
-    case 'Tone': return values.tone;
-    case 'Relationship': return values.relationship;
-    case 'LastOpener': return values.lastOpener;
-    case 'Weapon': return values.weapon;
-    case 'HiddenInitiatorEntry': return values.initiatorEntry;
-    case 'DeathVictim': return values.deathVictim;
-    case 'DeathFacts': return values.deathFacts;
-    case 'DeathPawnSummary': return values.deathPawnSummary;
-    case 'DeathSetting': return values.deathSetting || values.setting;
-    case 'ArrivalPawn': return values.arrivalPawn;
-    case 'ArrivalFacts': return values.arrivalFacts;
-    case 'EntryText': return values.entryText;
-    case 'GameContext': return values.gameContext;
-    default: return '';
-  }
+// Maps the harness's loosely-named option bag (event/pov/other/...) onto the assembler's value names
+// (eventNoun/povName/otherName/...), so generated fixtures can render through the shared assembler.
+function toAssemblerValues(values) {
+  const v = values || {};
+  return {
+    eventNoun: v.event,
+    povName: v.pov,
+    povRole: v.role,
+    otherName: v.other,
+    povText: v.povText,
+    neutralText: v.neutralText,
+    instruction: v.instruction,
+    pawnSummary: v.pawnSummary,
+    persona: v.persona,
+    promptEnchantment: v.promptEnchantment,
+    includePromptEnchantment: v.includePromptEnchantment,
+    setting: v.setting,
+    tone: v.tone,
+    relationship: v.relationship,
+    lastOpener: v.lastOpener,
+    weapon: v.weapon,
+    initiatorEntry: v.initiatorEntry,
+    deathVictim: v.deathVictim,
+    deathFacts: v.deathFacts,
+    deathPawnSummary: v.deathPawnSummary,
+    deathSetting: v.deathSetting,
+    arrivalPawn: v.arrivalPawn,
+    arrivalFacts: v.arrivalFacts,
+    entryText: v.entryText,
+    gameContext: v.gameContext,
+  };
 }
 
-function fieldsFromTemplate(template, values) {
-  const fields = {};
-  const order = [];
-  for (const field of template.fields || []) {
-    if (!field || !field.label || !field.source || field.enabled === false) {
-      continue;
-    }
-    fields[field.label] = sourceValue(field.source, values);
-    order.push(field.label);
-  }
-  return { fields, order };
+// Builds the shared-assembler input for a generated fixture: the template's field list and flags,
+// the resolved values bag, and the fully-assembled final instruction.
+function assemblerInputFor(template, values, finalInstruction) {
+  return {
+    templateKey: template.templateKey,
+    fields: template.fields || [],
+    includePersona: template.includePersona !== false,
+    values: toAssemblerValues(values),
+    finalInstruction,
+  };
 }
 
 function domainOf(group) {
@@ -837,7 +863,7 @@ function buildPairFixture(promptData, group, options) {
     )
     : baseInstruction;
 
-  const rendered = fieldsFromTemplate(template, {
+  const assemblerInput = assemblerInputFor(template, {
     event: options.event,
     pov: options.pov,
     role: options.role,
@@ -854,14 +880,14 @@ function buildPairFixture(promptData, group, options) {
     lastOpener: options.lastOpener,
     weapon: options.weapon,
     initiatorEntry: hiddenInitiatorEntry,
-  });
+  }, append);
 
   return {
     id: options.id,
     templateKey,
-    promptFieldOrder: rendered.order,
-    promptFields: rendered.fields,
-    append,
+    assembler: assemblerInput,
+    // Persona now rides in the system prompt (composed via the shared assembler), not the field list.
+    personaRule: options.persona,
     type: 'pair',
     gameContext: context,
     version: options.version,
@@ -882,7 +908,7 @@ function buildSoloFixture(promptData, group, options) {
       baseInstruction,
     )
     : baseInstruction;
-  const rendered = fieldsFromTemplate(template, {
+  const assemblerInput = assemblerInputFor(template, {
     event: options.event,
     pov: options.pov,
     povText: options.whatHappened,
@@ -897,14 +923,14 @@ function buildSoloFixture(promptData, group, options) {
     lastOpener: options.lastOpener,
     weapon: options.weapon,
     initiatorEntry: '',
-  });
+  }, append);
 
   return {
     id: options.id,
     templateKey,
-    promptFieldOrder: rendered.order,
-    promptFields: rendered.fields,
-    append,
+    assembler: assemblerInput,
+    // Persona now rides in the system prompt (composed via the shared assembler), not the field list.
+    personaRule: options.persona,
     type: 'solo',
     gameContext: context,
     version: options.version,

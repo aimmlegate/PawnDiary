@@ -32,6 +32,11 @@ Generated fixtures select the same template keys as the in-game `DiaryPromptBuil
 render field order and inclusion from `DiaryPromptTemplateDefs.xml`. Interaction fixtures also
 append the current Keyed direct-speech cue for the active POV pawn when the template allows it.
 
+First-person fixtures append the pawn's persona voice to the **system prompt** (wrapped by the
+`PawnDiary.Prompt.PersonaVoice` Keyed string), mirroring `DiaryPromptBuilder.ComposeSystemPrompt` —
+persona is no longer a user-message field. Templates with `includePersona=false` (the neutral
+death/arrival chronicles and the title follow-up) stay persona-free.
+
 Use:
 
 ```bash

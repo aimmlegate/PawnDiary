@@ -273,6 +273,9 @@
   <PawnDiary.Error.TitleEmptyResponse>Title follow-up returned no usable text.</PawnDiary.Error.TitleEmptyResponse>
 
   <!-- ===== Prompt context: descriptive words the model reads (the field KEYS stay English) ===== -->
+  <!-- Persona voice block appended to the first-person system prompt at dispatch. {0} is the
+       persona's voice rule (e.g. "writes in terse, matter-of-fact sentences..."). -->
+  <PawnDiary.Prompt.PersonaVoice>Write in this colonist's own voice — someone who {0} Let this voice shape word choice, rhythm, and which details they notice, not only what happens.</PawnDiary.Prompt.PersonaVoice>
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
   <PawnDiary.Prompt.Health.HighPriority>high priority</PawnDiary.Prompt.Health.HighPriority>

@@ -3,6 +3,24 @@
 Dated history of important changes to the mod, newest first. `DOCUMENTATION.md` describes the
 current design; this file records how it got there.
 
+- **2026-06-18 (atmosphere-led prompts + persona in system prompt)**
+  - Rewrote the first-person and reflection system prompts (`DiaryPromptDef.xml` and the matching C#
+    defaults in `DiaryPromptDef.cs`) to lead with a positive "write toward atmosphere" block —
+    anchor the entry in one concrete sensation/object/gesture, let mood/health/relationship/setting/
+    tone color the subtext, keep the colonist's voice — then a consolidated "stay truthful" block.
+    This replaces the old prohibition wall that muted output on both small RP-tuned and large
+    reasoning models, while keeping the anti-hallucination guardrails. Added a flat-vs-atmospheric
+    example pair to teach the intended lift, and added a fragment carve-out so persona voices built
+    on fragments (imagist, fractured, black-signal, fiery) are no longer forced into tidy grammar.
+  - Moved the persona voice out of the user-message `persona:` field and into the system prompt via
+    new `DiaryPromptBuilder.ComposeSystemPrompt`, wrapped by the new `PawnDiary.Prompt.PersonaVoice`
+    Keyed string, so the voice governs *how* the entry is written instead of competing as one field.
+    Added `includePersona` to `DiaryPromptTemplateDef` (default true; false on death/arrival/title),
+    removed the `persona` field from the shipped templates and the code fallback field list, and
+    trimmed `singlePovInstruction` / `recipientFollowupInstruction` to a short task restatement since
+    the guardrails now live only in the system prompt. The `Persona` field source still resolves for
+    custom templates that want the voice back in the user message.
+
 - **2026-06-18 (reasoning leak fix)**
   - Fixed reasoning/thinking text leaking into saved diary entries from R1-style models whose chat
     template emits the opening `<think>` in the prompt, so the completion begins inside the reasoning

@@ -299,10 +299,17 @@ in `1.6/Defs/DiaryPromptTemplateDefs.xml`. `DiaryPromptBuilder` still classifies
 (`PairDefault`, `PairImportant`, `PairCombat`, `PairBatched`, `SoloDefault`, `SoloImportant`,
 `SoloInternalState`, `SoloBatched`, `SoloDayReflection`, `DeathDescription`, `ArrivalDescription`,
 or `Title`), but XML controls which structured fields appear for each shape. Template fields can
-include event facts, POV, role, other pawn, group instruction, pawn summary, persona, weighted prompt
+include event facts, POV, role, other pawn, group instruction, pawn summary, weighted prompt
 enchantment, setting, tone, relationship continuity, last opener, weapon, hidden initiator entry,
 death/arrival facts, or title source text. Templates may also override their system prompt or final
 instruction; if left blank, `DiaryPromptDef.xml` supplies the shared defaults.
+
+The pawn's **persona voice is no longer a user-message field**. `DiaryPromptBuilder.ComposeSystemPrompt`
+appends it to the system prompt at dispatch (wrapped by the `PawnDiary.Prompt.PersonaVoice` Keyed
+string), so the voice governs *how* the colonist writes rather than competing as one `key: value`
+line among many. First-person shapes keep the default `includePersona=true`; neutral death/arrival
+chronicles and the title follow-up set `includePersona=false` to stay persona-free. The `Persona`
+field source still resolves, so a custom template can opt the voice back into the user message.
 
 Pawn summaries may contain DLC identity lines, life stage, mood, health, low capacities, and top
 thoughts when the policy includes `you:`. Generated structured context avoids sending numeric
@@ -365,16 +372,20 @@ System prompts are selected by narrative mode:
 | Arrival/death chronicle | `systemPromptNeutral` |
 | Title follow-up | `systemPromptTitle` |
 
-Default prompt contracts ask for complete, short entries using prose length cues rather than numeric
-word ranges. They now name the actual event (`event`, `what you saw` / `what happened`,
-`instruction`, POV, and role) as the subject that must drive the entry. Persona, relationship,
-setting, weapon, mood, thought, health, hidden entries, and last-opener fields are supporting
-context for voice, focus, and subtext, not alternate scenes to write instead. The first-person diary
-and day-reflection system prompts also require at least one concrete event detail, warn against
-vague filler and invented props/treatment/dialogue. They now include an explicit low-creative-reach
-guard for roleplay-tuned models: do not add new names, factions, places, backstory, memories,
-symbols, threats, promises, consequences, or off-screen actions. Compact good/bad examples help
-small local models see the intended transformation.
+The first-person and reflection system prompts are **atmosphere-led**: they open with a short
+"write toward atmosphere" block (anchor the entry in one concrete sensation/object/gesture taken
+from supplied context; let mood/health/relationship/setting/tone color the feeling and subtext;
+keep the colonist's voice, allowing persona-driven fragments and emphasis) before a tighter
+"stay truthful" block. This replaces the older prohibition-heavy contract, which was a wall of
+"do not …" lines that muted output across both small RP-tuned and large reasoning models; the
+truthfulness guardrails are kept but consolidated (build from the supplied event and use at least
+one concrete fact; invent no new people/places/dialogue/treatment/weapons/time-skips/motives/
+outcomes; treat health as body/mood pressure, not a medical scene unless the event is medical;
+hidden entries are continuity only). Length is still cued in prose ("one to three sentences",
+"two to four" for reflection). Each system prompt carries compact examples — including a
+flat-vs-atmospheric pair — so small local models see the intended lift, not just rules. The
+per-mode final instructions (`singlePovInstruction` / `recipientFollowupInstruction`) were trimmed
+to a short task restatement, since the duplicated guardrails now live only in the system prompt.
 
 Paired two-pawn interaction prompts append separate localized direct-speech rules for initiator and
 recipient POVs. Initiator prompts may put spoken words on their own line inside a closed
@@ -391,6 +402,10 @@ Prompt tuning is XML-only at runtime. `DiaryPromptTemplateDefs.xml` controls fie
 per-template system/final-instruction overrides; `DiaryPromptDef.xml` supplies shared default system
 prompts and final instructions. The in-game Prompt Studio is now a status view that reports loaded
 template defs. Saved prompt text from older versions is not used by generation.
+
+The selected persona's `rule` text is injected into the system prompt at dispatch (see
+`ComposeSystemPrompt` above), not rendered as a user-message field. Each POV in a paired event
+resolves its own persona, so the initiator and recipient requests carry different system prompts.
 
 Persona presets start from `DiaryPersonaDef` XML, then settings may layer built-in overrides and
 custom personas. `DiaryPersonas.WeightedStartingPersona` uses base weight, trait/backstory theme
