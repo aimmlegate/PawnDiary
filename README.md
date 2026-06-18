@@ -57,6 +57,32 @@ npm run from-defs
 
 See `prompt-lab/README.md` for fixtures and per-model markdown output.
 
+## Building & Releasing
+
+`scripts/publish.ps1` builds the DLL, copies **only** the files the mod needs to run
+(`About/`, both assemblies, `1.6/Defs/`, `Languages/`) into a clean `dist/PawnDiary`
+folder, and snapshots that payload onto a `release/<version>` branch plus a `v<version>`
+tag. Your current branch and the committed Debug DLL are left untouched.
+
+```powershell
+# Versioned release: builds dist/PawnDiary + branch release/1.0.0-beta.1 + tag v1.0.0-beta.1
+powershell -File scripts/publish.ps1 -Version 1.0.0-beta.1
+
+# Just refresh the uploadable dist/ folder, no git snapshot:
+powershell -File scripts/publish.ps1 -SkipBranch
+
+# Re-run an existing version (overwrite branch/tag): add -Force
+# Ship the Debug build instead of Release:           -Configuration Debug
+```
+
+**Uploading to the Steam Workshop:** the mod is published through RimWorld's in-game
+uploader (Dev mode → Mods → *Upload to Steam Workshop*), which uploads an entire mod
+folder verbatim — so upload the clean `dist/PawnDiary`, not this dev repo. Copy it into
+`…/RimWorld/Mods/PawnDiary` and temporarily move this dev folder out of `Mods` so RimWorld
+does not see two mods with `packageId aimml.pawndiary`. `About/PublishedFileId.txt` ships
+with the payload, so the upload updates the existing item. RimWorld publishes items as
+public, so set **Visibility → Friends Only** on the item's Steam page afterwards.
+
 ## Documentation
 
 - `DOCUMENTATION.md` explains the architecture, event flow, settings, prompts, and localization.
