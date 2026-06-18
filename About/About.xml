@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
-  <name>Pawn Diary</name>
+  <name>Pawn Diary (Beta)</name>
   <author>Aimml</author>
   <packageId>aimml.pawndiary</packageId>
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
-  <description>
-    Pawn Diary gives RimWorld colonists a private journal. It watches important colony moments - social interactions, fights, mental breaks, raids, work, thoughts, arrivals, deaths, and more - then asks a local or OpenAI-compatible language model to turn them into short diary pages in each pawn's own voice.
+  <description>BETA / WORK IN PROGRESS - published as a hidden Steam Workshop release for testing. Expect rough edges, changing defaults, and ongoing prompt tuning; output quality depends heavily on your model and settings. Feedback and bug reports are very welcome.
 
-    Entries appear in a Diary tab beside Social. The mod is storytelling only: it does not change gameplay mechanics, and it is built for compact prompts that work well with local LLM tools such as LM Studio, llama.cpp, and Ollama.
-  </description>
+Pawn Diary gives RimWorld colonists a private journal. It watches meaningful colony moments - social interactions, fights, mental breaks, raids, medicine, crafting, work, mood events, thoughts, arrivals, deaths, and end-of-day reflections - then asks a local or OpenAI-compatible language model to rewrite them as short diary pages in each pawn's own voice.
+
+Entries appear in a Diary tab on each colonist, next to Needs. Two-colonist events get paired points of view, so each pawn can remember the same moment differently. Arrivals and deaths bookend a pawn's story with neutral pages, and optional writing personas shape each colonist's voice without touching gameplay.
+
+LOCAL LLMs
+Works with any OpenAI-compatible /chat/completions endpoint, plus OpenAI Responses and native Ollama chat. It is built around compact prompts for small to mid-size local models (roughly 4-32B) through tools such as LM Studio, llama.cpp, and Ollama. Default endpoint: http://localhost:1234. Configure endpoints, models, API keys, concurrency, prompt text, personas, and event groups in the mod settings.
+
+Pawn Diary is storytelling only: it does not change gameplay, add needs/hediffs/jobs, or write external save data beyond the diary entries stored in your RimWorld save. It targets base RimWorld 1.6 and keeps DLC content optional.</description>
 </ModMetaData>

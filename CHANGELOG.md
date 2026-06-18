@@ -18,6 +18,9 @@ Newest first. `DOCUMENTATION.md` describes the current design; this file records
   always — to stop weather from dominating diary openings. The per-weather chances are XML-tunable in
   `DiaryTuningDef.xml` (`weatherMentionChances`), with favorability-keyed fallbacks for unlisted
   DLC/modded weather.
+- **Beta release prep:** new `About/Preview.png` banner; refreshed `About.xml` description and
+  `README.md` to the current feature set and marked the mod as a beta/WIP hidden Steam Workshop
+  release (name shows "Pawn Diary (Beta)"; `packageId` unchanged).
 - **Voice-spanning few-shot:** the first-person `systemPrompt` examples now span three registers
   (clipped, warm, lyrical) instead of all lyrical, with a "match the colonist's voice, not these
   examples" framing, so small models stop defaulting every persona to elegiac prose. Each example
