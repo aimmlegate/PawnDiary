@@ -4,6 +4,9 @@ Newest first. `DOCUMENTATION.md` describes the current design; this file records
 
 ## 2026-06-18
 
+- **Publish metadata cleanup:** `scripts/publish.ps1` now derives its default payload folder,
+  upload instructions, tag message, and published metadata from `About.xml`; the copied payload
+  strips a trailing `(developement)` / `(development)` dev marker from both mod name and packageId.
 - **Small-model persona retune:** rewrote every `DiaryPersonaDef` rule to lead with one dominant,
   imitable voice signature (shorter, positive phrasing, mechanically distinct) and appended a short
   in-voice example (`For example: "..."`) to each, so small local models (Gemma, Mistral Nemo, small

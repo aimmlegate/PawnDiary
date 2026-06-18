@@ -324,6 +324,12 @@ MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 Output is `1.6/Assemblies/PawnDiary.dll`. If `MSBuild` is not on `PATH`, locate it with `vswhere`
 or use a Visual Studio Developer PowerShell.
 
+Release payloads are made with `scripts/publish.ps1`. It builds a throwaway Release DLL, copies only
+the runnable mod files into `dist/<published packageId>`, and rewrites the copied `About.xml` so a
+local dev marker `(developement)` / `(development)` is stripped from the published mod name and
+packageId. The source `About.xml` keeps the marker so the dev copy can sit beside the Workshop copy
+without a duplicate package-id clash.
+
 Enable hooks:
 
 ```powershell
