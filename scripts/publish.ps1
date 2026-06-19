@@ -27,6 +27,16 @@
 
 .PARAMETER Author
   Override the published <author> value. By default keeps the source value.
+
+.PARAMETER InstallToMods
+  Create or refresh a junction in your RimWorld Mods folder that points to the built dist payload.
+
+.PARAMETER ModsDir
+  RimWorld Mods folder used when -InstallToMods is enabled. Defaults to your current repo's
+  parent Mods directory if it exists.
+
+.PARAMETER LinkName
+  Folder name to create under -ModsDir for the junction.
 #>
 [CmdletBinding()]
 param(
@@ -35,6 +45,9 @@ param(
     [string]$Configuration = "Release",
     [string]$PackageId,
     [string]$Author,
+    [switch]$InstallToMods,
+    [string]$ModsDir,
+    [string]$LinkName,
     [switch]$SkipBranch,
     [switch]$Force
 )
@@ -128,6 +141,54 @@ function Copy-Payload {
     return $true
 }
 
+function Resolve-ModsFolder {
+    param([string]$Candidate)
+    if ([string]::IsNullOrWhiteSpace($Candidate)) {
+        return $null
+    }
+    $expanded = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Candidate)
+    if (Test-Path -LiteralPath $expanded) { return $expanded }
+    return $null
+}
+
+function Install-ModJunction {
+    param(
+        [string]$DestinationRoot,
+        [string]$FolderName,
+        [string]$TargetFolder,
+        [switch]$AllowReplace
+    )
+
+    if (-not (Test-Path -LiteralPath $DestinationRoot)) {
+        throw "Mods folder does not exist: $DestinationRoot"
+    }
+
+    $linkPath = Join-Path $DestinationRoot $FolderName
+    if (Test-Path -LiteralPath $linkPath) {
+        $existing = Get-Item -LiteralPath $linkPath
+        $existingTarget = $existing.Target
+        if ($existingTarget) {
+            $existingTarget = $existingTarget | Select-Object -First 1
+            $normalizedExisting = [System.IO.Path]::GetFullPath($existingTarget.TrimEnd('\', '/'))
+            $normalizedTarget   = [System.IO.Path]::GetFullPath($TargetFolder.TrimEnd('\', '/'))
+            if ($normalizedExisting -eq $normalizedTarget) {
+                Write-Host "  mods link  : existing link already points to payload ($linkPath -> $TargetFolder)"
+                return
+            }
+            if (-not $AllowReplace) {
+                throw "Mods entry exists but points elsewhere: $linkPath -> $existingTarget. Use -Force to replace."
+            }
+        } elseif (-not $AllowReplace) {
+            throw "Mods entry exists and is not a link: $linkPath. Use -Force to replace."
+        }
+
+        Remove-Item -LiteralPath $linkPath -Recurse -Force
+    }
+
+    New-Item -ItemType Junction -Path $linkPath -Target $TargetFolder | Out-Null
+    Write-Host "  mods link  : $linkPath -> $TargetFolder"
+}
+
 $repoRoot = (& git rev-parse --show-toplevel).Trim()
 if (-not $repoRoot) { throw "Not inside a git repository." }
 Set-Location -LiteralPath $repoRoot
@@ -153,6 +214,13 @@ if ([string]::IsNullOrWhiteSpace($publishedPackageId)) { $publishedPackageId = "
 
 $payloadFolderName = Get-SafeFolderName $publishedPackageId "pawn-diary"
 if (-not $OutDir) { $OutDir = Join-Path $repoRoot "dist\$payloadFolderName" }
+if (-not $LinkName) { $LinkName = $payloadFolderName }
+
+$resolvedModsDir = Resolve-ModsFolder $ModsDir
+if (-not $resolvedModsDir) {
+    $fallbackMods = Split-Path $repoRoot -Parent
+    $resolvedModsDir = Resolve-ModsFolder $fallbackMods
+}
 
 Write-Host "$publishedModName publish prep" -ForegroundColor Green
 Write-Host "  version     : $Version"
@@ -162,6 +230,12 @@ Write-Host "  packageId   : $publishedPackageId"
 Write-Host "  payload out : $OutDir"
 if ($SkipBranch -or $Force) {
     Write-Host "  branch mode: disabled (flags accepted for compatibility)"
+}
+if ($InstallToMods) {
+    if (-not $resolvedModsDir) {
+        throw "Could not determine Mods folder automatically. Please pass -ModsDir explicitly."
+    }
+    Write-Host "  install to  : $resolvedModsDir\$LinkName"
 }
 
 Write-Step "Build PawnDiary.dll ($Configuration)"
@@ -262,3 +336,7 @@ Write-Host "  $OutDir"
 Write-Host "  Built DLL: $builtDll"
 Write-Host "  Prepared About.xml: $aboutDest"
 Write-Host ("  shipped {0} files, {1:N2} MB" -f $payloadFiles.Count, ($payloadBytes / 1MB))
+
+if ($InstallToMods) {
+    Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $LinkName -TargetFolder $OutDir -AllowReplace:$Force
+}
