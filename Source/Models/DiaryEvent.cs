@@ -116,6 +116,9 @@ namespace PawnDiary
         // text decorations without reading live pawn state.
         public string initiatorTextDecorationFacts;
         public string recipientTextDecorationFacts;
+        // LogID of the optional generated direct-speech Social-log row. -1 means no row has been
+        // added for this event. Stored so a duplicate result or later load will not add another.
+        public int generatedSpeechPlayLogEntryId = -1;
 
         // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
         // keys written to the save file — renaming one breaks saved games. The PostLoadInit
@@ -182,6 +185,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref recipientStaggeredIntensity, "recipientStaggeredIntensity", 0);
             Scribe_Values.Look(ref initiatorTextDecorationFacts, "initiatorTextDecorationFacts");
             Scribe_Values.Look(ref recipientTextDecorationFacts, "recipientTextDecorationFacts");
+            Scribe_Values.Look(ref generatedSpeechPlayLogEntryId, "generatedSpeechPlayLogEntryId", -1);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -794,25 +798,10 @@ namespace PawnDiary
 
         private static string StripSpeechMarkersForPreview(string text)
         {
-            string stripped = RemoveSpeechMarkerForPreview(text, "[[speech]]");
-            return RemoveSpeechMarkerForPreview(stripped, "[[/speech]]");
-        }
-
-        private static string RemoveSpeechMarkerForPreview(string text, string marker)
-        {
-            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(marker))
-            {
-                return text ?? string.Empty;
-            }
-
-            int index = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-            while (index >= 0)
-            {
-                text = text.Remove(index, marker.Length);
-                index = text.IndexOf(marker, index, StringComparison.OrdinalIgnoreCase);
-            }
-
-            return text;
+            return DiaryDirectSpeechParser.RemoveMarkers(
+                text,
+                DiaryDirectSpeechParser.DefaultOpenMarker,
+                DiaryDirectSpeechParser.DefaultCloseMarker);
         }
 
         /// <summary>
@@ -935,6 +924,29 @@ namespace PawnDiary
             return playLogEntryId >= 0
                 && playLogEntryIds != null
                 && playLogEntryIds.Contains(playLogEntryId);
+        }
+
+        /// <summary>
+        /// True once this event has added its optional generated direct-speech Social-log row.
+        /// </summary>
+        public bool HasGeneratedSpeechPlayLogEntry()
+        {
+            return generatedSpeechPlayLogEntryId >= 0;
+        }
+
+        /// <summary>
+        /// Remembers the generated direct-speech Social-log row and lets the existing click bridge
+        /// open this diary entry when that row is clicked later.
+        /// </summary>
+        public void MarkGeneratedSpeechPlayLogEntry(int playLogEntryId)
+        {
+            if (playLogEntryId < 0)
+            {
+                return;
+            }
+
+            generatedSpeechPlayLogEntryId = playLogEntryId;
+            AddPlayLogEntryId(playLogEntryId);
         }
 
         /// <summary>

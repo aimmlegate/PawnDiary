@@ -87,6 +87,8 @@ Key files:
 7. `LlmClient` sends the request, parses provider JSON, applies postprocessing, and returns results
    to the main thread.
 8. `ApplyLlmResult` stores text or failure state; successful main entries may queue a title request.
+   If Social-log speech injection is enabled, the first valid initiator `[[speech]]...[[/speech]]`
+   block also creates one new `PlayLogEntry_Interaction` after the LLM result is ready.
 9. `EntriesFor` reads saved events for the Diary tab. The tab caches built views until the pawn's
    render token changes.
 
@@ -186,9 +188,16 @@ templates may add exactly one localized `important health:` field selected from 
 matches. Health cues are pressure, not the subject, unless the event itself is medical. Low
 Consciousness is represented by capacity enchantments; it no longer changes persona text.
 
-Direct speech is only allowed for initiator/single-POV interaction prompts, using closed
-`[[speech]]...[[/speech]]` blocks for words plausibly spoken aloud by the POV pawn. Recipient
-follow-up prompts forbid speech blocks and receive hidden initiator continuity.
+Direct speech is only allowed for initiator/single-POV interaction prompts, using exactly one closed
+`[[speech]]...[[/speech]]` block when source notes contain or strongly imply words spoken aloud by
+the POV pawn. Recipient follow-up prompts forbid speech blocks and receive hidden initiator
+continuity.
+
+When `injectGeneratedSpeechToPlayLog` is enabled, that same direct-speech parser feeds RimWorld's
+native Social log: a completed initiator result with a valid speech block adds one fresh social-log
+interaction row containing the generated spoken line. The original PlayLog row is not mutated, the
+generated row is marked so Pawn Diary does not record it again, and the row's displayed text is
+restored from saved `LogID` mapping after load.
 
 Title generation defaults on. Successful main entries queue a capped title follow-up pinned to the
 successful lane when possible. Titles store separately from main text and render as `date - title`;
@@ -210,6 +219,7 @@ Core settings:
 | `generateTitles` | true | Queues title follow-ups. |
 | `enableAtmosphericFormatting` | true | Enables display-only extreme-entry layout. |
 | `enablePromptEnchantments` | true | Enables one live health/capacity cue in eligible prompts. |
+| `injectGeneratedSpeechToPlayLog` | false | Adds one fresh Social-log row for parsed initiator direct speech after generation succeeds. |
 | `workGenerationWeight` / `socialGenerationWeight` | 1 | 0-5 multipliers for work sampling and social promotion. |
 | system prompt overrides | empty | Saved overrides for four shared prompts; blank uses XML. |
 | event filters | XML defaults | `DiaryInteractionGroupDefs.xml` owns matching/defaults; old saved toggles are ignored. |
@@ -230,7 +240,8 @@ model rich-text tags, then converts light markdown and valid speech markers to U
 intoxication/anesthesia and Zalgo direct speech for anomaly/dark cues. Decorations are recomputed
 from saved plain facts; generated text is not mutated on save.
 
-Social-tab log rows can jump to matching diary entries, including older year pages.
+Social-tab log rows can jump to matching diary entries, including older year pages. Generated
+speech rows use the same click bridge.
 
 ---
 

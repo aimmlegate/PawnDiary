@@ -678,6 +678,8 @@ namespace PawnDiary
                 diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildGenerationUrl(result.endpointUrl, result.apiMode), result.modelName);
             }
 
+            TryInjectGeneratedSpeechPlayLogEntry(diaryEvent, result);
+
             QueueRecipientAfterInitiatorResult(diaryEvent, result, successfulLane);
 
             // Title follow-up: if Generate LLM titles is on and the main entry produced text

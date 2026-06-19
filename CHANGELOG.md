@@ -2,6 +2,16 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-19
+
+- **Generated speech Social-log injection:** added an opt-in setting that creates one fresh native
+  social-log interaction row when an initiator diary result contains a valid parsed direct-speech
+  block, sharing the same parser used by the Diary tab and skipping the synthetic row in Pawn
+  Diary's own PlayLog listener to avoid feedback loops.
+- **Initiator speech prompt nudge:** strengthened initiator and single-POV direct-speech prompt
+  instructions so eligible entries ask for exactly one short standalone `[[speech]]` block when the
+  supplied notes contain or strongly imply words spoken by the POV pawn.
+
 ## 2026-06-18
 
 - **Publish metadata cleanup:** `scripts/publish.ps1` now derives its default payload folder,

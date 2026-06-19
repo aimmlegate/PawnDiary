@@ -19,6 +19,7 @@ namespace DiaryPipelineTests
             TestSoloSelection();
             TestSoloBatchSelection();
             TestResponsePostprocessorRules();
+            TestDirectSpeechParser();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -251,6 +252,45 @@ namespace DiaryPipelineTests
                 DiaryResponseRules.ForRequest("e-title", DiaryPipelineRoles.Initiator, true, 8));
             AssertEqual("title keeps fragment", "A title without period", title.generatedText);
             AssertEqual("title text", "A title without period", title.titleText);
+        }
+
+        private static void TestDirectSpeechParser()
+        {
+            List<DiaryDirectSpeechLine> allowed = new List<DiaryDirectSpeechLine>(
+                DiaryDirectSpeechParser.Lines(
+                    "I leaned closer.\n[[speech]]Enough.[[/speech]]\nThen I walked away.",
+                    true,
+                    "[[speech]]",
+                    "[[/speech]]"));
+            AssertEqual("direct speech line count", 3, allowed.Count);
+            AssertTrue("direct speech parsed", allowed[1].directSpeech);
+            AssertEqual("direct speech text", "Enough.", allowed[1].line);
+
+            List<DiaryDirectSpeechLine> blocked = new List<DiaryDirectSpeechLine>(
+                DiaryDirectSpeechParser.Lines(
+                    "[[speech]]Enough.[[/speech]]",
+                    false,
+                    "[[speech]]",
+                    "[[/speech]]"));
+            AssertEqual("blocked line count", 1, blocked.Count);
+            AssertTrue("blocked direct speech stripped to prose", !blocked[0].directSpeech);
+            AssertEqual("blocked marker removal", "Enough.", blocked[0].line);
+
+            string firstSpeech = DiaryDirectSpeechParser.FirstDirectSpeechBlock(
+                "Before [[speech]]First.[[/speech]] after\n[[speech]]Second.[[/speech]]",
+                "[[speech]]",
+                "[[/speech]]");
+            AssertEqual("first direct speech", "First.", firstSpeech);
+
+            List<DiaryDirectSpeechLine> unclosed = new List<DiaryDirectSpeechLine>(
+                DiaryDirectSpeechParser.Lines(
+                    "[[speech]]Unclosed",
+                    true,
+                    "[[speech]]",
+                    "[[/speech]]"));
+            AssertEqual("unclosed line count", 1, unclosed.Count);
+            AssertTrue("unclosed marker is prose", !unclosed[0].directSpeech);
+            AssertEqual("unclosed marker stripped", "Unclosed", unclosed[0].line);
         }
 
         private static DiaryEventPayload PairPayload(string eventId, string eventNoun, string initiatorText, string recipientText)

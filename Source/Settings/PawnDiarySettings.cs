@@ -161,6 +161,9 @@ namespace PawnDiary
         // Master toggle for hediff-based prompt enchantments. When true, first-person diary prompts
         // may get one live health-condition hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
+        // Optional native PlayLog integration. When true, a successfully parsed initiator
+        // direct-speech block creates a fresh social-log row after the LLM result is ready.
+        public bool injectGeneratedSpeechToPlayLog;
         // Optional saved overrides for the shared system prompts. Blank means "use the XML default"
         // from DiaryPromptDef.xml, so XML remains the restore source and template/final instructions
         // stay Def-owned.
@@ -219,6 +222,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
+            Scribe_Values.Look(ref injectGeneratedSpeechToPlayLog, "injectGeneratedSpeechToPlayLog", false);
             Scribe_Values.Look(ref systemPromptOverride, "systemPromptOverride", string.Empty);
             Scribe_Values.Look(ref systemPromptReflectionOverride, "systemPromptReflectionOverride", string.Empty);
             Scribe_Values.Look(ref systemPromptNeutralOverride, "systemPromptNeutralOverride", string.Empty);

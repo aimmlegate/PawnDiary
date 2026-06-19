@@ -66,8 +66,8 @@ namespace PawnDiary
         private static float WritingDotGap => UiStyle.writingDotGap;
         private static float AtmosphereInset => UiStyle.atmosphereInset;
         private static float MemorialInset => UiStyle.memorialInset;
-        private static string SpeechBlockOpenMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockOpenMarker) ? "[[speech]]" : UiStyle.speechBlockOpenMarker;
-        private static string SpeechBlockCloseMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockCloseMarker) ? "[[/speech]]" : UiStyle.speechBlockCloseMarker;
+        private static string SpeechBlockOpenMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockOpenMarker) ? DiaryDirectSpeechParser.DefaultOpenMarker : UiStyle.speechBlockOpenMarker;
+        private static string SpeechBlockCloseMarker => string.IsNullOrWhiteSpace(UiStyle.speechBlockCloseMarker) ? DiaryDirectSpeechParser.DefaultCloseMarker : UiStyle.speechBlockCloseMarker;
 
         private static Color QuietColor => UiStyle.QuietTextColor;
         private static Color NarrativeColor => UiStyle.NarrativeTextColor;
@@ -125,12 +125,6 @@ namespace PawnDiary
             public FontStyle fontStyle = FontStyle.Normal;
             public TextAnchor alignment = TextAnchor.UpperLeft;
             public int seedSalt;
-            public bool directSpeech;
-        }
-
-        private sealed class ParsedRoleplayLine
-        {
-            public string line;
             public bool directSpeech;
         }
 

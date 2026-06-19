@@ -109,6 +109,12 @@ namespace PawnDiary
         // New games build maps after StartedNewGame. This flag lets the first tick with maps create
         // founding-colonist arrival entries using scenario context.
         private bool initialArrivalScanPending;
+        // Generated direct-speech PlayLog rows need their displayed text after save/load. The actual
+        // PlayLogEntry_Interaction stays in RimWorld's PlayLog; this map keys its LogID to the LLM
+        // speech line our ToGameStringFromPOV patch should show.
+        private Dictionary<int, string> generatedSpeechPlayLogTexts = new Dictionary<int, string>();
+        private List<int> generatedSpeechPlayLogTextKeys;
+        private List<string> generatedSpeechPlayLogTextValues;
 
         // How often (in ticks) GameComponentTick rescans saved events to (re)queue any pending
         // generations, and the next tick that scan is allowed to run.
@@ -172,6 +178,7 @@ namespace PawnDiary
             recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
             orphanCandidatesLastScan.Clear();
+            generatedSpeechPlayLogTexts.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
@@ -228,6 +235,8 @@ namespace PawnDiary
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             Scribe_Collections.Look(ref diaryEvents, "diaryEvents", LookMode.Deep);
+            Scribe_Collections.Look(ref generatedSpeechPlayLogTexts, "generatedSpeechPlayLogTexts", LookMode.Value, LookMode.Value,
+                ref generatedSpeechPlayLogTextKeys, ref generatedSpeechPlayLogTextValues);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -239,6 +248,11 @@ namespace PawnDiary
                 if (diaryEvents == null)
                 {
                     diaryEvents = new List<DiaryEvent>();
+                }
+
+                if (generatedSpeechPlayLogTexts == null)
+                {
+                    generatedSpeechPlayLogTexts = new Dictionary<int, string>();
                 }
 
                 // The lookup index is not serialized; rebuild it from the loaded events so FindEvent

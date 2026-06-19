@@ -222,7 +222,7 @@ namespace PawnDiary
         private static IEnumerable<RoleplayLineBlock> NormalRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
+            foreach (DiaryDirectSpeechLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
                 yield return line.directSpeech
                     ? MakeSpeechRoleplayBlock(line.line, index++)
@@ -233,7 +233,7 @@ namespace PawnDiary
         private static IEnumerable<RoleplayLineBlock> FracturedRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
+            foreach (DiaryDirectSpeechLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
                 if (line.directSpeech)
                 {
@@ -260,7 +260,7 @@ namespace PawnDiary
         private static IEnumerable<RoleplayLineBlock> UnsettledRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
+            foreach (DiaryDirectSpeechLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
                 if (line.directSpeech)
                 {
@@ -284,7 +284,7 @@ namespace PawnDiary
         private static IEnumerable<RoleplayLineBlock> MemorialRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
-            foreach (ParsedRoleplayLine line in RoleplayLines(text, allowDirectSpeechBlocks))
+            foreach (DiaryDirectSpeechLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
                 if (line.directSpeech)
                 {
@@ -451,100 +451,16 @@ namespace PawnDiary
         /// <summary>
         /// Splits generated text into author-provided lines while preserving blank paragraph breaks.
         /// </summary>
-        private static IEnumerable<ParsedRoleplayLine> RoleplayLines(string text, bool allowDirectSpeechBlocks)
+        private static IEnumerable<DiaryDirectSpeechLine> RoleplayLines(string text, bool allowDirectSpeechBlocks)
         {
-            if (string.IsNullOrWhiteSpace(text))
+            foreach (DiaryDirectSpeechLine line in DiaryDirectSpeechParser.Lines(
+                text,
+                allowDirectSpeechBlocks,
+                SpeechBlockOpenMarker,
+                SpeechBlockCloseMarker))
             {
-                yield break;
+                yield return line;
             }
-
-            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
-            string[] lines = normalized.Split('\n');
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i].Trim();
-                if (!allowDirectSpeechBlocks)
-                {
-                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(line), false);
-                    continue;
-                }
-
-                int openIndex = IndexOfSpeechMarker(line, SpeechBlockOpenMarker, 0);
-                if (openIndex < 0)
-                {
-                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(line), false);
-                    continue;
-                }
-
-                int contentStart = openIndex + SpeechBlockOpenMarker.Length;
-                int closeSameLine = IndexOfSpeechMarker(line, SpeechBlockCloseMarker, contentStart);
-                if (closeSameLine < 0)
-                {
-                    // If the model forgot the closing marker, hide the marker but keep the line as
-                    // ordinary prose instead of letting an unclosed block consume later lines.
-                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(line), false);
-                    continue;
-                }
-
-                string before = line.Substring(0, openIndex).Trim();
-                if (!string.IsNullOrWhiteSpace(before))
-                {
-                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(before), false);
-                }
-
-                string speech = line.Substring(contentStart, closeSameLine - contentStart).Trim();
-                if (!string.IsNullOrWhiteSpace(speech))
-                {
-                    yield return MakeParsedRoleplayLine(speech, true);
-                }
-
-                string after = line.Substring(closeSameLine + SpeechBlockCloseMarker.Length).Trim();
-                if (!string.IsNullOrWhiteSpace(after))
-                {
-                    yield return MakeParsedRoleplayLine(RemoveSpeechMarkers(after), false);
-                }
-            }
-        }
-
-        private static ParsedRoleplayLine MakeParsedRoleplayLine(string line, bool directSpeech)
-        {
-            return new ParsedRoleplayLine
-            {
-                line = line ?? string.Empty,
-                directSpeech = directSpeech
-            };
-        }
-
-        private static int IndexOfSpeechMarker(string line, string marker, int startIndex)
-        {
-            if (string.IsNullOrEmpty(line) || string.IsNullOrEmpty(marker) || startIndex >= line.Length)
-            {
-                return -1;
-            }
-
-            return line.IndexOf(marker, Math.Max(0, startIndex), StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string RemoveSpeechMarkers(string line)
-        {
-            if (string.IsNullOrEmpty(line))
-            {
-                return line ?? string.Empty;
-            }
-
-            return RemoveSpeechMarker(RemoveSpeechMarker(line, SpeechBlockOpenMarker), SpeechBlockCloseMarker).Trim();
-        }
-
-        private static string RemoveSpeechMarker(string line, string marker)
-        {
-            int index = IndexOfSpeechMarker(line, marker, 0);
-            while (index >= 0)
-            {
-                line = line.Remove(index, marker.Length);
-                index = IndexOfSpeechMarker(line, marker, index);
-            }
-
-            return line;
         }
 
         /// <summary>

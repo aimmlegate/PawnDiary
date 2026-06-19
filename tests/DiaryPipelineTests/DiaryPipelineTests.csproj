@@ -10,6 +10,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryPipelineContracts.cs" Link="DiaryPipelineContracts.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptPlanner.cs" Link="DiaryPromptPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryResponsePostprocessor.cs" Link="DiaryResponsePostprocessor.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryDirectSpeechParser.cs" Link="DiaryDirectSpeechParser.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
     <Compile Include="..\..\Source\Generation\PromptAssembler.cs" Link="PromptAssembler.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />

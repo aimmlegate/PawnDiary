@@ -285,6 +285,11 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(LogEntry entry)
         {
+            if (GeneratedSpeechPlayLog.IsAddingGeneratedSpeechEntry)
+            {
+                return;
+            }
+
             PlayLogEntry_Interaction interactionEntry = entry as PlayLogEntry_Interaction;
             if (interactionEntry == null)
             {
@@ -320,6 +325,26 @@ namespace PawnDiary
             {
                 return interactionEntry.ToString();
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayLogEntry_Interaction), nameof(PlayLogEntry_Interaction.ToGameStringFromPOV))]
+    public static class PlayLogGeneratedSpeechTextPatch
+    {
+        /// <summary>
+        /// Harmony Prefix for generated direct-speech rows. Normal vanilla interaction rows continue
+        /// through RimWorld's grammar; injected rows display the already parsed LLM speech text.
+        /// </summary>
+        public static bool Prefix(PlayLogEntry_Interaction __instance, ref string __result)
+        {
+            string text;
+            if (!GeneratedSpeechPlayLog.TryGetText(__instance, out text))
+            {
+                return true;
+            }
+
+            __result = text;
+            return false;
         }
     }
 

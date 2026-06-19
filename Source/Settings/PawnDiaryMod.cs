@@ -111,6 +111,10 @@ namespace PawnDiary
                 "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
                 ref Settings.enablePromptEnchantments,
                 "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
+            listing.CheckboxLabeled(
+                "PawnDiary.Settings.InjectGeneratedSpeechToPlayLog".Translate(),
+                ref Settings.injectGeneratedSpeechToPlayLog,
+                "PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip".Translate());
             listing.Label("PawnDiary.Settings.Temperature".Translate(Settings.temperature.ToString("0.00")));
             Settings.temperature = listing.Slider(Settings.temperature, 0f, 2f);
             DrawHint(listing, "PawnDiary.Settings.TemperatureHelp".Translate());
