@@ -142,6 +142,17 @@ namespace PawnDiary
             }
         }
 
+        // True only when a game is actually in play. A few of our Harmony hooks also fire during pawn
+        // generation and map init — AddHediff while rolling starting-pawn age injuries, SetFaction
+        // during scenario setup — before the world clock exists. Recording then is meaningless and
+        // trips RimWorld's "TicksAbs accessed before gameStartAbsTick is set" error via CurrentDayIndex
+        // and event date stamping, so those hooks gate on this. (Verse.Current is qualified because
+        // this type also defines a static Current.)
+        internal static bool GamePlaying
+        {
+            get { return Verse.Current.ProgramState == ProgramState.Playing; }
+        }
+
         public DiaryGameComponent(Game game)
         {
             // One LLM session spans the lifetime of one loaded Game, and this constructor is the

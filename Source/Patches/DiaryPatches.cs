@@ -61,7 +61,11 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Pawn __instance, Faction newFaction)
         {
-            if (__instance == null || newFaction != Faction.OfPlayer || !__instance.IsColonist)
+            // Scenario setup flips starting pawns to the player faction during generation, before the
+            // game is playing; skip those so we don't record arrivals (and read TicksAbs) too early.
+            // Founding colonists are recorded by the first-playing-tick scan instead.
+            if (__instance == null || newFaction != Faction.OfPlayer || !__instance.IsColonist
+                || !DiaryGameComponent.GamePlaying)
             {
                 return;
             }
@@ -103,7 +107,10 @@ namespace PawnDiary
         public static void Postfix(Hediff hediff)
         {
             Pawn pawn = hediff?.pawn;
-            if (pawn == null || !pawn.IsColonist)
+            // RimWorld rolls old-age injuries onto starting pawns during generation, before the game
+            // is playing; skip those so RecordHediffAppeared does not read TicksAbs (via CurrentDayIndex)
+            // before the world clock exists. Starting hediffs are baselined by the first scan instead.
+            if (pawn == null || !pawn.IsColonist || !DiaryGameComponent.GamePlaying)
             {
                 return;
             }

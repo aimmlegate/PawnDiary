@@ -41,6 +41,11 @@ namespace PawnDiary
         public int tick; // game tick when the event was recorded
         public string date; // human-readable date string at event time
         public string interactionDefName; // RimWorld InteractionDef defName (e.g. "Chat")
+        // A real InteractionDef defName usable to build the generated-speech Social-log row. For
+        // combined interaction batches interactionDefName is a synthetic group name that does not
+        // resolve as an InteractionDef, so the originating interaction's def is kept here for
+        // injection. Empty for events with no underlying InteractionDef (mental states, tales).
+        public string playLogInteractionDefName;
         public string interactionLabel; // display label for the interaction type
         public string initiatorPawnId; // RimWorld unique load ID of the initiating pawn
         public string recipientPawnId; // RimWorld unique load ID of the receiving pawn
@@ -132,6 +137,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref tick, "tick");
             Scribe_Values.Look(ref date, "date");
             Scribe_Values.Look(ref interactionDefName, "interactionDefName");
+            Scribe_Values.Look(ref playLogInteractionDefName, "playLogInteractionDefName");
             Scribe_Values.Look(ref interactionLabel, "interactionLabel");
             Scribe_Values.Look(ref initiatorPawnId, "initiatorPawnId");
             Scribe_Values.Look(ref recipientPawnId, "recipientPawnId");

@@ -119,6 +119,7 @@ namespace PawnDiary
                 initiatorText, recipientText,
                 InteractionInstruction(interactionDef),
                 DiaryContextBuilder.BuildGameContextSummary(interactionDef, interactionLabel));
+            diaryEvent.playLogInteractionDefName = interactionDef.defName;
             diaryEvent.AddPlayLogEntryId(playLogEntryId);
             QueuePairwiseGeneration(diaryEvent);
         }

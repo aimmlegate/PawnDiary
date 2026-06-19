@@ -195,11 +195,22 @@ continuity.
 
 When `injectGeneratedSpeechToPlayLog` is enabled, that same direct-speech parser feeds RimWorld's
 native Social log: a completed initiator result with a valid speech block adds one fresh social-log
-interaction row containing the generated spoken line. The original PlayLog row is not mutated, the
+interaction row containing the generated spoken line. The row is built from `playLogInteractionDefName`
+(the originating interaction's real `InteractionDef`, kept because combined batches display a synthetic
+group def that would not resolve), falling back to `interactionDefName` for direct events; events with
+no underlying interaction (mental states, tales) and solo entries do not inject. The original PlayLog
+row is not mutated, the
 generated row is marked so Pawn Diary does not record it again, and the row's displayed text is
 restored from saved `LogID` mapping after load. That map is pruned on save (dropping `LogID`s whose
 PlayLog row has aged out) so it cannot grow without bound, and the display patch short-circuits when
 a game holds no generated rows so it adds no per-row cost to vanilla Social-log rendering.
+
+Known open issue (under investigation): the inject path now succeeds — the row is added to
+`Find.PlayLog`, the `LogID` is assigned, and Dev Mode logs `Injected generated speech into Social log`
+— but the row does **not** yet appear in the Social tab's interaction log UI. The vessel
+`InteractionDef`, participants, and generated text are all valid, so the remaining gap is in how/when
+the Social tab enumerates or filters PlayLog rows for display, not in building the row. To diagnose,
+enable Dev Mode and watch for the inject/skip log lines emitted by `TryInjectGeneratedSpeechPlayLogEntry`.
 
 Title generation defaults on. Successful main entries queue a capped title follow-up pinned to the
 successful lane when possible. Titles store separately from main text and render as `date - title`;

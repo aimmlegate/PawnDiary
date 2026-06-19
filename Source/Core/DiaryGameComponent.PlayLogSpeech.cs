@@ -36,19 +36,33 @@ namespace PawnDiary
             }
 
             // The generated row is intentionally a social interaction row, so require the original
-            // event to still resolve to two pawns and an InteractionDef.
+            // event to still resolve to two pawns and an InteractionDef. Combined batches store a
+            // synthetic interactionDefName, so prefer the real def kept for injection and only fall
+            // back to interactionDefName (covers direct interactions and pre-field saves).
+            string rowDefName = string.IsNullOrWhiteSpace(diaryEvent.playLogInteractionDefName)
+                ? diaryEvent.interactionDefName
+                : diaryEvent.playLogInteractionDefName;
             if (diaryEvent.solo
                 || string.IsNullOrWhiteSpace(diaryEvent.recipientPawnId)
-                || string.IsNullOrWhiteSpace(diaryEvent.interactionDefName))
+                || string.IsNullOrWhiteSpace(rowDefName))
             {
                 return;
             }
 
-            InteractionDef interactionDef = DefDatabase<InteractionDef>.GetNamedSilentFail(diaryEvent.interactionDefName);
+            InteractionDef interactionDef = DefDatabase<InteractionDef>.GetNamedSilentFail(rowDefName);
             Pawn initiator = FindLivePawnByLoadId(diaryEvent.initiatorPawnId);
             Pawn recipient = FindLivePawnByLoadId(diaryEvent.recipientPawnId);
             if (interactionDef == null || initiator == null || recipient == null)
             {
+                // Speech was parsed but the row could not be built. Surface why under Dev Mode so the
+                // feature is diagnosable in-game (e.g. a non-InteractionDef def or a despawned pawn).
+                if (Prefs.DevMode)
+                {
+                    Log.Message("[Pawn Diary] Speech parsed but Social-log row skipped (def='" + rowDefName
+                        + "' interactionDef=" + (interactionDef != null) + ", initiator=" + (initiator != null)
+                        + ", recipient=" + (recipient != null) + ").");
+                }
+
                 return;
             }
 
@@ -63,6 +77,11 @@ namespace PawnDiary
             {
                 RememberGeneratedSpeechPlayLogEntry(playLogEntryId, speech);
                 diaryEvent.MarkGeneratedSpeechPlayLogEntry(playLogEntryId);
+                if (Prefs.DevMode)
+                {
+                    Log.Message("[Pawn Diary] Injected generated speech into Social log (def='" + rowDefName
+                        + "', logId=" + playLogEntryId + ").");
+                }
             }
         }
 

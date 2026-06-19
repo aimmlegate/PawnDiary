@@ -450,6 +450,9 @@ namespace PawnDiary
 
             DiaryEvent diaryEvent = AddPairwiseEvent(batch.initiator, batch.recipient, defName, label,
                 initiatorText, recipientText, instruction, gameContext);
+            // defName above may be a synthetic combined-batch name; keep the originating interaction's
+            // real def so the generated-speech Social-log row can resolve a valid InteractionDef.
+            diaryEvent.playLogInteractionDefName = batch.firstDefName;
             AddPlayLogEntryIds(diaryEvent, batch.playLogEntryIds);
             QueuePairwiseGeneration(diaryEvent);
         }

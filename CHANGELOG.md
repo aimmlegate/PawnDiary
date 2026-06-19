@@ -20,6 +20,20 @@ Newest first. `DOCUMENTATION.md` describes the current design; this file records
   it, so entries that ended on a spoken line lost their speech in both the diary tab and the
   Social-log injection. Cleanup now treats a closed speech block as a complete boundary while still
   trimming genuinely truncated tails.
+- **No more "TicksAbs before gameStartAbsTick" error:** the `AddHediff` and `SetFaction` hooks fire
+  during starting-pawn generation and scenario setup (e.g. rolling old-age injuries), before the
+  world clock exists, so reading the day calendar there logged a red error. Both hooks now gate on a
+  shared `GamePlaying` check and no-op until the game is actually in play; starting pawns are still
+  captured by the first-playing-tick scans.
+- **Speech injection now builds the row for batched interactions:** combined interaction batches store
+  a synthetic group `interactionDefName` that does not resolve as a real `InteractionDef`, so the
+  generated-speech Social-log row could never be built for them (the common case). Pairwise
+  interaction events now keep the originating interaction's real def in a dedicated
+  `playLogInteractionDefName`, which the injector resolves first (falling back to `interactionDefName`
+  for direct events and pre-field saves). Added Dev Mode log lines on inject/skip so the path is
+  diagnosable in-game. **Known open issue:** the row is now successfully added to `Find.PlayLog` (the
+  inject path logs `Injected generated speech into Social log` and a `LogID` is assigned), but it does
+  not yet appear in the Social tab's interaction log UI — surfacing it there is still being worked on.
 
 ## 2026-06-18
 
