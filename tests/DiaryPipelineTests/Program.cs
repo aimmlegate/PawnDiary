@@ -20,6 +20,7 @@ namespace DiaryPipelineTests
             TestSoloBatchSelection();
             TestResponsePostprocessorRules();
             TestDirectSpeechParser();
+            TestGeneratedTextKeepsTrailingSpeech();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -291,6 +292,30 @@ namespace DiaryPipelineTests
             AssertEqual("unclosed line count", 1, unclosed.Count);
             AssertTrue("unclosed marker is prose", !unclosed[0].directSpeech);
             AssertEqual("unclosed marker stripped", "Unclosed", unclosed[0].line);
+        }
+
+        private static void TestGeneratedTextKeepsTrailingSpeech()
+        {
+            // Regression: the incomplete-sentence trimmer used to delete a speech block on the final
+            // line (it ends in "]]", not sentence punctuation), so neither the diary tab nor the
+            // Social-log injection could find it. All three layouts must now keep the block.
+            AssertEqual("trailing speech survives cleaning", "Enough.", FirstSpeechAfterClean(
+                "I told Bob to stop.\n[[speech]]Enough.[[/speech]]"));
+            AssertEqual("speech-only survives cleaning", "Enough.", FirstSpeechAfterClean(
+                "[[speech]]Enough.[[/speech]]"));
+            AssertEqual("speech then prose survives cleaning", "Enough.", FirstSpeechAfterClean(
+                "I told Bob to stop.\n[[speech]]Enough.[[/speech]]\nThen I walked away."));
+
+            // A genuinely truncated trailing fragment (no speech block) is still trimmed back to the
+            // last complete sentence, so the speech guard does not weaken normal cleanup.
+            AssertEqual("incomplete tail still trimmed", "It was calm.",
+                LlmResponseParser.CleanGeneratedText("It was calm. Then suddenly the", 200, false));
+        }
+
+        private static string FirstSpeechAfterClean(string raw)
+        {
+            string cleaned = LlmResponseParser.CleanGeneratedText(raw, 200, false);
+            return DiaryDirectSpeechParser.FirstDirectSpeechBlock(cleaned, "[[speech]]", "[[/speech]]");
         }
 
         private static DiaryEventPayload PairPayload(string eventId, string eventNoun, string initiatorText, string recipientText)

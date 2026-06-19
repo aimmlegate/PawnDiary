@@ -197,7 +197,9 @@ When `injectGeneratedSpeechToPlayLog` is enabled, that same direct-speech parser
 native Social log: a completed initiator result with a valid speech block adds one fresh social-log
 interaction row containing the generated spoken line. The original PlayLog row is not mutated, the
 generated row is marked so Pawn Diary does not record it again, and the row's displayed text is
-restored from saved `LogID` mapping after load.
+restored from saved `LogID` mapping after load. That map is pruned on save (dropping `LogID`s whose
+PlayLog row has aged out) so it cannot grow without bound, and the display patch short-circuits when
+a game holds no generated rows so it adds no per-row cost to vanilla Social-log rendering.
 
 Title generation defaults on. Successful main entries queue a capped title follow-up pinned to the
 successful lane when possible. Titles store separately from main text and render as `date - title`;

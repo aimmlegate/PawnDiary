@@ -763,13 +763,50 @@ namespace PawnDiary
                 return trimmed;
             }
 
+            // A closed direct-speech block ("[[speech]]...[[/speech]]") is complete by construction,
+            // but it ends in "]]" rather than sentence punctuation, so the sentence heuristic alone
+            // would rewind past it and delete the whole block when the model ends an entry on a speech
+            // line. Treat the end of the last closed block as a valid boundary and cut at whichever
+            // complete boundary is furthest right, so the block is never trimmed away.
             int sentenceEnd = LastSentenceEndBefore(trimmed, trimmed.Length);
-            if (sentenceEnd > 0)
+            int speechBlockEnd = LastClosedSpeechBlockEnd(trimmed);
+            int cut = Math.Max(sentenceEnd, speechBlockEnd);
+            if (cut > 0)
             {
-                return trimmed.Substring(0, sentenceEnd).TrimEnd();
+                return trimmed.Substring(0, cut).TrimEnd();
             }
 
             return trimmed;
+        }
+
+        // Direct-speech sentinels, mirrored locally so this file keeps compiling in isolation (see the
+        // header note). These are the literal markers the prompt asks the model to emit and match
+        // DiaryDirectSpeechParser.Default{Open,Close}Marker.
+        private const string SpeechOpenMarker = "[[speech]]";
+        private const string SpeechCloseMarker = "[[/speech]]";
+
+        /// <summary>
+        /// Returns the index just past the last closed direct-speech block, or 0 when none is present.
+        /// Used so trailing-fragment trimming treats a finished speech block as a complete ending.
+        /// </summary>
+        private static int LastClosedSpeechBlockEnd(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return 0;
+            }
+
+            int close = text.LastIndexOf(SpeechCloseMarker, StringComparison.OrdinalIgnoreCase);
+            if (close < 0)
+            {
+                return 0;
+            }
+
+            // Require a matching open marker before the close so a stray close marker in ordinary
+            // prose cannot suppress trimming of a genuinely truncated tail.
+            int open = text.Substring(0, close)
+                .IndexOf(SpeechOpenMarker, StringComparison.OrdinalIgnoreCase);
+            return open >= 0 ? close + SpeechCloseMarker.Length : 0;
         }
 
         /// <summary>

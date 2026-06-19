@@ -235,6 +235,14 @@ namespace PawnDiary
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             Scribe_Collections.Look(ref diaryEvents, "diaryEvents", LookMode.Deep);
+
+            // Before writing the generated-speech text map, drop rows RimWorld's PlayLog has already
+            // pruned so this map cannot accumulate dead LogID entries across a long playthrough.
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                PruneStaleGeneratedSpeechPlayLogTexts();
+            }
+
             Scribe_Collections.Look(ref generatedSpeechPlayLogTexts, "generatedSpeechPlayLogTexts", LookMode.Value, LookMode.Value,
                 ref generatedSpeechPlayLogTextKeys, ref generatedSpeechPlayLogTextValues);
 

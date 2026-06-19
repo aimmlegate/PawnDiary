@@ -1,7 +1,7 @@
 // Generated direct-speech PlayLog injection. This is an impure RimWorld adapter: it resolves saved
 // pawn IDs back to live Pawn objects, creates a fresh PlayLogEntry_Interaction after LLM generation
 // succeeds, and remembers the generated display text for the Harmony patch in DiaryPatches.cs.
-using System;
+using System.Collections.Generic;
 using RimWorld;
 using Verse;
 
@@ -79,7 +79,7 @@ namespace PawnDiary
 
             if (generatedSpeechPlayLogTexts == null)
             {
-                generatedSpeechPlayLogTexts = new System.Collections.Generic.Dictionary<int, string>();
+                generatedSpeechPlayLogTexts = new Dictionary<int, string>();
             }
 
             generatedSpeechPlayLogTexts[playLogEntryId] = speech.Trim();
@@ -98,6 +98,64 @@ namespace PawnDiary
 
             string text;
             return generatedSpeechPlayLogTexts.TryGetValue(playLogEntryId, out text) ? text ?? string.Empty : string.Empty;
+        }
+
+        /// <summary>
+        /// True when this game holds at least one generated direct-speech row. The display patch
+        /// reads this to skip its per-row lookup entirely in games that never created one.
+        /// </summary>
+        public bool HasGeneratedSpeechPlayLogTexts
+        {
+            get { return generatedSpeechPlayLogTexts != null && generatedSpeechPlayLogTexts.Count > 0; }
+        }
+
+        /// <summary>
+        /// Drops generated-speech text entries whose PlayLog row RimWorld has already pruned. Called
+        /// when saving so the LogID->text map cannot grow without bound as old Social-log rows age out.
+        /// </summary>
+        private void PruneStaleGeneratedSpeechPlayLogTexts()
+        {
+            if (generatedSpeechPlayLogTexts == null || generatedSpeechPlayLogTexts.Count == 0)
+            {
+                return;
+            }
+
+            // Without a readable PlayLog we cannot tell which rows are stale, so keep the map as-is
+            // rather than risk dropping mappings whose rows are still live.
+            List<LogEntry> entries = Find.PlayLog?.AllEntries;
+            if (entries == null)
+            {
+                return;
+            }
+
+            HashSet<int> liveLogIds = new HashSet<int>();
+            for (int i = 0; i < entries.Count; i++)
+            {
+                LogEntry entry = entries[i];
+                if (entry != null)
+                {
+                    liveLogIds.Add(entry.LogID);
+                }
+            }
+
+            List<int> stale = null;
+            foreach (KeyValuePair<int, string> pair in generatedSpeechPlayLogTexts)
+            {
+                if (!liveLogIds.Contains(pair.Key))
+                {
+                    (stale ?? (stale = new List<int>())).Add(pair.Key);
+                }
+            }
+
+            if (stale == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < stale.Count; i++)
+            {
+                generatedSpeechPlayLogTexts.Remove(stale[i]);
+            }
         }
 
         private static string SpeechBlockOpenMarker()

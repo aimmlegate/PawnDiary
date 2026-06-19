@@ -28,6 +28,9 @@ namespace PawnDiary
         private static readonly FieldInfo InitiatorField = AccessTools.Field(typeof(PlayLogEntry_Interaction), "initiator");
         private static readonly FieldInfo RecipientField = AccessTools.Field(typeof(PlayLogEntry_Interaction), "recipient");
         private static readonly FieldInfo ExtraSentencePacksField = AccessTools.Field(typeof(PlayLogEntry_Interaction), "extraSentencePacks");
+        // The base LogEntry backing field for LogID, used only by the reflection fallback below to
+        // stamp a unique id the parameterless constructor may have skipped.
+        private static readonly FieldInfo LogIdField = AccessTools.Field(typeof(LogEntry), "logID");
 
         private static int addDepth;
 
@@ -38,6 +41,21 @@ namespace PawnDiary
         public static bool IsAddingGeneratedSpeechEntry
         {
             get { return addDepth > 0; }
+        }
+
+        /// <summary>
+        /// True when the current game has any generated direct-speech rows, so the display patch must
+        /// inspect each rendered interaction. False for games that never created one, letting that
+        /// patch skip its per-row lookup entirely. The map is populated synchronously right after a
+        /// row is added (before any UI render), so this gate never hides one of our own rows.
+        /// </summary>
+        public static bool HasGeneratedSpeechRows
+        {
+            get
+            {
+                DiaryGameComponent component = DiaryGameComponent.Current;
+                return component != null && component.HasGeneratedSpeechPlayLogTexts;
+            }
         }
 
         /// <summary>
@@ -74,6 +92,14 @@ namespace PawnDiary
             if (ExtraSentencePacksField != null)
             {
                 ExtraSentencePacksField.SetValue(entry, null);
+            }
+
+            // The parameterless constructor this fallback uses may leave logID unset, and PlayLog.Add
+            // never assigns one. Stamp a fresh unique LogID so the synthetic row can't collide with
+            // another entry (the primary constructor path above already assigns one).
+            if (LogIdField != null && Find.UniqueIDsManager != null)
+            {
+                LogIdField.SetValue(entry, Find.UniqueIDsManager.GetNextLogID());
             }
 
             return entry;

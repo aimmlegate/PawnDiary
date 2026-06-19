@@ -11,6 +11,15 @@ Newest first. `DOCUMENTATION.md` describes the current design; this file records
 - **Initiator speech prompt nudge:** strengthened initiator and single-POV direct-speech prompt
   instructions so eligible entries ask for exactly one short standalone `[[speech]]` block when the
   supplied notes contain or strongly imply words spoken by the POV pawn.
+- **Speech-injection hardening:** the saved `LogID`->text map now drops entries whose PlayLog row
+  RimWorld has already pruned (on save), so it can't grow without bound; the display patch skips its
+  per-row lookup entirely in games that never created a generated row; and the reflection-fallback
+  constructor now stamps a fresh unique `LogID` instead of risking a colliding default.
+- **Trailing speech no longer trimmed away:** response cleanup treated a `[[speech]]...[[/speech]]`
+  block on the final line as an incomplete sentence (it ends in `]]`, not `.`/`!`/`?`) and deleted
+  it, so entries that ended on a spoken line lost their speech in both the diary tab and the
+  Social-log injection. Cleanup now treats a closed speech block as a complete boundary while still
+  trimming genuinely truncated tails.
 
 ## 2026-06-18
 

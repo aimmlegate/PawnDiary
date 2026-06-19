@@ -337,6 +337,13 @@ namespace PawnDiary
         /// </summary>
         public static bool Prefix(PlayLogEntry_Interaction __instance, ref string __result)
         {
+            // Fast path: when this game has no generated speech rows at all, skip the per-row lookup
+            // entirely and let every interaction render through vanilla grammar.
+            if (!GeneratedSpeechPlayLog.HasGeneratedSpeechRows)
+            {
+                return true;
+            }
+
             string text;
             if (!GeneratedSpeechPlayLog.TryGetText(__instance, out text))
             {
