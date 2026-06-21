@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using PawnDiary;
 
 namespace LlmResponseParserTests
@@ -15,6 +16,8 @@ namespace LlmResponseParserTests
             TestReasoningScrub();
             TestReasoningScrubNoCloseTag();
             TestGeneratedTextCleanup();
+            TestMiniJsonRejectsMalformedNumbers();
+            TestMiniJsonRejectsExcessiveDepth();
 
             Console.WriteLine("LlmResponseParserTests passed " + assertions + " assertions.");
             return 0;
@@ -27,6 +30,13 @@ namespace LlmResponseParserTests
                 "A small entry.",
                 LlmResponseParser.ParseGeneratedText(
                     Root("{\"choices\":[{\"message\":{\"content\":\"A small entry.\"}}]}"),
+                    LlmResponseMode.OpenAIChatCompletions));
+
+            AssertEqual(
+                "chat text parts",
+                "Part one.\nPart two.",
+                LlmResponseParser.ParseGeneratedText(
+                    Root("{\"choices\":[{\"message\":{\"content\":[{\"type\":\"text\",\"text\":\"Part one.\"},{\"type\":\"reasoning_text\",\"text\":\"hidden\"},{\"type\":\"text\",\"text\":\"Part two.\"}]}}]}"),
                     LlmResponseMode.OpenAIChatCompletions));
 
             AssertEqual(
@@ -170,6 +180,30 @@ namespace LlmResponseParserTests
                 LlmResponseParser.CleanGeneratedText("One two three four", 2, false));
         }
 
+        private static void TestMiniJsonRejectsMalformedNumbers()
+        {
+            AssertThrows("double minus number", delegate { MiniJson.Deserialize("--1"); });
+            AssertThrows("plus number", delegate { MiniJson.Deserialize("+5"); });
+            AssertThrows("double decimal number", delegate { MiniJson.Deserialize("1.2.3"); });
+            AssertThrows("missing exponent number", delegate { MiniJson.Deserialize("1e"); });
+        }
+
+        private static void TestMiniJsonRejectsExcessiveDepth()
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < 300; i++)
+            {
+                builder.Append('[');
+            }
+
+            for (int i = 0; i < 300; i++)
+            {
+                builder.Append(']');
+            }
+
+            AssertThrows("too deep json", delegate { MiniJson.Deserialize(builder.ToString()); });
+        }
+
         private static Dictionary<string, object> Root(string json)
         {
             return LlmResponseParser.ParseResponseRoot(json);
@@ -183,6 +217,21 @@ namespace LlmResponseParserTests
                 throw new InvalidOperationException(
                     name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");
             }
+        }
+
+        private static void AssertThrows(string name, Action action)
+        {
+            assertions++;
+            try
+            {
+                action();
+            }
+            catch (FormatException)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(name + " expected a FormatException.");
         }
     }
 }

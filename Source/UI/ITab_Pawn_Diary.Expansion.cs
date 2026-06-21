@@ -94,24 +94,12 @@ namespace PawnDiary
         /// </summary>
         private static string EntryKey(DiaryEntryView entry)
         {
-
             if (entry == null)
             {
-
                 return string.Empty;
-
             }
 
-
-
-            string eventPart = string.IsNullOrWhiteSpace(entry.EventId)
-
-                ? ((entry.Date ?? string.Empty) + "|" + entry.Tick)
-
-                : entry.EventId;
-
-            return eventPart + "|" + (entry.PovRole ?? string.Empty);
-
+            return entry.EntryKey ?? string.Empty;
         }
 
 

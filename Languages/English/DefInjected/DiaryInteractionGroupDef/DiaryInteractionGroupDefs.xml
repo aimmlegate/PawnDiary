@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <romance.label>Romance &amp; dating</romance.label>
+  <romance.instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</romance.instruction>
+  <romance.tone>with tender, fluttering warmth</romance.tone>
+  <recruit.label>Recruitment &amp; prison</recruit.label>
+  <recruit.instruction>the dance of captor and captive—building rapport, breaking will, or planting seeds of rebellion</recruit.instruction>
+  <slavery.label>Slavery</slavery.label>
+  <slavery.instruction>the weight of chains—suppression by an overseer or the first spark of defiance</slavery.instruction>
+  <slavery.tone>with grim, heavy unease</slavery.tone>
+  <conversion.label>Ideology &amp; conversion</conversion.label>
+  <conversion.instruction>a battle of belief—conversion, counseling, preaching, or the pressure of faith on faith</conversion.instruction>
+  <trial.label>Trials &amp; accusations</trial.label>
+  <trial.instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</trial.instruction>
+  <trial.tone>with tense, formal pressure</trial.tone>
+  <strangechat.label>Strange chat</strangechat.label>
+  <strangechat.instruction>something wrong in ordinary conversation--a strange chat that leaves unease lingering. Don&apos;t explain it away</strangechat.instruction>
+  <strangechat.tone>with creeping dread; never resolve the wrongness</strangechat.tone>
+  <anomaly.label>Anomaly &amp; dark</anomaly.label>
+  <anomaly.instruction>something wrong—an unsettling exchange that leaves unease lingering. Don&apos;t explain it away</anomaly.instruction>
+  <anomaly.tone>with creeping dread; never resolve the wrongness</anomaly.tone>
+  <insults.label>Insults &amp; fights</insults.label>
+  <insults.instruction>the sting of contempt—an insult, a slight, or fists about to fly</insults.instruction>
+  <insults.tone>with sharp, stinging heat</insults.tone>
+  <ritual.label>Rituals &amp; speeches</ritual.label>
+  <ritual.instruction>a solemn public moment—ritual, ceremony, or address. The colony watches</ritual.instruction>
+  <ritual.tone>with solemn, ceremonial weight</ritual.tone>
+  <animal.label>Animal handling</animal.label>
+  <animal.instruction>a quiet bond—chatting with an animal, taming, training, or letting one go</animal.instruction>
+  <animal.tone>with quiet, gentle fondness</animal.tone>
+  <heartfelt.label>Heartfelt talk</heartfelt.label>
+  <heartfelt.instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</heartfelt.instruction>
+  <heartfelt.tone>with soft, tender warmth</heartfelt.tone>
+  <teaching.label>Teaching &amp; lessons</teaching.label>
+  <teaching.instruction>a lesson passed down—an adult teaching or playing with a child</teaching.instruction>
+  <smalltalk.label>Small talk</smalltalk.label>
+  <smalltalk.instruction>idle chatter—low-stakes small talk that fills the silence</smalltalk.instruction>
+  <smalltalk.tone>with light, easy familiarity</smalltalk.tone>
+  <dayreflection.label>Day&apos;s reflection</dayreflection.label>
+  <dayreflection.instruction>a quiet end-of-day reflection looking back on the whole day</dayreflection.instruction>
+  <dayreflection.tone>with a quiet, settling, end-of-day calm</dayreflection.tone>
+  <arrival.label>Arrival</arrival.label>
+  <other.label>A quiet day</other.label>
+  <other.instruction>a social interaction between the pawns</other.instruction>
+  <socialfight.label>Social fights</socialfight.label>
+  <socialfight.instruction>tempers snapped—two people came to blows. Write it as heat and impact</socialfight.instruction>
+  <socialfight.tone>with raw, adrenal fury</socialfight.tone>
+  <insultspree.label>Insult sprees</insultspree.label>
+  <insultspree.instruction>a pawn breaking into repeated verbal cruelty; prefer the actual insult log entries when they are recorded</insultspree.instruction>
+  <insultspree.tone>with sour, needling anger</insultspree.tone>
+  <mentalbreak.label>Mental breaks</mentalbreak.label>
+  <mentalbreak.instruction>the mind breaking—write the pawn&apos;s inner storm and what they did</mentalbreak.instruction>
+  <mentalbreak.tone>with frayed, overwhelmed intensity</mentalbreak.tone>
+  <talecombat.label>Combat, injuries &amp; death</talecombat.label>
+  <talecombat.instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</talecombat.instruction>
+  <talecombat.tone>with fear and visceral danger</talecombat.tone>
+  <talehealth.label>Health &amp; medicine</talehealth.label>
+  <talehealth.instruction>the body&apos;s fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</talehealth.instruction>
+  <talehealth.tone>with fragile fear and relief</talehealth.tone>
+  <talelife.label>Life milestones</talelife.label>
+  <talelife.instruction>a turning point—birth, capture, bonding, or a new beginning. Write it as a life changed</talelife.instruction>
+  <talelife.tone>with the quiet weight of a turning point</talelife.tone>
+  <talequality.label>Masterworks &amp; legendary crafts</talequality.label>
+  <talequality.instruction>hands that made something lasting—pride, exhaustion, and the weight of creation</talequality.instruction>
+  <talequality.tone>with proud, bone-tired satisfaction</talequality.tone>
+  <talerelic.label>Relics</talerelic.label>
+  <talerelic.instruction>a sacred object placed with reverence—a solemn, culturally weighty moment</talerelic.instruction>
+  <talerelic.tone>with hushed reverence</talerelic.tone>
+  <talework.label>Work &amp; achievements</talework.label>
+  <talework.instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</talework.instruction>
+  <taleanomaly.label>Anomaly horror</taleanomaly.label>
+  <taleanomaly.instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</taleanomaly.instruction>
+  <taleanomaly.tone>with dread and the uncanny; leave it unexplained</taleanomaly.tone>
+  <taleincident.label>Raids, disasters &amp; colony events</taleincident.label>
+  <taleincident.instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</taleincident.instruction>
+  <taleincident.tone>with shaken, crisis-pitched tension</taleincident.tone>
+  <talequiet.label>Quiet personal moments</talequiet.label>
+  <talequiet.instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</talequiet.instruction>
+  <talequiet.tone>with small, private quiet</talequiet.tone>
+  <taleother.label>A notable day</taleother.label>
+  <taleother.instruction>a notable non-social RimWorld tale involving the pawn</taleother.instruction>
+  <moodeventPositive.label>Positive mood events</moodeventPositive.label>
+  <moodeventPositive.instruction>something lifted—a positive colony-wide event that eases the heart</moodeventPositive.instruction>
+  <moodeventPositive.tone>with a lifted, eased spirit</moodeventPositive.tone>
+  <moodeventNegative.label>Negative mood events</moodeventNegative.label>
+  <moodeventNegative.instruction>something weighing—a negative colony-wide event that strains the spirit</moodeventNegative.instruction>
+  <moodeventNegative.tone>with a weighed-down strain</moodeventNegative.tone>
+  <moodeventMixed.label>Situationally mixed mood events</moodeventMixed.label>
+  <moodeventMixed.instruction>a condition that touches each person differently—write how it feels to this pawn</moodeventMixed.instruction>
+  <moodeventOther.label>Passing moods</moodeventOther.label>
+  <moodeventOther.instruction>a colony-wide event affecting the pawn&apos;s mood</moodeventOther.instruction>
+  <thoughtPregnancyFamily.label>Pregnancy memories</thoughtPregnancyFamily.label>
+  <thoughtPregnancyFamily.instruction>pregnancy, birth loss, or the end of a pregnancy as intimate family news; write with restraint and do not assume the pawn feels only one simple emotion</thoughtPregnancyFamily.instruction>
+  <thoughtPregnancyFamily.tone>with intimate, restrained weight</thoughtPregnancyFamily.tone>
+  <thoughtPositive.label>Positive thoughts</thoughtPositive.label>
+  <thoughtPositive.instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood effect: minor joys get a quiet note, strong ones get warmth and detail</thoughtPositive.instruction>
+  <thoughtNegative.label>Negative thoughts</thoughtNegative.label>
+  <thoughtNegative.instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood effect: minor irritations get a passing mention, severe ones get raw emotion and weight</thoughtNegative.instruction>
+  <thoughtOther.label>Passing thoughts</thoughtOther.label>
+  <thoughtOther.instruction>a temporary thought that crossed the pawn&apos;s mind. Match the intensity to the mood effect</thoughtOther.instruction>
+  <inspiration.label>Inspirations</inspiration.label>
+  <inspiration.instruction>a sudden useful clarity—write the pawn&apos;s mind catching fire with purpose, grounded in the specific kind of inspiration and any reason the game gives</inspiration.instruction>
+  <inspiration.tone>with bright, focused momentum</inspiration.tone>
+  <workDarkStudy.label>Dark study work</workDarkStudy.label>
+  <workDarkStudy.instruction>dark research that should feel unsettling every time—write the work as intimate contact with something wrong; keep it spooky, sensory, and unresolved</workDarkStudy.instruction>
+  <workDarkStudy.tone>with creeping, unresolved dread</workDarkStudy.tone>
+  <workPassion.label>Passionate work</workPassion.label>
+  <workPassion.instruction>work that touches one of the pawn&apos;s passions—positive, focused, quietly satisfying, without pretending the colony is easy</workPassion.instruction>
+  <workPassion.tone>with grounded satisfaction</workPassion.tone>
+  <workStrain.label>Straining work</workStrain.label>
+  <workStrain.instruction>work that feels dull, grimy, clumsy, or frustrating—negative when it is cleaning/dumb labor or when the pawn lacks skill</workStrain.instruction>
+  <workStrain.tone>with weary irritation</workStrain.tone>
+  <workRoutine.label>Routine work</workRoutine.label>
+  <workRoutine.instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</workRoutine.instruction>
+  <hediffPregnancy.label>Pregnancy</hediffPregnancy.label>
+  <hediffPregnancy.instruction>pregnancy as a life-changing beginning; write the pawn noticing the body, future, fear, hope, or uncertainty without assuming joy</hediffPregnancy.instruction>
+  <hediffPregnancy.tone>with intimate uncertainty and quiet weight</hediffPregnancy.tone>
+  <hediffLabor.label>Labor</hediffLabor.label>
+  <hediffLabor.instruction>labor and birth approaching; write urgency, pain, fear, care, and the threshold before birth without skipping ahead to the baby unless supplied</hediffLabor.instruction>
+  <hediffLabor.tone>with urgent bodily strain</hediffLabor.tone>
+  <hediffMajorHealth.label>Major health changes</hediffMajorHealth.label>
+  <hediffMajorHealth.instruction>a new or worsening health condition that stayed with the pawn through the day</hediffMajorHealth.instruction>
+  <hediffMajorHealth.tone>with bodily unease and vulnerability</hediffMajorHealth.tone>
+</LanguageData>

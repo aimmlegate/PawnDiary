@@ -19,6 +19,17 @@ namespace PawnDiary
         /// </summary>
         private bool RecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
         {
+            if (IsRecentlyRecorded(recentEvents, key, windowTicks))
+            {
+                return true;
+            }
+
+            MarkRecentlyRecorded(recentEvents, key, windowTicks);
+            return false;
+        }
+
+        private bool IsRecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        {
             if (recentEvents == null || string.IsNullOrEmpty(key))
             {
                 return false;
@@ -28,13 +39,19 @@ namespace PawnDiary
             PruneRecentEvents(recentEvents, now, windowTicks);
 
             int last;
-            if (recentEvents.TryGetValue(key, out last) && now - last < windowTicks)
+            return recentEvents.TryGetValue(key, out last) && now - last < windowTicks;
+        }
+
+        private void MarkRecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        {
+            if (recentEvents == null || string.IsNullOrEmpty(key))
             {
-                return true;
+                return;
             }
 
+            int now = Find.TickManager.TicksGame;
+            PruneRecentEvents(recentEvents, now, windowTicks);
             recentEvents[key] = now;
-            return false;
         }
 
         /// <summary>
@@ -82,11 +99,31 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// A pawn qualifies for diary tracking if it is a humanlike colonist.
+        /// A pawn qualifies for diary tracking if it is a humanlike colonist old enough to write
+        /// first-person entries. Pre-teen colonists can still appear as "other pawn" context.
         /// </summary>
         private static bool IsDiaryEligible(Pawn pawn)
         {
-            return IsHumanlike(pawn) && pawn.IsColonist;
+            return IsHumanlike(pawn) && pawn.IsColonist && IsFirstPersonDiaryAgeEligible(pawn);
+        }
+
+        /// <summary>
+        /// Returns whether a pawn is old enough for first-person diary ownership/generation.
+        /// </summary>
+        private static bool IsFirstPersonDiaryAgeEligible(Pawn pawn)
+        {
+            int minimumAge = Math.Max(0, DiaryTuning.Current.minimumFirstPersonAgeYears);
+            return minimumAge <= 0
+                || (pawn?.ageTracker != null && pawn.ageTracker.AgeBiologicalYears >= minimumAge);
+        }
+
+        /// <summary>
+        /// Harmony hooks can fire during pawn/world generation, before TicksAbs is valid. Event
+        /// recorders that create DiaryEvents call this before stamping the current absolute date.
+        /// </summary>
+        private static bool CanRecordGameplayEventNow()
+        {
+            return GamePlaying;
         }
 
         /// <summary>
@@ -272,13 +309,9 @@ namespace PawnDiary
                 return false;
             }
 
-            if (EventFallsOutsideDiaryBoundsByIndex(diaryEvent, pawnId, diary))
-            {
-                return true;
-            }
-
-            return EventFallsBeforeFirstArrival(diaryEvent, FirstArrivalTickFor(pawnId, diary))
-                || EventFallsAfterFinalDeath(diaryEvent, FinalDeathTickFor(pawnId, diary));
+            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+            int eventIndex = EventIndexInDiary(diary, diaryEvent.eventId);
+            return EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, bounds);
         }
 
         /// <summary>
@@ -294,6 +327,12 @@ namespace PawnDiary
             public int finalDeathIndex;
             public int? firstArrivalTick;
             public int? finalDeathTick;
+        }
+
+        private sealed class DiaryBoundsCacheEntry
+        {
+            public DiaryBounds bounds;
+            public Dictionary<string, int> eventIndexesById;
         }
 
         /// <summary>
@@ -393,6 +432,66 @@ namespace PawnDiary
                 || EventFallsAfterFinalDeath(diaryEvent, bounds.finalDeathTick);
         }
 
+        private bool EventFallsOutsideDiaryBoundsForPawn(DiaryEvent diaryEvent, string pawnId,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            DiaryBoundsCacheEntry cacheEntry = DiaryBoundsForPawn(pawnId, boundsCache);
+            int eventIndex = EventIndexInDiary(cacheEntry, diaryEvent.eventId);
+            return EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, cacheEntry.bounds);
+        }
+
+        private DiaryBoundsCacheEntry DiaryBoundsForPawn(string pawnId,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache)
+        {
+            if (boundsCache == null)
+            {
+                return BuildDiaryBoundsCacheEntry(pawnId, FindDiaryByPawnId(pawnId));
+            }
+
+            DiaryBoundsCacheEntry cacheEntry;
+            if (!boundsCache.TryGetValue(pawnId, out cacheEntry))
+            {
+                cacheEntry = BuildDiaryBoundsCacheEntry(pawnId, FindDiaryByPawnId(pawnId));
+                boundsCache[pawnId] = cacheEntry;
+            }
+
+            return cacheEntry;
+        }
+
+        private DiaryBoundsCacheEntry BuildDiaryBoundsCacheEntry(string pawnId, PawnDiaryRecord diary)
+        {
+            return new DiaryBoundsCacheEntry
+            {
+                bounds = ComputeDiaryBounds(pawnId, diary),
+                eventIndexesById = EventIndexesById(diary)
+            };
+        }
+
+        private static Dictionary<string, int> EventIndexesById(PawnDiaryRecord diary)
+        {
+            Dictionary<string, int> indexes = new Dictionary<string, int>();
+            if (diary?.eventIds == null)
+            {
+                return indexes;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                string eventId = diary.eventIds[i];
+                if (!string.IsNullOrWhiteSpace(eventId) && !indexes.ContainsKey(eventId))
+                {
+                    indexes[eventId] = i;
+                }
+            }
+
+            return indexes;
+        }
+
         /// <summary>
         /// Uses the pawn's saved event-id order as the hard boundary. This catches same-tick cases
         /// where a startup thought was recorded before the arrival page, or a hook fires after death.
@@ -477,6 +576,17 @@ namespace PawnDiary
             return -1;
         }
 
+        private static int EventIndexInDiary(DiaryBoundsCacheEntry cacheEntry, string eventId)
+        {
+            if (string.IsNullOrWhiteSpace(eventId) || cacheEntry?.eventIndexesById == null)
+            {
+                return -1;
+            }
+
+            int index;
+            return cacheEntry.eventIndexesById.TryGetValue(eventId, out index) ? index : -1;
+        }
+
         private static bool EventFallsBeforeFirstArrival(DiaryEvent diaryEvent, int? firstArrivalTick)
         {
             return diaryEvent != null
@@ -553,6 +663,60 @@ namespace PawnDiary
                 if (!eventsById.ContainsKey(diaryEvent.eventId))
                 {
                     eventsById[diaryEvent.eventId] = diaryEvent;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes blank, duplicate, and dangling event references from per-pawn diary indexes. The
+        /// saved event list is the source of truth; records should not keep pointing at events that no
+        /// longer exist or were corrupted out of a save.
+        /// </summary>
+        private void PruneDiaryEventRefs()
+        {
+            if (diaries == null)
+            {
+                return;
+            }
+
+            if (eventsById.Count == 0 && diaryEvents != null && diaryEvents.Count > 0)
+            {
+                RebuildEventIndex();
+            }
+
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                PawnDiaryRecord diary = diaries[i];
+                if (diary == null)
+                {
+                    continue;
+                }
+
+                if (diary.eventIds == null)
+                {
+                    diary.eventIds = new List<string>();
+                    continue;
+                }
+
+                HashSet<string> seen = null;
+                for (int j = diary.eventIds.Count - 1; j >= 0; j--)
+                {
+                    string eventId = diary.eventIds[j];
+                    if (string.IsNullOrWhiteSpace(eventId) || !eventsById.ContainsKey(eventId))
+                    {
+                        diary.eventIds.RemoveAt(j);
+                        continue;
+                    }
+
+                    if (seen == null)
+                    {
+                        seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    }
+
+                    if (!seen.Add(eventId))
+                    {
+                        diary.eventIds.RemoveAt(j);
+                    }
                 }
             }
         }

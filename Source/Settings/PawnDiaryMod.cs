@@ -118,6 +118,12 @@ namespace PawnDiary
             listing.Label("PawnDiary.Settings.Temperature".Translate(Settings.temperature.ToString("0.00")));
             Settings.temperature = listing.Slider(Settings.temperature, 0f, 2f);
             DrawHint(listing, "PawnDiary.Settings.TemperatureHelp".Translate());
+            listing.Label("PawnDiary.Settings.TimeoutSeconds".Translate(Settings.timeoutSeconds));
+            Settings.timeoutSeconds = Mathf.RoundToInt(listing.Slider(Settings.timeoutSeconds, 5f, 300f));
+            DrawHint(listing, "PawnDiary.Settings.TimeoutSecondsHelp".Translate());
+            listing.Label("PawnDiary.Settings.MaxTokens".Translate(Settings.maxTokens));
+            Settings.maxTokens = Mathf.RoundToInt(listing.Slider(Settings.maxTokens, 32f, 2048f));
+            DrawHint(listing, "PawnDiary.Settings.MaxTokensHelp".Translate());
             listing.Label("PawnDiary.Settings.WorkGenerationWeight".Translate(Settings.workGenerationWeight.ToString("0.##")));
             Settings.workGenerationWeight = listing.Slider(Settings.workGenerationWeight, 0f, 5f);
             DrawHint(listing, "PawnDiary.Settings.WorkGenerationWeightHelp".Translate());
@@ -147,6 +153,7 @@ namespace PawnDiary
         public override void WriteSettings()
         {
             Settings.ClampValues();
+            Settings.NormalizeEndpointUrls();
             LlmClient.ApplyConcurrency();
             LlmClient.ApplyDebugLoggingSetting();
             base.WriteSettings();
@@ -997,7 +1004,7 @@ namespace PawnDiary
             }
 
             // Generation controls, four system-prompt editor cards, and persona-preset studio.
-            height += 330f;
+            height += 400f;
             height += 1180f;
             height += 590f + PersonaTagPickerHeight();
 
@@ -1070,39 +1077,50 @@ namespace PawnDiary
         private async void TestApiConnection(int index)
         {
             int generation = ++connectionTestGeneration;
-            isTestingConnection = true;
-            connectionTestTargetIndex = index;
-            connectionTestStatus = "PawnDiary.Settings.TestingConnection".Translate();
-
-            if (index < 0 || index >= Settings.apiEndpoints.Count)
-            {
-                isTestingConnection = false;
-                connectionTestStatus = null;
-                return;
-            }
-
-            ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
-            string url = endpoint.url;
-            string apiKey = endpoint.apiKey;
-            string model = endpoint.model;
-            ApiCompatibilityMode apiMode = endpoint.apiMode;
-            string reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
-            bool ollamaThink = endpoint.ollamaThink;
-            int timeoutSeconds = Settings.timeoutSeconds;
-            float temperature = Settings.temperature;
-            string prompt = "PawnDiary.Settings.ConnectionTestPrompt".Translate();
-            string validationError = ConnectionTestValidationError(url, model);
-            if (!string.IsNullOrWhiteSpace(validationError))
-            {
-                isTestingConnection = false;
-                connectionTestStatus = "PawnDiary.Settings.ConnectionTestFailed".Translate(validationError);
-                Log.Warning("[PawnDiary debug] API connection check failed for " + ConnectionTestLaneLabel(url, model, apiMode)
-                    + ": " + validationError);
-                return;
-            }
-
+            string url = string.Empty;
+            string apiKey = string.Empty;
+            string model = string.Empty;
+            ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
+            string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
+            bool ollamaThink = false;
             try
             {
+                isTestingConnection = true;
+                connectionTestTargetIndex = index;
+                connectionTestStatus = "PawnDiary.Settings.TestingConnection".Translate();
+
+                if (Settings?.apiEndpoints == null || index < 0 || index >= Settings.apiEndpoints.Count)
+                {
+                    isTestingConnection = false;
+                    connectionTestStatus = null;
+                    return;
+                }
+
+                ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
+                if (endpoint == null)
+                {
+                    throw new InvalidOperationException("Endpoint row is missing.");
+                }
+
+                url = endpoint.url;
+                apiKey = endpoint.apiKey;
+                model = endpoint.model;
+                apiMode = endpoint.apiMode;
+                reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
+                ollamaThink = endpoint.ollamaThink;
+                int timeoutSeconds = Settings.timeoutSeconds;
+                float temperature = Settings.temperature;
+                string prompt = "PawnDiary.Settings.ConnectionTestPrompt".Translate();
+                string validationError = ConnectionTestValidationError(url, model);
+                if (!string.IsNullOrWhiteSpace(validationError))
+                {
+                    isTestingConnection = false;
+                    connectionTestStatus = "PawnDiary.Settings.ConnectionTestFailed".Translate(validationError);
+                    Log.Warning("[PawnDiary debug] API connection check failed for " + ConnectionTestLaneLabel(url, model, apiMode)
+                        + ": " + validationError);
+                    return;
+                }
+
                 string sampleText = await LlmClient.TestConnection(new ApiEndpointConfig(url, apiKey, model)
                 {
                     apiMode = apiMode,
@@ -1165,28 +1183,36 @@ namespace PawnDiary
         private async void FetchModels(int index)
         {
             int generation = ++fetchGeneration; // capture current generation to detect stale completions
-            isFetchingModels = true;
-            fetchTargetIndex = index;
-            fetchStatus = "PawnDiary.Settings.FetchingModels".Translate(); // main thread here
-
-            // Snapshot the inputs on the main thread. The await continuation may resume on a
-            // background thread in RimWorld's runtime, so it must not read game state, call
-            // .Translate(), or edit shared collections — it only hands a result back via
-            // pendingFetchResult, which the main-thread draw (ApplyPendingFetchResult) consumes.
-            if (index < 0 || index >= Settings.apiEndpoints.Count)
-            {
-                isFetchingModels = false;
-                return;
-            }
-
-            ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
-            string url = endpoint.url;
-            string apiKey = endpoint.apiKey;
-            ApiCompatibilityMode apiMode = endpoint.apiMode;
-            int timeoutSeconds = Settings.timeoutSeconds;
-
+            string url = string.Empty;
+            string apiKey = string.Empty;
+            ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
             try
             {
+                isFetchingModels = true;
+                fetchTargetIndex = index;
+                fetchStatus = "PawnDiary.Settings.FetchingModels".Translate(); // main thread here
+
+                // Snapshot the inputs on the main thread. The await continuation may resume on a
+                // background thread in RimWorld's runtime, so it must not read game state, call
+                // .Translate(), or edit shared collections — it only hands a result back via
+                // pendingFetchResult, which the main-thread draw (ApplyPendingFetchResult) consumes.
+                if (Settings?.apiEndpoints == null || index < 0 || index >= Settings.apiEndpoints.Count)
+                {
+                    isFetchingModels = false;
+                    return;
+                }
+
+                ApiEndpointConfig endpoint = Settings.apiEndpoints[index];
+                if (endpoint == null)
+                {
+                    throw new InvalidOperationException("Endpoint row is missing.");
+                }
+
+                url = endpoint.url;
+                apiKey = endpoint.apiKey;
+                apiMode = endpoint.apiMode;
+                int timeoutSeconds = Settings.timeoutSeconds;
+
                 List<string> models = await ModelListClient.FetchModels(url, apiKey, apiMode, timeoutSeconds);
                 pendingFetchResult = new ModelFetchResult
                 {
@@ -1395,8 +1421,31 @@ namespace PawnDiary
             string model = string.IsNullOrWhiteSpace(modelName) ? "<blank-model>" : modelName;
             string endpoint = string.IsNullOrWhiteSpace(endpointUrl)
                 ? "<blank-url>"
-                : EndpointUtility.BuildGenerationUrl(endpointUrl, apiMode);
+                : EndpointUtility.BuildGenerationUrl(SanitizeEndpointUrlForLog(endpointUrl), apiMode);
             return model + " [" + apiMode + "] @ " + endpoint;
+        }
+
+        private static string SanitizeEndpointUrlForLog(string endpointUrl)
+        {
+            if (string.IsNullOrWhiteSpace(endpointUrl))
+            {
+                return string.Empty;
+            }
+
+            int query = endpointUrl.IndexOf('?');
+            int fragment = endpointUrl.IndexOf('#');
+            int cut = -1;
+            if (query >= 0)
+            {
+                cut = query;
+            }
+
+            if (fragment >= 0 && (cut < 0 || fragment < cut))
+            {
+                cut = fragment;
+            }
+
+            return cut >= 0 ? endpointUrl.Substring(0, cut) : endpointUrl;
         }
 
         private static string TrimForStatus(string value)

@@ -17,7 +17,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordInspiration(Pawn pawn, InspirationDef inspirationDef, string reason)
         {
-            if (pawn == null || inspirationDef == null || PawnDiaryMod.Settings == null)
+            if (!CanRecordGameplayEventNow() || pawn == null || inspirationDef == null || PawnDiaryMod.Settings == null)
             {
                 return;
             }

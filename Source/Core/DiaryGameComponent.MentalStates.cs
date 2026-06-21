@@ -18,7 +18,7 @@ namespace PawnDiary
         // everything else is recorded as a solo break from the breaking pawn's point of view.
         public void RecordMentalState(Pawn pawn, MentalStateDef stateDef, Pawn otherPawn, string reason)
         {
-            if (!IsDiaryEligible(pawn) || stateDef == null)
+            if (!CanRecordGameplayEventNow() || !IsDiaryEligible(pawn) || stateDef == null)
             {
                 return;
             }

@@ -17,6 +17,7 @@ namespace PawnDiary
         private const int MaxActiveMapConditions = 3;
         private const int MaxThreatLetterScanBack = 30;
         private const int RecentThreatTimeoutTicks = 7500;
+        private static readonly Regex RichTextTagRegex = new Regex("<.*?>");
 
         public static string BuildGameContextSummary(InteractionDef interactionDef, string interactionLabel)
         {
@@ -1006,7 +1007,7 @@ namespace PawnDiary
             }
 
             string cleaned = value.Replace("\r", " ").Replace("\n", " ");
-            cleaned = Regex.Replace(cleaned, "<.*?>", string.Empty);
+            cleaned = RichTextTagRegex.Replace(cleaned, string.Empty);
             return cleaned.Trim();
         }
 

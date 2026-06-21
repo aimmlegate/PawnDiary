@@ -108,6 +108,10 @@
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>When enabled, a completed initiator diary entry with a valid speech block adds one new Social-log line containing that generated spoken text. This can let mods that watch new interaction log entries react after the LLM result is ready.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
   <PawnDiary.Settings.Temperature>LLM temperature: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Controls model randomness for diary and title requests. Lower values are steadier and more literal; higher values are more varied and atmospheric but can drift from supplied facts.</PawnDiary.Settings.TemperatureHelp>
+  <PawnDiary.Settings.TimeoutSeconds>Request timeout: {0}s</PawnDiary.Settings.TimeoutSeconds>
+  <PawnDiary.Settings.TimeoutSecondsHelp>Maximum seconds to wait for one API lane before failing over or marking the request failed. Slow local models may need more than the default 30 seconds.</PawnDiary.Settings.TimeoutSecondsHelp>
+  <PawnDiary.Settings.MaxTokens>Max response tokens: {0}</PawnDiary.Settings.MaxTokens>
+  <PawnDiary.Settings.MaxTokensHelp>Upper token cap for diary responses before local sentence-aware cleanup. Higher values allow longer pages but slow generation and can make entries less concise.</PawnDiary.Settings.MaxTokensHelp>
   <PawnDiary.Settings.WorkGenerationWeight>Work random weight: {0}x</PawnDiary.Settings.WorkGenerationWeight>
   <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
   <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>
@@ -131,6 +135,7 @@
   <PawnDiary.Settings.PersonaStudioSummary>{0} personas total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>
   <PawnDiary.Settings.PersonaStudioTagsHelp>Custom personas must keep at least one predefined tag.</PawnDiary.Settings.PersonaStudioTagsHelp>
   <PawnDiary.Settings.AddPersonaPreset>Add custom persona</PawnDiary.Settings.AddPersonaPreset>
+  <PawnDiary.Settings.NewPersonaLabel>New Persona</PawnDiary.Settings.NewPersonaLabel>
   <PawnDiary.Settings.ResetPersonaPresets>Restore all persona defaults</PawnDiary.Settings.ResetPersonaPresets>
   <PawnDiary.Settings.PersonaPickerHeader>Choose a persona to edit</PawnDiary.Settings.PersonaPickerHeader>
   <PawnDiary.Settings.EditingPersona>Editing persona: {0}</PawnDiary.Settings.EditingPersona>
@@ -168,7 +173,6 @@
   <PawnDiary.Event.BatchInstruction>write one diary entry for the overall {0} exchange, not separate entries for each listed moment</PawnDiary.Event.BatchInstruction>
   <PawnDiary.Event.TaleBatchFallback>{0} lived through a few {1} moments.</PawnDiary.Event.TaleBatchFallback>
   <PawnDiary.Event.TaleBatchLabel>{0}</PawnDiary.Event.TaleBatchLabel>
-  <PawnDiary.Event.TaleBatchBrief>A {0} moment left a mark.</PawnDiary.Event.TaleBatchBrief>
   <PawnDiary.Event.TaleBatchHeader>Several {0} moments happened:</PawnDiary.Event.TaleBatchHeader>
   <PawnDiary.Event.TaleBatchInstruction>write one solo diary entry for the overall {0} stretch, not separate entries for each listed moment</PawnDiary.Event.TaleBatchInstruction>
   <PawnDiary.Event.CombatBatchLabel>Combat aftermath</PawnDiary.Event.CombatBatchLabel>

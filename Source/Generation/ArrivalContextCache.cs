@@ -16,6 +16,7 @@ namespace PawnDiary
     public static class ArrivalContextCache
     {
         private static readonly Dictionary<string, string> CachedByPawnId = new Dictionary<string, string>();
+        private static readonly Queue<string> CachedPawnOrder = new Queue<string>();
 
         // Arrival facts are consumed in the Pawn.SetFaction postfix right after Capture, so a
         // leftover entry only happens when a join path doesn't reach the postfix. Cap the cache so
@@ -28,6 +29,7 @@ namespace PawnDiary
         public static void Clear()
         {
             CachedByPawnId.Clear();
+            CachedPawnOrder.Clear();
         }
 
         /// <summary>
@@ -76,12 +78,7 @@ namespace PawnDiary
                 parts.Add("arrival_surroundings=" + surroundings);
             }
 
-            if (CachedByPawnId.Count >= MaxCachedEntries && !CachedByPawnId.ContainsKey(pawnId))
-            {
-                CachedByPawnId.Clear(); // drop stale, never-consumed entries before growing further
-            }
-
-            CachedByPawnId[pawnId] = string.Join("; ", parts.ToArray());
+            Store(pawnId, string.Join("; ", parts.ToArray()));
         }
 
         /// <summary>
@@ -100,6 +97,7 @@ namespace PawnDiary
             if (!string.IsNullOrWhiteSpace(pawnId) && CachedByPawnId.TryGetValue(pawnId, out cached))
             {
                 CachedByPawnId.Remove(pawnId);
+                CompactOrderIfNeeded();
                 return cached;
             }
 
@@ -115,6 +113,41 @@ namespace PawnDiary
             }
 
             return string.Join("; ", parts.ToArray());
+        }
+
+        private static void Store(string pawnId, string context)
+        {
+            if (!CachedByPawnId.ContainsKey(pawnId))
+            {
+                CachedPawnOrder.Enqueue(pawnId);
+            }
+
+            CachedByPawnId[pawnId] = context;
+            PruneOldestEntries();
+            CompactOrderIfNeeded();
+        }
+
+        private static void PruneOldestEntries()
+        {
+            while (CachedByPawnId.Count > MaxCachedEntries && CachedPawnOrder.Count > 0)
+            {
+                string oldestPawnId = CachedPawnOrder.Dequeue();
+                CachedByPawnId.Remove(oldestPawnId);
+            }
+        }
+
+        private static void CompactOrderIfNeeded()
+        {
+            if (CachedPawnOrder.Count <= MaxCachedEntries * 2)
+            {
+                return;
+            }
+
+            CachedPawnOrder.Clear();
+            foreach (string pawnId in CachedByPawnId.Keys)
+            {
+                CachedPawnOrder.Enqueue(pawnId);
+            }
         }
 
         private static void AppendFaction(List<string> parts, Faction faction)

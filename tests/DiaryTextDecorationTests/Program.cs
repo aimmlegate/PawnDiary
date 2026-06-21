@@ -16,6 +16,7 @@ namespace DiaryTextDecorationTests
             TestDecorationsApplyInSequenceAndPreserveTags();
             TestZalgoIntensity();
             TestPawnFactSerializationRoundTrip();
+            TestEventTagsFromContext();
 
             Console.WriteLine("DiaryTextDecorationTests passed " + assertions + " assertions.");
             return 0;
@@ -169,6 +170,18 @@ namespace DiaryTextDecorationTests
                 }
             };
             AssertTrue("round-trip hediff matches condition", DiaryTextDecorations.Matches(roundTrip, anestheticRule.when));
+        }
+
+        private static void TestEventTagsFromContext()
+        {
+            string gameContext = "mood_event=Aurora; death_description=true; lonely_tag";
+            DiaryTextDecorationContext context = new DiaryTextDecorationContext();
+            DiaryTextDecorations.AddEventTagsFromContext(context, gameContext);
+
+            AssertTrue("context tag key", context.eventTags.Contains("mood_event"));
+            AssertTrue("context tag key value", context.eventTags.Contains("mood_event=Aurora"));
+            AssertTrue("context tag bare value", context.eventTags.Contains("lonely_tag"));
+            AssertEqual("shared context value", "Aurora", DiaryTextDecorations.ContextValue(gameContext, "mood_event"));
         }
 
         private static int CountCombiningMarks(string text)

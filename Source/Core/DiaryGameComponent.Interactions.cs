@@ -54,7 +54,7 @@ namespace PawnDiary
         public void RecordInteraction(Pawn initiator, Pawn recipient, InteractionDef interactionDef,
             string initiatorGameText, string recipientGameText, int playLogEntryId)
         {
-            if (initiator == null || recipient == null || interactionDef == null)
+            if (!CanRecordGameplayEventNow() || initiator == null || recipient == null || interactionDef == null)
             {
                 return;
             }

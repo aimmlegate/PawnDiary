@@ -23,7 +23,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordCraftedQuality(Thing craftedThing, Pawn worker)
         {
-            if (!IsDiaryEligible(worker) || craftedThing == null || PawnDiaryMod.Settings == null)
+            if (!CanRecordGameplayEventNow() || !IsDiaryEligible(worker) || craftedThing == null || PawnDiaryMod.Settings == null)
             {
                 return;
             }
@@ -77,7 +77,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordRelicInstalled(Pawn pawn, Thing relic)
         {
-            if (!IsDiaryEligible(pawn) || relic == null || PawnDiaryMod.Settings == null)
+            if (!CanRecordGameplayEventNow() || !IsDiaryEligible(pawn) || relic == null || PawnDiaryMod.Settings == null)
             {
                 return;
             }

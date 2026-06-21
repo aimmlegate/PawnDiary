@@ -61,6 +61,9 @@
 
     <!-- Misc -->
     <diaryLineMaxChars>160</diaryLineMaxChars>
+    <!-- Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
+         still appear as context in someone else's entry, but do not write their own pages. -->
+    <minimumFirstPersonAgeYears>13</minimumFirstPersonAgeYears>
 
     <!-- Beauty buckets -->
     <beautyBeautiful>2</beautyBeautiful>

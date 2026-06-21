@@ -8,5 +8,6 @@
 
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
+    <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
   </ItemGroup>
 </Project>

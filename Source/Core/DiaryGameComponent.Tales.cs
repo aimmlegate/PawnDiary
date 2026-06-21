@@ -4,8 +4,8 @@
 // a solo/pairwise DiaryEvent or hands bursty combat tales to the delayed solo batcher. Colonist
 // deaths take a special "death description" path (a neutral account rather than the dead pawn's POV).
 // The helpers below pull pawns/defs out of the vanilla Tale subclasses, build the fallback text and
-// "tale=" game-context string, and resolve the death victim. The two static sets list TaleDefs we
-// skip (covered elsewhere) and TaleDefs that represent a death.
+// "tale=" game-context string, and resolve the death victim. The static set below lists TaleDefs we
+// skip because they are covered by narrower hooks; death TaleDefs are classified in XML.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
@@ -27,21 +27,6 @@ namespace PawnDiary
             "MentalStateGaveUp"
         };
 
-        // TaleDefs where one involved pawn died. RimWorld uses different first/second pawn roles
-        // depending on the tale, so DeathVictimForTale below resolves the victim explicitly.
-        private static readonly HashSet<string> DeathTaleDefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "KilledBy",
-            "KilledCapacity",
-            "KilledLongRange",
-            "KilledMajorThreat",
-            "KilledMelee",
-            "KilledMortar",
-            "KilledChild",
-            "KilledColonist",
-            "KilledColonyAnimal"
-        };
-
         private const string DeathFallbackDefName = "PawnDiary_DeathFallback";
 
         /// <summary>
@@ -53,7 +38,7 @@ namespace PawnDiary
         public void RecordTale(Tale tale, TaleDef taleDef)
         {
             taleDef = taleDef ?? tale?.def;
-            if (tale == null || taleDef == null || PawnDiaryMod.Settings == null)
+            if (!CanRecordGameplayEventNow() || tale == null || taleDef == null || PawnDiaryMod.Settings == null)
             {
                 return;
             }
@@ -147,7 +132,10 @@ namespace PawnDiary
         /// </summary>
         public void RecordDeathFallback(Pawn pawn)
         {
-            if (pawn == null || PawnDiaryMod.Settings == null || !IsDeathDescriptionEligible(pawn))
+            if (!CanRecordGameplayEventNow()
+                || pawn == null
+                || PawnDiaryMod.Settings == null
+                || !IsDeathDescriptionEligible(pawn))
             {
                 return;
             }
@@ -347,19 +335,24 @@ namespace PawnDiary
         /// </summary>
         private static Pawn DeathVictimForTale(TaleDef taleDef, Pawn firstPawn, Pawn secondPawn)
         {
-            if (taleDef == null || string.IsNullOrWhiteSpace(taleDef.defName) || !DeathTaleDefs.Contains(taleDef.defName))
+            if (taleDef == null || string.IsNullOrWhiteSpace(taleDef.defName))
             {
                 return null;
             }
 
-            // KilledBy is firstPawn=VICTIM, secondPawn=KILLER. Most other kill tales are
-            // firstPawn=KILLER, secondPawn=VICTIM/COLONIST/CHILD.
-            if (string.Equals(taleDef.defName, "KilledBy", StringComparison.OrdinalIgnoreCase))
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyTale(taleDef);
+            string victimRole = group?.DeathVictimRoleFor(taleDef.defName);
+            if (string.Equals(victimRole, DiaryEvent.InitiatorRole, StringComparison.OrdinalIgnoreCase))
             {
                 return firstPawn;
             }
 
-            return secondPawn;
+            if (string.Equals(victimRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase))
+            {
+                return secondPawn;
+            }
+
+            return null;
         }
 
         private static string DeathVictimRole(Pawn deathVictim, Pawn firstPawn, Pawn secondPawn)
@@ -381,7 +374,7 @@ namespace PawnDiary
         {
             return pawn != null
                 && IsHumanlike(pawn)
-                && (pawn.IsColonist || pawn.Faction == Faction.OfPlayer);
+                && pawn.IsColonist;
         }
 
         private bool HasDeathDescriptionFor(Pawn pawn)

@@ -61,10 +61,10 @@ See `prompt-lab/README.md` for fixtures and per-model markdown output.
 
 `scripts/publish.ps1` builds the DLL, copies **only** the files the mod needs to run
 (`About/`, both assemblies, `1.6/Defs/`, `Languages/`) into a clean
-`dist/<published packageId>` folder, strips the dev `(developement)` / `(development)`
-postfix from the published `About.xml` name/packageId, and snapshots that payload onto a
-`release/<version>` branch plus a `v<version>` tag. Your current branch and the committed
-Debug DLL are left untouched.
+`dist/<published packageId>` folder, strips the dev `.development` package suffix (and legacy
+`(developement)` / `(development)` markers) from the published `About.xml` name/packageId, and
+snapshots that payload onto a `release/<version>` branch plus a `v<version>` tag. Your current branch
+and the committed Debug DLL are left untouched.
 
 ```powershell
 # Versioned release: builds dist/<published packageId> + release branch/tag

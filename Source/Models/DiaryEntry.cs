@@ -69,6 +69,9 @@ namespace PawnDiary
         public readonly string LlmRawResponse; // Final-answer text before local length/sentence cleanup
         public readonly string EventId;     // Identifier of the backing DiaryEvent
         public readonly string PovRole;     // Role/perspective this view represents.
+        // Stable UI/cache key for this displayed POV. Built once because the Diary tab asks for it
+        // several times per visible entry every draw frame.
+        public readonly string EntryKey;
         public readonly string GroupLabel;  // Human-readable event group shown in the entry header
         public readonly string ColorCue;    // Stable semantic cue used for the card's color strip/chip
         // Rare display-only formatting cue used by the Diary tab. Empty means ordinary prose layout.
@@ -128,6 +131,7 @@ namespace PawnDiary
             LlmRawResponse = llmRawResponse;
             EventId = eventId;
             PovRole = povRole;
+            EntryKey = BuildEntryKey(eventId, povRole, date, tick);
             GroupLabel = groupLabel;
             ColorCue = colorCue ?? string.Empty;
             AtmosphereCue = atmosphereCue ?? string.Empty;
@@ -138,6 +142,20 @@ namespace PawnDiary
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;
             TitlePending = titlePending;
+        }
+
+        /// <summary>
+        /// Builds the per-entry UI key used for expansion state, animation, and fade caches.
+        /// Event id plus POV role is stable for saved entries; the fallback keeps damaged entries
+        /// clickable without throwing.
+        /// </summary>
+        private static string BuildEntryKey(string eventId, string povRole, string date, int tick)
+        {
+            string eventPart = string.IsNullOrWhiteSpace(eventId)
+                ? ((date ?? string.Empty) + "|" + tick)
+                : eventId;
+
+            return eventPart + "|" + (povRole ?? string.Empty);
         }
 
         /// <summary>
