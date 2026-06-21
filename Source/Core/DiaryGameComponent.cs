@@ -188,6 +188,7 @@ namespace PawnDiary
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
+            recentRomanceEvents.Clear();
             orphanCandidatesLastScan.Clear();
             generatedSpeechPlayLogTexts.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
@@ -218,6 +219,7 @@ namespace PawnDiary
             recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
+            recentRomanceEvents.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their

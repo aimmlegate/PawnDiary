@@ -1410,14 +1410,7 @@ namespace PawnDiary
 
         private static string DecorationDomainForContext(string context)
         {
-            if (IsTaleEvent(context)) return GroupDomain.Tale.ToString();
-            if (IsMoodEventEvent(context)) return GroupDomain.MoodEvent.ToString();
-            if (IsThoughtEvent(context)) return GroupDomain.Thought.ToString();
-            if (IsInspirationEvent(context)) return GroupDomain.Inspiration.ToString();
-            if (IsWorkEvent(context)) return GroupDomain.Work.ToString();
-            if (IsHediffEvent(context)) return GroupDomain.Hediff.ToString();
-            if (IsMentalStateEvent(context)) return GroupDomain.MentalState.ToString();
-            return GroupDomain.Interaction.ToString();
+            return DiaryEventDomainClassifier.DomainForContext(context);
         }
 
         /// <summary>
@@ -1475,19 +1468,11 @@ namespace PawnDiary
 
         private static DiaryInteractionGroupDef GroupForDisplay(string context, string defName)
         {
-            GroupDomain domain = IsTaleEvent(context)
-                ? GroupDomain.Tale
-                : IsMoodEventEvent(context)
-                    ? GroupDomain.MoodEvent
-                    : IsThoughtEvent(context)
-                        ? GroupDomain.Thought
-                        : IsInspirationEvent(context)
-                            ? GroupDomain.Inspiration
-                            : IsWorkEvent(context)
-                                ? GroupDomain.Work
-                                : IsHediffEvent(context)
-                                    ? GroupDomain.Hediff
-                                    : IsMentalStateEvent(context) ? GroupDomain.MentalState : GroupDomain.Interaction;
+            GroupDomain domain;
+            if (!Enum.TryParse(DiaryEventDomainClassifier.DomainForContext(context), out domain))
+            {
+                domain = GroupDomain.Interaction;
+            }
             return InteractionGroups.ClassifyDefName(domain, defName);
         }
 

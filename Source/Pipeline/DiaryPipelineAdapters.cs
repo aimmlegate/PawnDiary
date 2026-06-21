@@ -238,14 +238,7 @@ namespace PawnDiary
 
         private static string DomainFor(string context)
         {
-            if (DiaryContextFields.HasMarker(context, "tale=")) return GroupDomain.Tale.ToString();
-            if (DiaryContextFields.HasMarker(context, "mood_event=")) return GroupDomain.MoodEvent.ToString();
-            if (DiaryContextFields.HasMarker(context, "thought=")) return GroupDomain.Thought.ToString();
-            if (DiaryContextFields.HasMarker(context, "inspiration=")) return GroupDomain.Inspiration.ToString();
-            if (DiaryContextFields.HasMarker(context, "work=")) return GroupDomain.Work.ToString();
-            if (DiaryContextFields.HasMarker(context, "hediff=")) return GroupDomain.Hediff.ToString();
-            if (DiaryContextFields.HasMarker(context, "mental_state=")) return GroupDomain.MentalState.ToString();
-            return GroupDomain.Interaction.ToString();
+            return DiaryEventDomainClassifier.DomainForContext(context);
         }
 
         private static string DirectSpeechInstructionFor(DiaryEvent diaryEvent, string povRole)
@@ -278,17 +271,11 @@ namespace PawnDiary
                 return false;
             }
 
-            if (HasContext(diaryEvent, "batch=ambient_day_note")
+            if (DiaryEventDomainClassifier.HasNonInteractionSourceMarker(diaryEvent.gameContext)
+                || HasContext(diaryEvent, "batch=ambient_day_note")
                 || HasContext(diaryEvent, "arrival_description=")
                 || HasContext(diaryEvent, "death_description=")
                 || HasContext(diaryEvent, "dev_mock=")
-                || HasContext(diaryEvent, "mental_state=")
-                || HasContext(diaryEvent, "tale=")
-                || HasContext(diaryEvent, "mood_event=")
-                || HasContext(diaryEvent, "thought=")
-                || HasContext(diaryEvent, "inspiration=")
-                || HasContext(diaryEvent, "work=")
-                || HasContext(diaryEvent, "hediff=")
                 || HasContext(diaryEvent, "day_reflection="))
             {
                 return false;

@@ -16,7 +16,7 @@ namespace PawnDiary.Capture
         GenerateSolo,
 
         /// <summary>Record this as one pairwise diary event with both POV entries (initiator +
-        /// recipient). Used by social fights and future romance/raid pair sources. The other
+        /// recipient). Used by social fights, romance milestones, and future raid pair sources. The other
         /// participant's id is carried on the payload so the sink can build the pair.</summary>
         GeneratePair,
 

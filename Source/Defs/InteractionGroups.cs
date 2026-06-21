@@ -15,9 +15,10 @@ namespace PawnDiary
     // (social log entries); MentalState groups match MentalStateDefs (breaks, social fights);
     // Tale groups match TaleDefs (RimWorld's notable-history events); MoodEvent groups match
     // GameConditionDefs that affect colonist mood (aurora, eclipse, psychic drone, etc.);
-    // Inspiration groups match InspirationDefs when a pawn gains an inspiration;
-    // Work groups classify the synthetic work diary events emitted by the periodic work scanner;
-    // Hediff groups match HediffDefs when a health condition appears or worsens.
+    // Inspiration groups match InspirationDefs when a pawn gains an inspiration; Romance groups
+    // match PawnRelationDef defNames for relation changes (Lover/Spouse/etc.); Work groups classify
+    // the synthetic work diary events emitted by the periodic work scanner; Hediff groups match
+    // HediffDefs when a health condition appears or worsens.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -27,6 +28,7 @@ namespace PawnDiary
         MoodEvent,
         Thought,
         Inspiration,
+        Romance,
         Work,
         Hediff
     }
@@ -422,6 +424,14 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.Inspiration, inspirationDef?.defName);
         }
 
+        // First Romance-domain group that explicitly matches the PawnRelationDef defName. Unlike
+        // saved-event display classification, live capture must not fall back to a catch-all here:
+        // only XML-listed relation changes should create romance diary entries.
+        public static DiaryInteractionGroupDef ClassifyRomanceRelation(string relationDefName)
+        {
+            return ClassifyRequiredMatch(GroupDomain.Romance, relationDefName);
+        }
+
         // First Work-domain group that matches the synthetic work diary defName.
         public static DiaryInteractionGroupDef ClassifyWork(string workEventDefName)
         {
@@ -440,6 +450,26 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyDefName(GroupDomain domain, string defName)
         {
             return ClassifyIn(domain, defName);
+        }
+
+        private static DiaryInteractionGroupDef ClassifyRequiredMatch(GroupDomain domain, string defName)
+        {
+            if (string.IsNullOrEmpty(defName))
+            {
+                return null;
+            }
+
+            List<DiaryInteractionGroupDef> all = All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryInteractionGroupDef group = all[i];
+                if (group.domain == domain && group.Matches(defName))
+                {
+                    return group;
+                }
+            }
+
+            return null;
         }
 
         private static DiaryInteractionGroupDef ClassifyIn(GroupDomain domain, string defName)

@@ -56,6 +56,8 @@ namespace PawnDiary
         public int moodEventDedupTicks = 2500;
         // The same pawn+thought combination is only recorded once within this window (~1 in-game hour).
         public int thoughtDedupTicks = 2500;
+        // The same romance relation change for a pawn pair is only recorded once within this window.
+        public int romanceDedupTicks = 2500;
 
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things

@@ -18,13 +18,6 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        // Romance relations we record. Hardcoded list matching vanilla PawnRelationDef defNames;
-        // modded relation types are skipped unless the filter is extended here. Kept private so a
-        // future XML-driven list (per-relation enable toggles) can replace it without touching the
-        // hook.
-        private static readonly string[] RomanceRelationDefNames =
-            { "Lover", "Spouse", "ExLover", "ExSpouse" };
-
         /// <summary>
         /// Records one romance-relation change as a pairwise diary event. Called by the
         /// <see cref="PawnRelationAddPatch"/> Harmony postfix on
@@ -41,9 +34,10 @@ namespace PawnDiary
                 return;
             }
 
-            // Filter to the four vanilla romance relations. Modded relation defs are skipped until
-            // the filter is extended (see RomanceRelationDefNames comment above).
-            if (!IsRomanceRelation(relationDef.defName))
+            // XML owns which relation defs count as diary-worthy romance milestones. This keeps
+            // modded relation compatibility data-only instead of hardcoding defName lists in C#.
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyRomanceRelation(relationDef.defName);
+            if (group == null)
             {
                 return;
             }
@@ -67,12 +61,9 @@ namespace PawnDiary
                 SecondEligible = secondEligible,
             };
 
-            // TODO(settings): there is no per-romance user toggle today (the source is always on
-            // when both pawns are eligible). When XML-driven enable/disable per relation lands,
-            // replace the constant `true` flags here with the real settings reads.
             CaptureContext ctx = BuildCaptureContext(
                 eligible: firstEligible && secondEligible,
-                userEnabled: true,
+                userEnabled: PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
                 signalEnabled: true,
                 ambientSignalEnabled: true);
 
@@ -87,44 +78,25 @@ namespace PawnDiary
 
             // Pair dedup collapses the mirrored AddDirectRelation call from the other participant.
             string pairDedupKey = "romance|" + PairKey(pawn, otherPawn) + "|" + relationDef.defName;
-            if (RecentlyRecorded(recentRomanceEvents, pairDedupKey, DiaryTuning.Current.mentalBreakDedupTicks))
+            if (RecentlyRecorded(recentRomanceEvents, pairDedupKey, DiaryTuning.Current.romanceDedupTicks))
             {
-                // TODO(tuning): add a dedicated romanceDedupTicks to DiaryTuningDef. For now reuse
-                // the mental-break window (a few hours) which is long enough to collapse mirrored
-                // calls without dropping legitimate back-to-back relationship changes.
                 return;
             }
 
-            // Impure build: label (Translate), instruction (none today — TODO), text, gameContext.
+            // Impure build: label, XML prompt instruction, localized text, gameContext.
             string label = relationDef.LabelCap.Resolve();
             string cleanedLabel = DiaryContextBuilder.CleanLine(label);
             string kind = RomanceEventData.KindFor(relationDef.defName);
             string gameContext = RomanceEventData.BuildGameContext(relationDef.defName, cleanedLabel, kind);
+            string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
 
             // Both pawns see the same factual text; the LLM prompt adds per-pawn summaries and
             // continuity when generating each POV.
             string text = "PawnDiary.Event.Romance".Translate(pawn.LabelShortCap, cleanedLabel, otherPawn.LabelShortCap).Resolve();
 
             DiaryEvent romanceEvent = AddPairwiseEvent(pawn, otherPawn, relationDef.defName, label,
-                text, text, string.Empty, gameContext);
+                text, text, instruction, gameContext);
             QueuePairwiseGeneration(romanceEvent);
-        }
-
-        private static bool IsRomanceRelation(string defName)
-        {
-            if (string.IsNullOrEmpty(defName))
-            {
-                return false;
-            }
-
-            for (int i = 0; i < RomanceRelationDefNames.Length; i++)
-            {
-                if (string.Equals(RomanceRelationDefNames[i], defName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

@@ -68,6 +68,22 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>romance_relation</defName>
+    <label>Romance milestones</label>
+    <order>20</order>
+    <domain>Romance</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>a relationship becoming official, formalized, or broken; center the change between the two people without treating it like a chat log</instruction>
+    <tone>with intimate emotional weight</tone>
+    <matchDefNames>
+      <li>Lover</li>
+      <li>Spouse</li>
+      <li>ExLover</li>
+      <li>ExSpouse</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>recruit</defName>
     <label>Recruitment &amp; prison</label>
     <order>30</order>

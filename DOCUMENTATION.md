@@ -112,6 +112,7 @@ that guard. Scheduled scans snapshot free colonists before iterating.
 |---|---|---|
 | Social interactions | `PlayLog.Add` -> `RecordInteraction` | Pairwise, solo, pair batch, or ambient day note by XML group. Insults batch per pair; small talk, strange chat, animal, and teaching are usually ambient. |
 | Mental states | `MentalStateHandler.TryStartMentalState` | `SocialFighting` pairwise when both pawns are eligible, otherwise solo; other accepted breaks are solo. |
+| Romance relation changes | `Pawn_RelationsTracker.AddDirectRelation` | Pairwise entries for XML-listed relationship milestones (`Lover`, `Spouse`, `ExLover`, `ExSpouse`) when both pawns are eligible. |
 | Tales | `TaleRecorder.RecordTale` | Solo or pairwise notable events; precise hooks and GameCondition-like tales are skipped to avoid duplicates. |
 | Combat tales | Tale-domain batch policy | Non-death combat evidence becomes delayed per-pawn solo batches; death descriptions stay immediate neutral entries. |
 | Arrivals | Starting-colonist scan and `Pawn.SetFaction` | Neutral first-page arrival with prior faction/recruiter/kind/creepjoiner/surroundings context when available. |
@@ -142,9 +143,9 @@ Anatomy:
   magnitude, duration, ...). Plus a pure `static Decide(data, ctx) → CaptureDecision`.
 - `CaptureContext` — pre-computed impure facts (eligibility, user/signal/ambient enable flags, game
   tick). Filled by the caller so the reducer never touches DefDatabase/Settings/tick manager.
-- `CaptureDecision` — `Drop` / `GenerateSolo` / `GeneratePair` / `RouteAmbient`. MentalState is the
-  first migrated source using `GeneratePair` (social fights); future pair sources (romance, raid
-  pairs) reuse it.
+- `CaptureDecision` — `Drop` / `GenerateSolo` / `GeneratePair` / `RouteAmbient`. MentalState was
+  the first migrated source using `GeneratePair` (social fights); Romance relation changes reuse it
+  for two-pawn relationship milestones.
 - `DiaryEventSpec` — abstract reducer wrapper, one subclass per source, registered in
   `DiaryEventCatalog` so callers dispatch with a single `catalog.Get(type).Decide(...)`.
 
@@ -152,11 +153,13 @@ Migrated in the current slice: **Thought** (richest source — token filter, gen
 threshold, bypass tokens, ambient routing), **Inspiration** (trivial source — eligibility + user
 toggle only), **MoodEvent** (first multi-pawn fan-out — one GameCondition → one solo entry per
 affected colonist, fan-out loop stays in `RecordMoodEvent`), **MentalState** (first pair source
-— social fights emit `GeneratePair`, every other break emits `GenerateSolo`), and **Tale** (partial
+— social fights emit `GeneratePair`, every other break emits `GenerateSolo`), **Tale** (partial
 migration — drop-gate is in the catalog; the batch/death/pair/solo shape dispatch stays in
-`RecordTale` because the current `CaptureDecision` does not encode those outcomes). The other
-sources in §4 still use their pre-Catalog `RecordX` code; they migrate source-by-source in later
-slices.
+`RecordTale` because the current `CaptureDecision` does not encode those outcomes), **Hediff**
+(partial migration — drop-gate and context format are pure, Immediate/DayReflection dispatch stays
+impure), **Interaction** (partial migration — drop-gate is pure, solo/pair/batch dispatch stays
+impure), and **Romance** (first net-new catalog source — pairwise relation-change events). Arrival
+and Death are still outside the catalog as their own specialized flows.
 
 Adding a new source (the 4-step recipe):
 
@@ -188,8 +191,10 @@ removed from the sentinel list (`TestMigrationSentinel`).
    threshold / weight policy, add a frozen policy snapshot type (like `ThoughtCapturePolicy`) and
    pass it on the payload. `Decide` must not touch RimWorld types.
 3. **Pure game-context builder.** Write `XxxEventData.BuildGameContext(...)` (and any other pure
-   string assembly the source needs). The leading `"xxx="` marker is load-bearing — the UI parses
-   it to recover the domain. Add a format test to `DiaryCapturePolicyTests` so the format is locked.
+   string assembly the source needs). The leading `"xxx="` marker is load-bearing — the UI and
+   prompt adapters parse it through `DiaryEventDomainClassifier` to recover the domain. Add a format
+   test to `DiaryCapturePolicyTests` and, for a new marker/domain, a classifier test in
+   `DiaryPipelineTests` so the format is locked end-to-end.
 4. **Spec wrapper.** Write `Source/Capture/Specs/XxxEventSpec.cs` that delegates `Decide` to the
    payload's static method. (Future per-source metadata — `Weight`, `PromptKey`, RNG filters —
    belongs here as fields/properties, not in the base contract.)
@@ -202,10 +207,9 @@ removed from the sentinel list (`TestMigrationSentinel`).
 7. **Sentinel cleanup.** If the source was listed in `PlannedNotYetMigratedSources` in
    `DiaryCapturePolicyTests/Program.cs`, remove its name. If it was a brand-new source never in the
    list, nothing to do.
-8. **Pair sources only.** When migrating the first pair source (mental state social fights, future
-   romance/raid), add `GeneratePair` to `CaptureDecision` and extend the sink in
-   `DiaryGameComponent` to dispatch pair drafts. Solo sources stay unchanged. *(MentalState has
-   already done this step — `GeneratePair` exists; future pair sources just reuse it.)*
+8. **Pair sources only.** Pair sources such as mental state social fights and romance milestones
+   return `GeneratePair` from `Decide` and call `AddPairwiseEvent` in the sink. Solo sources stay
+   unchanged. *(MentalState already added `GeneratePair`; newer pair sources reuse it.)*
 
 What stays in `RecordXxx` (impure, NOT in the pure layer): `IsDiaryEligible(pawn)`, `.LabelCap.
 Resolve()`, `.Translate()`, `Find.TickManager.TicksGame`, `RecentlyRecorded`, `AddSoloEvent`/
@@ -218,8 +222,10 @@ carefully, and where possible keep them as one-liners around calls into the pure
 
 `1.6/Defs/DiaryInteractionGroupDefs.xml` owns group matching, instructions, color cues, batching,
 promotion, Hediff policy, and default enablement. Domains are Interaction, MentalState, Tale,
-MoodEvent, Thought, Inspiration, Work, and Hediff. Matching is domain-scoped by exact `defName` or
-substring token; XML order matters and catch-all groups go last. All shipped groups default on.
+MoodEvent, Thought, Inspiration, Romance, Work, and Hediff. Matching is domain-scoped by exact
+`defName` or substring token; XML order matters and catch-all groups go last. Romance-domain groups
+match `PawnRelationDef` defNames for relation-change events; Interaction-domain romance groups still
+match social-log romance attempts/proposals. All shipped groups default on.
 
 Batch policy:
 
@@ -396,10 +402,10 @@ semantic `colorCue`, titles, assembled prompts, compact per-POV hediff/trait fac
 intensity, and capped pre-cleanup debug text. Decorated rich text is not persisted.
 
 Classification is inferred from stable `gameContext` fields such as `tale=`, `mental_state=`,
-`mood_event=`, `thought=`, `inspiration=`, `work=`, and `hediff=`, parsed through
-`DiaryContextFields`. Pending requests are not persisted; pending statuses reset on load and scans
-requeue eligible missing work. Death and arrival caches evict oldest stale entries at their cap and
-clear when a new session starts.
+`mood_event=`, `thought=`, `inspiration=`, `romance=`, `work=`, and `hediff=`, parsed through
+`DiaryContextFields` and `DiaryEventDomainClassifier`. Pending requests are not persisted; pending
+statuses reset on load and scans requeue eligible missing work. Death and arrival caches evict
+oldest stale entries at their cap and clear when a new session starts.
 
 ### TODO: Role-slot extraction
 
@@ -485,6 +491,8 @@ dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.cspro
 These harnesses compile without RimWorld/Unity assemblies; a Verse/XML Def dependency in pure code
 should fail the tests at compile time. `DiaryCapturePolicyTests` covers the Event Catalog decision
 reducers (see §4a) — link only `Source/Capture/*.cs` files there, never a Verse-using file.
+`DiaryPipelineTests` covers pure prompt planning plus marker-to-domain recovery in
+`DiaryEventDomainClassifier`.
 
 Prompt lab:
 

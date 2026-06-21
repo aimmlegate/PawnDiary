@@ -29,7 +29,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordMentalState(Pawn pawn, MentalStateDef stateDef, Pawn otherPawn, string reason)
         {
-            if (pawn == null || stateDef == null)
+            if (!CanRecordGameplayEventNow() || pawn == null || stateDef == null)
             {
                 return;
             }

@@ -18,6 +18,7 @@ namespace DiaryPipelineTests
             TestTitlePromptPlan();
             TestSoloSelection();
             TestSoloBatchSelection();
+            TestDomainClassifier();
             TestResponsePostprocessorRules();
             TestDirectSpeechParser();
             TestGeneratedTextKeepsTrailingSpeech();
@@ -238,6 +239,20 @@ namespace DiaryPipelineTests
                 povRole = DiaryPipelineRoles.Initiator
             });
             AssertEqual("solo combat batch selection", DiaryPipelineTemplates.SoloImportant, combatBatchPlan.templateKey);
+        }
+
+        private static void TestDomainClassifier()
+        {
+            AssertEqual("romance marker domain", "Romance",
+                DiaryEventDomainClassifier.DomainForContext("romance=Spouse; label=spouse; kind=married"));
+            AssertEqual("mental marker domain", "MentalState",
+                DiaryEventDomainClassifier.DomainForContext("mental_state=SocialFighting; label=social fight"));
+            AssertEqual("interaction fallback domain", "Interaction",
+                DiaryEventDomainClassifier.DomainForContext("def=Chat; label=chat"));
+            AssertTrue("romance marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("romance=Lover; label=lover"));
+            AssertTrue("plain interaction stays interaction prompt",
+                !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
         }
 
         private static void TestResponsePostprocessorRules()

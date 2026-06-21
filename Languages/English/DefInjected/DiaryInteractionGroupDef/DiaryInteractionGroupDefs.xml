@@ -3,6 +3,9 @@
   <romance.label>Romance &amp; dating</romance.label>
   <romance.instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</romance.instruction>
   <romance.tone>with tender, fluttering warmth</romance.tone>
+  <romance_relation.label>Romance milestones</romance_relation.label>
+  <romance_relation.instruction>a relationship becoming official, formalized, or broken; center the change between the two people without treating it like a chat log</romance_relation.instruction>
+  <romance_relation.tone>with intimate emotional weight</romance_relation.tone>
   <recruit.label>Recruitment &amp; prison</recruit.label>
   <recruit.instruction>the dance of captor and captive—building rapport, breaking will, or planting seeds of rebellion</recruit.instruction>
   <slavery.label>Slavery</slavery.label>

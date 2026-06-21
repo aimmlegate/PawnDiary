@@ -2,6 +2,18 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5e)
+
+- **Fixed Event Catalog review findings:** restored the `CanRecordGameplayEventNow()` guard in
+  `RecordMentalState` before any tick/date snapshot work; added a real Romance XML domain for
+  relation-change events (`romance_relation`) while keeping the existing Interaction-domain romance
+  group for social-log attempts/proposals; wired `romance=` through pure domain recovery so prompt
+  policy, display grouping, color/importance fallback, and text decoration no longer treat relation
+  changes as generic Interaction events; moved romance relation matching and prompt instruction to
+  XML and added dedicated `romanceDedupTicks` tuning instead of borrowing mental-break tuning.
+  `recentRomanceEvents` now clears on new/load game. Added `DiaryEventDomainClassifier` tests.
+  Test count: `DiaryPipelineTests` 73 → 78 assertions. Rebuilt DLL.
+
 ## 2026-06-21 (5d)
 
 - **Added Romance as the first net-new Event Catalog source:** pair events for romance relation
