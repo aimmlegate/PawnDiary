@@ -521,29 +521,7 @@ namespace PawnDiary
 
         public static string ContextValue(string gameContext, string key)
         {
-            if (string.IsNullOrWhiteSpace(gameContext) || string.IsNullOrWhiteSpace(key))
-            {
-                return string.Empty;
-            }
-
-            string[] parts = gameContext.Split(';');
-            for (int i = 0; i < parts.Length; i++)
-            {
-                string part = parts[i] == null ? string.Empty : parts[i].Trim();
-                int equals = part.IndexOf('=');
-                if (equals <= 0)
-                {
-                    continue;
-                }
-
-                string partKey = part.Substring(0, equals).Trim();
-                if (string.Equals(partKey, key.Trim(), StringComparison.OrdinalIgnoreCase))
-                {
-                    return part.Substring(equals + 1).Trim();
-                }
-            }
-
-            return string.Empty;
+            return DiaryContextFields.Value(gameContext, key);
         }
 
         private static bool MatchesHediff(DiaryTextDecorationCondition condition, List<DiaryTextDecorationHediffFact> hediffs)

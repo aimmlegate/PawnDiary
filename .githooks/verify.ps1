@@ -73,7 +73,11 @@ if ($HookName -eq "pre-commit") {
 }
 
 Write-Step "XML well-formed check"
-Get-ChildItem -Path "1.6\Defs" -Filter "*.xml" -File | ForEach-Object {
+$xmlRoots = @("About", "1.6", "Languages") | Where-Object { Test-Path -LiteralPath $_ }
+$xmlFiles = @(Get-ChildItem -Path $xmlRoots -Filter "*.xml" -File -Recurse)
+$projectRoots = @("Source", "tests") | Where-Object { Test-Path -LiteralPath $_ }
+$xmlFiles += Get-ChildItem -Path $projectRoots -Filter "*.csproj" -File -Recurse
+$xmlFiles | ForEach-Object {
     [xml](Get-Content -LiteralPath $_.FullName -Raw) | Out-Null
 }
 
@@ -87,9 +91,21 @@ $msbuild = Find-MSBuild
 Invoke-Native $msbuild @("Source\PawnDiary.csproj", "/t:Build", "/p:Configuration=Debug")
 
 Write-Step "Committed DLL freshness check"
-& git diff --quiet -- "1.6/Assemblies/PawnDiary.dll"
+$sourceHarmony = Join-Path $repoRoot "Source\Libs\0Harmony.dll"
+$runtimeHarmony = Join-Path $repoRoot "1.6\Assemblies\0Harmony.dll"
+if (-not (Test-Path -LiteralPath $runtimeHarmony)) {
+    throw "Missing committed runtime dependency: 1.6/Assemblies/0Harmony.dll"
+}
+if (-not (Test-Path -LiteralPath $sourceHarmony)) {
+    throw "Missing build reference dependency: Source/Libs/0Harmony.dll"
+}
+if ((Get-FileHash -LiteralPath $sourceHarmony).Hash -ne (Get-FileHash -LiteralPath $runtimeHarmony).Hash) {
+    throw "Source/Libs/0Harmony.dll differs from 1.6/Assemblies/0Harmony.dll. Update and stage the runtime copy."
+}
+
+& git diff --quiet -- "1.6/Assemblies/PawnDiary.dll" "1.6/Assemblies/0Harmony.dll"
 if ($LASTEXITCODE -ne 0) {
-    throw "Build changed 1.6/Assemblies/PawnDiary.dll. Stage the rebuilt DLL and retry."
+    throw "Build changed committed runtime DLLs. Stage the rebuilt DLL(s) and retry."
 }
 
 Write-Host ""

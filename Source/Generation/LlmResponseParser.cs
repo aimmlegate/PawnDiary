@@ -129,7 +129,7 @@ namespace PawnDiary
                 Dictionary<string, object> message = messageObject as Dictionary<string, object>;
                 if (message != null && message.TryGetValue("content", out object contentObject))
                 {
-                    return contentObject as string;
+                    return TextFromContentObject(contentObject);
                 }
             }
 
@@ -221,7 +221,7 @@ namespace PawnDiary
                 Dictionary<string, object> message = messageObject as Dictionary<string, object>;
                 if (message != null && message.TryGetValue("content", out object contentObject))
                 {
-                    return contentObject as string;
+                    return TextFromContentObject(contentObject);
                 }
             }
 
@@ -231,6 +231,51 @@ namespace PawnDiary
             }
 
             return null;
+        }
+
+        private static string TextFromContentObject(object contentObject)
+        {
+            string direct = contentObject as string;
+            if (direct != null)
+            {
+                return direct;
+            }
+
+            object[] parts = contentObject as object[];
+            if (parts == null)
+            {
+                return null;
+            }
+
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < parts.Length; i++)
+            {
+                Dictionary<string, object> part = parts[i] as Dictionary<string, object>;
+                if (IsReasoningResponseItem(part))
+                {
+                    continue;
+                }
+
+                string partText = StringField(part, "text");
+                if (string.IsNullOrWhiteSpace(partText))
+                {
+                    partText = StringField(part, "content");
+                }
+
+                if (string.IsNullOrWhiteSpace(partText))
+                {
+                    continue;
+                }
+
+                if (text.Length > 0)
+                {
+                    text.Append("\n");
+                }
+
+                text.Append(partText);
+            }
+
+            return text.Length > 0 ? text.ToString() : null;
         }
 
         private static string ExtractOpenAIResponsesStatusError(Dictionary<string, object> root, bool hasGeneratedText)
@@ -802,11 +847,23 @@ namespace PawnDiary
                 return 0;
             }
 
+            // Only treat the block as a completion boundary when it is at the end. If prose follows
+            // the closed block and then gets truncated, keep the prose for the normal fragment
+            // heuristic instead of cutting back to the earlier speech block.
+            int end = close + SpeechCloseMarker.Length;
+            for (int i = end; i < text.Length; i++)
+            {
+                if (!char.IsWhiteSpace(text[i]))
+                {
+                    return 0;
+                }
+            }
+
             // Require a matching open marker before the close so a stray close marker in ordinary
             // prose cannot suppress trimming of a genuinely truncated tail.
             int open = text.Substring(0, close)
                 .IndexOf(SpeechOpenMarker, StringComparison.OrdinalIgnoreCase);
-            return open >= 0 ? close + SpeechCloseMarker.Length : 0;
+            return open >= 0 ? end : 0;
         }
 
         /// <summary>

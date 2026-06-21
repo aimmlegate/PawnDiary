@@ -30,6 +30,9 @@
                      addictionAlways, missingPartAlways, recordOnAdd,
                      recordOnSeverityIncrease, severityStep, dedupTicks, dayReflectionWeight,
                      appearedTextKey, progressedTextKey
+    deathVictimInitiatorDefNames / deathVictimRecipientDefNames
+                   - optional Tale-domain death metadata: exact TaleDef names where the death
+                     victim lives in the first or second pawn slot
     instruction    - the diary-prompt instruction shared by every event in the group
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
@@ -570,6 +573,19 @@
       <li>CollapseDodged</li>
       <li>WasOnFire</li>
     </matchDefNames>
+    <deathVictimInitiatorDefNames>
+      <li>KilledBy</li>
+    </deathVictimInitiatorDefNames>
+    <deathVictimRecipientDefNames>
+      <li>KilledCapacity</li>
+      <li>KilledLongRange</li>
+      <li>KilledMajorThreat</li>
+      <li>KilledMelee</li>
+      <li>KilledMortar</li>
+      <li>KilledChild</li>
+      <li>KilledColonist</li>
+      <li>KilledColonyAnimal</li>
+    </deathVictimRecipientDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>

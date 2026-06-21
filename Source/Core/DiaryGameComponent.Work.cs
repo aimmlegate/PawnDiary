@@ -190,9 +190,14 @@ namespace PawnDiary
             for (int i = diaryEvents.Count - 1; i >= 0; i--)
             {
                 DiaryEvent diaryEvent = diaryEvents[i];
-                if (diaryEvent == null || diaryEvent.tick < minTick)
+                if (diaryEvent == null)
                 {
                     continue;
+                }
+
+                if (diaryEvent.tick < minTick)
+                {
+                    break;
                 }
 
                 if (diaryEvent.initiatorPawnId != pawnId || !IsWorkContext(diaryEvent.gameContext))

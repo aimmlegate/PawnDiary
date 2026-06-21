@@ -18,6 +18,7 @@ namespace PawnDiary
     public static class DeathContextCache
     {
         private static readonly Dictionary<string, string> CachedByPawnId = new Dictionary<string, string>();
+        private static readonly Queue<string> CachedPawnOrder = new Queue<string>();
 
         // Death facts are consumed within the same Pawn.Kill call (the death Tale fires
         // synchronously). A leftover entry only happens when no death tale is recorded for the pawn
@@ -31,6 +32,7 @@ namespace PawnDiary
         public static void Clear()
         {
             CachedByPawnId.Clear();
+            CachedPawnOrder.Clear();
         }
 
         /// <summary>
@@ -73,12 +75,7 @@ namespace PawnDiary
                 parts.Add("death_facts=unknown");
             }
 
-            if (CachedByPawnId.Count >= MaxCachedEntries && !CachedByPawnId.ContainsKey(pawnId))
-            {
-                CachedByPawnId.Clear(); // drop stale, never-consumed entries before growing further
-            }
-
-            CachedByPawnId[pawnId] = string.Join("; ", parts.ToArray());
+            Store(pawnId, string.Join("; ", parts.ToArray()));
         }
 
         /// <summary>
@@ -97,6 +94,7 @@ namespace PawnDiary
             if (!string.IsNullOrWhiteSpace(pawnId) && CachedByPawnId.TryGetValue(pawnId, out cached))
             {
                 CachedByPawnId.Remove(pawnId);
+                CompactOrderIfNeeded();
                 return cached;
             }
 
@@ -111,6 +109,41 @@ namespace PawnDiary
             }
 
             return parts.Count == 0 ? string.Empty : string.Join("; ", parts.ToArray());
+        }
+
+        private static void Store(string pawnId, string context)
+        {
+            if (!CachedByPawnId.ContainsKey(pawnId))
+            {
+                CachedPawnOrder.Enqueue(pawnId);
+            }
+
+            CachedByPawnId[pawnId] = context;
+            PruneOldestEntries();
+            CompactOrderIfNeeded();
+        }
+
+        private static void PruneOldestEntries()
+        {
+            while (CachedByPawnId.Count > MaxCachedEntries && CachedPawnOrder.Count > 0)
+            {
+                string oldestPawnId = CachedPawnOrder.Dequeue();
+                CachedByPawnId.Remove(oldestPawnId);
+            }
+        }
+
+        private static void CompactOrderIfNeeded()
+        {
+            if (CachedPawnOrder.Count <= MaxCachedEntries * 2)
+            {
+                return;
+            }
+
+            CachedPawnOrder.Clear();
+            foreach (string pawnId in CachedByPawnId.Keys)
+            {
+                CachedPawnOrder.Enqueue(pawnId);
+            }
         }
 
         private static void AppendDamageInfo(List<string> parts, DamageInfo info)
@@ -250,7 +283,7 @@ namespace PawnDiary
             return pawn != null
                 && pawn.RaceProps != null
                 && pawn.RaceProps.Humanlike
-                && (pawn.IsColonist || pawn.Faction == Faction.OfPlayer);
+                && pawn.IsColonist;
         }
     }
 }

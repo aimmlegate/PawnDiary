@@ -2,6 +2,36 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21
+
+- **Critical review fixes:** added English DefInjected localization stubs for diary interaction
+  group text, persona labels/rules, and shared prompt defs; localized the default custom-persona
+  label in settings.
+- **Safer eligibility and startup recording:** first-person diary ownership/generation now requires
+  `DiaryTuningDef.minimumFirstPersonAgeYears` (13 by default), and all gameplay event recorders no-op
+  until RimWorld is actually in play so startup/scenario hooks cannot read calendar ticks too early.
+- **Work scan window fix:** old work diary events now stop the reverse-time scan once they fall
+  outside the configured lookback window, while null saved rows are skipped without ending the scan.
+- **Save/load recovery fixes:** prompts are now persisted for debug view, title generation sweeps
+  completed entries that lost or never received title requests, stale generated-speech PlayLog IDs
+  are cleared when their rows age out, and per-pawn diary event references prune blank/duplicate/
+  dangling IDs after load and before save.
+- **Long-save performance fixes:** generation scans cache diary bounds and live-pawn lookups, the
+  Diary tab reuses visible/year/measurement buffers and precomputed entry keys, context tag lookup
+  uses the shared parser, and rich-text tag stripping uses a cached regex.
+- **Event correctness fixes:** mood-event dedup now records only after at least one pawn entry is
+  written and keys by GameCondition instance; death descriptions require real colonists and resolve
+  death Tale victim roles from XML; transient death/arrival context caches evict oldest entries
+  instead of clearing all at capacity; hediff body-part keys use stable part paths.
+- **Parser and transport robustness:** same-line direct-speech blocks are preserved, truncated
+  speech-tail cleanup no longer cuts earlier prose, OpenAI/Ollama chat content arrays are supported,
+  MiniJson rejects malformed numbers and excessive nesting, and settings async actions catch sync
+  prefix failures.
+- **Settings and release hygiene:** timeout/max-token controls are exposed, endpoint normalization
+  moved to load/save with query strings stripped from connection logs, the dev package id is now the
+  legal `aimmlegate.pawndiary.development`, Harmony freshness is checked by hooks, project XML is
+  validated, C# language version is explicit, and text EOL rules are tracked.
+
 ## 2026-06-19
 
 - **Generated speech Social-log injection:** added an opt-in setting that creates one fresh native

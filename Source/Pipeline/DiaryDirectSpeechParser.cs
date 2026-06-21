@@ -45,39 +45,49 @@ namespace PawnDiary
                     continue;
                 }
 
-                int openIndex = IndexOfMarker(line, openMarker, 0);
-                if (openIndex < 0)
+                int cursor = 0;
+                while (cursor < line.Length)
                 {
-                    yield return new DiaryDirectSpeechLine(RemoveMarkers(line, openMarker, closeMarker), false);
-                    continue;
-                }
+                    int openIndex = IndexOfMarker(line, openMarker, cursor);
+                    if (openIndex < 0)
+                    {
+                        string prose = line.Substring(cursor).Trim();
+                        if (!string.IsNullOrWhiteSpace(prose))
+                        {
+                            yield return new DiaryDirectSpeechLine(RemoveMarkers(prose, openMarker, closeMarker), false);
+                        }
 
-                int contentStart = openIndex + openMarker.Length;
-                int closeSameLine = IndexOfMarker(line, closeMarker, contentStart);
-                if (closeSameLine < 0)
-                {
-                    // If the model forgot the closing marker, hide the marker but keep the line as
-                    // ordinary prose instead of letting an unclosed block consume later lines.
-                    yield return new DiaryDirectSpeechLine(RemoveMarkers(line, openMarker, closeMarker), false);
-                    continue;
-                }
+                        break;
+                    }
 
-                string before = line.Substring(0, openIndex).Trim();
-                if (!string.IsNullOrWhiteSpace(before))
-                {
-                    yield return new DiaryDirectSpeechLine(RemoveMarkers(before, openMarker, closeMarker), false);
-                }
+                    string before = line.Substring(cursor, openIndex - cursor).Trim();
+                    if (!string.IsNullOrWhiteSpace(before))
+                    {
+                        yield return new DiaryDirectSpeechLine(RemoveMarkers(before, openMarker, closeMarker), false);
+                    }
 
-                string speech = line.Substring(contentStart, closeSameLine - contentStart).Trim();
-                if (!string.IsNullOrWhiteSpace(speech))
-                {
-                    yield return new DiaryDirectSpeechLine(speech, true);
-                }
+                    int contentStart = openIndex + openMarker.Length;
+                    int closeSameLine = IndexOfMarker(line, closeMarker, contentStart);
+                    if (closeSameLine < 0)
+                    {
+                        // If the model forgot the closing marker, hide the marker but keep the rest
+                        // as ordinary prose instead of letting an unclosed block consume later text.
+                        string remainder = line.Substring(openIndex).Trim();
+                        if (!string.IsNullOrWhiteSpace(remainder))
+                        {
+                            yield return new DiaryDirectSpeechLine(RemoveMarkers(remainder, openMarker, closeMarker), false);
+                        }
 
-                string after = line.Substring(closeSameLine + closeMarker.Length).Trim();
-                if (!string.IsNullOrWhiteSpace(after))
-                {
-                    yield return new DiaryDirectSpeechLine(RemoveMarkers(after, openMarker, closeMarker), false);
+                        break;
+                    }
+
+                    string speech = line.Substring(contentStart, closeSameLine - contentStart).Trim();
+                    if (!string.IsNullOrWhiteSpace(speech))
+                    {
+                        yield return new DiaryDirectSpeechLine(speech, true);
+                    }
+
+                    cursor = closeSameLine + closeMarker.Length;
                 }
             }
         }

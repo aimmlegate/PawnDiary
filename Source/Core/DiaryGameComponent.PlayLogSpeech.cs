@@ -129,12 +129,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Drops generated-speech text entries whose PlayLog row RimWorld has already pruned. Called
-        /// when saving so the LogID->text map cannot grow without bound as old Social-log rows age out.
+        /// Drops generated-speech state whose PlayLog row RimWorld has already pruned. Called when
+        /// loading/saving so stale LogIDs cannot grow the text map or block later re-injection.
         /// </summary>
-        private void PruneStaleGeneratedSpeechPlayLogTexts()
+        private void PruneStaleGeneratedSpeechPlayLogState()
         {
-            if (generatedSpeechPlayLogTexts == null || generatedSpeechPlayLogTexts.Count == 0)
+            bool hasTextMap = generatedSpeechPlayLogTexts != null && generatedSpeechPlayLogTexts.Count > 0;
+            bool hasEventRows = HasRememberedGeneratedSpeechPlayLogEvents();
+            if (!hasTextMap && !hasEventRows)
             {
                 return;
             }
@@ -157,23 +159,66 @@ namespace PawnDiary
                 }
             }
 
-            List<int> stale = null;
-            foreach (KeyValuePair<int, string> pair in generatedSpeechPlayLogTexts)
+            if (hasTextMap)
             {
-                if (!liveLogIds.Contains(pair.Key))
+                List<int> stale = null;
+                foreach (KeyValuePair<int, string> pair in generatedSpeechPlayLogTexts)
                 {
-                    (stale ?? (stale = new List<int>())).Add(pair.Key);
+                    if (!liveLogIds.Contains(pair.Key))
+                    {
+                        (stale ?? (stale = new List<int>())).Add(pair.Key);
+                    }
+                }
+
+                if (stale != null)
+                {
+                    for (int i = 0; i < stale.Count; i++)
+                    {
+                        generatedSpeechPlayLogTexts.Remove(stale[i]);
+                    }
                 }
             }
 
-            if (stale == null)
+            if (hasEventRows)
+            {
+                PruneStaleGeneratedSpeechPlayLogEventIds(liveLogIds);
+            }
+        }
+
+        private bool HasRememberedGeneratedSpeechPlayLogEvents()
+        {
+            if (diaryEvents == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                if (diaryEvents[i] != null && diaryEvents[i].HasGeneratedSpeechPlayLogEntry())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void PruneStaleGeneratedSpeechPlayLogEventIds(HashSet<int> liveLogIds)
+        {
+            if (diaryEvents == null || liveLogIds == null)
             {
                 return;
             }
 
-            for (int i = 0; i < stale.Count; i++)
+            for (int i = 0; i < diaryEvents.Count; i++)
             {
-                generatedSpeechPlayLogTexts.Remove(stale[i]);
+                DiaryEvent diaryEvent = diaryEvents[i];
+                if (diaryEvent != null
+                    && diaryEvent.HasGeneratedSpeechPlayLogEntry()
+                    && !liveLogIds.Contains(diaryEvent.generatedSpeechPlayLogEntryId))
+                {
+                    diaryEvent.ClearGeneratedSpeechPlayLogEntry();
+                }
             }
         }
 

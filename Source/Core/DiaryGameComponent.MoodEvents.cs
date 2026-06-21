@@ -24,7 +24,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordMoodEvent(GameCondition condition)
         {
-            if (condition == null || condition.def == null || PawnDiaryMod.Settings == null)
+            if (!CanRecordGameplayEventNow() || condition == null || condition.def == null || PawnDiaryMod.Settings == null)
             {
                 return;
             }
@@ -38,10 +38,10 @@ namespace PawnDiary
             string conditionDefName = conditionDef.defName;
             string conditionLabel = DiaryContextBuilder.CleanLine(conditionDef.LabelCap.Resolve());
 
-            // Dedup: the same GameCondition type within a short window avoids duplicate diary events
-            // if a condition fires across multiple maps or re-triggers quickly.
-            string dedupKey = "moodevent|" + conditionDefName;
-            if (RecentlyRecorded(recentMoodEvents, dedupKey, DiaryTuning.Current.moodEventDedupTicks))
+            // Dedup the concrete GameCondition instance. Only mark the key after at least one pawn
+            // records an entry, so an empty transition map cannot consume the whole window.
+            string dedupKey = "moodevent|" + conditionDefName + "|" + condition.uniqueID;
+            if (IsRecentlyRecorded(recentMoodEvents, dedupKey, DiaryTuning.Current.moodEventDedupTicks))
             {
                 return;
             }
@@ -66,6 +66,7 @@ namespace PawnDiary
             }
 
             HashSet<string> recordedPawnIds = new HashSet<string>();
+            bool recordedAny = false;
             for (int i = 0; i < affectedMaps.Count; i++)
             {
                 Map map = affectedMaps[i];
@@ -105,9 +106,20 @@ namespace PawnDiary
 
                     DiaryEvent moodEvent = AddSoloEvent(pawn, null, conditionDefName, conditionLabel,
                         text, instruction, perPawnContext);
+                    if (moodEvent == null)
+                    {
+                        continue;
+                    }
+
+                    recordedAny = true;
                     moodEvent.moodImpact = moodImpact;
                     QueueLlmRewrite(moodEvent, DiaryEvent.InitiatorRole);
                 }
+            }
+
+            if (recordedAny)
+            {
+                MarkRecentlyRecorded(recentMoodEvents, dedupKey, DiaryTuning.Current.moodEventDedupTicks);
             }
         }
     }

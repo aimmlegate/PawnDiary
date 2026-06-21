@@ -242,16 +242,17 @@ namespace PawnDiary
                 FlushAllInteractionBatches();
                 FlushAllTaleBatches();
                 FlushAllAmbientThoughtNotes();
+                PruneDiaryEventRefs();
             }
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             Scribe_Collections.Look(ref diaryEvents, "diaryEvents", LookMode.Deep);
 
-            // Before writing the generated-speech text map, drop rows RimWorld's PlayLog has already
-            // pruned so this map cannot accumulate dead LogID entries across a long playthrough.
+            // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
+            // pruned so stale LogIDs cannot accumulate or block future injection.
             if (Scribe.mode == LoadSaveMode.Saving)
             {
-                PruneStaleGeneratedSpeechPlayLogTexts();
+                PruneStaleGeneratedSpeechPlayLogState();
             }
 
             Scribe_Collections.Look(ref generatedSpeechPlayLogTexts, "generatedSpeechPlayLogTexts", LookMode.Value, LookMode.Value,
@@ -278,6 +279,8 @@ namespace PawnDiary
                 // works immediately (the first generation scan and any UI draw run before any new
                 // event is recorded this session).
                 RebuildEventIndex();
+                PruneDiaryEventRefs();
+                PruneStaleGeneratedSpeechPlayLogState();
             }
         }
 

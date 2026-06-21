@@ -25,19 +25,21 @@ namespace PawnDiary
         // until the pawn is conscious enough again.
         private const float MinimumConsciousnessForFirstPersonGeneration = 0.11f;
 
-        private void EnsureGenerationQueued(DiaryEvent diaryEvent, string povRole)
+        private void EnsureGenerationQueued(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
             {
                 return;
             }
 
-            if (TryMarkIncapacitatedPovSkipped(diaryEvent, povRole))
+            if (TryMarkIncapacitatedPovSkipped(diaryEvent, povRole, livePawnsById))
             {
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
             {
                 return;
             }
@@ -56,13 +58,13 @@ namespace PawnDiary
 
             if (DiaryEvent.RoleIsInitiatorOrRecipient(povRole) && !diaryEvent.solo)
             {
-                QueueSequentialPairwiseRewrite(diaryEvent);
+                QueueSequentialPairwiseRewrite(diaryEvent, null, boundsCache, livePawnsById);
                 return;
             }
 
             if (diaryEvent.CanQueueGeneration(povRole))
             {
-                QueueLlmRewrite(diaryEvent, povRole);
+                QueueLlmRewrite(diaryEvent, povRole, boundsCache, livePawnsById);
             }
         }
 
@@ -73,6 +75,8 @@ namespace PawnDiary
                 return;
             }
 
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = new Dictionary<string, DiaryBoundsCacheEntry>();
+            Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
             for (int i = 0; i < diaryEvents.Count; i++)
             {
                 DiaryEvent diaryEvent = diaryEvents[i];
@@ -85,7 +89,7 @@ namespace PawnDiary
                 {
                     if (diaryEvent.CanQueueGeneration(DiaryEvent.NeutralRole))
                     {
-                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
                     }
 
                     continue;
@@ -95,26 +99,79 @@ namespace PawnDiary
                 {
                     if (diaryEvent.CanQueueGeneration(DiaryEvent.NeutralRole))
                     {
-                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
                     }
 
                     continue;
                 }
 
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole)
-                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.initiatorPawnId))
+                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.initiatorPawnId, boundsCache))
                 {
-                    EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole);
+                    EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole, boundsCache, livePawnsById);
                 }
 
                 if (!diaryEvent.solo
                     && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole)
-                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.recipientPawnId))
+                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.recipientPawnId, boundsCache))
                 {
-                    EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole);
+                    EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
                 }
 
             }
+
+            QueueMissingTitles(boundsCache, livePawnsById);
+        }
+
+        /// <summary>
+        /// Title requests are not persisted as live work; after load or after enabling title
+        /// generation later, sweep completed entries and queue any missing titles once.
+        /// </summary>
+        private void QueueMissingTitles(Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
+            Dictionary<string, Pawn> livePawnsById = null)
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (settings == null || !settings.generateTitles || diaryEvents == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = diaryEvents[i];
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                if (diaryEvent.HasDeathDescription() || diaryEvent.HasArrivalDescription())
+                {
+                    QueueMissingTitleForRole(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
+                    continue;
+                }
+
+                QueueMissingTitleForRole(diaryEvent, DiaryEvent.InitiatorRole, boundsCache, livePawnsById);
+                if (!diaryEvent.solo)
+                {
+                    QueueMissingTitleForRole(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
+                }
+            }
+        }
+
+        private void QueueMissingTitleForRole(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
+            Dictionary<string, Pawn> livePawnsById = null)
+        {
+            if (diaryEvent == null
+                || string.IsNullOrWhiteSpace(povRole)
+                || !diaryEvent.HasGeneratedTextForRole(povRole)
+                || !string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(povRole))
+                || !diaryEvent.CanQueueTitleGeneration(povRole))
+            {
+                return;
+            }
+
+            QueueTitleRequest(diaryEvent, povRole, null, boundsCache, livePawnsById);
         }
 
         /// <summary>
@@ -190,6 +247,8 @@ namespace PawnDiary
                 return;
             }
 
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = new Dictionary<string, DiaryBoundsCacheEntry>();
+            Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
                 DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
@@ -198,7 +257,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId))
+                if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId, boundsCache))
                 {
                     continue;
                 }
@@ -207,7 +266,7 @@ namespace PawnDiary
                 {
                     if (diaryEvent.IsDeathDescriptionFor(pawnId))
                     {
-                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
                     }
 
                     continue;
@@ -217,14 +276,14 @@ namespace PawnDiary
                 {
                     if (diaryEvent.IsArrivalDescriptionFor(pawnId))
                     {
-                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole);
+                        EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
                     }
 
                     continue;
                 }
 
                 string povRole = diaryEvent.RoleForPawn(pawnId);
-                EnsureGenerationQueued(diaryEvent, povRole);
+                EnsureGenerationQueued(diaryEvent, povRole, boundsCache, livePawnsById);
             }
         }
 
@@ -239,14 +298,16 @@ namespace PawnDiary
         /// <summary>
         /// Builds the prompt for a single POV role and enqueues the LLM request if generation is still allowed.
         /// </summary>
-        private void QueueLlmRewrite(DiaryEvent diaryEvent, string povRole)
+        private void QueueLlmRewrite(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
             {
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
             {
                 return;
             }
@@ -263,8 +324,8 @@ namespace PawnDiary
                 diaryEvent,
                 povRole,
                 PersonaRuleFor(diaryEvent, povRole),
-                PromptEnchantmentRuleFor(diaryEvent, povRole));
-            QueuePrompt(diaryEvent, povRole, promptPlan);
+                PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById));
+            QueuePrompt(diaryEvent, povRole, promptPlan, null, boundsCache);
         }
 
         /// <summary>
@@ -301,18 +362,20 @@ namespace PawnDiary
         /// Dual-POV flow: queues the initiator first, then the recipient once the initiator result arrives
         /// (so the recipient prompt can include the initiator's generated text as hidden continuity context).
         /// </summary>
-        private void QueueSequentialPairwiseRewrite(DiaryEvent diaryEvent, ApiEndpointConfig recipientPrimaryOverride = null)
+        private void QueueSequentialPairwiseRewrite(DiaryEvent diaryEvent, ApiEndpointConfig recipientPrimaryOverride = null,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null || diaryEvent.solo)
             {
                 return;
             }
 
-            TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole);
-            TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.RecipientRole);
+            TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
+            TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
 
-            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole);
-            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole);
+            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole, boundsCache);
+            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole, boundsCache);
             bool initiatorSkipped = diaryEvent.IsSkipped(DiaryEvent.InitiatorRole);
             bool initiatorContextExpected = initiatorEnabled && !initiatorSkipped;
 
@@ -324,8 +387,8 @@ namespace PawnDiary
                     diaryEvent,
                     DiaryEvent.InitiatorRole,
                     PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole),
-                    PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole));
-                QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, promptPlan);
+                    PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById));
+                QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, promptPlan, null, boundsCache);
                 return;
             }
 
@@ -363,13 +426,13 @@ namespace PawnDiary
                         diaryEvent,
                         DiaryEvent.RecipientRole,
                         PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
-                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole))
+                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById))
                     : DiaryPromptBuilder.BuildInteractionPromptPlan(
                         diaryEvent,
                         DiaryEvent.RecipientRole,
                         PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
-                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole));
-                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, promptPlan, recipientPrimaryOverride);
+                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById));
+                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, promptPlan, recipientPrimaryOverride, boundsCache);
             }
         }
 
@@ -377,14 +440,15 @@ namespace PawnDiary
         /// Final impure step before LLM dispatch: stamps the planned prompt on the event, records
         /// endpoint metadata, marks the event queued, and enqueues the request to <see cref="LlmClient"/>.
         /// </summary>
-        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, DiaryPromptPlan promptPlan, ApiEndpointConfig primaryOverride = null)
+        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, DiaryPromptPlan promptPlan,
+            ApiEndpointConfig primaryOverride = null, Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlan == null)
             {
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
             {
                 return;
             }
@@ -749,7 +813,9 @@ namespace PawnDiary
         /// enqueue an <see cref="LlmGenerationRequest"/> with <c>isTitleRequest = true</c>.
         /// On failure (no API configured, lane unavailable) the per-POV title is left untouched.
         /// </summary>
-        private void QueueTitleRequest(DiaryEvent diaryEvent, string povRole, ApiEndpointConfig primaryOverride)
+        private void QueueTitleRequest(DiaryEvent diaryEvent, string povRole, ApiEndpointConfig primaryOverride,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
             {
@@ -767,12 +833,17 @@ namespace PawnDiary
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole))
+            if (!diaryEvent.CanQueueTitleGeneration(povRole))
             {
                 return;
             }
 
-            if (ShouldSkipFirstPersonGenerationForIncapacitation(FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole))))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
+            {
+                return;
+            }
+
+            if (ShouldSkipFirstPersonGenerationForIncapacitation(FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById)))
             {
                 return;
             }
@@ -885,7 +956,8 @@ namespace PawnDiary
         /// Checks whether the pawn for a given POV role in an event has diary generation enabled,
         /// resolving the pawn via its saved diary record.
         /// </summary>
-        private bool DiaryGenerationEnabledFor(DiaryEvent diaryEvent, string povRole)
+        private bool DiaryGenerationEnabledFor(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null)
         {
             // DiaryEvents store pawn IDs, not Pawn instances, so queue-time checks resolve through
             // the saved diary record for that POV.
@@ -900,7 +972,7 @@ namespace PawnDiary
                 return false;
             }
 
-            if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId))
+            if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId, boundsCache))
             {
                 return false;
             }
@@ -928,7 +1000,8 @@ namespace PawnDiary
         /// Marks a non-neutral POV as skipped when its live pawn is below the Consciousness floor.
         /// Returns true when generation should stop for this POV.
         /// </summary>
-        private bool TryMarkIncapacitatedPovSkipped(DiaryEvent diaryEvent, string povRole)
+        private bool TryMarkIncapacitatedPovSkipped(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null
                 || !DiaryEvent.RoleIsInitiatorOrRecipient(povRole)
@@ -937,7 +1010,7 @@ namespace PawnDiary
                 return false;
             }
 
-            Pawn pawn = FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole));
+            Pawn pawn = FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById);
             if (!ShouldSkipFirstPersonGenerationForIncapacitation(pawn))
             {
                 return false;
@@ -990,7 +1063,8 @@ namespace PawnDiary
         /// Resolves the optional hediff-based prompt enchantment for the POV pawn. Missing live pawn
         /// data simply means no enchantment, preserving neutral death/arrival and title flows.
         /// </summary>
-        private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole)
+        private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             if (!DiaryPromptBuilder.ShouldResolvePromptEnchantment(diaryEvent))
             {
@@ -998,8 +1072,69 @@ namespace PawnDiary
             }
 
             string pawnId = PawnIdForRole(diaryEvent, povRole);
-            Pawn pawn = FindLivePawnByLoadId(pawnId);
+            Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             return PromptEnchantments.RuleFor(pawn);
+        }
+
+        private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()
+        {
+            Dictionary<string, Pawn> pawnsById = new Dictionary<string, Pawn>();
+            if (Find.Maps != null)
+            {
+                for (int mapIndex = 0; mapIndex < Find.Maps.Count; mapIndex++)
+                {
+                    Map map = Find.Maps[mapIndex];
+                    if (map?.mapPawns?.AllPawns == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (Pawn pawn in map.mapPawns.AllPawns)
+                    {
+                        AddLivePawnToSnapshot(pawnsById, pawn);
+                    }
+                }
+            }
+
+            if (Find.WorldPawns?.AllPawnsAlive != null)
+            {
+                foreach (Pawn pawn in Find.WorldPawns.AllPawnsAlive)
+                {
+                    AddLivePawnToSnapshot(pawnsById, pawn);
+                }
+            }
+
+            return pawnsById;
+        }
+
+        private static void AddLivePawnToSnapshot(Dictionary<string, Pawn> pawnsById, Pawn pawn)
+        {
+            if (pawnsById == null || pawn == null)
+            {
+                return;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            if (!string.IsNullOrWhiteSpace(pawnId) && !pawnsById.ContainsKey(pawnId))
+            {
+                pawnsById[pawnId] = pawn;
+            }
+        }
+
+        private static Pawn FindLivePawnByLoadId(string pawnId, Dictionary<string, Pawn> livePawnsById)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            if (livePawnsById != null)
+            {
+                Pawn pawn;
+                return livePawnsById.TryGetValue(pawnId, out pawn) ? pawn : null;
+            }
+
+            return FindLivePawnByLoadId(pawnId);
         }
 
         /// <summary>

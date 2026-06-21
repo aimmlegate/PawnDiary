@@ -44,6 +44,9 @@ namespace PawnDiary
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                pawnId = pawnId ?? string.Empty;
+                pawnName = pawnName ?? string.Empty;
+
                 // Recover gracefully if a persona Def was renamed/removed.
                 if (string.IsNullOrWhiteSpace(personaDefName) || DiaryPersonas.ForDefName(personaDefName) == null)
                 {

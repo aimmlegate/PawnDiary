@@ -15,6 +15,8 @@ namespace PawnDiary
     /// </summary>
     public static class MiniJson
     {
+        private const int MaxDepth = 256;
+
         public static object Deserialize(string json)
         {
             if (string.IsNullOrEmpty(json))
@@ -23,7 +25,7 @@ namespace PawnDiary
             }
 
             int index = 0;
-            object value = ParseValue(json, ref index);
+            object value = ParseValue(json, ref index, 0);
             SkipWhitespace(json, ref index);
             if (index != json.Length)
             {
@@ -33,8 +35,13 @@ namespace PawnDiary
             return value;
         }
 
-        private static object ParseValue(string json, ref int index)
+        private static object ParseValue(string json, ref int index, int depth)
         {
+            if (depth > MaxDepth)
+            {
+                throw new FormatException("JSON nesting is too deep.");
+            }
+
             SkipWhitespace(json, ref index);
             if (index >= json.Length)
             {
@@ -45,9 +52,9 @@ namespace PawnDiary
             switch (c)
             {
                 case '{':
-                    return ParseObject(json, ref index);
+                    return ParseObject(json, ref index, depth + 1);
                 case '[':
-                    return ParseArray(json, ref index);
+                    return ParseArray(json, ref index, depth + 1);
                 case '"':
                     return ParseString(json, ref index);
                 case 't':
@@ -61,8 +68,13 @@ namespace PawnDiary
             }
         }
 
-        private static Dictionary<string, object> ParseObject(string json, ref int index)
+        private static Dictionary<string, object> ParseObject(string json, ref int index, int depth)
         {
+            if (depth > MaxDepth)
+            {
+                throw new FormatException("JSON nesting is too deep.");
+            }
+
             Dictionary<string, object> result = new Dictionary<string, object>();
             index++; // consume '{'
             SkipWhitespace(json, ref index);
@@ -88,7 +100,7 @@ namespace PawnDiary
                 }
 
                 index++; // consume ':'
-                object value = ParseValue(json, ref index);
+                object value = ParseValue(json, ref index, depth);
                 result[key] = value;
 
                 SkipWhitespace(json, ref index);
@@ -114,8 +126,13 @@ namespace PawnDiary
             }
         }
 
-        private static object[] ParseArray(string json, ref int index)
+        private static object[] ParseArray(string json, ref int index, int depth)
         {
+            if (depth > MaxDepth)
+            {
+                throw new FormatException("JSON nesting is too deep.");
+            }
+
             List<object> result = new List<object>();
             index++; // consume '['
             SkipWhitespace(json, ref index);
@@ -127,7 +144,7 @@ namespace PawnDiary
 
             while (true)
             {
-                object value = ParseValue(json, ref index);
+                object value = ParseValue(json, ref index, depth);
                 result.Add(value);
 
                 SkipWhitespace(json, ref index);
@@ -225,26 +242,76 @@ namespace PawnDiary
         private static object ParseNumber(string json, ref int index)
         {
             int start = index;
-            while (index < json.Length)
+
+            if (index < json.Length && json[index] == '-')
             {
-                char c = json[index];
-                if (c == '-' || c == '+' || c == '.' || c == 'e' || c == 'E' || (c >= '0' && c <= '9'))
-                {
-                    index++;
-                }
-                else
-                {
-                    break;
-                }
+                index++;
             }
 
-            string number = json.Substring(start, index - start);
-            if (number.Length == 0)
+            if (index >= json.Length)
             {
                 throw new FormatException("Invalid number in JSON at position " + start + ".");
             }
 
+            if (json[index] == '0')
+            {
+                index++;
+            }
+            else if (json[index] >= '1' && json[index] <= '9')
+            {
+                index++;
+                while (index < json.Length && IsDigit(json[index]))
+                {
+                    index++;
+                }
+            }
+            else
+            {
+                throw new FormatException("Invalid number in JSON at position " + start + ".");
+            }
+
+            if (index < json.Length && json[index] == '.')
+            {
+                index++;
+                int fractionStart = index;
+                while (index < json.Length && IsDigit(json[index]))
+                {
+                    index++;
+                }
+
+                if (index == fractionStart)
+                {
+                    throw new FormatException("Invalid number in JSON at position " + start + ".");
+                }
+            }
+
+            if (index < json.Length && (json[index] == 'e' || json[index] == 'E'))
+            {
+                index++;
+                if (index < json.Length && (json[index] == '+' || json[index] == '-'))
+                {
+                    index++;
+                }
+
+                int exponentStart = index;
+                while (index < json.Length && IsDigit(json[index]))
+                {
+                    index++;
+                }
+
+                if (index == exponentStart)
+                {
+                    throw new FormatException("Invalid number in JSON at position " + start + ".");
+                }
+            }
+
+            string number = json.Substring(start, index - start);
             return double.Parse(number, NumberStyles.Float, CultureInfo.InvariantCulture);
+        }
+
+        private static bool IsDigit(char c)
+        {
+            return c >= '0' && c <= '9';
         }
 
         private static bool ParseBool(string json, ref int index)

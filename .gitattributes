@@ -1,2 +1,3 @@
 # Git executes hook shims through a shell; CRLF can break shebang parsing.
 .githooks/* text eol=lf
+*.ps1 text eol=lf

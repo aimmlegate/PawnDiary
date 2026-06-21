@@ -283,6 +283,18 @@ namespace DiaryPipelineTests
                 "[[/speech]]");
             AssertEqual("first direct speech", "First.", firstSpeech);
 
+            List<DiaryDirectSpeechLine> multipleSameLine = new List<DiaryDirectSpeechLine>(
+                DiaryDirectSpeechParser.Lines(
+                    "Before [[speech]]First.[[/speech]] between [[speech]]Second.[[/speech]] after",
+                    true,
+                    "[[speech]]",
+                    "[[/speech]]"));
+            AssertEqual("same-line speech block count", 5, multipleSameLine.Count);
+            AssertTrue("same-line first speech parsed", multipleSameLine[1].directSpeech);
+            AssertEqual("same-line first speech", "First.", multipleSameLine[1].line);
+            AssertTrue("same-line second speech parsed", multipleSameLine[3].directSpeech);
+            AssertEqual("same-line second speech", "Second.", multipleSameLine[3].line);
+
             List<DiaryDirectSpeechLine> unclosed = new List<DiaryDirectSpeechLine>(
                 DiaryDirectSpeechParser.Lines(
                     "[[speech]]Unclosed",
@@ -310,6 +322,10 @@ namespace DiaryPipelineTests
             // last complete sentence, so the speech guard does not weaken normal cleanup.
             AssertEqual("incomplete tail still trimmed", "It was calm.",
                 LlmResponseParser.CleanGeneratedText("It was calm. Then suddenly the", 200, false));
+
+            AssertEqual("closed speech before truncated prose is not a cut point",
+                "[[speech]]Hi[[/speech]] He waved [[speech>",
+                LlmResponseParser.CleanGeneratedText("[[speech]]Hi[[/speech]] He waved [[speech>", 200, false));
         }
 
         private static string FirstSpeechAfterClean(string raw)
