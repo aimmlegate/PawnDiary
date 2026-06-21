@@ -1,16 +1,22 @@
-// Thoughts — the MemoryThoughtHandler.TryGainMemory hook's diary flow. A pawn gaining a temporary
-// memory thought becomes a solo DiaryEvent, but only after filtering: permanent thoughts
-// (durationDays <= 0), configurable ignore tokens, and sub-threshold magnitudes are dropped (eating
-// thoughts use a higher bar; "bypass" thoughts like death/banishment skip the threshold). The event
-// carries a "thought=" game-context marker so the UI classifies it into the Thought domain. The
-// helpers below match the configurable token lists and read the thought's current-stage mood offset.
+// Thoughts — the MemoryThoughtHandler.TryGainMemory hook's diary flow, now built on the Event
+// Catalog pattern (see Source/Capture/). A pawn gaining a temporary memory thought becomes a solo
+// DiaryEvent, but only after filtering: permanent thoughts (durationDays <= 0), configurable ignore
+// tokens, and sub-threshold magnitudes are dropped (eating thoughts use a higher bar; "bypass"
+// thoughts like death/banishment skip the threshold). Low-stakes ambient-token thoughts are routed
+// to the per-pawn/day ambient batcher instead. The event carries a "thought=" game-context marker
+// so the UI classifies it into the Thought domain.
+//
+// This file now contains only the IMPURE half of the flow: snapshotting live Pawn/Thought facts into
+// ThoughtEventData + CaptureContext, asking DiaryEventCatalog for the pure decision, then performing
+// whatever impure action the decision requests (dedup, ambient routing, save mutation, LLM queue).
+// The pure decision logic (token match, threshold gate, ambient routing) lives in
+// Source/Capture/Events/ThoughtEventData.cs and is unit-tested without RimWorld.
+//
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+using PawnDiary.Capture;
 using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace PawnDiary
@@ -18,9 +24,9 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         /// <summary>
-        /// Records a diary event when a pawn gains a temporary thought with expiration.
-        /// Filters out thoughts below magnitude thresholds (±5 general, ±15 eating),
-        /// room stat thoughts, and deduplicates within the configured window.
+        /// Records a diary event when a pawn gains a temporary thought with expiration. Delegates the
+        /// "should we?" decision to ThoughtEventData.Decide (pure) and keeps the impure side-effects
+        /// (dedup, ambient routing, event creation, LLM queue) here.
         /// </summary>
         public void RecordThought(Pawn pawn, Thought_Memory thought)
         {
@@ -29,115 +35,105 @@ namespace PawnDiary
                 return;
             }
 
-            if (!IsDiaryEligible(pawn))
+            // Snapshot the live RimWorld facts the pure Decider needs. All impure reads (Pawn state,
+            // DefDatabase, Settings, tick manager) happen here, so the Decider itself stays pure.
+            float moodOffset = thought.MoodOffset();
+            ThoughtEventData data = new ThoughtEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = thought.def.defName,
+                MoodOffset = moodOffset,
+                DurationDays = thought.def.durationDays,
+                // MoodImpact.Classify needs the Verse-using MoodImpact helper, so classify here and
+                // pass the resolved token into the pure layer.
+                MoodImpact = MoodImpact.Classify(moodOffset),
+                Policy = SnapshotThoughtPolicy(),
+            };
+
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: IsDiaryEligible(pawn),
+                userEnabled: PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.IsThoughtEnabled(thought.def),
+                signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.Thought),
+                ambientSignalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.AmbientThought));
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Thought);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision == CaptureDecision.Drop)
             {
                 return;
             }
 
-            if (PawnDiaryMod.Settings == null
-                || !DiarySignalPolicies.Enabled(DiarySignalPolicies.Thought)
-                || !PawnDiaryMod.Settings.IsThoughtEnabled(thought.def))
-            {
-                return;
-            }
-
-            if (thought.def.durationDays <= 0f)
-            {
-                return;
-            }
-
-            if (MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtIgnoreTokens))
-            {
-                return;
-            }
-
-            float moodOffset = GetThoughtMoodOffset(thought);
-            bool isEatingThought = MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtEatingTokens);
-            bool bypassThreshold = MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtBypassThresholdTokens);
-
-            // Bypass thoughts (death, banishment, etc.) are always recorded regardless of magnitude.
-            // Everything else must clear its threshold; eating thoughts use the higher bar.
-            if (!bypassThreshold)
-            {
-                float minMoodOffset = isEatingThought
-                    ? DiarySignalPolicies.ThoughtEatingMinMoodOffset
-                    : DiarySignalPolicies.ThoughtMinMoodOffset;
-                if (Mathf.Abs(moodOffset) < minMoodOffset)
-                {
-                    return;
-                }
-            }
-
-            string dedupKey = "thought|" + pawn.GetUniqueLoadID() + "|" + thought.def.defName;
+            // Dedup happens AFTER the decision, BEFORE the impure build — same order as before the
+            // refactor, so a thought that would be ambient-routed still benefits from dedup only if
+            // it would otherwise have been a solo event. (Ambient routing has its own dedup via the
+            // ambient batcher's "written" guard.)
+            string dedupKey = "thought|" + data.PawnId + "|" + data.DefName;
             if (RecentlyRecorded(recentThoughtEvents, dedupKey, DiarySignalPolicies.ThoughtDedupTicks))
             {
                 return;
             }
 
-            string thoughtDefName = thought.def.defName;
+            // Impure build: label, instruction, game-context marker, localized event text. These need
+            // the live ThoughtDef (LabelCap, settings instruction) so they cannot live in the pure
+            // payload layer.
             string label = DiaryContextBuilder.CleanLine(thought.def.LabelCap.Resolve());
             string instruction = PawnDiaryMod.Settings.InstructionForThought(thought.def);
 
-            string moodImpact = MoodImpact.Classify(moodOffset);
-
-            if (DiarySignalPolicies.Enabled(DiarySignalPolicies.AmbientThought)
-                && MatchesAnyToken(thought.def, DiarySignalPolicies.ThoughtAmbientTokens))
+            if (decision == CaptureDecision.RouteAmbient)
             {
-                RecordAmbientThought(pawn, thought.def, label, moodOffset, moodImpact, instruction);
+                RecordAmbientThought(pawn, thought.def, label, moodOffset, data.MoodImpact, instruction);
                 return;
             }
 
-            string gameContext = "thought=" + thoughtDefName
-                + "; label=" + label
-                + "; mood_impact=" + moodImpact
-                + "; mood_offset=" + moodOffset.ToString("F1", CultureInfo.InvariantCulture)
-                + "; duration_days=" + thought.def.durationDays.ToString("F1", CultureInfo.InvariantCulture);
+            string gameContext = ThoughtEventData.BuildGameContext(
+                data.DefName, label, data.MoodImpact, moodOffset, thought.def.durationDays);
 
-            string text = MoodImpact.PickText(moodImpact,
+            string text = MoodImpact.PickText(data.MoodImpact,
                 "PawnDiary.Event.ThoughtPositive", "PawnDiary.Event.ThoughtNegative", "PawnDiary.Event.Thought",
                 pawn.LabelShortCap, label);
 
-            DiaryEvent thoughtEvent = AddSoloEvent(pawn, null, thoughtDefName, label, text, instruction, gameContext);
-            thoughtEvent.moodImpact = moodImpact;
+            DiaryEvent thoughtEvent = AddSoloEvent(pawn, null, data.DefName, label, text, instruction, gameContext);
+            thoughtEvent.moodImpact = data.MoodImpact;
             QueueLlmRewrite(thoughtEvent, DiaryEvent.InitiatorRole);
         }
 
         /// <summary>
-        /// Returns true if the thought's defName contains any of the tokens in the given list (case-insensitive).
-        /// Used for configurable ignore/bypass/classification token lists from DiaryTuningDef.
+        /// Copies the live Thought signal policy (tokens + thresholds) out of DiarySignalPolicies into
+        /// a frozen ThoughtCapturePolicy snapshot the pure Decider can read without touching the
+        /// DefDatabase.
         /// </summary>
-        private static bool MatchesAnyToken(ThoughtDef thoughtDef, List<string> tokens)
+        private static ThoughtCapturePolicy SnapshotThoughtPolicy()
         {
-            if (thoughtDef == null || string.IsNullOrEmpty(thoughtDef.defName) || tokens == null)
+            return new ThoughtCapturePolicy
             {
-                return false;
-            }
-
-            string defName = thoughtDef.defName;
-            for (int i = 0; i < tokens.Count; i++)
-            {
-                if (!string.IsNullOrEmpty(tokens[i])
-                    && defName.IndexOf(tokens[i], StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+                IgnoreTokens = DiarySignalPolicies.ThoughtIgnoreTokens,
+                BypassThresholdTokens = DiarySignalPolicies.ThoughtBypassThresholdTokens,
+                EatingTokens = DiarySignalPolicies.ThoughtEatingTokens,
+                AmbientTokens = DiarySignalPolicies.ThoughtAmbientTokens,
+                MinMoodOffset = DiarySignalPolicies.ThoughtMinMoodOffset,
+                EatingMinMoodOffset = DiarySignalPolicies.ThoughtEatingMinMoodOffset,
+            };
         }
 
         /// <summary>
-        /// Returns the mood offset for a thought's current stage. Uses Thought.MoodOffset()
-        /// which returns the active stage's baseMoodEffect (not a sum of all stages).
+        /// Builds a CaptureContext from the impure eligibility/enable facts the caller already
+        /// computed. Centralized so each source's Record method reads the same way and the pure
+        /// Decider sees a consistent snapshot.
         /// </summary>
-        private static float GetThoughtMoodOffset(Thought_Memory thought)
+        private static CaptureContext BuildCaptureContext(
+            bool eligible, bool userEnabled, bool signalEnabled, bool ambientSignalEnabled)
         {
-            if (thought == null)
+            return new CaptureContext
             {
-                return 0f;
-            }
-
-            return thought.MoodOffset();
+                Eligible = eligible,
+                UserEnabled = userEnabled,
+                SignalEnabled = signalEnabled,
+                AmbientSignalEnabled = ambientSignalEnabled,
+                Now = Find.TickManager.TicksGame,
+            };
         }
     }
 }

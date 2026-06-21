@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pure Capture layer only — no RimWorld/Verse/UnityEngine. If a new file under Source/Capture
+         ever starts using Verse, do NOT link it here; link only the pure decision files. -->
+    <Compile Include="..\..\Source\Capture\DiaryEventType.cs" Link="Capture\DiaryEventType.cs" />
+    <Compile Include="..\..\Source\Capture\DiaryEventData.cs" Link="Capture\DiaryEventData.cs" />
+    <Compile Include="..\..\Source\Capture\CaptureContext.cs" Link="Capture\CaptureContext.cs" />
+    <Compile Include="..\..\Source\Capture\CaptureDecision.cs" Link="Capture\CaptureDecision.cs" />
+    <Compile Include="..\..\Source\Capture\ThoughtCapturePolicy.cs" Link="Capture\ThoughtCapturePolicy.cs" />
+    <Compile Include="..\..\Source\Capture\Events\ThoughtEventData.cs" Link="Capture\Events\ThoughtEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\InspirationEventData.cs" Link="Capture\Events\InspirationEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Catalog\DiaryEventSpec.cs" Link="Capture\Catalog\DiaryEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Catalog\DiaryEventCatalog.cs" Link="Capture\Catalog\DiaryEventCatalog.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\ThoughtEventSpec.cs" Link="Capture\Specs\ThoughtEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\InspirationEventSpec.cs" Link="Capture\Specs\InspirationEventSpec.cs" />
+  </ItemGroup>
+</Project>
