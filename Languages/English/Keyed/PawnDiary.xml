@@ -34,6 +34,14 @@
   <PawnDiary.Tab.FillMockEntriesTip>Dev-only: adds completed mock pages across many in-game dates so long-history scrolling, year paging, and collapse behavior can be tested without calling an LLM.</PawnDiary.Tab.FillMockEntriesTip>
   <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
+  <PawnDiary.Tab.DevPreviewPlain>Plain</PawnDiary.Tab.DevPreviewPlain>
+  <PawnDiary.Tab.DevPreviewSpeech>Speech</PawnDiary.Tab.DevPreviewSpeech>
+  <PawnDiary.Tab.DevPreviewStaggered>Stagger</PawnDiary.Tab.DevPreviewStaggered>
+  <PawnDiary.Tab.DevPreviewCombat>Combat</PawnDiary.Tab.DevPreviewCombat>
+  <PawnDiary.Tab.DevPreviewStrange>Strange</PawnDiary.Tab.DevPreviewStrange>
+  <PawnDiary.Tab.DevPreviewDeath>Death</PawnDiary.Tab.DevPreviewDeath>
+  <PawnDiary.Tab.DevPreviewClear>Clear</PawnDiary.Tab.DevPreviewClear>
+  <PawnDiary.Tab.DevPreviewTip>Dev-only: shows one temporary diary page at the top of the list so text wrapping, markdown, combat/death colors, speech blocks, and atmosphere decorations can be checked without saving mock events.</PawnDiary.Tab.DevPreviewTip>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.LinkedInitiator>{0}'s perspective (initiator):</PawnDiary.Tab.LinkedInitiator>
   <PawnDiary.Tab.LinkedRecipient>{0}'s perspective (recipient):</PawnDiary.Tab.LinkedRecipient>
@@ -244,6 +252,21 @@
   <PawnDiary.Dev.MockTitle>Mock page {0}</PawnDiary.Dev.MockTitle>
   <PawnDiary.Dev.MockRawText>{0} received mock diary event {1}.</PawnDiary.Dev.MockRawText>
   <PawnDiary.Dev.MockBody>Mock diary page {0}. {1} carried this deliberately artificial memory through the day so the diary can be tested with a long, multi-year history.</PawnDiary.Dev.MockBody>
+  <PawnDiary.Dev.PreviewPawnFallback>this colonist</PawnDiary.Dev.PreviewPawnFallback>
+  <PawnDiary.Dev.PreviewLabel>Formatting preview</PawnDiary.Dev.PreviewLabel>
+  <PawnDiary.Dev.PreviewRawText>{0} rendered the {1} diary formatting preview.</PawnDiary.Dev.PreviewRawText>
+  <PawnDiary.Dev.PreviewTitlePlain>Plain text preview</PawnDiary.Dev.PreviewTitlePlain>
+  <PawnDiary.Dev.PreviewTitleSpeech>Speech block preview</PawnDiary.Dev.PreviewTitleSpeech>
+  <PawnDiary.Dev.PreviewTitleStaggered>Staggered speech preview</PawnDiary.Dev.PreviewTitleStaggered>
+  <PawnDiary.Dev.PreviewTitleCombat>Combat page preview</PawnDiary.Dev.PreviewTitleCombat>
+  <PawnDiary.Dev.PreviewTitleStrange>Strange speech preview</PawnDiary.Dev.PreviewTitleStrange>
+  <PawnDiary.Dev.PreviewTitleDeath>Death page preview</PawnDiary.Dev.PreviewTitleDeath>
+  <PawnDiary.Dev.PreviewBodyPlain>This is a simulated diary page for {0}. It includes **bold memory**, *uneasy emphasis*, and "quoted words" inside ordinary prose.&#10;&#10;The second paragraph is deliberately longer so wrapping, spacing, and the page bottom can be checked without waiting for an LLM.</PawnDiary.Dev.PreviewBodyPlain>
+  <PawnDiary.Dev.PreviewBodySpeech>{0} writes a short ordinary line before saying something out loud.&#10;[[speech]]This line should become the colored speech block.[[/speech]]&#10;After the speech, ordinary narration should return to the diary body style.</PawnDiary.Dev.PreviewBodySpeech>
+  <PawnDiary.Dev.PreviewBodyStaggered>{0} tries to keep the page steady after too much drink.&#10;[[speech]]I can write this straight. I am almost sure of it.[[/speech]]&#10;Only the spoken block should pick up the configured staggered word-size decoration.</PawnDiary.Dev.PreviewBodyStaggered>
+  <PawnDiary.Dev.PreviewBodyCombat>{0} is testing the combat diary color and a longer, harsher entry shape. The page should carry the combat accent while ordinary narration still wraps cleanly around strong verbs, clipped sentences, and **important** damage details.&#10;&#10;A second combat paragraph checks that the card keeps enough bottom padding after a dense account of smoke, blood, shouted orders, and the sick quiet that follows a fight.</PawnDiary.Dev.PreviewBodyCombat>
+  <PawnDiary.Dev.PreviewBodyStrange>{0} records the moment as carefully as possible, but the lines do not want to stay where they belong.&#10;[[speech]]The walls answered before I spoke.[[/speech]]&#10;The strange preview uses the unsettled layout and the same color cue that drives direct-speech distortion.</PawnDiary.Dev.PreviewBodyStrange>
+  <PawnDiary.Dev.PreviewBodyDeath>{0}'s death-preview page should settle into the centered memorial layout. The words are not a real eulogy; they are only here to check the pale accent, spacing, and quiet line breaks.&#10;&#10;What remains is a measured silence, a name held carefully, and enough text to prove the memorial card can breathe without clipping.</PawnDiary.Dev.PreviewBodyDeath>
 
   <!-- Mood-event text (GameCondition diary entries) -->
   <PawnDiary.Event.MoodEvent>{0} experienced {1}.</PawnDiary.Event.MoodEvent>

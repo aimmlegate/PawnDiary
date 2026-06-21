@@ -515,7 +515,8 @@ namespace PawnDiary
                 && cachedVisiblePawn == pawn
                 && token.Equals(cachedVisibleToken)
                 && cachedVisibleShowDebug == showLlmDebugInfo
-                && cachedVisibleShowGenerating == showGeneratingEntries)
+                && cachedVisibleShowGenerating == showGeneratingEntries
+                && cachedVisiblePreviewKind == devPreviewKind)
             {
                 return;
             }
@@ -525,9 +526,12 @@ namespace PawnDiary
             cachedVisibleToken = token;
             cachedVisibleShowDebug = showLlmDebugInfo;
             cachedVisibleShowGenerating = showGeneratingEntries;
+            cachedVisiblePreviewKind = devPreviewKind;
             cachedGeneratingCount = 0;
             cachedVisibleEntries.Clear();
             cachedVisibleYears.Clear();
+
+            AddDevPreviewEntryIfNeeded(cachedVisibleEntries, cachedVisibleYears, pawn);
 
             if (entries != null)
             {

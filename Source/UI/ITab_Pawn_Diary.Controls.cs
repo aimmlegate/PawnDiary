@@ -29,7 +29,7 @@ namespace PawnDiary
 
 
 
-            float lines = 2f; // generation toggle + dev-only mock-history filler
+            float lines = 3f; // generation toggle + mock-history filler + transient formatting preview
 
             if (PawnDiaryMod.Settings != null)
             {
@@ -56,7 +56,7 @@ namespace PawnDiary
         /// <summary>
         /// Renders the per-pawn generation toggle plus dev-mode-only troubleshooting controls.
         /// </summary>
-        private static void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
+        private void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
         {
 
             if (pawn == null || component == null)
@@ -229,6 +229,9 @@ namespace PawnDiary
                 mockButtonRect,
 
                 "PawnDiary.Tab.FillMockEntriesTip".Translate(DevMockDiaryTargetCount));
+
+
+            DrawDevPreviewButtons(listing, pawn);
 
 
 
