@@ -16,7 +16,6 @@
 //   DiaryGameComponent.Interactions.cs   — social interactions (PlayLog.Add)
 //   DiaryGameComponent.MentalStates.cs   — social fights + mental breaks (TryStartMentalState)
 //   DiaryGameComponent.Tales.cs          — notable-history tales (TaleRecorder.RecordTale)
-//   DiaryGameComponent.CraftedAndRelics.cs — masterwork/legendary crafts + relic installs
 //   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
 //   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
 //   DiaryGameComponent.Inspirations.cs   — pawn inspirations (TryStartInspiration)
@@ -53,9 +52,6 @@ namespace PawnDiary
         // The transient dedup dictionaries keep only recent keys. Once any dictionary crosses this
         // size, the shared gate sweeps entries outside that source's configured dedup window.
         private const int RecentEventPruneThreshold = 512;
-        // Synthetic Tale-domain groups for notable events vanilla does not expose as TaleDefs.
-        private const string TaleQualityGroupKey = "talequality";
-        private const string TaleRelicGroupKey = "talerelic";
         // Synthetic event used for the neutral first entry that explains how a pawn joined.
         private const string ArrivalGroupKey = "arrival";
         private const string ArrivalDefName = "PawnDiary_Arrival";

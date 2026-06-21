@@ -27,10 +27,6 @@ namespace PawnDiary
                 Log.Error("[Pawn Diary] PatchAll failed: " + e);
             }
 
-            // Registered manually (not via PatchAll) because its target is a fragile compiler-
-            // generated method name — see RelicInstallCompletionPatch for why.
-            RelicInstallCompletionPatch.TryRegister(harmony);
-
             // Registered manually (not via PatchAll) because the target method name may change
             // between RimWorld versions — see ThoughtGainPatch.TryRegister for why.
             ThoughtGainPatch.TryRegister(harmony);

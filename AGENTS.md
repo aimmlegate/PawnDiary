@@ -87,7 +87,7 @@ Rules, strongest first:
   missing def errors on load. Our matcher lists are plain strings, so they're safe.
 - **Harmony-patching a DLC method is fine** (the type exists) — it just never fires without the
   DLC. If the target is a fragile compiler-generated name, register it defensively with a
-  null-check + warning like `RelicInstallCompletionPatch.TryRegister`, never via bare `PatchAll`.
+  null-check + warning like `ThoughtGainPatch.TryRegister`, never via bare `PatchAll`.
 - **Only add a DLC `<modDependencies>` to `About.xml` if the *entire mod* needs it** — never for
   one optional feature.
 
