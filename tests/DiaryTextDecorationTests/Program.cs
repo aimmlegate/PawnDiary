@@ -15,6 +15,10 @@ namespace DiaryTextDecorationTests
             TestTraitAndColorRulesAreOrdered();
             TestDecorationsApplyInSequenceAndPreserveTags();
             TestZalgoIntensity();
+            TestDimmedWordsPreserveTagsWithoutZalgoMarks();
+            TestDarkAndStrangeSelectDifferentDecorations();
+            TestNameHighlighterColorsAndBoldsKnownPawns();
+            TestNameHighlighterRespectsBoundariesAndLongestName();
             TestPawnFactSerializationRoundTrip();
             TestEventTagsFromContext();
 
@@ -133,6 +137,95 @@ namespace DiaryTextDecorationTests
             AssertContains("mild keeps tag", mild, "<i>");
             AssertContains("strong keeps tag", strong, "</i>");
             AssertTrue("stronger intensity adds more marks", CountCombiningMarks(strong) > CountCombiningMarks(mild));
+        }
+
+        private static void TestDimmedWordsPreserveTagsWithoutZalgoMarks()
+        {
+            string input = "<b>Alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima</b>";
+            string dimmed = DiaryTextDecorations.ApplyDimmedWordsToRichText(input, 4, 123);
+
+            AssertContains("dimmed keeps bold open tag", dimmed, "<b>");
+            AssertContains("dimmed keeps bold close tag", dimmed, "</b>");
+            AssertContains("dimmed adds color tag", dimmed, "<color=#56514D>");
+            AssertContains("dimmed adds italic tag", dimmed, "<i>");
+            AssertTrue("dimmed does not add combining marks", CountCombiningMarks(dimmed) == 0);
+        }
+
+        private static void TestDarkAndStrangeSelectDifferentDecorations()
+        {
+            List<DiaryTextDecorationRule> rules = new List<DiaryTextDecorationRule>
+            {
+                new DiaryTextDecorationRule
+                {
+                    decoration = DiaryTextDecorationKinds.DimmedWords,
+                    scope = DiaryTextDecorationScopes.DirectSpeech,
+                    sequence = 30,
+                    intensity = 3,
+                    when = new DiaryTextDecorationCondition
+                    {
+                        anyColorCue = new List<string> { "extremeDark" }
+                    }
+                },
+                new DiaryTextDecorationRule
+                {
+                    decoration = DiaryTextDecorationKinds.Zalgo,
+                    scope = DiaryTextDecorationScopes.DirectSpeech,
+                    sequence = 30,
+                    intensity = 1,
+                    when = new DiaryTextDecorationCondition
+                    {
+                        anyColorCue = new List<string> { "strangeChat" }
+                    }
+                }
+            };
+
+            DiaryTextDecorationPlan dark = DiaryTextDecorations.Select(
+                new DiaryTextDecorationContext { colorCue = "extremeDark" },
+                rules,
+                DiaryTextDecorationScopes.DirectSpeech);
+            DiaryTextDecorationPlan strange = DiaryTextDecorations.Select(
+                new DiaryTextDecorationContext { colorCue = "strangeChat" },
+                rules,
+                DiaryTextDecorationScopes.DirectSpeech);
+
+            AssertEqual("dark rule count", 1, dark.rules.Count);
+            AssertEqual("strange rule count", 1, strange.rules.Count);
+            AssertEqual("dark uses dimming", DiaryTextDecorationKinds.DimmedWords, dark.rules[0].decoration);
+            AssertEqual("strange keeps zalgo", DiaryTextDecorationKinds.Zalgo, strange.rules[0].decoration);
+        }
+
+        private static void TestNameHighlighterColorsAndBoldsKnownPawns()
+        {
+            List<DiaryNameHighlight> highlights = new List<DiaryNameHighlight>
+            {
+                new DiaryNameHighlight { name = "Alice", colorHex = "aabbcc" },
+                new DiaryNameHighlight { name = "Bob", colorHex = string.Empty }
+            };
+
+            string highlighted = DiaryNameHighlighter.ApplyToRichText(
+                "Alice met <i>Bob</i>. Alice's pack was missing.",
+                highlights);
+
+            AssertContains("colored Alice", highlighted, "<color=#AABBCC><b>Alice</b></color>");
+            AssertContains("bold-only Bob preserves tag", highlighted, "<i><b>Bob</b></i>");
+            AssertContains("possessive Alice", highlighted, "<color=#AABBCC><b>Alice</b></color>'s");
+        }
+
+        private static void TestNameHighlighterRespectsBoundariesAndLongestName()
+        {
+            List<DiaryNameHighlight> highlights = new List<DiaryNameHighlight>
+            {
+                new DiaryNameHighlight { name = "Ann", colorHex = "112233" },
+                new DiaryNameHighlight { name = "Anna", colorHex = "445566" }
+            };
+
+            string highlighted = DiaryNameHighlighter.ApplyToRichText(
+                "Anna spoke to Ann near the annex.",
+                highlights);
+
+            AssertContains("longest name wins", highlighted, "<color=#445566><b>Anna</b></color>");
+            AssertContains("shorter name still matches", highlighted, "<color=#112233><b>Ann</b></color>");
+            AssertTrue("does not match inside annex", highlighted.IndexOf("<b>ann</b>ex", StringComparison.OrdinalIgnoreCase) < 0);
         }
 
         private static void TestPawnFactSerializationRoundTrip()

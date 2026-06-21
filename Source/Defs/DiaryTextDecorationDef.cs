@@ -57,7 +57,7 @@ namespace PawnDiary
                     decoration = DiaryTextDecorationKinds.StaggeredWordSizes,
                     scope = DiaryTextDecorationScopes.DirectSpeech,
                     sequence = 20,
-                    intensity = 2,
+                    intensity = 4,
                     when = new DiaryTextDecorationCondition
                     {
                         anyHediffDefName = new List<string>
@@ -102,6 +102,20 @@ namespace PawnDiary
                 },
                 new DiaryTextDecorationRule
                 {
+                    decoration = DiaryTextDecorationKinds.DimmedWords,
+                    scope = DiaryTextDecorationScopes.DirectSpeech,
+                    sequence = 30,
+                    intensity = 3,
+                    when = new DiaryTextDecorationCondition
+                    {
+                        anyColorCue = new List<string>
+                        {
+                            DiaryEvent.ExtremeDarkColorCue
+                        }
+                    }
+                },
+                new DiaryTextDecorationRule
+                {
                     decoration = DiaryTextDecorationKinds.Zalgo,
                     scope = DiaryTextDecorationScopes.DirectSpeech,
                     sequence = 30,
@@ -110,8 +124,7 @@ namespace PawnDiary
                     {
                         anyColorCue = new List<string>
                         {
-                            DiaryEvent.StrangeChatColorCue,
-                            DiaryEvent.ExtremeDarkColorCue
+                            DiaryEvent.StrangeChatColorCue
                         }
                     }
                 }

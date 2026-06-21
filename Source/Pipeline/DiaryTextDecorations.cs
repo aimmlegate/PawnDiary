@@ -16,6 +16,7 @@ namespace PawnDiary
     public static class DiaryTextDecorationKinds
     {
         public const string StaggeredWordSizes = "StaggeredWordSizes";
+        public const string DimmedWords = "DimmedWords";
         public const string Zalgo = "Zalgo";
     }
 
@@ -201,6 +202,12 @@ namespace PawnDiary
                     continue;
                 }
 
+                if (KindEquals(rule.decoration, DiaryTextDecorationKinds.DimmedWords))
+                {
+                    result = ApplyDimmedWordsToRichText(result, rule.intensity, ruleSeed);
+                    continue;
+                }
+
                 if (KindEquals(rule.decoration, DiaryTextDecorationKinds.Zalgo))
                 {
                     result = ApplyZalgoToRichText(result, rule.intensity, ruleSeed);
@@ -262,6 +269,64 @@ namespace PawnDiary
                         result.Append(">");
                         result.Append(word);
                         result.Append("</size>");
+                    }
+                    else
+                    {
+                        result.Append(word);
+                    }
+
+                    wordIndex++;
+                    continue;
+                }
+
+                result.Append(c);
+                i++;
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Darkens selected visible words without corrupting the letters. This replaces the extreme
+        /// darkness Zalgo treatment so darkness feels muffled/fading while strange chat stays uncanny.
+        /// </summary>
+        public static string ApplyDimmedWordsToRichText(string rich, int intensity, int seed)
+        {
+            intensity = ClampIntensity(intensity);
+            if (string.IsNullOrEmpty(rich) || intensity <= 0)
+            {
+                return rich ?? string.Empty;
+            }
+
+            int selectionModulo = intensity >= 4 ? 2 : (intensity == 3 ? 3 : (intensity == 2 ? 4 : 6));
+            StringBuilder result = new StringBuilder(rich.Length + rich.Length / 3);
+            int wordIndex = 0;
+
+            for (int i = 0; i < rich.Length;)
+            {
+                char c = rich[i];
+                if (TryCopyRichTextTag(rich, ref i, result))
+                {
+                    continue;
+                }
+
+                if (char.IsLetterOrDigit(c))
+                {
+                    int start = i;
+                    i++;
+                    while (i < rich.Length && char.IsLetterOrDigit(rich[i]))
+                    {
+                        i++;
+                    }
+
+                    int length = i - start;
+                    string word = rich.Substring(start, length);
+                    int hash = PositiveHash(MixHash(seed, wordIndex, length));
+                    if (length > 2 && hash % selectionModulo == 0)
+                    {
+                        result.Append("<color=#56514D><i>");
+                        result.Append(word);
+                        result.Append("</i></color>");
                     }
                     else
                     {

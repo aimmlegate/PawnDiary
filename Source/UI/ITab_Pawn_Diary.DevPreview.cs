@@ -182,7 +182,7 @@ namespace PawnDiary
                 string.Empty,
                 DevPreviewEventId(pawn, kind),
                 DiaryEvent.InitiatorRole,
-                "PawnDiary.Dev.PreviewLabel".Translate().Resolve(),
+                DevPreviewButtonLabel(kind),
                 colorCue,
                 atmosphereCue,
                 0,

@@ -8,6 +8,7 @@
 
   Supported decoration values:
     StaggeredWordSizes - wraps selected visible words in Unity <size=...> rich-text tags.
+    DimmedWords        - wraps selected visible words in dark italic Unity rich-text tags.
     Zalgo              - adds light deterministic combining marks to visible letters.
 
   Supported scope values:
@@ -31,7 +32,7 @@
         <decoration>StaggeredWordSizes</decoration>
         <scope>DirectSpeech</scope>
         <sequence>20</sequence>
-        <intensity>2</intensity>
+        <intensity>4</intensity>
         <when>
           <anyHediffDefName>
             <li>AlcoholHigh</li>
@@ -71,6 +72,19 @@
         </when>
       </li>
 
+      <!-- Extreme darkness dims direct speech instead of using the strange-chat glyph distortion. -->
+      <li>
+        <decoration>DimmedWords</decoration>
+        <scope>DirectSpeech</scope>
+        <sequence>30</sequence>
+        <intensity>3</intensity>
+        <when>
+          <anyColorCue>
+            <li>extremeDark</li>
+          </anyColorCue>
+        </when>
+      </li>
+
       <!-- Disturbing/anomaly-like conversations distort direct speech, not narration. -->
       <li>
         <decoration>Zalgo</decoration>
@@ -80,7 +94,6 @@
         <when>
           <anyColorCue>
             <li>strangeChat</li>
-            <li>extremeDark</li>
           </anyColorCue>
         </when>
       </li>

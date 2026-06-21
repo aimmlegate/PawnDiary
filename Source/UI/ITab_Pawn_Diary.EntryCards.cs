@@ -217,6 +217,23 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns the body-page wash for the entry. Conflict pages get stronger cue-specific
+        /// washes so they read differently from ordinary quiet pages before the text is inspected.
+        /// </summary>
+        private static Color EntryPageTintColor(DiaryEntryView entry)
+        {
+            return UiStyle.PageTintForCue(entry?.ColorCue);
+        }
+
+        /// <summary>
+        /// Returns the separator line color under the card header, matching any cue-specific wash.
+        /// </summary>
+        private static Color EntryHeaderRuleColor(DiaryEntryView entry)
+        {
+            return UiStyle.HeaderRuleForCue(entry?.ColorCue);
+        }
+
+        /// <summary>
         /// Maps stable diary color cues onto RimWorld-style UI colors. Empty cues fall back to a
         /// warm neutral for important entries and light gray for non-important ones.
         /// </summary>
@@ -538,7 +555,11 @@ namespace PawnDiary
         /// dynamic text wrapping of the generated diary text and the linked-entry card
         /// (if present) positioned before or after the main text.
         /// </summary>
-        private static float EntryHeight(DiaryEntryView entry, float width, bool showLlmDebugInfo)
+        private static float EntryHeight(
+            DiaryEntryView entry,
+            float width,
+            bool showLlmDebugInfo,
+            IEnumerable<DiaryNameHighlight> nameHighlights)
         {
             // Must match the draw width in FillTab (entryRect.width - 20f) so the measured wrap
             // height equals what is actually rendered; a wider measure clips long entries at the bottom.
@@ -552,7 +573,8 @@ namespace PawnDiary
                 EntryAtmosphereCue(entry),
                 EntryAllowDirectSpeechBlocks(entry),
                 EntryTextDecorationContext(entry),
-                StableTextSeed(EntryKey(entry)));
+                StableTextSeed(EntryKey(entry)),
+                nameHighlights);
             Text.Font = oldFont;
 
             float height = EntryTextTop + textHeight + EntryBottomPadding;

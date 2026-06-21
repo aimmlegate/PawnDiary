@@ -7,6 +7,7 @@
 // Unity's IMGUI labels understand a small HTML-like markup when the GUIStyle has richText enabled
 // (see ITab_Pawn_Diary.BodyStyle). Kept deliberately conservative so ordinary prose is never mangled.
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -128,7 +129,19 @@ namespace PawnDiary
             int seed,
             int baseFontSize)
         {
+            return ToRichText(line, quoteColor, decorations, seed, baseFontSize, null);
+        }
+
+        public static string ToRichText(
+            string line,
+            Color quoteColor,
+            DiaryTextDecorationPlan decorations,
+            int seed,
+            int baseFontSize,
+            IEnumerable<DiaryNameHighlight> nameHighlights)
+        {
             string rich = ToRichText(line, quoteColor, false, seed);
+            rich = DiaryNameHighlighter.ApplyToRichText(rich, nameHighlights);
             return DiaryTextDecorations.ApplyToRichText(rich, decorations, seed, baseFontSize);
         }
 
@@ -172,6 +185,17 @@ namespace PawnDiary
             int seed,
             int baseFontSize)
         {
+            return ToSpeechBlockRichText(line, quoteColor, decorations, seed, baseFontSize, null);
+        }
+
+        public static string ToSpeechBlockRichText(
+            string line,
+            Color quoteColor,
+            DiaryTextDecorationPlan decorations,
+            int seed,
+            int baseFontSize,
+            IEnumerable<DiaryNameHighlight> nameHighlights)
+        {
             if (string.IsNullOrEmpty(line))
             {
                 return line ?? string.Empty;
@@ -181,6 +205,7 @@ namespace PawnDiary
             string s = EscapeRawRichText(speech);
             s = BoldPattern.Replace(s, "<b>$1</b>");
             s = ItalicPattern.Replace(s, "<i>$1</i>");
+            s = DiaryNameHighlighter.ApplyToRichText(s, nameHighlights);
             s = DiaryTextDecorations.ApplyToRichText(s, decorations, seed, baseFontSize);
 
             return "<color=#" + ColorUtility.ToHtmlStringRGB(quoteColor) + "><b>"

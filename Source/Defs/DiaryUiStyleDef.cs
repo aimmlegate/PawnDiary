@@ -151,6 +151,12 @@ namespace PawnDiary
         public string speechBlockOpenMarker = "[[speech]]";
         public string speechBlockCloseMarker = "[[/speech]]";
         public float atmosphereInset = 18f;
+        public float fracturedPrimaryInsetMultiplier = 1.75f;
+        public float fracturedSecondaryInsetMultiplier = 0.72f;
+        public float fracturedRightInsetMultiplier = 0.35f;
+        public float fracturedLongTopGap = 3f;
+        public float fracturedShortTopGap = 7f;
+        public float fracturedBottomGap = 3f;
         public float memorialInset = 34f;
         public float writingDotSize = 4f;
         public float writingDotGap = 5f;
@@ -168,6 +174,12 @@ namespace PawnDiary
         public float speechBlockAccentAlpha = 0.72f;
         public DiaryUiColorSpec pageTintColor = Color(0.91f, 0.83f, 0.66f, 0.07f);
         public DiaryUiColorSpec headerRuleColor = Color(0.62f, 0.58f, 0.50f, 0.35f);
+        public DiaryUiColorSpec combatPageTintColor = Color(0.70f, 0.10f, 0.07f, 0.18f);
+        public DiaryUiColorSpec combatHeaderRuleColor = Color(0.95f, 0.18f, 0.12f, 0.65f);
+        public DiaryUiColorSpec socialFightPageTintColor = Color(0.90f, 0.34f, 0.05f, 0.16f);
+        public DiaryUiColorSpec socialFightHeaderRuleColor = Color(1f, 0.52f, 0.16f, 0.68f);
+        public DiaryUiColorSpec mentalBreakPageTintColor = Color(0.18f, 0.50f, 0.24f, 0.15f);
+        public DiaryUiColorSpec mentalBreakHeaderRuleColor = Color(0.42f, 0.95f, 0.46f, 0.60f);
         public DiaryUiColorSpec accentHighlightColor = Color(1f, 1f, 1f, 0.10f);
         public DiaryUiColorSpec titleTextColor = Color(0.88f, 0.86f, 0.79f, 1f);
         public DiaryUiColorSpec pendingTitlePrefixColor = Color(0.86f, 0.86f, 0.86f, 0.95f);
@@ -185,6 +197,10 @@ namespace PawnDiary
         public DiaryUiColorSpec linkedEntryHoverColor = Color(0.25f, 0.30f, 0.38f, 0.90f);
         public DiaryUiColorSpec defaultCueColor = Preset("name");
         public DiaryUiColorSpec quietCueColor = Color(0.74f, 0.74f, 0.70f, 1f);
+        public DiaryUiColorSpec pawnNameSlaveColor = Color(0.96f, 0.72f, 0.26f, 1f);
+        public DiaryUiColorSpec pawnNamePrisonerColor = Color(0.95f, 0.48f, 0.20f, 1f);
+        public DiaryUiColorSpec pawnNameEnemyColor = Preset("hostile");
+        public DiaryUiColorSpec pawnNameNeutralColor = Color(0.55f, 0.72f, 1f, 1f);
         public List<DiaryUiColorSpec> entryAccentPalette = new List<DiaryUiColorSpec>
         {
             Color(0.95f, 0.58f, 0.32f, 1f),
@@ -215,6 +231,12 @@ namespace PawnDiary
         public Color SpeechBlockBgColor => speechBlockBgColor.ToColor(new Color(0.10f, 0.14f, 0.16f, 0.55f));
         public Color PageTintColor => pageTintColor.ToColor(new Color(0.91f, 0.83f, 0.66f, 0.07f));
         public Color HeaderRuleColor => headerRuleColor.ToColor(new Color(0.62f, 0.58f, 0.50f, 0.35f));
+        public Color CombatPageTintColor => combatPageTintColor.ToColor(new Color(0.70f, 0.10f, 0.07f, 0.18f));
+        public Color CombatHeaderRuleColor => combatHeaderRuleColor.ToColor(new Color(0.95f, 0.18f, 0.12f, 0.65f));
+        public Color SocialFightPageTintColor => socialFightPageTintColor.ToColor(new Color(0.90f, 0.34f, 0.05f, 0.16f));
+        public Color SocialFightHeaderRuleColor => socialFightHeaderRuleColor.ToColor(new Color(1f, 0.52f, 0.16f, 0.68f));
+        public Color MentalBreakPageTintColor => mentalBreakPageTintColor.ToColor(new Color(0.18f, 0.50f, 0.24f, 0.15f));
+        public Color MentalBreakHeaderRuleColor => mentalBreakHeaderRuleColor.ToColor(new Color(0.42f, 0.95f, 0.46f, 0.60f));
         public Color AccentHighlightColor => accentHighlightColor.ToColor(new Color(1f, 1f, 1f, 0.10f));
         public Color TitleTextColor => titleTextColor.ToColor(new Color(0.88f, 0.86f, 0.79f));
         public Color PendingTitlePrefixColor => pendingTitlePrefixColor.ToColor(new Color(0.86f, 0.86f, 0.86f, 0.95f));
@@ -232,6 +254,10 @@ namespace PawnDiary
         public Color LinkedEntryHoverColor => linkedEntryHoverColor.ToColor(new Color(0.25f, 0.30f, 0.38f, 0.90f));
         public Color DefaultCueColor => defaultCueColor.ToColor(ColoredText.NameColor);
         public Color QuietCueColor => quietCueColor.ToColor(new Color(0.74f, 0.74f, 0.70f));
+        public Color PawnNameSlaveColor => pawnNameSlaveColor.ToColor(new Color(0.96f, 0.72f, 0.26f));
+        public Color PawnNamePrisonerColor => pawnNamePrisonerColor.ToColor(new Color(0.95f, 0.48f, 0.20f));
+        public Color PawnNameEnemyColor => pawnNameEnemyColor.ToColor(ColoredText.FactionColor_Hostile);
+        public Color PawnNameNeutralColor => pawnNameNeutralColor.ToColor(new Color(0.55f, 0.72f, 1f));
 
         public Color ColorForCue(string cue, bool important)
         {
@@ -249,6 +275,36 @@ namespace PawnDiary
             }
 
             return important ? DefaultCueColor : QuietCueColor;
+        }
+
+        public Color PageTintForCue(string cue)
+        {
+            if (CueEquals(cue, DiaryEvent.CombatColorCue))
+            {
+                return CombatPageTintColor;
+            }
+
+            if (CueEquals(cue, DiaryEvent.SocialFightColorCue))
+            {
+                return SocialFightPageTintColor;
+            }
+
+            return CueEquals(cue, DiaryEvent.MentalBreakColorCue) ? MentalBreakPageTintColor : PageTintColor;
+        }
+
+        public Color HeaderRuleForCue(string cue)
+        {
+            if (CueEquals(cue, DiaryEvent.CombatColorCue))
+            {
+                return CombatHeaderRuleColor;
+            }
+
+            if (CueEquals(cue, DiaryEvent.SocialFightColorCue))
+            {
+                return SocialFightHeaderRuleColor;
+            }
+
+            return CueEquals(cue, DiaryEvent.MentalBreakColorCue) ? MentalBreakHeaderRuleColor : HeaderRuleColor;
         }
 
         public Color PaletteColor(int index, Color fallback)
@@ -274,6 +330,11 @@ namespace PawnDiary
         private static DiaryUiCueColor Cue(string cue, DiaryUiColorSpec color)
         {
             return new DiaryUiCueColor { cue = cue, color = color };
+        }
+
+        private static bool CueEquals(string left, string right)
+        {
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
         }
     }
 

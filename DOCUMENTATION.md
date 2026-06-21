@@ -226,7 +226,13 @@ model id, linked POV previews, and title-pending animation.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
-owns display-only decorations; generated text itself is not mutated on save.
+owns display-only decorations; intoxication/anesthesia speech uses the strongest staggered word-size
+setting so it is visibly impaired, extreme-dark speech dims selected words instead of using the
+strange-chat Zalgo effect, combat/social-fight color cues add stronger hostile/conflict page washes
+and header rules, mental-break pages use stronger fractured spacing with their own wash, and generated
+text itself is not mutated on save. The Diary tab also highlights live humanlike pawn names mentioned
+in rendered prose: colonists use their favorite color when available, slaves/prisoners/enemies/neutral
+pawns use XML-backed status colors, and ambiguous or uncolored matches fall back to bold-only text.
 
 ---
 

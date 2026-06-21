@@ -63,6 +63,12 @@
     <speechBlockOpenMarker>[[speech]]</speechBlockOpenMarker>
     <speechBlockCloseMarker>[[/speech]]</speechBlockCloseMarker>
     <atmosphereInset>18</atmosphereInset>
+    <fracturedPrimaryInsetMultiplier>1.75</fracturedPrimaryInsetMultiplier>
+    <fracturedSecondaryInsetMultiplier>0.72</fracturedSecondaryInsetMultiplier>
+    <fracturedRightInsetMultiplier>0.35</fracturedRightInsetMultiplier>
+    <fracturedLongTopGap>3</fracturedLongTopGap>
+    <fracturedShortTopGap>7</fracturedShortTopGap>
+    <fracturedBottomGap>3</fracturedBottomGap>
     <memorialInset>34</memorialInset>
     <writingDotSize>4</writingDotSize>
     <writingDotGap>5</writingDotGap>
@@ -80,6 +86,12 @@
     <speechBlockAccentAlpha>0.72</speechBlockAccentAlpha>
     <pageTintColor><r>0.91</r><g>0.83</g><b>0.66</b><a>0.07</a></pageTintColor>
     <headerRuleColor><r>0.62</r><g>0.58</g><b>0.50</b><a>0.35</a></headerRuleColor>
+    <combatPageTintColor><r>0.70</r><g>0.10</g><b>0.07</b><a>0.18</a></combatPageTintColor>
+    <combatHeaderRuleColor><r>0.95</r><g>0.18</g><b>0.12</b><a>0.65</a></combatHeaderRuleColor>
+    <socialFightPageTintColor><r>0.90</r><g>0.34</g><b>0.05</b><a>0.16</a></socialFightPageTintColor>
+    <socialFightHeaderRuleColor><r>1</r><g>0.52</g><b>0.16</b><a>0.68</a></socialFightHeaderRuleColor>
+    <mentalBreakPageTintColor><r>0.18</r><g>0.50</g><b>0.24</b><a>0.15</a></mentalBreakPageTintColor>
+    <mentalBreakHeaderRuleColor><r>0.42</r><g>0.95</g><b>0.46</b><a>0.60</a></mentalBreakHeaderRuleColor>
     <accentHighlightColor><r>1</r><g>1</g><b>1</b><a>0.10</a></accentHighlightColor>
     <titleTextColor><r>0.88</r><g>0.86</g><b>0.79</b><a>1</a></titleTextColor>
     <pendingTitlePrefixColor><r>0.86</r><g>0.86</g><b>0.86</b><a>0.95</a></pendingTitlePrefixColor>
@@ -97,6 +109,10 @@
     <linkedEntryHoverColor><r>0.25</r><g>0.30</g><b>0.38</b><a>0.90</a></linkedEntryHoverColor>
     <defaultCueColor><preset>name</preset></defaultCueColor>
     <quietCueColor><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></quietCueColor>
+    <pawnNameSlaveColor><r>0.96</r><g>0.72</g><b>0.26</b><a>1</a></pawnNameSlaveColor>
+    <pawnNamePrisonerColor><r>0.95</r><g>0.48</g><b>0.20</b><a>1</a></pawnNamePrisonerColor>
+    <pawnNameEnemyColor><preset>hostile</preset></pawnNameEnemyColor>
+    <pawnNameNeutralColor><r>0.55</r><g>0.72</g><b>1</b><a>1</a></pawnNameNeutralColor>
 
     <!-- Legacy linked-role accent palette. Diary card colors normally use cueColors below. -->
     <entryAccentPalette>

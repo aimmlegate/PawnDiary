@@ -27,7 +27,8 @@ namespace PawnDiary
             string atmosphereCue,
             bool allowDirectSpeechBlocks,
             DiaryTextDecorationContext decorationContext,
-            int seed)
+            int seed,
+            IEnumerable<DiaryNameHighlight> nameHighlights)
         {
             GameFont oldFont = Text.Font;
             Color oldColor = GUI.color;
@@ -51,7 +52,7 @@ namespace PawnDiary
                 TextAnchor oldAlignment = style.alignment;
                 style.fontStyle = block.fontStyle;
                 style.alignment = block.alignment;
-                string rich = RoleplayRichText(block, dialogueColor, decorationContext, seed, style.fontSize);
+                string rich = RoleplayRichText(block, dialogueColor, decorationContext, seed, style.fontSize, nameHighlights);
                 float lineWidth = Mathf.Max(80f, rect.width - block.leftInset - block.rightInset);
                 float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
                 float blockHeight = textHeight;
@@ -120,7 +121,8 @@ namespace PawnDiary
             string atmosphereCue,
             bool allowDirectSpeechBlocks,
             DiaryTextDecorationContext decorationContext,
-            int seed)
+            int seed,
+            IEnumerable<DiaryNameHighlight> nameHighlights)
         {
             GUIStyle style = BodyStyle();
             float height = 0f;
@@ -137,7 +139,7 @@ namespace PawnDiary
                 TextAnchor oldAlignment = style.alignment;
                 style.fontStyle = block.fontStyle;
                 style.alignment = block.alignment;
-                string rich = RoleplayRichText(block, FallbackDialogueColor, decorationContext, seed, style.fontSize);
+                string rich = RoleplayRichText(block, FallbackDialogueColor, decorationContext, seed, style.fontSize, nameHighlights);
                 float lineWidth = Mathf.Max(80f, width - block.leftInset - block.rightInset);
                 float textHeight = style.CalcHeight(new GUIContent(rich), lineWidth);
                 if (block.directSpeech)
@@ -158,12 +160,13 @@ namespace PawnDiary
             Color dialogueColor,
             DiaryTextDecorationContext decorationContext,
             int seed,
-            int baseFontSize)
+            int baseFontSize,
+            IEnumerable<DiaryNameHighlight> nameHighlights)
         {
             DiaryTextDecorationPlan decorations = RoleplayDecorationPlan(decorationContext, block != null && block.directSpeech);
             string rich = block != null && block.directSpeech
-                ? DiaryTextFormat.ToSpeechBlockRichText(block.line, dialogueColor, decorations, seed ^ block.seedSalt, baseFontSize)
-                : DiaryTextFormat.ToRichText(block?.line ?? string.Empty, dialogueColor, decorations, seed ^ block.seedSalt, baseFontSize);
+                ? DiaryTextFormat.ToSpeechBlockRichText(block.line, dialogueColor, decorations, seed ^ block.seedSalt, baseFontSize, nameHighlights)
+                : DiaryTextFormat.ToRichText(block?.line ?? string.Empty, dialogueColor, decorations, seed ^ block.seedSalt, baseFontSize, nameHighlights);
 
             return rich;
         }
@@ -250,9 +253,13 @@ namespace PawnDiary
                 List<string> fragments = SentenceFragments(line.line);
                 for (int i = 0; i < fragments.Count; i++)
                 {
-                    float indent = index % 3 == 1 ? AtmosphereInset : (index % 3 == 2 ? AtmosphereInset * 0.45f : 0f);
-                    float topGap = index == 0 ? 0f : (fragments[i].Length <= 28 ? 3f : 1f);
-                    yield return MakeRoleplayBlock(fragments[i], indent, 0f, topGap, 1f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                    float indent = index % 3 == 1
+                        ? AtmosphereInset * UiStyle.fracturedPrimaryInsetMultiplier
+                        : (index % 3 == 2 ? AtmosphereInset * UiStyle.fracturedSecondaryInsetMultiplier : 0f);
+                    float rightInset = index % 2 == 0 ? AtmosphereInset * UiStyle.fracturedRightInsetMultiplier : 0f;
+                    float topGap = index == 0 ? 0f : (fragments[i].Length <= 28 ? UiStyle.fracturedShortTopGap : UiStyle.fracturedLongTopGap);
+                    FontStyle fontStyle = index % 2 == 1 ? FontStyle.Italic : FontStyle.Normal;
+                    yield return MakeRoleplayBlock(fragments[i], indent, rightInset, topGap, UiStyle.fracturedBottomGap, fontStyle, TextAnchor.UpperLeft, index++);
                 }
             }
         }

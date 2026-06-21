@@ -10,6 +10,17 @@ not need separate entries unless they change behavior or document an important r
   for plain prose, markdown, speech blocks, combat pages, social fights, mental-break fractured
   pages, extreme darkness, linked cards, writing/title animations, death/memorial pages, staggered
   speech, and strange-chat distortion without saving mock events.
+- **Staggered speech made stronger.** Intoxication/anesthesia speech decoration now uses the maximum
+  staggered word-size intensity so the effect is visible in the Diary tab.
+- **Conflict diary cards now read as conflict.** Combat-cued entries use a stronger hostile page
+  wash/header rule, social-fight entries use a distinct orange conflict wash, and simulated preview
+  chips show the selected sample type.
+- **Mental-break diary cards look more broken.** Fractured pages now use larger staggered offsets,
+  alternating italics, stronger spacing, and a mental-break page wash/header rule.
+- **Dark and strange speech split apart.** Extreme-dark direct speech now uses a dimmed-word
+  treatment, while strange-chat speech keeps the Zalgo glyph distortion.
+- **Pawn names now stand out in diary prose.** Rendered diary text highlights live humanlike pawn
+  names with status-aware colors, falling back to bold when a name cannot be colored safely.
 - **Event Catalog completed for current live sources.** The capture decision layer now covers
   Thought, Inspiration, MoodEvent, MentalState, Tale, Hediff, Interaction, Romance, Arrival, Death
   fallback, Work, ThoughtProgression, and DayReflection. Remaining direct event writers are route

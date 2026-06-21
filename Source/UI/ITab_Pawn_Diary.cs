@@ -94,7 +94,6 @@ namespace PawnDiary
         private static Color NarrativeColor => UiStyle.NarrativeTextColor;
         private static Color FallbackDialogueColor => UiStyle.FallbackDialogueColor;
         private static Color SpeechBlockBgColor => UiStyle.SpeechBlockBgColor;
-        private static Color PageTintColor => UiStyle.PageTintColor;
         private static Color HeaderRuleColor => UiStyle.HeaderRuleColor;
         private static Color AccentHighlightColor => UiStyle.AccentHighlightColor;
         private static Color LinkedEntryBgColor => UiStyle.LinkedEntryBgColor;
@@ -313,6 +312,7 @@ namespace PawnDiary
             // pending-scroll jump, and the draw loop. Wrapping height is otherwise recomputed two or
             // three times per entry every frame.
             float animationDelta = ExpansionAnimationDelta();
+            List<DiaryNameHighlight> nameHighlights = NameHighlightsFor(pawn);
             EnsureEntryMeasurementBufferCapacity(ordered.Count);
             string[] entryKeys = entryKeysBuffer;
             bool[] expandedTargets = expandedTargetsBuffer;
@@ -329,7 +329,7 @@ namespace PawnDiary
                 // Fully collapsed cards only need header height, so avoid expensive wrapped-text
                 // measurement until they are expanding or open.
                 float fullHeight = (expanded || expansionBlend > 0f)
-                    ? EntryHeight(entry, viewWidth, showLlmDebugInfo)
+                    ? EntryHeight(entry, viewWidth, showLlmDebugInfo, nameHighlights)
                     : CollapsedEntryHeight;
 
                 entryKeys[i] = entryKey;
@@ -388,7 +388,7 @@ namespace PawnDiary
                     localEntryRect.y + EntryTitleHeight,
                     Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 4f),
                     Mathf.Max(0f, localEntryRect.height - EntryTitleHeight - 2f));
-                Widgets.DrawBoxSolid(pageRect, PageTintColor);
+                Widgets.DrawBoxSolid(pageRect, EntryPageTintColor(entry));
                 Widgets.DrawHighlightIfMouseover(visibleEntryRect);
 
                 Rect titleRect = new Rect(localEntryRect.x, localEntryRect.y, localEntryRect.width, EntryTitleHeight);
@@ -405,7 +405,7 @@ namespace PawnDiary
                         localEntryRect.y + EntryTitleHeight,
                         Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 20f),
                         1f),
-                    HeaderRuleColor);
+                    EntryHeaderRuleColor(entry));
 
                 Rect groupRect = GroupLabelRect(titleRect, entry.GroupLabel);
                 if (groupRect.width > 0f)
@@ -446,7 +446,8 @@ namespace PawnDiary
                     atmosphereCue,
                     allowDirectSpeechBlocks,
                     decorationContext,
-                    roleplaySeed);
+                    roleplaySeed,
+                    nameHighlights);
                 float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
 
                 if (linkedBefore)
@@ -471,7 +472,8 @@ namespace PawnDiary
                         atmosphereCue,
                         allowDirectSpeechBlocks,
                         decorationContext,
-                        roleplaySeed);
+                        roleplaySeed,
+                        nameHighlights);
                 }
                 float afterTextY = textRect.yMax;
 
