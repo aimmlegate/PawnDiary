@@ -2,6 +2,22 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (3)
+
+- **Added `GeneratePair` to `CaptureDecision`; migrated MentalState to Event Catalog:** the first
+  migrated source whose Decider can return a pair outcome. MentalState covers two paths in one
+  source: a social fight (`MentalStateDef.defName == "SocialFighting"` between two eligible pawns)
+  becomes a pairwise DiaryEvent with both POV entries, and every other accepted break (berserk,
+  sad wandering, insult spree, …) becomes a solo event from the breaking pawn's POV. The pair-vs
+  -solo branch is now pure (in `MentalStateEventData.IsSocialFightPair`/`Decide`), as is the
+  game-context string assembly (`BuildPairGameContext` for fights, `BuildSoloGameContext` for
+  breaks with an optional `target=` and `reason=` field). `RecordMentalState` keeps the per-path
+  dedup (canonical pair-key for the mirrored social-fight call, pawn+defName for breaks) and the
+  impure text/Translate calls. `ReasonSuffix` was deleted — its job moved into the pure builders.
+  Future pair sources (Romance, Raid pairs) reuse `GeneratePair`. No user-visible behavior change;
+  same filters, same dedup keys, same game-context format. Test count: 71 → 92 assertions.
+  Restaged DLL.
+
 ## 2026-06-21 (2)
 
 - **Migrated MoodEvent to Event Catalog:** the second existing source moved onto the registry

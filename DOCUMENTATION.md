@@ -143,15 +143,18 @@ Anatomy:
   magnitude, duration, ...). Plus a pure `static Decide(data, ctx) → CaptureDecision`.
 - `CaptureContext` — pre-computed impure facts (eligibility, user/signal/ambient enable flags, game
   tick). Filled by the caller so the reducer never touches DefDatabase/Settings/tick manager.
-- `CaptureDecision` — `Drop` / `GenerateSolo` / `RouteAmbient` (pair events will add `GeneratePair`
-  when the first pair source migrates).
+- `CaptureDecision` — `Drop` / `GenerateSolo` / `GeneratePair` / `RouteAmbient`. MentalState is the
+  first migrated source using `GeneratePair` (social fights); future pair sources (romance, raid
+  pairs) reuse it.
 - `DiaryEventSpec` — abstract reducer wrapper, one subclass per source, registered in
   `DiaryEventCatalog` so callers dispatch with a single `catalog.Get(type).Decide(...)`.
 
 Migrated in the current slice: **Thought** (richest source — token filter, general/eating magnitude
-threshold, bypass tokens, ambient routing) and **Inspiration** (trivial source — eligibility + user
-toggle only). The other sources in §4 still use their pre-Catalog `RecordX` code; they migrate
-source-by-source in later slices.
+threshold, bypass tokens, ambient routing), **Inspiration** (trivial source — eligibility + user
+toggle only), **MoodEvent** (first multi-pawn fan-out — one GameCondition → one solo entry per
+affected colonist, fan-out loop stays in `RecordMoodEvent`), and **MentalState** (first pair source
+— social fights emit `GeneratePair`, every other break emits `GenerateSolo`). The other sources in
+§4 still use their pre-Catalog `RecordX` code; they migrate source-by-source in later slices.
 
 Adding a new source (the 4-step recipe):
 
@@ -199,7 +202,8 @@ removed from the sentinel list (`TestMigrationSentinel`).
    list, nothing to do.
 8. **Pair sources only.** When migrating the first pair source (mental state social fights, future
    romance/raid), add `GeneratePair` to `CaptureDecision` and extend the sink in
-   `DiaryGameComponent` to dispatch pair drafts. Solo sources stay unchanged.
+   `DiaryGameComponent` to dispatch pair drafts. Solo sources stay unchanged. *(MentalState has
+   already done this step — `GeneratePair` exists; future pair sources just reuse it.)*
 
 What stays in `RecordXxx` (impure, NOT in the pure layer): `IsDiaryEligible(pawn)`, `.LabelCap.
 Resolve()`, `.Translate()`, `Find.TickManager.TicksGame`, `RecentlyRecorded`, `AddSoloEvent`/

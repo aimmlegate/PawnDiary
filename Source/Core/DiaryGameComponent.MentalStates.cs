@@ -1,69 +1,119 @@
-// Mental states — the MentalStateHandler.TryStartMentalState hook's diary flow. Social fights are
-// recorded as a pairwise event from both pawns (the mirrored second call is deduped); every other
-// break is a solo entry from the breaking pawn's POV. The helpers below assemble that break's
-// human-readable fallback text and the "reason=" suffix appended to the game-context string.
+// Mental states — the MentalStateHandler.TryStartMentalState hook's diary flow, now built on the
+// Event Catalog pattern (see Source/Capture/). This is the FIRST migrated source whose Decider can
+// return GeneratePair: a social fight (MentalStateDef "SocialFighting") between two eligible pawns
+// becomes a pairwise DiaryEvent with both POV entries (the mirrored second call from the other
+// participant is deduped), while every other accepted break becomes a solo event from the breaking
+// pawn's POV.
+//
+// This file holds the IMPURE half of the flow: snapshot live Pawn/MentalStateDef facts into
+// MentalStateEventData + CaptureContext, ask DiaryEventCatalog.Get(MentalState) for the decision,
+// then perform the per-decision impure side-effects (pair dedup with canonical pair key, solo
+// dedup with pawn+defName key, build label/text/instruction via RimWorld translation, AddPairwise
+// /AddSoloEvent, queue LLM). The pure pair-vs-solo decision and the pure game-context string
+// assembly live in Source/Capture/Events/MentalStateEventData.cs.
+//
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
-using System.Collections.Generic;
-using System.Text;
+using PawnDiary.Capture;
 using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        // Social fights and mental breaks. Social fights are pairwise (both pawns fight);
-        // everything else is recorded as a solo break from the breaking pawn's point of view.
+        /// <summary>
+        /// Records one started mental state as either a pairwise social-fight event or a solo
+        /// mental-break event. Delegates the "pair vs solo vs drop?" decision to
+        /// MentalStateEventData.Decide (pure) and keeps the impure side-effects here.
+        /// </summary>
         public void RecordMentalState(Pawn pawn, MentalStateDef stateDef, Pawn otherPawn, string reason)
         {
-            if (!CanRecordGameplayEventNow() || !IsDiaryEligible(pawn) || stateDef == null)
+            if (pawn == null || stateDef == null)
             {
                 return;
             }
 
-            if (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.IsMentalStateEnabled(stateDef))
+            // Snapshot live facts the pure Decider needs. OtherPawnId/OtherPawnLabel are set whenever
+            // otherPawn is non-null (the solo break can target any pawn, eligible or not); eligibility
+            // is a separate flag feeding only the pair decision.
+            string pawnId = pawn.GetUniqueLoadID();
+            bool hasOtherPawn = otherPawn != null;
+            string otherPawnId = hasOtherPawn ? otherPawn.GetUniqueLoadID() : null;
+            string otherPawnLabel = hasOtherPawn
+                ? DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap)
+                : null;
+
+            MentalStateEventData data = new MentalStateEventData
+            {
+                PawnId = pawnId,
+                Tick = Find.TickManager.TicksGame,
+                DefName = stateDef.defName,
+                OtherPawnId = otherPawnId,
+                OtherPawnEligible = hasOtherPawn && IsDiaryEligible(otherPawn) && otherPawn != pawn,
+                OtherPawnLabel = otherPawnLabel,
+            };
+
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: IsDiaryEligible(pawn),
+                userEnabled: PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.IsMentalStateEnabled(stateDef),
+                signalEnabled: true,
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.MentalState);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision == CaptureDecision.Drop)
             {
                 return;
             }
 
+            // Impure build: label, instruction, cleaned reason — all need RimWorld translation.
             string label = stateDef.LabelCap.Resolve();
             string instruction = PawnDiaryMod.Settings.InstructionForMentalState(stateDef);
-            bool isSocialFight = string.Equals(stateDef.defName, "SocialFighting", StringComparison.OrdinalIgnoreCase)
-                && IsDiaryEligible(otherPawn) && otherPawn != pawn;
+            string cleanedLabel = DiaryContextBuilder.CleanLine(label);
+            string cleanedReason = DiaryContextBuilder.CleanLine(reason);
 
-            if (isSocialFight)
+            if (decision == CaptureDecision.GeneratePair)
             {
-                // SocialFighting fires once per participant; collapse the mirrored call.
-                if (RecentlyRecorded(recentMentalEvents, "fight|" + PairKey(pawn, otherPawn), DiaryTuning.Current.socialFightDedupTicks))
+                // Pair dedup collapses the mirrored SocialFighting call from the other participant;
+                // PairKey canonicalizes the two ids so both calls hit the same key.
+                string pairDedupKey = "fight|" + PairKey(pawn, otherPawn);
+                if (RecentlyRecorded(recentMentalEvents, pairDedupKey, DiaryTuning.Current.socialFightDedupTicks))
                 {
                     return;
                 }
 
                 string text = "PawnDiary.Event.SocialFight".Translate(pawn.LabelShortCap, otherPawn.LabelShortCap);
-                string gameContext = "mental_state=" + stateDef.defName + "; label=" + DiaryContextBuilder.CleanLine(label) + ReasonSuffix(reason);
+                string gameContext = MentalStateEventData.BuildPairGameContext(
+                    stateDef.defName, cleanedLabel, cleanedReason);
+
                 DiaryEvent fightEvent = AddPairwiseEvent(pawn, otherPawn, stateDef.defName, label,
                     text, text, instruction, gameContext);
                 QueuePairwiseGeneration(fightEvent);
                 return;
             }
 
-            if (RecentlyRecorded(recentMentalEvents, "break|" + pawn.GetUniqueLoadID() + "|" + stateDef.defName, DiaryTuning.Current.mentalBreakDedupTicks))
+            // Solo break: separate dedup window per pawn+defName.
+            string soloDedupKey = "break|" + pawnId + "|" + stateDef.defName;
+            if (RecentlyRecorded(recentMentalEvents, soloDedupKey, DiaryTuning.Current.mentalBreakDedupTicks))
             {
                 return;
             }
 
             string breakText = BuildMentalBreakText(pawn, label, otherPawn, reason);
-            string breakContext = "mental_state=" + stateDef.defName + "; label=" + DiaryContextBuilder.CleanLine(label)
-                + (otherPawn != null ? "; target=" + DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap) : string.Empty)
-                + ReasonSuffix(reason);
-            DiaryEvent breakEvent = AddSoloEvent(pawn, otherPawn, stateDef.defName, label, breakText, instruction, breakContext);
+            string breakContext = MentalStateEventData.BuildSoloGameContext(
+                stateDef.defName, cleanedLabel, otherPawnLabel, cleanedReason);
+
+            DiaryEvent breakEvent = AddSoloEvent(pawn, otherPawn, stateDef.defName, label,
+                breakText, instruction, breakContext);
             QueueLlmRewrite(breakEvent, DiaryEvent.InitiatorRole);
         }
 
         /// <summary>
-        /// Assembles a human-readable fallback description for a mental break, including target and reason if available.
+        /// Assembles a human-readable fallback description for a mental break, including target and
+        /// reason if available. Stays impure (Translate calls).
         /// </summary>
         private static string BuildMentalBreakText(Pawn pawn, string label, Pawn otherPawn, string reason)
         {
@@ -80,15 +130,6 @@ namespace PawnDiary
             }
 
             return text + ".";
-        }
-
-        /// <summary>
-        /// Returns a cleaned "reason=…" suffix for appending to gameContext strings, or empty if no reason.
-        /// </summary>
-        private static string ReasonSuffix(string reason)
-        {
-            string cleanReason = DiaryContextBuilder.CleanLine(reason);
-            return string.IsNullOrWhiteSpace(cleanReason) ? string.Empty : "; reason=" + cleanReason;
         }
     }
 }
