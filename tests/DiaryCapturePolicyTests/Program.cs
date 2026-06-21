@@ -30,6 +30,8 @@ namespace DiaryCapturePolicyTests
             TestMentalStateDecide();
             TestMentalStateBuildPairGameContextFormat();
             TestMentalStateBuildSoloGameContextFormat();
+            TestTaleDecide();
+            TestTaleBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -362,6 +364,73 @@ namespace DiaryCapturePolicyTests
                 bareContext);
         }
 
+        // ── Tale (partial migration — drop-gate only) ──
+
+        private static void TestTaleDecide()
+        {
+            // Null guards.
+            AssertEqual("tale null data drops", CaptureDecision.Drop,
+                TaleEventData.Decide(null, Ctx()));
+            AssertEqual("tale null ctx drops", CaptureDecision.Drop,
+                TaleEventData.Decide(Tale("KilledMan"), null));
+
+            // Covered-elsewhere: defName in TaleEventData.CoveredElsewhere set.
+            AssertEqual("tale covered elsewhere drops", CaptureDecision.Drop,
+                TaleEventData.Decide(Tale("SocialFight", coveredElsewhere: true), Ctx()));
+            AssertEqual("tale covered elsewhere case-insensitive", CaptureDecision.Drop,
+                TaleEventData.Decide(Tale("mentalstateberserk", coveredElsewhere: true), Ctx()));
+
+            // GameCondition-duplicate: GameCondition domain (MoodEvent) owns it.
+            AssertEqual("tale game-condition duplicate drops", CaptureDecision.Drop,
+                TaleEventData.Decide(Tale("Eclipse", gameConditionDup: true), Ctx()));
+
+            // Signal / user gates.
+            AssertEqual("tale signal disabled drops", CaptureDecision.Drop,
+                TaleEventData.Decide(Tale("KilledMan"), Ctx(signal: false)));
+            AssertEqual("tale user disabled drops", CaptureDecision.Drop,
+                TaleEventData.Decide(Tale("KilledMan"), Ctx(user: false)));
+
+            // Eligibility: neither participant eligible → Drop.
+            AssertEqual("tale no eligible pawns drops", CaptureDecision.Drop,
+                TaleEventData.Decide(
+                    new TaleEventData { DefName = "KilledMan" },  // FirstEligible/SecondEligible default false
+                    Ctx()));
+
+            // Continuation: at least one eligible + none of the gates fire → GenerateSolo
+            // (RecordTale re-runs the shape dispatch; see file header TODO).
+            AssertEqual("tale first-only eligible continues", CaptureDecision.GenerateSolo,
+                TaleEventData.Decide(Tale("KilledMan", firstEligible: true), Ctx()));
+            AssertEqual("tale second-only eligible continues", CaptureDecision.GenerateSolo,
+                TaleEventData.Decide(Tale("Wounded", secondEligible: true), Ctx()));
+            AssertEqual("tale both eligible continues", CaptureDecision.GenerateSolo,
+                TaleEventData.Decide(Tale("DidResearch", firstEligible: true, secondEligible: true), Ctx()));
+        }
+
+        private static void TestTaleBuildGameContextFormat()
+        {
+            // Base format: 3 mandatory fields, no attachedDef.
+            string baseCtx = TaleEventData.BuildGameContext(
+                "KilledMan", "killed a man", "Tale_DoublePawn", null, null);
+            AssertEqual("tale base context",
+                "tale=KilledMan; label=killed a man; taleClass=Tale_DoublePawn",
+                baseCtx);
+
+            // With attached def (research project, skill, etc.) — both fields present.
+            string withDef = TaleEventData.BuildGameContext(
+                "DidResearch", "finished research", "Tale_SinglePawnAndDef",
+                "ResearchProject_Electricity", "Electricity");
+            AssertEqual("tale context with attached def",
+                "tale=DidResearch; label=finished research; taleClass=Tale_SinglePawnAndDef; attachedDef=ResearchProject_Electricity; attachedLabel=Electricity",
+                withDef);
+
+            // attachedDef name present but label empty → only attachedDef field emitted.
+            string defNoLabel = TaleEventData.BuildGameContext(
+                "CraftedArt", "crafted art", "Tale_SinglePawnAndDef", "Sculpture", "");
+            AssertEqual("tale context attached def no label",
+                "tale=CraftedArt; label=crafted art; taleClass=Tale_SinglePawnAndDef; attachedDef=Sculpture",
+                defNoLabel);
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -424,8 +493,7 @@ namespace DiaryCapturePolicyTests
         {
             "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
             "AnomalyEvent", "IncidentEvent", "Health", "Romance",
-            "Tale", "Crafted", "Hediff",
-            "Interaction", "Arrival", "Death",
+            "Hediff", "Interaction", "Arrival", "Death",
         };
 
         private static void TestMigrationSentinel()
@@ -507,6 +575,27 @@ namespace DiaryCapturePolicyTests
                 OtherPawnId = otherId,
                 OtherPawnEligible = otherEligible,
                 OtherPawnLabel = otherId != null ? "Other" : null,
+            };
+        }
+
+        private static TaleEventData Tale(
+            string defName,
+            bool firstEligible = true,
+            bool secondEligible = false,
+            bool coveredElsewhere = false,
+            bool gameConditionDup = false)
+        {
+            return new TaleEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                FirstPawnId = "P1",
+                SecondPawnId = secondEligible ? "P2" : null,
+                FirstEligible = firstEligible,
+                SecondEligible = secondEligible,
+                IsCoveredElsewhere = coveredElsewhere,
+                IsGameConditionDuplicate = gameConditionDup,
             };
         }
 

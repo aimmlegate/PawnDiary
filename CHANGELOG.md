@@ -2,6 +2,20 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5)
+
+- **Partial Tale migration to Event Catalog:** the drop-gate for TaleRecorder events (covered-
+  elsewhere / GameCondition-duplicate / disabled / no-eligible-pawn) moves into pure
+  `TaleEventData.Decide`, and the base `tale=<defName>; label=…; taleClass=…` game-context format
+  moves into `TaleEventData.BuildGameContext` (both unit-tested). The complex shape-determination
+  (batching, death-description, pair-vs-solo dispatch) stays in `RecordTale` because the current
+  `CaptureDecision` contract (Drop/GenerateSolo/GeneratePair/RouteAmbient) does not encode those
+  outcomes cleanly; that dispatch is marked with a TODO for a future slice that extends
+  `CaptureDecision` (e.g. adds `GenerateBatched`, models death-description as a payload flag).
+  `TaleDefsCoveredElsewhere` becomes the public `TaleEventData.CoveredElsewhere` set so tests can
+  lock it. No user-visible behavior change; same skip-list, same game-context format, same dispatch.
+  Test count: 92 → 107 assertions. Restaged DLL.
+
 ## 2026-06-21 (4)
 
 - **Removed crafted-quality and relic-install diary events:** vanilla RimWorld already records
