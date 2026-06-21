@@ -115,6 +115,13 @@ namespace PawnDiary
                 "PawnDiary.Settings.InjectGeneratedSpeechToPlayLog".Translate(),
                 ref Settings.injectGeneratedSpeechToPlayLog,
                 "PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip".Translate());
+            if (Prefs.DevMode)
+            {
+                listing.CheckboxLabeled(
+                    "PawnDiary.Settings.PromptTestMode".Translate(),
+                    ref Settings.promptTestMode,
+                    "PawnDiary.Settings.PromptTestModeTip".Translate());
+            }
             listing.Label("PawnDiary.Settings.Temperature".Translate(Settings.temperature.ToString("0.00")));
             Settings.temperature = listing.Slider(Settings.temperature, 0f, 2f);
             DrawHint(listing, "PawnDiary.Settings.TemperatureHelp".Translate());
@@ -1005,6 +1012,10 @@ namespace PawnDiary
 
             // Generation controls, four system-prompt editor cards, and persona-preset studio.
             height += 400f;
+            if (Prefs.DevMode)
+            {
+                height += 30f;
+            }
             height += 1180f;
             height += 590f + PersonaTagPickerHeight();
 

@@ -20,6 +20,7 @@ namespace PawnDiary
         // cheap when the title toggle is on. Reused from the same field on the main-entry
         // request — we do NOT add a player setting for it.
         private const int TitleMaxTokens = 40;
+        private const string PromptTestEndpointLabel = "prompt-test-mode";
         // Pawns below 11% Consciousness should not write first-person entries. Events still record,
         // and neutral death/arrival descriptions still generate, but non-neutral LLM work waits
         // until the pawn is conscious enough again.
@@ -459,11 +460,20 @@ namespace PawnDiary
             }
 
             string rawText = promptPlan.userPrompt ?? string.Empty;
-            diaryEvent.SetPrompt(povRole, rawText);
+            string capturedPrompt = DiaryPromptCapture.Format(promptPlan.systemPrompt, rawText);
+            diaryEvent.SetPrompt(povRole, PromptTestModeEnabled() ? capturedPrompt : rawText);
 
             if (PawnDiaryMod.Settings == null)
             {
                 diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoLlmSettings".Translate());
+                return;
+            }
+
+            if (PromptTestModeEnabled())
+            {
+                diaryEvent.SetLlmMeta(povRole, PromptTestEndpointLabel, string.Empty);
+                diaryEvent.MarkPromptOnly(povRole, "PawnDiary.Error.PromptTestModeCaptured".Translate());
+                LogApiDebug("Captured prompt without generation event=" + diaryEvent.eventId + " role=" + povRole);
                 return;
             }
 
@@ -525,6 +535,11 @@ namespace PawnDiary
                 temperature = PawnDiaryMod.Settings.temperature,
                 responseRules = responseRules
             });
+        }
+
+        private static bool PromptTestModeEnabled()
+        {
+            return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.promptTestMode;
         }
 
         /// <summary>
@@ -850,6 +865,11 @@ namespace PawnDiary
 
             PawnDiarySettings settings = PawnDiaryMod.Settings;
             if (settings == null)
+            {
+                return;
+            }
+
+            if (PromptTestModeEnabled())
             {
                 return;
             }

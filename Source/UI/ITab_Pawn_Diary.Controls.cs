@@ -371,6 +371,18 @@ namespace PawnDiary
 
 
         /// <summary>
+        /// Dev-mode gate for prompt-only cards captured by the no-generation prompt test setting.
+        /// </summary>
+        private static bool ShouldShowPromptOnlyEntries()
+        {
+
+            return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.promptTestMode;
+
+        }
+
+
+
+        /// <summary>
         /// Dev-mode preference gate for revealing entries still in the LLM generation pipeline
         /// (in-progress or stuck), without the full prompt/status diagnostic block.
         /// </summary>

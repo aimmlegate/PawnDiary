@@ -61,7 +61,7 @@ namespace PawnDiary
         public readonly string Date;        // Human-readable date string
         public readonly string Text;        // Raw game-authored event text
         public readonly string GeneratedText; // LLM-generated narrative text
-        public readonly string LlmStatus;   // LLM generation status ("pending", "failed", or empty)
+        public readonly string LlmStatus;   // LLM generation status ("pending", "failed", "prompt_only", etc.)
         public readonly string LlmError;    // Error message if LLM generation failed
         public readonly string LlmEndpoint; // API endpoint used for the LLM call
         public readonly string LlmModel;    // LLM model identifier
@@ -200,6 +200,11 @@ namespace PawnDiary
                 if (LlmStatus == DiaryEvent.SkippedStatus)
                 {
                     return "PawnDiary.Status.Skipped".Translate();
+                }
+
+                if (LlmStatus == DiaryEvent.PromptOnlyStatus)
+                {
+                    return "PawnDiary.Status.PromptOnly".Translate();
                 }
 
                 return string.Empty;

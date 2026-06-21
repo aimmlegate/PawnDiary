@@ -69,7 +69,9 @@
   <PawnDiary.Status.WritingEllipsis>writing...</PawnDiary.Status.WritingEllipsis>
   <PawnDiary.Status.GenerationFailed>writing failed</PawnDiary.Status.GenerationFailed>
   <PawnDiary.Status.Skipped>writing skipped</PawnDiary.Status.Skipped>
+  <PawnDiary.Status.PromptOnly>prompt captured</PawnDiary.Status.PromptOnly>
   <PawnDiary.Error.SkippedIncapacitated>Skipped because the pawn was below {0}% Consciousness when generation would have started.</PawnDiary.Error.SkippedIncapacitated>
+  <PawnDiary.Error.PromptTestModeCaptured>Prompt test mode captured this prompt without sending it to an LLM.</PawnDiary.Error.PromptTestModeCaptured>
 
   <!-- ===== Mod settings window ===== -->
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
@@ -121,6 +123,8 @@
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live health cue. XML only controls which hediffs match and how often they appear; the prompt text stays compact and uses the game's hediff label, urgency, body part, and strongest impact cues.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Add generated speech to the Social log</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>When enabled, a completed initiator diary entry with a valid speech block adds one new Social-log line containing that generated spoken text. This can let mods that watch new interaction log entries react after the LLM result is ready.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
+  <PawnDiary.Settings.PromptTestMode>Prompt test mode: capture prompts only</PawnDiary.Settings.PromptTestMode>
+  <PawnDiary.Settings.PromptTestModeTip>Dev-only: real gameplay events assemble and save their system and user prompts, but no diary or title request is sent to an LLM. Prompt-only cards appear in the Diary tab while dev mode is on.</PawnDiary.Settings.PromptTestModeTip>
   <PawnDiary.Settings.Temperature>LLM temperature: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Controls model randomness for diary and title requests. Lower values are steadier and more literal; higher values are more varied and atmospheric but can drift from supplied facts.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Request timeout: {0}s</PawnDiary.Settings.TimeoutSeconds>

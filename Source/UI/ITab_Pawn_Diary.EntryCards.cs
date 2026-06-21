@@ -24,6 +24,11 @@ namespace PawnDiary
                 return string.Empty;
             }
 
+            if (IsPromptOnly(entry) && !string.IsNullOrWhiteSpace(entry.LlmPrompt))
+            {
+                return entry.LlmPrompt;
+            }
+
             // Generating entries (revealed by the debug toggle OR the dev-only "show generating"
             // toggle) use DisplayText so an in-progress card shows the "writing..." placeholder /
             // raw text instead of rendering blank. Both the measure and draw passes call this, so
@@ -42,6 +47,15 @@ namespace PawnDiary
         private static bool IsGenerating(DiaryEntryView entry)
         {
             return entry != null && entry.LlmStatus == DiaryEvent.PendingStatus;
+        }
+
+        /// <summary>
+        /// True for dev prompt-capture cards. These render the stored prompt text directly and never
+        /// pretend an LLM wrote a diary page.
+        /// </summary>
+        private static bool IsPromptOnly(DiaryEntryView entry)
+        {
+            return entry != null && entry.LlmStatus == DiaryEvent.PromptOnlyStatus;
         }
 
         /// <summary>
@@ -186,11 +200,21 @@ namespace PawnDiary
 
         private static string EntryAtmosphereCue(DiaryEntryView entry)
         {
+            if (IsPromptOnly(entry))
+            {
+                return string.Empty;
+            }
+
             return AtmosphericFormattingEnabled() ? (entry?.AtmosphereCue ?? string.Empty) : string.Empty;
         }
 
         private static DiaryTextDecorationContext EntryTextDecorationContext(DiaryEntryView entry)
         {
+            if (IsPromptOnly(entry))
+            {
+                return null;
+            }
+
             return AtmosphericFormattingEnabled() && entry != null ? entry.TextDecorationContext : null;
         }
 
@@ -201,7 +225,7 @@ namespace PawnDiary
         /// </summary>
         private static bool EntryAllowDirectSpeechBlocks(DiaryEntryView entry)
         {
-            return entry != null && !DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
+            return entry != null && !IsPromptOnly(entry) && !DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
         }
 
         /// <summary>
@@ -567,6 +591,7 @@ namespace PawnDiary
 
             GameFont oldFont = Text.Font;
             Text.Font = GameFont.Small;
+            IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : nameHighlights;
             float textHeight = RoleplayTextHeight(
                 EntryBodyText(entry, showLlmDebugInfo),
                 innerWidth,
@@ -574,7 +599,7 @@ namespace PawnDiary
                 EntryAllowDirectSpeechBlocks(entry),
                 EntryTextDecorationContext(entry),
                 StableTextSeed(EntryKey(entry)),
-                nameHighlights);
+                entryNameHighlights);
             Text.Font = oldFont;
 
             float height = EntryTextTop + textHeight + EntryBottomPadding;

@@ -22,6 +22,7 @@ namespace DiaryPipelineTests
             TestResponsePostprocessorRules();
             TestDirectSpeechParser();
             TestGeneratedTextKeepsTrailingSpeech();
+            TestPromptCaptureFormatting();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -239,6 +240,18 @@ namespace DiaryPipelineTests
                 povRole = DiaryPipelineRoles.Initiator
             });
             AssertEqual("solo combat batch selection", DiaryPipelineTemplates.SoloImportant, combatBatchPlan.templateKey);
+        }
+
+        private static void TestPromptCaptureFormatting()
+        {
+            string captured = DiaryPromptCapture.Format("System text.", "event: test\npov: Alice");
+            AssertEqual(
+                "prompt capture combined",
+                "SYSTEM PROMPT\nSystem text.\n\nUSER PROMPT\nevent: test\npov: Alice",
+                captured);
+
+            string blankSystem = DiaryPromptCapture.Format(null, "user only");
+            AssertEqual("prompt capture null system", "SYSTEM PROMPT\n\nUSER PROMPT\nuser only", blankSystem);
         }
 
         private static void TestDomainClassifier()

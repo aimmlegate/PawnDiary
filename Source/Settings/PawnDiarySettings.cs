@@ -151,6 +151,10 @@ namespace PawnDiary
         // stuck on "writing...") in the pawn Diary tab, without the full LLM diagnostic block. Lets a
         // player see which events never finished generating. Normal mode always hides them.
         public bool showGeneratingEntries = false;
+        // Dev-mode test switch: captures assembled prompts on real gameplay events and skips the LLM
+        // request. Prompt-only cards appear in the Diary tab so prompt formatting can be checked
+        // without running a model or writing fake generated text.
+        public bool promptTestMode = false;
         // Master toggle for the LLM-titling flow. When false, no extra title call is made and
         // diary card headers stay date-only.
         public bool generateTitles = true;
@@ -219,6 +223,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
             Scribe_Values.Look(ref showGeneratingEntries, "showGeneratingEntries", false);
+            Scribe_Values.Look(ref promptTestMode, "promptTestMode", false);
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);

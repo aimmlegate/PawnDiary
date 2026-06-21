@@ -36,6 +36,7 @@ namespace PawnDiary
         private DiaryRenderToken cachedVisibleToken;
         private bool cachedVisibleShowDebug;
         private bool cachedVisibleShowGenerating;
+        private bool cachedVisibleShowPromptOnly;
         private int cachedVisibleRevision;
         private int cachedGeneratingCount;
         private readonly List<DiaryEntryView> cachedVisibleEntries = new List<DiaryEntryView>();
@@ -242,7 +243,8 @@ namespace PawnDiary
             // Dev-mode-only: when on, reveal in-progress/stuck entries in the list (the full debug
             // toggle already shows them, so this only matters when debug info is off).
             bool showGeneratingEntries = ShouldShowGeneratingEntries();
-            RebuildVisibleEntryCachesIfNeeded(entries, pawn, token, showLlmDebugInfo, showGeneratingEntries);
+            bool showPromptOnlyEntries = ShouldShowPromptOnlyEntries();
+            RebuildVisibleEntryCachesIfNeeded(entries, pawn, token, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries);
             int generatingCount = cachedGeneratingCount;
             List<DiaryEntryView> visibleEntries = cachedVisibleEntries;
 
@@ -434,12 +436,13 @@ namespace PawnDiary
                 bool linkedAfter = linked != null && !linkedBefore;
                 bool showModelName = HasModelName(entry);
                 string bodyText = EntryBodyText(entry, showLlmDebugInfo);
-                string debugText = showLlmDebugInfo ? entry.DebugText : string.Empty;
+                string debugText = showLlmDebugInfo && !IsPromptOnly(entry) ? entry.DebugText : string.Empty;
                 float innerTextWidth = localEntryRect.width - 20f;
                 string atmosphereCue = EntryAtmosphereCue(entry);
                 bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
                 DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
                 int roleplaySeed = StableTextSeed(entryKeys[i]);
+                IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : nameHighlights;
                 float mainTextHeight = RoleplayTextHeight(
                     bodyText,
                     innerTextWidth,
@@ -447,7 +450,7 @@ namespace PawnDiary
                     allowDirectSpeechBlocks,
                     decorationContext,
                     roleplaySeed,
-                    nameHighlights);
+                    entryNameHighlights);
                 float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
 
                 if (linkedBefore)
@@ -473,7 +476,7 @@ namespace PawnDiary
                         allowDirectSpeechBlocks,
                         decorationContext,
                         roleplaySeed,
-                        nameHighlights);
+                        entryNameHighlights);
                 }
                 float afterTextY = textRect.yMax;
 
@@ -511,13 +514,15 @@ namespace PawnDiary
             Pawn pawn,
             DiaryRenderToken token,
             bool showLlmDebugInfo,
-            bool showGeneratingEntries)
+            bool showGeneratingEntries,
+            bool showPromptOnlyEntries)
         {
             if (cachedVisibleSource == entries
                 && cachedVisiblePawn == pawn
                 && token.Equals(cachedVisibleToken)
                 && cachedVisibleShowDebug == showLlmDebugInfo
                 && cachedVisibleShowGenerating == showGeneratingEntries
+                && cachedVisibleShowPromptOnly == showPromptOnlyEntries
                 && cachedVisiblePreviewKind == devPreviewKind)
             {
                 return;
@@ -528,6 +533,7 @@ namespace PawnDiary
             cachedVisibleToken = token;
             cachedVisibleShowDebug = showLlmDebugInfo;
             cachedVisibleShowGenerating = showGeneratingEntries;
+            cachedVisibleShowPromptOnly = showPromptOnlyEntries;
             cachedVisiblePreviewKind = devPreviewKind;
             cachedGeneratingCount = 0;
             cachedVisibleEntries.Clear();
@@ -546,7 +552,11 @@ namespace PawnDiary
                         cachedGeneratingCount++;
                     }
 
-                    if (entry != null && (showLlmDebugInfo || IsGenerated(entry) || (showGeneratingEntries && generating)))
+                    if (entry != null
+                        && (showLlmDebugInfo
+                            || IsGenerated(entry)
+                            || (showGeneratingEntries && generating)
+                            || (showPromptOnlyEntries && IsPromptOnly(entry))))
                     {
                         cachedVisibleEntries.Add(entry);
                         AddYearIfMissing(cachedVisibleYears, EntryYear(entry));

@@ -26,6 +26,7 @@ namespace PawnDiary
         public const string CompleteStatus = "complete";
         public const string FailedStatus = "failed";
         public const string SkippedStatus = "skipped";
+        public const string PromptOnlyStatus = "prompt_only";
         public const string CombatColorCue = "combat";
         public const string SocialFightColorCue = "socialFight";
         public const string MentalBreakColorCue = "mentalBreak";
@@ -646,7 +647,8 @@ namespace PawnDiary
         /// </summary>
         public bool IsSkipped(string povRole)
         {
-            return RoleEquals(StatusFor(povRole), SkippedStatus);
+            string status = StatusFor(povRole);
+            return RoleEquals(status, SkippedStatus) || RoleEquals(status, PromptOnlyStatus);
         }
 
         /// <summary>
@@ -703,6 +705,16 @@ namespace PawnDiary
         public void MarkSkipped(string povRole, string reason)
         {
             SetStatus(povRole, SkippedStatus);
+            SetError(povRole, reason);
+        }
+
+        /// <summary>
+        /// Marks a POV role as prompt-only: the prompt was captured for inspection and no LLM
+        /// request should be sent or retried.
+        /// </summary>
+        public void MarkPromptOnly(string povRole, string reason)
+        {
+            SetStatus(povRole, PromptOnlyStatus);
             SetError(povRole, reason);
         }
 

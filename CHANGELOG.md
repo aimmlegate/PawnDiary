@@ -4,6 +4,11 @@ High-signal project history, newest first. Keep this file grouped by feature or 
 individual commit. Routine refactors, follow-up fixes, rebuilt DLLs, and assertion-count changes do
 not need separate entries unless they change behavior or document an important risk.
 
+## 2026-06-22
+
+- **Dev prompt test mode added.** RimWorld dev mode now reveals a mod-settings switch that captures
+  real event system/user prompts as prompt-only diary cards while skipping all LLM generation.
+
 ## 2026-06-21
 
 - **Diary formatting previews added.** Dev-mode Diary controls now include transient preview buttons

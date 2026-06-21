@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-21 (documentation compact pass)_
+_Last updated: 2026-06-22 (prompt test mode)_
 
 ---
 
@@ -211,7 +211,11 @@ successful lane when possible.
 
 Core settings include API lanes, timeout, max concurrency, max tokens, temperature, title generation,
 atmospheric formatting, prompt enchantments, generated-speech injection, work/social generation
-weights, system prompt overrides, XML-backed event filters, and persona presets.
+weights, system prompt overrides, XML-backed event filters, and persona presets. RimWorld dev mode
+also reveals prompt test mode in mod settings: real gameplay events still assemble their system and
+user prompts, but the generation queue marks the POV as prompt-only and never calls the LLM client.
+Those prompt-only cards are shown in the Diary tab while dev mode is on so prompt formatting can be
+checked from live events without producing generated diary text.
 
 API lanes support OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat,
 including model fetch/pick, per-row connection tests, Responses reasoning effort, and Ollama
