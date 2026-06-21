@@ -6,6 +6,17 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-22
 
+- **Diary tab made taller.** Default tab height raised (650 to 800) so more entries fit without
+  scrolling; tunable via `tabHeight` in `DiaryUiStyleDef.xml`.
+- **Dev-only copy button on entry cards.** A subtle copy icon at the right edge of each card header
+  (dev mode only) copies that card's text to the clipboard — the captured prompt for prompt-only
+  cards, otherwise the generated text.
+- **Prompt test suite added.** Dev-mode Diary controls now include a "Prompt suite" button that
+  enables prompt test mode and seeds one synthetic diary event per major category (insult, social
+  fight, romance, mental break, hediff, inspiration, work, thought, mood event, tale, day
+  reflection), routed through the normal generation queue so each prompt shape is captured as a
+  prompt-only card with no LLM call. Death and arrival shapes are excluded because synthetic
+  boundary events would hide the pawn's real diary pages.
 - **Dev prompt test mode added.** RimWorld dev mode now reveals a mod-settings switch that captures
   real event system/user prompts as prompt-only diary cards while skipping all LLM generation.
 

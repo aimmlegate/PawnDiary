@@ -34,6 +34,37 @@
   <PawnDiary.Tab.FillMockEntriesTip>Dev-only: adds completed mock pages across many in-game dates so long-history scrolling, year paging, and collapse behavior can be tested without calling an LLM.</PawnDiary.Tab.FillMockEntriesTip>
   <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
+  <PawnDiary.Tab.GeneratePromptSuite>Prompt suite</PawnDiary.Tab.GeneratePromptSuite>
+  <PawnDiary.Tab.GeneratePromptSuiteTip>Dev-only: turns on prompt test mode and adds one synthetic prompt-only page per event category (insult, social fight, romance, mental break, hediff, inspiration, work, thought, mood event, tale, day reflection) so every prompt shape can be inspected without an LLM. Pair categories also appear in a second colonist's diary. Death and arrival shapes are not included because fake ones would hide this pawn's real pages.</PawnDiary.Tab.GeneratePromptSuiteTip>
+  <PawnDiary.Tab.PromptSuiteAdded>Captured {0} prompt-only test pages for {1} (prompt test mode enabled).</PawnDiary.Tab.PromptSuiteAdded>
+  <PawnDiary.Tab.PromptSuiteEmpty>No prompt test pages were captured for {0}. Enable diary generation for this pawn and try again.</PawnDiary.Tab.PromptSuiteEmpty>
+  <PawnDiary.Dev.PromptSuite.Instruction>write a short diary entry for this synthetic dev test event</PawnDiary.Dev.PromptSuite.Instruction>
+  <PawnDiary.Dev.PromptSuite.Reason>synthetic dev test</PawnDiary.Dev.PromptSuite.Reason>
+  <PawnDiary.Dev.PromptSuite.Insult.Label>Insult</PawnDiary.Dev.PromptSuite.Insult.Label>
+  <PawnDiary.Dev.PromptSuite.Insult.Initiator>I insulted {0}.</PawnDiary.Dev.PromptSuite.Insult.Initiator>
+  <PawnDiary.Dev.PromptSuite.Insult.Recipient>{0} insulted me.</PawnDiary.Dev.PromptSuite.Insult.Recipient>
+  <PawnDiary.Dev.PromptSuite.SocialFight.Label>Social fight</PawnDiary.Dev.PromptSuite.SocialFight.Label>
+  <PawnDiary.Dev.PromptSuite.SocialFight.Initiator>I came to blows with {0}.</PawnDiary.Dev.PromptSuite.SocialFight.Initiator>
+  <PawnDiary.Dev.PromptSuite.SocialFight.Recipient>I came to blows with {0}.</PawnDiary.Dev.PromptSuite.SocialFight.Recipient>
+  <PawnDiary.Dev.PromptSuite.Romance.Label>Married</PawnDiary.Dev.PromptSuite.Romance.Label>
+  <PawnDiary.Dev.PromptSuite.Romance.Initiator>{0} and I got married.</PawnDiary.Dev.PromptSuite.Romance.Initiator>
+  <PawnDiary.Dev.PromptSuite.Romance.Recipient>{0} and I got married.</PawnDiary.Dev.PromptSuite.Romance.Recipient>
+  <PawnDiary.Dev.PromptSuite.MentalBreak.Label>Berserk rage</PawnDiary.Dev.PromptSuite.MentalBreak.Label>
+  <PawnDiary.Dev.PromptSuite.MentalBreak.Text>{0} snapped and flew into a berserk rage.</PawnDiary.Dev.PromptSuite.MentalBreak.Text>
+  <PawnDiary.Dev.PromptSuite.Hediff.Label>Fell ill</PawnDiary.Dev.PromptSuite.Hediff.Label>
+  <PawnDiary.Dev.PromptSuite.Hediff.Text>{0} came down with the flu.</PawnDiary.Dev.PromptSuite.Hediff.Text>
+  <PawnDiary.Dev.PromptSuite.Inspiration.Label>Inspired</PawnDiary.Dev.PromptSuite.Inspiration.Label>
+  <PawnDiary.Dev.PromptSuite.Inspiration.Text>A burst of inspiration seized {0}.</PawnDiary.Dev.PromptSuite.Inspiration.Text>
+  <PawnDiary.Dev.PromptSuite.Work.Label>Research</PawnDiary.Dev.PromptSuite.Work.Label>
+  <PawnDiary.Dev.PromptSuite.Work.Text>{0} worked at the research bench.</PawnDiary.Dev.PromptSuite.Work.Text>
+  <PawnDiary.Dev.PromptSuite.Thought.Label>Ate without a table</PawnDiary.Dev.PromptSuite.Thought.Label>
+  <PawnDiary.Dev.PromptSuite.Thought.Text>{0} ate a meal off the ground.</PawnDiary.Dev.PromptSuite.Thought.Text>
+  <PawnDiary.Dev.PromptSuite.MoodEvent.Label>Heat wave</PawnDiary.Dev.PromptSuite.MoodEvent.Label>
+  <PawnDiary.Dev.PromptSuite.MoodEvent.Text>A blistering heat wave settled over the colony.</PawnDiary.Dev.PromptSuite.MoodEvent.Text>
+  <PawnDiary.Dev.PromptSuite.Tale.Label>Finished research</PawnDiary.Dev.PromptSuite.Tale.Label>
+  <PawnDiary.Dev.PromptSuite.Tale.Text>{0} completed a long research project.</PawnDiary.Dev.PromptSuite.Tale.Text>
+  <PawnDiary.Dev.PromptSuite.DayReflection.Label>End of day</PawnDiary.Dev.PromptSuite.DayReflection.Label>
+  <PawnDiary.Dev.PromptSuite.DayReflection.Text>Today brought focused research, a stinging insult, and a creeping fever.</PawnDiary.Dev.PromptSuite.DayReflection.Text>
   <PawnDiary.Tab.DevPreviewPlain>Plain</PawnDiary.Tab.DevPreviewPlain>
   <PawnDiary.Tab.DevPreviewMarkdown>Markdown</PawnDiary.Tab.DevPreviewMarkdown>
   <PawnDiary.Tab.DevPreviewSpeech>Speech</PawnDiary.Tab.DevPreviewSpeech>
@@ -62,6 +93,8 @@
   <PawnDiary.Tab.YearLabel>Year {0}</PawnDiary.Tab.YearLabel>
   <PawnDiary.Tab.UnknownYear>Undated</PawnDiary.Tab.UnknownYear>
   <PawnDiary.Tab.ExpandCollapseTip>Click the header to expand or collapse this page.</PawnDiary.Tab.ExpandCollapseTip>
+  <PawnDiary.Tab.CopyEntryTip>Dev-only: copy this page's text to the clipboard. Prompt-only cards copy the captured prompt; other cards copy the generated text.</PawnDiary.Tab.CopyEntryTip>
+  <PawnDiary.Tab.CopyEntryCopied>Copied page text to clipboard.</PawnDiary.Tab.CopyEntryCopied>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->

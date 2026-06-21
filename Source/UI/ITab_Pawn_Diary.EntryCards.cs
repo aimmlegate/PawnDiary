@@ -42,6 +42,70 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dev-only: draws a small, subtle copy-to-clipboard button at the right edge of a card's
+        /// title bar. On click it copies the entry's prompt (for prompt-only cards) or its generated/
+        /// visible text to the system clipboard. Must be drawn BEFORE any click-to-expand invisible
+        /// button covering the same title bar so this smaller button can claim clicks in its own rect.
+        /// </summary>
+        private static void DrawCopyButton(Rect titleRect, DiaryEntryView entry)
+        {
+            if (!Prefs.DevMode || entry == null)
+            {
+                return;
+            }
+
+            float buttonSize = 18f;
+            Rect copyRect = new Rect(
+                titleRect.xMax - buttonSize - 8f,
+                titleRect.y + (titleRect.height - buttonSize) * 0.5f,
+                buttonSize,
+                buttonSize);
+
+            // Low alpha until hovered so the icon stays unobtrusive next to the title.
+            bool hover = Mouse.IsOver(copyRect);
+            Color oldColor = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, hover ? 1f : 0.5f);
+            bool clicked = Widgets.ButtonImage(copyRect, TexButton.Copy);
+            GUI.color = oldColor;
+
+            TooltipHandler.TipRegion(copyRect, "PawnDiary.Tab.CopyEntryTip".Translate());
+
+            if (clicked)
+            {
+                string text = EntryCopyText(entry);
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    GUIUtility.systemCopyBuffer = text;
+                    Messages.Message("PawnDiary.Tab.CopyEntryCopied".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The text a dev copy-button copies for an entry: the captured prompt for prompt-only cards,
+        /// otherwise the LLM-generated text, falling back to the raw display text.
+        /// </summary>
+        private static string EntryCopyText(DiaryEntryView entry)
+        {
+            if (entry == null)
+            {
+                return string.Empty;
+            }
+
+            if (IsPromptOnly(entry) && !string.IsNullOrWhiteSpace(entry.LlmPrompt))
+            {
+                return entry.LlmPrompt;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.GeneratedText))
+            {
+                return entry.GeneratedText;
+            }
+
+            return entry.DisplayText ?? string.Empty;
+        }
+
+        /// <summary>
         /// True while an entry is still waiting on the background LLM generation pipeline.
         /// </summary>
         private static bool IsGenerating(DiaryEntryView entry)

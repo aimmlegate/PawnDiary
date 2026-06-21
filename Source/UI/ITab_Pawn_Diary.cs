@@ -420,6 +420,9 @@ namespace PawnDiary
                     entry,
                     accentColor);
                 DrawExpansionIndicator(titleRect, expanded, expansionBlend, accentColor);
+                // Draw the dev copy button before the click-to-expand invisible button so it can claim
+                // clicks inside its own small rect instead of the whole title bar toggling expansion.
+                DrawCopyButton(titleRect, entry);
                 if (Widgets.ButtonInvisible(titleRect, false))
                 {
                     SetEntryExpanded(entry, !expanded);

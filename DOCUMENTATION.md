@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-22 (prompt test mode)_
+_Last updated: 2026-06-22 (prompt test suite, taller tab, dev copy button)_
 
 ---
 
@@ -227,6 +227,22 @@ formatting preview rows for prose, markdown, speech, combat/social-fight/mental/
 colors, linked cards, writing placeholders, title-pending animation, and atmosphere checks, plus
 mock-page fill. Long histories page by in-game year. Cards show date/title, accent, group chip,
 model id, linked POV previews, and title-pending animation.
+
+The dev-mode Diary controls also include a **Generate prompt test suite** button (next to the
+mock-page filler). It turns prompt test mode on and seeds one synthetic diary event per major
+category — insult, social fight, romance, mental break, hediff, inspiration, work, thought, mood
+event, tale, and day reflection — then routes each through the normal generation queue. Because
+prompt test mode is on, each role is captured as a prompt-only card holding the exact prompt that
+would have been sent, giving one card per prompt shape (PairCombat, PairImportant, SoloImportant,
+SoloInternalState, SoloDefault, SoloDayReflection) with no LLM call. Pair categories also appear
+in a second colonist's diary. Death and arrival shapes are intentionally excluded: a synthetic
+death/arrival event would become that pawn's diary boundary (see `ComputeDiaryBounds`) and hide
+the pawn's real pages, so those two shapes are still tested through real gameplay hooks.
+
+The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. In dev mode every
+entry card also shows a subtle copy button at the right edge of its header: clicking it copies the
+card's text to the clipboard — the captured prompt for prompt-only cards, otherwise the generated
+text — so prompts and output can be pasted out for inspection.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`

@@ -19,7 +19,7 @@
 
     <!-- Tab window -->
     <tabWidth>720</tabWidth>
-    <tabHeight>650</tabHeight>
+    <tabHeight>800</tabHeight>
 
     <!-- Header/card dimensions -->
     <controlLineHeight>28</controlLineHeight>

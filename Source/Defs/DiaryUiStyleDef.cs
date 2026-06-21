@@ -107,7 +107,7 @@ namespace PawnDiary
     {
         // ---- Tab window ----
         public float tabWidth = 720f;
-        public float tabHeight = 650f;
+        public float tabHeight = 800f;
 
         // ---- Control/header/card dimensions ----
         public float controlLineHeight = 28f;

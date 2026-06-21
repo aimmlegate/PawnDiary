@@ -186,7 +186,21 @@ namespace PawnDiary
 
 
 
-            Rect mockButtonRect = listing.GetRect(ControlLineHeight);
+            // The mock-page filler and the prompt test suite share one row. Each is a self-contained
+
+            // dev fixture: mock pages test long-history scrolling; the prompt suite captures one
+
+            // prompt-only card per event category so every prompt shape can be inspected without an LLM.
+
+            Rect devButtonRow = listing.GetRect(ControlLineHeight);
+
+            float devButtonGap = 4f;
+
+            float mockButtonWidth = (devButtonRow.width - devButtonGap) * 0.5f;
+
+            Rect mockButtonRect = new Rect(devButtonRow.x, devButtonRow.y, mockButtonWidth, devButtonRow.height);
+
+            Rect promptSuiteButtonRect = new Rect(mockButtonRect.xMax + devButtonGap, devButtonRow.y, devButtonRow.width - mockButtonWidth - devButtonGap, devButtonRow.height);
 
             if (Widgets.ButtonText(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
             {
@@ -229,6 +243,23 @@ namespace PawnDiary
                 mockButtonRect,
 
                 "PawnDiary.Tab.FillMockEntriesTip".Translate(DevMockDiaryTargetCount));
+
+
+
+            if (Widgets.ButtonText(promptSuiteButtonRect, "PawnDiary.Tab.GeneratePromptSuite".Translate()))
+            {
+
+                HandleGeneratePromptSuite(pawn, component);
+
+            }
+
+
+
+            TooltipHandler.TipRegion(
+
+                promptSuiteButtonRect,
+
+                "PawnDiary.Tab.GeneratePromptSuiteTip".Translate());
 
 
             DrawDevPreviewButtons(listing, pawn);
@@ -390,6 +421,69 @@ namespace PawnDiary
         {
 
             return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.showGeneratingEntries;
+
+        }
+
+
+
+        /// <summary>
+        /// Dev-only handler for the "Generate prompt test suite" button. Enables prompt test mode (so
+        /// the queue captures prompts instead of calling an LLM), then asks the component to seed one
+        /// synthetic event per category and reports how many prompt-only pages were captured. Pair
+        /// categories are silently skipped when the pawn has no second colonist.
+        /// </summary>
+        private void HandleGeneratePromptSuite(Pawn pawn, DiaryGameComponent component)
+        {
+
+            if (pawn == null || component == null)
+            {
+
+                return;
+
+            }
+
+
+
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+
+            if (settings != null && !settings.promptTestMode)
+            {
+
+                settings.promptTestMode = true;
+
+                WriteGlobalSettings();
+
+            }
+
+
+
+            int added = component.GeneratePromptTestSuiteForDev(pawn, null);
+
+            if (added > 0)
+            {
+
+                Messages.Message(
+
+                    "PawnDiary.Tab.PromptSuiteAdded".Translate(added, pawn.LabelShortCap),
+
+                    MessageTypeDefOf.PositiveEvent,
+
+                    false);
+
+            }
+
+            else
+            {
+
+                Messages.Message(
+
+                    "PawnDiary.Tab.PromptSuiteEmpty".Translate(pawn.LabelShortCap),
+
+                    MessageTypeDefOf.NeutralEvent,
+
+                    false);
+
+            }
 
         }
 
