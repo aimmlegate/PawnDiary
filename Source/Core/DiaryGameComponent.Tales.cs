@@ -146,26 +146,46 @@ namespace PawnDiary
         {
             if (!CanRecordGameplayEventNow()
                 || pawn == null
-                || PawnDiaryMod.Settings == null
-                || !IsDeathDescriptionEligible(pawn))
-            {
-                return;
-            }
-
-            if (HasDeathDescriptionFor(pawn))
+                || PawnDiaryMod.Settings == null)
             {
                 return;
             }
 
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(GroupDomain.Tale, DeathFallbackDefName);
-            if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
+            string pawnId = pawn.GetUniqueLoadID();
+            DeathEventData data = new DeathEventData
+            {
+                PawnId = pawnId,
+                Tick = Find.TickManager.TicksGame,
+                DefName = DeathFallbackDefName,
+                PawnLabel = DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
+                PawnLoadId = pawnId,
+                HasExistingDeathDescription = HasDeathDescriptionFor(pawn),
+            };
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: IsDeathDescriptionEligible(pawn),
+                userEnabled: group != null && PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                signalEnabled: true,
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Death);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision != CaptureDecision.GenerateSoloDeathDescription)
             {
                 return;
             }
 
             string label = "PawnDiary.Event.DeathFallbackLabel".Translate().Resolve();
             string text = "PawnDiary.Event.DeathFallback".Translate(pawn.LabelShortCap).Resolve();
-            string gameContext = BuildDeathFallbackContext(pawn, label);
+            string gameContext = DeathEventData.BuildFallbackGameContext(
+                DeathFallbackDefName,
+                DiaryContextBuilder.CleanLine(label),
+                data.PawnLabel,
+                data.PawnLoadId,
+                DiaryEvent.InitiatorRole,
+                DeathContextCache.ConsumeOrBuild(pawn));
             DiaryEvent deathEvent = AddSoloEvent(pawn, null, DeathFallbackDefName, label, text,
                 PawnDiaryMod.Settings.InstructionForGroup(group), gameContext);
             AddDeathEventRef(pawn, deathEvent.eventId);
@@ -311,28 +331,6 @@ namespace PawnDiary
             }
 
             string deathFacts = DeathContextCache.ConsumeOrBuild(deathVictim);
-            if (!string.IsNullOrWhiteSpace(deathFacts))
-            {
-                parts.Add(deathFacts);
-            }
-
-            return string.Join("; ", parts.ToArray());
-        }
-
-        private static string BuildDeathFallbackContext(Pawn pawn, string label)
-        {
-            List<string> parts = new List<string>
-            {
-                "tale=" + DeathFallbackDefName,
-                "label=" + DiaryContextBuilder.CleanLine(label),
-                "taleClass=PawnKillFallback",
-                "death_description=true",
-                "death_victim=" + DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
-                "death_victim_id=" + pawn.GetUniqueLoadID(),
-                "death_victim_role=" + DiaryEvent.InitiatorRole
-            };
-
-            string deathFacts = DeathContextCache.ConsumeOrBuild(pawn);
             if (!string.IsNullOrWhiteSpace(deathFacts))
             {
                 parts.Add(deathFacts);

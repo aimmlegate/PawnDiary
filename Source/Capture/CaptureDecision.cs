@@ -40,5 +40,9 @@ namespace PawnDiary.Capture
         /// <summary>Create a pair-shaped event carrying both involved pawns, then queue the neutral
         /// death-description prompt instead of pairwise first-person rewrites.</summary>
         GeneratePairDeathDescription,
+
+        /// <summary>Create a solo event, then queue the neutral arrival-description prompt instead
+        /// of a first-person rewrite.</summary>
+        GenerateSoloArrivalDescription,
     }
 }

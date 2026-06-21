@@ -145,22 +145,28 @@ Anatomy:
   tick). Filled by the caller so the reducer never touches DefDatabase/Settings/tick manager.
 - `CaptureDecision` — the pure outcome: `Drop`, `GenerateSolo`, `GeneratePair`, `RouteBatch`,
   `RouteAmbient`, `RouteDayReflection`, `GenerateSoloDeathDescription`, or
-  `GeneratePairDeathDescription`. The `RecordX` sink executes that outcome with RimWorld side
-  effects such as batching, save mutation, and LLM queueing.
+  `GeneratePairDeathDescription`, or `GenerateSoloArrivalDescription`. The `RecordX` sink executes
+  that outcome with RimWorld side effects such as batching, save mutation, and LLM queueing.
 - `DiaryEventSpec` — abstract reducer wrapper, one subclass per source, registered in
   `DiaryEventCatalog` so callers dispatch with a single `catalog.Get(type).Decide(...)`.
 
-Migrated in the current slice: **Thought** (richest source — token filter, general/eating magnitude
-threshold, bypass tokens, ambient routing), **Inspiration** (trivial source — eligibility + user
-toggle only), **MoodEvent** (first multi-pawn fan-out — one GameCondition → one solo entry per
-affected colonist, fan-out loop stays in `RecordMoodEvent`), **MentalState** (first pair source
-— social fights emit `GeneratePair`, every other break emits `GenerateSolo`), **Tale** (catalog
-chooses batch / pair / solo / neutral death-description routes from a primitive payload),
-**Hediff** (catalog chooses Immediate solo vs DayReflection routing after pre-computed policy
-flags), **Interaction** (catalog chooses solo / pair / batch / ambient after XML group
-classification and the impure promotion roll are snapshotted), and **Romance** (first net-new
-catalog source — pairwise relation-change events). Arrival and Death fallback are still outside the
-catalog as specialized flows.
+Currently migrated: **Thought** (richest source — token filter, general/eating magnitude threshold,
+bypass tokens, ambient routing), **Inspiration** (trivial source — eligibility + user toggle only),
+**MoodEvent** (first multi-pawn fan-out — one GameCondition → one solo entry per affected colonist,
+fan-out loop stays in `RecordMoodEvent`), **MentalState** (first pair source — social fights emit
+`GeneratePair`, every other break emits `GenerateSolo`), **Tale** (catalog chooses batch / pair /
+solo / neutral death-description routes from a primitive payload), **Hediff** (catalog chooses
+Immediate solo vs DayReflection routing after pre-computed policy flags), **Interaction** (catalog
+chooses solo / pair / batch / ambient after XML group classification and the impure promotion roll
+are snapshotted), **Romance** (first net-new catalog source — pairwise relation-change events),
+**Arrival** (neutral first-page route), **Death fallback** (neutral final-page route for deaths with
+no Tale-backed description), **Work** (cooldown/chance/current-work snapshot), **ThoughtProgression**
+(worsened-stage snapshot), and **DayReflection** (end-of-day candidate/highlight gate).
+
+Some direct `AddSoloEvent` call sites remain by design in downstream sinks: interaction/tale batch
+flushers, ambient day-note flushers, the generation queue dispatcher, and the event factory. Those
+execute routes chosen by catalog-backed sources rather than deciding whether a new gameplay source
+should be captured.
 
 Adding a new source (the 4-step recipe):
 

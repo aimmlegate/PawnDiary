@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -131,30 +132,57 @@ namespace PawnDiary
                 return;
             }
 
-            if (!worsened || state.recordedStageKeys.Contains(stageKey))
-            {
-                return;
-            }
-
-            if (RecordThoughtProgression(pawn, match))
+            bool stageAlreadyRecorded = state.recordedStageKeys.Contains(stageKey);
+            if (RecordThoughtProgression(pawn, match, worsened, stageAlreadyRecorded))
             {
                 state.recordedStageKeys.Add(stageKey);
             }
         }
 
-        private bool RecordThoughtProgression(Pawn pawn, ThoughtProgressionMatch match)
+        private bool RecordThoughtProgression(Pawn pawn, ThoughtProgressionMatch match,
+            bool worsened, bool stageAlreadyRecorded)
         {
             if (pawn == null || match == null || match.thoughtDef == null)
             {
                 return false;
             }
 
-            if (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.IsThoughtEnabled(match.thoughtDef))
+            if (PawnDiaryMod.Settings == null)
             {
                 return false;
             }
 
             string pawnId = pawn.GetUniqueLoadID();
+            string moodImpact = MoodImpact.Classify(match.moodOffset);
+            ThoughtProgressionEventData data = new ThoughtProgressionEventData
+            {
+                PawnId = pawnId,
+                Tick = Find.TickManager.TicksGame,
+                DefName = match.thoughtDefName,
+                CategoryKey = match.categoryKey,
+                Label = match.label,
+                StageIndex = match.stageIndex.ToString(),
+                Severity = match.severity.ToString(),
+                MoodImpact = moodImpact,
+                MoodOffset = match.moodOffset.ToString("F1", CultureInfo.InvariantCulture),
+                Worsened = worsened,
+                StageAlreadyRecorded = stageAlreadyRecorded,
+            };
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: IsDiaryEligible(pawn),
+                userEnabled: PawnDiaryMod.Settings.IsThoughtEnabled(match.thoughtDef),
+                signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.ThoughtProgression),
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.ThoughtProgression);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision != CaptureDecision.GenerateSolo)
+            {
+                return false;
+            }
+
             string dedupKey = "thoughtprogression|" + pawnId + "|" + match.categoryKey + "|"
                 + match.thoughtDefName + "|" + match.stageIndex.ToString();
             if (RecentlyRecorded(recentThoughtEvents, dedupKey, DiarySignalPolicies.ThoughtProgressionDedupTicks))
@@ -162,17 +190,12 @@ namespace PawnDiary
                 return false;
             }
 
-            string moodImpact = MoodImpact.Classify(match.moodOffset);
             string instruction = AppendThoughtProgressionInstruction(
                 PawnDiaryMod.Settings.InstructionForThought(match.thoughtDef));
 
-            string gameContext = "thought=" + match.thoughtDefName
-                + "; thought_progression=" + match.categoryKey
-                + "; label=" + match.label
-                + "; stage_index=" + match.stageIndex.ToString()
-                + "; severity=" + match.severity.ToString()
-                + "; mood_impact=" + moodImpact
-                + "; mood_offset=" + match.moodOffset.ToString("F1", CultureInfo.InvariantCulture);
+            string gameContext = ThoughtProgressionEventData.BuildGameContext(
+                data.DefName, data.CategoryKey, data.Label, data.StageIndex,
+                data.Severity, data.MoodImpact, data.MoodOffset);
 
             string text = "PawnDiary.Event.ThoughtProgressionNegative".Translate(
                 pawn.LabelShortCap, match.label).Resolve();

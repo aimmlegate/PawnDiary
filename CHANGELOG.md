@@ -2,6 +2,18 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5g)
+
+- **Migrated the remaining live sources outside the Event Catalog:** Arrival, Death fallback, Work,
+  ThoughtProgression, and DayReflection now have pure `XxxEventData` payloads, `XxxEventSpec`
+  wrappers, catalog registration, and adapter-side routing through `DiaryEventCatalog.Get(...)`.
+  Arrival and Death fallback use explicit neutral-generation outcomes; Work snapshots cooldown and
+  RNG results before the pure decision; ThoughtProgression snapshots worsened/already-recorded
+  stage state; DayReflection snapshots candidate/highlight counts before writing the day marker.
+  `DiaryCapturePolicyTests` now links and covers all five sources and removes Arrival/Death from
+  the future-source sentinel. No intended user-visible behavior change. Test count:
+  `DiaryCapturePolicyTests` 169 -> 243 assertions. Rebuilt DLL.
+
 ## 2026-06-21 (5f)
 
 - **Finished the partial Event Catalog migrations for Tale, Hediff, and Interaction:** extended

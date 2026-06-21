@@ -6,6 +6,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -53,32 +54,46 @@ namespace PawnDiary
         /// </summary>
         public void RecordColonistArrival(Pawn pawn, string arrivalContext)
         {
-            if (!CanRecordGameplayEventNow() || !IsDiaryEligible(pawn))
+            if (!CanRecordGameplayEventNow() || pawn == null || PawnDiaryMod.Settings == null)
             {
                 return;
             }
 
             string pawnId = pawn.GetUniqueLoadID();
-            if (HasArrivalEventFor(pawnId))
-            {
-                return;
-            }
-
             DiaryInteractionGroupDef arrivalGroup = InteractionGroups.ByKey(ArrivalGroupKey);
-            if (arrivalGroup != null && !PawnDiaryMod.Settings.IsGroupEnabled(arrivalGroup.defName))
+            ArrivalEventData data = new ArrivalEventData
+            {
+                PawnId = pawnId,
+                Tick = Find.TickManager.TicksGame,
+                DefName = ArrivalDefName,
+                PawnLabel = DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
+                PawnLoadId = pawnId,
+                ArrivalContext = arrivalContext,
+                HasExistingArrival = HasArrivalEventFor(pawnId),
+            };
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: IsDiaryEligible(pawn),
+                userEnabled: arrivalGroup == null || PawnDiaryMod.Settings.IsGroupEnabled(arrivalGroup.defName),
+                signalEnabled: true,
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Arrival);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision != CaptureDecision.GenerateSoloArrivalDescription)
             {
                 return;
             }
 
-            bool startingPawn = !string.IsNullOrWhiteSpace(arrivalContext)
-                && arrivalContext.IndexOf("arrival_source=game_start", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool startingPawn = ArrivalEventData.IsStartingArrival(arrivalContext);
             string label = "PawnDiary.Event.ArrivalLabel".Translate().Resolve();
             string text = startingPawn
                 ? "PawnDiary.Event.StartingArrival".Translate(pawn.LabelShortCap).Resolve()
                 : "PawnDiary.Event.JoinedArrival".Translate(pawn.LabelShortCap).Resolve();
 
             DiaryEvent arrivalEvent = AddSoloEvent(pawn, null, ArrivalDefName, label, text, string.Empty,
-                BuildArrivalGameContext(pawn, arrivalContext));
+                ArrivalEventData.BuildGameContext(data.PawnLabel, data.PawnLoadId, data.ArrivalContext));
             QueueArrivalDescription(arrivalEvent);
         }
 
@@ -98,27 +113,6 @@ namespace PawnDiary
             }
 
             return false;
-        }
-
-        private static string BuildArrivalGameContext(Pawn pawn, string arrivalContext)
-        {
-            List<string> parts = new List<string>
-            {
-                "arrival_description=true",
-                "arrival_pawn=" + DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
-                "arrival_pawn_id=" + pawn.GetUniqueLoadID()
-            };
-
-            if (!string.IsNullOrWhiteSpace(arrivalContext))
-            {
-                parts.Add(arrivalContext);
-            }
-            else
-            {
-                parts.Add("arrival_source=unknown");
-            }
-
-            return string.Join("; ", parts.ToArray());
         }
 
         private static string BuildStartingArrivalContext()

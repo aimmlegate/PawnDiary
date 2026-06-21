@@ -22,6 +22,11 @@
     <Compile Include="..\..\Source\Capture\Events\HediffEventData.cs" Link="Capture\Events\HediffEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\InteractionEventData.cs" Link="Capture\Events\InteractionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RomanceEventData.cs" Link="Capture\Events\RomanceEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\ArrivalEventData.cs" Link="Capture\Events\ArrivalEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\DeathEventData.cs" Link="Capture\Events\DeathEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\WorkEventData.cs" Link="Capture\Events\WorkEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\ThoughtProgressionEventData.cs" Link="Capture\Events\ThoughtProgressionEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\DayReflectionEventData.cs" Link="Capture\Events\DayReflectionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventSpec.cs" Link="Capture\Catalog\DiaryEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventCatalog.cs" Link="Capture\Catalog\DiaryEventCatalog.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ThoughtEventSpec.cs" Link="Capture\Specs\ThoughtEventSpec.cs" />
@@ -32,5 +37,10 @@
     <Compile Include="..\..\Source\Capture\Specs\HediffEventSpec.cs" Link="Capture\Specs\HediffEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\InteractionEventSpec.cs" Link="Capture\Specs\InteractionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\RomanceEventSpec.cs" Link="Capture\Specs\RomanceEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\ArrivalEventSpec.cs" Link="Capture\Specs\ArrivalEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\DeathEventSpec.cs" Link="Capture\Specs\DeathEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\WorkEventSpec.cs" Link="Capture\Specs\WorkEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\ThoughtProgressionEventSpec.cs" Link="Capture\Specs\ThoughtProgressionEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\DayReflectionEventSpec.cs" Link="Capture\Specs\DayReflectionEventSpec.cs" />
   </ItemGroup>
 </Project>

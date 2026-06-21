@@ -4,6 +4,7 @@
 // weighted random roll. New to C#/RimWorld? See AGENTS.md ("WorkTypeDef", "WorkGiverDef").
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 using Verse.AI;
@@ -12,11 +13,6 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        private const string WorkPassionEventDefName = "PawnDiary_WorkPassion";
-        private const string WorkStrainEventDefName = "PawnDiary_WorkStrain";
-        private const string WorkRoutineEventDefName = "PawnDiary_WorkRoutine";
-        private const string WorkDarkStudyEventDefName = "PawnDiary_WorkDarkStudy";
-
         /// <summary>
         /// Periodically samples eligible colonists' current work and sometimes records a solo work
         /// diary event. Cooldowns are read from saved DiaryEvents, so loading a save does not reset
@@ -49,41 +45,75 @@ namespace PawnDiary
                 return;
             }
 
-            if (ShouldIgnoreWorkType(workTypeDef))
-            {
-                return;
-            }
-
-            WorkMood mood = ClassifyWorkMood(pawn, workTypeDef);
-            string eventDefName = WorkEventDefName(workTypeDef, mood);
+            bool ignoredWorkType = ShouldIgnoreWorkType(workTypeDef);
+            WorkMood mood = ignoredWorkType ? default(WorkMood) : ClassifyWorkMood(pawn, workTypeDef);
+            string eventDefName = ignoredWorkType
+                ? WorkEventData.RoutineDefName
+                : WorkEventDefName(workTypeDef, mood);
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyWork(eventDefName);
-            if (group == null || !PawnDiaryMod.Settings.IsWorkEnabled(group))
-            {
-                return;
-            }
 
             int cooldownTicks = Math.Max(0, DiarySignalPolicies.WorkSameTypeCooldownTicks);
-            if (HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, true))
+            bool sameWorkCooldownClear = false;
+            if (!ignoredWorkType)
             {
-                return;
+                sameWorkCooldownClear = !HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, true);
             }
 
-            float chance = WorkDiaryChance(pawn, workTypeDef, mood);
-            if (HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, false))
+            bool passedChanceRoll = false;
+            if (!ignoredWorkType && sameWorkCooldownClear)
             {
-                chance *= Math.Max(0f, DiarySignalPolicies.WorkRecentDifferentTypeMultiplier);
+                float chance = WorkDiaryChance(pawn, workTypeDef, mood);
+                if (HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, false))
+                {
+                    chance *= Math.Max(0f, DiarySignalPolicies.WorkRecentDifferentTypeMultiplier);
+                }
+                passedChanceRoll = Rand.Value <= Math.Min(1f, Math.Max(0f, chance));
             }
 
-            if (Rand.Value > Math.Min(1f, Math.Max(0f, chance)))
+            string moodImpact = mood.IsPositive ? MoodImpact.Positive : mood.IsNegative ? MoodImpact.Negative : MoodImpact.Neutral;
+            WorkEventData data = new WorkEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = eventDefName,
+                WorkTypeDefName = workTypeDef.defName,
+                WorkGiverDefName = workGiverDef?.defName,
+                MoodImpact = moodImpact,
+                HasCurrentWork = true,
+                IgnoredWorkType = ignoredWorkType,
+                SameWorkCooldownClear = sameWorkCooldownClear,
+                PassedChanceRoll = passedChanceRoll,
+                HasPassion = mood.HasPassion,
+                HasLowSkill = mood.HasLowSkill,
+                IsNegativeChore = mood.IsNegativeChore,
+                IsDarkStudy = mood.IsDarkStudy,
+            };
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: IsDiaryEligible(pawn),
+                userEnabled: group != null && PawnDiaryMod.Settings.IsWorkEnabled(group),
+                signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.Work),
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Work);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision != CaptureDecision.GenerateSolo)
             {
                 return;
             }
 
             string label = WorkLabel(workTypeDef, workGiverDef);
-            string moodImpact = mood.IsPositive ? MoodImpact.Positive : mood.IsNegative ? MoodImpact.Negative : MoodImpact.Neutral;
             string text = WorkEventText(pawn, label, moodImpact, IsDarkStudy(workTypeDef));
             string instruction = PawnDiaryMod.Settings.InstructionForWork(group);
-            string gameContext = BuildWorkGameContext(workTypeDef, workGiverDef, mood, moodImpact);
+            string gameContext = WorkEventData.BuildGameContext(
+                data.WorkTypeDefName,
+                data.WorkGiverDefName,
+                data.MoodImpact,
+                data.HasPassion,
+                data.HasLowSkill,
+                data.IsNegativeChore,
+                data.IsDarkStudy);
 
             DiaryEvent diaryEvent = AddSoloEvent(pawn, null, eventDefName, label, text, instruction, gameContext);
             diaryEvent.moodImpact = moodImpact;
@@ -138,22 +168,7 @@ namespace PawnDiary
 
         private static string WorkEventDefName(WorkTypeDef workTypeDef, WorkMood mood)
         {
-            if (mood.IsDarkStudy)
-            {
-                return WorkDarkStudyEventDefName;
-            }
-
-            if (mood.IsPositive)
-            {
-                return WorkPassionEventDefName;
-            }
-
-            if (mood.IsNegative)
-            {
-                return WorkStrainEventDefName;
-            }
-
-            return WorkRoutineEventDefName;
+            return WorkEventData.EventDefName(mood.IsDarkStudy, mood.IsPositive, mood.IsNegative);
         }
 
         private static float WorkDiaryChance(Pawn pawn, WorkTypeDef workTypeDef, WorkMood mood)
@@ -312,22 +327,6 @@ namespace PawnDiary
                 "PawnDiary.Event.WorkNeutral",
                 pawn.LabelShortCap.Named("PAWN"),
                 label.Named("WORK"));
-        }
-
-        private static string BuildWorkGameContext(WorkTypeDef workTypeDef, WorkGiverDef workGiverDef, WorkMood mood, string moodImpact)
-        {
-            List<string> parts = new List<string>
-            {
-                "work=" + (workTypeDef?.defName ?? string.Empty),
-                "work_giver=" + (workGiverDef?.defName ?? string.Empty),
-                "mood_impact=" + moodImpact,
-                "passion=" + (mood.HasPassion ? "true" : "false"),
-                "low_skill=" + (mood.HasLowSkill ? "true" : "false"),
-                "dumb_or_cleaning=" + (mood.IsNegativeChore ? "true" : "false"),
-                "dark_study=" + (mood.IsDarkStudy ? "true" : "false")
-            };
-
-            return string.Join("; ", parts.ToArray());
         }
 
         private struct WorkMood

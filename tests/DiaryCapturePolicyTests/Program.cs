@@ -39,6 +39,17 @@ namespace DiaryCapturePolicyTests
             TestRomanceDecide();
             TestRomanceBuildGameContextFormat();
             TestRomanceKindFor();
+            TestArrivalDecide();
+            TestArrivalBuildGameContextFormat();
+            TestDeathDecide();
+            TestDeathBuildFallbackGameContextFormat();
+            TestWorkDecide();
+            TestWorkEventDefName();
+            TestWorkBuildGameContextFormat();
+            TestThoughtProgressionDecide();
+            TestThoughtProgressionBuildGameContextFormat();
+            TestDayReflectionDecide();
+            TestDayReflectionBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -652,6 +663,199 @@ namespace DiaryCapturePolicyTests
             AssertEqual("kind empty defName", string.Empty, RomanceEventData.KindFor(null));
         }
 
+        // ── Arrival ──
+
+        private static void TestArrivalDecide()
+        {
+            AssertEqual("arrival null data drops", CaptureDecision.Drop,
+                ArrivalEventData.Decide(null, Ctx()));
+            AssertEqual("arrival null ctx drops", CaptureDecision.Drop,
+                ArrivalEventData.Decide(Arrival(), null));
+            AssertEqual("arrival empty defName drops", CaptureDecision.Drop,
+                ArrivalEventData.Decide(Arrival(defName: ""), Ctx()));
+            AssertEqual("arrival ineligible drops", CaptureDecision.Drop,
+                ArrivalEventData.Decide(Arrival(), Ctx(eligible: false)));
+            AssertEqual("arrival user disabled drops", CaptureDecision.Drop,
+                ArrivalEventData.Decide(Arrival(), Ctx(user: false)));
+            AssertEqual("arrival signal disabled drops", CaptureDecision.Drop,
+                ArrivalEventData.Decide(Arrival(), Ctx(signal: false)));
+            AssertEqual("arrival existing page drops", CaptureDecision.Drop,
+                ArrivalEventData.Decide(Arrival(existing: true), Ctx()));
+            AssertEqual("arrival records through neutral prompt route",
+                CaptureDecision.GenerateSoloArrivalDescription,
+                ArrivalEventData.Decide(Arrival(), Ctx()));
+        }
+
+        private static void TestArrivalBuildGameContextFormat()
+        {
+            AssertTrue("arrival game-start marker is case-insensitive",
+                ArrivalEventData.IsStartingArrival("arrival_source=GAME_START; scenario=Crashlanded"));
+            AssertTrue("arrival non-start marker is false",
+                !ArrivalEventData.IsStartingArrival("arrival_source=joined"));
+
+            AssertEqual("arrival context with supplied source",
+                "arrival_description=true; arrival_pawn=Alice; arrival_pawn_id=P1; arrival_source=joined; join_reason=rescued",
+                ArrivalEventData.BuildGameContext("Alice", "P1", "arrival_source=joined; join_reason=rescued"));
+            AssertEqual("arrival context unknown source fallback",
+                "arrival_description=true; arrival_pawn=Alice; arrival_pawn_id=P1; arrival_source=unknown",
+                ArrivalEventData.BuildGameContext("Alice", "P1", ""));
+        }
+
+        // ── Death fallback ──
+
+        private static void TestDeathDecide()
+        {
+            AssertEqual("death null data drops", CaptureDecision.Drop,
+                DeathEventData.Decide(null, Ctx()));
+            AssertEqual("death null ctx drops", CaptureDecision.Drop,
+                DeathEventData.Decide(Death(), null));
+            AssertEqual("death empty defName drops", CaptureDecision.Drop,
+                DeathEventData.Decide(Death(defName: ""), Ctx()));
+            AssertEqual("death ineligible drops", CaptureDecision.Drop,
+                DeathEventData.Decide(Death(), Ctx(eligible: false)));
+            AssertEqual("death user disabled drops", CaptureDecision.Drop,
+                DeathEventData.Decide(Death(), Ctx(user: false)));
+            AssertEqual("death signal disabled drops", CaptureDecision.Drop,
+                DeathEventData.Decide(Death(), Ctx(signal: false)));
+            AssertEqual("death existing description drops", CaptureDecision.Drop,
+                DeathEventData.Decide(Death(existing: true), Ctx()));
+            AssertEqual("death records through neutral prompt route",
+                CaptureDecision.GenerateSoloDeathDescription,
+                DeathEventData.Decide(Death(), Ctx()));
+        }
+
+        private static void TestDeathBuildFallbackGameContextFormat()
+        {
+            AssertEqual("death fallback context with facts",
+                "tale=PawnDiary_DeathFallback; label=death; taleClass=PawnKillFallback; death_description=true; death_victim=Alice; death_victim_id=P1; death_victim_role=initiator; killer=Bear; cause=mauling",
+                DeathEventData.BuildFallbackGameContext(
+                    "PawnDiary_DeathFallback", "death", "Alice", "P1", "initiator", "killer=Bear; cause=mauling"));
+            AssertEqual("death fallback context without facts",
+                "tale=PawnDiary_DeathFallback; label=death; taleClass=PawnKillFallback; death_description=true; death_victim=Alice; death_victim_id=P1; death_victim_role=initiator",
+                DeathEventData.BuildFallbackGameContext(
+                    "PawnDiary_DeathFallback", "death", "Alice", "P1", "initiator", ""));
+        }
+
+        // ── Work ──
+
+        private static void TestWorkDecide()
+        {
+            AssertEqual("work null data drops", CaptureDecision.Drop,
+                WorkEventData.Decide(null, Ctx()));
+            AssertEqual("work null ctx drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(), null));
+            AssertEqual("work empty defName drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(defName: ""), Ctx()));
+            AssertEqual("work ineligible drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(), Ctx(eligible: false)));
+            AssertEqual("work user disabled drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(), Ctx(user: false)));
+            AssertEqual("work signal disabled drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(), Ctx(signal: false)));
+            AssertEqual("work without current work drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(hasCurrentWork: false), Ctx()));
+            AssertEqual("work ignored type drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(ignored: true), Ctx()));
+            AssertEqual("work same-type cooldown drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(cooldownClear: false), Ctx()));
+            AssertEqual("work failed chance roll drops", CaptureDecision.Drop,
+                WorkEventData.Decide(Work(passedChance: false), Ctx()));
+            AssertEqual("work valid signal records", CaptureDecision.GenerateSolo,
+                WorkEventData.Decide(Work(), Ctx()));
+        }
+
+        private static void TestWorkEventDefName()
+        {
+            AssertEqual("work dark study def wins", WorkEventData.DarkStudyDefName,
+                WorkEventData.EventDefName(isDarkStudy: true, isPositive: true, isNegative: true));
+            AssertEqual("work positive def", WorkEventData.PassionDefName,
+                WorkEventData.EventDefName(isDarkStudy: false, isPositive: true, isNegative: false));
+            AssertEqual("work negative def", WorkEventData.StrainDefName,
+                WorkEventData.EventDefName(isDarkStudy: false, isPositive: false, isNegative: true));
+            AssertEqual("work routine def", WorkEventData.RoutineDefName,
+                WorkEventData.EventDefName(isDarkStudy: false, isPositive: false, isNegative: false));
+        }
+
+        private static void TestWorkBuildGameContextFormat()
+        {
+            AssertEqual("work context with flags",
+                "work=Cooking; work_giver=DoBill; mood_impact=positive; passion=true; low_skill=true; dumb_or_cleaning=true; dark_study=true",
+                WorkEventData.BuildGameContext(
+                    "Cooking", "DoBill", MoodPositive, true, true, true, true));
+            AssertEqual("work context null strings and false flags",
+                "work=; work_giver=; mood_impact=; passion=false; low_skill=false; dumb_or_cleaning=false; dark_study=false",
+                WorkEventData.BuildGameContext(
+                    null, null, null, false, false, false, false));
+        }
+
+        // ── Thought progression ──
+
+        private static void TestThoughtProgressionDecide()
+        {
+            AssertEqual("thought progression null data drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(null, Ctx()));
+            AssertEqual("thought progression null ctx drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(), null));
+            AssertEqual("thought progression empty defName drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(defName: ""), Ctx()));
+            AssertEqual("thought progression ineligible drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(), Ctx(eligible: false)));
+            AssertEqual("thought progression user disabled drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(), Ctx(user: false)));
+            AssertEqual("thought progression signal disabled drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(), Ctx(signal: false)));
+            AssertEqual("thought progression not worsened drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(worsened: false), Ctx()));
+            AssertEqual("thought progression already recorded drops", CaptureDecision.Drop,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(stageRecorded: true), Ctx()));
+            AssertEqual("thought progression worsened records", CaptureDecision.GenerateSolo,
+                ThoughtProgressionEventData.Decide(ThoughtProgression(), Ctx()));
+        }
+
+        private static void TestThoughtProgressionBuildGameContextFormat()
+        {
+            AssertEqual("thought progression context",
+                "thought=NeedOutdoors; thought_progression=need_outdoors; label=stuck indoors; stage_index=2; severity=0.75; mood_impact=negative; mood_offset=-8.0",
+                ThoughtProgressionEventData.BuildGameContext(
+                    "NeedOutdoors", "need_outdoors", "stuck indoors", "2", "0.75", MoodNegative, "-8.0"));
+        }
+
+        // ── Day reflection ──
+
+        private static void TestDayReflectionDecide()
+        {
+            AssertEqual("day reflection null data drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(null, Ctx()));
+            AssertEqual("day reflection null ctx drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(), null));
+            AssertEqual("day reflection empty defName drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(defName: ""), Ctx()));
+            AssertEqual("day reflection ineligible drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(), Ctx(eligible: false)));
+            AssertEqual("day reflection user disabled drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(), Ctx(user: false)));
+            AssertEqual("day reflection signal disabled drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(), Ctx(signal: false)));
+            AssertEqual("day reflection already written drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(alreadyWritten: true), Ctx()));
+            AssertEqual("day reflection no candidates drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(candidates: 0), Ctx()));
+            AssertEqual("day reflection no highlights drops", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(highlights: 0), Ctx()));
+            AssertEqual("day reflection valid signal records", CaptureDecision.GenerateSolo,
+                DayReflectionEventData.Decide(DayReflection(), Ctx()));
+        }
+
+        private static void TestDayReflectionBuildGameContextFormat()
+        {
+            AssertEqual("day reflection context",
+                "day_reflection=true; day=42; highlights=3; candidates=8; filler_moments=2; signals=thought,work,hediff",
+                DayReflectionEventData.BuildGameContext(42, 3, 8, 2, "thought,work,hediff"));
+            AssertEqual("day reflection context null tags",
+                "day_reflection=true; day=42; highlights=1; candidates=1; filler_moments=0; signals=",
+                DayReflectionEventData.BuildGameContext(42, 1, 1, 0, null));
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -714,7 +918,6 @@ namespace DiaryCapturePolicyTests
         {
             "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
             "AnomalyEvent", "IncidentEvent", "Health",
-            "Arrival", "Death",
         };
 
         private static void TestMigrationSentinel()
@@ -889,6 +1092,100 @@ namespace DiaryCapturePolicyTests
                 SecondPawnId = secondId,
                 FirstEligible = firstEligible,
                 SecondEligible = secondEligible,
+            };
+        }
+
+        private static ArrivalEventData Arrival(
+            string defName = ArrivalEventData.DefNameToken, bool existing = false)
+        {
+            return new ArrivalEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                PawnLabel = "Alice",
+                PawnLoadId = "P1",
+                ArrivalContext = "arrival_source=joined",
+                HasExistingArrival = existing,
+            };
+        }
+
+        private static DeathEventData Death(
+            string defName = DeathEventData.DefNameToken, bool existing = false)
+        {
+            return new DeathEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Label = "death",
+                PawnLabel = "Alice",
+                PawnLoadId = "P1",
+                DeathFacts = "killer=Bear",
+                HasExistingDeathDescription = existing,
+            };
+        }
+
+        private static WorkEventData Work(
+            string defName = WorkEventData.RoutineDefName,
+            bool hasCurrentWork = true,
+            bool ignored = false,
+            bool cooldownClear = true,
+            bool passedChance = true)
+        {
+            return new WorkEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                WorkTypeDefName = "Cooking",
+                WorkGiverDefName = "DoBill",
+                MoodImpact = MoodNeutral,
+                HasCurrentWork = hasCurrentWork,
+                IgnoredWorkType = ignored,
+                SameWorkCooldownClear = cooldownClear,
+                PassedChanceRoll = passedChance,
+            };
+        }
+
+        private static ThoughtProgressionEventData ThoughtProgression(
+            string defName = "NeedOutdoors",
+            bool worsened = true,
+            bool stageRecorded = false)
+        {
+            return new ThoughtProgressionEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                CategoryKey = "need_outdoors",
+                Label = "stuck indoors",
+                StageIndex = "2",
+                Severity = "0.75",
+                MoodImpact = MoodNegative,
+                MoodOffset = "-8.0",
+                Worsened = worsened,
+                StageAlreadyRecorded = stageRecorded,
+            };
+        }
+
+        private static DayReflectionEventData DayReflection(
+            string defName = DayReflectionEventData.DefNameToken,
+            int candidates = 3,
+            int highlights = 2,
+            bool alreadyWritten = false)
+        {
+            return new DayReflectionEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Day = 42,
+                CandidateCount = candidates,
+                HighlightCount = highlights,
+                FillerMomentCount = 1,
+                SignalTags = "thought,work",
+                AlreadyWritten = alreadyWritten,
             };
         }
 

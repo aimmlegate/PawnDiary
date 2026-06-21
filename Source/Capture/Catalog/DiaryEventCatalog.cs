@@ -68,6 +68,11 @@ namespace PawnDiary.Capture
             Register(new TaleEventSpec());
             Register(new HediffEventSpec());
             Register(new InteractionEventSpec());
+            Register(new ArrivalEventSpec());
+            Register(new DeathEventSpec());
+            Register(new WorkEventSpec());
+            Register(new ThoughtProgressionEventSpec());
+            Register(new DayReflectionEventSpec());
             Register(new RomanceEventSpec());
         }
     }

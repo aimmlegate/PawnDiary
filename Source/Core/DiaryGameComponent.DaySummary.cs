@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -73,19 +74,8 @@ namespace PawnDiary
             ConsumePawnDayFiller(pawnId, day);
             pendingDayHediffs.Remove(dayKey);
 
-            if (candidates.Count == 0)
-            {
-                return;
-            }
-
-            writtenDayReflections.Add(dayKey);
-
             List<DaySummarySignal> highlights = SelectHighlights(candidates, DaySummaryMaxHighlights);
             highlights.Sort((a, b) => b.weight.CompareTo(a.weight));
-
-            string label = "PawnDiary.Event.DayReflectionLabel".Translate().Resolve();
-            string text = BuildDayReflectionText(pawn, highlights);
-            string instruction = "PawnDiary.Event.DayReflectionInstruction".Translate(pawn.LabelShortCap).Resolve();
 
             StringBuilder tags = new StringBuilder();
             for (int i = 0; i < highlights.Count; i++)
@@ -98,14 +88,42 @@ namespace PawnDiary
                 tags.Append(highlights[i].contextTag);
             }
 
-            string gameContext = "day_reflection=true"
-                + "; day=" + day
-                + "; highlights=" + highlights.Count
-                + "; candidates=" + candidates.Count
-                + "; filler_moments=" + fillerCount
-                + "; signals=" + tags;
+            DayReflectionEventData data = new DayReflectionEventData
+            {
+                PawnId = pawnId,
+                Tick = Find.TickManager.TicksGame,
+                DefName = DayReflectionEventData.DefNameToken,
+                Day = day,
+                CandidateCount = candidates.Count,
+                HighlightCount = highlights.Count,
+                FillerMomentCount = fillerCount,
+                SignalTags = tags.ToString(),
+                AlreadyWritten = false,
+            };
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: true,
+                userEnabled: true,
+                signalEnabled: DiaryTuning.Current.daySummaryEnabled,
+                ambientSignalEnabled: true);
 
-            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, "DayReflection", label, text, instruction, gameContext);
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.DayReflection);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision != CaptureDecision.GenerateSolo)
+            {
+                return;
+            }
+
+            writtenDayReflections.Add(dayKey);
+
+            string label = "PawnDiary.Event.DayReflectionLabel".Translate().Resolve();
+            string text = BuildDayReflectionText(pawn, highlights);
+            string instruction = "PawnDiary.Event.DayReflectionInstruction".Translate(pawn.LabelShortCap).Resolve();
+            string gameContext = DayReflectionEventData.BuildGameContext(
+                data.Day, data.HighlightCount, data.CandidateCount, data.FillerMomentCount, data.SignalTags);
+
+            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, DayReflectionEventData.DefNameToken, label, text, instruction, gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
         }
 
