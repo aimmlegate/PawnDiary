@@ -21,8 +21,8 @@ namespace PawnDiary.Capture
         /// .Enabled(Thought)). Sources without a signal policy leave this true.</summary>
         public bool SignalEnabled;
 
-        /// <summary>True if the ambient routing policy for this source is enabled (only Thought uses
-        /// ambient today). Sources without ambient routing leave this true.</summary>
+        /// <summary>True if the ambient routing policy for this source is enabled. Sources without
+        /// ambient routing leave this true.</summary>
         public bool AmbientSignalEnabled;
 
         /// <summary>Current game tick (Find.TickManager.TicksGame). Used for any time-based decision;

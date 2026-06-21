@@ -6,9 +6,8 @@
 // diary knows how to react to. Keeping it in one place makes it easy to see the mod's coverage at a
 // glance and gives future tooling (dev tab, weight table, XML-driven enable/disable) a stable key.
 //
-// Today only Thought and Inspiration are wired end-to-end. The TODO entries below name the sources
-// we plan to migrate or add in later slices — they are listed so the design intent is visible, but
-// they MUST NOT be referenced by code yet (no spec, no payload, no patch).
+// Every value in this enum has a registered Spec and pure decision tests. Planned future sources
+// stay out of the enum until they have an XxxEventData, XxxEventSpec, Register() call, and tests.
 namespace PawnDiary.Capture
 {
     public enum DiaryEventType

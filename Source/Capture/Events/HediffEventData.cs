@@ -2,19 +2,17 @@
 // Pawn_HealthTracker.AddHediff hook + the severity scanner). This is the sixth existing source
 // migrated to the Event Catalog.
 //
-// Like Tale, this migration is intentionally PARTIAL. Hediff has two diary modes (Immediate and
-// DayReflection) and a rich per-hediff policy (visibleOnly, badOnly, excludeInjuries, chronicAlways,
+// Hediff has two diary modes (Immediate and DayReflection) and a rich per-hediff policy (visibleOnly,
+// badOnly, excludeInjuries, chronicAlways,
 // minSeverity, severityStep, etc.). Most of those policy checks read RimWorld hediff state and so
-// cannot move into a pure Decider cleanly without exploding the payload with ~10 boolean flags.
-// This slice extracts only the basic drop-gate (defName/label/group/mode/source eligibility, plus
-// a single "passes-basic-policy" boolean that the caller pre-computes from the richer policy) and
-// the gameContext format. The Immediate-vs-DayReflection dispatch stays in RecordHediffSignal with
-// a TODO for a future slice that extends CaptureDecision (e.g. add RouteDayReflection) or moves
-// more of the policy evaluation into pure helpers.
+// cannot move into a pure Decider cleanly without exploding the payload with ~10 boolean flags. The
+// caller pre-computes those booleans; this pure Decider owns the final Immediate-vs-DayReflection
+// outcome.
 //
-// Even partial, this locks down the load-bearing parts: the source appears in the registry, the
-// drop-gate is testable, and the hediff gameContext format (`hediff=<defName>; label=…; source=…;
+// This locks down the load-bearing parts: the source appears in the registry, the drop-gate is
+// testable, and the hediff gameContext format (`hediff=<defName>; label=…; source=…;
 // group=…; mode=…; severity=…; stage=…` with optional stage_label/body_part) is locked by tests.
+using System;
 using System.Globalization;
 
 namespace PawnDiary.Capture
@@ -71,12 +69,9 @@ namespace PawnDiary.Capture
         public bool ModeRecordable;
 
         /// <summary>
-        /// Pure drop-gate for a hediff signal. Returns Drop when ANY of: no defName, not eligible,
+        /// Pure decision for a hediff signal. Returns Drop when ANY of: no defName, not eligible,
         /// user disabled the group, policy does not record this source, mode not recordable, hediff
-        /// fails the basic policy / should-record gate. Otherwise returns GenerateSolo as a
-        /// "continue processing" signal — the actual Immediate-vs-DayReflection dispatch stays in
-        /// RecordHediffSignal because the current CaptureDecision contract has no DayReflection
-        /// outcome. See file header TODO.
+        /// fails the basic policy / should-record gate. Otherwise returns the final sink route.
         /// </summary>
         public static CaptureDecision Decide(HediffEventData data, CaptureContext ctx)
         {
@@ -85,7 +80,7 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            if (!ctx.Eligible || !ctx.UserEnabled)
+            if (!ctx.Eligible || !ctx.UserEnabled || !ctx.SignalEnabled)
             {
                 return CaptureDecision.Drop;
             }
@@ -95,10 +90,11 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            // TODO(catalog): when CaptureDecision grows a RouteDayReflection value (or per-source
-            // outcome enums), split Immediate vs DayReflection here. Until then RecordHediffSignal
-            // reads data.ModeToken and dispatches to RecordImmediateHediffEvent or
-            // RecordDayReflectionHediffSignal itself.
+            if (string.Equals(data.ModeToken, "DayReflection", StringComparison.OrdinalIgnoreCase))
+            {
+                return CaptureDecision.RouteDayReflection;
+            }
+
             return CaptureDecision.GenerateSolo;
         }
 

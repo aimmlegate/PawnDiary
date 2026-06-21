@@ -2,8 +2,9 @@
 // returns one of these; DiaryGameComponent then performs the corresponding impure action (build
 // event text, mutate save state, queue LLM, route to ambient batcher).
 //
-// MentalState is the first migrated source that uses GeneratePair (social fights). Future pair
-// sources (romance, raid pairs) reuse the same value.
+// MentalState was the first migrated source that used GeneratePair (social fights). Later slices
+// added batch routing, day-reflection routing, and neutral death-description outcomes so the catalog
+// can choose the final event shape while DiaryGameComponent performs only the side effects.
 namespace PawnDiary.Capture
 {
     public enum CaptureDecision
@@ -20,8 +21,24 @@ namespace PawnDiary.Capture
         /// participant's id is carried on the payload so the sink can build the pair.</summary>
         GeneratePair,
 
+        /// <summary>Route the signal into a delayed batch instead of creating an immediate event.
+        /// Used by Tale combat batching and non-ambient social interaction batches.</summary>
+        RouteBatch,
+
         /// <summary>Route the event to the ambient-day-note batcher instead of emitting a solo event
-        /// right away. Only used by low-impact thought sources today.</summary>
+        /// right away. Used by low-impact thought sources and ambient social interactions.</summary>
         RouteAmbient,
+
+        /// <summary>Route the signal into the end-of-day reflection collector instead of creating
+        /// an immediate event. Used by Hediff groups whose XML policy chooses DayReflection.</summary>
+        RouteDayReflection,
+
+        /// <summary>Create a solo event, then queue the neutral death-description prompt instead of
+        /// a first-person rewrite.</summary>
+        GenerateSoloDeathDescription,
+
+        /// <summary>Create a pair-shaped event carrying both involved pawns, then queue the neutral
+        /// death-description prompt instead of pairwise first-person rewrites.</summary>
+        GeneratePairDeathDescription,
     }
 }

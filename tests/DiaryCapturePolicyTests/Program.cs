@@ -371,7 +371,7 @@ namespace DiaryCapturePolicyTests
                 bareContext);
         }
 
-        // ── Tale (partial migration — drop-gate only) ──
+        // ── Tale ──
 
         private static void TestTaleDecide()
         {
@@ -403,14 +403,25 @@ namespace DiaryCapturePolicyTests
                     new TaleEventData { DefName = "KilledMan" },  // FirstEligible/SecondEligible default false
                     Ctx()));
 
-            // Continuation: at least one eligible + none of the gates fire → GenerateSolo
-            // (RecordTale re-runs the shape dispatch; see file header TODO).
-            AssertEqual("tale first-only eligible continues", CaptureDecision.GenerateSolo,
+            // Final shape: single eligible pawn → solo.
+            AssertEqual("tale first-only eligible generates solo", CaptureDecision.GenerateSolo,
                 TaleEventData.Decide(Tale("KilledMan", firstEligible: true), Ctx()));
-            AssertEqual("tale second-only eligible continues", CaptureDecision.GenerateSolo,
-                TaleEventData.Decide(Tale("Wounded", secondEligible: true), Ctx()));
-            AssertEqual("tale both eligible continues", CaptureDecision.GenerateSolo,
+            AssertEqual("tale second-only eligible generates solo", CaptureDecision.GenerateSolo,
+                TaleEventData.Decide(Tale("Wounded", firstEligible: false, secondEligible: true), Ctx()));
+
+            // Final shape: non-death pair, batch, and death-description routes.
+            AssertEqual("tale both eligible generates pair", CaptureDecision.GeneratePair,
                 TaleEventData.Decide(Tale("DidResearch", firstEligible: true, secondEligible: true), Ctx()));
+            AssertEqual("tale same pawn stays solo", CaptureDecision.GenerateSolo,
+                TaleEventData.Decide(Tale("DidResearch", firstEligible: true, secondEligible: true, secondId: "P1"), Ctx()));
+            AssertEqual("tale batched route", CaptureDecision.RouteBatch,
+                TaleEventData.Decide(Tale("Wounded", firstEligible: true, secondEligible: true, batched: true), Ctx()));
+            AssertEqual("tale solo death description", CaptureDecision.GenerateSoloDeathDescription,
+                TaleEventData.Decide(Tale("Died", firstEligible: true, deathDescription: true), Ctx()));
+            AssertEqual("tale pair death description", CaptureDecision.GeneratePairDeathDescription,
+                TaleEventData.Decide(Tale("KilledMan", firstEligible: true, secondEligible: true, deathDescription: true), Ctx()));
+            AssertEqual("tale death beats batch", CaptureDecision.GeneratePairDeathDescription,
+                TaleEventData.Decide(Tale("KilledMan", firstEligible: true, secondEligible: true, batched: true, deathDescription: true), Ctx()));
         }
 
         private static void TestTaleBuildGameContextFormat()
@@ -438,7 +449,7 @@ namespace DiaryCapturePolicyTests
                 defNoLabel);
         }
 
-        // ── Hediff (partial migration — drop-gate only) ──
+        // ── Hediff ──
 
         private static void TestHediffDecide()
         {
@@ -457,6 +468,8 @@ namespace DiaryCapturePolicyTests
                 HediffEventData.Decide(Hediff(), Ctx(eligible: false)));
             AssertEqual("hediff user disabled drops", CaptureDecision.Drop,
                 HediffEventData.Decide(Hediff(), Ctx(user: false)));
+            AssertEqual("hediff signal disabled drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(), Ctx(signal: false)));
 
             // Policy gates: PolicyRecordsSource / ModeRecordable / PassesPolicy (any false → Drop).
             AssertEqual("hediff policy not recording source drops", CaptureDecision.Drop,
@@ -466,10 +479,13 @@ namespace DiaryCapturePolicyTests
             AssertEqual("hediff fails policy drops", CaptureDecision.Drop,
                 HediffEventData.Decide(Hediff(passesPolicy: false), Ctx()));
 
-            // Continuation: all gates pass → GenerateSolo (RecordHediffSignal re-dispatches
-            // Immediate vs DayReflection locally; see file header TODO).
-            AssertEqual("hediff all gates pass continues", CaptureDecision.GenerateSolo,
+            // Final route: Immediate emits a solo event; DayReflection feeds the day-summary collector.
+            AssertEqual("hediff immediate generates solo", CaptureDecision.GenerateSolo,
                 HediffEventData.Decide(Hediff(), Ctx()));
+            AssertEqual("hediff day reflection routes", CaptureDecision.RouteDayReflection,
+                HediffEventData.Decide(Hediff(modeToken: "DayReflection"), Ctx()));
+            AssertEqual("hediff day reflection route is case-insensitive", CaptureDecision.RouteDayReflection,
+                HediffEventData.Decide(Hediff(modeToken: "dayreflection"), Ctx()));
         }
 
         private static void TestHediffBuildGameContextFormat()
@@ -498,7 +514,7 @@ namespace DiaryCapturePolicyTests
                 progressed);
         }
 
-        // ── Interaction (partial migration — drop-gate only) ──
+        // ── Interaction ──
 
         private static void TestInteractionDecide()
         {
@@ -519,6 +535,8 @@ namespace DiaryCapturePolicyTests
             // User gate.
             AssertEqual("interaction user disabled drops", CaptureDecision.Drop,
                 InteractionEventData.Decide(Interaction(), Ctx(user: false)));
+            AssertEqual("interaction signal disabled drops", CaptureDecision.Drop,
+                InteractionEventData.Decide(Interaction(), Ctx(signal: false)));
 
             // No eligible pawn → Drop.
             AssertEqual("interaction no eligible pawns drops", CaptureDecision.Drop,
@@ -526,15 +544,26 @@ namespace DiaryCapturePolicyTests
                     Interaction(initiatorEligible: false, recipientEligible: false),
                     Ctx()));
 
-            // At least one eligible + significant + enabled → GenerateSolo (continue).
-            AssertEqual("interaction initiator only eligible continues", CaptureDecision.GenerateSolo,
+            // Final shape: one eligible pawn stays solo.
+            AssertEqual("interaction initiator only eligible generates solo", CaptureDecision.GenerateSolo,
                 InteractionEventData.Decide(
                     Interaction(initiatorEligible: true, recipientEligible: false), Ctx()));
-            AssertEqual("interaction recipient only eligible continues", CaptureDecision.GenerateSolo,
+            AssertEqual("interaction recipient only eligible generates solo", CaptureDecision.GenerateSolo,
                 InteractionEventData.Decide(
                     Interaction(initiatorEligible: false, recipientEligible: true), Ctx()));
-            AssertEqual("interaction both eligible continues", CaptureDecision.GenerateSolo,
+
+            // Final shape: both eligible pawns either pair immediately, route to batch, or ambient.
+            AssertEqual("interaction both eligible generates pair", CaptureDecision.GeneratePair,
                 InteractionEventData.Decide(Interaction(), Ctx()));
+            AssertEqual("interaction route batch", CaptureDecision.RouteBatch,
+                InteractionEventData.Decide(Interaction(routeToBatch: true), Ctx()));
+            AssertEqual("interaction route ambient", CaptureDecision.RouteAmbient,
+                InteractionEventData.Decide(Interaction(routeToAmbient: true), Ctx()));
+            AssertEqual("interaction ambient wins over batch flag", CaptureDecision.RouteAmbient,
+                InteractionEventData.Decide(Interaction(routeToBatch: true, routeToAmbient: true), Ctx()));
+            AssertEqual("interaction route flag ignored for one eligible pawn", CaptureDecision.GenerateSolo,
+                InteractionEventData.Decide(
+                    Interaction(initiatorEligible: true, recipientEligible: false, routeToBatch: true), Ctx()));
         }
 
         private static void TestInteractionBuildGameContextFormat()
@@ -775,19 +804,25 @@ namespace DiaryCapturePolicyTests
             bool firstEligible = true,
             bool secondEligible = false,
             bool coveredElsewhere = false,
-            bool gameConditionDup = false)
+            bool gameConditionDup = false,
+            bool batched = false,
+            bool deathDescription = false,
+            string firstId = "P1",
+            string secondId = null)
         {
             return new TaleEventData
             {
-                PawnId = "P1",
+                PawnId = firstId,
                 Tick = 0,
                 DefName = defName,
-                FirstPawnId = "P1",
-                SecondPawnId = secondEligible ? "P2" : null,
+                FirstPawnId = firstId,
+                SecondPawnId = secondId ?? (secondEligible ? "P2" : null),
                 FirstEligible = firstEligible,
                 SecondEligible = secondEligible,
                 IsCoveredElsewhere = coveredElsewhere,
                 IsGameConditionDuplicate = gameConditionDup,
+                IsBatched = batched,
+                IsDeathDescription = deathDescription,
             };
         }
 
@@ -795,7 +830,8 @@ namespace DiaryCapturePolicyTests
             string defName = "Wound",
             bool policyRecordsSource = true,
             bool modeRecordable = true,
-            bool passesPolicy = true)
+            bool passesPolicy = true,
+            string modeToken = "Immediate")
         {
             return new HediffEventData
             {
@@ -805,7 +841,7 @@ namespace DiaryCapturePolicyTests
                 Label = "test label",
                 SourceToken = "add",
                 GroupKey = "hediff_test",
-                ModeToken = "Immediate",
+                ModeToken = modeToken,
                 SeverityF2 = "0.50",
                 StageString = "0",
                 CleanedStageLabel = null,
@@ -820,7 +856,9 @@ namespace DiaryCapturePolicyTests
             string defName = "Insult",
             bool initiatorEligible = true,
             bool recipientEligible = true,
-            bool isSignificant = true)
+            bool isSignificant = true,
+            bool routeToBatch = false,
+            bool routeToAmbient = false)
         {
             return new InteractionEventData
             {
@@ -833,6 +871,8 @@ namespace DiaryCapturePolicyTests
                 InitiatorEligible = initiatorEligible,
                 RecipientEligible = recipientEligible,
                 IsSignificant = isSignificant,
+                RouteToBatch = routeToBatch,
+                RouteToAmbient = routeToAmbient,
             };
         }
 

@@ -143,9 +143,10 @@ Anatomy:
   magnitude, duration, ...). Plus a pure `static Decide(data, ctx) → CaptureDecision`.
 - `CaptureContext` — pre-computed impure facts (eligibility, user/signal/ambient enable flags, game
   tick). Filled by the caller so the reducer never touches DefDatabase/Settings/tick manager.
-- `CaptureDecision` — `Drop` / `GenerateSolo` / `GeneratePair` / `RouteAmbient`. MentalState was
-  the first migrated source using `GeneratePair` (social fights); Romance relation changes reuse it
-  for two-pawn relationship milestones.
+- `CaptureDecision` — the pure outcome: `Drop`, `GenerateSolo`, `GeneratePair`, `RouteBatch`,
+  `RouteAmbient`, `RouteDayReflection`, `GenerateSoloDeathDescription`, or
+  `GeneratePairDeathDescription`. The `RecordX` sink executes that outcome with RimWorld side
+  effects such as batching, save mutation, and LLM queueing.
 - `DiaryEventSpec` — abstract reducer wrapper, one subclass per source, registered in
   `DiaryEventCatalog` so callers dispatch with a single `catalog.Get(type).Decide(...)`.
 
@@ -153,13 +154,13 @@ Migrated in the current slice: **Thought** (richest source — token filter, gen
 threshold, bypass tokens, ambient routing), **Inspiration** (trivial source — eligibility + user
 toggle only), **MoodEvent** (first multi-pawn fan-out — one GameCondition → one solo entry per
 affected colonist, fan-out loop stays in `RecordMoodEvent`), **MentalState** (first pair source
-— social fights emit `GeneratePair`, every other break emits `GenerateSolo`), **Tale** (partial
-migration — drop-gate is in the catalog; the batch/death/pair/solo shape dispatch stays in
-`RecordTale` because the current `CaptureDecision` does not encode those outcomes), **Hediff**
-(partial migration — drop-gate and context format are pure, Immediate/DayReflection dispatch stays
-impure), **Interaction** (partial migration — drop-gate is pure, solo/pair/batch dispatch stays
-impure), and **Romance** (first net-new catalog source — pairwise relation-change events). Arrival
-and Death are still outside the catalog as their own specialized flows.
+— social fights emit `GeneratePair`, every other break emits `GenerateSolo`), **Tale** (catalog
+chooses batch / pair / solo / neutral death-description routes from a primitive payload),
+**Hediff** (catalog chooses Immediate solo vs DayReflection routing after pre-computed policy
+flags), **Interaction** (catalog chooses solo / pair / batch / ambient after XML group
+classification and the impure promotion roll are snapshotted), and **Romance** (first net-new
+catalog source — pairwise relation-change events). Arrival and Death fallback are still outside the
+catalog as specialized flows.
 
 Adding a new source (the 4-step recipe):
 
@@ -201,15 +202,17 @@ removed from the sentinel list (`TestMigrationSentinel`).
 5. **Registration.** Add `Register(new XxxEventSpec())` to `DiaryEventCatalog.EnsureInitialized`.
 6. **Impure RecordX rewrite.** Update `DiaryGameComponent.RecordXxx` to: snapshot live facts into
    `XxxEventData` + `CaptureContext` → `catalog.Get(type).Decide(...)` → if `Drop` return → perform
-   dedup → call the pure `BuildGameContext` → create `DiaryEvent` via `AddSoloEvent` (or
-   `AddPairwiseEvent` for pair sources) → queue LLM. The RecordX should contain NO business logic,
-   only Verse reads + sink side-effects.
+   dedup → call the pure `BuildGameContext` → execute the returned route (`AddSoloEvent`,
+   `AddPairwiseEvent`, batch append, ambient append, day-reflection append, or neutral
+   death-description queue). The RecordX should contain only Verse reads, pre-computed impure facts
+   like RNG/settings results, and sink side-effects.
 7. **Sentinel cleanup.** If the source was listed in `PlannedNotYetMigratedSources` in
    `DiaryCapturePolicyTests/Program.cs`, remove its name. If it was a brand-new source never in the
    list, nothing to do.
-8. **Pair sources only.** Pair sources such as mental state social fights and romance milestones
-   return `GeneratePair` from `Decide` and call `AddPairwiseEvent` in the sink. Solo sources stay
-   unchanged. *(MentalState already added `GeneratePair`; newer pair sources reuse it.)*
+8. **Non-solo outcomes.** Pair sources such as mental state social fights and romance milestones
+   return `GeneratePair` from `Decide` and call `AddPairwiseEvent` in the sink. Batching sources use
+   `RouteBatch` or `RouteAmbient`; day-summary health sources use `RouteDayReflection`; Tale-backed
+   deaths use the neutral death-description outcomes. Solo sources stay on `GenerateSolo`.
 
 What stays in `RecordXxx` (impure, NOT in the pure layer): `IsDiaryEligible(pawn)`, `.LabelCap.
 Resolve()`, `.Translate()`, `Find.TickManager.TicksGame`, `RecentlyRecorded`, `AddSoloEvent`/

@@ -1,13 +1,6 @@
-// Social interactions — the PlayLog.Add hook's diary flow, partially built on the Event Catalog
-// pattern (see Source/Capture/). The Harmony patch (DiaryPatches.cs) forwards every social-log row
-// here; RecordInteraction asks the catalog for the basic drop-gate (significance / no eligible
-// pawn / user-disabled), then performs the solo-vs-pair-vs-batched dispatch locally.
-//
-// TODO(catalog): the shape dispatch (Solo when only one eligible / Pair when both eligible /
-// Batched when the classified group has a batch policy and no promotion roll wins) reads impure
-// state (group classification, RNG) and does not fit CaptureDecision cleanly. When per-source
-// outcome enums or a batched value lands, move the dispatch into InteractionEventData.Decide and
-// shrink this file.
+// Social interactions — the PlayLog.Add hook's diary flow. The Harmony patch (DiaryPatches.cs)
+// forwards every social-log row here; RecordInteraction snapshots live RimWorld facts, asks the
+// catalog for the final route (solo / pair / batch / ambient), then performs that side effect.
 //
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
@@ -73,11 +66,25 @@ namespace PawnDiary
 
             bool initiatorEligible = IsDiaryEligible(initiator);
             bool recipientEligible = IsDiaryEligible(recipient);
+            DiaryInteractionGroupDef batchGroup = null;
+            bool routeToBatch = false;
+            bool routeToAmbient = false;
+            if (initiatorEligible && recipientEligible)
+            {
+                // XML marks low-value groups as delayed batches. The promotion roll is intentionally
+                // impure, so the adapter pre-computes the chosen route before calling the catalog.
+                batchGroup = BatchGroupFor(interactionDef);
+                if (batchGroup != null && !ShouldPromoteInteraction(batchGroup, initiator, recipient))
+                {
+                    routeToAmbient = batchGroup.batch != null
+                        && batchGroup.batch.mode == InteractionBatchMode.AmbientDayNote;
+                    routeToBatch = !routeToAmbient;
+                }
+            }
 
-            // Snapshot for the catalog drop-gate. The IsSignificant flag and UserEnabled both
-            // reflect the IsInteractionSignificant check above (which already gated on the user's
-            // per-interaction toggle) — kept explicit here so the pure Decider exercises the same
-            // gates with synthetic inputs in tests.
+            // Snapshot for the catalog. The IsSignificant flag reflects the earlier
+            // IsInteractionSignificant check, while the route flags capture XML batching policy plus
+            // the impure promotion RNG result.
             InteractionEventData data = new InteractionEventData
             {
                 PawnId = initiatorEligible ? initiator.GetUniqueLoadID() : recipient.GetUniqueLoadID(),
@@ -89,6 +96,8 @@ namespace PawnDiary
                 InitiatorEligible = initiatorEligible,
                 RecipientEligible = recipientEligible,
                 IsSignificant = true,
+                RouteToBatch = routeToBatch,
+                RouteToAmbient = routeToAmbient,
             };
             CaptureContext ctx = BuildCaptureContext(
                 eligible: initiatorEligible || recipientEligible,
@@ -105,19 +114,11 @@ namespace PawnDiary
                 return;
             }
 
-            // catalog returned GenerateSolo as a "continue processing" signal (see file header
-            // TODO). The Solo/Pair/Batched dispatch below is the impure part that still lives here.
-
-            if (!initiatorEligible && !recipientEligible)
-            {
-                return;
-            }
-
             string interactionLabel = interactionDef.LabelCap.Resolve();
             string initiatorText = DiaryContextBuilder.CleanLine(initiatorGameText);
             string recipientText = DiaryContextBuilder.CleanLine(recipientGameText);
 
-            if (!initiatorEligible || !recipientEligible)
+            if (decision == CaptureDecision.GenerateSolo)
             {
                 Pawn eligiblePawn = initiatorEligible ? initiator : recipient;
                 Pawn otherPawn = initiatorEligible ? recipient : initiator;
@@ -145,14 +146,18 @@ namespace PawnDiary
                 recipientText = initiatorText;
             }
 
-            // Low-value groups normally batch. A promotion policy can let an individually-interesting
-            // moment win a weighted-random roll and skip batching — falling through to the immediate
-            // pairwise path below so it becomes its own diary event instead of daily filler.
-            DiaryInteractionGroupDef batchGroup = BatchGroupFor(interactionDef);
-            if (batchGroup != null && !ShouldPromoteInteraction(batchGroup, initiator, recipient))
+            if (decision == CaptureDecision.RouteBatch || decision == CaptureDecision.RouteAmbient)
             {
-                RecordBatchedInteraction(batchGroup, initiator, recipient, interactionDef,
-                    interactionLabel, initiatorText, recipientText, playLogEntryId);
+                if (batchGroup != null)
+                {
+                    RecordBatchedInteraction(batchGroup, initiator, recipient, interactionDef,
+                        interactionLabel, initiatorText, recipientText, playLogEntryId);
+                }
+                return;
+            }
+
+            if (decision != CaptureDecision.GeneratePair)
+            {
                 return;
             }
 

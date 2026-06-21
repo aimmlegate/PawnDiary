@@ -1,13 +1,7 @@
-// Generic hediff diary signals, partially built on the Event Catalog pattern (see Source/Capture/).
+// Generic hediff diary signals, built on the Event Catalog pattern (see Source/Capture/).
 // The Harmony AddHediff hook and the lightweight severity scanner both route through XML Hediff-
 // domain groups, so support for modded health conditions is data-only: compatibility packs add/patch
 // DiaryInteractionGroupDefs instead of adding C# patches here.
-//
-// TODO(catalog): RecordHediffSignal asks the catalog for the basic drop-gate (defName/eligible/
-// user-disabled/policyRecordsSource/modeRecordable/passesPolicy), then performs the
-// Immediate-vs-DayReflection dispatch locally because CaptureDecision has no DayReflection outcome.
-// When RouteDayReflection (or per-source outcome enums) lands, move the dispatch into
-// HediffEventData.Decide and shrink this file to the impure snapshot + side-effects.
 //
 // This is one piece of the partial DiaryGameComponent class -- see DiaryGameComponent.cs for the map.
 using System;
@@ -218,22 +212,22 @@ namespace PawnDiary
                 return;
             }
 
-            // catalog returned GenerateSolo as a "continue processing" signal (see file header
-            // TODO). The dedup + Immediate-vs-DayReflection dispatch below is the impure part.
-
             string dedupKey = HediffDedupKey(pawn, hediff, policy, source);
             if (RecentlyRecorded(recentHediffEvents, dedupKey, Math.Max(0, policy.dedupTicks)))
             {
                 return;
             }
 
-            if (policy.mode == HediffDiaryMode.Immediate)
+            if (decision == CaptureDecision.GenerateSolo)
             {
                 RecordImmediateHediffEvent(pawn, hediff, group, policy, source, data);
                 return;
             }
 
-            RecordDayReflectionHediffSignal(pawn, hediff, policy, source);
+            if (decision == CaptureDecision.RouteDayReflection)
+            {
+                RecordDayReflectionHediffSignal(pawn, hediff, policy, source);
+            }
         }
 
         private static HediffEventData BuildHediffEventData(Pawn pawn, Hediff hediff,

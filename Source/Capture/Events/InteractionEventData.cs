@@ -1,16 +1,13 @@
 // Payload + pure decision for a "social interaction logged" event (the PlayLog.Add hook). This is
 // the seventh existing source migrated to the Event Catalog.
 //
-// Like Tale and Hediff, this migration is intentionally PARTIAL. Interaction has three shapes
-// (Solo when only one pawn is eligible / Pair when both eligible / Batched when the classified
-// group has an XML batch policy and no promotion roll wins). Shape determination reads impure
-// state (group classification, promotion RNG) and does not fit the current CaptureDecision
-// contract cleanly. This slice extracts only the drop-gate (significance + eligibility +
-// user-enabled) and locks the gameContext format. The solo-vs-pair-vs-batch dispatch stays in
-// RecordInteraction with a TODO for a future slice.
+// Interaction has four shapes (Solo when only one pawn is eligible / Pair when both eligible /
+// Batched when the classified group has a normal XML batch policy / Ambient when the group batches
+// into per-pawn day notes). DiaryGameComponent pre-computes the impure group classification and
+// promotion RNG result, then this pure Decide chooses the final outcome.
 //
-// Even partial, this locks: the source appears in the registry, the drop-gate is testable, and
-// the `interaction=<defName>; label=…` gameContext format is locked by tests.
+// This locks the source registry entry, the pure drop-gate, final routing, and the
+// `interaction=<defName>; label=…` gameContext format with tests.
 namespace PawnDiary.Capture
 {
     /// <summary>
@@ -44,11 +41,17 @@ namespace PawnDiary.Capture
         /// IsInteractionSignificant.</summary>
         public bool IsSignificant;
 
+        /// <summary>True when this interaction should be routed to a normal delayed pair batch.
+        /// Pre-computed by the caller after XML group classification and promotion RNG.</summary>
+        public bool RouteToBatch;
+
+        /// <summary>True when this interaction should be routed to the ambient day-note batcher.
+        /// Pre-computed by the caller after XML group classification and promotion RNG.</summary>
+        public bool RouteToAmbient;
+
         /// <summary>
-        /// Pure drop-gate for an interaction event. Returns Drop when ANY of: no defName, neither
-        /// pawn eligible, group not significant, user disabled. Otherwise returns GenerateSolo as a
-        /// "continue processing" signal — the actual Solo/Pair/Batched dispatch stays in
-        /// RecordInteraction. See file header TODO.
+        /// Pure decision for an interaction event. Returns Drop when ANY of: no defName, neither
+        /// pawn eligible, group not significant, user disabled. Otherwise returns the final shape.
         /// </summary>
         public static CaptureDecision Decide(InteractionEventData data, CaptureContext ctx)
         {
@@ -57,7 +60,7 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            if (!data.IsSignificant || !ctx.UserEnabled)
+            if (!data.IsSignificant || !ctx.UserEnabled || !ctx.SignalEnabled)
             {
                 return CaptureDecision.Drop;
             }
@@ -67,11 +70,22 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            // TODO(catalog): when CaptureDecision grows per-source outcome enums (or a batched
-            // value), move the Solo/Pair/Batched dispatch here. Until then RecordInteraction
-            // re-runs the shape classification (one-eligible / batch-group / promote-roll /
-            // pairwise) on the live pawns.
-            return CaptureDecision.GenerateSolo;
+            if (!data.InitiatorEligible || !data.RecipientEligible)
+            {
+                return CaptureDecision.GenerateSolo;
+            }
+
+            if (data.RouteToAmbient)
+            {
+                return CaptureDecision.RouteAmbient;
+            }
+
+            if (data.RouteToBatch)
+            {
+                return CaptureDecision.RouteBatch;
+            }
+
+            return CaptureDecision.GeneratePair;
         }
 
         /// <summary>

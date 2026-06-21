@@ -4,18 +4,11 @@
 // Tale is the most complex source migrated so far: a single RecordTale call can branch into five
 // different outcomes (Drop / Batched / Pair / Solo / DeathDescription), and the classification
 // requires heavy RimWorld introspection (Tale_DoublePawn vs Tale_SinglePawn, DefDatabase lookups
-// for batch groups, death-victim role, GameConditionDef duplicate detection).
+// for batch groups, death-victim role, GameConditionDef duplicate detection). DiaryGameComponent
+// pre-computes those impure facts, then this pure Decide chooses the final outcome.
 //
-// This migration is intentionally PARTIAL: the pure Decide handles only the basic drop-gate
-// (covered-elsewhere / GameCondition-duplicate / disabled / no-eligible-pawn). All the complex
-// shape-determination (batching, death-description, pair-vs-solo) stays in RecordTale, because
-// the current CaptureDecision contract does not cleanly encode those outcomes. The basic gate
-// moves into the catalog so it is testable and the source appears in the registry; the rest is
-// marked with TODOs for a future slice that extends CaptureDecision (e.g. add GenerateBatched,
-// model death-description as a payload flag).
-//
-// Even partial, this locks down the load-bearing parts: the TaleDefsCoveredElsewhere skip-list
-// (now a public const set, testable) and the base gameContext format (`tale=<defName>; label=…;
+// This locks down the load-bearing parts: the TaleDefsCoveredElsewhere skip-list (now a public
+// const set, testable) and the base gameContext format (`tale=<defName>; label=…;
 // taleClass=…` + optional attachedDef fields). RecordTale keeps the death/batch context builders
 // because they pull impure state (DeathContextCache, batch group policy).
 using System;
@@ -59,6 +52,13 @@ namespace PawnDiary.Capture
         /// Pre-computed by the caller via DefDatabase lookup.</summary>
         public bool IsGameConditionDuplicate;
 
+        /// <summary>True when the matched Tale group has an enabled per-pawn batch policy. Death
+        /// descriptions force this false because they must preserve final chronology.</summary>
+        public bool IsBatched;
+
+        /// <summary>True when this Tale should become the pawn's neutral final death page.</summary>
+        public bool IsDeathDescription;
+
         /// <summary>
         /// TaleDefs whose events are already captured by narrower hooks. Skipping them here avoids
         /// double diary entries for one social fight or mental break. Mirrored from the pre-refactor
@@ -72,18 +72,16 @@ namespace PawnDiary.Capture
         };
 
         /// <summary>
-        /// Pure drop-gate for a Tale event. Returns Drop when ANY of:
+        /// Pure decision for a Tale event. Returns Drop when ANY of:
         ///   - the defName is covered by a narrower hook (covered-elsewhere),
         ///   - the defName is also a GameConditionDef (MoodEvent owns it),
         ///   - the user disabled this signal/tale,
         ///   - neither participant is eligible.
-        /// Otherwise returns GenerateSolo as a "continue processing" signal — the actual shape
-        /// (batch / pair / solo / death-description) is determined impure in RecordTale because
-        /// the current CaptureDecision contract does not encode those outcomes.
+        /// Otherwise returns the final shape the impure sink should execute.
         /// </summary>
         public static CaptureDecision Decide(TaleEventData data, CaptureContext ctx)
         {
-            if (data == null || ctx == null)
+            if (data == null || ctx == null || string.IsNullOrEmpty(data.DefName))
             {
                 return CaptureDecision.Drop;
             }
@@ -103,10 +101,33 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            // TODO(catalog): when CaptureDecision grows a Process/Continue value (or per-source
-            // outcome enums), replace this GenerateSolo-as-continue idiom. Until then RecordTale
-            // re-runs the shape classification (batch/death/pair/solo) on the live Tale.
+            if (data.IsDeathDescription)
+            {
+                return HasEligibleDistinctPair(data)
+                    ? CaptureDecision.GeneratePairDeathDescription
+                    : CaptureDecision.GenerateSoloDeathDescription;
+            }
+
+            if (data.IsBatched)
+            {
+                return CaptureDecision.RouteBatch;
+            }
+
+            if (HasEligibleDistinctPair(data))
+            {
+                return CaptureDecision.GeneratePair;
+            }
+
             return CaptureDecision.GenerateSolo;
+        }
+
+        private static bool HasEligibleDistinctPair(TaleEventData data)
+        {
+            return data.FirstEligible
+                && data.SecondEligible
+                && !string.IsNullOrEmpty(data.FirstPawnId)
+                && !string.IsNullOrEmpty(data.SecondPawnId)
+                && !string.Equals(data.FirstPawnId, data.SecondPawnId, StringComparison.Ordinal);
         }
 
         /// <summary>

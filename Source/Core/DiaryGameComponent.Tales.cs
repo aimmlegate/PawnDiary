@@ -1,13 +1,7 @@
-// Tales — the TaleRecorder.RecordTale hook's diary flow, partially built on the Event Catalog
-// pattern (see Source/Capture/). Tales are vanilla's broad notable-history events (deaths, wounds,
-// surgeries, births, recruitment, research, disasters, …). RecordTale asks the catalog for the
-// basic drop-gate (covered-elsewhere / GameCondition-duplicate / disabled / no-eligible-pawn), then
-// performs the complex shape-determination (batch / death-description / pair / solo) impure.
-//
-// TODO(catalog): the shape-determination still lives here because the current CaptureDecision
-// contract encodes only Drop/GenerateSolo/GeneratePair/RouteAmbient. Tale needs GenerateBatched
-// and a death-description flag to fully migrate. When those land, move the shape dispatch into
-// TaleEventData.Decide and shrink this file to the impure snapshot + side-effects.
+// Tales — the TaleRecorder.RecordTale hook's diary flow. Tales are vanilla's broad notable-history
+// events (deaths, wounds, surgeries, births, recruitment, research, disasters, ...). RecordTale
+// snapshots the live RimWorld facts the pure catalog cannot read; TaleEventData.Decide chooses the
+// final route (batch / death-description / pair / solo); this file performs that side effect.
 //
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
@@ -25,9 +19,8 @@ namespace PawnDiary
         private const string DeathFallbackDefName = "PawnDiary_DeathFallback";
 
         /// <summary>
-        /// Records one RimWorld TaleRecorder event. Delegates the basic drop-gate to
-        /// TaleEventData.Decide (pure) and keeps the complex shape dispatch (batch / death / pair /
-        /// solo) impure. See file header TODO for the planned full migration.
+        /// Records one RimWorld TaleRecorder event by snapshotting live facts, asking the pure
+        /// catalog for a route, then executing the requested side effect.
         /// </summary>
         public void RecordTale(Tale tale, TaleDef taleDef)
         {
@@ -46,10 +39,11 @@ namespace PawnDiary
 
             bool firstEligible = IsDiaryEligible(firstPawn) || (deathDescription && firstPawn == deathVictim);
             bool secondEligible = IsDiaryEligible(secondPawn) || (deathDescription && secondPawn == deathVictim);
+            DiaryInteractionGroupDef batchGroup = deathDescription ? null : TaleBatchGroupFor(taleDef);
 
-            // Snapshot live facts for the pure drop-gate. The caller pre-computes the impure
+            // Snapshot live facts for the pure catalog decision. The caller pre-computes the impure
             // classifications (covered-elsewhere set membership, GameConditionDef duplicate,
-            // pawn eligibility with death override) so the catalog's Decide stays pure.
+            // pawn eligibility with death override, and XML batch policy) so Decide stays pure.
             TaleEventData data = new TaleEventData
             {
                 PawnId = firstPawn?.GetUniqueLoadID() ?? string.Empty,
@@ -61,6 +55,8 @@ namespace PawnDiary
                 SecondEligible = secondEligible,
                 IsCoveredElsewhere = TaleEventData.CoveredElsewhere.Contains(taleDef.defName),
                 IsGameConditionDuplicate = DefDatabase<GameConditionDef>.GetNamedSilentFail(taleDef.defName) != null,
+                IsBatched = batchGroup != null,
+                IsDeathDescription = deathDescription,
             };
 
             CaptureContext ctx = BuildCaptureContext(
@@ -78,9 +74,6 @@ namespace PawnDiary
                 return;
             }
 
-            // catalog returned GenerateSolo as a "continue processing" signal (see file header
-            // TODO). The shape dispatch below is the impure part that still lives here.
-
             string key = "tale|" + taleDef.defName + "|" + (firstPawn?.GetUniqueLoadID() ?? string.Empty)
                 + "|" + (secondPawn?.GetUniqueLoadID() ?? string.Empty);
             if (RecentlyRecorded(recentTaleEvents, key, DiaryTuning.Current.taleDedupTicks))
@@ -97,20 +90,23 @@ namespace PawnDiary
                 gameContext = AppendDeathDescriptionContext(gameContext, deathVictim, firstPawn, secondPawn);
             }
 
-            DiaryInteractionGroupDef batchGroup = deathDescription ? null : TaleBatchGroupFor(taleDef);
-            if (batchGroup != null)
+            if (decision == CaptureDecision.RouteBatch)
             {
-                RecordBatchedTale(batchGroup, firstPawn, secondPawn, firstEligible, secondEligible,
-                    taleDef, label, attachedDef, instruction);
+                if (batchGroup != null)
+                {
+                    RecordBatchedTale(batchGroup, firstPawn, secondPawn, firstEligible, secondEligible,
+                        taleDef, label, attachedDef, instruction);
+                }
                 return;
             }
 
-            if (firstEligible && secondEligible && firstPawn != secondPawn)
+            if (decision == CaptureDecision.GeneratePair
+                || decision == CaptureDecision.GeneratePairDeathDescription)
             {
                 string text = BuildTalePairText(firstPawn, secondPawn, label, attachedDef);
                 DiaryEvent pairEvent = AddPairwiseEvent(firstPawn, secondPawn, taleDef.defName, label,
                     text, text, instruction, gameContext);
-                if (deathDescription)
+                if (decision == CaptureDecision.GeneratePairDeathDescription)
                 {
                     AddDeathEventRef(deathVictim, pairEvent.eventId);
                     QueueDeathDescription(pairEvent);
@@ -121,11 +117,17 @@ namespace PawnDiary
                 return;
             }
 
+            if (decision != CaptureDecision.GenerateSolo
+                && decision != CaptureDecision.GenerateSoloDeathDescription)
+            {
+                return;
+            }
+
             Pawn povPawn = firstEligible ? firstPawn : secondPawn;
             Pawn otherPawn = firstEligible ? secondPawn : firstPawn;
             string soloText = BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
             DiaryEvent soloEvent = AddSoloEvent(povPawn, otherPawn, taleDef.defName, label, soloText, instruction, gameContext);
-            if (deathDescription)
+            if (decision == CaptureDecision.GenerateSoloDeathDescription)
             {
                 AddDeathEventRef(deathVictim, soloEvent.eventId);
                 QueueDeathDescription(soloEvent);

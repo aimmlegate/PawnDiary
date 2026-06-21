@@ -2,10 +2,9 @@
 // event source the diary can decide on. Adding a new source = add a value to DiaryEventType, write a
 // XxxEventData + XxxEventSpec, then Register() the spec here.
 //
-// Today only Thought and Inspiration are registered. The registry is initialized lazily in its
-// static constructor (first Get() call) so it does not run during RimWorld's early type load, which
-// would be too early to read DefDatabase-backed settings — Specs read those lazily inside Decide(),
-// not in their constructors.
+// Every current DiaryEventType value is registered here. The registry is initialized lazily on the
+// first Get() call so it does not run during RimWorld's early type load, which would be too early to
+// read DefDatabase-backed settings. Specs read those lazily inside Decide(), not in constructors.
 using System;
 using System.Collections.Generic;
 

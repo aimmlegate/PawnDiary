@@ -2,6 +2,18 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5f)
+
+- **Finished the partial Event Catalog migrations for Tale, Hediff, and Interaction:** extended
+  `CaptureDecision` with route outcomes for normal batches, ambient batches, hediff day-reflection,
+  and neutral death-description events. `TaleEventData.Decide` now chooses batch / pair / solo /
+  death-description routes from primitive flags; `HediffEventData.Decide` now chooses Immediate solo
+  vs DayReflection; `InteractionEventData.Decide` now chooses solo / pair / batch / ambient after
+  the adapter snapshots XML batching policy and the promotion RNG result. `RecordTale`,
+  `RecordHediffSignal`, and `RecordInteraction` now execute catalog outcomes instead of using
+  `GenerateSolo` as a local "continue processing" marker. No intended user-visible behavior change.
+  Test count: `DiaryCapturePolicyTests` 156 -> 169 assertions. Rebuilt DLL.
+
 ## 2026-06-21 (5e)
 
 - **Fixed Event Catalog review findings:** restored the `CanRecordGameplayEventNow()` guard in
