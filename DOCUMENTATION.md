@@ -59,7 +59,7 @@ Key files:
 | File | Role |
 |---|---|
 | `DiaryModStartup.cs` | Applies patches and injects the Diary tab. |
-| `DiaryPatches.cs` | Harmony hooks for interactions, mental states, inspirations, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
+| `DiaryPatches.cs` | Harmony hooks for interactions, mental states, inspirations, tales, deaths, arrivals, mood events, thoughts, and hediff signals. |
 | `Source/Capture/*` | Event Catalog: `DiaryEventType` enum (the source list), `XxxEventData` payloads, pure `XxxEventData.Decide` reducers, and `DiaryEventCatalog` dispatch. The "should this event be recorded?" decision for migrated sources lives here, unit-tested without RimWorld. See §4a. |
 | `DiaryGameComponent*.cs` | Recording, batching, scans, save/load, lookup indexes, generation queueing, and public UI access. |
 | `DiaryEvent.cs` / `PawnDiaryRecord.cs` | Saved event model and per-pawn event index/persona/generation toggle. |
@@ -114,7 +114,6 @@ that guard. Scheduled scans snapshot free colonists before iterating.
 | Mental states | `MentalStateHandler.TryStartMentalState` | `SocialFighting` pairwise when both pawns are eligible, otherwise solo; other accepted breaks are solo. |
 | Tales | `TaleRecorder.RecordTale` | Solo or pairwise notable events; precise hooks and GameCondition-like tales are skipped to avoid duplicates. |
 | Combat tales | Tale-domain batch policy | Non-death combat evidence becomes delayed per-pawn solo batches; death descriptions stay immediate neutral entries. |
-| Synthetic tales | `QualityUtility.SendCraftNotification`, relic-install patch | Masterwork/legendary crafts and relic installs. |
 | Arrivals | Starting-colonist scan and `Pawn.SetFaction` | Neutral first-page arrival with prior faction/recruiter/kind/creepjoiner/surroundings context when available. |
 | Deaths | `Pawn.Kill` prefix/postfix plus XML-marked death TaleDefs | Neutral final page with cached cause/context; XML marks which Tale pawn slot is the victim; fallback covers natural deaths without duplicating tale-backed deaths. |
 | Mood events | `GameConditionManager.RegisterCondition` | Once per eligible colonist on affected maps. |

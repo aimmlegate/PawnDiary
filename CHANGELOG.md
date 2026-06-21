@@ -2,6 +2,19 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (4)
+
+- **Removed crafted-quality and relic-install diary events:** vanilla RimWorld already records
+  masterwork/legendary crafts through the `CraftedArt` tale (which Pawn Diary captures via the
+  existing `RecordTale` flow), so the synthetic `RecordCraftedQuality` and `RecordRelicInstalled`
+  events were redundant. Deleted `DiaryGameComponent.CraftedAndRelics.cs`, the
+  `CraftQualityNotificationPatch` and `RelicInstallCompletionPatch` Harmony hooks, their manual
+  registration in `DiaryModStartup`, the `talequality`/`talerelic` synthetic-group constants, the
+  four related Keyed localization keys, the dead `talerelic` DefInjected group, and the dead
+  `CraftedMasterwork`/`CraftedLegendary` matchers from the `talequality` group (only `CraftedArt`
+  is live there now). Updated the AGENTS.md defensive-registration example to use
+  `ThoughtGainPatch.TryRegister` instead of the removed relic hook. Restaged `PawnDiary.dll`.
+
 ## 2026-06-21 (3)
 
 - **Added `GeneratePair` to `CaptureDecision`; migrated MentalState to Event Catalog:** the first

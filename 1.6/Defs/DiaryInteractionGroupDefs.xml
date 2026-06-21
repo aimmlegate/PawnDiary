@@ -643,22 +643,7 @@
     <instruction>hands that made something lasting—pride, exhaustion, and the weight of creation</instruction>
     <tone>with proud, bone-tired satisfaction</tone>
     <matchDefNames>
-      <li>CraftedMasterwork</li>
-      <li>CraftedLegendary</li>
       <li>CraftedArt</li>
-    </matchDefNames>
-  </PawnDiary.DiaryInteractionGroupDef>
-
-  <PawnDiary.DiaryInteractionGroupDef>
-    <defName>talerelic</defName>
-    <label>Relics</label>
-    <order>326</order>
-    <domain>Tale</domain>
-    <defaultEnabled>true</defaultEnabled>
-    <instruction>a sacred object placed with reverence—a solemn, culturally weighty moment</instruction>
-    <tone>with hushed reverence</tone>
-    <matchDefNames>
-      <li>RelicInstalled</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

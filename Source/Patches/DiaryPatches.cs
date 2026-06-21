@@ -75,21 +75,6 @@ namespace PawnDiary
         }
     }
 
-    // Fires when vanilla sends the masterwork/legendary craft letter. We filter by quality in
-    // DiaryGameComponent too, but patching this narrow method avoids watching every produced item.
-    [HarmonyPatch(typeof(QualityUtility), nameof(QualityUtility.SendCraftNotification))]
-    public static class CraftQualityNotificationPatch
-    {
-        /// <summary>
-        /// Harmony Postfix for QualityUtility.SendCraftNotification. Forwards the crafted item
-        /// and worker so masterwork/legendary production can become a solo diary event.
-        /// </summary>
-        public static void Postfix(Thing thing, Pawn worker)
-        {
-            DiaryGameComponent.Current?.RecordCraftedQuality(thing, worker);
-        }
-    }
-
     // Fires whenever a hediff is added to any pawn (injuries, diseases, addictions, implants...).
     // We forward colonist additions so a major new affliction can feed that pawn's end-of-day
     // reflection. The "is this major enough?" filter and per-day accumulation live in
@@ -116,93 +101,6 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.Current?.RecordHediffAppeared(pawn, hediff);
-        }
-    }
-
-    // Fires when a pawn finishes installing an ideology relic in a reliquary. The target is a
-    // compiler-generated local function inside MakeNewToils, whose name (<MakeNewToils>b__5_5) can
-    // shift between RimWorld versions. We deliberately do NOT register this via [HarmonyPatch] /
-    // PatchAll: if the name no longer resolves, AccessTools.Method returns null and PatchAll would
-    // THROW, aborting every other patch. Instead DiaryModStartup calls TryRegister, which null-checks
-    // the method and logs a warning, so a future rename only disables relic entries — nothing else.
-    public static class RelicInstallCompletionPatch
-    {
-        /// <summary>
-        /// Patches the private final-action method inside JobDriver_InstallRelic.MakeNewToils, if it
-        /// can still be found. Safe to call even when the method name has changed: it logs and skips.
-        /// </summary>
-        public static void TryRegister(Harmony harmony)
-        {
-            MethodBase target = AccessTools.Method(typeof(JobDriver_InstallRelic), "<MakeNewToils>b__5_5");
-            if (target == null)
-            {
-                Log.Warning("[Pawn Diary] Could not find JobDriver_InstallRelic.<MakeNewToils>b__5_5; "
-                    + "relic-install diary entries are disabled (a RimWorld update likely renamed it).");
-                return;
-            }
-
-            harmony.Patch(target, postfix: new HarmonyMethod(typeof(RelicInstallCompletionPatch), nameof(Postfix)));
-        }
-
-        /// <summary>
-        /// Harmony Postfix for the install-relic completion action. Finds the relic from the job
-        /// targets or the reliquary container, then records the installer pawn's diary event.
-        /// </summary>
-        public static void Postfix(JobDriver_InstallRelic __instance)
-        {
-            if (__instance == null)
-            {
-                return;
-            }
-
-            Thing relic = FindRelic(__instance);
-            if (relic == null)
-            {
-                return;
-            }
-
-            DiaryGameComponent.Current?.RecordRelicInstalled(__instance.pawn, relic);
-        }
-
-        private static Thing FindRelic(JobDriver_InstallRelic driver)
-        {
-            Thing[] targets = new Thing[]
-            {
-                driver.job.GetTarget(TargetIndex.A).Thing,
-                driver.job.GetTarget(TargetIndex.B).Thing,
-                driver.job.GetTarget(TargetIndex.C).Thing
-            };
-
-            CompRelicContainer container = null;
-            for (int i = 0; i < targets.Length; i++)
-            {
-                ThingWithComps thingWithComps = targets[i] as ThingWithComps;
-                CompRelicContainer found = thingWithComps?.GetComp<CompRelicContainer>();
-                if (found != null)
-                {
-                    container = found;
-                    if (found.ContainedThing != null)
-                    {
-                        return found.ContainedThing;
-                    }
-                }
-            }
-
-            if (container == null)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < targets.Length; i++)
-            {
-                Thing target = targets[i];
-                if (target != null && CompRelicContainer.IsRelic(target))
-                {
-                    return target;
-                }
-            }
-
-            return null;
         }
     }
 
