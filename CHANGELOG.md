@@ -7,8 +7,9 @@ not need separate entries unless they change behavior or document an important r
 ## 2026-06-21
 
 - **Diary formatting previews added.** Dev-mode Diary controls now include transient preview buttons
-  for plain prose, speech blocks, combat pages, death/memorial pages, staggered speech, and
-  strange-chat distortion without saving mock events.
+  for plain prose, markdown, speech blocks, combat pages, social fights, mental-break fractured
+  pages, extreme darkness, linked cards, writing/title animations, death/memorial pages, staggered
+  speech, and strange-chat distortion without saving mock events.
 - **Event Catalog completed for current live sources.** The capture decision layer now covers
   Thought, Inspiration, MoodEvent, MentalState, Tale, Hediff, Interaction, Romance, Arrival, Death
   fallback, Work, ThoughtProgression, and DayReflection. Remaining direct event writers are route

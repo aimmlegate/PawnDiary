@@ -35,13 +35,20 @@
   <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
   <PawnDiary.Tab.DevPreviewPlain>Plain</PawnDiary.Tab.DevPreviewPlain>
+  <PawnDiary.Tab.DevPreviewMarkdown>Markdown</PawnDiary.Tab.DevPreviewMarkdown>
   <PawnDiary.Tab.DevPreviewSpeech>Speech</PawnDiary.Tab.DevPreviewSpeech>
   <PawnDiary.Tab.DevPreviewStaggered>Stagger</PawnDiary.Tab.DevPreviewStaggered>
   <PawnDiary.Tab.DevPreviewCombat>Combat</PawnDiary.Tab.DevPreviewCombat>
+  <PawnDiary.Tab.DevPreviewSocialFight>Fight</PawnDiary.Tab.DevPreviewSocialFight>
+  <PawnDiary.Tab.DevPreviewMental>Mental</PawnDiary.Tab.DevPreviewMental>
+  <PawnDiary.Tab.DevPreviewDark>Dark</PawnDiary.Tab.DevPreviewDark>
   <PawnDiary.Tab.DevPreviewStrange>Strange</PawnDiary.Tab.DevPreviewStrange>
   <PawnDiary.Tab.DevPreviewDeath>Death</PawnDiary.Tab.DevPreviewDeath>
+  <PawnDiary.Tab.DevPreviewLinked>Linked</PawnDiary.Tab.DevPreviewLinked>
+  <PawnDiary.Tab.DevPreviewWriting>Writing</PawnDiary.Tab.DevPreviewWriting>
+  <PawnDiary.Tab.DevPreviewTitle>Title</PawnDiary.Tab.DevPreviewTitle>
   <PawnDiary.Tab.DevPreviewClear>Clear</PawnDiary.Tab.DevPreviewClear>
-  <PawnDiary.Tab.DevPreviewTip>Dev-only: shows one temporary diary page at the top of the list so text wrapping, markdown, combat/death colors, speech blocks, and atmosphere decorations can be checked without saving mock events.</PawnDiary.Tab.DevPreviewTip>
+  <PawnDiary.Tab.DevPreviewTip>Dev-only: shows one temporary diary page at the top of the list so text wrapping, markdown, linked cards, writing/title animations, colors, speech blocks, and atmosphere decorations can be checked without saving mock events.</PawnDiary.Tab.DevPreviewTip>
   <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.LinkedInitiator>{0}'s perspective (initiator):</PawnDiary.Tab.LinkedInitiator>
   <PawnDiary.Tab.LinkedRecipient>{0}'s perspective (recipient):</PawnDiary.Tab.LinkedRecipient>
@@ -255,18 +262,35 @@
   <PawnDiary.Dev.PreviewPawnFallback>this colonist</PawnDiary.Dev.PreviewPawnFallback>
   <PawnDiary.Dev.PreviewLabel>Formatting preview</PawnDiary.Dev.PreviewLabel>
   <PawnDiary.Dev.PreviewRawText>{0} rendered the {1} diary formatting preview.</PawnDiary.Dev.PreviewRawText>
+  <PawnDiary.Dev.PreviewLinkedPawn>Other colonist</PawnDiary.Dev.PreviewLinkedPawn>
+  <PawnDiary.Dev.PreviewLinkedTitle>Linked preview</PawnDiary.Dev.PreviewLinkedTitle>
+  <PawnDiary.Dev.PreviewLinkedText>The other perspective preview should sit inside the main card, with its own border, accent strip, label line, and clipped body text.</PawnDiary.Dev.PreviewLinkedText>
   <PawnDiary.Dev.PreviewTitlePlain>Plain text preview</PawnDiary.Dev.PreviewTitlePlain>
+  <PawnDiary.Dev.PreviewTitleMarkdown>Markdown preview</PawnDiary.Dev.PreviewTitleMarkdown>
   <PawnDiary.Dev.PreviewTitleSpeech>Speech block preview</PawnDiary.Dev.PreviewTitleSpeech>
   <PawnDiary.Dev.PreviewTitleStaggered>Staggered speech preview</PawnDiary.Dev.PreviewTitleStaggered>
   <PawnDiary.Dev.PreviewTitleCombat>Combat page preview</PawnDiary.Dev.PreviewTitleCombat>
+  <PawnDiary.Dev.PreviewTitleSocialFight>Social fight preview</PawnDiary.Dev.PreviewTitleSocialFight>
+  <PawnDiary.Dev.PreviewTitleMental>Mental break preview</PawnDiary.Dev.PreviewTitleMental>
+  <PawnDiary.Dev.PreviewTitleDark>Extreme darkness preview</PawnDiary.Dev.PreviewTitleDark>
   <PawnDiary.Dev.PreviewTitleStrange>Strange speech preview</PawnDiary.Dev.PreviewTitleStrange>
   <PawnDiary.Dev.PreviewTitleDeath>Death page preview</PawnDiary.Dev.PreviewTitleDeath>
+  <PawnDiary.Dev.PreviewTitleLinked>Linked card preview</PawnDiary.Dev.PreviewTitleLinked>
+  <PawnDiary.Dev.PreviewTitleWriting>Writing preview</PawnDiary.Dev.PreviewTitleWriting>
+  <PawnDiary.Dev.PreviewTitlePending>Title pending preview</PawnDiary.Dev.PreviewTitlePending>
   <PawnDiary.Dev.PreviewBodyPlain>This is a simulated diary page for {0}. It includes **bold memory**, *uneasy emphasis*, and "quoted words" inside ordinary prose.&#10;&#10;The second paragraph is deliberately longer so wrapping, spacing, and the page bottom can be checked without waiting for an LLM.</PawnDiary.Dev.PreviewBodyPlain>
+  <PawnDiary.Dev.PreviewBodyMarkdown># A heading-like line&#10;- A bullet marker should become a compact bullet.&#10;&gt; A quote marker should disappear while the words remain.&#10;This line checks **bold**, *italic*, and "inline spoken words" in the ordinary body renderer.</PawnDiary.Dev.PreviewBodyMarkdown>
   <PawnDiary.Dev.PreviewBodySpeech>{0} writes a short ordinary line before saying something out loud.&#10;[[speech]]This line should become the colored speech block.[[/speech]]&#10;After the speech, ordinary narration should return to the diary body style.</PawnDiary.Dev.PreviewBodySpeech>
   <PawnDiary.Dev.PreviewBodyStaggered>{0} tries to keep the page steady after too much drink.&#10;[[speech]]I can write this straight. I am almost sure of it.[[/speech]]&#10;Only the spoken block should pick up the configured staggered word-size decoration.</PawnDiary.Dev.PreviewBodyStaggered>
   <PawnDiary.Dev.PreviewBodyCombat>{0} is testing the combat diary color and a longer, harsher entry shape. The page should carry the combat accent while ordinary narration still wraps cleanly around strong verbs, clipped sentences, and **important** damage details.&#10;&#10;A second combat paragraph checks that the card keeps enough bottom padding after a dense account of smoke, blood, shouted orders, and the sick quiet that follows a fight.</PawnDiary.Dev.PreviewBodyCombat>
+  <PawnDiary.Dev.PreviewBodySocialFight>{0} is testing the social-fight accent, where the page should feel angry without using the full combat color. Short lines should still stay readable. The card should show the orange conflict cue, ordinary body text, and enough space after the last sentence.</PawnDiary.Dev.PreviewBodySocialFight>
+  <PawnDiary.Dev.PreviewBodyMental>{0} is testing the fractured mental-break layout. One sentence should sit cleanly. Another should break away. A third should make the staggered indentation obvious without changing the saved words.&#10;&#10;The second paragraph checks that fractured spacing still respects blank-line gaps.</PawnDiary.Dev.PreviewBodyMental>
+  <PawnDiary.Dev.PreviewBodyDark>{0} is testing the extreme-dark cue and unsettled layout. The page should lean into the dark red accent without losing legibility.&#10;[[speech]]Something moved where there was no light.[[/speech]]&#10;The spoken line should pick up the same distortion rules used by dark and strange pages.</PawnDiary.Dev.PreviewBodyDark>
   <PawnDiary.Dev.PreviewBodyStrange>{0} records the moment as carefully as possible, but the lines do not want to stay where they belong.&#10;[[speech]]The walls answered before I spoke.[[/speech]]&#10;The strange preview uses the unsettled layout and the same color cue that drives direct-speech distortion.</PawnDiary.Dev.PreviewBodyStrange>
   <PawnDiary.Dev.PreviewBodyDeath>{0}'s death-preview page should settle into the centered memorial layout. The words are not a real eulogy; they are only here to check the pale accent, spacing, and quiet line breaks.&#10;&#10;What remains is a measured silence, a name held carefully, and enough text to prove the memorial card can breathe without clipping.</PawnDiary.Dev.PreviewBodyDeath>
+  <PawnDiary.Dev.PreviewBodyLinked>{0} is testing the main side of a pairwise diary card. The linked preview above or below should reserve height correctly, stay inside its border, and keep the main text from clipping.&#10;&#10;This page also checks that the linked card and body text use separate colors and spacing.</PawnDiary.Dev.PreviewBodyLinked>
+  <PawnDiary.Dev.PreviewBodyWriting>{0} is testing the in-progress writing placeholder. This body is stored as raw preview data, but the card should show the animated writing dots instead of finished prose while the status is pending.</PawnDiary.Dev.PreviewBodyWriting>
+  <PawnDiary.Dev.PreviewBodyTitle>{0} is testing the title-pending header. The body is complete, but the header should keep the date visible and animate small dots where the generated title will appear.</PawnDiary.Dev.PreviewBodyTitle>
 
   <!-- Mood-event text (GameCondition diary entries) -->
   <PawnDiary.Event.MoodEvent>{0} experienced {1}.</PawnDiary.Event.MoodEvent>

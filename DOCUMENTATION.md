@@ -218,10 +218,11 @@ including model fetch/pick, per-row connection tests, Responses reasoning effort
 thinking output. Endpoint URLs normalize on load/save and logs strip query strings.
 
 The Diary tab shows completed pages in production. Dev mode adds generation enablement, persona
-picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, a transient
-formatting preview row for prose/speech/combat/death/atmosphere checks, and mock-page fill. Long
-histories page by in-game year. Cards show date/title, accent, group chip, model id, linked POV
-previews, and title-pending animation.
+picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient
+formatting preview rows for prose, markdown, speech, combat/social-fight/mental/dark/death
+colors, linked cards, writing placeholders, title-pending animation, and atmosphere checks, plus
+mock-page fill. Long histories page by in-game year. Cards show date/title, accent, group chip,
+model id, linked POV previews, and title-pending animation.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`

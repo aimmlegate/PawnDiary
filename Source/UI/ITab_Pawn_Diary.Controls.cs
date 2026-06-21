@@ -29,7 +29,7 @@ namespace PawnDiary
 
 
 
-            float lines = 3f; // generation toggle + mock-history filler + transient formatting preview
+            float lines = 4f; // generation toggle + mock-history filler + two transient formatting preview rows
 
             if (PawnDiaryMod.Settings != null)
             {
