@@ -19,6 +19,7 @@
     <Compile Include="..\..\Source\Capture\Events\MoodEventData.cs" Link="Capture\Events\MoodEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\MentalStateEventData.cs" Link="Capture\Events\MentalStateEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\TaleEventData.cs" Link="Capture\Events\TaleEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\HediffEventData.cs" Link="Capture\Events\HediffEventData.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventSpec.cs" Link="Capture\Catalog\DiaryEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventCatalog.cs" Link="Capture\Catalog\DiaryEventCatalog.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ThoughtEventSpec.cs" Link="Capture\Specs\ThoughtEventSpec.cs" />
@@ -26,5 +27,6 @@
     <Compile Include="..\..\Source\Capture\Specs\MoodEventSpec.cs" Link="Capture\Specs\MoodEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\MentalStateEventSpec.cs" Link="Capture\Specs\MentalStateEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\TaleEventSpec.cs" Link="Capture\Specs\TaleEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\HediffEventSpec.cs" Link="Capture\Specs\HediffEventSpec.cs" />
   </ItemGroup>
 </Project>
