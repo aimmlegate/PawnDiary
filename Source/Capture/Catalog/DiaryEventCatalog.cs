@@ -68,6 +68,7 @@ namespace PawnDiary.Capture
             Register(new MentalStateEventSpec());
             Register(new TaleEventSpec());
             Register(new HediffEventSpec());
+            Register(new InteractionEventSpec());
         }
     }
 }

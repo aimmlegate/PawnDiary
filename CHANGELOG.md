@@ -2,6 +2,18 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5c)
+
+- **Partial Interaction migration to Event Catalog:** the drop-gate for social interactions
+  (PlayLog.Add hook) moves into pure `InteractionEventData.Decide`, and the
+  `def=<defName>; label=…; worker=…; initiatorThought=…; recipientThought=…` game-context format
+  moves into `InteractionEventData.BuildGameContext` (mirroring the pre-refactor
+  `DiaryContextBuilder.BuildGameContextSummary` format byte-for-byte, both unit-tested). The
+  Solo/Pair/Batched shape dispatch stays in `RecordInteraction` because the current
+  `CaptureDecision` contract has no batched outcome; marked with a TODO for a future slice that
+  extends the contract. No user-visible behavior change. Test count: 92 → 106 assertions. Restaged
+  DLL.
+
 ## 2026-06-21 (5b)
 
 - **Partial Hediff migration to Event Catalog:** the drop-gate for hediff signals (Appeared via

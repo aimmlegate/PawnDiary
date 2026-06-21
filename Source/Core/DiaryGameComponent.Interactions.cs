@@ -1,12 +1,19 @@
-// Social interactions — the PlayLog.Add hook's diary flow. The Harmony patch (DiaryPatches.cs)
-// forwards every social-log row here; these RecordInteraction overloads classify it (skip
-// insignificant groups, check per-pawn eligibility), build the fallback text, and hand off to a
-// pairwise/solo DiaryEvent — or, when the classified group has an XML <batch> policy, into the
-// interaction batcher (RecordBatchedInteraction lives in DiaryGameComponent.InteractionBatching.cs).
+// Social interactions — the PlayLog.Add hook's diary flow, partially built on the Event Catalog
+// pattern (see Source/Capture/). The Harmony patch (DiaryPatches.cs) forwards every social-log row
+// here; RecordInteraction asks the catalog for the basic drop-gate (significance / no eligible
+// pawn / user-disabled), then performs the solo-vs-pair-vs-batched dispatch locally.
+//
+// TODO(catalog): the shape dispatch (Solo when only one eligible / Pair when both eligible /
+// Batched when the classified group has a batch policy and no promotion roll wins) reads impure
+// state (group classification, RNG) and does not fit CaptureDecision cleanly. When per-source
+// outcome enums or a batched value lands, move the dispatch into InteractionEventData.Decide and
+// shrink this file.
+//
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
 using System.Text;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -66,6 +73,40 @@ namespace PawnDiary
 
             bool initiatorEligible = IsDiaryEligible(initiator);
             bool recipientEligible = IsDiaryEligible(recipient);
+
+            // Snapshot for the catalog drop-gate. The IsSignificant flag and UserEnabled both
+            // reflect the IsInteractionSignificant check above (which already gated on the user's
+            // per-interaction toggle) — kept explicit here so the pure Decider exercises the same
+            // gates with synthetic inputs in tests.
+            InteractionEventData data = new InteractionEventData
+            {
+                PawnId = initiatorEligible ? initiator.GetUniqueLoadID() : recipient.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = interactionDef.defName,
+                Label = interactionDef.LabelCap.Resolve(),
+                InitiatorPawnId = initiator.GetUniqueLoadID(),
+                RecipientPawnId = recipient.GetUniqueLoadID(),
+                InitiatorEligible = initiatorEligible,
+                RecipientEligible = recipientEligible,
+                IsSignificant = true,
+            };
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: initiatorEligible || recipientEligible,
+                userEnabled: true,
+                signalEnabled: true,
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Interaction);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision == CaptureDecision.Drop)
+            {
+                return;
+            }
+
+            // catalog returned GenerateSolo as a "continue processing" signal (see file header
+            // TODO). The Solo/Pair/Batched dispatch below is the impure part that still lives here.
 
             if (!initiatorEligible && !recipientEligible)
             {
