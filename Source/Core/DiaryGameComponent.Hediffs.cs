@@ -1,11 +1,20 @@
-// Generic hediff diary signals. The Harmony AddHediff hook and the lightweight severity scanner
-// both route through XML Hediff-domain groups, so support for modded health conditions is data-only:
-// compatibility packs add/patch DiaryInteractionGroupDefs instead of adding C# patches here.
+// Generic hediff diary signals, partially built on the Event Catalog pattern (see Source/Capture/).
+// The Harmony AddHediff hook and the lightweight severity scanner both route through XML Hediff-
+// domain groups, so support for modded health conditions is data-only: compatibility packs add/patch
+// DiaryInteractionGroupDefs instead of adding C# patches here.
+//
+// TODO(catalog): RecordHediffSignal asks the catalog for the basic drop-gate (defName/eligible/
+// user-disabled/policyRecordsSource/modeRecordable/passesPolicy), then performs the
+// Immediate-vs-DayReflection dispatch locally because CaptureDecision has no DayReflection outcome.
+// When RouteDayReflection (or per-source outcome enums) lands, move the dispatch into
+// HediffEventData.Decide and shrink this file to the impure snapshot + side-effects.
+//
 // This is one piece of the partial DiaryGameComponent class -- see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -191,12 +200,26 @@ namespace PawnDiary
                 RememberHediffProgressionState(pawn, hediff, policy);
             }
 
-            if (!PolicyRecordsSource(policy, source)
-                || !CanRecordHediffMode(policy)
-                || !ShouldRecordHediff(policy, hediff))
+            // Snapshot for the catalog drop-gate. The policy flags are pre-computed here because
+            // every check reads RimWorld hediff state; the pure Decider only reads primitives.
+            HediffEventData data = BuildHediffEventData(pawn, hediff, group, policy, source);
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: true,
+                userEnabled: PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                signalEnabled: policy.enabled,
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Hediff);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision == CaptureDecision.Drop)
             {
                 return;
             }
+
+            // catalog returned GenerateSolo as a "continue processing" signal (see file header
+            // TODO). The dedup + Immediate-vs-DayReflection dispatch below is the impure part.
 
             string dedupKey = HediffDedupKey(pawn, hediff, policy, source);
             if (RecentlyRecorded(recentHediffEvents, dedupKey, Math.Max(0, policy.dedupTicks)))
@@ -206,11 +229,33 @@ namespace PawnDiary
 
             if (policy.mode == HediffDiaryMode.Immediate)
             {
-                RecordImmediateHediffEvent(pawn, hediff, group, policy, source);
+                RecordImmediateHediffEvent(pawn, hediff, group, policy, source, data);
                 return;
             }
 
             RecordDayReflectionHediffSignal(pawn, hediff, policy, source);
+        }
+
+        private static HediffEventData BuildHediffEventData(Pawn pawn, Hediff hediff,
+            DiaryInteractionGroupDef group, HediffSignalPolicy policy, HediffSignalSource source)
+        {
+            return new HediffEventData
+            {
+                PawnId = pawn.GetUniqueLoadID(),
+                Tick = Find.TickManager.TicksGame,
+                DefName = HediffDefName(hediff),
+                Label = HediffLabel(hediff),
+                SourceToken = source == HediffSignalSource.Progressed ? "severity_progression" : "add",
+                GroupKey = group.defName,
+                ModeToken = policy.mode.ToString(),
+                SeverityF2 = hediff.Severity.ToString("F2", CultureInfo.InvariantCulture),
+                StageString = HediffSeverityStage(hediff, policy).ToString(CultureInfo.InvariantCulture),
+                CleanedStageLabel = DiaryContextBuilder.CleanLine(hediff.CurStage?.label),
+                CleanedBodyPartLabel = hediff.Part == null ? null : DiaryContextBuilder.CleanLine(hediff.Part.LabelCap),
+                PassesPolicy = ShouldRecordHediff(policy, hediff),
+                PolicyRecordsSource = PolicyRecordsSource(policy, source),
+                ModeRecordable = CanRecordHediffMode(policy),
+            };
         }
 
         private void RememberHediffProgressionState(Pawn pawn, Hediff hediff, HediffSignalPolicy policy)
@@ -237,16 +282,16 @@ namespace PawnDiary
         }
 
         private void RecordImmediateHediffEvent(Pawn pawn, Hediff hediff, DiaryInteractionGroupDef group,
-            HediffSignalPolicy policy, HediffSignalSource source)
+            HediffSignalPolicy policy, HediffSignalSource source, HediffEventData data)
         {
-            string defName = HediffDefName(hediff);
-            string label = HediffLabel(hediff);
             string textKey = ImmediateHediffTextKey(policy, source);
-            string text = textKey.Translate(pawn.LabelShortCap, label).Resolve();
+            string text = textKey.Translate(pawn.LabelShortCap, data.Label).Resolve();
             string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
-            string gameContext = BuildHediffGameContext(hediff, group, policy, source);
+            string gameContext = HediffEventData.BuildGameContext(
+                data.DefName, data.Label, data.SourceToken, data.GroupKey, data.ModeToken,
+                data.SeverityF2, data.StageString, data.CleanedStageLabel, data.CleanedBodyPartLabel);
 
-            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, defName, label, text, instruction, gameContext);
+            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, data.DefName, data.Label, text, instruction, gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
         }
 
@@ -414,36 +459,6 @@ namespace PawnDiary
                 + "|" + HediffDefName(hediff)
                 + "|" + HediffPartKey(hediff)
                 + "|" + stage.ToString(CultureInfo.InvariantCulture);
-        }
-
-        private static string BuildHediffGameContext(Hediff hediff, DiaryInteractionGroupDef group,
-            HediffSignalPolicy policy, HediffSignalSource source)
-        {
-            string label = HediffLabel(hediff);
-            StringBuilder builder = new StringBuilder();
-            builder.Append("hediff=").Append(HediffDefName(hediff));
-            builder.Append("; label=").Append(label);
-            builder.Append("; source=").Append(source == HediffSignalSource.Progressed
-                ? "severity_progression"
-                : "add");
-            builder.Append("; group=").Append(group.defName);
-            builder.Append("; mode=").Append(policy.mode.ToString());
-            builder.Append("; severity=").Append(hediff.Severity.ToString("F2", CultureInfo.InvariantCulture));
-            builder.Append("; stage=").Append(HediffSeverityStage(hediff, policy).ToString(CultureInfo.InvariantCulture));
-
-            string stageLabel = DiaryContextBuilder.CleanLine(hediff.CurStage?.label);
-            if (!string.IsNullOrWhiteSpace(stageLabel))
-            {
-                builder.Append("; stage_label=").Append(stageLabel);
-            }
-
-            string part = hediff.Part == null ? string.Empty : DiaryContextBuilder.CleanLine(hediff.Part.LabelCap);
-            if (!string.IsNullOrWhiteSpace(part))
-            {
-                builder.Append("; body_part=").Append(part);
-            }
-
-            return builder.ToString();
         }
 
         private static string HediffDefName(Hediff hediff)

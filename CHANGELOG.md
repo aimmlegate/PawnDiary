@@ -2,6 +2,22 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5b)
+
+- **Partial Hediff migration to Event Catalog:** the drop-gate for hediff signals (Appeared via
+  AddHediff hook + Progressed via severity scanner) moves into pure `HediffEventData.Decide`, and
+  the `hediff=<defName>; label=…; source=…; group=…; mode=…; severity=…; stage=…` game-context
+  format (with optional `stage_label`/`body_part`) moves into `HediffEventData.BuildGameContext`
+  (both unit-tested). The Immediate-vs-DayReflection dispatch stays in `RecordHediffSignal` because
+  `CaptureDecision` has no DayReflection outcome; that dispatch is marked with a TODO for a future
+  slice that adds `RouteDayReflection` (or per-source outcome enums). Pre-computed policy flags
+  (`PassesPolicy`, `PolicyRecordsSource`, `ModeRecordable`) carry the rich per-hediff policy
+  decisions (visibleOnly / badOnly / excludeInjuries / chronicAlways / sickThoughtAlways /
+  addictionAlways / missingPartAlways / minSeverity) into the pure layer without exploding the
+  payload. Same baseline-on-AddHediff ordering, same dedup, same dispatch. Test count: 92 → 105
+  assertions. Removed the stale `Crafted` reference from the enum placeholder list (deleted in
+  PR #34). Restaged DLL.
+
 ## 2026-06-21 (5)
 
 - **Partial Tale migration to Event Catalog:** the drop-gate for TaleRecorder events (covered-

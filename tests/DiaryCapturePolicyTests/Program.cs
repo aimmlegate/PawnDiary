@@ -32,6 +32,8 @@ namespace DiaryCapturePolicyTests
             TestMentalStateBuildSoloGameContextFormat();
             TestTaleDecide();
             TestTaleBuildGameContextFormat();
+            TestHediffDecide();
+            TestHediffBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -431,6 +433,66 @@ namespace DiaryCapturePolicyTests
                 defNoLabel);
         }
 
+        // ── Hediff (partial migration — drop-gate only) ──
+
+        private static void TestHediffDecide()
+        {
+            // Null guards.
+            AssertEqual("hediff null data drops", CaptureDecision.Drop,
+                HediffEventData.Decide(null, Ctx()));
+            AssertEqual("hediff null ctx drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(), null));
+
+            // Empty defName → Drop.
+            AssertEqual("hediff empty defName drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(defName: ""), Ctx()));
+
+            // Eligibility / user gate.
+            AssertEqual("hediff ineligible drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(), Ctx(eligible: false)));
+            AssertEqual("hediff user disabled drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(), Ctx(user: false)));
+
+            // Policy gates: PolicyRecordsSource / ModeRecordable / PassesPolicy (any false → Drop).
+            AssertEqual("hediff policy not recording source drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(policyRecordsSource: false), Ctx()));
+            AssertEqual("hediff mode not recordable drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(modeRecordable: false), Ctx()));
+            AssertEqual("hediff fails policy drops", CaptureDecision.Drop,
+                HediffEventData.Decide(Hediff(passesPolicy: false), Ctx()));
+
+            // Continuation: all gates pass → GenerateSolo (RecordHediffSignal re-dispatches
+            // Immediate vs DayReflection locally; see file header TODO).
+            AssertEqual("hediff all gates pass continues", CaptureDecision.GenerateSolo,
+                HediffEventData.Decide(Hediff(), Ctx()));
+        }
+
+        private static void TestHediffBuildGameContextFormat()
+        {
+            // Base format: 7 mandatory fields, no stage_label/body_part.
+            string baseCtx = HediffEventData.BuildGameContext(
+                "Wound", "wound", "add", "hediff_injury", "Immediate", "0.50", "0", null, null);
+            AssertEqual("hediff base context",
+                "hediff=Wound; label=wound; source=add; group=hediff_injury; mode=Immediate; severity=0.50; stage=0",
+                baseCtx);
+
+            // With stage_label and body_part.
+            string withExtras = HediffEventData.BuildGameContext(
+                "SurgeryComplication", "surgery complication", "severity_progression", "hediff_surgery",
+                "DayReflection", "1.20", "2", "infection", "left arm");
+            AssertEqual("hediff context with extras",
+                "hediff=SurgeryComplication; label=surgery complication; source=severity_progression; group=hediff_surgery; mode=DayReflection; severity=1.20; stage=2; stage_label=infection; body_part=left arm",
+                withExtras);
+
+            // Progressed source token + Immediate mode + no extras.
+            string progressed = HediffEventData.BuildGameContext(
+                "GutWorms", "gut worms", "severity_progression", "hediff_disease", "Immediate",
+                "0.75", "1", "", "");
+            AssertEqual("hediff progressed context",
+                "hediff=GutWorms; label=gut worms; source=severity_progression; group=hediff_disease; mode=Immediate; severity=0.75; stage=1",
+                progressed);
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -493,7 +555,7 @@ namespace DiaryCapturePolicyTests
         {
             "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
             "AnomalyEvent", "IncidentEvent", "Health", "Romance",
-            "Hediff", "Interaction", "Arrival", "Death",
+            "Interaction", "Arrival", "Death",
         };
 
         private static void TestMigrationSentinel()
@@ -596,6 +658,31 @@ namespace DiaryCapturePolicyTests
                 SecondEligible = secondEligible,
                 IsCoveredElsewhere = coveredElsewhere,
                 IsGameConditionDuplicate = gameConditionDup,
+            };
+        }
+
+        private static HediffEventData Hediff(
+            string defName = "Wound",
+            bool policyRecordsSource = true,
+            bool modeRecordable = true,
+            bool passesPolicy = true)
+        {
+            return new HediffEventData
+            {
+                PawnId = "P",
+                Tick = 0,
+                DefName = defName,
+                Label = "test label",
+                SourceToken = "add",
+                GroupKey = "hediff_test",
+                ModeToken = "Immediate",
+                SeverityF2 = "0.50",
+                StageString = "0",
+                CleanedStageLabel = null,
+                CleanedBodyPartLabel = null,
+                PassesPolicy = passesPolicy,
+                PolicyRecordsSource = policyRecordsSource,
+                ModeRecordable = modeRecordable,
             };
         }
 
