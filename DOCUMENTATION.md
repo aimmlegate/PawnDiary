@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-22 (prompt test suite, taller tab, dev copy button)_
+_Last updated: 2026-06-22 (prompt suite dropdown, taller tab, dev copy button)_
 
 ---
 
@@ -228,16 +228,19 @@ colors, linked cards, writing placeholders, title-pending animation, and atmosph
 mock-page fill. Long histories page by in-game year. Cards show date/title, accent, group chip,
 model id, linked POV previews, and title-pending animation.
 
-The dev-mode Diary controls also include a **Generate prompt test suite** button (next to the
-mock-page filler). It turns prompt test mode on and seeds one synthetic diary event per major
-category — insult, social fight, romance, mental break, hediff, inspiration, work, thought, mood
-event, tale, and day reflection — then routes each through the normal generation queue. Because
-prompt test mode is on, each role is captured as a prompt-only card holding the exact prompt that
-would have been sent, giving one card per prompt shape (PairCombat, PairImportant, SoloImportant,
-SoloInternalState, SoloDefault, SoloDayReflection) with no LLM call. Pair categories also appear
-in a second colonist's diary. Death and arrival shapes are intentionally excluded: a synthetic
-death/arrival event would become that pawn's diary boundary (see `ComputeDiaryBounds`) and hide
-the pawn's real pages, so those two shapes are still tested through real gameplay hooks.
+The dev-mode Diary controls also include a **Prompt suite** button (next to the mock-page filler).
+It turns prompt test mode on and opens a dropdown of event categories — insult, social fight,
+romance, mental break, hediff, inspiration, work, thought, mood event, tale, and day reflection.
+The dropdown is driven by a single data-driven registry (`DiaryGameComponent.AllSuiteEntries`), so
+adding a future category means appending one entry there and it auto-appears in the menu. Picking a
+category deletes any prior test entry and captures exactly **one** prompt-only card for that
+category (rendered plainly, with no decoration), routed through the normal generation queue; picking
+another replaces it. A companion **Clear test prompts** button deletes every prompt-test entry from
+all colonists' diaries. Pair categories also produce a recipient POV card in a second colonist's
+diary and are omitted from the menu when no second colonist exists. Death and arrival shapes are
+intentionally excluded: a synthetic death/arrival event would become that pawn's diary boundary (see
+`ComputeDiaryBounds`) and hide the pawn's real pages, so those two shapes are still tested through
+real gameplay hooks.
 
 The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. In dev mode every
 expanded entry card also shows a subtle copy button at the bottom-left of the card: clicking it copies the

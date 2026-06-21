@@ -186,21 +186,21 @@ namespace PawnDiary
 
 
 
-            // The mock-page filler and the prompt test suite share one row. Each is a self-contained
-
-            // dev fixture: mock pages test long-history scrolling; the prompt suite captures one
-
-            // prompt-only card per event category so every prompt shape can be inspected without an LLM.
+            // Three dev fixtures share one row: mock-page filler (long-history scrolling), the prompt
+            // suite (opens a dropdown of event categories; selecting one shows a single prompt-only
+            // card for that category), and a clear button that deletes every prompt-test entry.
 
             Rect devButtonRow = listing.GetRect(ControlLineHeight);
 
             float devButtonGap = 4f;
 
-            float mockButtonWidth = (devButtonRow.width - devButtonGap) * 0.5f;
+            float devButtonWidth = (devButtonRow.width - devButtonGap * 2f) / 3f;
 
-            Rect mockButtonRect = new Rect(devButtonRow.x, devButtonRow.y, mockButtonWidth, devButtonRow.height);
+            Rect mockButtonRect = new Rect(devButtonRow.x, devButtonRow.y, devButtonWidth, devButtonRow.height);
 
-            Rect promptSuiteButtonRect = new Rect(mockButtonRect.xMax + devButtonGap, devButtonRow.y, devButtonRow.width - mockButtonWidth - devButtonGap, devButtonRow.height);
+            Rect promptSuiteButtonRect = new Rect(mockButtonRect.xMax + devButtonGap, devButtonRow.y, devButtonWidth, devButtonRow.height);
+
+            Rect clearPromptSuiteButtonRect = new Rect(promptSuiteButtonRect.xMax + devButtonGap, devButtonRow.y, devButtonWidth, devButtonRow.height);
 
             if (Widgets.ButtonText(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
             {
@@ -260,6 +260,23 @@ namespace PawnDiary
                 promptSuiteButtonRect,
 
                 "PawnDiary.Tab.GeneratePromptSuiteTip".Translate());
+
+
+
+            if (Widgets.ButtonText(clearPromptSuiteButtonRect, "PawnDiary.Tab.ClearPromptSuite".Translate()))
+            {
+
+                HandleClearPromptSuite(pawn, component);
+
+            }
+
+
+
+            TooltipHandler.TipRegion(
+
+                clearPromptSuiteButtonRect,
+
+                "PawnDiary.Tab.ClearPromptSuiteTip".Translate());
 
 
             DrawDevPreviewButtons(listing, pawn);
@@ -427,10 +444,12 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Dev-only handler for the "Generate prompt test suite" button. Enables prompt test mode (so
-        /// the queue captures prompts instead of calling an LLM), then asks the component to seed one
-        /// synthetic event per category and reports how many prompt-only pages were captured. Pair
-        /// categories are silently skipped when the pawn has no second colonist.
+        /// Dev-only handler for the "Prompt suite" button. Enables prompt test mode (so the queue
+        /// captures prompts instead of calling an LLM), then opens a dropdown of the event categories
+        /// sourced from <see cref="DiaryGameComponent.AvailableSuiteEntriesForDev"/>. Picking one calls
+        /// back into the component, which deletes any prior test entry and captures exactly one
+        /// prompt-only card for the chosen category. Pair categories are omitted from the menu when no
+        /// second colonist is available.
         /// </summary>
         private void HandleGeneratePromptSuite(Pawn pawn, DiaryGameComponent component)
         {
@@ -457,22 +476,9 @@ namespace PawnDiary
 
 
 
-            int added = component.GeneratePromptTestSuiteForDev(pawn, null);
+            IReadOnlyList<DiaryGameComponent.DevPromptSuiteEntry> entries = component.AvailableSuiteEntriesForDev(pawn);
 
-            if (added > 0)
-            {
-
-                Messages.Message(
-
-                    "PawnDiary.Tab.PromptSuiteAdded".Translate(added, pawn.LabelShortCap),
-
-                    MessageTypeDefOf.PositiveEvent,
-
-                    false);
-
-            }
-
-            else
+            if (entries == null || entries.Count == 0)
             {
 
                 Messages.Message(
@@ -483,7 +489,77 @@ namespace PawnDiary
 
                     false);
 
+                return;
+
             }
+
+
+
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+
+                DiaryGameComponent.DevPromptSuiteEntry entry = entries[i];
+
+                string entryLabel = entry.labelKey.Translate();
+
+                Pawn selectedPawn = pawn;
+
+                DiaryGameComponent.DevPromptSuiteEntry captured = entry;
+
+                options.Add(new FloatMenuOption(entryLabel, delegate
+                {
+
+                    bool shown = component.ShowPromptSuiteEntryForDev(selectedPawn, captured);
+
+                    Messages.Message(
+
+                        shown
+                            ? "PawnDiary.Tab.PromptSuiteShown".Translate(selectedPawn.LabelShortCap, entryLabel)
+                            : "PawnDiary.Tab.PromptSuiteEmpty".Translate(selectedPawn.LabelShortCap),
+
+                        shown ? MessageTypeDefOf.PositiveEvent : MessageTypeDefOf.NeutralEvent,
+
+                        false);
+
+                }));
+
+            }
+
+
+
+            Find.WindowStack.Add(new FloatMenu(options));
+
+        }
+
+
+
+        /// <summary>
+        /// Dev-only handler for the "Clear test prompts" button: deletes every prompt-test entry from
+        /// all colonists' diaries and reports how many were removed.
+        /// </summary>
+        private void HandleClearPromptSuite(Pawn pawn, DiaryGameComponent component)
+        {
+
+            if (component == null)
+            {
+
+                return;
+
+            }
+
+
+
+            int removed = component.ClearPromptSuiteForDev();
+
+            Messages.Message(
+
+                "PawnDiary.Tab.PromptSuiteCleared".Translate(removed),
+
+                MessageTypeDefOf.NeutralEvent,
+
+                false);
 
         }
 

@@ -14,12 +14,10 @@ not need separate entries unless they change behavior or document an important r
 - **Copy button moved to bottom-left.** The dev copy badge now sits at the bottom-left of expanded
   cards only (removed from collapsed), rests at ~0.5 alpha and brightens on hover, and reserves a
   dev-only footer so it clears the model-name line.
-- **Prompt test suite added.** Dev-mode Diary controls now include a "Prompt suite" button that
-  enables prompt test mode and seeds one synthetic diary event per major category (insult, social
-  fight, romance, mental break, hediff, inspiration, work, thought, mood event, tale, day
-  reflection), routed through the normal generation queue so each prompt shape is captured as a
-  prompt-only card with no LLM call. Death and arrival shapes are excluded because synthetic
-  boundary events would hide the pawn's real diary pages.
+- **Prompt test suite reworked to a dropdown.** The dev-mode "Prompt suite" button now opens a
+  dropdown of event categories (data-driven from a single registry, so new categories auto-appear);
+  selecting one captures exactly one plain, undecorated prompt-only card and replaces any previous
+  selection. A new "Clear test prompts" button deletes every prompt-test entry.
 - **Dev prompt test mode added.** RimWorld dev mode now reveals a mod-settings switch that captures
   real event system/user prompts as prompt-only diary cards while skipping all LLM generation.
 

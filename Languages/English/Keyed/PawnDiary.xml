@@ -35,8 +35,11 @@
   <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
   <PawnDiary.Tab.GeneratePromptSuite>Prompt suite</PawnDiary.Tab.GeneratePromptSuite>
-  <PawnDiary.Tab.GeneratePromptSuiteTip>Dev-only: turns on prompt test mode and adds one synthetic prompt-only page per event category (insult, social fight, romance, mental break, hediff, inspiration, work, thought, mood event, tale, day reflection) so every prompt shape can be inspected without an LLM. Pair categories also appear in a second colonist's diary. Death and arrival shapes are not included because fake ones would hide this pawn's real pages.</PawnDiary.Tab.GeneratePromptSuiteTip>
-  <PawnDiary.Tab.PromptSuiteAdded>Captured {0} prompt-only test pages for {1} (prompt test mode enabled).</PawnDiary.Tab.PromptSuiteAdded>
+  <PawnDiary.Tab.GeneratePromptSuiteTip>Dev-only: turns on prompt test mode and opens a dropdown of event categories. Pick one to capture a single prompt-only page for that category (plain, no decoration); picking another replaces it. Pair categories need a second colonist.</PawnDiary.Tab.GeneratePromptSuiteTip>
+  <PawnDiary.Tab.ClearPromptSuite>Clear test prompts</PawnDiary.Tab.ClearPromptSuite>
+  <PawnDiary.Tab.ClearPromptSuiteTip>Dev-only: delete every prompt-test entry from all colonists' diaries.</PawnDiary.Tab.ClearPromptSuiteTip>
+  <PawnDiary.Tab.PromptSuiteShown>Captured a prompt-test page for {0}: {1}.</PawnDiary.Tab.PromptSuiteShown>
+  <PawnDiary.Tab.PromptSuiteCleared>Removed {0} prompt-test page(s).</PawnDiary.Tab.PromptSuiteCleared>
   <PawnDiary.Tab.PromptSuiteEmpty>No prompt test pages were captured for {0}. Enable diary generation for this pawn and try again.</PawnDiary.Tab.PromptSuiteEmpty>
   <PawnDiary.Dev.PromptSuite.Instruction>write a short diary entry for this synthetic dev test event</PawnDiary.Dev.PromptSuite.Instruction>
   <PawnDiary.Dev.PromptSuite.Reason>synthetic dev test</PawnDiary.Dev.PromptSuite.Reason>
