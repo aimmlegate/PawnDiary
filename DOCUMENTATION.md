@@ -36,6 +36,7 @@ PawnDiary/
 |   `-- Defs/                       groups, tuning, prompts, personas, UI/text policy
 |-- Languages/                     Keyed and DefInjected localization
 |-- Source/
+|   |-- Capture/                   Event Catalog: pure event types, payloads, decision reducers, registry
 |   |-- Core/                      DiaryGameComponent partials, event capture, batching
 |   |-- Defs/                      Def classes and XML lookup helpers
 |   |-- Generation/                context, prompt facade, LLM client
@@ -57,6 +58,7 @@ Key files:
 |---|---|
 | `DiaryModStartup.cs` | Applies patches and injects the Diary tab. |
 | `DiaryPatches.cs` | Harmony hooks for interactions, mental states, inspirations, tales, deaths, arrivals, crafts, relics, mood events, thoughts, and hediff signals. |
+| `Source/Capture/*` | Event Catalog: `DiaryEventType` enum (the source list), `XxxEventData` payloads, pure `XxxEventData.Decide` reducers, and `DiaryEventCatalog` dispatch. The "should this event be recorded?" decision for migrated sources lives here, unit-tested without RimWorld. See §4a. |
 | `DiaryGameComponent*.cs` | Recording, batching, scans, save/load, lookup indexes, generation queueing, and public UI access. |
 | `DiaryEvent.cs` / `PawnDiaryRecord.cs` | Saved event model and per-pawn event index/persona/generation toggle. |
 | `DiaryPromptBuilder.cs` | Thin facade from saved event to typed prompt plan. |
@@ -117,6 +119,51 @@ that guard. Scheduled scans snapshot free colonists before iterating.
 | Hediffs | `Pawn_HealthTracker.AddHediff` plus progression scan | XML Hediff groups choose Immediate or DayReflection, add/progression gates, severity steps, dedup, and weights. |
 | Work | Periodic current-job sampling | Skips social/violent work, applies XML odds/cooldowns and `workGenerationWeight`, classifies as dark, passion, strain, or routine. |
 | Day reflections | Sleep/rest trigger | One candidate per pawn from major events, opinion shifts, health signals, and low-weight filler when enabled. |
+
+---
+
+## 4a. Event Catalog — how to add a new event source
+
+`Source/Capture/` is a small registry layer that lets new gameplay sources plug into the diary with
+one predictable shape. It is the C#/RimWorld analog of Redux "action types + reducers": a single
+enumerated list of every source the diary can react to, a typed payload for each, and a pure reducer
+that decides what to do with one. The impure RimWorld-facing half (label resolution, localized text,
+game-context string, save mutation, LLM queue) stays in the existing `DiaryGameComponent.RecordX`
+methods. This split keeps the decision unit-testable without RimWorld assemblies.
+
+Anatomy:
+
+- `DiaryEventType` — one enum value per source. The list is the diary's coverage at a glance.
+- `XxxEventData : DiaryEventData` — primitive payload captured from the live RimWorld hook (defName,
+  magnitude, duration, ...). Plus a pure `static Decide(data, ctx) → CaptureDecision`.
+- `CaptureContext` — pre-computed impure facts (eligibility, user/signal/ambient enable flags, game
+  tick). Filled by the caller so the reducer never touches DefDatabase/Settings/tick manager.
+- `CaptureDecision` — `Drop` / `GenerateSolo` / `RouteAmbient` (pair events will add `GeneratePair`
+  when the first pair source migrates).
+- `DiaryEventSpec` — abstract reducer wrapper, one subclass per source, registered in
+  `DiaryEventCatalog` so callers dispatch with a single `catalog.Get(type).Decide(...)`.
+
+Migrated in the current slice: **Thought** (richest source — token filter, general/eating magnitude
+threshold, bypass tokens, ambient routing) and **Inspiration** (trivial source — eligibility + user
+toggle only). The other sources in §4 still use their pre-Catalog `RecordX` code; they migrate
+source-by-source in later slices.
+
+Adding a new source (the 4-step recipe):
+
+1. Add a value to `DiaryEventType`.
+2. Write `XxxEventData : DiaryEventData` with primitive fields + a pure `Decide(data, ctx)` (and any
+   per-source policy snapshot type it needs, like `ThoughtCapturePolicy`).
+3. Write `XxxEventSpec : DiaryEventSpec` that delegates `Decide` to the payload.
+4. `Register(new XxxEventSpec())` in `DiaryEventCatalog.EnsureInitialized`. The hook side calls
+   `DiaryGameComponent.RecordXxx`, which snapshots facts, asks the catalog, and performs the impure
+   side-effects.
+
+Adding per-source tunable content (weights, prompt-template keys, RNG filters) belongs on the
+`XxxEventSpec` class or in a dedicated XML Def — not in the base contract — so sources stay
+independent. Existing `DiarySignalPolicyDef`/`DiaryInteractionGroupDef` already own today's tokens,
+thresholds, dedup windows, and prompt policy; new sources either reuse them or add their own Def
+following the same shape. See `AGENTS.md` rule 2 (impure listener → plain context → pure decision →
+impure sink) and rule 3 (XML owns tunable values).
 
 ---
 
@@ -370,10 +417,12 @@ Pure tests:
 dotnet run --project tests/LlmResponseParserTests/LlmResponseParserTests.csproj
 dotnet run --project tests/DiaryPipelineTests/DiaryPipelineTests.csproj
 dotnet run --project tests/DiaryTextDecorationTests/DiaryTextDecorationTests.csproj
+dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.csproj
 ```
 
 These harnesses compile without RimWorld/Unity assemblies; a Verse/XML Def dependency in pure code
-should fail the tests at compile time.
+should fail the tests at compile time. `DiaryCapturePolicyTests` covers the Event Catalog decision
+reducers (see §4a) — link only `Source/Capture/*.cs` files there, never a Verse-using file.
 
 Prompt lab:
 

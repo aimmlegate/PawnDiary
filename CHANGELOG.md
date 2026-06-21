@@ -2,6 +2,24 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21
+
+- **Event Catalog decision layer (architecture slice):** introduced `Source/Capture/` — a pure
+  registry that decides whether a captured gameplay moment becomes a diary event. Mirrors the Redux
+  "action types + reducers" shape: `DiaryEventType` enum lists every source the diary can react to;
+  `XxxEventData` payloads carry primitive facts; `XxxEventSpec`/`XxxEventData.Decide` are the pure
+  reducers (token match, threshold gate, ambient routing); `DiaryEventCatalog` dispatches. The impure
+  RimWorld-facing assembly (label, text, game-context, LLM queue) stays in the existing
+  `DiaryGameComponent.RecordX` methods, which now snapshot live facts, ask the catalog for a
+  decision, then perform the requested side-effect. Migrated the two most contrasting sources:
+  **Thought** (richest — tokens, threshold, ambient routing) and **Inspiration** (trivial —
+  eligibility + user toggle only). No user-visible behavior change; same filters, same dedup order,
+  same game-context markers, same XML tuning. Future planned sources (quest, raid, romance, anomaly,
+  world, health, mental state, tale, mood event, crafted, hediff, interaction, arrival, death) are
+  listed as `// TODO` in the enum and will be added source-by-source in later slices following the
+  same pattern. New pure test project `tests/DiaryCapturePolicyTests` covers Thought and Inspiration
+  decisions (32 assertions, no RimWorld assemblies). Restaged `1.6/Assemblies/PawnDiary.dll`.
+
 ## 2026-06-19
 
 - **Generated speech Social-log injection:** added an opt-in setting that creates one fresh native
