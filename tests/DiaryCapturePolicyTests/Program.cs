@@ -34,6 +34,8 @@ namespace DiaryCapturePolicyTests
             TestTaleBuildGameContextFormat();
             TestHediffDecide();
             TestHediffBuildGameContextFormat();
+            TestInteractionDecide();
+            TestInteractionBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -493,6 +495,68 @@ namespace DiaryCapturePolicyTests
                 progressed);
         }
 
+        // ── Interaction (partial migration — drop-gate only) ──
+
+        private static void TestInteractionDecide()
+        {
+            // Null guards.
+            AssertEqual("interaction null data drops", CaptureDecision.Drop,
+                InteractionEventData.Decide(null, Ctx()));
+            AssertEqual("interaction null ctx drops", CaptureDecision.Drop,
+                InteractionEventData.Decide(Interaction(), null));
+
+            // Empty defName → Drop.
+            AssertEqual("interaction empty defName drops", CaptureDecision.Drop,
+                InteractionEventData.Decide(Interaction(defName: ""), Ctx()));
+
+            // Significance gate.
+            AssertEqual("interaction not significant drops", CaptureDecision.Drop,
+                InteractionEventData.Decide(Interaction(isSignificant: false), Ctx()));
+
+            // User gate.
+            AssertEqual("interaction user disabled drops", CaptureDecision.Drop,
+                InteractionEventData.Decide(Interaction(), Ctx(user: false)));
+
+            // No eligible pawn → Drop.
+            AssertEqual("interaction no eligible pawns drops", CaptureDecision.Drop,
+                InteractionEventData.Decide(
+                    Interaction(initiatorEligible: false, recipientEligible: false),
+                    Ctx()));
+
+            // At least one eligible + significant + enabled → GenerateSolo (continue).
+            AssertEqual("interaction initiator only eligible continues", CaptureDecision.GenerateSolo,
+                InteractionEventData.Decide(
+                    Interaction(initiatorEligible: true, recipientEligible: false), Ctx()));
+            AssertEqual("interaction recipient only eligible continues", CaptureDecision.GenerateSolo,
+                InteractionEventData.Decide(
+                    Interaction(initiatorEligible: false, recipientEligible: true), Ctx()));
+            AssertEqual("interaction both eligible continues", CaptureDecision.GenerateSolo,
+                InteractionEventData.Decide(Interaction(), Ctx()));
+        }
+
+        private static void TestInteractionBuildGameContextFormat()
+        {
+            // Base format: 2 mandatory fields (def + label).
+            string baseCtx = InteractionEventData.BuildGameContext("Insult", "insult", null, null, null);
+            AssertEqual("interaction base context",
+                "def=Insult; label=insult",
+                baseCtx);
+
+            // All optional fields populated.
+            string full = InteractionEventData.BuildGameContext(
+                "Chat", "chat", "InteractionWorker_Chat", "talked", "listened");
+            AssertEqual("interaction full context",
+                "def=Chat; label=chat; worker=InteractionWorker_Chat; initiatorThought=talked; recipientThought=listened",
+                full);
+
+            // Only worker, no thoughts.
+            string workerOnly = InteractionEventData.BuildGameContext(
+                "Hug", "hug", "InteractionWorker_Hug", "", "");
+            AssertEqual("interaction worker only context",
+                "def=Hug; label=hug; worker=InteractionWorker_Hug",
+                workerOnly);
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -555,7 +619,7 @@ namespace DiaryCapturePolicyTests
         {
             "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
             "AnomalyEvent", "IncidentEvent", "Health", "Romance",
-            "Interaction", "Arrival", "Death",
+            "Arrival", "Death",
         };
 
         private static void TestMigrationSentinel()
@@ -683,6 +747,26 @@ namespace DiaryCapturePolicyTests
                 PassesPolicy = passesPolicy,
                 PolicyRecordsSource = policyRecordsSource,
                 ModeRecordable = modeRecordable,
+            };
+        }
+
+        private static InteractionEventData Interaction(
+            string defName = "Insult",
+            bool initiatorEligible = true,
+            bool recipientEligible = true,
+            bool isSignificant = true)
+        {
+            return new InteractionEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Label = "test label",
+                InitiatorPawnId = "P1",
+                RecipientPawnId = "P2",
+                InitiatorEligible = initiatorEligible,
+                RecipientEligible = recipientEligible,
+                IsSignificant = isSignificant,
             };
         }
 

@@ -20,10 +20,11 @@ namespace PawnDiary.Capture
         MentalState,
         Tale,
         Hediff,
+        Interaction,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // Existing sources to migrate source-by-source in later slices:
-        //   Interaction, Arrival, Death.
+        //   Arrival, Death.
         // Net-new sources planned (see repo discussion):
         //   Quest, Raid, MajorThreat, RandomEvent, WorldEvent, AnomalyEvent, IncidentEvent,
         //   Health, Romance.
