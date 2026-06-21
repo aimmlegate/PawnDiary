@@ -151,9 +151,12 @@ Anatomy:
 Migrated in the current slice: **Thought** (richest source — token filter, general/eating magnitude
 threshold, bypass tokens, ambient routing), **Inspiration** (trivial source — eligibility + user
 toggle only), **MoodEvent** (first multi-pawn fan-out — one GameCondition → one solo entry per
-affected colonist, fan-out loop stays in `RecordMoodEvent`), and **MentalState** (first pair source
-— social fights emit `GeneratePair`, every other break emits `GenerateSolo`). The other sources in
-§4 still use their pre-Catalog `RecordX` code; they migrate source-by-source in later slices.
+affected colonist, fan-out loop stays in `RecordMoodEvent`), **MentalState** (first pair source
+— social fights emit `GeneratePair`, every other break emits `GenerateSolo`), and **Tale** (partial
+migration — drop-gate is in the catalog; the batch/death/pair/solo shape dispatch stays in
+`RecordTale` because the current `CaptureDecision` does not encode those outcomes). The other
+sources in §4 still use their pre-Catalog `RecordX` code; they migrate source-by-source in later
+slices.
 
 Adding a new source (the 4-step recipe):
 

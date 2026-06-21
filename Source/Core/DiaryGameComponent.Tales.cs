@@ -1,15 +1,19 @@
-// Tales — the TaleRecorder.RecordTale hook's diary flow. Tales are vanilla's broad notable-history
-// events (deaths, wounds, surgeries, births, recruitment, research, disasters, …). RecordTale skips
-// tales already covered by a more specific hook or shared with a GameCondition, dedups, then records
-// a solo/pairwise DiaryEvent or hands bursty combat tales to the delayed solo batcher. Colonist
-// deaths take a special "death description" path (a neutral account rather than the dead pawn's POV).
-// The helpers below pull pawns/defs out of the vanilla Tale subclasses, build the fallback text and
-// "tale=" game-context string, and resolve the death victim. The static set below lists TaleDefs we
-// skip because they are covered by narrower hooks; death TaleDefs are classified in XML.
+// Tales — the TaleRecorder.RecordTale hook's diary flow, partially built on the Event Catalog
+// pattern (see Source/Capture/). Tales are vanilla's broad notable-history events (deaths, wounds,
+// surgeries, births, recruitment, research, disasters, …). RecordTale asks the catalog for the
+// basic drop-gate (covered-elsewhere / GameCondition-duplicate / disabled / no-eligible-pawn), then
+// performs the complex shape-determination (batch / death-description / pair / solo) impure.
+//
+// TODO(catalog): the shape-determination still lives here because the current CaptureDecision
+// contract encodes only Drop/GenerateSolo/GeneratePair/RouteAmbient. Tale needs GenerateBatched
+// and a death-description flag to fully migrate. When those land, move the shape dispatch into
+// TaleEventData.Decide and shrink this file to the impure snapshot + side-effects.
+//
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
 using System.Text;
+using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -18,41 +22,17 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
-        // These TaleDefs mirror events we already capture through more specific hooks. Skipping
-        // them avoids two diary entries for one social fight or mental break.
-        private static readonly HashSet<string> TaleDefsCoveredElsewhere = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "SocialFight",
-            "MentalStateBerserk",
-            "MentalStateGaveUp"
-        };
-
         private const string DeathFallbackDefName = "PawnDiary_DeathFallback";
 
         /// <summary>
-        /// Records one RimWorld TaleRecorder event. Tales are vanilla's broader notable-history
-        /// events: deaths, wounds, surgeries, births, recruitment, research, disasters, and more.
-        /// Some tales involve one pawn, others two; this method records a solo or pairwise diary
-        /// event depending on how many eligible colonists are involved.
+        /// Records one RimWorld TaleRecorder event. Delegates the basic drop-gate to
+        /// TaleEventData.Decide (pure) and keeps the complex shape dispatch (batch / death / pair /
+        /// solo) impure. See file header TODO for the planned full migration.
         /// </summary>
         public void RecordTale(Tale tale, TaleDef taleDef)
         {
             taleDef = taleDef ?? tale?.def;
             if (!CanRecordGameplayEventNow() || tale == null || taleDef == null || PawnDiaryMod.Settings == null)
-            {
-                return;
-            }
-
-            if (TaleDefsCoveredElsewhere.Contains(taleDef.defName) || !PawnDiaryMod.Settings.IsTaleEnabled(taleDef))
-            {
-                return;
-            }
-
-            // Several incidents (Eclipse, Aurora, ToxicFallout, VolcanicWinter, Flashstorm, ...) are
-            // recorded BOTH as a Tale and as a GameCondition that shares the same defName. The
-            // MoodEvent domain already captures the GameCondition with proper positive/negative mood
-            // handling, so skip the Tale here to avoid logging the same event in the diary twice.
-            if (DefDatabase<GameConditionDef>.GetNamedSilentFail(taleDef.defName) != null)
             {
                 return;
             }
@@ -66,10 +46,40 @@ namespace PawnDiary
 
             bool firstEligible = IsDiaryEligible(firstPawn) || (deathDescription && firstPawn == deathVictim);
             bool secondEligible = IsDiaryEligible(secondPawn) || (deathDescription && secondPawn == deathVictim);
-            if (!firstEligible && !secondEligible)
+
+            // Snapshot live facts for the pure drop-gate. The caller pre-computes the impure
+            // classifications (covered-elsewhere set membership, GameConditionDef duplicate,
+            // pawn eligibility with death override) so the catalog's Decide stays pure.
+            TaleEventData data = new TaleEventData
+            {
+                PawnId = firstPawn?.GetUniqueLoadID() ?? string.Empty,
+                Tick = Find.TickManager.TicksGame,
+                DefName = taleDef.defName,
+                FirstPawnId = firstPawn?.GetUniqueLoadID(),
+                SecondPawnId = secondPawn?.GetUniqueLoadID(),
+                FirstEligible = firstEligible,
+                SecondEligible = secondEligible,
+                IsCoveredElsewhere = TaleEventData.CoveredElsewhere.Contains(taleDef.defName),
+                IsGameConditionDuplicate = DefDatabase<GameConditionDef>.GetNamedSilentFail(taleDef.defName) != null,
+            };
+
+            CaptureContext ctx = BuildCaptureContext(
+                eligible: firstEligible || secondEligible,
+                userEnabled: PawnDiaryMod.Settings.IsTaleEnabled(taleDef),
+                signalEnabled: true,
+                ambientSignalEnabled: true);
+
+            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Tale);
+            CaptureDecision decision = spec != null
+                ? spec.Decide(data, ctx)
+                : CaptureDecision.Drop;
+            if (decision == CaptureDecision.Drop)
             {
                 return;
             }
+
+            // catalog returned GenerateSolo as a "continue processing" signal (see file header
+            // TODO). The shape dispatch below is the impure part that still lives here.
 
             string key = "tale|" + taleDef.defName + "|" + (firstPawn?.GetUniqueLoadID() ?? string.Empty)
                 + "|" + (secondPawn?.GetUniqueLoadID() ?? string.Empty);

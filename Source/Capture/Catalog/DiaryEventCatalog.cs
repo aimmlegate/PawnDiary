@@ -66,6 +66,7 @@ namespace PawnDiary.Capture
             Register(new InspirationEventSpec());
             Register(new MoodEventSpec());
             Register(new MentalStateEventSpec());
+            Register(new TaleEventSpec());
         }
     }
 }
