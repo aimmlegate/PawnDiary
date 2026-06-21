@@ -163,7 +163,11 @@ namespace PawnDiary
 
         private void RecordHediffSignal(Pawn pawn, Hediff hediff, HediffSignalSource source)
         {
-            if (pawn == null || hediff == null || hediff.def == null || PawnDiaryMod.Settings == null)
+            if (!CanRecordGameplayEventNow()
+                || pawn == null
+                || hediff == null
+                || hediff.def == null
+                || PawnDiaryMod.Settings == null)
             {
                 return;
             }
@@ -467,8 +471,36 @@ namespace PawnDiary
                 return "whole_body";
             }
 
-            string defName = part.def?.defName ?? "part";
-            return defName + "#" + part.GetHashCode().ToString(CultureInfo.InvariantCulture);
+            List<string> path = new List<string>();
+            BodyPartRecord current = part;
+            while (current != null)
+            {
+                string defName = current.def?.defName ?? "part";
+                path.Add(defName + "[" + BodyPartSiblingIndex(current).ToString(CultureInfo.InvariantCulture) + "]");
+                current = current.parent;
+            }
+
+            path.Reverse();
+            return string.Join("/", path.ToArray());
+        }
+
+        private static int BodyPartSiblingIndex(BodyPartRecord part)
+        {
+            if (part?.parent?.parts == null)
+            {
+                return 0;
+            }
+
+            List<BodyPartRecord> siblings = part.parent.parts;
+            for (int i = 0; i < siblings.Count; i++)
+            {
+                if (ReferenceEquals(siblings[i], part))
+                {
+                    return i;
+                }
+            }
+
+            return 0;
         }
 
         private static string HediffProgressionStateKey(string pawnId, string defName, string partKey)

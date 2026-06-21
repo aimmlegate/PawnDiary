@@ -30,7 +30,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordThought(Pawn pawn, Thought_Memory thought)
         {
-            if (pawn == null || thought == null || thought.def == null)
+            if (!CanRecordGameplayEventNow() || pawn == null || thought == null || thought.def == null)
             {
                 return;
             }

@@ -235,6 +235,7 @@ namespace PawnDiary
             ClampValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                NormalizeEndpointUrls();
                 DiaryPersonas.InvalidateCache();
             }
         }
@@ -368,8 +369,9 @@ namespace PawnDiary
         // ---- API endpoint helpers ----
 
         /// <summary>
-        /// Guarantees <see cref="apiEndpoints"/> is non-null and normalizes each row's URL.
-        /// Public so the settings UI can call it before drawing the first frame.
+        /// Guarantees <see cref="apiEndpoints"/> is non-null and each row has non-null editable
+        /// fields. Does not normalize URLs because the settings UI calls this every frame while the
+        /// user may be typing into a text field.
         /// </summary>
         public void EnsureEndpointsList()
         {
@@ -382,8 +384,6 @@ namespace PawnDiary
             {
                 apiEndpoints.Add(new ApiEndpointConfig(DefaultEndpointUrl, string.Empty, DefaultModelName));
             }
-
-            // Normalize each row's URL before it is used for model discovery or generation.
             foreach (ApiEndpointConfig endpoint in apiEndpoints)
             {
                 if (endpoint == null)
@@ -403,6 +403,22 @@ namespace PawnDiary
                 }
 
                 endpoint.reasoningEffort = NormalizeReasoningEffort(endpoint.reasoningEffort);
+            }
+        }
+
+        /// <summary>
+        /// Normalizes endpoint URL rows at load/save boundaries without editing the active text field
+        /// every settings-frame while the user is typing.
+        /// </summary>
+        public void NormalizeEndpointUrls()
+        {
+            EnsureEndpointsList();
+            foreach (ApiEndpointConfig endpoint in apiEndpoints)
+            {
+                if (endpoint != null)
+                {
+                    endpoint.url = EndpointUtility.NormalizeBaseEndpoint(endpoint.url);
+                }
             }
         }
 
@@ -731,7 +747,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Clamps all numeric and connection fields to safe ranges, and normalizes the endpoint URL.
+        /// Clamps all numeric and connection fields to safe ranges.
         /// Called after loading to guard against corrupted or outdated saves.
         /// </summary>
         public void ClampValues()
@@ -873,7 +889,7 @@ namespace PawnDiary
             string defName = NextCustomPersonaDefName();
             personaPresets.Add(new PersonaPresetConfig(
                 defName,
-                "New Persona",
+                "PawnDiary.Settings.NewPersonaLabel".Translate().Resolve(),
                 string.Empty,
                 new[] { DiaryPersonas.PredefinedThemeTags[0] },
                 true));

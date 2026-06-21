@@ -104,6 +104,9 @@ namespace PawnDiary
 
         // ---- Misc ----
         public int diaryLineMaxChars = 160;   // truncate the "last wrote" continuity line to this
+        // Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
+        // still appear as context in someone else's entry, but they do not write their own pages.
+        public int minimumFirstPersonAgeYears = 13;
 
         // ---- Beauty buckets (the "notable" gate uses beautyPleasant as the ± threshold) ----
         public float beautyBeautiful = 2f;

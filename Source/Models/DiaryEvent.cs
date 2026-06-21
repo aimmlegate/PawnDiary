@@ -159,6 +159,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref recipientLastOpener, "recipientLastOpener");
             Scribe_Values.Look(ref initiatorWeapon, "initiatorWeapon");
             Scribe_Values.Look(ref recipientWeapon, "recipientWeapon");
+            Scribe_Values.Look(ref initiatorPrompt, "initiatorPrompt");
+            Scribe_Values.Look(ref recipientPrompt, "recipientPrompt");
+            Scribe_Values.Look(ref neutralPrompt, "neutralPrompt");
             Scribe_Values.Look(ref initiatorGeneratedText, "initiatorGeneratedText");
             Scribe_Values.Look(ref recipientGeneratedText, "recipientGeneratedText");
             Scribe_Values.Look(ref neutralGeneratedText, "neutralGeneratedText");
@@ -205,6 +208,29 @@ namespace PawnDiary
                 {
                     playLogEntryIds = new List<int>();
                 }
+
+                date = EmptyIfNull(date);
+                interactionDefName = EmptyIfNull(interactionDefName);
+                playLogInteractionDefName = EmptyIfNull(playLogInteractionDefName);
+                interactionLabel = EmptyIfNull(interactionLabel);
+                initiatorPawnId = EmptyIfNull(initiatorPawnId);
+                recipientPawnId = EmptyIfNull(recipientPawnId);
+                initiatorName = EmptyIfNull(initiatorName);
+                recipientName = EmptyIfNull(recipientName);
+                initiatorText = EmptyIfNull(initiatorText);
+                recipientText = EmptyIfNull(recipientText);
+                initiatorGeneratedText = EmptyIfNull(initiatorGeneratedText);
+                recipientGeneratedText = EmptyIfNull(recipientGeneratedText);
+                neutralGeneratedText = EmptyIfNull(neutralGeneratedText);
+                initiatorError = EmptyIfNull(initiatorError);
+                recipientError = EmptyIfNull(recipientError);
+                neutralError = EmptyIfNull(neutralError);
+                initiatorLlmEndpoint = EmptyIfNull(initiatorLlmEndpoint);
+                recipientLlmEndpoint = EmptyIfNull(recipientLlmEndpoint);
+                neutralLlmEndpoint = EmptyIfNull(neutralLlmEndpoint);
+                initiatorLlmModel = EmptyIfNull(initiatorLlmModel);
+                recipientLlmModel = EmptyIfNull(recipientLlmModel);
+                neutralLlmModel = EmptyIfNull(neutralLlmModel);
 
                 if (string.IsNullOrWhiteSpace(initiatorStatus))
                 {
@@ -303,6 +329,21 @@ namespace PawnDiary
                     recipientWeapon = string.Empty;
                 }
 
+                if (initiatorPrompt == null)
+                {
+                    initiatorPrompt = string.Empty;
+                }
+
+                if (recipientPrompt == null)
+                {
+                    recipientPrompt = string.Empty;
+                }
+
+                if (neutralPrompt == null)
+                {
+                    neutralPrompt = string.Empty;
+                }
+
                 // Mood impact defaults to neutral when no mood direction was saved.
                 // "positive"/"negative" are set at record time for mood-event entries.
                 if (string.IsNullOrWhiteSpace(moodImpact))
@@ -387,6 +428,11 @@ namespace PawnDiary
                 }
 
             }
+        }
+
+        private static string EmptyIfNull(string value)
+        {
+            return value ?? string.Empty;
         }
 
         /// <summary>
@@ -523,6 +569,16 @@ namespace PawnDiary
         public bool IsTitlePending(string povRole)
         {
             return RoleEquals(TitleStatusFor(povRole), PendingStatus);
+        }
+
+        /// <summary>
+        /// Returns true when a title request may be queued for this POV. Failed title attempts stay
+        /// failed so the periodic recovery sweep does not retry them every few seconds.
+        /// </summary>
+        public bool CanQueueTitleGeneration(string povRole)
+        {
+            string status = TitleStatusFor(povRole);
+            return string.IsNullOrWhiteSpace(status) || RoleEquals(status, NotGeneratedStatus);
         }
 
         private string LlmEndpointFor(string povRole)
@@ -941,6 +997,20 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Forgets a generated Social-log row after RimWorld prunes it, allowing a later successful
+        /// result to inject a fresh row instead of being blocked by a stale LogID.
+        /// </summary>
+        public void ClearGeneratedSpeechPlayLogEntry()
+        {
+            if (generatedSpeechPlayLogEntryId >= 0 && playLogEntryIds != null)
+            {
+                playLogEntryIds.Remove(generatedSpeechPlayLogEntryId);
+            }
+
+            generatedSpeechPlayLogEntryId = -1;
+        }
+
+        /// <summary>
         /// Remembers the generated direct-speech Social-log row and lets the existing click bridge
         /// open this diary entry when that row is clicked later.
         /// </summary>
@@ -979,6 +1049,14 @@ namespace PawnDiary
         {
             string generated = GeneratedTextFor(povRole);
             return string.IsNullOrWhiteSpace(generated) ? TextFor(povRole) : generated;
+        }
+
+        /// <summary>
+        /// Returns true only when this POV has completed LLM diary text, not just raw fallback text.
+        /// </summary>
+        public bool HasGeneratedTextForRole(string povRole)
+        {
+            return !string.IsNullOrWhiteSpace(GeneratedTextFor(povRole));
         }
 
         /// <summary>
@@ -1673,15 +1751,15 @@ namespace PawnDiary
         {
             if (RoleEquals(povRole, InitiatorRole))
             {
-                return initiatorPrompt;
+                return initiatorPrompt ?? string.Empty;
             }
 
             if (RoleEquals(povRole, RecipientRole))
             {
-                return recipientPrompt;
+                return recipientPrompt ?? string.Empty;
             }
 
-            return neutralPrompt;
+            return neutralPrompt ?? string.Empty;
         }
 
         private string RawResponseFor(string povRole)

@@ -113,7 +113,10 @@ function Set-AboutValue {
 function Remove-DevelopmentPostfix {
     param([string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return "" }
-    return ($Value -replace '\s*\((?:developement|development)\)\s*$', '').Trim()
+    $clean = $Value.Trim()
+    $clean = $clean -replace '\s*\((?:developement|development)\)\s*$', ''
+    $clean = $clean -replace '[._-](?:developement|development)$', ''
+    return $clean.Trim()
 }
 
 function Get-SafeFolderName {

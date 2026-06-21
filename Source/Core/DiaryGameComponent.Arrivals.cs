@@ -19,6 +19,11 @@ namespace PawnDiary
         /// </summary>
         private bool TryRecordStartingColonistArrivals()
         {
+            if (!CanRecordGameplayEventNow())
+            {
+                return false;
+            }
+
             if (Find.Maps == null || Find.Maps.Count == 0)
             {
                 return false;
@@ -48,7 +53,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordColonistArrival(Pawn pawn, string arrivalContext)
         {
-            if (!IsDiaryEligible(pawn))
+            if (!CanRecordGameplayEventNow() || !IsDiaryEligible(pawn))
             {
                 return;
             }

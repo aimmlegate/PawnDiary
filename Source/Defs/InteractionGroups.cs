@@ -200,6 +200,12 @@ namespace PawnDiary
         // become day-reflection signals or immediate solo diary entries without any per-mod C# hook.
         public HediffSignalPolicy hediff;
 
+        // Optional Tale-domain death metadata. Vanilla death TaleDefs are still just TaleDefs, but
+        // different defs put the victim in different pawn slots. Keeping those lists in XML means new
+        // or corrected death tales do not need a code edit.
+        public List<string> deathVictimInitiatorDefNames;
+        public List<string> deathVictimRecipientDefNames;
+
         // The diary-prompt instruction shared by every event in the group.
         public string instruction;
 
@@ -313,6 +319,45 @@ namespace PawnDiary
             {
                 return domain == GroupDomain.Hediff && hediff != null && hediff.enabled;
             }
+        }
+
+        // Returns which Tale pawn slot contains the death victim, or empty for non-death tales.
+        public string DeathVictimRoleFor(string defName)
+        {
+            if (domain != GroupDomain.Tale || string.IsNullOrWhiteSpace(defName))
+            {
+                return string.Empty;
+            }
+
+            if (ContainsDefName(deathVictimInitiatorDefNames, defName))
+            {
+                return DiaryEvent.InitiatorRole;
+            }
+
+            if (ContainsDefName(deathVictimRecipientDefNames, defName))
+            {
+                return DiaryEvent.RecipientRole;
+            }
+
+            return string.Empty;
+        }
+
+        private static bool ContainsDefName(List<string> defNames, string defName)
+        {
+            if (defNames == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < defNames.Count; i++)
+            {
+                if (string.Equals(defNames[i], defName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

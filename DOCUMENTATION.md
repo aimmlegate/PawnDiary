@@ -3,7 +3,7 @@
 Current-state guide for the mod. When behavior or structure changes, update this file and add a
 dated entry to [CHANGELOG.md](CHANGELOG.md).
 
-_Last updated: 2026-06-18 (compact current-state docs)_
+_Last updated: 2026-06-21 (priority review fixes)_
 
 ---
 
@@ -14,9 +14,11 @@ through configured compatible LLM API lanes. RimWorld loads the compiled DLL at 
 patches, `GameComponent`s, Defs, and inspector tabs are discovered by RimWorld lifecycle hooks.
 
 The Diary tab is inserted after Needs and appears for colonists, including corpses. Animals,
-prisoners, slaves, enemies, visitors, and non-colonist participants are ignored. Mixed events create
-a solo entry for the eligible colonist. Pairwise colonist events generate initiator POV first, then
-recipient POV with the initiator page as hidden continuity context.
+prisoners, slaves, enemies, visitors, non-colonist participants, and colonists below
+`DiaryTuningDef.minimumFirstPersonAgeYears` (13 by default) are ignored for diary ownership and
+generation. Mixed events create a solo entry for the eligible colonist. Pairwise colonist events
+generate initiator POV first, then recipient POV with the initiator page as hidden continuity
+context.
 
 Neutral arrival pages are forced to the first visible/generated page. Neutral death pages are
 terminal; later same-tick events for that pawn are hidden and not generated.
@@ -78,7 +80,9 @@ Key files:
 
 ## 3. Data Flow
 
-1. A Harmony hook or scanner sees a candidate moment.
+1. A Harmony hook or scanner sees a candidate moment. Gameplay event recorders no-op until RimWorld
+   is actually in play, so startup pawn generation/scenario setup never reads calendar ticks before
+   the world clock exists.
 2. Source code checks pawn eligibility, XML group enablement, dedup windows, and source filters.
 3. `AddSoloEvent` or `AddPairwiseEvent` creates a `DiaryEvent`, saves semantic `colorCue`,
    per-POV facts for text decoration, and references from each eligible pawn record.
@@ -89,10 +93,11 @@ Key files:
 7. `LlmClient` sends the request, parses provider JSON, applies postprocessing, and returns results
    to the main thread.
 8. `ApplyLlmResult` stores text or failure state; successful main entries may queue a title request.
+   Load/tick sweeps requeue missing titles for completed entries when title generation is enabled.
    If Social-log speech injection is enabled, the first valid initiator `[[speech]]...[[/speech]]`
    block also creates one new `PlayLogEntry_Interaction` after the LLM result is ready.
 9. `EntriesFor` reads saved events for the Diary tab. The tab caches built views until the pawn's
-   render token changes.
+   render token changes, and reuses filtered/year/measurement buffers between draw frames.
 
 `GameComponentTick` drains completed results, flushes dev debug logs, recovers orphaned pending
 entries, and queues pending work roughly every 120 ticks. On load, pending statuses reset to
@@ -111,7 +116,7 @@ that guard. Scheduled scans snapshot free colonists before iterating.
 | Combat tales | Tale-domain batch policy | Non-death combat evidence becomes delayed per-pawn solo batches; death descriptions stay immediate neutral entries. |
 | Synthetic tales | `QualityUtility.SendCraftNotification`, relic-install patch | Masterwork/legendary crafts and relic installs. |
 | Arrivals | Starting-colonist scan and `Pawn.SetFaction` | Neutral first-page arrival with prior faction/recruiter/kind/creepjoiner/surroundings context when available. |
-| Deaths | `Pawn.Kill` prefix/postfix plus death TaleDefs | Neutral final page with cached cause/context; fallback covers natural deaths without duplicating tale-backed deaths. |
+| Deaths | `Pawn.Kill` prefix/postfix plus XML-marked death TaleDefs | Neutral final page with cached cause/context; XML marks which Tale pawn slot is the victim; fallback covers natural deaths without duplicating tale-backed deaths. |
 | Mood events | `GameConditionManager.RegisterCondition` | Once per eligible colonist on affected maps. |
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | Temporary memories filtered by XML thresholds/tokens; ambient thoughts can batch into one day note. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, and chemical stages record first tracked and later worsening stages; recovery writes nothing. |
@@ -223,10 +228,14 @@ Hediff policy lives on Hediff-domain groups. `<hediff>` controls mode (`Immediat
 `DayReflection`), visible/bad/injury gates, severity thresholds, always qualifiers, add/progression
 recording, severity steps, dedup, day-reflection weight, and optional localized text keys.
 
+Tale-domain groups can also declare `deathVictimInitiatorDefNames` and
+`deathVictimRecipientDefNames`; those XML lists identify death TaleDefs and which pawn slot contains
+the victim, so DLC/modded death classifications stay data-owned.
+
 `DiarySignalPolicyDefs.xml` owns tracker-specific thought/work policy: thresholds, tokens, staged
 progression, ambient batching, scan odds, and cooldowns. `DiaryTuningDef.xml` keeps shared fallback
-tuning for mood/health buckets, nearby context, day-reflection weights, and scanner intervals. Code
-fallbacks keep the mod usable if XML is absent.
+tuning for mood/health buckets, nearby context, first-person minimum biological age,
+day-reflection weights, and scanner intervals. Code fallbacks keep the mod usable if XML is absent.
 
 Surroundings only include weather when the pawn is outdoors, and then only on a severity-weighted
 roll (`DiaryTuningDef.weatherMentionChances`, keyed by `WeatherDef.defName`): clear skies are never
@@ -286,7 +295,9 @@ row is not mutated, the
 generated row is marked so Pawn Diary does not record it again, and the row's displayed text is
 restored from saved `LogID` mapping after load. That map is pruned on save (dropping `LogID`s whose
 PlayLog row has aged out) so it cannot grow without bound, and the display patch short-circuits when
-a game holds no generated rows so it adds no per-row cost to vanilla Social-log rendering.
+a game holds no generated rows so it adds no per-row cost to vanilla Social-log rendering. Saved
+events also clear stale generated-speech `LogID`s when the backing PlayLog row is gone, allowing a
+future result to inject again instead of being blocked by an aged-out id.
 
 Known open issue (under investigation): the inject path now succeeds — the row is added to
 `Find.PlayLog`, the `LogID` is assigned, and Dev Mode logs `Injected generated speech into Social log`
@@ -297,7 +308,8 @@ enable Dev Mode and watch for the inject/skip log lines emitted by `TryInjectGen
 
 Title generation defaults on. Successful main entries queue a capped title follow-up pinned to the
 successful lane when possible. Titles store separately from main text and render as `date - title`;
-entries without titles render date-only.
+entries without titles render date-only. Completed entries that lack titles are swept on load and
+periodic generation scans, so save/load interruptions and retroactive title enablement recover.
 
 ---
 
@@ -321,9 +333,11 @@ Core settings:
 | event filters | XML defaults | `DiaryInteractionGroupDefs.xml` owns matching/defaults; old saved toggles are ignored. |
 | `personaPresets` | empty | Built-in overrides plus custom personas. |
 
-Settings UI includes Connection, Generation, Prompt Studio, and Persona Presets. API lanes support
-OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat, including model
-fetch/pick, per-row connection tests, Responses reasoning effort, and Ollama thinking output.
+Settings UI includes Connection, Generation, Prompt Studio, and Persona Presets. Generation exposes
+temperature, timeout, and max-token controls. API lanes support OpenAI-compatible Chat Completions,
+OpenAI Responses, and native Ollama Chat, including model fetch/pick, per-row connection tests,
+Responses reasoning effort, and Ollama thinking output. Endpoint URLs normalize on load/save rather
+than every draw frame, and connection-test logs strip query strings from endpoints.
 
 Production Diary tab shows completed generated pages. Dev mode adds generation enablement, persona
 picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, and a mock-page
@@ -370,15 +384,16 @@ If no enabled lane has a model, the entry fails with `PawnDiary.Error.NoApiConfi
 ## 9. Persistence
 
 `DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`; `eventId -> DiaryEvent` indexes
-are rebuilt on load. `DiaryEvent` saves raw text, generated text, statuses/errors, context,
-source ids, LLM metadata, semantic `colorCue`, titles, compact per-POV hediff/trait facts, legacy
-staggered intensity, and capped pre-cleanup debug text. Full prompts and decorated rich text are not
-persisted.
+are rebuilt on load, and per-pawn event-id lists prune blank, duplicate, or dangling references.
+`DiaryEvent` saves raw text, generated text, statuses/errors, context, source ids, LLM metadata,
+semantic `colorCue`, titles, assembled prompts, compact per-POV hediff/trait facts, legacy staggered
+intensity, and capped pre-cleanup debug text. Decorated rich text is not persisted.
 
 Classification is inferred from stable `gameContext` fields such as `tale=`, `mental_state=`,
 `mood_event=`, `thought=`, `inspiration=`, `work=`, and `hediff=`, parsed through
-`DiaryContextFields`. Pending requests are not persisted; pending statuses reset on load. Death and
-arrival caches clear when a new session starts.
+`DiaryContextFields`. Pending requests are not persisted; pending statuses reset on load and scans
+requeue eligible missing work. Death and arrival caches evict oldest stale entries at their cap and
+clear when a new session starts.
 
 ### TODO: Role-slot extraction
 
@@ -411,6 +426,10 @@ Def text (`label`, `instruction`, `tone`, persona `rule`, prompt defs/templates,
 labels) localizes through DefInjected. Prompt-enchantment and context connector words use Keyed
 `PawnDiary.Prompt.Health.*` and `PawnDiary.Ctx.*` entries.
 
+The shipped English localization includes DefInjected stubs for `DiaryInteractionGroupDef`,
+`DiaryPersonaDef`, and `DiaryPromptDef` under `Languages/English/DefInjected/`; keep those in sync
+when editing XML labels, instructions, tones, persona rules, or shared system prompts.
+
 Kept English intentionally: prompt schema labels (`event:`, `role:`, `thought=`), role/sentinel
 words (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), internal defNames/theme tags,
 and background-thread `LlmClient` debug/error strings.
@@ -433,9 +452,9 @@ or use a Visual Studio Developer PowerShell.
 
 Release payloads are made with `scripts/publish.ps1`. It builds a throwaway Release DLL, copies only
 the runnable mod files into `dist/<published packageId>`, and rewrites the copied `About.xml` so a
-local dev marker `(developement)` / `(development)` is stripped from the published mod name and
-packageId. The source `About.xml` keeps the marker so the dev copy can sit beside the Workshop copy
-without a duplicate package-id clash.
+local dev package suffix `.development` (and legacy `(developement)` / `(development)` markers) is
+stripped from the published packageId/name. The source `About.xml` keeps the development suffix so
+the dev copy can sit beside the Workshop copy without a duplicate package-id clash.
 
 Enable hooks:
 
@@ -443,9 +462,10 @@ Enable hooks:
 git config core.hooksPath .githooks
 ```
 
-`.githooks/verify.ps1` checks staged whitespace, XML well-formedness, pure tests, Debug MSBuild,
-and committed-DLL freshness. If the build changes `1.6/Assemblies/PawnDiary.dll`, stage it and
-retry. Emergency bypass: `PAWNDIARY_SKIP_VERIFY_HOOKS=1`.
+`.githooks/verify.ps1` checks staged whitespace, XML/project well-formedness, pure tests, Debug
+MSBuild, committed `PawnDiary.dll` freshness, and `0Harmony.dll` source/runtime freshness. If the
+build changes committed runtime DLLs, stage them and retry. Emergency bypass:
+`PAWNDIARY_SKIP_VERIFY_HOOKS=1`.
 
 Pure tests:
 
