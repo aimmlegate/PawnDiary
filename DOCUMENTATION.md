@@ -165,6 +165,42 @@ thresholds, dedup windows, and prompt policy; new sources either reuse them or a
 following the same shape. See `AGENTS.md` rule 2 (impure listener → plain context → pure decision →
 impure sink) and rule 3 (XML owns tunable values).
 
+### Migration recipe — step-by-step
+
+When migrating an existing source (or adding a net-new one) to the Event Catalog, follow this
+checklist. `tests/DiaryCapturePolicyTests` enforces steps 1+5 automatically — it fails if a new enum
+value has no Spec (`TestCatalogContract`) or if a planned source appears in the enum without being
+removed from the sentinel list (`TestMigrationSentinel`).
+
+1. **Enum entry.** Add a value to `DiaryEventType`. (The contract test will now fail until step 5.)
+2. **Payload + pure decision.** Write `Source/Capture/Events/XxxEventData.cs` with primitive fields
+   + a `static Decide(XxxEventData, CaptureContext) → CaptureDecision`. If the source has token /
+   threshold / weight policy, add a frozen policy snapshot type (like `ThoughtCapturePolicy`) and
+   pass it on the payload. `Decide` must not touch RimWorld types.
+3. **Pure game-context builder.** Write `XxxEventData.BuildGameContext(...)` (and any other pure
+   string assembly the source needs). The leading `"xxx="` marker is load-bearing — the UI parses
+   it to recover the domain. Add a format test to `DiaryCapturePolicyTests` so the format is locked.
+4. **Spec wrapper.** Write `Source/Capture/Specs/XxxEventSpec.cs` that delegates `Decide` to the
+   payload's static method. (Future per-source metadata — `Weight`, `PromptKey`, RNG filters —
+   belongs here as fields/properties, not in the base contract.)
+5. **Registration.** Add `Register(new XxxEventSpec())` to `DiaryEventCatalog.EnsureInitialized`.
+6. **Impure RecordX rewrite.** Update `DiaryGameComponent.RecordXxx` to: snapshot live facts into
+   `XxxEventData` + `CaptureContext` → `catalog.Get(type).Decide(...)` → if `Drop` return → perform
+   dedup → call the pure `BuildGameContext` → create `DiaryEvent` via `AddSoloEvent` (or
+   `AddPairwiseEvent` for pair sources) → queue LLM. The RecordX should contain NO business logic,
+   only Verse reads + sink side-effects.
+7. **Sentinel cleanup.** If the source was listed in `PlannedNotYetMigratedSources` in
+   `DiaryCapturePolicyTests/Program.cs`, remove its name. If it was a brand-new source never in the
+   list, nothing to do.
+8. **Pair sources only.** When migrating the first pair source (mental state social fights, future
+   romance/raid), add `GeneratePair` to `CaptureDecision` and extend the sink in
+   `DiaryGameComponent` to dispatch pair drafts. Solo sources stay unchanged.
+
+What stays in `RecordXxx` (impure, NOT in the pure layer): `IsDiaryEligible(pawn)`, `.LabelCap.
+Resolve()`, `.Translate()`, `Find.TickManager.TicksGame`, `RecentlyRecorded`, `AddSoloEvent`/
+`AddPairwiseEvent`, `QueueLlmRewrite`. These cannot be unit-tested without RimWorld — review
+carefully, and where possible keep them as one-liners around calls into the pure helpers.
+
 ---
 
 ## 5. XML Policy

@@ -22,8 +22,12 @@ namespace DiaryCapturePolicyTests
             TestThoughtBypassToken();
             TestThoughtAmbientRouting();
             TestThoughtPolicyNullDefaults();
+            TestThoughtBuildGameContextFormat();
             TestInspirationDecide();
+            TestInspirationBuildGameContextFormat();
             TestCatalogDispatch();
+            TestCatalogContract();
+            TestMigrationSentinel();
 
             Console.WriteLine("DiaryCapturePolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -136,6 +140,33 @@ namespace DiaryCapturePolicyTests
                 ThoughtEventData.Decide(data, Ctx()));
         }
 
+        private static void TestThoughtBuildGameContextFormat()
+        {
+            // The leading "thought=" marker and the field order/precision are load-bearing: the UI
+            // parses the marker to recover the Thought domain, and the LLM reads the rest. Locking the
+            // format here means a future migration cannot silently drift it.
+            string ctx = ThoughtEventData.BuildGameContext(
+                "AteWithoutTable", "ate without table", "negative", -5.27f, 0.4f);
+            AssertEqual("thought context full format",
+                "thought=AteWithoutTable; label=ate without table; mood_impact=negative; mood_offset=-5.3; duration_days=0.4",
+                ctx);
+
+            // Positive mood impact, integer-valued offset formats with one decimal.
+            string positive = ThoughtEventData.BuildGameContext(
+                "GotMarried", "got married", "positive", 12f, 2f);
+            AssertEqual("thought context positive integer floats",
+                "thought=GotMarried; label=got married; mood_impact=positive; mood_offset=12.0; duration_days=2.0",
+                positive);
+
+            // Neutral impact passes through verbatim — classification happens in the caller, the build
+            // helper just embeds whatever it receives.
+            string neutral = ThoughtEventData.BuildGameContext(
+                "Foo", "bar", "neutral", 0f, 1f);
+            AssertEqual("thought context neutral impact",
+                "thought=Foo; label=bar; mood_impact=neutral; mood_offset=0.0; duration_days=1.0",
+                neutral);
+        }
+
         // ── Inspiration ──
 
         private static void TestInspirationDecide()
@@ -150,6 +181,32 @@ namespace DiaryCapturePolicyTests
                 InspirationEventData.Decide(Inspiration("Foo"), Ctx(user: false)));
             AssertEqual("inspiration eligible records", CaptureDecision.GenerateSolo,
                 InspirationEventData.Decide(Inspiration("Inspired_Recruitment"), Ctx()));
+        }
+
+        private static void TestInspirationBuildGameContextFormat()
+        {
+            // The leading "inspiration=" marker is load-bearing for UI domain classification.
+            // With a reason: the optional "reason=" field is appended.
+            string withReason = InspirationEventData.BuildGameContext(
+                "Inspired_Recruitment", "recruitment drive", 8.0f, "felt inspired");
+            AssertEqual("inspiration context with reason",
+                "inspiration=Inspired_Recruitment; label=recruitment drive; duration_days=8.0; reason=felt inspired",
+                withReason);
+
+            // Without a reason: the field is omitted entirely (not emitted as empty), matching
+            // pre-refactor behavior.
+            string noReason = InspirationEventData.BuildGameContext(
+                "Inspired_Creativity", "creative inspiration", 8.5f, "");
+            AssertEqual("inspiration context without reason",
+                "inspiration=Inspired_Creativity; label=creative inspiration; duration_days=8.5",
+                noReason);
+
+            // Whitespace-only reason is also treated as absent (the helper guards against it).
+            string whitespaceReason = InspirationEventData.BuildGameContext(
+                "Inspired_Trade", "trade deal", 8.0f, "   ");
+            AssertEqual("inspiration context whitespace reason omitted",
+                "inspiration=Inspired_Trade; label=trade deal; duration_days=8.0",
+                whitespaceReason);
         }
 
         // ── Catalog dispatch ──
@@ -174,6 +231,60 @@ namespace DiaryCapturePolicyTests
             // (We can't construct a DiaryEventType that isn't registered because all values are
             // registered today, so verify Reset re-registers defaults.)
             AssertTrue("catalog spec is non-null after reset", DiaryEventCatalog.Get(DiaryEventType.Thought) != null);
+        }
+
+        // ── Catalog contract (invariants every migration must preserve) ──
+
+        private static void TestCatalogContract()
+        {
+            DiaryEventCatalog.Reset();
+
+            // (1) Every value declared in DiaryEventType MUST have a registered Spec. Catches the
+            // classic "I added the enum entry but forgot Register()" half-finished migration.
+            foreach (DiaryEventType type in (DiaryEventType[])Enum.GetValues(typeof(DiaryEventType)))
+            {
+                DiaryEventSpec spec = DiaryEventCatalog.Get(type);
+                AssertTrue("catalog has spec for " + type, spec != null);
+                // (2) The spec's own EventType must match the key it is registered under. Catches a
+                // spec being registered against the wrong enum value.
+                AssertEqual("spec EventType matches key for " + type, type, spec.EventType);
+            }
+
+            // (3) Reset is idempotent: re-resetting leaves the catalog in the same shape.
+            DiaryEventCatalog.Reset();
+            foreach (DiaryEventType type in (DiaryEventType[])Enum.GetValues(typeof(DiaryEventType)))
+            {
+                AssertTrue("catalog still has spec after re-reset for " + type,
+                    DiaryEventCatalog.Get(type) != null);
+            }
+        }
+
+        // ── Migration sentinel — list of planned sources NOT yet migrated ──
+        // Every name in this list is a DiaryEventType we PLAN to add in future slices. The test
+        // asserts each one is still ABSENT from the enum. When you migrate a source:
+        //   1. Add the value to DiaryEventType.
+        //   2. Write XxxEventData + XxxEventSpec + Register.
+        //   3. REMOVE its name from this list.
+        // The TestCatalogContract step (1) above already enforces "every enum value has a Spec", so
+        // this sentinel only protects against accidentally-landed enum values that nobody migrated.
+        private static readonly string[] PlannedNotYetMigratedSources =
+        {
+            "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
+            "AnomalyEvent", "IncidentEvent", "Health", "Romance",
+            "MentalState", "Tale", "MoodEvent", "Crafted", "Hediff",
+            "Interaction", "Arrival", "Death",
+        };
+
+        private static void TestMigrationSentinel()
+        {
+            foreach (string name in PlannedNotYetMigratedSources)
+            {
+                // Each planned-but-not-yet-migrated source MUST NOT be defined in the enum yet. If this
+                // fails: either remove the name from the list above (you finished migrating it), or
+                // check that you actually completed the migration (Spec registered, Decide tested).
+                bool defined = Enum.IsDefined(typeof(DiaryEventType), name);
+                AssertTrue("sentinel: " + name + " is still future (not in enum)", !defined);
+            }
         }
 
         // ── Factory helpers ──

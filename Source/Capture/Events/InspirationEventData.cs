@@ -6,6 +6,8 @@
 //
 // Like ThoughtEventData, the decision is pure; the RimWorld-facing label/text/game-context assembly
 // stays in DiaryGameComponent.RecordInspiration.
+using System.Globalization;
+
 namespace PawnDiary.Capture
 {
     /// <summary>
@@ -44,6 +46,27 @@ namespace PawnDiary.Capture
             }
 
             return CaptureDecision.GenerateSolo;
+        }
+
+        /// <summary>
+        /// Pure assembly of the inspiration's game-context marker string. Inputs must already be
+        /// cleaned (RecordInspiration runs DiaryContextBuilder.CleanLine on the label and reason
+        /// before calling). The leading "inspiration=" marker is load-bearing: the UI uses it to
+        /// classify the event into the Inspiration domain. A null/whitespace reason omits the
+        /// "reason=" field entirely (matches pre-refactor behavior). Keeping this in a pure helper
+        /// lets tests lock down the exact format.
+        /// </summary>
+        public static string BuildGameContext(
+            string defName, string label, float durationDays, string cleanedReason)
+        {
+            string context = "inspiration=" + defName
+                + "; label=" + label
+                + "; duration_days=" + durationDays.ToString("F1", CultureInfo.InvariantCulture);
+            if (!string.IsNullOrWhiteSpace(cleanedReason))
+            {
+                context += "; reason=" + cleanedReason;
+            }
+            return context;
         }
     }
 }

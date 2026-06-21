@@ -15,6 +15,7 @@
 // it directly without linking RimWorld assemblies.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace PawnDiary.Capture
 {
@@ -137,6 +138,24 @@ namespace PawnDiary.Capture
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Pure assembly of the thought's game-context marker string. Inputs must already be cleaned
+        /// (RecordThought runs DiaryContextBuilder.CleanLine on the label before calling). The format
+        /// is load-bearing: the UI parses the leading "thought=" marker to classify the event into
+        /// the Thought domain, and the LLM reads the rest as prompt evidence. Keeping the format in a
+        /// pure helper means tests can lock it down — a future migration that drifts the format (e.g.
+        /// changes the F1 precision, reorders fields, renames a key) will fail the format tests.
+        /// </summary>
+        public static string BuildGameContext(
+            string defName, string label, string moodImpact, float moodOffset, float durationDays)
+        {
+            return "thought=" + defName
+                + "; label=" + label
+                + "; mood_impact=" + moodImpact
+                + "; mood_offset=" + moodOffset.ToString("F1", CultureInfo.InvariantCulture)
+                + "; duration_days=" + durationDays.ToString("F1", CultureInfo.InvariantCulture);
         }
     }
 }

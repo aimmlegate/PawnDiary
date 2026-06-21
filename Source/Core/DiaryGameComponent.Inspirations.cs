@@ -10,8 +10,6 @@
 // lives in Source/Capture/Events/InspirationEventData.cs.
 //
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
-using System.Globalization;
-using System.Text;
 using PawnDiary.Capture;
 using RimWorld;
 using Verse;
@@ -61,7 +59,9 @@ namespace PawnDiary
             // straight to event assembly.
             string label = CleanInspirationLabel(inspirationDef);
             string instruction = PawnDiaryMod.Settings.InstructionForInspiration(inspirationDef);
-            string gameContext = BuildInspirationGameContext(inspirationDef, label, reason);
+            string cleanedReason = DiaryContextBuilder.CleanLine(reason);
+            string gameContext = InspirationEventData.BuildGameContext(
+                inspirationDef.defName, label, inspirationDef.baseDurationDays, cleanedReason);
             string text = BuildInspirationText(pawn, label, reason);
 
             DiaryEvent inspirationEvent = AddSoloEvent(pawn, null, data.DefName, label, text, instruction, gameContext);
@@ -95,27 +95,6 @@ namespace PawnDiary
             }
 
             return text + ".";
-        }
-
-        /// <summary>
-        /// Creates a compact metadata string for inspiration-sourced diary events. The leading
-        /// inspiration= marker is stable and lets display code recover the correct group domain.
-        /// </summary>
-        private static string BuildInspirationGameContext(InspirationDef inspirationDef, string label, string reason)
-        {
-            StringBuilder context = new StringBuilder();
-            context.Append("inspiration=").Append(inspirationDef.defName);
-            context.Append("; label=").Append(DiaryContextBuilder.CleanLine(label));
-            context.Append("; duration_days=")
-                .Append(inspirationDef.baseDurationDays.ToString("F1", CultureInfo.InvariantCulture));
-
-            string cleanReason = DiaryContextBuilder.CleanLine(reason);
-            if (!string.IsNullOrWhiteSpace(cleanReason))
-            {
-                context.Append("; reason=").Append(cleanReason);
-            }
-
-            return context.ToString();
         }
     }
 }
