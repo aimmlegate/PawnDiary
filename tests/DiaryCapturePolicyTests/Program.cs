@@ -27,6 +27,9 @@ namespace DiaryCapturePolicyTests
             TestInspirationBuildGameContextFormat();
             TestMoodEventDecide();
             TestMoodEventBuildGameContextFormat();
+            TestMentalStateDecide();
+            TestMentalStateBuildPairGameContextFormat();
+            TestMentalStateBuildSoloGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -250,6 +253,115 @@ namespace DiaryCapturePolicyTests
                 neutral);
         }
 
+        // ── MentalState (first pair source) ──
+
+        private static void TestMentalStateDecide()
+        {
+            // Null guards.
+            AssertEqual("mental state null data drops", CaptureDecision.Drop,
+                MentalStateEventData.Decide(null, Ctx()));
+            AssertEqual("mental state null ctx drops", CaptureDecision.Drop,
+                MentalStateEventData.Decide(MentalState("Berserk"), null));
+
+            // Eligibility / user toggle gates.
+            AssertEqual("mental state ineligible drops", CaptureDecision.Drop,
+                MentalStateEventData.Decide(MentalState("Berserk"), Ctx(eligible: false)));
+            AssertEqual("mental state user disabled drops", CaptureDecision.Drop,
+                MentalStateEventData.Decide(MentalState("Berserk"), Ctx(user: false)));
+
+            // Solo break: non-SocialFighting defName → GenerateSolo regardless of otherPawn.
+            AssertEqual("non-social-fight solo break", CaptureDecision.GenerateSolo,
+                MentalStateEventData.Decide(MentalState("Berserk", otherId: "P2"), Ctx()));
+            AssertEqual("solo break without other pawn", CaptureDecision.GenerateSolo,
+                MentalStateEventData.Decide(MentalState("SadWander"), Ctx()));
+
+            // Pair: SocialFighting + eligible counterpart + different pawn → GeneratePair.
+            AssertEqual("social fight pair", CaptureDecision.GeneratePair,
+                MentalStateEventData.Decide(
+                    MentalState("SocialFighting", otherId: "P2", otherEligible: true),
+                    Ctx()));
+
+            // Pair falls back to solo when defName is not SocialFighting.
+            AssertEqual("non-social-fight with eligible other stays solo", CaptureDecision.GenerateSolo,
+                MentalStateEventData.Decide(
+                    MentalState("Berserk", otherId: "P2", otherEligible: true),
+                    Ctx()));
+
+            // Pair falls back to solo when counterpart is ineligible.
+            AssertEqual("social fight with ineligible counterpart is solo", CaptureDecision.GenerateSolo,
+                MentalStateEventData.Decide(
+                    MentalState("SocialFighting", otherId: "P2", otherEligible: false),
+                    Ctx()));
+
+            // Pair falls back to solo when counterpart == self (degenerate call the hook should
+            // never emit; the catalog guards against self-pair anyway).
+            AssertEqual("social fight with self counterpart is solo", CaptureDecision.GenerateSolo,
+                MentalStateEventData.Decide(
+                    MentalState("SocialFighting", otherId: "P", otherEligible: true),
+                    Ctx()));
+
+            // Pair falls back to solo when no counterpart provided.
+            AssertEqual("social fight without other pawn is solo", CaptureDecision.GenerateSolo,
+                MentalStateEventData.Decide(MentalState("SocialFighting"), Ctx()));
+
+            // DefName match is case-insensitive.
+            AssertEqual("social fight defName case-insensitive", CaptureDecision.GeneratePair,
+                MentalStateEventData.Decide(
+                    MentalState("socialfighting", otherId: "P2", otherEligible: true),
+                    Ctx()));
+        }
+
+        private static void TestMentalStateBuildPairGameContextFormat()
+        {
+            // Pair context (social fights): no target field (both pawns are POV participants).
+            // Reason is optional.
+            string withReason = MentalStateEventData.BuildPairGameContext(
+                "SocialFighting", "social fight", "they argued over food");
+            AssertEqual("mental state pair context with reason",
+                "mental_state=SocialFighting; label=social fight; reason=they argued over food",
+                withReason);
+
+            string noReason = MentalStateEventData.BuildPairGameContext(
+                "SocialFighting", "social fight", "");
+            AssertEqual("mental state pair context no reason",
+                "mental_state=SocialFighting; label=social fight",
+                noReason);
+
+            string whitespaceReason = MentalStateEventData.BuildPairGameContext(
+                "SocialFighting", "social fight", "   ");
+            AssertEqual("mental state pair context whitespace reason omitted",
+                "mental_state=SocialFighting; label=social fight",
+                whitespaceReason);
+        }
+
+        private static void TestMentalStateBuildSoloGameContextFormat()
+        {
+            // Solo context (mental breaks): optional target + optional reason.
+            string withTargetAndReason = MentalStateEventData.BuildSoloGameContext(
+                "Berserk", "berserk rage", "Bob", "slept in the rain");
+            AssertEqual("mental state solo context target + reason",
+                "mental_state=Berserk; label=berserk rage; target=Bob; reason=slept in the rain",
+                withTargetAndReason);
+
+            string targetNoReason = MentalStateEventData.BuildSoloGameContext(
+                "InsultSpree", "insult spree", "Alice", "");
+            AssertEqual("mental state solo context target only",
+                "mental_state=InsultSpree; label=insult spree; target=Alice",
+                targetNoReason);
+
+            string noTargetWithReason = MentalStateEventData.BuildSoloGameContext(
+                "SadWander", "sad wandering", null, "lost a friend");
+            AssertEqual("mental state solo context reason only",
+                "mental_state=SadWander; label=sad wandering; reason=lost a friend",
+                noTargetWithReason);
+
+            string bareContext = MentalStateEventData.BuildSoloGameContext(
+                "ConfusedWander", "confused wandering", null, "");
+            AssertEqual("mental state solo context bare",
+                "mental_state=ConfusedWander; label=confused wandering",
+                bareContext);
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -312,7 +424,7 @@ namespace DiaryCapturePolicyTests
         {
             "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
             "AnomalyEvent", "IncidentEvent", "Health", "Romance",
-            "MentalState", "Tale", "Crafted", "Hediff",
+            "Tale", "Crafted", "Hediff",
             "Interaction", "Arrival", "Death",
         };
 
@@ -381,6 +493,20 @@ namespace DiaryCapturePolicyTests
                 DefName = defName,
                 Label = "test label",
                 MoodImpact = moodImpact,
+            };
+        }
+
+        private static MentalStateEventData MentalState(
+            string defName, string otherId = null, bool otherEligible = false)
+        {
+            return new MentalStateEventData
+            {
+                PawnId = "P",
+                Tick = 0,
+                DefName = defName,
+                OtherPawnId = otherId,
+                OtherPawnEligible = otherEligible,
+                OtherPawnLabel = otherId != null ? "Other" : null,
             };
         }
 
