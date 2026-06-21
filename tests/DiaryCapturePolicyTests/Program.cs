@@ -366,7 +366,6 @@ namespace DiaryCapturePolicyTests
                 bareContext);
         }
 
-<<<<<<< HEAD
         // ── Tale (partial migration — drop-gate only) ──
 
         private static void TestTaleDecide()
@@ -641,7 +640,6 @@ namespace DiaryCapturePolicyTests
             };
         }
 
-<<<<<<< HEAD
         private static TaleEventData Tale(
             string defName,
             bool firstEligible = true,
@@ -685,8 +683,6 @@ namespace DiaryCapturePolicyTests
                 PassesPolicy = passesPolicy,
                 PolicyRecordsSource = policyRecordsSource,
                 ModeRecordable = modeRecordable,
-            };
-        }
             };
         }
 
