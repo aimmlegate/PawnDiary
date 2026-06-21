@@ -4,10 +4,10 @@ Review this pull request for bugs, behavioral regressions, security issues, brok
 
 Use the repository instructions in `AGENTS.md`. Focus on changed behavior and reachable impact, not general style preferences.
 
-The workflow fetched the base branch and PR head before this prompt runs. Inspect the change with:
+The workflow checked out the pull request merge commit and fetched both parents. Inspect the pull request change with:
 
 ```bash
-git diff --find-renames "origin/${PR_BASE_REF}...origin/pull/${PR_NUMBER}"
+git diff --find-renames HEAD^1 HEAD^2
 ```
 
 Return Markdown suitable for a pull request comment:
