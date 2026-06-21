@@ -22,11 +22,17 @@ namespace PawnDiary.Capture
         Hediff,
         Interaction,
 
+        // ── Net-new sources added on top of the Event Catalog ──
+        // Romance: pair events for Lover/Spouse/ExLover/ExSpouse relation changes (the first
+        // source designed FROM SCRATCH onto the catalog, proving the pattern handles additions
+        // not just migrations of pre-existing RecordX methods).
+        Romance,
+
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // Existing sources to migrate source-by-source in later slices:
         //   Arrival, Death.
         // Net-new sources planned (see repo discussion):
         //   Quest, Raid, MajorThreat, RandomEvent, WorldEvent, AnomalyEvent, IncidentEvent,
-        //   Health, Romance.
+        //   Health.
     }
 }

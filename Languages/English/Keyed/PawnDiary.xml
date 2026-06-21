@@ -164,6 +164,7 @@
   <PawnDiary.Event.SocialFight>{0} and {1} lost their tempers and came to blows.</PawnDiary.Event.SocialFight>
   <PawnDiary.Event.MentalBreak>{0} had a mental break ({1})</PawnDiary.Event.MentalBreak>
   <PawnDiary.Event.Inspiration>{0} became inspired: {1}</PawnDiary.Event.Inspiration>
+  <PawnDiary.Event.Romance>{0} and {2} are now {1}.</PawnDiary.Event.Romance>
   <PawnDiary.Event.DirectedAt>, directed at {0}</PawnDiary.Event.DirectedAt>
   <PawnDiary.Event.ReasonSuffix>. Reason: {0}</PawnDiary.Event.ReasonSuffix>
   <PawnDiary.Event.BatchFallback>{0} had several {2} moments with {1}.</PawnDiary.Event.BatchFallback>

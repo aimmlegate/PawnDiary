@@ -359,6 +359,40 @@ namespace PawnDiary
         }
     }
 
+    // Fires whenever a pawn gains a direct relation with another pawn (Lover, Spouse, Rival,
+    // Cousin, Parent, ...). RecordRomance filters to the four vanilla romance relations and
+    // emits a pairwise diary event for the relation change. Pair dedup (canonical pair key in
+    // RecordRomance) collapses the mirrored call when RimWorld adds the relation symmetrically on
+    // the other pawn's tracker.
+    [HarmonyPatch(typeof(Pawn_RelationsTracker), nameof(Pawn_RelationsTracker.AddDirectRelation))]
+    public static class PawnRelationAddPatch
+    {
+        // Reflection accessor for the private Pawn_RelationsTracker.pawn field so we can read the
+        // subject pawn (the tracker's owner). Mirrors the MentalStateHandler.pawn pattern.
+        private static readonly FieldInfo PawnField = AccessTools.Field(typeof(Pawn_RelationsTracker), "pawn");
+
+        /// <summary>
+        /// Harmony Postfix for Pawn_RelationsTracker.AddDirectRelation. Forwards the relation
+        /// change to DiaryGameComponent.RecordRomance, which filters to romance relations and
+        /// records a pairwise diary event when both pawns are eligible.
+        /// </summary>
+        public static void Postfix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn)
+        {
+            if (__instance == null || def == null || otherPawn == null)
+            {
+                return;
+            }
+
+            Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
+            if (pawn == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordRomance(pawn, otherPawn, def);
+        }
+    }
+
     // Fires when a pawn gains a temporary thought (Thought_Memory). We only record thoughts
     // that have an expiration (durationDays > 0), filtering out permanent traits and
     // low-magnitude thoughts. The patch catches all temporary mood thoughts at the moment

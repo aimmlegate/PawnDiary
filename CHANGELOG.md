@@ -2,6 +2,21 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5d)
+
+- **Added Romance as the first net-new Event Catalog source:** pair events for romance relation
+  changes (Lover / Spouse / ExLover / ExSpouse via `Pawn_RelationsTracker.AddDirectRelation`).
+  This is the first source designed from scratch on the catalog rather than migrated from an
+  existing `RecordX` method, proving the registry pattern handles net-new additions cleanly. The
+  pure `RomanceEventData.Decide` requires both pawns eligible + signal/user enabled and returns
+  `GeneratePair`; the pure `BuildGameContext` locks the `romance=<defName>; label=…; kind=…`
+  format with kind derived from the relation defName (married / lover / divorce / breakup, modded
+  defNames fall back to the raw name). The new `PawnRelationAddPatch` filters to the four vanilla
+  romance relations; canonical pair-key dedup collapses the mirrored AddDirectRelation call when
+  RimWorld adds the relation symmetrically. New `PawnDiary.Event.Romance` keyed string. New
+  transient `recentRomanceEvents` dedup dictionary. No user-visible behavior change for existing
+  sources. Test count: 92 → 113 assertions. Restaged DLL.
+
 ## 2026-06-21 (5c)
 
 - **Partial Interaction migration to Event Catalog:** the drop-gate for social interactions
