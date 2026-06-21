@@ -96,6 +96,10 @@ namespace PawnDiary
         private readonly Dictionary<string, int> recentThoughtEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against repeated hediff appearance/progression signals.
         private readonly Dictionary<string, int> recentHediffEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against the mirrored AddDirectRelation call from the other
+        // participant when a romance relation is added symmetrically. Keys by canonical pair id +
+        // relation defName.
+        private readonly Dictionary<string, int> recentRomanceEvents = new Dictionary<string, int>();
         // Transient (not saved): event-role keys ("eventId|role") seen pending-but-not-in-flight on the
         // previous generation scan. An entry must look orphaned on two consecutive scans before the
         // orphan recovery re-queues it, so a request that merely finished between scans (its result

@@ -36,6 +36,9 @@ namespace DiaryCapturePolicyTests
             TestHediffBuildGameContextFormat();
             TestInteractionDecide();
             TestInteractionBuildGameContextFormat();
+            TestRomanceDecide();
+            TestRomanceBuildGameContextFormat();
+            TestRomanceKindFor();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -557,6 +560,69 @@ namespace DiaryCapturePolicyTests
                 workerOnly);
         }
 
+        // ── Romance (first net-new source) ──
+
+        private static void TestRomanceDecide()
+        {
+            // Null guards.
+            AssertEqual("romance null data drops", CaptureDecision.Drop,
+                RomanceEventData.Decide(null, Ctx()));
+            AssertEqual("romance null ctx drops", CaptureDecision.Drop,
+                RomanceEventData.Decide(Romance("Lover"), null));
+
+            // Signal / user gates.
+            AssertEqual("romance signal disabled drops", CaptureDecision.Drop,
+                RomanceEventData.Decide(Romance("Lover"), Ctx(signal: false)));
+            AssertEqual("romance user disabled drops", CaptureDecision.Drop,
+                RomanceEventData.Decide(Romance("Lover"), Ctx(user: false)));
+
+            // Both pawns must be eligible (a pair event between a colonist and a non-colonist
+            // does not diary).
+            AssertEqual("romance first ineligible drops", CaptureDecision.Drop,
+                RomanceEventData.Decide(Romance("Lover", firstEligible: false), Ctx()));
+            AssertEqual("romance second ineligible drops", CaptureDecision.Drop,
+                RomanceEventData.Decide(Romance("Lover", secondEligible: false), Ctx()));
+
+            // Degenerate self-relation.
+            AssertEqual("romance self-pair drops", CaptureDecision.Drop,
+                RomanceEventData.Decide(Romance("Lover", secondId: "P1"), Ctx()));
+
+            // Both eligible + different pawns → GeneratePair.
+            AssertEqual("romance both eligible generates pair", CaptureDecision.GeneratePair,
+                RomanceEventData.Decide(Romance("Spouse"), Ctx()));
+        }
+
+        private static void TestRomanceBuildGameContextFormat()
+        {
+            // The leading "romance=" marker is load-bearing for UI domain classification; the
+            // "kind=" field carries the short human-readable category.
+            AssertEqual("romance lover context",
+                "romance=Lover; label=lover; kind=lover",
+                RomanceEventData.BuildGameContext("Lover", "lover", "lover"));
+            AssertEqual("romance spouse context",
+                "romance=Spouse; label=spouse; kind=married",
+                RomanceEventData.BuildGameContext("Spouse", "spouse", "married"));
+            AssertEqual("romance exlover context",
+                "romance=ExLover; label=ex-lover; kind=breakup",
+                RomanceEventData.BuildGameContext("ExLover", "ex-lover", "breakup"));
+            AssertEqual("romance exspouse context",
+                "romance=ExSpouse; label=ex-spouse; kind=divorce",
+                RomanceEventData.BuildGameContext("ExSpouse", "ex-spouse", "divorce"));
+        }
+
+        private static void TestRomanceKindFor()
+        {
+            // Vanilla relation defNames map to the four kind tokens; modded defNames fall back to
+            // the raw defName so the catalog never throws on an unknown relation.
+            AssertEqual("kind Spouse", "married", RomanceEventData.KindFor("Spouse"));
+            AssertEqual("kind Lover", "lover", RomanceEventData.KindFor("Lover"));
+            AssertEqual("kind ExSpouse", "divorce", RomanceEventData.KindFor("ExSpouse"));
+            AssertEqual("kind ExLover", "breakup", RomanceEventData.KindFor("ExLover"));
+            AssertEqual("kind case-insensitive", "married", RomanceEventData.KindFor("SPOUSE"));
+            AssertEqual("kind modded fallback", "Bonded", RomanceEventData.KindFor("Bonded"));
+            AssertEqual("kind empty defName", string.Empty, RomanceEventData.KindFor(null));
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -618,7 +684,7 @@ namespace DiaryCapturePolicyTests
         private static readonly string[] PlannedNotYetMigratedSources =
         {
             "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
-            "AnomalyEvent", "IncidentEvent", "Health", "Romance",
+            "AnomalyEvent", "IncidentEvent", "Health",
             "Arrival", "Death",
         };
 
@@ -767,6 +833,22 @@ namespace DiaryCapturePolicyTests
                 InitiatorEligible = initiatorEligible,
                 RecipientEligible = recipientEligible,
                 IsSignificant = isSignificant,
+            };
+        }
+
+        private static RomanceEventData Romance(
+            string defName, string firstId = "P1", string secondId = "P2",
+            bool firstEligible = true, bool secondEligible = true)
+        {
+            return new RomanceEventData
+            {
+                PawnId = firstId,
+                Tick = 0,
+                DefName = defName,
+                FirstPawnId = firstId,
+                SecondPawnId = secondId,
+                FirstEligible = firstEligible,
+                SecondEligible = secondEligible,
             };
         }
 
