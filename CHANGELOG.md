@@ -11,6 +11,9 @@ not need separate entries unless they change behavior or document an important r
 - **Dev-only copy button on entry cards.** A subtle copy icon at the right edge of each card header
   (dev mode only) copies that card's text to the clipboard — the captured prompt for prompt-only
   cards, otherwise the generated text.
+- **Copy button moved to bottom-left.** The dev copy badge now sits at the bottom-left of expanded
+  cards only (removed from collapsed), rests at ~0.5 alpha and brightens on hover, and reserves a
+  dev-only footer so it clears the model-name line.
 - **Prompt test suite added.** Dev-mode Diary controls now include a "Prompt suite" button that
   enables prompt test mode and seeds one synthetic diary event per major category (insult, social
   fight, romance, mental break, hediff, inspiration, work, thought, mood event, tale, day

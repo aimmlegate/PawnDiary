@@ -80,10 +80,6 @@ namespace PawnDiary
 
             DrawExpansionIndicator(titleRect, expanded, expansionBlend, accent);
 
-            // Dev copy button: drawn here (before the FillTab click-to-expand invisible button covers
-            // the whole card) so it can still claim its own click region on collapsed cards.
-            DrawCopyButton(titleRect, entry);
-
 
 
             TooltipHandler.TipRegion(rect, "PawnDiary.Tab.ExpandCollapseTip".Translate());

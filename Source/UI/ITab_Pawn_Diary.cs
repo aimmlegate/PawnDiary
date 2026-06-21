@@ -420,9 +420,6 @@ namespace PawnDiary
                     entry,
                     accentColor);
                 DrawExpansionIndicator(titleRect, expanded, expansionBlend, accentColor);
-                // Draw the dev copy button before the click-to-expand invisible button so it can claim
-                // clicks inside its own small rect instead of the whole title bar toggling expansion.
-                DrawCopyButton(titleRect, entry);
                 if (Widgets.ButtonInvisible(titleRect, false))
                 {
                     SetEntryExpanded(entry, !expanded);
@@ -498,9 +495,15 @@ namespace PawnDiary
 
                 if (showModelName)
                 {
-                    Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
+                    // Anchor above the dev-only footer (DevCopyFooter, 0 outside dev mode) so the
+                    // bottom-left copy badge never overlaps or clips the model name.
+                    Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
                     DrawModelName(modelRect, entry.LlmModel);
                 }
+
+                // Dev-only copy badge sits in the reserved bottom-left footer, drawn last so it
+                // floats above the page wash/highlight without competing with body text or model name.
+                DrawCopyButton(localEntryRect, entry);
 
                 GUI.EndGroup();
                 curY += height + EntryGap;

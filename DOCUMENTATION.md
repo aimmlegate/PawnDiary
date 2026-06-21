@@ -240,9 +240,10 @@ death/arrival event would become that pawn's diary boundary (see `ComputeDiaryBo
 the pawn's real pages, so those two shapes are still tested through real gameplay hooks.
 
 The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. In dev mode every
-entry card also shows a subtle copy button at the right edge of its header: clicking it copies the
+expanded entry card also shows a subtle copy button at the bottom-left of the card: clicking it copies the
 card's text to the clipboard — the captured prompt for prompt-only cards, otherwise the generated
-text — so prompts and output can be pasted out for inspection.
+text — so prompts and output can be pasted out for inspection. The badge rests at ~0.5 alpha,
+brightens on hover, and reserves a dev-only footer so it clears the model-name line drawn above it.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`

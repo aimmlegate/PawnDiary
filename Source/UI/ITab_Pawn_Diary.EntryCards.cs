@@ -41,30 +41,37 @@ namespace PawnDiary
             return entry.GeneratedText;
         }
 
+        // Dev-only copy badge geometry. The footer reserves a thin strip at the bottom of expanded
+        // cards (dev mode only) so the badge clears both the body text and the model-name line drawn
+        // just above it. Production card heights are unchanged because DevCopyFooter is 0 outside dev.
+        private const float DevCopyButtonSize = 16f;
+        private const float DevCopyButtonFooter = 20f;
+        private static float DevCopyFooter => Prefs.DevMode ? DevCopyButtonFooter : 0f;
+
         /// <summary>
-        /// Dev-only: draws a small, subtle copy-to-clipboard button at the right edge of a card's
-        /// title bar. On click it copies the entry's prompt (for prompt-only cards) or its generated/
-        /// visible text to the system clipboard. Must be drawn BEFORE any click-to-expand invisible
-        /// button covering the same title bar so this smaller button can claim clicks in its own rect.
+        /// Dev-only: draws a small, subtle copy-to-clipboard button anchored to the bottom-left of an
+        /// expanded card. On click it copies the entry's prompt (for prompt-only cards) or its
+        /// generated/visible text to the system clipboard. Drawn AFTER the body text and model-name
+        /// line so it lives in its own reserved footer strip (see DevCopyFooter) and never overlaps or
+        /// clips them. Only called from the expanded-card path; collapsed cards have no copy button.
         /// </summary>
-        private static void DrawCopyButton(Rect titleRect, DiaryEntryView entry)
+        private static void DrawCopyButton(Rect cardRect, DiaryEntryView entry)
         {
             if (!Prefs.DevMode || entry == null)
             {
                 return;
             }
 
-            float buttonSize = 18f;
             Rect copyRect = new Rect(
-                titleRect.xMax - buttonSize - 8f,
-                titleRect.y + (titleRect.height - buttonSize) * 0.5f,
-                buttonSize,
-                buttonSize);
+                cardRect.x + 6f,
+                cardRect.yMax - DevCopyButtonSize - 5f,
+                DevCopyButtonSize,
+                DevCopyButtonSize);
 
-            // Low alpha until hovered so the icon stays unobtrusive next to the title.
+            // CSS-opacity style: dim at rest, slight brighten on hover so it still reads as clickable.
             bool hover = Mouse.IsOver(copyRect);
             Color oldColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, hover ? 1f : 0.5f);
+            GUI.color = new Color(1f, 1f, 1f, hover ? 0.85f : 0.5f);
             bool clicked = Widgets.ButtonImage(copyRect, TexButton.Copy);
             GUI.color = oldColor;
 
@@ -688,6 +695,9 @@ namespace PawnDiary
                 }
             }
 
+            // Reserve the dev-only footer so the bottom-left copy badge clears the model-name line.
+            // Outside dev mode DevCopyFooter is 0 and production card heights are unchanged.
+            height += DevCopyFooter;
             return height;
         }
 
