@@ -16,9 +16,11 @@
     <Compile Include="..\..\Source\Capture\ThoughtCapturePolicy.cs" Link="Capture\ThoughtCapturePolicy.cs" />
     <Compile Include="..\..\Source\Capture\Events\ThoughtEventData.cs" Link="Capture\Events\ThoughtEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\InspirationEventData.cs" Link="Capture\Events\InspirationEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\MoodEventData.cs" Link="Capture\Events\MoodEventData.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventSpec.cs" Link="Capture\Catalog\DiaryEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventCatalog.cs" Link="Capture\Catalog\DiaryEventCatalog.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ThoughtEventSpec.cs" Link="Capture\Specs\ThoughtEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\InspirationEventSpec.cs" Link="Capture\Specs\InspirationEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\MoodEventSpec.cs" Link="Capture\Specs\MoodEventSpec.cs" />
   </ItemGroup>
 </Project>

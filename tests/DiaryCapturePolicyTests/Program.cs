@@ -25,6 +25,8 @@ namespace DiaryCapturePolicyTests
             TestThoughtBuildGameContextFormat();
             TestInspirationDecide();
             TestInspirationBuildGameContextFormat();
+            TestMoodEventDecide();
+            TestMoodEventBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -209,6 +211,45 @@ namespace DiaryCapturePolicyTests
                 whitespaceReason);
         }
 
+        // ── MoodEvent ──
+
+        private static void TestMoodEventDecide()
+        {
+            // MoodEvent has multi-pawn fan-out, but the catalog sees one event at a time — so the
+            // Decider is the same trivial shape as Inspiration: eligibility + user toggle only.
+            AssertEqual("mood event null data drops", CaptureDecision.Drop,
+                MoodEventData.Decide(null, Ctx()));
+            AssertEqual("mood event null ctx drops", CaptureDecision.Drop,
+                MoodEventData.Decide(MoodEvent("Aurora"), null));
+            AssertEqual("mood event ineligible drops", CaptureDecision.Drop,
+                MoodEventData.Decide(MoodEvent("Aurora"), Ctx(eligible: false)));
+            AssertEqual("mood event user disabled drops", CaptureDecision.Drop,
+                MoodEventData.Decide(MoodEvent("Aurora"), Ctx(user: false)));
+            AssertEqual("mood event eligible records", CaptureDecision.GenerateSolo,
+                MoodEventData.Decide(MoodEvent("PsychicDrone"), Ctx()));
+        }
+
+        private static void TestMoodEventBuildGameContextFormat()
+        {
+            // The leading "mood_event=" marker is load-bearing for UI domain classification. The
+            // format has no numeric fields (unlike Thought/Inspiration), so the test focuses on
+            // marker position, field order, and mood-impact token pass-through.
+            string positive = MoodEventData.BuildGameContext("Aurora", "aurora", "positive");
+            AssertEqual("mood event positive context",
+                "mood_event=Aurora; label=aurora; mood_impact=positive",
+                positive);
+
+            string negative = MoodEventData.BuildGameContext("PsychicDrone", "psychic drone", "negative");
+            AssertEqual("mood event negative context",
+                "mood_event=PsychicDrone; label=psychic drone; mood_impact=negative",
+                negative);
+
+            string neutral = MoodEventData.BuildGameContext("Eclipse", "eclipse", "neutral");
+            AssertEqual("mood event neutral context",
+                "mood_event=Eclipse; label=eclipse; mood_impact=neutral",
+                neutral);
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -271,7 +312,7 @@ namespace DiaryCapturePolicyTests
         {
             "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
             "AnomalyEvent", "IncidentEvent", "Health", "Romance",
-            "MentalState", "Tale", "MoodEvent", "Crafted", "Hediff",
+            "MentalState", "Tale", "Crafted", "Hediff",
             "Interaction", "Arrival", "Death",
         };
 
@@ -328,6 +369,18 @@ namespace DiaryCapturePolicyTests
                 DefName = defName,
                 DurationDays = 8f,
                 Reason = "test reason",
+            };
+        }
+
+        private static MoodEventData MoodEvent(string defName, string moodImpact = "neutral")
+        {
+            return new MoodEventData
+            {
+                PawnId = "P",
+                Tick = 0,
+                DefName = defName,
+                Label = "test label",
+                MoodImpact = moodImpact,
             };
         }
 

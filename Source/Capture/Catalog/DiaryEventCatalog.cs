@@ -64,6 +64,7 @@ namespace PawnDiary.Capture
             // One Register call per migrated source. New sources added in future slices register here.
             Register(new ThoughtEventSpec());
             Register(new InspirationEventSpec());
+            Register(new MoodEventSpec());
         }
     }
 }

@@ -2,6 +2,21 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (2)
+
+- **Migrated MoodEvent to Event Catalog:** the second existing source moved onto the registry
+  pattern. `MoodEventData` + `MoodEventSpec` carry the pure decision (eligible + user-enabled →
+  GenerateSolo) and the pure `BuildGameContext` helper that locks the
+  `mood_event=<defName>; label=<label>; mood_impact=<impact>` format. `RecordMoodEvent` keeps the
+  per-source-call gates that don't belong in the catalog: the `CanRecordGameplayEventNow` /
+  `IsMoodEventEnabled` top-level gates, the condition-level dedup (peek + conditional mark by
+  `condition.uniqueID`), and the per-pawn duplicate check (a pawn on multiple maps during a
+  transition). The per-pawn fan-out loop stays in `RecordMoodEvent` and dispatches one
+  `MoodEventData` per colonist to the catalog. The sentinel list dropped `MoodEvent` and the
+  catalog contract test (`TestCatalogContract`) now covers three migrated sources. No user-visible
+  behavior change; same filters, same dedup order, same game-context format. Test count: 61 → 71
+  assertions. Restaged DLL.
+
 ## 2026-06-21
 
 - **Event Catalog decision layer (architecture slice):** introduced `Source/Capture/` — a pure

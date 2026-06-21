@@ -13,13 +13,14 @@ namespace PawnDiary.Capture
 {
     public enum DiaryEventType
     {
-        // ── Migrated to the Event Catalog pattern (this slice) ──
+        // ── Migrated to the Event Catalog pattern ──
         Thought,
         Inspiration,
+        MoodEvent,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // Existing sources to migrate source-by-source in later slices:
-        //   MentalState, Tale, MoodEvent, Crafted, Hediff, Interaction, Arrival, Death.
+        //   MentalState, Tale, Crafted, Hediff, Interaction, Arrival, Death.
         // Net-new sources planned (see repo discussion):
         //   Quest, Raid, MajorThreat, RandomEvent, WorldEvent, AnomalyEvent, IncidentEvent,
         //   Health, Romance.
