@@ -51,16 +51,20 @@ namespace PawnDiary
                 ? WorkEventData.RoutineDefName
                 : WorkEventDefName(workTypeDef, mood);
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyWork(eventDefName);
+            bool eligible = IsDiaryEligible(pawn);
+            bool userEnabled = group != null && PawnDiaryMod.Settings.IsWorkEnabled(group);
+            bool signalEnabled = DiarySignalPolicies.Enabled(DiarySignalPolicies.Work);
+            bool canRollWorkEvent = eligible && userEnabled && signalEnabled && !ignoredWorkType;
 
             int cooldownTicks = Math.Max(0, DiarySignalPolicies.WorkSameTypeCooldownTicks);
             bool sameWorkCooldownClear = false;
-            if (!ignoredWorkType)
+            if (canRollWorkEvent)
             {
                 sameWorkCooldownClear = !HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, true);
             }
 
             bool passedChanceRoll = false;
-            if (!ignoredWorkType && sameWorkCooldownClear)
+            if (canRollWorkEvent && sameWorkCooldownClear)
             {
                 float chance = WorkDiaryChance(pawn, workTypeDef, mood);
                 if (HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, false))
@@ -89,9 +93,9 @@ namespace PawnDiary
                 IsDarkStudy = mood.IsDarkStudy,
             };
             CaptureContext ctx = BuildCaptureContext(
-                eligible: IsDiaryEligible(pawn),
-                userEnabled: group != null && PawnDiaryMod.Settings.IsWorkEnabled(group),
-                signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.Work),
+                eligible: eligible,
+                userEnabled: userEnabled,
+                signalEnabled: signalEnabled,
                 ambientSignalEnabled: true);
 
             DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Work);

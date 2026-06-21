@@ -2,6 +2,15 @@
 
 Newest first. `DOCUMENTATION.md` describes the current design; this file records how it got there.
 
+## 2026-06-21 (5h)
+
+- **Fixed an Event Catalog migration regression in Work sampling:** the Work adapter now checks
+  eligibility, user group enablement, signal enablement, and ignored work type before it snapshots
+  cooldown/chance and consumes `Rand.Value`. Disabled or ignored Work capture paths are again
+  side-effect-free while still flowing through `WorkEventData.Decide`. `DiaryCapturePolicyTests`
+  now dispatches every registered Spec through `DiaryEventCatalog` so wrapper/payload mismatches do
+  not slip past direct `XxxEventData.Decide` tests.
+
 ## 2026-06-21 (5g)
 
 - **Migrated the remaining live sources outside the Event Catalog:** Arrival, Death fallback, Work,

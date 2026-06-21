@@ -1,6 +1,6 @@
-// Pure unit tests for the Event Catalog decision layer. These exercise ThoughtEventData.Decide and
-// InspirationEventData.Decide without RimWorld assemblies, plus the DiaryEventCatalog dispatch. Run
-// via: build DiaryCapturePolicyTests.csproj, then execute the resulting exe (exit code 0 = pass).
+// Pure unit tests for the Event Catalog decision layer. These exercise each migrated EventData.Decide
+// reducer and the DiaryEventCatalog dispatch without RimWorld assemblies. Run via: build
+// DiaryCapturePolicyTests.csproj, then execute the resulting exe (exit code 0 = pass).
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -873,6 +873,72 @@ namespace DiaryCapturePolicyTests
             AssertEqual("catalog dispatches Inspiration decision",
                 CaptureDecision.GenerateSolo,
                 inspirationSpec.Decide(Inspiration("Foo"), Ctx()));
+
+            DiaryEventSpec moodSpec = DiaryEventCatalog.Get(DiaryEventType.MoodEvent);
+            AssertTrue("catalog has MoodEvent spec", moodSpec is MoodEventSpec);
+            AssertEqual("catalog dispatches MoodEvent decision",
+                CaptureDecision.GenerateSolo,
+                moodSpec.Decide(MoodEvent("Aurora"), Ctx()));
+
+            DiaryEventSpec mentalStateSpec = DiaryEventCatalog.Get(DiaryEventType.MentalState);
+            AssertTrue("catalog has MentalState spec", mentalStateSpec is MentalStateEventSpec);
+            AssertEqual("catalog dispatches MentalState decision",
+                CaptureDecision.GenerateSolo,
+                mentalStateSpec.Decide(MentalState("Berserk"), Ctx()));
+
+            DiaryEventSpec taleSpec = DiaryEventCatalog.Get(DiaryEventType.Tale);
+            AssertTrue("catalog has Tale spec", taleSpec is TaleEventSpec);
+            AssertEqual("catalog dispatches Tale decision",
+                CaptureDecision.GenerateSolo,
+                taleSpec.Decide(Tale("KilledMan", firstEligible: true), Ctx()));
+
+            DiaryEventSpec hediffSpec = DiaryEventCatalog.Get(DiaryEventType.Hediff);
+            AssertTrue("catalog has Hediff spec", hediffSpec is HediffEventSpec);
+            AssertEqual("catalog dispatches Hediff decision",
+                CaptureDecision.GenerateSolo,
+                hediffSpec.Decide(Hediff(), Ctx()));
+
+            DiaryEventSpec interactionSpec = DiaryEventCatalog.Get(DiaryEventType.Interaction);
+            AssertTrue("catalog has Interaction spec", interactionSpec is InteractionEventSpec);
+            AssertEqual("catalog dispatches Interaction decision",
+                CaptureDecision.GeneratePair,
+                interactionSpec.Decide(Interaction(), Ctx()));
+
+            DiaryEventSpec romanceSpec = DiaryEventCatalog.Get(DiaryEventType.Romance);
+            AssertTrue("catalog has Romance spec", romanceSpec is RomanceEventSpec);
+            AssertEqual("catalog dispatches Romance decision",
+                CaptureDecision.GeneratePair,
+                romanceSpec.Decide(Romance("Lover"), Ctx()));
+
+            DiaryEventSpec arrivalSpec = DiaryEventCatalog.Get(DiaryEventType.Arrival);
+            AssertTrue("catalog has Arrival spec", arrivalSpec is ArrivalEventSpec);
+            AssertEqual("catalog dispatches Arrival decision",
+                CaptureDecision.GenerateSoloArrivalDescription,
+                arrivalSpec.Decide(Arrival(), Ctx()));
+
+            DiaryEventSpec deathSpec = DiaryEventCatalog.Get(DiaryEventType.Death);
+            AssertTrue("catalog has Death spec", deathSpec is DeathEventSpec);
+            AssertEqual("catalog dispatches Death decision",
+                CaptureDecision.GenerateSoloDeathDescription,
+                deathSpec.Decide(Death(), Ctx()));
+
+            DiaryEventSpec workSpec = DiaryEventCatalog.Get(DiaryEventType.Work);
+            AssertTrue("catalog has Work spec", workSpec is WorkEventSpec);
+            AssertEqual("catalog dispatches Work decision",
+                CaptureDecision.GenerateSolo,
+                workSpec.Decide(Work(), Ctx()));
+
+            DiaryEventSpec thoughtProgressionSpec = DiaryEventCatalog.Get(DiaryEventType.ThoughtProgression);
+            AssertTrue("catalog has ThoughtProgression spec", thoughtProgressionSpec is ThoughtProgressionEventSpec);
+            AssertEqual("catalog dispatches ThoughtProgression decision",
+                CaptureDecision.GenerateSolo,
+                thoughtProgressionSpec.Decide(ThoughtProgression(), Ctx()));
+
+            DiaryEventSpec dayReflectionSpec = DiaryEventCatalog.Get(DiaryEventType.DayReflection);
+            AssertTrue("catalog has DayReflection spec", dayReflectionSpec is DayReflectionEventSpec);
+            AssertEqual("catalog dispatches DayReflection decision",
+                CaptureDecision.GenerateSolo,
+                dayReflectionSpec.Decide(DayReflection(), Ctx()));
 
             // Unregistered spec returns null — callers must treat as Drop.
             // (We can't construct a DiaryEventType that isn't registered because all values are
