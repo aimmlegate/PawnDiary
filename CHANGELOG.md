@@ -6,6 +6,18 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-22
 
+- **Raid event source added (minimal realization).** `IncidentWorker.TryExecute` (filtered to
+  `IncidentWorker_Raid`) now fans out one solo diary entry per eligible colonist on the raid's target
+  map. Payload is intentionally minimal: incident defName, raider faction defName, and raid points.
+  New `Raid` group domain with a catch-all "Raids" group plus a "Friendly arrivals & raids" subset.
+  Colony-level dedup keys by incident/map/faction/points (`raidDedupTicks`).
+- **Quest event source added (rich context).** `Quest.Accept` and `Quest.End` hooks now record the
+  full quest lifecycle. Only accepted quests are recorded (offered-but-not-accepted quests are
+  ignored). `QuestEndOutcome.Success` -> "completed", `Fail` -> "failed"; each signal gets its own
+  prompt group and tone. Rich context — quest description (capped at 600 chars), issuer faction
+  defName, and an item-rewards summary scanned from `QuestPart_DropPods` (capped at 300 chars) — is
+  embedded in the localized event text and the `quest=` game-context marker. One entry per eligible
+  colonist per signal; dedup keys by quest id + signal (`questDedupTicks`).
 - **Diary tab made taller.** Default tab height raised (650 to 800) so more entries fit without
   scrolling; tunable via `tabHeight` in `DiaryUiStyleDef.xml`.
 - **Dev-only copy button on entry cards.** A subtle copy icon at the right edge of each card header

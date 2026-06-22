@@ -18,7 +18,9 @@ namespace PawnDiary
     // Inspiration groups match InspirationDefs when a pawn gains an inspiration; Romance groups
     // match PawnRelationDef defNames for relation changes (Lover/Spouse/etc.); Work groups classify
     // the synthetic work diary events emitted by the periodic work scanner; Hediff groups match
-    // HediffDefs when a health condition appears or worsens.
+    // HediffDefs when a health condition appears or worsens; Raid groups match raid incident
+    // defNames (RaidEnemy/RaidFriendly/RaidBeacon); Quest groups match the quest lifecycle signal
+    // ("accepted"/"completed"/"failed") so one DiaryEventType.Quest fans out to three groups.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -30,7 +32,9 @@ namespace PawnDiary
         Inspiration,
         Romance,
         Work,
-        Hediff
+        Hediff,
+        Raid,
+        Quest
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -442,6 +446,23 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyHediff(HediffDef hediffDef)
         {
             return ClassifyIn(GroupDomain.Hediff, hediffDef?.defName);
+        }
+
+        // First Raid-domain group that matches the raid incident defName (e.g. "RaidEnemy"), else
+        // the Raid catch-all ("Raids"). The friendly subset ("raidFriendly") is ordered lower so it
+        // is tested before the catch-all. Specific defName -> group; everything else falls through.
+        public static DiaryInteractionGroupDef ClassifyRaid(string incidentDefName)
+        {
+            return ClassifyIn(GroupDomain.Raid, incidentDefName);
+        }
+
+        // First Quest-domain group that matches the lifecycle signal. The signal IS the classifier
+        // key: "accepted" -> questAccepted, "completed" -> questCompleted, "failed" -> questFailed.
+        // There is intentionally no catch-all: an unknown signal returns the last Quest group
+        // (ClassifyIn fallback), but the hook layer only ever passes one of the three known signals.
+        public static DiaryInteractionGroupDef ClassifyQuest(string signal)
+        {
+            return ClassifyIn(GroupDomain.Quest, signal);
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.

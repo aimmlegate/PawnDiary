@@ -686,6 +686,64 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Same as IsInteractionEnabled but for raid incidents (RaidEnemy/RaidFriendly/RaidBeacon).
+        /// Classifies by incident defName into the Raid domain; the catch-all "Raids" group makes
+        /// every raid recordable by default.
+        /// </summary>
+        public bool IsRaidEnabled(string incidentDefName)
+        {
+            if (string.IsNullOrEmpty(incidentDefName))
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyRaid(incidentDefName);
+            return group != null && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a raid diary entry (group's XML default).
+        /// </summary>
+        public string InstructionForRaid(string incidentDefName)
+        {
+            if (string.IsNullOrEmpty(incidentDefName))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(InteractionGroups.ClassifyRaid(incidentDefName));
+        }
+
+        /// <summary>
+        /// Same as IsInteractionEnabled but for quest lifecycle signals. The signal ("accepted",
+        /// "completed", "failed") is the classifier key — each maps to its own Quest group, so a
+        /// player could disable just failed-quest entries by turning that group off in XML.
+        /// </summary>
+        public bool IsQuestEnabled(string signal)
+        {
+            if (string.IsNullOrEmpty(signal))
+            {
+                return false;
+            }
+
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyQuest(signal);
+            return group != null && IsGroupEnabled(group.defName);
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a quest diary entry (group's XML default).
+        /// </summary>
+        public string InstructionForQuest(string signal)
+        {
+            if (string.IsNullOrEmpty(signal))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(InteractionGroups.ClassifyQuest(signal));
+        }
+
+        /// <summary>
         /// Checks whether an interaction group is enabled. Event filters are XML-only now, so saved
         /// groupEnabled values from older settings files are ignored.
         /// </summary>

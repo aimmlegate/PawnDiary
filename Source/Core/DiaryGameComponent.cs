@@ -100,6 +100,12 @@ namespace PawnDiary
         // participant when a romance relation is added symmetrically. Keys by canonical pair id +
         // relation defName.
         private readonly Dictionary<string, int> recentRomanceEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against a raid incident double-firing or re-firing within the
+        // dedup window (e.g. mirrored multi-map transitions). Keys by incident/map/faction/points.
+        private readonly Dictionary<string, int> recentRaidEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against a quest lifecycle signal double-firing (e.g. a
+        // multi-map transition or a fluke double-call). Keys by quest id + signal.
+        private readonly Dictionary<string, int> recentQuestEvents = new Dictionary<string, int>();
         // Transient (not saved): event-role keys ("eventId|role") seen pending-but-not-in-flight on the
         // previous generation scan. An entry must look orphaned on two consecutive scans before the
         // orphan recovery re-queues it, so a request that merely finished between scans (its result
@@ -189,6 +195,8 @@ namespace PawnDiary
             recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
             recentRomanceEvents.Clear();
+            recentRaidEvents.Clear();
+            recentQuestEvents.Clear();
             orphanCandidatesLastScan.Clear();
             generatedSpeechPlayLogTexts.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
@@ -220,6 +228,8 @@ namespace PawnDiary
             recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
             recentRomanceEvents.Clear();
+            recentRaidEvents.Clear();
+            recentQuestEvents.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their

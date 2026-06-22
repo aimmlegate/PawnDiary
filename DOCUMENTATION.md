@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-22 (prompt suite dropdown, taller tab, dev copy button)_
+_Last updated: 2026-06-22 (raid + quest event sources)_
 
 ---
 
@@ -113,6 +113,8 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo entry for the inspired pawn. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` plus progression scan | Immediate or day-reflection health entries by XML Hediff policy. |
 | Work | Periodic current-job sampling | Skips social/violent work, applies XML odds/cooldowns and `workGenerationWeight`. |
+| Raids | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid`) | Once per eligible colonist on the raid's target map. Minimal payload: incident defName, raider faction defName, raid points. |
+| Quests | `Quest.Accept` and `Quest.End` | Only accepted quests are recorded. `Success` -> "completed", `Fail` -> "failed"; one entry per eligible colonist per signal, with description, issuer faction, and rewards context. |
 | Day reflections | Sleep/rest trigger | One reflective entry per pawn/day from major events, opinion shifts, health signals, and filler. |
 
 ---
@@ -130,7 +132,7 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 - `XxxEventSpec`: wrapper registered in `DiaryEventCatalog`.
 
 Currently catalog-backed: Thought, Inspiration, MoodEvent, MentalState, Tale, Hediff, Interaction,
-Romance, Arrival, Death fallback, Work, ThoughtProgression, and DayReflection.
+Romance, Arrival, Death fallback, Work, ThoughtProgression, DayReflection, Raid, and Quest.
 
 Direct `AddSoloEvent`/`AddPairwiseEvent` call sites that remain outside `RecordXxx` are sinks:
 interaction/tale batch flushers, ambient day-note flushers, the generation dispatcher, and the event
@@ -156,8 +158,10 @@ dedup mutation, event creation, and LLM queueing in adapters. Pure code must acc
 
 `1.6/Defs/DiaryInteractionGroupDefs.xml` owns group matching, instructions, color cues, batching,
 promotion, Hediff policy, and default enablement. Domains include Interaction, MentalState, Tale,
-MoodEvent, Thought, Inspiration, Romance, Work, and Hediff. Matching is domain-scoped by exact
-`defName` or substring token; XML order matters and catch-all groups go last.
+MoodEvent, Thought, Inspiration, Romance, Work, Hediff, Raid, and Quest. Matching is domain-scoped
+by exact `defName` or substring token; XML order matters and catch-all groups go last. The Quest
+domain is unusual: its matchDefNames are lifecycle signals (`accepted`/`completed`/`failed`), not
+defNames, because one `DiaryEventType.Quest` fans out to three prompt groups.
 
 `DiarySignalPolicyDefs.xml` owns tracker-specific thought/work policy: thresholds, tokens, staged
 progression, ambient batching, scan odds, and cooldowns. `DiaryTuningDef.xml` keeps shared fallback
@@ -288,7 +292,7 @@ load, and per-pawn event-id lists prune blank, duplicate, or dangling references
 intensity, and capped pre-cleanup debug text. Decorated rich text is not persisted.
 
 Classification is inferred from stable `gameContext` fields such as `tale=`, `mental_state=`,
-`mood_event=`, `thought=`, `inspiration=`, `romance=`, `work=`, and `hediff=`.
+`mood_event=`, `thought=`, `inspiration=`, `romance=`, `work=`, `hediff=`, `raid=`, and `quest=`.
 
 Pending requests are not persisted. Pending statuses reset on load and scans requeue eligible work.
 Death and arrival caches evict oldest stale entries at their cap and clear when a new session starts.

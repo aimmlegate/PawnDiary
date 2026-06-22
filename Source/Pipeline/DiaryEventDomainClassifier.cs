@@ -17,6 +17,8 @@ namespace PawnDiary
         public const string Romance = "Romance";
         public const string Work = "Work";
         public const string Hediff = "Hediff";
+        public const string Raid = "Raid";
+        public const string Quest = "Quest";
 
         /// <summary>
         /// Returns the domain implied by a saved event's game-context marker. Plain social
@@ -32,6 +34,8 @@ namespace PawnDiary
             if (DiaryContextFields.HasMarker(context, "work=")) return Work;
             if (DiaryContextFields.HasMarker(context, "hediff=")) return Hediff;
             if (DiaryContextFields.HasMarker(context, "mental_state=")) return MentalState;
+            if (DiaryContextFields.HasMarker(context, "raid=")) return Raid;
+            if (DiaryContextFields.HasMarker(context, "quest=")) return Quest;
             return Interaction;
         }
 

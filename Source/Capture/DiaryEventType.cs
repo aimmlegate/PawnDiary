@@ -31,11 +31,18 @@ namespace PawnDiary.Capture
         // source designed FROM SCRATCH onto the catalog, proving the pattern handles additions
         // not just migrations of pre-existing RecordX methods).
         Romance,
+        // Raid: colony-wide fan-out for IncidentWorker_Raid (RaidEnemy/RaidFriendly/RaidBeacon).
+        // Each eligible colonist on the raid's target map gets a solo entry. Minimal realization:
+        // only incident defName + raider faction defName + raid points are captured.
+        Raid,
+        // Quest: colony-wide fan-out across the quest lifecycle. Only accepted quests are recorded
+        // (Quest.Accept hook). Quest.End records Success as "completed" and Fail as "failed". The
+        // Signal field on QuestEventData routes prompt group selection, not this enum value.
+        Quest,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.
         // Net-new sources planned (see repo discussion):
-        //   Quest, Raid, MajorThreat, RandomEvent, WorldEvent, AnomalyEvent, IncidentEvent,
-        //   Health.
+        //   MajorThreat, RandomEvent, WorldEvent, AnomalyEvent, IncidentEvent, Health.
     }
 }

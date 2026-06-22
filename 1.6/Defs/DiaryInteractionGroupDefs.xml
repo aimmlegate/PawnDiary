@@ -12,7 +12,9 @@
     domain         - Interaction (matches InteractionDefs), MentalState (matches MentalStateDefs),
                      Tale (matches TaleDefs from RimWorld's notable-history system), MoodEvent,
                      Thought, Inspiration, Work (matches synthetic work diary defNames), or Hediff
-                     (matches HediffDefs from health conditions)
+                     (matches HediffDefs from health conditions), Raid (matches raid incident
+                     defNames like RaidEnemy), or Quest (matches the lifecycle signal: accepted,
+                     completed, failed)
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
@@ -1123,6 +1125,85 @@
       <dayReflectionWeight>0.8</dayReflectionWeight>
     </hediff>
     <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Raid domain: colony raids (IncidentWorker_Raid hook) ===== -->
+  <!-- Each eligible colonist on the raid's target map gets their own solo entry. The friendly
+       subset is ordered BELOW the catch-all so it is tested first (first-match-wins); any raid
+       defName not claimed by it falls through to the generic "Raids" group. -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidFriendly</defName>
+    <label>Friendly arrivals &amp; raids</label>
+    <order>705</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a friendly force arriving at the colony—reinforcements, allies, or a peaceful drop. Write the relief or unease they bring</instruction>
+    <tone>with cautious relief or uneasy gratitude</tone>
+    <matchDefNames>
+      <li>RaidFriendly</li>
+      <li>RaidBeacon</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raid</defName>
+    <label>Raids</label>
+    <order>710</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>the colony under attack—violence, fear, and the desperate scramble to survive. Write what it felt like to live through it</instruction>
+    <tone>with shaken, crisis-pitched tension</tone>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Quest domain: quest lifecycle (Quest.Accept / Quest.End hooks) ===== -->
+  <!-- One DiaryEventType.Quest fans out to three groups: the lifecycle signal (accepted /
+       completed / failed) is the matchDefName. Only accepted quests are recorded; the Accept
+       hook is the entry point, and Quest.End records Success as "completed" and Fail as "failed". -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questAccepted</defName>
+    <label>Quest accepted</label>
+    <order>750</order>
+    <domain>Quest</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a new quest taken on—anticipation, curiosity, and the weight of a promise made. Write the hope or doubt it stirs</instruction>
+    <tone>with anticipation and wary curiosity</tone>
+    <matchDefNames>
+      <li>accepted</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questCompleted</defName>
+    <label>Quest completed</label>
+    <order>755</order>
+    <domain>Quest</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a quest fulfilled—relief, satisfaction, and the cost paid along the way. Write the earned resolution</instruction>
+    <tone>with hard-won relief and quiet satisfaction</tone>
+    <matchDefNames>
+      <li>completed</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>questFailed</defName>
+    <label>Quest failed</label>
+    <order>760</order>
+    <domain>Quest</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a quest lost—regret, grief, and the consequences of the failure. Write the weight of what slipped away</instruction>
+    <tone>with regret and heavy loss</tone>
+    <matchDefNames>
+      <li>failed</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
 </Defs>

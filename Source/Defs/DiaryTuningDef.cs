@@ -58,6 +58,13 @@ namespace PawnDiary
         public int thoughtDedupTicks = 2500;
         // The same romance relation change for a pawn pair is only recorded once within this window.
         public int romanceDedupTicks = 2500;
+        // The same raid incident (same incident/map/faction/points key) is only recorded once across
+        // the colony within this window. Raids fire once per IncidentWorker.TryExecute, so this is
+        // mostly defensive against a fluke double-fire or a mirrored multi-map transition.
+        public int raidDedupTicks = 2500;
+        // The same quest lifecycle signal (same quest id + signal) is only recorded once within this
+        // window. Guards against a fluke double-call on Quest.Accept or Quest.End.
+        public int questDedupTicks = 2500;
 
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things

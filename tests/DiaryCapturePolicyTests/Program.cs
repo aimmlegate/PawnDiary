@@ -39,6 +39,10 @@ namespace DiaryCapturePolicyTests
             TestRomanceDecide();
             TestRomanceBuildGameContextFormat();
             TestRomanceKindFor();
+            TestRaidDecide();
+            TestRaidBuildGameContextFormat();
+            TestQuestDecide();
+            TestQuestBuildGameContextFormat();
             TestArrivalDecide();
             TestArrivalBuildGameContextFormat();
             TestDeathDecide();
@@ -663,6 +667,86 @@ namespace DiaryCapturePolicyTests
             AssertEqual("kind empty defName", string.Empty, RomanceEventData.KindFor(null));
         }
 
+        // ── Raid (colony-wide fan-out, minimal realization) ──
+
+        private static void TestRaidDecide()
+        {
+            // Null guards.
+            AssertEqual("raid null data drops", CaptureDecision.Drop,
+                RaidEventData.Decide(null, Ctx()));
+            AssertEqual("raid null ctx drops", CaptureDecision.Drop,
+                RaidEventData.Decide(Raid(), null));
+
+            // Eligibility / user gate (mirrors MoodEvent: trivial eligible + user shape).
+            AssertEqual("raid ineligible drops", CaptureDecision.Drop,
+                RaidEventData.Decide(Raid(), Ctx(eligible: false)));
+            AssertEqual("raid user disabled drops", CaptureDecision.Drop,
+                RaidEventData.Decide(Raid(), Ctx(user: false)));
+            AssertEqual("raid eligible records solo", CaptureDecision.GenerateSolo,
+                RaidEventData.Decide(Raid(), Ctx()));
+        }
+
+        private static void TestRaidBuildGameContextFormat()
+        {
+            // The leading "raid=" marker is load-bearing for UI domain classification. Field order
+            // and the int points format are locked here so a future migration cannot drift them.
+            AssertEqual("raid enemy context",
+                "raid=RaidEnemy; label=enemy raid; faction=Pirate; points=350",
+                RaidEventData.BuildGameContext("RaidEnemy", "enemy raid", "Pirate", "350"));
+            AssertEqual("raid unknown faction sentinel",
+                "raid=RaidFriendly; label=friendly raid; faction=unknown; points=0",
+                RaidEventData.BuildGameContext("RaidFriendly", "friendly raid", "unknown", "0"));
+        }
+
+        // ── Quest (lifecycle: accepted / completed / failed) ──
+
+        private static void TestQuestDecide()
+        {
+            // Null guards.
+            AssertEqual("quest null data drops", CaptureDecision.Drop,
+                QuestEventData.Decide(null, Ctx()));
+            AssertEqual("quest null ctx drops", CaptureDecision.Drop,
+                QuestEventData.Decide(Quest("accepted"), null));
+
+            // The "do not record offered-but-not-accepted" requirement is enforced here: an empty
+            // signal drops (defensive — the hook layer never constructs such a payload, but the pure
+            // layer guards independently).
+            AssertEqual("quest empty signal drops (offered not accepted)", CaptureDecision.Drop,
+                QuestEventData.Decide(Quest(""), Ctx()));
+            AssertEqual("quest null signal drops", CaptureDecision.Drop,
+                QuestEventData.Decide(Quest(null), Ctx()));
+
+            // Eligibility / user gate.
+            AssertEqual("quest ineligible drops", CaptureDecision.Drop,
+                QuestEventData.Decide(Quest("accepted"), Ctx(eligible: false)));
+            AssertEqual("quest user disabled drops", CaptureDecision.Drop,
+                QuestEventData.Decide(Quest("completed"), Ctx(user: false)));
+
+            // All three lifecycle signals record through the same Decide.
+            AssertEqual("quest accepted records solo", CaptureDecision.GenerateSolo,
+                QuestEventData.Decide(Quest("accepted"), Ctx()));
+            AssertEqual("quest completed records solo", CaptureDecision.GenerateSolo,
+                QuestEventData.Decide(Quest("completed"), Ctx()));
+            AssertEqual("quest failed records solo", CaptureDecision.GenerateSolo,
+                QuestEventData.Decide(Quest("failed"), Ctx()));
+        }
+
+        private static void TestQuestBuildGameContextFormat()
+        {
+            // The leading "quest=" marker is load-bearing for UI domain classification; the signal
+            // field routes prompt group selection. The description is intentionally NOT here (it
+            // is prose and lives in the localized event text). Field order locked by this test.
+            AssertEqual("quest accepted context",
+                "quest=OpportunityQuest_Friendlies; signal=accepted; label=A Stolen Cache; faction=Outlander; rewards=Silver x100, Medicine x5",
+                QuestEventData.BuildGameContext("OpportunityQuest_Friendlies", "accepted", "A Stolen Cache", "Outlander", "Silver x100, Medicine x5"));
+            AssertEqual("quest completed sentinels",
+                "quest=UntitledQuest; signal=completed; label=untitled; faction=unknown; rewards=none",
+                QuestEventData.BuildGameContext("UntitledQuest", "completed", "untitled", "unknown", "none"));
+            AssertEqual("quest failed context",
+                "quest=ThreatQuest; signal=failed; label=the thrumbo pulse; faction=Pirate; rewards=none",
+                QuestEventData.BuildGameContext("ThreatQuest", "failed", "the thrumbo pulse", "Pirate", "none"));
+        }
+
         // ── Arrival ──
 
         private static void TestArrivalDecide()
@@ -910,6 +994,18 @@ namespace DiaryCapturePolicyTests
                 CaptureDecision.GeneratePair,
                 romanceSpec.Decide(Romance("Lover"), Ctx()));
 
+            DiaryEventSpec raidSpec = DiaryEventCatalog.Get(DiaryEventType.Raid);
+            AssertTrue("catalog has Raid spec", raidSpec is RaidEventSpec);
+            AssertEqual("catalog dispatches Raid decision",
+                CaptureDecision.GenerateSolo,
+                raidSpec.Decide(Raid(), Ctx()));
+
+            DiaryEventSpec questSpec = DiaryEventCatalog.Get(DiaryEventType.Quest);
+            AssertTrue("catalog has Quest spec", questSpec is QuestEventSpec);
+            AssertEqual("catalog dispatches Quest decision",
+                CaptureDecision.GenerateSolo,
+                questSpec.Decide(Quest("accepted"), Ctx()));
+
             DiaryEventSpec arrivalSpec = DiaryEventCatalog.Get(DiaryEventType.Arrival);
             AssertTrue("catalog has Arrival spec", arrivalSpec is ArrivalEventSpec);
             AssertEqual("catalog dispatches Arrival decision",
@@ -982,7 +1078,7 @@ namespace DiaryCapturePolicyTests
         // this sentinel only protects against accidentally-landed enum values that nobody migrated.
         private static readonly string[] PlannedNotYetMigratedSources =
         {
-            "Quest", "Raid", "MajorThreat", "RandomEvent", "WorldEvent",
+            "MajorThreat", "RandomEvent", "WorldEvent",
             "AnomalyEvent", "IncidentEvent", "Health",
         };
 
@@ -1158,6 +1254,37 @@ namespace DiaryCapturePolicyTests
                 SecondPawnId = secondId,
                 FirstEligible = firstEligible,
                 SecondEligible = secondEligible,
+            };
+        }
+
+        private static RaidEventData Raid(
+            string defName = "RaidEnemy",
+            string label = "enemy raid",
+            string factionDefName = "Pirate",
+            string points = "350")
+        {
+            return new RaidEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Label = label,
+                FactionDefName = factionDefName,
+                Points = points,
+            };
+        }
+
+        private static QuestEventData Quest(string signal)
+        {
+            return new QuestEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                Signal = signal,
+                DefName = "OpportunityQuest_Friendlies",
+                Label = "A Stolen Cache",
+                FactionDefName = "Outlander",
+                Rewards = "Silver x100, Medicine x5",
             };
         }
 

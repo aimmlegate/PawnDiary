@@ -262,8 +262,16 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("mental_state=SocialFighting; label=social fight"));
             AssertEqual("interaction fallback domain", "Interaction",
                 DiaryEventDomainClassifier.DomainForContext("def=Chat; label=chat"));
+            AssertEqual("raid marker domain", "Raid",
+                DiaryEventDomainClassifier.DomainForContext("raid=RaidEnemy; label=enemy raid; faction=Pirate; points=350"));
+            AssertEqual("quest marker domain", "Quest",
+                DiaryEventDomainClassifier.DomainForContext("quest=OpportunityQuest; signal=accepted; label=cache; faction=Outlander; rewards=Silver x100"));
             AssertTrue("romance marker is not interaction prompt",
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("romance=Lover; label=lover"));
+            AssertTrue("raid marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("raid=RaidEnemy; label=enemy raid"));
+            AssertTrue("quest marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("quest=QuestDef; signal=completed; label=name"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
         }

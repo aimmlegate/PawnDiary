@@ -359,7 +359,7 @@ namespace PawnDiary
         }
     }
 
-    // Fires whenever a pawn gains a direct relation with another pawn (Lover, Spouse, Rival,
+    // Fires when a pawn gains a direct relation with another pawn (Lover, Spouse, Rival,
     // Cousin, Parent, ...). RecordRomance filters to the four vanilla romance relations and
     // emits a pairwise diary event for the relation change. Pair dedup (canonical pair key in
     // RecordRomance) collapses the mirrored call when RimWorld adds the relation symmetrically on
@@ -390,6 +390,76 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.Current?.RecordRomance(pawn, otherPawn, def);
+        }
+    }
+
+    // Fires once per raid incident (RaidEnemy / RaidFriendly / RaidBeacon). IncidentWorker.TryExecute
+    // is the single public entry point every incident flows through, so we filter to raid subclasses
+    // in the postfix (after raiders have spawned) and forward the IncidentParms + IncidentDef. The
+    // hook fires exactly once per raid instance, which is the cleanest single chokepoint.
+    [HarmonyPatch(typeof(IncidentWorker), nameof(IncidentWorker.TryExecute))]
+    public static class RaidExecutePatch
+    {
+        /// <summary>
+        /// Harmony Postfix for IncidentWorker.TryExecute. Forwards successful raid incidents to
+        /// DiaryGameComponent.RecordRaid, which fans out to each eligible colonist on the target map.
+        /// Non-raid incidents and failed executions are skipped.
+        /// </summary>
+        public static void Postfix(IncidentWorker __instance, IncidentParms parms, bool __result)
+        {
+            if (!__result || !(__instance is IncidentWorker_Raid) || parms == null || __instance.def == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordRaid(parms, __instance.def);
+        }
+    }
+
+    // Fires when the player accepts a quest (Quest.Accept). This is the diary's entry point for the
+    // whole quest lifecycle: offered-but-not-accepted quests are intentionally ignored (per the
+    // requirement "only quest that accepted"). Accept fans out to every eligible colonist.
+    [HarmonyPatch(typeof(Quest), nameof(Quest.Accept))]
+    public static class QuestAcceptPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for Quest.Accept. Forwards the freshly accepted quest to
+        /// DiaryGameComponent.RecordQuestAccepted, which records a solo entry per eligible colonist.
+        /// </summary>
+        public static void Postfix(Quest __instance)
+        {
+            if (__instance == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordQuestAccepted(__instance);
+        }
+    }
+
+    // Fires when a quest ends (Quest.End). Only Success ("completed") and Fail ("failed") outcomes
+    // are recorded; Unknown and InvalidPreAcceptance are skipped. Each outcome fans out to every
+    // eligible colonist with its own prompt group and emotional register.
+    [HarmonyPatch(typeof(Quest), nameof(Quest.End))]
+    public static class QuestEndPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for Quest.End. Forwards Success/Fail outcomes to
+        /// DiaryGameComponent.RecordQuestEnded, which maps them to the completed/failed signals.
+        /// </summary>
+        public static void Postfix(Quest __instance, QuestEndOutcome outcome)
+        {
+            if (__instance == null)
+            {
+                return;
+            }
+
+            if (outcome != QuestEndOutcome.Success && outcome != QuestEndOutcome.Fail)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordQuestEnded(__instance, outcome);
         }
     }
 
