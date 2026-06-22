@@ -207,6 +207,14 @@
          moment survive selection more often. -->
     <daySummaryEnabled>true</daySummaryEnabled>
     <daySummaryMaxHighlights>3</daySummaryMaxHighlights>
+    <!-- Signal kinds that can justify creating a day reflection. Valid tokens:
+         event, opinion, hediff, filler. Leave filler out to keep common batched events as
+         background only; add it to allow quiet filler-only days to generate summaries. -->
+    <daySummaryImportantSignalKinds>
+      <li>event</li>
+      <li>opinion</li>
+      <li>hediff</li>
+    </daySummaryImportantSignalKinds>
     <daySummaryOpinionDeltaThreshold>15</daySummaryOpinionDeltaThreshold>
     <daySummaryWeightCriticalEvent>1</daySummaryWeightCriticalEvent>
     <daySummaryWeightMajorEvent>0.7</daySummaryWeightMajorEvent>

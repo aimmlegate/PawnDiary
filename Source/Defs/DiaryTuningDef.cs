@@ -3,6 +3,7 @@
 // and restarting — no recompile. Every field defaults to the value the code shipped with, so a
 // missing or partial XML changes nothing. New to C#/RimWorld? See AGENTS.md ("Defs").
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using Verse;
 
 namespace PawnDiary
@@ -260,6 +261,15 @@ namespace PawnDiary
         public bool daySummaryEnabled = true;
         // Highest number of highlights woven into one reflection (the weighted selection cap).
         public int daySummaryMaxHighlights = 3;
+        // Which candidate kinds are strong enough to create a reflection. Valid tokens are event,
+        // opinion, hediff, and filler. Filler is excluded by default so small talk can add color but
+        // cannot create an otherwise-empty daily summary.
+        public List<string> daySummaryImportantSignalKinds = new List<string>
+        {
+            DayReflectionEventData.SignalKindEvent,
+            DayReflectionEventData.SignalKindOpinion,
+            DayReflectionEventData.SignalKindHediff,
+        };
         // A colonist→colonist opinion swing of at least this many points (vs the day-start snapshot)
         // becomes a social-dynamic signal.
         public int daySummaryOpinionDeltaThreshold = 15;

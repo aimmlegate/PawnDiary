@@ -53,6 +53,7 @@ namespace DiaryCapturePolicyTests
             TestThoughtProgressionDecide();
             TestThoughtProgressionBuildGameContextFormat();
             TestDayReflectionDecide();
+            TestDayReflectionImportantSignalKindPolicy();
             TestDayReflectionBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
@@ -926,8 +927,32 @@ namespace DiaryCapturePolicyTests
                 DayReflectionEventData.Decide(DayReflection(candidates: 0), Ctx()));
             AssertEqual("day reflection no highlights drops", CaptureDecision.Drop,
                 DayReflectionEventData.Decide(DayReflection(highlights: 0), Ctx()));
+            AssertEqual("day reflection filler-only candidates drop", CaptureDecision.Drop,
+                DayReflectionEventData.Decide(DayReflection(candidates: 2, highlights: 1, importantCandidates: 0), Ctx()));
             AssertEqual("day reflection valid signal records", CaptureDecision.GenerateSolo,
                 DayReflectionEventData.Decide(DayReflection(), Ctx()));
+        }
+
+        private static void TestDayReflectionImportantSignalKindPolicy()
+        {
+            List<string> policy = new List<string>
+            {
+                DayReflectionEventData.SignalKindEvent,
+                DayReflectionEventData.SignalKindHediff,
+            };
+
+            AssertTrue("day reflection important kind matches exact token",
+                DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindEvent, policy));
+            AssertTrue("day reflection important kind is case-insensitive",
+                DayReflectionEventData.IsImportantSignalKind("HEDIFF", policy));
+            AssertTrue("day reflection non-listed kind is not important",
+                !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindFiller, policy));
+            AssertTrue("day reflection empty policy disables all kinds",
+                !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindEvent, new List<string>()));
+            AssertTrue("day reflection null policy disables all kinds",
+                !DayReflectionEventData.IsImportantSignalKind(DayReflectionEventData.SignalKindEvent, null));
+            AssertTrue("day reflection blank kind never matches",
+                !DayReflectionEventData.IsImportantSignalKind(" ", policy));
         }
 
         private static void TestDayReflectionBuildGameContextFormat()
@@ -1366,6 +1391,7 @@ namespace DiaryCapturePolicyTests
             string defName = DayReflectionEventData.DefNameToken,
             int candidates = 3,
             int highlights = 2,
+            int importantCandidates = 2,
             bool alreadyWritten = false)
         {
             return new DayReflectionEventData
@@ -1375,6 +1401,7 @@ namespace DiaryCapturePolicyTests
                 DefName = defName,
                 Day = 42,
                 CandidateCount = candidates,
+                ImportantCandidateCount = importantCandidates,
                 HighlightCount = highlights,
                 FillerMomentCount = 1,
                 SignalTags = "thought,work",

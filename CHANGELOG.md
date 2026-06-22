@@ -4,6 +4,14 @@ High-signal project history, newest first. Keep this file grouped by feature or 
 individual commit. Routine refactors, follow-up fixes, rebuilt DLLs, and assertion-count changes do
 not need separate entries unless they change behavior or document an important risk.
 
+## 2026-06-23
+
+- **Day reflections require an XML-controlled important signal.** End-of-day summaries now drop
+  filler-only days by default: ambient small talk and passing moods can still color a reflection,
+  but only after an XML-configured important signal kind happened to that pawn. The default
+  `daySummaryImportantSignalKinds` are `event`, `opinion`, and `hediff`; adding `filler` in XML
+  intentionally allows quiet filler-only summaries again.
+
 ## 2026-06-22
 
 - **Diary prose nudged toward immediacy.** First-person prompts now ask for one concrete sensory

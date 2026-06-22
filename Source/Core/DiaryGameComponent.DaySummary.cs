@@ -2,9 +2,10 @@
 // (small talk, passing thoughts), so it read thin. This file builds a richer memory instead: when a
 // colonist beds down, it gathers the day's candidate signals from several collectors — the day's
 // major diary events, big opinion swings toward other colonists, newly-appeared afflictions, plus
-// the filler as light background — then runs a weighted-random selection so only the MOST important
-// few survive, and writes one solo reflective entry. It deliberately coexists with the per-event
-// entries that already fired in the moment: this is the pawn looking back on the whole day.
+// the filler as light background when something important happened — then runs a weighted-random
+// selection anchored to an important signal and writes one solo reflective entry. It deliberately
+// coexists with the per-event entries that already fired in the moment: this is the pawn looking
+// back on the whole day.
 //
 // All state here is transient (cleared on load, re-derived live), like the existing pending notes,
 // so this touches no save schema. The opinion baseline is re-snapshotted on load and at each day
@@ -67,6 +68,7 @@ namespace PawnDiary
             CollectOpinionSignals(pawn, candidates);
             CollectHediffSignals(dayKey, candidates);
             int fillerCount = CollectFillerSignal(pawnId, day, candidates);
+            int importantCandidateCount = CountImportantSignals(candidates);
 
             // Always release this pawn/day's filler + hediffs so they never separately emit, even
             // when nothing is selected. (Consuming filler also keeps the old fallback path from
@@ -75,6 +77,7 @@ namespace PawnDiary
             pendingDayHediffs.Remove(dayKey);
 
             List<DaySummarySignal> highlights = SelectHighlights(candidates, DaySummaryMaxHighlights);
+            EnsureImportantHighlight(highlights, candidates);
             highlights.Sort((a, b) => b.weight.CompareTo(a.weight));
 
             StringBuilder tags = new StringBuilder();
@@ -95,6 +98,7 @@ namespace PawnDiary
                 DefName = DayReflectionEventData.DefNameToken,
                 Day = day,
                 CandidateCount = candidates.Count,
+                ImportantCandidateCount = importantCandidateCount,
                 HighlightCount = highlights.Count,
                 FillerMomentCount = fillerCount,
                 SignalTags = tags.ToString(),
@@ -174,7 +178,12 @@ namespace PawnDiary
                 }
 
                 float weight = ev.IsCombatRelated() ? tuning.daySummaryWeightCriticalEvent : tuning.daySummaryWeightMajorEvent;
-                candidates.Add(new DaySummarySignal(weight, line, "event:" + ev.interactionDefName));
+                string kind = DayReflectionEventData.SignalKindEvent;
+                candidates.Add(new DaySummarySignal(
+                    weight,
+                    line,
+                    DaySummarySignalTag(kind, ev.interactionDefName),
+                    IsDaySummarySignalImportant(kind)));
             }
         }
 
@@ -219,7 +228,12 @@ namespace PawnDiary
                 string line = (delta > 0
                     ? "PawnDiary.Event.DayReflectionOpinionWarmed".Translate(other.LabelShortCap)
                     : "PawnDiary.Event.DayReflectionOpinionCooled".Translate(other.LabelShortCap)).Resolve();
-                candidates.Add(new DaySummarySignal(weight, line, "opinion:" + (delta > 0 ? "+" : "") + delta));
+                string kind = DayReflectionEventData.SignalKindOpinion;
+                candidates.Add(new DaySummarySignal(
+                    weight,
+                    line,
+                    DaySummarySignalTag(kind, (delta > 0 ? "+" : "") + delta),
+                    IsDaySummarySignalImportant(kind)));
             }
         }
 
@@ -241,7 +255,12 @@ namespace PawnDiary
                     : "PawnDiary.Event.DayReflectionHediff";
                 string line = key.Translate(list[i].label).Resolve();
                 float weight = list[i].weight > 0f ? list[i].weight : DiaryTuning.Current.daySummaryWeightHediff;
-                candidates.Add(new DaySummarySignal(weight, line, "hediff:" + list[i].defName));
+                string kind = DayReflectionEventData.SignalKindHediff;
+                candidates.Add(new DaySummarySignal(
+                    weight,
+                    line,
+                    DaySummarySignalTag(kind, list[i].defName),
+                    IsDaySummarySignalImportant(kind)));
             }
         }
 
@@ -255,7 +274,12 @@ namespace PawnDiary
             if (fillerCount >= 2)
             {
                 string line = "PawnDiary.Event.DayReflectionFillerLine".Translate().Resolve();
-                candidates.Add(new DaySummarySignal(DiaryTuning.Current.daySummaryWeightFiller, line, "filler:" + fillerCount));
+                string kind = DayReflectionEventData.SignalKindFiller;
+                candidates.Add(new DaySummarySignal(
+                    DiaryTuning.Current.daySummaryWeightFiller,
+                    line,
+                    DaySummarySignalTag(kind, fillerCount.ToString()),
+                    IsDaySummarySignalImportant(kind)));
             }
 
             return fillerCount;
@@ -297,6 +321,105 @@ namespace PawnDiary
             }
 
             return chosen;
+        }
+
+        /// <summary>
+        /// Counts the meaningful signals that are strong enough to justify a reflection by themselves.
+        /// Filler can color a reflection, but it should not be the reason one exists.
+        /// </summary>
+        private static int CountImportantSignals(List<DaySummarySignal> signals)
+        {
+            if (signals == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < signals.Count; i++)
+            {
+                if (signals[i].important)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// The selection is weighted for variety, but a valid reflection must mention at least one
+        /// important signal. If the random draw picked only filler, replace the lightest filler cue
+        /// with the strongest important candidate.
+        /// </summary>
+        private static void EnsureImportantHighlight(List<DaySummarySignal> highlights, List<DaySummarySignal> candidates)
+        {
+            if (CountImportantSignals(highlights) > 0 || candidates == null)
+            {
+                return;
+            }
+
+            bool foundImportant = false;
+            DaySummarySignal strongestImportant = default(DaySummarySignal);
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                if (!candidates[i].important)
+                {
+                    continue;
+                }
+
+                if (!foundImportant || candidates[i].weight > strongestImportant.weight)
+                {
+                    strongestImportant = candidates[i];
+                    foundImportant = true;
+                }
+            }
+
+            if (!foundImportant)
+            {
+                return;
+            }
+
+            if (highlights == null)
+            {
+                return;
+            }
+
+            if (highlights.Count == 0)
+            {
+                highlights.Add(strongestImportant);
+                return;
+            }
+
+            int replaceIndex = 0;
+            float replaceWeight = highlights[0].weight;
+            for (int i = 1; i < highlights.Count; i++)
+            {
+                if (highlights[i].weight < replaceWeight)
+                {
+                    replaceIndex = i;
+                    replaceWeight = highlights[i].weight;
+                }
+            }
+
+            highlights[replaceIndex] = strongestImportant;
+        }
+
+        /// <summary>
+        /// XML-backed policy check for whether a day-reflection signal kind can create a reflection.
+        /// </summary>
+        private static bool IsDaySummarySignalImportant(string signalKind)
+        {
+            return DayReflectionEventData.IsImportantSignalKind(
+                signalKind,
+                DiaryTuning.Current.daySummaryImportantSignalKinds);
+        }
+
+        /// <summary>
+        /// Stable tag format embedded in gameContext for diagnostics and prompt context.
+        /// </summary>
+        private static string DaySummarySignalTag(string signalKind, string detail)
+        {
+            return signalKind + ":" + (detail ?? string.Empty);
         }
 
         /// <summary>
@@ -518,12 +641,14 @@ namespace PawnDiary
             public readonly float weight;       // relative selection weight
             public readonly string evidenceLine; // localized prompt cue
             public readonly string contextTag;  // short tag recorded in gameContext
+            public readonly bool important;     // true when this signal can justify a reflection
 
-            public DaySummarySignal(float weight, string evidenceLine, string contextTag)
+            public DaySummarySignal(float weight, string evidenceLine, string contextTag, bool important)
             {
                 this.weight = weight;
                 this.evidenceLine = evidenceLine;
                 this.contextTag = contextTag;
+                this.important = important;
             }
         }
     }

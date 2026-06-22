@@ -115,7 +115,7 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 | Work | Periodic current-job sampling | Skips social/violent work, applies XML odds/cooldowns and `workGenerationWeight`. |
 | Raids | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid`) | Once per eligible colonist on the raid's target map. Minimal payload: incident defName, raider faction defName, raid points. |
 | Quests | `Quest.Accept`, a defensive `MainTabWindow_Quests` accept-action fallback, a `Quest.EverAccepted` state scan, and `Quest.End` | Only accepted quests are recorded. `Success` -> "completed", `Fail` -> "failed"; one entry per eligible colonist per signal, with description, issuer faction, and rewards context. |
-| Day reflections | Sleep/rest trigger | One reflective entry per pawn/day from major events, opinion shifts, health signals, and filler. |
+| Day reflections | Sleep/rest trigger | One reflective entry per pawn/day only when at least one XML-configured important signal kind exists. The default important kinds are major events, opinion shifts, and health signals; filler can be folded in as background but cannot trigger a reflection by itself unless XML allows it. |
 
 ---
 
@@ -133,6 +133,12 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 
 Currently catalog-backed: Thought, Inspiration, MoodEvent, MentalState, Tale, Hediff, Interaction,
 Romance, Arrival, Death fallback, Work, ThoughtProgression, DayReflection, Raid, and Quest.
+
+DayReflection is a meta-source: the adapter counts all candidate cues plus the subset that are
+important enough to justify a reflection. `DiaryTuningDef.daySummaryImportantSignalKinds` controls
+which candidate kinds are important (`event`, `opinion`, `hediff`, `filler`). Its pure `Decide`
+drops days with no important candidates, so ambient small talk can color a reflection after
+something meaningful happened but cannot create one alone by default.
 
 Direct `AddSoloEvent`/`AddPairwiseEvent` call sites that remain outside `RecordXxx` are sinks:
 interaction/tale batch flushers, ambient day-note flushers, the generation dispatcher, and the event
@@ -167,8 +173,8 @@ recovery classify them from the saved `signal=` context field.
 
 `DiarySignalPolicyDefs.xml` owns tracker-specific thought/work policy: thresholds, tokens, staged
 progression, ambient batching, scan odds, and cooldowns. `DiaryTuningDef.xml` keeps shared fallback
-tuning for mood/health buckets, nearby context, minimum first-person age, day-reflection weights,
-weather mention chances, and scanner intervals.
+tuning for mood/health buckets, nearby context, minimum first-person age, day-reflection important
+signal kinds/weights, weather mention chances, and scanner intervals.
 
 Hediff-domain groups define Immediate vs DayReflection mode, visible/bad/injury gates, severity
 thresholds, always qualifiers, add/progression recording, severity steps, dedup, and weights.
