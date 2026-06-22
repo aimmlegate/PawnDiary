@@ -142,6 +142,31 @@ available:
 | Prompt | `SoloInternalState`. |
 | Prompt evidence | Per-pawn condition text, XML MoodEvent instruction/tone, mood impact in context, surroundings, health hint, and last opener. |
 
+### Raids
+
+| Item | Value |
+|---|---|
+| Source | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid`), through `RaidEventData`. Minimal realization: one solo entry per eligible colonist on the raid's target map. |
+| Context | `raid=<IncidentDef>; label=<label>; faction=<FactionDef\|unknown>; points=<int>` |
+| Hostile-raid prompt | `SoloImportant` — the `raid` XML group is important. |
+| Friendly-raid prompt | `SoloDefault` — the `raidFriendly` XML group is not important. |
+| Prompt evidence | Per-pawn raid text, XML Raid instruction/tone, raider faction and threat points in context, surroundings, health hint, and last opener. The minimal payload carries only incident defName + raider faction + raid points; strategy, raider count, and loadout are intentionally not captured. |
+| Colony dedup | One window per raid, keyed by incident/faction/points/map. |
+
+### Quests
+
+| Item | Value |
+|---|---|
+| Source | `Quest.Accept` and `Quest.End` (filtered to `QuestEndOutcome.Success` / `Fail`), through `QuestEventData`. Colony-wide: every eligible colonist gets their own solo entry. |
+| Recording rule | Only accepted quests are recorded. Offered-but-not-accepted quests (`QuestManager.Add`) are ignored entirely; the Accept hook is the entry point. |
+| Signals | One `DiaryEventType.Quest` carries three signals via the `Signal` field: `accepted` (on `Quest.Accept`), `completed` (on `Quest.End` with `Success`), `failed` (on `Quest.End` with `Fail`). Each signal routes to its own XML group via `ClassifyQuest(signal)`. |
+| Context | `quest=<QuestScriptDef>; signal=<accepted\|completed\|failed>; label=<label>; faction=<FactionDef\|unknown>; rewards=<summary\|none>` |
+| Description | The quest's prose description is NOT in the context marker — it lives in the localized event text (it is prose, not a structured field). |
+| Rewards | Aggregated from `QuestPart_DropPods.thingDefs` into a short summary. Delayed/choice reward parts are not aggregated; absent rewards fall back to the `none` sentinel. |
+| Prompt | `SoloImportant` for all three signals (the `questAccepted` / `questCompleted` / `questFailed` XML groups are all important). |
+| Prompt evidence | Per-pawn quest text (carrying the description prose), XML Quest instruction/tone, issuer faction and reward summary in context, surroundings, health hint, and last opener. |
+| Colony dedup | One window per quest signal, keyed by quest id + signal. |
+
 ### Thoughts
 
 | Item | Value |
