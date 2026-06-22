@@ -12,7 +12,8 @@
 //
 // This file holds both halves of the multi-pawn fan-out (mirroring MoodEvents.cs):
 // (1) per-source-call gates that stay impure and outside the catalog — CanRecordGameplayEventNow,
-//     the user-toggle gate, the per-signal dedup (peek + conditional mark);
+//     the user-toggle gate, the per-signal dedup (peek + conditional mark), plus the accepted-state
+//     scanner that covers UI/modded accept paths where a direct hook can be missed;
 // (2) the per-pawn catalog dispatch loop — for each eligible colonist on every map, build a
 //     QuestEventData + CaptureContext, ask the catalog for a decision, and if GenerateSolo build
 //     the entry via the pure QuestEventData.BuildGameContext helper and the localized event text.
@@ -43,6 +44,7 @@ namespace PawnDiary
         /// </summary>
         public void RecordQuestAccepted(Quest quest)
         {
+            MarkAcceptedQuestSeen(quest);
             RecordQuestSignal(quest, QuestEventData.SignalAccepted, "PawnDiary.Event.QuestAccepted");
         }
 
@@ -184,6 +186,92 @@ namespace PawnDiary
             if (recordedAny)
             {
                 MarkRecentlyRecorded(recentQuestEvents, dedupKey, DiaryTuning.Current.questDedupTicks);
+            }
+        }
+
+        /// <summary>
+        /// Remembers quests that were already accepted when a save loaded. This keeps the acceptance
+        /// scanner from backfilling old quests while still letting newly accepted quests in the same
+        /// session be recorded.
+        /// </summary>
+        private bool BaselineAcceptedQuests()
+        {
+            QuestManager manager = Find.QuestManager;
+            if (manager == null)
+            {
+                return false;
+            }
+
+            List<Quest> quests = manager.QuestsListForReading;
+            if (quests == null)
+            {
+                return false;
+            }
+
+            knownAcceptedQuestIds.Clear();
+            for (int i = 0; i < quests.Count; i++)
+            {
+                Quest quest = quests[i];
+                if (quest != null && quest.EverAccepted)
+                {
+                    knownAcceptedQuestIds.Add(quest.id);
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Periodically catches quest acceptances by observing the Quest.EverAccepted state. The direct
+        /// Quest.Accept hook remains the immediate path; this scanner is the defensive fallback for
+        /// RimWorld UI or modded flows that mark a quest accepted without hitting our patch.
+        /// </summary>
+        private void ScanAcceptedQuestsForDiaryEvents()
+        {
+            if (baselineQuestAcceptancesOnNextScan)
+            {
+                baselineQuestAcceptancesOnNextScan = !BaselineAcceptedQuests();
+                return;
+            }
+
+            if (!CanRecordGameplayEventNow())
+            {
+                return;
+            }
+
+            QuestManager manager = Find.QuestManager;
+            if (manager == null)
+            {
+                return;
+            }
+
+            List<Quest> quests = manager.QuestsListForReading;
+            if (quests == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < quests.Count; i++)
+            {
+                Quest quest = quests[i];
+                if (quest == null || !quest.EverAccepted || knownAcceptedQuestIds.Contains(quest.id))
+                {
+                    continue;
+                }
+
+                RecordQuestAccepted(quest);
+            }
+        }
+
+        /// <summary>
+        /// Marks a quest as already handled by the acceptance path so the scanner does not produce a
+        /// duplicate entry after the direct hook succeeds.
+        /// </summary>
+        private void MarkAcceptedQuestSeen(Quest quest)
+        {
+            if (quest != null)
+            {
+                knownAcceptedQuestIds.Add(quest.id);
             }
         }
 

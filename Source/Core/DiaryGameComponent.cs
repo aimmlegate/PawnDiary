@@ -106,12 +106,19 @@ namespace PawnDiary
         // Transient (not saved) guard against a quest lifecycle signal double-firing (e.g. a
         // multi-map transition or a fluke double-call). Keys by quest id + signal.
         private readonly Dictionary<string, int> recentQuestEvents = new Dictionary<string, int>();
+        // Transient (not saved) list of quests already seen in the accepted state. Quest.Accept can
+        // be reached through more than one RimWorld UI path, so the tick scanner uses this to catch
+        // missed acceptance transitions without duplicating hook-driven entries.
+        private readonly HashSet<int> knownAcceptedQuestIds = new HashSet<int>();
         // Transient (not saved): event-role keys ("eventId|role") seen pending-but-not-in-flight on the
         // previous generation scan. An entry must look orphaned on two consecutive scans before the
         // orphan recovery re-queues it, so a request that merely finished between scans (its result
         // still queued for the main thread) is never mistaken for an orphan. See
         // RecoverOrphanedPendingGenerations.
         private HashSet<string> orphanCandidatesLastScan = new HashSet<string>();
+        // Loaded saves already contain accepted quests. If the quest manager is not ready during
+        // LoadedGame, the first scanner pass baselines them instead of backfilling old acceptances.
+        private bool baselineQuestAcceptancesOnNextScan;
         // New games build maps after StartedNewGame. This flag lets the first tick with maps create
         // founding-colonist arrival entries using scenario context.
         private bool initialArrivalScanPending;
@@ -126,6 +133,11 @@ namespace PawnDiary
         // generations, and the next tick that scan is allowed to run.
         private const int GenerationScanIntervalTicks = 120;
         private int nextGenerationScanTick;
+
+        // Quest acceptance has a direct Harmony hook, but a light state scan covers UI or modded
+        // accept paths that do not pass through the expected method.
+        private const int QuestAcceptanceScanIntervalTicks = 120;
+        private int nextQuestAcceptanceScanTick;
 
         // Ambient notes read like end-of-day memories, so when a pawn goes to sleep or rests we try
         // to write any sufficiently full low-stakes note for that pawn. This is only a periodic scan
@@ -197,6 +209,7 @@ namespace PawnDiary
             recentRomanceEvents.Clear();
             recentRaidEvents.Clear();
             recentQuestEvents.Clear();
+            knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             generatedSpeechPlayLogTexts.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
@@ -204,9 +217,11 @@ namespace PawnDiary
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
             // their diary entries stuck on "Generating" with no way to re-queue them this session.
             nextGenerationScanTick = 0;
+            nextQuestAcceptanceScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
+            baselineQuestAcceptancesOnNextScan = false;
             initialArrivalScanPending = true;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
@@ -230,15 +245,18 @@ namespace PawnDiary
             recentRomanceEvents.Clear();
             recentRaidEvents.Clear();
             recentQuestEvents.Clear();
+            knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
             // "pending" status normalized back to "not generated" (DiaryEvent.NormalizeLoadedStatus),
             // so the scan below re-queues them in the current session.
             nextGenerationScanTick = 0;
+            nextQuestAcceptanceScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
+            baselineQuestAcceptancesOnNextScan = !BaselineAcceptedQuests();
             initialArrivalScanPending = false;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
@@ -325,6 +343,12 @@ namespace PawnDiary
             {
                 nextWorkScanTick = now + Math.Max(250, DiarySignalPolicies.WorkScanIntervalTicks);
                 ScanPawnWorkForDiaryEvents();
+            }
+
+            if (!initialArrivalScanPending && now >= nextQuestAcceptanceScanTick)
+            {
+                nextQuestAcceptanceScanTick = now + QuestAcceptanceScanIntervalTicks;
+                ScanAcceptedQuestsForDiaryEvents();
             }
 
             if (!initialArrivalScanPending && now >= nextThoughtProgressionScanTick)

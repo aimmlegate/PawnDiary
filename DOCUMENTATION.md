@@ -114,7 +114,7 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 | Hediffs | `Pawn_HealthTracker.AddHediff` plus progression scan | Immediate or day-reflection health entries by XML Hediff policy. |
 | Work | Periodic current-job sampling | Skips social/violent work, applies XML odds/cooldowns and `workGenerationWeight`. |
 | Raids | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid`) | Once per eligible colonist on the raid's target map. Minimal payload: incident defName, raider faction defName, raid points. |
-| Quests | `Quest.Accept` and `Quest.End` | Only accepted quests are recorded. `Success` -> "completed", `Fail` -> "failed"; one entry per eligible colonist per signal, with description, issuer faction, and rewards context. |
+| Quests | `Quest.Accept`, a defensive `MainTabWindow_Quests` accept-action fallback, a `Quest.EverAccepted` state scan, and `Quest.End` | Only accepted quests are recorded. `Success` -> "completed", `Fail` -> "failed"; one entry per eligible colonist per signal, with description, issuer faction, and rewards context. |
 | Day reflections | Sleep/rest trigger | One reflective entry per pawn/day from major events, opinion shifts, health signals, and filler. |
 
 ---

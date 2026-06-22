@@ -30,6 +30,7 @@ namespace PawnDiary
             // Registered manually (not via PatchAll) because the target method name may change
             // between RimWorld versions — see ThoughtGainPatch.TryRegister for why.
             ThoughtGainPatch.TryRegister(harmony);
+            QuestUiAcceptPatch.TryRegister(harmony);
 
             InjectDiaryTab();
             Log.Message("[Pawn Diary] Loaded.");

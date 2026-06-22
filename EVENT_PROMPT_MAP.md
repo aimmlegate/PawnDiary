@@ -157,9 +157,9 @@ available:
 
 | Item | Value |
 |---|---|
-| Source | `Quest.Accept` and `Quest.End` (filtered to `QuestEndOutcome.Success` / `Fail`), through `QuestEventData`. Colony-wide: every eligible colonist gets their own solo entry. |
+| Source | `Quest.Accept` plus a defensive `MainTabWindow_Quests` accept-action fallback, a `Quest.EverAccepted` state scan, and `Quest.End` (filtered to `QuestEndOutcome.Success` / `Fail`), through `QuestEventData`. Colony-wide: every eligible colonist gets their own solo entry. |
 | Recording rule | Only accepted quests are recorded. Offered-but-not-accepted quests (`QuestManager.Add`) are ignored entirely; the Accept hook is the entry point. |
-| Signals | One `DiaryEventType.Quest` carries three signals via the `Signal` field: `accepted` (on `Quest.Accept`), `completed` (on `Quest.End` with `Success`), `failed` (on `Quest.End` with `Fail`). Each signal routes to its own XML group via `ClassifyQuest(signal)`. |
+| Signals | One `DiaryEventType.Quest` carries three signals via the `Signal` field: `accepted` (on `Quest.Accept` or the accepted-state scan), `completed` (on `Quest.End` with `Success`), `failed` (on `Quest.End` with `Fail`). Each signal routes to its own XML group via `ClassifyQuest(signal)`. |
 | Context | `quest=<QuestScriptDef>; signal=<accepted\|completed\|failed>; label=<label>; faction=<FactionDef\|unknown>; rewards=<summary\|none>` |
 | Description | The quest's prose description is NOT in the context marker — it lives in the localized event text (it is prose, not a structured field). |
 | Rewards | Aggregated from `QuestPart_DropPods.thingDefs` into a short summary. Delayed/choice reward parts are not aggregated; absent rewards fall back to the `none` sentinel. |

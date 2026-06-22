@@ -6,6 +6,10 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-22
 
+- **Quest accept capture hardened.** Accepted-quest capture now keeps the direct `Quest.Accept`
+  hook, patches RimWorld's generated `MainTabWindow_Quests` accept action defensively, and scans
+  `Quest.EverAccepted` every 120 ticks. The scan catches accepted-state transitions even if a UI or
+  modded accept path skips both Harmony hooks.
 - **Quest lifecycle group recovery fixed.** Saved quest entries keep the real quest script defName,
   while XML Quest groups match lifecycle signals; display and prompt-policy recovery now classify
   Quest entries from the saved `signal=` field so accepted/completed/failed entries retain their own

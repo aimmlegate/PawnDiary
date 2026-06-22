@@ -8,6 +8,7 @@
 // play-log clicks into the matching Diary entry when one exists. AccessTools.Field reads private
 // vanilla fields via reflection.
 // New to this? See AGENTS.md ("Harmony patches").
+using System;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -419,7 +420,7 @@ namespace PawnDiary
     // Fires when the player accepts a quest (Quest.Accept). This is the diary's entry point for the
     // whole quest lifecycle: offered-but-not-accepted quests are intentionally ignored (per the
     // requirement "only quest that accepted"). Accept fans out to every eligible colonist.
-    [HarmonyPatch(typeof(Quest), nameof(Quest.Accept))]
+    [HarmonyPatch(typeof(Quest), nameof(Quest.Accept), new[] { typeof(Pawn) })]
     public static class QuestAcceptPatch
     {
         /// <summary>
@@ -434,6 +435,68 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.Current?.RecordQuestAccepted(__instance);
+        }
+    }
+
+    // UI fallback for quest acceptance. Vanilla accepts quests from MainTabWindow_Quests through a
+    // compiler-generated local function; Quest.Accept should still be the canonical hook, but this
+    // covers the exact in-game button path if a RimWorld/Harmony edge case skips the direct patch.
+    // New to C#/RimWorld? Compiler-generated names are fragile, so this is registered manually with
+    // null checks instead of a bare [HarmonyPatch] attribute.
+    public static class QuestUiAcceptPatch
+    {
+        private const string AcceptClosureTypeName = "RimWorld.MainTabWindow_Quests+<>c__DisplayClass83_1";
+        private const string AcceptActionMethodName = "<AcceptQuestByInterface>g__AcceptAction|1";
+        private const string ParentClosureFieldName = "CS$<>8__locals1";
+        private const string QuestWindowFieldName = "<>4__this";
+        private const string SelectedQuestFieldName = "selected";
+
+        private static FieldInfo ParentClosureField;
+        private static FieldInfo QuestWindowField;
+        private static FieldInfo SelectedQuestField;
+
+        /// <summary>
+        /// Patches the generated UI accept action when RimWorld still exposes it under the known
+        /// compiler name. Safe to skip: the canonical Quest.Accept patch remains registered above.
+        /// </summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            Type closureType = AccessTools.TypeByName(AcceptClosureTypeName);
+            MethodBase target = AccessTools.Method(closureType, AcceptActionMethodName);
+            ParentClosureField = AccessTools.Field(closureType, ParentClosureFieldName);
+            Type parentClosureType = ParentClosureField?.FieldType;
+            QuestWindowField = AccessTools.Field(parentClosureType, QuestWindowFieldName);
+            SelectedQuestField = AccessTools.Field(typeof(MainTabWindow_Quests), SelectedQuestFieldName);
+
+            if (target == null
+                || ParentClosureField == null
+                || QuestWindowField == null
+                || SelectedQuestField == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find MainTabWindow_Quests quest-accept UI action; "
+                    + "quest accepted diary entries will rely on Quest.Accept only.");
+                return;
+            }
+
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(QuestUiAcceptPatch), nameof(Postfix)));
+        }
+
+        /// <summary>
+        /// Harmony Postfix for the UI accept action. Runs after vanilla acceptance, then forwards the
+        /// selected quest. If Quest.Accept already recorded it, RecordQuestAccepted's dedup key drops
+        /// this duplicate in the same tick.
+        /// </summary>
+        public static void Postfix(object __instance)
+        {
+            object parentClosure = ParentClosureField?.GetValue(__instance);
+            object questWindow = QuestWindowField?.GetValue(parentClosure);
+            Quest quest = SelectedQuestField?.GetValue(questWindow) as Quest;
+            if (quest == null || !quest.EverAccepted)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordQuestAccepted(quest);
         }
     }
 
