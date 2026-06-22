@@ -159,7 +159,12 @@ namespace PawnDiary
     /// </summary>
     public class DiaryGroupPolicy
     {
+        public string defName;
         public string domain;
+        public string classifierKey;
+        public string eventPromptKey;
+        public string eventPrompt;
+        public string eventEnhancement;
         public bool important = true;
         public bool combat;
         public string colorCue;

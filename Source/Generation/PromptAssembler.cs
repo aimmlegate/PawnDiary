@@ -51,6 +51,8 @@ namespace PawnDiary
         public string instruction;
         public string pawnSummary;
         public string persona;
+        public string eventPrompt;
+        public string eventEnhancement;
         public string promptEnchantment;
         public bool includePromptEnchantment = true;
         public string setting;
@@ -182,6 +184,8 @@ namespace PawnDiary
             if (Eq(source, "Instruction")) return v.instruction;
             if (Eq(source, "PawnSummary")) return v.pawnSummary;
             if (Eq(source, "Persona")) return v.persona;
+            if (Eq(source, "EventPrompt")) return v.eventPrompt;
+            if (Eq(source, "EventEnhancement")) return v.eventEnhancement;
             if (Eq(source, "PromptEnchantment")) return v.includePromptEnchantment ? v.promptEnchantment : string.Empty;
             if (Eq(source, "Setting")) return v.setting;
             if (Eq(source, "Tone")) return v.tone;

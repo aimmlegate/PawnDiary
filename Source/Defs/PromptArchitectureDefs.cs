@@ -41,6 +41,71 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// XML prompt policy for one broad event source such as Quest, Raid, Thought, or Work. These
+    /// fields render into every first-person prompt as source-level guidance before the narrower
+    /// group instruction/tone. Missing XML safely means no event-type guidance.
+    /// </summary>
+    public class DiaryEventPromptDef : Def
+    {
+        public string eventType;
+        public string prompt;
+        public string enhancement;
+    }
+
+    /// <summary>
+    /// Lookup helper for broad event-source prompt policy. The adapter resolves this on the impure
+    /// side and copies only plain strings into the pure pipeline snapshot.
+    /// </summary>
+    public static class DiaryEventPrompts
+    {
+        private static readonly Dictionary<string, DiaryEventPromptDef> Fallbacks =
+            new Dictionary<string, DiaryEventPromptDef>(StringComparer.OrdinalIgnoreCase);
+
+        public static DiaryEventPromptDef ForKey(string eventType)
+        {
+            string key = string.IsNullOrWhiteSpace(eventType) ? "Interaction" : eventType;
+            List<DiaryEventPromptDef> defs = DefDatabase<DiaryEventPromptDef>.AllDefsListForReading;
+            if (defs != null)
+            {
+                for (int i = 0; i < defs.Count; i++)
+                {
+                    DiaryEventPromptDef def = defs[i];
+                    if (def == null)
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(def.eventType, key, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(def.defName, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return def;
+                    }
+                }
+            }
+
+            return FallbackFor(key);
+        }
+
+        private static DiaryEventPromptDef FallbackFor(string eventType)
+        {
+            string key = string.IsNullOrWhiteSpace(eventType) ? "Interaction" : eventType;
+            DiaryEventPromptDef fallback;
+            if (Fallbacks.TryGetValue(key, out fallback))
+            {
+                return fallback;
+            }
+
+            fallback = new DiaryEventPromptDef
+            {
+                defName = "DiaryEventPrompt_Fallback_" + key,
+                eventType = key
+            };
+            Fallbacks[key] = fallback;
+            return fallback;
+        }
+    }
+
+    /// <summary>
     /// Central lookup helper for prompt templates. Code asks for a stable template key; XML owns the
     /// field list and may override the system prompt or final instruction for that key.
     /// </summary>
@@ -211,6 +276,8 @@ namespace PawnDiary
             {
                 return Fields(
                     Field("event", "EventNoun"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
                     Field("deceased", "DeathVictim"),
                     Field("what happened", "NeutralText"),
                     Field("death facts", "DeathFacts"),
@@ -222,6 +289,8 @@ namespace PawnDiary
             {
                 return Fields(
                     Field("event", "EventNoun"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
                     Field("colonist", "ArrivalPawn"),
                     Field("what happened", "NeutralText"),
                     Field("arrival facts", "ArrivalFacts"),
@@ -240,6 +309,8 @@ namespace PawnDiary
                 Field("event", "EventNoun"),
                 Field("pov", "PovName"),
                 Field("what happened", "PovText"),
+                Field("event prompt", "EventPrompt"),
+                Field("event enhancement", "EventEnhancement"),
                 Field("instruction", "Instruction"),
                 Field("important health", "PromptEnchantment"),
                 Field("setting", "Setting"),

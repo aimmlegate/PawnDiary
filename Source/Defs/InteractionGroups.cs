@@ -172,8 +172,8 @@ namespace PawnDiary
     }
 
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in
-    // settings: an enable toggle (is it recorded?) plus a single diary-prompt instruction
-    // shared by every event in it. To add or retune a group, edit
+    // settings: an enable toggle (is it recorded?) plus a single diary-prompt instruction shared by
+    // every event in it. To add or retune a group, edit
     // 1.6/Defs/DiaryInteractionGroupDefs.xml — no code change needed.
     //
     // `Def` (the base class) already supplies two fields we rely on:
@@ -212,7 +212,8 @@ namespace PawnDiary
         public List<string> deathVictimInitiatorDefNames;
         public List<string> deathVictimRecipientDefNames;
 
-        // The diary-prompt instruction shared by every event in the group.
+        // The diary-prompt instruction shared by every event in the group. This is the event-type
+        // prompt: it tells the model what kind of moment this is.
         public string instruction;
 
         // Optional emotional register for entries in this group (e.g. "with creeping dread"). This

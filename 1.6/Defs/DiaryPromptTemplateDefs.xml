@@ -4,6 +4,9 @@
   `source` values are stable internal tokens; `label` is the model-facing field name.
   System prompts and final instructions may be overridden here. When blank, DiaryPromptDef.xml
   supplies the shared default text.
+  Event-specific prompt guidance comes from two XML layers:
+    - DiaryEventPromptDef.prompt/enhancement -> "event prompt" and "event enhancement"
+    - DiaryInteractionGroupDef.instruction -> narrower group flavor
 
   Persona note: the pawn's persona voice is NOT a field here anymore — it is appended to the
   system prompt at dispatch (DiaryPromptPlanner.Build via PromptAssembler.ComposeSystem) so the voice governs HOW the
@@ -24,6 +27,8 @@
       <li><label>with</label><source>OtherPawnName</source></li>
       <li><label>what you saw</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>relationship</label><source>Relationship</source></li>
@@ -41,6 +46,8 @@
       <li><label>with</label><source>OtherPawnName</source></li>
       <li><label>what you saw</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
@@ -60,6 +67,8 @@
       <li><label>with</label><source>OtherPawnName</source></li>
       <li><label>what you saw</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>you</label><source>PawnSummary</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
@@ -81,6 +90,8 @@
       <li><label>with</label><source>OtherPawnName</source></li>
       <li><label>what you saw</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -95,6 +106,8 @@
       <li><label>pov</label><source>PovName</source></li>
       <li><label>what happened</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -110,6 +123,8 @@
       <li><label>what happened</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
@@ -125,6 +140,8 @@
       <li><label>pov</label><source>PovName</source></li>
       <li><label>what happened</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -139,6 +156,8 @@
       <li><label>pov</label><source>PovName</source></li>
       <li><label>what happened</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -155,6 +174,8 @@
       <li><label>what happened</label><source>PovText</source></li>
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -169,6 +190,8 @@
     <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
     <fields>
       <li><label>event</label><source>EventNoun</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>deceased</label><source>DeathVictim</source></li>
       <li><label>what happened</label><source>NeutralText</source></li>
       <li><label>death facts</label><source>DeathFacts</source></li>
@@ -185,6 +208,8 @@
     <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
     <fields>
       <li><label>event</label><source>EventNoun</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>colonist</label><source>ArrivalPawn</source></li>
       <li><label>what happened</label><source>NeutralText</source></li>
       <li><label>arrival facts</label><source>ArrivalFacts</source></li>

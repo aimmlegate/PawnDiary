@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Broad event-type prompt policy. These Defs are the first layer of event-specific prompt control:
+  `prompt` names what kind of source the LLM is writing from, and `enhancement` adds source-level
+  constraints. Narrower flavor still comes from DiaryInteractionGroupDef.instruction/tone.
+-->
+<Defs>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Interaction</defName>
+    <eventType>Interaction</eventType>
+    <prompt>Write a direct social interaction between pawns from the POV pawn's side of the moment.</prompt>
+    <enhancement>Keep the reaction tied to the supplied social text; do not add unstated history or dialogue.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_MentalState</defName>
+    <eventType>MentalState</eventType>
+    <prompt>Write a mental-state event as immediate pressure on thought, impulse, and action.</prompt>
+    <enhancement>Stay inside the named break/state and observed behavior; do not diagnose beyond supplied facts.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Tale</defName>
+    <eventType>Tale</eventType>
+    <prompt>Write a notable non-social RimWorld tale as something the pawn lived through or remembers.</prompt>
+    <enhancement>Use the tale facts as the event source; do not turn the entry into ordinary social chatter.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_MoodEvent</defName>
+    <eventType>MoodEvent</eventType>
+    <prompt>Write a colony-wide mood event through how it touches this pawn.</prompt>
+    <enhancement>Show felt effect rather than explaining game mechanics; keep the condition's scope clear.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Thought</defName>
+    <eventType>Thought</eventType>
+    <prompt>Write a temporary thought or mood memory as inner pressure, relief, or irritation.</prompt>
+    <enhancement>Treat the thought as internal context, not as a new external event unless the facts say so.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Inspiration</defName>
+    <eventType>Inspiration</eventType>
+    <prompt>Write inspiration as sudden useful clarity catching in the pawn's mind.</prompt>
+    <enhancement>Focus on what the inspiration makes the pawn want to do next; do not invent success.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Romance</defName>
+    <eventType>Romance</eventType>
+    <prompt>Write a relationship milestone as an emotional change between the two people.</prompt>
+    <enhancement>Center the changed bond itself; do not backfill a conversation or private scene.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Work</defName>
+    <eventType>Work</eventType>
+    <prompt>Write sampled colony work as a concrete moment in the pawn's labor.</prompt>
+    <enhancement>Keep routine work modest and physical; let passion, strain, or dread come only from supplied fields.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Hediff</defName>
+    <eventType>Hediff</eventType>
+    <prompt>Write a health-condition event through the pawn's body and mood.</prompt>
+    <enhancement>Let the condition press on the entry without inventing treatment, diagnosis, or recovery.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Raid</defName>
+    <eventType>Raid</eventType>
+    <prompt>Write a raid or hostile arrival from the pawn's immediate experience of danger.</prompt>
+    <enhancement>Keep it grounded in threat, noise, orders, fear, and survival; do not invent battle outcomes.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Quest</defName>
+    <eventType>Quest</eventType>
+    <prompt>Write a quest lifecycle event as promise, resolution, or loss.</prompt>
+    <enhancement>Use the lifecycle signal and supplied quest facts; do not invent rewards, blame, or consequences.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_DayReflection</defName>
+    <eventType>DayReflection</eventType>
+    <prompt>Write an end-of-day reflection that weighs the day as a whole.</prompt>
+    <enhancement>Choose the supplied moments that still matter tonight instead of listing every event.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Arrival</defName>
+    <eventType>Arrival</eventType>
+    <prompt>Write a factual colony-arrival note about how this pawn joined or began here.</prompt>
+    <enhancement>Use only scenario and arrival facts; do not invent backstory, welcome scenes, or future plans.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Death</defName>
+    <eventType>Death</eventType>
+    <prompt>Write a factual death note about how the colonist died.</prompt>
+    <enhancement>Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+</Defs>

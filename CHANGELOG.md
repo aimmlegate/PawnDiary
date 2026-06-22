@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-22
 
+- **Prompt structure split for finer event control.** Shared system prompts were shortened to global
+  essentials, and broad event-source guidance moved into `DiaryEventPromptDef` rows rendered as
+  separate `event prompt:` and `event enhancement:` fields before per-group `instruction:` flavor.
 - **Quest accept capture hardened.** Accepted-quest capture now keeps the direct `Quest.Accept`
   hook, patches RimWorld's generated `MainTabWindow_Quests` accept action defensively, and scans
   `Quest.EverAccepted` every 120 ticks. The scan catches accepted-state transitions even if a UI or

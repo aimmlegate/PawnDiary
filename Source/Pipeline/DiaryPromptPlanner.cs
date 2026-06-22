@@ -168,6 +168,8 @@ namespace PawnDiary
                 instruction = payload.instruction,
                 pawnSummary = pov?.pawnSummary,
                 persona = request.personaRule,
+                eventPrompt = request.policy?.group?.eventPrompt,
+                eventEnhancement = request.policy?.group?.eventEnhancement,
                 promptEnchantment = request.promptEnchantment,
                 includePromptEnchantment = template.includePromptEnchantment,
                 setting = pov?.surroundings,

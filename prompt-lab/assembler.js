@@ -58,6 +58,8 @@ function resolveSource(field, v) {
   if (eq(source, 'Instruction')) return v.instruction;
   if (eq(source, 'PawnSummary')) return v.pawnSummary;
   if (eq(source, 'Persona')) return v.persona;
+  if (eq(source, 'EventPrompt')) return v.eventPrompt;
+  if (eq(source, 'EventEnhancement')) return v.eventEnhancement;
   if (eq(source, 'PromptEnchantment')) return v.includePromptEnchantment === false ? '' : v.promptEnchantment;
   if (eq(source, 'Setting')) return v.setting;
   if (eq(source, 'Tone')) return v.tone;

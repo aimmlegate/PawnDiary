@@ -94,6 +94,7 @@ const DEFAULTS = {
   defaultSystemPromptReflection: path.join('prompts', '_system_reflection.txt'),
   defaultSystemPromptTitle: path.join('prompts', '_system_title.txt'),
   promptDefFile: path.join('..', '1.6', 'Defs', 'DiaryPromptDef.xml'),
+  eventPromptDefFile: path.join('..', '1.6', 'Defs', 'DiaryEventPromptDefs.xml'),
   promptTemplateDefFile: path.join('..', '1.6', 'Defs', 'DiaryPromptTemplateDefs.xml'),
   personaDefFile: path.join('..', '1.6', 'Defs', 'DiaryPersonaDefs.xml'),
   interactionGroupDefFile: path.join('..', '1.6', 'Defs', 'DiaryInteractionGroupDefs.xml'),
@@ -414,6 +415,22 @@ function parsePromptTemplateDefsFromXml(config) {
   }).filter((template) => template.templateKey && template.fields.length > 0);
 }
 
+function parseEventPromptDefsFromXml(config) {
+  const raw = readIfExists(resolvePath(config.eventPromptDefFile));
+  if (!raw) return [];
+
+  const blocks = extractBlocks(raw, 'PawnDiary.DiaryEventPromptDef');
+  return blocks.map((block) => {
+    const defName = extractTag(block, 'defName');
+    return {
+      defName,
+      eventType: extractTag(block, 'eventType') || defName,
+      prompt: extractTag(block, 'prompt'),
+      enhancement: extractTag(block, 'enhancement'),
+    };
+  }).filter((entry) => entry.eventType);
+}
+
 function parseKeyedPromptText(config) {
   const defaults = {
     pairInitiatorDirectSpeech: 'Initiator POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
@@ -478,12 +495,13 @@ function loadPromptData(config) {
       recipientFollowupInstruction: "Write one to three first-person diary sentences from the recipient's point of view, about the event above. The initiator's diary entry is hidden continuity context — do not write as if the recipient read it. If the notes are thin, react specifically to what happened rather than inventing detail. Output only the diary entry.",
       deathDescriptionInstruction: 'Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts. Output only the death description.',
       arrivalDescriptionInstruction: 'Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. Output only the arrival description.',
-      systemPrompt: "You write first-person diary entries for RimWorld colonists, one to three sentences in the colonist's own voice. Anchor each entry in one concrete sensation or detail from the supplied context, let mood/health/setting/tone color the subtext, invent nothing not supplied, and return only the diary text. (Persona voice is appended separately.)",
-      systemPromptReflection: "You write end-of-day diary reflections for RimWorld colonists, first-person, two to four sentences in the colonist's voice. Anchor the reflection in one or two of the day's listed moments that still weigh on them, reflect on how the day felt, invent nothing not in the notes, and return only the diary text.",
-      systemPromptNeutral: 'You write short, third-person factual notes about RimWorld colony events. Each note is one to three complete sentences. Use only supplied facts and return only the note text.',
-      titleSystemPrompt: 'You write short, evocative titles (3 to 8 words) for RimWorld diary entries. Return only the title — no quotes, no period, no markdown, no labels, no commentary.',
+      systemPrompt: "Write 1-3 first-person diary sentences in the POV colonist's voice. Use only supplied fields. Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and persona shape mood and wording. Output only diary text.",
+      systemPromptReflection: "Write 2-4 first-person end-of-day diary sentences in the colonist's voice. Use only supplied day moments; choose what still matters tonight. Output only diary text.",
+      systemPromptNeutral: 'Write 1-3 short third-person factual RimWorld colony notes. Use only supplied facts. Output only note text.',
+      titleSystemPrompt: 'Return a 3-8 word title for a RimWorld diary entry. Output only the title: no quotes, period, markdown, labels, or commentary.',
       titleUserInstruction: DEFAULT_TITLE_USER_INSTRUCTION,
     },
+    eventPrompts: parseEventPromptDefsFromXml(config),
     promptTemplates: parsePromptTemplateDefsFromXml(config),
     personas: parsePersonaDefsFromXml(config),
     groups: parseInteractionGroupsFromXml(config),
@@ -759,6 +777,8 @@ function toAssemblerValues(values) {
     instruction: v.instruction,
     pawnSummary: v.pawnSummary,
     persona: v.persona,
+    eventPrompt: v.eventPrompt,
+    eventEnhancement: v.eventEnhancement,
     promptEnchantment: v.promptEnchantment,
     includePromptEnchantment: v.includePromptEnchantment,
     setting: v.setting,
@@ -776,6 +796,19 @@ function toAssemblerValues(values) {
     entryText: v.entryText,
     gameContext: v.gameContext,
   };
+}
+
+function eventPromptKeyForGroup(group) {
+  if (!group) return 'Interaction';
+  if (eq(group.defName, 'dayreflection')) return 'DayReflection';
+  if (eq(group.defName, 'arrival')) return 'Arrival';
+  return group.domain || 'Interaction';
+}
+
+function eventPromptForGroup(promptData, group) {
+  const key = eventPromptKeyForGroup(group);
+  const defs = promptData.eventPrompts || [];
+  return defs.find((entry) => eq(entry.eventType, key) || eq(entry.defName, key)) || {};
 }
 
 // Builds the shared-assembler input for a generated fixture: the template's field list and flags,
@@ -970,6 +1003,7 @@ function buildPairFixture(promptData, group, options) {
   const context = generatedContextForGroup(group, 'pair');
   const templateKey = templateKeyForFixture(group, context, true);
   const template = resolvedTemplate(promptData, templateKey);
+  const eventPrompt = eventPromptForGroup(promptData, group);
   const hiddenInitiatorEntry = options.role === 'recipient' ? options.initiatorEntry : '';
   const usesFollowupInstruction = options.role === 'recipient' && !isSkippable(hiddenInitiatorEntry);
   const baseInstruction = usesFollowupInstruction
@@ -996,6 +1030,8 @@ function buildPairFixture(promptData, group, options) {
     instruction: options.instruction,
     pawnSummary: options.pawnSummary,
     persona: options.persona,
+    eventPrompt: isSkippable(options.eventPrompt) ? eventPrompt.prompt : options.eventPrompt,
+    eventEnhancement: isSkippable(options.eventEnhancement) ? eventPrompt.enhancement : options.eventEnhancement,
     promptEnchantment: options.promptEnchantment,
     includePromptEnchantment: template.includePromptEnchantment,
     setting: options.setting,
@@ -1022,6 +1058,7 @@ function buildSoloFixture(promptData, group, options) {
   const context = generatedContextForGroup(group, 'solo');
   const templateKey = templateKeyForFixture(group, context, false);
   const template = resolvedTemplate(promptData, templateKey);
+  const eventPrompt = eventPromptForGroup(promptData, group);
   const baseInstruction = finalInstructionForTemplate(promptData, templateKey);
   const append = template.appendDirectSpeechInstruction
     ? soloInstructionForFixture(
@@ -1039,6 +1076,8 @@ function buildSoloFixture(promptData, group, options) {
     instruction: options.instruction,
     pawnSummary: options.pawnSummary,
     persona: options.persona,
+    eventPrompt: isSkippable(options.eventPrompt) ? eventPrompt.prompt : options.eventPrompt,
+    eventEnhancement: isSkippable(options.eventEnhancement) ? eventPrompt.enhancement : options.eventEnhancement,
     promptEnchantment: options.promptEnchantment,
     includePromptEnchantment: template.includePromptEnchantment,
     setting: options.setting,

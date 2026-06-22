@@ -86,15 +86,24 @@ namespace PawnDiary
 
         public static DiaryPolicySnapshot PolicyFor(DiaryEventPayload payload)
         {
+            string classifierKey = ClassifierKeyForPayload(payload);
+            string eventPromptKey = EventPromptKeyForPayload(payload);
+            DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
+            DiaryEventPromptDef eventPrompt = DiaryEventPrompts.ForKey(eventPromptKey);
             DiaryPolicySnapshot snapshot = new DiaryPolicySnapshot
             {
                 group = new DiaryGroupPolicy
                 {
+                    defName = group?.defName,
                     domain = payload?.domain,
+                    classifierKey = classifierKey,
+                    eventPromptKey = eventPromptKey,
+                    eventPrompt = eventPrompt?.prompt,
+                    eventEnhancement = eventPrompt?.enhancement,
                     important = payload?.display == null || payload.display.important,
-                    combat = GroupCombat(payload),
+                    combat = GroupCombat(payload, group),
                     colorCue = payload?.display?.colorCue,
-                    tone = ToneFor(payload)
+                    tone = ToneFor(group)
                 }
             };
 
@@ -198,7 +207,7 @@ namespace PawnDiary
             return label.ToLowerInvariant();
         }
 
-        private static bool GroupCombat(DiaryEventPayload payload)
+        private static bool GroupCombat(DiaryEventPayload payload, DiaryInteractionGroupDef group)
         {
             if (payload == null)
             {
@@ -210,17 +219,15 @@ namespace PawnDiary
                 return true;
             }
 
-            DiaryInteractionGroupDef group = GroupForPayload(payload);
             return group != null && group.combat;
         }
 
-        private static string ToneFor(DiaryEventPayload payload)
+        private static string ToneFor(DiaryInteractionGroupDef group)
         {
-            DiaryInteractionGroupDef group = GroupForPayload(payload);
             return group != null ? group.tone : string.Empty;
         }
 
-        private static DiaryInteractionGroupDef GroupForPayload(DiaryEventPayload payload)
+        private static DiaryInteractionGroupDef GroupForPayload(DiaryEventPayload payload, string classifierKey)
         {
             if (payload == null)
             {
@@ -234,9 +241,42 @@ namespace PawnDiary
                 domain = GroupDomain.Interaction;
             }
 
-            string classifierKey = DiaryEventDomainClassifier.GroupClassifierKey(
-                domainName, payload.gameContext, payload.defName);
             return InteractionGroups.ClassifyDefName(domain, classifierKey);
+        }
+
+        private static string ClassifierKeyForPayload(DiaryEventPayload payload)
+        {
+            return payload == null
+                ? string.Empty
+                : DiaryEventDomainClassifier.GroupClassifierKey(
+                    payload.domain, payload.gameContext, payload.defName);
+        }
+
+        private static string EventPromptKeyForPayload(DiaryEventPayload payload)
+        {
+            if (payload == null)
+            {
+                return DiaryEventDomainClassifier.Interaction;
+            }
+
+            if (payload.hasDeathDescription)
+            {
+                return "Death";
+            }
+
+            if (payload.hasArrivalDescription)
+            {
+                return "Arrival";
+            }
+
+            if (payload.dayReflection)
+            {
+                return "DayReflection";
+            }
+
+            return string.IsNullOrWhiteSpace(payload.domain)
+                ? DiaryEventDomainClassifier.Interaction
+                : payload.domain;
         }
 
         private static string DomainFor(string context)

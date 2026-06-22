@@ -64,7 +64,7 @@ Key files:
 | `DiaryPromptBuilder.cs` / `Source/Pipeline/*` | Prompt facade plus pure planning, response cleanup, domain recovery, and text decoration. |
 | `DiaryContextBuilder.cs` / `DlcContext.cs` | Pawn/surroundings/relationship/health/weapon context; DLC reads are centralized and guarded. |
 | `InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, odds, cooldowns, scanner policy, and shared tuning. |
-| `DiaryPromptDef.cs`, `DiaryPersonaDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned prompt, persona, UI, and display policy. |
+| `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, persona, UI, and display policy. |
 | `LlmClient.cs` / `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data and settings UI. |
 | `ITab_Pawn_Diary*.cs` / `DiaryTextFormat.cs` | Diary UI, cards, paging, debug controls, and safe rich-text formatting. |
@@ -184,6 +184,12 @@ Prompts are compact `key: value` lines. Empty values and `none` / `n/a` / `unkno
 dropped. Prompt templates include pair, solo, batched, day-reflection, death-description,
 arrival-description, and title shapes.
 
+The system prompts are intentionally short and only carry global safety/format rules. Event-type
+prompt control lives in `DiaryEventPromptDef`: `prompt` renders as `event prompt:`, and `enhancement`
+renders as `event enhancement:`. Narrower XML group policy still renders as `instruction:` and
+`tone:`. This keeps quests, raids, thoughts, work, health, romance, and other source types tunable
+without editing C# or bloating the shared system prompt.
+
 Layer boundaries:
 
 - Impure: event hooks, `DiaryGameComponent`, settings, XML lookup, localization, IO, RNG, save
@@ -198,7 +204,8 @@ used for first-person templates only; neutral arrival/death and title prompts ar
 
 Prompt enchantments are XML-weighted live health/capacity cues. Eligible first-person prompts may
 add one localized `important health:` field as pressure, not as the subject unless the event itself
-is medical.
+is medical. These are separate from `DiaryEventPromptDef.enhancement`, which is static event-type
+guidance.
 
 Direct speech is allowed only for initiator/single-POV interaction prompts, using one closed
 `[[speech]]...[[/speech]]` block when source notes support it. Recipient follow-ups forbid speech
@@ -325,8 +332,9 @@ Player-facing UI strings and natural-language prompt text live in
 Def text (`label`, `instruction`, `tone`, persona `rule`, prompt defs/templates, hediff/body-part
 labels) localizes through DefInjected.
 
-Keep DefInjected English stubs in sync for `DiaryInteractionGroupDef`, `DiaryPersonaDef`, and
-`DiaryPromptDef` when editing XML labels, instructions, tones, persona rules, or shared prompts.
+Keep DefInjected English stubs in sync for `DiaryInteractionGroupDef`, `DiaryEventPromptDef`,
+`DiaryPersonaDef`, and `DiaryPromptDef` when editing XML labels, instructions, tones, event prompts,
+persona rules, or shared prompts.
 
 Kept English intentionally: prompt schema labels (`event:`, `role:`, `thought=`), role/sentinel
 words (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), internal defNames/theme tags,

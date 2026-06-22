@@ -67,6 +67,8 @@ namespace DiaryPipelineTests
             AssertEqual("solo system includes persona", "System SoloImportant\n\nWrite like Alice.", plan.systemPrompt);
             AssertContains("solo pov", plan.userPrompt, "pov: Alice");
             AssertContains("solo text", plan.userPrompt, "what happened: Alice repaired the generator alone.");
+            AssertContains("solo event prompt", plan.userPrompt, "event prompt: Write this event type.");
+            AssertContains("solo event enhancement", plan.userPrompt, "event enhancement: Keep the event focused.");
             AssertContains("solo health", plan.userPrompt, "important health: Her hands shake.");
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
         }
@@ -493,7 +495,9 @@ namespace DiaryPipelineTests
                 {
                     combat = combat,
                     important = important,
-                    tone = "tense"
+                    tone = "tense",
+                    eventPrompt = "Write this event type.",
+                    eventEnhancement = "Keep the event focused."
                 }
             };
 
@@ -523,6 +527,8 @@ namespace DiaryPipelineTests
             {
                 fields = Fields(
                     Field("event", "EventNoun"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
                     Field("deceased", "DeathVictim"),
                     Field("what happened", "NeutralText"),
                     Field("death facts", "DeathFacts"),
@@ -533,6 +539,8 @@ namespace DiaryPipelineTests
             {
                 fields = Fields(
                     Field("event", "EventNoun"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
                     Field("colonist", "ArrivalPawn"),
                     Field("what happened", "NeutralText"),
                     Field("arrival facts", "ArrivalFacts"),
@@ -545,6 +553,8 @@ namespace DiaryPipelineTests
                     Field("event", "EventNoun"),
                     Field("pov", "PovName"),
                     Field("what happened", "PovText"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
                     Field("weapon", "Weapon"),
                     Field("important health", "PromptEnchantment"),
                     Field("initiator entry", "HiddenInitiatorEntry"),
