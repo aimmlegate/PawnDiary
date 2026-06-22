@@ -188,7 +188,9 @@ The system prompts are intentionally short and only carry global safety/format r
 prompt control lives in `DiaryEventPromptDef`: `prompt` renders as `event prompt:`, and `enhancement`
 renders as `event enhancement:`. Narrower XML group policy still renders as `instruction:` and
 `tone:`. This keeps quests, raids, thoughts, work, health, romance, and other source types tunable
-without editing C# or bloating the shared system prompt.
+without editing C# or bloating the shared system prompt. The first-person system prompt asks the
+model to make supplied facts immediate through one sensory detail, one emotional beat, and one
+implied consequence or tension, while still forbidding invented facts.
 
 Layer boundaries:
 

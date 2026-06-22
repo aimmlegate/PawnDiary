@@ -38,6 +38,7 @@ namespace PawnDiary
         public string systemPrompt = "Write 1-3 first-person diary sentences in the POV colonist's voice.\n"
             + "Use only supplied fields. Do not invent people, places, dialogue, motives, outcomes, treatment, or time skips.\n"
             + "Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and persona shape mood and wording.\n"
+            + "Make the supplied facts feel immediate: use one concrete sensory detail, one emotional beat, and one small consequence or tension already implied by the context. Avoid flat summaries.\n"
             + "Direct speech only when explicitly allowed: put the POV pawn's own words in [[speech]]words[[/speech]] and paraphrase everyone else.\n"
             + "Output only diary text. End with normal sentence punctuation.";
 

@@ -38,6 +38,7 @@
     <systemPrompt>Write 1-3 first-person diary sentences in the POV colonist's voice.
 Use only supplied fields. Do not invent people, places, dialogue, motives, outcomes, treatment, or time skips.
 Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and persona shape mood and wording.
+Make the supplied facts feel immediate: use one concrete sensory detail, one emotional beat, and one small consequence or tension already implied by the context. Avoid flat summaries.
 Direct speech only when explicitly allowed: put the POV pawn's own words in [[speech]]words[[/speech]] and paraphrase everyone else.
 Output only diary text. End with normal sentence punctuation.</systemPrompt>
 

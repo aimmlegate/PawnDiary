@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
   <DiaryEventPrompt_Interaction.prompt>Write a direct social interaction between pawns from the POV pawn&apos;s side of the moment.</DiaryEventPrompt_Interaction.prompt>
-  <DiaryEventPrompt_Interaction.enhancement>Keep the reaction tied to the supplied social text; do not add unstated history or dialogue.</DiaryEventPrompt_Interaction.enhancement>
+  <DiaryEventPrompt_Interaction.enhancement>Make the exchange feel live in the room: a look, pause, flinch, heat, or silence. Keep it tied to the supplied social text; do not add unstated history or dialogue.</DiaryEventPrompt_Interaction.enhancement>
   <DiaryEventPrompt_MentalState.prompt>Write a mental-state event as immediate pressure on thought, impulse, and action.</DiaryEventPrompt_MentalState.prompt>
-  <DiaryEventPrompt_MentalState.enhancement>Stay inside the named break/state and observed behavior; do not diagnose beyond supplied facts.</DiaryEventPrompt_MentalState.enhancement>
+  <DiaryEventPrompt_MentalState.enhancement>Write with pressure and unstable momentum: thought, impulse, body, then action. Stay inside the named state and observed behavior; do not diagnose beyond supplied facts.</DiaryEventPrompt_MentalState.enhancement>
   <DiaryEventPrompt_Tale.prompt>Write a notable non-social RimWorld tale as something the pawn lived through or remembers.</DiaryEventPrompt_Tale.prompt>
-  <DiaryEventPrompt_Tale.enhancement>Use the tale facts as the event source; do not turn the entry into ordinary social chatter.</DiaryEventPrompt_Tale.enhancement>
+  <DiaryEventPrompt_Tale.enhancement>Find the dramatic pressure in the tale facts: danger, pride, shame, relief, damage, or aftermath. Do not turn the entry into ordinary social chatter.</DiaryEventPrompt_Tale.enhancement>
   <DiaryEventPrompt_MoodEvent.prompt>Write a colony-wide mood event through how it touches this pawn.</DiaryEventPrompt_MoodEvent.prompt>
-  <DiaryEventPrompt_MoodEvent.enhancement>Show felt effect rather than explaining game mechanics; keep the condition&apos;s scope clear.</DiaryEventPrompt_MoodEvent.enhancement>
+  <DiaryEventPrompt_MoodEvent.enhancement>Show the condition pressing on the pawn&apos;s senses or nerves rather than explaining game mechanics; keep the condition&apos;s scope clear.</DiaryEventPrompt_MoodEvent.enhancement>
   <DiaryEventPrompt_Thought.prompt>Write a temporary thought or mood memory as inner pressure, relief, or irritation.</DiaryEventPrompt_Thought.prompt>
-  <DiaryEventPrompt_Thought.enhancement>Treat the thought as internal context, not as a new external event unless the facts say so.</DiaryEventPrompt_Thought.enhancement>
+  <DiaryEventPrompt_Thought.enhancement>Make the thought bite, comfort, itch, or linger in the pawn&apos;s mind. Treat it as internal context, not as a new external event unless the facts say so.</DiaryEventPrompt_Thought.enhancement>
   <DiaryEventPrompt_Inspiration.prompt>Write inspiration as sudden useful clarity catching in the pawn&apos;s mind.</DiaryEventPrompt_Inspiration.prompt>
-  <DiaryEventPrompt_Inspiration.enhancement>Focus on what the inspiration makes the pawn want to do next; do not invent success.</DiaryEventPrompt_Inspiration.enhancement>
+  <DiaryEventPrompt_Inspiration.enhancement>Make the clarity feel electric and actionable: a sudden plan, urge, or confidence. Focus on what the pawn wants to do next; do not invent success.</DiaryEventPrompt_Inspiration.enhancement>
   <DiaryEventPrompt_Romance.prompt>Write a relationship milestone as an emotional change between the two people.</DiaryEventPrompt_Romance.prompt>
-  <DiaryEventPrompt_Romance.enhancement>Center the changed bond itself; do not backfill a conversation or private scene.</DiaryEventPrompt_Romance.enhancement>
+  <DiaryEventPrompt_Romance.enhancement>Make the changed bond feel risky and personal: hope, embarrassment, ache, relief, or dread. Do not backfill a conversation or private scene.</DiaryEventPrompt_Romance.enhancement>
   <DiaryEventPrompt_Work.prompt>Write sampled colony work as a concrete moment in the pawn&apos;s labor.</DiaryEventPrompt_Work.prompt>
-  <DiaryEventPrompt_Work.enhancement>Keep routine work modest and physical; let passion, strain, or dread come only from supplied fields.</DiaryEventPrompt_Work.enhancement>
+  <DiaryEventPrompt_Work.enhancement>Use tactile work detail: weight, heat, dirt, rhythm, tools, mistakes, or satisfaction. Let passion, strain, or dread come only from supplied fields.</DiaryEventPrompt_Work.enhancement>
   <DiaryEventPrompt_Hediff.prompt>Write a health-condition event through the pawn&apos;s body and mood.</DiaryEventPrompt_Hediff.prompt>
-  <DiaryEventPrompt_Hediff.enhancement>Let the condition press on the entry without inventing treatment, diagnosis, or recovery.</DiaryEventPrompt_Hediff.enhancement>
+  <DiaryEventPrompt_Hediff.enhancement>Make the body unavoidable: pain, weakness, breath, fever, hunger, balance, or fear. Do not invent treatment, diagnosis, or recovery.</DiaryEventPrompt_Hediff.enhancement>
   <DiaryEventPrompt_Raid.prompt>Write a raid or hostile arrival from the pawn&apos;s immediate experience of danger.</DiaryEventPrompt_Raid.prompt>
-  <DiaryEventPrompt_Raid.enhancement>Keep it grounded in threat, noise, orders, fear, and survival; do not invent battle outcomes.</DiaryEventPrompt_Raid.enhancement>
+  <DiaryEventPrompt_Raid.enhancement>Write close to the body: noise, cover, orders, fear, pain, smoke, blood, or the scramble to survive. Keep every detail grounded; do not invent battle outcomes.</DiaryEventPrompt_Raid.enhancement>
   <DiaryEventPrompt_Quest.prompt>Write a quest lifecycle event as promise, resolution, or loss.</DiaryEventPrompt_Quest.prompt>
-  <DiaryEventPrompt_Quest.enhancement>Use the lifecycle signal and supplied quest facts; do not invent rewards, blame, or consequences.</DiaryEventPrompt_Quest.enhancement>
+  <DiaryEventPrompt_Quest.enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not invent rewards, blame, or consequences.</DiaryEventPrompt_Quest.enhancement>
   <DiaryEventPrompt_DayReflection.prompt>Write an end-of-day reflection that weighs the day as a whole.</DiaryEventPrompt_DayReflection.prompt>
-  <DiaryEventPrompt_DayReflection.enhancement>Choose the supplied moments that still matter tonight instead of listing every event.</DiaryEventPrompt_DayReflection.enhancement>
+  <DiaryEventPrompt_DayReflection.enhancement>Choose the supplied moments that still sting, glow, or weigh on the pawn tonight instead of listing every event.</DiaryEventPrompt_DayReflection.enhancement>
   <DiaryEventPrompt_Arrival.prompt>Write a factual colony-arrival note about how this pawn joined or began here.</DiaryEventPrompt_Arrival.prompt>
-  <DiaryEventPrompt_Arrival.enhancement>Use only scenario and arrival facts; do not invent backstory, welcome scenes, or future plans.</DiaryEventPrompt_Arrival.enhancement>
+  <DiaryEventPrompt_Arrival.enhancement>Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts.</DiaryEventPrompt_Arrival.enhancement>
   <DiaryEventPrompt_Death.prompt>Write a factual death note about how the colonist died.</DiaryEventPrompt_Death.prompt>
-  <DiaryEventPrompt_Death.enhancement>Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</DiaryEventPrompt_Death.enhancement>
+  <DiaryEventPrompt_Death.enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</DiaryEventPrompt_Death.enhancement>
 </LanguageData>

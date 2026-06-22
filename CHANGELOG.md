@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-22
 
+- **Diary prose nudged toward immediacy.** First-person prompts now ask for one concrete sensory
+  detail, one emotional beat, and one implied consequence/tension from supplied facts, and event-type
+  enhancements were sharpened for more vivid but still grounded entries.
 - **Prompt structure split for finer event control.** Shared system prompts were shortened to global
   essentials, and broad event-source guidance moved into `DiaryEventPromptDef` rows rendered as
   separate `event prompt:` and `event enhancement:` fields before per-group `instruction:` flavor.
