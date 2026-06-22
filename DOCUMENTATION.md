@@ -161,7 +161,9 @@ promotion, Hediff policy, and default enablement. Domains include Interaction, M
 MoodEvent, Thought, Inspiration, Romance, Work, Hediff, Raid, and Quest. Matching is domain-scoped
 by exact `defName` or substring token; XML order matters and catch-all groups go last. The Quest
 domain is unusual: its matchDefNames are lifecycle signals (`accepted`/`completed`/`failed`), not
-defNames, because one `DiaryEventType.Quest` fans out to three prompt groups.
+defNames, because one `DiaryEventType.Quest` fans out to three prompt groups. Saved Quest entries
+still keep the real `QuestScriptDef` in their source defName/context; display and prompt-policy
+recovery classify them from the saved `signal=` context field.
 
 `DiarySignalPolicyDefs.xml` owns tracker-specific thought/work policy: thresholds, tokens, staged
 progression, ambient batching, scan odds, and cooldowns. `DiaryTuningDef.xml` keeps shared fallback

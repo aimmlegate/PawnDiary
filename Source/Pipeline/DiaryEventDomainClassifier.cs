@@ -40,6 +40,25 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns the key that should be used when recovering an XML group for a saved event. Most
+        /// domains classify by the saved source defName, but Quest groups classify by lifecycle
+        /// signal so accepted/completed/failed entries keep their distinct prompt policy.
+        /// </summary>
+        public static string GroupClassifierKey(string domain, string context, string savedDefName)
+        {
+            if (string.Equals(domain, Quest, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string signal = DiaryContextFields.Value(context, "signal");
+                if (!string.IsNullOrWhiteSpace(signal))
+                {
+                    return signal;
+                }
+            }
+
+            return savedDefName;
+        }
+
+        /// <summary>
         /// True when a context marker identifies a source that is not a normal social InteractionDef.
         /// Used to avoid adding direct-speech prompt instructions to non-social-log events.
         /// </summary>

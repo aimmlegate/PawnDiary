@@ -1480,12 +1480,15 @@ namespace PawnDiary
 
         private static DiaryInteractionGroupDef GroupForDisplay(string context, string defName)
         {
+            string domainName = DiaryEventDomainClassifier.DomainForContext(context);
             GroupDomain domain;
-            if (!Enum.TryParse(DiaryEventDomainClassifier.DomainForContext(context), out domain))
+            if (!Enum.TryParse(domainName, out domain))
             {
                 domain = GroupDomain.Interaction;
             }
-            return InteractionGroups.ClassifyDefName(domain, defName);
+
+            string classifierKey = DiaryEventDomainClassifier.GroupClassifierKey(domainName, context, defName);
+            return InteractionGroups.ClassifyDefName(domain, classifierKey);
         }
 
         /// <summary>

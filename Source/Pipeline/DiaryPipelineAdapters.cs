@@ -227,13 +227,16 @@ namespace PawnDiary
                 return null;
             }
 
+            string domainName = payload.domain ?? string.Empty;
             GroupDomain domain;
-            if (!Enum.TryParse(payload.domain ?? string.Empty, out domain))
+            if (!Enum.TryParse(domainName, out domain))
             {
                 domain = GroupDomain.Interaction;
             }
 
-            return InteractionGroups.ClassifyDefName(domain, payload.defName);
+            string classifierKey = DiaryEventDomainClassifier.GroupClassifierKey(
+                domainName, payload.gameContext, payload.defName);
+            return InteractionGroups.ClassifyDefName(domain, classifierKey);
         }
 
         private static string DomainFor(string context)

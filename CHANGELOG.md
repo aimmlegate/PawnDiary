@@ -6,6 +6,10 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-22
 
+- **Quest lifecycle group recovery fixed.** Saved quest entries keep the real quest script defName,
+  while XML Quest groups match lifecycle signals; display and prompt-policy recovery now classify
+  Quest entries from the saved `signal=` field so accepted/completed/failed entries retain their own
+  label, importance, and tone instead of falling through to the failed-quest group.
 - **Raid event source added (minimal realization).** `IncidentWorker.TryExecute` (filtered to
   `IncidentWorker_Raid`) now fans out one solo diary entry per eligible colonist on the raid's target
   map. Payload is intentionally minimal: incident defName, raider faction defName, and raid points.

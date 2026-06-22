@@ -266,6 +266,24 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("raid=RaidEnemy; label=enemy raid; faction=Pirate; points=350"));
             AssertEqual("quest marker domain", "Quest",
                 DiaryEventDomainClassifier.DomainForContext("quest=OpportunityQuest; signal=accepted; label=cache; faction=Outlander; rewards=Silver x100"));
+            AssertEqual("quest classifier uses lifecycle signal",
+                "completed",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Quest",
+                    "quest=OpportunityQuest; signal=completed; label=cache; faction=Outlander; rewards=Silver x100",
+                    "OpportunityQuest"));
+            AssertEqual("quest classifier falls back without signal",
+                "OpportunityQuest",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Quest",
+                    "quest=OpportunityQuest; label=cache; faction=Outlander; rewards=Silver x100",
+                    "OpportunityQuest"));
+            AssertEqual("raid classifier keeps incident defName",
+                "RaidEnemy",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Raid",
+                    "raid=RaidEnemy; label=enemy raid; faction=Pirate; points=350",
+                    "RaidEnemy"));
             AssertTrue("romance marker is not interaction prompt",
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("romance=Lover; label=lover"));
             AssertTrue("raid marker is not interaction prompt",
