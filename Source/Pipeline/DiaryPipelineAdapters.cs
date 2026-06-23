@@ -109,7 +109,7 @@ namespace PawnDiary
                     important = payload?.display == null || payload.display.important,
                     combat = GroupCombat(payload, group),
                     colorCue = payload?.display?.colorCue,
-                    tone = ToneFor(group)
+                    tone = ToneFor(group, payload?.eventId)
                 }
             };
 
@@ -228,9 +228,18 @@ namespace PawnDiary
             return group != null && group.combat;
         }
 
-        private static string ToneFor(DiaryInteractionGroupDef group)
+        // One tone wording for the group, or empty. When the group has a `tones` variant pool, a
+        // wording is picked deterministically by the event id so the same entry keeps the same tone
+        // across save/load and regeneration; the singular `tone` is the fallback. Seeding keeps the
+        // otherwise-impure pick out of the pure planner (RNG-free by contract).
+        private static string ToneFor(DiaryInteractionGroupDef group, string seed)
         {
-            return group != null ? group.tone : string.Empty;
+            if (group == null)
+            {
+                return string.Empty;
+            }
+
+            return PromptVariants.Pick(group.tones, group.tone, PromptVariants.HashSeed(seed));
         }
 
         private static DiaryInteractionGroupDef GroupForPayload(DiaryEventPayload payload, string classifierKey)

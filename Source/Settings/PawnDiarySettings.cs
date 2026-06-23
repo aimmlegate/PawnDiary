@@ -995,8 +995,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the effective prompt instruction for a group. Prompt wording is XML-only so
-        /// tuning stays in Defs instead of save settings.
+        /// Returns the effective prompt instruction for a group. When the group defines an
+        /// <see cref="DiaryInteractionGroupDef.instructions"/> variant pool, one wording is rolled
+        /// per call (capture-time, so the result is persisted on the DiaryEvent); otherwise the
+        /// singular <see cref="DiaryInteractionGroupDef.instruction"/> fallback is used. Prompt
+        /// wording is XML-only so tuning stays in Defs instead of save settings.
         /// </summary>
         public string InstructionForGroup(DiaryInteractionGroupDef group)
         {
@@ -1005,7 +1008,10 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return group.instruction;
+            // Rand is RimWorld's main-thread RNG; this is called only from the capture path that
+            // freezes the result into diaryEvent.instruction, so a fresh roll per event is correct.
+            // The settings preview uses EditableInstructionForGroup (singular) to avoid flicker.
+            return PromptVariants.Pick(group.instructions, group.instruction, Rand.Range(0, int.MaxValue));
         }
 
         /// <summary>

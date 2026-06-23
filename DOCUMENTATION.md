@@ -201,6 +201,24 @@ without editing C# or bloating the shared system prompt. The first-person system
 model to make supplied facts immediate through one sensory detail, one emotional beat, and one
 implied consequence or tension, while still forbidding invented facts.
 
+Each group may also carry **variant pools** (`instructions` / `tones` lists) so the same event type
+does not repeat verbatim every time. When a pool has any non-blank entry, one wording is selected
+per entry by the pure `PromptVariants.Pick` helper: the `instruction` variant rolls once at capture
+(and is persisted on the entry, so it never changes), while the `tone` variant is picked
+deterministically by event id so an entry keeps its tone across save/load and regeneration. The
+singular `instruction` / `tone` remain as fallback and settings-preview values. Weighting is
+XML-owned: list a wording more than once to make it more common. Do not leave blank `<li>` slots —
+selection skips whitespace entries, which would misalign the indexed DefInjected translation keys.
+
+Shipped pools are written for **small-model separability**: each `instructions` pool holds ~3
+*lens-distinct* variants — different sensory, narrative, or temporal entry points written in
+concrete nouns/verbs (e.g. "open on sound" / "open on the body" / "open on the room") rather than
+emotional synonyms. Small models collapse near-synonym affective phrasings ("tender warmth" vs
+"soft sweetness") to one output shape, but they do separate concrete directional cues, so
+distinctiveness is invested in the instruction lens rather than the tone. Tone pools are therefore
+left empty by default (one singular tone per group); the `tones` capability remains available for
+modders targeting larger models.
+
 Prompt Studio in mod settings can save per-event overrides for an existing
 `DiaryEventPromptDef.prompt` or `.enhancement`. Empty text or text matching the localized XML value
 clears the override, so XML remains the default catalog and new event types still start in Defs.
@@ -210,8 +228,8 @@ Layer boundaries:
 - Impure: event hooks, `DiaryGameComponent`, settings, XML lookup, localization, IO, RNG, save
   mutation, and transport.
 - Bridge: `DiaryPipelineAdapters`.
-- Pure: `DiaryPromptPlanner`, `PromptAssembler`, `DiaryContextFields`, `LlmResponseParser`,
-  `DiaryResponsePostprocessor`, and `DiaryTextDecorations`.
+- Pure: `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
+  `LlmResponseParser`, `DiaryResponsePostprocessor`, and `DiaryTextDecorations`.
 
 Personas come from `DiaryPersonaDef` plus settings overrides/custom rows. Weighted selection uses
 base weight, trait/backstory matches, creepjoiner bonuses, and duplicate penalties. Persona text is
@@ -382,7 +400,9 @@ labels) localizes through DefInjected.
 
 Keep DefInjected English stubs in sync for `DiaryInteractionGroupDef`, `DiaryEventPromptDef`,
 `DiaryPersonaDef`, and `DiaryPromptDef` when editing XML labels, instructions, tones, event prompts,
-persona rules, or shared prompts.
+persona rules, or shared prompts. Variant pools (`instructions` / `tones` lists) localize through
+indexed DefInjected keys — `<group.instructions.0>`, `<group.instructions.1>`, `<group.tones.0>`,
+etc. — one entry per list position; keep blanks out of the pool so indices stay aligned.
 
 Kept English intentionally: prompt schema labels (`event:`, `role:`, `thought=`), role/sentinel
 words (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), internal defNames/theme tags,
@@ -421,11 +441,13 @@ dotnet run --project tests/LlmResponseParserTests/LlmResponseParserTests.csproj
 dotnet run --project tests/DiaryPipelineTests/DiaryPipelineTests.csproj
 dotnet run --project tests/DiaryTextDecorationTests/DiaryTextDecorationTests.csproj
 dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.csproj
+dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 ```
 
 Pure test harnesses compile without RimWorld/Unity assemblies. `DiaryCapturePolicyTests` covers
 Event Catalog decisions and dispatch. `DiaryPipelineTests` covers prompt planning and domain
-recovery.
+recovery. `PromptVariantsTests` covers instruction/tone pool selection (fallback, determinism,
+negative-seed normalization, blank-skip).
 
 Prompt lab:
 

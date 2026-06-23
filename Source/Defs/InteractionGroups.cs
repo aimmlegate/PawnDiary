@@ -216,11 +216,25 @@ namespace PawnDiary
         // prompt: it tells the model what kind of moment this is.
         public string instruction;
 
+        // Optional variant pool for `instruction`. When this list has any non-blank entry, one
+        // wording is picked per captured event (see PromptVariants.Pick) so the Nth entry of a kind
+        // does not read identically to the first. The singular `instruction` above is the fallback
+        // used when the pool is absent/empty, and stays the value shown in the settings preview.
+        // Localized via DefInjected like `instruction`. IMPORTANT: do not leave blank <li> slots in
+        // this list — variant selection skips whitespace entries, which would misalign indexed
+        // DefInjected translation keys (<group.instructions.0>, .1, ...). Remove unused entries.
+        public List<string> instructions;
+
         // Optional emotional register for entries in this group (e.g. "with creeping dread"). This
         // is event-driven: a raid reads tense, a prank light. Sent to the LLM as a "tone:" field for
         // first-person entries; empty leaves the tone neutral.
         // Localized via DefInjected like `instruction` (it reaches the prompt), not Keyed.
         public string tone;
+
+        // Optional variant pool for `tone`, mirroring `instructions`. One wording is picked per
+        // prompt build, deterministically seeded by the event id so the same entry keeps the same
+        // tone across save/load and regeneration. Same no-blank-<li> rule as `instructions`.
+        public List<string> tones;
 
         // Optional stable UI color cue stored on new DiaryEvents. This is deliberately an internal
         // key (for example "combat" or "socialFight"), not translated player-facing text.

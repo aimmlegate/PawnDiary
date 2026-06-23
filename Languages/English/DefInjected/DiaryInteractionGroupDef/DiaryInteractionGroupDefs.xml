@@ -2,17 +2,22 @@
 <LanguageData>
   <romance.label>Romance &amp; dating</romance.label>
   <romance.instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</romance.instruction>
+  <romance.instructions.0>romance — write it through the body: the gap closing, a touch that hesitates, a hand pulled away</romance.instructions.0>
+  <romance.instructions.1>romance — write it through the thought behind the eyes: what they wanted to say, what they almost admitted</romance.instructions.1>
+  <romance.instructions.2>romance — write the half-second after: the held breath, the read of the other face, what now sits between them</romance.instructions.2>
   <romance.tone>with tender, fluttering warmth</romance.tone>
   <romance_relation.label>Romance milestones</romance_relation.label>
   <romance_relation.instruction>a relationship becoming official, formalized, or broken; center the change between the two people without treating it like a chat log</romance_relation.instruction>
   <romance_relation.tone>with intimate emotional weight</romance_relation.tone>
   <recruit.label>Recruitment &amp; prison</recruit.label>
   <recruit.instruction>the dance of captor and captive—building rapport, breaking will, or planting seeds of rebellion</recruit.instruction>
+  <recruit.tone>with measured, calculating tension</recruit.tone>
   <slavery.label>Slavery</slavery.label>
   <slavery.instruction>the weight of chains—suppression by an overseer or the first spark of defiance</slavery.instruction>
   <slavery.tone>with grim, heavy unease</slavery.tone>
   <conversion.label>Ideology &amp; conversion</conversion.label>
   <conversion.instruction>a battle of belief—conversion, counseling, preaching, or the pressure of faith on faith</conversion.instruction>
+  <conversion.tone>with fervent, pressing conviction</conversion.tone>
   <trial.label>Trials &amp; accusations</trial.label>
   <trial.instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</trial.instruction>
   <trial.tone>with tense, formal pressure</trial.tone>
@@ -21,9 +26,12 @@
   <strangechat.tone>with creeping dread; never resolve the wrongness</strangechat.tone>
   <anomaly.label>Anomaly &amp; dark</anomaly.label>
   <anomaly.instruction>something wrong—an unsettling exchange that leaves unease lingering. Don&apos;t explain it away</anomaly.instruction>
-  <anomaly.tone>with creeping dread; never resolve the wrongness</anomaly.tone>
+  <anomaly.tone>with crawling, skin-prickling wrongness; never explain it</anomaly.tone>
   <insults.label>Insults &amp; fights</insults.label>
   <insults.instruction>the sting of contempt—an insult, a slight, or fists about to fly</insults.instruction>
+  <insults.instructions.0>an insult or slight — write the words landing: what was said, the tone, the flinch it drew</insults.instructions.0>
+  <insults.instructions.1>an insult or slight — write it through the body: the flush, the clenched jaw, the half-step forward</insults.instructions.1>
+  <insults.instructions.2>an insult or slight — write the room: who heard it, who looked away, the silence that came after</insults.instructions.2>
   <insults.tone>with sharp, stinging heat</insults.tone>
   <ritual.label>Rituals &amp; speeches</ritual.label>
   <ritual.instruction>a solemn public moment—ritual, ceremony, or address. The colony watches</ritual.instruction>
@@ -36,8 +44,12 @@
   <heartfelt.tone>with soft, tender warmth</heartfelt.tone>
   <teaching.label>Teaching &amp; lessons</teaching.label>
   <teaching.instruction>a lesson passed down—an adult teaching or playing with a child</teaching.instruction>
+  <teaching.tone>with patient, quiet fondness</teaching.tone>
   <smalltalk.label>Small talk</smalltalk.label>
   <smalltalk.instruction>idle chatter—low-stakes small talk that fills the silence</smalltalk.instruction>
+  <smalltalk.instructions.0>small talk — write it through the trivial thing itself: the weather, the food, the half-formed opinion</smalltalk.instructions.0>
+  <smalltalk.instructions.1>small talk — write the thing underneath it: the ease, the awkwardness, the feeling never named out loud</smalltalk.instructions.1>
+  <smalltalk.instructions.2>small talk — write it as rhythm: the back-and-forth, the pauses, the nothing that passes the time</smalltalk.instructions.2>
   <smalltalk.tone>with light, easy familiarity</smalltalk.tone>
   <dayreflection.label>Day&apos;s reflection</dayreflection.label>
   <dayreflection.instruction>a quiet end-of-day reflection looking back on the whole day</dayreflection.instruction>
@@ -53,9 +65,15 @@
   <insultspree.tone>with sour, needling anger</insultspree.tone>
   <mentalbreak.label>Mental breaks</mentalbreak.label>
   <mentalbreak.instruction>the mind breaking—write the pawn&apos;s inner storm and what they did</mentalbreak.instruction>
+  <mentalbreak.instructions.0>a mental break — write the spiral: the thought that wouldn&apos;t stop, the logic that bent, the pressure that won</mentalbreak.instructions.0>
+  <mentalbreak.instructions.1>a mental break — write it through the body: the hands, the wandering feet, the thing done without deciding</mentalbreak.instructions.1>
+  <mentalbreak.instructions.2>a mental break — write the senses going wrong: noise too loud, edges too sharp, the world at a wrong angle</mentalbreak.instructions.2>
   <mentalbreak.tone>with frayed, overwhelmed intensity</mentalbreak.tone>
   <talecombat.label>Combat, injuries &amp; death</talecombat.label>
   <talecombat.instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</talecombat.instruction>
+  <talecombat.instructions.0>combat, injury, or rescue — open on sound: the alarm, the crack, the screaming, the silence after</talecombat.instructions.0>
+  <talecombat.instructions.1>combat, injury, or rescue — open on the body&apos;s impact: the blow, the heat, the wet, the limb that won&apos;t answer</talecombat.instructions.1>
+  <talecombat.instructions.2>combat, injury, or rescue — open on the other: the face across the gap, the hand that pulled you clear, the body that fell</talecombat.instructions.2>
   <talecombat.tone>with fear and visceral danger</talecombat.tone>
   <talehealth.label>Health &amp; medicine</talehealth.label>
   <talehealth.instruction>the body&apos;s fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</talehealth.instruction>
@@ -68,12 +86,13 @@
   <talequality.tone>with proud, bone-tired satisfaction</talequality.tone>
   <talework.label>Work &amp; achievements</talework.label>
   <talework.instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</talework.instruction>
+  <talework.tone>with steady, grounded pride</talework.tone>
   <taleanomaly.label>Anomaly horror</taleanomaly.label>
   <taleanomaly.instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</taleanomaly.instruction>
   <taleanomaly.tone>with dread and the uncanny; leave it unexplained</taleanomaly.tone>
   <taleincident.label>Raids, disasters &amp; colony events</taleincident.label>
   <taleincident.instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</taleincident.instruction>
-  <taleincident.tone>with shaken, crisis-pitched tension</taleincident.tone>
+  <taleincident.tone>with reeling, disaster-shocked tension</taleincident.tone>
   <talequiet.label>Quiet personal moments</talequiet.label>
   <talequiet.instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</talequiet.instruction>
   <talequiet.tone>with small, private quiet</talequiet.tone>
@@ -87,6 +106,7 @@
   <moodeventNegative.tone>with a weighed-down strain</moodeventNegative.tone>
   <moodeventMixed.label>Situationally mixed mood events</moodeventMixed.label>
   <moodeventMixed.instruction>a condition that touches each person differently—write how it feels to this pawn</moodeventMixed.instruction>
+  <moodeventMixed.tone>with an uneasy, conditional charge</moodeventMixed.tone>
   <moodeventOther.label>Passing moods</moodeventOther.label>
   <moodeventOther.instruction>a colony-wide event affecting the pawn&apos;s mood</moodeventOther.instruction>
   <thoughtPregnancyFamily.label>Pregnancy memories</thoughtPregnancyFamily.label>
@@ -94,10 +114,19 @@
   <thoughtPregnancyFamily.tone>with intimate, restrained weight</thoughtPregnancyFamily.tone>
   <thoughtPositive.label>Positive thoughts</thoughtPositive.label>
   <thoughtPositive.instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood effect: minor joys get a quiet note, strong ones get warmth and detail</thoughtPositive.instruction>
+  <thoughtPositive.instructions.0>a positive thought — write what sparked it: the small thing seen, heard, or remembered. Scale it to the mood lift</thoughtPositive.instructions.0>
+  <thoughtPositive.instructions.1>a positive thought — write the body easing: shoulders, breath, the half-smile nobody saw. Scale it to the mood lift</thoughtPositive.instructions.1>
+  <thoughtPositive.instructions.2>a positive thought — write the want it stirs: the pull to keep this, do it again, tell someone. Scale it to the mood lift</thoughtPositive.instructions.2>
+  <thoughtPositive.tone>with a small, brightening lift</thoughtPositive.tone>
   <thoughtNegative.label>Negative thoughts</thoughtNegative.label>
   <thoughtNegative.instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood effect: minor irritations get a passing mention, severe ones get raw emotion and weight</thoughtNegative.instruction>
+  <thoughtNegative.instructions.0>a negative thought — write what sparked it: the small sting, the line that repeated. Scale it to the mood hit</thoughtNegative.instructions.0>
+  <thoughtNegative.instructions.1>a negative thought — write the body tightening: jaw, gut, the restless hands. Scale it to the mood hit</thoughtNegative.instructions.1>
+  <thoughtNegative.instructions.2>a negative thought — write the loop it makes: coming back, growing, the angle it won&apos;t drop. Scale it to the mood hit</thoughtNegative.instructions.2>
+  <thoughtNegative.tone>with a low, nagging weight</thoughtNegative.tone>
   <thoughtOther.label>Passing thoughts</thoughtOther.label>
   <thoughtOther.instruction>a temporary thought that crossed the pawn&apos;s mind. Match the intensity to the mood effect</thoughtOther.instruction>
+  <thoughtOther.tone>with a passing, half-felt shift</thoughtOther.tone>
   <inspiration.label>Inspirations</inspiration.label>
   <inspiration.instruction>a sudden useful clarity—write the pawn&apos;s mind catching fire with purpose, grounded in the specific kind of inspiration and any reason the game gives</inspiration.instruction>
   <inspiration.tone>with bright, focused momentum</inspiration.tone>
@@ -112,6 +141,7 @@
   <workStrain.tone>with weary irritation</workStrain.tone>
   <workRoutine.label>Routine work</workRoutine.label>
   <workRoutine.instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</workRoutine.instruction>
+  <workRoutine.tone>with steady, matter-of-fact routine</workRoutine.tone>
   <hediffPregnancy.label>Pregnancy</hediffPregnancy.label>
   <hediffPregnancy.instruction>pregnancy as a life-changing beginning; write the pawn noticing the body, future, fear, hope, or uncertainty without assuming joy</hediffPregnancy.instruction>
   <hediffPregnancy.tone>with intimate uncertainty and quiet weight</hediffPregnancy.tone>
@@ -121,4 +151,10 @@
   <hediffMajorHealth.label>Major health changes</hediffMajorHealth.label>
   <hediffMajorHealth.instruction>a new or worsening health condition that stayed with the pawn through the day</hediffMajorHealth.instruction>
   <hediffMajorHealth.tone>with bodily unease and vulnerability</hediffMajorHealth.tone>
+  <raid.label>Raids</raid.label>
+  <raid.instruction>the colony under attack—violence, fear, and the desperate scramble to survive. Write what it felt like to live through it</raid.instruction>
+  <raid.instructions.0>the colony under attack — open on the space: the door, the cover, the gap they&apos;ll come through</raid.instructions.0>
+  <raid.instructions.1>the colony under attack — open on the body: the sprint, the breath, the fumble for the weapon</raid.instructions.1>
+  <raid.instructions.2>the colony under attack — open on the aftermath: the smoke, the blood on the floor, who isn&apos;t answering</raid.instructions.2>
+  <raid.tone>with shaken, crisis-pitched tension</raid.tone>
 </LanguageData>

@@ -6,6 +6,21 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Per-event-type prompt variation.** Interaction groups can now carry an `instructions` variant
+  pool (and, optionally, a `tones` pool) alongside the singular `instruction` / `tone`; one wording
+  is chosen per entry so the Nth raid no longer reads identically to the first. Instruction variants
+  roll once at capture and are persisted on the entry; tone variants (when used) pick
+  deterministically by event id. Seeded selection lives in a new pure helper
+  (`Source/Generation/PromptVariants.cs`, tested in `tests/PromptVariantsTests`), keeping the pure
+  prompt renderer and the prompt-lab golden harness untouched. Eight high-frequency groups (romance,
+  insults, small talk, mental breaks, combat/death, raids, positive/negative thoughts) ship 3
+  **lens-distinct** instruction variants each — different sensory/narrative/temporal entry points
+  (concrete nouns, not emotional synonyms) so small models actually separate them rather than
+  collapsing near-synonyms to one output. Tone pools are left empty by design: abstract tone
+  variants collapse on small models, so distinctiveness is invested in the instruction lenses
+  instead (the `tones` capability remains in the schema for modders targeting larger models). The
+  nine toneless groups gained distinct singular tones, and two duplicate tones across distinct event
+  types (raids vs. disasters; anomaly vs. strange chat) were differentiated.
 - **Save compatibility documented.** Add/remove safety is now explicit in player-facing metadata and
   persistence docs: Pawn Diary records only self-contained diary history, does not attach gameplay
   defs/components to pawns or maps, and calls out the old generated Social-log injection caveat.
