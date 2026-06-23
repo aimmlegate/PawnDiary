@@ -143,6 +143,8 @@ namespace PawnDiary
         public float temperature = 0.8f;
         // UI preference: when false, the compact API/model setup block is collapsed in mod settings.
         public bool showApiSettings = true;
+        // UI preference: when false, the compact Prompt Studio block is collapsed in mod settings.
+        public bool showPromptStudio = true;
         // Dev-mode UI preference: shows the per-pawn persona picker in the Diary inspector tab.
         public bool showPersonaSettings = false;
         // Dev-mode UI preference: shows raw/pending entries and the LLM prompt/status diagnostic block.
@@ -165,8 +167,8 @@ namespace PawnDiary
         // Master toggle for hediff-based prompt enchantments. When true, first-person diary prompts
         // may get one live health-condition hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
-        // Optional native PlayLog integration. When true, a successfully parsed initiator
-        // direct-speech block creates a fresh social-log row after the LLM result is ready.
+        // Disabled compatibility field. Old configs may have this set, but the Social-log injection
+        // path is hidden and forced off because RimWorld accepts the row without reliably showing it.
         public bool injectGeneratedSpeechToPlayLog;
         // Optional saved overrides for the shared system prompts. Blank means "use the XML default"
         // from DiaryPromptDef.xml, so XML remains the restore source and template/final instructions
@@ -229,6 +231,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref maxTokens, "maxTokens", 100);
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
             Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
+            Scribe_Values.Look(ref showPromptStudio, "showPromptStudio", true);
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
             Scribe_Values.Look(ref showGeneratingEntries, "showGeneratingEntries", false);
@@ -1057,6 +1060,7 @@ namespace PawnDiary
             maxConcurrentRequests = Mathf.Clamp(maxConcurrentRequests, 1, 16);
             maxTokens = Mathf.Clamp(maxTokens, 32, 2048);
             temperature = Mathf.Clamp(temperature, 0f, 2f);
+            injectGeneratedSpeechToPlayLog = false;
             systemPromptOverride = systemPromptOverride ?? string.Empty;
             systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;
             systemPromptNeutralOverride = systemPromptNeutralOverride ?? string.Empty;

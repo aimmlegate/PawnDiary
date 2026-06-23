@@ -757,7 +757,9 @@ namespace PawnDiary
                 diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildGenerationUrl(result.endpointUrl, result.apiMode), result.modelName);
             }
 
-            TryInjectGeneratedSpeechPlayLogEntry(diaryEvent, result);
+            // Generated speech Social-log injection is currently hidden/disabled. RimWorld accepts
+            // the synthetic PlayLog row, but it does not reliably appear in the Social tab UI.
+            // TryInjectGeneratedSpeechPlayLogEntry(diaryEvent, result);
 
             QueueRecipientAfterInitiatorResult(diaryEvent, result, successfulLane);
 

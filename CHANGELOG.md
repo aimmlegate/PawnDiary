@@ -6,6 +6,10 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-23
 
+- **Settings window compacted.** Request tuning now lives inside the expanded connection section,
+  visible helper paragraphs were removed, Prompt Studio is collapsible with system and event prompts
+  sharing one selector/editor block, persona presets now edit inside one highlighted block, and the
+  nonworking generated-speech Social-log injection toggle/path is hidden and forced off.
 - **Diary entry point moved to pawn selection.** The Diary inspect tab remains the same UI internally,
   but its inspector tab-strip button is hidden; selecting one eligible pawn or colonist corpse now
   shows a Diary command button with a custom journal-and-pen icon that opens or closes the same tab.

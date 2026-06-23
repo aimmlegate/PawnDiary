@@ -129,6 +129,7 @@
   <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-compatible</PawnDiary.Settings.ApiCompatibility.Chat>
   <PawnDiary.Settings.ApiCompatibility.Responses>OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
   <PawnDiary.Settings.ApiCompatibility.Ollama>Ollama native chat</PawnDiary.Settings.ApiCompatibility.Ollama>
+  <PawnDiary.Settings.RequestTuning>Request tuning</PawnDiary.Settings.RequestTuning>
   <PawnDiary.Settings.ReasoningEffort>Reasoning</PawnDiary.Settings.ReasoningEffort>
   <PawnDiary.Settings.ReasoningEffort.Default>API default</PawnDiary.Settings.ReasoningEffort.Default>
   <PawnDiary.Settings.ReasoningEffort.None>None</PawnDiary.Settings.ReasoningEffort.None>
@@ -176,21 +177,25 @@
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
+  <PawnDiary.Settings.ShowPromptStudio>Show prompts</PawnDiary.Settings.ShowPromptStudio>
+  <PawnDiary.Settings.HidePromptStudio>Hide prompts</PawnDiary.Settings.HidePromptStudio>
   <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts and per-event prompt guidance. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
   <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates and {1} event prompt types loaded; {2} event types customized in settings</PawnDiary.Settings.PromptStudioSummary>
   <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and persona catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
-  <PawnDiary.Settings.ResetEventPromptOverrides>Restore all event prompt defaults</PawnDiary.Settings.ResetEventPromptOverrides>
+  <PawnDiary.Settings.ResetEventPromptOverrides>Restore event defaults</PawnDiary.Settings.ResetEventPromptOverrides>
   <PawnDiary.Settings.EventPromptPickerHeader>Event prompt type</PawnDiary.Settings.EventPromptPickerHeader>
+  <PawnDiary.Settings.PromptTypePickerHeader>Prompt type</PawnDiary.Settings.PromptTypePickerHeader>
   <PawnDiary.Settings.EventPromptNoneLoaded>No event prompt defs loaded</PawnDiary.Settings.EventPromptNoneLoaded>
   <PawnDiary.Settings.EditingEventPrompt>Editing event prompt: {0}</PawnDiary.Settings.EditingEventPrompt>
   <PawnDiary.Settings.EventPromptPromptField>event prompt field</PawnDiary.Settings.EventPromptPromptField>
   <PawnDiary.Settings.EventPromptEnhancementField>event enhancement field</PawnDiary.Settings.EventPromptEnhancementField>
-  <PawnDiary.Settings.RestoreEventPromptDefault>Restore prompt default</PawnDiary.Settings.RestoreEventPromptDefault>
-  <PawnDiary.Settings.RestoreEventEnhancementDefault>Restore enhancement default</PawnDiary.Settings.RestoreEventEnhancementDefault>
+  <PawnDiary.Settings.RestoreEventPromptDefault>Restore prompt</PawnDiary.Settings.RestoreEventPromptDefault>
+  <PawnDiary.Settings.RestoreEventEnhancementDefault>Restore enhancement</PawnDiary.Settings.RestoreEventEnhancementDefault>
   <PawnDiary.Settings.SystemPromptDiary>Diary entries system prompt</PawnDiary.Settings.SystemPromptDiary>
   <PawnDiary.Settings.SystemPromptReflection>Day reflection system prompt</PawnDiary.Settings.SystemPromptReflection>
   <PawnDiary.Settings.SystemPromptNeutral>Neutral chronicle system prompt</PawnDiary.Settings.SystemPromptNeutral>
   <PawnDiary.Settings.SystemPromptTitle>Title generation system prompt</PawnDiary.Settings.SystemPromptTitle>
+  <PawnDiary.Settings.SystemPromptField>system prompt</PawnDiary.Settings.SystemPromptField>
   <PawnDiary.Settings.RestorePromptDefault>Restore XML default</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Customized from the XML default</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Using the XML default</PawnDiary.Settings.PromptStatusDefault>
@@ -201,14 +206,14 @@
   <PawnDiary.Settings.AddPersonaPreset>Add custom persona</PawnDiary.Settings.AddPersonaPreset>
   <PawnDiary.Settings.NewPersonaLabel>New Persona</PawnDiary.Settings.NewPersonaLabel>
   <PawnDiary.Settings.ResetPersonaPresets>Restore all persona defaults</PawnDiary.Settings.ResetPersonaPresets>
-  <PawnDiary.Settings.PersonaPickerHeader>Choose a persona to edit</PawnDiary.Settings.PersonaPickerHeader>
+  <PawnDiary.Settings.PersonaPickerHeader>Persona</PawnDiary.Settings.PersonaPickerHeader>
   <PawnDiary.Settings.EditingPersona>Editing persona: {0}</PawnDiary.Settings.EditingPersona>
   <PawnDiary.Settings.PersonaBadgeBuiltIn>Built-in preset</PawnDiary.Settings.PersonaBadgeBuiltIn>
   <PawnDiary.Settings.PersonaBadgeCustom>Custom preset</PawnDiary.Settings.PersonaBadgeCustom>
   <PawnDiary.Settings.PersonaLabel>Label</PawnDiary.Settings.PersonaLabel>
   <PawnDiary.Settings.PersonaRule>Voice rule (used as prompt persona text)</PawnDiary.Settings.PersonaRule>
   <PawnDiary.Settings.PersonaTags>Theme tags (first-roll weighting)</PawnDiary.Settings.PersonaTags>
-  <PawnDiary.Settings.RestorePersonaPreset>Restore this preset default</PawnDiary.Settings.RestorePersonaPreset>
+  <PawnDiary.Settings.RestorePersonaPreset>Restore preset</PawnDiary.Settings.RestorePersonaPreset>
   <PawnDiary.Settings.DeletePersonaPreset>Delete this custom persona</PawnDiary.Settings.DeletePersonaPreset>
   <PawnDiary.Settings.PersonaTag.grim>grim</PawnDiary.Settings.PersonaTag.grim>
   <PawnDiary.Settings.PersonaTag.warm>warm</PawnDiary.Settings.PersonaTag.warm>

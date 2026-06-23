@@ -230,9 +230,9 @@ malformed speech closers are repaired, unpaired speech markers are stripped to p
 `[[tag]]...[[/tag]]` markers are removed, and bracketed prose like `[[I should speak.]]` is
 flattened back into normal text.
 
-Generated speech Social-log injection is optional. When enabled, a completed initiator result with a
-valid speech block adds one fresh RimWorld Social-log row and stores the generated text by `LogID`.
-Known issue: the row is added to `Find.PlayLog` but may not appear in RimWorld's Social tab UI.
+Generated speech Social-log injection is currently disabled and hidden. The old compatibility field
+is still loaded for save safety, but settings force it off and the LLM-result call site is commented
+out because RimWorld accepted the synthetic row without reliably showing it in the Social tab UI.
 
 Title generation defaults on. Successful main entries queue a capped title follow-up pinned to the
 successful lane when possible.
@@ -241,8 +241,8 @@ successful lane when possible.
 
 ## 8. Settings And UI
 
-Core settings include API lanes, timeout, max concurrency, max tokens, temperature, title generation,
-atmospheric formatting, prompt enchantments, generated-speech injection, work/social generation
+Core settings include API lanes, request tuning (timeout, max concurrency, max tokens, and
+temperature), title generation, atmospheric formatting, prompt enchantments, work/social generation
 weights, system prompt overrides, per-event prompt/enhancement overrides, XML-backed event filters,
 and persona presets. RimWorld dev mode also reveals prompt test mode in mod settings: real gameplay
 events still assemble their system and user prompts, but the generation queue marks the POV as
@@ -251,9 +251,15 @@ dev mode is on so prompt formatting can be checked from live events without prod
 diary text.
 
 API lanes support OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat,
-including model fetch/pick, per-row connection tests, Responses reasoning effort, and Ollama
-thinking output. Endpoint URLs normalize on load/save, not every settings draw, so users can edit or
-clear the active text field without it being rewritten mid-typing. Logs strip query strings.
+including model fetch/pick, per-row connection tests, Responses reasoning effort, Ollama thinking
+output, and the shared request-tuning block shown inside the expanded connection section. Endpoint
+URLs normalize on load/save, not every settings draw, so users can edit or clear the active text
+field without it being rewritten mid-typing. Logs strip query strings.
+
+Prompt Studio is a collapsible settings section. Its selector contains both shared system prompts
+and `DiaryEventPromptDef` event prompt types, and the selected prompt's editor appears in the same
+highlighted block as the selector. Persona presets likewise use one highlighted block for summary,
+add/reset actions, persona selection, rule editing, tag toggles, and the selected preset action.
 
 The Diary surface is still an inspect tab internally, but its normal inspector tab-strip button is
 hidden. Selecting one eligible colonist pawn, or a colonist corpse, adds a **Diary** command button
