@@ -224,7 +224,11 @@ guidance.
 
 Direct speech is allowed only for initiator/single-POV interaction prompts, using one closed
 `[[speech]]...[[/speech]]` block when source notes support it. Recipient follow-ups forbid speech
-blocks and receive hidden initiator continuity.
+blocks and receive hidden initiator continuity. Before generated text is saved, response cleanup
+preserves complete speech blocks but sanitizes hallucinated bracket tags from smaller models:
+malformed speech closers are repaired, unpaired speech markers are stripped to prose, unknown
+`[[tag]]...[[/tag]]` markers are removed, and bracketed prose like `[[I should speak.]]` is
+flattened back into normal text.
 
 Generated speech Social-log injection is optional. When enabled, a completed initiator result with a
 valid speech block adds one fresh RimWorld Social-log row and stores the generated text by `LogID`.

@@ -380,7 +380,7 @@ namespace DiaryPipelineTests
                 LlmResponseParser.CleanGeneratedText("It was calm. Then suddenly the", 200, false));
 
             AssertEqual("closed speech before truncated prose is not a cut point",
-                "[[speech]]Hi[[/speech]] He waved [[speech>",
+                "[[speech]]Hi[[/speech]] He waved",
                 LlmResponseParser.CleanGeneratedText("[[speech]]Hi[[/speech]] He waved [[speech>", 200, false));
         }
 

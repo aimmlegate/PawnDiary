@@ -106,13 +106,15 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Applies local response cleanup before text is saved: length cap first, then trailing
-        /// fragment removal for diary/note text. Title requests skip sentence-fragment trimming.
+        /// Applies local response cleanup before text is saved: length cap first, marker/tag
+        /// sanitizing second, then trailing fragment removal for diary/note text. Title requests
+        /// skip sentence-fragment trimming.
         /// </summary>
         public static string CleanGeneratedText(string text, int maxTokens, bool isTitleRequest)
         {
             string capped = TrimToMaxTokens(text, maxTokens);
-            return isTitleRequest ? capped : TrimTrailingIncompleteSentence(capped);
+            string sanitized = SanitizeGeneratedMarkup(capped);
+            return isTitleRequest ? sanitized : TrimTrailingIncompleteSentence(sanitized);
         }
 
         /// <summary>Supports the standard choices[0].message.content chat-completions shape.</summary>
@@ -698,6 +700,25 @@ namespace PawnDiary
             return value.IndexOf(needle, startIndex, StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool StartsWithOrdinalIgnoreCase(string value, int startIndex, string needle)
+        {
+            return value != null
+                && needle != null
+                && startIndex >= 0
+                && startIndex + needle.Length <= value.Length
+                && string.Compare(value, startIndex, needle, 0, needle.Length, StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
+        private static bool IsPrecededBy(string value, int index, char expected)
+        {
+            return index > 0 && value[index - 1] == expected;
+        }
+
+        private static bool IsFollowedBy(string value, int index, char expected)
+        {
+            return index < value.Length && value[index] == expected;
+        }
+
         private static string[] ReasoningFenceLabels()
         {
             return new[] { "think", "thinking", "reasoning", "analysis", "chain-of-thought", "chain of thought", "cot" };
@@ -720,6 +741,271 @@ namespace PawnDiary
                 text = text.Replace("\n\n\n", "\n\n");
             }
 
+            return text;
+        }
+
+        /// <summary>
+        /// Removes model-hallucinated bracket tags while preserving the one marker contract the UI
+        /// understands: a complete [[speech]]...[[/speech]] block. Small local models sometimes copy
+        /// the speech-marker shape for thoughts, stage directions, or malformed closing tags; saved
+        /// diary text should stay readable and parser-safe even when they do.
+        /// </summary>
+        private static string SanitizeGeneratedMarkup(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            string normalized = NormalizeMalformedSpeechMarkers(text);
+            string sanitized = SanitizeGeneratedTagMarkers(normalized, true);
+            return CompactGeneratedMarkupWhitespace(sanitized).Trim();
+        }
+
+        private static string NormalizeMalformedSpeechMarkers(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (StartsWithOrdinalIgnoreCase(text, i, "[[/speech]")
+                    && !StartsWithOrdinalIgnoreCase(text, i, SpeechCloseMarker))
+                {
+                    builder.Append(SpeechCloseMarker);
+                    i += "[[/speech]".Length;
+                    continue;
+                }
+
+                if (StartsWithOrdinalIgnoreCase(text, i, "[/speech]]")
+                    && !IsPrecededBy(text, i, '['))
+                {
+                    builder.Append(SpeechCloseMarker);
+                    i += "[/speech]]".Length;
+                    continue;
+                }
+
+                if (StartsWithOrdinalIgnoreCase(text, i, "[/speech]")
+                    && !IsPrecededBy(text, i, '[')
+                    && !IsFollowedBy(text, i + "[/speech]".Length, ']'))
+                {
+                    builder.Append(SpeechCloseMarker);
+                    i += "[/speech]".Length;
+                    continue;
+                }
+
+                if (StartsWithOrdinalIgnoreCase(text, i, "[[speech]")
+                    && !StartsWithOrdinalIgnoreCase(text, i, SpeechOpenMarker))
+                {
+                    builder.Append(SpeechOpenMarker);
+                    i += "[[speech]".Length;
+                    continue;
+                }
+
+                if (StartsWithOrdinalIgnoreCase(text, i, "[speech]]")
+                    && !IsPrecededBy(text, i, '['))
+                {
+                    builder.Append(SpeechOpenMarker);
+                    i += "[speech]]".Length;
+                    continue;
+                }
+
+                if (StartsWithOrdinalIgnoreCase(text, i, "[speech]")
+                    && !IsPrecededBy(text, i, '[')
+                    && !IsFollowedBy(text, i + "[speech]".Length, ']'))
+                {
+                    builder.Append(SpeechOpenMarker);
+                    i += "[speech]".Length;
+                    continue;
+                }
+
+                builder.Append(text[i]);
+                i++;
+            }
+
+            return builder.ToString();
+        }
+
+        private static string SanitizeGeneratedTagMarkers(string text, bool preserveSpeechPairs)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (StartsWithOrdinalIgnoreCase(text, i, SpeechOpenMarker))
+                {
+                    if (preserveSpeechPairs)
+                    {
+                        int contentStart = i + SpeechOpenMarker.Length;
+                        int close = IndexOfOrdinalIgnoreCase(text, SpeechCloseMarker, contentStart);
+                        if (close >= 0)
+                        {
+                            builder.Append(SpeechOpenMarker);
+                            builder.Append(SanitizeGeneratedTagMarkers(text.Substring(contentStart, close - contentStart), false));
+                            builder.Append(SpeechCloseMarker);
+                            i = close + SpeechCloseMarker.Length;
+                            continue;
+                        }
+                    }
+
+                    i += SpeechOpenMarker.Length;
+                    continue;
+                }
+
+                if (StartsWithOrdinalIgnoreCase(text, i, SpeechCloseMarker))
+                {
+                    i += SpeechCloseMarker.Length;
+                    continue;
+                }
+
+                int malformedSpeechMarkerLength = MalformedSpeechMarkerLength(text, i);
+                if (malformedSpeechMarkerLength > 0)
+                {
+                    i += malformedSpeechMarkerLength;
+                    continue;
+                }
+
+                if (i + 1 < text.Length && text[i] == '[' && text[i + 1] == '[')
+                {
+                    int close = text.IndexOf("]]", i + 2, StringComparison.Ordinal);
+                    if (close >= 0)
+                    {
+                        string inner = text.Substring(i + 2, close - i - 2).Trim();
+                        if (!IsLowercaseTagName(inner))
+                        {
+                            builder.Append(inner);
+                        }
+
+                        i = close + 2;
+                        continue;
+                    }
+                }
+
+                builder.Append(text[i]);
+                i++;
+            }
+
+            return builder.ToString();
+        }
+
+        private static int MalformedSpeechMarkerLength(string text, int index)
+        {
+            int length = MalformedMarkerLengthForPrefix(text, index, "[[speech");
+            if (length > 0)
+            {
+                return length;
+            }
+
+            length = MalformedMarkerLengthForPrefix(text, index, "[[/speech");
+            if (length > 0)
+            {
+                return length;
+            }
+
+            length = MalformedMarkerLengthForPrefix(text, index, "[speech");
+            if (length > 0 && !IsPrecededBy(text, index, '['))
+            {
+                return length;
+            }
+
+            length = MalformedMarkerLengthForPrefix(text, index, "[/speech");
+            return length > 0 && !IsPrecededBy(text, index, '[') ? length : 0;
+        }
+
+        private static int MalformedMarkerLengthForPrefix(string text, int index, string prefix)
+        {
+            if (!StartsWithOrdinalIgnoreCase(text, index, prefix))
+            {
+                return 0;
+            }
+
+            int afterPrefix = index + prefix.Length;
+            if (afterPrefix >= text.Length)
+            {
+                return prefix.Length;
+            }
+
+            char next = text[afterPrefix];
+            if (next != ']' && next != '>' && !char.IsWhiteSpace(next))
+            {
+                return 0;
+            }
+
+            int markerEnd = afterPrefix;
+            while (markerEnd < text.Length
+                && !char.IsWhiteSpace(text[markerEnd])
+                && text[markerEnd] != '[')
+            {
+                if (text[markerEnd] == ']' || text[markerEnd] == '>')
+                {
+                    return markerEnd - index + 1;
+                }
+
+                markerEnd++;
+            }
+
+            return afterPrefix - index;
+        }
+
+        private static bool IsLowercaseTagName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            string name = value.Trim();
+            int start = name[0] == '/' ? 1 : 0;
+            if (start >= name.Length || name.Length - start > 24)
+            {
+                return false;
+            }
+
+            if (!IsAsciiLower(name[start]))
+            {
+                return false;
+            }
+
+            for (int i = start + 1; i < name.Length; i++)
+            {
+                char c = name[i];
+                if (!IsAsciiLower(c) && !char.IsDigit(c) && c != '-' && c != '_')
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsAsciiLower(char c)
+        {
+            return c >= 'a' && c <= 'z';
+        }
+
+        private static string CompactGeneratedMarkupWhitespace(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            while (text.Contains("  "))
+            {
+                text = text.Replace("  ", " ");
+            }
+
+            text = text.Replace(" \n", "\n");
+            text = text.Replace("\n ", "\n");
             return text;
         }
 

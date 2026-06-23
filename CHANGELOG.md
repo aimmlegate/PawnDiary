@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-23
 
+- **Generated tag sanitizer added.** Saved LLM output now preserves valid
+  `[[speech]]...[[/speech]]` blocks while repairing malformed speech closers and stripping or
+  flattening hallucinated bracket tags from small local models before diary text is persisted.
 - **Prompt lab coverage catches XML prompt drift.** Static arrival/death fixtures now render their
   `DiaryEventPromptDef` prompt/enhancement fields, generated contexts cover Romance/Raid/Quest
   markers, and `npm test` checks all XML template/event prompt types plus all-variants pass coverage.

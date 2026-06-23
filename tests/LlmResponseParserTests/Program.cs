@@ -16,6 +16,7 @@ namespace LlmResponseParserTests
             TestReasoningScrub();
             TestReasoningScrubNoCloseTag();
             TestGeneratedTextCleanup();
+            TestGeneratedTagSanitizer();
             TestMiniJsonRejectsMalformedNumbers();
             TestMiniJsonRejectsExcessiveDepth();
 
@@ -211,6 +212,39 @@ namespace LlmResponseParserTests
                 "cap without sentence boundary",
                 "One two...",
                 LlmResponseParser.CleanGeneratedText("One two three four", 2, false));
+        }
+
+        private static void TestGeneratedTagSanitizer()
+        {
+            AssertEqual(
+                "valid speech survives sanitizer",
+                "I said it.\n[[speech]]Enough.[[/speech]]",
+                LlmResponseParser.CleanGeneratedText("I said it.\n[[speech]]Enough.[[/speech]]", 50, false));
+
+            AssertEqual(
+                "malformed speech close repaired",
+                "[[speech]]We are doing this now.[[/speech]]",
+                LlmResponseParser.CleanGeneratedText("[[speech]]We are doing this now.[/speech]]", 50, false));
+
+            AssertEqual(
+                "bracketed prose flattened",
+                "I froze. You do not belong here.",
+                LlmResponseParser.CleanGeneratedText("I froze. [[You do not belong here.]]", 50, false));
+
+            AssertEqual(
+                "unknown paired tag markers stripped",
+                "The plan was first.",
+                LlmResponseParser.CleanGeneratedText("The plan was [[work]]first[[/work]].", 50, false));
+
+            AssertEqual(
+                "unpaired speech marker stripped to prose",
+                "I spoke. Enough.",
+                LlmResponseParser.CleanGeneratedText("I spoke. [[speech]]Enough.", 50, false));
+
+            AssertEqual(
+                "title sanitizes bracket tags",
+                "The Storm Watch",
+                LlmResponseParser.CleanGeneratedText("[[The Storm Watch]]", 20, true));
         }
 
         private static void TestMiniJsonRejectsMalformedNumbers()
