@@ -1,6 +1,6 @@
 // Mod entry point. [StaticConstructorOnStartup] makes RimWorld run this class's static
 // constructor once at game load (there is no main()). We use it to apply our Harmony patches and
-// inject the Diary inspector tab after the vanilla Needs tab on every humanlike pawn.
+// register the hidden Diary inspector tab after the vanilla Needs tab on every humanlike pawn.
 // See AGENTS.md ("[StaticConstructorOnStartup]").
 using System;
 using System.Collections.Generic;
@@ -16,7 +16,7 @@ namespace PawnDiary
         static DiaryModStartup()
         {
             // Apply all attribute-tagged ([HarmonyPatch]) patches. Wrapped so one failing patch
-            // can't abort this static constructor (which would also skip the tab injection below).
+            // can't abort this static constructor (which would also skip the tab registration below).
             Harmony harmony = new Harmony("aimml.pawndiary");
             try
             {
@@ -37,10 +37,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Injects the Diary inspector tab into every humanlike pawn's inspector, placing it after Needs.
+        /// Registers the hidden Diary inspector tab for every humanlike pawn, placing it after Needs.
         /// </summary>
-        // Add the Diary inspector tab to every humanlike pawn. If another path already inserted it,
-        // remove that earlier slot first so the tab ends up consistently after the vanilla Needs tab.
+        // Add the Diary inspector tab to every humanlike pawn. It is hidden from the tab strip by
+        // ITab_Pawn_Diary.Hidden, but must stay registered so command buttons and diary links can
+        // open it through RimWorld's inspect pane. If another path already inserted it, remove that
+        // earlier slot first so the tab ends up consistently after the vanilla Needs tab.
         private static void InjectDiaryTab()
         {
             foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)

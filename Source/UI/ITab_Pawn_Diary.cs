@@ -1,6 +1,7 @@
-// The inspector tab (UI) that renders the selected pawn's finished diary entries.
+// The hidden inspector tab (UI) that renders the selected pawn's finished diary entries.
 // RimWorld calls FillTab() to draw it using immediate-mode GUI (the whole tab is re-emitted each
-// frame). It reads entries via DiaryGameComponent.EntriesFor. See AGENTS.md ("lifecycle").
+// frame) after a pawn/corpse command opens it. It reads entries via DiaryGameComponent.EntriesFor.
+// See AGENTS.md ("lifecycle").
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +11,8 @@ using Verse;
 
 namespace PawnDiary
 {
-    // Inspector tab that shows the selected pawn's diary. Replaces the old standalone
-    // Diary window/gizmo and is injected immediately after the vanilla Needs tab at startup.
+    // Inspector tab that shows the selected pawn's diary. It stays registered with the inspect pane
+    // so RimWorld can host it, but the visible entry point is a pawn/corpse command button.
     /// <summary>
     /// Partial implementation of the pawn Diary inspector tab.
     /// </summary>
@@ -183,6 +184,23 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Hides the Diary tab button from RimWorld's normal inspector tab strip.
+        /// The tab remains registered so command buttons and Social-log links can open this same UI.
+        /// </summary>
+        public override bool Hidden
+        {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// True when the pawn should have diary UI access, matching the tab's existing visibility rule.
+        /// </summary>
+        public static bool CanShowDiaryFor(Pawn pawn)
+        {
+            return pawn != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike && pawn.IsColonist;
+        }
+
+        /// <summary>
         /// Resolves the pawn to display a diary for, handling both selected colonists
         /// and selected corpses of colonists.
         /// </summary>
@@ -195,7 +213,7 @@ namespace PawnDiary
                 pawn = corpse?.InnerPawn;
             }
 
-            if (pawn == null || pawn.RaceProps == null || !pawn.RaceProps.Humanlike || !pawn.IsColonist)
+            if (!CanShowDiaryFor(pawn))
             {
                 return null;
             }

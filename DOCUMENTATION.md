@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-22 (raid + quest event sources)_
+_Last updated: 2026-06-23 (diary command entry point)_
 
 ---
 
@@ -45,7 +45,7 @@ PawnDiary/
 |   |-- Patches/                   Harmony startup and hooks
 |   |-- Pipeline/                  pure prompt/response/decor contracts
 |   |-- Settings/                  settings data and settings UI
-|   |-- UI/                        Diary inspector tab
+|   |-- UI/                        Hidden Diary inspector tab and command-opened UI
 |   `-- Util/                      MiniJson
 |-- prompt-lab/                    Node prompt-testing harness
 |-- tests/                         standalone pure-helper tests
@@ -57,7 +57,7 @@ Key files:
 
 | File | Role |
 |---|---|
-| `DiaryModStartup.cs` / `DiaryPatches.cs` | Startup, tab injection, Harmony hooks. |
+| `DiaryModStartup.cs` / `DiaryPatches.cs` | Startup, hidden tab registration, Harmony hooks. |
 | `Source/Capture/*` | Event Catalog: `DiaryEventType`, `XxxEventData`, `XxxEventSpec`, and `DiaryEventCatalog`. |
 | `DiaryGameComponent*.cs` | Recording, batching, scans, save/load, lookup indexes, and generation queueing. |
 | `DiaryEvent.cs` / `PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
@@ -67,7 +67,7 @@ Key files:
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, persona, UI, and display policy. |
 | `LlmClient.cs` / `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data and settings UI. |
-| `ITab_Pawn_Diary*.cs` / `DiaryTextFormat.cs` | Diary UI, cards, paging, debug controls, and safe rich-text formatting. |
+| `ITab_Pawn_Diary*.cs` / `DiaryTextFormat.cs` | Hidden Diary inspect tab, cards, paging, debug controls, and safe rich-text formatting. |
 | `MiniJson.cs` | Runtime-safe JSON parser. Do not replace with unsupported dependencies. |
 
 ---
@@ -255,7 +255,12 @@ including model fetch/pick, per-row connection tests, Responses reasoning effort
 thinking output. Endpoint URLs normalize on load/save, not every settings draw, so users can edit or
 clear the active text field without it being rewritten mid-typing. Logs strip query strings.
 
-The Diary tab shows completed pages in production. Dev mode adds generation enablement, persona
+The Diary surface is still an inspect tab internally, but its normal inspector tab-strip button is
+hidden. Selecting one eligible colonist pawn, or a colonist corpse, adds a **Diary** command button
+that opens or closes that same tab. Social-log diary links and linked-POV diary navigation also
+continue to open the same hidden tab.
+
+The Diary UI shows completed pages in production. Dev mode adds generation enablement, persona
 picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient
 formatting preview rows for prose, markdown, speech, combat/social-fight/mental/dark/death
 colors, linked cards, writing placeholders, title-pending animation, and atmosphere checks, plus
