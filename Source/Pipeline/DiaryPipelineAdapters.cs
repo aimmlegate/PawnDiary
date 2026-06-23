@@ -90,6 +90,12 @@ namespace PawnDiary
             string eventPromptKey = EventPromptKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
             DiaryEventPromptDef eventPrompt = DiaryEventPrompts.ForKey(eventPromptKey);
+            string eventPromptText = PawnDiaryMod.Settings == null
+                ? eventPrompt?.prompt
+                : PawnDiaryMod.Settings.EffectiveEventPrompt(eventPromptKey, eventPrompt?.prompt);
+            string eventEnhancementText = PawnDiaryMod.Settings == null
+                ? eventPrompt?.enhancement
+                : PawnDiaryMod.Settings.EffectiveEventEnhancement(eventPromptKey, eventPrompt?.enhancement);
             DiaryPolicySnapshot snapshot = new DiaryPolicySnapshot
             {
                 group = new DiaryGroupPolicy
@@ -98,8 +104,8 @@ namespace PawnDiary
                     domain = payload?.domain,
                     classifierKey = classifierKey,
                     eventPromptKey = eventPromptKey,
-                    eventPrompt = eventPrompt?.prompt,
-                    eventEnhancement = eventPrompt?.enhancement,
+                    eventPrompt = eventPromptText,
+                    eventEnhancement = eventEnhancementText,
                     important = payload?.display == null || payload.display.important,
                     combat = GroupCombat(payload, group),
                     colorCue = payload?.display?.colorCue,

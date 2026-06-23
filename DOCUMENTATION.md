@@ -201,6 +201,10 @@ without editing C# or bloating the shared system prompt. The first-person system
 model to make supplied facts immediate through one sensory detail, one emotional beat, and one
 implied consequence or tension, while still forbidding invented facts.
 
+Prompt Studio in mod settings can save per-event overrides for an existing
+`DiaryEventPromptDef.prompt` or `.enhancement`. Empty text or text matching the localized XML value
+clears the override, so XML remains the default catalog and new event types still start in Defs.
+
 Layer boundaries:
 
 - Impure: event hooks, `DiaryGameComponent`, settings, XML lookup, localization, IO, RNG, save
@@ -235,11 +239,12 @@ successful lane when possible.
 
 Core settings include API lanes, timeout, max concurrency, max tokens, temperature, title generation,
 atmospheric formatting, prompt enchantments, generated-speech injection, work/social generation
-weights, system prompt overrides, XML-backed event filters, and persona presets. RimWorld dev mode
-also reveals prompt test mode in mod settings: real gameplay events still assemble their system and
-user prompts, but the generation queue marks the POV as prompt-only and never calls the LLM client.
-Those prompt-only cards are shown in the Diary tab while dev mode is on so prompt formatting can be
-checked from live events without producing generated diary text.
+weights, system prompt overrides, per-event prompt/enhancement overrides, XML-backed event filters,
+and persona presets. RimWorld dev mode also reveals prompt test mode in mod settings: real gameplay
+events still assemble their system and user prompts, but the generation queue marks the POV as
+prompt-only and never calls the LLM client. Those prompt-only cards are shown in the Diary tab while
+dev mode is on so prompt formatting can be checked from live events without producing generated
+diary text.
 
 API lanes support OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat,
 including model fetch/pick, per-row connection tests, Responses reasoning effort, and Ollama

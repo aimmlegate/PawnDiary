@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-23
 
+- **Prompt Studio can edit event-source guidance.** Mod settings now expose each
+  `DiaryEventPromptDef` event type through a selector and save per-event `prompt` / `enhancement`
+  overrides while preserving XML as the default catalog.
 - **Review hardening pass.** Fixed save/load day-reflection dedup, settings endpoint editing, capped
   HTTP response reads before JSON parsing, avoided hot-path PlayLog grammar rendering before capture
   eligibility, added one-time reflection warnings, made diary lookups tolerate null records, throttled

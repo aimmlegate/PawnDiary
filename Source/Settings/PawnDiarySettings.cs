@@ -1,6 +1,6 @@
-// All mod settings (connection, generation options, system prompt overrides, per-group enable
-// overrides, and persona edits) plus value clamping and save/load. Prompt templates, signal
-// policies, and per-group instructions are XML Defs, not save settings.
+// All mod settings (connection, generation options, prompt overrides, per-group enable overrides,
+// and persona edits) plus value clamping and save/load. Prompt templates, signal policies, and
+// per-group instructions are XML Defs, not save settings.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -175,6 +175,11 @@ namespace PawnDiary
         public string systemPromptReflectionOverride = string.Empty;
         public string systemPromptNeutralOverride = string.Empty;
         public string titleSystemPromptOverride = string.Empty;
+        // Optional saved overrides for the broad event-source prompt fields. Keys are
+        // DiaryEventPromptDef.eventType values such as "Interaction" or "Raid"; blank means
+        // "use the XML default" so Defs stay the canonical prompt catalog.
+        public Dictionary<string, string> eventPromptOverrides = new Dictionary<string, string>();
+        public Dictionary<string, string> eventEnhancementOverrides = new Dictionary<string, string>();
         // Player-facing multipliers for the two random entry gates:
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
@@ -191,6 +196,10 @@ namespace PawnDiary
         // serialization cannot handle Dictionary directly).
         private List<string> groupEnabledKeys;
         private List<bool> groupEnabledValues;
+        private List<string> eventPromptOverrideKeys;
+        private List<string> eventPromptOverrideValues;
+        private List<string> eventEnhancementOverrideKeys;
+        private List<string> eventEnhancementOverrideValues;
 
         // Default local LLM server endpoint (LM Studio/OpenAI-compatible local servers).
         public const string DefaultEndpointUrl = "http://localhost:1234/v1";
@@ -232,6 +241,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref systemPromptReflectionOverride, "systemPromptReflectionOverride", string.Empty);
             Scribe_Values.Look(ref systemPromptNeutralOverride, "systemPromptNeutralOverride", string.Empty);
             Scribe_Values.Look(ref titleSystemPromptOverride, "titleSystemPromptOverride", string.Empty);
+            Scribe_Collections.Look(ref eventPromptOverrides, "eventPromptOverrides", LookMode.Value, LookMode.Value, ref eventPromptOverrideKeys, ref eventPromptOverrideValues);
+            Scribe_Collections.Look(ref eventEnhancementOverrides, "eventEnhancementOverrides", LookMode.Value, LookMode.Value, ref eventEnhancementOverrideKeys, ref eventEnhancementOverrideValues);
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
@@ -369,6 +380,223 @@ namespace PawnDiary
             }
 
             return value;
+        }
+
+        // ---- Event prompt helpers ----
+
+        /// <summary>Returns the event-type prompt, using a saved override when present.</summary>
+        public string EffectiveEventPrompt(string eventType, string xmlDefault)
+        {
+            EnsureEventPromptDictionaries();
+            return PromptOverrideOrDefault(EventOverrideFor(eventPromptOverrides, eventType), xmlDefault);
+        }
+
+        /// <summary>Returns the event-type enhancement, using a saved override when present.</summary>
+        public string EffectiveEventEnhancement(string eventType, string xmlDefault)
+        {
+            EnsureEventPromptDictionaries();
+            return PromptOverrideOrDefault(EventOverrideFor(eventEnhancementOverrides, eventType), xmlDefault);
+        }
+
+        /// <summary>Stores or clears the prompt override for one broad event source.</summary>
+        public void SetEventPromptOverride(string eventType, string prompt, string xmlDefault)
+        {
+            EnsureEventPromptDictionaries();
+            SetEventOverride(eventPromptOverrides, eventType, NormalizePromptOverride(prompt, xmlDefault));
+        }
+
+        /// <summary>Stores or clears the enhancement override for one broad event source.</summary>
+        public void SetEventEnhancementOverride(string eventType, string enhancement, string xmlDefault)
+        {
+            EnsureEventPromptDictionaries();
+            SetEventOverride(eventEnhancementOverrides, eventType, NormalizePromptOverride(enhancement, xmlDefault));
+        }
+
+        /// <summary>Clears one event prompt override so XML supplies the text again.</summary>
+        public void ResetEventPromptOverride(string eventType)
+        {
+            EnsureEventPromptDictionaries();
+            RemoveEventOverride(eventPromptOverrides, eventType);
+        }
+
+        /// <summary>Clears one event enhancement override so XML supplies the text again.</summary>
+        public void ResetEventEnhancementOverride(string eventType)
+        {
+            EnsureEventPromptDictionaries();
+            RemoveEventOverride(eventEnhancementOverrides, eventType);
+        }
+
+        /// <summary>Clears both saved event prompt dictionaries.</summary>
+        public void ResetAllEventPromptOverrides()
+        {
+            EnsureEventPromptDictionaries();
+            eventPromptOverrides.Clear();
+            eventEnhancementOverrides.Clear();
+        }
+
+        /// <summary>True when the event prompt text differs from its XML default.</summary>
+        public bool HasEventPromptOverride(string eventType)
+        {
+            EnsureEventPromptDictionaries();
+            return !string.IsNullOrWhiteSpace(EventOverrideFor(eventPromptOverrides, eventType));
+        }
+
+        /// <summary>True when the event enhancement text differs from its XML default.</summary>
+        public bool HasEventEnhancementOverride(string eventType)
+        {
+            EnsureEventPromptDictionaries();
+            return !string.IsNullOrWhiteSpace(EventOverrideFor(eventEnhancementOverrides, eventType));
+        }
+
+        /// <summary>Counts event types with either prompt or enhancement text customized.</summary>
+        public int CustomizedEventPromptCount()
+        {
+            EnsureEventPromptDictionaries();
+            HashSet<string> keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            AddOverrideKeys(keys, eventPromptOverrides);
+            AddOverrideKeys(keys, eventEnhancementOverrides);
+            return keys.Count;
+        }
+
+        private void EnsureEventPromptDictionaries()
+        {
+            if (eventPromptOverrides == null)
+            {
+                eventPromptOverrides = new Dictionary<string, string>();
+            }
+
+            if (eventEnhancementOverrides == null)
+            {
+                eventEnhancementOverrides = new Dictionary<string, string>();
+            }
+        }
+
+        private string EventOverrideFor(Dictionary<string, string> overrides, string eventType)
+        {
+            EnsureEventPromptDictionaries();
+            string key = EventPromptKey(eventType);
+            if (string.IsNullOrEmpty(key) || overrides == null)
+            {
+                return string.Empty;
+            }
+
+            string value;
+            if (overrides.TryGetValue(key, out value))
+            {
+                return value ?? string.Empty;
+            }
+
+            foreach (KeyValuePair<string, string> pair in overrides)
+            {
+                if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return pair.Value ?? string.Empty;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private void SetEventOverride(Dictionary<string, string> overrides, string eventType, string value)
+        {
+            EnsureEventPromptDictionaries();
+            string key = EventPromptKey(eventType);
+            if (string.IsNullOrEmpty(key) || overrides == null)
+            {
+                return;
+            }
+
+            RemoveEventOverride(overrides, key);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                overrides[key] = value;
+            }
+        }
+
+        private void RemoveEventOverride(Dictionary<string, string> overrides, string eventType)
+        {
+            string key = EventPromptKey(eventType);
+            if (string.IsNullOrEmpty(key) || overrides == null)
+            {
+                return;
+            }
+
+            List<string> keysToRemove = null;
+            foreach (string existingKey in overrides.Keys)
+            {
+                if (string.Equals(existingKey, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (keysToRemove == null)
+                    {
+                        keysToRemove = new List<string>();
+                    }
+
+                    keysToRemove.Add(existingKey);
+                }
+            }
+
+            if (keysToRemove == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < keysToRemove.Count; i++)
+            {
+                overrides.Remove(keysToRemove[i]);
+            }
+        }
+
+        private static string EventPromptKey(string eventType)
+        {
+            return (eventType ?? string.Empty).Trim();
+        }
+
+        private static void AddOverrideKeys(HashSet<string> keys, Dictionary<string, string> overrides)
+        {
+            if (keys == null || overrides == null)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<string, string> pair in overrides)
+            {
+                if (!string.IsNullOrWhiteSpace(pair.Key) && !string.IsNullOrWhiteSpace(pair.Value))
+                {
+                    keys.Add(pair.Key.Trim());
+                }
+            }
+        }
+
+        private static void NormalizeEventOverrideDictionary(Dictionary<string, string> overrides)
+        {
+            if (overrides == null)
+            {
+                return;
+            }
+
+            List<string> keysToRemove = null;
+            foreach (KeyValuePair<string, string> pair in overrides)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+                {
+                    if (keysToRemove == null)
+                    {
+                        keysToRemove = new List<string>();
+                    }
+
+                    keysToRemove.Add(pair.Key);
+                }
+            }
+
+            if (keysToRemove == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < keysToRemove.Count; i++)
+            {
+                overrides.Remove(keysToRemove[i]);
+            }
         }
 
         // ---- API endpoint helpers ----
@@ -820,6 +1048,7 @@ namespace PawnDiary
         public void ClampValues()
         {
             EnsureGroupDictionaries();
+            EnsureEventPromptDictionaries();
             EnsurePersonaPresetList();
 
             EnsureEndpointsList();
@@ -832,6 +1061,8 @@ namespace PawnDiary
             systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;
             systemPromptNeutralOverride = systemPromptNeutralOverride ?? string.Empty;
             titleSystemPromptOverride = titleSystemPromptOverride ?? string.Empty;
+            NormalizeEventOverrideDictionary(eventPromptOverrides);
+            NormalizeEventOverrideDictionary(eventEnhancementOverrides);
             workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
             socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
             NormalizePersonaPresets();

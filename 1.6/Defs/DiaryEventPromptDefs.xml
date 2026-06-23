@@ -8,6 +8,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Interaction</defName>
+    <label>social interaction</label>
     <eventType>Interaction</eventType>
     <prompt>Write a direct social interaction between pawns from the POV pawn's side of the moment.</prompt>
     <enhancement>Make the exchange feel live in the room: a look, pause, flinch, heat, or silence. Keep it tied to the supplied social text; do not add unstated history or dialogue.</enhancement>
@@ -15,6 +16,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_MentalState</defName>
+    <label>mental state</label>
     <eventType>MentalState</eventType>
     <prompt>Write a mental-state event as immediate pressure on thought, impulse, and action.</prompt>
     <enhancement>Write with pressure and unstable momentum: thought, impulse, body, then action. Stay inside the named state and observed behavior; do not diagnose beyond supplied facts.</enhancement>
@@ -22,6 +24,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Tale</defName>
+    <label>tale</label>
     <eventType>Tale</eventType>
     <prompt>Write a notable non-social RimWorld tale as something the pawn lived through or remembers.</prompt>
     <enhancement>Find the dramatic pressure in the tale facts: danger, pride, shame, relief, damage, or aftermath. Do not turn the entry into ordinary social chatter.</enhancement>
@@ -29,6 +32,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_MoodEvent</defName>
+    <label>mood event</label>
     <eventType>MoodEvent</eventType>
     <prompt>Write a colony-wide mood event through how it touches this pawn.</prompt>
     <enhancement>Show the condition pressing on the pawn's senses or nerves rather than explaining game mechanics; keep the condition's scope clear.</enhancement>
@@ -36,6 +40,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Thought</defName>
+    <label>thought</label>
     <eventType>Thought</eventType>
     <prompt>Write a temporary thought or mood memory as inner pressure, relief, or irritation.</prompt>
     <enhancement>Make the thought bite, comfort, itch, or linger in the pawn's mind. Treat it as internal context, not as a new external event unless the facts say so.</enhancement>
@@ -43,6 +48,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Inspiration</defName>
+    <label>inspiration</label>
     <eventType>Inspiration</eventType>
     <prompt>Write inspiration as sudden useful clarity catching in the pawn's mind.</prompt>
     <enhancement>Make the clarity feel electric and actionable: a sudden plan, urge, or confidence. Focus on what the pawn wants to do next; do not invent success.</enhancement>
@@ -50,6 +56,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Romance</defName>
+    <label>romance</label>
     <eventType>Romance</eventType>
     <prompt>Write a relationship milestone as an emotional change between the two people.</prompt>
     <enhancement>Make the changed bond feel risky and personal: hope, embarrassment, ache, relief, or dread. Do not backfill a conversation or private scene.</enhancement>
@@ -57,6 +64,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Work</defName>
+    <label>work</label>
     <eventType>Work</eventType>
     <prompt>Write sampled colony work as a concrete moment in the pawn's labor.</prompt>
     <enhancement>Use tactile work detail: weight, heat, dirt, rhythm, tools, mistakes, or satisfaction. Let passion, strain, or dread come only from supplied fields.</enhancement>
@@ -64,6 +72,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Hediff</defName>
+    <label>health condition</label>
     <eventType>Hediff</eventType>
     <prompt>Write a health-condition event through the pawn's body and mood.</prompt>
     <enhancement>Make the body unavoidable: pain, weakness, breath, fever, hunger, balance, or fear. Do not invent treatment, diagnosis, or recovery.</enhancement>
@@ -71,6 +80,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Raid</defName>
+    <label>raid</label>
     <eventType>Raid</eventType>
     <prompt>Write a raid or hostile arrival from the pawn's immediate experience of danger.</prompt>
     <enhancement>Write close to the body: noise, cover, orders, fear, pain, smoke, blood, or the scramble to survive. Keep every detail grounded; do not invent battle outcomes.</enhancement>
@@ -78,6 +88,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Quest</defName>
+    <label>quest</label>
     <eventType>Quest</eventType>
     <prompt>Write a quest lifecycle event as promise, resolution, or loss.</prompt>
     <enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not invent rewards, blame, or consequences.</enhancement>
@@ -85,6 +96,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_DayReflection</defName>
+    <label>day reflection</label>
     <eventType>DayReflection</eventType>
     <prompt>Write an end-of-day reflection that weighs the day as a whole.</prompt>
     <enhancement>Choose the supplied moments that still sting, glow, or weigh on the pawn tonight instead of listing every event.</enhancement>
@@ -92,6 +104,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Arrival</defName>
+    <label>arrival</label>
     <eventType>Arrival</eventType>
     <prompt>Write a factual colony-arrival note about how this pawn joined or began here.</prompt>
     <enhancement>Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts.</enhancement>
@@ -99,6 +112,7 @@
 
   <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Death</defName>
+    <label>death</label>
     <eventType>Death</eventType>
     <prompt>Write a factual death note about how the colonist died.</prompt>
     <enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</enhancement>

@@ -39,6 +39,8 @@ namespace PawnDiary
         private int connectionTestTargetIndex = -1;
         private string connectionTestStatus;
         private volatile ConnectionTestResult pendingConnectionTestResult;
+        // Which event-source prompt card is open in the settings "Prompt Studio" section.
+        private string selectedEventPromptKey;
         // Which persona card is open in the settings "Persona Presets" section.
         private string selectedPersonaKey;
         // Scroll position for the settings window scroll view.
@@ -56,6 +58,7 @@ namespace PawnDiary
         private static readonly Color AccentColor = new Color(0.50f, 0.77f, 0.60f);
         private const float PersonaTagRowHeight = 24f;
         private const float PersonaTagRowGap = 4f;
+        private const float EventPromptTextAreaHeight = 96f;
         private const float PersonaRuleTextAreaHeight = 112f;
 
         /// <summary>
@@ -571,23 +574,38 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws focused editors for the shared system prompts. Event filters, field lists, and
-        /// final instructions stay XML-only so the in-game page remains small.
+        /// Draws focused editors for the shared system prompts and broad event-source prompt text.
+        /// Event filters, field lists, and final instructions stay XML-only so the in-game page
+        /// remains small and the structured prompt contract stays Def-owned.
         /// </summary>
         private void DrawPromptStudio(Listing_Standard listing)
         {
             SectionTitle(listing, "PawnDiary.Settings.PromptStudioTitle".Translate());
             DrawHint(listing, "PawnDiary.Settings.PromptStudioHelp".Translate());
 
-            Rect cardRect = listing.GetRect(72f);
+            List<DiaryEventPromptDef> eventPromptDefs = EventPromptDefsForSettings();
+            int customizedEventTypes = Settings.CustomizedEventPromptCount();
+
+            Rect cardRect = listing.GetRect(108f);
             Widgets.DrawMenuSection(cardRect);
             Rect innerRect = cardRect.ContractedBy(8f);
             Widgets.LabelFit(
                 new Rect(innerRect.x, innerRect.y, innerRect.width, 24f),
-                "PawnDiary.Settings.PromptStudioSummary".Translate(DiaryPromptTemplates.LoadedTemplateCount));
+                "PawnDiary.Settings.PromptStudioSummary".Translate(
+                    DiaryPromptTemplates.LoadedTemplateCount,
+                    eventPromptDefs.Count,
+                    customizedEventTypes));
             DrawMutedLabel(
-                new Rect(innerRect.x, innerRect.y + 28f, innerRect.width, 40f),
+                new Rect(innerRect.x, innerRect.y + 28f, innerRect.width, 34f),
                 "PawnDiary.Settings.PromptStudioXmlNote".Translate());
+            Rect resetEventsRect = new Rect(innerRect.x, innerRect.y + 66f, innerRect.width, 30f);
+            if (ButtonTextFit(resetEventsRect, "PawnDiary.Settings.ResetEventPromptOverrides".Translate()))
+            {
+                Settings.ResetAllEventPromptOverrides();
+            }
+
+            listing.Gap(6f);
+            DrawEventPromptEditor(listing, eventPromptDefs);
 
             listing.Gap(6f);
             DrawSystemPromptEditor(
@@ -625,6 +643,180 @@ namespace PawnDiary
                 Settings.HasTitleSystemPromptOverride(),
                 Settings.SetTitleSystemPromptOverride,
                 Settings.ResetTitleSystemPromptOverride);
+        }
+
+        private void DrawEventPromptEditor(Listing_Standard listing, List<DiaryEventPromptDef> eventPromptDefs)
+        {
+            if (eventPromptDefs == null || eventPromptDefs.Count == 0)
+            {
+                DrawHint(listing, "PawnDiary.Settings.EventPromptNoneLoaded".Translate());
+                return;
+            }
+
+            DrawEventPromptPicker(listing, eventPromptDefs);
+            listing.Gap(6f);
+
+            DiaryEventPromptDef selected = SelectedEventPromptForSettings(eventPromptDefs);
+            if (selected != null)
+            {
+                DrawSelectedEventPromptEditor(listing, selected);
+            }
+        }
+
+        private void DrawEventPromptPicker(Listing_Standard listing, List<DiaryEventPromptDef> eventPromptDefs)
+        {
+            DiaryEventPromptDef selected = SelectedEventPromptForSettings(eventPromptDefs);
+            Rect cardRect = listing.GetRect(74f);
+            Widgets.DrawMenuSection(cardRect);
+
+            Rect innerRect = cardRect.ContractedBy(8f);
+            Widgets.LabelFit(
+                new Rect(innerRect.x, innerRect.y, innerRect.width, 22f),
+                "PawnDiary.Settings.EventPromptPickerHeader".Translate());
+
+            string selectedLabel = selected == null
+                ? "PawnDiary.Settings.EventPromptNoneLoaded".Translate().ToString()
+                : EventPromptOptionLabel(selected);
+            Rect selectorRect = new Rect(innerRect.x, innerRect.y + 28f, innerRect.width, 30f);
+            if (ButtonTextFit(selectorRect, selectedLabel))
+            {
+                List<FloatMenuOption> options = eventPromptDefs
+                    .Select(def =>
+                    {
+                        DiaryEventPromptDef option = def;
+                        return new FloatMenuOption(EventPromptOptionLabel(option), delegate
+                        {
+                            selectedEventPromptKey = EventPromptKeyForSettings(option);
+                        });
+                    })
+                    .ToList();
+
+                if (options.Count == 0)
+                {
+                    options.Add(new FloatMenuOption("PawnDiary.Settings.EventPromptNoneLoaded".Translate(), null));
+                }
+
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private void DrawSelectedEventPromptEditor(Listing_Standard listing, DiaryEventPromptDef selected)
+        {
+            string eventKey = EventPromptKeyForSettings(selected);
+            string currentPrompt = Settings.EffectiveEventPrompt(eventKey, selected.prompt);
+            string currentEnhancement = Settings.EffectiveEventEnhancement(eventKey, selected.enhancement);
+            bool promptCustomized = Settings.HasEventPromptOverride(eventKey);
+            bool enhancementCustomized = Settings.HasEventEnhancementOverride(eventKey);
+
+            Rect cardRect = listing.GetRect(354f);
+            Widgets.DrawMenuSection(cardRect);
+            Rect innerRect = cardRect.ContractedBy(10f);
+
+            float y = innerRect.y;
+            Widgets.LabelFit(
+                new Rect(innerRect.x, y, innerRect.width, 24f),
+                "PawnDiary.Settings.EditingEventPrompt".Translate(EventPromptLabelForUi(selected)));
+            y += 24f;
+            DrawMutedLabel(
+                new Rect(innerRect.x, y, innerRect.width, 20f),
+                (promptCustomized || enhancementCustomized
+                    ? "PawnDiary.Settings.PromptStatusCustomized"
+                    : "PawnDiary.Settings.PromptStatusDefault").Translate());
+
+            y += 24f;
+            DrawHint(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptPromptField".Translate());
+            y += 22f;
+            Rect promptRect = new Rect(innerRect.x, y, innerRect.width, EventPromptTextAreaHeight);
+            string editedPrompt = Widgets.TextArea(promptRect, currentPrompt ?? string.Empty);
+            if (!string.Equals(editedPrompt, currentPrompt ?? string.Empty, StringComparison.Ordinal))
+            {
+                Settings.SetEventPromptOverride(eventKey, editedPrompt, selected.prompt);
+            }
+
+            y += EventPromptTextAreaHeight + 8f;
+            DrawHint(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptEnhancementField".Translate());
+            y += 22f;
+            Rect enhancementRect = new Rect(innerRect.x, y, innerRect.width, EventPromptTextAreaHeight);
+            string editedEnhancement = Widgets.TextArea(enhancementRect, currentEnhancement ?? string.Empty);
+            if (!string.Equals(editedEnhancement, currentEnhancement ?? string.Empty, StringComparison.Ordinal))
+            {
+                Settings.SetEventEnhancementOverride(eventKey, editedEnhancement, selected.enhancement);
+            }
+
+            y += EventPromptTextAreaHeight + 10f;
+            Rect promptResetRect = new Rect(innerRect.x, y, innerRect.width / 2f - 4f, 30f);
+            Rect enhancementResetRect = new Rect(innerRect.x + innerRect.width / 2f + 4f, y, innerRect.width / 2f - 4f, 30f);
+            if (ButtonTextFit(promptResetRect, "PawnDiary.Settings.RestoreEventPromptDefault".Translate()))
+            {
+                Settings.ResetEventPromptOverride(eventKey);
+            }
+
+            if (ButtonTextFit(enhancementResetRect, "PawnDiary.Settings.RestoreEventEnhancementDefault".Translate()))
+            {
+                Settings.ResetEventEnhancementOverride(eventKey);
+            }
+        }
+
+        private static List<DiaryEventPromptDef> EventPromptDefsForSettings()
+        {
+            List<DiaryEventPromptDef> defs = DefDatabase<DiaryEventPromptDef>.AllDefsListForReading;
+            if (defs == null)
+            {
+                return new List<DiaryEventPromptDef>();
+            }
+
+            return defs
+                .Where(def => def != null)
+                .OrderBy(EventPromptLabelForUi)
+                .ToList();
+        }
+
+        private DiaryEventPromptDef SelectedEventPromptForSettings(List<DiaryEventPromptDef> eventPromptDefs)
+        {
+            DiaryEventPromptDef selected = eventPromptDefs.FirstOrDefault(def =>
+                string.Equals(EventPromptKeyForSettings(def), selectedEventPromptKey, StringComparison.OrdinalIgnoreCase))
+                ?? eventPromptDefs.FirstOrDefault();
+            if (selected != null)
+            {
+                selectedEventPromptKey = EventPromptKeyForSettings(selected);
+            }
+
+            return selected;
+        }
+
+        private static string EventPromptOptionLabel(DiaryEventPromptDef def)
+        {
+            string label = EventPromptLabelForUi(def);
+            string key = EventPromptKeyForSettings(def);
+            return string.Equals(label, key, StringComparison.OrdinalIgnoreCase)
+                ? label
+                : label + " (" + key + ")";
+        }
+
+        private static string EventPromptLabelForUi(DiaryEventPromptDef def)
+        {
+            if (def == null)
+            {
+                return string.Empty;
+            }
+
+            string label = def.LabelCap.ToString();
+            if (string.IsNullOrWhiteSpace(label) || string.Equals(label, def.defName, StringComparison.Ordinal))
+            {
+                return EventPromptKeyForSettings(def);
+            }
+
+            return label;
+        }
+
+        private static string EventPromptKeyForSettings(DiaryEventPromptDef def)
+        {
+            if (def == null)
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(def.eventType) ? def.defName ?? string.Empty : def.eventType;
         }
 
         /// <summary>
@@ -1010,13 +1202,13 @@ namespace PawnDiary
                 height += 34f; // compact summary
             }
 
-            // Generation controls, four system-prompt editor cards, and persona-preset studio.
+            // Generation controls, prompt studio cards, and persona-preset studio.
             height += 400f;
             if (Prefs.DevMode)
             {
                 height += 30f;
             }
-            height += 1180f;
+            height += 1640f;
             height += 590f + PersonaTagPickerHeight();
 
             return height + 220f; // breathing room for translated labels and RimWorld skin variance

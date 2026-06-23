@@ -175,9 +175,17 @@
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
-  <PawnDiary.Settings.PromptStudioHelp>Edit only the shared system prompts. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
-  <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates loaded; system prompt overrides below are saved in settings</PawnDiary.Settings.PromptStudioSummary>
+  <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts and per-event prompt guidance. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
+  <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates and {1} event prompt types loaded; {2} event types customized in settings</PawnDiary.Settings.PromptStudioSummary>
   <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and persona catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
+  <PawnDiary.Settings.ResetEventPromptOverrides>Restore all event prompt defaults</PawnDiary.Settings.ResetEventPromptOverrides>
+  <PawnDiary.Settings.EventPromptPickerHeader>Event prompt type</PawnDiary.Settings.EventPromptPickerHeader>
+  <PawnDiary.Settings.EventPromptNoneLoaded>No event prompt defs loaded</PawnDiary.Settings.EventPromptNoneLoaded>
+  <PawnDiary.Settings.EditingEventPrompt>Editing event prompt: {0}</PawnDiary.Settings.EditingEventPrompt>
+  <PawnDiary.Settings.EventPromptPromptField>event prompt field</PawnDiary.Settings.EventPromptPromptField>
+  <PawnDiary.Settings.EventPromptEnhancementField>event enhancement field</PawnDiary.Settings.EventPromptEnhancementField>
+  <PawnDiary.Settings.RestoreEventPromptDefault>Restore prompt default</PawnDiary.Settings.RestoreEventPromptDefault>
+  <PawnDiary.Settings.RestoreEventEnhancementDefault>Restore enhancement default</PawnDiary.Settings.RestoreEventEnhancementDefault>
   <PawnDiary.Settings.SystemPromptDiary>Diary entries system prompt</PawnDiary.Settings.SystemPromptDiary>
   <PawnDiary.Settings.SystemPromptReflection>Day reflection system prompt</PawnDiary.Settings.SystemPromptReflection>
   <PawnDiary.Settings.SystemPromptNeutral>Neutral chronicle system prompt</PawnDiary.Settings.SystemPromptNeutral>
