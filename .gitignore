@@ -17,6 +17,7 @@ Thumbs.db
 .codegraph/
 .codex-worktrees/
 .mcp.json
+.opencode/
 .vscode/
 opencode.jsonc
 
