@@ -302,9 +302,10 @@ HTTP bodies are streamed with hard byte caps before JSON parsing/logging, so a b
 force an unbounded response string allocation. Successful responses are trimmed locally to
 `maxTokens`, preferring complete sentences for diary/note text.
 
-`LlmResponseParser` strips structured and transcript-style reasoning/thinking output before debug or
-save persistence. API keys are never logged or saved in event metadata. New game sessions cancel
-stale requests. Orphaned pending entries reset only after two scans.
+`LlmResponseParser` extracts typed visible output before fallback fields, falls back from blank
+Ollama content to root `response`, and strips structured or transcript-style reasoning/thinking
+before debug or save persistence. API keys are never logged or saved in event metadata. New game
+sessions cancel stale requests. Orphaned pending entries reset only after two scans.
 
 If no enabled lane has a model, the entry fails with `PawnDiary.Error.NoApiConfigured`.
 

@@ -137,29 +137,23 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Supports OpenAI Responses' output array, plus the convenience output_text field when a
-        /// compatible proxy includes it.
+        /// Supports OpenAI Responses' typed output array, plus the convenience output_text field when a
+        /// compatible proxy includes it. The typed array wins because it lets us skip reasoning items
+        /// before any proxy-flattened text can leak thinking into the diary.
         /// </summary>
         private static string ParseOpenAIResponsesText(Dictionary<string, object> root)
         {
-            if (root.TryGetValue("output_text", out object outputTextObject))
-            {
-                string outputText = outputTextObject as string;
-                if (!string.IsNullOrWhiteSpace(outputText))
-                {
-                    return outputText;
-                }
-            }
+            string outputText = StringField(root, "output_text");
 
             if (!root.TryGetValue("output", out object outputObject))
             {
-                return null;
+                return string.IsNullOrWhiteSpace(outputText) ? null : outputText;
             }
 
             object[] output = outputObject as object[];
             if (output == null)
             {
-                return null;
+                return string.IsNullOrWhiteSpace(outputText) ? null : outputText;
             }
 
             StringBuilder text = new StringBuilder();
@@ -176,41 +170,23 @@ namespace PawnDiary
                     continue;
                 }
 
-                object[] content = contentObject as object[];
-                if (content == null)
+                string contentText = TextFromContentObject(contentObject);
+                if (string.IsNullOrWhiteSpace(contentText))
                 {
                     continue;
                 }
 
-                for (int c = 0; c < content.Length; c++)
+                if (text.Length > 0)
                 {
-                    Dictionary<string, object> part = content[c] as Dictionary<string, object>;
-                    if (IsReasoningResponseItem(part))
-                    {
-                        continue;
-                    }
-
-                    if (part == null || !part.TryGetValue("text", out object partTextObject))
-                    {
-                        continue;
-                    }
-
-                    string partText = partTextObject as string;
-                    if (string.IsNullOrWhiteSpace(partText))
-                    {
-                        continue;
-                    }
-
-                    if (text.Length > 0)
-                    {
-                        text.Append("\n");
-                    }
-
-                    text.Append(partText);
+                    text.Append("\n");
                 }
+
+                text.Append(contentText);
             }
 
-            return text.Length > 0 ? text.ToString() : null;
+            return text.Length > 0
+                ? text.ToString()
+                : (string.IsNullOrWhiteSpace(outputText) ? null : outputText);
         }
 
         /// <summary>Supports Ollama native /api/chat with stream=false: message.content.</summary>
@@ -221,7 +197,11 @@ namespace PawnDiary
                 Dictionary<string, object> message = messageObject as Dictionary<string, object>;
                 if (message != null && message.TryGetValue("content", out object contentObject))
                 {
-                    return TextFromContentObject(contentObject);
+                    string messageText = TextFromContentObject(contentObject);
+                    if (!string.IsNullOrWhiteSpace(messageText))
+                    {
+                        return messageText;
+                    }
                 }
             }
 
@@ -441,8 +421,11 @@ namespace PawnDiary
             string type = (typeObject as string ?? string.Empty).Trim().ToLowerInvariant();
             return type == "reasoning"
                 || type == "reasoning_text"
+                || type == "reasoning_content"
+                || type == "reasoning_summary"
                 || type == "summary_text"
                 || type == "thinking"
+                || type == "thinking_text"
                 || type == "analysis";
         }
 
@@ -727,7 +710,7 @@ namespace PawnDiary
 
         private static string[] FinalAnswerLabels()
         {
-            return new[] { "final:", "final answer:", "answer:", "response:", "diary:", "entry:", "output:" };
+            return new[] { "final:", "final answer:", "final response:", "answer:", "response:", "result:", "diary:", "entry:", "output:" };
         }
 
         private static string CompactReasoningCleanupWhitespace(string text)

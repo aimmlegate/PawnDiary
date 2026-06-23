@@ -40,10 +40,31 @@ namespace LlmResponseParserTests
                     LlmResponseMode.OpenAIChatCompletions));
 
             AssertEqual(
-                "responses output_text",
+                "chat reasoning_content parts",
+                "Visible answer.",
+                LlmResponseParser.ParseGeneratedText(
+                    Root("{\"choices\":[{\"message\":{\"content\":[{\"type\":\"reasoning_content\",\"text\":\"hidden chain\"},{\"type\":\"text\",\"text\":\"Visible answer.\"}]}}]}"),
+                    LlmResponseMode.OpenAIChatCompletions));
+
+            AssertEqual(
+                "responses output_text fallback",
                 "Preferred text.",
                 LlmResponseParser.ParseGeneratedText(
-                    Root("{\"output_text\":\"Preferred text.\",\"output\":[{\"content\":[{\"text\":\"Fallback.\"}]}]}"),
+                    Root("{\"output_text\":\"Preferred text.\"}"),
+                    LlmResponseMode.OpenAIResponses));
+
+            AssertEqual(
+                "responses typed output beats leaked output_text",
+                "Visible diary.",
+                LlmResponseParser.ParseGeneratedText(
+                    Root("{\"output_text\":\"hidden thinking transcript\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Visible diary.\"}]}]}"),
+                    LlmResponseMode.OpenAIResponses));
+
+            AssertEqual(
+                "responses string content beats leaked output_text",
+                "Visible string diary.",
+                LlmResponseParser.ParseGeneratedText(
+                    Root("{\"output_text\":\"hidden thinking transcript\",\"output\":[{\"type\":\"message\",\"content\":\"Visible string diary.\"}]}"),
                     LlmResponseMode.OpenAIResponses));
 
             AssertEqual(
@@ -65,6 +86,13 @@ namespace LlmResponseParserTests
                 "Legacy response.",
                 LlmResponseParser.ParseGeneratedText(
                     Root("{\"response\":\"Legacy response.\",\"done\":true}"),
+                    LlmResponseMode.OllamaNativeChat));
+
+            AssertEqual(
+                "ollama blank message falls back to response",
+                "Visible response.",
+                LlmResponseParser.ParseGeneratedText(
+                    Root("{\"message\":{\"content\":\"\",\"thinking\":\"hidden chain\"},\"response\":\"Visible response.\",\"done\":true}"),
                     LlmResponseMode.OllamaNativeChat));
         }
 
@@ -124,6 +152,11 @@ namespace LlmResponseParserTests
                 "reasoning heading",
                 "Visible.",
                 LlmResponseParser.StripReasoningTextBlocks("Thinking:\nsecret\nAnswer: Visible."));
+
+            AssertEqual(
+                "reasoning heading final response",
+                "Visible.",
+                LlmResponseParser.StripReasoningTextBlocks("Thinking:\nsecret\nFinal response: Visible."));
         }
 
         // Covers the trickier fallback branches of StripTaggedReasoningBlocks: an opening reasoning

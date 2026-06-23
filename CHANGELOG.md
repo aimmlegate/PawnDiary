@@ -6,6 +6,8 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-23
 
+- **Thinking-model response parsing fixed.** Typed visible output now beats flattened reasoning text,
+  more reasoning part types are skipped, and blank Ollama messages can fall back to root `response`.
 - **Prompt Studio can edit event-source guidance.** Mod settings now expose each
   `DiaryEventPromptDef` event type through a selector and save per-event `prompt` / `enhancement`
   overrides while preserving XML as the default catalog.
