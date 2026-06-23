@@ -9,10 +9,12 @@ not need separate entries unless they change behavior or document an important r
 - **Diary entry point moved to pawn selection.** The Diary inspect tab remains the same UI internally,
   but its inspector tab-strip button is hidden; selecting one eligible pawn or colonist corpse now
   shows a Diary command button with a custom journal-and-pen icon that opens or closes the same tab.
-- **Mod icon added.** `About/ModIcon.png` now uses a larger journal-and-pen mark for RimWorld's mod
-  list while leaving the Workshop preview image unchanged.
+- **Mod icon added.** `About/ModIcon.png` and the texture-backed `modIconPath` now use a larger
+  journal-and-pen mark for RimWorld's mod list while leaving the Workshop preview image unchanged.
 - **Release payload includes the mod icon.** The publish script now carries `About/ModIcon.png`
   into `dist` alongside the existing Workshop preview assets.
+- **Release payload includes runtime textures.** The publish script now carries the command-icon
+  texture folder into `dist` so published builds use the current Diary button icon.
 - **Generated tag sanitizer added.** Saved LLM output now preserves valid
   `[[speech]]...[[/speech]]` blocks while repairing malformed speech closers and stripping or
   flattening hallucinated bracket tags from small local models before diary text is persisted.

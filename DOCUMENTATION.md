@@ -425,7 +425,7 @@ set covers every current XML prompt template, every `DiaryEventPromptDef` prompt
 configured prompt-enchantment variants, runtime context marker families, and the repeated-pass path.
 
 Release payloads are made with `scripts/publish.ps1`; it builds a throwaway Release DLL and copies
-only runnable mod files into `dist/<published packageId>`.
+only runnable mod files, including runtime textures, into `dist/<published packageId>`.
 
 ---
 

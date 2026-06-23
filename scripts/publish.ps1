@@ -6,7 +6,7 @@
   This script performs a two-phase publish prep:
 
     1. Build PawnDiary.dll into a throwaway temp folder.
-    2. Assemble a clean payload folder (About, 1.6/Defs, Languages, assemblies, docs) and
+    2. Assemble a clean payload folder (About, 1.6/Defs, Textures, Languages, assemblies, docs) and
        normalize the published mod name/packageId by stripping "(development)" markers.
 
   Branch/tag creation from earlier versions is intentionally disabled; this keeps the script focused
@@ -271,6 +271,7 @@ Copy-Payload "About\PublishedFileId.txt" | Out-Null
 
 # Core runtime assets.
 Copy-Payload "1.6\Defs" -Required | Out-Null
+Copy-Payload "Textures" | Out-Null
 Copy-Payload "Languages" | Out-Null
 
 $aboutDest = Join-Path $OutDir "About\About.xml"
