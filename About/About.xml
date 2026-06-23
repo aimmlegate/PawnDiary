@@ -16,5 +16,5 @@ Entries appear in a Diary tab on each colonist, next to Needs. Two-colonist even
 LOCAL LLMs
 Works with any OpenAI-compatible /chat/completions endpoint, plus OpenAI Responses and native Ollama chat. It is built around compact prompts for small to mid-size local models (roughly 4-32B) through tools such as LM Studio, llama.cpp, and Ollama. Default endpoint: http://localhost:1234. Configure endpoints, models, API keys, concurrency, prompt text, personas, and event groups in the mod settings.
 
-Pawn Diary is storytelling only: it does not change gameplay, add needs/hediffs/jobs, or write external save data beyond the diary entries stored in your RimWorld save. It targets base RimWorld 1.6 and keeps DLC content optional.</description>
+Pawn Diary is storytelling only: it does not change gameplay, add needs/hediffs/jobs, or write external save data beyond the diary entries stored in your RimWorld save. It is safe to add to an existing save. Removing it stops diary capture and hides the Diary UI/history, but leaves no custom gameplay defs, needs, hediffs, jobs, or pawn/map components behind. It targets base RimWorld 1.6 and keeps DLC content optional.</description>
 </ModMetaData>

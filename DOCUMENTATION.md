@@ -231,8 +231,9 @@ malformed speech closers are repaired, unpaired speech markers are stripped to p
 flattened back into normal text.
 
 Generated speech Social-log injection is currently disabled and hidden. The old compatibility field
-is still loaded for save safety, but settings force it off and the LLM-result call site is commented
-out because RimWorld accepted the synthetic row without reliably showing it in the Social tab UI.
+is still loaded for save safety, settings force it off, and the LLM-result call site remains
+commented out because RimWorld accepted the synthetic row without reliably showing it in the Social
+tab UI.
 
 Title generation defaults on. Successful main entries queue a capped title follow-up pinned to the
 successful lane when possible.
@@ -331,6 +332,16 @@ If no enabled lane has a model, the entry fails with `PawnDiary.Error.NoApiConfi
 `DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. Event indexes and transient
 day-reflection written guards are rebuilt on load, and per-pawn event-id lists prune blank,
 duplicate, or dangling references.
+
+Add/remove safety: adding Pawn Diary to an existing save creates an empty diary component on the next
+load and starts recording future events only. Removing it is gameplay-safe because the mod does not
+persist custom `ThingDef`, `HediffDef`, `ThoughtDef`, job, need, pawn component, map component, or
+cross-reference data onto vanilla pawns/maps. The saved diary history lives inside Pawn Diary's own
+`GameComponent`; without the mod loaded, the Diary UI/history is unavailable and RimWorld may leave
+stale Pawn Diary component XML in the save until the save is rewritten. Default builds do not write
+outside that component. Legacy or development saves that used generated Social-log injection may keep
+those synthetic vanilla `PlayLogEntry_Interaction` rows, but the generated replacement text requires
+Pawn Diary's component and display patch.
 
 `DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, LLM metadata, semantic
 `colorCue`, titles, assembled prompts, compact per-POV hediff/trait facts, legacy staggered

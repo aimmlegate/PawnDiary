@@ -24,6 +24,9 @@ voice.
 Pawn Diary is storytelling only. It does not add memories, mechanics, needs, hediffs, or jobs, and it
 writes no external save data beyond the diary entries stored in the RimWorld save.
 
+It is safe to add to an existing save. Removing it stops diary capture and hides the Diary UI/history,
+but it does not leave custom gameplay defs, needs, hediffs, jobs, or pawn/map components behind.
+
 ## LLM Support
 
 The mod talks to any OpenAI-compatible `/chat/completions` endpoint, and also supports the OpenAI

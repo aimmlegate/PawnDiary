@@ -4,6 +4,12 @@ High-signal project history, newest first. Keep this file grouped by feature or 
 individual commit. Routine refactors, follow-up fixes, rebuilt DLLs, and assertion-count changes do
 not need separate entries unless they change behavior or document an important risk.
 
+## 2026-06-24
+
+- **Save compatibility documented.** Add/remove safety is now explicit in player-facing metadata and
+  persistence docs: Pawn Diary records only self-contained diary history, does not attach gameplay
+  defs/components to pawns or maps, and calls out the old generated Social-log injection caveat.
+
 ## 2026-06-23
 
 - **Settings window compacted.** Request tuning now lives inside the expanded connection section,
