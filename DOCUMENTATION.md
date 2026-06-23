@@ -405,10 +405,15 @@ Prompt lab:
 
 ```powershell
 cd prompt-lab
+npm test
 npm run from-defs
 node run.js --from-defs --save --model <model-name>
 node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 ```
+
+`npm test` runs the C#/JS assembler golden check and verifies the generated all-variants fixture
+set covers every current XML prompt template, every `DiaryEventPromptDef` prompt/enhancement,
+configured prompt-enchantment variants, runtime context marker families, and the repeated-pass path.
 
 Release payloads are made with `scripts/publish.ps1`; it builds a throwaway Release DLL and copies
 only runnable mod files into `dist/<published packageId>`.

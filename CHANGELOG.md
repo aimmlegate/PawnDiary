@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-23
 
+- **Prompt lab coverage catches XML prompt drift.** Static arrival/death fixtures now render their
+  `DiaryEventPromptDef` prompt/enhancement fields, generated contexts cover Romance/Raid/Quest
+  markers, and `npm test` checks all XML template/event prompt types plus all-variants pass coverage.
 - **Thinking-model response parsing fixed.** Typed visible output now beats flattened reasoning text,
   more reasoning part types are skipped, and blank Ollama messages can fall back to root `response`.
 - **Prompt Studio can edit event-source guidance.** Mod settings now expose each

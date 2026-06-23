@@ -17,7 +17,7 @@ const { URL } = require('url');
 // algorithm the mod ships, instead of a separate copy that could drift.
 const assembler = require('./assembler');
 
-const ROOT = path.dirname(process.argv[1]);
+const ROOT = __dirname;
 const DEFAULT_CONFIG_PATH = path.join(ROOT, 'prompt-lab.config.json');
 const DEFAULT_FIXTURE_DIR = path.join(ROOT, 'prompts', 'fixtures');
 const DEFAULT_RESULT_RELATIVE_DIR = 'results';
@@ -509,6 +509,10 @@ function loadPromptData(config) {
   };
 }
 
+function eq(a, b) {
+  return String(a || '').toLowerCase() === String(b || '').toLowerCase();
+}
+
 function isSkippable(value) {
   if (!value) return true;
   const normalized = String(value).trim().toLowerCase();
@@ -666,6 +670,8 @@ function fallbackTemplateFields(key) {
   if (key === 'DeathDescription') {
     return [
       ['event', 'EventNoun'],
+      ['event prompt', 'EventPrompt'],
+      ['event enhancement', 'EventEnhancement'],
       ['deceased', 'DeathVictim'],
       ['what happened', 'NeutralText'],
       ['death facts', 'DeathFacts'],
@@ -676,6 +682,8 @@ function fallbackTemplateFields(key) {
   if (key === 'ArrivalDescription') {
     return [
       ['event', 'EventNoun'],
+      ['event prompt', 'EventPrompt'],
+      ['event enhancement', 'EventEnhancement'],
       ['colonist', 'ArrivalPawn'],
       ['what happened', 'NeutralText'],
       ['arrival facts', 'ArrivalFacts'],
@@ -805,10 +813,20 @@ function eventPromptKeyForGroup(group) {
   return group.domain || 'Interaction';
 }
 
-function eventPromptForGroup(promptData, group) {
-  const key = eventPromptKeyForGroup(group);
+function eventPromptForKey(promptData, key) {
   const defs = promptData.eventPrompts || [];
   return defs.find((entry) => eq(entry.eventType, key) || eq(entry.defName, key)) || {};
+}
+
+function eventPromptForGroup(promptData, group) {
+  return eventPromptForKey(promptData, eventPromptKeyForGroup(group));
+}
+
+function eventPromptKeyForTemplate(templateKey) {
+  if (eq(templateKey, 'DeathDescription')) return 'Death';
+  if (eq(templateKey, 'ArrivalDescription')) return 'Arrival';
+  if (eq(templateKey, 'SoloDayReflection')) return 'DayReflection';
+  return '';
 }
 
 // Builds the shared-assembler input for a generated fixture: the template's field list and flags,
@@ -913,11 +931,20 @@ function generatedContextForGroup(group, kind) {
   if (domain === 'Inspiration') {
     return `inspiration=${defName}; label=${label}`;
   }
+  if (domain === 'Romance') {
+    return `romance=${defName}; label=${label}`;
+  }
   if (domain === 'Work') {
     return `work=${defName}; label=${label}`;
   }
   if (domain === 'Hediff') {
     return `hediff=${defName}; label=${label}`;
+  }
+  if (domain === 'Raid') {
+    return `raid=${defName}; label=${label}`;
+  }
+  if (domain === 'Quest') {
+    return `quest=${defName}; label=${label}`;
   }
 
   return `def=${defName}; label=${label}`;
@@ -1102,8 +1129,14 @@ function buildSoloFixture(promptData, group, options) {
 
 function buildStaticTemplateFixture(promptData, options) {
   const template = resolvedTemplate(promptData, options.templateKey);
+  const eventPrompt = eventPromptForKey(
+    promptData,
+    options.eventPromptKey || eventPromptKeyForTemplate(options.templateKey),
+  );
   const rendered = fieldsFromTemplate(template, {
     event: options.event,
+    eventPrompt: isSkippable(options.eventPrompt) ? eventPrompt.prompt : options.eventPrompt,
+    eventEnhancement: isSkippable(options.eventEnhancement) ? eventPrompt.enhancement : options.eventEnhancement,
     neutralText: options.neutralText,
     pawnSummary: options.pawnSummary,
     setting: options.setting,
@@ -1440,9 +1473,10 @@ function buildAllVariantFixtureSet(promptData, config, options, groups, allPerso
   const personaLimit = resolveGeneratedLimit(options.includePersonas, config.generated.includePersonas, allPersonas.length);
   const personas = pickRandom(allPersonas, personaLimit);
   const variants = promptEnchantmentVariantsFor(config);
-  const sourceGroups = groups.length > 0
+  const catalogGroups = groups.length > 0
     ? groups
     : [{ defName: 'default', label: 'quiet colonist moment', instruction: 'a tense social moment', tone: 'tense but clear', domain: 'Interaction', combat: false }];
+  const sourceGroups = addTemplateCoverageGroups(catalogGroups);
   const cases = [];
   const pairGroups = sourceGroups.filter(isGeneratedPairGroup);
   const soloGroups = sourceGroups.filter(isGeneratedSoloGroup);
@@ -1530,6 +1564,43 @@ function buildAllVariantFixtureSet(promptData, config, options, groups, allPerso
 
   appendStaticGeneratedFixtures(cases, promptData);
   return cases;
+}
+
+function addTemplateCoverageGroups(groups) {
+  const result = [...groups];
+  const pairGroups = result.filter(isGeneratedPairGroup);
+  const coveredPairTemplates = new Set(pairGroups.map((group) =>
+    templateKeyForFixture(group, generatedContextForGroup(group, 'pair'), true)));
+
+  // These are lab-only fixtures, used only when the current XML catalog has no live group that
+  // naturally selects the template. They keep --all-variants exhaustive without changing game XML.
+  if (!coveredPairTemplates.has('PairImportant')) {
+    result.push({
+      defName: 'labPairImportant',
+      label: 'Important social exchange',
+      instruction: 'an important social exchange with stakes for both pawns',
+      tone: 'with tense personal importance',
+      domain: 'Interaction',
+      important: true,
+      combat: false,
+    });
+  }
+
+  if (!coveredPairTemplates.has('PairBatched')) {
+    result.push({
+      defName: 'labPairBatched',
+      label: 'Batched social exchange',
+      instruction: 'several small social exchanges compressed into one remembered pattern',
+      tone: 'with compact social pressure',
+      domain: 'Interaction',
+      important: false,
+      combat: false,
+      hasBatch: true,
+      batchMode: 'PairEvent',
+    });
+  }
+
+  return result;
 }
 
 function appendStaticGeneratedFixtures(cases, promptData) {
@@ -2147,12 +2218,7 @@ async function main() {
     return;
   }
 
-  const userConfig = readJson(resolvePath(args.configPath), {});
-  const config = {
-    ...DEFAULTS,
-    ...userConfig,
-  };
-  config.generated = { ...DEFAULTS.generated, ...(config.generated || {}) };
+  const config = loadConfig(args.configPath);
 
   if (args.resultFolder) config.resultFolder = args.resultFolder;
   if (args.endpoint) config.endpoint = args.endpoint;
@@ -2225,7 +2291,31 @@ async function main() {
   console.log(`Saved markdown results to ${outPath}`);
 }
 
-main().catch((error) => {
-  console.error('prompt-lab failed:', error.message || error);
-  process.exitCode = 1;
-});
+function loadConfig(configPath = DEFAULT_CONFIG_PATH) {
+  const userConfig = readJson(resolvePath(configPath), {});
+  const config = {
+    ...DEFAULTS,
+    ...userConfig,
+  };
+  config.generated = { ...DEFAULTS.generated, ...(config.generated || {}) };
+  return config;
+}
+
+module.exports = {
+  DEFAULTS,
+  DEFAULT_CONFIG_PATH,
+  buildGeneratedFixtureSet,
+  buildPromptText,
+  expandGenerationPasses,
+  getSystemForFixture,
+  loadConfig,
+  loadPromptData,
+  promptEnchantmentVariantsFor,
+};
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('prompt-lab failed:', error.message || error);
+    process.exitCode = 1;
+  });
+}
