@@ -63,6 +63,15 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Anomaly: whether this pawn joined as a creepjoiner. False without Anomaly or for normal
+        /// pawns, so callers do not need to touch the DLC-backed pawn property directly.
+        /// </summary>
+        public static bool IsCreepJoiner(Pawn pawn)
+        {
+            return ModsConfig.AnomalyActive && pawn != null && pawn.IsCreepJoiner;
+        }
+
+        /// <summary>
         /// Ideology: the pawn's ideoligion name plus their role if they have one (e.g.
         /// "Hidden Truth (Acolyte)"). Empty without Ideology or for a pawn with no ideo.
         /// </summary>

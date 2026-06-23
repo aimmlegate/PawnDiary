@@ -134,7 +134,7 @@ namespace PawnDiary
             }
 
             float bonus = ThemeBonus * matches;
-            if (pawn.IsCreepJoiner && HasTheme(persona, "void"))
+            if (DlcContext.IsCreepJoiner(pawn) && HasTheme(persona, "void"))
             {
                 bonus += CreepjoinerVoidBonus;
             }

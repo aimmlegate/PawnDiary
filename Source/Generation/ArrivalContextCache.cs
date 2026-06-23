@@ -67,7 +67,7 @@ namespace PawnDiary
                 parts.Add("recruiter=" + DiaryContextBuilder.CleanLine(recruiter.LabelShortCap));
             }
 
-            if (pawn.IsCreepJoiner)
+            if (DlcContext.IsCreepJoiner(pawn))
             {
                 parts.Add("creepjoiner=true");
             }
@@ -107,7 +107,7 @@ namespace PawnDiary
             };
 
             AppendPawnKind(parts, pawn);
-            if (pawn.IsCreepJoiner)
+            if (DlcContext.IsCreepJoiner(pawn))
             {
                 parts.Add("creepjoiner=true");
             }

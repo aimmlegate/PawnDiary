@@ -260,6 +260,7 @@ namespace PawnDiary
             initialArrivalScanPending = false;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
             ResetDaySummaryState();
+            RebuildWrittenDayReflectionsFromEvents();
             ResetThoughtProgressionState(true);
             ResetHediffProgressionState(true);
             QueueAllPendingGenerations();
@@ -309,6 +310,7 @@ namespace PawnDiary
                 // works immediately (the first generation scan and any UI draw run before any new
                 // event is recorded this session).
                 RebuildEventIndex();
+                RebuildWrittenDayReflectionsFromEvents();
                 PruneDiaryEventRefs();
                 PruneStaleGeneratedSpeechPlayLogState();
             }

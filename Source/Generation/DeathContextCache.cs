@@ -227,10 +227,10 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = DiaryContextBuilder.CleanLine(missingPart.Part.LabelCap);
+                string label = "part=" + DiaryContextBuilder.CleanLine(missingPart.Part.LabelCap);
                 if (missingPart.lastInjury != null)
                 {
-                    label += " by " + DiaryContextBuilder.CleanLine(missingPart.lastInjury.LabelCap);
+                    label += " cause=" + DiaryContextBuilder.CleanLine(missingPart.lastInjury.LabelCap);
                 }
 
                 missing.Add(label);

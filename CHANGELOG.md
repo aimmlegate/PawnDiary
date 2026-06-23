@@ -6,6 +6,11 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-23
 
+- **Review hardening pass.** Fixed save/load day-reflection dedup, settings endpoint editing, capped
+  HTTP response reads before JSON parsing, avoided hot-path PlayLog grammar rendering before capture
+  eligibility, added one-time reflection warnings, made diary lookups tolerate null records, throttled
+  live-name highlight rebuilding, centralized Anomaly creepjoiner reads in `DlcContext`, avoided direct
+  Royalty suppression type handling, and removed an English prompt connector from death context facts.
 - **Day reflections require an XML-controlled important signal.** End-of-day summaries now drop
   filler-only days by default: ambient small talk and passing moods can still color a reflection,
   but only after an XML-configured important signal kind happened to that pawn. The default

@@ -590,6 +590,33 @@ namespace PawnDiary
             opinionSnapshotDay = -1;
         }
 
+        /// <summary>
+        /// Rebuilds the transient once-per-pawn/day guard from saved DayReflection events after load.
+        /// Without this, a pawn that saved while resting could write the same reflection again after
+        /// loading because the guard itself is intentionally not part of the save schema.
+        /// </summary>
+        private void RebuildWrittenDayReflectionsFromEvents()
+        {
+            writtenDayReflections.Clear();
+            if (diaryEvents == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < diaryEvents.Count; i++)
+            {
+                DiaryEvent ev = diaryEvents[i];
+                if (ev == null
+                    || !string.Equals(ev.interactionDefName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase)
+                    || string.IsNullOrWhiteSpace(ev.initiatorPawnId))
+                {
+                    continue;
+                }
+
+                writtenDayReflections.Add(DaySummaryKey(ev.initiatorPawnId, DayIndexForGameTick(ev.tick)));
+            }
+        }
+
         /// <summary>Day index a stored game tick falls in, aligned with <see cref="CurrentDayIndex"/>.</summary>
         private static int DayIndexForGameTick(int gameTick)
         {

@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Text;
@@ -147,6 +148,9 @@ namespace PawnDiary
 
         /// <summary>Upper bound the semaphore cannot exceed, regardless of user settings.</summary>
         private const int MaxConcurrencyCap = 16;
+
+        /// <summary>Hard cap for one endpoint response body, before JSON parsing or logging.</summary>
+        private const int MaxResponseBytes = 1024 * 1024;
 
         /// <summary>Finished results awaiting consumption by the main-thread tick.</summary>
         private static readonly ConcurrentQueue<LlmGenerationResult> Completed = new ConcurrentQueue<LlmGenerationResult>();
@@ -714,9 +718,9 @@ namespace PawnDiary
                 }
 
                 message.Content = new StringContent(BuildRequestJson(request), Encoding.UTF8, "application/json");
-                using (HttpResponseMessage response = await Client.SendAsync(message, cancellationToken))
+                using (HttpResponseMessage response = await Client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
-                    string responseJson = await response.Content.ReadAsStringAsync();
+                    string responseJson = await ReadCappedResponseString(response.Content, MaxResponseBytes, cancellationToken);
                     if (!response.IsSuccessStatusCode)
                     {
                         string error = $"HTTP {(int)response.StatusCode}: {TrimForLog(responseJson)}";
@@ -763,6 +767,43 @@ namespace PawnDiary
                         CleanText = responsePlan.generatedText
                     };
                 }
+            }
+        }
+
+        /// <summary>
+        /// Reads an HTTP body with a hard byte cap so a bad local server cannot allocate an unbounded
+        /// string inside RimWorld. The cap is larger than any useful diary response.
+        /// </summary>
+        private static async Task<string> ReadCappedResponseString(HttpContent content, int maxBytes, CancellationToken cancellationToken)
+        {
+            if (content == null)
+            {
+                return string.Empty;
+            }
+
+            using (Stream stream = await content.ReadAsStreamAsync())
+            using (MemoryStream buffer = new MemoryStream())
+            {
+                byte[] chunk = new byte[8192];
+                int total = 0;
+                while (true)
+                {
+                    int read = await stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken);
+                    if (read <= 0)
+                    {
+                        break;
+                    }
+
+                    total += read;
+                    if (total > maxBytes)
+                    {
+                        throw new LlmPermanentException("The endpoint returned a response that was too large.");
+                    }
+
+                    buffer.Write(chunk, 0, read);
+                }
+
+                return Encoding.UTF8.GetString(buffer.ToArray());
             }
         }
 

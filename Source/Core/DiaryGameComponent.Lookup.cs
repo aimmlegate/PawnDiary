@@ -743,10 +743,16 @@ namespace PawnDiary
             string pawnId = pawn.GetUniqueLoadID();
             for (int i = 0; i < diaries.Count; i++)
             {
-                if (diaries[i].pawnId == pawnId)
+                PawnDiaryRecord existingDiary = diaries[i];
+                if (existingDiary == null)
                 {
-                    EnsurePawnDiaryDefaults(diaries[i]);
-                    return diaries[i];
+                    continue;
+                }
+
+                if (existingDiary.pawnId == pawnId)
+                {
+                    EnsurePawnDiaryDefaults(existingDiary);
+                    return existingDiary;
                 }
             }
 
@@ -828,10 +834,16 @@ namespace PawnDiary
 
             for (int i = 0; i < diaries.Count; i++)
             {
-                if (diaries[i].pawnId == pawnId)
+                PawnDiaryRecord diary = diaries[i];
+                if (diary == null)
                 {
-                    EnsurePawnDiaryDefaults(diaries[i]);
-                    return diaries[i];
+                    continue;
+                }
+
+                if (diary.pawnId == pawnId)
+                {
+                    EnsurePawnDiaryDefaults(diary);
+                    return diary;
                 }
             }
 

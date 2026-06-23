@@ -2,8 +2,10 @@
 // this class only backs the "Fetch models" button in the settings window.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,6 +22,7 @@ namespace PawnDiary
         {
             Timeout = Timeout.InfiniteTimeSpan
         };
+        private const int MaxModelListResponseBytes = 1024 * 512;
 
         /// <summary>
         /// Sends a GET request to the selected mode's model-list endpoint, authenticates with the
@@ -35,9 +38,9 @@ namespace PawnDiary
                     request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey.Trim());
                 }
 
-                using (HttpResponseMessage response = await Client.SendAsync(request, cancellation.Token))
+                using (HttpResponseMessage response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation.Token))
                 {
-                    string json = await response.Content.ReadAsStringAsync();
+                    string json = await ReadCappedResponseString(response.Content, MaxModelListResponseBytes, cancellation.Token);
                     if (!response.IsSuccessStatusCode)
                     {
                         throw new InvalidOperationException($"HTTP {(int)response.StatusCode}: {TrimForStatus(json)}");
@@ -47,6 +50,43 @@ namespace PawnDiary
                         ? ParseOllamaModelNames(json)
                         : ParseOpenAIModelIds(json);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Reads model-list JSON with a hard byte cap so a misconfigured endpoint cannot allocate an
+        /// unbounded response string in the settings window.
+        /// </summary>
+        private static async Task<string> ReadCappedResponseString(HttpContent content, int maxBytes, CancellationToken cancellationToken)
+        {
+            if (content == null)
+            {
+                return string.Empty;
+            }
+
+            using (Stream stream = await content.ReadAsStreamAsync())
+            using (MemoryStream buffer = new MemoryStream())
+            {
+                byte[] chunk = new byte[8192];
+                int total = 0;
+                while (true)
+                {
+                    int read = await stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken);
+                    if (read <= 0)
+                    {
+                        break;
+                    }
+
+                    total += read;
+                    if (total > maxBytes)
+                    {
+                        throw new InvalidOperationException("The endpoint returned a model list that was too large.");
+                    }
+
+                    buffer.Write(chunk, 0, read);
+                }
+
+                return Encoding.UTF8.GetString(buffer.ToArray());
             }
         }
 

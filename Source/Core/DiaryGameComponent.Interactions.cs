@@ -169,5 +169,19 @@ namespace PawnDiary
             diaryEvent.AddPlayLogEntryId(playLogEntryId);
             QueuePairwiseGeneration(diaryEvent);
         }
+
+        /// <summary>
+        /// Cheap preflight used by the PlayLog.Add patch before it renders RimWorld grammar strings.
+        /// The full recorder repeats these checks because settings/XML may change between call sites.
+        /// </summary>
+        public bool ShouldCaptureInteractionFromPlayLog(Pawn initiator, Pawn recipient, InteractionDef interactionDef)
+        {
+            return CanRecordGameplayEventNow()
+                && initiator != null
+                && recipient != null
+                && interactionDef != null
+                && IsInteractionSignificant(interactionDef)
+                && (IsDiaryEligible(initiator) || IsDiaryEligible(recipient));
+        }
     }
 }

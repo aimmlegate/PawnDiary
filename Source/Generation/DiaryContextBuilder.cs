@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using RimWorld;
 using UnityEngine;
@@ -1199,10 +1200,13 @@ namespace PawnDiary
                 }
             }
 
-            // GameCondition_PsychicSuppression also targets one gender.
-            if (condition is GameCondition_PsychicSuppression suppressionCondition)
+            // Royalty's psychic suppression also targets one gender. Avoid naming the DLC type; if a
+            // live condition's defName says suppression, reflect the same gender field vanilla uses.
+            if (defName != null
+                && defName.IndexOf("PsychicSuppress", StringComparison.OrdinalIgnoreCase) >= 0
+                && TryReadConditionGender(condition, out Gender suppressionGender))
             {
-                if (suppressionCondition.gender != pawn.gender)
+                if (suppressionGender != pawn.gender)
                 {
                     return MoodImpact.Neutral;
                 }
@@ -1247,6 +1251,24 @@ namespace PawnDiary
             // If we can't determine the impact, default to neutral. The LLM will use the
             // condition label and gameContext to figure out how the pawn feels.
             return MoodImpact.Neutral;
+        }
+
+        private static bool TryReadConditionGender(GameCondition condition, out Gender gender)
+        {
+            gender = Gender.None;
+            if (condition == null)
+            {
+                return false;
+            }
+
+            FieldInfo field = condition.GetType().GetField("gender", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field == null || field.FieldType != typeof(Gender))
+            {
+                return false;
+            }
+
+            gender = (Gender)field.GetValue(condition);
+            return true;
         }
 
         // Scans DefDatabase<ThoughtDef> for any thoughts that reference the given

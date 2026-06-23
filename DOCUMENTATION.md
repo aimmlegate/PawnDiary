@@ -117,6 +117,9 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 | Quests | `Quest.Accept`, a defensive `MainTabWindow_Quests` accept-action fallback, a `Quest.EverAccepted` state scan, and `Quest.End` | Only accepted quests are recorded. `Success` -> "completed", `Fail` -> "failed"; one entry per eligible colonist per signal, with description, issuer faction, and rewards context. |
 | Day reflections | Sleep/rest trigger | One reflective entry per pawn/day only when at least one XML-configured important signal kind exists. The default important kinds are major events, opinion shifts, and health signals; filler can be folded in as background but cannot trigger a reflection by itself unless XML allows it. |
 
+`PlayLog.Add` preflights live pawn eligibility and XML significance before rendering RimWorld's POV
+grammar strings, so routine social-log rows that cannot become diary entries stay cheap.
+
 ---
 
 ## 5. Event Catalog
@@ -240,7 +243,8 @@ checked from live events without producing generated diary text.
 
 API lanes support OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat,
 including model fetch/pick, per-row connection tests, Responses reasoning effort, and Ollama
-thinking output. Endpoint URLs normalize on load/save and logs strip query strings.
+thinking output. Endpoint URLs normalize on load/save, not every settings draw, so users can edit or
+clear the active text field without it being rewritten mid-typing. Logs strip query strings.
 
 The Diary tab shows completed pages in production. Dev mode adds generation enablement, persona
 picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient
@@ -288,8 +292,10 @@ follow-ups and title requests pin to the prior successful lane when possible. Pe
 enforce concurrency, and `ServicePointManager.DefaultConnectionLimit` is raised for Mono.
 
 `LlmClient` builds mode-specific URLs/payloads, retries transient errors up to three times per lane,
-and surfaces timeout/permanent/empty/incomplete responses as failure text. Successful responses are
-trimmed locally to `maxTokens`, preferring complete sentences for diary/note text.
+and surfaces timeout/permanent/empty/incomplete responses as failure text. Generation and model-list
+HTTP bodies are streamed with hard byte caps before JSON parsing/logging, so a bad endpoint cannot
+force an unbounded response string allocation. Successful responses are trimmed locally to
+`maxTokens`, preferring complete sentences for diary/note text.
 
 `LlmResponseParser` strips structured and transcript-style reasoning/thinking output before debug or
 save persistence. API keys are never logged or saved in event metadata. New game sessions cancel
@@ -301,8 +307,9 @@ If no enabled lane has a model, the entry fails with `PawnDiary.Error.NoApiConfi
 
 ## 10. Persistence
 
-`DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. Event indexes are rebuilt on
-load, and per-pawn event-id lists prune blank, duplicate, or dangling references.
+`DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. Event indexes and transient
+day-reflection written guards are rebuilt on load, and per-pawn event-id lists prune blank,
+duplicate, or dangling references.
 
 `DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, LLM metadata, semantic
 `colorCue`, titles, assembled prompts, compact per-POV hediff/trait facts, legacy staggered
@@ -326,7 +333,8 @@ callers to slot accessors, and only then consider retiring direct legacy writes.
 - Do not add `System.Web.Extensions`, `JavaScriptSerializer`, or external JSON dependencies.
 - The mod declares no paid DLC dependency. Optional DLC content must cleanly no-op when absent.
 - Prefer XML string `defName` matchers for DLC-aware content; absent DLC defs simply never appear.
-- DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks.
+- DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks;
+  Anomaly creepjoiner checks use the same centralized helper.
 - Avoid `DefDatabase<T>.GetNamed("DlcDef")` for optional content; use `GetNamedSilentFail` or XML
   string matching.
 - XML references to DLC defs need `MayRequire`; plain string matcher lists do not.

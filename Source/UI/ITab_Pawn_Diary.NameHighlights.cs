@@ -18,6 +18,7 @@ namespace PawnDiary
     public partial class ITab_Pawn_Diary
     {
         private static readonly Dictionary<string, PropertyInfo> PawnBoolPropertyCache = new Dictionary<string, PropertyInfo>();
+        private const int NameHighlightCacheTicks = 250;
         private Pawn cachedNameHighlightsPawn;
         private int cachedNameHighlightsTick = -1;
         private List<DiaryNameHighlight> cachedNameHighlights = new List<DiaryNameHighlight>();
@@ -26,7 +27,9 @@ namespace PawnDiary
         {
             int tick = Find.TickManager == null ? -1 : Find.TickManager.TicksGame;
             if (cachedNameHighlightsPawn == selectedPawn
-                && cachedNameHighlightsTick == tick
+                && cachedNameHighlightsTick >= 0
+                && tick >= 0
+                && tick - cachedNameHighlightsTick < NameHighlightCacheTicks
                 && cachedNameHighlights != null)
             {
                 return cachedNameHighlights;

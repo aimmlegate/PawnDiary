@@ -135,6 +135,14 @@ namespace PawnDiary
         // Reflection accessor for the private MentalStateHandler.pawn field so we can read the subject pawn.
         private static readonly FieldInfo PawnField = AccessTools.Field(typeof(MentalStateHandler), "pawn");
 
+        static MentalStateStartPatch()
+        {
+            if (PawnField == null)
+            {
+                Log.Warning("[PawnDiary] Could not find MentalStateHandler.pawn; mental-state diary events will not be captured.");
+            }
+        }
+
         /// <summary>
         /// Harmony Postfix for MentalStateHandler.TryStartMentalState. Forwards successful
         /// mental state transitions to DiaryGameComponent for diary recording.
@@ -205,10 +213,16 @@ namespace PawnDiary
             InteractionDef interactionDef = IntDefField?.GetValue(interactionEntry) as InteractionDef;
             Pawn initiator = InitiatorField?.GetValue(interactionEntry) as Pawn;
             Pawn recipient = RecipientField?.GetValue(interactionEntry) as Pawn;
+            DiaryGameComponent component = DiaryGameComponent.Current;
+            if (component == null || !component.ShouldCaptureInteractionFromPlayLog(initiator, recipient, interactionDef))
+            {
+                return;
+            }
+
             string initiatorGameText = GameTextFromPov(interactionEntry, initiator);
             string recipientGameText = GameTextFromPov(interactionEntry, recipient);
 
-            DiaryGameComponent.Current?.RecordInteraction(initiator, recipient, interactionDef,
+            component.RecordInteraction(initiator, recipient, interactionDef,
                 initiatorGameText, recipientGameText, interactionEntry.LogID);
         }
 
@@ -371,6 +385,14 @@ namespace PawnDiary
         // Reflection accessor for the private Pawn_RelationsTracker.pawn field so we can read the
         // subject pawn (the tracker's owner). Mirrors the MentalStateHandler.pawn pattern.
         private static readonly FieldInfo PawnField = AccessTools.Field(typeof(Pawn_RelationsTracker), "pawn");
+
+        static PawnRelationAddPatch()
+        {
+            if (PawnField == null)
+            {
+                Log.Warning("[PawnDiary] Could not find Pawn_RelationsTracker.pawn; romance diary events will not be captured.");
+            }
+        }
 
         /// <summary>
         /// Harmony Postfix for Pawn_RelationsTracker.AddDirectRelation. Forwards the relation

@@ -396,7 +396,11 @@ namespace PawnDiary
                     continue;
                 }
 
-                endpoint.url = EndpointUtility.NormalizeBaseEndpoint(endpoint.url);
+                if (endpoint.url == null)
+                {
+                    endpoint.url = string.Empty;
+                }
+
                 if (endpoint.apiKey == null)
                 {
                     endpoint.apiKey = string.Empty;
