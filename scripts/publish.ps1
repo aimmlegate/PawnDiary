@@ -266,6 +266,7 @@ New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 # About metadata + preview + published-file-id, all required for Workshop updates.
 Copy-Payload "About\About.xml" -Required | Out-Null
 Copy-Payload "About\Preview.png" -Required | Out-Null
+Copy-Payload "About\ModIcon.png" | Out-Null
 Copy-Payload "About\PublishedFileId.txt" | Out-Null
 
 # Core runtime assets.

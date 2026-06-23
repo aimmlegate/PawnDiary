@@ -11,6 +11,8 @@ not need separate entries unless they change behavior or document an important r
   shows a Diary command button with a custom journal-and-pen icon that opens or closes the same tab.
 - **Mod icon added.** `About/ModIcon.png` now uses a larger journal-and-pen mark for RimWorld's mod
   list while leaving the Workshop preview image unchanged.
+- **Release payload includes the mod icon.** The publish script now carries `About/ModIcon.png`
+  into `dist` alongside the existing Workshop preview assets.
 - **Generated tag sanitizer added.** Saved LLM output now preserves valid
   `[[speech]]...[[/speech]]` blocks while repairing malformed speech closers and stripping or
   flattening hallucinated bracket tags from small local models before diary text is persisted.
