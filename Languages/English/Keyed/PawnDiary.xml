@@ -130,7 +130,6 @@
   <PawnDiary.Settings.ApiCompatibility>Type</PawnDiary.Settings.ApiCompatibility>
   <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-compatible</PawnDiary.Settings.ApiCompatibility.Chat>
   <PawnDiary.Settings.ApiCompatibility.Responses>OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
-  <PawnDiary.Settings.ApiCompatibility.Ollama>Ollama native chat</PawnDiary.Settings.ApiCompatibility.Ollama>
   <PawnDiary.Settings.ApiAuthMode>Auth</PawnDiary.Settings.ApiAuthMode>
   <PawnDiary.Settings.ApiAuthMode.Bearer>Bearer token</PawnDiary.Settings.ApiAuthMode.Bearer>
   <PawnDiary.Settings.ApiAuthMode.None>No auth</PawnDiary.Settings.ApiAuthMode.None>
@@ -150,7 +149,6 @@
   <PawnDiary.Settings.ReasoningEffort.Medium>Medium</PawnDiary.Settings.ReasoningEffort.Medium>
   <PawnDiary.Settings.ReasoningEffort.High>High</PawnDiary.Settings.ReasoningEffort.High>
   <PawnDiary.Settings.ReasoningEffort.XHigh>Extra high</PawnDiary.Settings.ReasoningEffort.XHigh>
-  <PawnDiary.Settings.OllamaThinking>Thinking</PawnDiary.Settings.OllamaThinking>
   <PawnDiary.Settings.ToggleOn>On</PawnDiary.Settings.ToggleOn>
   <PawnDiary.Settings.ToggleOff>Off</PawnDiary.Settings.ToggleOff>
   <PawnDiary.Settings.FetchModels>Fetch</PawnDiary.Settings.FetchModels>

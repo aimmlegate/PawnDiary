@@ -314,15 +314,15 @@ queue marks the POV as prompt-only and never calls the LLM client. Those prompt-
 in the Diary tab while dev mode is on so prompt formatting can be checked from live events without
 producing generated diary text.
 
-API lanes support OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat,
-including model fetch/pick, per-row connection tests, per-row auth style (Bearer, no auth, editable
-custom API-key header such as `x-goog-api-key`, or `key=` query), per-row reasoning effort for
-OpenAI-compatible Chat and Responses providers, Ollama thinking output, and the shared request-tuning
-block shown inside the expanded connection section. Endpoint URLs and custom-header text normalize on
-send/load/save boundaries, not every settings draw, so users can edit or clear the active text field
-without it being rewritten mid-typing. Query-key auth replaces any existing `key=` parameter while
-preserving URL fragments, and logs strip query strings. Old saved `api-key` and `x-api-key` auth rows
-migrate to custom-header auth with the matching header name. Gemini's OpenAI-compatible endpoint
+API lanes support OpenAI-compatible Chat Completions and OpenAI Responses, including model
+fetch/pick, per-row connection tests, per-row auth style (Bearer, no auth, editable custom API-key
+header such as `x-goog-api-key`, or `key=` query), per-row reasoning effort, and the shared
+request-tuning block shown inside the expanded connection section. Endpoint URLs and custom-header
+text normalize on send/load/save boundaries, not every settings draw, so users can edit or clear the
+active text field without it being rewritten mid-typing. Query-key auth replaces any existing `key=`
+parameter while preserving URL fragments, and logs strip query strings. Old saved `api-key` and
+`x-api-key` auth rows migrate to custom-header auth with the matching header name. Gemini's
+OpenAI-compatible endpoint
 (`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`) uses the Chat-compatible
 mode; set Auth to Bearer or `key=` query as needed, then use the Reasoning selector to send
 `reasoning_effort` (`none`, `low`, `medium`, `high`, etc.) for Gemini thinking models.
@@ -404,13 +404,12 @@ are streamed with hard byte caps before JSON parsing/logging, so a bad endpoint 
 unbounded response string allocation. Successful responses are trimmed locally to `maxTokens`,
 preferring complete sentences for diary/note text.
 
-`LlmResponseParser` extracts typed visible output before fallback fields, falls back from blank
-Ollama content to root `response`, and strips structured or transcript-style reasoning/thinking
-before debug or save persistence. The same save-time sanitizer preserves valid speech blocks while
-removing hallucinated bracket tags and standalone schema punctuation tokens such as `;`, `=`, `:`,
-or `|` when small models echo prompt separators. API keys are never logged or saved in event
-metadata. New game sessions cancel stale requests. Orphaned pending entries reset only after two
-scans.
+`LlmResponseParser` extracts typed visible output before fallback fields and strips structured or
+transcript-style reasoning/thinking before debug or save persistence. The same save-time sanitizer
+preserves valid speech blocks while removing hallucinated bracket tags and standalone schema
+punctuation tokens such as `;`, `=`, `:`, or `|` when small models echo prompt separators. API keys
+are never logged or saved in event metadata. New game sessions cancel stale requests. Orphaned
+pending entries reset only after two scans.
 
 If no enabled lane has a model, the entry fails with `PawnDiary.Error.NoApiConfigured`.
 

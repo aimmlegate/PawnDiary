@@ -16,8 +16,7 @@ namespace PawnDiary
     public enum LlmResponseMode
     {
         OpenAIChatCompletions,
-        OpenAIResponses,
-        OllamaNativeChat
+        OpenAIResponses
     }
 
     /// <summary>
@@ -49,8 +48,6 @@ namespace PawnDiary
             {
                 case LlmResponseMode.OpenAIResponses:
                     return ParseOpenAIResponsesText(root) ?? ParseOpenAIChatText(root);
-                case LlmResponseMode.OllamaNativeChat:
-                    return ParseOllamaChatText(root);
                 default:
                     return ParseOpenAIChatText(root);
             }
@@ -80,8 +77,6 @@ namespace PawnDiary
             {
                 case LlmResponseMode.OpenAIResponses:
                     return ExtractOpenAIResponsesStatusError(root, hasGeneratedText);
-                case LlmResponseMode.OllamaNativeChat:
-                    return ExtractOllamaStatusError(root, hasGeneratedText);
                 default:
                     return ExtractOpenAIChatStatusError(root, hasGeneratedText);
             }
@@ -191,30 +186,6 @@ namespace PawnDiary
                 : (string.IsNullOrWhiteSpace(outputText) ? null : outputText);
         }
 
-        /// <summary>Supports Ollama native /api/chat with stream=false: message.content.</summary>
-        private static string ParseOllamaChatText(Dictionary<string, object> root)
-        {
-            if (root.TryGetValue("message", out object messageObject))
-            {
-                Dictionary<string, object> message = messageObject as Dictionary<string, object>;
-                if (message != null && message.TryGetValue("content", out object contentObject))
-                {
-                    string messageText = TextFromContentObject(contentObject);
-                    if (!string.IsNullOrWhiteSpace(messageText))
-                    {
-                        return messageText;
-                    }
-                }
-            }
-
-            if (root.TryGetValue("response", out object responseObject))
-            {
-                return responseObject as string;
-            }
-
-            return null;
-        }
-
         private static string TextFromContentObject(object contentObject)
         {
             string direct = contentObject as string;
@@ -297,44 +268,6 @@ namespace PawnDiary
             }
 
             return null;
-        }
-
-        private static string ExtractOllamaStatusError(Dictionary<string, object> root, bool hasGeneratedText)
-        {
-            if (!hasGeneratedText && OllamaThinkingOnly(root))
-            {
-                return "Ollama returned thinking text but no message content.";
-            }
-
-            object doneObject;
-            if (!hasGeneratedText && root.TryGetValue("done", out doneObject) && doneObject is bool && !(bool)doneObject)
-            {
-                return "Ollama returned an unfinished non-streaming response.";
-            }
-
-            return null;
-        }
-
-        private static bool OllamaThinkingOnly(Dictionary<string, object> root)
-        {
-            if (root == null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(StringField(root, "thinking")))
-            {
-                return true;
-            }
-
-            object messageObject;
-            if (!root.TryGetValue("message", out messageObject))
-            {
-                return false;
-            }
-
-            Dictionary<string, object> message = messageObject as Dictionary<string, object>;
-            return message != null && !string.IsNullOrWhiteSpace(StringField(message, "thinking"));
         }
 
         private static Dictionary<string, object> FirstChoice(Dictionary<string, object> root)

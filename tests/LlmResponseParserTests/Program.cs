@@ -75,26 +75,6 @@ namespace LlmResponseParserTests
                     Root("{\"output\":[{\"type\":\"reasoning\",\"content\":[{\"text\":\"secret\"}]},{\"content\":[{\"type\":\"output_text\",\"text\":\"Alpha.\"},{\"type\":\"reasoning_text\",\"text\":\"hidden\"},{\"type\":\"output_text\",\"text\":\"Beta.\"}]}]}"),
                     LlmResponseMode.OpenAIResponses));
 
-            AssertEqual(
-                "ollama message content",
-                "Ollama entry.",
-                LlmResponseParser.ParseGeneratedText(
-                    Root("{\"message\":{\"content\":\"Ollama entry.\"},\"done\":true}"),
-                    LlmResponseMode.OllamaNativeChat));
-
-            AssertEqual(
-                "ollama response fallback",
-                "Legacy response.",
-                LlmResponseParser.ParseGeneratedText(
-                    Root("{\"response\":\"Legacy response.\",\"done\":true}"),
-                    LlmResponseMode.OllamaNativeChat));
-
-            AssertEqual(
-                "ollama blank message falls back to response",
-                "Visible response.",
-                LlmResponseParser.ParseGeneratedText(
-                    Root("{\"message\":{\"content\":\"\",\"thinking\":\"hidden chain\"},\"response\":\"Visible response.\",\"done\":true}"),
-                    LlmResponseMode.OllamaNativeChat));
         }
 
         private static void TestProviderErrors()
@@ -123,13 +103,6 @@ namespace LlmResponseParserTests
                     LlmResponseMode.OpenAIChatCompletions,
                     false));
 
-            AssertEqual(
-                "ollama thinking only",
-                "Ollama returned thinking text but no message content.",
-                LlmResponseParser.ExtractProviderError(
-                    Root("{\"message\":{\"thinking\":\"secret\"},\"done\":true}"),
-                    LlmResponseMode.OllamaNativeChat,
-                    false));
         }
 
         private static void TestReasoningScrub()

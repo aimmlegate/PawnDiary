@@ -6,6 +6,11 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Native Ollama API mode removed.** API lanes now support only OpenAI-compatible Chat
+  Completions and OpenAI Responses. Model fetching uses OpenAI-style `/models`, generation no
+  longer builds native `/api/chat` payloads, and the native Ollama thinking toggle was removed from
+  settings.
+
 - **Harmony dependency declared in About.xml.** RimWorld 1.6 no longer ships `0Harmony.dll` in its
   `Managed` folder, so `About/About.xml` now declares the standalone Harmony mod
   (`brrainz.harmony`) under `<modDependencies>` and `<loadAfter>` for correct load ordering. The

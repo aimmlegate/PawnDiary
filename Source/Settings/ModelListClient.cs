@@ -25,8 +25,8 @@ namespace PawnDiary
         private const int MaxModelListResponseBytes = 1024 * 512;
 
         /// <summary>
-        /// Sends a GET request to the selected mode's model-list endpoint, authenticates with the
-        /// given API key when present, and returns a sorted, deduplicated list of model IDs.
+        /// Sends a GET request to the OpenAI-style model-list endpoint, authenticates with the given
+        /// API key when present, and returns a sorted, deduplicated list of model IDs.
         /// </summary>
         public static async Task<List<string>> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode, string customAuthHeaderName, ApiCompatibilityMode mode, int timeoutSeconds)
         {
@@ -45,9 +45,7 @@ namespace PawnDiary
                         throw new InvalidOperationException($"HTTP {(int)response.StatusCode}: {TrimForStatus(json)}");
                     }
 
-                    return mode == ApiCompatibilityMode.OllamaNativeChat
-                        ? ParseOllamaModelNames(json)
-                        : ParseOpenAIModelIds(json);
+                    return ParseOpenAIModelIds(json);
                 }
             }
         }
@@ -120,52 +118,6 @@ namespace PawnDiary
                 if (!string.IsNullOrWhiteSpace(id))
                 {
                     models.Add(id);
-                }
-            }
-
-            return models.Distinct().OrderBy(model => model).ToList();
-        }
-
-        /// <summary>
-        /// Extracts model names from Ollama's native /api/tags shape: { models: [{ name: ... }] }.
-        /// </summary>
-        private static List<string> ParseOllamaModelNames(string json)
-        {
-            List<string> models = new List<string>();
-            Dictionary<string, object> root = MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
-            if (root == null || !root.TryGetValue("models", out object modelsObject))
-            {
-                return models;
-            }
-
-            object[] data = modelsObject as object[];
-            if (data == null)
-            {
-                return models;
-            }
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                Dictionary<string, object> model = data[i] as Dictionary<string, object>;
-                if (model == null)
-                {
-                    continue;
-                }
-
-                string name = null;
-                if (model.TryGetValue("name", out object nameObject))
-                {
-                    name = nameObject as string;
-                }
-
-                if (string.IsNullOrWhiteSpace(name) && model.TryGetValue("model", out object modelObject))
-                {
-                    name = modelObject as string;
-                }
-
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    models.Add(name);
                 }
             }
 

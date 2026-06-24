@@ -435,8 +435,7 @@ namespace PawnDiary
         {
             return endpoint != null
                 && (endpoint.apiMode == ApiCompatibilityMode.OpenAIChatCompletions
-                    || endpoint.apiMode == ApiCompatibilityMode.OpenAIResponses
-                    || endpoint.apiMode == ApiCompatibilityMode.OllamaNativeChat);
+                    || endpoint.apiMode == ApiCompatibilityMode.OpenAIResponses);
         }
 
         /// <summary>
@@ -452,8 +451,7 @@ namespace PawnDiary
                 List<FloatMenuOption> options = new List<FloatMenuOption>
                 {
                     ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIChatCompletions),
-                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIResponses),
-                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OllamaNativeChat)
+                    ApiCompatibilityOption(endpoint, ApiCompatibilityMode.OpenAIResponses)
                 };
                 Find.WindowStack.Add(new FloatMenu(options));
             }
@@ -463,23 +461,8 @@ namespace PawnDiary
         {
             return new FloatMenuOption(ApiCompatibilityLabel(mode).Translate(), delegate
             {
-                ApiCompatibilityMode oldMode = endpoint.apiMode;
-                endpoint.apiMode = mode;
+                endpoint.apiMode = PawnDiarySettings.NormalizeApiMode(mode);
                 endpoint.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
-
-                // A fresh default row should become useful immediately when the user picks Ollama.
-                if (oldMode != ApiCompatibilityMode.OllamaNativeChat
-                    && mode == ApiCompatibilityMode.OllamaNativeChat
-                    && string.Equals(endpoint.url, PawnDiarySettings.DefaultEndpointUrl, StringComparison.OrdinalIgnoreCase))
-                {
-                    endpoint.url = PawnDiarySettings.DefaultOllamaEndpointUrl;
-                }
-                else if (oldMode == ApiCompatibilityMode.OllamaNativeChat
-                    && mode != ApiCompatibilityMode.OllamaNativeChat
-                    && string.Equals(endpoint.url, PawnDiarySettings.DefaultOllamaEndpointUrl, StringComparison.OrdinalIgnoreCase))
-                {
-                    endpoint.url = PawnDiarySettings.DefaultEndpointUrl;
-                }
             });
         }
 
@@ -489,8 +472,6 @@ namespace PawnDiary
             {
                 case ApiCompatibilityMode.OpenAIResponses:
                     return "PawnDiary.Settings.ApiCompatibility.Responses";
-                case ApiCompatibilityMode.OllamaNativeChat:
-                    return "PawnDiary.Settings.ApiCompatibility.Ollama";
                 default:
                     return "PawnDiary.Settings.ApiCompatibility.Chat";
             }
@@ -552,25 +533,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the small mode-specific option row: OpenAI-compatible reasoning effort for Chat /
-        /// Responses, or native thinking output for Ollama.
+        /// Draws the small mode-specific option row for OpenAI-compatible reasoning effort.
         /// </summary>
         private static void DrawApiAdvancedRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
         {
             Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
             Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
-
-            if (endpoint.apiMode == ApiCompatibilityMode.OllamaNativeChat)
-            {
-                Widgets.LabelFit(labelRect, "PawnDiary.Settings.OllamaThinking".Translate());
-                string labelKey = endpoint.ollamaThink ? "PawnDiary.Settings.ToggleOn" : "PawnDiary.Settings.ToggleOff";
-                if (Widgets.ButtonText(buttonRect, labelKey.Translate()))
-                {
-                    endpoint.ollamaThink = !endpoint.ollamaThink;
-                }
-
-                return;
-            }
 
             Widgets.LabelFit(labelRect, "PawnDiary.Settings.ReasoningEffort".Translate());
             if (Widgets.ButtonText(buttonRect, ReasoningEffortLabel(endpoint.reasoningEffort).Translate()))
@@ -1445,7 +1413,6 @@ namespace PawnDiary
             ApiAuthMode authMode = ApiAuthMode.BearerToken;
             ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
             string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
-            bool ollamaThink = false;
             try
             {
                 isTestingConnection = true;
@@ -1470,9 +1437,8 @@ namespace PawnDiary
                 customAuthHeaderName = endpoint.customAuthHeaderName;
                 model = endpoint.model;
                 authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode);
-                apiMode = endpoint.apiMode;
+                apiMode = PawnDiarySettings.NormalizeApiMode(endpoint.apiMode);
                 reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
-                ollamaThink = endpoint.ollamaThink;
                 int timeoutSeconds = Settings.timeoutSeconds;
                 float temperature = Settings.temperature;
                 string prompt = "PawnDiary.Settings.ConnectionTestPrompt".Translate();
@@ -1491,8 +1457,7 @@ namespace PawnDiary
                     authMode = authMode,
                     customAuthHeaderName = customAuthHeaderName,
                     apiMode = apiMode,
-                    reasoningEffort = reasoningEffort,
-                    ollamaThink = ollamaThink
+                    reasoningEffort = reasoningEffort
                 }, prompt, timeoutSeconds, temperature);
 
                 pendingConnectionTestResult = new ConnectionTestResult
@@ -1507,8 +1472,7 @@ namespace PawnDiary
                     model = model,
                     authMode = authMode,
                     apiMode = apiMode,
-                    reasoningEffort = reasoningEffort,
-                    ollamaThink = ollamaThink
+                    reasoningEffort = reasoningEffort
                 };
             }
             catch (Exception ex)
@@ -1525,8 +1489,7 @@ namespace PawnDiary
                     model = model,
                     authMode = authMode,
                     apiMode = apiMode,
-                    reasoningEffort = reasoningEffort,
-                    ollamaThink = ollamaThink
+                    reasoningEffort = reasoningEffort
                 };
             }
         }
@@ -1784,9 +1747,8 @@ namespace PawnDiary
                 && string.Equals(endpoint.model ?? string.Empty, result.model ?? string.Empty, StringComparison.Ordinal)
                 && PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == result.authMode
                 && string.Equals(ApiEndpointPolicy.EffectiveAuthHeaderName(endpoint.authMode, endpoint.customAuthHeaderName), result.customAuthHeaderName ?? string.Empty, StringComparison.Ordinal)
-                && endpoint.apiMode == result.apiMode
-                && string.Equals(PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort), result.reasoningEffort ?? string.Empty, StringComparison.Ordinal)
-                && endpoint.ollamaThink == result.ollamaThink;
+                && PawnDiarySettings.NormalizeApiMode(endpoint.apiMode) == result.apiMode
+                && string.Equals(PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort), result.reasoningEffort ?? string.Empty, StringComparison.Ordinal);
         }
 
         private static string ConnectionTestLaneLabel(ConnectionTestResult result)
@@ -1913,7 +1875,6 @@ namespace PawnDiary
             public ApiAuthMode authMode;
             public ApiCompatibilityMode apiMode;
             public string reasoningEffort;
-            public bool ollamaThink;
         }
     }
 

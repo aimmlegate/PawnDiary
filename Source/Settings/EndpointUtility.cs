@@ -28,10 +28,7 @@ namespace PawnDiary
             {
                 "/chat/completions",
                 "/responses",
-                "/api/chat",
-                "/api/generate",
-                "/models",
-                "/api/tags"
+                "/models"
             };
 
             for (int i = 0; i < suffixes.Length; i++)
@@ -50,7 +47,7 @@ namespace PawnDiary
         /// <summary>Builds the full model-list URL for the selected compatibility mode.</summary>
         public static string BuildModelsUrl(string endpoint, ApiCompatibilityMode mode)
         {
-            return NormalizeBaseEndpoint(endpoint) + (mode == ApiCompatibilityMode.OllamaNativeChat ? "/api/tags" : "/models");
+            return NormalizeBaseEndpoint(endpoint) + "/models";
         }
 
         /// <summary>Builds the full generation URL for the selected compatibility mode.</summary>
@@ -60,8 +57,6 @@ namespace PawnDiary
             {
                 case ApiCompatibilityMode.OpenAIResponses:
                     return NormalizeBaseEndpoint(endpoint) + "/responses";
-                case ApiCompatibilityMode.OllamaNativeChat:
-                    return NormalizeBaseEndpoint(endpoint) + "/api/chat";
                 default:
                     return BuildChatCompletionsUrl(endpoint);
             }

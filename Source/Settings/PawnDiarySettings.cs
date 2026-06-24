@@ -12,14 +12,13 @@ namespace PawnDiary
 {
     /// <summary>
     /// Which request/response shape an API lane speaks. Most providers that advertise
-    /// "OpenAI-compatible" should use <see cref="OpenAIChatCompletions"/>; the other modes cover
-    /// newer OpenAI reasoning models and Ollama's native thinking-model endpoint.
+    /// "OpenAI-compatible" should use <see cref="OpenAIChatCompletions"/>; the Responses mode covers
+    /// newer OpenAI reasoning models.
     /// </summary>
     public enum ApiCompatibilityMode
     {
         OpenAIChatCompletions,
-        OpenAIResponses,
-        OllamaNativeChat
+        OpenAIResponses
     }
 
     /// <summary>
@@ -47,8 +46,6 @@ namespace PawnDiary
         public ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
         // OpenAI Responses reasoning effort. "default" means omit the reasoning object entirely.
         public string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
-        // Ollama native chat: opt into the model's separate thinking stream when supported.
-        public bool ollamaThink;
 
         public ApiEndpointConfig()
         {
@@ -73,8 +70,7 @@ namespace PawnDiary
                 authMode = authMode,
                 customAuthHeaderName = customAuthHeaderName,
                 apiMode = apiMode,
-                reasoningEffort = reasoningEffort,
-                ollamaThink = ollamaThink
+                reasoningEffort = reasoningEffort
             };
         }
 
@@ -89,7 +85,6 @@ namespace PawnDiary
             Scribe_Values.Look(ref enabled, "enabled", true);
             Scribe_Values.Look(ref apiMode, "apiMode", ApiCompatibilityMode.OpenAIChatCompletions);
             Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
-            Scribe_Values.Look(ref ollamaThink, "ollamaThink", false);
         }
     }
 
@@ -216,8 +211,6 @@ namespace PawnDiary
 
         // Default local LLM server endpoint (LM Studio/OpenAI-compatible local servers).
         public const string DefaultEndpointUrl = "http://localhost:1234/v1";
-        // Default native Ollama endpoint used when a user switches a fresh row to Ollama mode.
-        public const string DefaultOllamaEndpointUrl = "http://localhost:11434";
         // Placeholder model name; real value depends on the local server's loaded model.
         public const string DefaultModelName = "local-model";
         // Sentinel value stored in settings to mean "do not send a reasoning override".
@@ -670,6 +663,7 @@ namespace PawnDiary
                 }
 
                 endpoint.authMode = NormalizeAuthMode(endpoint.authMode);
+                endpoint.apiMode = NormalizeApiMode(endpoint.apiMode);
                 endpoint.reasoningEffort = NormalizeReasoningEffort(endpoint.reasoningEffort);
             }
         }
@@ -733,6 +727,14 @@ namespace PawnDiary
         public static ApiAuthMode NormalizeAuthMode(ApiAuthMode mode)
         {
             return ApiEndpointPolicy.NormalizeAuthMode(mode);
+        }
+
+        /// <summary>Normalizes invalid compatibility enum values loaded from hand-edited settings.</summary>
+        public static ApiCompatibilityMode NormalizeApiMode(ApiCompatibilityMode mode)
+        {
+            return mode == ApiCompatibilityMode.OpenAIResponses
+                ? ApiCompatibilityMode.OpenAIResponses
+                : ApiCompatibilityMode.OpenAIChatCompletions;
         }
 
         // ---- Interaction group helpers ----

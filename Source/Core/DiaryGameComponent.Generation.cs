@@ -529,7 +529,6 @@ namespace PawnDiary
                 customAuthHeaderName = target.customAuthHeaderName,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
-                ollamaThink = target.ollamaThink,
                 // The other configured lanes, tried in order if this one errors ("use next model").
                 failoverTargets = failoverTargets,
                 timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
@@ -1014,7 +1013,6 @@ namespace PawnDiary
                 customAuthHeaderName = target.customAuthHeaderName,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
-                ollamaThink = target.ollamaThink,
                 failoverTargets = BuildFailoverTargets(targets, target),
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = TitleMaxTokens,

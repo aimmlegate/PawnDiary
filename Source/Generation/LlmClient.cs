@@ -57,9 +57,6 @@ namespace PawnDiary
         /// <summary>OpenAI Responses reasoning effort. "default" means no reasoning override.</summary>
         public string reasoningEffort;
 
-        /// <summary>Ollama native chat: whether to request the model's separate thinking stream.</summary>
-        public bool ollamaThink;
-
         /// <summary>
         /// Ordered alternate lanes (endpoint + key + model) to try if the primary lane above errors —
         /// "on error, use the next model". Optional; null/empty means no failover. Populated by the
@@ -366,7 +363,6 @@ namespace PawnDiary
                     customAuthHeaderName = endpoint.customAuthHeaderName,
                     apiMode = endpoint.apiMode,
                     reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
-                    ollamaThink = endpoint.ollamaThink,
                     timeoutSeconds = timeoutSeconds,
                     maxTokens = 32,
                     temperature = temperature,
@@ -727,7 +723,6 @@ namespace PawnDiary
                     request.modelName = target.model;
                     request.apiMode = target.apiMode;
                     request.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(target.reasoningEffort);
-                    request.ollamaThink = target.ollamaThink;
                     string laneLabel = LaneLabel(request);
 
                     // Reuse the gate captured at enqueue for the first lane; create per-lane gates
@@ -930,8 +925,7 @@ namespace PawnDiary
                     authMode = PawnDiarySettings.NormalizeAuthMode(request.authMode),
                     customAuthHeaderName = request.customAuthHeaderName,
                     apiMode = request.apiMode,
-                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort),
-                    ollamaThink = request.ollamaThink
+                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort)
                 }
             };
 
@@ -1108,8 +1102,6 @@ namespace PawnDiary
             {
                 case ApiCompatibilityMode.OpenAIResponses:
                     return BuildOpenAIResponsesRequestJson(request);
-                case ApiCompatibilityMode.OllamaNativeChat:
-                    return BuildOllamaChatRequestJson(request);
                 default:
                     return BuildOpenAIChatRequestJson(request);
             }
@@ -1124,8 +1116,6 @@ namespace PawnDiary
             {
                 case ApiCompatibilityMode.OpenAIResponses:
                     return LlmResponseMode.OpenAIResponses;
-                case ApiCompatibilityMode.OllamaNativeChat:
-                    return LlmResponseMode.OllamaNativeChat;
                 default:
                     return LlmResponseMode.OpenAIChatCompletions;
             }
@@ -1168,20 +1158,6 @@ namespace PawnDiary
             }
 
             return json + "}";
-        }
-
-        private static string BuildOllamaChatRequestJson(LlmGenerationRequest request)
-        {
-            return "{"
-                + "\"model\":\"" + JsonEscape(request.modelName) + "\","
-                + "\"messages\":[" + BuildMessagesJson(request) + "],"
-                + "\"think\":" + (request.ollamaThink ? "true" : "false") + ","
-                + "\"stream\":false,"
-                + "\"options\":{"
-                    + "\"temperature\":" + JsonNumber(request.temperature) + ","
-                    + "\"num_predict\":" + request.maxTokens
-                + "}"
-                + "}";
         }
 
         /// <summary>
