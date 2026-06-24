@@ -6,28 +6,28 @@ using Verse;
 
 namespace PawnDiary
 {
-    // XML-backed writing style for a pawn. The rule is sent in the user prompt as
-    // "persona:" so the model has a stable voice target separate from traits/mood.
+    // XML-backed writing style for a pawn. The class/field names keep "Persona" for save and Def
+    // compatibility with older Pawn Diary versions, but the player-facing feature is writing styles.
     public class DiaryPersonaDef : Def
     {
-        // The writing rule injected into the LLM prompt as "persona:" so the model adopts a consistent voice.
+        // The writing-style rule injected into the LLM system prompt.
         public string rule;
 
         // Coarse internal keyword tags (e.g. "grim", "warm", "anxious", "void") used only to bias the
-        // *initial* persona roll toward a fitting voice for the pawn's traits/backstory. They are
+        // *initial* style roll toward prose that fits the pawn's traits/backstory. They are
         // matched against PersonaAffinity's pawn -> theme logic; "void" also gets a creepjoiner-only
-        // boost. Tags are never shown to the player, so they are NOT localized. Untagged personas
+        // boost. Tags are never shown to the player, so they are NOT localized. Untagged styles
         // simply ride the base weight.
         // Initialized so old/partial defs that omit <themes> never NullReference.
         public List<string> themes = new List<string>();
     }
 
-    // Central lookup/fallback helper for the persona catalog. RimWorld loads Defs from
+    // Central lookup/fallback helper for the writing-style catalog. RimWorld loads Defs from
     // 1.6/Defs/DiaryPersonaDefs.xml; the hardcoded fallback keeps saves usable if XML is missing.
     public static class DiaryPersonas
     {
-        // Fixed vocabulary used by PersonaAffinity and the persona-settings editor. Players can
-        // assign only these tags to custom personas, which keeps weighting behavior predictable.
+        // Fixed vocabulary used by PersonaAffinity and the writing-style settings editor. Players can
+        // assign only these tags to custom styles, which keeps weighting behavior predictable.
         public static readonly string[] PredefinedThemeTags =
         {
             "grim",
@@ -46,8 +46,8 @@ namespace PawnDiary
         private static readonly DiaryPersonaDef Fallback = new DiaryPersonaDef
         {
             defName = "DiaryPersona_StoicSurvivor",
-            label = "stoic-survivor",
-            rule = "writes in short, flat sentences and ends on the next task to do. States the plain fact and skips the feeling. For example: \"Wall's patched. Two breaches left. Rest can wait.\""
+            label = "three-line-note",
+            rule = "This pawn tends to write exactly three short diary sentences: fact, problem, next action. No flourish. For example: \"Wall patched. Rain still gets through. I will fix the gap tomorrow.\""
         };
 
         // Wrapped in a list so All can return a non-null IReadOnlyList even with zero XML defs.
@@ -58,7 +58,7 @@ namespace PawnDiary
         private static PawnDiarySettings cachedSettings;
 
         /// <summary>
-        /// All loaded persona defs, or the hardcoded fallback list if none exist in XML.
+        /// All loaded writing-style defs, or the hardcoded fallback list if none exist in XML.
         /// </summary>
         public static IReadOnlyList<DiaryPersonaDef> All
         {
@@ -84,7 +84,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Clears the merged persona catalog after settings-backed preset edits or load-time cleanup.
+        /// Clears the merged style catalog after settings-backed preset edits or load-time cleanup.
         /// </summary>
         public static void InvalidateCache()
         {
@@ -95,21 +95,21 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// The default persona, sourced from DiaryPromptDef.xml's defaultPersonaDefName,
+        /// The default writing style, sourced from DiaryPromptDef.xml's defaultPersonaDefName,
         /// with cascading fallbacks to the first available def then the hardcoded Fallback.
         /// </summary>
         public static DiaryPersonaDef Default
         {
             get
             {
-                // The default persona is itself configurable in DiaryPromptDef.xml.
+                // The default style is itself configurable in DiaryPromptDef.xml.
                 return ForDefName(DiaryPrompts.Current.defaultPersonaDefName) ?? All.FirstOrDefault() ?? Fallback;
             }
         }
 
         /// <summary>
-        /// Picks the initial persona for a brand-new pawn diary record. Existing records keep
-        /// their saved persona; this is only used the first time a pawn enters the diary system.
+        /// Picks the initial style for a brand-new pawn diary record. Existing records keep
+        /// their saved style; this is only used the first time a pawn enters the diary system.
         /// </summary>
         public static DiaryPersonaDef RandomStartingPersona()
         {
@@ -122,8 +122,8 @@ namespace PawnDiary
             return personas[Rand.Range(0, personas.Count)] ?? Default ?? Fallback;
         }
 
-        // Base weight every persona gets so the catalog never starves; the theme bonus is layered
-        // on top. Multiplied per duplicate already in use, so a persona another colonist holds is
+        // Base weight every style gets so the catalog never starves; the theme bonus is layered
+        // on top. Multiplied per duplicate already in use, so a style another colonist holds is
         // ~quarter as likely each time (soft penalty, never fully excluded). Floor keeps weights
         // positive so weighted selection cannot divide by zero. Tunable.
         private const float BaseWeight = 1f;
@@ -131,11 +131,11 @@ namespace PawnDiary
         private const float WeightFloor = 0.0001f;
 
         /// <summary>
-        /// Picks the initial persona for a NEW pawn, biased toward personas whose <c>themes</c>
+        /// Picks the initial style for a NEW pawn, biased toward styles whose <c>themes</c>
         /// fit the pawn's traits/backstory (see <see cref="PersonaAffinity"/>) and softly penalized
-        /// for personas already used by other colonists (<paramref name="usedCounts"/> maps a
-        /// persona defName to how many current colonists already write in it). Falls back to a flat
-        /// random pick if weights are unusable. Existing records keep their saved persona — this
+        /// for styles already used by other colonists (<paramref name="usedCounts"/> maps a
+        /// style defName to how many current colonists already write in it). Falls back to a flat
+        /// random pick if weights are unusable. Existing records keep their saved style — this
         /// only runs the first time a pawn enters the diary system.
         /// </summary>
         public static DiaryPersonaDef WeightedStartingPersona(Pawn pawn, IDictionary<string, int> usedCounts)
@@ -159,7 +159,7 @@ namespace PawnDiary
 
                 float weight = BaseWeight + PersonaAffinity.ThemeBonusFor(persona, pawn);
 
-                // Apply the soft duplicate penalty once per colonist already using this persona.
+                // Apply the soft duplicate penalty once per colonist already using this style.
                 int used = 0;
                 if (usedCounts != null && persona.defName != null && usedCounts.TryGetValue(persona.defName, out used) && used > 0)
                 {
@@ -192,7 +192,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Looks up a persona by defName, returning null if not found or the name is blank.
+        /// Looks up a writing style by defName, returning null if not found or the name is blank.
         /// </summary>
         public static DiaryPersonaDef ForDefName(string defName)
         {
@@ -205,14 +205,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resolves a defName to its persona, falling back to Default if the name is missing or unknown.
+        /// Resolves a defName to its style, falling back to Default if the name is missing or unknown.
         /// </summary>
         public static DiaryPersonaDef Resolve(string defName)
         {
             return ForDefName(defName) ?? Default;
         }
 
-        // Include the label in the prompt so debug output clearly shows which preset was used.
+        // Include the label in the prompt so debug output clearly shows which style was used.
         public static string RuleFor(string defName)
         {
             DiaryPersonaDef persona = Resolve(defName);
@@ -230,7 +230,7 @@ namespace PawnDiary
             return persona.label + ": " + rule;
         }
 
-        // Builds the effective runtime catalog from XML defs plus settings-based edits/custom rows.
+        // Builds the effective runtime style catalog from XML defs plus settings-based edits/custom rows.
         private static IReadOnlyList<DiaryPersonaDef> MergeWithSettings(IReadOnlyList<DiaryPersonaDef> baseList,
             PawnDiarySettings settings)
         {

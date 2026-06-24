@@ -25,8 +25,8 @@
   <PawnDiary.Tab.NoGeneratedEntries>No finished pages yet.</PawnDiary.Tab.NoGeneratedEntries>
   <PawnDiary.Tab.GenerateForPawn>Write diary pages for this pawn</PawnDiary.Tab.GenerateForPawn>
   <PawnDiary.Tab.GenerateForPawnTip>When disabled, events are still remembered here, but no new diary page is sent to the writer for this pawn.</PawnDiary.Tab.GenerateForPawnTip>
-  <PawnDiary.Tab.ShowPersonaSettings>Show persona settings</PawnDiary.Tab.ShowPersonaSettings>
-  <PawnDiary.Tab.ShowPersonaSettingsTip>Show the manual persona picker in this pawn's Diary tab.</PawnDiary.Tab.ShowPersonaSettingsTip>
+  <PawnDiary.Tab.ShowPersonaSettings>Show writing-style settings</PawnDiary.Tab.ShowPersonaSettings>
+  <PawnDiary.Tab.ShowPersonaSettingsTip>Show the manual writing-style picker in this pawn's Diary tab.</PawnDiary.Tab.ShowPersonaSettingsTip>
   <PawnDiary.Tab.ShowLlmDebugInfo>Show LLM debug info</PawnDiary.Tab.ShowLlmDebugInfo>
   <PawnDiary.Tab.ShowLlmDebugInfoTip>Show raw, pending, and failed entries with endpoint, model, status, error, and prompt diagnostics.</PawnDiary.Tab.ShowLlmDebugInfoTip>
   <PawnDiary.Tab.ShowGeneratingEntries>Show pages still being written</PawnDiary.Tab.ShowGeneratingEntries>
@@ -84,7 +84,7 @@
   <PawnDiary.Tab.DevPreviewTitle>Title</PawnDiary.Tab.DevPreviewTitle>
   <PawnDiary.Tab.DevPreviewClear>Clear</PawnDiary.Tab.DevPreviewClear>
   <PawnDiary.Tab.DevPreviewTip>Dev-only: shows one temporary diary page at the top of the list so text wrapping, markdown, linked cards, writing/title animations, colors, speech blocks, and atmosphere decorations can be checked without saving mock events.</PawnDiary.Tab.DevPreviewTip>
-  <PawnDiary.Tab.PersonaButton>Persona: {0}</PawnDiary.Tab.PersonaButton>
+  <PawnDiary.Tab.PersonaButton>Writing style: {0}</PawnDiary.Tab.PersonaButton>
   <PawnDiary.Tab.LinkedInitiator>{0}'s perspective (initiator):</PawnDiary.Tab.LinkedInitiator>
   <PawnDiary.Tab.LinkedRecipient>{0}'s perspective (recipient):</PawnDiary.Tab.LinkedRecipient>
   <PawnDiary.Tab.LinkedNotGenerated>[not written yet]</PawnDiary.Tab.LinkedNotGenerated>
@@ -193,7 +193,7 @@
   <PawnDiary.Settings.HidePromptStudio>Hide prompts</PawnDiary.Settings.HidePromptStudio>
   <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts and per-event prompt guidance. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
   <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates and {1} event prompt types loaded; {2} event types customized in settings</PawnDiary.Settings.PromptStudioSummary>
-  <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and persona catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
+  <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and writing-style catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
   <PawnDiary.Settings.ResetEventPromptOverrides>Restore event defaults</PawnDiary.Settings.ResetEventPromptOverrides>
   <PawnDiary.Settings.EventPromptPickerHeader>Event prompt type</PawnDiary.Settings.EventPromptPickerHeader>
   <PawnDiary.Settings.PromptTypePickerHeader>Prompt type</PawnDiary.Settings.PromptTypePickerHeader>
@@ -211,22 +211,22 @@
   <PawnDiary.Settings.RestorePromptDefault>Restore XML default</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Customized from the XML default</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Using the XML default</PawnDiary.Settings.PromptStatusDefault>
-  <PawnDiary.Settings.PersonaStudioTitle>Persona presets</PawnDiary.Settings.PersonaStudioTitle>
-  <PawnDiary.Settings.PersonaStudioHelp>Edit persona labels, voice rules, and theme tags from DiaryPersonaDefs.xml, or add your own. Tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
-  <PawnDiary.Settings.PersonaStudioSummary>{0} personas total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>
-  <PawnDiary.Settings.PersonaStudioTagsHelp>Custom personas must keep at least one predefined tag.</PawnDiary.Settings.PersonaStudioTagsHelp>
-  <PawnDiary.Settings.AddPersonaPreset>Add custom persona</PawnDiary.Settings.AddPersonaPreset>
-  <PawnDiary.Settings.NewPersonaLabel>New Persona</PawnDiary.Settings.NewPersonaLabel>
-  <PawnDiary.Settings.ResetPersonaPresets>Restore all persona defaults</PawnDiary.Settings.ResetPersonaPresets>
-  <PawnDiary.Settings.PersonaPickerHeader>Persona</PawnDiary.Settings.PersonaPickerHeader>
-  <PawnDiary.Settings.EditingPersona>Editing persona: {0}</PawnDiary.Settings.EditingPersona>
-  <PawnDiary.Settings.PersonaBadgeBuiltIn>Built-in preset</PawnDiary.Settings.PersonaBadgeBuiltIn>
-  <PawnDiary.Settings.PersonaBadgeCustom>Custom preset</PawnDiary.Settings.PersonaBadgeCustom>
+  <PawnDiary.Settings.PersonaStudioTitle>Writing styles</PawnDiary.Settings.PersonaStudioTitle>
+  <PawnDiary.Settings.PersonaStudioHelp>Edit writing-style labels, style rules, and theme tags from DiaryPersonaDefs.xml, or add your own. Tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
+  <PawnDiary.Settings.PersonaStudioSummary>{0} styles total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>
+  <PawnDiary.Settings.PersonaStudioTagsHelp>Custom writing styles must keep at least one predefined tag.</PawnDiary.Settings.PersonaStudioTagsHelp>
+  <PawnDiary.Settings.AddPersonaPreset>Add custom style</PawnDiary.Settings.AddPersonaPreset>
+  <PawnDiary.Settings.NewPersonaLabel>New Writing Style</PawnDiary.Settings.NewPersonaLabel>
+  <PawnDiary.Settings.ResetPersonaPresets>Restore all style defaults</PawnDiary.Settings.ResetPersonaPresets>
+  <PawnDiary.Settings.PersonaPickerHeader>Style</PawnDiary.Settings.PersonaPickerHeader>
+  <PawnDiary.Settings.EditingPersona>Editing style: {0}</PawnDiary.Settings.EditingPersona>
+  <PawnDiary.Settings.PersonaBadgeBuiltIn>Built-in style</PawnDiary.Settings.PersonaBadgeBuiltIn>
+  <PawnDiary.Settings.PersonaBadgeCustom>Custom style</PawnDiary.Settings.PersonaBadgeCustom>
   <PawnDiary.Settings.PersonaLabel>Label</PawnDiary.Settings.PersonaLabel>
-  <PawnDiary.Settings.PersonaRule>Voice rule (used as prompt persona text)</PawnDiary.Settings.PersonaRule>
+  <PawnDiary.Settings.PersonaRule>Style rule (used in first-person prompts)</PawnDiary.Settings.PersonaRule>
   <PawnDiary.Settings.PersonaTags>Theme tags (first-roll weighting)</PawnDiary.Settings.PersonaTags>
-  <PawnDiary.Settings.RestorePersonaPreset>Restore preset</PawnDiary.Settings.RestorePersonaPreset>
-  <PawnDiary.Settings.DeletePersonaPreset>Delete this custom persona</PawnDiary.Settings.DeletePersonaPreset>
+  <PawnDiary.Settings.RestorePersonaPreset>Restore style</PawnDiary.Settings.RestorePersonaPreset>
+  <PawnDiary.Settings.DeletePersonaPreset>Delete this custom style</PawnDiary.Settings.DeletePersonaPreset>
   <PawnDiary.Settings.PersonaTag.grim>grim</PawnDiary.Settings.PersonaTag.grim>
   <PawnDiary.Settings.PersonaTag.warm>warm</PawnDiary.Settings.PersonaTag.warm>
   <PawnDiary.Settings.PersonaTag.hostile>hostile</PawnDiary.Settings.PersonaTag.hostile>
@@ -303,7 +303,7 @@
   <PawnDiary.Event.DayReflectionLabel>Looking back on the day</PawnDiary.Event.DayReflectionLabel>
   <PawnDiary.Event.DayReflectionHeader>Of everything today, these stayed with {0}:</PawnDiary.Event.DayReflectionHeader>
   <PawnDiary.Event.DayReflectionFallback>{0} settled down at the end of a quiet, unremarkable day.</PawnDiary.Event.DayReflectionFallback>
-  <PawnDiary.Event.DayReflectionInstruction>write one short reflective diary paragraph as {0} settling down at day's end, looking back on the day as a whole; weave together only the moments below that would still be on their mind, in their own voice; these are the highlights they already lived, so reflect on how the day felt rather than re-reporting each event; do not write a list or mention counts</PawnDiary.Event.DayReflectionInstruction>
+  <PawnDiary.Event.DayReflectionInstruction>write one short reflective diary paragraph as {0} settling down at day's end, looking back on the day as a whole; weave together only the moments below that would still be on their mind, using their writing style; these are the highlights they already lived, so reflect on how the day felt rather than re-reporting each event; do not write a list or mention counts</PawnDiary.Event.DayReflectionInstruction>
   <PawnDiary.Event.DayReflectionFillerLine>the ordinary background of small talk and passing moods</PawnDiary.Event.DayReflectionFillerLine>
   <PawnDiary.Event.DayReflectionOpinionWarmed>felt noticeably warmer toward {0}</PawnDiary.Event.DayReflectionOpinionWarmed>
   <PawnDiary.Event.DayReflectionOpinionCooled>grew noticeably colder toward {0}</PawnDiary.Event.DayReflectionOpinionCooled>
@@ -387,9 +387,9 @@
   <PawnDiary.Error.TitleEmptyResponse>Title follow-up returned no usable text.</PawnDiary.Error.TitleEmptyResponse>
 
   <!-- ===== Prompt context: descriptive words the model reads (the field KEYS stay English) ===== -->
-  <!-- Persona voice block appended to the first-person system prompt at dispatch. {0} is the
-       persona's voice rule (e.g. "writes in terse, matter-of-fact sentences..."). -->
-  <PawnDiary.Prompt.PersonaVoice>Write in this colonist's own voice — someone who {0} Let this voice shape word choice, rhythm, and which details they notice, not only what happens.</PawnDiary.Prompt.PersonaVoice>
+  <!-- Writing-style block appended to the first-person system prompt at dispatch. {0} is the
+       style label plus rule (e.g. "three-line-note: This pawn tends to write..."). -->
+  <PawnDiary.Prompt.PersonaVoice>How this pawn tends to write: {0} Follow the rule's concrete sentence shape, opening move, punctuation, and detail choice. Do not roleplay a chat persona, add catchphrases, or invent dialogue.</PawnDiary.Prompt.PersonaVoice>
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
   <PawnDiary.Prompt.Health.HighPriority>high priority</PawnDiary.Prompt.Health.HighPriority>

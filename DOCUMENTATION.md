@@ -34,7 +34,7 @@ PawnDiary/
 |-- About/                         mod metadata and preview
 |-- 1.6/
 |   |-- Assemblies/PawnDiary.dll    committed build output
-|   `-- Defs/                       groups, tuning, prompts, personas, UI/text policy
+|   `-- Defs/                       groups, tuning, prompts, writing styles, UI/text policy
 |-- Languages/                     Keyed and DefInjected localization
 |-- Source/
 |   |-- Capture/                   Event Catalog pure payloads/specs/registry
@@ -64,7 +64,7 @@ Key files:
 | `DiaryPromptBuilder.cs` / `Source/Pipeline/*` | Prompt facade plus pure planning, response cleanup, domain recovery, and text decoration. |
 | `DiaryContextBuilder.cs` / `DlcContext.cs` | Pawn/surroundings/relationship/health/weapon context; DLC reads are centralized and guarded. |
 | `InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, odds, cooldowns, scanner policy, and shared tuning. |
-| `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, persona, UI, and display policy. |
+| `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, UI, and display policy. |
 | `LlmClient.cs` / `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
 | `PawnDiaryMod.cs` / `PawnDiarySettings.cs` | Settings data and settings UI. |
 | `ITab_Pawn_Diary*.cs` / `DiaryTextFormat.cs` | Hidden Diary inspect tab, cards, paging, debug controls, and safe rich-text formatting. |
@@ -187,7 +187,7 @@ and DLC/mod friendly.
 
 ---
 
-## 7. Prompts And Personas
+## 7. Prompts And Writing Styles
 
 Prompts are compact `key: value` lines. Empty values and `none` / `n/a` / `unknown` sentinels are
 dropped. Prompt templates include pair, solo, batched, day-reflection, death-description,
@@ -236,9 +236,17 @@ Layer boundaries:
 - Pure: `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
   `LlmResponseParser`, `DiaryResponsePostprocessor`, and `DiaryTextDecorations`.
 
-Personas come from `DiaryPersonaDef` plus settings overrides/custom rows. Weighted selection uses
-base weight, trait/backstory matches, creepjoiner bonuses, and duplicate penalties. Persona text is
-used for first-person templates only; neutral arrival/death and title prompts are persona-free.
+Writing styles come from `DiaryPersonaDef` plus settings overrides/custom rows. The Def and save
+field names still say "Persona" for compatibility with older Pawn Diary saves, but the player-facing
+feature is writing styles. Weighted selection uses base weight, trait/backstory matches, creepjoiner
+bonuses, and duplicate penalties. Style text is appended to first-person system prompts only;
+neutral arrival/death and title prompts are style-free. Each built-in rule is phrased as how that
+pawn tends to write diary notes, and the stock catalog is intentionally high-contrast for small local
+models: sentence count/order, punctuation habits, fragments, repeated words, questions, body logs,
+social room-reading, and other concrete mechanics separate the presets more than mood synonyms do.
+The wrapper tells the model to follow the rule's concrete sentence shape, opening move, punctuation,
+and detail choice, and explicitly not to roleplay a chat persona, add catchphrases, or invent
+dialogue.
 
 Prompt enchantments are XML-weighted live health/capacity cues. Eligible first-person prompts may
 add one localized `important health:` field as pressure, not as the subject unless the event itself
@@ -268,7 +276,7 @@ successful lane when possible.
 Core settings include API lanes, lane routing mode, request tuning (timeout, max concurrency, max
 tokens, and temperature), title generation, atmospheric formatting, prompt enchantments,
 work/social generation weights, system prompt overrides, per-event prompt/enhancement overrides,
-XML-backed event filters, and persona presets. RimWorld dev mode also reveals prompt test mode in
+XML-backed event filters, and writing-style presets. RimWorld dev mode also reveals prompt test mode in
 mod settings: real gameplay events still assemble their system and user prompts, but the generation
 queue marks the POV as prompt-only and never calls the LLM client. Those prompt-only cards are shown
 in the Diary tab while dev mode is on so prompt formatting can be checked from live events without
@@ -288,15 +296,16 @@ the first ready row. Row order also remains the failover order in every mode.
 
 Prompt Studio is a collapsible settings section. Its selector contains both shared system prompts
 and `DiaryEventPromptDef` event prompt types, and the selected prompt's editor appears in the same
-highlighted block as the selector. Persona presets likewise use one highlighted block for summary,
-add/reset actions, persona selection, rule editing, tag toggles, and the selected preset action.
+highlighted block as the selector. Writing-style presets likewise use one highlighted block for
+summary, add/reset actions, style selection, rule editing, tag toggles, and the selected preset
+action.
 
 The Diary surface is still an inspect tab internally, but its normal inspector tab-strip button is
 hidden. Selecting one eligible colonist pawn, or a colonist corpse, adds a **Diary** command button
 that opens or closes that same tab. Social-log diary links and linked-POV diary navigation also
 continue to open the same hidden tab.
 
-The Diary UI shows completed pages in production. Dev mode adds generation enablement, persona
+The Diary UI shows completed pages in production. Dev mode adds generation enablement, writing-style
 picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient
 formatting preview rows for prose, markdown, speech, combat/social-fight/mental/dark/death
 colors, linked cards, writing placeholders, title-pending animation, and atmosphere checks, plus
@@ -410,12 +419,12 @@ callers to slot accessors, and only then consider retiring direct legacy writes.
 
 Player-facing UI strings and natural-language prompt text live in
 `Languages/English/Keyed/PawnDiary.xml` and are resolved with `.Translate()` on the main thread.
-Def text (`label`, `instruction`, `tone`, persona `rule`, prompt defs/templates, hediff/body-part
+Def text (`label`, `instruction`, `tone`, writing-style `rule`, prompt defs/templates, hediff/body-part
 labels) localizes through DefInjected.
 
 Keep DefInjected English stubs in sync for `DiaryInteractionGroupDef`, `DiaryEventPromptDef`,
 `DiaryPersonaDef`, and `DiaryPromptDef` when editing XML labels, instructions, tones, event prompts,
-persona rules, or shared prompts. Variant pools (`instructions` / `tones` lists) localize through
+writing-style rules, or shared prompts. Variant pools (`instructions` / `tones` lists) localize through
 indexed DefInjected keys — `<group.instructions.0>`, `<group.instructions.1>`, `<group.tones.0>`,
 etc. — one entry per list position; keep blanks out of the pool so indices stay aligned.
 

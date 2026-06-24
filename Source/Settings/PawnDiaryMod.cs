@@ -41,7 +41,7 @@ namespace PawnDiary
         private volatile ConnectionTestResult pendingConnectionTestResult;
         // Which prompt card is open in the settings "Prompt Studio" section.
         private string selectedPromptStudioKey;
-        // Which persona card is open in the settings "Persona Presets" section.
+        // Which writing-style card is open in the settings "Writing styles" section.
         private string selectedPersonaKey;
         // Scroll position for the settings window scroll view.
         private Vector2 settingsScrollPosition;
@@ -84,7 +84,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Draws the full settings window: API lanes, generation controls, the prompt-text studio,
-        /// and the persona-preset editor.
+        /// and the writing-style preset editor.
         /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
@@ -1066,7 +1066,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the editable persona catalog as one compact highlighted block.
+        /// Draws the editable writing-style catalog as one compact highlighted block.
         /// </summary>
         private void DrawPersonaStudio(Listing_Standard listing)
         {
@@ -1378,7 +1378,7 @@ namespace PawnDiary
                 height += 34f; // compact summary
             }
 
-            // Generation controls, compact prompt studio, and persona-preset studio.
+            // Generation controls, compact prompt studio, and writing-style preset studio.
             height += 250f;
             if (Prefs.DevMode)
             {

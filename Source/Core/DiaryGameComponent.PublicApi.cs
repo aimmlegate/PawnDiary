@@ -1,6 +1,6 @@
 // Read/write entry points the UI (the Diary tab and social-log integration) calls on the live
 // DiaryGameComponent: list a pawn's entries, jump from a social-log row to its generated entry,
-// and toggle/read the per-pawn generation flag and persona. These are pure-ish accessors over the
+// and toggle/read the per-pawn generation flag and writing style. These are pure-ish accessors over the
 // saved data; all the heavy lifting (recording, generation) lives in the sibling partial files.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;

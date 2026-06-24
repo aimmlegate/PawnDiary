@@ -31,10 +31,10 @@ namespace PawnDiary
         public string finalInstruction;
         public string recipientFinalInstruction;
         public bool includePromptEnchantment = true;
-        // When true, the pawn's persona voice rule is appended to the system prompt for this shape
-        // (composed by DiaryPromptPlanner.Build via PromptAssembler.ComposeSystem). Persona now governs the system prompt rather
+        // When true, the pawn's writing-style rule is appended to the system prompt for this shape
+        // (composed by DiaryPromptPlanner.Build via PromptAssembler.ComposeSystem). Style now governs the system prompt rather
         // than competing as one field in the user message, so first-person shapes keep this true and
-        // the neutral chronicle/title shapes set it false to stay persona-free.
+        // the neutral chronicle/title shapes set it false to stay style-free.
         public bool includePersona = true;
         public bool appendDirectSpeechInstruction = true;
         public List<DiaryPromptFieldDef> fields = new List<DiaryPromptFieldDef>();

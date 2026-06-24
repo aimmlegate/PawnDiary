@@ -1,7 +1,7 @@
 // Thin façade over the pure diary prompt pipeline. Each method projects a DiaryEvent (plus the
-// already-resolved persona/enchantment strings) into a typed DiaryPromptRequest via
+// already-resolved writing-style/enchantment strings) into a typed DiaryPromptRequest via
 // DiaryPipelineAdapters, then runs the pure DiaryPromptPlanner to produce the prompt envelope sent to
-// the model. All the real work — template selection, field rendering, system-prompt/persona
+// the model. All the real work — template selection, field rendering, system-prompt/style
 // composition, direct-speech rules — lives in Source/Pipeline now. This file only exists so the
 // generation orchestrator (DiaryGameComponent.Generation) keeps the same small call surface it had
 // before the pipeline split. See DOCUMENTATION.md.
@@ -42,8 +42,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Builds the neutral, persona-independent prompt used only for colonist death
-        /// descriptions. It deliberately omits persona, relationship continuity, and first-person
+        /// Builds the neutral, writing-style-independent prompt used only for colonist death
+        /// descriptions. It deliberately omits style, relationship continuity, and first-person
         /// POV fields because this output is a factual death note, not a diary entry.
         /// </summary>
         public static DiaryPromptPlan BuildDeathDescriptionPromptPlan(DiaryEvent diaryEvent, int maxTokens = 0)
@@ -52,7 +52,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Builds the neutral, persona-independent prompt used for the first diary entry: how this
+        /// Builds the neutral, writing-style-independent prompt used for the first diary entry: how this
         /// pawn became part of the colony. Starting pawns get scenario context; later pawns get the
         /// SetFaction/join facts captured at runtime.
         /// </summary>
@@ -76,10 +76,10 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns true when this non-neutral prompt can use a live prompt enchantment (a hediff health
-        /// hint that travels with persona). Neutral chronicle/title prompts stay persona- and
+        /// hint that travels with style). Neutral chronicle/title prompts stay style- and
         /// enchantment-free. The decision reads the SAME template the shipped prompt will use — by
         /// running the pure planner's selection — so this gate can never drift from the template that
-        /// actually renders. Template selection ignores POV/persona/enchantment, so neutral
+        /// actually renders. Template selection ignores POV/style/enchantment, so neutral
         /// placeholders are fine for this probe. Call on the main thread: building the request resolves
         /// localized strings (<c>.Translate()</c>), exactly as the real prompt build does.
         /// </summary>

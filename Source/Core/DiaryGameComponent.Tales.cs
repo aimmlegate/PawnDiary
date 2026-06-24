@@ -310,7 +310,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Appends colonist-death metadata to the Tale context. The neutral death prompt reads this
-        /// instead of using a pawn persona, so it can describe cause, damaged body part, illness, and
+        /// instead of using a pawn writing style, so it can describe cause, damaged body part, illness, and
         /// nearby context without pretending the dead pawn wrote a diary entry.
         /// </summary>
         private static string AppendDeathDescriptionContext(string gameContext, Pawn deathVictim, Pawn firstPawn, Pawn secondPawn)

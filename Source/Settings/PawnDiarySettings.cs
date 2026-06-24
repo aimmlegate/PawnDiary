@@ -1,5 +1,5 @@
 // All mod settings (connection, generation options, prompt overrides, per-group enable overrides,
-// and persona edits) plus value clamping and save/load. Prompt templates, signal policies, and
+// and writing-style edits) plus value clamping and save/load. Prompt templates, signal policies, and
 // per-group instructions are XML Defs, not save settings.
 using System;
 using System.Collections.Generic;
@@ -90,21 +90,22 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// One editable persona preset row persisted in settings. Rows are either:
-    /// - an override of an XML persona Def (custom = false, defName matches the Def), or
-    /// - a fully custom persona created in settings (custom = true).
+    /// One editable writing-style preset row persisted in settings. Rows are either:
+    /// - an override of an XML style Def (custom = false, defName matches the Def), or
+    /// - a fully custom style created in settings (custom = true).
+    /// The type name keeps "Persona" for save compatibility with older settings.
     /// </summary>
     public class PersonaPresetConfig : IExposable
     {
-        // Stable key used everywhere personas are referenced (per-pawn record, prompt context, picker).
+        // Stable key used everywhere styles are referenced (per-pawn record, prompt context, picker).
         public string defName = string.Empty;
         // Human-readable picker label shown in UI.
         public string label = string.Empty;
-        // Writing-style rule appended to prompts as the persona voice target.
+        // Writing-style rule appended to first-person prompts.
         public string rule = string.Empty;
-        // Internal theme tags used for weighted first-roll persona selection.
+        // Internal theme tags used for weighted first-roll style selection.
         public List<string> themes = new List<string>();
-        // True when this row is a user-created persona (not an override of an XML Def).
+        // True when this row is a user-created style (not an override of an XML Def).
         public bool custom;
 
         public PersonaPresetConfig()
@@ -151,7 +152,7 @@ namespace PawnDiary
         public bool showApiSettings = true;
         // UI preference: when false, the compact Prompt Studio block is collapsed in mod settings.
         public bool showPromptStudio = true;
-        // Dev-mode UI preference: shows the per-pawn persona picker in the Diary inspector tab.
+        // Dev-mode UI preference: shows the per-pawn writing-style picker in the Diary inspector tab.
         public bool showPersonaSettings = false;
         // Dev-mode UI preference: shows raw/pending entries and the LLM prompt/status diagnostic block.
         public bool showLlmDebugInfo = false;
@@ -197,7 +198,7 @@ namespace PawnDiary
         // is now XML-only (DiaryInteractionGroupDef.defaultEnabled); this dictionary remains only so
         // old configs load without losing unrelated settings.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
-        // Persona preset edits made in settings: XML override rows plus user-created custom personas.
+        // Writing-style preset edits made in settings: XML override rows plus user-created custom styles.
         public List<PersonaPresetConfig> personaPresets = new List<PersonaPresetConfig>();
 
         // Parallel lists used by Scribe_Collections for serializing the dictionaries (Unity's
@@ -1117,7 +1118,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Ensures the persona preset edit list is non-null (defensive against deserialization gaps).
+        /// Ensures the style preset edit list is non-null (defensive against deserialization gaps).
         /// </summary>
         public void EnsurePersonaPresetList()
         {
@@ -1128,7 +1129,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Finds an override row for an XML persona Def by defName.
+        /// Finds an override row for an XML writing-style Def by defName.
         /// </summary>
         public PersonaPresetConfig PersonaOverrideFor(string defName)
         {
@@ -1140,7 +1141,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Finds a custom persona row by defName.
+        /// Finds a custom writing-style row by defName.
         /// </summary>
         public PersonaPresetConfig CustomPersonaFor(string defName)
         {
@@ -1152,7 +1153,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns only user-created personas (custom=true) for catalog merging and UI.
+        /// Returns only user-created writing styles (custom=true) for catalog merging and UI.
         /// </summary>
         public List<PersonaPresetConfig> CustomPersonas()
         {
@@ -1163,7 +1164,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Upserts an override row for an XML persona Def.
+        /// Upserts an override row for an XML writing-style Def.
         /// </summary>
         public void SetPersonaOverride(string defName, string label, string rule, IEnumerable<string> themes)
         {
@@ -1196,7 +1197,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Removes an override row for an XML persona Def, restoring XML defaults.
+        /// Removes an override row for an XML writing-style Def, restoring XML defaults.
         /// </summary>
         public void ResetPersonaOverride(string defName)
         {
@@ -1212,7 +1213,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Adds a new custom persona row and returns its generated defName.
+        /// Adds a new custom writing-style row and returns its generated defName.
         /// </summary>
         public string AddCustomPersona()
         {
@@ -1229,7 +1230,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Deletes one user-created persona row.
+        /// Deletes one user-created writing-style row.
         /// </summary>
         public void RemoveCustomPersona(string defName)
         {
@@ -1245,7 +1246,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Removes all persona overrides and custom personas, restoring pure XML persona defs.
+        /// Removes all style overrides and custom styles, restoring pure XML style defs.
         /// </summary>
         public void ResetPersonaPresets()
         {
@@ -1254,7 +1255,7 @@ namespace PawnDiary
             DiaryPersonas.InvalidateCache();
         }
 
-        // Generates deterministic custom persona keys so they are stable across saves and merges.
+        // Generates deterministic custom style keys so they are stable across saves and merges.
         private string NextCustomPersonaDefName()
         {
             const string prefix = "DiaryPersona_Custom_";
@@ -1289,9 +1290,9 @@ namespace PawnDiary
             return prefix + next;
         }
 
-        // Keeps persona preset edits safe and deterministic after load:
+        // Keeps writing-style preset edits safe and deterministic after load:
         // - strips invalid/unknown tags
-        // - guarantees custom personas keep at least one predefined tag
+        // - guarantees custom styles keep at least one predefined tag
         // - drops malformed rows and duplicate keys
         private void NormalizePersonaPresets()
         {

@@ -1,7 +1,7 @@
 // Lookups and bookkeeping over the saved data: cross-referencing events onto pawn diary records,
 // finding events/records by id, the "arrival first / death last" rules that make a colonist's
 // arrival and death entries hard diary boundaries, per-pawn eligibility checks, the dedup gate
-// shared by every Record* hook, persona seeding/defaulting, and the shared empty-list singleton.
+// shared by every Record* hook, writing-style seeding/defaulting, and the shared empty-list singleton.
 // These are the small, mostly-pure helpers the other partial files lean on.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
@@ -765,8 +765,8 @@ namespace PawnDiary
             {
                 pawnId = pawnId,
                 pawnName = pawn.LabelShortCap,
-                // Initial persona is rolled once, biased toward the pawn's traits/backstory and
-                // softly steered away from personas other colonists already use. The player can
+                // Initial writing style is rolled once, biased toward the pawn's traits/backstory and
+                // softly steered away from styles other colonists already use. The player can
                 // still override it from the diary tab; that saved choice is never re-rolled.
                 personaDefName = DiaryPersonas.WeightedStartingPersona(pawn, BuildUsedPersonaCounts(pawnId)).defName,
                 diaryGenerationEnabled = true
@@ -776,10 +776,10 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Counts how many current, living colonists already use each persona, so a new pawn's
+        /// Counts how many current, living colonists already use each writing style, so a new pawn's
         /// initial roll can softly avoid duplicates (see <see cref="DiaryPersonas.WeightedStartingPersona"/>).
-        /// Keyed by persona defName. The pawn being created is excluded via <paramref name="excludePawnId"/>;
-        /// dead/lost pawns and non-colonists are ignored so retired voices free up again.
+        /// Keyed by style defName. The pawn being created is excluded via <paramref name="excludePawnId"/>;
+        /// dead/lost pawns and non-colonists are ignored so retired styles free up again.
         /// </summary>
         private Dictionary<string, int> BuildUsedPersonaCounts(string excludePawnId)
         {
@@ -789,7 +789,7 @@ namespace PawnDiary
                 return counts;
             }
 
-            // The set of pawn IDs that are colonists right now, so persona "use" reflects the
+            // The set of pawn IDs that are colonists right now, so style "use" reflects the
             // living colony rather than every record ever created.
             HashSet<string> colonistIds = new HashSet<string>();
             List<Pawn> colonists = SnapshotFreeColonists();
@@ -851,7 +851,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Ensures a usable persona is assigned even if the Def was removed or never set.
+        /// Ensures a usable writing style is assigned even if the Def was removed or never set.
         /// </summary>
         private static void EnsurePawnDiaryDefaults(PawnDiaryRecord diary)
         {
@@ -860,7 +860,7 @@ namespace PawnDiary
                 return;
             }
 
-            // XML edits or mod patches may remove a persona Def that a pawn record names.
+            // XML edits or mod patches may remove a style Def that a pawn record names.
             if (string.IsNullOrWhiteSpace(diary.personaDefName) || DiaryPersonas.ForDefName(diary.personaDefName) == null)
             {
                 diary.personaDefName = DiaryPersonas.Default.defName;

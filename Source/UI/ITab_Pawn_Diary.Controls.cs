@@ -34,12 +34,12 @@ namespace PawnDiary
             if (PawnDiaryMod.Settings != null)
             {
 
-                lines += 3f; // dev toggles: persona controls, LLM diagnostics, show generating
+                lines += 3f; // dev toggles: writing-style controls, LLM diagnostics, show generating
 
                 if (ShouldShowPersonaSettings())
                 {
 
-                    lines += 1f; // persona picker
+                    lines += 1f; // writing-style picker
 
                 }
 
@@ -283,7 +283,7 @@ namespace PawnDiary
 
 
 
-            // Persona picker. Options come from DiaryPersonaDefs.xml so new presets can be added
+            // Writing-style picker. Options come from DiaryPersonaDefs.xml so new presets can be added
 
             // without touching UI code; the choice is saved per pawn and used for future generations.
 
@@ -343,7 +343,7 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Returns the human-readable label for a persona, falling back to "default" if null
+        /// Returns the human-readable label for a writing style, falling back to "default" if null
         /// or to defName if the label is blank.
         /// </summary>
         private static string PersonaLabel(DiaryPersonaDef persona)

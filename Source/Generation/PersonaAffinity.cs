@@ -1,15 +1,15 @@
-// Maps a pawn's traits and backstory to the coarse "theme" keywords carried by personas, so the
-// initial persona roll can lean toward a voice that fits who the pawn is. This is the ONE place
+// Maps a pawn's traits and backstory to the coarse "theme" keywords carried by writing styles, so the
+// initial style roll can lean toward prose that fits who the pawn is. This is the ONE place
 // that knows which RimWorld trait/backstory keywords suggest which writing theme.
 //
 // How it fits together:
-//   - Personas declare <themes> in 1.6/Defs/DiaryPersonaDefs.xml (e.g. "grim", "warm", "void").
+//   - Writing styles declare <themes> in 1.6/Defs/DiaryPersonaDefs.xml (e.g. "grim", "warm", "void").
 //   - The two maps below translate a pawn's trait defNames and backstory spawnCategories into the
 //     same theme vocabulary.
-//   - ThemeBonusFor counts how many of the pawn's themes a given persona shares, and the persona
+//   - ThemeBonusFor counts how many of the pawn's themes a given style shares, and the style
 //     selector (DiaryPersonas.WeightedStartingPersona) turns that count into extra roll weight.
-//   - Creepjoiners get an extra boost toward void-tagged personas so their starting voice leans
-//     uncanny without making those personas common for ordinary colonists.
+//   - Creepjoiners get an extra boost toward void-tagged styles so their starting prose leans
+//     uncanny without making those styles common for ordinary colonists.
 //
 // Everything is null-safe in the same spirit as DlcContext: traits/backstory can be absent for
 // some pawn kinds, and any trait/category we don't recognize simply contributes nothing (it never
@@ -33,12 +33,12 @@ namespace PawnDiary
 {
     public static class PersonaAffinity
     {
-        // Extra roll weight added per pawn-theme a persona matches. Layered on top of the flat base
-        // weight in DiaryPersonas, so a persona that hits two of the pawn's themes is strongly
+        // Extra roll weight added per pawn-theme a style matches. Layered on top of the flat base
+        // weight in DiaryPersonas, so a style that hits two of the pawn's themes is strongly
         // favored without ever making the others impossible. Tunable.
         private const float ThemeBonus = 3f;
 
-        // Extra roll weight for Anomaly creepjoiners when a persona is tagged with the internal
+        // Extra roll weight for Anomaly creepjoiners when a style is tagged with the internal
         // "void" theme. This is intentionally separate from grim/anxious so normal colonists do not
         // over-select the darker voices just because they share a common trait theme.
         private const float CreepjoinerVoidBonus = 12f;
@@ -108,10 +108,10 @@ namespace PawnDiary
         };
 
         /// <summary>
-        /// Returns the extra roll weight a persona earns for matching the pawn's traits/backstory:
-        /// <c>ThemeBonus * (number of distinct themes shared between the pawn and the persona)</c>.
-        /// Void-tagged personas also receive a large bonus for creepjoiners. Returns 0 for a null
-        /// pawn/persona, an untagged persona, or a pawn with no matching themes or creepjoiner bias.
+        /// Returns the extra roll weight a style earns for matching the pawn's traits/backstory:
+        /// <c>ThemeBonus * (number of distinct themes shared between the pawn and the style)</c>.
+        /// Void-tagged styles also receive a large bonus for creepjoiners. Returns 0 for a null
+        /// pawn/style, an untagged style, or a pawn with no matching themes or creepjoiner bias.
         /// </summary>
         public static float ThemeBonusFor(DiaryPersonaDef persona, Pawn pawn)
         {

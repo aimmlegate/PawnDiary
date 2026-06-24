@@ -1138,11 +1138,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resolves the LLM persona rule string for a given POV in an event, falling back to the XML default.
+        /// Resolves the LLM writing-style rule string for a given POV in an event, falling back to the XML default.
         /// </summary>
         private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole)
         {
-            // Missing records fall back to the XML default persona.
+            // Missing records fall back to the XML default writing style.
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             return DiaryPersonas.RuleFor(diary?.personaDefName);

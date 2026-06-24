@@ -1,6 +1,6 @@
 // Pure, game-independent prompt assembly. Turns an already-resolved bag of string values plus a
 // template's field list into the final USER prompt, and composes the SYSTEM prompt from a base
-// prompt and an optional persona voice block.
+// prompt and an optional writing-style block.
 //
 // "Pure" means: no RimWorld / Verse / Unity types, no DefDatabase, no .Translate(), no RNG, no IO.
 // The same inputs always produce the same strings. The only thing it leans on is DiaryContextFields
@@ -9,7 +9,7 @@
 // Why it exists: the in-game extractor (DiaryContextBuilder + persona/enchantment selection) reads
 // live game state and is C#-only and impure. But the *rendering algorithm* — field order, the skip
 // rules for empty/placeholder values, the "label: value" join, the instruction trailer, and the
-// persona/system composition — is also re-implemented by the Node prompt-lab harness. Keeping that
+// style/system composition — is also re-implemented by the Node prompt-lab harness. Keeping that
 // algorithm in one pure place lets a tiny dotnet dump tool render a set of fixed inputs and let the
 // harness assert byte-identical output, so the two implementations can never silently drift
 // (see prompt-lab/golden and prompt-lab/dump).
@@ -146,8 +146,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Composes the system prompt: the base prompt plus the persona voice block appended as a
-        /// trailing paragraph, unless the template opts out of persona or no block was supplied.
+        /// Composes the system prompt: the base prompt plus the writing-style block appended as a
+        /// trailing paragraph, unless the template opts out of style or no block was supplied.
         /// </summary>
         public static string ComposeSystem(string baseSystemPrompt, string personaVoiceBlock, bool includePersona)
         {

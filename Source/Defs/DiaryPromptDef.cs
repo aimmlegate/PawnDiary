@@ -18,13 +18,14 @@ namespace PawnDiary
         // Wrapped instruction for the recipient's second request in paired sequential mode.
         public string recipientFollowupInstruction = "Write one to three first-person diary sentences from the recipient's point of view, about the event above. The initiator's diary entry is hidden continuity context — do not write as if the recipient read it. If the notes are thin, react specifically to what happened rather than inventing detail. Output only the diary entry.";
 
-        // Neutral, non-persona instruction for colonist death summaries.
-        public string deathDescriptionInstruction = "Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's persona or write from first person. Prefer a shorter complete note over covering every detail. Output only the death description.";
+        // Neutral, non-writing-style instruction for colonist death summaries.
+        public string deathDescriptionInstruction = "Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts: cause, weapon or illness, destroyed organ/body part if known, and nearby context. Do not use the pawn's writing style or write from first person. Prefer a shorter complete note over covering every detail. Output only the death description.";
 
-        // Neutral, non-persona instruction for the first diary entry describing how a pawn joined.
-        public string arrivalDescriptionInstruction = "Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. For starting colonists, use the scenario details as founding context; for later colonists, use the join facts. Do not use the pawn's persona or write from first person. Prefer a shorter complete note over covering every detail. Output only the arrival description.";
+        // Neutral, non-writing-style instruction for the first diary entry describing how a pawn joined.
+        public string arrivalDescriptionInstruction = "Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. For starting colonists, use the scenario details as founding context; for later colonists, use the join facts. Do not use the pawn's writing style or write from first person. Prefer a shorter complete note over covering every detail. Output only the arrival description.";
 
-        // Default persona for new/existing pawns that do not have an explicit saved choice.
+        // Default writing-style Def for new/existing pawns that do not have an explicit saved choice.
+        // The field name is kept for save/XML compatibility with older Pawn Diary releases.
         public string defaultPersonaDefName = "DiaryPersona_StoicSurvivor";
 
         // The three main system prompts, one per narrative mode. Settings can store per-save
@@ -33,25 +34,25 @@ namespace PawnDiary
         // DiaryGameComponent.Generation.cs). These are the code fallbacks; the values actually
         // loaded live in DiaryPromptDef.xml.
 
-        // Diary voice: first-person, in-character entries (interactions, mental states, tales,
+        // Diary voice: first-person entries (interactions, mental states, tales,
         // mood events, thoughts).
-        public string systemPrompt = "Write 1-3 first-person diary sentences in the POV colonist's voice.\n"
+        public string systemPrompt = "Write 1-3 first-person diary sentences using the POV colonist's writing style.\n"
             + "Use only supplied fields. Do not invent people, places, dialogue, motives, outcomes, treatment, or time skips.\n"
-            + "Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and persona shape mood and wording.\n"
+            + "Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and the writing style's concrete mechanics shape mood and wording.\n"
             + "Make the supplied facts feel immediate: use one concrete sensory detail, one emotional beat, and one small consequence or tension already implied by the context. Avoid flat summaries.\n"
             + "Direct speech only when explicitly allowed: put the POV pawn's own words in [[speech]]words[[/speech]] and paraphrase everyone else.\n"
             + "Output only diary text. End with normal sentence punctuation.";
 
         // Day reflection: first-person, looking back on the whole day, weaving the day's highlights.
-        public string systemPromptReflection = "Write 2-4 first-person end-of-day diary sentences in the colonist's voice.\n"
+        public string systemPromptReflection = "Write 2-4 first-person end-of-day diary sentences using the colonist's writing style.\n"
             + "Use only supplied day moments; choose the ones that still matter tonight instead of listing everything.\n"
-            + "Let mood, health, setting, and persona shape the reflection.\n"
+            + "Let mood, health, setting, and the writing style's concrete mechanics shape the reflection.\n"
             + "Output only diary text. End with normal sentence punctuation.";
 
-        // Neutral chronicle: third-person, factual, no persona (colonist death + arrival descriptions).
+        // Neutral chronicle: third-person, factual, no writing style (colonist death + arrival descriptions).
         public string systemPromptNeutral = "Write 1-3 short third-person factual RimWorld colony notes.\n"
             + "Use only supplied facts. Do not invent names, causes, places, motives, outcomes, or details.\n"
-            + "Do not use persona or first person. Output only note text. End with normal sentence punctuation.";
+            + "Do not use writing style or first person. Output only note text. End with normal sentence punctuation.";
 
         // Title generation: short chat-style subject for an existing diary entry.
         // Used only by the "Generate LLM titles" flow. The system prompt stays minimal so a small

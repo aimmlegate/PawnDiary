@@ -1,7 +1,7 @@
 // Quest events — the Quest.Accept and Quest.End hooks' diary flow, built on the Event Catalog
 // pattern (see Source/Capture/). Quests are colony-wide: when the player accepts a quest, and
 // again when the quest ends in Success or Fail, every eligible colonist gets their own solo
-// DiaryEvent so each survivor can react in their own voice. The event carries a "quest=" marker
+// DiaryEvent so each survivor can react through their own writing style. The event carries a "quest=" marker
 // so the UI classifies it into the Quest domain.
 //
 // Rich context (per the brief): quest defName, the quest's description prose, the issuer faction

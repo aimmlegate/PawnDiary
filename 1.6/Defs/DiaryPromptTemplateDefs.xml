@@ -8,12 +8,12 @@
     - DiaryEventPromptDef.prompt/enhancement -> "event prompt" and "event enhancement"
     - DiaryInteractionGroupDef.instruction -> narrower group flavor
 
-  Persona note: the pawn's persona voice is NOT a field here anymore — it is appended to the
-  system prompt at dispatch (DiaryPromptPlanner.Build via PromptAssembler.ComposeSystem) so the voice governs HOW the
-  entry is written. First-person shapes keep the default includePersona=true; the neutral
-  death/arrival chronicles and the title flow set includePersona=false to stay persona-free.
-  (A custom template can still add <li><source>Persona</source></li> to put the voice back into the
-  user message if you prefer that.)
+  Writing-style note: the pawn's style is NOT a field here anymore. It is appended to the system
+  prompt at dispatch (DiaryPromptPlanner.Build via PromptAssembler.ComposeSystem) so the style governs
+  HOW the entry is written. First-person shapes keep the default includePersona=true; the neutral
+  death/arrival chronicles and the title flow set includePersona=false to stay style-free.
+  (A custom template can still add <li><source>Persona</source></li> to put the style back into the
+  user message if you prefer that. The source token remains Persona for compatibility.)
 -->
 <Defs>
 

@@ -196,7 +196,7 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Input to the pure prompt planner. Impure callers resolve persona text, prompt enchantments,
+    /// Input to the pure prompt planner. Impure callers resolve writing-style text, prompt enchantments,
     /// localized direct-speech snippets, and XML policy snapshots before constructing this request.
     /// </summary>
     public class DiaryPromptRequest

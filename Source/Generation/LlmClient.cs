@@ -30,7 +30,7 @@ namespace PawnDiary
         /// <summary>Stamped by <see cref="LlmClient.Enqueue"/>; used to discard results from stale sessions.</summary>
         public long sessionId;
 
-        /// <summary>Optional system prompt that sets persona or formatting rules for the model.</summary>
+        /// <summary>Optional system prompt that sets writing style or formatting rules for the model.</summary>
         public string systemPrompt;
 
         /// <summary>Raw narrative text describing the game event, sent as the user message.</summary>
@@ -1069,7 +1069,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Constructs the JSON array of message objects. Prepends a system message when
-        /// the request includes one so the model adopts the intended persona.
+        /// the request includes one so the model adopts the intended writing style.
         /// </summary>
         private static string BuildMessagesJson(LlmGenerationRequest request)
         {

@@ -32,10 +32,12 @@ Generated fixtures select the same template keys as the in-game `DiaryPromptBuil
 render field order and inclusion from `DiaryPromptTemplateDefs.xml`. Interaction fixtures also
 append the current Keyed direct-speech cue for the active POV pawn when the template allows it.
 
-First-person fixtures append the pawn's persona voice to the **system prompt** (wrapped by the
+First-person fixtures append the pawn's writing style to the **system prompt** (wrapped by the
 `PawnDiary.Prompt.PersonaVoice` Keyed string), mirroring `PromptAssembler.ComposeSystem` —
-persona is no longer a user-message field. Templates with `includePersona=false` (the neutral
-death/arrival chronicles and the title follow-up) stay persona-free.
+style is no longer a user-message field. The wrapper emphasizes concrete mechanics such as sentence
+shape, opening move, punctuation, and detail choice so small models can separate presets. Templates
+with `includePersona=false` (the neutral death/arrival chronicles and the title follow-up) stay
+style-free.
 
 Use:
 
@@ -133,7 +135,7 @@ node run.js --from-defs --no-title
 - `--max-tokens <int>`
 - `--timeout <seconds>`
 - `--include-groups <n|all>`
-- `--include-personas <n|all>`
+- `--include-personas <n|all>` (legacy flag name; selects XML writing styles)
 - `--all-variants` (all event groups crossed with fixed prompt-enchantment variants)
 - `--passes <n>` (repeat the same prompt set for stability checks)
 - `--compact` / `--compact-md` (save prompt + parsed result only)

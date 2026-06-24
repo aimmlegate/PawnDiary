@@ -1,63 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LanguageData>
-  <DiaryPersona_StoicSurvivor.label>stoic-survivor</DiaryPersona_StoicSurvivor.label>
-  <DiaryPersona_StoicSurvivor.rule>writes in short, flat sentences and ends on the next task to do. States the plain fact and skips the feeling. For example: &quot;Wall&apos;s patched. Two breaches left. Rest can wait.&quot;</DiaryPersona_StoicSurvivor.rule>
-  <DiaryPersona_FieryHothead.label>fiery-hothead</DiaryPersona_FieryHothead.label>
-  <DiaryPersona_FieryHothead.rule>writes in hot bursts and throws a CAPITALIZED word or two for force, snapping from fury to forgiveness in short, jagged fragments. For example: &quot;Unbelievable. UNBELIEVABLE. Fine — it&apos;s done, forget it.&quot;</DiaryPersona_FieryHothead.rule>
-  <DiaryPersona_MelancholyDreamer.label>melancholy-dreamer</DiaryPersona_MelancholyDreamer.label>
-  <DiaryPersona_MelancholyDreamer.rule>writes slow and wistful, lingering on what is lost or fading and noticing light, silence, and empty spaces before any action. For example: &quot;The lamp burned down to nothing while no one was watching.&quot;</DiaryPersona_MelancholyDreamer.rule>
-  <DiaryPersona_EarnestOptimist.label>earnest-optimist</DiaryPersona_EarnestOptimist.label>
-  <DiaryPersona_EarnestOptimist.rule>writes warm and hopeful and finds the one good thing in anything, opening grateful and letting a sincere exclamation slip now and then. For example: &quot;Hard day, but we&apos;re all still here — and that counts!&quot;</DiaryPersona_EarnestOptimist.rule>
-  <DiaryPersona_CynicalRealist.label>cynical-realist</DiaryPersona_CynicalRealist.label>
-  <DiaryPersona_CynicalRealist.rule>writes dry and deadpan, expecting the worst with gallows humor and understating everything, never admitting to caring. For example: &quot;Went about as well as everything else around here lately.&quot;</DiaryPersona_CynicalRealist.rule>
-  <DiaryPersona_AnxiousWorrier.label>anxious-worrier</DiaryPersona_AnxiousWorrier.label>
-  <DiaryPersona_AnxiousWorrier.rule>writes in long, second-guessing sentences and hedges with &quot;maybe&quot; and &quot;I think,&quot; circling what could still go wrong. For example: &quot;It&apos;s probably fine, I think, unless it isn&apos;t, which it might be.&quot;</DiaryPersona_AnxiousWorrier.rule>
-  <DiaryPersona_GentleCaretaker.label>gentle-caretaker</DiaryPersona_GentleCaretaker.label>
-  <DiaryPersona_GentleCaretaker.rule>writes soft and caring, noticing other people&apos;s pain first and playing down their own troubles. For example: &quot;She looked so tired tonight; I told her mine was nothing.&quot;</DiaryPersona_GentleCaretaker.rule>
-  <DiaryPersona_GrimVeteran.label>grim-veteran</DiaryPersona_GrimVeteran.label>
-  <DiaryPersona_GrimVeteran.rule>writes like a field report: clipped, precise, cold about violence and loyal to the people beside them. For example: &quot;Held the line. One hurt, none lost. Good enough.&quot;</DiaryPersona_GrimVeteran.rule>
-  <DiaryPersona_WhimsicalEccentric.label>whimsical-eccentric</DiaryPersona_WhimsicalEccentric.label>
-  <DiaryPersona_WhimsicalEccentric.rule>writes in wandering tangents and odd little observations, hopping from one thought to the next and noticing strange details first. For example: &quot;Funny how the kettle ticks as it cools — anyway, where was I?&quot;</DiaryPersona_WhimsicalEccentric.rule>
-  <DiaryPersona_NobleIdealist.label>noble-idealist</DiaryPersona_NobleIdealist.label>
-  <DiaryPersona_NobleIdealist.rule>writes formal and a little old-fashioned, framing things through honor and duty, with phrases like &quot;one must&quot; and &quot;it is fitting.&quot; For example: &quot;One must hold the line, however thankless the holding.&quot;</DiaryPersona_NobleIdealist.rule>
-  <DiaryPersona_BitterLoner.label>bitter-loner</DiaryPersona_BitterLoner.label>
-  <DiaryPersona_BitterLoner.rule>writes with sour, mistrustful sarcasm, certain betrayal is coming, muttering &quot;of course&quot; and &quot;as expected.&quot; For example: &quot;Let me down again. Of course. As expected.&quot;</DiaryPersona_BitterLoner.rule>
-  <DiaryPersona_EagerSocialite.label>eager-socialite</DiaryPersona_EagerSocialite.label>
-  <DiaryPersona_EagerSocialite.rule>writes chatty and gossipy, tracking who said what and who is up or down, and loves an aside set off in dashes. For example: &quot;And then — naturally — she pretended not to hear me.&quot;</DiaryPersona_EagerSocialite.rule>
-  <DiaryPersona_LedgerKeeper.label>ledger-keeper</DiaryPersona_LedgerKeeper.label>
-  <DiaryPersona_LedgerKeeper.rule>writes like a tally of debts owed and paid, scoring each thing as a gain or a loss, in money words: &quot;owed,&quot; &quot;paid off,&quot; &quot;in the red.&quot; For example: &quot;They owe me for this one. Balance still in the red.&quot;</DiaryPersona_LedgerKeeper.rule>
-  <DiaryPersona_HardboiledGumshoe.label>hardboiled-gumshoe</DiaryPersona_HardboiledGumshoe.label>
-  <DiaryPersona_HardboiledGumshoe.rule>writes like a tired noir detective working a case — every detail a clue, every face hiding something — opening on the weather or a bad feeling in short, clipped lines. For example: &quot;Cold morning. Quiet morning. Never trust a quiet morning.&quot;</DiaryPersona_HardboiledGumshoe.rule>
-  <DiaryPersona_DoomsayingProphet.label>doomsaying-prophet</DiaryPersona_DoomsayingProphet.label>
-  <DiaryPersona_DoomsayingProphet.rule>writes like a prophet reading omens into plain events, seeing signs and judgment everywhere, in solemn words: &quot;thus,&quot; &quot;the signs are clear.&quot; For example: &quot;The birds left early. The signs are clear enough.&quot;</DiaryPersona_DoomsayingProphet.rule>
-  <DiaryPersona_ClinicalExperimenter.label>clinical-experimenter</DiaryPersona_ClinicalExperimenter.label>
-  <DiaryPersona_ClinicalExperimenter.rule>writes like a lab log and treats even their own feelings as data to record, in words like &quot;noted,&quot; &quot;observed,&quot; &quot;inconclusive.&quot; For example: &quot;Pulse up, hands steady. Cause noted. Results inconclusive.&quot;</DiaryPersona_ClinicalExperimenter.rule>
-  <DiaryPersona_TheatricalTragedian.label>theatrical-tragedian</DiaryPersona_TheatricalTragedian.label>
-  <DiaryPersona_TheatricalTragedian.rule>writes big and operatic, as if narrating a tragedy from the stage and sighing at cruel fate, with flourishes like &quot;O&quot; and &quot;alas.&quot; For example: &quot;O, what a day — and alas, not even the worst of them.&quot;</DiaryPersona_TheatricalTragedian.rule>
-  <DiaryPersona_SwaggeringBraggart.label>swaggering-braggart</DiaryPersona_SwaggeringBraggart.label>
-  <DiaryPersona_SwaggeringBraggart.rule>writes to be the hero of every story, inflating their part and waving off luck or help, with asides like &quot;naturally&quot; and &quot;as only I could.&quot; For example: &quot;Handled it myself, naturally. They&apos;d be lost without me.&quot;</DiaryPersona_SwaggeringBraggart.rule>
-  <DiaryPersona_RamblingOldTimer.label>rambling-old-timer</DiaryPersona_RamblingOldTimer.label>
-  <DiaryPersona_RamblingOldTimer.rule>writes in nostalgic detours, measuring everything now against the old days and wandering off with &quot;back in my day&quot; and &quot;this reminds me.&quot; For example: &quot;Back in my day we&apos;d have fixed it twice over by now.&quot;</DiaryPersona_RamblingOldTimer.rule>
-  <DiaryPersona_SuperstitiousRitualist.label>superstitious-ritualist</DiaryPersona_SuperstitiousRitualist.label>
-  <DiaryPersona_SuperstitiousRitualist.rule>writes around luck and omens, half-afraid of jinxing things, reading each sign and counting lucky numbers. For example: &quot;Good sign this morning. Won&apos;t say more — mustn&apos;t jinx it.&quot;</DiaryPersona_SuperstitiousRitualist.rule>
-  <DiaryPersona_DetachedPhilosopher.label>detached-philosopher</DiaryPersona_DetachedPhilosopher.label>
-  <DiaryPersona_DetachedPhilosopher.rule>writes by turning a small moment into a large question about meaning, stepping back to ponder it rather than feel it, musing with &quot;perhaps&quot; and &quot;one wonders.&quot; For example: &quot;A small thing, perhaps. Yet one wonders what it points to.&quot;</DiaryPersona_DetachedPhilosopher.rule>
-  <DiaryPersona_ImagistMinimalist.label>imagist-minimalist</DiaryPersona_ImagistMinimalist.label>
-  <DiaryPersona_ImagistMinimalist.rule>writes in spare fragments built on one sharp image, almost a haiku — present tense, few words, no explaining. For example: &quot;Cold rail. Wet rope. Hands that won&apos;t warm.&quot;</DiaryPersona_ImagistMinimalist.rule>
-  <DiaryPersona_FracturedPatternSeer.label>fractured-pattern-seer</DiaryPersona_FracturedPatternSeer.label>
-  <DiaryPersona_FracturedPatternSeer.rule>writes in quick jumps, certain that small details — numbers, sounds, words — secretly connect, while keeping the real event clear underneath. For example: &quot;Three knocks. Three crows. Same as before. It means something.&quot;</DiaryPersona_FracturedPatternSeer.rule>
-  <DiaryPersona_WordSaladOracle.label>word-salad-oracle</DiaryPersona_WordSaladOracle.label>
-  <DiaryPersona_WordSaladOracle.rule>writes with strange, colliding images and bent grammar, yet keeps one clear event detail and one real feeling so it still reads. For example: &quot;The hours grew teeth, but I fixed the door and I was afraid.&quot;</DiaryPersona_WordSaladOracle.rule>
-  <DiaryPersona_PlainspokenPoet.label>plainspoken-poet</DiaryPersona_PlainspokenPoet.label>
-  <DiaryPersona_PlainspokenPoet.rule>writes plain but quietly poetic, letting one concrete image carry the feeling and staying human, never ornate. For example: &quot;The fire was small, but it was enough to sit by.&quot;</DiaryPersona_PlainspokenPoet.rule>
-  <DiaryPersona_LowKeyRapper.label>lowkey-rapper</DiaryPersona_LowKeyRapper.label>
-  <DiaryPersona_LowKeyRapper.rule>writes with a loose conversational beat and the odd internal rhyme, sincere rather than showy, in short punchy lines. For example: &quot;Long shift, tight grip — kept my head and let it slip.&quot;</DiaryPersona_LowKeyRapper.rule>
-  <DiaryPersona_VoidListener.label>void-listener</DiaryPersona_VoidListener.label>
-  <DiaryPersona_VoidListener.rule>writes as if the silence itself is speaking, treating pauses and gaps as messages — calm, attentive, quietly unsettling. For example: &quot;No one answered. The quiet did, though.&quot;</DiaryPersona_VoidListener.rule>
-  <DiaryPersona_HollowWitness.label>hollow-witness</DiaryPersona_HollowWitness.label>
-  <DiaryPersona_HollowWitness.rule>writes with flat, dissociated calm, watching their own body from a step away and never explaining the fear, in cold, restrained sentences. For example: &quot;My hands did the work. I watched them do it.&quot;</DiaryPersona_HollowWitness.rule>
-  <DiaryPersona_BlackSignal.label>black-signal</DiaryPersona_BlackSignal.label>
-  <DiaryPersona_BlackSignal.rule>writes like a breaking transmission — static, fragments, repeated warnings — while the event stays understandable, in clipped, broken lines. For example: &quot;—still here. Hold position. Hold. The wall held.&quot;</DiaryPersona_BlackSignal.rule>
-  <DiaryPersona_UnsetClock.label>unset-clock</DiaryPersona_UnsetClock.label>
-  <DiaryPersona_UnsetClock.rule>writes as if time has slipped loose: moments out of order, the present feeling already lived once before, using &quot;again,&quot; &quot;already,&quot; &quot;not yet.&quot; For example: &quot;This happened already. Or it hasn&apos;t yet. Again.&quot;</DiaryPersona_UnsetClock.rule>
+  <DiaryPersona_StoicSurvivor.label>three-line-note</DiaryPersona_StoicSurvivor.label>
+  <DiaryPersona_StoicSurvivor.rule>This pawn tends to write exactly three short diary sentences: fact, problem, next action. No flourish. For example: "Wall patched. Rain still gets through. I will fix the gap tomorrow."</DiaryPersona_StoicSurvivor.rule>
+  <DiaryPersona_FieryHothead.label>hard-stop-bursts</DiaryPersona_FieryHothead.label>
+  <DiaryPersona_FieryHothead.rule>This pawn tends to write abrupt bursts with hard stops and one stressed word in caps when pressure peaks. For example: "Done. Barely. The door HELD."</DiaryPersona_FieryHothead.rule>
+  <DiaryPersona_MelancholyDreamer.label>image-first</DiaryPersona_MelancholyDreamer.label>
+  <DiaryPersona_MelancholyDreamer.rule>This pawn tends to open with one quiet image, then explain why it mattered. The image carries the feeling. For example: "Ash drifted through the lamplight. I kept sweeping after the fire was out."</DiaryPersona_MelancholyDreamer.rule>
+  <DiaryPersona_EarnestOptimist.label>bad-then-good</DiaryPersona_EarnestOptimist.label>
+  <DiaryPersona_EarnestOptimist.rule>This pawn tends to use a clear turn: first the bad fact, then the small good thing that survived it. For example: "The roof leaked again, but the stove stayed warm."</DiaryPersona_EarnestOptimist.rule>
+  <DiaryPersona_CynicalRealist.label>understated-ledger</DiaryPersona_CynicalRealist.label>
+  <DiaryPersona_CynicalRealist.rule>This pawn tends to write a dry tally with commas or semicolons, then end with a flat understatement. For example: "One bruise, one torn sleeve, no deaths; call that progress."</DiaryPersona_CynicalRealist.rule>
+  <DiaryPersona_AnxiousWorrier.label>if-unless-loop</DiaryPersona_AnxiousWorrier.label>
+  <DiaryPersona_AnxiousWorrier.rule>This pawn tends to write one winding sentence built around if, unless, maybe, or probably. The sentence should circle one real worry. For example: "Maybe the patch holds if the rain stops before morning."</DiaryPersona_AnxiousWorrier.rule>
+  <DiaryPersona_GentleCaretaker.label>others-first</DiaryPersona_GentleCaretaker.label>
+  <DiaryPersona_GentleCaretaker.rule>This pawn tends to start with another person's condition before mentioning the event. Their own feelings stay indirect. For example: "Mara's hands were shaking, so I made the fire last."</DiaryPersona_GentleCaretaker.rule>
+  <DiaryPersona_GrimVeteran.label>damage-report</DiaryPersona_GrimVeteran.label>
+  <DiaryPersona_GrimVeteran.rule>This pawn tends to write compact report clauses in this order: place, damage, survivors. For example: "South wall: cracked. Right arm: bruised. Everyone returned."</DiaryPersona_GrimVeteran.rule>
+  <DiaryPersona_WhimsicalEccentric.label>odd-object-turn</DiaryPersona_WhimsicalEccentric.label>
+  <DiaryPersona_WhimsicalEccentric.rule>This pawn tends to begin with an odd object or sound, then pivot with "then" or "anyway" into the event. For example: "The kettle clicked twice; then the roof gave up."</DiaryPersona_WhimsicalEccentric.rule>
+  <DiaryPersona_NobleIdealist.label>duty-sentence</DiaryPersona_NobleIdealist.label>
+  <DiaryPersona_NobleIdealist.rule>This pawn tends to write one formal sentence around duty, obligation, or what was owed. Keep it restrained. For example: "It was unpleasant work, but it was mine to finish."</DiaryPersona_NobleIdealist.rule>
+  <DiaryPersona_BitterLoner.label>sour-afterthought</DiaryPersona_BitterLoner.label>
+  <DiaryPersona_BitterLoner.rule>This pawn tends to write the event plainly, then add a short sour afterthought. For example: "Help came late. I noticed."</DiaryPersona_BitterLoner.rule>
+  <DiaryPersona_EagerSocialite.label>room-read</DiaryPersona_EagerSocialite.label>
+  <DiaryPersona_EagerSocialite.rule>This pawn tends to write who noticed, who looked away, and how the room shifted. No invented dialogue. For example: "Mara saw it first, and the room went careful."</DiaryPersona_EagerSocialite.rule>
+  <DiaryPersona_LedgerKeeper.label>plus-minus</DiaryPersona_LedgerKeeper.label>
+  <DiaryPersona_LedgerKeeper.rule>This pawn tends to write in gain/loss terms, sometimes with plus and minus words but not literal tables. For example: "Gained a closed door. Lost one good sleeve. Fair trade."</DiaryPersona_LedgerKeeper.rule>
+  <DiaryPersona_HardboiledGumshoe.label>weather-shadow</DiaryPersona_HardboiledGumshoe.label>
+  <DiaryPersona_HardboiledGumshoe.rule>This pawn tends to open with weather, light, or shadow in a clipped sentence, then state the event. For example: "Cold morning. Dark hall. The south door finally gave."</DiaryPersona_HardboiledGumshoe.rule>
+  <DiaryPersona_DoomsayingProphet.label>single-sign</DiaryPersona_DoomsayingProphet.label>
+  <DiaryPersona_DoomsayingProphet.rule>This pawn tends to mark one real detail as a sign, then stop before predicting anything. For example: "The birds left early. I wrote that down."</DiaryPersona_DoomsayingProphet.rule>
+  <DiaryPersona_ClinicalExperimenter.label>body-measure</DiaryPersona_ClinicalExperimenter.label>
+  <DiaryPersona_ClinicalExperimenter.rule>This pawn tends to record body signals as measurements before naming feeling. For example: "Hands steady. Breath short. Fear present but manageable."</DiaryPersona_ClinicalExperimenter.rule>
+  <DiaryPersona_TheatricalTragedian.label>one-flourish</DiaryPersona_TheatricalTragedian.label>
+  <DiaryPersona_TheatricalTragedian.rule>This pawn tends to add one dramatic phrase to an otherwise clear account. Only one flourish. For example: "A miserable little victory, but a victory all the same."</DiaryPersona_TheatricalTragedian.rule>
+  <DiaryPersona_SwaggeringBraggart.label>credit-at-end</DiaryPersona_SwaggeringBraggart.label>
+  <DiaryPersona_SwaggeringBraggart.rule>This pawn tends to state the fact, then claim a little credit in the final words without changing what happened. For example: "The door held. I helped, naturally."</DiaryPersona_SwaggeringBraggart.rule>
+  <DiaryPersona_RamblingOldTimer.label>old-days-contrast</DiaryPersona_RamblingOldTimer.label>
+  <DiaryPersona_RamblingOldTimer.rule>This pawn tends to compare the event to the old days in one sentence, then return to today. For example: "Old camps patched leaks faster; this place held anyway."</DiaryPersona_RamblingOldTimer.rule>
+  <DiaryPersona_SuperstitiousRitualist.label>counted-signs</DiaryPersona_SuperstitiousRitualist.label>
+  <DiaryPersona_SuperstitiousRitualist.rule>This pawn tends to count a small sign or habit before the event, often using a number. For example: "Three knocks before breakfast. Then the wall split."</DiaryPersona_SuperstitiousRitualist.rule>
+  <DiaryPersona_DetachedPhilosopher.label>perhaps-question</DiaryPersona_DetachedPhilosopher.label>
+  <DiaryPersona_DetachedPhilosopher.rule>This pawn tends to turn the event into one quiet question with perhaps or one wonders. For example: "Perhaps repairs are how a place decides to stay."</DiaryPersona_DetachedPhilosopher.rule>
+  <DiaryPersona_ImagistMinimalist.label>three-fragments</DiaryPersona_ImagistMinimalist.label>
+  <DiaryPersona_ImagistMinimalist.rule>This pawn tends to write three fragments built from concrete nouns, no explanation. For example: "Cold rail. Wet rope. Slow hands."</DiaryPersona_ImagistMinimalist.rule>
+  <DiaryPersona_FracturedPatternSeer.label>repeat-pattern</DiaryPersona_FracturedPatternSeer.label>
+  <DiaryPersona_FracturedPatternSeer.rule>This pawn tends to repeat one sound, number, or word as a pattern while keeping the event visible. For example: "Three knocks. Three breaths. Door fixed."</DiaryPersona_FracturedPatternSeer.rule>
+  <DiaryPersona_WordSaladOracle.label>surreal-anchor</DiaryPersona_WordSaladOracle.label>
+  <DiaryPersona_WordSaladOracle.rule>This pawn tends to pair one strange image with one plain event fact. The fact must stay readable. For example: "The hour grew teeth; I fixed the latch."</DiaryPersona_WordSaladOracle.rule>
+  <DiaryPersona_PlainspokenPoet.label>plain-last-image</DiaryPersona_PlainspokenPoet.label>
+  <DiaryPersona_PlainspokenPoet.rule>This pawn tends to write plain sentences and end on one ordinary image. For example: "We got through it. The fire was small but enough."</DiaryPersona_PlainspokenPoet.rule>
+  <DiaryPersona_LowKeyRapper.label>soft-rhyme</DiaryPersona_LowKeyRapper.label>
+  <DiaryPersona_LowKeyRapper.rule>This pawn tends to use one small internal rhyme or beat, but no performance. For example: "Long shift, tight grip. Kept my head."</DiaryPersona_LowKeyRapper.rule>
+  <DiaryPersona_VoidListener.label>silence-line</DiaryPersona_VoidListener.label>
+  <DiaryPersona_VoidListener.rule>This pawn tends to give silence its own short sentence. Keep the rest sparse. For example: "No one answered. The room did."</DiaryPersona_VoidListener.rule>
+  <DiaryPersona_HollowWitness.label>hands-watching</DiaryPersona_HollowWitness.label>
+  <DiaryPersona_HollowWitness.rule>This pawn tends to describe their own body doing the event as if watched from outside. For example: "My hands finished it before I caught up."</DiaryPersona_HollowWitness.rule>
+  <DiaryPersona_BlackSignal.label>broken-repeat</DiaryPersona_BlackSignal.label>
+  <DiaryPersona_BlackSignal.rule>This pawn tends to write broken fragments with one repeated word. The event must remain clear. For example: "Still here. Wall held. Hold. Hold."</DiaryPersona_BlackSignal.rule>
+  <DiaryPersona_UnsetClock.label>already-not-yet</DiaryPersona_UnsetClock.label>
+  <DiaryPersona_UnsetClock.rule>This pawn tends to use already, again, or not yet to make time feel slightly folded while the event stays clear. For example: "It felt already done before I heard the crack."</DiaryPersona_UnsetClock.rule>
 </LanguageData>

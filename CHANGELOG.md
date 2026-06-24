@@ -6,6 +6,20 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Personas reworked into writing styles.** Player-facing settings, per-pawn picker text, prompt
+  defaults, and prompt-lab docs now frame the feature as writing styles rather than chat personas.
+  The shipped catalog was retuned toward prose mechanics (rhythm, sentence shape, imagery, emphasis,
+  and detail choice), and the system prompt wrapper now tells models not to roleplay a chat persona,
+  add catchphrases, or invent dialogue. Internal `DiaryPersonaDef`/save keys remain unchanged for
+  compatibility.
+- **Writing-style presets rewritten as diary habits.** Built-in style rules now describe how each
+  pawn tends to write notes: what they notice first, how they pace sentences, what they omit, and how
+  they compress feeling into prose. Preset labels/rules were fully refreshed while preserving
+  existing DefNames and theme tags for save compatibility and first-roll weighting.
+- **Writing styles separated for small models.** The stock catalog now gives each preset a stronger
+  mechanical signature — sentence count/order, hard stops, fragments, questions, repeated words,
+  ledger clauses, body logs, silence lines, or time-fold cues — so smaller local models are less
+  likely to collapse nearby styles into the same diary output.
 - **API lane routing hardened for free-tier pools.** Connection settings now include a global routing
   mode (Balanced, Prefer top rows, or Failover only), compact arrow controls to reorder API rows, and
   per-row auth styles for Bearer, no auth, `api-key`, `x-api-key`, or `key=` query providers.

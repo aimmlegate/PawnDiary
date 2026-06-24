@@ -5,7 +5,7 @@
  *
  * This is the pure prompt-assembly algorithm: field order, the skip rules for empty/placeholder
  * values, the "label: value" join, the instruction trailer, source-token -> value mapping, and the
- * persona/system composition. It must stay byte-for-byte identical to the C# version; the golden
+ * style/system composition. It must stay byte-for-byte identical to the C# version; the golden
  * check (npm run check-golden) renders prompt-lab/golden/cases.json through both and asserts equality.
  *
  * Inputs use the same shape and field names as the C# types (PromptAssemblerInput / PromptValues),

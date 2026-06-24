@@ -303,7 +303,7 @@ function usage() {
     '  --all-variants                Build every XML event group across the prompt-enchantment matrix',
     '  --passes <n>                  Repeat each case with identical prompts for stability checks',
     '  --include-groups <n|all>      Number of XML interaction groups to include in sampled cases',
-    '  --include-personas <n|all>    Number of XML personas used when building variants',
+    '  --include-personas <n|all>    Number of XML writing styles used when building variants',
     '  --dry-run                     Print prompt payload only',
     '  --save                        Save outputs to prompt-lab/results/<model>/YYYY-mm-ddTHH-MM-SS.mmmZ.md',
     '  --compact, --compact-md       Save compact markdown: prompt + parsed result per case',
@@ -467,8 +467,8 @@ function parseKeyedPromptText(config) {
     pairInitiatorDirectSpeech: 'Initiator POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
     pairRecipientDirectSpeech: 'Recipient POV for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
     soloInteractionDirectSpeech: 'Single-POV interaction for {0}: quotation marks may contain only words {0} plausibly said. If {0} did not speak, use no quoted dialogue and write {0}\'s private reaction instead.',
-    // Mirrors PawnDiary.Prompt.PersonaVoice: the persona voice block appended to the system prompt.
-    personaVoice: "Write in this colonist's own voice — someone who {0} Let this voice shape word choice, rhythm, and which details they notice, not only what happens.",
+    // Mirrors PawnDiary.Prompt.PersonaVoice: the writing-style block appended to the system prompt.
+    personaVoice: 'How this pawn tends to write: {0} Follow the rule\'s concrete sentence shape, opening move, punctuation, and detail choice. Do not roleplay a chat persona, add catchphrases, or invent dialogue.',
   };
   const raw = readIfExists(resolvePath(config.keyedFile));
   if (!raw) return defaults;
@@ -528,8 +528,8 @@ function loadPromptData(config) {
       recipientFollowupInstruction: "Write one to three first-person diary sentences from the recipient's point of view, about the event above. The initiator's diary entry is hidden continuity context — do not write as if the recipient read it. If the notes are thin, react specifically to what happened rather than inventing detail. Output only the diary entry.",
       deathDescriptionInstruction: 'Write one to three complete third-person death-description sentences. Keep it brief. State how the colonist died using only the supplied facts. Output only the death description.',
       arrivalDescriptionInstruction: 'Write one to three complete third-person colony-arrival sentences. Keep it brief. Explain how this pawn joined the colony using only the supplied scenario, pawn, and joining facts. Output only the arrival description.',
-      systemPrompt: "Write 1-3 first-person diary sentences in the POV colonist's voice. Use only supplied fields. Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and persona shape mood and wording. Make supplied facts feel immediate with one sensory detail, one emotional beat, and implied tension. Output only diary text.",
-      systemPromptReflection: "Write 2-4 first-person end-of-day diary sentences in the colonist's voice. Use only supplied day moments; choose what still matters tonight. Output only diary text.",
+      systemPrompt: "Write 1-3 first-person diary sentences using the POV colonist's writing style. Use only supplied fields. Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and the writing style's concrete mechanics shape mood and wording. Make supplied facts feel immediate with one sensory detail, one emotional beat, and implied tension. Output only diary text.",
+      systemPromptReflection: "Write 2-4 first-person end-of-day diary sentences using the colonist's writing style. Use only supplied day moments; choose what still matters tonight. Let mood, health, setting, and the writing style's concrete mechanics shape the reflection. Output only diary text.",
       systemPromptNeutral: 'Write 1-3 short third-person factual RimWorld colony notes. Use only supplied facts. Output only note text.',
       titleSystemPrompt: 'Return a 3-8 word title for a RimWorld diary entry. Output only the title: no quotes, period, markdown, labels, or commentary.',
       titleUserInstruction: DEFAULT_TITLE_USER_INSTRUCTION,
@@ -684,9 +684,9 @@ function resultRootFolder(config) {
   return path.isAbsolute(configured) ? configured : path.join(ROOT, configured);
 }
 
-// Mirrors PromptAssembler.ComposeSystem (run from DiaryPromptPlanner.Build): append the pawn's persona voice to the system
-// prompt (so the voice governs HOW the entry is written) unless the template opts out via
-// includePersona. The neutral death/arrival chronicles and the title flow stay persona-free.
+// Mirrors PromptAssembler.ComposeSystem (run from DiaryPromptPlanner.Build): append the pawn's writing style
+// to the system prompt (so style governs HOW the entry is written) unless the template opts out via
+// includePersona. The neutral death/arrival chronicles and the title flow stay style-free.
 function appendPersonaToSystem(baseSystem, template, personaRule, keyed) {
   if (template && template.includePersona === false) return baseSystem;
   const rule = cleanValue(personaRule);
@@ -797,7 +797,7 @@ function fallbackTemplateFields(key) {
   if (key === 'Title') {
     return [['entry', 'EntryText']];
   }
-  // Persona is injected into the system prompt (see appendPersonaToSystem), not a user field.
+  // Writing style is injected into the system prompt (see appendPersonaToSystem), not a user field.
   return [
     ['event', 'EventNoun'],
     ['pov', 'PovName'],
@@ -1176,7 +1176,7 @@ function buildPairFixture(promptData, group, options) {
     id: options.id,
     templateKey,
     assembler: assemblerInput,
-    // Persona now rides in the system prompt (composed via the shared assembler), not the field list.
+    // Writing style now rides in the system prompt (composed via the shared assembler), not the field list.
     personaRule: options.persona,
     type: 'pair',
     gameContext: context,
@@ -1222,7 +1222,7 @@ function buildSoloFixture(promptData, group, options) {
     id: options.id,
     templateKey,
     assembler: assemblerInput,
-    // Persona now rides in the system prompt (composed via the shared assembler), not the field list.
+    // Writing style now rides in the system prompt (composed via the shared assembler), not the field list.
     personaRule: options.persona,
     type: 'solo',
     gameContext: context,
@@ -1504,7 +1504,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
     version: 'v2',
   }));
 
-  // Neutral descriptions (third-person, no persona).
+  // Neutral descriptions (third-person, no writing style).
   cases.push(buildStaticTemplateFixture(promptData, {
     id: 'arrival-colonist-v1',
     type: 'arrival',
