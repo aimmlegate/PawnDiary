@@ -39,6 +39,8 @@ namespace PawnDiary
         public string apiKey = string.Empty;
         // How apiKey is attached to requests for this lane. Bearer preserves existing saves.
         public ApiAuthMode authMode = ApiAuthMode.BearerToken;
+        // Header name used when authMode is CustomHeader.
+        public string customAuthHeaderName = ApiEndpointPolicy.DefaultCustomHeaderName;
         // When false, keep this row configured but exclude it from generation and failover.
         public bool enabled = true;
         // Request/response compatibility mode. Default preserves existing OpenAI-compatible setups.
@@ -69,6 +71,7 @@ namespace PawnDiary
             {
                 enabled = enabled,
                 authMode = authMode,
+                customAuthHeaderName = customAuthHeaderName,
                 apiMode = apiMode,
                 reasoningEffort = reasoningEffort,
                 ollamaThink = ollamaThink
@@ -82,6 +85,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref model, "model", string.Empty);
             Scribe_Values.Look(ref apiKey, "apiKey", string.Empty);
             Scribe_Values.Look(ref authMode, "authMode", ApiAuthMode.BearerToken);
+            Scribe_Values.Look(ref customAuthHeaderName, "customAuthHeaderName", ApiEndpointPolicy.DefaultCustomHeaderName);
             Scribe_Values.Look(ref enabled, "enabled", true);
             Scribe_Values.Look(ref apiMode, "apiMode", ApiCompatibilityMode.OpenAIChatCompletions);
             Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
@@ -650,6 +654,19 @@ namespace PawnDiary
                 if (endpoint.model == null)
                 {
                     endpoint.model = string.Empty;
+                }
+
+                if (endpoint.authMode == ApiAuthMode.ApiKeyHeader)
+                {
+                    endpoint.customAuthHeaderName = ApiEndpointPolicy.LegacyApiKeyHeaderName;
+                }
+                else if (endpoint.authMode == ApiAuthMode.XApiKeyHeader)
+                {
+                    endpoint.customAuthHeaderName = ApiEndpointPolicy.LegacyXApiKeyHeaderName;
+                }
+                else
+                {
+                    endpoint.customAuthHeaderName = endpoint.customAuthHeaderName ?? ApiEndpointPolicy.DefaultCustomHeaderName;
                 }
 
                 endpoint.authMode = NormalizeAuthMode(endpoint.authMode);

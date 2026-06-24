@@ -526,6 +526,7 @@ namespace PawnDiary
                 modelName = target.model,
                 apiKey = target.apiKey,
                 authMode = target.authMode,
+                customAuthHeaderName = target.customAuthHeaderName,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
                 ollamaThink = target.ollamaThink,
@@ -677,6 +678,10 @@ namespace PawnDiary
             ApiAuthMode leftAuthMode = PawnDiarySettings.NormalizeAuthMode(left.authMode);
             ApiAuthMode rightAuthMode = PawnDiarySettings.NormalizeAuthMode(right.authMode);
             return leftAuthMode == rightAuthMode
+                && string.Equals(
+                    ApiEndpointPolicy.EffectiveAuthHeaderName(left.authMode, left.customAuthHeaderName),
+                    ApiEndpointPolicy.EffectiveAuthHeaderName(right.authMode, right.customAuthHeaderName),
+                    StringComparison.Ordinal)
                 && string.Equals(
                     ApiEndpointPolicy.EffectiveApiKey(leftAuthMode, left.apiKey),
                     ApiEndpointPolicy.EffectiveApiKey(rightAuthMode, right.apiKey),
@@ -846,6 +851,7 @@ namespace PawnDiary
             return new ApiEndpointConfig(result.endpointUrl, result.apiKey, result.modelName)
             {
                 authMode = result.authMode,
+                customAuthHeaderName = result.customAuthHeaderName,
                 apiMode = result.apiMode
             };
         }
@@ -1005,6 +1011,7 @@ namespace PawnDiary
                 modelName = target.model,
                 apiKey = target.apiKey,
                 authMode = target.authMode,
+                customAuthHeaderName = target.customAuthHeaderName,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
                 ollamaThink = target.ollamaThink,

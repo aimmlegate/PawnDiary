@@ -28,14 +28,14 @@ namespace PawnDiary
         /// Sends a GET request to the selected mode's model-list endpoint, authenticates with the
         /// given API key when present, and returns a sorted, deduplicated list of model IDs.
         /// </summary>
-        public static async Task<List<string>> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode, ApiCompatibilityMode mode, int timeoutSeconds)
+        public static async Task<List<string>> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode, string customAuthHeaderName, ApiCompatibilityMode mode, int timeoutSeconds)
         {
             using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
             using (HttpRequestMessage request = new HttpRequestMessage(
                 HttpMethod.Get,
                 ApiRequestAuth.ApplyQueryAuth(EndpointUtility.BuildModelsUrl(endpoint, mode), apiKey, authMode)))
             {
-                ApiRequestAuth.ApplyHeaders(request, apiKey, authMode);
+                ApiRequestAuth.ApplyHeaders(request, apiKey, authMode, customAuthHeaderName);
 
                 using (HttpResponseMessage response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation.Token))
                 {

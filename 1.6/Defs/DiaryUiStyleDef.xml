@@ -31,7 +31,7 @@
     <statusBadgeHeight>24</statusBadgeHeight>
     <statusBadgeRightPadding>24</statusBadgeRightPadding>
     <entryGap>8</entryGap>
-    <autoExpandedEntryCount>15</autoExpandedEntryCount>
+    <autoExpandedEntryCount>0</autoExpandedEntryCount>
     <collapsedEntryChromePadding>2</collapsedEntryChromePadding>
     <expansionAnimationSpeed>5.5</expansionAnimationSpeed>
     <entryAccentWidth>6</entryAccentWidth>

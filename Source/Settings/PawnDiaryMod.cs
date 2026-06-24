@@ -434,7 +434,8 @@ namespace PawnDiary
         private static bool HasApiAdvancedRow(ApiEndpointConfig endpoint)
         {
             return endpoint != null
-                && (endpoint.apiMode == ApiCompatibilityMode.OpenAIResponses
+                && (endpoint.apiMode == ApiCompatibilityMode.OpenAIChatCompletions
+                    || endpoint.apiMode == ApiCompatibilityMode.OpenAIResponses
                     || endpoint.apiMode == ApiCompatibilityMode.OllamaNativeChat);
         }
 
@@ -499,7 +500,9 @@ namespace PawnDiary
         private static void DrawAuthModeRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
         {
             Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
-            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+            bool customHeader = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == ApiAuthMode.CustomHeader;
+            float headerWidth = customHeader ? Mathf.Min(190f, Mathf.Max(120f, rect.width * 0.34f)) : 0f;
+            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - headerWidth - (customHeader ? 8f : 4f), rect.height);
             Widgets.LabelFit(labelRect, "PawnDiary.Settings.ApiAuthMode".Translate());
             if (Widgets.ButtonText(buttonRect, ApiAuthModeLabel(endpoint.authMode).Translate()))
             {
@@ -507,11 +510,17 @@ namespace PawnDiary
                 {
                     ApiAuthModeOption(endpoint, ApiAuthMode.BearerToken),
                     ApiAuthModeOption(endpoint, ApiAuthMode.None),
-                    ApiAuthModeOption(endpoint, ApiAuthMode.ApiKeyHeader),
-                    ApiAuthModeOption(endpoint, ApiAuthMode.XApiKeyHeader),
+                    ApiAuthModeOption(endpoint, ApiAuthMode.CustomHeader),
                     ApiAuthModeOption(endpoint, ApiAuthMode.QueryParameterKey)
                 };
                 Find.WindowStack.Add(new FloatMenu(options));
+            }
+
+            if (customHeader)
+            {
+                Rect headerRect = new Rect(buttonRect.xMax + 4f, rect.y, Mathf.Max(0f, rect.xMax - buttonRect.xMax - 4f), rect.height);
+                endpoint.customAuthHeaderName = Widgets.TextField(headerRect, endpoint.customAuthHeaderName ?? string.Empty);
+                TooltipHandler.TipRegion(headerRect, "PawnDiary.Settings.CustomAuthHeaderTip".Translate());
             }
         }
 
@@ -520,6 +529,10 @@ namespace PawnDiary
             return new FloatMenuOption(ApiAuthModeLabel(authMode).Translate(), delegate
             {
                 endpoint.authMode = PawnDiarySettings.NormalizeAuthMode(authMode);
+                if (endpoint.authMode == ApiAuthMode.CustomHeader)
+                {
+                    endpoint.customAuthHeaderName = ApiEndpointPolicy.NormalizeCustomHeaderName(endpoint.customAuthHeaderName);
+                }
             });
         }
 
@@ -529,10 +542,8 @@ namespace PawnDiary
             {
                 case ApiAuthMode.None:
                     return "PawnDiary.Settings.ApiAuthMode.None";
-                case ApiAuthMode.ApiKeyHeader:
-                    return "PawnDiary.Settings.ApiAuthMode.ApiKeyHeader";
-                case ApiAuthMode.XApiKeyHeader:
-                    return "PawnDiary.Settings.ApiAuthMode.XApiKeyHeader";
+                case ApiAuthMode.CustomHeader:
+                    return "PawnDiary.Settings.ApiAuthMode.CustomHeader";
                 case ApiAuthMode.QueryParameterKey:
                     return "PawnDiary.Settings.ApiAuthMode.QueryParameterKey";
                 default:
@@ -541,8 +552,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the small mode-specific option row: reasoning effort for OpenAI Responses, or
-        /// native thinking output for Ollama.
+        /// Draws the small mode-specific option row: OpenAI-compatible reasoning effort for Chat /
+        /// Responses, or native thinking output for Ollama.
         /// </summary>
         private static void DrawApiAdvancedRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
         {
@@ -1429,6 +1440,7 @@ namespace PawnDiary
             int generation = ++connectionTestGeneration;
             string url = string.Empty;
             string apiKey = string.Empty;
+            string customAuthHeaderName = ApiEndpointPolicy.DefaultCustomHeaderName;
             string model = string.Empty;
             ApiAuthMode authMode = ApiAuthMode.BearerToken;
             ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
@@ -1455,6 +1467,7 @@ namespace PawnDiary
 
                 url = endpoint.url;
                 apiKey = endpoint.apiKey;
+                customAuthHeaderName = endpoint.customAuthHeaderName;
                 model = endpoint.model;
                 authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode);
                 apiMode = endpoint.apiMode;
@@ -1476,6 +1489,7 @@ namespace PawnDiary
                 string sampleText = await LlmClient.TestConnection(new ApiEndpointConfig(url, apiKey, model)
                 {
                     authMode = authMode,
+                    customAuthHeaderName = customAuthHeaderName,
                     apiMode = apiMode,
                     reasoningEffort = reasoningEffort,
                     ollamaThink = ollamaThink
@@ -1489,6 +1503,7 @@ namespace PawnDiary
                     sampleText = sampleText,
                     endpointUrl = url,
                     apiKey = apiKey,
+                    customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                     model = model,
                     authMode = authMode,
                     apiMode = apiMode,
@@ -1506,6 +1521,7 @@ namespace PawnDiary
                     errorDetail = ex.Message,
                     endpointUrl = url,
                     apiKey = apiKey,
+                    customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                     model = model,
                     authMode = authMode,
                     apiMode = apiMode,
@@ -1540,6 +1556,7 @@ namespace PawnDiary
             int generation = ++fetchGeneration; // capture current generation to detect stale completions
             string url = string.Empty;
             string apiKey = string.Empty;
+            string customAuthHeaderName = ApiEndpointPolicy.DefaultCustomHeaderName;
             ApiAuthMode authMode = ApiAuthMode.BearerToken;
             ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
             try
@@ -1566,11 +1583,12 @@ namespace PawnDiary
 
                 url = endpoint.url;
                 apiKey = endpoint.apiKey;
+                customAuthHeaderName = endpoint.customAuthHeaderName;
                 authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode);
                 apiMode = endpoint.apiMode;
                 int timeoutSeconds = Settings.timeoutSeconds;
 
-                List<string> models = await ModelListClient.FetchModels(url, apiKey, authMode, apiMode, timeoutSeconds);
+                List<string> models = await ModelListClient.FetchModels(url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
                 pendingFetchResult = new ModelFetchResult
                 {
                     generation = generation,
@@ -1579,6 +1597,7 @@ namespace PawnDiary
                     models = models,
                     endpointUrl = url,
                     apiKey = apiKey,
+                    customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                     authMode = authMode,
                     apiMode = apiMode
                 };
@@ -1593,6 +1612,7 @@ namespace PawnDiary
                     errorDetail = ex.Message,
                     endpointUrl = url,
                     apiKey = apiKey,
+                    customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
                     authMode = authMode,
                     apiMode = apiMode
                 };
@@ -1743,6 +1763,7 @@ namespace PawnDiary
                 && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
                 && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
                 && PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == result.authMode
+                && string.Equals(ApiEndpointPolicy.EffectiveAuthHeaderName(endpoint.authMode, endpoint.customAuthHeaderName), result.customAuthHeaderName ?? string.Empty, StringComparison.Ordinal)
                 && endpoint.apiMode == result.apiMode;
         }
 
@@ -1762,6 +1783,7 @@ namespace PawnDiary
                 && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
                 && string.Equals(endpoint.model ?? string.Empty, result.model ?? string.Empty, StringComparison.Ordinal)
                 && PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == result.authMode
+                && string.Equals(ApiEndpointPolicy.EffectiveAuthHeaderName(endpoint.authMode, endpoint.customAuthHeaderName), result.customAuthHeaderName ?? string.Empty, StringComparison.Ordinal)
                 && endpoint.apiMode == result.apiMode
                 && string.Equals(PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort), result.reasoningEffort ?? string.Empty, StringComparison.Ordinal)
                 && endpoint.ollamaThink == result.ollamaThink;
@@ -1870,6 +1892,7 @@ namespace PawnDiary
             public string errorDetail;    // raw, untranslated exception message
             public string endpointUrl;     // row URL snapshot used to reject stale row edits
             public string apiKey;          // row key snapshot; never logged or shown
+            public string customAuthHeaderName; // effective custom-header name; never logged or shown
             public ApiAuthMode authMode;   // auth style snapshot; changing it changes request shape
             public ApiCompatibilityMode apiMode; // row mode snapshot; changing modes changes model-list shape
         }
@@ -1885,6 +1908,7 @@ namespace PawnDiary
             public string errorDetail;
             public string endpointUrl;
             public string apiKey;
+            public string customAuthHeaderName;
             public string model;
             public ApiAuthMode authMode;
             public ApiCompatibilityMode apiMode;

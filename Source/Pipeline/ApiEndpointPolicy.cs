@@ -11,9 +11,13 @@ namespace PawnDiary
     {
         BearerToken,
         None,
+        // Legacy saves may still contain these fixed header modes. The settings UI now exposes
+        // CustomHeader instead, and load-time normalization maps the old names to that mode after
+        // seeding the matching header name on the endpoint row.
         ApiKeyHeader,
         XApiKeyHeader,
-        QueryParameterKey
+        QueryParameterKey,
+        CustomHeader
     }
 
     /// <summary>Pure policy helpers for API lane auth and transient-failure cooldown.</summary>
@@ -21,6 +25,9 @@ namespace PawnDiary
     {
         private const int BaseCooldownSeconds = 10;
         private const int MaxCooldownSeconds = 300;
+        public const string DefaultCustomHeaderName = "x-goog-api-key";
+        public const string LegacyApiKeyHeaderName = "api-key";
+        public const string LegacyXApiKeyHeaderName = "x-api-key";
 
         /// <summary>Normalizes invalid auth enum values loaded from hand-edited settings.</summary>
         public static ApiAuthMode NormalizeAuthMode(ApiAuthMode mode)
@@ -29,10 +36,12 @@ namespace PawnDiary
             {
                 case ApiAuthMode.BearerToken:
                 case ApiAuthMode.None:
+                case ApiAuthMode.QueryParameterKey:
+                case ApiAuthMode.CustomHeader:
+                    return mode;
                 case ApiAuthMode.ApiKeyHeader:
                 case ApiAuthMode.XApiKeyHeader:
-                case ApiAuthMode.QueryParameterKey:
-                    return mode;
+                    return ApiAuthMode.CustomHeader;
                 default:
                     return ApiAuthMode.BearerToken;
             }
@@ -50,6 +59,69 @@ namespace PawnDiary
             }
 
             return (apiKey ?? string.Empty).Trim();
+        }
+
+        /// <summary>
+        /// Returns the header name used by CustomHeader auth, or an empty string for non-header auth.
+        /// Invalid custom names fall back to x-goog-api-key so hand-edited settings cannot break sends.
+        /// </summary>
+        public static string EffectiveAuthHeaderName(ApiAuthMode authMode, string customHeaderName)
+        {
+            switch (authMode)
+            {
+                case ApiAuthMode.ApiKeyHeader:
+                    return LegacyApiKeyHeaderName;
+                case ApiAuthMode.XApiKeyHeader:
+                    return LegacyXApiKeyHeaderName;
+            }
+
+            return NormalizeAuthMode(authMode) == ApiAuthMode.CustomHeader
+                ? NormalizeCustomHeaderName(customHeaderName)
+                : string.Empty;
+        }
+
+        /// <summary>Normalizes a user-entered HTTP header field name.</summary>
+        public static string NormalizeCustomHeaderName(string headerName)
+        {
+            string trimmed = (headerName ?? string.Empty).Trim();
+            return IsValidHeaderName(trimmed) ? trimmed : DefaultCustomHeaderName;
+        }
+
+        private static bool IsValidHeaderName(string headerName)
+        {
+            if (string.IsNullOrEmpty(headerName))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < headerName.Length; i++)
+            {
+                char c = headerName[i];
+                bool valid = (c >= 'A' && c <= 'Z')
+                    || (c >= 'a' && c <= 'z')
+                    || (c >= '0' && c <= '9')
+                    || c == '!'
+                    || c == '#'
+                    || c == '$'
+                    || c == '%'
+                    || c == '&'
+                    || c == '\''
+                    || c == '*'
+                    || c == '+'
+                    || c == '-'
+                    || c == '.'
+                    || c == '^'
+                    || c == '_'
+                    || c == '`'
+                    || c == '|'
+                    || c == '~';
+                if (!valid)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

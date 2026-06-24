@@ -134,8 +134,8 @@
   <PawnDiary.Settings.ApiAuthMode>Auth</PawnDiary.Settings.ApiAuthMode>
   <PawnDiary.Settings.ApiAuthMode.Bearer>Bearer token</PawnDiary.Settings.ApiAuthMode.Bearer>
   <PawnDiary.Settings.ApiAuthMode.None>No auth</PawnDiary.Settings.ApiAuthMode.None>
-  <PawnDiary.Settings.ApiAuthMode.ApiKeyHeader>api-key header</PawnDiary.Settings.ApiAuthMode.ApiKeyHeader>
-  <PawnDiary.Settings.ApiAuthMode.XApiKeyHeader>x-api-key header</PawnDiary.Settings.ApiAuthMode.XApiKeyHeader>
+  <PawnDiary.Settings.ApiAuthMode.CustomHeader>Custom header</PawnDiary.Settings.ApiAuthMode.CustomHeader>
+  <PawnDiary.Settings.CustomAuthHeaderTip>HTTP header name for the API key, such as x-goog-api-key, api-key, or x-api-key.</PawnDiary.Settings.CustomAuthHeaderTip>
   <PawnDiary.Settings.ApiAuthMode.QueryParameterKey>key= query</PawnDiary.Settings.ApiAuthMode.QueryParameterKey>
   <PawnDiary.Settings.RequestTuning>Request tuning</PawnDiary.Settings.RequestTuning>
   <PawnDiary.Settings.ApiRouting>Routing</PawnDiary.Settings.ApiRouting>

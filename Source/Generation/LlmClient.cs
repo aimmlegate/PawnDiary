@@ -48,6 +48,9 @@ namespace PawnDiary
         /// <summary>How to send <see cref="apiKey"/> for this lane.</summary>
         public ApiAuthMode authMode;
 
+        /// <summary>Header name used when <see cref="authMode"/> is CustomHeader.</summary>
+        public string customAuthHeaderName;
+
         /// <summary>Request/response compatibility mode for this lane.</summary>
         public ApiCompatibilityMode apiMode;
 
@@ -134,6 +137,9 @@ namespace PawnDiary
 
         /// <summary>Auth style of the lane that actually produced the text.</summary>
         public ApiAuthMode authMode;
+
+        /// <summary>Header name used when authMode is CustomHeader.</summary>
+        public string customAuthHeaderName;
 
         /// <summary>Mirror of <see cref="LlmGenerationRequest.isTitleRequest"/>. The dispatcher
         /// branches on this to route the result to the title handler instead of the main-entry
@@ -357,6 +363,7 @@ namespace PawnDiary
                     modelName = endpoint.model,
                     apiKey = endpoint.apiKey,
                     authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode),
+                    customAuthHeaderName = endpoint.customAuthHeaderName,
                     apiMode = endpoint.apiMode,
                     reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
                     ollamaThink = endpoint.ollamaThink,
@@ -388,7 +395,7 @@ namespace PawnDiary
                 return false;
             }
 
-            return IsLaneCooling(LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.apiKey));
+            return IsLaneCooling(LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.customAuthHeaderName, lane.apiKey));
         }
 
         /// <summary>
@@ -397,7 +404,7 @@ namespace PawnDiary
         /// </summary>
         private static string GateKey(LlmGenerationRequest request)
         {
-            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.apiKey);
+            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.customAuthHeaderName, request.apiKey);
         }
 
         private static string LaneKey(LlmGenerationRequest request)
@@ -407,15 +414,16 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.apiKey);
+            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.customAuthHeaderName, request.apiKey);
         }
 
-        private static string LaneKey(string endpointUrl, string modelName, ApiCompatibilityMode apiMode, ApiAuthMode authMode, string apiKey)
+        private static string LaneKey(string endpointUrl, string modelName, ApiCompatibilityMode apiMode, ApiAuthMode authMode, string customAuthHeaderName, string apiKey)
         {
             string endpoint = EndpointUtility.NormalizeBaseEndpoint(endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
             string model = (modelName ?? string.Empty).Trim();
             ApiAuthMode normalizedAuthMode = PawnDiarySettings.NormalizeAuthMode(authMode);
-            return apiMode + "\n" + endpoint + "\n" + model + "\n" + normalizedAuthMode + "\n" + ApiEndpointPolicy.EffectiveApiKey(normalizedAuthMode, apiKey);
+            string headerName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName);
+            return apiMode + "\n" + endpoint + "\n" + model + "\n" + normalizedAuthMode + "\n" + headerName + "\n" + ApiEndpointPolicy.EffectiveApiKey(normalizedAuthMode, apiKey);
         }
 
         private static HashSet<string> BuildLaneKeySet(List<ApiEndpointConfig> lanes)
@@ -433,7 +441,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                string key = LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.apiKey);
+                string key = LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.customAuthHeaderName, lane.apiKey);
                 if (!string.IsNullOrEmpty(key))
                 {
                     keys.Add(key);
@@ -715,6 +723,7 @@ namespace PawnDiary
                     request.endpointUrl = target.url;
                     request.apiKey = target.apiKey;
                     request.authMode = PawnDiarySettings.NormalizeAuthMode(target.authMode);
+                    request.customAuthHeaderName = target.customAuthHeaderName;
                     request.modelName = target.model;
                     request.apiMode = target.apiMode;
                     request.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(target.reasoningEffort);
@@ -772,6 +781,7 @@ namespace PawnDiary
                                 apiMode = request.apiMode,
                                 apiKey = request.apiKey,
                                 authMode = request.authMode,
+                                customAuthHeaderName = request.customAuthHeaderName,
                                 isTitleRequest = request.isTitleRequest
                             });
                             return;
@@ -918,6 +928,7 @@ namespace PawnDiary
                 new ApiEndpointConfig(request.endpointUrl, request.apiKey, request.modelName)
                 {
                     authMode = PawnDiarySettings.NormalizeAuthMode(request.authMode),
+                    customAuthHeaderName = request.customAuthHeaderName,
                     apiMode = request.apiMode,
                     reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort),
                     ollamaThink = request.ollamaThink
@@ -971,7 +982,7 @@ namespace PawnDiary
                 request.authMode);
             using (HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, requestUrl))
             {
-                ApiRequestAuth.ApplyHeaders(message, request.apiKey, request.authMode);
+                ApiRequestAuth.ApplyHeaders(message, request.apiKey, request.authMode, request.customAuthHeaderName);
 
                 message.Content = new StringContent(BuildRequestJson(request), Encoding.UTF8, "application/json");
                 using (HttpResponseMessage response = await Client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
@@ -1122,12 +1133,19 @@ namespace PawnDiary
 
         private static string BuildOpenAIChatRequestJson(LlmGenerationRequest request)
         {
-            return "{"
+            string json = "{"
                 + "\"model\":\"" + JsonEscape(request.modelName) + "\","
                 + "\"messages\":[" + BuildMessagesJson(request) + "],"
                 + "\"temperature\":" + JsonNumber(request.temperature) + ","
-                + "\"max_tokens\":" + request.maxTokens
-                + "}";
+                + "\"max_tokens\":" + request.maxTokens;
+
+            string reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort);
+            if (HasExplicitReasoningEffort(reasoningEffort))
+            {
+                json += ",\"reasoning_effort\":\"" + JsonEscape(reasoningEffort) + "\"";
+            }
+
+            return json + "}";
         }
 
         private static string BuildOpenAIResponsesRequestJson(LlmGenerationRequest request)
@@ -1205,6 +1223,10 @@ namespace PawnDiary
                 && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
                 && left.apiMode == right.apiMode
                 && leftAuthMode == rightAuthMode
+                && string.Equals(
+                    ApiEndpointPolicy.EffectiveAuthHeaderName(left.authMode, left.customAuthHeaderName),
+                    ApiEndpointPolicy.EffectiveAuthHeaderName(right.authMode, right.customAuthHeaderName),
+                    StringComparison.Ordinal)
                 && string.Equals(
                     ApiEndpointPolicy.EffectiveApiKey(leftAuthMode, left.apiKey),
                     ApiEndpointPolicy.EffectiveApiKey(rightAuthMode, right.apiKey),

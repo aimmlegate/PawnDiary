@@ -296,12 +296,20 @@ namespace DiaryPipelineTests
                 ApiEndpointPolicy.NormalizeAuthMode(ApiAuthMode.BearerToken));
             AssertEqual("normalize query auth", ApiAuthMode.QueryParameterKey,
                 ApiEndpointPolicy.NormalizeAuthMode(ApiAuthMode.QueryParameterKey));
+            AssertEqual("normalize legacy api-key auth", ApiAuthMode.CustomHeader,
+                ApiEndpointPolicy.NormalizeAuthMode(ApiAuthMode.ApiKeyHeader));
             AssertEqual("normalize invalid auth", ApiAuthMode.BearerToken,
                 ApiEndpointPolicy.NormalizeAuthMode((ApiAuthMode)999));
             AssertEqual("effective key trims authenticated lanes", "secret",
                 ApiEndpointPolicy.EffectiveApiKey(ApiAuthMode.BearerToken, " secret "));
             AssertEqual("effective key ignores no-auth stale key", string.Empty,
                 ApiEndpointPolicy.EffectiveApiKey(ApiAuthMode.None, "stale"));
+            AssertEqual("custom header default", "x-goog-api-key",
+                ApiEndpointPolicy.NormalizeCustomHeaderName(""));
+            AssertEqual("custom header trims valid name", "x-api-key",
+                ApiEndpointPolicy.NormalizeCustomHeaderName(" x-api-key "));
+            AssertEqual("custom header rejects invalid spaces", "x-goog-api-key",
+                ApiEndpointPolicy.NormalizeCustomHeaderName("bad header"));
 
             AssertEqual("cooldown zero is first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(0));
             AssertEqual("cooldown first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(1));
@@ -340,16 +348,16 @@ namespace DiaryPipelineTests
                 AssertEqual("bearer parameter", "secret", bearer.Headers.Authorization.Parameter);
             }
 
-            using (HttpRequestMessage apiKey = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
+            using (HttpRequestMessage customKey = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
             {
-                ApiRequestAuth.ApplyHeaders(apiKey, "secret", ApiAuthMode.ApiKeyHeader);
-                AssertHeader("api-key header", apiKey, "api-key", "secret");
-                AssertTrue("api-key has no bearer", apiKey.Headers.Authorization == null);
+                ApiRequestAuth.ApplyHeaders(customKey, "secret", ApiAuthMode.CustomHeader, "x-goog-api-key");
+                AssertHeader("custom x-goog-api-key header", customKey, "x-goog-api-key", "secret");
+                AssertTrue("custom header has no bearer", customKey.Headers.Authorization == null);
             }
 
             using (HttpRequestMessage xApiKey = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
             {
-                ApiRequestAuth.ApplyHeaders(xApiKey, "secret", ApiAuthMode.XApiKeyHeader);
+                ApiRequestAuth.ApplyHeaders(xApiKey, "secret", ApiAuthMode.XApiKeyHeader, "");
                 AssertHeader("x-api-key header", xApiKey, "x-api-key", "secret");
             }
 

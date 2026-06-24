@@ -6,6 +6,15 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Diary entry cards default to compact rows.** The newest entries no longer auto-expand into tall
+  full-text panels; `autoExpandedEntryCount` now defaults to `0`, while click-to-expand behavior
+  remains unchanged.
+- **API auth headers made editable.** Fixed `api-key` and `x-api-key` auth choices were replaced by
+  one custom-header mode that defaults to `x-goog-api-key`; old saved rows migrate to custom-header
+  auth with their previous header name.
+- **OpenAI-compatible Chat reasoning added.** Chat-compatible rows now expose the same Reasoning
+  selector as Responses rows and send `reasoning_effort`, allowing Gemini's OpenAI-compatible
+  `/chat/completions` endpoint to reduce or disable thinking when the selected model supports it.
 - **Pawn ability-use events added.** Successful `Ability.Activate` calls now create cooldown-weighted
   solo diary candidates for the caster. Faster-cooldown abilities get lower capture odds, while
   rare long-cooldown abilities are more likely to be kept; prompts receive ability name, category,

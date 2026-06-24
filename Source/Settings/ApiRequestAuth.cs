@@ -29,6 +29,12 @@ namespace PawnDiary
         /// <summary>Adds header-based auth when the selected auth mode requires it.</summary>
         public static void ApplyHeaders(HttpRequestMessage request, string apiKey, ApiAuthMode authMode)
         {
+            ApplyHeaders(request, apiKey, authMode, ApiEndpointPolicy.DefaultCustomHeaderName);
+        }
+
+        /// <summary>Adds header-based auth when the selected auth mode requires it.</summary>
+        public static void ApplyHeaders(HttpRequestMessage request, string apiKey, ApiAuthMode authMode, string customHeaderName)
+        {
             if (request == null)
             {
                 return;
@@ -45,11 +51,10 @@ namespace PawnDiary
                 case ApiAuthMode.None:
                 case ApiAuthMode.QueryParameterKey:
                     return;
-                case ApiAuthMode.ApiKeyHeader:
-                    request.Headers.TryAddWithoutValidation("api-key", key);
-                    return;
-                case ApiAuthMode.XApiKeyHeader:
-                    request.Headers.TryAddWithoutValidation("x-api-key", key);
+                case ApiAuthMode.CustomHeader:
+                    request.Headers.TryAddWithoutValidation(
+                        ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customHeaderName),
+                        key);
                     return;
                 default:
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);

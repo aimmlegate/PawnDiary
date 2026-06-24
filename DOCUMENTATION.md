@@ -311,12 +311,17 @@ in the Diary tab while dev mode is on so prompt formatting can be checked from l
 producing generated diary text.
 
 API lanes support OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat,
-including model fetch/pick, per-row connection tests, per-row auth style (Bearer, no auth,
-`api-key`, `x-api-key`, or `key=` query), Responses reasoning effort, Ollama thinking output, and
-the shared request-tuning block shown inside the expanded connection section. Endpoint URLs
-normalize on load/save, not every settings draw, so users can edit or clear the active text field
+including model fetch/pick, per-row connection tests, per-row auth style (Bearer, no auth, editable
+custom API-key header such as `x-goog-api-key`, or `key=` query), per-row reasoning effort for
+OpenAI-compatible Chat and Responses providers, Ollama thinking output, and the shared request-tuning
+block shown inside the expanded connection section. Endpoint URLs and custom-header text normalize on
+send/load/save boundaries, not every settings draw, so users can edit or clear the active text field
 without it being rewritten mid-typing. Query-key auth replaces any existing `key=` parameter while
-preserving URL fragments, and logs strip query strings.
+preserving URL fragments, and logs strip query strings. Old saved `api-key` and `x-api-key` auth rows
+migrate to custom-header auth with the matching header name. Gemini's OpenAI-compatible endpoint
+(`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`) uses the Chat-compatible
+mode; set Auth to Bearer or `key=` query as needed, then use the Reasoning selector to send
+`reasoning_effort` (`none`, `low`, `medium`, `high`, etc.) for Gemini thinking models.
 
 API row order is editable with compact arrow buttons that show their full label on hover. The global
 routing mode controls how strongly that order affects primary selection: **Balanced** spreads primary requests equally across enabled rows,
@@ -356,11 +361,13 @@ intentionally excluded: a synthetic death/arrival event would become that pawn's
 real gameplay hooks. The prompt suite validates prompt planning, queueing, and Diary UI display; it
 does not validate Harmony event capture. Use the live hook workflow in §13 for real hook checks.
 
-The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. In dev mode every
-expanded entry card also shows a subtle copy button at the bottom-left of the card: clicking it copies the
-card's text to the clipboard — the captured prompt for prompt-only cards, otherwise the generated
-text — so prompts and output can be pasted out for inspection. The badge rests at ~0.5 alpha,
-brightens on hover, and reserves a dev-only footer so it clears the model-name line drawn above it.
+The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. Entry cards start
+collapsed by default (`autoExpandedEntryCount`), keeping the list compact; clicking a card header
+expands it to the full wrapped diary text. In dev mode every expanded entry card also shows a subtle
+copy button at the bottom-left of the card: clicking it copies the card's text to the clipboard —
+the captured prompt for prompt-only cards, otherwise the generated text — so prompts and output can
+be pasted out for inspection. The badge rests at ~0.5 alpha, brightens on hover, and reserves a
+dev-only footer so it clears the model-name line drawn above it.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
