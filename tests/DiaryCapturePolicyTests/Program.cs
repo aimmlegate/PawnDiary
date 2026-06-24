@@ -44,6 +44,7 @@ namespace DiaryCapturePolicyTests
             TestQuestDecide();
             TestQuestBuildGameContextFormat();
             TestRitualDecide();
+            TestRitualQualityLabel();
             TestRitualBuildGameContextFormat();
             TestPsychicRitualBuildGameContextFormat();
             TestAbilityDecide();
@@ -779,7 +780,7 @@ namespace DiaryCapturePolicyTests
         private static void TestRitualBuildGameContextFormat()
         {
             AssertEqual("ritual context full",
-                "ritual=Ritual_Speech; ritual_title=Leader's address; ritual_behavior=RitualBehaviorWorker_LeaderSpeech; ritual_perspective=author; ritual_role=author (speaker); royal_title=Count; ideological_role=Moral guide; outcome=finished; quality=0.84",
+                "ritual=Ritual_Speech; ritual_title=Leader's address; ritual_behavior=RitualBehaviorWorker_LeaderSpeech; ritual_perspective=author; ritual_role=author (speaker); royal_title=Count; ideological_role=Moral guide; outcome=finished; quality=strong",
                 RitualEventData.BuildGameContext(
                     "Ritual_Speech",
                     "Leader's address",
@@ -789,7 +790,7 @@ namespace DiaryCapturePolicyTests
                     "Count",
                     "Moral guide",
                     "finished",
-                    "0.84"));
+                    "strong"));
             AssertEqual("ritual context fallbacks",
                 "ritual=Ritual_Dance; ritual_title=ritual; ritual_behavior=unknown; ritual_perspective=participant; ritual_role=participant; royal_title=none; ideological_role=none; outcome=finished; quality=unknown",
                 RitualEventData.BuildGameContext(
@@ -810,9 +811,9 @@ namespace DiaryCapturePolicyTests
                 "VoidProvocation",
                 RitualEventData.PerspectiveInvoker,
                 "finished",
-                "0.67");
+                "decent");
             AssertEqual("psychic ritual context full",
-                "psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker; outcome=finished; quality=0.67",
+                "psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker; outcome=finished; quality=decent",
                 context);
             AssertTrue("psychic ritual omits ritual title",
                 context.IndexOf("ritual_title=", StringComparison.OrdinalIgnoreCase) < 0);
@@ -822,6 +823,25 @@ namespace DiaryCapturePolicyTests
             AssertEqual("psychic ritual context fallbacks",
                 "psychic_ritual=Chronophagy; psychic_ritual_perspective=participant; outcome=finished; quality=unknown",
                 RitualEventData.BuildPsychicGameContext("Chronophagy", "", "", ""));
+        }
+
+        private static void TestRitualQualityLabel()
+        {
+            List<RitualQualityBand> bands = RitualEventData.DefaultQualityBands();
+            AssertEqual("ritual quality NaN", "unknown", RitualEventData.QualityLabel(float.NaN, bands));
+            AssertEqual("ritual quality terrible", "terrible", RitualEventData.QualityLabel(0.1f, bands));
+            AssertEqual("ritual quality weak", "weak", RitualEventData.QualityLabel(0.35f, bands));
+            AssertEqual("ritual quality decent", "decent", RitualEventData.QualityLabel(0.67f, bands));
+            AssertEqual("ritual quality strong", "strong", RitualEventData.QualityLabel(0.84f, bands));
+            AssertEqual("ritual quality excellent", "excellent", RitualEventData.QualityLabel(1f, bands));
+
+            List<RitualQualityBand> customBands = new List<RitualQualityBand>
+            {
+                new RitualQualityBand { maxExclusive = 0.5f, label = "low" },
+                new RitualQualityBand { maxExclusive = 9999f, label = "high" },
+            };
+            AssertEqual("ritual quality uses supplied bands", "high",
+                RitualEventData.QualityLabel(0.75f, customBands));
         }
 
         // ── Ability (successful Ability.Activate calls) ──

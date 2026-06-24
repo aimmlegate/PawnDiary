@@ -175,10 +175,11 @@ ritual/ability/status lines.
 
 | Item | Value |
 |---|---|
-| Source | `LordJob_Ritual.ApplyOutcome` and `PsychicRitualGraph.End`, through `RitualEventData`. Only finished/successful, non-canceled rituals record. |
+| Source | `LordJob_Ritual.ApplyOutcome` and `LordToil_PsychicRitual.RitualCompleted`, through `RitualEventData`. Only finished/successful, non-canceled rituals record. |
 | Recording rule | One finished ritual fans out to separate solo entries for the author/invoker, target pawn when available, participants, and spectators. Duplicate pawns are recorded once, in that priority order. |
-| Context | `ritual=<Precept_Ritual>; ritual_title=<title>; ritual_behavior=<worker>; ritual_perspective=<author\|target\|participant\|spectator>; ritual_role=<role>; royal_title=<title\|none>; ideological_role=<role\|none>; outcome=finished; quality=<progress\|unknown>` |
-| Psychic ritual context | `psychic_ritual=<PsychicRitualDef>; psychic_ritual_perspective=<invoker\|target\|participant\|spectator>; outcome=finished; quality=<power\|unknown>`. These entries intentionally do not send `ritual_title` or `ritual_role`. |
+| Context | `ritual=<Precept_Ritual>; ritual_title=<title>; ritual_behavior=<worker>; ritual_perspective=<author\|target\|participant\|spectator>; ritual_role=<role>; royal_title=<title\|none>; ideological_role=<role\|none>; outcome=finished; quality=<terrible\|weak\|decent\|strong\|excellent\|unknown>` |
+| Psychic ritual context | `psychic_ritual=<PsychicRitualDef>; psychic_ritual_perspective=<invoker\|target\|participant\|spectator>; outcome=finished; quality=<terrible\|weak\|decent\|strong\|excellent\|unknown>`. These entries intentionally do not send `ritual_title` or `ritual_role`. |
+| Quality policy | `DiaryTuningDef.xml` owns the ritual quality bands. Prompts should respect the supplied quality as pressure on confidence, aftermath, and emotional weight, but should not quote or explain the label directly. |
 | Prompt | Usually `SoloImportant`; all shipped Ritual groups are important. |
 | Perspective instruction | Author/invoker, target, participant, and spectator entries each get a separate localized instruction after the ritual has finished. Psychic ritual invoker entries request exactly one standalone `[[speech]]...[[/speech]]` block containing unsettling invented ritual speech. |
 | Edge groups | Royalty `ThroneSpeech` / `AnimaTreeLinking` use more courtly or psyfocus/anima flavor; Biotech `ChildBirth` stays medically and emotionally appropriate; Odyssey `GravshipLaunch` is technical, launch/flight/landing focused; Anomaly psychic rituals use the dark color cue and unsettling atmosphere, with display-side distortion applied to invoker speech blocks from saved psychic-ritual context. |

@@ -81,6 +81,11 @@ namespace PawnDiary
         public float abilityUseMaxChance = 0.75f;
         public int abilityUseReferenceCooldownTicks = 60000;
 
+        // ---- Ritual quality wording ----
+        // Ordered map from RimWorld's ritual progress/power value to a plain saved context label.
+        // The prompt sees this label but is instructed to treat it as weight/aftermath, not to quote it.
+        public List<RitualQualityBand> ritualQualityBands = RitualEventData.DefaultQualityBands();
+
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things
         public int maxNearbyThings = 6;       // cap on nearby candidates considered before weighted pick

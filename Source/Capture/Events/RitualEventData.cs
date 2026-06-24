@@ -2,9 +2,20 @@
 // LordJob_Ritual out to organizer/target/participant/spectator solo entries; this payload is the
 // plain per-pawn slice that keeps decision logic testable without RimWorld assemblies.
 using System;
+using System.Collections.Generic;
 
 namespace PawnDiary.Capture
 {
+    /// <summary>
+    /// One XML-configurable ritual quality bucket. The first bucket whose maxExclusive is greater
+    /// than the ritual value supplies the saved quality label.
+    /// </summary>
+    public class RitualQualityBand
+    {
+        public float maxExclusive = 1f;
+        public string label;
+    }
+
     /// <summary>
     /// Captured facts for one pawn's perspective on a finished ritual.
     /// </summary>
@@ -102,6 +113,52 @@ namespace PawnDiary.Capture
                 + "; psychic_ritual_perspective=" + Fallback(perspective, PerspectiveParticipant)
                 + "; outcome=" + Fallback(outcome, "finished")
                 + "; quality=" + Fallback(quality, "unknown");
+        }
+
+        /// <summary>
+        /// Converts RimWorld's 0..1-ish ritual strength/progress values into plain prompt words.
+        /// The labels are stable schema values, not UI prose.
+        /// </summary>
+        public static string QualityLabel(float value, IList<RitualQualityBand> bands)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                return "unknown";
+            }
+
+            IList<RitualQualityBand> safeBands = bands == null || bands.Count == 0
+                ? DefaultQualityBands()
+                : bands;
+            for (int i = 0; i < safeBands.Count; i++)
+            {
+                RitualQualityBand band = safeBands[i];
+                if (band == null || string.IsNullOrWhiteSpace(band.label))
+                {
+                    continue;
+                }
+
+                if (value < band.maxExclusive)
+                {
+                    return Clean(band.label);
+                }
+            }
+
+            return "unknown";
+        }
+
+        /// <summary>
+        /// Safe fallback when XML is absent. Normal runtime policy comes from DiaryTuningDef.xml.
+        /// </summary>
+        public static List<RitualQualityBand> DefaultQualityBands()
+        {
+            return new List<RitualQualityBand>
+            {
+                new RitualQualityBand { maxExclusive = 0.25f, label = "terrible" },
+                new RitualQualityBand { maxExclusive = 0.5f, label = "weak" },
+                new RitualQualityBand { maxExclusive = 0.75f, label = "decent" },
+                new RitualQualityBand { maxExclusive = 1f, label = "strong" },
+                new RitualQualityBand { maxExclusive = 9999f, label = "excellent" },
+            };
         }
 
         private static string Fallback(string value, string fallback)

@@ -3,7 +3,6 @@
 // them without sending role/title prompt fields.
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Reflection;
 using HarmonyLib;
 using PawnDiary.Capture;
@@ -21,14 +20,12 @@ namespace PawnDiary
             AccessTools.Field(typeof(PsychicRitual), "def");
         private static readonly FieldInfo PsychicRitualAssignmentsField =
             AccessTools.Field(typeof(PsychicRitual), "assignments");
-        private static readonly FieldInfo PsychicRitualPowerField =
-            AccessTools.Field(typeof(PsychicRitual), "power");
         private static readonly FieldInfo PsychicRitualCanceledField =
             AccessTools.Field(typeof(PsychicRitual), "canceled");
 
         /// <summary>
         /// Records a successful Anomaly psychic ritual as per-pawn solo diary events. Called from
-        /// PsychicRitualGraph.End after vanilla completes the ritual graph.
+        /// LordToil_PsychicRitual.RitualCompleted after vanilla reaches the completion callback.
         /// </summary>
         public void RecordPsychicRitualFinished(PsychicRitual psychicRitual, bool success)
         {
@@ -190,10 +187,9 @@ namespace PawnDiary
 
         private static string PsychicRitualQuality(PsychicRitual psychicRitual)
         {
-            object value = PsychicRitualPowerField?.GetValue(psychicRitual);
-            return value is float
-                ? ((float)value).ToString("0.##", CultureInfo.InvariantCulture)
-                : string.Empty;
+            return psychicRitual == null
+                ? string.Empty
+                : RitualEventData.QualityLabel(psychicRitual.PowerPercent, DiaryTuning.Current.ritualQualityBands);
         }
 
         private static string PsychicRitualClassifierKey(string defName)

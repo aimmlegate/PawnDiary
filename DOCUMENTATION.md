@@ -115,7 +115,7 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 | Work | Periodic current-job sampling | Skips social/violent work, applies XML odds/cooldowns and `workGenerationWeight`. |
 | Raids | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid`) | Once per eligible colonist on the raid's target map. Minimal payload: incident defName, raider faction defName, raid points. |
 | Quests | `Quest.Accept`, a defensive `MainTabWindow_Quests` accept-action fallback, a `Quest.EverAccepted` state scan, and `Quest.End` | Only accepted quests are recorded. `Success` -> "completed", `Fail` -> "failed"; one entry per eligible colonist per signal, with description, issuer faction, and rewards context. |
-| Rituals | `LordJob_Ritual.ApplyOutcome`, `PsychicRitualGraph.End` | Finished Ideology rituals fan out to author, target pawn when present, participants, and spectators with role/title/status context. Successful Anomaly psychic rituals fan out similarly from the psychic ritual graph, but deliberately omit role/title prompt fields and use darker, stranger instructions. |
+| Rituals | `LordJob_Ritual.ApplyOutcome`, `LordToil_PsychicRitual.RitualCompleted` | Finished Ideology rituals fan out to author, target pawn when present, participants, and spectators with role/title/status context. Successful Anomaly psychic rituals fan out from the ritual completion callback, deliberately omit role/title prompt fields, and use darker, stranger instructions. |
 | Abilities | `Ability.Activate` local-map and world-target overloads | Successful ability uses can become solo entries for the caster. Sampling is cooldown-weighted: fast-repeat abilities stay rare, while long-cooldown abilities have higher odds. |
 | Day reflections | Sleep/rest trigger | One reflective entry per pawn/day only when at least one XML-configured important signal kind exists. The default important kinds are major events, opinion shifts, and health signals; filler can be folded in as background but cannot trigger a reflection by itself unless XML allows it. |
 
@@ -184,11 +184,15 @@ Ritual-domain entries classify by string markers only. Ideology/Royalty/Biotech/
 `Precept_Ritual` defName plus the ritual behavior worker class when available, and carry role facts
 in context: `ritual_title`, `ritual_behavior`, `ritual_perspective`, `ritual_role`, `royal_title`,
 and `ideological_role`. Anomaly psychic rituals use `psychic_ritual` plus a `PsychicRitual`
-classifier prefix, carry only `psychic_ritual_perspective`, outcome, and quality, and deliberately
+classifier prefix, carry only `psychic_ritual_perspective`, outcome, and plain-word quality, and deliberately
 omit role/title fields. XML groups use these string-only classifiers for DLC-specific edge cases
 such as Royalty throne/anima rituals, Biotech childbirth, Odyssey gravship launch/landing, and
 Anomaly psychic rituals. Prompt templates render the role/title fields only when present, so
 non-ritual and psychic-ritual events do not spend tokens on empty ritual context.
+`DiaryTuningDef.xml` owns the ritual quality bands that turn RimWorld ritual progress/power values
+into plain labels (`terrible`, `weak`, `decent`, `strong`, `excellent`, or `unknown`). Ritual
+prompts must let that label shape confidence, aftermath, and emotional weight, but should not name
+or explain the label directly in the diary prose.
 Psychic ritual invoker prompts ask only for invented or broken ritual words inside a speech block;
 the visual distortion is applied later by `DiaryTextDecorationDefs.xml` from the saved
 `psychic_ritual_perspective=invoker` context while the card keeps the dark color cue.

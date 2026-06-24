@@ -3,7 +3,6 @@
 // ritual author/organizer, target pawn if any, participants, and spectators.
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Reflection;
 using HarmonyLib;
 using PawnDiary.Capture;
@@ -74,7 +73,7 @@ namespace PawnDiary
             RitualRoleAssignments assignments = RitualAssignments(ritualJob);
             string title = RitualTitle(ritualJob, ritual);
             string label = title;
-            string quality = progress.ToString("0.##", CultureInfo.InvariantCulture);
+            string quality = RitualEventData.QualityLabel(progress, DiaryTuning.Current.ritualQualityBands);
             DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Ritual);
             HashSet<string> recordedPawnIds = new HashSet<string>();
             bool recordedAny = false;

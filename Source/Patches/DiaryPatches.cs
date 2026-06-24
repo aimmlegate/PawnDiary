@@ -583,23 +583,24 @@ namespace PawnDiary
         }
     }
 
-    // Fires after an Anomaly psychic ritual graph ends. Only successful endings are recorded; the
-    // component reads the ritual state and fans it out to invoker/target/participant/spectator pages.
-    [HarmonyPatch(typeof(PsychicRitualGraph), "End")]
-    public static class PsychicRitualOutcomePatch
+    // Fires after an Anomaly psychic ritual finishes. Graph.End can run for nested graph transitions;
+    // RitualCompleted is the LordToil completion point, after the ritual has actually finished.
+    [HarmonyPatch(typeof(LordToil_PsychicRitual), "RitualCompleted")]
+    public static class PsychicRitualCompletedPatch
     {
         /// <summary>
-        /// Harmony Postfix for PsychicRitualGraph.End. The success flag distinguishes a completed
-        /// psychic ritual from an interruption or cancellation.
+        /// Harmony Postfix for LordToil_PsychicRitual.RitualCompleted. Forwards the completed
+        /// psychic ritual instance to the diary after vanilla confirms completion.
         /// </summary>
-        public static void Postfix(PsychicRitual psychicRitual, bool success)
+        public static void Postfix(LordToil_PsychicRitual __instance)
         {
-            if (psychicRitual == null || !success)
+            PsychicRitual psychicRitual = __instance?.RitualData?.psychicRitual;
+            if (psychicRitual == null)
             {
                 return;
             }
 
-            DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success);
+            DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success: true);
         }
     }
 

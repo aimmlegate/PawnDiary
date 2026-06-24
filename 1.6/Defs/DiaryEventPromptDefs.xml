@@ -99,7 +99,7 @@
     <label>ritual</label>
     <eventType>Ritual</eventType>
     <prompt>Write a finished Ideology ritual from the pawn's assigned place in it.</prompt>
-    <enhancement>Use the supplied ritual role, ritual title, behavior, and pawn status fields. Keep the entry grounded in what completion would feel like from that role; do not invent ritual effects beyond the supplied outcome.</enhancement>
+    <enhancement>Use the supplied ritual role, ritual title, behavior, quality, and pawn status fields. Let quality shape confidence, aftermath, and emotional weight, but do not name or explain the quality label directly. Keep the entry grounded in what completion would feel like from that role; do not invent ritual effects beyond the supplied outcome.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>

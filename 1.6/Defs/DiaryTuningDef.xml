@@ -28,6 +28,32 @@
     <abilityUseMaxChance>0.75</abilityUseMaxChance>
     <abilityUseReferenceCooldownTicks>60000</abilityUseReferenceCooldownTicks>
 
+    <!-- Ordered ritual-quality map. First maxExclusive greater than RimWorld's progress/power
+         value wins. These are saved context labels; prompts should respect the weight without
+         naming the label directly. -->
+    <ritualQualityBands>
+      <li>
+        <maxExclusive>0.25</maxExclusive>
+        <label>terrible</label>
+      </li>
+      <li>
+        <maxExclusive>0.5</maxExclusive>
+        <label>weak</label>
+      </li>
+      <li>
+        <maxExclusive>0.75</maxExclusive>
+        <label>decent</label>
+      </li>
+      <li>
+        <maxExclusive>1</maxExclusive>
+        <label>strong</label>
+      </li>
+      <li>
+        <maxExclusive>9999</maxExclusive>
+        <label>excellent</label>
+      </li>
+    </ritualQualityBands>
+
     <!-- Surroundings scan -->
     <!-- nearbyRadius: search radius in cells around pawn for notable objects -->
     <nearbyRadius>5</nearbyRadius>

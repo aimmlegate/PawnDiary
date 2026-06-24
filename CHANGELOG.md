@@ -6,6 +6,11 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Psychic ritual capture moved to completion.** Anomaly psychic rituals now record from
+  `LordToil_PsychicRitual.RitualCompleted` instead of graph end, avoiding start/transition
+  captures, and ritual quality is passed to prompts as XML-tuned plain words rather than raw
+  decimals. Ritual prompts now treat quality as indirect emotional/aftermath weight instead of
+  naming the label directly.
 - **Diary entry cards default to compact rows.** The newest entries no longer auto-expand into tall
   full-text panels; `autoExpandedEntryCount` now defaults to `0`, while click-to-expand behavior
   remains unchanged.
