@@ -153,7 +153,7 @@ namespace PawnDiary
         public ITab_Pawn_Diary()
         {
             size = new Vector2(UiStyle.tabWidth, UiStyle.tabHeight);
-            labelKey = "PawnDiaryTabLabelFixed";
+            labelKey = "PawnDiaryTabLabel";
         }
 
         /// <summary>
@@ -199,23 +199,6 @@ namespace PawnDiary
         public static bool CanShowDiaryFor(Pawn pawn)
         {
             return pawn != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike && pawn.IsColonist;
-        }
-
-        /// <summary>
-        /// Updates the inspect-tab label before RimWorld draws the tab strip. Both labels reserve the
-        /// same left/right spacer slots, so the word stays centered when the new-page dot appears.
-        /// </summary>
-        internal void RefreshTabLabelStatus()
-        {
-            string key = "PawnDiaryTabLabelFixed";
-            Pawn pawn = PawnToShow();
-            DiaryGameComponent component = DiaryGameComponent.Current;
-            if (pawn != null && component != null && component.CommandStatusFor(pawn).HasNewPages)
-            {
-                key = "PawnDiaryTabLabelNew";
-            }
-
-            labelKey = key;
         }
 
         /// <summary>

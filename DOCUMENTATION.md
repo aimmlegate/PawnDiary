@@ -321,10 +321,10 @@ The Diary surface is an inspect tab internally. By default, selecting one eligib
 colonist corpse) adds a **Diary** command button (journal-and-pen icon) that opens/closes the hidden
 tab. A settings toggle can instead show Diary in the normal pawn inspect-tab row and hide the bottom
 command. In command mode, the command overlays a subtle underline for newly finished pages and
-pulsing dots while any page or title is still being written. In tab mode, the tab label reserves
-fixed non-breaking spacer slots on both sides of the title; newly finished pages show only a small
-right-side dot, so the centered **Diary** title and tab width do not move. Opening the pawn's Diary
-acknowledges the finished-page marker.
+pulsing dots while any page or title is still being written. Independent of that setting, the
+selected pawn's inspect-pane title appends a small sparkle when diary activity is present: a steady
+`✦` for newly finished pages, or a two-frame `✦`/`✧` animation while a page or title is still being
+written. Opening the pawn's Diary acknowledges the finished-page marker.
 Social-log diary links and linked-POV navigation open the same tab in either mode.
 
 The Diary UI shows completed pages in production. Dev mode adds generation enablement, writing-style
