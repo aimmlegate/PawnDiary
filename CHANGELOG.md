@@ -6,9 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
-- **Diary command status badges added.** The selected-pawn **Diary** command now shows a small count
-  for newly finished pages and pulsing dots while a page or title is still being written. Opening
-  that pawn's Diary acknowledges the finished-page count without using intrusive top-left messages.
+- **Diary command status badges added.** The selected-pawn **Diary** command now shows a subtle
+  corner marker for newly finished pages and pulsing dots while a page or title is still being
+  written. Opening that pawn's Diary acknowledges the finished-page marker without using intrusive
+  top-left messages or pushing players to read every single event immediately.
 
 ## 2026-06-24
 

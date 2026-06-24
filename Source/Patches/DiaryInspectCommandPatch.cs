@@ -129,12 +129,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Diary command with small overlays: a count for newly finished pages and pulsing dots while
-        /// any page or title is still being generated. Vanilla still draws the base button.
+        /// Diary command with small overlays: a quiet mark for newly finished pages and pulsing dots
+        /// while any page or title is still being generated. Vanilla still draws the base button.
         /// </summary>
         private sealed class DiaryCommand_Action : Command_Action
         {
-            private const float BadgeSize = 22f;
+            private const float NewPageMarkerSize = 12f;
             private const float WritingDotSize = 4f;
             private const float WritingDotGap = 3f;
 
@@ -169,8 +169,11 @@ namespace PawnDiary
                 Rect buttonRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
                 if (status.HasNewPages)
                 {
-                    DrawNewPageBadge(new Rect(buttonRect.xMax - BadgeSize - 4f, buttonRect.y + 4f, BadgeSize, BadgeSize),
-                        status.unacknowledgedCount);
+                    DrawNewPageMarker(new Rect(
+                        buttonRect.xMax - NewPageMarkerSize - 7f,
+                        buttonRect.y + 7f,
+                        NewPageMarkerSize,
+                        NewPageMarkerSize));
                 }
 
                 if (status.IsWriting)
@@ -179,22 +182,17 @@ namespace PawnDiary
                 }
             }
 
-            private static void DrawNewPageBadge(Rect rect, int count)
+            private static void DrawNewPageMarker(Rect rect)
             {
                 Color oldColor = GUI.color;
-                Widgets.DrawBoxSolidWithOutline(rect, new Color(0.2f, 0.52f, 0.24f, 0.94f), new Color(0.74f, 1f, 0.72f), 1);
-
-                GameFont oldFont = Text.Font;
-                TextAnchor oldAnchor = Text.Anchor;
-                Text.Font = GameFont.Tiny;
-                Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = Color.white;
-                Widgets.Label(rect.ContractedBy(1f), count > 9 ? "9+" : count.ToString());
-                Text.Anchor = oldAnchor;
-                Text.Font = oldFont;
+                Widgets.DrawBoxSolidWithOutline(
+                    rect,
+                    new Color(0.44f, 0.39f, 0.28f, 0.62f),
+                    new Color(0.78f, 0.71f, 0.55f, 0.68f),
+                    1);
                 GUI.color = oldColor;
 
-                TooltipHandler.TipRegion(rect, "PawnDiary.Command.NewPagesTip".Translate(count));
+                TooltipHandler.TipRegion(rect, "PawnDiary.Command.NewPagesTip".Translate());
             }
 
             private static void DrawWritingBadge(Rect rect)

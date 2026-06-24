@@ -18,7 +18,7 @@
   <!-- Diary surface label, used by the hidden inspect tab and the selected-pawn command button. -->
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
   <PawnDiary.Command.OpenDiaryDesc>Open or close this pawn's diary.</PawnDiary.Command.OpenDiaryDesc>
-  <PawnDiary.Command.NewPagesTip>{0} new diary page(s). Open the Diary to clear this badge.</PawnDiary.Command.NewPagesTip>
+  <PawnDiary.Command.NewPagesTip>New diary pages are waiting.</PawnDiary.Command.NewPagesTip>
   <PawnDiary.Command.WritingTip>Diary page is being written.</PawnDiary.Command.WritingTip>
 
   <!-- ===== Diary tab UI ===== -->

@@ -299,9 +299,9 @@ presets likewise use one block for summary/add/reset/selection/rule editing/tag 
 
 The Diary surface is an inspect tab internally, but its tab-strip button is hidden. Selecting one
 eligible colonist (or colonist corpse) adds a **Diary** command button (journal-and-pen icon) that
-opens/closes the same tab. The command overlays a small green count when that pawn has newly
+opens/closes the same tab. The command overlays a subtle corner mark when that pawn has newly
 finished pages, and pulsing dots while any page or title is still being written. Opening the pawn's
-Diary acknowledges the finished-page count. Social-log diary links and linked-POV navigation open
+Diary acknowledges the finished-page marker. Social-log diary links and linked-POV navigation open
 the same hidden tab.
 
 The Diary UI shows completed pages in production. Dev mode adds generation enablement, writing-style
