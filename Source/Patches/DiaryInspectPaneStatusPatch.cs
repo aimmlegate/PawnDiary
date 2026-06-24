@@ -1,27 +1,26 @@
-// Adds a tiny Diary status underline under the visible Diary inspect tab button.
-// RimWorld owns inspect-tab layout, so this patch waits until the inspect window has drawn, reads the
-// Diary tab's final button rectangle, then draws a short underline in the same GUI space.
+// Adds a tiny Diary status underline to the visible Diary inspect tab button.
+// RimWorld owns inspect-tab layout, so this patch draws during the tab button's own GUI pass and
+// keeps the underline inside the tab rectangle, avoiding coordinate-space mismatches and clipping.
 using HarmonyLib;
-using RimWorld;
 using UnityEngine;
 using Verse;
 
 namespace PawnDiary
 {
-    [HarmonyPatch(typeof(MainTabWindow_Inspect), nameof(MainTabWindow_Inspect.DoWindowContents))]
+    [HarmonyPatch(typeof(InspectTabBase), nameof(InspectTabBase.DoTabGUI))]
     public static class DiaryInspectPaneStatusPatch
     {
-        private const float UnderlineWidth = 34f;
-        private const float UnderlineHeight = 2f;
+        private const float UnderlineInset = 8f;
+        private const float UnderlineHeight = 3f;
 
         /// <summary>
         /// Draws a steady underline for finished diary pages, or a soft pulse on that same underline
         /// while a diary page/title is still being written.
         /// </summary>
-        public static void Postfix(MainTabWindow_Inspect __instance)
+        public static void Postfix(InspectTabBase __instance)
         {
-            ITab_Pawn_Diary diaryTab = VisibleDiaryTab(__instance);
-            if (diaryTab == null)
+            ITab_Pawn_Diary diaryTab = __instance as ITab_Pawn_Diary;
+            if (diaryTab == null || diaryTab.Hidden)
             {
                 return;
             }
@@ -48,25 +47,6 @@ namespace PawnDiary
             DrawUnderline(tabRect, status.IsWriting);
         }
 
-        private static ITab_Pawn_Diary VisibleDiaryTab(MainTabWindow_Inspect inspectWindow)
-        {
-            if (inspectWindow == null || inspectWindow.CurTabs == null)
-            {
-                return null;
-            }
-
-            foreach (InspectTabBase tab in inspectWindow.CurTabs)
-            {
-                ITab_Pawn_Diary diaryTab = tab as ITab_Pawn_Diary;
-                if (diaryTab != null && !diaryTab.Hidden)
-                {
-                    return diaryTab;
-                }
-            }
-
-            return null;
-        }
-
         private static Pawn SelectedDiaryPawn()
         {
             if (Find.Selector == null || Find.Selector.NumSelected != 1)
@@ -88,22 +68,22 @@ namespace PawnDiary
         private static void DrawUnderline(Rect tabRect, bool writing)
         {
             Rect underlineRect = new Rect(
-                tabRect.center.x - UnderlineWidth * 0.5f,
-                tabRect.yMax - 4f,
-                UnderlineWidth,
+                tabRect.x + UnderlineInset,
+                tabRect.yMax - 7f,
+                Mathf.Max(0f, tabRect.width - UnderlineInset * 2f),
                 UnderlineHeight);
 
             Color oldColor = GUI.color;
-            float alpha = 0.42f;
+            float alpha = 0.56f;
             if (writing)
             {
                 float pulse = (Mathf.Sin(Time.realtimeSinceStartup * 4f) + 1f) * 0.5f;
-                alpha = Mathf.Lerp(0.20f, 0.44f, pulse);
+                alpha = Mathf.Lerp(0.28f, 0.62f, pulse);
             }
 
             GUI.color = writing
-                ? new Color(0.60f, 0.68f, 0.54f, alpha)
-                : new Color(0.62f, 0.56f, 0.43f, alpha);
+                ? new Color(0.67f, 0.75f, 0.58f, alpha)
+                : new Color(0.68f, 0.61f, 0.44f, alpha);
 
             Widgets.DrawBoxSolid(underlineRect, GUI.color);
             TooltipHandler.TipRegion(

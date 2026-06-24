@@ -21,7 +21,7 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   arrival/strategy context, and use dedicated prompt instructions.
 - **Diary entry access can use the pawn tab again.** A new setting swaps the selected-pawn **Diary**
   command back to the normal pawn inspect tab. Command mode still uses a subtle underline plus
-  writing dots; tab mode now draws a short underline under the visible Diary tab button when diary
+  writing dots; tab mode now draws a short underline on the visible Diary tab button when diary
   activity is present: steady for newly finished pages, softly pulsing while writing is in progress.
   Opening that pawn's Diary acknowledges the finished-page marker without top-left messages.
 

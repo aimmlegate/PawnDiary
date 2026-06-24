@@ -203,7 +203,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Gives the inspect-pane status patch the current Diary tab button rectangle. RimWorld owns
-        /// the tab-strip layout, so the patch reads this after the tab row has been drawn.
+        /// the tab-strip layout, so the patch reads this during the tab button's own draw pass.
         /// </summary>
         internal Rect DiaryTabButtonRect()
         {
