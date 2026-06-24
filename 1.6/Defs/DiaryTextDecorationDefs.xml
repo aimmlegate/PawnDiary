@@ -72,7 +72,8 @@
         </when>
       </li>
 
-      <!-- Extreme darkness dims direct speech instead of using the strange-chat glyph distortion. -->
+      <!-- Extreme darkness dims direct speech. Some event-specific rules may layer another
+           formatter on top, but the card color cue stays dark. -->
       <li>
         <decoration>DimmedWords</decoration>
         <scope>DirectSpeech</scope>
@@ -82,6 +83,23 @@
           <anyColorCue>
             <li>extremeDark</li>
           </anyColorCue>
+        </when>
+      </li>
+
+      <!-- Psychic ritual invoker speech gets the strange glyph formatter from saved context, not
+           from model-generated text and not from the card color cue. -->
+      <li>
+        <decoration>Zalgo</decoration>
+        <scope>DirectSpeech</scope>
+        <sequence>35</sequence>
+        <intensity>1</intensity>
+        <when>
+          <anyContextKey>
+            <li>psychic_ritual</li>
+          </anyContextKey>
+          <anyContextValueContains>
+            <li>psychic_ritual_perspective=invoker</li>
+          </anyContextValueContains>
         </when>
       </li>
 

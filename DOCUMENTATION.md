@@ -187,6 +187,9 @@ omit role/title fields. XML groups use these string-only classifiers for DLC-spe
 such as Royalty throne/anima rituals, Biotech childbirth, Odyssey gravship launch/landing, and
 Anomaly psychic rituals. Prompt templates render the role/title fields only when present, so
 non-ritual and psychic-ritual events do not spend tokens on empty ritual context.
+Psychic ritual invoker prompts ask only for invented or broken ritual words inside a speech block;
+the visual distortion is applied later by `DiaryTextDecorationDefs.xml` from the saved
+`psychic_ritual_perspective=invoker` context while the card keeps the dark color cue.
 
 `DiarySignalPolicyDefs.xml` owns tracker-specific thought/work policy: thresholds, tokens, staged
 progression, ambient batching, scan odds, and cooldowns. `DiaryTuningDef.xml` keeps shared fallback

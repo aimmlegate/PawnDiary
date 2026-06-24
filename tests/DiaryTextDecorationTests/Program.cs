@@ -17,6 +17,7 @@ namespace DiaryTextDecorationTests
             TestZalgoIntensity();
             TestDimmedWordsPreserveTagsWithoutZalgoMarks();
             TestDarkAndStrangeSelectDifferentDecorations();
+            TestPsychicRitualInvokerUsesFormatterWithDarkCue();
             TestNameHighlighterColorsAndBoldsKnownPawns();
             TestNameHighlighterRespectsBoundariesAndLongestName();
             TestPawnFactSerializationRoundTrip();
@@ -192,6 +193,49 @@ namespace DiaryTextDecorationTests
             AssertEqual("strange rule count", 1, strange.rules.Count);
             AssertEqual("dark uses dimming", DiaryTextDecorationKinds.DimmedWords, dark.rules[0].decoration);
             AssertEqual("strange keeps zalgo", DiaryTextDecorationKinds.Zalgo, strange.rules[0].decoration);
+        }
+
+        private static void TestPsychicRitualInvokerUsesFormatterWithDarkCue()
+        {
+            List<DiaryTextDecorationRule> rules = new List<DiaryTextDecorationRule>
+            {
+                new DiaryTextDecorationRule
+                {
+                    decoration = DiaryTextDecorationKinds.DimmedWords,
+                    scope = DiaryTextDecorationScopes.DirectSpeech,
+                    sequence = 30,
+                    intensity = 3,
+                    when = new DiaryTextDecorationCondition
+                    {
+                        anyColorCue = new List<string> { "extremeDark" }
+                    }
+                },
+                new DiaryTextDecorationRule
+                {
+                    decoration = DiaryTextDecorationKinds.Zalgo,
+                    scope = DiaryTextDecorationScopes.DirectSpeech,
+                    sequence = 35,
+                    intensity = 1,
+                    when = new DiaryTextDecorationCondition
+                    {
+                        anyContextKey = new List<string> { "psychic_ritual" },
+                        anyContextValueContains = new List<string> { "psychic_ritual_perspective=invoker" }
+                    }
+                }
+            };
+
+            DiaryTextDecorationPlan plan = DiaryTextDecorations.Select(
+                new DiaryTextDecorationContext
+                {
+                    colorCue = "extremeDark",
+                    gameContext = "psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"
+                },
+                rules,
+                DiaryTextDecorationScopes.DirectSpeech);
+
+            AssertEqual("psychic invoker dark formatter rule count", 2, plan.rules.Count);
+            AssertEqual("psychic invoker keeps dark first", DiaryTextDecorationKinds.DimmedWords, plan.rules[0].decoration);
+            AssertEqual("psychic invoker applies formatter second", DiaryTextDecorationKinds.Zalgo, plan.rules[1].decoration);
         }
 
         private static void TestNameHighlighterColorsAndBoldsKnownPawns()

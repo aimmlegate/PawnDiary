@@ -8,9 +8,9 @@ not need separate entries unless they change behavior or document an important r
 
 - **Anomaly psychic ritual events added.** Successful `PsychicRitualGraph.End` completions now
   generate solo entries for invoker, target, participants, and spectators without sending ritual
-  role/title fields. The new Ritual-domain XML group uses dark `strangeChat` atmosphere, and invoker
-  prompts require one unsettling `[[speech]]...[[/speech]]` block with invented or incomprehensible
-  ritual speech.
+  role/title fields. The new Ritual-domain XML group uses the dark color cue, and invoker prompts
+  require one unsettling `[[speech]]...[[/speech]]` block with invented or incomprehensible ritual
+  words; the display formatter supplies the visual distortion.
 - **Ideology ritual events added.** Finished, non-canceled `LordJob_Ritual` outcomes now generate
   separate solo entries for author, target, participants, and spectators, with role/title context,
   both Royalty title and Ideology role status fields, and perspective-specific prompt instructions.

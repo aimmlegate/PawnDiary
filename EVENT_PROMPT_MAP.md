@@ -181,7 +181,7 @@ ritual/status lines.
 | Psychic ritual context | `psychic_ritual=<PsychicRitualDef>; psychic_ritual_perspective=<invoker\|target\|participant\|spectator>; outcome=finished; quality=<power\|unknown>`. These entries intentionally do not send `ritual_title` or `ritual_role`. |
 | Prompt | Usually `SoloImportant`; all shipped Ritual groups are important. |
 | Perspective instruction | Author/invoker, target, participant, and spectator entries each get a separate localized instruction after the ritual has finished. Psychic ritual invoker entries request exactly one standalone `[[speech]]...[[/speech]]` block containing unsettling invented ritual speech. |
-| Edge groups | Royalty `ThroneSpeech` / `AnimaTreeLinking` use more courtly or psyfocus/anima flavor; Biotech `ChildBirth` stays medically and emotionally appropriate; Odyssey `GravshipLaunch` is technical, launch/flight/landing focused; Anomaly psychic rituals use `strangeChat` color cue and unsettling dark atmosphere. |
+| Edge groups | Royalty `ThroneSpeech` / `AnimaTreeLinking` use more courtly or psyfocus/anima flavor; Biotech `ChildBirth` stays medically and emotionally appropriate; Odyssey `GravshipLaunch` is technical, launch/flight/landing focused; Anomaly psychic rituals use the dark color cue and unsettling atmosphere, with display-side distortion applied to invoker speech blocks from saved psychic-ritual context. |
 | Prompt evidence | Per-pawn ritual text, XML Ritual instruction/tone, role/title/status context, ritual behavior, surroundings, important context, and last opener. |
 | Dedup | One window per ritual defName + organizer + target + tick. |
 

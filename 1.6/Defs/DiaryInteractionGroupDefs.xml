@@ -1530,7 +1530,7 @@
       <li>unsettling and dark, with fear, wrongness, void pressure, and sensory dread</li>
       <li>scary, fragmentary, and half-incomprehensible, as if language is failing around the ritual</li>
     </tones>
-    <colorCue>strangeChat</colorCue>
+    <colorCue>extremeDark</colorCue>
     <matchTokens>
       <li>PsychicRitual</li>
     </matchTokens>
