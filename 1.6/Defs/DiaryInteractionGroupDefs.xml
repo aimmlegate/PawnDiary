@@ -64,11 +64,15 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</instruction>
     <instructions>
-      <li>romance — write it through the body: the gap closing, a touch that hesitates, a hand pulled away</li>
-      <li>romance — write it through the thought behind the eyes: what they wanted to say, what they almost admitted</li>
-      <li>romance — write the half-second after: the held breath, the read of the other face, what now sits between them</li>
+      <li>romance — use body cues already implied by the supplied text: distance, breath, hesitation, or touch if stated</li>
+      <li>romance — use the unsaid pressure: what the POV notices, holds back, or fears without adding a new confession</li>
+      <li>romance — write the moment after: the pause, the read of the other face, and the changed tension</li>
     </instructions>
     <tone>with tender, fluttering warmth</tone>
+    <tones>
+      <li>close and physical, with restrained vulnerability</li>
+      <li>quietly reflective, focused on what changed</li>
+    </tones>
     <matchDefNames>
       <li>RomanceAttempt</li>
       <li>MarriageProposal</li>
@@ -96,6 +100,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>a relationship becoming official, formalized, or broken; center the change between the two people without treating it like a chat log</instruction>
     <tone>with intimate emotional weight</tone>
+    <tones>
+      <li>formal and life-changing, with quiet restraint</li>
+      <li>private and raw, focused on the bond shifting</li>
+    </tones>
     <matchDefNames>
       <li>Lover</li>
       <li>Spouse</li>
@@ -112,6 +120,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>the dance of captor and captive—building rapport, breaking will, or planting seeds of rebellion</instruction>
     <tone>with measured, calculating tension</tone>
+    <tones>
+      <li>controlled and strategic, every sentence weighing leverage</li>
+      <li>tight and wary, focused on power in the room</li>
+    </tones>
     <matchDefNames>
       <li>BuildRapport</li>
       <li>RecruitAttempt</li>
@@ -138,6 +150,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>the weight of chains—suppression by an overseer or the first spark of defiance</instruction>
     <tone>with grim, heavy unease</tone>
+    <tones>
+      <li>oppressive and heavy, focused on control</li>
+      <li>quietly defiant, with anger kept under pressure</li>
+    </tones>
     <matchDefNames>
       <li>Suppress</li>
       <li>SparkSlaveRebellion</li>
@@ -157,6 +173,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>a battle of belief—conversion, counseling, preaching, or the pressure of faith on faith</instruction>
     <tone>with fervent, pressing conviction</tone>
+    <tones>
+      <li>fervent and declarative, like belief under pressure</li>
+      <li>inward and doubtful, focused on conviction cracking</li>
+    </tones>
     <matchDefNames>
       <li>ConvertIdeoAttempt</li>
       <li>Convert_Success</li>
@@ -187,6 +207,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>the weight of judgment—an accusation hurled, a defense mounted, before watching eyes</instruction>
     <tone>with tense, formal pressure</tone>
+    <tones>
+      <li>formal and brittle, each sentence like testimony</li>
+      <li>watched and exposed, focused on shame or defense</li>
+    </tones>
     <matchDefNames>
       <li>Trial_Accuse</li>
       <li>Trial_Defend</li>
@@ -206,6 +230,10 @@
     <important>true</important>
     <instruction>something wrong in ordinary conversation--a strange chat that leaves unease lingering. Don't explain it away</instruction>
     <tone>with creeping dread; never resolve the wrongness</tone>
+    <tones>
+      <li>ordinary on the surface, wrong underneath</li>
+      <li>quietly uncanny, ending before the wrongness resolves</li>
+    </tones>
     <colorCue>strangeChat</colorCue>
     <batch>
       <mode>AmbientDayNote</mode>
@@ -246,6 +274,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>something wrong—an unsettling exchange that leaves unease lingering. Don't explain it away</instruction>
     <tone>with crawling, skin-prickling wrongness; never explain it</tone>
+    <tones>
+      <li>skin-prickling and sensory, with no explanation</li>
+      <li>cold and alien, focused on what feels off</li>
+    </tones>
     <colorCue>extremeDark</colorCue>
     <matchDefNames>
       <li>DarkDialogue</li>
@@ -290,11 +322,15 @@
     </batch>
     <instruction>the sting of contempt—an insult, a slight, or fists about to fly</instruction>
     <instructions>
-      <li>an insult or slight — write the words landing: what was said, the tone, the flinch it drew</li>
-      <li>an insult or slight — write it through the body: the flush, the clenched jaw, the half-step forward</li>
-      <li>an insult or slight — write the room: who heard it, who looked away, the silence that came after</li>
+      <li>an insult or slight — use the supplied social text as the sting; do not invent exact wording</li>
+      <li>an insult or slight — write the body's reaction: heat, jaw, breath, posture</li>
+      <li>an insult or slight — write the aftermath in the room: silence, tension, or what the POV does next</li>
     </instructions>
     <tone>with sharp, stinging heat</tone>
+    <tones>
+      <li>hot and clipped, like anger held in the teeth</li>
+      <li>cold and cutting, focused on the sting afterward</li>
+    </tones>
     <matchDefNames>
       <li>Insult</li>
       <li>Slight</li>
@@ -318,6 +354,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>a solemn public moment—ritual, ceremony, or address. The colony watches</instruction>
     <tone>with solemn, ceremonial weight</tone>
+    <tones>
+      <li>ceremonial and still, aware of watching eyes</li>
+      <li>reverent but uneasy, focused on duty and consequence</li>
+    </tones>
     <matchDefNames>
       <li>SpeechUtility</li>
       <li>Speech_Duel</li>
@@ -362,6 +402,10 @@
     </batch>
     <instruction>a quiet bond—chatting with an animal, taming, training, or letting one go</instruction>
     <tone>with quiet, gentle fondness</tone>
+    <tones>
+      <li>soft and patient, focused on trust through action</li>
+      <li>practical and warm, fondness shown without sentimentality</li>
+    </tones>
     <matchDefNames>
       <li>AnimalChat</li>
       <li>TameAttempt</li>
@@ -386,6 +430,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</instruction>
     <tone>with soft, tender warmth</tone>
+    <tones>
+      <li>gentle and open, letting warmth show plainly</li>
+      <li>quietly held, warmth shown through small restraint</li>
+    </tones>
     <colorCue>white</colorCue>
     <matchDefNames>
       <li>DeepTalk</li>
@@ -424,6 +472,10 @@
     </batch>
     <instruction>a lesson passed down—an adult teaching or playing with a child</instruction>
     <tone>with patient, quiet fondness</tone>
+    <tones>
+      <li>patient and instructive, focused on small progress</li>
+      <li>playful but grounded, affection shown through attention</li>
+    </tones>
     <matchDefNames>
       <li>BabyPlay</li>
     </matchDefNames>
@@ -472,11 +524,15 @@
     </promotion>
     <instruction>idle chatter—low-stakes small talk that fills the silence</instruction>
     <instructions>
-      <li>small talk — write it through the trivial thing itself: the weather, the food, the half-formed opinion</li>
-      <li>small talk — write the thing underneath it: the ease, the awkwardness, the feeling never named out loud</li>
-      <li>small talk — write it as rhythm: the back-and-forth, the pauses, the nothing that passes the time</li>
+      <li>small talk — use the supplied topic if present; otherwise let the ordinary rhythm carry the entry</li>
+      <li>small talk — write the feeling under it: ease, awkwardness, duty, or distance</li>
+      <li>small talk — write the pauses and back-and-forth without inventing a new topic</li>
     </instructions>
     <tone>with light, easy familiarity</tone>
+    <tones>
+      <li>loose and conversational, carried by small pauses</li>
+      <li>plain and companionable, ordinary detail doing the work</li>
+    </tones>
     <matchDefNames>
       <li>Chitchat</li>
       <li>Conversation</li>
@@ -507,6 +563,10 @@
     <important>true</important>
     <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
     <tone>with a quiet, settling, end-of-day calm</tone>
+    <tones>
+      <li>tired and reflective, weighing what still matters</li>
+      <li>softly closing, like the day finally going quiet</li>
+    </tones>
     <colorCue>white</colorCue>
     <!-- Synthetic defName emitted by the day-summary builder (DiaryGameComponent.DaySummary.cs). -->
     <matchDefNames>
@@ -548,6 +608,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>tempers snapped—two people came to blows. Write it as heat and impact</instruction>
     <tone>with raw, adrenal fury</tone>
+    <tones>
+      <li>fast and physical, driven by impact and breath</li>
+      <li>shocked and aftermath-heavy, anger cooling into consequence</li>
+    </tones>
     <colorCue>socialFight</colorCue>
     <matchDefNames>
       <li>SocialFighting</li>
@@ -563,6 +627,10 @@
     <important>false</important>
     <instruction>a pawn breaking into repeated verbal cruelty; prefer the actual insult log entries when they are recorded</instruction>
     <tone>with sour, needling anger</tone>
+    <tones>
+      <li>needling and repetitive, like anger looking for targets</li>
+      <li>sour and exhausted, cruelty sounding almost automatic</li>
+    </tones>
     <matchDefNames>
       <li>InsultingSpree</li>
     </matchDefNames>
@@ -576,11 +644,15 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>the mind breaking—write the pawn's inner storm and what they did</instruction>
     <instructions>
-      <li>a mental break — write the spiral: the thought that wouldn't stop, the logic that bent, the pressure that won</li>
-      <li>a mental break — write it through the body: the hands, the wandering feet, the thing done without deciding</li>
-      <li>a mental break — write the senses going wrong: noise too loud, edges too sharp, the world at a wrong angle</li>
+      <li>a mental break — write the pressure loop: the repeated thought or urge behind the named state</li>
+      <li>a mental break — write it through body and motion: hands, feet, breath, and the supplied action</li>
+      <li>a mental break — write the world narrowing: one simple sensation, then the state taking over</li>
     </instructions>
     <tone>with frayed, overwhelmed intensity</tone>
+    <tones>
+      <li>fragmented and breathless, thought under too much pressure</li>
+      <li>numb and sideways, reality narrowed to one impulse</li>
+    </tones>
     <colorCue>mentalBreak</colorCue>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
@@ -597,11 +669,15 @@
     <colorCue>combat</colorCue>
     <instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</instruction>
     <instructions>
-      <li>combat, injury, or rescue — open on sound: the alarm, the crack, the screaming, the silence after</li>
-      <li>combat, injury, or rescue — open on the body's impact: the blow, the heat, the wet, the limb that won't answer</li>
-      <li>combat, injury, or rescue — open on the other: the face across the gap, the hand that pulled you clear, the body that fell</li>
+      <li>combat, injury, or rescue — open on a supplied sound cue if present; otherwise open on immediate danger</li>
+      <li>combat, injury, or rescue — open on body impact: pain, heat, breath, or the injury already supplied</li>
+      <li>combat, injury, or rescue — use the other pawn only if supplied; otherwise stay with the POV surviving the moment</li>
     </instructions>
     <tone>with fear and visceral danger</tone>
+    <tones>
+      <li>visceral and immediate, body first and thought second</li>
+      <li>stunned and aftershock-heavy, danger echoing afterward</li>
+    </tones>
     <batch>
       <!-- RimWorld has 2,500 ticks per in-game hour; 7,500 ticks is a three-hour quiet window. -->
       <windowTicks>7500</windowTicks>
@@ -656,6 +732,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>the body's fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</instruction>
     <tone>with fragile fear and relief</tone>
+    <tones>
+      <li>fragile and clinical, focused on body and risk</li>
+      <li>relieved but shaken, trust or fear still present</li>
+    </tones>
     <matchDefNames>
       <li>DidSurgery</li>
       <li>HealedMe</li>
@@ -676,6 +756,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>a turning point—birth, capture, bonding, or a new beginning. Write it as a life changed</instruction>
     <tone>with the quiet weight of a turning point</tone>
+    <tones>
+      <li>hushed and consequential, aware life has turned</li>
+      <li>immediate and personal, focused on the first changed breath</li>
+    </tones>
     <matchDefNames>
       <li>GaveBirth</li>
       <li>Captured</li>
@@ -702,6 +786,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>hands that made something lasting—pride, exhaustion, and the weight of creation</instruction>
     <tone>with proud, bone-tired satisfaction</tone>
+    <tones>
+      <li>proud and tactile, focused on hands and material</li>
+      <li>bone-tired and satisfied, accomplishment after strain</li>
+    </tones>
     <matchDefNames>
       <li>CraftedArt</li>
     </matchDefNames>
@@ -716,6 +804,10 @@
     <important>false</important>
     <instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</instruction>
     <tone>with steady, grounded pride</tone>
+    <tones>
+      <li>steady and practical, pride kept close to the work</li>
+      <li>quietly pleased, focused on skill settling into the body</li>
+    </tones>
     <matchDefNames>
       <li>FinishedResearchProject</li>
       <li>CompletedLongConstructionProject</li>
@@ -735,6 +827,10 @@
     <colorCue>extremeDark</colorCue>
     <instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</instruction>
     <tone>with dread and the uncanny; leave it unexplained</tone>
+    <tones>
+      <li>uncanny and watchful, refusing explanation</li>
+      <li>intimate and contaminated, as if the wrongness got close</li>
+    </tones>
     <matchDefNames>
       <li>StudiedEntity</li>
       <li>MutatedMyArm</li>
@@ -756,6 +852,10 @@
     <colorCue>combat</colorCue>
     <instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</instruction>
     <tone>with reeling, disaster-shocked tension</tone>
+    <tones>
+      <li>reeling and urgent, focused on the scramble</li>
+      <li>hollow and stunned, focused on the damage after</li>
+    </tones>
     <matchDefNames>
       <li>Raid</li>
       <li>Infestation</li>
@@ -799,6 +899,10 @@
     <important>false</important>
     <instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</instruction>
     <tone>with small, private quiet</tone>
+    <tones>
+      <li>private and spare, one small feeling held close</li>
+      <li>light and brief, a passing note rather than a confession</li>
+    </tones>
     <matchDefNames>
       <li>AteRawHumanlikeMeat</li>
       <li>AttendedConcert</li>
@@ -838,6 +942,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>something lifted—a positive colony-wide event that eases the heart</instruction>
     <tone>with a lifted, eased spirit</tone>
+    <tones>
+      <li>open and eased, letting relief into the sentence</li>
+      <li>quietly grateful, focused on tension leaving the body</li>
+    </tones>
     <matchDefNames>
       <li>Aurora</li>
       <li>Party</li>
@@ -853,6 +961,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>something weighing—a negative colony-wide event that strains the spirit</instruction>
     <tone>with a weighed-down strain</tone>
+    <tones>
+      <li>heavy and low, every detail pressing downward</li>
+      <li>irritated and weathered, strain showing in patience</li>
+    </tones>
     <matchDefNames>
       <li>Eclipse</li>
       <li>PsychicDrone</li>
@@ -869,6 +981,10 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>a condition that touches each person differently—write how it feels to this pawn</instruction>
     <tone>with an uneasy, conditional charge</tone>
+    <tones>
+      <li>uneasy and conditional, the pawn unsure how to feel</li>
+      <li>alert and bodily, tracking how the condition lands</li>
+    </tones>
     <matchDefNames>
       <!-- TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now. -->
       <!-- <li>ProblemCauser</li> -->
@@ -899,6 +1015,10 @@
     <important>true</important>
     <instruction>pregnancy, birth loss, or the end of a pregnancy as intimate family news; write with restraint and do not assume the pawn feels only one simple emotion</instruction>
     <tone>with intimate, restrained weight</tone>
+    <tones>
+      <li>restrained and intimate, emotion held carefully</li>
+      <li>body-aware and uncertain, hope and fear both possible</li>
+    </tones>
     <matchDefNames>
       <li>PregnancyTerminated</li>
       <li>PregnancyEnded</li>
@@ -917,11 +1037,15 @@
     <important>false</important>
     <instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood effect: minor joys get a quiet note, strong ones get warmth and detail</instruction>
     <instructions>
-      <li>a positive thought — write what sparked it: the small thing seen, heard, or remembered. Scale it to the mood lift</li>
-      <li>a positive thought — write the body easing: shoulders, breath, the half-smile nobody saw. Scale it to the mood lift</li>
-      <li>a positive thought — write the want it stirs: the pull to keep this, do it again, tell someone. Scale it to the mood lift</li>
+      <li>a positive thought — use the supplied trigger if present; otherwise write the mood lift itself. Scale it to the effect</li>
+      <li>a positive thought — write the body easing: shoulders, breath, a small private smile. Scale it to the mood lift</li>
+      <li>a positive thought — write the pull it creates: wanting the feeling to last or the day to turn. Scale it to the mood lift</li>
     </instructions>
     <tone>with a small, brightening lift</tone>
+    <tones>
+      <li>small and bright, like tension briefly loosening</li>
+      <li>quietly buoyant, focused on a thought worth keeping</li>
+    </tones>
     <!-- TODO: Some tokens (Good, Nice, Love, Social) are broad substring matches that may
          misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
     <matchTokens>
@@ -958,11 +1082,15 @@
     <important>false</important>
     <instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood effect: minor irritations get a passing mention, severe ones get raw emotion and weight</instruction>
     <instructions>
-      <li>a negative thought — write what sparked it: the small sting, the line that repeated. Scale it to the mood hit</li>
-      <li>a negative thought — write the body tightening: jaw, gut, the restless hands. Scale it to the mood hit</li>
-      <li>a negative thought — write the loop it makes: coming back, growing, the angle it won't drop. Scale it to the mood hit</li>
+      <li>a negative thought — use the supplied trigger if present; otherwise write the sting repeating. Scale it to the mood hit</li>
+      <li>a negative thought — write the body tightening: jaw, gut, restless hands. Scale it to the mood hit</li>
+      <li>a negative thought — write the loop it makes: returning, growing, hard to drop. Scale it to the mood hit</li>
     </instructions>
     <tone>with a low, nagging weight</tone>
+    <tones>
+      <li>low and nagging, the thought returning in loops</li>
+      <li>tight and bodily, irritation or hurt sitting in the gut</li>
+    </tones>
     <!-- TODO: Some tokens (Bad, Sad, Hot, Cold) are broad substring matches that may
          misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
     <matchDefNames>
@@ -1013,6 +1141,10 @@
     <important>false</important>
     <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood effect</instruction>
     <tone>with a passing, half-felt shift</tone>
+    <tones>
+      <li>brief and half-felt, gone almost as it arrives</li>
+      <li>plain and observational, naming the mood without drama</li>
+    </tones>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1027,6 +1159,10 @@
     <important>true</important>
     <instruction>a sudden useful clarity—write the pawn's mind catching fire with purpose, grounded in the specific kind of inspiration and any reason the game gives</instruction>
     <tone>with bright, focused momentum</tone>
+    <tones>
+      <li>bright and decisive, thought turning into a plan</li>
+      <li>electric and restless, purpose pushing the body forward</li>
+    </tones>
     <matchDefNames>
       <li>Frenzy_Work</li>
       <li>Frenzy_Go</li>
@@ -1050,6 +1186,10 @@
     <important>true</important>
     <instruction>dark research that should feel unsettling every time—write the work as intimate contact with something wrong; keep it spooky, sensory, and unresolved</instruction>
     <tone>with creeping, unresolved dread</tone>
+    <tones>
+      <li>close and sensory, dread coming through the work itself</li>
+      <li>quietly contaminated, curiosity feeling like a mistake</li>
+    </tones>
     <colorCue>extremeDark</colorCue>
     <matchDefNames>
       <li>PawnDiary_WorkDarkStudy</li>
@@ -1065,6 +1205,10 @@
     <important>false</important>
     <instruction>work that touches one of the pawn's passions—positive, focused, quietly satisfying, without pretending the colony is easy</instruction>
     <tone>with grounded satisfaction</tone>
+    <tones>
+      <li>focused and satisfied, pleasure kept practical</li>
+      <li>absorbed and tactile, passion showing through the task</li>
+    </tones>
     <matchDefNames>
       <li>PawnDiary_WorkPassion</li>
     </matchDefNames>
@@ -1079,6 +1223,10 @@
     <important>false</important>
     <instruction>work that feels dull, grimy, clumsy, or frustrating—negative when it is cleaning/dumb labor or when the pawn lacks skill</instruction>
     <tone>with weary irritation</tone>
+    <tones>
+      <li>weary and blunt, frustration in the hands</li>
+      <li>grimy and resigned, irritation kept under duty</li>
+    </tones>
     <matchDefNames>
       <li>PawnDiary_WorkStrain</li>
     </matchDefNames>
@@ -1093,6 +1241,10 @@
     <important>false</important>
     <instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</instruction>
     <tone>with steady, matter-of-fact routine</tone>
+    <tones>
+      <li>matter-of-fact and rhythmic, ordinary work continuing</li>
+      <li>quietly practical, attention on tools and sequence</li>
+    </tones>
     <matchDefNames>
       <li>PawnDiary_WorkRoutine</li>
     </matchDefNames>
@@ -1109,6 +1261,10 @@
     <important>true</important>
     <instruction>pregnancy as a life-changing beginning; write the pawn noticing the body, future, fear, hope, or uncertainty without assuming joy</instruction>
     <tone>with intimate uncertainty and quiet weight</tone>
+    <tones>
+      <li>body-aware and intimate, uncertainty held close</li>
+      <li>future-facing and quiet, hope and fear in balance</li>
+    </tones>
     <hediff>
       <mode>Immediate</mode>
       <visibleOnly>false</visibleOnly>
@@ -1137,6 +1293,10 @@
     <important>true</important>
     <instruction>labor and birth approaching; write urgency, pain, fear, care, and the threshold before birth without skipping ahead to the baby unless supplied</instruction>
     <tone>with urgent bodily strain</tone>
+    <tones>
+      <li>urgent and bodily, breath and pain setting the pace</li>
+      <li>threshold-tense, focused on fear, care, and waiting</li>
+    </tones>
     <hediff>
       <mode>Immediate</mode>
       <visibleOnly>false</visibleOnly>
@@ -1163,6 +1323,10 @@
     <important>true</important>
     <instruction>a new or worsening health condition that stayed with the pawn through the day</instruction>
     <tone>with bodily unease and vulnerability</tone>
+    <tones>
+      <li>vulnerable and bodily, symptoms shaping every thought</li>
+      <li>quietly frightened, weakness changing the day's scale</li>
+    </tones>
     <!-- Built-in fallback preserving the old major-affliction behavior: bad non-injury hediffs only,
          with chronic/sick/addiction/missing-part conditions accepted even below the severity gate.
          Mod support XML should add lower-order Hediff groups for specific modded conditions. -->
@@ -1199,6 +1363,10 @@
     <important>false</important>
     <instruction>a friendly force arriving at the colony—reinforcements, allies, or a peaceful drop. Write the relief or unease they bring</instruction>
     <tone>with cautious relief or uneasy gratitude</tone>
+    <tones>
+      <li>cautiously relieved, trust arriving slowly</li>
+      <li>uneasy and grateful, help still feeling like risk</li>
+    </tones>
     <matchDefNames>
       <li>RaidFriendly</li>
       <li>RaidBeacon</li>
@@ -1214,11 +1382,15 @@
     <important>true</important>
     <instruction>the colony under attack—violence, fear, and the desperate scramble to survive. Write what it felt like to live through it</instruction>
     <instructions>
-      <li>the colony under attack — open on the space: the door, the cover, the gap they'll come through</li>
-      <li>the colony under attack — open on the body: the sprint, the breath, the fumble for the weapon</li>
-      <li>the colony under attack — open on the aftermath: the smoke, the blood on the floor, who isn't answering</li>
+      <li>the colony under attack — open on supplied space, cover, or weather if present; otherwise open on the threat</li>
+      <li>the colony under attack — open on the body: sprint, breath, grip on a weapon if supplied</li>
+      <li>the colony under attack — use aftermath details only if supplied; otherwise keep it to shock and urgency</li>
     </instructions>
     <tone>with shaken, crisis-pitched tension</tone>
+    <tones>
+      <li>crisis-fast and bodily, fear driving each sentence</li>
+      <li>shaken and tactical, attention jumping to cover and survival</li>
+    </tones>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1236,6 +1408,10 @@
     <important>true</important>
     <instruction>a new quest taken on—anticipation, curiosity, and the weight of a promise made. Write the hope or doubt it stirs</instruction>
     <tone>with anticipation and wary curiosity</tone>
+    <tones>
+      <li>wary and forward-looking, promise weighed against risk</li>
+      <li>curious but guarded, hope kept under practical doubt</li>
+    </tones>
     <matchDefNames>
       <li>accepted</li>
     </matchDefNames>
@@ -1250,6 +1426,10 @@
     <important>true</important>
     <instruction>a quest fulfilled—relief, satisfaction, and the cost paid along the way. Write the earned resolution</instruction>
     <tone>with hard-won relief and quiet satisfaction</tone>
+    <tones>
+      <li>relieved and settled, like a debt finally paid</li>
+      <li>tired but proud, satisfaction measured against the cost</li>
+    </tones>
     <matchDefNames>
       <li>completed</li>
     </matchDefNames>
@@ -1264,6 +1444,10 @@
     <important>true</important>
     <instruction>a quest lost—regret, grief, and the consequences of the failure. Write the weight of what slipped away</instruction>
     <tone>with regret and heavy loss</tone>
+    <tones>
+      <li>heavy and regretful, focused on what slipped away</li>
+      <li>quietly grieving, consequence felt more than explained</li>
+    </tones>
     <matchDefNames>
       <li>failed</li>
     </matchDefNames>

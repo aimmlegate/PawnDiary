@@ -351,6 +351,14 @@ function extractMultiTag(block, tag) {
   return values;
 }
 
+function extractListItems(block, tag) {
+  const listBlock = extractTag(block, tag);
+  if (!listBlock) return [];
+  return extractMultiTag(listBlock, 'li')
+    .map(cleanValue)
+    .filter((value) => !isSkippable(value));
+}
+
 function extractBlocks(xml, tagName) {
   const escaped = escapeRegex(tagName);
   const pattern = new RegExp(`<${escaped}>([\\s\\S]*?)<\\/${escaped}>`, 'gi');
@@ -477,7 +485,9 @@ function parseInteractionGroupsFromXml(config) {
       domain: extractTag(block, 'domain') || 'Interaction',
       order: Number.isFinite(orderValue) ? orderValue : 999,
       instruction: extractTag(block, 'instruction'),
+      instructions: extractListItems(block, 'instructions'),
       tone: extractTag(block, 'tone'),
+      tones: extractListItems(block, 'tones'),
       combat: /<combat>\s*true\s*<\/combat>/i.test(block),
       important: /<important>\s*true\s*<\/important>/i.test(block),
       catchAll: /<catchAll>\s*true\s*<\/catchAll>/i.test(block),
@@ -525,6 +535,76 @@ function cleanValue(value) {
     return value.filter(Boolean).join(', ');
   }
   return String(value).trim();
+}
+
+function usablePromptVariants(values) {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map(cleanValue)
+    .filter((value) => !isSkippable(value));
+}
+
+function pickPromptVariant(values, fallback, seed) {
+  const variants = usablePromptVariants(values);
+  if (variants.length === 0) {
+    return cleanValue(fallback);
+  }
+  if (variants.length === 1) {
+    return variants[0];
+  }
+
+  const rawSeed = Number.isFinite(seed) ? seed : hashSeed(String(seed || ''));
+  const index = ((rawSeed % variants.length) + variants.length) % variants.length;
+  return variants[index];
+}
+
+function instructionForGroupVariant(group, fallback, seed) {
+  return pickPromptVariant(group && group.instructions, group && group.instruction ? group.instruction : fallback, seed);
+}
+
+function toneForGroupVariant(group, fallback, seed) {
+  return pickPromptVariant(group && group.tones, group && group.tone ? group.tone : fallback, seed);
+}
+
+function instructionVariantsForGroup(group, fallback) {
+  const variants = usablePromptVariants(group && group.instructions);
+  if (variants.length === 0) {
+    return [{ key: 'instruction-default', instruction: cleanValue(group && group.instruction ? group.instruction : fallback) }];
+  }
+
+  return variants.map((instruction, index) => ({
+    key: `instruction-${index + 1}`,
+    instruction,
+  }));
+}
+
+function toneVariantsForGroup(group, fallback) {
+  const variants = usablePromptVariants(group && group.tones);
+  if (variants.length === 0) {
+    return [{ key: 'tone-default', tone: cleanValue(group && group.tone ? group.tone : fallback) }];
+  }
+
+  return variants.map((tone, index) => ({
+    key: `tone-${index + 1}`,
+    tone,
+  }));
+}
+
+function instructionVariantIdPrefix(instructionVariants, variant) {
+  return instructionVariants.length > 1 ? `${variant.key}-` : '';
+}
+
+function toneVariantIdPrefix(toneVariants, variant) {
+  return toneVariants.length > 1 ? `${variant.key}-` : '';
+}
+
+function hashSeed(text) {
+  let hash = 5381;
+  const value = String(text || '');
+  for (let i = 0; i < value.length; i++) {
+    hash = (((hash << 5) + hash) + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
 }
 
 function buildPromptText(fixture) {
@@ -1188,11 +1268,15 @@ function buildGeneratedFixtureSet(promptData, config, options) {
     const group = pairGroups[i];
     const primaryPersona = pickPersona(personas, i);
     const secondaryPersona = pickPersona(personas, i + 1);
-    const tone = isSkippable(group.tone) ? 'tense but clear' : group.tone;
+    const tone = toneForGroupVariant(group, 'tense but clear', hashSeed(`${group.defName}:pair`));
     const label = isSkippable(group.label) ? `social event ${group.defName}` : group.label;
-    const coreInstruction = isSkippable(group.instruction)
+    const fallbackInstruction = isSkippable(group.instruction)
       ? 'a charged social exchange between two colonists'
       : group.instruction;
+    const initiatorInstructionA = instructionForGroupVariant(group, fallbackInstruction, 0);
+    const initiatorInstructionB = instructionForGroupVariant(group, fallbackInstruction, 1);
+    const recipientInstructionA = instructionForGroupVariant(group, fallbackInstruction, 2);
+    const recipientInstructionB = instructionForGroupVariant(group, fallbackInstruction, 3);
 
     cases.push(buildPairFixture(promptData, group, {
       id: `pair-${group.defName}-initiator-v1`,
@@ -1201,7 +1285,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
       role: 'initiator',
       other: 'Juno',
       whatYouSaw: `A tense exchange started over a practical disagreement. ${label} shifted the room's mood.`,
-      instruction: coreInstruction,
+      instruction: initiatorInstructionA,
       pawnSummary: 'sex=female; life_stage=adult; mood=tense; thoughts=restless',
       persona: primaryPersona.rule,
       promptEnchantment: '',
@@ -1221,7 +1305,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
       role: 'initiator',
       other: 'Juno',
       whatYouSaw: `They did not expect this in public. ${label} left everyone off balance for the rest of the watch.`,
-      instruction: `${coreInstruction}. Keep it brief, with a practical register.`,
+      instruction: `${initiatorInstructionB}. Keep it brief, with a practical register.`,
       pawnSummary: 'sex=female; life_stage=adult; mood=alert; thoughts=anticipating trouble',
       persona: primaryPersona.rule,
       promptEnchantment: 'high priority; moderate bruise in left arm; pain',
@@ -1241,7 +1325,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
       role: 'recipient',
       other: 'Cass',
       whatYouSaw: `${label} was already half-decided before Cass spoke. Juno had to keep a calm face.`,
-      instruction: coreInstruction,
+      instruction: recipientInstructionA,
       pawnSummary: 'sex=female; life_stage=adult; mood=cautious; thoughts=calculating',
       persona: secondaryPersona.rule,
       promptEnchantment: '',
@@ -1261,7 +1345,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
       role: 'recipient',
       other: 'Cass',
       whatYouSaw: `${label} ended with a careful line that both could repeat publicly.`,
-      instruction: `${coreInstruction}, but keep the emotional beat small and concrete.`,
+      instruction: `${recipientInstructionB}, but keep the emotional beat small and concrete.`,
       pawnSummary: 'sex=female; life_stage=adult; mood=steady; thoughts=resolved',
       persona: secondaryPersona.rule,
       promptEnchantment: 'high priority; major blood loss in torso; heavy bleeding, severe pain',
@@ -1280,18 +1364,20 @@ function buildGeneratedFixtureSet(promptData, config, options) {
   for (let i = 0; i < Math.min(soloSources.length, 2); i++) {
     const group = soloSources[i];
     const persona = pickPersona(personas, i);
-    const tone = isSkippable(group.tone) ? 'nervous but grounded' : group.tone;
+    const tone = toneForGroupVariant(group, 'nervous but grounded', hashSeed(`${group.defName}:solo`));
     const label = isSkippable(group.label) ? `solo moment ${group.defName}` : group.label;
-    const baseInstruction = isSkippable(group.instruction)
+    const fallbackInstruction = isSkippable(group.instruction)
       ? 'a private moment that changes the tone of the day'
       : group.instruction;
+    const baseInstructionA = instructionForGroupVariant(group, fallbackInstruction, 0);
+    const baseInstructionB = instructionForGroupVariant(group, fallbackInstruction, 1);
 
     cases.push(buildSoloFixture(promptData, group, {
       id: `solo-${group.defName}-v1`,
       event: label.toLowerCase(),
       pov: i === 0 ? 'Cass' : 'Juno',
       whatHappened: `${label} hit suddenly and left a physical trace in mood and movement.`,
-      instruction: `${baseInstruction}; keep it immediate and grounded.`,
+      instruction: `${baseInstructionA}; keep it immediate and grounded.`,
       pawnSummary: `sex=${i === 0 ? 'female' : 'male'}; life_stage=adult; mood=alert; thoughts=complicated`,
       persona: persona.rule,
       promptEnchantment: 'high priority; critical consciousness; near collapse, thoughts fragmented, barely awake',
@@ -1307,7 +1393,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
       event: label.toLowerCase(),
       pov: i === 0 ? 'Cass' : 'Juno',
       whatHappened: `${label} unfolded over a long minute, then cooled into routine.`,
-      instruction: `${baseInstruction} with a calm aftertaste.`,
+      instruction: `${baseInstructionB} with a calm aftertaste.`,
       pawnSummary: `sex=${i === 0 ? 'female' : 'male'}; life_stage=adult; mood=measured; thoughts=reflective`,
       persona: persona.rule,
       promptEnchantment: '',
@@ -1325,13 +1411,14 @@ function buildGeneratedFixtureSet(promptData, config, options) {
   // setting shape ("indoors, <room role>, <activity>") with no weather token, so a standard run also
   // shows whether entry openings still diverge by persona once the weather anchor is gone.
   const indoorPairGroup = pairGroups[0] || fallbackGroup;
-  const indoorPairTone = isSkippable(indoorPairGroup.tone) ? 'quiet but charged' : indoorPairGroup.tone;
+  const indoorPairTone = toneForGroupVariant(indoorPairGroup, 'quiet but charged', hashSeed(`${indoorPairGroup.defName}:indoor-pair`));
   const indoorPairLabel = isSkippable(indoorPairGroup.label)
     ? `social event ${indoorPairGroup.defName}`
     : indoorPairGroup.label;
-  const indoorPairInstruction = isSkippable(indoorPairGroup.instruction)
+  const indoorPairFallbackInstruction = isSkippable(indoorPairGroup.instruction)
     ? 'a charged social exchange between two colonists'
     : indoorPairGroup.instruction;
+  const indoorPairInstruction = instructionForGroupVariant(indoorPairGroup, indoorPairFallbackInstruction, 4);
   cases.push(buildPairFixture(promptData, indoorPairGroup, {
     id: 'pair-indoor-initiator-v1',
     event: indoorPairLabel.toLowerCase(),
@@ -1353,19 +1440,21 @@ function buildGeneratedFixtureSet(promptData, config, options) {
   }));
 
   const indoorSoloGroup = soloGroups[0] || fallbackGroup;
-  const indoorSoloTone = isSkippable(indoorSoloGroup.tone) ? 'low and private' : indoorSoloGroup.tone;
+  const indoorSoloTone = toneForGroupVariant(indoorSoloGroup, 'low and private', hashSeed(`${indoorSoloGroup.defName}:indoor-solo`));
   const indoorSoloLabel = isSkippable(indoorSoloGroup.label)
     ? `solo moment ${indoorSoloGroup.defName}`
     : indoorSoloGroup.label;
-  const indoorSoloInstruction = isSkippable(indoorSoloGroup.instruction)
+  const indoorSoloFallbackInstruction = isSkippable(indoorSoloGroup.instruction)
     ? 'a private moment that changes the tone of the day'
     : indoorSoloGroup.instruction;
+  const indoorSoloInstructionA = instructionForGroupVariant(indoorSoloGroup, indoorSoloFallbackInstruction, 2);
+  const indoorSoloInstructionB = instructionForGroupVariant(indoorSoloGroup, indoorSoloFallbackInstruction, 3);
   cases.push(buildSoloFixture(promptData, indoorSoloGroup, {
     id: 'solo-indoor-v1',
     event: indoorSoloLabel.toLowerCase(),
     pov: 'Cass',
     whatHappened: `${indoorSoloLabel} settled in during a long off-shift hour in the barracks.`,
-    instruction: `${indoorSoloInstruction}; keep it immediate and grounded.`,
+    instruction: `${indoorSoloInstructionA}; keep it immediate and grounded.`,
     pawnSummary: 'sex=female; life_stage=adult; mood=subdued; thoughts=turning inward',
     persona: pickPersona(personas, 1).rule,
     promptEnchantment: '',
@@ -1381,7 +1470,7 @@ function buildGeneratedFixtureSet(promptData, config, options) {
     event: indoorSoloLabel.toLowerCase(),
     pov: 'Juno',
     whatHappened: `${indoorSoloLabel} lingered while recovering in the medical bay.`,
-    instruction: `${indoorSoloInstruction} with a calm aftertaste.`,
+    instruction: `${indoorSoloInstructionB} with a calm aftertaste.`,
     pawnSummary: 'sex=female; life_stage=adult; mood=tired; thoughts=foggy',
     persona: pickPersona(personas, 2).rule,
     promptEnchantment: 'high priority; moderate infection in torso; low fever, aching',
@@ -1485,80 +1574,94 @@ function buildAllVariantFixtureSet(promptData, config, options, groups, allPerso
     const group = pairGroups[i];
     const primaryPersona = pickPersona(personas, i);
     const secondaryPersona = pickPersona(personas, i + 1);
-    const tone = isSkippable(group.tone) ? 'tense but clear' : group.tone;
     const label = isSkippable(group.label) ? `social event ${group.defName}` : group.label;
-    const coreInstruction = isSkippable(group.instruction)
+    const fallbackInstruction = isSkippable(group.instruction)
       ? 'a charged social exchange between two colonists'
       : group.instruction;
+    const instructionVariants = instructionVariantsForGroup(group, fallbackInstruction);
+    const toneVariants = toneVariantsForGroup(group, 'tense but clear');
 
-    for (const variant of variants) {
-      cases.push(buildPairFixture(promptData, group, {
-        id: `pair-${group.defName}-initiator-${variant.key}`,
-        event: label.toLowerCase(),
-        pov: 'Cass',
-        role: 'initiator',
-        other: 'Juno',
-        whatYouSaw: `Cass started the ${label.toLowerCase()} after a practical disagreement. The fixed lab context is ${variant.label}.`,
-        instruction: coreInstruction,
-        pawnSummary: pawnSummaryForVariant('female', 'tense', 'restless', variant),
-        persona: primaryPersona.rule,
-        promptEnchantment: variant.promptEnchantment,
-        setting: settingForVariant(variant, 'outdoors, overcast, temperate forest, doing guard duty'),
-        tone: toneForVariant(tone, variant),
-        relationship: 'opinion=cold; because insulted recently; last wrote: I kept my mouth shut too long.',
-        lastOpener: 'The quiet had lasted too long.',
-        weapon: group.combat ? 'short spear' : '',
-        initiatorEntry: '',
-        version: variant.key,
-      }));
+    for (const instructionVariant of instructionVariants) {
+      const instructionPrefix = instructionVariantIdPrefix(instructionVariants, instructionVariant);
+      for (const toneVariant of toneVariants) {
+        const tonePrefix = toneVariantIdPrefix(toneVariants, toneVariant);
+        for (const variant of variants) {
+          cases.push(buildPairFixture(promptData, group, {
+            id: `pair-${group.defName}-initiator-${instructionPrefix}${tonePrefix}${variant.key}`,
+            event: label.toLowerCase(),
+            pov: 'Cass',
+            role: 'initiator',
+            other: 'Juno',
+            whatYouSaw: `Cass started the ${label.toLowerCase()} after a practical disagreement. The fixed lab context is ${variant.label}.`,
+            instruction: instructionVariant.instruction,
+            pawnSummary: pawnSummaryForVariant('female', 'tense', 'restless', variant),
+            persona: primaryPersona.rule,
+            promptEnchantment: variant.promptEnchantment,
+            setting: settingForVariant(variant, 'outdoors, overcast, temperate forest, doing guard duty'),
+            tone: toneForVariant(toneVariant.tone, variant),
+            relationship: 'opinion=cold; because insulted recently; last wrote: I kept my mouth shut too long.',
+            lastOpener: 'The quiet had lasted too long.',
+            weapon: group.combat ? 'short spear' : '',
+            initiatorEntry: '',
+            version: variant.key,
+          }));
 
-      cases.push(buildPairFixture(promptData, group, {
-        id: `pair-${group.defName}-recipient-${variant.key}`,
-        event: label.toLowerCase(),
-        pov: 'Juno',
-        role: 'recipient',
-        other: 'Cass',
-        whatYouSaw: `Juno received the ${label.toLowerCase()} with everyone close enough to notice. The fixed lab context is ${variant.label}.`,
-        instruction: coreInstruction,
-        pawnSummary: pawnSummaryForVariant('female', 'cautious', 'calculating', variant),
-        persona: secondaryPersona.rule,
-        promptEnchantment: variant.promptEnchantment,
-        setting: settingForVariant(variant, 'outdoors, overcast, temperate forest, hauling medicine'),
-        tone: toneForVariant(tone, variant),
-        relationship: 'opinion=guarded; because practical loyalty; last wrote: I would rather finish the job.',
-        lastOpener: 'A private note was due later.',
-        weapon: group.combat ? 'short spear' : '',
-        initiatorEntry: 'I pushed the point because waiting would only make the room colder.',
-        version: variant.key,
-      }));
+          cases.push(buildPairFixture(promptData, group, {
+            id: `pair-${group.defName}-recipient-${instructionPrefix}${tonePrefix}${variant.key}`,
+            event: label.toLowerCase(),
+            pov: 'Juno',
+            role: 'recipient',
+            other: 'Cass',
+            whatYouSaw: `Juno received the ${label.toLowerCase()} with everyone close enough to notice. The fixed lab context is ${variant.label}.`,
+            instruction: instructionVariant.instruction,
+            pawnSummary: pawnSummaryForVariant('female', 'cautious', 'calculating', variant),
+            persona: secondaryPersona.rule,
+            promptEnchantment: variant.promptEnchantment,
+            setting: settingForVariant(variant, 'outdoors, overcast, temperate forest, hauling medicine'),
+            tone: toneForVariant(toneVariant.tone, variant),
+            relationship: 'opinion=guarded; because practical loyalty; last wrote: I would rather finish the job.',
+            lastOpener: 'A private note was due later.',
+            weapon: group.combat ? 'short spear' : '',
+            initiatorEntry: 'I pushed the point because waiting would only make the room colder.',
+            version: variant.key,
+          }));
+        }
+      }
     }
   }
 
   for (let i = 0; i < soloGroups.length; i++) {
     const group = soloGroups[i];
     const persona = pickPersona(personas, i);
-    const tone = isSkippable(group.tone) ? 'nervous but grounded' : group.tone;
     const label = isSkippable(group.label) ? `solo moment ${group.defName}` : group.label;
-    const baseInstruction = isSkippable(group.instruction)
+    const fallbackInstruction = isSkippable(group.instruction)
       ? 'a private moment that changes the tone of the day'
       : group.instruction;
+    const instructionVariants = instructionVariantsForGroup(group, fallbackInstruction);
+    const toneVariants = toneVariantsForGroup(group, 'nervous but grounded');
 
-    for (const variant of variants) {
-      cases.push(buildSoloFixture(promptData, group, {
-        id: `solo-${group.defName}-${variant.key}`,
-        event: label.toLowerCase(),
-        pov: i % 2 === 0 ? 'Cass' : 'Juno',
-        whatHappened: `${label} landed as a private colony moment. The fixed lab context is ${variant.label}.`,
-        instruction: `${baseInstruction}; keep it immediate and grounded.`,
-        pawnSummary: pawnSummaryForVariant(i % 2 === 0 ? 'female' : 'male', 'alert', 'complicated', variant),
-        persona: persona.rule,
-        promptEnchantment: variant.promptEnchantment,
-        setting: settingForVariant(variant, 'outdoors, clear, arid hills, doing field work'),
-        tone: toneForVariant(tone, variant),
-        lastOpener: 'Nothing needed to be said out loud.',
-        weapon: '',
-        version: variant.key,
-      }));
+    for (const instructionVariant of instructionVariants) {
+      const instructionPrefix = instructionVariantIdPrefix(instructionVariants, instructionVariant);
+      for (const toneVariant of toneVariants) {
+        const tonePrefix = toneVariantIdPrefix(toneVariants, toneVariant);
+        for (const variant of variants) {
+          cases.push(buildSoloFixture(promptData, group, {
+            id: `solo-${group.defName}-${instructionPrefix}${tonePrefix}${variant.key}`,
+            event: label.toLowerCase(),
+            pov: i % 2 === 0 ? 'Cass' : 'Juno',
+            whatHappened: `${label} landed as a private colony moment. The fixed lab context is ${variant.label}.`,
+            instruction: `${instructionVariant.instruction}; keep it immediate and grounded.`,
+            pawnSummary: pawnSummaryForVariant(i % 2 === 0 ? 'female' : 'male', 'alert', 'complicated', variant),
+            persona: persona.rule,
+            promptEnchantment: variant.promptEnchantment,
+            setting: settingForVariant(variant, 'outdoors, clear, arid hills, doing field work'),
+            tone: toneForVariant(toneVariant.tone, variant),
+            lastOpener: 'Nothing needed to be said out loud.',
+            weapon: '',
+            version: variant.key,
+          }));
+        }
+      }
     }
   }
 

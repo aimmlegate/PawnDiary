@@ -60,7 +60,8 @@ builds deterministic cases for:
 - neutral arrival/death fixtures,
 - title fixtures.
 
-First-person cases are crossed with the fixed prompt-enchantment matrix:
+First-person cases are crossed with the fixed prompt-enchantment matrix and, when a group defines
+variant pools, each configured instruction and tone variant:
 
 - no prompt enchantment,
 - moderate pain,

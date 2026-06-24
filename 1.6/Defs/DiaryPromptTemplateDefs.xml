@@ -31,6 +31,7 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
       <li><label>relationship</label><source>Relationship</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
     </fields>
@@ -94,6 +95,7 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
@@ -110,6 +112,7 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
@@ -144,6 +147,7 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
@@ -160,6 +164,7 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
@@ -178,6 +183,7 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important health</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
+      <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>

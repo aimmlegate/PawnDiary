@@ -210,14 +210,19 @@ singular `instruction` / `tone` remain as fallback and settings-preview values. 
 XML-owned: list a wording more than once to make it more common. Do not leave blank `<li>` slots —
 selection skips whitespace entries, which would misalign the indexed DefInjected translation keys.
 
-Shipped pools are written for **small-model separability**: each `instructions` pool holds ~3
+Shipped pools are written for **small-model separability**. Each `instructions` pool holds ~3
 *lens-distinct* variants — different sensory, narrative, or temporal entry points written in
 concrete nouns/verbs (e.g. "open on sound" / "open on the body" / "open on the room") rather than
-emotional synonyms. Small models collapse near-synonym affective phrasings ("tender warmth" vs
-"soft sweetness") to one output shape, but they do separate concrete directional cues, so
-distinctiveness is invested in the instruction lens rather than the tone. Tone pools are therefore
-left empty by default (one singular tone per group); the `tones` capability remains available for
-modders targeting larger models.
+emotional synonyms. Each tone-bearing group also ships exactly two `tones` variants. Those tone
+variants should not be near-synonym mood labels; make one change rhythm/attention (clipped,
+ceremonial, tactile, stunned, etc.) and the other change emotional posture (guarded, exposed,
+grateful, grieving, etc.) so small models produce visibly different shapes.
+
+Variants must not ask for unsupplied facts ("who heard it", exact words, named aftermath, etc.)
+unless the wording also gates that detail behind supplied context; use conditional phrasing such as
+"if supplied" or steer toward internal/body/pressure cues instead. Prompt-lab's generated XML
+fixtures parse the same variant pools, and `--all-variants` crosses instruction variants, tone
+variants, and the prompt-enchantment matrix so lab runs can catch drift in shipped variant wording.
 
 Prompt Studio in mod settings can save per-event overrides for an existing
 `DiaryEventPromptDef.prompt` or `.enhancement`. Empty text or text matching the localized XML value

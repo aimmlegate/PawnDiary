@@ -85,6 +85,32 @@ function main() {
     failures.push(`Generated fixtures do not render event prompt text: ${eventPromptFailures.join(', ')}`);
   }
 
+  const instructionVariantFailures = [];
+  for (const group of promptData.groups || []) {
+    for (const instruction of group.instructions || []) {
+      if (!containsAny(rendered, instruction)) {
+        instructionVariantFailures.push(`${group.defName}.instructions`);
+        break;
+      }
+    }
+  }
+  if (instructionVariantFailures.length > 0) {
+    failures.push(`Generated fixtures do not render instruction variant pool(s): ${instructionVariantFailures.join(', ')}`);
+  }
+
+  const toneVariantFailures = [];
+  for (const group of promptData.groups || []) {
+    for (const tone of group.tones || []) {
+      if (!containsAny(rendered, tone)) {
+        toneVariantFailures.push(`${group.defName}.tones`);
+        break;
+      }
+    }
+  }
+  if (toneVariantFailures.length > 0) {
+    failures.push(`Generated fixtures do not render tone variant pool(s): ${toneVariantFailures.join(', ')}`);
+  }
+
   const expectedMarkers = [
     'tale=',
     'mood_event=',

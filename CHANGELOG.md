@@ -6,6 +6,15 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Tone pools enabled for stock prompts.** Every tone-bearing interaction group now ships two
+  distinct `tones` variants, and every first-person prompt template renders the `tone:` field so the
+  selected tone reaches the model. Prompt-lab `--all-variants` now crosses tone variants alongside
+  instruction variants and prompt-enchantment variants, with coverage checks for both pools.
+- **Prompt variants tightened against hallucinated facts.** Reworded shipped instruction variants so
+  they no longer ask small local models for exact words, witnesses, aftermath, or other facts unless
+  the supplied context carries them. Prompt-lab now parses XML `instructions` / `tones`; generated
+  all-variant fixtures cross instruction/tone variants with the prompt-enchantment matrix and the
+  coverage check verifies every configured variant renders at least once.
 - **Per-event-type prompt variation.** Interaction groups can now carry an `instructions` variant
   pool (and, optionally, a `tones` pool) alongside the singular `instruction` / `tone`; one wording
   is chosen per entry so the Nth raid no longer reads identically to the first. Instruction variants
@@ -16,11 +25,9 @@ not need separate entries unless they change behavior or document an important r
   insults, small talk, mental breaks, combat/death, raids, positive/negative thoughts) ship 3
   **lens-distinct** instruction variants each — different sensory/narrative/temporal entry points
   (concrete nouns, not emotional synonyms) so small models actually separate them rather than
-  collapsing near-synonyms to one output. Tone pools are left empty by design: abstract tone
-  variants collapse on small models, so distinctiveness is invested in the instruction lenses
-  instead (the `tones` capability remains in the schema for modders targeting larger models). The
-  nine toneless groups gained distinct singular tones, and two duplicate tones across distinct event
-  types (raids vs. disasters; anomaly vs. strange chat) were differentiated.
+  collapsing near-synonyms to one output. The nine toneless groups gained distinct singular tones,
+  and two duplicate tones across distinct event types (raids vs. disasters; anomaly vs. strange chat)
+  were differentiated.
 - **Save compatibility documented.** Add/remove safety is now explicit in player-facing metadata and
   persistence docs: Pawn Diary records only self-contained diary history, does not attach gameplay
   defs/components to pawns or maps, and calls out the old generated Social-log injection caveat.
