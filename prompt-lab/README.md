@@ -128,6 +128,7 @@ node run.js --from-defs --no-title
 - `--endpoint http://127.0.0.1:1234/v1`
 - `--model <name>`
 - `--api-key <key>`
+- `--auth-mode <bearer|none|api-key|x-api-key|query-key>`
 - `--temperature <float>`
 - `--max-tokens <int>`
 - `--timeout <seconds>`
@@ -141,6 +142,10 @@ node run.js --from-defs --no-title
 - `--no-title` (skip title follow-up generation)
 - `--dry-run` (build prompt only)
 - `--verbose` (print payload)
+
+`--auth-mode` mirrors the in-game API row auth selector. `bearer` sends
+`Authorization: Bearer <key>`, `none` sends no key, `api-key` / `x-api-key` send header keys, and
+`query-key` appends `?key=<key>` to the request URL.
 
 ## Manual fixtures
 

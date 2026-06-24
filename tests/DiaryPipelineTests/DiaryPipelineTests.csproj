@@ -14,6 +14,9 @@
     <Compile Include="..\..\Source\Pipeline\DiaryDirectSpeechParser.cs" Link="DiaryDirectSpeechParser.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptCapture.cs" Link="DiaryPromptCapture.cs" />
+    <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />
+    <Compile Include="..\..\Source\Settings\ApiRequestAuth.cs" Link="ApiRequestAuth.cs" />
     <Compile Include="..\..\Source\Generation\PromptAssembler.cs" Link="PromptAssembler.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
     <Compile Include="..\..\Source\Generation\LlmResponseParser.cs" Link="LlmResponseParser.cs" />

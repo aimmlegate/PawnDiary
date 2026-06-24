@@ -120,6 +120,8 @@
   <PawnDiary.Settings.ApisSummary>{0} enabled of {1} configured model rows</PawnDiary.Settings.ApisSummary>
   <PawnDiary.Settings.ApiLabel>API {0}</PawnDiary.Settings.ApiLabel>
   <PawnDiary.Settings.ApiEnabled>Enabled</PawnDiary.Settings.ApiEnabled>
+  <PawnDiary.Settings.MoveApiUp>Up</PawnDiary.Settings.MoveApiUp>
+  <PawnDiary.Settings.MoveApiDown>Down</PawnDiary.Settings.MoveApiDown>
   <PawnDiary.Settings.AddApi>+ Add API</PawnDiary.Settings.AddApi>
   <PawnDiary.Settings.RemoveApi>− Remove</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
@@ -129,7 +131,17 @@
   <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-compatible</PawnDiary.Settings.ApiCompatibility.Chat>
   <PawnDiary.Settings.ApiCompatibility.Responses>OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
   <PawnDiary.Settings.ApiCompatibility.Ollama>Ollama native chat</PawnDiary.Settings.ApiCompatibility.Ollama>
+  <PawnDiary.Settings.ApiAuthMode>Auth</PawnDiary.Settings.ApiAuthMode>
+  <PawnDiary.Settings.ApiAuthMode.Bearer>Bearer token</PawnDiary.Settings.ApiAuthMode.Bearer>
+  <PawnDiary.Settings.ApiAuthMode.None>No auth</PawnDiary.Settings.ApiAuthMode.None>
+  <PawnDiary.Settings.ApiAuthMode.ApiKeyHeader>api-key header</PawnDiary.Settings.ApiAuthMode.ApiKeyHeader>
+  <PawnDiary.Settings.ApiAuthMode.XApiKeyHeader>x-api-key header</PawnDiary.Settings.ApiAuthMode.XApiKeyHeader>
+  <PawnDiary.Settings.ApiAuthMode.QueryParameterKey>key= query</PawnDiary.Settings.ApiAuthMode.QueryParameterKey>
   <PawnDiary.Settings.RequestTuning>Request tuning</PawnDiary.Settings.RequestTuning>
+  <PawnDiary.Settings.ApiRouting>Routing</PawnDiary.Settings.ApiRouting>
+  <PawnDiary.Settings.ApiRouting.Balanced>Balanced</PawnDiary.Settings.ApiRouting.Balanced>
+  <PawnDiary.Settings.ApiRouting.PreferTopRows>Prefer top rows</PawnDiary.Settings.ApiRouting.PreferTopRows>
+  <PawnDiary.Settings.ApiRouting.FailoverOnly>Failover only</PawnDiary.Settings.ApiRouting.FailoverOnly>
   <PawnDiary.Settings.ReasoningEffort>Reasoning</PawnDiary.Settings.ReasoningEffort>
   <PawnDiary.Settings.ReasoningEffort.Default>API default</PawnDiary.Settings.ReasoningEffort.Default>
   <PawnDiary.Settings.ReasoningEffort.None>None</PawnDiary.Settings.ReasoningEffort.None>

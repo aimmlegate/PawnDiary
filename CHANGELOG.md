@@ -6,6 +6,12 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **API lane routing hardened for free-tier pools.** Connection settings now include a global routing
+  mode (Balanced, Prefer top rows, or Failover only), Up/Down controls to reorder API rows, and
+  per-row auth styles for Bearer, no auth, `api-key`, `x-api-key`, or `key=` query providers.
+  Transient lane failures and timeouts now apply automatic runtime cooldowns with exponential
+  backoff, while successful responses clear the lane cooldown. Prompt-lab gained matching
+  `--auth-mode` support.
 - **Tone pools enabled for stock prompts.** Every tone-bearing interaction group now ships two
   distinct `tones` variants, and every first-person prompt template renders the `tone:` field so the
   selected tone reaches the model. Prompt-lab `--all-variants` now crosses tone variants alongside

@@ -61,7 +61,7 @@ namespace PawnDiary
         private const float EventPromptTextAreaHeight = 88f;
         private const float SystemPromptTextAreaHeight = 138f;
         private const float PersonaRuleTextAreaHeight = 96f;
-        private const float RequestTuningBlockHeight = 166f;
+        private const float RequestTuningBlockHeight = 197f;
         private const string PromptStudioSystemPrefix = "system:";
         private const string PromptStudioEventPrefix = "event:";
 
@@ -189,6 +189,8 @@ namespace PawnDiary
 
             // Defer removal until after the loop so we don't mutate the list while drawing it.
             int removeIndex = -1;
+            int moveIndex = -1;
+            int moveDelta = 0;
             for (int i = 0; i < Settings.apiEndpoints.Count; i++)
             {
                 ApiEndpointConfig endpoint = Settings.apiEndpoints[i];
@@ -197,7 +199,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                DrawCompactApiEndpointRow(listing, i, endpoint, ref removeIndex);
+                DrawCompactApiEndpointRow(listing, i, endpoint, ref removeIndex, ref moveIndex, ref moveDelta);
             }
 
             if (removeIndex >= 0)
@@ -206,6 +208,19 @@ namespace PawnDiary
                 // A removed row shifts indices, so any pending fetch result no longer maps cleanly.
                 CancelModelFetchUiState();
                 CancelConnectionTestUiState();
+            }
+            else if (moveIndex >= 0 && moveDelta != 0)
+            {
+                int targetIndex = moveIndex + moveDelta;
+                if (targetIndex >= 0 && targetIndex < Settings.apiEndpoints.Count)
+                {
+                    ApiEndpointConfig moving = Settings.apiEndpoints[moveIndex];
+                    Settings.apiEndpoints[moveIndex] = Settings.apiEndpoints[targetIndex];
+                    Settings.apiEndpoints[targetIndex] = moving;
+                    // A moved row shifts index-based fetch/test status and changes routing priority.
+                    CancelModelFetchUiState();
+                    CancelConnectionTestUiState();
+                }
             }
 
             Rect actionRect = listing.GetRect(28f);
@@ -244,6 +259,10 @@ namespace PawnDiary
             Widgets.LabelFit(new Rect(innerRect.x, y, innerRect.width, 24f), "PawnDiary.Settings.RequestTuning".Translate());
             y += 28f;
 
+            Rect routingRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
+            DrawRoutingModeRow(routingRect, 230f);
+            y += rowHeight + gap;
+
             Rect tempRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
             Settings.temperature = DrawSliderRow(tempRect, "PawnDiary.Settings.Temperature".Translate(Settings.temperature.ToString("0.00")), Settings.temperature, 0f, 2f);
             y += rowHeight + gap;
@@ -269,12 +288,50 @@ namespace PawnDiary
             return Widgets.HorizontalSlider(sliderRect, value, min, max);
         }
 
+        private static void DrawRoutingModeRow(Rect rect, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, Mathf.Min(labelWidth, rect.width * 0.45f), rect.height);
+            Rect buttonRect = new Rect(labelRect.xMax + 8f, rect.y, Mathf.Max(0f, rect.xMax - labelRect.xMax - 8f), rect.height);
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ApiRouting".Translate());
+            if (Widgets.ButtonText(buttonRect, ApiRoutingLabel(Settings.apiRoutingMode).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>
+                {
+                    ApiRoutingOption(ApiLaneRoutingMode.Balanced),
+                    ApiRoutingOption(ApiLaneRoutingMode.PreferTopRows),
+                    ApiRoutingOption(ApiLaneRoutingMode.FailoverOnly)
+                };
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private static FloatMenuOption ApiRoutingOption(ApiLaneRoutingMode mode)
+        {
+            return new FloatMenuOption(ApiRoutingLabel(mode).Translate(), delegate
+            {
+                Settings.apiRoutingMode = ApiLaneSelector.Normalize(mode);
+            });
+        }
+
+        private static string ApiRoutingLabel(ApiLaneRoutingMode mode)
+        {
+            switch (ApiLaneSelector.Normalize(mode))
+            {
+                case ApiLaneRoutingMode.PreferTopRows:
+                    return "PawnDiary.Settings.ApiRouting.PreferTopRows";
+                case ApiLaneRoutingMode.FailoverOnly:
+                    return "PawnDiary.Settings.ApiRouting.FailoverOnly";
+                default:
+                    return "PawnDiary.Settings.ApiRouting.Balanced";
+            }
+        }
+
         /// <summary>
         /// Draws one API/model lane as a small framed block. The row is intentionally taller than
         /// the old compact version: full-width endpoint/key fields avoid the clipped labels and
         /// cramped text boxes that made the settings window hard to scan.
         /// </summary>
-        private void DrawCompactApiEndpointRow(Listing_Standard listing, int index, ApiEndpointConfig endpoint, ref int removeIndex)
+        private void DrawCompactApiEndpointRow(Listing_Standard listing, int index, ApiEndpointConfig endpoint, ref int removeIndex, ref int moveIndex, ref int moveDelta)
         {
             int statusLineCount = ApiRowStatusLineCount(index);
             Rect blockRect = listing.GetRect(ApiEndpointRowHeight(endpoint, statusLineCount));
@@ -284,16 +341,30 @@ namespace PawnDiary
             float lineHeight = 28f;
             float gap = 5f;
 
-            // Row header: "API N" on the left, then Enabled and Remove controls on the right.
+            // Row header: "API N" on the left, order controls, then Enabled and Remove controls.
             Rect headerRect = new Rect(innerRect.x, innerRect.y, innerRect.width, lineHeight);
-            Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, headerRect.width - 240f, headerRect.height);
+            Rect removeRect = new Rect(headerRect.xMax - 84f, headerRect.y, 84f, headerRect.height);
+            Rect enabledRect = new Rect(removeRect.x - 106f, headerRect.y, 98f, headerRect.height);
+            Rect downRect = new Rect(enabledRect.x - 42f, headerRect.y, 36f, headerRect.height);
+            Rect upRect = new Rect(downRect.x - 42f, headerRect.y, 36f, headerRect.height);
+            Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, Mathf.Max(0f, upRect.x - headerRect.x - 6f), headerRect.height);
             Widgets.Label(headerLabelRect, "PawnDiary.Settings.ApiLabel".Translate(index + 1));
-            Rect enabledRect = new Rect(headerRect.xMax - 220f, headerRect.y, 110f, headerRect.height);
+            if (ButtonTextFit(upRect, "PawnDiary.Settings.MoveApiUp".Translate()) && index > 0)
+            {
+                moveIndex = index;
+                moveDelta = -1;
+            }
+
+            if (ButtonTextFit(downRect, "PawnDiary.Settings.MoveApiDown".Translate()) && index < Settings.apiEndpoints.Count - 1)
+            {
+                moveIndex = index;
+                moveDelta = 1;
+            }
+
             Widgets.CheckboxLabeled(enabledRect, "PawnDiary.Settings.ApiEnabled".Translate(), ref endpoint.enabled);
             if (Settings.apiEndpoints.Count > 1)
             {
-                Rect removeRect = new Rect(headerRect.xMax - 100f, headerRect.y, 100f, headerRect.height);
-                if (Widgets.ButtonText(removeRect, "PawnDiary.Settings.RemoveApi".Translate()))
+                if (ButtonTextFit(removeRect, "PawnDiary.Settings.RemoveApi".Translate()))
                 {
                     removeIndex = index;
                 }
@@ -325,6 +396,10 @@ namespace PawnDiary
             endpoint.apiKey = DrawCompactTextField(keyFieldRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 94f);
             DrawConnectionTestButton(testRect, index);
 
+            y += lineHeight + gap;
+            Rect authRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+            DrawAuthModeRow(authRect, endpoint, 94f);
+
             if (HasApiAdvancedRow(endpoint))
             {
                 y += lineHeight + gap;
@@ -350,7 +425,7 @@ namespace PawnDiary
         /// </summary>
         private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, int statusLineCount)
         {
-            float height = HasApiAdvancedRow(endpoint) ? 214f : 181f;
+            float height = HasApiAdvancedRow(endpoint) ? 247f : 214f;
             return height + (Mathf.Max(0, statusLineCount) * 26f);
         }
 
@@ -415,6 +490,51 @@ namespace PawnDiary
                     return "PawnDiary.Settings.ApiCompatibility.Ollama";
                 default:
                     return "PawnDiary.Settings.ApiCompatibility.Chat";
+            }
+        }
+
+        /// <summary>Draws the API-key transport style selector for one API lane.</summary>
+        private static void DrawAuthModeRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ApiAuthMode".Translate());
+            if (Widgets.ButtonText(buttonRect, ApiAuthModeLabel(endpoint.authMode).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>
+                {
+                    ApiAuthModeOption(endpoint, ApiAuthMode.BearerToken),
+                    ApiAuthModeOption(endpoint, ApiAuthMode.None),
+                    ApiAuthModeOption(endpoint, ApiAuthMode.ApiKeyHeader),
+                    ApiAuthModeOption(endpoint, ApiAuthMode.XApiKeyHeader),
+                    ApiAuthModeOption(endpoint, ApiAuthMode.QueryParameterKey)
+                };
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private static FloatMenuOption ApiAuthModeOption(ApiEndpointConfig endpoint, ApiAuthMode authMode)
+        {
+            return new FloatMenuOption(ApiAuthModeLabel(authMode).Translate(), delegate
+            {
+                endpoint.authMode = PawnDiarySettings.NormalizeAuthMode(authMode);
+            });
+        }
+
+        private static string ApiAuthModeLabel(ApiAuthMode authMode)
+        {
+            switch (PawnDiarySettings.NormalizeAuthMode(authMode))
+            {
+                case ApiAuthMode.None:
+                    return "PawnDiary.Settings.ApiAuthMode.None";
+                case ApiAuthMode.ApiKeyHeader:
+                    return "PawnDiary.Settings.ApiAuthMode.ApiKeyHeader";
+                case ApiAuthMode.XApiKeyHeader:
+                    return "PawnDiary.Settings.ApiAuthMode.XApiKeyHeader";
+                case ApiAuthMode.QueryParameterKey:
+                    return "PawnDiary.Settings.ApiAuthMode.QueryParameterKey";
+                default:
+                    return "PawnDiary.Settings.ApiAuthMode.Bearer";
             }
         }
 
@@ -1296,6 +1416,7 @@ namespace PawnDiary
             string url = string.Empty;
             string apiKey = string.Empty;
             string model = string.Empty;
+            ApiAuthMode authMode = ApiAuthMode.BearerToken;
             ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
             string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
             bool ollamaThink = false;
@@ -1321,6 +1442,7 @@ namespace PawnDiary
                 url = endpoint.url;
                 apiKey = endpoint.apiKey;
                 model = endpoint.model;
+                authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode);
                 apiMode = endpoint.apiMode;
                 reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort);
                 ollamaThink = endpoint.ollamaThink;
@@ -1339,6 +1461,7 @@ namespace PawnDiary
 
                 string sampleText = await LlmClient.TestConnection(new ApiEndpointConfig(url, apiKey, model)
                 {
+                    authMode = authMode,
                     apiMode = apiMode,
                     reasoningEffort = reasoningEffort,
                     ollamaThink = ollamaThink
@@ -1353,6 +1476,7 @@ namespace PawnDiary
                     endpointUrl = url,
                     apiKey = apiKey,
                     model = model,
+                    authMode = authMode,
                     apiMode = apiMode,
                     reasoningEffort = reasoningEffort,
                     ollamaThink = ollamaThink
@@ -1369,6 +1493,7 @@ namespace PawnDiary
                     endpointUrl = url,
                     apiKey = apiKey,
                     model = model,
+                    authMode = authMode,
                     apiMode = apiMode,
                     reasoningEffort = reasoningEffort,
                     ollamaThink = ollamaThink
@@ -1401,6 +1526,7 @@ namespace PawnDiary
             int generation = ++fetchGeneration; // capture current generation to detect stale completions
             string url = string.Empty;
             string apiKey = string.Empty;
+            ApiAuthMode authMode = ApiAuthMode.BearerToken;
             ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
             try
             {
@@ -1426,10 +1552,11 @@ namespace PawnDiary
 
                 url = endpoint.url;
                 apiKey = endpoint.apiKey;
+                authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode);
                 apiMode = endpoint.apiMode;
                 int timeoutSeconds = Settings.timeoutSeconds;
 
-                List<string> models = await ModelListClient.FetchModels(url, apiKey, apiMode, timeoutSeconds);
+                List<string> models = await ModelListClient.FetchModels(url, apiKey, authMode, apiMode, timeoutSeconds);
                 pendingFetchResult = new ModelFetchResult
                 {
                     generation = generation,
@@ -1438,6 +1565,7 @@ namespace PawnDiary
                     models = models,
                     endpointUrl = url,
                     apiKey = apiKey,
+                    authMode = authMode,
                     apiMode = apiMode
                 };
             }
@@ -1451,6 +1579,7 @@ namespace PawnDiary
                     errorDetail = ex.Message,
                     endpointUrl = url,
                     apiKey = apiKey,
+                    authMode = authMode,
                     apiMode = apiMode
                 };
             }
@@ -1599,6 +1728,7 @@ namespace PawnDiary
             return endpoint != null
                 && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
                 && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
+                && PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == result.authMode
                 && endpoint.apiMode == result.apiMode;
         }
 
@@ -1617,6 +1747,7 @@ namespace PawnDiary
                 && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
                 && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
                 && string.Equals(endpoint.model ?? string.Empty, result.model ?? string.Empty, StringComparison.Ordinal)
+                && PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == result.authMode
                 && endpoint.apiMode == result.apiMode
                 && string.Equals(PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort), result.reasoningEffort ?? string.Empty, StringComparison.Ordinal)
                 && endpoint.ollamaThink == result.ollamaThink;
@@ -1725,6 +1856,7 @@ namespace PawnDiary
             public string errorDetail;    // raw, untranslated exception message
             public string endpointUrl;     // row URL snapshot used to reject stale row edits
             public string apiKey;          // row key snapshot; never logged or shown
+            public ApiAuthMode authMode;   // auth style snapshot; changing it changes request shape
             public ApiCompatibilityMode apiMode; // row mode snapshot; changing modes changes model-list shape
         }
 
@@ -1740,6 +1872,7 @@ namespace PawnDiary
             public string endpointUrl;
             public string apiKey;
             public string model;
+            public ApiAuthMode authMode;
             public ApiCompatibilityMode apiMode;
             public string reasoningEffort;
             public bool ollamaThink;

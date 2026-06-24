@@ -37,6 +37,8 @@ namespace PawnDiary
         public string model = string.Empty;
         // API key (may be empty for local models that don't require auth).
         public string apiKey = string.Empty;
+        // How apiKey is attached to requests for this lane. Bearer preserves existing saves.
+        public ApiAuthMode authMode = ApiAuthMode.BearerToken;
         // When false, keep this row configured but exclude it from generation and failover.
         public bool enabled = true;
         // Request/response compatibility mode. Default preserves existing OpenAI-compatible setups.
@@ -66,6 +68,7 @@ namespace PawnDiary
             return new ApiEndpointConfig(url, apiKey, model)
             {
                 enabled = enabled,
+                authMode = authMode,
                 apiMode = apiMode,
                 reasoningEffort = reasoningEffort,
                 ollamaThink = ollamaThink
@@ -78,6 +81,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref url, "url", PawnDiarySettings.DefaultEndpointUrl);
             Scribe_Values.Look(ref model, "model", string.Empty);
             Scribe_Values.Look(ref apiKey, "apiKey", string.Empty);
+            Scribe_Values.Look(ref authMode, "authMode", ApiAuthMode.BearerToken);
             Scribe_Values.Look(ref enabled, "enabled", true);
             Scribe_Values.Look(ref apiMode, "apiMode", ApiCompatibilityMode.OpenAIChatCompletions);
             Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
@@ -128,9 +132,11 @@ namespace PawnDiary
 
     public class PawnDiarySettings : ModSettings
     {
-        // The configured API lanes used for generation. Requests are distributed across these
-        // round-robin and run in parallel (one in-flight request per lane, see LlmClient).
+        // The configured API lanes used for generation. Requests are distributed according to
+        // apiRoutingMode and run in parallel (one in-flight request per lane, see LlmClient).
         public List<ApiEndpointConfig> apiEndpoints = new List<ApiEndpointConfig>();
+        // Global primary-lane routing policy. Row order always controls failover order.
+        public ApiLaneRoutingMode apiRoutingMode = ApiLaneRoutingMode.Balanced;
 
         // Per-request timeout in seconds before the request is cancelled.
         public int timeoutSeconds = 30;
@@ -226,6 +232,7 @@ namespace PawnDiary
         public override void ExposeData()
         {
             Scribe_Collections.Look(ref apiEndpoints, "apiEndpoints", LookMode.Deep);
+            Scribe_Values.Look(ref apiRoutingMode, "apiRoutingMode", ApiLaneRoutingMode.Balanced);
             Scribe_Values.Look(ref timeoutSeconds, "timeoutSeconds", 30);
             Scribe_Values.Look(ref maxConcurrentRequests, "maxConcurrentRequests", 4);
             Scribe_Values.Look(ref maxTokens, "maxTokens", 100);
@@ -611,6 +618,8 @@ namespace PawnDiary
         /// </summary>
         public void EnsureEndpointsList()
         {
+            apiRoutingMode = NormalizeRoutingMode(apiRoutingMode);
+
             if (apiEndpoints == null)
             {
                 apiEndpoints = new List<ApiEndpointConfig>();
@@ -642,6 +651,7 @@ namespace PawnDiary
                     endpoint.model = string.Empty;
                 }
 
+                endpoint.authMode = NormalizeAuthMode(endpoint.authMode);
                 endpoint.reasoningEffort = NormalizeReasoningEffort(endpoint.reasoningEffort);
             }
         }
@@ -693,6 +703,18 @@ namespace PawnDiary
         {
             string normalized = (effort ?? DefaultReasoningEffort).Trim().ToLowerInvariant();
             return ValidReasoningEfforts.Contains(normalized) ? normalized : DefaultReasoningEffort;
+        }
+
+        /// <summary>Normalizes invalid routing enum values loaded from hand-edited settings.</summary>
+        public static ApiLaneRoutingMode NormalizeRoutingMode(ApiLaneRoutingMode mode)
+        {
+            return ApiLaneSelector.Normalize(mode);
+        }
+
+        /// <summary>Normalizes invalid auth enum values loaded from hand-edited settings.</summary>
+        public static ApiAuthMode NormalizeAuthMode(ApiAuthMode mode)
+        {
+            return ApiEndpointPolicy.NormalizeAuthMode(mode);
         }
 
         // ---- Interaction group helpers ----
@@ -1062,6 +1084,7 @@ namespace PawnDiary
 
             EnsureEndpointsList();
 
+            apiRoutingMode = NormalizeRoutingMode(apiRoutingMode);
             timeoutSeconds = Mathf.Clamp(timeoutSeconds, 5, 300);
             maxConcurrentRequests = Mathf.Clamp(maxConcurrentRequests, 1, 16);
             maxTokens = Mathf.Clamp(maxTokens, 32, 2048);

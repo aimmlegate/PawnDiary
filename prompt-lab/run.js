@@ -86,6 +86,7 @@ const DEFAULTS = {
   endpoint: 'http://localhost:1234/v1',
   model: 'local-model',
   apiKey: '',
+  authMode: 'bearer',
   temperature: 0.8,
   maxTokens: 120,
   timeoutSeconds: 60,
@@ -127,6 +128,21 @@ function parsePositiveIntegerOrAll(value) {
   return Number.isFinite(parsed) ? Math.max(1, parsed) : null;
 }
 
+function normalizeAuthMode(value) {
+  const normalized = String(value || DEFAULTS.authMode).trim().toLowerCase();
+  switch (normalized) {
+    case 'none':
+    case 'api-key':
+    case 'x-api-key':
+    case 'query-key':
+      return normalized;
+    case 'bearer-token':
+    case 'bearer':
+    default:
+      return 'bearer';
+  }
+}
+
 function parseArgs(argv) {
   const options = {
     configPath: DEFAULT_CONFIG_PATH,
@@ -142,6 +158,7 @@ function parseArgs(argv) {
     endpoint: null,
     model: null,
     apiKey: null,
+    authMode: null,
     includeGroups: null,
     includePersonas: null,
     fixtureDir: DEFAULT_FIXTURE_DIR,
@@ -238,6 +255,11 @@ function parseArgs(argv) {
       i++;
       continue;
     }
+    if (arg === '--auth-mode') {
+      options.authMode = normalizeAuthMode(argv[i + 1]);
+      i++;
+      continue;
+    }
     if (arg === '--temperature') {
       const value = parseFloat(argv[i + 1]);
       options.temperature = Number.isFinite(value) ? value : null;
@@ -291,6 +313,7 @@ function usage() {
     '  --endpoint <url>              Override endpoint',
     '  --model <name>                Override model',
     '  --api-key <key>               Override API key',
+    '  --auth-mode <mode>            Auth mode: bearer, none, api-key, x-api-key, query-key',
     '  --temperature <float>         Override temperature',
     '  --max-tokens <int>            Override max_tokens',
     '  --timeout <seconds>           Override request timeout',
@@ -1907,6 +1930,7 @@ function buildRequestConfig(fixture, options, config) {
     endpoint: fixture.endpoint || options.endpoint || config.endpoint,
     model: fixture.model || options.model || config.model,
     apiKey: fixture.apiKey || options.apiKey || config.apiKey || '',
+    authMode: normalizeAuthMode(fixture.authMode || options.authMode || config.authMode),
     temperature: Number.isFinite(fixture.temperature) ? fixture.temperature : options.temperature ?? config.temperature,
     maxTokens: Number.isFinite(fixture.maxTokens) ? fixture.maxTokens : options.maxTokens ?? config.maxTokens,
     timeoutSeconds: Number.isFinite(fixture.timeoutSeconds)
@@ -1944,9 +1968,40 @@ function parseModelResponse(body) {
   return { generated: '', error: 'No usable content in response.' };
 }
 
-function postJson(url, payload, apiKey, timeoutMs) {
-  const body = JSON.stringify(payload);
+function authenticatedUrl(url, apiKey, authMode) {
+  if (normalizeAuthMode(authMode) !== 'query-key' || !apiKey || apiKey.trim() === '') {
+    return url;
+  }
+
   const requestUrl = new URL(url);
+  requestUrl.searchParams.set('key', apiKey.trim());
+  return requestUrl.toString();
+}
+
+function applyAuthHeaders(req, apiKey, authMode) {
+  if (!apiKey || apiKey.trim() === '') {
+    return;
+  }
+
+  const key = apiKey.trim();
+  switch (normalizeAuthMode(authMode)) {
+    case 'none':
+    case 'query-key':
+      return;
+    case 'api-key':
+      req.setHeader('api-key', key);
+      return;
+    case 'x-api-key':
+      req.setHeader('x-api-key', key);
+      return;
+    default:
+      req.setHeader('Authorization', `Bearer ${key}`);
+  }
+}
+
+function postJson(url, payload, apiKey, authMode, timeoutMs) {
+  const body = JSON.stringify(payload);
+  const requestUrl = new URL(authenticatedUrl(url, apiKey, authMode));
   const transport = requestUrl.protocol === 'https:' ? https : http;
 
   return new Promise((resolve, reject) => {
@@ -1974,9 +2029,7 @@ function postJson(url, payload, apiKey, timeoutMs) {
 
     req.on('error', (error) => reject(error));
     req.setTimeout(timeoutMs, () => req.destroy(new Error(`Request timeout after ${timeoutMs}ms`)));
-    if (apiKey && apiKey.trim() !== '') {
-      req.setHeader('Authorization', `Bearer ${apiKey.trim()}`);
-    }
+    applyAuthHeaders(req, apiKey, authMode);
     req.write(body);
     req.end();
   });
@@ -2024,6 +2077,7 @@ function buildMarkdownOutput(runConfig) {
   chunks.push(`- Timestamp: ${runConfig.timestamp}`);
   chunks.push(`- Endpoint: ${runConfig.endpoint}`);
   chunks.push(`- Model: ${runConfig.model}`);
+  chunks.push(`- Auth mode: ${normalizeAuthMode(runConfig.authMode)}`);
   chunks.push(`- Temperature: ${runConfig.temperature}`);
   chunks.push(`- Max tokens: ${runConfig.maxTokens}`);
   chunks.push('');
@@ -2081,6 +2135,7 @@ function buildCompactMarkdownOutput(runConfig) {
   chunks.push(`- Timestamp: ${runConfig.timestamp}`);
   chunks.push(`- Endpoint: ${runConfig.endpoint}`);
   chunks.push(`- Model: ${runConfig.model}`);
+  chunks.push(`- Auth mode: ${normalizeAuthMode(runConfig.authMode)}`);
   chunks.push(`- Temperature: ${runConfig.temperature}`);
   chunks.push(`- Max tokens: ${runConfig.maxTokens}`);
   chunks.push(`- Cases: ${runConfig.entries.length}`);
@@ -2157,6 +2212,7 @@ async function runTitleFollowUp(fixture, mainText, requestConfig, config, prompt
     model: fixture.model,
     endpoint: fixture.endpoint,
     apiKey: fixture.apiKey,
+    authMode: fixture.authMode,
     temperature: fixture.temperature,
     maxTokens: fixture.maxTokens,
     timeoutSeconds: fixture.timeoutSeconds,
@@ -2196,6 +2252,7 @@ async function runTitleFollowUp(fixture, mainText, requestConfig, config, prompt
       titleEndpointUrl,
       titlePayload,
       titleConfig.apiKey,
+      titleConfig.authMode,
       Math.max(1000, titleConfig.timeoutSeconds * 1000),
     );
     result.titleStatus = String(response.statusCode || 0);
@@ -2255,6 +2312,7 @@ async function runOneFixture(fixture, config, promptData, options, runState) {
       endpointUrl,
       payload,
       requestConfig.apiKey,
+      requestConfig.authMode,
       Math.max(1000, requestConfig.timeoutSeconds * 1000)
     );
     resultEntry.status = String(response.statusCode || 0);
@@ -2327,6 +2385,7 @@ async function main() {
   if (args.endpoint) config.endpoint = args.endpoint;
   if (args.model) config.model = args.model;
   if (args.apiKey) config.apiKey = args.apiKey;
+  if (args.authMode) config.authMode = args.authMode;
   if (args.includeGroups) config.generated.includeGroups = args.includeGroups;
   if (args.includePersonas) config.generated.includePersonas = args.includePersonas;
   if (args.allVariants) config.generated.allVariants = true;
@@ -2383,6 +2442,7 @@ async function main() {
     timestamp,
     endpoint: toChatUrl(config.endpoint || DEFAULTS.endpoint),
     model: args.model || config.model || DEFAULTS.model,
+    authMode: args.authMode || config.authMode || DEFAULTS.authMode,
     temperature: args.temperature ?? config.temperature,
     maxTokens: args.maxTokens ?? config.maxTokens,
     entries: runEntries,
@@ -2401,6 +2461,7 @@ function loadConfig(configPath = DEFAULT_CONFIG_PATH) {
     ...userConfig,
   };
   config.generated = { ...DEFAULTS.generated, ...(config.generated || {}) };
+  config.authMode = normalizeAuthMode(config.authMode);
   return config;
 }
 

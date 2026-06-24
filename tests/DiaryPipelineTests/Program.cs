@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using PawnDiary;
 
 namespace DiaryPipelineTests
@@ -23,6 +24,9 @@ namespace DiaryPipelineTests
             TestDirectSpeechParser();
             TestGeneratedTextKeepsTrailingSpeech();
             TestPromptCaptureFormatting();
+            TestApiLaneSelector();
+            TestApiEndpointPolicy();
+            TestApiRequestAuth();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -254,6 +258,98 @@ namespace DiaryPipelineTests
 
             string blankSystem = DiaryPromptCapture.Format(null, "user only");
             AssertEqual("prompt capture null system", "SYSTEM PROMPT\n\nUSER PROMPT\nuser only", blankSystem);
+        }
+
+        private static void TestApiLaneSelector()
+        {
+            AssertEqual("balanced first", 0,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.Balanced, 0, Ready(true, true, true)));
+            AssertEqual("balanced second", 1,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.Balanced, 1, Ready(true, true, true)));
+            AssertEqual("balanced wraps", 0,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.Balanced, 3, Ready(true, true, true)));
+            AssertEqual("balanced skips cooling", 2,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.Balanced, 1, Ready(false, true, true)));
+
+            AssertEqual("prefer top row share 1", 0,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.PreferTopRows, 0, Ready(true, true, true)));
+            AssertEqual("prefer top row share 2", 0,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.PreferTopRows, 1, Ready(true, true, true)));
+            AssertEqual("prefer top row share 3", 0,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.PreferTopRows, 2, Ready(true, true, true)));
+            AssertEqual("prefer second row share", 1,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.PreferTopRows, 3, Ready(true, true, true)));
+            AssertEqual("prefer last row share", 2,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.PreferTopRows, 5, Ready(true, true, true)));
+            AssertEqual("prefer skips cooling top", 1,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.PreferTopRows, 0, Ready(false, true, true)));
+
+            AssertEqual("failover only first ready", 1,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.FailoverOnly, 10, Ready(false, true, true)));
+            AssertEqual("all cooling falls back to first", 0,
+                ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.FailoverOnly, 10, Ready(false, false, false)));
+        }
+
+        private static void TestApiEndpointPolicy()
+        {
+            AssertEqual("normalize bearer auth", ApiAuthMode.BearerToken,
+                ApiEndpointPolicy.NormalizeAuthMode(ApiAuthMode.BearerToken));
+            AssertEqual("normalize query auth", ApiAuthMode.QueryParameterKey,
+                ApiEndpointPolicy.NormalizeAuthMode(ApiAuthMode.QueryParameterKey));
+            AssertEqual("normalize invalid auth", ApiAuthMode.BearerToken,
+                ApiEndpointPolicy.NormalizeAuthMode((ApiAuthMode)999));
+
+            AssertEqual("cooldown zero is first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(0));
+            AssertEqual("cooldown first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(1));
+            AssertEqual("cooldown second failure", 20, ApiEndpointPolicy.CooldownSecondsForFailures(2));
+            AssertEqual("cooldown third failure", 40, ApiEndpointPolicy.CooldownSecondsForFailures(3));
+            AssertEqual("cooldown fifth failure", 160, ApiEndpointPolicy.CooldownSecondsForFailures(5));
+            AssertEqual("cooldown caps", 300, ApiEndpointPolicy.CooldownSecondsForFailures(6));
+            AssertEqual("cooldown remains capped", 300, ApiEndpointPolicy.CooldownSecondsForFailures(20));
+        }
+
+        private static void TestApiRequestAuth()
+        {
+            AssertEqual("query auth appends key",
+                "https://example.test/v1/chat/completions?existing=1&key=a%20b",
+                ApiRequestAuth.ApplyQueryAuth(
+                    "https://example.test/v1/chat/completions?existing=1",
+                    "a b",
+                    ApiAuthMode.QueryParameterKey));
+            AssertEqual("query auth unchanged without key",
+                "https://example.test/v1/chat/completions",
+                ApiRequestAuth.ApplyQueryAuth(
+                    "https://example.test/v1/chat/completions",
+                    "",
+                    ApiAuthMode.QueryParameterKey));
+
+            using (HttpRequestMessage bearer = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
+            {
+                ApiRequestAuth.ApplyHeaders(bearer, "secret", ApiAuthMode.BearerToken);
+                AssertEqual("bearer scheme", "Bearer", bearer.Headers.Authorization.Scheme);
+                AssertEqual("bearer parameter", "secret", bearer.Headers.Authorization.Parameter);
+            }
+
+            using (HttpRequestMessage apiKey = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
+            {
+                ApiRequestAuth.ApplyHeaders(apiKey, "secret", ApiAuthMode.ApiKeyHeader);
+                AssertHeader("api-key header", apiKey, "api-key", "secret");
+                AssertTrue("api-key has no bearer", apiKey.Headers.Authorization == null);
+            }
+
+            using (HttpRequestMessage xApiKey = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
+            {
+                ApiRequestAuth.ApplyHeaders(xApiKey, "secret", ApiAuthMode.XApiKeyHeader);
+                AssertHeader("x-api-key header", xApiKey, "x-api-key", "secret");
+            }
+
+            using (HttpRequestMessage none = new HttpRequestMessage(HttpMethod.Post, "https://example.test"))
+            {
+                ApiRequestAuth.ApplyHeaders(none, "secret", ApiAuthMode.None);
+                AssertTrue("none has no bearer", none.Headers.Authorization == null);
+                IEnumerable<string> values;
+                AssertTrue("none has no api-key", !none.Headers.TryGetValues("api-key", out values));
+            }
         }
 
         private static void TestDomainClassifier()
@@ -583,6 +679,41 @@ namespace DiaryPipelineTests
         private static DiaryPromptFieldPolicy Field(string label, string source)
         {
             return new DiaryPromptFieldPolicy { label = label, source = source, enabled = true };
+        }
+
+        private static List<bool> Ready(params bool[] values)
+        {
+            return new List<bool>(values);
+        }
+
+        private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)
+        {
+            IEnumerable<string> values;
+            if (!request.Headers.TryGetValues(headerName, out values))
+            {
+                throw new InvalidOperationException(name + " failed.\nMissing header: " + headerName);
+            }
+
+            foreach (string value in values)
+            {
+                assertions++;
+                if (string.Equals(value, expected, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            throw new InvalidOperationException(name + " failed.\nExpected header value: [" + expected + "]");
+        }
+
+        private static void AssertEqual(string name, ApiAuthMode expected, ApiAuthMode actual)
+        {
+            assertions++;
+            if (expected != actual)
+            {
+                throw new InvalidOperationException(
+                    name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");
+            }
         }
 
         private static void AssertEqual(string name, string expected, string actual)

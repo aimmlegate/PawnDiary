@@ -45,6 +45,9 @@ namespace PawnDiary
         /// <summary>Bearer token for API authentication; may be empty for local endpoints.</summary>
         public string apiKey;
 
+        /// <summary>How to send <see cref="apiKey"/> for this lane.</summary>
+        public ApiAuthMode authMode;
+
         /// <summary>Request/response compatibility mode for this lane.</summary>
         public ApiCompatibilityMode apiMode;
 
@@ -129,6 +132,9 @@ namespace PawnDiary
         /// Transient only: used for same-session follow-up pinning, never saved or logged.</summary>
         public string apiKey;
 
+        /// <summary>Auth style of the lane that actually produced the text.</summary>
+        public ApiAuthMode authMode;
+
         /// <summary>Mirror of <see cref="LlmGenerationRequest.isTitleRequest"/>. The dispatcher
         /// branches on this to route the result to the title handler instead of the main-entry
         /// handler. Defaults to false so existing main-entry results behave exactly as before.</summary>
@@ -191,7 +197,12 @@ namespace PawnDiary
         // that serves one request at a time). Gates are created lazily and rebuilt when the limit changes.
         private static ConcurrentDictionary<string, SemaphoreSlim> sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
 
-        // Rotates over the configured API lanes so successive requests spread across them.
+        // Runtime-only transient-failure backoff per lane. Protected by a simple lock because the
+        // main thread reads it for routing while background HTTP workers update it after failures.
+        private static readonly object laneCooldownLock = new object();
+        private static readonly Dictionary<string, LaneCooldownState> laneCooldowns = new Dictionary<string, LaneCooldownState>();
+
+        // Advances deterministic lane selection for balanced and preference-weighted routing.
         // Incremented atomically because requests may be enqueued from different threads.
         private static int roundRobinCounter = -1;
 
@@ -227,6 +238,10 @@ namespace PawnDiary
             CancellationTokenSource oldCancellation = sessionCancellation;
             sessionCancellation = new CancellationTokenSource();
             sendGates = new ConcurrentDictionary<string, SemaphoreSlim>(); // fresh per-lane gates at the current limit
+            lock (laneCooldownLock)
+            {
+                laneCooldowns.Clear();
+            }
             Interlocked.Increment(ref currentSessionId); // bump so stale results are ignored
             ClearCompleted();
             oldCancellation.Cancel(); // abort all in-flight requests from previous session
@@ -296,6 +311,7 @@ namespace PawnDiary
                     endpointUrl = endpoint.url,
                     modelName = endpoint.model,
                     apiKey = endpoint.apiKey,
+                    authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode),
                     apiMode = endpoint.apiMode,
                     reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
                     ollamaThink = endpoint.ollamaThink,
@@ -319,15 +335,41 @@ namespace PawnDiary
             return Interlocked.Increment(ref roundRobinCounter) & int.MaxValue;
         }
 
+        /// <summary>Returns true while a lane is temporarily skipped after transient failures.</summary>
+        public static bool IsLaneCooling(ApiEndpointConfig lane)
+        {
+            if (lane == null)
+            {
+                return false;
+            }
+
+            return IsLaneCooling(LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.apiKey));
+        }
+
         /// <summary>
-        /// Builds the gate key identifying an API lane: its endpoint plus model. Requests
-        /// sharing both share a lane (and therefore its in-flight cap).
+        /// Builds the gate key identifying an API lane. Requests sharing endpoint, model, mode, auth
+        /// style, and key share a lane (and therefore its in-flight cap and cooldown state).
         /// </summary>
         private static string GateKey(LlmGenerationRequest request)
         {
-            string endpoint = (request.endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
-            string model = (request.modelName ?? string.Empty).Trim();
-            return request.apiMode + "\n" + endpoint + "\n" + model;
+            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.apiKey);
+        }
+
+        private static string LaneKey(LlmGenerationRequest request)
+        {
+            if (request == null)
+            {
+                return string.Empty;
+            }
+
+            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.apiKey);
+        }
+
+        private static string LaneKey(string endpointUrl, string modelName, ApiCompatibilityMode apiMode, ApiAuthMode authMode, string apiKey)
+        {
+            string endpoint = EndpointUtility.NormalizeBaseEndpoint(endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
+            string model = (modelName ?? string.Empty).Trim();
+            return apiMode + "\n" + endpoint + "\n" + model + "\n" + PawnDiarySettings.NormalizeAuthMode(authMode) + "\n" + NormalizeApiKey(apiKey);
         }
 
         /// <summary>
@@ -352,6 +394,96 @@ namespace PawnDiary
             }
 
             return requested > MaxConcurrencyCap ? MaxConcurrencyCap : requested;
+        }
+
+        private static bool IsLaneCooling(string laneKey)
+        {
+            if (string.IsNullOrEmpty(laneKey))
+            {
+                return false;
+            }
+
+            lock (laneCooldownLock)
+            {
+                LaneCooldownState state;
+                return laneCooldowns.TryGetValue(laneKey, out state)
+                    && state != null
+                    && state.cooldownUntilUtc > DateTime.UtcNow;
+            }
+        }
+
+        private static bool HasReadyLane(List<ApiEndpointConfig> lanes)
+        {
+            if (lanes == null || lanes.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (ApiEndpointConfig lane in lanes)
+            {
+                if (lane != null && !IsLaneCooling(lane))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void MarkLaneCooldown(LlmGenerationRequest request, string error)
+        {
+            string key = LaneKey(request);
+            if (string.IsNullOrEmpty(key))
+            {
+                return;
+            }
+
+            int failureCount;
+            int cooldownSeconds;
+            lock (laneCooldownLock)
+            {
+                LaneCooldownState state;
+                if (!laneCooldowns.TryGetValue(key, out state) || state == null)
+                {
+                    state = new LaneCooldownState();
+                    laneCooldowns[key] = state;
+                }
+
+                state.failureCount++;
+                failureCount = state.failureCount;
+                cooldownSeconds = ApiEndpointPolicy.CooldownSecondsForFailures(failureCount);
+                state.cooldownUntilUtc = DateTime.UtcNow.AddSeconds(cooldownSeconds);
+            }
+
+            LogDebug(
+                "Cooling lane after transient failure for "
+                + cooldownSeconds
+                + "s failures="
+                + failureCount
+                + " lane="
+                + LaneLabel(request)
+                + " error="
+                + TrimForLog(error));
+        }
+
+        private static void ClearLaneCooldown(LlmGenerationRequest request)
+        {
+            string key = LaneKey(request);
+            if (string.IsNullOrEmpty(key))
+            {
+                return;
+            }
+
+            bool cleared;
+            lock (laneCooldownLock)
+            {
+                cleared = laneCooldowns.Remove(key);
+            }
+
+            if (cleared)
+            {
+                LogDebug("Cleared lane cooldown after success lane=" + LaneLabel(request));
+            }
         }
 
         /// <summary>
@@ -430,7 +562,15 @@ namespace PawnDiary
             public string Text;
             public string RawText;
             public string Error;
+            public bool TransientFailure;
             public bool Cancelled; // session ended mid-flight — abort entirely, no failover
+        }
+
+        /// <summary>Runtime failure count and backoff deadline for one API lane.</summary>
+        private sealed class LaneCooldownState
+        {
+            public int failureCount;
+            public DateTime cooldownUntilUtc;
         }
 
         /// <summary>
@@ -467,8 +607,15 @@ namespace PawnDiary
                     // Point the request at this lane so the gate key, HTTP call, and reported
                     // result all reflect the model we are about to try.
                     ApiEndpointConfig target = targets[t];
+                    if (HasReadyLane(targets) && IsLaneCooling(target))
+                    {
+                        LogDebug("Skipped cooling lane event=" + request.eventId + " role=" + request.povRole + " lane=" + LaneLabel(target));
+                        continue;
+                    }
+
                     request.endpointUrl = target.url;
                     request.apiKey = target.apiKey;
+                    request.authMode = PawnDiarySettings.NormalizeAuthMode(target.authMode);
                     request.modelName = target.model;
                     request.apiMode = target.apiMode;
                     request.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(target.reasoningEffort);
@@ -509,27 +656,34 @@ namespace PawnDiary
                             return; // session cancelled mid-flight: drop quietly
                         }
 
-                            if (outcome.Success)
+                        if (outcome.Success)
+                        {
+                            ClearLaneCooldown(request);
+                            LogDebug("Lane succeeded event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
+                            Completed.Enqueue(new LlmGenerationResult
                             {
-                                LogDebug("Lane succeeded event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel);
-                                Completed.Enqueue(new LlmGenerationResult
-                                {
                                     eventId = request.eventId,
                                     povRole = request.povRole,
                                     sessionId = request.sessionId,
                                     success = true,
                                     generatedText = outcome.Text,
                                     rawResponse = outcome.RawText,
-                                    endpointUrl = request.endpointUrl,
-                                    modelName = request.modelName,
-                                    apiMode = request.apiMode,
-                                    apiKey = request.apiKey,
-                                    isTitleRequest = request.isTitleRequest
-                                });
-                                return;
+                                endpointUrl = request.endpointUrl,
+                                modelName = request.modelName,
+                                apiMode = request.apiMode,
+                                apiKey = request.apiKey,
+                                authMode = request.authMode,
+                                isTitleRequest = request.isTitleRequest
+                            });
+                            return;
                         }
 
                         lastError = outcome.Error; // this lane failed — fall through to the next one
+                        if (outcome.TransientFailure)
+                        {
+                            MarkLaneCooldown(request, outcome.Error);
+                        }
+
                         LogDebug("Lane failed event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel + " error=" + TrimForLog(outcome.Error));
                     }
                     finally
@@ -645,6 +799,7 @@ namespace PawnDiary
                 return new LaneResult
                 {
                     Success = false,
+                    TransientFailure = true,
                     Error = deadline.IsCancellationRequested
                         ? "Timed out waiting for the model."
                         : (lastError ?? "Unknown network error.")
@@ -663,6 +818,7 @@ namespace PawnDiary
             {
                 new ApiEndpointConfig(request.endpointUrl, request.apiKey, request.modelName)
                 {
+                    authMode = PawnDiarySettings.NormalizeAuthMode(request.authMode),
                     apiMode = request.apiMode,
                     reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort),
                     ollamaThink = request.ollamaThink
@@ -710,12 +866,13 @@ namespace PawnDiary
         /// </summary>
         private static async Task<SendResponse> SendOnce(LlmGenerationRequest request, CancellationToken cancellationToken)
         {
-            using (HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, EndpointUtility.BuildGenerationUrl(request.endpointUrl, request.apiMode)))
+            string requestUrl = ApiRequestAuth.ApplyQueryAuth(
+                EndpointUtility.BuildGenerationUrl(request.endpointUrl, request.apiMode),
+                request.apiKey,
+                request.authMode);
+            using (HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, requestUrl))
             {
-                if (!string.IsNullOrWhiteSpace(request.apiKey))
-                {
-                    message.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", request.apiKey.Trim());
-                }
+                ApiRequestAuth.ApplyHeaders(message, request.apiKey, request.authMode);
 
                 message.Content = new StringContent(BuildRequestJson(request), Encoding.UTF8, "application/json");
                 using (HttpResponseMessage response = await Client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
@@ -946,6 +1103,7 @@ namespace PawnDiary
             return string.Equals(EndpointUtility.NormalizeBaseEndpoint(left.url), EndpointUtility.NormalizeBaseEndpoint(right.url), StringComparison.OrdinalIgnoreCase)
                 && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
                 && left.apiMode == right.apiMode
+                && PawnDiarySettings.NormalizeAuthMode(left.authMode) == PawnDiarySettings.NormalizeAuthMode(right.authMode)
                 && string.Equals(NormalizeApiKey(left.apiKey), NormalizeApiKey(right.apiKey), StringComparison.Ordinal);
         }
 

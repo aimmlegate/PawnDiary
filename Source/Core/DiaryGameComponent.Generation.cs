@@ -489,7 +489,7 @@ namespace PawnDiary
             }
 
             string selectionReason;
-            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride, out selectionReason);
+            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride, PawnDiaryMod.Settings.apiRoutingMode, out selectionReason);
             List<ApiEndpointConfig> failoverTargets = BuildFailoverTargets(targets, target);
             LogApiDebug(
                 "Queue event=" + diaryEvent.eventId
@@ -525,6 +525,7 @@ namespace PawnDiary
                 endpointUrl = target.url,
                 modelName = target.model,
                 apiKey = target.apiKey,
+                authMode = target.authMode,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
                 ollamaThink = target.ollamaThink,
@@ -546,15 +547,20 @@ namespace PawnDiary
         /// Chooses the primary API lane for a request from the given active lanes (non-empty).
         /// The recipient of a paired event reuses the lane the initiator used — matched
         /// by the endpoint+model recorded on the event — so the sequential pair shares one model.
-        /// Everything else takes the next lane in round-robin order to spread load across APIs.
+        /// Everything else uses the saved routing mode to spread or prioritize load across APIs.
         /// </summary>
-        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets, ApiEndpointConfig primaryOverride, out string reason)
+        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets, ApiEndpointConfig primaryOverride, ApiLaneRoutingMode routingMode, out string reason)
         {
             ApiEndpointConfig overrideTarget = FindMatchingActiveLane(targets, primaryOverride);
             if (overrideTarget != null)
             {
-                reason = "pinned to successful prior lane";
-                return overrideTarget;
+                if (CanUsePinnedLane(targets, overrideTarget))
+                {
+                    reason = "pinned to successful prior lane";
+                    return overrideTarget;
+                }
+
+                LogApiDebug("Pinned lane is cooling; using routing mode instead lane=" + LaneLabel(overrideTarget));
             }
 
             // Sequential pinning: keep the recipient on the initiator's lane when paired mode ran
@@ -571,8 +577,14 @@ namespace PawnDiary
                         if (string.Equals(EndpointUtility.BuildGenerationUrl(candidate.url, candidate.apiMode), initiatorEndpoint, StringComparison.OrdinalIgnoreCase)
                             && string.Equals(candidate.model, initiatorModel, StringComparison.Ordinal))
                         {
-                            reason = "recipient pinned to initiator lane";
-                            return candidate;
+                            if (CanUsePinnedLane(targets, candidate))
+                            {
+                                reason = "recipient pinned to initiator lane";
+                                return candidate;
+                            }
+
+                            LogApiDebug("Recipient pin lane is cooling; using routing mode instead event=" + diaryEvent.eventId + " lane=" + LaneLabel(candidate));
+                            break;
                         }
                     }
 
@@ -583,9 +595,49 @@ namespace PawnDiary
                 }
             }
 
-            int index = LlmClient.NextRoundRobinIndex() % targets.Count;
-            reason = "round-robin index " + index + " of " + targets.Count;
+            int counter = LlmClient.NextRoundRobinIndex();
+            int index = ApiLaneSelector.SelectPrimaryIndex(targets.Count, routingMode, counter, LaneReadiness(targets));
+            reason = "routing " + ApiLaneSelector.Normalize(routingMode) + " selected index " + index + " of " + targets.Count;
             return targets[index];
+        }
+
+        private static bool CanUsePinnedLane(List<ApiEndpointConfig> targets, ApiEndpointConfig lane)
+        {
+            return lane != null && (!LlmClient.IsLaneCooling(lane) || !HasReadyLane(targets));
+        }
+
+        private static bool HasReadyLane(List<ApiEndpointConfig> targets)
+        {
+            if (targets == null)
+            {
+                return false;
+            }
+
+            foreach (ApiEndpointConfig target in targets)
+            {
+                if (target != null && !LlmClient.IsLaneCooling(target))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<bool> LaneReadiness(List<ApiEndpointConfig> targets)
+        {
+            List<bool> ready = new List<bool>();
+            if (targets == null)
+            {
+                return ready;
+            }
+
+            foreach (ApiEndpointConfig target in targets)
+            {
+                ready.Add(target != null && !LlmClient.IsLaneCooling(target));
+            }
+
+            return ready;
         }
 
         private static ApiEndpointConfig FindMatchingActiveLane(List<ApiEndpointConfig> targets, ApiEndpointConfig requested)
@@ -618,6 +670,7 @@ namespace PawnDiary
                 && left.apiMode == right.apiMode;
 
             return sameLane
+                && (!includeApiKey || PawnDiarySettings.NormalizeAuthMode(left.authMode) == PawnDiarySettings.NormalizeAuthMode(right.authMode))
                 && (!includeApiKey || string.Equals(NormalizeApiKey(left.apiKey), NormalizeApiKey(right.apiKey), StringComparison.Ordinal));
         }
 
@@ -788,6 +841,7 @@ namespace PawnDiary
 
             return new ApiEndpointConfig(result.endpointUrl, result.apiKey, result.modelName)
             {
+                authMode = result.authMode,
                 apiMode = result.apiMode
             };
         }
@@ -883,6 +937,11 @@ namespace PawnDiary
             }
 
             ApiEndpointConfig target = FindMatchingActiveLane(targets, primaryOverride);
+            if (target != null && !CanUsePinnedLane(targets, target))
+            {
+                target = null;
+            }
+
             if (target == null)
             {
                 // Pin the title to the same lane the main entry used, when available — keeps a
@@ -897,7 +956,10 @@ namespace PawnDiary
                         if (string.Equals(EndpointUtility.BuildGenerationUrl(candidate.url, candidate.apiMode), mainEndpoint, StringComparison.OrdinalIgnoreCase)
                             && string.Equals(candidate.model, mainModel, StringComparison.Ordinal))
                         {
-                            target = candidate;
+                            if (CanUsePinnedLane(targets, candidate))
+                            {
+                                target = candidate;
+                            }
                             break;
                         }
                     }
@@ -905,7 +967,11 @@ namespace PawnDiary
 
                 if (target == null)
                 {
-                    int index = LlmClient.NextRoundRobinIndex() % targets.Count;
+                    int index = ApiLaneSelector.SelectPrimaryIndex(
+                        targets.Count,
+                        settings.apiRoutingMode,
+                        LlmClient.NextRoundRobinIndex(),
+                        LaneReadiness(targets));
                     target = targets[index];
                 }
             }
@@ -934,6 +1000,7 @@ namespace PawnDiary
                 endpointUrl = target.url,
                 modelName = target.model,
                 apiKey = target.apiKey,
+                authMode = target.authMode,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
                 ollamaThink = target.ollamaThink,

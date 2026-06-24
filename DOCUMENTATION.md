@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-23 (diary command entry point)_
+_Last updated: 2026-06-24 (API lane routing and cooldowns)_
 
 ---
 
@@ -265,20 +265,26 @@ successful lane when possible.
 
 ## 8. Settings And UI
 
-Core settings include API lanes, request tuning (timeout, max concurrency, max tokens, and
-temperature), title generation, atmospheric formatting, prompt enchantments, work/social generation
-weights, system prompt overrides, per-event prompt/enhancement overrides, XML-backed event filters,
-and persona presets. RimWorld dev mode also reveals prompt test mode in mod settings: real gameplay
-events still assemble their system and user prompts, but the generation queue marks the POV as
-prompt-only and never calls the LLM client. Those prompt-only cards are shown in the Diary tab while
-dev mode is on so prompt formatting can be checked from live events without producing generated
-diary text.
+Core settings include API lanes, lane routing mode, request tuning (timeout, max concurrency, max
+tokens, and temperature), title generation, atmospheric formatting, prompt enchantments,
+work/social generation weights, system prompt overrides, per-event prompt/enhancement overrides,
+XML-backed event filters, and persona presets. RimWorld dev mode also reveals prompt test mode in
+mod settings: real gameplay events still assemble their system and user prompts, but the generation
+queue marks the POV as prompt-only and never calls the LLM client. Those prompt-only cards are shown
+in the Diary tab while dev mode is on so prompt formatting can be checked from live events without
+producing generated diary text.
 
 API lanes support OpenAI-compatible Chat Completions, OpenAI Responses, and native Ollama Chat,
-including model fetch/pick, per-row connection tests, Responses reasoning effort, Ollama thinking
-output, and the shared request-tuning block shown inside the expanded connection section. Endpoint
-URLs normalize on load/save, not every settings draw, so users can edit or clear the active text
-field without it being rewritten mid-typing. Logs strip query strings.
+including model fetch/pick, per-row connection tests, per-row auth style (Bearer, no auth,
+`api-key`, `x-api-key`, or `key=` query), Responses reasoning effort, Ollama thinking output, and
+the shared request-tuning block shown inside the expanded connection section. Endpoint URLs
+normalize on load/save, not every settings draw, so users can edit or clear the active text field
+without it being rewritten mid-typing. Logs strip query strings.
+
+API row order is editable with Up/Down buttons. The global routing mode controls how strongly that
+order affects primary selection: **Balanced** spreads primary requests equally across enabled rows,
+**Prefer top rows** gives earlier rows more primary turns, and **Failover only** always starts with
+the first ready row. Row order also remains the failover order in every mode.
 
 Prompt Studio is a collapsible settings section. Its selector contains both shared system prompts
 and `DiaryEventPromptDef` event prompt types, and the selected prompt's editor appears in the same
@@ -331,15 +337,19 @@ pawns use XML-backed status colors, and ambiguous or uncolored matches fall back
 
 ## 9. LLM Reliability
 
-Each enabled endpoint/model/mode row is an API lane. New requests round-robin across lanes. Recipient
-follow-ups and title requests pin to the prior successful lane when possible. Per-lane semaphores
-enforce concurrency, and `ServicePointManager.DefaultConnectionLimit` is raised for Mono.
+Each enabled endpoint/model/mode/auth row is an API lane. New requests choose a primary lane by the
+saved routing mode. Recipient follow-ups and title requests pin to the prior successful lane when
+possible unless that lane is cooling and another lane is ready. Per-lane semaphores enforce
+concurrency, and `ServicePointManager.DefaultConnectionLimit` is raised for Mono.
 
 `LlmClient` builds mode-specific URLs/payloads, retries transient errors up to three times per lane,
-and surfaces timeout/permanent/empty/incomplete responses as failure text. Generation and model-list
-HTTP bodies are streamed with hard byte caps before JSON parsing/logging, so a bad endpoint cannot
-force an unbounded response string allocation. Successful responses are trimmed locally to
-`maxTokens`, preferring complete sentences for diary/note text.
+and surfaces timeout/permanent/empty/incomplete responses as failure text. Transient lane failures
+and timeouts apply an automatic runtime cooldown that grows 10s, 20s, 40s, 80s, 160s, then caps at
+300s; any success clears that lane's cooldown. Cooling lanes are skipped for primary selection and
+failover while another lane is ready, but can still be tried when every lane is cooling. Generation
+and model-list HTTP bodies are streamed with hard byte caps before JSON parsing/logging, so a bad
+endpoint cannot force an unbounded response string allocation. Successful responses are trimmed
+locally to `maxTokens`, preferring complete sentences for diary/note text.
 
 `LlmResponseParser` extracts typed visible output before fallback fields, falls back from blank
 Ollama content to root `response`, and strips structured or transcript-style reasoning/thinking
