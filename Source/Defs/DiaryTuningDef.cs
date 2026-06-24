@@ -69,6 +69,17 @@ namespace PawnDiary
         // The same ritual outcome is only recorded once within this window. Guards against a fluke
         // double-call while still allowing separate rituals of the same type later.
         public int ritualDedupTicks = 2500;
+        // The same ability activation is only recorded once within this window. The key also includes
+        // the current tick, so this is mostly a defensive guard against paired Activate overloads.
+        public int abilityDedupTicks = 300;
+
+        // ---- Ability-use sampling ----
+        // Successful ability activations are sampled by cooldown. A no/short-cooldown ability uses
+        // abilityUseMinChance; longer cooldowns approach abilityUseMaxChance. The reference value is
+        // the cooldown where the curve reaches roughly halfway between min and max.
+        public float abilityUseMinChance = 0.03f;
+        public float abilityUseMaxChance = 0.75f;
+        public int abilityUseReferenceCooldownTicks = 60000;
 
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things

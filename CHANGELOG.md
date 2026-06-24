@@ -6,6 +6,10 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Pawn ability-use events added.** Successful `Ability.Activate` calls now create cooldown-weighted
+  solo diary candidates for the caster. Faster-cooldown abilities get lower capture odds, while
+  rare long-cooldown abilities are more likely to be kept; prompts receive ability name, category,
+  target, and cooldown fields.
 - **Anomaly psychic ritual events added.** Successful `PsychicRitualGraph.End` completions now
   generate solo entries for invoker, target, participants, and spectators without sending ritual
   role/title fields. The new Ritual-domain XML group uses the dark color cue, and invoker prompts

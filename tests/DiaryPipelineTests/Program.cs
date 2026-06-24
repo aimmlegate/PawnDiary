@@ -390,6 +390,8 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("ritual=Ritual_Speech; ritual_title=Leader's address; ritual_role=author"));
             AssertEqual("psychic ritual marker domain", "Ritual",
                 DiaryEventDomainClassifier.DomainForContext("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
+            AssertEqual("ability marker domain", "Ability",
+                DiaryEventDomainClassifier.DomainForContext("ability=Stun; ability_label=stun; ability_category=Psycast"));
             AssertEqual("ritual classifier includes behavior when present",
                 "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -408,6 +410,12 @@ namespace DiaryPipelineTests
                     "Ritual",
                     "psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker",
                     "VoidProvocation"));
+            AssertEqual("ability classifier includes category when present",
+                "Stun;Psycast",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Ability",
+                    "ability=Stun; ability_label=stun; ability_category=Psycast",
+                    "Stun"));
             AssertEqual("raid classifier keeps incident defName",
                 "RaidEnemy",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -424,6 +432,8 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ritual=Ritual_Speech; ritual_title=Leader's address"));
             AssertTrue("psychic ritual marker is not interaction prompt",
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
+            AssertTrue("ability marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ability=Stun; ability_label=stun"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
         }

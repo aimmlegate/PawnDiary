@@ -182,4 +182,19 @@
   <ritualFinished.tone>with ceremonial weight and personal consequence</ritualFinished.tone>
   <ritualFinished.tones.0>ceremonial and embodied, attention fixed on role, title, and consequence</ritualFinished.tones.0>
   <ritualFinished.tones.1>formal but personal, the ritual&apos;s public meaning pressing into private thought</ritualFinished.tones.1>
+  <abilityPsycast.label>Psycasts</abilityPsycast.label>
+  <abilityPsycast.instruction>a psychic ability used—write the moment as focus, willpower, psychic pressure, and visible consequence without inventing extra effects</abilityPsycast.instruction>
+  <abilityPsycast.tone>with psychic focus and charged restraint</abilityPsycast.tone>
+  <abilityPsycast.tones.0>controlled and psychic, focused on effort, pressure, and the ability&apos;s visible result</abilityPsycast.tones.0>
+  <abilityPsycast.tones.1>hushed and forceful, with the mind doing work the body can barely explain</abilityPsycast.tones.1>
+  <abilityHostile.label>Combat abilities</abilityHostile.label>
+  <abilityHostile.instruction>a hostile ability used in danger—write the activation as a tactical action under pressure, grounded in the supplied ability and target</abilityHostile.instruction>
+  <abilityHostile.tone>with tactical pressure and sudden force</abilityHostile.tone>
+  <abilityHostile.tones.0>urgent and tactical, centered on the decision to use the power now</abilityHostile.tones.0>
+  <abilityHostile.tones.1>sharp and violent, but only as far as the supplied ability facts support</abilityHostile.tones.1>
+  <abilityUsed.label>Abilities</abilityUsed.label>
+  <abilityUsed.instruction>a pawn used an ability—write the decision, effort, target if supplied, and immediate consequence without adding mechanics or outcomes that were not given</abilityUsed.instruction>
+  <abilityUsed.tone>with focused exertion and practical consequence</abilityUsed.tone>
+  <abilityUsed.tones.0>focused and concrete, about the moment of use rather than a broad summary</abilityUsed.tones.0>
+  <abilityUsed.tones.1>practical and sensory, grounded in the named ability, target, and cooldown rarity</abilityUsed.tones.1>
 </LanguageData>

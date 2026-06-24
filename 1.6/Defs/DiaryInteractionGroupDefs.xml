@@ -1552,4 +1552,61 @@
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- ===== Ability domain: successful pawn Ability.Activate hook ===== -->
+  <!-- Fast-cooldown abilities are sampled at lower odds by C# tuning; these groups only choose
+       prompt flavor once a successful activation wins the weighted roll. -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>abilityPsycast</defName>
+    <label>Psycasts</label>
+    <order>790</order>
+    <domain>Ability</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a psychic ability used—write the moment as focus, willpower, psychic pressure, and visible consequence without inventing extra effects</instruction>
+    <tone>with psychic focus and charged restraint</tone>
+    <tones>
+      <li>controlled and psychic, focused on effort, pressure, and the ability's visible result</li>
+      <li>hushed and forceful, with the mind doing work the body can barely explain</li>
+    </tones>
+    <matchTokens>
+      <li>Psycast</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>abilityHostile</defName>
+    <label>Combat abilities</label>
+    <order>792</order>
+    <domain>Ability</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <instruction>a hostile ability used in danger—write the activation as a tactical action under pressure, grounded in the supplied ability and target</instruction>
+    <tone>with tactical pressure and sudden force</tone>
+    <tones>
+      <li>urgent and tactical, centered on the decision to use the power now</li>
+      <li>sharp and violent, but only as far as the supplied ability facts support</li>
+    </tones>
+    <matchTokens>
+      <li>Hostile</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>abilityUsed</defName>
+    <label>Abilities</label>
+    <order>799</order>
+    <domain>Ability</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a pawn used an ability—write the decision, effort, target if supplied, and immediate consequence without adding mechanics or outcomes that were not given</instruction>
+    <tone>with focused exertion and practical consequence</tone>
+    <tones>
+      <li>focused and concrete, about the moment of use rather than a broad summary</li>
+      <li>practical and sensory, grounded in the named ability, target, and cooldown rarity</li>
+    </tones>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
 </Defs>

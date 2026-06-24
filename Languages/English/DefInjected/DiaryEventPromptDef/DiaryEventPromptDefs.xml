@@ -36,6 +36,9 @@
   <DiaryEventPrompt_Ritual.label>ritual</DiaryEventPrompt_Ritual.label>
   <DiaryEventPrompt_Ritual.prompt>Write a finished Ideology ritual from the pawn&apos;s assigned place in it.</DiaryEventPrompt_Ritual.prompt>
   <DiaryEventPrompt_Ritual.enhancement>Use the supplied ritual role, ritual title, behavior, and pawn status fields. Keep the entry grounded in what completion would feel like from that role; do not invent ritual effects beyond the supplied outcome.</DiaryEventPrompt_Ritual.enhancement>
+  <DiaryEventPrompt_Ability.label>ability</DiaryEventPrompt_Ability.label>
+  <DiaryEventPrompt_Ability.prompt>Write a successful pawn ability use as a concrete moment of focus, risk, or exertion.</DiaryEventPrompt_Ability.prompt>
+  <DiaryEventPrompt_Ability.enhancement>Use the supplied ability name, category, target, and cooldown facts. Treat short-cooldown abilities as quick minor moments and long-cooldown abilities as rarer, weightier choices; do not invent extra effects.</DiaryEventPrompt_Ability.enhancement>
   <DiaryEventPrompt_DayReflection.label>day reflection</DiaryEventPrompt_DayReflection.label>
   <DiaryEventPrompt_DayReflection.prompt>Write an end-of-day reflection that weighs the day as a whole.</DiaryEventPrompt_DayReflection.prompt>
   <DiaryEventPrompt_DayReflection.enhancement>Choose the supplied moments that still sting, glow, or weigh on the pawn tonight instead of listing every event.</DiaryEventPrompt_DayReflection.enhancement>

@@ -43,6 +43,9 @@ namespace PawnDiary.Capture
         // eligible organizer/target/participant/spectator gets a solo entry with role-specific
         // instruction and ritual role/title context.
         Ritual,
+        // Ability: successful pawn Ability.Activate calls. Short-cooldown abilities are sampled
+        // less often than long-cooldown abilities to avoid spam.
+        Ability,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.

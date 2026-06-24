@@ -47,22 +47,22 @@ available:
 
 | Template | Fields |
 |---|---|
-| `PairDefault` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `relationship`, `my last opener (not repeat)` |
-| `PairImportant` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `initiator diary (hidden context)` |
-| `PairCombat` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `weapon`, `initiator diary (hidden context)` |
-| `PairBatched` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
-| `SoloDefault` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
-| `SoloImportant` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `my last opener (not repeat)` |
-| `SoloInternalState` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
-| `SoloBatched` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
-| `SoloDayReflection` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `PairDefault` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `royal title`, `ideoligion role`, `important context`, `setting`, `relationship`, `my last opener (not repeat)` |
+| `PairImportant` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `initiator diary (hidden context)` |
+| `PairCombat` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `weapon`, `initiator diary (hidden context)` |
+| `PairBatched` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloDefault` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloImportant` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `my last opener (not repeat)` |
+| `SoloInternalState` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloBatched` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloDayReflection` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `ability`, `ability category`, `ability target`, `ability cooldown ticks`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
 | `DeathDescription` | `event`, `deceased`, `what happened`, `death facts`, `deceased pawn`, `setting` |
 | `ArrivalDescription` | `event`, `colonist`, `what happened`, `arrival facts`, `colonist pawn`, `setting` |
 | `Title` | `entry` |
 
-The ritual and DLC-status fields only render when the event context has real values. The placeholder
-values `none`, `n/a`, and `unknown` are omitted, so normal non-ritual prompts do not show empty
-ritual/status lines.
+The ritual, ability, and DLC-status fields only render when the event context has real values. The
+placeholder values `none`, `n/a`, and `unknown` are omitted, so normal prompts do not show empty
+ritual/ability/status lines.
 
 ## 3. Event Source Map
 
@@ -185,6 +185,18 @@ ritual/status lines.
 | Prompt evidence | Per-pawn ritual text, XML Ritual instruction/tone, role/title/status context, ritual behavior, surroundings, important context, and last opener. |
 | Dedup | One window per ritual defName + organizer + target + tick. |
 
+### Abilities
+
+| Item | Value |
+|---|---|
+| Source | Successful `Ability.Activate(LocalTargetInfo, LocalTargetInfo)` and `Ability.Activate(GlobalTargetInfo)` calls, through `AbilityEventData`. |
+| Recording rule | One solo entry for the caster if the pawn is diary-eligible, the XML Ability group is enabled, the dedup key is clear, and the cooldown-weighted roll succeeds. |
+| Weighting | `CooldownWeightedChance = min + (max-min) * cooldown/(cooldown+reference)`, using `abilityUseMinChance`, `abilityUseMaxChance`, and `abilityUseReferenceCooldownTicks` from `DiaryTuningDef.xml`. Faster cooldowns therefore have lower capture odds. |
+| Context | `ability=<AbilityDef>; ability_label=<label>; ability_category=<category\|unknown>; ability_cooldown_ticks=<ticks>; ability_record_chance=<chance>; ability_target=<target>` when a target label is available. |
+| Prompt | Usually `SoloImportant`; the shipped Ability groups are important. `abilityHostile` is combat-marked, though ability entries are solo so they still use solo templates. |
+| Prompt evidence | Per-pawn ability text, XML Ability instruction/tone, ability name/category/target/cooldown fields, surroundings, important context, and last opener. |
+| Dedup | One window per caster + ability + target + activation tick. |
+
 ### Thoughts
 
 | Item | Value |
@@ -269,4 +281,4 @@ ritual/status lines.
 | `ArrivalPawn` | Arriving colonist name from `arrival_pawn` or the event initiator. |
 | `ArrivalFacts` | Compact facts extracted from arrival context: source, scenario, prior faction, pawn kind, recruiter, creepjoiner, and arrival surroundings. |
 | `EntryText` | Generated diary entry text passed to the title prompt. |
-| `GameContext` | Direct lookup into `gameContext` by `contextKey`; not used by current shipped templates, but supported by the assembler. |
+| `GameContext` | Direct lookup into `gameContext` by `contextKey`; used by shipped ritual, ability, and DLC-status fields. |

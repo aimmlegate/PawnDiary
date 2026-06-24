@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   Prompt templates control the structured fields sent to the LLM for each event shape.
   `source` values are stable internal tokens; `label` is the model-facing field name.
@@ -31,6 +31,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -55,6 +59,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -80,6 +88,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>you</label><source>PawnSummary</source></li>
@@ -107,6 +119,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -128,6 +144,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -150,6 +170,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -171,6 +195,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -192,6 +220,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -215,6 +247,10 @@
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
+      <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
+      <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
+      <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>

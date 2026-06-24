@@ -103,6 +103,14 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Ability</defName>
+    <label>ability</label>
+    <eventType>Ability</eventType>
+    <prompt>Write a successful pawn ability use as a concrete moment of focus, risk, or exertion.</prompt>
+    <enhancement>Use the supplied ability name, category, target, and cooldown facts. Treat short-cooldown abilities as quick minor moments and long-cooldown abilities as rarer, weightier choices; do not invent extra effects.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_DayReflection</defName>
     <label>day reflection</label>
     <eventType>DayReflection</eventType>

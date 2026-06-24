@@ -46,6 +46,9 @@ namespace DiaryCapturePolicyTests
             TestRitualDecide();
             TestRitualBuildGameContextFormat();
             TestPsychicRitualBuildGameContextFormat();
+            TestAbilityDecide();
+            TestAbilityCooldownWeightedChance();
+            TestAbilityBuildGameContextFormat();
             TestArrivalDecide();
             TestArrivalBuildGameContextFormat();
             TestDeathDecide();
@@ -821,6 +824,55 @@ namespace DiaryCapturePolicyTests
                 RitualEventData.BuildPsychicGameContext("Chronophagy", "", "", ""));
         }
 
+        // ── Ability (successful Ability.Activate calls) ──
+
+        private static void TestAbilityDecide()
+        {
+            AssertEqual("ability null data drops", CaptureDecision.Drop,
+                AbilityEventData.Decide(null, Ctx()));
+            AssertEqual("ability null ctx drops", CaptureDecision.Drop,
+                AbilityEventData.Decide(Ability(), null));
+            AssertEqual("ability empty defName drops", CaptureDecision.Drop,
+                AbilityEventData.Decide(Ability(defName: ""), Ctx()));
+            AssertEqual("ability ineligible drops", CaptureDecision.Drop,
+                AbilityEventData.Decide(Ability(), Ctx(eligible: false)));
+            AssertEqual("ability user disabled drops", CaptureDecision.Drop,
+                AbilityEventData.Decide(Ability(), Ctx(user: false)));
+            AssertEqual("ability signal disabled drops", CaptureDecision.Drop,
+                AbilityEventData.Decide(Ability(), Ctx(signal: false)));
+            AssertEqual("ability roll above chance drops", CaptureDecision.Drop,
+                AbilityEventData.Decide(Ability(chance: 0.25f, roll: 0.251f), Ctx()));
+            AssertEqual("ability roll at chance records solo", CaptureDecision.GenerateSolo,
+                AbilityEventData.Decide(Ability(chance: 0.25f, roll: 0.25f), Ctx()));
+            AssertEqual("ability chance clamps high", CaptureDecision.GenerateSolo,
+                AbilityEventData.Decide(Ability(chance: 2f, roll: 1f), Ctx()));
+        }
+
+        private static void TestAbilityCooldownWeightedChance()
+        {
+            AssertNearlyEqual("zero cooldown uses min chance", 0.03f,
+                AbilityEventData.CooldownWeightedChance(0, 0.03f, 0.75f, 60000));
+            AssertNearlyEqual("reference cooldown is halfway through curve", 0.39f,
+                AbilityEventData.CooldownWeightedChance(60000, 0.03f, 0.75f, 60000));
+            AssertTrue("long cooldown has more weight than reference",
+                AbilityEventData.CooldownWeightedChance(240000, 0.03f, 0.75f, 60000)
+                > AbilityEventData.CooldownWeightedChance(60000, 0.03f, 0.75f, 60000));
+            AssertNearlyEqual("swapped min max are corrected", 0.39f,
+                AbilityEventData.CooldownWeightedChance(60000, 0.75f, 0.03f, 60000));
+            AssertNearlyEqual("negative cooldown is treated as zero", 0.03f,
+                AbilityEventData.CooldownWeightedChance(-10, 0.03f, 0.75f, 60000));
+        }
+
+        private static void TestAbilityBuildGameContextFormat()
+        {
+            AssertEqual("ability context full",
+                "ability=Stun; ability_label=stun; ability_category=Psycast; ability_cooldown_ticks=600; ability_record_chance=0.037; ability_target=Bob",
+                AbilityEventData.BuildGameContext("Stun", "stun", "Psycast", "Bob", 600, 0.0371f));
+            AssertEqual("ability context fallbacks",
+                "ability=JumpPack; ability_label=JumpPack; ability_category=unknown; ability_cooldown_ticks=0; ability_record_chance=1",
+                AbilityEventData.BuildGameContext("JumpPack", "", "", "", -20, 5f));
+        }
+
         // ── Arrival ──
 
         private static void TestArrivalDecide()
@@ -1109,6 +1161,12 @@ namespace DiaryCapturePolicyTests
             AssertEqual("catalog dispatches Ritual decision",
                 CaptureDecision.GenerateSolo,
                 ritualSpec.Decide(Ritual(), Ctx()));
+
+            DiaryEventSpec abilitySpec = DiaryEventCatalog.Get(DiaryEventType.Ability);
+            AssertTrue("catalog has Ability spec", abilitySpec is AbilityEventSpec);
+            AssertEqual("catalog dispatches Ability decision",
+                CaptureDecision.GenerateSolo,
+                abilitySpec.Decide(Ability(), Ctx()));
 
             DiaryEventSpec arrivalSpec = DiaryEventCatalog.Get(DiaryEventType.Arrival);
             AssertTrue("catalog has Arrival spec", arrivalSpec is ArrivalEventSpec);
@@ -1410,6 +1468,25 @@ namespace DiaryCapturePolicyTests
             };
         }
 
+        private static AbilityEventData Ability(
+            string defName = "Stun",
+            float chance = 1f,
+            float roll = 0f)
+        {
+            return new AbilityEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Label = "stun",
+                Category = "Psycast",
+                TargetLabel = "Bob",
+                CooldownTicks = 600,
+                RecordChance = chance,
+                Roll = roll,
+            };
+        }
+
         private static ArrivalEventData Arrival(
             string defName = ArrivalEventData.DefNameToken, bool existing = false)
         {
@@ -1557,6 +1634,16 @@ namespace DiaryCapturePolicyTests
             if (!condition)
             {
                 throw new InvalidOperationException(name + " failed.");
+            }
+        }
+
+        private static void AssertNearlyEqual(string name, float expected, float actual, float tolerance = 0.0001f)
+        {
+            assertions++;
+            if (Math.Abs(expected - actual) > tolerance)
+            {
+                throw new InvalidOperationException(
+                    name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");
             }
         }
     }

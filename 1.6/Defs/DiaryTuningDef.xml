@@ -19,6 +19,14 @@
     <raidDedupTicks>2500</raidDedupTicks>
     <questDedupTicks>2500</questDedupTicks>
     <ritualDedupTicks>2500</ritualDedupTicks>
+    <abilityDedupTicks>300</abilityDedupTicks>
+
+    <!-- Ability-use sampling. A no/short-cooldown ability uses abilityUseMinChance; longer
+         cooldowns approach abilityUseMaxChance. The reference cooldown is the midpoint of the
+         curve, so 60000 ticks (~1 in-game day) gives roughly halfway between min and max. -->
+    <abilityUseMinChance>0.03</abilityUseMinChance>
+    <abilityUseMaxChance>0.75</abilityUseMaxChance>
+    <abilityUseReferenceCooldownTicks>60000</abilityUseReferenceCooldownTicks>
 
     <!-- Surroundings scan -->
     <!-- nearbyRadius: search radius in cells around pawn for notable objects -->

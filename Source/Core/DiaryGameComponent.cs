@@ -109,6 +109,9 @@ namespace PawnDiary
         // Transient (not saved) guard against a ritual outcome double-firing. Keys by ritual,
         // organizer, target, and finish tick.
         private readonly Dictionary<string, int> recentRitualEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against an ability activation double-firing. Keys by caster,
+        // ability, target, and activation tick.
+        private readonly Dictionary<string, int> recentAbilityEvents = new Dictionary<string, int>();
         // Transient (not saved) list of quests already seen in the accepted state. Quest.Accept can
         // be reached through more than one RimWorld UI path, so the tick scanner uses this to catch
         // missed acceptance transitions without duplicating hook-driven entries.

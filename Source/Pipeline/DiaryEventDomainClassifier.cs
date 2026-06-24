@@ -20,6 +20,7 @@ namespace PawnDiary
         public const string Raid = "Raid";
         public const string Quest = "Quest";
         public const string Ritual = "Ritual";
+        public const string Ability = "Ability";
 
         /// <summary>
         /// Returns the domain implied by a saved event's game-context marker. Plain social
@@ -39,6 +40,7 @@ namespace PawnDiary
             if (DiaryContextFields.HasMarker(context, "quest=")) return Quest;
             if (DiaryContextFields.HasMarker(context, "ritual=")) return Ritual;
             if (DiaryContextFields.HasMarker(context, "psychic_ritual=")) return Ritual;
+            if (DiaryContextFields.HasMarker(context, "ability=")) return Ability;
             return Interaction;
         }
 
@@ -69,6 +71,15 @@ namespace PawnDiary
                 if (DiaryContextFields.HasMarker(context, "psychic_ritual="))
                 {
                     return "PsychicRitual;" + savedDefName;
+                }
+            }
+
+            if (string.Equals(domain, Ability, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string category = DiaryContextFields.Value(context, "ability_category");
+                if (!string.IsNullOrWhiteSpace(category))
+                {
+                    return savedDefName + ";" + category;
                 }
             }
 

@@ -77,6 +77,7 @@ namespace PawnDiary.Capture
             Register(new RaidEventSpec());
             Register(new QuestEventSpec());
             Register(new RitualEventSpec());
+            Register(new AbilityEventSpec());
         }
     }
 }

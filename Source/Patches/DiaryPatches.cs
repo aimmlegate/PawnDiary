@@ -12,6 +12,7 @@ using System;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -599,6 +600,45 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success);
+        }
+    }
+
+    // Fires after a pawn ability successfully activates on a local map target. Ability covers
+    // Royalty psycasts/permits, Biotech/Anomaly powers, and modded abilities that use vanilla defs.
+    [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo) })]
+    public static class AbilityActivateLocalPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for Ability.Activate(LocalTargetInfo, LocalTargetInfo). Only successful
+        /// activations are forwarded; the component handles sampling and prompt policy.
+        /// </summary>
+        public static void Postfix(Ability __instance, LocalTargetInfo target, LocalTargetInfo dest, bool __result)
+        {
+            if (!__result || __instance == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target, dest);
+        }
+    }
+
+    // Fires after a pawn ability successfully activates on a world target.
+    [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(GlobalTargetInfo) })]
+    public static class AbilityActivateGlobalPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for Ability.Activate(GlobalTargetInfo). Only successful activations are
+        /// forwarded; the component handles sampling and prompt policy.
+        /// </summary>
+        public static void Postfix(Ability __instance, GlobalTargetInfo target, bool __result)
+        {
+            if (!__result || __instance == null)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target);
         }
     }
 

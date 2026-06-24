@@ -22,6 +22,7 @@ namespace PawnDiary
     // defNames (RaidEnemy/RaidFriendly/RaidBeacon); Quest groups match the quest lifecycle signal
     // ("accepted"/"completed"/"failed") so one DiaryEventType.Quest fans out to three groups;
     // Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
+    // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -36,7 +37,8 @@ namespace PawnDiary
         Hediff,
         Raid,
         Quest,
-        Ritual
+        Ritual,
+        Ability
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -488,6 +490,13 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyRitual(string ritualClassifierKey)
         {
             return ClassifyIn(GroupDomain.Ritual, ritualClassifierKey);
+        }
+
+        // First Ability-domain group that matches the AbilityDef classifier key, else the Ability
+        // catch-all. The key can include category/source tokens as well as the defName.
+        public static DiaryInteractionGroupDef ClassifyAbility(string abilityClassifierKey)
+        {
+            return ClassifyIn(GroupDomain.Ability, abilityClassifierKey);
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.
