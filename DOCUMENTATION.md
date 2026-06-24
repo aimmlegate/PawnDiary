@@ -33,7 +33,7 @@ RimWorld loads `About/`, `1.6/`, and `Languages/`. Source lives under `Source/`;
 PawnDiary/
 |-- About/                         mod metadata and preview
 |-- 1.6/
-|   |-- Assemblies/PawnDiary.dll    committed build output
+|   |-- Assemblies/                  PawnDiary.dll (committed output) + bundled 0Harmony.dll fallback
 |   `-- Defs/                       groups, tuning, prompts, writing styles, UI/text policy
 |-- Languages/                     Keyed and DefInjected localization
 |-- Source/
@@ -452,6 +452,14 @@ callers to slot accessors, and only then consider retiring direct legacy writes.
 
 - RimWorld runs on Unity Mono. Use only assemblies present in `RimWorldWin64_Data/Managed`.
 - Do not add `System.Web.Extensions`, `JavaScriptSerializer`, or external JSON dependencies.
+- **Harmony is the mod's only external dependency.** RimWorld 1.6 no longer ships
+  `0Harmony.dll` in `RimWorldWin64_Data/Managed` (earlier versions did), so `About/About.xml`
+  declares the standalone Harmony mod (`brrainz.harmony`) under `<modDependencies>` and
+  `<loadAfter>` for correct load ordering. A copy of `0Harmony.dll` is also bundled in
+  `1.6/Assemblies/` as a fallback so the mod still runs from a bare clone or for users who lack
+  the Harmony mod; RimWorld's assembly loader dedupes the shared `0Harmony` assembly to a single
+  copy at the highest available version. The DLL is referenced at build time from
+  `Source/Libs/0Harmony.dll` (`Private=False`).
 - The mod declares no paid DLC dependency. Optional DLC content must cleanly no-op when absent.
 - Prefer XML string `defName` matchers for DLC-aware content; absent DLC defs simply never appear.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks;

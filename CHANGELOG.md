@@ -6,6 +6,12 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Harmony dependency declared in About.xml.** RimWorld 1.6 no longer ships `0Harmony.dll` in its
+  `Managed` folder, so `About/About.xml` now declares the standalone Harmony mod
+  (`brrainz.harmony`) under `<modDependencies>` and `<loadAfter>` for correct load ordering. The
+  bundled `1.6/Assemblies/0Harmony.dll` is kept as a run-from-clone / missing-mod fallback;
+  RimWorld's loader dedupes the shared `0Harmony` assembly to a single copy at the highest version.
+
 - **Generated-output punctuation cleanup added.** Save-time LLM output sanitization now strips
   standalone schema punctuation tokens such as `;`, `=`, `:`, and `|` when small models echo prompt
   separators, while preserving normal prose punctuation.
