@@ -17,9 +17,6 @@
 
   <!-- Diary surface label, used by the selected-pawn command button and optional inspect tab. -->
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
-  <PawnDiary.InspectPane.NewMarker>✦</PawnDiary.InspectPane.NewMarker>
-  <PawnDiary.InspectPane.WritingMarkerA>✦</PawnDiary.InspectPane.WritingMarkerA>
-  <PawnDiary.InspectPane.WritingMarkerB>✧</PawnDiary.InspectPane.WritingMarkerB>
   <PawnDiary.Command.OpenDiaryDesc>Open or close this pawn's diary.</PawnDiary.Command.OpenDiaryDesc>
   <PawnDiary.Command.NewPagesTip>New diary pages are waiting.</PawnDiary.Command.NewPagesTip>
   <PawnDiary.Command.WritingTip>Diary page is being written.</PawnDiary.Command.WritingTip>

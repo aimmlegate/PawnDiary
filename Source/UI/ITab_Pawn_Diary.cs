@@ -202,6 +202,15 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Gives the inspect-pane status patch the current Diary tab button rectangle. RimWorld owns
+        /// the tab-strip layout, so the patch reads this after the tab row has been drawn.
+        /// </summary>
+        internal Rect DiaryTabButtonRect()
+        {
+            return TabRect;
+        }
+
+        /// <summary>
         /// Resolves the pawn to display a diary for, handling both selected colonists
         /// and selected corpses of colonists.
         /// </summary>

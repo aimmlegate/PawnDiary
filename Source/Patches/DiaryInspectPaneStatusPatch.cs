@@ -1,6 +1,6 @@
-// Adds a tiny Diary status mark to the selected pawn's inspect-pane title.
-// This is intentionally independent of whether the Diary opens from the bottom command gizmo or the
-// normal pawn inspect tab, because RimWorld reliably redraws the inspect title in both modes.
+// Adds a tiny Diary status underline under the visible Diary inspect tab button.
+// RimWorld owns inspect-tab layout, so this patch waits until the inspect window has drawn, reads the
+// Diary tab's final button rectangle, then draws a short underline in the same GUI space.
 using HarmonyLib;
 using RimWorld;
 using UnityEngine;
@@ -8,16 +8,20 @@ using Verse;
 
 namespace PawnDiary
 {
-    [HarmonyPatch(typeof(MainTabWindow_Inspect), nameof(MainTabWindow_Inspect.GetLabel))]
+    [HarmonyPatch(typeof(MainTabWindow_Inspect), nameof(MainTabWindow_Inspect.DoWindowContents))]
     public static class DiaryInspectPaneStatusPatch
     {
+        private const float UnderlineWidth = 34f;
+        private const float UnderlineHeight = 2f;
+
         /// <summary>
-        /// Appends a steady sparkle when finished diary pages are waiting, or a soft two-frame sparkle
-        /// animation while a diary page/title is still being written.
+        /// Draws a steady underline for finished diary pages, or a soft pulse on that same underline
+        /// while a diary page/title is still being written.
         /// </summary>
-        public static void Postfix(ref string __result)
+        public static void Postfix(MainTabWindow_Inspect __instance)
         {
-            if (string.IsNullOrEmpty(__result))
+            ITab_Pawn_Diary diaryTab = VisibleDiaryTab(__instance);
+            if (diaryTab == null)
             {
                 return;
             }
@@ -30,13 +34,37 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.DiaryCommandStatus status = component.CommandStatusFor(pawn);
-            string marker = StatusMarker(status);
-            if (string.IsNullOrEmpty(marker))
+            if (!status.HasNewPages && !status.IsWriting)
             {
                 return;
             }
 
-            __result += " " + marker;
+            Rect tabRect = diaryTab.DiaryTabButtonRect();
+            if (tabRect.width <= 0f || tabRect.height <= 0f)
+            {
+                return;
+            }
+
+            DrawUnderline(tabRect, status.IsWriting);
+        }
+
+        private static ITab_Pawn_Diary VisibleDiaryTab(MainTabWindow_Inspect inspectWindow)
+        {
+            if (inspectWindow == null || inspectWindow.CurTabs == null)
+            {
+                return null;
+            }
+
+            foreach (InspectTabBase tab in inspectWindow.CurTabs)
+            {
+                ITab_Pawn_Diary diaryTab = tab as ITab_Pawn_Diary;
+                if (diaryTab != null && !diaryTab.Hidden)
+                {
+                    return diaryTab;
+                }
+            }
+
+            return null;
         }
 
         private static Pawn SelectedDiaryPawn()
@@ -57,24 +85,32 @@ namespace PawnDiary
             return ITab_Pawn_Diary.CanShowDiaryFor(pawn) ? pawn : null;
         }
 
-        private static string StatusMarker(DiaryGameComponent.DiaryCommandStatus status)
+        private static void DrawUnderline(Rect tabRect, bool writing)
         {
-            if (status.IsWriting)
+            Rect underlineRect = new Rect(
+                tabRect.center.x - UnderlineWidth * 0.5f,
+                tabRect.yMax - 4f,
+                UnderlineWidth,
+                UnderlineHeight);
+
+            Color oldColor = GUI.color;
+            float alpha = 0.42f;
+            if (writing)
             {
-                return WritingMarker();
+                float pulse = (Mathf.Sin(Time.realtimeSinceStartup * 4f) + 1f) * 0.5f;
+                alpha = Mathf.Lerp(0.20f, 0.44f, pulse);
             }
 
-            return status.HasNewPages ? "PawnDiary.InspectPane.NewMarker".Translate().Resolve() : string.Empty;
-        }
+            GUI.color = writing
+                ? new Color(0.60f, 0.68f, 0.54f, alpha)
+                : new Color(0.62f, 0.56f, 0.43f, alpha);
 
-        private static string WritingMarker()
-        {
-            int frame = Mathf.FloorToInt(Time.realtimeSinceStartup * 2.5f) % 2;
-            return (frame == 0
-                    ? "PawnDiary.InspectPane.WritingMarkerA"
-                    : "PawnDiary.InspectPane.WritingMarkerB")
-                .Translate()
-                .Resolve();
+            Widgets.DrawBoxSolid(underlineRect, GUI.color);
+            TooltipHandler.TipRegion(
+                new Rect(underlineRect.x - 4f, underlineRect.y - 4f, underlineRect.width + 8f, 12f),
+                writing ? "PawnDiary.Command.WritingTip".Translate() : "PawnDiary.Command.NewPagesTip".Translate());
+
+            GUI.color = oldColor;
         }
     }
 }
