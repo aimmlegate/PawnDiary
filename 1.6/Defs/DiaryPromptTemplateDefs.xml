@@ -29,7 +29,11 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>relationship</label><source>Relationship</source></li>
@@ -49,7 +53,11 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>relationship</label><source>Relationship</source></li>
@@ -70,8 +78,12 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>you</label><source>PawnSummary</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>relationship</label><source>Relationship</source></li>
@@ -93,7 +105,11 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -110,7 +126,11 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -128,7 +148,11 @@
       <li><label>you</label><source>PawnSummary</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -145,7 +169,11 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -162,7 +190,11 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
@@ -181,7 +213,11 @@
       <li><label>you</label><source>PawnSummary</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
-      <li><label>important health</label><source>PromptEnchantment</source></li>
+      <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
+      <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
+      <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
+      <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
+      <li><label>important context</label><source>PromptEnchantment</source></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>

@@ -171,8 +171,8 @@ namespace PawnDiary
         // spacing or staggered word sizes in the Diary tab. This never changes prompts or saved
         // generated text.
         public bool enableAtmosphericFormatting = true;
-        // Master toggle for hediff-based prompt enchantments. When true, first-person diary prompts
-        // may get one live health-condition hint weighted by DiaryPromptEnchantmentDefs.xml.
+        // Master toggle for live prompt enchantments. When true, first-person diary prompts may get
+        // one live health/status hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
         // Disabled compatibility field. Old configs may have this set, but the Social-log injection
         // path is hidden and forced off because RimWorld accepts the row without reliably showing it.

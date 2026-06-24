@@ -1,6 +1,7 @@
-// Hediff-based prompt enchantments: optional, one-shot health context chosen from live pawn
-// state right before a first-person prompt is queued. XML no longer writes prompt prose here; it
-// only controls which hediffs are eligible and how strongly each one is weighted.
+// Prompt enchantments: optional, one-shot live pawn context chosen right before a first-person
+// prompt is queued. Most candidates are health/capacity facts; important events may also include
+// DLC social-status facts. XML controls which candidates are eligible and how strongly each one is
+// weighted.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -46,7 +47,8 @@ namespace PawnDiary
         public List<PromptEnchantmentSeverityTier> hediffSeverityTiers = new List<PromptEnchantmentSeverityTier>();
 
         // Optional non-hediff source. "Capacity" lets XML add live pawn capacities such as
-        // Consciousness into the same weighted random pool as hediffs.
+        // Consciousness into the same weighted random pool as hediffs. "RoyalTitle" and
+        // "IdeologyRole" are DLC-safe context sources that only enter the pool for important events.
         public string source = "Hediff";
         public string capacityDefName;
         public float minCapacity = -1f;
@@ -73,6 +75,7 @@ namespace PawnDiary
             public readonly Hediff hediff;
             public readonly float capacityLevel;
             public readonly string capacityLabel;
+            public readonly string contextValue;
             public readonly float weight;
 
             public Candidate(DiaryPromptEnchantmentDef def, Hediff hediff, float weight)
@@ -87,6 +90,13 @@ namespace PawnDiary
                 this.def = def;
                 this.capacityLevel = capacityLevel;
                 this.capacityLabel = capacityLabel;
+                this.weight = weight;
+            }
+
+            public Candidate(DiaryPromptEnchantmentDef def, string contextValue, float weight)
+            {
+                this.def = def;
+                this.contextValue = contextValue;
                 this.weight = weight;
             }
         }
@@ -116,9 +126,9 @@ namespace PawnDiary
         private const int MaxImpactCues = 3;
 
         /// <summary>
-        /// Returns one live hediff prompt for this pawn, or empty when disabled/no match.
+        /// Returns one live context prompt for this pawn, or empty when disabled/no match.
         /// </summary>
-        public static string RuleFor(Pawn pawn)
+        public static string RuleFor(Pawn pawn, bool includeImportantEventContext = false)
         {
             if (pawn == null || PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
             {
@@ -145,6 +155,12 @@ namespace PawnDiary
                 if (IsCapacitySource(def))
                 {
                     AddCapacityCandidate(pawn, def, candidates, ref totalWeight);
+                    continue;
+                }
+
+                if (IsImportantEventContextSource(def))
+                {
+                    AddImportantEventContextCandidate(pawn, def, includeImportantEventContext, candidates, ref totalWeight);
                     continue;
                 }
 
@@ -192,6 +208,36 @@ namespace PawnDiary
             }
 
             candidates.Add(new Candidate(def, hediff, effectiveWeight));
+            totalWeight += effectiveWeight;
+        }
+
+        private static void AddImportantEventContextCandidate(Pawn pawn, DiaryPromptEnchantmentDef def,
+            bool includeImportantEventContext, List<Candidate> candidates, ref float totalWeight)
+        {
+            if (!includeImportantEventContext)
+            {
+                return;
+            }
+
+            string value = ImportantEventContextValue(pawn, def);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            float chance = ChanceFor(def.frequency >= 0f ? def.frequency : def.chance);
+            if (chance <= 0f || Rand.Range(0f, 1f) > chance)
+            {
+                return;
+            }
+
+            float effectiveWeight = Mathf.Max(0f, def.weight) * Mathf.Max(0f, def.severity);
+            if (effectiveWeight <= 0f)
+            {
+                return;
+            }
+
+            candidates.Add(new Candidate(def, value, effectiveWeight));
             totalWeight += effectiveWeight;
         }
 
@@ -252,6 +298,11 @@ namespace PawnDiary
 
         private static string BuildPromptText(Candidate candidate)
         {
+            if (candidate != null && IsImportantEventContextSource(candidate.def))
+            {
+                return BuildImportantEventContextPromptText(candidate);
+            }
+
             if (candidate != null && candidate.hediff == null && IsCapacitySource(candidate.def))
             {
                 return BuildCapacityPromptText(candidate);
@@ -270,6 +321,26 @@ namespace PawnDiary
             };
 
             AddImpactCues(parts, hediff);
+            AddConfiguredCues(parts, candidate.def);
+            return string.Join("; ", parts.ToArray());
+        }
+
+        private static string BuildImportantEventContextPromptText(Candidate candidate)
+        {
+            if (candidate == null || candidate.def == null || string.IsNullOrWhiteSpace(candidate.contextValue))
+            {
+                return string.Empty;
+            }
+
+            List<string> parts = new List<string>
+            {
+                PriorityText(candidate.def),
+                PromptText(
+                    "PawnDiary.Prompt.Context.Value",
+                    ImportantEventContextLabel(candidate.def),
+                    candidate.contextValue)
+            };
+
             AddConfiguredCues(parts, candidate.def);
             return string.Join("; ", parts.ToArray());
         }
@@ -463,6 +534,53 @@ namespace PawnDiary
             return def != null
                 && (!string.IsNullOrWhiteSpace(def.capacityDefName)
                     || string.Equals(def.source, "Capacity", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsImportantEventContextSource(DiaryPromptEnchantmentDef def)
+        {
+            return IsRoyalTitleSource(def) || IsIdeologyRoleSource(def);
+        }
+
+        private static bool IsRoyalTitleSource(DiaryPromptEnchantmentDef def)
+        {
+            return def != null && string.Equals(def.source, "RoyalTitle", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsIdeologyRoleSource(DiaryPromptEnchantmentDef def)
+        {
+            return def != null && string.Equals(def.source, "IdeologyRole", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ImportantEventContextValue(Pawn pawn, DiaryPromptEnchantmentDef def)
+        {
+            if (IsRoyalTitleSource(def))
+            {
+                return DlcContext.RoyalTitle(pawn);
+            }
+
+            if (IsIdeologyRoleSource(def))
+            {
+                return DlcContext.IdeologicalRole(pawn);
+            }
+
+            return string.Empty;
+        }
+
+        private static string ImportantEventContextLabel(DiaryPromptEnchantmentDef def)
+        {
+            if (!string.IsNullOrWhiteSpace(def?.conditionLabel))
+            {
+                return def.conditionLabel;
+            }
+
+            if (!string.IsNullOrWhiteSpace(def?.conditionKey))
+            {
+                return PromptText(def.conditionKey);
+            }
+
+            return IsRoyalTitleSource(def)
+                ? PromptText("PawnDiary.Prompt.Context.RoyalTitle")
+                : PromptText("PawnDiary.Prompt.Context.IdeologyRole");
         }
 
         private static PawnCapacityDef CapacityDefFor(DiaryPromptEnchantmentDef def)

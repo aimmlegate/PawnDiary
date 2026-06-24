@@ -95,5 +95,20 @@ namespace PawnDiary
             string roleLabel = role != null ? DiaryContextBuilder.CleanLine(role.LabelForPawn(pawn)) : string.Empty;
             return string.IsNullOrWhiteSpace(roleLabel) ? faith : faith + " (" + roleLabel + ")";
         }
+
+        /// <summary>
+        /// Ideology: the pawn's formal ideoligion role only (for example "Moral guide"). Empty
+        /// without Ideology, without an ideoligion, or when the pawn holds no role.
+        /// </summary>
+        public static string IdeologicalRole(Pawn pawn)
+        {
+            if (!ModsConfig.IdeologyActive || pawn?.ideo?.Ideo == null)
+            {
+                return string.Empty;
+            }
+
+            Precept_Role role = pawn.ideo.Ideo.GetRole(pawn);
+            return role == null ? string.Empty : DiaryContextBuilder.CleanLine(role.LabelForPawn(pawn));
+        }
     }
 }

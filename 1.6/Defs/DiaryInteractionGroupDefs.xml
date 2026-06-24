@@ -13,8 +13,8 @@
                      Tale (matches TaleDefs from RimWorld's notable-history system), MoodEvent,
                      Thought, Inspiration, Work (matches synthetic work diary defNames), or Hediff
                      (matches HediffDefs from health conditions), Raid (matches raid incident
-                     defNames like RaidEnemy), or Quest (matches the lifecycle signal: accepted,
-                     completed, failed)
+                     defNames like RaidEnemy), Quest (matches the lifecycle signal: accepted,
+                     completed, failed), or Ritual (matches Precept_Ritual defNames)
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
@@ -1451,6 +1451,105 @@
     <matchDefNames>
       <li>failed</li>
     </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Ritual domain: Ideology rituals (LordJob_Ritual.ApplyOutcome hook) ===== -->
+  <!-- A finished ritual creates separate solo entries for the ritual author/organizer, target pawn
+       when present, participants, and spectators. The per-pawn instruction comes from Keyed strings
+       because it depends on that pawn's perspective; this group supplies the shared ritual tone. -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualRoyal</defName>
+    <label>Royal rituals</label>
+    <order>770</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a Royalty ritual completed—make the ceremony courtly, title-conscious, psychic, or anima-rooted as the ritual title suggests</instruction>
+    <tone>with formal rank and ritual authority</tone>
+    <tones>
+      <li>courtly and charged with rank, title, witnesses, and public authority</li>
+      <li>psyfocus-hushed and tradition-bound, the ceremony larger than one pawn's body</li>
+    </tones>
+    <matchTokens>
+      <li>ThroneSpeech</li>
+      <li>AnimaTreeLinking</li>
+      <li>RitualBehaviorWorker_ThroneSpeech</li>
+      <li>RitualBehaviorWorker_AnimaLinking</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualChildbirth</defName>
+    <label>Childbirth ritual</label>
+    <order>772</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a childbirth ritual completed—keep the entry medically and emotionally appropriate: pain, care, risk, exhaustion, relief, or fear before mysticism</instruction>
+    <tone>with clinical tenderness and bodily urgency</tone>
+    <tones>
+      <li>medical, intimate, and careful around pain, care, danger, and relief</li>
+      <li>tender but unsentimental, focused on the body, helpers, and immediate outcome</li>
+    </tones>
+    <matchTokens>
+      <li>ChildBirth</li>
+      <li>RitualBehaviorWorker_ChildBirth</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualGravship</defName>
+    <label>Gravship launch</label>
+    <order>774</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a gravship launch or landing ritual completed—write it as technical, operational, and dangerous: systems, countdown, lift, flight, landing, and crew discipline</instruction>
+    <tone>with technical pressure and launch-day focus</tone>
+    <tones>
+      <li>technical and procedural, centered on systems, thrust, flight, and touchdown</li>
+      <li>tense and crew-minded, with launch checks, hard vibration, and landing consequence</li>
+    </tones>
+    <matchTokens>
+      <li>GravshipLaunch</li>
+      <li>RitualBehaviorWorker_GravshipLaunch</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualAnomalyPsychic</defName>
+    <label>Psychic rituals</label>
+    <order>776</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>an Anomaly psychic ritual completed—write it with unsettling dark atmosphere, fear, wrongness, void pressure, and consequences that should not be fully explained</instruction>
+    <tone>with occult dread and incomprehensible pressure</tone>
+    <tones>
+      <li>unsettling and dark, with fear, wrongness, void pressure, and sensory dread</li>
+      <li>scary, fragmentary, and half-incomprehensible, as if language is failing around the ritual</li>
+    </tones>
+    <colorCue>strangeChat</colorCue>
+    <matchTokens>
+      <li>PsychicRitual</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>ritualFinished</defName>
+    <label>Rituals</label>
+    <order>780</order>
+    <domain>Ritual</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a ritual completed—write the ceremony as a social, spiritual, or political moment from the pawn's assigned place in it</instruction>
+    <tone>with ceremonial weight and personal consequence</tone>
+    <tones>
+      <li>ceremonial and embodied, attention fixed on role, title, and consequence</li>
+      <li>formal but personal, the ritual's public meaning pressing into private thought</li>
+    </tones>
+    <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
 </Defs>

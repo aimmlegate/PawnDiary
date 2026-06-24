@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-24 (API lane routing, auth, and cooldowns)_
+_Last updated: 2026-06-24 (live event auto-test scenario)_
 
 ---
 
@@ -115,6 +115,7 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 | Work | Periodic current-job sampling | Skips social/violent work, applies XML odds/cooldowns and `workGenerationWeight`. |
 | Raids | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid`) | Once per eligible colonist on the raid's target map. Minimal payload: incident defName, raider faction defName, raid points. |
 | Quests | `Quest.Accept`, a defensive `MainTabWindow_Quests` accept-action fallback, a `Quest.EverAccepted` state scan, and `Quest.End` | Only accepted quests are recorded. `Success` -> "completed", `Fail` -> "failed"; one entry per eligible colonist per signal, with description, issuer faction, and rewards context. |
+| Rituals | `LordJob_Ritual.ApplyOutcome`, `PsychicRitualGraph.End` | Finished Ideology rituals fan out to author, target pawn when present, participants, and spectators with role/title/status context. Successful Anomaly psychic rituals fan out similarly from the psychic ritual graph, but deliberately omit role/title prompt fields and use darker, stranger instructions. |
 | Day reflections | Sleep/rest trigger | One reflective entry per pawn/day only when at least one XML-configured important signal kind exists. The default important kinds are major events, opinion shifts, and health signals; filler can be folded in as background but cannot trigger a reflection by itself unless XML allows it. |
 
 `PlayLog.Add` preflights live pawn eligibility and XML significance before rendering RimWorld's POV
@@ -138,7 +139,7 @@ Generated Social-log speech rows patch the concrete RimWorld 1.6 interaction tex
 - `XxxEventSpec`: wrapper registered in `DiaryEventCatalog`.
 
 Currently catalog-backed: Thought, Inspiration, MoodEvent, MentalState, Tale, Hediff, Interaction,
-Romance, Arrival, Death fallback, Work, ThoughtProgression, DayReflection, Raid, and Quest.
+Romance, Arrival, Death fallback, Work, ThoughtProgression, DayReflection, Raid, Quest, and Ritual.
 
 DayReflection is a meta-source: the adapter counts all candidate cues plus the subset that are
 important enough to justify a reflection. `DiaryTuningDef.daySummaryImportantSignalKinds` controls
@@ -170,12 +171,22 @@ dedup mutation, event creation, and LLM queueing in adapters. Pure code must acc
 
 `1.6/Defs/DiaryInteractionGroupDefs.xml` owns group matching, instructions, color cues, batching,
 promotion, Hediff policy, and default enablement. Domains include Interaction, MentalState, Tale,
-MoodEvent, Thought, Inspiration, Romance, Work, Hediff, Raid, and Quest. Matching is domain-scoped
+MoodEvent, Thought, Inspiration, Romance, Work, Hediff, Raid, Quest, and Ritual. Matching is domain-scoped
 by exact `defName` or substring token; XML order matters and catch-all groups go last. The Quest
 domain is unusual: its matchDefNames are lifecycle signals (`accepted`/`completed`/`failed`), not
 defNames, because one `DiaryEventType.Quest` fans out to three prompt groups. Saved Quest entries
 still keep the real `QuestScriptDef` in their source defName/context; display and prompt-policy
 recovery classify them from the saved `signal=` context field.
+
+Ritual-domain entries classify by string markers only. Ideology/Royalty/Biotech/Odyssey rituals use
+`Precept_Ritual` defName plus the ritual behavior worker class when available, and carry role facts
+in context: `ritual_title`, `ritual_behavior`, `ritual_perspective`, `ritual_role`, `royal_title`,
+and `ideological_role`. Anomaly psychic rituals use `psychic_ritual` plus a `PsychicRitual`
+classifier prefix, carry only `psychic_ritual_perspective`, outcome, and quality, and deliberately
+omit role/title fields. XML groups use these string-only classifiers for DLC-specific edge cases
+such as Royalty throne/anima rituals, Biotech childbirth, Odyssey gravship launch/landing, and
+Anomaly psychic rituals. Prompt templates render the role/title fields only when present, so
+non-ritual and psychic-ritual events do not spend tokens on empty ritual context.
 
 `DiarySignalPolicyDefs.xml` owns tracker-specific thought/work policy: thresholds, tokens, staged
 progression, ambient batching, scan odds, and cooldowns. `DiaryTuningDef.xml` keeps shared fallback
@@ -251,9 +262,12 @@ The wrapper tells the model to follow the rule's concrete sentence shape, openin
 and detail choice, and explicitly not to roleplay a chat persona, add catchphrases, or invent
 dialogue.
 
-Prompt enchantments are XML-weighted live health/capacity cues. Eligible first-person prompts may
-add one localized `important health:` field as pressure, not as the subject unless the event itself
-is medical. These are separate from `DiaryEventPromptDef.enhancement`, which is static event-type
+Prompt enchantments are XML-weighted live pawn context cues. Eligible first-person prompts may add
+one localized `important context:` field as pressure, not as the subject unless the event itself
+already centers on that fact. Health/capacity cues can appear on any eligible first-person prompt;
+important events may also put the pawn's Royalty title or Ideology role into the same weighted pool.
+Only one candidate wins, so royal title and ideoligion role cues are mutually exclusive in a single
+prompt. These are separate from `DiaryEventPromptDef.enhancement`, which is static event-type
 guidance.
 
 Direct speech is allowed only for initiator/single-POV interaction prompts, using one closed
@@ -504,6 +518,60 @@ Suggested low-impact real hook checks:
 | Thought | `Actions\Show more actions\T: Give bad thought` on a colonist | One prompt-only capture from `MemoryThoughtHandler.TryGainMemory`. |
 | Social `PlayLog.Add` | `Actions\T: Force Interaction`, choose another colonist, then `insult` | Pairwise prompt-only captures when the social hook is installed and policy allows the interaction. |
 | Mood condition | `Actions\Add Game Condition...\Aurora\1 hour` or `...\Eclipse\1 hour` | One prompt-only capture per eligible affected colonist. |
+
+Full live auto-test scenario:
+
+The practical target is one deterministic pass through every implemented source and route shape, not
+every XML matcher token. The XML file names many DLC-, mod-, and content-specific defNames that only
+exist in matching games; prompt-lab and pure catalog tests cover those policy permutations without a
+live colony. The live scenario below proves the Harmony/scanner hooks are installed and that real
+RimWorld events can reach prompt construction.
+
+Automation should keep a `lastLogSequence` cursor and count new
+`[PawnDiary debug] Captured prompt without generation ...` lines after each step. A solo event should
+produce one role capture, a pair event should produce initiator and recipient captures with the same
+event id, a neutral arrival/death should produce a neutral capture, and a colony-wide fan-out should
+produce one initiator capture per eligible colonist. For stronger assertions than the RimWorld log
+allows, add or use a dev dump that reads recent saved `DiaryEvent` rows and reports
+`interactionDefName`, `gameContext`, involved pawn ids, and per-role status.
+
+`scripts/gabs/pawndiary-live-smoke.lua` is the smallest script-agent hybrid smoke fixture. Run it
+through `rimbridge/run_lua_file` with `includeStepResults=false` to spend one GABS call on a live
+mental-state hook check: it snapshots the log cursor, targets one current-map colonist, executes
+`Actions\Mental state...\Crying`, cleans up with `Actions\T: Stop mental state`, and fails if no new
+PawnDiary prompt-capture log appears.
+
+| Phase | Source/routes covered | Trigger | Expected evidence |
+|---|---|---|---|
+| 0 | Startup arrival, neutral prompt route | Start a disposable debug colony and wait until playable. | One neutral first-page capture per eligible starting colonist. |
+| 1 | Inspiration solo | `Actions\Inspiration...\Frenzy_Work` on one colonist. | One initiator capture. |
+| 2 | Mental-state solo | `Actions\Mental state...\Crying` on one colonist, then `Actions\T: Stop mental state`. | One initiator capture. |
+| 3 | Temporary thought | `Actions\Show more actions\T: Give bad thought` on one colonist. | One initiator capture from `MemoryThoughtHandler.TryGainMemory`. |
+| 4 | Mood event fan-out | `Actions\Add Game Condition...\Aurora\1 hour`. | One initiator capture per eligible affected colonist. |
+| 5 | Romance relation pair | `Actions\T: Add/remove pawn relation`, choose `Lover` or `Spouse`, then another eligible colonist. | One event id with initiator and recipient captures. |
+| 6 | Social `PlayLog.Add` pair batch | `Actions\T: Force Interaction`, choose another colonist, then `insult`; advance at least 8,000 ticks. | One event id with initiator and recipient captures after the 7,500-tick batch window. |
+| 7 | Ambient social route | Force at least three `Chitchat`/small-talk style interactions for the same day, then advance 60,000 ticks or make the pawn rest. | One ambient day-note capture for the pawn when the XML minimum and quiet window are met. |
+| 8 | Raid fan-out | Execute a successful low-risk `RaidEnemy` incident with enough points to spawn; 20 points can be refused by vanilla and is not a valid failure. | One initiator capture per eligible colonist on the target map, with a raid context in the saved event. |
+| 9 | Quest accepted | Create an offered quest, then accept it through the quest UI or a helper that calls `Quest.Accept`. Do not count offered-but-unaccepted quests. | One initiator capture per eligible colonist; saved context should include `signal=accepted`. |
+| 10 | Quest completed | End the accepted quest with `QuestEndOutcome.Success` through a real quest end path or helper. | One initiator capture per eligible colonist; saved context should include `signal=completed`. |
+| 11 | Quest failed | Accept a second disposable quest and end it with `QuestEndOutcome.Fail`. | One initiator capture per eligible colonist; saved context should include `signal=failed`. |
+| 12 | Ideology ritual completion | In an Ideology-enabled disposable save, complete a ritual such as a speech or dance party through the real ritual flow. In base-game-only runs, mark this source as not applicable. | Separate solo captures for eligible author, target pawn if present, participants, and spectators; saved context should include `ritual=`, `ritual_behavior=`, `ritual_role=`, and `ritual_title=`. |
+| 13 | Anomaly psychic ritual completion | In an Anomaly-enabled disposable save, complete a psychic ritual such as void provocation through the real ritual flow. In base-game-only runs, mark this source as not applicable. | Separate solo captures for eligible invoker, target pawn if present, participants, and spectators; saved context should include `psychic_ritual=` and `psychic_ritual_perspective=`, should not include `ritual_role=` or `ritual_title=`, and invoker prompts should request one `[[speech]]...[[/speech]]` block with unsettling invented ritual speech. |
+| 13 | Tale non-death | Trigger a real `TaleRecorder.RecordTale` path such as successful research completion, surgery, taming, or crafting. Avoid debug actions that only mutate state. | One capture or batch capture according to the matched Tale group. |
+| 14 | Combat tale batch | Cause a controlled non-lethal wound/downing in a disposable save, then advance at least 8,000 ticks. | A delayed tale batch capture after the 7,500-tick combat-tale window. |
+| 15 | Death neutral route | Kill a disposable extra colonist in the test save through a real kill path. | One neutral death-description capture, or the death fallback capture if vanilla emits no death Tale. |
+| 16 | Hediff day-reflection route | Add a bad non-injury hediff that passes XML policy, such as a sufficiently severe disease; make the pawn sleep/rest. | One `DayReflection` capture for that pawn with a health signal in saved context. |
+| 17 | Hediff immediate route | In a Biotech-enabled disposable save, add `PregnantHuman`/`Pregnant` or `PregnancyLabor`. In base-game-only runs, mark this source as not applicable. | One immediate initiator capture for pregnancy/labor. |
+| 18 | Thought progression scanner | Drive food, rest, outdoors, or chemical desire into a configured stage, then advance at least 250 ticks. | One initiator capture when the configured stage first appears or worsens. |
+| 19 | Work scanner | Put a colonist into a stable non-social, non-violent job and run long enough for work scans; for deterministic CI, use a temporary test policy with work odds at 100% and cooldowns at 0. | One initiator capture classified as passion, strain, routine, or dark-study work. |
+| 20 | Day reflection from major event/opinion/filler | Accumulate at least one important day-summary signal, then make the pawn sleep/rest. | One `DayReflection` capture for the pawn/day; filler alone should not trigger unless XML policy says so. |
+
+Quest checks are required for "all mod events." The quest source has three distinct lifecycle groups:
+accepted, completed, and failed. A single accepted quest only covers the first group. The automation
+needs either stable debug actions that create/select/end quests, or a small RimBridge/test helper that
+creates a disposable quest, calls `Quest.Accept`, and calls `Quest.End(Success/Fail)`. If the global
+RimWorld debug-action tree crashes while enumerating actions, use known stable paths or the helper
+instead of treating enumeration failure as a Pawn Diary failure.
 
 Use more disruptive hooks only in disposable saves. Generic health actions such as `Flu` may route
 to day reflection or fail severity policy, so no immediate prompt does not by itself disprove the

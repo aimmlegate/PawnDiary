@@ -169,8 +169,8 @@
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.EnableAtmosphericFormatting>Use rare atmosphere formatting</PawnDiary.Settings.EnableAtmosphericFormatting>
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>When enabled, only extreme diary pages can use unusual spacing, staggered variable-size words, or dramatic strange-chat speech distortion. Mental breaks, anomaly/dark entries, death descriptions, and pages written while heavily impaired may be affected. Prompts and saved diary text are unchanged.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
-  <PawnDiary.Settings.EnablePromptEnchantments>Use health-condition prompt hints</PawnDiary.Settings.EnablePromptEnchantments>
-  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live health cue. XML only controls which hediffs match and how often they appear; the prompt text stays compact and uses the game's hediff label, urgency, body part, and strongest impact cues.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.EnablePromptEnchantments>Use live prompt context hints</PawnDiary.Settings.EnablePromptEnchantments>
+  <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live context cue. XML controls which health conditions and important-event status cues can appear and how often they win the weighted random pick.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Add generated speech to the Social log</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>When enabled, a completed initiator diary entry with a valid speech block adds one new Social-log line containing that generated spoken text. This can let mods that watch new interaction log entries react after the LLM result is ready.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
   <PawnDiary.Settings.PromptTestMode>Prompt test mode: capture prompts only</PawnDiary.Settings.PromptTestMode>
@@ -323,6 +323,21 @@
   <PawnDiary.Event.ArrivalLabel>Arrival</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0} was one of the colony's founding colonists.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0} joined the colony.</PawnDiary.Event.JoinedArrival>
+  <PawnDiary.Event.RitualFinished>{0} finished the ritual {1} as {2}; ritual role: {3}.</PawnDiary.Event.RitualFinished>
+  <PawnDiary.Ritual.Role.Author>author</PawnDiary.Ritual.Role.Author>
+  <PawnDiary.Ritual.Role.Target>target</PawnDiary.Ritual.Role.Target>
+  <PawnDiary.Ritual.Role.Participant>participant</PawnDiary.Ritual.Role.Participant>
+  <PawnDiary.Ritual.Role.Spectator>spectator</PawnDiary.Ritual.Role.Spectator>
+  <PawnDiary.PsychicRitual.Role.Invoker>invoker</PawnDiary.PsychicRitual.Role.Invoker>
+  <PawnDiary.Event.RitualInstruction.Author>write as the ritual's author/organizer after it has finished; carry responsibility, public pressure, and what the completed ceremony cost or proved</PawnDiary.Event.RitualInstruction.Author>
+  <PawnDiary.Event.RitualInstruction.Target>write as the ritual's target after it has finished; center what it meant to be singled out, watched, changed, judged, honored, or used by the ceremony</PawnDiary.Event.RitualInstruction.Target>
+  <PawnDiary.Event.RitualInstruction.Participant>write as a ritual participant after it has finished; use the assigned role and ritual title as concrete pressure, not background decoration</PawnDiary.Event.RitualInstruction.Participant>
+  <PawnDiary.Event.RitualInstruction.Spectator>write as a spectator after the ritual has finished; focus on watching, judging, belonging, doubt, awe, discomfort, or relief from the edge of the ceremony</PawnDiary.Event.RitualInstruction.Spectator>
+  <PawnDiary.Event.PsychicRitualFinished>{0} completed the psychic ritual {1} as {2}.</PawnDiary.Event.PsychicRitualFinished>
+  <PawnDiary.Event.PsychicRitualInstruction.Invoker>write as the psychic ritual's invoker after it has completed; make the atmosphere unsettling, scary, dark, or plain incomprehensible; include exactly one short standalone [[speech]]...[[/speech]] block containing invented, broken, or Zalgo-like ritual speech from the invoker, and put no narration inside that block</PawnDiary.Event.PsychicRitualInstruction.Invoker>
+  <PawnDiary.Event.PsychicRitualInstruction.Target>write as the psychic ritual's target after it has completed; make the event frightening, violating, or darkly numbing without explaining the occult mechanism</PawnDiary.Event.PsychicRitualInstruction.Target>
+  <PawnDiary.Event.PsychicRitualInstruction.Participant>write as someone involved in the psychic ritual after it has completed; keep the atmosphere unsettling, scary, and hard to fully understand</PawnDiary.Event.PsychicRitualInstruction.Participant>
+  <PawnDiary.Event.PsychicRitualInstruction.Spectator>write as someone who watched the psychic ritual complete; focus on dread, wrongness, fear, silence, strange sound, or relief from the edge of it</PawnDiary.Event.PsychicRitualInstruction.Spectator>
 
   <!-- Dev-mode mock entries used only by the Diary tab stress-test button. -->
   <PawnDiary.Dev.MockLabel>Diary UI test</PawnDiary.Dev.MockLabel>
@@ -415,6 +430,11 @@
   <PawnDiary.Prompt.Health.Cue.NearCollapse>near collapse</PawnDiary.Prompt.Health.Cue.NearCollapse>
   <PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>thoughts fragmented</PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>
   <PawnDiary.Prompt.Health.Cue.BarelyAwake>barely awake</PawnDiary.Prompt.Health.Cue.BarelyAwake>
+  <PawnDiary.Prompt.Context.Important>important context</PawnDiary.Prompt.Context.Important>
+  <PawnDiary.Prompt.Context.RoyalTitle>royal title</PawnDiary.Prompt.Context.RoyalTitle>
+  <PawnDiary.Prompt.Context.IdeologyRole>ideoligion role</PawnDiary.Prompt.Context.IdeologyRole>
+  <PawnDiary.Prompt.Context.Value>{0}: {1}</PawnDiary.Prompt.Context.Value>
+  <PawnDiary.Prompt.Context.Cue.RespectIfRelevant>respect this status if it changes how the pawn would frame the event</PawnDiary.Prompt.Context.Cue.RespectIfRelevant>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>

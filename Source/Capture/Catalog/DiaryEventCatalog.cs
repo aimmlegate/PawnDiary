@@ -76,6 +76,7 @@ namespace PawnDiary.Capture
             Register(new RomanceEventSpec());
             Register(new RaidEventSpec());
             Register(new QuestEventSpec());
+            Register(new RitualEventSpec());
         }
     }
 }

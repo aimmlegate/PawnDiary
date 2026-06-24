@@ -1,8 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
-  Optional prompt enchantments add ONE extra "important health:" line to selected
-  first-person diary prompts. The text comes from the live hediff's game label, body part,
-  urgency bucket, and strongest impact cues; this XML only controls which hediffs are eligible and
+  Optional prompt enchantments add ONE extra "important context:" line to selected
+  first-person diary prompts. Most text comes from the live hediff's game label, body part,
+  urgency bucket, and strongest impact cues; important-event-only DLC status sources can also add
+  the pawn's royal title or ideoligion role. This XML only controls which sources are eligible and
   how often they win.
 
   Tuning fields:
@@ -19,6 +20,34 @@
   mentioned without making the whole mod depend on it.
 -->
 <Defs>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_RoyalTitle</defName>
+    <label>royal title</label>
+    <source>RoyalTitle</source>
+    <chance>0.22</chance>
+    <weight>0.55</weight>
+    <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Context.RoyalTitle</conditionKey>
+    <priorityKey>PawnDiary.Prompt.Context.Important</priorityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Context.Cue.RespectIfRelevant</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_IdeologyRole</defName>
+    <label>ideoligion role</label>
+    <source>IdeologyRole</source>
+    <chance>0.22</chance>
+    <weight>0.55</weight>
+    <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Context.IdeologyRole</conditionKey>
+    <priorityKey>PawnDiary.Prompt.Context.Important</priorityKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Context.Cue.RespectIfRelevant</li>
+    </cueKeys>
+  </PawnDiary.DiaryPromptEnchantmentDef>
 
   <PawnDiary.DiaryPromptEnchantmentDef>
     <defName>DiaryEnchant_ConsciousnessClouded</defName>

@@ -1153,8 +1153,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Resolves the optional hediff-based prompt enchantment for the POV pawn. Missing live pawn
-        /// data simply means no enchantment, preserving neutral death/arrival and title flows.
+        /// Resolves the optional live prompt enchantment for the POV pawn. Missing live pawn data
+        /// simply means no enchantment, preserving neutral death/arrival and title flows.
         /// </summary>
         private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole,
             Dictionary<string, Pawn> livePawnsById = null)
@@ -1166,7 +1166,7 @@ namespace PawnDiary
 
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
-            return PromptEnchantments.RuleFor(pawn);
+            return PromptEnchantments.RuleFor(pawn, diaryEvent != null && diaryEvent.IsImportant());
         }
 
         private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()

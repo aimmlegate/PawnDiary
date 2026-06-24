@@ -20,7 +20,8 @@ namespace PawnDiary
     // the synthetic work diary events emitted by the periodic work scanner; Hediff groups match
     // HediffDefs when a health condition appears or worsens; Raid groups match raid incident
     // defNames (RaidEnemy/RaidFriendly/RaidBeacon); Quest groups match the quest lifecycle signal
-    // ("accepted"/"completed"/"failed") so one DiaryEventType.Quest fans out to three groups.
+    // ("accepted"/"completed"/"failed") so one DiaryEventType.Quest fans out to three groups;
+    // Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -34,7 +35,8 @@ namespace PawnDiary
         Work,
         Hediff,
         Raid,
-        Quest
+        Quest,
+        Ritual
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -478,6 +480,14 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyQuest(string signal)
         {
             return ClassifyIn(GroupDomain.Quest, signal);
+        }
+
+        // First Ritual-domain group that matches the Precept_Ritual defName plus optional behavior
+        // worker class, else the Ritual catch-all. Ritual-specific packs can add exact
+        // defName/token groups without C# changes.
+        public static DiaryInteractionGroupDef ClassifyRitual(string ritualClassifierKey)
+        {
+            return ClassifyIn(GroupDomain.Ritual, ritualClassifierKey);
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.

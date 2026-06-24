@@ -6,9 +6,30 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Anomaly psychic ritual events added.** Successful `PsychicRitualGraph.End` completions now
+  generate solo entries for invoker, target, participants, and spectators without sending ritual
+  role/title fields. The new Ritual-domain XML group uses dark `strangeChat` atmosphere, and invoker
+  prompts require one unsettling `[[speech]]...[[/speech]]` block with invented or incomprehensible
+  ritual speech.
+- **Ideology ritual events added.** Finished, non-canceled `LordJob_Ritual` outcomes now generate
+  separate solo entries for author, target, participants, and spectators, with role/title context,
+  both Royalty title and Ideology role status fields, and perspective-specific prompt instructions.
+  Ritual policy includes DLC-safe XML edge groups for Royalty throne/anima rituals, Biotech
+  childbirth, and Odyssey gravship launch/flight/landing flavor.
+- **Important-event status context added.** Prompt enchantments now use the generic `important
+  context` field and can rarely add one weighted DLC-safe status cue for important events: Royalty
+  title or Ideology role. The cues share the existing one-candidate picker, so royal and ideology
+  status cannot both appear in the same prompt.
 - **Live hook validation workflow documented.** `DOCUMENTATION.md` now records the RimBridge/GABS
   prompt-test-mode procedure for validating real Harmony hooks, including expected capture logs,
   safe debug actions, and common false negatives.
+- **Live event auto-test scenario documented.** The validation notes now include a phase-by-phase
+  scenario for every implemented event source and route shape, including quest accepted/completed/
+  failed lifecycle checks, raid fan-out, Tale/death routes, hediff/day-reflection routes, scanner
+  sources, and the need for a dev event dump or helper when log-only evidence is too weak.
+- **GABS live smoke fixture added.** `scripts/gabs/pawndiary-live-smoke.lua` runs a compact
+  script-agent mental-state hook check through `rimbridge/run_lua_file`, keeping the live-game
+  transcript to one bounded result instead of many chat-visible tool calls.
 - **Harmony startup hook restored for RimWorld 1.6.** Generated Social-log speech display now
   resolves `PlayLogEntry_Interaction.ToGameStringFromPOV_Worker` with an old-name fallback, avoiding
   the `PatchAll` startup failure that could leave later real event hooks unregistered.

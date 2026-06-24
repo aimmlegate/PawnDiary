@@ -311,8 +311,12 @@ namespace PawnDiary
                 Field("what happened", "PovText"),
                 Field("event prompt", "EventPrompt"),
                 Field("event enhancement", "EventEnhancement"),
+                ContextField("ritual role", "ritual_role"),
+                ContextField("ritual title", "ritual_title"),
+                ContextField("royal title", "royal_title"),
+                ContextField("ideoligion role", "ideological_role"),
                 Field("instruction", "Instruction"),
-                Field("important health", "PromptEnchantment"),
+                Field("important context", "PromptEnchantment"),
                 Field("setting", "Setting"),
                 Field("my last opener (not repeat)", "LastOpener"));
         }
@@ -325,6 +329,11 @@ namespace PawnDiary
         private static DiaryPromptFieldDef Field(string label, string source)
         {
             return new DiaryPromptFieldDef { label = label, source = source };
+        }
+
+        private static DiaryPromptFieldDef ContextField(string label, string contextKey)
+        {
+            return new DiaryPromptFieldDef { label = label, source = "GameContext", contextKey = contextKey };
         }
     }
 

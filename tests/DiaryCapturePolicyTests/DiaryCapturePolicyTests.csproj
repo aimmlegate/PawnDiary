@@ -29,6 +29,7 @@
     <Compile Include="..\..\Source\Capture\Events\DayReflectionEventData.cs" Link="Capture\Events\DayReflectionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RaidEventData.cs" Link="Capture\Events\RaidEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\QuestEventData.cs" Link="Capture\Events\QuestEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\RitualEventData.cs" Link="Capture\Events\RitualEventData.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventSpec.cs" Link="Capture\Catalog\DiaryEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Catalog\DiaryEventCatalog.cs" Link="Capture\Catalog\DiaryEventCatalog.cs" />
     <Compile Include="..\..\Source\Capture\Specs\ThoughtEventSpec.cs" Link="Capture\Specs\ThoughtEventSpec.cs" />
@@ -46,5 +47,6 @@
     <Compile Include="..\..\Source\Capture\Specs\DayReflectionEventSpec.cs" Link="Capture\Specs\DayReflectionEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\RaidEventSpec.cs" Link="Capture\Specs\RaidEventSpec.cs" />
     <Compile Include="..\..\Source\Capture\Specs\QuestEventSpec.cs" Link="Capture\Specs\QuestEventSpec.cs" />
+    <Compile Include="..\..\Source\Capture\Specs\RitualEventSpec.cs" Link="Capture\Specs\RitualEventSpec.cs" />
   </ItemGroup>
 </Project>

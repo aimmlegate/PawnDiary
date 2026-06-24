@@ -157,4 +157,29 @@
   <raid.instructions.1>the colony under attack — open on the body: the sprint, the breath, the fumble for the weapon</raid.instructions.1>
   <raid.instructions.2>the colony under attack — open on the aftermath: the smoke, the blood on the floor, who isn&apos;t answering</raid.instructions.2>
   <raid.tone>with shaken, crisis-pitched tension</raid.tone>
+  <ritualRoyal.label>Royal rituals</ritualRoyal.label>
+  <ritualRoyal.instruction>a Royalty ritual completed—make the ceremony courtly, title-conscious, psychic, or anima-rooted as the ritual title suggests</ritualRoyal.instruction>
+  <ritualRoyal.tone>with formal rank and ritual authority</ritualRoyal.tone>
+  <ritualRoyal.tones.0>courtly and charged with rank, title, witnesses, and public authority</ritualRoyal.tones.0>
+  <ritualRoyal.tones.1>psyfocus-hushed and tradition-bound, the ceremony larger than one pawn&apos;s body</ritualRoyal.tones.1>
+  <ritualChildbirth.label>Childbirth ritual</ritualChildbirth.label>
+  <ritualChildbirth.instruction>a childbirth ritual completed—keep the entry medically and emotionally appropriate: pain, care, risk, exhaustion, relief, or fear before mysticism</ritualChildbirth.instruction>
+  <ritualChildbirth.tone>with clinical tenderness and bodily urgency</ritualChildbirth.tone>
+  <ritualChildbirth.tones.0>medical, intimate, and careful around pain, care, danger, and relief</ritualChildbirth.tones.0>
+  <ritualChildbirth.tones.1>tender but unsentimental, focused on the body, helpers, and immediate outcome</ritualChildbirth.tones.1>
+  <ritualGravship.label>Gravship launch</ritualGravship.label>
+  <ritualGravship.instruction>a gravship launch or landing ritual completed—write it as technical, operational, and dangerous: systems, countdown, lift, flight, landing, and crew discipline</ritualGravship.instruction>
+  <ritualGravship.tone>with technical pressure and launch-day focus</ritualGravship.tone>
+  <ritualGravship.tones.0>technical and procedural, centered on systems, thrust, flight, and touchdown</ritualGravship.tones.0>
+  <ritualGravship.tones.1>tense and crew-minded, with launch checks, hard vibration, and landing consequence</ritualGravship.tones.1>
+  <ritualAnomalyPsychic.label>Psychic rituals</ritualAnomalyPsychic.label>
+  <ritualAnomalyPsychic.instruction>an Anomaly psychic ritual completed—write it with unsettling dark atmosphere, fear, wrongness, void pressure, and consequences that should not be fully explained</ritualAnomalyPsychic.instruction>
+  <ritualAnomalyPsychic.tone>with occult dread and incomprehensible pressure</ritualAnomalyPsychic.tone>
+  <ritualAnomalyPsychic.tones.0>unsettling and dark, with fear, wrongness, void pressure, and sensory dread</ritualAnomalyPsychic.tones.0>
+  <ritualAnomalyPsychic.tones.1>scary, fragmentary, and half-incomprehensible, as if language is failing around the ritual</ritualAnomalyPsychic.tones.1>
+  <ritualFinished.label>Rituals</ritualFinished.label>
+  <ritualFinished.instruction>a ritual completed—write the ceremony as a social, spiritual, or political moment from the pawn&apos;s assigned place in it</ritualFinished.instruction>
+  <ritualFinished.tone>with ceremonial weight and personal consequence</ritualFinished.tone>
+  <ritualFinished.tones.0>ceremonial and embodied, attention fixed on role, title, and consequence</ritualFinished.tones.0>
+  <ritualFinished.tones.1>formal but personal, the ritual&apos;s public meaning pressing into private thought</ritualFinished.tones.1>
 </LanguageData>

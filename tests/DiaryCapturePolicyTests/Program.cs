@@ -43,6 +43,9 @@ namespace DiaryCapturePolicyTests
             TestRaidBuildGameContextFormat();
             TestQuestDecide();
             TestQuestBuildGameContextFormat();
+            TestRitualDecide();
+            TestRitualBuildGameContextFormat();
+            TestPsychicRitualBuildGameContextFormat();
             TestArrivalDecide();
             TestArrivalBuildGameContextFormat();
             TestDeathDecide();
@@ -748,6 +751,76 @@ namespace DiaryCapturePolicyTests
                 QuestEventData.BuildGameContext("ThreatQuest", "failed", "the thrumbo pulse", "Pirate", "none"));
         }
 
+        // ── Ritual (finished Ideology rituals) ──
+
+        private static void TestRitualDecide()
+        {
+            AssertEqual("ritual null data drops", CaptureDecision.Drop,
+                RitualEventData.Decide(null, Ctx()));
+            AssertEqual("ritual null ctx drops", CaptureDecision.Drop,
+                RitualEventData.Decide(Ritual(), null));
+            AssertEqual("ritual empty defName drops", CaptureDecision.Drop,
+                RitualEventData.Decide(Ritual(defName: ""), Ctx()));
+            AssertEqual("ritual cancelled drops", CaptureDecision.Drop,
+                RitualEventData.Decide(Ritual(cancelled: true), Ctx()));
+            AssertEqual("ritual ineligible drops", CaptureDecision.Drop,
+                RitualEventData.Decide(Ritual(), Ctx(eligible: false)));
+            AssertEqual("ritual user disabled drops", CaptureDecision.Drop,
+                RitualEventData.Decide(Ritual(), Ctx(user: false)));
+            AssertEqual("ritual signal disabled drops", CaptureDecision.Drop,
+                RitualEventData.Decide(Ritual(), Ctx(signal: false)));
+            AssertEqual("ritual finished records solo", CaptureDecision.GenerateSolo,
+                RitualEventData.Decide(Ritual(), Ctx()));
+        }
+
+        private static void TestRitualBuildGameContextFormat()
+        {
+            AssertEqual("ritual context full",
+                "ritual=Ritual_Speech; ritual_title=Leader's address; ritual_behavior=RitualBehaviorWorker_LeaderSpeech; ritual_perspective=author; ritual_role=author (speaker); royal_title=Count; ideological_role=Moral guide; outcome=finished; quality=0.84",
+                RitualEventData.BuildGameContext(
+                    "Ritual_Speech",
+                    "Leader's address",
+                    "RitualBehaviorWorker_LeaderSpeech",
+                    "author",
+                    "author (speaker)",
+                    "Count",
+                    "Moral guide",
+                    "finished",
+                    "0.84"));
+            AssertEqual("ritual context fallbacks",
+                "ritual=Ritual_Dance; ritual_title=ritual; ritual_behavior=unknown; ritual_perspective=participant; ritual_role=participant; royal_title=none; ideological_role=none; outcome=finished; quality=unknown",
+                RitualEventData.BuildGameContext(
+                    "Ritual_Dance",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    null,
+                    "",
+                    ""));
+        }
+
+        private static void TestPsychicRitualBuildGameContextFormat()
+        {
+            string context = RitualEventData.BuildPsychicGameContext(
+                "VoidProvocation",
+                RitualEventData.PerspectiveInvoker,
+                "finished",
+                "0.67");
+            AssertEqual("psychic ritual context full",
+                "psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker; outcome=finished; quality=0.67",
+                context);
+            AssertTrue("psychic ritual omits ritual title",
+                context.IndexOf("ritual_title=", StringComparison.OrdinalIgnoreCase) < 0);
+            AssertTrue("psychic ritual omits ritual role",
+                context.IndexOf("ritual_role=", StringComparison.OrdinalIgnoreCase) < 0);
+
+            AssertEqual("psychic ritual context fallbacks",
+                "psychic_ritual=Chronophagy; psychic_ritual_perspective=participant; outcome=finished; quality=unknown",
+                RitualEventData.BuildPsychicGameContext("Chronophagy", "", "", ""));
+        }
+
         // ── Arrival ──
 
         private static void TestArrivalDecide()
@@ -1031,6 +1104,12 @@ namespace DiaryCapturePolicyTests
                 CaptureDecision.GenerateSolo,
                 questSpec.Decide(Quest("accepted"), Ctx()));
 
+            DiaryEventSpec ritualSpec = DiaryEventCatalog.Get(DiaryEventType.Ritual);
+            AssertTrue("catalog has Ritual spec", ritualSpec is RitualEventSpec);
+            AssertEqual("catalog dispatches Ritual decision",
+                CaptureDecision.GenerateSolo,
+                ritualSpec.Decide(Ritual(), Ctx()));
+
             DiaryEventSpec arrivalSpec = DiaryEventCatalog.Get(DiaryEventType.Arrival);
             AssertTrue("catalog has Arrival spec", arrivalSpec is ArrivalEventSpec);
             AssertEqual("catalog dispatches Arrival decision",
@@ -1310,6 +1389,24 @@ namespace DiaryCapturePolicyTests
                 Label = "A Stolen Cache",
                 FactionDefName = "Outlander",
                 Rewards = "Silver x100, Medicine x5",
+            };
+        }
+
+        private static RitualEventData Ritual(
+            string defName = "Ritual_Speech",
+            string perspective = RitualEventData.PerspectiveOrganizer,
+            bool cancelled = false)
+        {
+            return new RitualEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Title = "Leader's address",
+                BehaviorClass = "RitualBehaviorWorker_LeaderSpeech",
+                Perspective = perspective,
+                RitualRole = "author (speaker)",
+                Cancelled = cancelled,
             };
         }
 

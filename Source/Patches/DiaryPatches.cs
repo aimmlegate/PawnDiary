@@ -14,6 +14,7 @@ using HarmonyLib;
 using RimWorld;
 using Verse;
 using Verse.AI;
+using Verse.AI.Group;
 
 namespace PawnDiary
 {
@@ -558,6 +559,46 @@ namespace PawnDiary
             }
 
             DiaryGameComponent.Current?.RecordQuestEnded(__instance, outcome);
+        }
+    }
+
+    // Fires after an Ideology ritual applies its outcome. The hook records the finished ritual once,
+    // then DiaryGameComponent fans it out to author/target/participant/spectator solo entries.
+    [HarmonyPatch(typeof(LordJob_Ritual), "ApplyOutcome")]
+    public static class RitualOutcomePatch
+    {
+        /// <summary>
+        /// Harmony Postfix for LordJob_Ritual.ApplyOutcome. Runs after vanilla outcome effects and
+        /// skips canceled rituals, so only completed ritual events become diary pages.
+        /// </summary>
+        public static void Postfix(LordJob_Ritual __instance, float progress, bool cancelled)
+        {
+            if (__instance == null || cancelled)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordRitualFinished(__instance, progress, cancelled);
+        }
+    }
+
+    // Fires after an Anomaly psychic ritual graph ends. Only successful endings are recorded; the
+    // component reads the ritual state and fans it out to invoker/target/participant/spectator pages.
+    [HarmonyPatch(typeof(PsychicRitualGraph), "End")]
+    public static class PsychicRitualOutcomePatch
+    {
+        /// <summary>
+        /// Harmony Postfix for PsychicRitualGraph.End. The success flag distinguishes a completed
+        /// psychic ritual from an interruption or cancellation.
+        /// </summary>
+        public static void Postfix(PsychicRitual psychicRitual, bool success)
+        {
+            if (psychicRitual == null || !success)
+            {
+                return;
+            }
+
+            DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success);
         }
     }
 

@@ -1,0 +1,118 @@
+// Payload + pure decision for an Ideology ritual completion. The live hook fans one finished
+// LordJob_Ritual out to organizer/target/participant/spectator solo entries; this payload is the
+// plain per-pawn slice that keeps decision logic testable without RimWorld assemblies.
+using System;
+
+namespace PawnDiary.Capture
+{
+    /// <summary>
+    /// Captured facts for one pawn's perspective on a finished ritual.
+    /// </summary>
+    public class RitualEventData : DiaryEventData
+    {
+        public const string PerspectiveOrganizer = "author";
+        public const string PerspectiveTarget = "target";
+        public const string PerspectiveParticipant = "participant";
+        public const string PerspectiveSpectator = "spectator";
+        public const string PerspectiveInvoker = "invoker";
+        public const string FallbackRole = "participant";
+        public const string FallbackTitle = "ritual";
+
+        public override DiaryEventType EventType => DiaryEventType.Ritual;
+
+        /// <summary>The Precept_Ritual defName.</summary>
+        public string DefName;
+
+        /// <summary>The ritual title/label shown to the player.</summary>
+        public string Title;
+
+        /// <summary>The ritual behavior worker class name, when available.</summary>
+        public string BehaviorClass;
+
+        /// <summary>The pawn's perspective bucket: author, target, participant, or spectator.</summary>
+        public string Perspective;
+
+        /// <summary>The specific ritual assignment label, such as speaker, leader, or spectator.</summary>
+        public string RitualRole;
+
+        /// <summary>Whether the live ritual was canceled. Canceled rituals do not record.</summary>
+        public bool Cancelled;
+
+        /// <summary>
+        /// Pure decision for one pawn's ritual entry. Finished, non-canceled, eligible, enabled
+        /// ritual perspectives become solo diary entries.
+        /// </summary>
+        public static CaptureDecision Decide(RitualEventData data, CaptureContext ctx)
+        {
+            if (data == null || ctx == null || string.IsNullOrEmpty(data.DefName))
+            {
+                return CaptureDecision.Drop;
+            }
+
+            if (data.Cancelled)
+            {
+                return CaptureDecision.Drop;
+            }
+
+            if (!ctx.Eligible || !ctx.UserEnabled || !ctx.SignalEnabled)
+            {
+                return CaptureDecision.Drop;
+            }
+
+            return CaptureDecision.GenerateSolo;
+        }
+
+        /// <summary>
+        /// Pure assembly of the ritual game-context marker. The leading "ritual=" marker is
+        /// load-bearing for domain classification. Field order is locked by tests.
+        /// </summary>
+        public static string BuildGameContext(
+            string defName,
+            string title,
+            string behaviorClass,
+            string perspective,
+            string ritualRole,
+            string royalTitle,
+            string ideologicalRole,
+            string outcome,
+            string quality)
+        {
+            return "ritual=" + Clean(defName)
+                + "; ritual_title=" + Fallback(title, FallbackTitle)
+                + "; ritual_behavior=" + Fallback(behaviorClass, "unknown")
+                + "; ritual_perspective=" + Fallback(perspective, FallbackRole)
+                + "; ritual_role=" + Fallback(ritualRole, FallbackRole)
+                + "; royal_title=" + Fallback(royalTitle, "none")
+                + "; ideological_role=" + Fallback(ideologicalRole, "none")
+                + "; outcome=" + Fallback(outcome, "finished")
+                + "; quality=" + Fallback(quality, "unknown");
+        }
+
+        /// <summary>
+        /// Pure assembly for Anomaly psychic rituals. These deliberately do not send ritual
+        /// role/title fields; the prompt gets only perspective, outcome, and quality facts.
+        /// </summary>
+        public static string BuildPsychicGameContext(
+            string defName,
+            string perspective,
+            string outcome,
+            string quality)
+        {
+            return "psychic_ritual=" + Clean(defName)
+                + "; psychic_ritual_perspective=" + Fallback(perspective, PerspectiveParticipant)
+                + "; outcome=" + Fallback(outcome, "finished")
+                + "; quality=" + Fallback(quality, "unknown");
+        }
+
+        private static string Fallback(string value, string fallback)
+        {
+            string clean = Clean(value);
+            return string.IsNullOrWhiteSpace(clean) ? fallback : clean;
+        }
+
+        private static string Clean(string value)
+        {
+            return value == null ? string.Empty : value.Trim();
+        }
+    }
+}

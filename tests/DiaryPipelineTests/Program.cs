@@ -73,7 +73,7 @@ namespace DiaryPipelineTests
             AssertContains("solo text", plan.userPrompt, "what happened: Alice repaired the generator alone.");
             AssertContains("solo event prompt", plan.userPrompt, "event prompt: Write this event type.");
             AssertContains("solo event enhancement", plan.userPrompt, "event enhancement: Keep the event focused.");
-            AssertContains("solo health", plan.userPrompt, "important health: Her hands shake.");
+            AssertContains("solo context", plan.userPrompt, "important context: Her hands shake.");
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
         }
 
@@ -386,6 +386,28 @@ namespace DiaryPipelineTests
                     "Quest",
                     "quest=OpportunityQuest; label=cache; faction=Outlander; rewards=Silver x100",
                     "OpportunityQuest"));
+            AssertEqual("ritual marker domain", "Ritual",
+                DiaryEventDomainClassifier.DomainForContext("ritual=Ritual_Speech; ritual_title=Leader's address; ritual_role=author"));
+            AssertEqual("psychic ritual marker domain", "Ritual",
+                DiaryEventDomainClassifier.DomainForContext("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
+            AssertEqual("ritual classifier includes behavior when present",
+                "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Ritual",
+                    "ritual=Ritual_Speech; ritual_title=Leader's address; ritual_behavior=RitualBehaviorWorker_ThroneSpeech",
+                    "Ritual_Speech"));
+            AssertEqual("ritual classifier falls back without behavior",
+                "Ritual_Speech",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Ritual",
+                    "ritual=Ritual_Speech; ritual_title=Leader's address",
+                    "Ritual_Speech"));
+            AssertEqual("psychic ritual classifier uses psychic prefix",
+                "PsychicRitual;VoidProvocation",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Ritual",
+                    "psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker",
+                    "VoidProvocation"));
             AssertEqual("raid classifier keeps incident defName",
                 "RaidEnemy",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -398,6 +420,10 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("raid=RaidEnemy; label=enemy raid"));
             AssertTrue("quest marker is not interaction prompt",
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("quest=QuestDef; signal=completed; label=name"));
+            AssertTrue("ritual marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ritual=Ritual_Speech; ritual_title=Leader's address"));
+            AssertTrue("psychic ritual marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
         }
@@ -662,7 +688,7 @@ namespace DiaryPipelineTests
                     Field("event prompt", "EventPrompt"),
                     Field("event enhancement", "EventEnhancement"),
                     Field("weapon", "Weapon"),
-                    Field("important health", "PromptEnchantment"),
+                    Field("important context", "PromptEnchantment"),
                     Field("initiator entry", "HiddenInitiatorEntry"),
                     Field("entry", "EntryText"));
             }

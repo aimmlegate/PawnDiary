@@ -66,6 +66,9 @@ namespace PawnDiary
         // The same quest lifecycle signal (same quest id + signal) is only recorded once within this
         // window. Guards against a fluke double-call on Quest.Accept or Quest.End.
         public int questDedupTicks = 2500;
+        // The same ritual outcome is only recorded once within this window. Guards against a fluke
+        // double-call while still allowing separate rituals of the same type later.
+        public int ritualDedupTicks = 2500;
 
         // ---- Surroundings scan ----
         public float nearbyRadius = 5f;       // cells searched around the pawn for notable things

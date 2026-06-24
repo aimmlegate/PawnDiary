@@ -39,6 +39,10 @@ namespace PawnDiary.Capture
         // (Quest.Accept hook). Quest.End records Success as "completed" and Fail as "failed". The
         // Signal field on QuestEventData routes prompt group selection, not this enum value.
         Quest,
+        // Ritual: Ideology ritual completion fan-out from LordJob_Ritual.ApplyOutcome. Each
+        // eligible organizer/target/participant/spectator gets a solo entry with role-specific
+        // instruction and ritual role/title context.
+        Ritual,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.

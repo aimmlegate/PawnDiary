@@ -47,18 +47,22 @@ available:
 
 | Template | Fields |
 |---|---|
-| `PairDefault` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `important health`, `setting`, `relationship`, `my last opener (not repeat)` |
-| `PairImportant` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `important health`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `initiator diary (hidden context)` |
-| `PairCombat` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `you`, `important health`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `weapon`, `initiator diary (hidden context)` |
-| `PairBatched` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `important health`, `setting`, `my last opener (not repeat)` |
-| `SoloDefault` | `event`, `pov`, `what happened`, `instruction`, `important health`, `setting`, `my last opener (not repeat)` |
-| `SoloImportant` | `event`, `pov`, `what happened`, `instruction`, `you`, `important health`, `setting`, `tone`, `my last opener (not repeat)` |
-| `SoloInternalState` | `event`, `pov`, `what happened`, `instruction`, `important health`, `setting`, `my last opener (not repeat)` |
-| `SoloBatched` | `event`, `pov`, `what happened`, `instruction`, `important health`, `setting`, `my last opener (not repeat)` |
-| `SoloDayReflection` | `event`, `pov`, `what happened`, `instruction`, `you`, `important health`, `setting`, `my last opener (not repeat)` |
+| `PairDefault` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `relationship`, `my last opener (not repeat)` |
+| `PairImportant` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `initiator diary (hidden context)` |
+| `PairCombat` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `relationship`, `my last opener (not repeat)`, `weapon`, `initiator diary (hidden context)` |
+| `PairBatched` | `event`, `pov`, `role`, `with`, `what you saw`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloDefault` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloImportant` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `tone`, `my last opener (not repeat)` |
+| `SoloInternalState` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloBatched` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
+| `SoloDayReflection` | `event`, `pov`, `what happened`, `instruction`, `ritual role`, `ritual title`, `you`, `royal title`, `ideoligion role`, `important context`, `setting`, `my last opener (not repeat)` |
 | `DeathDescription` | `event`, `deceased`, `what happened`, `death facts`, `deceased pawn`, `setting` |
 | `ArrivalDescription` | `event`, `colonist`, `what happened`, `arrival facts`, `colonist pawn`, `setting` |
 | `Title` | `entry` |
+
+The ritual and DLC-status fields only render when the event context has real values. The placeholder
+values `none`, `n/a`, and `unknown` are omitted, so normal non-ritual prompts do not show empty
+ritual/status lines.
 
 ## 3. Event Source Map
 
@@ -167,6 +171,20 @@ available:
 | Prompt evidence | Per-pawn quest text (carrying the description prose), XML Quest instruction/tone, issuer faction and reward summary in context, surroundings, health hint, and last opener. |
 | Colony dedup | One window per quest signal, keyed by quest id + signal. |
 
+### Rituals
+
+| Item | Value |
+|---|---|
+| Source | `LordJob_Ritual.ApplyOutcome` and `PsychicRitualGraph.End`, through `RitualEventData`. Only finished/successful, non-canceled rituals record. |
+| Recording rule | One finished ritual fans out to separate solo entries for the author/invoker, target pawn when available, participants, and spectators. Duplicate pawns are recorded once, in that priority order. |
+| Context | `ritual=<Precept_Ritual>; ritual_title=<title>; ritual_behavior=<worker>; ritual_perspective=<author\|target\|participant\|spectator>; ritual_role=<role>; royal_title=<title\|none>; ideological_role=<role\|none>; outcome=finished; quality=<progress\|unknown>` |
+| Psychic ritual context | `psychic_ritual=<PsychicRitualDef>; psychic_ritual_perspective=<invoker\|target\|participant\|spectator>; outcome=finished; quality=<power\|unknown>`. These entries intentionally do not send `ritual_title` or `ritual_role`. |
+| Prompt | Usually `SoloImportant`; all shipped Ritual groups are important. |
+| Perspective instruction | Author/invoker, target, participant, and spectator entries each get a separate localized instruction after the ritual has finished. Psychic ritual invoker entries request exactly one standalone `[[speech]]...[[/speech]]` block containing unsettling invented ritual speech. |
+| Edge groups | Royalty `ThroneSpeech` / `AnimaTreeLinking` use more courtly or psyfocus/anima flavor; Biotech `ChildBirth` stays medically and emotionally appropriate; Odyssey `GravshipLaunch` is technical, launch/flight/landing focused; Anomaly psychic rituals use `strangeChat` color cue and unsettling dark atmosphere. |
+| Prompt evidence | Per-pawn ritual text, XML Ritual instruction/tone, role/title/status context, ritual behavior, surroundings, important context, and last opener. |
+| Dedup | One window per ritual defName + organizer + target + tick. |
+
 ### Thoughts
 
 | Item | Value |
@@ -223,7 +241,7 @@ available:
 | Source | Sleep/rest day-summary trigger, through `DayReflectionEventData`. |
 | Context | `day_reflection=true; day=<day>; highlights=<n>; candidates=<n>; filler_moments=<n>; signals=<tags>` |
 | Prompt | `SoloDayReflection`. |
-| Prompt evidence | A curated highlight summary from the pawn's day, pawn summary, surroundings, important health hint, and last opener. |
+| Prompt evidence | A curated highlight summary from the pawn's day, pawn summary, surroundings, important context hint, and last opener. |
 
 ## 4. Field Source Glossary
 

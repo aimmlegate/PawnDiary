@@ -18,6 +18,7 @@
     <romanceDedupTicks>2500</romanceDedupTicks>
     <raidDedupTicks>2500</raidDedupTicks>
     <questDedupTicks>2500</questDedupTicks>
+    <ritualDedupTicks>2500</ritualDedupTicks>
 
     <!-- Surroundings scan -->
     <!-- nearbyRadius: search radius in cells around pawn for notable objects -->
