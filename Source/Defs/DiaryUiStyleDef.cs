@@ -119,7 +119,7 @@ namespace PawnDiary
         public float statusBadgeHeight = 24f;
         public float statusBadgeRightPadding = 24f;
         public float entryGap = 8f;
-        public int autoExpandedEntryCount = 0;
+        public int autoExpandedEntryCount = 3;
         public float collapsedEntryChromePadding = 2f;
         public float expansionAnimationSpeed = 5.5f;
         public float entryAccentWidth = 6f;

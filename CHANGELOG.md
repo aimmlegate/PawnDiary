@@ -20,9 +20,9 @@ not need separate entries unless they change behavior or document an important r
   captures, and ritual quality is passed to prompts as XML-tuned plain words rather than raw
   decimals. Ritual prompts now treat quality as indirect emotional/aftermath weight instead of
   naming the label directly.
-- **Diary entry cards default to compact rows.** The newest entries no longer auto-expand into tall
-  full-text panels; `autoExpandedEntryCount` now defaults to `0`, while click-to-expand behavior
-  remains unchanged.
+- **Diary entry cards collapse older history.** The newest entries still auto-expand, but
+  `autoExpandedEntryCount` now defaults to `3` so older full-text panels start collapsed while
+  click-to-expand behavior remains unchanged.
 - **API auth headers made editable.** Fixed `api-key` and `x-api-key` auth choices were replaced by
   one custom-header mode that defaults to `x-goog-api-key`; old saved rows migrate to custom-header
   auth with their previous header name.

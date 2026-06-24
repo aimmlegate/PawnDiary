@@ -365,13 +365,13 @@ intentionally excluded: a synthetic death/arrival event would become that pawn's
 real gameplay hooks. The prompt suite validates prompt planning, queueing, and Diary UI display; it
 does not validate Harmony event capture. Use the live hook workflow in §13 for real hook checks.
 
-The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. Entry cards start
-collapsed by default (`autoExpandedEntryCount`), keeping the list compact; clicking a card header
-expands it to the full wrapped diary text. In dev mode every expanded entry card also shows a subtle
-copy button at the bottom-left of the card: clicking it copies the card's text to the clipboard —
-the captured prompt for prompt-only cards, otherwise the generated text — so prompts and output can
-be pasted out for inspection. The badge rests at ~0.5 alpha, brightens on hover, and reserves a
-dev-only footer so it clears the model-name line drawn above it.
+The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. The newest entry
+cards start expanded (`autoExpandedEntryCount`), while older history starts collapsed to keep long
+diaries scannable; clicking a card header toggles either state. In dev mode every expanded entry card
+also shows a subtle copy button at the bottom-left of the card: clicking it copies the card's text to
+the clipboard — the captured prompt for prompt-only cards, otherwise the generated text — so prompts
+and output can be pasted out for inspection. The badge rests at ~0.5 alpha, brightens on hover, and
+reserves a dev-only footer so it clears the model-name line drawn above it.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
