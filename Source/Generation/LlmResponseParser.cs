@@ -759,6 +759,7 @@ namespace PawnDiary
 
             string normalized = NormalizeMalformedSpeechMarkers(text);
             string sanitized = SanitizeGeneratedTagMarkers(normalized, true);
+            sanitized = StripStandaloneSchemaPunctuationTokens(sanitized);
             return CompactGeneratedMarkupWhitespace(sanitized).Trim();
         }
 
@@ -990,6 +991,55 @@ namespace PawnDiary
         private static bool IsAsciiLower(char c)
         {
             return c >= 'a' && c <= 'z';
+        }
+
+        private static string StripStandaloneSchemaPunctuationTokens(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (IsSchemaPunctuation(text[i])
+                    && IsAtTokenBoundary(text, i - 1)
+                    && IsSchemaPunctuationToken(text, i, out int tokenEnd)
+                    && IsAtTokenBoundary(text, tokenEnd))
+                {
+                    i = tokenEnd;
+                    continue;
+                }
+
+                builder.Append(text[i]);
+                i++;
+            }
+
+            return builder.ToString();
+        }
+
+        private static bool IsSchemaPunctuationToken(string text, int start, out int end)
+        {
+            int i = start;
+            while (i < text.Length && IsSchemaPunctuation(text[i]))
+            {
+                i++;
+            }
+
+            end = i;
+            return i > start;
+        }
+
+        private static bool IsSchemaPunctuation(char c)
+        {
+            return c == ';' || c == '=' || c == ':' || c == '|';
+        }
+
+        private static bool IsAtTokenBoundary(string text, int index)
+        {
+            return index < 0 || index >= text.Length || char.IsWhiteSpace(text[index]);
         }
 
         private static string CompactGeneratedMarkupWhitespace(string text)

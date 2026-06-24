@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Generated-output punctuation cleanup added.** Save-time LLM output sanitization now strips
+  standalone schema punctuation tokens such as `;`, `=`, `:`, and `|` when small models echo prompt
+  separators, while preserving normal prose punctuation.
 - **Psychic ritual capture moved to completion.** Anomaly psychic rituals now record from
   `LordToil_PsychicRitual.RitualCompleted` instead of graph end, avoiding start/transition
   captures, and ritual quality is passed to prompts as XML-tuned plain words rather than raw

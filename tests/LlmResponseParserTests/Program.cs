@@ -232,6 +232,16 @@ namespace LlmResponseParserTests
                 LlmResponseParser.CleanGeneratedText("I froze. [[You do not belong here.]]", 50, false));
 
             AssertEqual(
+                "schema punctuation tokens stripped",
+                "I froze. You do not belong here.",
+                LlmResponseParser.CleanGeneratedText("I froze. ; = | : You do not belong here.", 50, false));
+
+            AssertEqual(
+                "prose semicolon survives",
+                "I froze; you did not.",
+                LlmResponseParser.CleanGeneratedText("I froze; you did not.", 50, false));
+
+            AssertEqual(
                 "unknown paired tag markers stripped",
                 "The plan was first.",
                 LlmResponseParser.CleanGeneratedText("The plan was [[work]]first[[/work]].", 50, false));
