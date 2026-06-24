@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Harmony startup hook restored for RimWorld 1.6.** Generated Social-log speech display now
+  resolves `PlayLogEntry_Interaction.ToGameStringFromPOV_Worker` with an old-name fallback, avoiding
+  the `PatchAll` startup failure that could leave later real event hooks unregistered.
 - **API lane edge cases fixed.** Cooldown failover now snapshots lane readiness once per request so
   timing changes cannot skip every lane, `No auth` lanes ignore stale saved key text for lane
   identity, settings saves prune cooldowns for removed/reconfigured rows, `key=` query auth replaces

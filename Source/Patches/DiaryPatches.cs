@@ -248,9 +248,22 @@ namespace PawnDiary
         }
     }
 
-    [HarmonyPatch(typeof(PlayLogEntry_Interaction), nameof(PlayLogEntry_Interaction.ToGameStringFromPOV))]
+    [HarmonyPatch]
     public static class PlayLogGeneratedSpeechTextPatch
     {
+        /// <summary>
+        /// Finds the concrete interaction text renderer for this RimWorld build. In 1.6 the public
+        /// base method delegates to PlayLogEntry_Interaction.ToGameStringFromPOV_Worker, so patching
+        /// the old public name on the concrete class can fail PatchAll before later hooks register.
+        /// </summary>
+        private static MethodBase TargetMethod()
+        {
+            return AccessTools.Method(typeof(PlayLogEntry_Interaction), "ToGameStringFromPOV_Worker",
+                new[] { typeof(Thing), typeof(bool) })
+                ?? AccessTools.Method(typeof(PlayLogEntry_Interaction), "ToGameStringFromPOV",
+                new[] { typeof(Thing), typeof(bool) });
+        }
+
         /// <summary>
         /// Harmony Prefix for generated direct-speech rows. Normal vanilla interaction rows continue
         /// through RimWorld's grammar; injected rows display the already parsed LLM speech text.

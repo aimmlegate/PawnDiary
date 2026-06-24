@@ -119,6 +119,9 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 
 `PlayLog.Add` preflights live pawn eligibility and XML significance before rendering RimWorld's POV
 grammar strings, so routine social-log rows that cannot become diary entries stay cheap.
+Generated Social-log speech rows patch the concrete RimWorld 1.6 interaction text worker
+(`ToGameStringFromPOV_Worker`) with an old-name fallback, so a display-method rename cannot abort
+`PatchAll` before the later mood, relation, raid, and quest hooks register.
 
 ---
 
