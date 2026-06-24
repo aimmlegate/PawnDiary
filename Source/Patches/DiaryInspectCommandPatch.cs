@@ -90,6 +90,7 @@ namespace PawnDiary
         {
             return selectedThing != null
                 && ITab_Pawn_Diary.CanShowDiaryFor(diaryPawn)
+                && (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.showDiaryInspectTab)
                 && Find.Selector != null
                 && Find.Selector.NumSelected == 1
                 && Find.Selector.SingleSelectedThing == selectedThing;

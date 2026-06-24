@@ -15,8 +15,11 @@
 -->
 <LanguageData>
 
-  <!-- Diary surface label, used by the hidden inspect tab and the selected-pawn command button. -->
+  <!-- Diary surface label, used by the selected-pawn command button. Fixed tab labels keep
+       non-breaking spacer slots on both sides so the title remains centered when the new-page dot appears. -->
   <PawnDiaryTabLabel>Diary</PawnDiaryTabLabel>
+  <PawnDiaryTabLabelFixed>&#160;&#160;Diary&#160;&#160;</PawnDiaryTabLabelFixed>
+  <PawnDiaryTabLabelNew>&#160;&#160;Diary&#160;•</PawnDiaryTabLabelNew>
   <PawnDiary.Command.OpenDiaryDesc>Open or close this pawn's diary.</PawnDiary.Command.OpenDiaryDesc>
   <PawnDiary.Command.NewPagesTip>New diary pages are waiting.</PawnDiary.Command.NewPagesTip>
   <PawnDiary.Command.WritingTip>Diary page is being written.</PawnDiary.Command.WritingTip>
@@ -165,6 +168,8 @@
   <PawnDiary.Settings.ConnectionTestMissingEndpoint>Connection test needs an endpoint URL.</PawnDiary.Settings.ConnectionTestMissingEndpoint>
   <PawnDiary.Settings.ConnectionTestMissingModel>Connection test needs a model name.</PawnDiary.Settings.ConnectionTestMissingModel>
   <PawnDiary.Settings.ConnectionTestPrompt>Reply with one short sentence confirming the API connection works.</PawnDiary.Settings.ConnectionTestPrompt>
+  <PawnDiary.Settings.ShowDiaryInspectTab>Use pawn inspect tab instead of Diary command</PawnDiary.Settings.ShowDiaryInspectTab>
+  <PawnDiary.Settings.ShowDiaryInspectTabTip>When enabled, Diary appears in the selected pawn's normal inspect-tab row. When disabled, Diary stays a bottom command button.</PawnDiary.Settings.ShowDiaryInspectTabTip>
   <PawnDiary.Settings.GenerateTitles>Write short titles for diary pages</PawnDiary.Settings.GenerateTitles>
   <PawnDiary.Settings.GenerateTitlesTip>When enabled, each diary entry sends a small follow-up LLM request to write a short title after the main page is written. Adds latency and one extra token bill per entry. When disabled, no new title is written and diary headers show only the date.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.EnableAtmosphericFormatting>Use rare atmosphere formatting</PawnDiary.Settings.EnableAtmosphericFormatting>

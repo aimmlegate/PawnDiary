@@ -151,6 +151,9 @@ namespace PawnDiary
         public bool showApiSettings = true;
         // UI preference: when false, the compact Prompt Studio block is collapsed in mod settings.
         public bool showPromptStudio = true;
+        // UI preference: when true, show the normal pawn inspect-tab button instead of the selected
+        // pawn bottom gizmo. The tab remains registered either way so links can always open it.
+        public bool showDiaryInspectTab = false;
         // Dev-mode UI preference: shows the per-pawn writing-style picker in the Diary inspector tab.
         public bool showPersonaSettings = false;
         // Dev-mode UI preference: shows raw/pending entries and the LLM prompt/status diagnostic block.
@@ -237,6 +240,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
             Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
             Scribe_Values.Look(ref showPromptStudio, "showPromptStudio", true);
+            Scribe_Values.Look(ref showDiaryInspectTab, "showDiaryInspectTab", false);
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);
             Scribe_Values.Look(ref showGeneratingEntries, "showGeneratingEntries", false);
