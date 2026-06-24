@@ -64,6 +64,8 @@ namespace PawnDiary
         private const float RequestTuningBlockHeight = 197f;
         private const string PromptStudioSystemPrefix = "system:";
         private const string PromptStudioEventPrefix = "event:";
+        private const string ApiMoveUpSymbol = "↑";
+        private const string ApiMoveDownSymbol = "↓";
 
         /// <summary>
         /// Initializes the mod, loading persisted settings from the save/config store.
@@ -349,13 +351,13 @@ namespace PawnDiary
             Rect upRect = new Rect(downRect.x - 42f, headerRect.y, 36f, headerRect.height);
             Rect headerLabelRect = new Rect(headerRect.x, headerRect.y, Mathf.Max(0f, upRect.x - headerRect.x - 6f), headerRect.height);
             Widgets.Label(headerLabelRect, "PawnDiary.Settings.ApiLabel".Translate(index + 1));
-            if (ButtonTextFit(upRect, "PawnDiary.Settings.MoveApiUp".Translate()) && index > 0)
+            if (ButtonSymbolWithTip(upRect, ApiMoveUpSymbol, "PawnDiary.Settings.MoveApiUp".Translate()) && index > 0)
             {
                 moveIndex = index;
                 moveDelta = -1;
             }
 
-            if (ButtonTextFit(downRect, "PawnDiary.Settings.MoveApiDown".Translate()) && index < Settings.apiEndpoints.Count - 1)
+            if (ButtonSymbolWithTip(downRect, ApiMoveDownSymbol, "PawnDiary.Settings.MoveApiDown".Translate()) && index < Settings.apiEndpoints.Count - 1)
             {
                 moveIndex = index;
                 moveDelta = 1;
@@ -650,6 +652,18 @@ namespace PawnDiary
 
             Text.Anchor = previousAnchor;
             Text.Font = previousFont;
+            return clicked;
+        }
+
+        /// <summary>Draws a compact symbol button and exposes its full meaning in a tooltip.</summary>
+        private static bool ButtonSymbolWithTip(Rect rect, string symbol, string tooltip)
+        {
+            bool clicked = Widgets.ButtonText(rect, symbol ?? string.Empty);
+            if (!string.IsNullOrEmpty(tooltip))
+            {
+                TooltipHandler.TipRegion(rect, tooltip);
+            }
+
             return clicked;
         }
 

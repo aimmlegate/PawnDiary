@@ -281,8 +281,8 @@ the shared request-tuning block shown inside the expanded connection section. En
 normalize on load/save, not every settings draw, so users can edit or clear the active text field
 without it being rewritten mid-typing. Logs strip query strings.
 
-API row order is editable with Up/Down buttons. The global routing mode controls how strongly that
-order affects primary selection: **Balanced** spreads primary requests equally across enabled rows,
+API row order is editable with compact arrow buttons that show their full label on hover. The global
+routing mode controls how strongly that order affects primary selection: **Balanced** spreads primary requests equally across enabled rows,
 **Prefer top rows** gives earlier rows more primary turns, and **Failover only** always starts with
 the first ready row. Row order also remains the failover order in every mode.
 

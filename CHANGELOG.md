@@ -7,7 +7,7 @@ not need separate entries unless they change behavior or document an important r
 ## 2026-06-24
 
 - **API lane routing hardened for free-tier pools.** Connection settings now include a global routing
-  mode (Balanced, Prefer top rows, or Failover only), Up/Down controls to reorder API rows, and
+  mode (Balanced, Prefer top rows, or Failover only), compact arrow controls to reorder API rows, and
   per-row auth styles for Bearer, no auth, `api-key`, `x-api-key`, or `key=` query providers.
   Transient lane failures and timeouts now apply automatic runtime cooldowns with exponential
   backoff, while successful responses clear the lane cooldown. Prompt-lab gained matching
