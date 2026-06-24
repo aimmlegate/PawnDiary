@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Per-entry HUMOR CUES. These are subtle, structural writing licenses — never "be funny". Each rule
+  is one concrete sentence-shape constraint (a flat understatement coda, a dry inventory, a clerical
+  tally) that lets a small model produce a droll or deadpan entry without ever naming comedy, jokes,
+  punchlines, or comic dialogue.
+
+  The feature is HIDDEN and ALWAYS-ON: no settings UI, no player-facing label. The base rate lives in
+  DiaryTuningDef.humorChance (default 0.10 ≈ 1 in 10 eligible entries). At most one cue per entry.
+
+  Flavor matches event STAKES, chosen by Source/Generation/HumorCues.cs:
+    * <tier>Light</tier>   — dry/absurdist, drawn for mundane events.
+    * <tier>Gallows</tier> — dark/deadpan, drawn for high-stakes events (important, Raid domain, or
+      combat/socialFight/mentalBreak color cue). Both tiers are always eligible; the tier only picks
+      the flavor.
+  <weight> is relative within the tier (1 = even with peers). The <rule> and <label> are localized
+  via DefInjected (Languages/English/DefInjected/DiaryHumorCueDef/DiaryHumorCueDefs.xml); this file
+  holds the English default copy. <tier> is an internal schema keyword and is NOT localized.
+
+  The chosen cue rides into the prompt folded inside the writing-style voice block, so it is
+  automatically suppressed on neutral death/arrival/title templates that opt out of persona text.
+-->
+<Defs>
+
+  <!-- ========================= Light (dry/absurdist, mundane events) ========================= -->
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_UnderstatementCoda</defName>
+    <label>understatement-coda</label>
+    <rule>End the entry with one flat understatement that shrinks what happened. No exaggeration, no punchline, no reaction.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_AbsurdDetail</defName>
+    <label>absurd-detail</label>
+    <rule>Include exactly one small absurd-but-true detail. State it plainly, then continue without commenting on it.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_PettyComplaint</defName>
+    <label>petty-complaint</label>
+    <rule>Frame the event as a petty complaint about one object or the weather. Keep the facts accurate.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_MisplacedPriority</defName>
+    <label>misplaced-priority</label>
+    <rule>Mention one small inconvenience as if it mattered more than the event itself. Do not explain the mismatch.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_DeadpanInventory</defName>
+    <label>deadpan-inventory</label>
+    <rule>List what happened as a dry inventory of minor losses and gains. No emotion words.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_PoliteRegret</defName>
+    <label>polite-regret</label>
+    <rule>Close with one over-formal, slightly too-polite regret about something trivial.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_SidewaysObservation</defName>
+    <label>sideways-observation</label>
+    <rule>Add one observation about an unrelated detail nearby, then stop. It should sit oddly beside the event.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_ConditionalCopOut</defName>
+    <label>conditional-cop-out</label>
+    <rule>End on a flat conditional like it could go either way, with no real concern.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_RenamedThing</defName>
+    <label>renamed-thing</label>
+    <rule>Call one ordinary object by a slightly wrong dignified name, once, without explaining.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_ShrugCloser</defName>
+    <label>shrug-closer</label>
+    <rule>Close with one short line that treats the whole event as barely worth noting.</rule>
+    <tier>Light</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <!-- ========================= Gallows (dark/deadpan, high-stakes events) ========================= -->
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_RoutineTerrible</defName>
+    <label>routine-terrible</label>
+    <rule>State the worst part as if it were routine inventory. No drama, no reflection, no pity.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_HouseholdMaintenance</defName>
+    <label>household-maintenance</label>
+    <rule>End with one quiet line that treats the terrible thing as ordinary household maintenance.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_UnacknowledgedDark</defName>
+    <label>unacknowledged-dark</label>
+    <rule>Let one detail be darker than the narrator acknowledges. They do not react to it at all.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_DryTallyOfLoss</defName>
+    <label>dry-tally-of-loss</label>
+    <rule>Tally who or what was lost in a flat, clerical tone, like checking off chores.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_GrimUnderstatement</defName>
+    <label>grim-understatement</label>
+    <rule>Reduce the scale of the disaster with one calm understatement. Sincerity, not sarcasm.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_MatterOfFactMortality</defName>
+    <label>matter-of-fact-mortality</label>
+    <rule>Mention death or injury the way one mentions the weather. Move straight on.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_QueuedForLater</defName>
+    <label>queued-for-later</label>
+    <rule>Treat the terrible event as an item deferred to a more convenient day.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_ProfessionalDetachment</defName>
+    <label>professional-detachment</label>
+    <rule>Describe the aftermath with the detached tone of a routine work report.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_GrimPracticality</defName>
+    <label>grim-practicality</label>
+    <rule>Pivot immediately to one practical next task, as if the event were already settled.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+  <PawnDiary.DiaryHumorCueDef>
+    <defName>DiaryHumorCue_EvenMeasure</defName>
+    <label>even-measure</label>
+    <rule>Weigh the day's loss against some trivial gain and call it even, flatly.</rule>
+    <tier>Gallows</tier>
+    <weight>1</weight>
+  </PawnDiary.DiaryHumorCueDef>
+
+</Defs>

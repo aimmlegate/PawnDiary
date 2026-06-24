@@ -18,7 +18,8 @@ namespace PawnDiary
             string povRole,
             string personaRule,
             string promptEnchantment,
-            int maxTokens = 0)
+            int maxTokens = 0,
+            string humorCue = null)
         {
             // In a paired event the recipient writes second, so it sees the initiator's finished entry
             // as hidden context. Only the recipient POV carries that prior entry.
@@ -28,7 +29,7 @@ namespace PawnDiary
                 ? DiaryContextBuilder.CleanLine(diaryEvent.initiatorGeneratedText)
                 : null;
 
-            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, initiatorEntry, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, initiatorEntry, null, false, maxTokens);
         }
 
         public static DiaryPromptPlan BuildInteractionPromptPlan(
@@ -36,9 +37,10 @@ namespace PawnDiary
             string povRole,
             string personaRule,
             string promptEnchantment,
-            int maxTokens = 0)
+            int maxTokens = 0,
+            string humorCue = null)
         {
-            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, null, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, null, null, false, maxTokens);
         }
 
         /// <summary>
@@ -48,7 +50,7 @@ namespace PawnDiary
         /// </summary>
         public static DiaryPromptPlan BuildDeathDescriptionPromptPlan(DiaryEvent diaryEvent, int maxTokens = 0)
         {
-            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, null, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens);
         }
 
         /// <summary>
@@ -58,7 +60,7 @@ namespace PawnDiary
         /// </summary>
         public static DiaryPromptPlan BuildArrivalDescriptionPromptPlan(DiaryEvent diaryEvent, int maxTokens = 0)
         {
-            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, null, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens);
         }
 
         /// <summary>
@@ -71,7 +73,7 @@ namespace PawnDiary
         public static DiaryPromptPlan BuildTitlePromptPlan(DiaryEvent diaryEvent, string povRole, int maxTokens = 0)
         {
             string entryText = diaryEvent == null ? string.Empty : diaryEvent.DisplayTextForRole(povRole);
-            return BuildPromptPlan(diaryEvent, povRole, string.Empty, string.Empty, null, entryText, true, maxTokens);
+            return BuildPromptPlan(diaryEvent, povRole, string.Empty, string.Empty, string.Empty, null, entryText, true, maxTokens);
         }
 
         /// <summary>
@@ -90,6 +92,7 @@ namespace PawnDiary
                 DiaryEvent.InitiatorRole,
                 string.Empty,
                 string.Empty,
+                string.Empty,
                 null,
                 null,
                 false,
@@ -105,6 +108,7 @@ namespace PawnDiary
             string povRole,
             string personaRule,
             string promptEnchantment,
+            string humorCue,
             string priorInitiatorEntry,
             string entryText,
             bool titleRequest,
@@ -115,6 +119,7 @@ namespace PawnDiary
                 povRole,
                 personaRule,
                 promptEnchantment,
+                humorCue,
                 priorInitiatorEntry,
                 entryText,
                 titleRequest,

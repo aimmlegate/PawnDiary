@@ -20,6 +20,7 @@ namespace PawnDiary
             string povRole,
             string personaRule,
             string promptEnchantment,
+            string humorCue,
             string priorInitiatorEntry,
             string entryText,
             bool titleRequest,
@@ -34,7 +35,10 @@ namespace PawnDiary
                 povRole = normalizedRole,
                 titleRequest = titleRequest,
                 personaRule = personaRule,
-                personaVoiceBlock = PersonaVoiceBlock(personaRule),
+                // The per-entry humor cue rides inside the persona voice block rather than on its own
+                // request field, so no planner/contract change is needed and it is automatically
+                // suppressed when a template opts out of persona text (neutral death/arrival/title).
+                personaVoiceBlock = CombinedVoiceBlock(PersonaVoiceBlock(personaRule), HumorVoiceBlock(humorCue)),
                 promptEnchantment = promptEnchantment,
                 priorInitiatorEntry = priorInitiatorEntry,
                 entryText = entryText,
@@ -200,6 +204,40 @@ namespace PawnDiary
             }
 
             return "PawnDiary.Prompt.PersonaVoice".Translate(personaRule.Trim()).Resolve();
+        }
+
+        // Wraps one chosen humor cue (a structural sentence-shape license) in the same kind of
+        // model-facing frame as the writing style. Blank cue => no block, so the feature is a no-op
+        // on the ~90% of entries that do not roll a cue. Main thread only: .Translate() is not
+        // thread-safe.
+        private static string HumorVoiceBlock(string humorCue)
+        {
+            if (string.IsNullOrWhiteSpace(humorCue))
+            {
+                return string.Empty;
+            }
+
+            return "PawnDiary.Prompt.HumorVoice".Translate(humorCue.Trim()).Resolve();
+        }
+
+        // Joins the writing-style block and the humor block with a blank line between them. If either
+        // is empty, the other stands alone; if both are empty, the whole voice block is empty (which
+        // is the correct shape for neutral death/arrival/title prompts).
+        private static string CombinedVoiceBlock(string personaVoiceBlock, string humorVoiceBlock)
+        {
+            bool hasPersona = !string.IsNullOrWhiteSpace(personaVoiceBlock);
+            bool hasHumor = !string.IsNullOrWhiteSpace(humorVoiceBlock);
+            if (hasPersona && hasHumor)
+            {
+                return personaVoiceBlock + "\n\n" + humorVoiceBlock;
+            }
+
+            if (hasPersona)
+            {
+                return personaVoiceBlock;
+            }
+
+            return hasHumor ? humorVoiceBlock : string.Empty;
         }
 
         private static string EventNoun(DiaryEvent diaryEvent)

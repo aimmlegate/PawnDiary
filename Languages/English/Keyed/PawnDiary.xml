@@ -407,6 +407,9 @@
   <!-- Writing-style block appended to the first-person system prompt at dispatch. {0} is the
        style label plus rule (e.g. "three-line-note: This pawn tends to write..."). -->
   <PawnDiary.Prompt.PersonaVoice>How this pawn tends to write: {0} Follow the rule's concrete sentence shape, opening move, punctuation, and detail choice. Do not roleplay a chat persona, add catchphrases, or invent dialogue.</PawnDiary.Prompt.PersonaVoice>
+  <!-- Per-entry humor cue (hidden, always-on). {0} is one structural sentence-shape license
+       chosen by stakes flavor. Appended after the writing-style block on eligible entries only. -->
+  <PawnDiary.Prompt.HumorVoice>For this one entry, an extra license is granted: {0} Keep it to a single sentence and do not break the writing style above. Never force a joke, add a punchline, or invent comic dialogue.</PawnDiary.Prompt.HumorVoice>
   <PawnDiary.Prompt.SocialEvent>social event</PawnDiary.Prompt.SocialEvent>
   <PawnDiary.Prompt.Colony>colony</PawnDiary.Prompt.Colony>
   <PawnDiary.Prompt.Health.HighPriority>high priority</PawnDiary.Prompt.Health.HighPriority>

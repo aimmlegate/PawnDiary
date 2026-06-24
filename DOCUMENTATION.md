@@ -34,7 +34,7 @@ PawnDiary/
 |-- About/                       mod metadata, icon, preview
 |-- 1.6/
 |   |-- Assemblies/              PawnDiary.dll (committed) + bundled 0Harmony.dll fallback
-|   `-- Defs/                    groups, tuning, prompts, writing styles, UI/text policy (11 files)
+|   `-- Defs/                    groups, tuning, prompts, writing styles, humor cues, UI/text policy (12 files)
 |-- Languages/                   Keyed + DefInjected localization
 |-- Source/
 |   |-- Capture/                 Event Catalog: pure payloads/specs/registry + CaptureContext/Decision
@@ -64,7 +64,7 @@ Key files:
 | `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, response cleanup, domain recovery, text decoration. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs` | Pawn/surroundings/relationship/health/weapon context; all DLC reads centralized and guarded here. |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, odds, cooldowns, scanner policy, shared tuning. |
-| `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, UI, and display policy. |
+| `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
 | `Generation/LlmClient.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
 | `Settings/PawnDiaryMod.cs`, `PawnDiarySettings.cs` | Settings data and settings UI. |
 | `UI/ITab_Pawn_Diary*.cs`, `DiaryTextFormat.cs` | Hidden Diary inspect tab, cards, paging, debug controls, safe rich-text formatting. |
@@ -261,6 +261,19 @@ localized `important context:` field as pressure (not the subject unless the eve
 Health/capacity cues can appear on any eligible first-person prompt; important events may also put a
 Royalty title or Ideology role into the same weighted pool — the two are mutually exclusive per
 prompt. These are separate from `DiaryEventPromptDef.enhancement` (static event-type guidance).
+
+**Humor cues** are a hidden, always-on per-entry writing license. Roughly one in ten eligible
+first-person entries (base rate XML-tunable via `DiaryTuningDef.humorChance`, default `0.10`) gets one
+subtle structural cue appended to its system prompt — never a "be funny" instruction, always a single
+sentence-shape constraint (an understatement coda, a dry inventory, a clerical tally of loss). The
+`DiaryHumorCueDef` catalog (`DiaryHumorCueDefs.xml`) holds Light (dry/absurdist) and Gallows
+(dark/deadpan) tiers; `HumorCues.CueFor` rolls the base rate, derives the stakes tier from the event
+(important, Raid domain, or `combat`/`socialFight`/`mentalBreak` color cue ⇒ Gallows), and weighted-
+picks one cue. The chosen rule rides into the prompt folded inside the **persona voice block**
+(`DiaryPipelineAdapters.HumorVoiceBlock` + `CombinedVoiceBlock`), so it needs no planner/contract
+field and is automatically suppressed on neutral death/arrival/title templates that opt out of
+persona text. There is no settings field or UI; the feature is invisible to the player. Cue `rule`
+and `label` text is localized via `DefInjected`; the `tier` keyword is an internal schema token.
 
 **Direct speech** is allowed only for initiator/single-POV interaction prompts, using one closed
 `[[speech]]...[[/speech]]` block when source notes support it. Recipient follow-ups forbid speech and

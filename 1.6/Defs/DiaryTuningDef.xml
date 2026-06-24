@@ -259,6 +259,11 @@
     <daySummaryWeightHediff>0.8</daySummaryWeightHediff>
     <daySummaryWeightOpinionShift>0.6</daySummaryWeightOpinionShift>
     <daySummaryWeightFiller>0.15</daySummaryWeightFiller>
+
+    <!-- Humor cues (hidden, always-on). Base probability an eligible first-person entry gets one
+         structural humor cue appended to its prompt. No settings UI; this is the single knob. Flavor
+         (Light vs Gallows) is chosen separately by event stakes. See DiaryHumorCueDefs.xml for cues. -->
+    <humorChance>0.10</humorChance>
   </PawnDiary.DiaryTuningDef>
 
 </Defs>

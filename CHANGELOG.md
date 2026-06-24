@@ -6,6 +6,15 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Hidden per-entry humor cues added.** Eligible first-person diary entries now occasionally carry
+  one subtle structural writing cue appended to the system prompt — never a "be funny" instruction,
+  always a single sentence-shape license (a flat understatement coda, a dry inventory, a clerical
+  tally of loss). Flavor matches event stakes: **Light** (dry/absurdist) for mundane events and
+  **Gallows** (dark/deadpan) for high-stakes events (important, Raid domain, or combat/social-fight/
+  mental-break). The feature is always-on and completely invisible: no settings field, no UI toggle.
+  The base rate (~10% of eligible entries) is XML-tunable via `DiaryTuningDef.humorChance`; cue text
+  and weights live in `DiaryHumorCueDefs.xml`. Cues ride inside the persona voice block, so neutral
+  death/arrival/title prompts stay humor-free automatically.
 - **Raid generation timing retuned.** Ordinary raids now record at spawn but delay LLM generation by
   `raidGenerationDelayTicks`, so entries lean into warning, positioning, and fight anticipation
   instead of instant battle aftermath. Drop-pod raids and infestations bypass the delay, carry

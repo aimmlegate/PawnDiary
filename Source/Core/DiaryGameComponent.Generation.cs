@@ -330,12 +330,14 @@ namespace PawnDiary
 
             // Persona and prompt enchantment are resolved at queue time so changing a pawn or XML
             // weights affects future generations without rewriting prompts already sent or saved
-            // for debugging.
+            // for debugging. The hidden per-entry humor cue is resolved the same way.
             DiaryPromptPlan promptPlan = DiaryPromptBuilder.BuildInteractionPromptPlan(
                 diaryEvent,
                 povRole,
                 PersonaRuleFor(diaryEvent, povRole),
-                PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById));
+                PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById),
+                0,
+                HumorCueFor(diaryEvent));
             QueuePrompt(diaryEvent, povRole, promptPlan, null, boundsCache);
         }
 
@@ -443,7 +445,9 @@ namespace PawnDiary
                     diaryEvent,
                     DiaryEvent.InitiatorRole,
                     PersonaRuleFor(diaryEvent, DiaryEvent.InitiatorRole),
-                    PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById));
+                    PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById),
+                    0,
+                    HumorCueFor(diaryEvent));
                 QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, promptPlan, null, boundsCache);
                 return;
             }
@@ -482,12 +486,16 @@ namespace PawnDiary
                         diaryEvent,
                         DiaryEvent.RecipientRole,
                         PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
-                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById))
+                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById),
+                        0,
+                        HumorCueFor(diaryEvent))
                     : DiaryPromptBuilder.BuildInteractionPromptPlan(
                         diaryEvent,
                         DiaryEvent.RecipientRole,
                         PersonaRuleFor(diaryEvent, DiaryEvent.RecipientRole),
-                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById));
+                        PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById),
+                        0,
+                        HumorCueFor(diaryEvent));
                 QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, promptPlan, recipientPrimaryOverride, boundsCache);
             }
         }
@@ -1227,6 +1235,23 @@ namespace PawnDiary
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             return PromptEnchantments.RuleFor(pawn, diaryEvent != null && diaryEvent.IsImportant());
+        }
+
+        /// <summary>
+        /// Resolves the optional per-entry humor cue for an event. Reuses the same
+        /// <see cref="DiaryPromptBuilder.ShouldResolvePromptEnchantment"/> gate as prompt
+        /// enchantments, so humor only applies to first-person templates that also allow persona and
+        /// enchantment text — neutral death/arrival/title prompts stay humor-free. The cue needs only
+        /// the event (no live pawn), so it works even when the pawn is offline.
+        /// </summary>
+        private string HumorCueFor(DiaryEvent diaryEvent)
+        {
+            if (!DiaryPromptBuilder.ShouldResolvePromptEnchantment(diaryEvent))
+            {
+                return string.Empty;
+            }
+
+            return HumorCues.CueFor(diaryEvent);
         }
 
         private static Dictionary<string, Pawn> SnapshotLivePawnsByLoadId()

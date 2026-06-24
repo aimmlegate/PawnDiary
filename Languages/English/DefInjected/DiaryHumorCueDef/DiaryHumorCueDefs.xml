@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DiaryHumorCue_UnderstatementCoda.label>understatement-coda</DiaryHumorCue_UnderstatementCoda.label>
+  <DiaryHumorCue_UnderstatementCoda.rule>End the entry with one flat understatement that shrinks what happened. No exaggeration, no punchline, no reaction.</DiaryHumorCue_UnderstatementCoda.rule>
+  <DiaryHumorCue_AbsurdDetail.label>absurd-detail</DiaryHumorCue_AbsurdDetail.label>
+  <DiaryHumorCue_AbsurdDetail.rule>Include exactly one small absurd-but-true detail. State it plainly, then continue without commenting on it.</DiaryHumorCue_AbsurdDetail.rule>
+  <DiaryHumorCue_PettyComplaint.label>petty-complaint</DiaryHumorCue_PettyComplaint.label>
+  <DiaryHumorCue_PettyComplaint.rule>Frame the event as a petty complaint about one object or the weather. Keep the facts accurate.</DiaryHumorCue_PettyComplaint.rule>
+  <DiaryHumorCue_MisplacedPriority.label>misplaced-priority</DiaryHumorCue_MisplacedPriority.label>
+  <DiaryHumorCue_MisplacedPriority.rule>Mention one small inconvenience as if it mattered more than the event itself. Do not explain the mismatch.</DiaryHumorCue_MisplacedPriority.rule>
+  <DiaryHumorCue_DeadpanInventory.label>deadpan-inventory</DiaryHumorCue_DeadpanInventory.label>
+  <DiaryHumorCue_DeadpanInventory.rule>List what happened as a dry inventory of minor losses and gains. No emotion words.</DiaryHumorCue_DeadpanInventory.rule>
+  <DiaryHumorCue_PoliteRegret.label>polite-regret</DiaryHumorCue_PoliteRegret.label>
+  <DiaryHumorCue_PoliteRegret.rule>Close with one over-formal, slightly too-polite regret about something trivial.</DiaryHumorCue_PoliteRegret.rule>
+  <DiaryHumorCue_SidewaysObservation.label>sideways-observation</DiaryHumorCue_SidewaysObservation.label>
+  <DiaryHumorCue_SidewaysObservation.rule>Add one observation about an unrelated detail nearby, then stop. It should sit oddly beside the event.</DiaryHumorCue_SidewaysObservation.rule>
+  <DiaryHumorCue_ConditionalCopOut.label>conditional-cop-out</DiaryHumorCue_ConditionalCopOut.label>
+  <DiaryHumorCue_ConditionalCopOut.rule>End on a flat conditional like it could go either way, with no real concern.</DiaryHumorCue_ConditionalCopOut.rule>
+  <DiaryHumorCue_RenamedThing.label>renamed-thing</DiaryHumorCue_RenamedThing.label>
+  <DiaryHumorCue_RenamedThing.rule>Call one ordinary object by a slightly wrong dignified name, once, without explaining.</DiaryHumorCue_RenamedThing.rule>
+  <DiaryHumorCue_ShrugCloser.label>shrug-closer</DiaryHumorCue_ShrugCloser.label>
+  <DiaryHumorCue_ShrugCloser.rule>Close with one short line that treats the whole event as barely worth noting.</DiaryHumorCue_ShrugCloser.rule>
+  <DiaryHumorCue_RoutineTerrible.label>routine-terrible</DiaryHumorCue_RoutineTerrible.label>
+  <DiaryHumorCue_RoutineTerrible.rule>State the worst part as if it were routine inventory. No drama, no reflection, no pity.</DiaryHumorCue_RoutineTerrible.rule>
+  <DiaryHumorCue_HouseholdMaintenance.label>household-maintenance</DiaryHumorCue_HouseholdMaintenance.label>
+  <DiaryHumorCue_HouseholdMaintenance.rule>End with one quiet line that treats the terrible thing as ordinary household maintenance.</DiaryHumorCue_HouseholdMaintenance.rule>
+  <DiaryHumorCue_UnacknowledgedDark.label>unacknowledged-dark</DiaryHumorCue_UnacknowledgedDark.label>
+  <DiaryHumorCue_UnacknowledgedDark.rule>Let one detail be darker than the narrator acknowledges. They do not react to it at all.</DiaryHumorCue_UnacknowledgedDark.rule>
+  <DiaryHumorCue_DryTallyOfLoss.label>dry-tally-of-loss</DiaryHumorCue_DryTallyOfLoss.label>
+  <DiaryHumorCue_DryTallyOfLoss.rule>Tally who or what was lost in a flat, clerical tone, like checking off chores.</DiaryHumorCue_DryTallyOfLoss.rule>
+  <DiaryHumorCue_GrimUnderstatement.label>grim-understatement</DiaryHumorCue_GrimUnderstatement.label>
+  <DiaryHumorCue_GrimUnderstatement.rule>Reduce the scale of the disaster with one calm understatement. Sincerity, not sarcasm.</DiaryHumorCue_GrimUnderstatement.rule>
+  <DiaryHumorCue_MatterOfFactMortality.label>matter-of-fact-mortality</DiaryHumorCue_MatterOfFactMortality.label>
+  <DiaryHumorCue_MatterOfFactMortality.rule>Mention death or injury the way one mentions the weather. Move straight on.</DiaryHumorCue_MatterOfFactMortality.rule>
+  <DiaryHumorCue_QueuedForLater.label>queued-for-later</DiaryHumorCue_QueuedForLater.label>
+  <DiaryHumorCue_QueuedForLater.rule>Treat the terrible event as an item deferred to a more convenient day.</DiaryHumorCue_QueuedForLater.rule>
+  <DiaryHumorCue_ProfessionalDetachment.label>professional-detachment</DiaryHumorCue_ProfessionalDetachment.label>
+  <DiaryHumorCue_ProfessionalDetachment.rule>Describe the aftermath with the detached tone of a routine work report.</DiaryHumorCue_ProfessionalDetachment.rule>
+  <DiaryHumorCue_GrimPracticality.label>grim-practicality</DiaryHumorCue_GrimPracticality.label>
+  <DiaryHumorCue_GrimPracticality.rule>Pivot immediately to one practical next task, as if the event were already settled.</DiaryHumorCue_GrimPracticality.rule>
+  <DiaryHumorCue_EvenMeasure.label>even-measure</DiaryHumorCue_EvenMeasure.label>
+  <DiaryHumorCue_EvenMeasure.rule>Weigh the day's loss against some trivial gain and call it even, flatly.</DiaryHumorCue_EvenMeasure.rule>
+</LanguageData>
