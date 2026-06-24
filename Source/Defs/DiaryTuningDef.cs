@@ -63,6 +63,11 @@ namespace PawnDiary
         // the colony within this window. Raids fire once per IncidentWorker.TryExecute, so this is
         // mostly defensive against a fluke double-fire or a mirrored multi-map transition.
         public int raidDedupTicks = 2500;
+        // Ordinary raids usually spend time approaching before combat starts. The diary records the
+        // event immediately but waits this many ticks before sending the LLM request, so generated
+        // text can lean into anticipation instead of assuming the fight already happened. Drop-pod
+        // raids and infestations bypass this delay.
+        public int raidGenerationDelayTicks = 2500;
         // The same quest lifecycle signal (same quest id + signal) is only recorded once within this
         // window. Guards against a fluke double-call on Quest.Accept or Quest.End.
         public int questDedupTicks = 2500;
@@ -298,6 +303,13 @@ namespace PawnDiary
         public float daySummaryWeightHediff = 0.8f;        // a hediff health signal
         public float daySummaryWeightOpinionShift = 0.6f;  // base; scaled up by swing magnitude
         public float daySummaryWeightFiller = 0.15f;       // background small talk / passing feelings
+
+        // ---- Humor cues (hidden, always-on) ----
+        // Base probability (0..1) that an eligible first-person entry gets one structural humor
+        // cue appended to its prompt. There is no settings field or UI for this; the single knob
+        // lives here so it can be retuned in XML. Flavor (Light vs Gallows) is chosen separately by
+        // event stakes, so this only controls how often any humor appears at all.
+        public float humorChance = 0.10f;
     }
 
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default
@@ -318,6 +330,30 @@ namespace PawnDiary
                 }
 
                 return cached ?? Fallback;
+            }
+        }
+
+        // Fallback base rate used only if the XML def is missing entirely. When the def exists but a
+        // modder leaves humorChance blank, the field initializer (0.10f) already applies. This clamps
+        // any out-of-range authored value to 0..1 so a typo can never make humor fire >100% or crash.
+        private const float DefaultHumorChance = 0.10f;
+
+        /// <summary>
+        /// XML-tuned base probability (0..1) that an eligible first-person entry gets a humor cue.
+        /// Reads <see cref="DiaryTuningDef.humorChance"/> from the loaded def, clamped to 0..1, with
+        /// a hardcoded fallback when the tuning def is absent. See <c>HumorCues</c>.
+        /// </summary>
+        public static float HumorChance
+        {
+            get
+            {
+                float value = Current.humorChance;
+                if (value < 0f || value > 1f || float.IsNaN(value))
+                {
+                    return DefaultHumorChance;
+                }
+
+                return value;
             }
         }
     }

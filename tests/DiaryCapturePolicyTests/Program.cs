@@ -675,7 +675,7 @@ namespace DiaryCapturePolicyTests
             AssertEqual("kind empty defName", string.Empty, RomanceEventData.KindFor(null));
         }
 
-        // ── Raid (colony-wide fan-out, minimal realization) ──
+        // ── Raid (colony-wide fan-out, delayed ordinary raids, immediate drop pods/infestations) ──
 
         private static void TestRaidDecide()
         {
@@ -692,6 +692,16 @@ namespace DiaryCapturePolicyTests
                 RaidEventData.Decide(Raid(), Ctx(user: false)));
             AssertEqual("raid eligible records solo", CaptureDecision.GenerateSolo,
                 RaidEventData.Decide(Raid(), Ctx()));
+            AssertEqual("ordinary raid delay", true,
+                RaidEventData.ShouldDelayGeneration("RaidEnemy", "EdgeWalkIn", "ImmediateAttack", 2500));
+            AssertEqual("zero delay disables raid delay", false,
+                RaidEventData.ShouldDelayGeneration("RaidEnemy", "EdgeWalkIn", "ImmediateAttack", 0));
+            AssertEqual("drop pod arrival bypasses raid delay", false,
+                RaidEventData.ShouldDelayGeneration("RaidEnemy", "CenterDrop", "ImmediateAttack", 2500));
+            AssertEqual("drop pod strategy bypasses raid delay", false,
+                RaidEventData.ShouldDelayGeneration("RaidEnemy", "EdgeWalkIn", "ImmediateAttackSmartDrop", 2500));
+            AssertEqual("infestation bypasses raid delay", false,
+                RaidEventData.ShouldDelayGeneration("Infestation", null, null, 2500));
         }
 
         private static void TestRaidBuildGameContextFormat()
@@ -704,6 +714,10 @@ namespace DiaryCapturePolicyTests
             AssertEqual("raid unknown faction sentinel",
                 "raid=RaidFriendly; label=friendly raid; faction=unknown; points=0",
                 RaidEventData.BuildGameContext("RaidFriendly", "friendly raid", "unknown", "0"));
+            AssertEqual("raid arrival and strategy context",
+                "raid=RaidEnemy; label=enemy raid; faction=Pirate; points=350; arrival_mode=CenterDrop; strategy=ImmediateAttack",
+                RaidEventData.BuildGameContext("RaidEnemy", "enemy raid", "Pirate", "350",
+                    "CenterDrop", "ImmediateAttack"));
         }
 
         // ── Quest (lifecycle: accepted / completed / failed) ──

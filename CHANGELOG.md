@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Raid generation timing retuned.** Ordinary raids now record at spawn but delay LLM generation by
+  `raidGenerationDelayTicks`, so entries lean into warning, positioning, and fight anticipation
+  instead of instant battle aftermath. Drop-pod raids and infestations bypass the delay, carry
+  arrival/strategy context, and use dedicated prompt instructions.
 - **Diary command status badges added.** The selected-pawn **Diary** command now shows a subtle
   corner marker for newly finished pages and pulsing dots while a page or title is still being
   written. Opening that pawn's Diary acknowledges the finished-page marker without using intrusive

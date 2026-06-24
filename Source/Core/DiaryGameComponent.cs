@@ -103,6 +103,10 @@ namespace PawnDiary
         // Transient (not saved) guard against a raid incident double-firing or re-firing within the
         // dedup window (e.g. mirrored multi-map transitions). Keys by incident/map/faction/points.
         private readonly Dictionary<string, int> recentRaidEvents = new Dictionary<string, int>();
+        // Transient (not saved) generation delay for ordinary raids. The event is recorded as soon as
+        // RimWorld spawns the threat, but the LLM waits a short XML-tuned window so walk-in raids read
+        // more like anticipation/contact than instant combat aftermath.
+        private readonly Dictionary<string, int> delayedRaidGenerationReadyTicks = new Dictionary<string, int>();
         // Transient (not saved) guard against a quest lifecycle signal double-firing (e.g. a
         // multi-map transition or a fluke double-call). Keys by quest id + signal.
         private readonly Dictionary<string, int> recentQuestEvents = new Dictionary<string, int>();
@@ -214,6 +218,7 @@ namespace PawnDiary
             recentHediffEvents.Clear();
             recentRomanceEvents.Clear();
             recentRaidEvents.Clear();
+            delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
@@ -250,6 +255,7 @@ namespace PawnDiary
             recentHediffEvents.Clear();
             recentRomanceEvents.Clear();
             recentRaidEvents.Clear();
+            delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();

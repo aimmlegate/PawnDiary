@@ -431,26 +431,39 @@ namespace PawnDiary
         }
     }
 
-    // Fires once per raid incident (RaidEnemy / RaidFriendly / RaidBeacon). IncidentWorker.TryExecute
-    // is the single public entry point every incident flows through, so we filter to raid subclasses
-    // in the postfix (after raiders have spawned) and forward the IncidentParms + IncidentDef. The
-    // hook fires exactly once per raid instance, which is the cleanest single chokepoint.
+    // Fires once per raid-like incident (RaidEnemy / RaidFriendly / RaidBeacon / Infestation).
+    // IncidentWorker.TryExecute is the single public entry point every incident flows through, so we
+    // filter in the postfix (after pawns/threats have spawned) and forward the IncidentParms +
+    // IncidentDef. Infestation is detected by worker type name so the raid diary path stays based on
+    // plain strings rather than extra incident-worker dependencies.
     [HarmonyPatch(typeof(IncidentWorker), nameof(IncidentWorker.TryExecute))]
     public static class RaidExecutePatch
     {
         /// <summary>
-        /// Harmony Postfix for IncidentWorker.TryExecute. Forwards successful raid incidents to
+        /// Harmony Postfix for IncidentWorker.TryExecute. Forwards successful raid-like incidents to
         /// DiaryGameComponent.RecordRaid, which fans out to each eligible colonist on the target map.
         /// Non-raid incidents and failed executions are skipped.
         /// </summary>
         public static void Postfix(IncidentWorker __instance, IncidentParms parms, bool __result)
         {
-            if (!__result || !(__instance is IncidentWorker_Raid) || parms == null || __instance.def == null)
+            if (!__result || !IsRaidLikeIncident(__instance) || parms == null || __instance.def == null)
             {
                 return;
             }
 
             DiaryGameComponent.Current?.RecordRaid(parms, __instance.def);
+        }
+
+        private static bool IsRaidLikeIncident(IncidentWorker worker)
+        {
+            if (worker is IncidentWorker_Raid)
+            {
+                return true;
+            }
+
+            string workerTypeName = worker?.GetType().Name;
+            return !string.IsNullOrWhiteSpace(workerTypeName)
+                && workerTypeName.IndexOf("Infestation", StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 

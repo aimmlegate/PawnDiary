@@ -1,14 +1,12 @@
 // Raid events — the IncidentWorker_Raid hook's diary flow, built on the Event Catalog pattern
-// (see Source/Capture/). A raid (RaidEnemy / RaidFriendly / RaidBeacon) is recorded as a separate
-// solo DiaryEvent for each eligible colonist on the raid's target map, because each survivor
-// experiences the attack independently. The event carries a "raid=" game-context marker so the UI
-// classifies it into the Raid domain.
+// (see Source/Capture/). A raid or infestation is recorded as a separate solo DiaryEvent for each
+// eligible colonist on the target map, because each survivor experiences the threat independently.
+// The event carries a "raid=" game-context marker so the UI classifies it into the Raid domain.
 //
 // This is a MINIMAL realization by design (see CHANGELOG): only the incident defName, the raider
-// faction defName, and the raid points are captured. Richer context (raid strategy, arrival mode,
-// raider count, weapon list) is intentionally deferred — the prompt instruction and tone carry the
-// emotional register, and per-pawn surroundings/health context are already attached by
-// AddSoloEvent's standard context builders.
+// faction defName, raid points, arrival mode, and strategy are captured. The latter two stay as
+// string defNames so prompt policy can distinguish walk-in, drop-pod, and infestation danger
+// without referencing paid-DLC content or live RimWorld objects in pure code.
 //
 // This file holds both halves of the multi-pawn fan-out (mirroring MoodEvents.cs):
 // (1) per-source-call gates that stay impure and outside the catalog — CanRecordGameplayEventNow,
@@ -50,10 +48,14 @@ namespace PawnDiary
                 return;
             }
 
+            string arrivalModeDefName = parms.raidArrivalMode?.defName;
+            string strategyDefName = parms.raidStrategy?.defName;
+            string raidClassifierKey = RaidClassifierKey(incidentDefName, arrivalModeDefName, strategyDefName);
+
             // XML owns which raid incidents count as diary-worthy. The Raid catch-all ("Raids")
-            // matches everything not claimed by the friendly subset, so every raid records.
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyRaid(incidentDefName);
-            if (group == null || !PawnDiaryMod.Settings.IsRaidEnabled(incidentDefName))
+            // matches everything not claimed by friendly/drop-pod/infestation subsets.
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyRaid(raidClassifierKey);
+            if (group == null || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
             {
                 return;
             }
@@ -66,7 +68,7 @@ namespace PawnDiary
                 return;
             }
 
-            // Minimal payload facts (per the brief): raider faction defName + raid points.
+            // Minimal payload facts: raider faction defName + raid points + arrival/strategy defNames.
             // Faction is always present on a raid IncidentParms; "unknown" is the schema sentinel.
             string raiderFactionDefName = parms.faction?.def?.defName;
             if (string.IsNullOrEmpty(raiderFactionDefName))
@@ -94,7 +96,14 @@ namespace PawnDiary
                 return;
             }
 
-            string instruction = PawnDiaryMod.Settings.InstructionForRaid(incidentDefName);
+            string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
+            bool delayGeneration = RaidEventData.ShouldDelayGeneration(
+                incidentDefName,
+                arrivalModeDefName,
+                strategyDefName,
+                DiaryTuning.Current.raidGenerationDelayTicks);
+            int generationReadyTick = Find.TickManager.TicksGame
+                + Math.Max(0, DiaryTuning.Current.raidGenerationDelayTicks);
 
             // Look up the catalog spec once per RecordRaid call. If somehow missing (a future source
             // forgot to Register), the per-pawn loop falls back to Drop and silently no-ops.
@@ -130,6 +139,8 @@ namespace PawnDiary
                     Label = cleanedLabel,
                     FactionDefName = raiderFactionDefName,
                     Points = pointsText,
+                    ArrivalModeDefName = arrivalModeDefName,
+                    StrategyDefName = strategyDefName,
                 };
                 CaptureContext ctx = BuildCaptureContext(
                     eligible: true,
@@ -146,7 +157,8 @@ namespace PawnDiary
                 }
 
                 string perPawnContext = RaidEventData.BuildGameContext(
-                    incidentDefName, cleanedLabel, raiderFactionDefName, pointsText);
+                    incidentDefName, cleanedLabel, raiderFactionDefName, pointsText,
+                    arrivalModeDefName, strategyDefName);
 
                 string text = "PawnDiary.Event.Raid".Translate(pawn.LabelShortCap).Resolve();
 
@@ -158,7 +170,14 @@ namespace PawnDiary
                 }
 
                 recordedAny = true;
-                QueueLlmRewrite(raidEvent, DiaryEvent.InitiatorRole);
+                if (delayGeneration)
+                {
+                    DelayGenerationUntil(raidEvent, DiaryEvent.InitiatorRole, generationReadyTick);
+                }
+                else
+                {
+                    QueueLlmRewrite(raidEvent, DiaryEvent.InitiatorRole);
+                }
             }
 
             if (recordedAny)
@@ -166,5 +185,27 @@ namespace PawnDiary
                 MarkRecentlyRecorded(recentRaidEvents, dedupKey, DiaryTuning.Current.raidDedupTicks);
             }
         }
+
+        /// <summary>
+        /// Builds the string classifier that XML groups match. It starts with the incident defName so
+        /// old exact/token matchers still see the source, then adds arrival/strategy defNames when
+        /// RimWorld supplied them.
+        /// </summary>
+        private static string RaidClassifierKey(string incidentDefName, string arrivalModeDefName, string strategyDefName)
+        {
+            List<string> parts = new List<string> { incidentDefName };
+            if (!string.IsNullOrWhiteSpace(arrivalModeDefName))
+            {
+                parts.Add("arrival=" + arrivalModeDefName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(strategyDefName))
+            {
+                parts.Add("strategy=" + strategyDefName);
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
     }
 }

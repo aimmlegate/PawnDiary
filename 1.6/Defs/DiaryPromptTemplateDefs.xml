@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   Prompt templates control the structured fields sent to the LLM for each event shape.
   `source` values are stable internal tokens; `label` is the model-facing field name.
@@ -35,6 +35,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -63,6 +66,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -92,6 +98,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>you</label><source>PawnSummary</source></li>
@@ -123,6 +132,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -148,6 +160,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -174,6 +189,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -199,6 +217,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -224,6 +245,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>
@@ -251,6 +275,9 @@
       <li><label>ability category</label><source>GameContext</source><contextKey>ability_category</contextKey></li>
       <li><label>ability target</label><source>GameContext</source><contextKey>ability_target</contextKey></li>
       <li><label>ability cooldown ticks</label><source>GameContext</source><contextKey>ability_cooldown_ticks</contextKey></li>
+      <li><label>raid arrival mode</label><source>GameContext</source><contextKey>arrival_mode</contextKey></li>
+      <li><label>raid strategy</label><source>GameContext</source><contextKey>strategy</contextKey></li>
+      <li><label>raid points</label><source>GameContext</source><contextKey>points</contextKey></li>
       <li><label>royal title</label><source>GameContext</source><contextKey>royal_title</contextKey></li>
       <li><label>ideoligion role</label><source>GameContext</source><contextKey>ideological_role</contextKey></li>
       <li><label>important context</label><source>PromptEnchantment</source></li>

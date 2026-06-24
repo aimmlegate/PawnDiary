@@ -17,6 +17,9 @@
     <thoughtDedupTicks>2500</thoughtDedupTicks>
     <romanceDedupTicks>2500</romanceDedupTicks>
     <raidDedupTicks>2500</raidDedupTicks>
+    <!-- Ordinary raids delay LLM generation so entries can catch the warning/approach phase.
+         Drop-pod raids and infestations bypass this delay. -->
+    <raidGenerationDelayTicks>2500</raidGenerationDelayTicks>
     <questDedupTicks>2500</questDedupTicks>
     <ritualDedupTicks>2500</ritualDedupTicks>
     <abilityDedupTicks>300</abilityDedupTicks>

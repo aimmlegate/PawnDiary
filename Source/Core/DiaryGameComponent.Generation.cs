@@ -35,6 +35,11 @@ namespace PawnDiary
                 return;
             }
 
+            if (IsGenerationDelayed(diaryEvent, povRole))
+            {
+                return;
+            }
+
             if (TryMarkIncapacitatedPovSkipped(diaryEvent, povRole, livePawnsById))
             {
                 return;
@@ -308,6 +313,11 @@ namespace PawnDiary
                 return;
             }
 
+            if (IsGenerationDelayed(diaryEvent, povRole))
+            {
+                return;
+            }
+
             if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
             {
                 return;
@@ -327,6 +337,51 @@ namespace PawnDiary
                 PersonaRuleFor(diaryEvent, povRole),
                 PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById));
             QueuePrompt(diaryEvent, povRole, promptPlan, null, boundsCache);
+        }
+
+        /// <summary>
+        /// Returns true while a freshly spawned ordinary raid is still in its XML-tuned anticipation
+        /// window. The marker is transient: saved/reloaded games recover by queuing any unfinished
+        /// generation normally, just like other not-yet-generated entries.
+        /// </summary>
+        private bool IsGenerationDelayed(DiaryEvent diaryEvent, string povRole)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return false;
+            }
+
+            int readyTick;
+            string key = DelayedGenerationKey(diaryEvent, povRole);
+            if (!delayedRaidGenerationReadyTicks.TryGetValue(key, out readyTick))
+            {
+                return false;
+            }
+
+            int now = Find.TickManager.TicksGame;
+            if (now < readyTick)
+            {
+                return true;
+            }
+
+            delayedRaidGenerationReadyTicks.Remove(key);
+            return false;
+        }
+
+        /// <summary>Stores a transient "do not queue this role until tick X" marker.</summary>
+        private void DelayGenerationUntil(DiaryEvent diaryEvent, string povRole, int readyTick)
+        {
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            delayedRaidGenerationReadyTicks[DelayedGenerationKey(diaryEvent, povRole)] = Math.Max(0, readyTick);
+        }
+
+        private static string DelayedGenerationKey(DiaryEvent diaryEvent, string povRole)
+        {
+            return diaryEvent.eventId + "|" + povRole;
         }
 
         /// <summary>

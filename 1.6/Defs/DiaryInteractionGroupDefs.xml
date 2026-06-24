@@ -1371,6 +1371,59 @@
       <li>RaidFriendly</li>
       <li>RaidBeacon</li>
     </matchDefNames>
+    <matchTokens>
+      <li>RaidFriendly</li>
+      <li>RaidBeacon</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidDropPod</defName>
+    <label>Drop-pod raids</label>
+    <order>706</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>raiders punching straight into the colony by drop pod—sudden impact, no long warning, danger already inside the perimeter. Write the shock of instant contact</instruction>
+    <instructions>
+      <li>a drop-pod raid landing inside or near the colony — open on impact, alarms, and the scramble before anyone has time to prepare</li>
+      <li>a drop-pod raid with no slow approach — write the first stunned seconds, then the pawn's immediate choice of cover, weapon, or flight</li>
+      <li>raiders dropping from above — keep it sudden and close; do not write as if there was a long siege or approach unless supplied facts say so</li>
+    </instructions>
+    <tone>with shocked, impact-fast danger</tone>
+    <tones>
+      <li>impact-fast and disoriented, danger already inside the walls</li>
+      <li>shocked and close-quarters, every sentence reacting to sudden contact</li>
+    </tones>
+    <matchTokens>
+      <li>Drop</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidInfestation</defName>
+    <label>Infestations</label>
+    <order>707</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>an infestation erupting from the colony's own ground—chitin, tunnels, enclosed panic, and danger already among the rooms. Write it as sudden internal horror, not a normal raid</instruction>
+    <instructions>
+      <li>an infestation breaking open inside the colony — open on sound, dust, claws, darkness, or the room changing from safe to hostile</li>
+      <li>insects bursting from within the base — write cramped fear and immediate survival, not a distant enemy approach</li>
+      <li>an underground threat erupting into lived-in space — keep it close, sensory, and practical; do not invent a resolved fight</li>
+    </instructions>
+    <tone>with claustrophobic, chitin-close panic</tone>
+    <tones>
+      <li>claustrophobic and horrified, safety turning into a breach</li>
+      <li>close, filthy, and panicked, the threat already underfoot</li>
+    </tones>
+    <matchDefNames>
+      <li>Infestation</li>
+    </matchDefNames>
+    <matchTokens>
+      <li>Infestation</li>
+    </matchTokens>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
@@ -1380,16 +1433,16 @@
     <domain>Raid</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>the colony under attack—violence, fear, and the desperate scramble to survive. Write what it felt like to live through it</instruction>
+    <instruction>the colony facing a raid that has spawned but may still be approaching—warning, weapons grabbed, positions taken, and the held breath before contact. Write anticipation of the fight unless supplied facts show combat already hit</instruction>
     <instructions>
-      <li>the colony under attack — open on supplied space, cover, or weather if present; otherwise open on the threat</li>
-      <li>the colony under attack — open on the body: sprint, breath, grip on a weapon if supplied</li>
-      <li>the colony under attack — use aftermath details only if supplied; otherwise keep it to shock and urgency</li>
+      <li>a raid approaching the colony — open on warning, distance, cover, weather, or the pawn checking a weapon; keep it before or at first contact</li>
+      <li>the colony bracing for attackers — write the waiting, orders, doors, sandbags, breath, and fear before the fight fully starts</li>
+      <li>a raid that may not have reached the defenders yet — use aftermath only if supplied; otherwise keep it to preparation, dread, and first sight of danger</li>
     </instructions>
-    <tone>with shaken, crisis-pitched tension</tone>
+    <tone>with tense, fight-anticipated urgency</tone>
     <tones>
-      <li>crisis-fast and bodily, fear driving each sentence</li>
-      <li>shaken and tactical, attention jumping to cover and survival</li>
+      <li>tense and tactical, waiting for the fight to break open</li>
+      <li>urgent but anticipatory, fear gathering before contact</li>
     </tones>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>

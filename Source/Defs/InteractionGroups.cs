@@ -18,10 +18,10 @@ namespace PawnDiary
     // Inspiration groups match InspirationDefs when a pawn gains an inspiration; Romance groups
     // match PawnRelationDef defNames for relation changes (Lover/Spouse/etc.); Work groups classify
     // the synthetic work diary events emitted by the periodic work scanner; Hediff groups match
-    // HediffDefs when a health condition appears or worsens; Raid groups match raid incident
-    // defNames (RaidEnemy/RaidFriendly/RaidBeacon); Quest groups match the quest lifecycle signal
-    // ("accepted"/"completed"/"failed") so one DiaryEventType.Quest fans out to three groups;
-    // Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
+    // HediffDefs when a health condition appears or worsens; Raid groups match raid incident plus
+    // optional arrival/strategy tokens (RaidEnemy/RaidFriendly/Infestation/drop pods); Quest groups
+    // match the quest lifecycle signal ("accepted"/"completed"/"failed") so one DiaryEventType.Quest
+    // fans out to three groups; Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
@@ -467,9 +467,10 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.Hediff, hediffDef?.defName);
         }
 
-        // First Raid-domain group that matches the raid incident defName (e.g. "RaidEnemy"), else
-        // the Raid catch-all ("Raids"). The friendly subset ("raidFriendly") is ordered lower so it
-        // is tested before the catch-all. Specific defName -> group; everything else falls through.
+        // First Raid-domain group that matches the raid classifier string (incident defName plus
+        // optional arrival/strategy tokens), else the Raid catch-all ("Raids"). Specific groups are
+        // ordered before the catch-all so drop pods, infestations, and friendly arrivals can claim
+        // their own prompt policy.
         public static DiaryInteractionGroupDef ClassifyRaid(string incidentDefName)
         {
             return ClassifyIn(GroupDomain.Raid, incidentDefName);

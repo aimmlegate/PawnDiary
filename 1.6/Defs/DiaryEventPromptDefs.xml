@@ -82,8 +82,8 @@
     <defName>DiaryEventPrompt_Raid</defName>
     <label>raid</label>
     <eventType>Raid</eventType>
-    <prompt>Write a raid or hostile arrival from the pawn's immediate experience of danger.</prompt>
-    <enhancement>Write close to the body: noise, cover, orders, fear, pain, smoke, blood, or the scramble to survive. Keep every detail grounded; do not invent battle outcomes.</enhancement>
+    <prompt>Write a raid, drop-pod attack, or infestation from the pawn's immediate experience of danger.</prompt>
+    <enhancement>Use the supplied raid fields, especially arrival mode and strategy. For ordinary raids, favor warning, preparation, first sight, and anticipation of the fight; for drop pods or infestations, write sudden contact already inside or under the colony. Keep every detail grounded and do not invent battle outcomes.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>

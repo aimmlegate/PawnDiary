@@ -112,7 +112,7 @@ load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/deat
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo entry for the inspired pawn. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` + progression scan | Immediate or day-reflection health entries by XML Hediff policy. |
 | Work | Periodic current-job sampling | Skips social/violent work; applies XML odds/cooldowns and `workGenerationWeight`. |
-| Raids | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid`) | Once per eligible colonist on the target map; payload = incident/faction defName + raid points. |
+| Raids / infestations | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid` plus infestation workers) | Once per eligible colonist on the target map; payload = incident/faction defName, raid points, arrival mode, and strategy. Ordinary raids delay LLM generation; drop-pod raids and infestations generate immediately. |
 | Quests | `Quest.Accept` + defensive `MainTabWindow_Quests` patch + `Quest.EverAccepted` scan + `Quest.End` | Only accepted quests recorded. `Success`→"completed", `Fail`→"failed"; one entry per eligible colonist per signal with description/issuer/rewards context. |
 | Rituals | `LordJob_Ritual.ApplyOutcome`, `LordToil_PsychicRitual.RitualCompleted` | Ideology rituals fan out to author/target/participants/spectators with role/title/status. Anomaly psychic rituals fan out from the completion callback, deliberately omit role/title fields, and use darker/stranger instructions. |
 | Abilities | `Ability.Activate` (local + world overloads) | Successful uses become solo entries for the caster, cooldown-weighted (fast abilities rare, rare ones more likely). |
@@ -192,6 +192,13 @@ or broken ritual words inside a speech block; the visual distortion is applied l
 hostile/utility disposition). Saved context uses `ability=`, `ability_label=`, `ability_category=`,
 `ability_target=`, `ability_cooldown_ticks=`. `DiaryTuningDef.xml` controls `abilityDedupTicks` and
 the cooldown-weighted sampling curve.
+
+**Raid domain** classifies by safe incident/arrival/strategy strings, not live pawn or DLC objects.
+Saved context uses `raid=`, `label=`, `faction=`, `points=`, plus optional `arrival_mode=` and
+`strategy=`. `DiaryTuningDef.xml` controls `raidDedupTicks` and `raidGenerationDelayTicks`; the delay
+applies only to ordinary raids so prompts can emphasize warning, positioning, and anticipation.
+Drop-pod raids and infestations bypass the delay and use their own XML instructions for sudden
+internal contact.
 
 `DiarySignalPolicyDefs.xml` owns thought/work policy: thresholds, tokens, staged progression, ambient
 batching, scan odds, cooldowns. `DiaryTuningDef.xml` keeps shared fallback tuning for mood/health
