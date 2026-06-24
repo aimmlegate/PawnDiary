@@ -153,7 +153,7 @@ namespace PawnDiary
         public ITab_Pawn_Diary()
         {
             size = new Vector2(UiStyle.tabWidth, UiStyle.tabHeight);
-            labelKey = "PawnDiaryTabLabel";
+            labelKey = "PawnDiaryTabLabelFixed";
         }
 
         /// <summary>
@@ -184,12 +184,13 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Hides the Diary tab button from RimWorld's normal inspector tab strip.
-        /// The tab remains registered so command buttons and Social-log links can open this same UI.
+        /// Hides the Diary tab button from RimWorld's normal inspector tab strip unless the player
+        /// chooses tab access in settings. The tab remains registered either way so command buttons
+        /// and Social-log links can open this same UI.
         /// </summary>
         public override bool Hidden
         {
-            get { return true; }
+            get { return PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.showDiaryInspectTab; }
         }
 
         /// <summary>
@@ -198,6 +199,23 @@ namespace PawnDiary
         public static bool CanShowDiaryFor(Pawn pawn)
         {
             return pawn != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike && pawn.IsColonist;
+        }
+
+        /// <summary>
+        /// Updates the inspect-tab label before RimWorld draws the tab strip. Both labels reserve the
+        /// same invisible left/right dot slots, so the word stays centered when the new-page dot appears.
+        /// </summary>
+        internal void RefreshTabLabelStatus()
+        {
+            string key = "PawnDiaryTabLabelFixed";
+            Pawn pawn = PawnToShow();
+            DiaryGameComponent component = DiaryGameComponent.Current;
+            if (pawn != null && component != null && component.CommandStatusFor(pawn).HasNewPages)
+            {
+                key = "PawnDiaryTabLabelNew";
+            }
+
+            labelKey = key;
         }
 
         /// <summary>

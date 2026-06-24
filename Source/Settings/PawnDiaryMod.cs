@@ -109,6 +109,10 @@ namespace PawnDiary
 
             SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
             listing.CheckboxLabeled(
+                "PawnDiary.Settings.ShowDiaryInspectTab".Translate(),
+                ref Settings.showDiaryInspectTab,
+                "PawnDiary.Settings.ShowDiaryInspectTabTip".Translate());
+            listing.CheckboxLabeled(
                 "PawnDiary.Settings.GenerateTitles".Translate(),
                 ref Settings.generateTitles,
                 "PawnDiary.Settings.GenerateTitlesTip".Translate());
@@ -1358,7 +1362,7 @@ namespace PawnDiary
             }
 
             // Generation controls, compact prompt studio, and writing-style preset studio.
-            height += 250f;
+            height += 280f;
             if (Prefs.DevMode)
             {
                 height += 30f;
