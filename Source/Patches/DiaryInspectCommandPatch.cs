@@ -129,12 +129,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Diary command with small overlays: a quiet mark for newly finished pages and pulsing dots
+        /// Diary command with small overlays: a quiet underline for newly finished pages and pulsing dots
         /// while any page or title is still being generated. Vanilla still draws the base button.
         /// </summary>
         private sealed class DiaryCommand_Action : Command_Action
         {
-            private const float NewPageMarkerSize = 12f;
             private const float WritingDotSize = 4f;
             private const float WritingDotGap = 3f;
 
@@ -169,11 +168,11 @@ namespace PawnDiary
                 Rect buttonRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
                 if (status.HasNewPages)
                 {
-                    DrawNewPageMarker(new Rect(
-                        buttonRect.xMax - NewPageMarkerSize - 7f,
-                        buttonRect.y + 7f,
-                        NewPageMarkerSize,
-                        NewPageMarkerSize));
+                    DrawNewPageUnderline(new Rect(
+                        buttonRect.x + 11f,
+                        buttonRect.yMax - 7f,
+                        Mathf.Max(0f, buttonRect.width - 22f),
+                        2f));
                 }
 
                 if (status.IsWriting)
@@ -182,14 +181,10 @@ namespace PawnDiary
                 }
             }
 
-            private static void DrawNewPageMarker(Rect rect)
+            private static void DrawNewPageUnderline(Rect rect)
             {
                 Color oldColor = GUI.color;
-                Widgets.DrawBoxSolidWithOutline(
-                    rect,
-                    new Color(0.44f, 0.39f, 0.28f, 0.62f),
-                    new Color(0.78f, 0.71f, 0.55f, 0.68f),
-                    1);
+                Widgets.DrawBoxSolid(rect, new Color(0.62f, 0.56f, 0.43f, 0.42f));
                 GUI.color = oldColor;
 
                 TooltipHandler.TipRegion(rect, "PawnDiary.Command.NewPagesTip".Translate());
