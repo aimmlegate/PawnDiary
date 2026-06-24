@@ -79,7 +79,7 @@ namespace PawnDiary
 
             if (ShouldShowDiaryCommand(selectedThing, diaryPawn))
             {
-                yield return CreateDiaryCommand();
+                yield return CreateDiaryCommand(diaryPawn);
             }
         }
 
@@ -98,9 +98,9 @@ namespace PawnDiary
         /// <summary>
         /// Builds the RimWorld command button that opens or closes the diary inspect tab.
         /// </summary>
-        private static Command_Action CreateDiaryCommand()
+        private static Command_Action CreateDiaryCommand(Pawn diaryPawn)
         {
-            return new Command_Action
+            return new DiaryCommand_Action(diaryPawn)
             {
                 defaultLabel = "PawnDiaryTabLabel".Translate(),
                 defaultDesc = "PawnDiary.Command.OpenDiaryDesc".Translate(),
@@ -126,6 +126,95 @@ namespace PawnDiary
             }
 
             InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+        }
+
+        /// <summary>
+        /// Diary command with small overlays: a count for newly finished pages and pulsing dots while
+        /// any page or title is still being generated. Vanilla still draws the base button.
+        /// </summary>
+        private sealed class DiaryCommand_Action : Command_Action
+        {
+            private const float BadgeSize = 22f;
+            private const float WritingDotSize = 4f;
+            private const float WritingDotGap = 3f;
+
+            private readonly Pawn diaryPawn;
+
+            public DiaryCommand_Action(Pawn diaryPawn)
+            {
+                this.diaryPawn = diaryPawn;
+            }
+
+            public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
+            {
+                GizmoResult result = base.GizmoOnGUI(topLeft, maxWidth, parms);
+                DrawDiaryStatus(topLeft, maxWidth);
+                return result;
+            }
+
+            private void DrawDiaryStatus(Vector2 topLeft, float maxWidth)
+            {
+                DiaryGameComponent component = DiaryGameComponent.Current;
+                if (component == null || diaryPawn == null)
+                {
+                    return;
+                }
+
+                DiaryGameComponent.DiaryCommandStatus status = component.CommandStatusFor(diaryPawn);
+                if (!status.HasNewPages && !status.IsWriting)
+                {
+                    return;
+                }
+
+                Rect buttonRect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
+                if (status.HasNewPages)
+                {
+                    DrawNewPageBadge(new Rect(buttonRect.xMax - BadgeSize - 4f, buttonRect.y + 4f, BadgeSize, BadgeSize),
+                        status.unacknowledgedCount);
+                }
+
+                if (status.IsWriting)
+                {
+                    DrawWritingBadge(new Rect(buttonRect.x + 7f, buttonRect.y + 7f, 28f, 14f));
+                }
+            }
+
+            private static void DrawNewPageBadge(Rect rect, int count)
+            {
+                Color oldColor = GUI.color;
+                Widgets.DrawBoxSolidWithOutline(rect, new Color(0.2f, 0.52f, 0.24f, 0.94f), new Color(0.74f, 1f, 0.72f), 1);
+
+                GameFont oldFont = Text.Font;
+                TextAnchor oldAnchor = Text.Anchor;
+                Text.Font = GameFont.Tiny;
+                Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = Color.white;
+                Widgets.Label(rect.ContractedBy(1f), count > 9 ? "9+" : count.ToString());
+                Text.Anchor = oldAnchor;
+                Text.Font = oldFont;
+                GUI.color = oldColor;
+
+                TooltipHandler.TipRegion(rect, "PawnDiary.Command.NewPagesTip".Translate(count));
+            }
+
+            private static void DrawWritingBadge(Rect rect)
+            {
+                Color oldColor = GUI.color;
+                Widgets.DrawBoxSolid(rect, new Color(0.06f, 0.08f, 0.06f, 0.72f));
+                GUI.color = Color.white;
+
+                float pulse = (Mathf.Sin(Time.realtimeSinceStartup * 5.2f) + 1f) * 0.5f;
+                Color dotColor = Color.Lerp(new Color(0.46f, 0.78f, 0.46f), new Color(0.84f, 1f, 0.76f), pulse);
+                for (int i = 0; i < 3; i++)
+                {
+                    float x = rect.x + 5f + i * (WritingDotSize + WritingDotGap);
+                    float y = rect.y + rect.height * 0.5f - WritingDotSize * 0.5f;
+                    Widgets.DrawBoxSolid(new Rect(x, y, WritingDotSize, WritingDotSize), dotColor);
+                }
+
+                GUI.color = oldColor;
+                TooltipHandler.TipRegion(rect, "PawnDiary.Command.WritingTip".Translate());
+            }
         }
     }
 }

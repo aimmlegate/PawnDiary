@@ -236,6 +236,7 @@ namespace PawnDiary
             Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(12f);
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Current;
+            component?.AcknowledgeGeneratedEntriesFor(pawn);
 
             // Only rebuild the entry views when something actually changed; otherwise the tab would
             // re-classify and re-parse every entry ~60 times a second while it is just being read.

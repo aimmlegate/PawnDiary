@@ -26,6 +26,10 @@ namespace PawnDiary
         // Per-pawn toggle: when false, this pawn is skipped during diary generation.
         public bool diaryGenerationEnabled = true;
 
+        // Count of completed LLM-written pages the player has acknowledged by opening this pawn's
+        // Diary. The bottom Diary command compares this to the current completed count for its badge.
+        public int acknowledgedGeneratedEntryCount;
+
         // Ordered list of DiaryEvent IDs this pawn appears in.
         public List<string> eventIds = new List<string>();
 
@@ -40,6 +44,9 @@ namespace PawnDiary
             Scribe_Values.Look(ref pawnName, "pawnName");
             Scribe_Values.Look(ref personaDefName, "personaDefName", DiaryPersonas.Default.defName);
             Scribe_Values.Look(ref diaryGenerationEnabled, "diaryGenerationEnabled", true);
+            // Missing in old saves: -1 tells the command status reader to baseline at the current
+            // completed count instead of lighting up every historical page as new.
+            Scribe_Values.Look(ref acknowledgedGeneratedEntryCount, "acknowledgedGeneratedEntryCount", -1);
             Scribe_Collections.Look(ref eventIds, "eventIds", LookMode.Value);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)

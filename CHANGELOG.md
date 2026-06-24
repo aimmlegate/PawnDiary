@@ -4,6 +4,12 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-06-25
+
+- **Diary command status badges added.** The selected-pawn **Diary** command now shows a small count
+  for newly finished pages and pulsing dots while a page or title is still being written. Opening
+  that pawn's Diary acknowledges the finished-page count without using intrusive top-left messages.
+
 ## 2026-06-24
 
 - **Native Ollama API mode removed.** API lanes now speak only OpenAI-compatible Chat Completions and

@@ -12,6 +12,27 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         /// <summary>
+        /// Compact status snapshot for the selected-pawn Diary command. It keeps the gizmo out of the
+        /// saved event internals while still showing whether pages are being written or newly ready.
+        /// </summary>
+        public struct DiaryCommandStatus
+        {
+            public int completedCount;
+            public int unacknowledgedCount;
+            public int pendingCount;
+
+            public bool HasNewPages
+            {
+                get { return unacknowledgedCount > 0; }
+            }
+
+            public bool IsWriting
+            {
+                get { return pendingCount > 0; }
+            }
+        }
+
+        /// <summary>
         /// Returns the diary entries to render for a pawn, bounded by that pawn's arrival and death pages.
         /// Pure read — no side effects. Generation is driven entirely by the background tick scan.
         /// </summary>
@@ -56,6 +77,89 @@ namespace PawnDiary
             }
 
             return views;
+        }
+
+        /// <summary>
+        /// Returns the current completed/pending counts for the selected-pawn Diary command badge.
+        /// Opening the Diary tab calls <see cref="AcknowledgeGeneratedEntriesFor"/>; this reader only
+        /// mutates old saves once, baselining pre-existing pages so they do not all appear "new."
+        /// </summary>
+        public DiaryCommandStatus CommandStatusFor(Pawn pawn)
+        {
+            DiaryCommandStatus status = default(DiaryCommandStatus);
+            if (pawn == null)
+            {
+                return status;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (diary == null || diary.eventIds == null)
+            {
+                return status;
+            }
+
+            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
+                {
+                    continue;
+                }
+
+                DiaryEntryView view = diaryEvent?.ToViewFor(pawnId);
+                if (view == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(view.GeneratedText))
+                {
+                    status.completedCount++;
+                }
+
+                if (view.LlmStatus == DiaryEvent.PendingStatus || view.TitlePending)
+                {
+                    status.pendingCount++;
+                }
+            }
+
+            if (diary.acknowledgedGeneratedEntryCount < 0)
+            {
+                diary.acknowledgedGeneratedEntryCount = status.completedCount;
+                status.unacknowledgedCount = 0;
+            }
+            else
+            {
+                status.unacknowledgedCount = Math.Max(0, status.completedCount - diary.acknowledgedGeneratedEntryCount);
+            }
+
+            return status;
+        }
+
+        /// <summary>
+        /// Marks the currently completed pages for a pawn as seen. Called when the player opens that
+        /// pawn's Diary tab, clearing the command's "new page" count while preserving in-flight status.
+        /// </summary>
+        public void AcknowledgeGeneratedEntriesFor(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (diary == null)
+            {
+                return;
+            }
+
+            DiaryCommandStatus status = CommandStatusFor(pawn);
+            if (diary.acknowledgedGeneratedEntryCount != status.completedCount)
+            {
+                diary.acknowledgedGeneratedEntryCount = status.completedCount;
+            }
         }
 
         /// <summary>
