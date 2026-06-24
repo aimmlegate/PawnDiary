@@ -6,6 +6,9 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **Live hook validation workflow documented.** `DOCUMENTATION.md` now records the RimBridge/GABS
+  prompt-test-mode procedure for validating real Harmony hooks, including expected capture logs,
+  safe debug actions, and common false negatives.
 - **Harmony startup hook restored for RimWorld 1.6.** Generated Social-log speech display now
   resolves `PlayLogEntry_Interaction.ToGameStringFromPOV_Worker` with an old-name fallback, avoiding
   the `PatchAll` startup failure that could leave later real event hooks unregistered.

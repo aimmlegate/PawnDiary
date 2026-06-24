@@ -328,7 +328,8 @@ all colonists' diaries. Pair categories also produce a recipient POV card in a s
 diary and are omitted from the menu when no second colonist exists. Death and arrival shapes are
 intentionally excluded: a synthetic death/arrival event would become that pawn's diary boundary (see
 `ComputeDiaryBounds`) and hide the pawn's real pages, so those two shapes are still tested through
-real gameplay hooks.
+real gameplay hooks. The prompt suite validates prompt planning, queueing, and Diary UI display; it
+does not validate Harmony event capture. Use the live hook workflow in §13 for real hook checks.
 
 The Diary tab itself is sized by `tabWidth`/`tabHeight` in `DiaryUiStyleDef.xml`. In dev mode every
 expanded entry card also shows a subtle copy button at the bottom-left of the card: clicking it copies the
@@ -479,6 +480,42 @@ Pure test harnesses compile without RimWorld/Unity assemblies. `DiaryCapturePoli
 Event Catalog decisions and dispatch. `DiaryPipelineTests` covers prompt planning and domain
 recovery. `PromptVariantsTests` covers instruction/tone pool selection (fallback, determinism,
 negative-seed normalization, blank-skip).
+
+Live RimBridge/GABS hook validation:
+
+Use a disposable save with RimWorld dev mode, RimBridge/GABS connected, and Pawn Diary prompt test
+mode enabled. Prompt test mode is still useful for hook validation because it intercepts only after a
+real event has reached `QueuePrompt`; a success appears as:
+
+```text
+[PawnDiary debug] Captured prompt without generation event=<id> role=<role>
+```
+
+Before testing events, restart RimWorld after any DLL rebuild and check the current log for
+`[Pawn Diary] PatchAll failed`. A startup PatchAll error can leave later Harmony hooks unregistered,
+so no-capture results after such an error are not meaningful.
+
+Suggested low-impact real hook checks:
+
+| Hook family | Debug action path | Expected evidence |
+|---|---|---|
+| Inspiration | `Actions\Inspiration...\Frenzy_Work` on an eligible colonist | One prompt-only capture for that pawn. |
+| Mental state | `Actions\Mental state...\Crying` on a colonist, then `Actions\T: Stop mental state` | One prompt-only capture, then the pawn returns to no mental state. |
+| Thought | `Actions\Show more actions\T: Give bad thought` on a colonist | One prompt-only capture from `MemoryThoughtHandler.TryGainMemory`. |
+| Social `PlayLog.Add` | `Actions\T: Force Interaction`, choose another colonist, then `insult` | Pairwise prompt-only captures when the social hook is installed and policy allows the interaction. |
+| Mood condition | `Actions\Add Game Condition...\Aurora\1 hour` or `...\Eclipse\1 hour` | One prompt-only capture per eligible affected colonist. |
+
+Use more disruptive hooks only in disposable saves. Generic health actions such as `Flu` may route
+to day reflection or fail severity policy, so no immediate prompt does not by itself disprove the
+`AddHediff` hook. Some direct research/debug actions set state without emitting a Tale, so no capture
+there does not prove `TaleRecorder.RecordTale` is broken. For raids and quests, prefer controlled
+low-point incidents or natural accepted quests and verify after the startup log is clean.
+
+When a live action produces no prompt-only log, classify the miss before changing code: vanilla may
+have refused the action, XML/settings policy may have dropped it, the debug action may bypass the
+vanilla hook, the pawn may be ineligible/incapacitated, or Harmony may not have installed the hook.
+Prompt-suite entries are not a substitute for this pass because they synthesize `DiaryEvent`s inside
+the mod instead of entering through RimWorld's event sources.
 
 Prompt lab:
 
