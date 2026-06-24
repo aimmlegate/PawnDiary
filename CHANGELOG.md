@@ -6,6 +6,11 @@ not need separate entries unless they change behavior or document an important r
 
 ## 2026-06-24
 
+- **API lane edge cases fixed.** Cooldown failover now snapshots lane readiness once per request so
+  timing changes cannot skip every lane, `No auth` lanes ignore stale saved key text for lane
+  identity, settings saves prune cooldowns for removed/reconfigured rows, `key=` query auth replaces
+  existing keys while preserving URL fragments, and prompt variant hash seeds are always
+  non-negative.
 - **Personas reworked into writing styles.** Player-facing settings, per-pawn picker text, prompt
   defaults, and prompt-lab docs now frame the feature as writing styles rather than chat personas.
   The shipped catalog was retuned toward prose mechanics (rhythm, sentence shape, imagery, emphasis,

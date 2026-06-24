@@ -669,14 +669,18 @@ namespace PawnDiary
                 && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
                 && left.apiMode == right.apiMode;
 
-            return sameLane
-                && (!includeApiKey || PawnDiarySettings.NormalizeAuthMode(left.authMode) == PawnDiarySettings.NormalizeAuthMode(right.authMode))
-                && (!includeApiKey || string.Equals(NormalizeApiKey(left.apiKey), NormalizeApiKey(right.apiKey), StringComparison.Ordinal));
-        }
+            if (!sameLane || !includeApiKey)
+            {
+                return sameLane;
+            }
 
-        private static string NormalizeApiKey(string apiKey)
-        {
-            return (apiKey ?? string.Empty).Trim();
+            ApiAuthMode leftAuthMode = PawnDiarySettings.NormalizeAuthMode(left.authMode);
+            ApiAuthMode rightAuthMode = PawnDiarySettings.NormalizeAuthMode(right.authMode);
+            return leftAuthMode == rightAuthMode
+                && string.Equals(
+                    ApiEndpointPolicy.EffectiveApiKey(leftAuthMode, left.apiKey),
+                    ApiEndpointPolicy.EffectiveApiKey(rightAuthMode, right.apiKey),
+                    StringComparison.Ordinal);
         }
 
         /// <summary>

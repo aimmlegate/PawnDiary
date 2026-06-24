@@ -39,6 +39,20 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns the API key value that actually affects a lane's request identity. "No auth"
+        /// lanes deliberately ignore any stale saved key text because that key is not sent.
+        /// </summary>
+        public static string EffectiveApiKey(ApiAuthMode authMode, string apiKey)
+        {
+            if (NormalizeAuthMode(authMode) == ApiAuthMode.None)
+            {
+                return string.Empty;
+            }
+
+            return (apiKey ?? string.Empty).Trim();
+        }
+
+        /// <summary>
         /// Exponential transient-failure backoff used by LlmClient. Failure counts below one behave
         /// like the first failure so corrupted state cannot create a zero-second cooldown.
         /// </summary>

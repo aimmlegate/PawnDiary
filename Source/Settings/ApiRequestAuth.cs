@@ -1,6 +1,7 @@
 // Shared authentication helpers for compatible LLM HTTP requests. Kept separate from the generation
 // client so settings-time model fetching and runtime diary generation send API keys the same way.
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -22,8 +23,7 @@ namespace PawnDiary
                 return url;
             }
 
-            string separator = url.IndexOf("?", StringComparison.Ordinal) >= 0 ? "&" : "?";
-            return url + separator + "key=" + Uri.EscapeDataString(key);
+            return AddOrReplaceQueryParameter(url, "key", Uri.EscapeDataString(key));
         }
 
         /// <summary>Adds header-based auth when the selected auth mode requires it.</summary>
@@ -55,6 +55,48 @@ namespace PawnDiary
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
                     return;
             }
+        }
+
+        private static string AddOrReplaceQueryParameter(string url, string name, string escapedValue)
+        {
+            int fragmentIndex = url.IndexOf("#", StringComparison.Ordinal);
+            string fragment = string.Empty;
+            string withoutFragment = url;
+            if (fragmentIndex >= 0)
+            {
+                fragment = url.Substring(fragmentIndex);
+                withoutFragment = url.Substring(0, fragmentIndex);
+            }
+
+            int queryIndex = withoutFragment.IndexOf("?", StringComparison.Ordinal);
+            string path = queryIndex >= 0 ? withoutFragment.Substring(0, queryIndex) : withoutFragment;
+            string query = queryIndex >= 0 ? withoutFragment.Substring(queryIndex + 1) : string.Empty;
+
+            List<string> parameters = new List<string>();
+            if (!string.IsNullOrEmpty(query))
+            {
+                string[] existing = query.Split('&');
+                for (int i = 0; i < existing.Length; i++)
+                {
+                    string parameter = existing[i];
+                    if (string.IsNullOrEmpty(parameter) || IsQueryParameter(parameter, name))
+                    {
+                        continue;
+                    }
+
+                    parameters.Add(parameter);
+                }
+            }
+
+            parameters.Add(name + "=" + escapedValue);
+            return path + "?" + string.Join("&", parameters.ToArray()) + fragment;
+        }
+
+        private static bool IsQueryParameter(string parameter, string name)
+        {
+            int equalsIndex = parameter.IndexOf("=", StringComparison.Ordinal);
+            string parameterName = equalsIndex >= 0 ? parameter.Substring(0, equalsIndex) : parameter;
+            return string.Equals(parameterName, name, StringComparison.Ordinal);
         }
     }
 }

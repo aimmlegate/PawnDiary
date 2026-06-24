@@ -145,14 +145,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Persists settings to disk and applies the current concurrency limit
-        /// to the shared LlmClient so it takes effect immediately.
+        /// Persists settings to disk and applies the current API lane snapshot
+        /// to the shared LlmClient so connection changes take effect immediately.
         /// </summary>
         public override void WriteSettings()
         {
             Settings.ClampValues();
             Settings.NormalizeEndpointUrls();
-            LlmClient.ApplyConcurrency();
+            LlmClient.ApplyLaneConfiguration(Settings.ActiveEndpoints());
             LlmClient.ApplyDebugLoggingSetting();
             base.WriteSettings();
         }

@@ -201,6 +201,9 @@ namespace PawnDiary
         // main thread reads it for routing while background HTTP workers update it after failures.
         private static readonly object laneCooldownLock = new object();
         private static readonly Dictionary<string, LaneCooldownState> laneCooldowns = new Dictionary<string, LaneCooldownState>();
+        // Set after settings are written. Null means we have not received a settings snapshot yet,
+        // so old saves/early startup should keep accepting cooldown updates normally.
+        private static HashSet<string> configuredLaneKeys;
 
         // Advances deterministic lane selection for balanced and preference-weighted routing.
         // Incremented atomically because requests may be enqueued from different threads.
@@ -257,6 +260,48 @@ namespace PawnDiary
             // Safe to swap at any time: in-flight workers hold their own gate reference
             // and release that one, so they never touch these new gates.
             sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+        }
+
+        /// <summary>
+        /// Applies the current API lane snapshot after settings are saved. Gates are rebuilt at the
+        /// latest concurrency limit, and cooldowns for removed or reconfigured lanes are discarded.
+        /// </summary>
+        public static void ApplyLaneConfiguration(List<ApiEndpointConfig> activeLanes)
+        {
+            // Safe to swap at any time: in-flight workers hold their own gate reference
+            // and release that one, so they never touch these new gates.
+            sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+
+            HashSet<string> activeKeys = BuildLaneKeySet(activeLanes);
+            int removedCount = 0;
+            lock (laneCooldownLock)
+            {
+                configuredLaneKeys = activeKeys;
+                if (laneCooldowns.Count > 0)
+                {
+                    List<string> staleKeys = new List<string>();
+                    foreach (string key in laneCooldowns.Keys)
+                    {
+                        if (!activeKeys.Contains(key))
+                        {
+                            staleKeys.Add(key);
+                        }
+                    }
+
+                    for (int i = 0; i < staleKeys.Count; i++)
+                    {
+                        if (laneCooldowns.Remove(staleKeys[i]))
+                        {
+                            removedCount++;
+                        }
+                    }
+                }
+            }
+
+            if (removedCount > 0)
+            {
+                LogDebug("Pruned stale lane cooldowns after API settings change count=" + removedCount);
+            }
         }
 
         /// <summary>
@@ -369,7 +414,33 @@ namespace PawnDiary
         {
             string endpoint = EndpointUtility.NormalizeBaseEndpoint(endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
             string model = (modelName ?? string.Empty).Trim();
-            return apiMode + "\n" + endpoint + "\n" + model + "\n" + PawnDiarySettings.NormalizeAuthMode(authMode) + "\n" + NormalizeApiKey(apiKey);
+            ApiAuthMode normalizedAuthMode = PawnDiarySettings.NormalizeAuthMode(authMode);
+            return apiMode + "\n" + endpoint + "\n" + model + "\n" + normalizedAuthMode + "\n" + ApiEndpointPolicy.EffectiveApiKey(normalizedAuthMode, apiKey);
+        }
+
+        private static HashSet<string> BuildLaneKeySet(List<ApiEndpointConfig> lanes)
+        {
+            HashSet<string> keys = new HashSet<string>();
+            if (lanes == null)
+            {
+                return keys;
+            }
+
+            foreach (ApiEndpointConfig lane in lanes)
+            {
+                if (lane == null)
+                {
+                    continue;
+                }
+
+                string key = LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.apiKey);
+                if (!string.IsNullOrEmpty(key))
+                {
+                    keys.Add(key);
+                }
+            }
+
+            return keys;
         }
 
         /// <summary>
@@ -412,22 +483,43 @@ namespace PawnDiary
             }
         }
 
-        private static bool HasReadyLane(List<ApiEndpointConfig> lanes)
+        private static List<bool> SnapshotLaneReadiness(List<ApiEndpointConfig> lanes)
         {
+            List<bool> ready = new List<bool>();
             if (lanes == null || lanes.Count == 0)
             {
-                return false;
+                return ready;
             }
 
             foreach (ApiEndpointConfig lane in lanes)
             {
-                if (lane != null && !IsLaneCooling(lane))
+                ready.Add(lane != null && !IsLaneCooling(lane));
+            }
+
+            return ready;
+        }
+
+        private static bool HasReadyLane(List<bool> readiness)
+        {
+            if (readiness == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < readiness.Count; i++)
+            {
+                if (readiness[i])
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        private static bool LaneWasReady(List<bool> readiness, int index)
+        {
+            return readiness != null && index >= 0 && index < readiness.Count && readiness[index];
         }
 
         private static void MarkLaneCooldown(LlmGenerationRequest request, string error)
@@ -442,6 +534,11 @@ namespace PawnDiary
             int cooldownSeconds;
             lock (laneCooldownLock)
             {
+                if (configuredLaneKeys != null && !configuredLaneKeys.Contains(key))
+                {
+                    return;
+                }
+
                 LaneCooldownState state;
                 if (!laneCooldowns.TryGetValue(key, out state) || state == null)
                 {
@@ -601,13 +698,15 @@ namespace PawnDiary
                     "Attempt order event=" + request.eventId
                     + " role=" + request.povRole
                     + " lanes=[" + LaneList(targets) + "]");
+                List<bool> readyAtStart = SnapshotLaneReadiness(targets);
+                bool hasReadyLaneAtStart = HasReadyLane(readyAtStart);
 
                 for (int t = 0; t < targets.Count; t++)
                 {
                     // Point the request at this lane so the gate key, HTTP call, and reported
                     // result all reflect the model we are about to try.
                     ApiEndpointConfig target = targets[t];
-                    if (HasReadyLane(targets) && IsLaneCooling(target))
+                    if (hasReadyLaneAtStart && !LaneWasReady(readyAtStart, t))
                     {
                         LogDebug("Skipped cooling lane event=" + request.eventId + " role=" + request.povRole + " lane=" + LaneLabel(target));
                         continue;
@@ -1100,16 +1199,16 @@ namespace PawnDiary
                 return false;
             }
 
+            ApiAuthMode leftAuthMode = PawnDiarySettings.NormalizeAuthMode(left.authMode);
+            ApiAuthMode rightAuthMode = PawnDiarySettings.NormalizeAuthMode(right.authMode);
             return string.Equals(EndpointUtility.NormalizeBaseEndpoint(left.url), EndpointUtility.NormalizeBaseEndpoint(right.url), StringComparison.OrdinalIgnoreCase)
                 && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
                 && left.apiMode == right.apiMode
-                && PawnDiarySettings.NormalizeAuthMode(left.authMode) == PawnDiarySettings.NormalizeAuthMode(right.authMode)
-                && string.Equals(NormalizeApiKey(left.apiKey), NormalizeApiKey(right.apiKey), StringComparison.Ordinal);
-        }
-
-        private static string NormalizeApiKey(string apiKey)
-        {
-            return (apiKey ?? string.Empty).Trim();
+                && leftAuthMode == rightAuthMode
+                && string.Equals(
+                    ApiEndpointPolicy.EffectiveApiKey(leftAuthMode, left.apiKey),
+                    ApiEndpointPolicy.EffectiveApiKey(rightAuthMode, right.apiKey),
+                    StringComparison.Ordinal);
         }
 
         private static int MaxOutputTokensForRequest(LlmGenerationRequest request)

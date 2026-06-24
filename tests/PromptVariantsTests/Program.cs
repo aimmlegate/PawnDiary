@@ -138,6 +138,7 @@ namespace PromptVariantsTests
             int h2 = PromptVariants.HashSeed("evt-123");
             AssertEqual("hash stable across calls", h1, h2);
             AssertEqual("hash non-negative", true, h1 >= 0);
+            AssertEqual("hash with high bit stays non-negative", true, PromptVariants.HashSeed("zzzzzzzz") >= 0);
         }
 
         private static void HashSeedEmptyStringIsZero()

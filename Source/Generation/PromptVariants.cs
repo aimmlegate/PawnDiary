@@ -95,7 +95,8 @@ namespace PawnDiary
                     hash = (hash << 5) + hash + text[i];
                 }
 
-                return (int)hash;
+                // Mask off the sign bit so callers can safely use this as a non-negative seed.
+                return (int)(hash & 0x7FFFFFFFu);
             }
         }
 

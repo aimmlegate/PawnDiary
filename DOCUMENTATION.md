@@ -3,7 +3,7 @@
 Current-state guide for the mod. Keep this file focused on how the system works now. Keep
 [CHANGELOG.md](CHANGELOG.md) grouped by milestone, not by individual commit.
 
-_Last updated: 2026-06-24 (API lane routing and cooldowns)_
+_Last updated: 2026-06-24 (API lane routing, auth, and cooldowns)_
 
 ---
 
@@ -287,7 +287,8 @@ including model fetch/pick, per-row connection tests, per-row auth style (Bearer
 `api-key`, `x-api-key`, or `key=` query), Responses reasoning effort, Ollama thinking output, and
 the shared request-tuning block shown inside the expanded connection section. Endpoint URLs
 normalize on load/save, not every settings draw, so users can edit or clear the active text field
-without it being rewritten mid-typing. Logs strip query strings.
+without it being rewritten mid-typing. Query-key auth replaces any existing `key=` parameter while
+preserving URL fragments, and logs strip query strings.
 
 API row order is editable with compact arrow buttons that show their full label on hover. The global
 routing mode controls how strongly that order affects primary selection: **Balanced** spreads primary requests equally across enabled rows,
@@ -355,10 +356,13 @@ concurrency, and `ServicePointManager.DefaultConnectionLimit` is raised for Mono
 and surfaces timeout/permanent/empty/incomplete responses as failure text. Transient lane failures
 and timeouts apply an automatic runtime cooldown that grows 10s, 20s, 40s, 80s, 160s, then caps at
 300s; any success clears that lane's cooldown. Cooling lanes are skipped for primary selection and
-failover while another lane is ready, but can still be tried when every lane is cooling. Generation
-and model-list HTTP bodies are streamed with hard byte caps before JSON parsing/logging, so a bad
-endpoint cannot force an unbounded response string allocation. Successful responses are trimmed
-locally to `maxTokens`, preferring complete sentences for diary/note text.
+failover while another lane is ready, but can still be tried when every lane is cooling. Each
+failover pass snapshots lane readiness once so a cooldown expiring or being added mid-loop cannot
+skip every lane. Lane identity ignores stale API-key text for `No auth` rows, and saving API
+settings prunes cooldowns for removed or reconfigured rows. Generation and model-list HTTP bodies
+are streamed with hard byte caps before JSON parsing/logging, so a bad endpoint cannot force an
+unbounded response string allocation. Successful responses are trimmed locally to `maxTokens`,
+preferring complete sentences for diary/note text.
 
 `LlmResponseParser` extracts typed visible output before fallback fields, falls back from blank
 Ollama content to root `response`, and strips structured or transcript-style reasoning/thinking

@@ -298,6 +298,10 @@ namespace DiaryPipelineTests
                 ApiEndpointPolicy.NormalizeAuthMode(ApiAuthMode.QueryParameterKey));
             AssertEqual("normalize invalid auth", ApiAuthMode.BearerToken,
                 ApiEndpointPolicy.NormalizeAuthMode((ApiAuthMode)999));
+            AssertEqual("effective key trims authenticated lanes", "secret",
+                ApiEndpointPolicy.EffectiveApiKey(ApiAuthMode.BearerToken, " secret "));
+            AssertEqual("effective key ignores no-auth stale key", string.Empty,
+                ApiEndpointPolicy.EffectiveApiKey(ApiAuthMode.None, "stale"));
 
             AssertEqual("cooldown zero is first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(0));
             AssertEqual("cooldown first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(1));
@@ -315,6 +319,12 @@ namespace DiaryPipelineTests
                 ApiRequestAuth.ApplyQueryAuth(
                     "https://example.test/v1/chat/completions?existing=1",
                     "a b",
+                    ApiAuthMode.QueryParameterKey));
+            AssertEqual("query auth replaces existing key and preserves fragment",
+                "https://example.test/v1/chat/completions?existing=1&key=new%20key#frag",
+                ApiRequestAuth.ApplyQueryAuth(
+                    "https://example.test/v1/chat/completions?key=old&existing=1&key=older#frag",
+                    "new key",
                     ApiAuthMode.QueryParameterKey));
             AssertEqual("query auth unchanged without key",
                 "https://example.test/v1/chat/completions",
