@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Prompt enchantments split into collector/planner.** `PromptEnchantments.RuleFor` is now a small
+  runtime facade; live `Pawn`/`Hediff`/capacity/DLC reads and localization live in
+  `PromptEnchantmentCollector`, which snapshots plain `PromptEnchantmentCandidate` DTOs for the pure
+  `PromptEnchantmentPlanner` to weighted-pick and format with a deterministic roll seam. The old
+  hardcoded hediff/consciousness thresholds and cue cap moved into `DiaryTuningDef.xml` with code
+  fallbacks, and `DiaryPipelineTests` covers planner selection/formatting/cue caps.
+
 - **Harmony patches split by capture domain.** The former monolithic `Source/Patches/DiaryPatches.cs`
   is now focused domain files for deaths, arrivals, health, thoughts, quests, social log/relations,
   and broader gameplay signals. Patch class names and Harmony attributes stay stable, while

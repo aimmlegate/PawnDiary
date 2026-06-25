@@ -18,6 +18,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryRichTextDecorators.cs" Link="DiaryRichTextDecorators.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptCapture.cs" Link="DiaryPromptCapture.cs" />
+    <Compile Include="..\..\Source\Pipeline\PromptEnchantmentPlanner.cs" Link="PromptEnchantmentPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneIdentity.cs" Link="ApiLaneIdentity.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />

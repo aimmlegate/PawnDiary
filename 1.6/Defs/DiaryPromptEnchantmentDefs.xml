@@ -13,8 +13,8 @@
 
   Hediff severity tiers:
     hediffSeverityTiers may override chance/frequency/weight/severity for visible matching hediffs.
-    Levels are fixed in C#: minor >= 0.05, moderate >= 0.25, major >= 0.50,
-    critical >= 0.75. The highest configured level at or below the live severity wins.
+    Levels are XML-tuned in DiaryTuningDef.xml (defaults: minor >= 0.05, moderate >= 0.25,
+    major >= 0.50, critical >= 0.75). The highest configured level at or below the live severity wins.
 
   hediffDefNames are plain strings and fail silently when absent, so DLC/modded content can be
   mentioned without making the whole mod depend on it.

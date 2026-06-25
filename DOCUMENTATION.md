@@ -62,8 +62,8 @@ Key files:
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
 | `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
-| `Generation/DiaryPromptBuilder.cs`, `Generation/DiaryPipelineAdapters.cs`, `Pipeline/*` | Prompt facade plus impure pipeline adapter, pure planning, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, and text decoration. `DiaryTextDecorations` is the stable facade over split decoration contracts, rule matching, fact codec, and rich-text transforms. |
-| `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
+| `Generation/DiaryPromptBuilder.cs`, `Generation/DiaryPipelineAdapters.cs`, `Generation/PromptEnchantments.cs`, `Generation/PromptEnchantmentCollector.cs`, `Pipeline/*` | Prompt facade plus impure pipeline adapter/collectors, pure planning, prompt-enchantment selection, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, and text decoration. `DiaryTextDecorations` is the stable facade over split decoration contracts, rule matching, fact codec, and rich-text transforms. |
+| `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; prompt-enchantment live health/capacity/status snapshots in `PromptEnchantmentCollector`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
 | `Generation/LlmClient.cs`, `Pipeline/LlmRequestJsonBuilder.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency, pure request body serialization, and pure provider response parsing. |
@@ -256,6 +256,7 @@ Layer boundaries:
 
 - Impure: event hooks, `DiaryGameComponent`, settings, XML lookup, localization, IO, RNG, save
   mutation, transport, and live-pawn fact collection (`DlcContext`, `PawnFactCapture`,
+  `PromptEnchantmentCollector`,
   `DiaryContextBuilder`'s summary builders, `MoodImpactClassifier`). The collectors delegate
   formatting to the localized band tokens in `DiaryBuckets` (`.Translate()`-bound, so main-thread)
   and to the pure text cleaner in `DiaryLineCleaner`.
@@ -263,7 +264,7 @@ Layer boundaries:
   settings state into the pure pipeline's DTO contracts.
 - Pure: `DiaryEvent`/`PawnDiaryRecord` (saved models — they store plain values only and never read a
   live `Pawn`), `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
-  `DiaryLineCleaner`, `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`,
+  `DiaryLineCleaner`, `PromptEnchantmentPlanner`, `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`,
   `LlmRequestJsonBuilder`, `LlmResponseParser`, `DiaryResponsePostprocessor`,
   `DiaryTextDecorations` and its split decoration helpers.
 
@@ -280,6 +281,11 @@ localized `important context:` field as pressure (not the subject unless the eve
 Health/capacity cues can appear on any eligible first-person prompt; important events may also put a
 Royalty title or Ideology role into the same weighted pool — the two are mutually exclusive per
 prompt. These are separate from `DiaryEventPromptDef.enhancement` (static event-type guidance).
+`PromptEnchantments.RuleFor` now only gates settings/Defs/RNG, `PromptEnchantmentCollector` snapshots
+live `Pawn`/`Hediff`/capacity/DLC context into plain candidates, and pure `PromptEnchantmentPlanner`
+does weighted selection plus final `; ` / cue joining. Severity tier thresholds and the cue cap are
+XML-tuned on `DiaryTuningDef` (`promptEnchantment*`, defaults match the shipped 0.05/0.25/0.50/0.75
+hediff bands, 0.55/0.35/0.20 consciousness bands, and 3 cues).
 
 **Humor cues** are a hidden, always-on per-entry writing license. Roughly one in ten eligible
 first-person entries (base rate XML-tunable via `DiaryTuningDef.humorChance`, default `0.10`) gets one

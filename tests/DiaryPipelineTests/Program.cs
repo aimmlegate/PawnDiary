@@ -19,6 +19,7 @@ namespace DiaryPipelineTests
             TestTitlePromptPlan();
             TestSoloSelection();
             TestSoloBatchSelection();
+            TestPromptEnchantmentPlanner();
             TestDomainClassifier();
             TestResponsePostprocessorRules();
             TestDirectSpeechParser();
@@ -248,6 +249,62 @@ namespace DiaryPipelineTests
                 povRole = DiaryPipelineRoles.Initiator
             });
             AssertEqual("solo combat batch selection", DiaryPipelineTemplates.SoloImportant, combatBatchPlan.templateKey);
+        }
+
+        private static void TestPromptEnchantmentPlanner()
+        {
+            PromptEnchantmentTuning tuning = new PromptEnchantmentTuning { maxImpactCues = 2 };
+            List<PromptEnchantmentCandidate> candidates = new List<PromptEnchantmentCandidate>
+            {
+                PromptCandidate(
+                    "urgent",
+                    "major cut on hand",
+                    1f,
+                    new string[] { "bleeding", "pain", "weakens body" },
+                    new string[] { "keep it physical", "avoid medical dump", "third cue" }),
+                PromptCandidate(
+                    "important",
+                    "royal title: yeoman",
+                    3f,
+                    null,
+                    new string[] { "respect if relevant" })
+            };
+
+            AssertEqual(
+                "prompt enchantment first roll",
+                "urgent; major cut on hand; bleeding, pain; keep it physical, avoid medical dump",
+                PromptEnchantmentPlanner.Build(candidates, tuning, 0f));
+            AssertEqual(
+                "prompt enchantment boundary roll",
+                "urgent; major cut on hand; bleeding, pain; keep it physical, avoid medical dump",
+                PromptEnchantmentPlanner.Build(candidates, tuning, 0.25f));
+            AssertEqual(
+                "prompt enchantment weighted second",
+                "important; royal title: yeoman; respect if relevant",
+                PromptEnchantmentPlanner.Build(candidates, tuning, 0.26f));
+
+            AssertEqual(
+                "prompt enchantment skips nonpositive",
+                "valid; condition",
+                PromptEnchantmentPlanner.Build(
+                    new List<PromptEnchantmentCandidate>
+                    {
+                        PromptCandidate("ignored", "zero", 0f, null, null),
+                        PromptCandidate("valid", "condition", 2f, null, null)
+                    },
+                    tuning,
+                    0f));
+            AssertEqual(
+                "prompt enchantment empty",
+                string.Empty,
+                PromptEnchantmentPlanner.Build(new List<PromptEnchantmentCandidate>(), tuning, 0.5f));
+            AssertEqual(
+                "prompt enchantment zero cue cap",
+                "urgent; major cut on hand",
+                PromptEnchantmentPlanner.Build(
+                    new List<PromptEnchantmentCandidate> { candidates[0] },
+                    new PromptEnchantmentTuning { maxImpactCues = 0 },
+                    0f));
         }
 
         private static void TestPromptCaptureFormatting()
@@ -858,6 +915,23 @@ namespace DiaryPipelineTests
         private static List<bool> Ready(params bool[] values)
         {
             return new List<bool>(values);
+        }
+
+        private static PromptEnchantmentCandidate PromptCandidate(string priorityText, string conditionText,
+            float weight, string[] impactCues, string[] configuredCues)
+        {
+            return new PromptEnchantmentCandidate
+            {
+                priorityText = priorityText,
+                conditionText = conditionText,
+                weight = weight,
+                impactCues = impactCues == null
+                    ? new List<string>()
+                    : new List<string>(impactCues),
+                configuredCues = configuredCues == null
+                    ? new List<string>()
+                    : new List<string>(configuredCues)
+            };
         }
 
         private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)

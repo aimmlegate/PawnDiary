@@ -136,6 +136,19 @@ namespace PawnDiary
         public float bleedVisibleAbove = 0.01f;    // report bleeding only above this rate
         public float lowCapacityThreshold = 0.80f; // report a capacity only when below this level
 
+        // ---- Prompt enchantments ----
+        // These bands drive the optional one-line "important context" prompt cue. The Defs still own
+        // which hediffs/capacities are eligible; these values only tune severity bucket thresholds and
+        // how many cue fragments survive formatting.
+        public float promptEnchantmentMinorHediffSeverity = PromptEnchantmentTuning.DefaultMinorHediffSeverity;
+        public float promptEnchantmentModerateHediffSeverity = PromptEnchantmentTuning.DefaultModerateHediffSeverity;
+        public float promptEnchantmentMajorHediffSeverity = PromptEnchantmentTuning.DefaultMajorHediffSeverity;
+        public float promptEnchantmentCriticalHediffSeverity = PromptEnchantmentTuning.DefaultCriticalHediffSeverity;
+        public float promptEnchantmentCloudedConsciousnessBelow = PromptEnchantmentTuning.DefaultCloudedConsciousnessBelow;
+        public float promptEnchantmentFadingConsciousnessBelow = PromptEnchantmentTuning.DefaultFadingConsciousnessBelow;
+        public float promptEnchantmentBarelyConsciousBelow = PromptEnchantmentTuning.DefaultBarelyConsciousBelow;
+        public int promptEnchantmentMaxImpactCues = PromptEnchantmentTuning.DefaultMaxImpactCues;
+
         // ---- Consciousness: first-person generation gate ----
         // Pawns below this Consciousness level do not write first-person entries. Events still
         // record and neutral death/arrival descriptions still generate; only non-neutral LLM work
@@ -406,6 +419,51 @@ namespace PawnDiary
 
                 return value;
             }
+        }
+
+        /// <summary>
+        /// XML-tuned prompt-enchantment thresholds and cue cap, normalized into a plain DTO for the
+        /// collector/planner split. Negative or NaN values fall back to the shipped defaults; zero is
+        /// allowed for the cue cap so XML can intentionally suppress cues.
+        /// </summary>
+        public static PromptEnchantmentTuning PromptEnchantmentTuning
+        {
+            get
+            {
+                DiaryTuningDef tuning = Current;
+                return new PawnDiary.PromptEnchantmentTuning
+                {
+                    minorHediffSeverity = NonNegativeOrDefault(
+                        tuning.promptEnchantmentMinorHediffSeverity,
+                        PawnDiary.PromptEnchantmentTuning.DefaultMinorHediffSeverity),
+                    moderateHediffSeverity = NonNegativeOrDefault(
+                        tuning.promptEnchantmentModerateHediffSeverity,
+                        PawnDiary.PromptEnchantmentTuning.DefaultModerateHediffSeverity),
+                    majorHediffSeverity = NonNegativeOrDefault(
+                        tuning.promptEnchantmentMajorHediffSeverity,
+                        PawnDiary.PromptEnchantmentTuning.DefaultMajorHediffSeverity),
+                    criticalHediffSeverity = NonNegativeOrDefault(
+                        tuning.promptEnchantmentCriticalHediffSeverity,
+                        PawnDiary.PromptEnchantmentTuning.DefaultCriticalHediffSeverity),
+                    cloudedConsciousnessBelow = NonNegativeOrDefault(
+                        tuning.promptEnchantmentCloudedConsciousnessBelow,
+                        PawnDiary.PromptEnchantmentTuning.DefaultCloudedConsciousnessBelow),
+                    fadingConsciousnessBelow = NonNegativeOrDefault(
+                        tuning.promptEnchantmentFadingConsciousnessBelow,
+                        PawnDiary.PromptEnchantmentTuning.DefaultFadingConsciousnessBelow),
+                    barelyConsciousBelow = NonNegativeOrDefault(
+                        tuning.promptEnchantmentBarelyConsciousBelow,
+                        PawnDiary.PromptEnchantmentTuning.DefaultBarelyConsciousBelow),
+                    maxImpactCues = tuning.promptEnchantmentMaxImpactCues < 0
+                        ? PawnDiary.PromptEnchantmentTuning.DefaultMaxImpactCues
+                        : tuning.promptEnchantmentMaxImpactCues
+                };
+            }
+        }
+
+        private static float NonNegativeOrDefault(float value, float fallback)
+        {
+            return value < 0f || float.IsNaN(value) ? fallback : value;
         }
     }
 }
