@@ -177,7 +177,7 @@ touched code is impure and `NameForRole` was never pure-testable).
 
 Evidence:
 - `Source/Models/DiaryEvent.cs:1089` calls `.Translate()`.
-- Sole production caller found in review: `DiaryPipelineAdapters.DirectSpeechInstructionFor` around `Source/Pipeline/DiaryPipelineAdapters.cs:355`.
+- Sole production caller found in review: `DiaryPipelineAdapters.DirectSpeechInstructionFor` around `Source/Generation/DiaryPipelineAdapters.cs:355`.
 
 Problem:
 - The persisted model reaches localization. This is small but violates the model boundary.
@@ -528,8 +528,13 @@ Docs:
 
 Priority: Low
 
+Status: Resolved 2026-06-25. `DiaryPipelineAdapters` moved to
+`Source/Generation/DiaryPipelineAdapters.cs` with namespace/API stable, leaving `Source/Pipeline` for
+pure prompt/response/decor and API policy helpers. Documentation and changelog were updated, and the
+Debug build succeeds.
+
 Evidence:
-- `Source/Pipeline/DiaryPipelineAdapters.cs:1` says the file is impure.
+- `Source/Generation/DiaryPipelineAdapters.cs:1` says the file is impure.
 - It accepts `DiaryEvent`, translates strings, and reads settings/Defs around `:18`, `:56`, `:91`, `:97`.
 
 Problem:

@@ -2,9 +2,9 @@
 // already-resolved writing-style/enchantment strings) into a typed DiaryPromptRequest via
 // DiaryPipelineAdapters, then runs the pure DiaryPromptPlanner to produce the prompt envelope sent to
 // the model. All the real work — template selection, field rendering, system-prompt/style
-// composition, direct-speech rules — lives in Source/Pipeline now. This file only exists so the
-// generation orchestrator (DiaryGameComponent.Generation) keeps the same small call surface it had
-// before the pipeline split. See DOCUMENTATION.md.
+// composition, direct-speech rules — is split between this Generation adapter and the pure helpers
+// in Source/Pipeline. This file only exists so the generation orchestrator keeps the same small call
+// surface it had before the pipeline split. See DOCUMENTATION.md.
 using System;
 
 namespace PawnDiary

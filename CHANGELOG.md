@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Diary pipeline adapter moved out of the pure folder.** The intentionally impure
+  `DiaryPipelineAdapters` bridge now lives at `Source/Generation/DiaryPipelineAdapters.cs`, beside
+  `DiaryPromptBuilder`, while keeping its namespace/API unchanged. `Source/Pipeline` is now reserved
+  for pure prompt/response/decor helpers and API policy/request serialization. Behavior is unchanged;
+  the Debug DLL was rebuilt and the build succeeds with 0 warnings.
+
 - **LLM parser speech-marker guard added.** `LlmResponseParserTests` now asserts the response
   parser's private `[[speech]]` sentinels still mirror `DiaryDirectSpeechParser`'s public defaults,
   preventing the two marker parsers from silently diverging. `LlmResponseParserTests` pass (38

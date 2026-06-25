@@ -40,7 +40,7 @@ PawnDiary/
 |   |-- Capture/                 Event Catalog: pure payloads/specs/registry + CaptureContext/Decision
 |   |-- Core/                    DiaryGameComponent partials (one per source), batching, generation queue
 |   |-- Defs/                    Def classes + XML lookup helpers
-|   |-- Generation/              context builders, prompt assembler, LLM client, DLC reads
+|   |-- Generation/              context builders, prompt adapter/facade, prompt assembler, LLM client, DLC reads
 |   |-- Models/                  saved/display models (DiaryEvent, DiaryEntry, PawnDiaryRecord)
 |   |-- Patches/                 Harmony startup + hooks + inspect command
 |   |-- Pipeline/                pure prompt/response/decor contracts + API endpoint/request policy
@@ -62,7 +62,7 @@ Key files:
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
 | `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
-| `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, text decoration. |
+| `Generation/DiaryPromptBuilder.cs`, `Generation/DiaryPipelineAdapters.cs`, `Pipeline/*` | Prompt facade plus impure pipeline adapter, pure planning, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, text decoration. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
@@ -83,7 +83,7 @@ Key files:
 4. `AddSoloEvent` / `AddPairwiseEvent` creates a saved `DiaryEvent`, semantic `colorCue`, per-POV
    decoration facts, and references from eligible pawn records.
 5. Generation queues immediately when possible and is retried by periodic scans.
-6. `DiaryPipelineAdapters` copies event/XML/localization/settings state into DTOs.
+6. `Generation/DiaryPipelineAdapters` copies event/XML/localization/settings state into DTOs.
 7. Pure pipeline helpers produce a prompt plan, parse provider output, and postprocess text.
 8. `LlmClient` sends requests, handles failover/concurrency, and returns results on the main thread.
 9. `ApplyLlmResult` stores success/failure; title generation (and the disabled speech injection) run
@@ -253,7 +253,8 @@ Layer boundaries:
   `DiaryContextBuilder`'s summary builders, `MoodImpactClassifier`). The collectors delegate
   formatting to the localized band tokens in `DiaryBuckets` (`.Translate()`-bound, so main-thread)
   and to the pure text cleaner in `DiaryLineCleaner`.
-- Bridge: `DiaryPipelineAdapters`.
+- Bridge: `Generation/DiaryPipelineAdapters.cs` copies impure runtime, XML, localization, and
+  settings state into the pure pipeline's DTO contracts.
 - Pure: `DiaryEvent`/`PawnDiaryRecord` (saved models — they store plain values only and never read a
   live `Pawn`), `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
   `DiaryLineCleaner`, `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`,
