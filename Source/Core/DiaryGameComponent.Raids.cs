@@ -96,7 +96,7 @@ namespace PawnDiary
                 return;
             }
 
-            string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
+            string instruction = InteractionGroups.InstructionForGroup(group);
             bool delayGeneration = RaidEventData.ShouldDelayGeneration(
                 incidentDefName,
                 arrivalModeDefName,

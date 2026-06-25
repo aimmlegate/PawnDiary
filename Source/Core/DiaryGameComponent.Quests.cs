@@ -108,7 +108,7 @@ namespace PawnDiary
                 return;
             }
 
-            string instruction = PawnDiaryMod.Settings.InstructionForQuest(signal);
+            string instruction = InteractionGroups.InstructionForQuest(signal);
             DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Quest);
 
             // Quests are colony-wide: fan out to every eligible colonist on every map. A pawn on two

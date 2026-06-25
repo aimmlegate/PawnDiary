@@ -280,7 +280,7 @@ namespace PawnDiary
         {
             string textKey = ImmediateHediffTextKey(policy, source);
             string text = textKey.Translate(pawn.LabelShortCap, data.Label).Resolve();
-            string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
+            string instruction = InteractionGroups.InstructionForGroup(group);
             string gameContext = HediffEventData.BuildGameContext(
                 data.DefName, data.Label, data.SourceToken, data.GroupKey, data.ModeToken,
                 data.SeverityF2, data.StageString, data.CleanedStageLabel, data.CleanedBodyPartLabel);

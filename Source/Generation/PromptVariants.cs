@@ -11,7 +11,7 @@
 // "Pure" means: no RimWorld / Verse / Unity types, no DefDatabase, no .Translate(), no IO, and no
 // RNG. The only inputs are the pool, a fallback, and an integer seed; the same inputs always yield
 // the same output. That makes the selection rule unit-testable without the game (see
-// tests/PromptVariantsTests). The impure callers (PawnDiarySettings.InstructionForGroup and
+// tests/PromptVariantsTests). The impure callers (InteractionGroups.InstructionForGroup and
 // DiaryPipelineAdapters.ToneFor) own the RNG/seed and call into here.
 using System.Collections.Generic;
 

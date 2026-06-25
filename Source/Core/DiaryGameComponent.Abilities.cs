@@ -116,7 +116,7 @@ namespace PawnDiary
             string text = string.IsNullOrWhiteSpace(targetLabel)
                 ? "PawnDiary.Event.AbilityUsed".Translate(pawn.LabelShortCap, label).Resolve()
                 : "PawnDiary.Event.AbilityUsedOn".Translate(pawn.LabelShortCap, label, targetLabel).Resolve();
-            string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
+            string instruction = InteractionGroups.InstructionForGroup(group);
 
             DiaryEvent abilityEvent = AddSoloEvent(pawn, targetPawn, defName, label, text, instruction, context);
             if (abilityEvent == null)

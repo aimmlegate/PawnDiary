@@ -63,7 +63,7 @@ Key files:
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
 | `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, response cleanup, API lane policy/identity, domain recovery, text decoration. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`). |
-| `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, odds, cooldowns, scanner policy, shared tuning. |
+| `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
 | `Generation/LlmClient.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
 | `Settings/PawnDiaryMod.cs`, `PawnDiarySettings.cs` | Settings data and settings UI. |
@@ -223,7 +223,8 @@ inventing facts.
 
 **Variant pools.** Each group may carry `instructions` / `tones` lists so an event type doesn't
 repeat verbatim. When a pool has any non-blank entry, the pure `PromptVariants.Pick` selects one
-wording per entry: `instruction` rolls once at capture and is persisted (never changes); `tone`
+wording per entry: `instruction` rolls once at capture (by `InteractionGroups.InstructionForGroup`,
+which the capture path freezes onto the event — never changes after) and is persisted; `tone`
 picks deterministically by event id (stable across save/load and regeneration). The singular
 `instruction`/`tone` remain as fallback/settings-preview. Weighting is XML-owned (list a wording more
 than once to make it common). Don't leave blank `<li>` slots — selection skips whitespace, which

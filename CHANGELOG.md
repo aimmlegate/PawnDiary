@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Prompt instruction resolution moved off the settings save DTO.** The `InstructionFor*` family
+  (classify a Def/signal into its group, then roll one `instructions` variant at capture) no longer
+  lives on `PawnDiarySettings` — it is now static on `InteractionGroups`, beside `Classify*`. These
+  methods read no settings state (instructions are XML-only — no saved overrides remain), so the
+  move restores the pure/impure barrier: the save DTO keeps persisted fields only, and classification
+  + RNG sit with classification. All 14 capture call sites in `DiaryGameComponent.*.cs` now call
+  `InteractionGroups.InstructionFor*(...)`. Behavior is unchanged: same classification, same
+  capture-time roll frozen into `diaryEvent.instruction`. No save-format, DLC, or localization change.
 - **Live-pawn fact capture extracted from the saved model.** `DiaryEvent` no longer reads live
   `Pawn` state. Its two capture methods (hediff/trait text-decoration facts and the 0..4
   staggered-handwriting intensity) became pure value setters (`SetTextDecorationFacts` /

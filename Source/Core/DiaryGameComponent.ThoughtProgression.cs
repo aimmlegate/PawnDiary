@@ -191,7 +191,7 @@ namespace PawnDiary
             }
 
             string instruction = AppendThoughtProgressionInstruction(
-                PawnDiaryMod.Settings.InstructionForThought(match.thoughtDef));
+                InteractionGroups.InstructionForThought(match.thoughtDef));
 
             string gameContext = ThoughtProgressionEventData.BuildGameContext(
                 data.DefName, data.CategoryKey, data.Label, data.StageIndex,

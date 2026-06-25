@@ -815,11 +815,11 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Returns the user-defined instruction for a specific interaction def, or empty string if none.
+        /// Returns the per-group prompt instruction for a specific interaction def, or empty string if none.
         /// </summary>
         private static string InteractionInstruction(InteractionDef interactionDef)
         {
-            return PawnDiaryMod.Settings?.InstructionFor(interactionDef) ?? string.Empty;
+            return InteractionGroups.InstructionFor(interactionDef);
         }
 
         /// <summary>

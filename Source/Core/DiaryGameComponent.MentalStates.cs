@@ -71,7 +71,7 @@ namespace PawnDiary
 
             // Impure build: label, instruction, cleaned reason — all need RimWorld translation.
             string label = stateDef.LabelCap.Resolve();
-            string instruction = PawnDiaryMod.Settings.InstructionForMentalState(stateDef);
+            string instruction = InteractionGroups.InstructionForMentalState(stateDef);
             string cleanedLabel = DiaryContextBuilder.CleanLine(label);
             string cleanedReason = DiaryContextBuilder.CleanLine(reason);
 

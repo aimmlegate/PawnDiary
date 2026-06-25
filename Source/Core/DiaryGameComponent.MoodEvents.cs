@@ -55,7 +55,7 @@ namespace PawnDiary
                 return;
             }
 
-            string instruction = PawnDiaryMod.Settings.InstructionForMoodEvent(conditionDef);
+            string instruction = InteractionGroups.InstructionForMoodEvent(conditionDef);
 
             // The condition's own thought offset is identical for every colonist, so compute it once
             // here (it scans the whole ThoughtDef database) instead of inside the per-pawn loop.

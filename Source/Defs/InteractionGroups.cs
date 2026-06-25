@@ -561,5 +561,138 @@ namespace PawnDiary
 
             return DefDatabase<DiaryInteractionGroupDef>.GetNamedSilentFail(key);
         }
+
+        // ---- Prompt instruction resolution ----
+        //
+        // The methods below resolve the diary-prompt instruction for a captured event. Each one
+        // classifies the incoming Def/string into its DiaryInteractionGroupDef (using the Classify*
+        // helpers above) and then rolls one wording from the group's variant pool. They used to live
+        // on PawnDiarySettings, but they read NO settings state — instructions are XML-only now (no
+        // saved overrides) — so they belong here, beside classification, and are static.
+        //
+        // Roll timing: Rand is RimWorld's main-thread RNG. Capture callers freeze the returned
+        // wording straight into diaryEvent.instruction, so a fresh roll per event is correct (the
+        // same event keeps the same wording after save/load because it is persisted on the event).
+        // The settings preview reads group.instruction (the singular fallback) directly to avoid
+        // flicker — see PawnDiarySettings.EditableInstructionForGroup.
+
+        // One rolled instruction wording for a group already classified. When the group defines an
+        // instructions variant pool, one wording is rolled; otherwise the singular instruction
+        // fallback is used. Prompt wording is XML-only, so tuning stays in Defs, not saves.
+        public static string InstructionForGroup(DiaryInteractionGroupDef group)
+        {
+            if (group == null)
+            {
+                return string.Empty;
+            }
+
+            return PromptVariants.Pick(group.instructions, group.instruction, Rand.Range(0, int.MaxValue));
+        }
+
+        // Interaction-domain (social log) instruction.
+        public static string InstructionFor(InteractionDef interactionDef)
+        {
+            if (interactionDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(Classify(interactionDef));
+        }
+
+        // MentalState-domain (social fights, mental breaks) instruction.
+        public static string InstructionForMentalState(MentalStateDef stateDef)
+        {
+            if (stateDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyMentalState(stateDef));
+        }
+
+        // Tale-domain (notable history: deaths, injuries, recruitment, disasters, ...) instruction.
+        public static string InstructionForTale(TaleDef taleDef)
+        {
+            if (taleDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyTale(taleDef));
+        }
+
+        // MoodEvent-domain (aurora, eclipse, psychic drone, toxic fallout, ...) instruction.
+        public static string InstructionForMoodEvent(GameConditionDef conditionDef)
+        {
+            if (conditionDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyMoodEvent(conditionDef));
+        }
+
+        // Thought-domain (expiring positive/negative mood thoughts) instruction.
+        public static string InstructionForThought(ThoughtDef thoughtDef)
+        {
+            if (thoughtDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyThought(thoughtDef));
+        }
+
+        // Inspiration-domain instruction.
+        public static string InstructionForInspiration(InspirationDef inspirationDef)
+        {
+            if (inspirationDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyInspiration(inspirationDef));
+        }
+
+        // Work-domain instruction. The scanner picks the group first (passion, strain, routine,
+        // dark study) because those groups depend on pawn state as well as the WorkTypeDef.
+        public static string InstructionForWork(DiaryInteractionGroupDef group)
+        {
+            return InstructionForGroup(group);
+        }
+
+        // Hediff-domain instruction (group's XML default).
+        public static string InstructionForHediff(HediffDef hediffDef)
+        {
+            if (hediffDef == null)
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyHediff(hediffDef));
+        }
+
+        // Raid-domain instruction (group's XML default).
+        public static string InstructionForRaid(string incidentDefName)
+        {
+            if (string.IsNullOrEmpty(incidentDefName))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyRaid(incidentDefName));
+        }
+
+        // Quest-domain instruction. The signal ("accepted"/"completed"/"failed") is the key.
+        public static string InstructionForQuest(string signal)
+        {
+            if (string.IsNullOrEmpty(signal))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyQuest(signal));
+        }
     }
 }

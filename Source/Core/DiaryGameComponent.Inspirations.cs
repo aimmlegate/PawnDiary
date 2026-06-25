@@ -58,7 +58,7 @@ namespace PawnDiary
             // Impure build: inspiration has no dedup today (matches pre-refactor behavior); jump
             // straight to event assembly.
             string label = CleanInspirationLabel(inspirationDef);
-            string instruction = PawnDiaryMod.Settings.InstructionForInspiration(inspirationDef);
+            string instruction = InteractionGroups.InstructionForInspiration(inspirationDef);
             string cleanedReason = DiaryContextBuilder.CleanLine(reason);
             string gameContext = InspirationEventData.BuildGameContext(
                 inspirationDef.defName, label, inspirationDef.baseDurationDays, cleanedReason);

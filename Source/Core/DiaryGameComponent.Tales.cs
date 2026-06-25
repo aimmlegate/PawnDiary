@@ -83,7 +83,7 @@ namespace PawnDiary
 
             string label = CleanTaleLabel(taleDef);
             Def attachedDef = AttachedDefFor(tale);
-            string instruction = PawnDiaryMod.Settings.InstructionForTale(taleDef);
+            string instruction = InteractionGroups.InstructionForTale(taleDef);
             string gameContext = BuildTaleGameContext(tale, taleDef, label, attachedDef);
             if (deathDescription)
             {
@@ -187,7 +187,7 @@ namespace PawnDiary
                 DiaryEvent.InitiatorRole,
                 DeathContextCache.ConsumeOrBuild(pawn));
             DiaryEvent deathEvent = AddSoloEvent(pawn, null, DeathFallbackDefName, label, text,
-                PawnDiaryMod.Settings.InstructionForGroup(group), gameContext);
+                InteractionGroups.InstructionForGroup(group), gameContext);
             AddDeathEventRef(pawn, deathEvent.eventId);
             QueueDeathDescription(deathEvent);
         }

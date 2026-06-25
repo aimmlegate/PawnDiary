@@ -109,7 +109,7 @@ namespace PawnDiary
 
             string label = WorkLabel(workTypeDef, workGiverDef);
             string text = WorkEventText(pawn, label, moodImpact, IsDarkStudy(workTypeDef));
-            string instruction = PawnDiaryMod.Settings.InstructionForWork(group);
+            string instruction = InteractionGroups.InstructionForWork(group);
             string gameContext = WorkEventData.BuildGameContext(
                 data.WorkTypeDefName,
                 data.WorkGiverDefName,

@@ -735,20 +735,11 @@ namespace PawnDiary
             return group != null && IsGroupEnabled(group.defName);
         }
 
-        /// <summary>
-        /// Returns the diary prompt instruction for an interaction, using the group's
-        /// override if set, otherwise the group's default instruction.
-        /// </summary>
-        // The diary prompt instruction for an interaction (its group's override or default).
-        public string InstructionFor(InteractionDef interactionDef)
-        {
-            if (interactionDef == null)
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.Classify(interactionDef));
-        }
+        // The diary-prompt InstructionFor* family used to live here on the settings DTO. They read
+        // NO settings state (instructions are XML-only now — no saved overrides), only classifying a
+        // Def and rolling a prompt variant, so they moved to InteractionGroups next to Classify*.
+        // Call InteractionGroups.InstructionFor*(...) instead. The Is*Enabled eligibility checks and
+        // the EditableInstructionForGroup preview helper remain below.
 
         /// <summary>
         /// Same as IsInteractionEnabled but for mental states (social fights, mental breaks).
@@ -763,20 +754,6 @@ namespace PawnDiary
 
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyMentalState(stateDef);
             return group != null && IsGroupEnabled(group.defName);
-        }
-
-        /// <summary>
-        /// Returns the per-group prompt instruction for a mental state's diary entry,
-        /// falling back to the group's default if no override is set.
-        /// </summary>
-        public string InstructionForMentalState(MentalStateDef stateDef)
-        {
-            if (stateDef == null)
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyMentalState(stateDef));
         }
 
         /// <summary>
@@ -795,20 +772,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the per-group prompt instruction for a TaleDef's diary entry,
-        /// falling back to the group's default if no override is set.
-        /// </summary>
-        public string InstructionForTale(TaleDef taleDef)
-        {
-            if (taleDef == null)
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyTale(taleDef));
-        }
-
-        /// <summary>
         /// Same as IsInteractionEnabled but for mood-affecting GameConditions (aurora,
         /// eclipse, psychic drone, toxic fallout, etc.).
         /// </summary>
@@ -821,20 +784,6 @@ namespace PawnDiary
 
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyMoodEvent(conditionDef);
             return group != null && IsGroupEnabled(group.defName);
-        }
-
-        /// <summary>
-        /// Returns the per-group prompt instruction for a mood event's diary entry,
-        /// falling back to the group's default if no override is set.
-        /// </summary>
-        public string InstructionForMoodEvent(GameConditionDef conditionDef)
-        {
-            if (conditionDef == null)
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyMoodEvent(conditionDef));
         }
 
         /// <summary>
@@ -852,20 +801,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the per-group prompt instruction for a thought's diary entry,
-        /// falling back to the group's default if no override is set.
-        /// </summary>
-        public string InstructionForThought(ThoughtDef thoughtDef)
-        {
-            if (thoughtDef == null)
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyThought(thoughtDef));
-        }
-
-        /// <summary>
         /// Same as IsInteractionEnabled but for InspirationDefs when a pawn gains an inspiration.
         /// </summary>
         public bool IsInspirationEnabled(InspirationDef inspirationDef)
@@ -880,20 +815,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the per-group prompt instruction for an inspiration diary entry,
-        /// falling back to the group's default if no override is set.
-        /// </summary>
-        public string InstructionForInspiration(InspirationDef inspirationDef)
-        {
-            if (inspirationDef == null)
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyInspiration(inspirationDef));
-        }
-
-        /// <summary>
         /// Same as IsInteractionEnabled but for synthetic work events emitted by the work scanner.
         /// The scanner picks the group first (passion, strain, routine, dark study), because those
         /// groups depend on pawn state as well as the WorkTypeDef.
@@ -901,14 +822,6 @@ namespace PawnDiary
         public bool IsWorkEnabled(DiaryInteractionGroupDef group)
         {
             return group != null && IsGroupEnabled(group.defName);
-        }
-
-        /// <summary>
-        /// Returns the per-group prompt instruction for a work diary entry.
-        /// </summary>
-        public string InstructionForWork(DiaryInteractionGroupDef group)
-        {
-            return InstructionForGroup(group);
         }
 
         /// <summary>
@@ -928,20 +841,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the per-group prompt instruction for a hediff diary entry, falling back to the
-        /// group's XML default if no player override is set.
-        /// </summary>
-        public string InstructionForHediff(HediffDef hediffDef)
-        {
-            if (hediffDef == null)
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyHediff(hediffDef));
-        }
-
-        /// <summary>
         /// Same as IsInteractionEnabled but for raid incidents (RaidEnemy/RaidFriendly/RaidBeacon).
         /// Classifies by incident defName into the Raid domain; the catch-all "Raids" group makes
         /// every raid recordable by default.
@@ -955,19 +854,6 @@ namespace PawnDiary
 
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyRaid(incidentDefName);
             return group != null && IsGroupEnabled(group.defName);
-        }
-
-        /// <summary>
-        /// Returns the per-group prompt instruction for a raid diary entry (group's XML default).
-        /// </summary>
-        public string InstructionForRaid(string incidentDefName)
-        {
-            if (string.IsNullOrEmpty(incidentDefName))
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyRaid(incidentDefName));
         }
 
         /// <summary>
@@ -987,19 +873,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the per-group prompt instruction for a quest diary entry (group's XML default).
-        /// </summary>
-        public string InstructionForQuest(string signal)
-        {
-            if (string.IsNullOrEmpty(signal))
-            {
-                return string.Empty;
-            }
-
-            return InstructionForGroup(InteractionGroups.ClassifyQuest(signal));
-        }
-
-        /// <summary>
         /// Checks whether an interaction group is enabled. Event filters are XML-only now, so saved
         /// groupEnabled values from older settings files are ignored.
         /// </summary>
@@ -1013,26 +886,6 @@ namespace PawnDiary
         /// </summary>
         public void SetGroupEnabled(string groupKey, bool enabled)
         {
-        }
-
-        /// <summary>
-        /// Returns the effective prompt instruction for a group. When the group defines an
-        /// <see cref="DiaryInteractionGroupDef.instructions"/> variant pool, one wording is rolled
-        /// per call (capture-time, so the result is persisted on the DiaryEvent); otherwise the
-        /// singular <see cref="DiaryInteractionGroupDef.instruction"/> fallback is used. Prompt
-        /// wording is XML-only so tuning stays in Defs instead of save settings.
-        /// </summary>
-        public string InstructionForGroup(DiaryInteractionGroupDef group)
-        {
-            if (group == null)
-            {
-                return string.Empty;
-            }
-
-            // Rand is RimWorld's main-thread RNG; this is called only from the capture path that
-            // freezes the result into diaryEvent.instruction, so a fresh roll per event is correct.
-            // The settings preview uses EditableInstructionForGroup (singular) to avoid flicker.
-            return PromptVariants.Pick(group.instructions, group.instruction, Rand.Range(0, int.MaxValue));
         }
 
         /// <summary>

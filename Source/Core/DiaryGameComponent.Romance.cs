@@ -88,7 +88,7 @@ namespace PawnDiary
             string cleanedLabel = DiaryContextBuilder.CleanLine(label);
             string kind = RomanceEventData.KindFor(relationDef.defName);
             string gameContext = RomanceEventData.BuildGameContext(relationDef.defName, cleanedLabel, kind);
-            string instruction = PawnDiaryMod.Settings.InstructionForGroup(group);
+            string instruction = InteractionGroups.InstructionForGroup(group);
 
             // Both pawns see the same factual text; the LLM prompt adds per-pawn summaries and
             // continuity when generating each POV.

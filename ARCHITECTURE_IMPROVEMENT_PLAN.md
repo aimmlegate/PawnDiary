@@ -21,7 +21,7 @@ Use this as a planning document, not as a mandate to do every refactor at once. 
 ## Recommended Run Order
 
 1. API lane identity/labels: highest dedup value, low behavior risk.
-2. Barrier fixes: ~~`PawnFactCapture`~~ (done), `InstructionFor*` off settings DTO, `NameForRole` localization move.
+2. Barrier fixes: ~~`PawnFactCapture`~~ (done), ~~`InstructionFor*` off settings DTO~~ (done), `NameForRole` localization move.
 3. Tunables to XML: intoxication, consciousness thresholds, mood condition families.
 4. `DiaryContextBuilder` split.
 5. `PawnDiaryMod` settings UI/async split.
@@ -124,6 +124,14 @@ Docs:
 ## Run Card 3: Move Settings Instruction Resolution Off `PawnDiarySettings`
 
 Priority: Medium
+
+Status: Resolved 2026-06-25. The `InstructionFor*` family (10 Def/signal-takers + `InstructionForGroup`)
+moved from `PawnDiarySettings` to static methods on `InteractionGroups` (beside `Classify*`). They read
+no settings state (instructions are XML-only — no saved overrides), so the move restores the save-DTO
+boundary. All 14 capture call sites in `DiaryGameComponent.*.cs` now call
+`InteractionGroups.InstructionFor*(...)`; the stale caller name in `PromptVariants.cs` and the stale
+"user-defined instruction" doc comment were fixed; DOCUMENTATION §2/§7 and CHANGELOG updated; Debug DLL
+rebuilt; all five pure test projects pass (602 assertions).
 
 Evidence:
 - `Source/Settings/PawnDiarySettings.cs:750-1024` (`InstructionFor*` family)
