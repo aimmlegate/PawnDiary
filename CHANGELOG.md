@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Harmony patches split by capture domain.** The former monolithic `Source/Patches/DiaryPatches.cs`
+  is now focused domain files for deaths, arrivals, health, thoughts, quests, social log/relations,
+  and broader gameplay signals. Patch class names and Harmony attributes stay stable, while
+  `DiaryPatchRegistrar` centralizes the fragile manual registrations for the thought-gain overload and
+  quest-accept UI closure so startup has one defensive patching choke point. Behavior is unchanged;
+  the Debug DLL was rebuilt.
+
 - **Diary tab per-frame cost capped for long histories.** Two hot paths that ran every draw frame
   and scaled with the pawn's whole entry list no longer do so. `CommandStatusFor` (called every
   frame via `AcknowledgeGeneratedEntriesFor`) rebuilt a `DiaryEntryView` for every in-bounds event

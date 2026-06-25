@@ -27,10 +27,9 @@ namespace PawnDiary
                 Log.Error("[Pawn Diary] PatchAll failed: " + e);
             }
 
-            // Registered manually (not via PatchAll) because the target method name may change
-            // between RimWorld versions — see ThoughtGainPatch.TryRegister for why.
-            ThoughtGainPatch.TryRegister(harmony);
-            QuestUiAcceptPatch.TryRegister(harmony);
+            // Registered manually (not via PatchAll) because these reflection/generated-name targets
+            // may change between RimWorld versions. The registrar keeps that fragility in one place.
+            DiaryPatchRegistrar.RegisterFragilePatches(harmony);
 
             InjectDiaryTab();
             Log.Message("[Pawn Diary] Loaded.");

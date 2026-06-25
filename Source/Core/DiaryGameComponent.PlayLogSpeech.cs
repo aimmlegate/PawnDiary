@@ -1,6 +1,7 @@
 // Generated direct-speech PlayLog injection. This is an impure RimWorld adapter: it resolves saved
 // pawn IDs back to live Pawn objects, creates a fresh PlayLogEntry_Interaction after LLM generation
-// succeeds, and remembers the generated display text for the Harmony patch in DiaryPatches.cs.
+// succeeds, and remembers the generated display text for the Harmony patch in
+// DiarySocialLogPatches.cs.
 using System.Collections.Generic;
 using RimWorld;
 using Verse;

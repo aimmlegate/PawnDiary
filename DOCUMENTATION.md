@@ -57,7 +57,7 @@ Key files:
 
 | File | Role |
 |---|---|
-| `Patches/DiaryModStartup.cs`, `Patches/DiaryPatches.cs` | Startup, hidden-tab registration, Harmony hooks. |
+| `Patches/DiaryModStartup.cs`, `Patches/DiaryPatchRegistrar.cs`, `Patches/Diary*Patches.cs` | Startup, hidden-tab registration, defensive manual patch registration, and domain-split Harmony hooks. |
 | `Capture/*` | Event Catalog: `DiaryEventType`, `XxxEventData` (+`Decide`), `XxxEventSpec`, `DiaryEventCatalog`. |
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
 | `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
@@ -125,6 +125,12 @@ arrival/death bypass that guard.
 strings, so routine social-log rows that can't become diary entries stay cheap. Generated Social-log
 speech patches the concrete 1.6 worker `ToGameStringFromPOV_Worker` with an old-name fallback so a
 display-method rename can't abort `PatchAll` before later hooks register.
+
+Harmony hooks are split by capture domain under `Source/Patches/`: deaths, arrivals, health,
+thoughts, quests, social log/relations, and broader gameplay signals. Most use `[HarmonyPatch]` and
+are discovered by `PatchAll`; fragile reflection/generated-name hooks (`ThoughtGainPatch` and
+`QuestUiAcceptPatch`) register through `DiaryPatchRegistrar` so missing targets warn and no-op rather
+than aborting startup.
 
 ---
 

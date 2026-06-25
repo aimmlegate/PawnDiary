@@ -630,6 +630,9 @@ Docs:
 
 Priority: Low
 
+Status: Completed 2026-06-25. `DiaryPatches.cs` was replaced by domain-split patch files plus the
+defensive `DiaryPatchRegistrar` manual registration choke point.
+
 Evidence:
 - `Source/Patches/DiaryPatches.cs:25` death patch.
 - `:49` arrival/faction patch.

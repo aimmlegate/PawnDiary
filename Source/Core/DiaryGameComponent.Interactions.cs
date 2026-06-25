@@ -1,4 +1,5 @@
-// Social interactions — the PlayLog.Add hook's diary flow. The Harmony patch (DiaryPatches.cs)
+// Social interactions — the PlayLog.Add hook's diary flow. The Harmony patch
+// (DiarySocialLogPatches.cs)
 // forwards every social-log row here; RecordInteraction snapshots live RimWorld facts, asks the
 // catalog for the final route (solo / pair / batch / ambient), then performs that side effect.
 //
