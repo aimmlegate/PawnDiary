@@ -22,14 +22,11 @@
   <loadAfter>
     <li>brrainz.harmony</li>
   </loadAfter>
-  <description>Pawn Diary gives RimWorld colonists a private journal. Output quality depends on your model and settings.
+  <description>Pawn Diary gives each RimWorld colonist a private journal.
 
-It watches meaningful colony moments - social interactions, fights, mental breaks, raids, medicine, crafting, work, mood events, thoughts, arrivals, deaths, and end-of-day reflections - then asks a local or OpenAI-compatible language model to rewrite them as short diary pages in each colonist's own voice.
+It watches meaningful colony moments - social interactions, fights, mental breaks, raids, medicine, work, crafting, arrivals, deaths, and end-of-day reflections - and turns them into short diary pages in each pawn's voice.
 
-Entries appear in a per-colonist Diary tab. Two-colonist events get paired points of view, so each pawn can remember the same moment differently. Arrivals and deaths bookend a pawn's story with neutral pages, and optional writing styles shape each voice without touching gameplay.
+Entries appear in a per-colonist Diary tab. Two-pawn events can create paired points of view, so both colonists can remember the same moment differently.
 
-LLM SUPPORT
-Works with any OpenAI-compatible /chat/completions endpoint, plus the OpenAI Responses API. Built around compact prompts for small to mid-size local models (roughly 4-32B) through tools such as LM Studio, llama.cpp, and Ollama. Default endpoint: http://localhost:1234. Configure endpoints, models, API keys, concurrency, prompts, writing styles, and event groups in the mod settings.
-
-Storytelling only: it does not change gameplay, add needs/hediffs/jobs, or write external save data beyond diary entries stored in your RimWorld save. Safe to add to an existing save; removing it stops diary capture and hides the Diary UI/history without leaving custom gameplay defs/components behind. Targets base RimWorld 1.6 and keeps paid DLC content optional.</description>
+Storytelling only: it does not change gameplay. Safe to add to an existing save; removing it stops diary capture and hides the Diary UI/history.</description>
 </ModMetaData>
