@@ -48,7 +48,7 @@ namespace PawnDiary.Capture
 
         /// <summary>The cleaned display label of the other pawn, used by BuildSoloGameContext for
         /// the optional "target=" field. Empty for pair events and untargeted breaks. Pre-cleaned
-        /// by the caller via DiaryContextBuilder.CleanLine.</summary>
+        /// by the caller via DiaryLineCleaner.CleanLine.</summary>
         public string OtherPawnLabel;
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace PawnDiary.Capture
         /// Pure assembly of a PAIR mental-state event's game-context marker (social fights). The
         /// leading "mental_state=" marker is load-bearing for UI domain classification. No
         /// "target=" field because both participants are POV pawns. Reason is appended only if
-        /// non-empty (caller pre-cleans it via DiaryContextBuilder.CleanLine).
+        /// non-empty (caller pre-cleans it via DiaryLineCleaner.CleanLine).
         /// </summary>
         public static string BuildPairGameContext(string defName, string label, string cleanedReason)
         {

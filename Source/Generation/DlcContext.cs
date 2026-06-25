@@ -38,7 +38,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return DiaryContextBuilder.CleanLine(pawn.genes.XenotypeLabelCap);
+            return DiaryLineCleaner.CleanLine(pawn.genes.XenotypeLabelCap);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return DiaryContextBuilder.CleanLine(titleDef.GetLabelCapFor(pawn));
+            return DiaryLineCleaner.CleanLine(titleDef.GetLabelCapFor(pawn));
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace PawnDiary
             }
 
             Ideo ideo = pawn.ideo.Ideo;
-            string faith = DiaryContextBuilder.CleanLine(ideo.name);
+            string faith = DiaryLineCleaner.CleanLine(ideo.name);
             if (string.IsNullOrWhiteSpace(faith))
             {
                 return string.Empty;
@@ -92,7 +92,7 @@ namespace PawnDiary
             // GetRole returns null when the pawn holds no ideoligion role; LabelForPawn is the
             // gender/age-specific role title (e.g. "Acolyte", "Moral guide").
             Precept_Role role = ideo.GetRole(pawn);
-            string roleLabel = role != null ? DiaryContextBuilder.CleanLine(role.LabelForPawn(pawn)) : string.Empty;
+            string roleLabel = role != null ? DiaryLineCleaner.CleanLine(role.LabelForPawn(pawn)) : string.Empty;
             return string.IsNullOrWhiteSpace(roleLabel) ? faith : faith + " (" + roleLabel + ")";
         }
 
@@ -108,7 +108,7 @@ namespace PawnDiary
             }
 
             Precept_Role role = pawn.ideo.Ideo.GetRole(pawn);
-            return role == null ? string.Empty : DiaryContextBuilder.CleanLine(role.LabelForPawn(pawn));
+            return role == null ? string.Empty : DiaryLineCleaner.CleanLine(role.LabelForPawn(pawn));
         }
     }
 }

@@ -115,8 +115,8 @@ namespace PawnDiary
             }
 
             string interactionLabel = interactionDef.LabelCap.Resolve();
-            string initiatorText = DiaryContextBuilder.CleanLine(initiatorGameText);
-            string recipientText = DiaryContextBuilder.CleanLine(recipientGameText);
+            string initiatorText = DiaryLineCleaner.CleanLine(initiatorGameText);
+            string recipientText = DiaryLineCleaner.CleanLine(recipientGameText);
 
             if (decision == CaptureDecision.GenerateSolo)
             {

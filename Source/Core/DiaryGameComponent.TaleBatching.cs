@@ -211,7 +211,7 @@ namespace PawnDiary
         /// </summary>
         private static string TaleBatchInstruction(PendingTaleBatch batch)
         {
-            string instruction = DiaryContextBuilder.CleanLine(batch.instruction);
+            string instruction = DiaryLineCleaner.CleanLine(batch.instruction);
             string batchingInstruction = TranslateTaleBatchKey(batch, batch.policy?.instructionKey,
                 "PawnDiary.Event.TaleBatchInstruction");
             if (string.IsNullOrWhiteSpace(instruction))
@@ -280,7 +280,7 @@ namespace PawnDiary
             List<string> parts = new List<string>
             {
                 "tale=" + defName,
-                "label=" + DiaryContextBuilder.CleanLine(label),
+                "label=" + DiaryLineCleaner.CleanLine(label),
                 "taleClass=TaleBatch",
                 "group=" + batch.GroupKey,
                 "batch=tale",
@@ -348,7 +348,7 @@ namespace PawnDiary
             }
 
             batch.participantIds.Add(id);
-            batch.participantNames.Add(DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap));
+            batch.participantNames.Add(DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap));
         }
 
         /// <summary>

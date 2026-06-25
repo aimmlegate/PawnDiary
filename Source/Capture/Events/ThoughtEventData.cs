@@ -142,7 +142,7 @@ namespace PawnDiary.Capture
 
         /// <summary>
         /// Pure assembly of the thought's game-context marker string. Inputs must already be cleaned
-        /// (RecordThought runs DiaryContextBuilder.CleanLine on the label before calling). The format
+        /// (RecordThought runs DiaryLineCleaner.CleanLine on the label before calling). The format
         /// is load-bearing: the UI parses the leading "thought=" marker to classify the event into
         /// the Thought domain, and the LLM reads the rest as prompt evidence. Keeping the format in a
         /// pure helper means tests can lock it down — a future migration that drifts the format (e.g.

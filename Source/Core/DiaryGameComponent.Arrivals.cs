@@ -66,7 +66,7 @@ namespace PawnDiary
                 PawnId = pawnId,
                 Tick = Find.TickManager.TicksGame,
                 DefName = ArrivalDefName,
-                PawnLabel = DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
+                PawnLabel = DiaryLineCleaner.CleanLine(pawn.LabelShortCap),
                 PawnLoadId = pawnId,
                 ArrivalContext = arrivalContext,
                 HasExistingArrival = HasArrivalEventFor(pawnId),
@@ -125,13 +125,13 @@ namespace PawnDiary
             Scenario scenario = Verse.Current.Game?.Scenario;
             if (scenario != null)
             {
-                string scenarioName = DiaryContextBuilder.CleanLine(scenario.name);
+                string scenarioName = DiaryLineCleaner.CleanLine(scenario.name);
                 if (!string.IsNullOrWhiteSpace(scenarioName))
                 {
                     parts.Add("scenario_name=" + scenarioName);
                 }
 
-                string scenarioDescription = DiaryContextBuilder.CleanLine(scenario.description);
+                string scenarioDescription = DiaryLineCleaner.CleanLine(scenario.description);
                 if (!string.IsNullOrWhiteSpace(scenarioDescription))
                 {
                     parts.Add("scenario_description=" + scenarioDescription);

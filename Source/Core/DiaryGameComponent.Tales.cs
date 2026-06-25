@@ -158,7 +158,7 @@ namespace PawnDiary
                 PawnId = pawnId,
                 Tick = Find.TickManager.TicksGame,
                 DefName = DeathFallbackDefName,
-                PawnLabel = DiaryContextBuilder.CleanLine(pawn.LabelShortCap),
+                PawnLabel = DiaryLineCleaner.CleanLine(pawn.LabelShortCap),
                 PawnLoadId = pawnId,
                 HasExistingDeathDescription = HasDeathDescriptionFor(pawn),
             };
@@ -181,7 +181,7 @@ namespace PawnDiary
             string text = "PawnDiary.Event.DeathFallback".Translate(pawn.LabelShortCap).Resolve();
             string gameContext = DeathEventData.BuildFallbackGameContext(
                 DeathFallbackDefName,
-                DiaryContextBuilder.CleanLine(label),
+                DiaryLineCleaner.CleanLine(label),
                 data.PawnLabel,
                 data.PawnLoadId,
                 DiaryEvent.InitiatorRole,
@@ -242,7 +242,7 @@ namespace PawnDiary
                 return "unknown";
             }
 
-            string label = DiaryContextBuilder.CleanLine(taleDef.LabelCap.Resolve());
+            string label = DiaryLineCleaner.CleanLine(taleDef.LabelCap.Resolve());
             return string.IsNullOrWhiteSpace(label) ? taleDef.defName : label;
         }
 
@@ -280,7 +280,7 @@ namespace PawnDiary
                 return text;
             }
 
-            string label = DiaryContextBuilder.CleanLine(attachedDef.LabelCap.Resolve());
+            string label = DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve());
             return string.IsNullOrWhiteSpace(label)
                 ? text
                 : text + "PawnDiary.Event.TaleAttachedDef".Translate(label).Resolve();
@@ -295,14 +295,14 @@ namespace PawnDiary
             List<string> parts = new List<string>
             {
                 "tale=" + taleDef.defName,
-                "label=" + DiaryContextBuilder.CleanLine(label),
+                "label=" + DiaryLineCleaner.CleanLine(label),
                 "taleClass=" + tale.GetType().Name
             };
 
             if (attachedDef != null)
             {
                 parts.Add("attachedDef=" + attachedDef.defName);
-                parts.Add("attachedLabel=" + DiaryContextBuilder.CleanLine(attachedDef.LabelCap.Resolve()));
+                parts.Add("attachedLabel=" + DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve()));
             }
 
             return string.Join("; ", parts.ToArray());
@@ -319,7 +319,7 @@ namespace PawnDiary
             {
                 gameContext,
                 "death_description=true",
-                "death_victim=" + DiaryContextBuilder.CleanLine(deathVictim.LabelShortCap),
+                "death_victim=" + DiaryLineCleaner.CleanLine(deathVictim.LabelShortCap),
                 "death_victim_id=" + deathVictim.GetUniqueLoadID(),
                 "death_victim_role=" + DeathVictimRole(deathVictim, firstPawn, secondPawn)
             };
@@ -327,7 +327,7 @@ namespace PawnDiary
             Pawn otherPawn = deathVictim == firstPawn ? secondPawn : firstPawn;
             if (otherPawn != null)
             {
-                parts.Add("other_pawn=" + DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap));
+                parts.Add("other_pawn=" + DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap));
             }
 
             string deathFacts = DeathContextCache.ConsumeOrBuild(deathVictim);

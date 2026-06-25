@@ -59,7 +59,7 @@ namespace PawnDiary
             // straight to event assembly.
             string label = CleanInspirationLabel(inspirationDef);
             string instruction = InteractionGroups.InstructionForInspiration(inspirationDef);
-            string cleanedReason = DiaryContextBuilder.CleanLine(reason);
+            string cleanedReason = DiaryLineCleaner.CleanLine(reason);
             string gameContext = InspirationEventData.BuildGameContext(
                 inspirationDef.defName, label, inspirationDef.baseDurationDays, cleanedReason);
             string text = BuildInspirationText(pawn, label, reason);
@@ -78,7 +78,7 @@ namespace PawnDiary
                 return "unknown";
             }
 
-            string label = DiaryContextBuilder.CleanLine(inspirationDef.LabelCap.Resolve());
+            string label = DiaryLineCleaner.CleanLine(inspirationDef.LabelCap.Resolve());
             return string.IsNullOrWhiteSpace(label) ? inspirationDef.defName : label;
         }
 
@@ -88,7 +88,7 @@ namespace PawnDiary
         private static string BuildInspirationText(Pawn pawn, string label, string reason)
         {
             string text = "PawnDiary.Event.Inspiration".Translate(pawn.LabelShortCap, label).Resolve();
-            string cleanReason = DiaryContextBuilder.CleanLine(reason);
+            string cleanReason = DiaryLineCleaner.CleanLine(reason);
             if (!string.IsNullOrWhiteSpace(cleanReason))
             {
                 text += "PawnDiary.Event.ReasonSuffix".Translate(cleanReason).Resolve();

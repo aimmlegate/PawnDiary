@@ -23,6 +23,7 @@ namespace DiaryTextDecorationTests
             TestPawnFactSerializationRoundTrip();
             TestEventTagsFromContext();
             TestIntoxicationHediffReusesStaggeredRules();
+            TestCleanLineStripsTagsCollapsesNewlinesAndTrims();
 
             Console.WriteLine("DiaryTextDecorationTests passed " + assertions + " assertions.");
             return 0;
@@ -390,6 +391,35 @@ namespace DiaryTextDecorationTests
             AssertTrue("null rules safe", !DiaryTextDecorations.HediffMatchesStaggeredRules(null,
                 new DiaryTextDecorationHediffFact { defName = "AlcoholHigh", visible = true }));
             AssertTrue("null fact safe", !DiaryTextDecorations.HediffMatchesStaggeredRules(rules, null));
+        }
+
+        // DiaryLineCleaner is the one context helper that is genuinely free of RimWorld/Verse state,
+        // so it is unit-tested here to lock in its tag-stripping, newline-collapsing, and trimming
+        // behavior. The production LLM context builders and capture code all route labels/thoughts
+        // through it before embedding them in prompt strings.
+        private static void TestCleanLineStripsTagsCollapsesNewlinesAndTrims()
+        {
+            AssertEqual("null returns empty", string.Empty, DiaryLineCleaner.CleanLine(null));
+            AssertEqual("empty returns empty", string.Empty, DiaryLineCleaner.CleanLine(string.Empty));
+            AssertEqual("whitespace returns empty", string.Empty, DiaryLineCleaner.CleanLine("   \t  "));
+            AssertEqual("plain text unchanged", "Hello world", DiaryLineCleaner.CleanLine("Hello world"));
+            AssertEqual("trims surrounding space", "Hi", DiaryLineCleaner.CleanLine("  Hi  "));
+
+            // Rich-text tags are removed; inner text survives.
+            AssertEqual("strips bold tags", "Hello", DiaryLineCleaner.CleanLine("<b>Hello</b>"));
+            AssertEqual("strips nested and valued tags", "x", DiaryLineCleaner.CleanLine("<size=20><b>x</b></size>"));
+            AssertEqual("strips color tags keeps words", "Hello world", DiaryLineCleaner.CleanLine("<color=#FF00FF>Hello</color> world"));
+
+            // Newlines and carriage returns become spaces, then get trimmed.
+            AssertEqual("newline collapses to space", "a b", DiaryLineCleaner.CleanLine("a\nb"));
+            AssertEqual("carriage return collapses to space", "a b", DiaryLineCleaner.CleanLine("a\rb"));
+            // \r and \n are each replaced by a space, so a CRLF pair yields two spaces (preserved
+            // pre-existing behavior — the cleaner does not collapse runs of spaces).
+            AssertEqual("crlf yields two spaces", "a  b", DiaryLineCleaner.CleanLine("a\r\nb"));
+            AssertEqual("trailing newline trimmed", "line", DiaryLineCleaner.CleanLine("line\n"));
+
+            // Tags + newlines together.
+            AssertEqual("tags and newlines together", "a b", DiaryLineCleaner.CleanLine("<b>a</b>\n<b>b</b>"));
         }
 
         private static int CountCombiningMarks(string text)

@@ -316,7 +316,7 @@ namespace PawnDiary
                 return "unknown";
             }
 
-            return DiaryContextBuilder.CleanLine(label);
+            return DiaryLineCleaner.CleanLine(label);
         }
 
         /// <summary>
@@ -444,7 +444,7 @@ namespace PawnDiary
                     return string.Empty;
                 }
 
-                description = DiaryContextBuilder.CleanLine(description);
+                description = DiaryLineCleaner.CleanLine(description);
                 if (description.Length > QuestDescriptionCap)
                 {
                     return description.Substring(0, QuestDescriptionCap) + "...";

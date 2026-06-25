@@ -448,8 +448,8 @@ namespace PawnDiary
         /// </summary>
         private static string EventEvidenceLine(DiaryEvent ev, string role)
         {
-            string label = DiaryContextBuilder.CleanLine(ev.interactionLabel);
-            string body = DiaryContextBuilder.CleanLine(ev.DisplayTextForRole(role));
+            string label = DiaryLineCleaner.CleanLine(ev.interactionLabel);
+            string body = DiaryLineCleaner.CleanLine(ev.DisplayTextForRole(role));
             body = TruncateForEvidence(body);
 
             if (string.IsNullOrWhiteSpace(body))

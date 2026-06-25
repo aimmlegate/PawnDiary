@@ -41,7 +41,7 @@ namespace PawnDiary
             bool hasOtherPawn = otherPawn != null;
             string otherPawnId = hasOtherPawn ? otherPawn.GetUniqueLoadID() : null;
             string otherPawnLabel = hasOtherPawn
-                ? DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap)
+                ? DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap)
                 : null;
 
             MentalStateEventData data = new MentalStateEventData
@@ -72,8 +72,8 @@ namespace PawnDiary
             // Impure build: label, instruction, cleaned reason — all need RimWorld translation.
             string label = stateDef.LabelCap.Resolve();
             string instruction = InteractionGroups.InstructionForMentalState(stateDef);
-            string cleanedLabel = DiaryContextBuilder.CleanLine(label);
-            string cleanedReason = DiaryContextBuilder.CleanLine(reason);
+            string cleanedLabel = DiaryLineCleaner.CleanLine(label);
+            string cleanedReason = DiaryLineCleaner.CleanLine(reason);
 
             if (decision == CaptureDecision.GeneratePair)
             {
@@ -117,13 +117,13 @@ namespace PawnDiary
         /// </summary>
         private static string BuildMentalBreakText(Pawn pawn, string label, Pawn otherPawn, string reason)
         {
-            string text = "PawnDiary.Event.MentalBreak".Translate(pawn.LabelShortCap, DiaryContextBuilder.CleanLine(label));
+            string text = "PawnDiary.Event.MentalBreak".Translate(pawn.LabelShortCap, DiaryLineCleaner.CleanLine(label));
             if (otherPawn != null)
             {
-                text += "PawnDiary.Event.DirectedAt".Translate(DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap)).Resolve();
+                text += "PawnDiary.Event.DirectedAt".Translate(DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap)).Resolve();
             }
 
-            string cleanReason = DiaryContextBuilder.CleanLine(reason);
+            string cleanReason = DiaryLineCleaner.CleanLine(reason);
             if (!string.IsNullOrWhiteSpace(cleanReason))
             {
                 text += "PawnDiary.Event.ReasonSuffix".Translate(cleanReason).Resolve();

@@ -213,7 +213,7 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientThoughtInstruction(string baseInstruction)
         {
-            string instruction = DiaryContextBuilder.CleanLine(baseInstruction);
+            string instruction = DiaryLineCleaner.CleanLine(baseInstruction);
             string ambientInstruction = "PawnDiary.Event.AmbientThoughtInstruction".Translate().Resolve();
             if (string.IsNullOrWhiteSpace(instruction))
             {
@@ -266,7 +266,7 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientThoughtLine(string label, float moodOffset)
         {
-            return DiaryContextBuilder.CleanLine(label) + " (" + moodOffset.ToString("F1", CultureInfo.InvariantCulture) + ")";
+            return DiaryLineCleaner.CleanLine(label) + " (" + moodOffset.ToString("F1", CultureInfo.InvariantCulture) + ")";
         }
 
         /// <summary>

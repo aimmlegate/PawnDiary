@@ -85,7 +85,7 @@ namespace PawnDiary
 
             // Impure build: label, XML prompt instruction, localized text, gameContext.
             string label = relationDef.LabelCap.Resolve();
-            string cleanedLabel = DiaryContextBuilder.CleanLine(label);
+            string cleanedLabel = DiaryLineCleaner.CleanLine(label);
             string kind = RomanceEventData.KindFor(relationDef.defName);
             string gameContext = RomanceEventData.BuildGameContext(relationDef.defName, cleanedLabel, kind);
             string instruction = InteractionGroups.InstructionForGroup(group);

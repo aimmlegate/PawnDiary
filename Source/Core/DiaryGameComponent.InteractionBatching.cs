@@ -566,8 +566,8 @@ namespace PawnDiary
         /// </summary>
         private static string InteractionBatchLine(string interactionLabel, string text)
         {
-            string cleanText = DiaryContextBuilder.CleanLine(text);
-            string cleanLabel = DiaryContextBuilder.CleanLine(interactionLabel);
+            string cleanText = DiaryLineCleaner.CleanLine(text);
+            string cleanLabel = DiaryLineCleaner.CleanLine(interactionLabel);
             if (string.IsNullOrWhiteSpace(cleanLabel))
             {
                 return cleanText;
@@ -581,7 +581,7 @@ namespace PawnDiary
         /// </summary>
         private static string BatchInstruction(PendingInteractionBatch batch)
         {
-            string instruction = DiaryContextBuilder.CleanLine(batch.instruction);
+            string instruction = DiaryLineCleaner.CleanLine(batch.instruction);
             string batchingInstruction = TranslateBatchKey(batch, batch.policy?.instructionKey,
                 "PawnDiary.Event.BatchInstruction");
             if (string.IsNullOrWhiteSpace(instruction))
@@ -661,7 +661,7 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientInstruction(PendingAmbientInteractionNote note)
         {
-            string instruction = DiaryContextBuilder.CleanLine(note.instruction);
+            string instruction = DiaryLineCleaner.CleanLine(note.instruction);
             string ambientInstruction = TranslateAmbientKey(note, note.policy?.instructionKey,
                 "PawnDiary.Event.AmbientDayInstruction");
             if (string.IsNullOrWhiteSpace(instruction))
@@ -788,7 +788,7 @@ namespace PawnDiary
             }
 
             note.participantIds.Add(id);
-            note.participantNames.Add(DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap));
+            note.participantNames.Add(DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap));
         }
 
         /// <summary>
@@ -796,9 +796,9 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientInteractionLine(Pawn otherPawn, string interactionLabel, string text)
         {
-            string cleanText = DiaryContextBuilder.CleanLine(text);
-            string cleanLabel = DiaryContextBuilder.CleanLine(interactionLabel);
-            string otherName = otherPawn == null ? string.Empty : DiaryContextBuilder.CleanLine(otherPawn.LabelShortCap);
+            string cleanText = DiaryLineCleaner.CleanLine(text);
+            string cleanLabel = DiaryLineCleaner.CleanLine(interactionLabel);
+            string otherName = otherPawn == null ? string.Empty : DiaryLineCleaner.CleanLine(otherPawn.LabelShortCap);
 
             StringBuilder builder = new StringBuilder();
             if (!string.IsNullOrWhiteSpace(otherName))

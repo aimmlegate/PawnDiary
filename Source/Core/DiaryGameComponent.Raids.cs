@@ -84,7 +84,7 @@ namespace PawnDiary
             // "friendly raid"); fall back to the defName when the def ships no label.
             string rawLabel = incidentDef.LabelCap.Resolve();
             string cleanedLabel = !string.IsNullOrWhiteSpace(rawLabel)
-                ? DiaryContextBuilder.CleanLine(rawLabel)
+                ? DiaryLineCleaner.CleanLine(rawLabel)
                 : incidentDefName;
 
             // Colony-level dedup: one window per raid, keyed by incident/map/faction/points. Only

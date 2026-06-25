@@ -250,7 +250,7 @@ namespace PawnDiary
                             thoughtDefName = thoughtDefName,
                             stageIndex = stageIndex,
                             severity = stage.severity,
-                            label = DiaryContextBuilder.CleanLine(thought.LabelCap),
+                            label = DiaryLineCleaner.CleanLine(thought.LabelCap),
                             moodOffset = thought.MoodOffset()
                         };
                     }

@@ -10,5 +10,6 @@
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryNameHighlighter.cs" Link="DiaryNameHighlighter.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
+    <Compile Include="..\..\Source\Generation\DiaryLineCleaner.cs" Link="DiaryLineCleaner.cs" />
   </ItemGroup>
 </Project>

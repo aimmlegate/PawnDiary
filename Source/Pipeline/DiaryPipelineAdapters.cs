@@ -242,7 +242,7 @@ namespace PawnDiary
 
         private static string EventNoun(DiaryEvent diaryEvent)
         {
-            string label = DiaryContextBuilder.CleanLine(diaryEvent.interactionLabel);
+            string label = DiaryLineCleaner.CleanLine(diaryEvent.interactionLabel);
             if (string.IsNullOrWhiteSpace(label))
             {
                 return "PawnDiary.Prompt.SocialEvent".Translate().Resolve();

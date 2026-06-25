@@ -66,7 +66,7 @@ namespace PawnDiary
                 return;
             }
 
-            string label = DiaryContextBuilder.CleanLine(def.label);
+            string label = DiaryLineCleaner.CleanLine(def.label);
             if (string.IsNullOrWhiteSpace(label))
             {
                 label = defName;

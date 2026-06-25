@@ -244,8 +244,8 @@ namespace PawnDiary
                 ModeToken = policy.mode.ToString(),
                 SeverityF2 = hediff.Severity.ToString("F2", CultureInfo.InvariantCulture),
                 StageString = HediffSeverityStage(hediff, policy).ToString(CultureInfo.InvariantCulture),
-                CleanedStageLabel = DiaryContextBuilder.CleanLine(hediff.CurStage?.label),
-                CleanedBodyPartLabel = hediff.Part == null ? null : DiaryContextBuilder.CleanLine(hediff.Part.LabelCap),
+                CleanedStageLabel = DiaryLineCleaner.CleanLine(hediff.CurStage?.label),
+                CleanedBodyPartLabel = hediff.Part == null ? null : DiaryLineCleaner.CleanLine(hediff.Part.LabelCap),
                 PassesPolicy = ShouldRecordHediff(policy, hediff),
                 PolicyRecordsSource = PolicyRecordsSource(policy, source),
                 ModeRecordable = CanRecordHediffMode(policy),
@@ -462,13 +462,13 @@ namespace PawnDiary
 
         private static string HediffLabel(Hediff hediff)
         {
-            string label = DiaryContextBuilder.CleanLine(hediff?.LabelCap);
+            string label = DiaryLineCleaner.CleanLine(hediff?.LabelCap);
             if (!string.IsNullOrWhiteSpace(label))
             {
                 return label;
             }
 
-            label = DiaryContextBuilder.CleanLine(hediff?.def?.LabelCap.Resolve());
+            label = DiaryLineCleaner.CleanLine(hediff?.def?.LabelCap.Resolve());
             return string.IsNullOrWhiteSpace(label) ? HediffDefName(hediff) : label;
         }
 

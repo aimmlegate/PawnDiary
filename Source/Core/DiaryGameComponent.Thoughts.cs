@@ -79,7 +79,7 @@ namespace PawnDiary
             // Impure build: label, instruction, game-context marker, localized event text. These need
             // the live ThoughtDef (LabelCap, settings instruction) so they cannot live in the pure
             // payload layer.
-            string label = DiaryContextBuilder.CleanLine(thought.def.LabelCap.Resolve());
+            string label = DiaryLineCleaner.CleanLine(thought.def.LabelCap.Resolve());
             string instruction = InteractionGroups.InstructionForThought(thought.def);
 
             if (decision == CaptureDecision.RouteAmbient)

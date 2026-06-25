@@ -275,7 +275,7 @@ namespace PawnDiary
                 return;
             }
 
-            string label = DiaryContextBuilder.CleanLine(capacityDef.LabelCap.Resolve());
+            string label = DiaryLineCleaner.CleanLine(capacityDef.LabelCap.Resolve());
             candidates.Add(new Candidate(def, level, label, effectiveWeight));
             totalWeight += effectiveWeight;
         }
@@ -449,10 +449,10 @@ namespace PawnDiary
 
         private static string CompactCondition(Hediff hediff)
         {
-            string condition = DiaryContextBuilder.CleanLine(hediff.LabelCap);
+            string condition = DiaryLineCleaner.CleanLine(hediff.LabelCap);
             if (string.IsNullOrWhiteSpace(condition))
             {
-                condition = DiaryContextBuilder.CleanLine(hediff.def?.label);
+                condition = DiaryLineCleaner.CleanLine(hediff.def?.label);
             }
 
             if (string.IsNullOrWhiteSpace(condition))
@@ -460,7 +460,7 @@ namespace PawnDiary
                 condition = PromptText("PawnDiary.Prompt.Health.ConditionFallback");
             }
 
-            string part = hediff.Part == null ? string.Empty : DiaryContextBuilder.CleanLine(hediff.Part.LabelCap);
+            string part = hediff.Part == null ? string.Empty : DiaryLineCleaner.CleanLine(hediff.Part.LabelCap);
             if (!string.IsNullOrWhiteSpace(part))
             {
                 condition = PromptText("PawnDiary.Prompt.Health.ConditionInPart", condition, part);

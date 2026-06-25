@@ -64,7 +64,7 @@ namespace PawnDiary
 
             if (recruiter != null)
             {
-                parts.Add("recruiter=" + DiaryContextBuilder.CleanLine(recruiter.LabelShortCap));
+                parts.Add("recruiter=" + DiaryLineCleaner.CleanLine(recruiter.LabelShortCap));
             }
 
             if (DlcContext.IsCreepJoiner(pawn))
@@ -158,7 +158,7 @@ namespace PawnDiary
                 return;
             }
 
-            string label = DiaryContextBuilder.CleanLine(faction.Name);
+            string label = DiaryLineCleaner.CleanLine(faction.Name);
             if (string.IsNullOrWhiteSpace(label) && faction.def != null)
             {
                 label = faction.def.defName;

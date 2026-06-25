@@ -67,7 +67,7 @@ namespace PawnDiary
             }
 
             string dedupKey = "ability|" + pawn.GetUniqueLoadID() + "|" + defName + "|"
-                + DiaryContextBuilder.CleanLine(targetLabel) + "|" + Find.TickManager.TicksGame;
+                + DiaryLineCleaner.CleanLine(targetLabel) + "|" + Find.TickManager.TicksGame;
             if (IsRecentlyRecorded(recentAbilityEvents, dedupKey, DiaryTuning.Current.abilityDedupTicks))
             {
                 return;
@@ -158,15 +158,15 @@ namespace PawnDiary
                 category = "Psycast";
             }
 
-            return string.IsNullOrWhiteSpace(category) ? "unknown" : DiaryContextBuilder.CleanLine(category);
+            return string.IsNullOrWhiteSpace(category) ? "unknown" : DiaryLineCleaner.CleanLine(category);
         }
 
         private static string AbilityLabel(AbilityDef def)
         {
-            string label = DiaryContextBuilder.CleanLine(def == null ? null : def.LabelCap.Resolve());
+            string label = DiaryLineCleaner.CleanLine(def == null ? null : def.LabelCap.Resolve());
             if (string.IsNullOrWhiteSpace(label))
             {
-                label = DiaryContextBuilder.CleanLine(def?.label);
+                label = DiaryLineCleaner.CleanLine(def?.label);
             }
 
             return string.IsNullOrWhiteSpace(label) ? def?.defName ?? "ability" : label;
@@ -190,7 +190,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return DiaryContextBuilder.CleanLine(thing.LabelShortCap);
+            return DiaryLineCleaner.CleanLine(thing.LabelShortCap);
         }
     }
 }

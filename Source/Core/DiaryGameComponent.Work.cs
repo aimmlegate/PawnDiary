@@ -302,19 +302,19 @@ namespace PawnDiary
 
         private static string WorkLabel(WorkTypeDef workTypeDef, WorkGiverDef workGiverDef)
         {
-            string label = DiaryContextBuilder.CleanLine(workGiverDef?.label);
+            string label = DiaryLineCleaner.CleanLine(workGiverDef?.label);
             if (!string.IsNullOrWhiteSpace(label))
             {
                 return label;
             }
 
-            label = DiaryContextBuilder.CleanLine(workTypeDef?.gerundLabel);
+            label = DiaryLineCleaner.CleanLine(workTypeDef?.gerundLabel);
             if (!string.IsNullOrWhiteSpace(label))
             {
                 return label;
             }
 
-            label = DiaryContextBuilder.CleanLine(workTypeDef?.labelShort);
+            label = DiaryLineCleaner.CleanLine(workTypeDef?.labelShort);
             return string.IsNullOrWhiteSpace(label) ? workTypeDef?.defName ?? string.Empty : label;
         }
 

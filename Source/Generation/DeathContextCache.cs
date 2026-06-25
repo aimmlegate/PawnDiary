@@ -151,7 +151,7 @@ namespace PawnDiary
             DamageDef damageDef = info.Def;
             if (damageDef != null)
             {
-                parts.Add("damage=" + DiaryContextBuilder.CleanLine(damageDef.LabelCap.Resolve()));
+                parts.Add("damage=" + DiaryLineCleaner.CleanLine(damageDef.LabelCap.Resolve()));
                 parts.Add("damageDef=" + damageDef.defName);
             }
 
@@ -163,26 +163,26 @@ namespace PawnDiary
             BodyPartRecord hitPart = info.HitPart;
             if (hitPart != null)
             {
-                parts.Add("hitPart=" + DiaryContextBuilder.CleanLine(hitPart.LabelCap));
+                parts.Add("hitPart=" + DiaryLineCleaner.CleanLine(hitPart.LabelCap));
             }
 
             Thing instigator = info.Instigator;
             if (instigator != null)
             {
-                parts.Add("instigator=" + DiaryContextBuilder.CleanLine(instigator.LabelShortCap));
+                parts.Add("instigator=" + DiaryLineCleaner.CleanLine(instigator.LabelShortCap));
             }
 
             ThingDef weapon = info.Weapon;
             if (weapon != null)
             {
-                parts.Add("weapon=" + DiaryContextBuilder.CleanLine(weapon.LabelCap.Resolve()));
+                parts.Add("weapon=" + DiaryLineCleaner.CleanLine(weapon.LabelCap.Resolve()));
                 parts.Add("weaponDef=" + weapon.defName);
             }
 
             Tool tool = info.Tool;
             if (tool != null && !string.IsNullOrWhiteSpace(tool.label))
             {
-                parts.Add("tool=" + DiaryContextBuilder.CleanLine(tool.label));
+                parts.Add("tool=" + DiaryLineCleaner.CleanLine(tool.label));
             }
         }
 
@@ -193,7 +193,7 @@ namespace PawnDiary
                 return;
             }
 
-            parts.Add("culprit=" + DiaryContextBuilder.CleanLine(exactCulprit.LabelCap));
+            parts.Add("culprit=" + DiaryLineCleaner.CleanLine(exactCulprit.LabelCap));
             if (exactCulprit.def != null)
             {
                 parts.Add("culpritDef=" + exactCulprit.def.defName);
@@ -202,7 +202,7 @@ namespace PawnDiary
             BodyPartRecord part = exactCulprit.Part;
             if (part != null)
             {
-                parts.Add("culpritPart=" + DiaryContextBuilder.CleanLine(part.LabelCap));
+                parts.Add("culpritPart=" + DiaryLineCleaner.CleanLine(part.LabelCap));
             }
 
             if (exactCulprit.Severity > 0f)
@@ -227,10 +227,10 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = "part=" + DiaryContextBuilder.CleanLine(missingPart.Part.LabelCap);
+                string label = "part=" + DiaryLineCleaner.CleanLine(missingPart.Part.LabelCap);
                 if (missingPart.lastInjury != null)
                 {
-                    label += " cause=" + DiaryContextBuilder.CleanLine(missingPart.lastInjury.LabelCap);
+                    label += " cause=" + DiaryLineCleaner.CleanLine(missingPart.lastInjury.LabelCap);
                 }
 
                 missing.Add(label);
@@ -263,10 +263,10 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = DiaryContextBuilder.CleanLine(hediff.LabelCap);
+                string label = DiaryLineCleaner.CleanLine(hediff.LabelCap);
                 if (hediff.Part != null)
                 {
-                    label += " (" + DiaryContextBuilder.CleanLine(hediff.Part.LabelCap) + ")";
+                    label += " (" + DiaryLineCleaner.CleanLine(hediff.Part.LabelCap) + ")";
                 }
 
                 hediffs.Add(label);

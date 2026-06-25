@@ -45,7 +45,7 @@ namespace PawnDiary
 
             GameConditionDef conditionDef = condition.def;
             string conditionDefName = conditionDef.defName;
-            string conditionLabel = DiaryContextBuilder.CleanLine(conditionDef.LabelCap.Resolve());
+            string conditionLabel = DiaryLineCleaner.CleanLine(conditionDef.LabelCap.Resolve());
 
             // Dedup the concrete GameCondition instance. Only mark the key after at least one pawn
             // records an entry, so an empty transition map cannot consume the whole window.
@@ -59,7 +59,7 @@ namespace PawnDiary
 
             // The condition's own thought offset is identical for every colonist, so compute it once
             // here (it scans the whole ThoughtDef database) instead of inside the per-pawn loop.
-            float conditionThoughtOffset = DiaryContextBuilder.GetMoodOffsetFromConditionThoughts(conditionDef);
+            float conditionThoughtOffset = MoodImpactClassifier.GetMoodOffsetFromConditionThoughts(conditionDef);
 
             // Look up the catalog spec once per RecordMoodEvent call. If somehow missing (future
             // source forgot to Register), the per-pawn loop falls back to Drop and silently no-ops.
@@ -106,7 +106,7 @@ namespace PawnDiary
                     // experiences the mood event independently. The mood impact direction
                     // (positive/negative/neutral) is determined per-pawn because some conditions
                     // (e.g. PsychicSuppressorMale) affect different sexes differently.
-                    string moodImpact = DiaryContextBuilder.DetermineMoodImpact(condition, pawn, conditionThoughtOffset);
+                    string moodImpact = MoodImpactClassifier.DetermineMoodImpact(condition, pawn, conditionThoughtOffset);
 
                     // Snapshot this pawn's facts and ask the catalog whether to record. The fan-out
                     // loop lives here; the catalog sees one event at a time.

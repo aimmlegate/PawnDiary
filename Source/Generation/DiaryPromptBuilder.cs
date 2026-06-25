@@ -26,7 +26,7 @@ namespace PawnDiary
             string initiatorEntry = diaryEvent != null
                 && !diaryEvent.solo
                 && string.Equals(povRole, DiaryEvent.RecipientRole, StringComparison.OrdinalIgnoreCase)
-                ? DiaryContextBuilder.CleanLine(diaryEvent.initiatorGeneratedText)
+                ? DiaryLineCleaner.CleanLine(diaryEvent.initiatorGeneratedText)
                 : null;
 
             return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, initiatorEntry, null, false, maxTokens);

@@ -23,7 +23,7 @@ Use this as a planning document, not as a mandate to do every refactor at once. 
 1. API lane identity/labels: highest dedup value, low behavior risk.
 2. Barrier fixes: ~~`PawnFactCapture`~~ (done), ~~`InstructionFor*` off settings DTO~~ (done), ~~`NameForRole` localization move~~ (done).
 3. Tunables to XML: intoxication, consciousness thresholds, mood condition families.
-4. `DiaryContextBuilder` split.
+4. ~~`DiaryContextBuilder` split~~ (done).
 5. `PawnDiaryMod` settings UI/async split.
 6. `PawnDiarySettings` persona/override extraction.
 7. `DiaryGameComponent.Generation` split: lane selection, titles, pawn lookup.
@@ -254,6 +254,21 @@ Docs:
 ## Run Card 6: Split `DiaryContextBuilder` By Concern
 
 Priority: Medium
+
+Status: Resolved 2026-06-25. Implemented as three new focused files alongside the trimmed
+`DiaryContextBuilder.cs`: `Source/Generation/DiaryLineCleaner.cs` (the pure, Verse-free `CleanLine`
+text cleaner — isolated so it is unit-testable, now covered by a pure test in
+`DiaryTextDecorationTests`), `Source/Generation/DiaryBuckets.cs` (the localized
+mood/pain/opinion/age/beauty/bleed/effect band formatters — `.Translate()`-bound, so main-thread and
+not Verse-free), and `Source/Generation/MoodImpactClassifier.cs` (the per-pawn GameCondition
+mood-direction policy: `DetermineMoodImpact`, `GetMoodOffsetFromConditionThoughts`, and helpers).
+`DiaryContextBuilder` now holds only the impure Pawn/Map/Archive context collectors and delegates to
+the three. `AgeBucket` now takes a plain `int years` (the caller snapshots
+`AgeBiologicalYears`) instead of a `Pawn`. All 89 `CleanLine` call sites across
+capture/core/generation/pipeline and the two mood-method call sites in
+`DiaryGameComponent.MoodEvents.cs` were rewritten to the new homes. Behavior is byte-for-byte
+unchanged; no save-format, DLC, or localization change; Debug DLL rebuilt; all five pure test
+projects pass (622 assertions).
 
 Evidence:
 - Pure helpers: `Source/Generation/DiaryContextBuilder.cs:1003` (`CleanLine`), `:1046` (`MoodBucket`), `:1067` (`PainBucket`), `:1098` (`OpinionBucket`), `:1124` (`AgeBucket`).

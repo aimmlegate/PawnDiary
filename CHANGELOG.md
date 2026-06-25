@@ -6,6 +6,22 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **`DiaryContextBuilder` split by concern.** The one static builder that mixed pure formatting,
+  impure Pawn/Map collection, and GameCondition mood-impact policy is now separated so each concern
+  has its own home and the pure piece is testable without the game. `DiaryContextBuilder` keeps only
+  the impure context collectors (pawn profile, surroundings, continuity, opinions). Its pure
+  one-line text cleaner (`CleanLine`) moved to a new Verse-free
+  `Generation/DiaryLineCleaner.cs`, now covered by a focused pure test (tag stripping, newline
+  collapsing, trimming, null/whitespace). Its localized mood/pain/opinion/age/beauty/bleed/effect
+  band tokens moved to a new `Generation/DiaryBuckets.cs` (`.Translate()`-bound, so main-thread —
+  not Verse-free). The per-pawn GameCondition mood-direction policy (`DetermineMoodImpact` +
+  `GetMoodOffsetFromConditionThoughts` and their helpers) moved to a new
+  `Generation/MoodImpactClassifier.cs`. `AgeBucket` now takes a plain `int years` (the caller
+  snapshots `AgeBiologicalYears`), removing its `Pawn` dependency. All 89 `CleanLine` call sites
+  across capture/core/generation/pipeline and the two mood-method call sites in
+  `DiaryGameComponent.MoodEvents.cs` were updated. Behavior is byte-for-byte unchanged; no
+  save-format, DLC, or localization change. The Debug DLL was rebuilt; all five pure test projects
+  pass (622 assertions).
 - **Hardcoded tunables moved to XML.** Three pockets of feature policy that lived in C# are now
   XML-owned with the original values as code fallbacks, so they retune without a recompile and
   modders/DLCs can extend them by string without code: (1) the first-person Consciousness gate

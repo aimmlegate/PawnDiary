@@ -1,12 +1,12 @@
 // Builds the compact context strings sent to the LLM (pawn profile, surroundings,
-// relationship/continuity, opinions) plus the text/bucket formatting helpers and the
-// mood-impact determination for GameCondition entries. Static helpers, no state.
-// Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
+// relationship/continuity, opinions). This file now holds only the IMPURE collectors that read live
+// Pawn/Map/Archive state; the pure one-line text cleaner (DiaryLineCleaner), the localized bucket
+// formatters (DiaryBuckets), and the GameCondition mood-impact policy (MoodImpactClassifier) were
+// split out so each concern has its own home and the pure pieces can be tested without the game.
+// Static helpers, no state. Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -18,7 +18,6 @@ namespace PawnDiary
         private const int MaxActiveMapConditions = 3;
         private const int MaxThreatLetterScanBack = 30;
         private const int RecentThreatTimeoutTicks = 7500;
-        private static readonly Regex RichTextTagRegex = new Regex("<.*?>");
 
         public static string BuildGameContextSummary(InteractionDef interactionDef, string interactionLabel)
         {
@@ -30,7 +29,7 @@ namespace PawnDiary
             List<string> parts = new List<string>
             {
                 "def=" + interactionDef.defName,
-                "label=" + CleanLine(interactionLabel)
+                "label=" + DiaryLineCleaner.CleanLine(interactionLabel)
             };
 
             string worker = interactionDef.Worker?.GetType().Name;
@@ -41,12 +40,12 @@ namespace PawnDiary
 
             if (interactionDef.initiatorThought != null)
             {
-                parts.Add("initiatorThought=" + CleanLine(interactionDef.initiatorThought.LabelCap.Resolve()));
+                parts.Add("initiatorThought=" + DiaryLineCleaner.CleanLine(interactionDef.initiatorThought.LabelCap.Resolve()));
             }
 
             if (interactionDef.recipientThought != null)
             {
-                parts.Add("recipientThought=" + CleanLine(interactionDef.recipientThought.LabelCap.Resolve()));
+                parts.Add("recipientThought=" + DiaryLineCleaner.CleanLine(interactionDef.recipientThought.LabelCap.Resolve()));
             }
 
             return string.Join("; ", parts.ToArray());
@@ -67,7 +66,7 @@ namespace PawnDiary
             PawnRelationDef relation = PawnRelationUtility.GetMostImportantRelation(povPawn, otherPawn);
             if (relation != null)
             {
-                string relationLabel = CleanLine(relation.GetGenderSpecificLabelCap(otherPawn));
+                string relationLabel = DiaryLineCleaner.CleanLine(relation.GetGenderSpecificLabelCap(otherPawn));
                 if (!string.IsNullOrWhiteSpace(relationLabel))
                 {
                     parts.Add(relationLabel);
@@ -75,7 +74,7 @@ namespace PawnDiary
             }
 
             int opinion = povPawn.relations?.OpinionOf(otherPawn) ?? 0;
-            parts.Add("PawnDiary.Ctx.Opinion".Translate(FormatOpinion(opinion)));
+            parts.Add("PawnDiary.Ctx.Opinion".Translate(DiaryBuckets.FormatOpinion(opinion)));
 
             string reasons = BuildSocialThoughtsSummary(povPawn, otherPawn);
             if (!string.IsNullOrWhiteSpace(reasons))
@@ -116,7 +115,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = CleanLine(memory.LabelCap);
+                string label = DiaryLineCleaner.CleanLine(memory.LabelCap);
                 if (string.IsNullOrWhiteSpace(label))
                 {
                     continue;
@@ -130,7 +129,7 @@ namespace PawnDiary
                 .Where(pair => Mathf.Abs(pair.Value) >= 1f)
                 .OrderByDescending(pair => Mathf.Abs(pair.Value))
                 .Take(3)
-                .Select(pair => pair.Key + " (" + EffectBucket(pair.Value) + ")")
+                .Select(pair => pair.Key + " (" + DiaryBuckets.EffectBucket(pair.Value) + ")")
                 .ToArray());
         }
 
@@ -153,7 +152,7 @@ namespace PawnDiary
                 string line = diaryEvent.DisplayTextForRole(role);
                 if (!string.IsNullOrWhiteSpace(line))
                 {
-                    line = CleanLine(line);
+                    line = DiaryLineCleaner.CleanLine(line);
                     int max = DiaryTuning.Current.diaryLineMaxChars;
                     return line.Length <= max ? line : line.Substring(0, max) + "...";
                 }
@@ -211,7 +210,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            string cleaned = CleanLine(text);
+            string cleaned = DiaryLineCleaner.CleanLine(text);
             if (string.IsNullOrWhiteSpace(cleaned))
             {
                 return string.Empty;
@@ -305,7 +304,7 @@ namespace PawnDiary
 
             if (room != null)
             {
-                string roomRole = CleanLine(room.GetRoomRoleLabel());
+                string roomRole = DiaryLineCleaner.CleanLine(room.GetRoomRoleLabel());
                 if (!string.IsNullOrWhiteSpace(roomRole))
                 {
                     parts.Add(roomRole);
@@ -323,12 +322,12 @@ namespace PawnDiary
                 WeatherDef weather = pawn.Map.weatherManager?.CurWeatherPerceived;
                 if (ShouldMentionWeather(weather))
                 {
-                    parts.Add(CleanLine(weather.label));
+                    parts.Add(DiaryLineCleaner.CleanLine(weather.label));
                 }
 
                 if (pawn.Map.Biome != null)
                 {
-                    parts.Add(CleanLine(pawn.Map.Biome.label));
+                    parts.Add(DiaryLineCleaner.CleanLine(pawn.Map.Biome.label));
                 }
             }
 
@@ -347,7 +346,7 @@ namespace PawnDiary
             float beauty = BeautyUtility.AverageBeautyPerceptible(pawn.Position, pawn.Map);
             if (beauty >= DiaryTuning.Current.beautyPleasant || beauty <= -DiaryTuning.Current.beautyPleasant)
             {
-                parts.Add("PawnDiary.Ctx.Surroundings".Translate(BeautyBucket(beauty)));
+                parts.Add("PawnDiary.Ctx.Surroundings".Translate(DiaryBuckets.BeautyBucket(beauty)));
             }
 
             string activeConditions = BuildActiveMapConditionsSummary(pawn.Map);
@@ -368,14 +367,14 @@ namespace PawnDiary
                 parts.Add("PawnDiary.Ctx.Near".Translate(nearby));
             }
 
-            string jobReport = CleanLine(pawn.GetJobReport());
+            string jobReport = DiaryLineCleaner.CleanLine(pawn.GetJobReport());
             if (!string.IsNullOrWhiteSpace(jobReport))
             {
                 parts.Add("PawnDiary.Ctx.Doing".Translate(jobReport));
             }
             else if (pawn.CurJobDef != null)
             {
-                parts.Add("PawnDiary.Ctx.Doing".Translate(CleanLine(pawn.CurJobDef.LabelCap.Resolve())));
+                parts.Add("PawnDiary.Ctx.Doing".Translate(DiaryLineCleaner.CleanLine(pawn.CurJobDef.LabelCap.Resolve())));
             }
 
             return string.Join(", ", parts.ToArray());
@@ -411,10 +410,10 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = CleanLine(condition.Label);
+                string label = DiaryLineCleaner.CleanLine(condition.Label);
                 if (string.IsNullOrWhiteSpace(label))
                 {
-                    label = CleanLine(condition.def.LabelCap.Resolve());
+                    label = DiaryLineCleaner.CleanLine(condition.def.LabelCap.Resolve());
                 }
 
                 if (!string.IsNullOrWhiteSpace(label) && seenLabels.Add(label))
@@ -515,7 +514,7 @@ namespace PawnDiary
 
             try
             {
-                return CleanLine(archivable.ArchivedLabel);
+                return DiaryLineCleaner.CleanLine(archivable.ArchivedLabel);
             }
             catch
             {
@@ -535,7 +534,12 @@ namespace PawnDiary
                 "sex=" + pawn.gender.ToString().ToLowerInvariant()
             };
 
-            string age = AgeBucket(pawn);
+            // Snapshot the biological age once; the band selection itself lives in DiaryBuckets and
+            // takes a plain int so it has no Pawn dependency. A null ageTracker yields no band, as
+            // before.
+            string age = pawn.ageTracker != null
+                ? DiaryBuckets.AgeBucket(pawn.ageTracker.AgeBiologicalYears)
+                : string.Empty;
             if (!string.IsNullOrWhiteSpace(age))
             {
                 parts.Add("life_stage=" + age);
@@ -603,7 +607,7 @@ namespace PawnDiary
             ThingWithComps primary = pawn.equipment.Primary;
             if (primary != null)
             {
-                return CleanLine(primary.LabelNoCount);
+                return DiaryLineCleaner.CleanLine(primary.LabelNoCount);
             }
 
             // If no primary, check inventory for weapons (for mods that allow multiple)
@@ -622,7 +626,7 @@ namespace PawnDiary
                 if (weapons.Count > 0)
                 {
                     Thing chosen = weapons[UnityEngine.Random.Range(0, weapons.Count)];
-                    return CleanLine(chosen.LabelNoCount);
+                    return DiaryLineCleaner.CleanLine(chosen.LabelNoCount);
                 }
             }
 
@@ -637,7 +641,7 @@ namespace PawnDiary
             }
 
             int moodPercent = Mathf.RoundToInt(pawn.needs.mood.CurLevelPercentage * 100f);
-            return MoodBucket(moodPercent);
+            return DiaryBuckets.MoodBucket(moodPercent);
         }
 
         private static string BuildHealthSummary(Pawn pawn)
@@ -662,13 +666,13 @@ namespace PawnDiary
             float pain = pawn.health.hediffSet?.PainTotal ?? 0f;
             if (pain > DiaryTuning.Current.painVisibleAbove)
             {
-                parts.Add("pain=" + PainBucket(pain));
+                parts.Add("pain=" + DiaryBuckets.PainBucket(pain));
             }
 
             float bleedRate = pawn.health.hediffSet?.BleedRateTotal ?? 0f;
             if (bleedRate > DiaryTuning.Current.bleedVisibleAbove)
             {
-                parts.Add("bleeding=" + BleedingBucket(bleedRate));
+                parts.Add("bleeding=" + DiaryBuckets.BleedingBucket(bleedRate));
             }
 
             string notableHediffs = BuildNotableHediffsSummary(pawn);
@@ -691,7 +695,7 @@ namespace PawnDiary
             return string.Join(", ", pawn.health.hediffSet.hediffs
                 .Where(hediff => hediff != null && hediff.Visible && (hediff.IsCurrentlyLifeThreatening || hediff.Bleeding || hediff.PainOffset > 0f || hediff.SummaryHealthPercentImpact < -0.05f))
                 .OrderByDescending(hediff => hediff.IsCurrentlyLifeThreatening ? 100f : hediff.BleedRate + hediff.PainOffset - hediff.SummaryHealthPercentImpact)
-                .Select(hediff => CleanLine(hediff.Label))
+                .Select(hediff => DiaryLineCleaner.CleanLine(hediff.Label))
                 .Where(label => !string.IsNullOrWhiteSpace(label))
                 .Take(2)
                 .ToArray());
@@ -822,13 +826,13 @@ namespace PawnDiary
                 cumulative += Mathf.Abs(thoughts[i].MoodOffset());
                 if (roll <= cumulative)
                 {
-                    return CleanLine(thoughts[i].LabelCap) + " (" + EffectBucket(thoughts[i].MoodOffset()) + ")";
+                    return DiaryLineCleaner.CleanLine(thoughts[i].LabelCap) + " (" + DiaryBuckets.EffectBucket(thoughts[i].MoodOffset()) + ")";
                 }
             }
 
             // Fallback: return the last one (shouldn't reach here normally)
             Thought last = thoughts[thoughts.Count - 1];
-            return CleanLine(last.LabelCap) + " (" + EffectBucket(last.MoodOffset()) + ")";
+            return DiaryLineCleaner.CleanLine(last.LabelCap) + " (" + DiaryBuckets.EffectBucket(last.MoodOffset()) + ")";
         }
 
         private static string BuildNearbyThingsSummary(Pawn pawn)
@@ -994,387 +998,10 @@ namespace PawnDiary
             Corpse corpse = thing as Corpse;
             if (corpse?.InnerPawn != null)
             {
-                return "PawnDiary.Ctx.Corpse".Translate(CleanLine(corpse.InnerPawn.LabelShortCap));
+                return "PawnDiary.Ctx.Corpse".Translate(DiaryLineCleaner.CleanLine(corpse.InnerPawn.LabelShortCap));
             }
 
-            return CleanLine(thing.LabelNoCount);
-        }
-
-        public static string CleanLine(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            string cleaned = value.Replace("\r", " ").Replace("\n", " ");
-            cleaned = RichTextTagRegex.Replace(cleaned, string.Empty);
-            return cleaned.Trim();
-        }
-
-        private static string FormatOpinion(int opinion)
-        {
-            return OpinionBucket(opinion);
-        }
-
-        private static string BeautyBucket(float beauty)
-        {
-            DiaryTuningDef t = DiaryTuning.Current;
-            if (beauty >= t.beautyBeautiful)
-            {
-                return "PawnDiary.Bucket.Beauty.Beautiful".Translate();
-            }
-
-            if (beauty >= t.beautyPleasant)
-            {
-                return "PawnDiary.Bucket.Beauty.Pleasant".Translate();
-            }
-
-            if (beauty > -t.beautyPleasant)
-            {
-                return "PawnDiary.Bucket.Beauty.Neutral".Translate();
-            }
-
-            if (beauty > t.beautyUgly)
-            {
-                return "PawnDiary.Bucket.Beauty.Ugly".Translate();
-            }
-
-            return "PawnDiary.Bucket.Beauty.Hideous".Translate();
-        }
-
-        private static string MoodBucket(int moodPercent)
-        {
-            DiaryTuningDef t = DiaryTuning.Current;
-            if (moodPercent >= t.moodHappy)
-            {
-                return "PawnDiary.Bucket.Mood.Happy".Translate();
-            }
-
-            if (moodPercent >= t.moodStable)
-            {
-                return "PawnDiary.Bucket.Mood.Stable".Translate();
-            }
-
-            if (moodPercent >= t.moodStressed)
-            {
-                return "PawnDiary.Bucket.Mood.Stressed".Translate();
-            }
-
-            return "PawnDiary.Bucket.Mood.Miserable".Translate();
-        }
-
-        private static string PainBucket(float pain)
-        {
-            DiaryTuningDef t = DiaryTuning.Current;
-            if (pain >= t.painSevere)
-            {
-                return "PawnDiary.Bucket.Pain.Severe".Translate();
-            }
-
-            if (pain >= t.painModerate)
-            {
-                return "PawnDiary.Bucket.Pain.Moderate".Translate();
-            }
-
-            return "PawnDiary.Bucket.Pain.Minor".Translate();
-        }
-
-        private static string BleedingBucket(float bleedRate)
-        {
-            if (bleedRate >= 2f)
-            {
-                return "PawnDiary.Bucket.Bleeding.Severe".Translate();
-            }
-
-            if (bleedRate >= 1f)
-            {
-                return "PawnDiary.Bucket.Bleeding.Moderate".Translate();
-            }
-
-            return "PawnDiary.Bucket.Bleeding.Minor".Translate();
-        }
-
-        private static string OpinionBucket(int opinion)
-        {
-            DiaryTuningDef t = DiaryTuning.Current;
-            if (opinion >= t.opinionDevoted)
-            {
-                return "PawnDiary.Bucket.Opinion.Devoted".Translate();
-            }
-
-            if (opinion >= t.opinionFriendly)
-            {
-                return "PawnDiary.Bucket.Opinion.Friendly".Translate();
-            }
-
-            if (opinion > t.opinionNeutralAbove)
-            {
-                return "PawnDiary.Bucket.Opinion.Neutral".Translate();
-            }
-
-            if (opinion > t.opinionStrainedAbove)
-            {
-                return "PawnDiary.Bucket.Opinion.Strained".Translate();
-            }
-
-            return "PawnDiary.Bucket.Opinion.Hostile".Translate();
-        }
-
-        private static string AgeBucket(Pawn pawn)
-        {
-            if (pawn?.ageTracker == null)
-            {
-                return string.Empty;
-            }
-
-            int years = pawn.ageTracker.AgeBiologicalYears;
-            if (years < 13)
-            {
-                return "PawnDiary.Bucket.Age.Child".Translate();
-            }
-
-            if (years < 20)
-            {
-                return "PawnDiary.Bucket.Age.Teen".Translate();
-            }
-
-            if (years < 45)
-            {
-                return "PawnDiary.Bucket.Age.Adult".Translate();
-            }
-
-            if (years < 65)
-            {
-                return "PawnDiary.Bucket.Age.OlderAdult".Translate();
-            }
-
-            return "PawnDiary.Bucket.Age.Elder".Translate();
-        }
-
-        private static string EffectBucket(float effect)
-        {
-            if (effect >= 8f)
-            {
-                return "PawnDiary.Bucket.Effect.StrongPositive".Translate();
-            }
-
-            if (effect > 0f)
-            {
-                return "PawnDiary.Bucket.Effect.Positive".Translate();
-            }
-
-            if (effect <= -8f)
-            {
-                return "PawnDiary.Bucket.Effect.StrongNegative".Translate();
-            }
-
-            return "PawnDiary.Bucket.Effect.Negative".Translate();
-        }
-
-        // Determines whether a GameCondition has a positive, negative, or neutral mood impact
-        // on a specific pawn. Uses the condition's thought definitions for direction, then checks
-        // pawn-specific factors (e.g. PsychicDrone targets one gender; PsychicSuppressor only
-        // hurts the suppressed gender). Returns "positive", "negative", or "neutral" for use in
-        // the gameContext mood_impact field and the event text.
-        // conditionThoughtOffset is the pawn-independent offset from the condition's thoughts,
-        // computed once by the caller (GetMoodOffsetFromConditionThoughts scans the whole ThoughtDef
-        // database, so we pass it in rather than repeat the scan for every affected colonist).
-        public static string DetermineMoodImpact(GameCondition condition, Pawn pawn, float conditionThoughtOffset)
-        {
-            if (condition == null || condition.def == null || pawn == null)
-            {
-                return MoodImpact.Neutral;
-            }
-
-            GameConditionDef def = condition.def;
-            string defName = def.defName;
-
-            // First, check if this pawn is unaffected by the condition due to gender targeting.
-            // GameCondition_PsychicEmanation (psychic drone / soothe) targets one gender.
-            if (condition is GameCondition_PsychicEmanation emanationCondition)
-            {
-                if (emanationCondition.gender != pawn.gender)
-                {
-                    return MoodImpact.Neutral;
-                }
-            }
-
-            // Royalty's psychic suppression also targets one gender. Avoid naming the DLC type; if a
-            // live condition's defName says suppression, reflect the same gender field vanilla uses.
-            if (defName != null
-                && defName.IndexOf("PsychicSuppress", StringComparison.OrdinalIgnoreCase) >= 0
-                && TryReadConditionGender(condition, out Gender suppressionGender))
-            {
-                if (suppressionGender != pawn.gender)
-                {
-                    return MoodImpact.Neutral;
-                }
-            }
-
-            // Combine the pawn-independent condition offset (precomputed by the caller) with this
-            // pawn's own active thoughts from the condition; the larger magnitude wins. RimWorld's
-            // relationship is inverted: GameConditionDef does not hold thought references; instead
-            // ThoughtDef has a `gameCondition` field that references the GameConditionDef it belongs to.
-            float bestOffset = conditionThoughtOffset;
-            float pawnOffset = GetMoodOffsetFromPawnThoughts(condition, pawn);
-            if (Mathf.Abs(pawnOffset) > Mathf.Abs(bestOffset))
-            {
-                bestOffset = pawnOffset;
-            }
-
-            // If we found a meaningful mood offset, return the direction. (We can't use
-            // MoodImpact.Classify here because a within-threshold offset must fall through to the
-            // name-based heuristics below rather than short-circuit to neutral.)
-            if (bestOffset > MoodImpact.MeaningfulThreshold)
-            {
-                return MoodImpact.Positive;
-            }
-
-            if (bestOffset < -MoodImpact.MeaningfulThreshold)
-            {
-                return MoodImpact.Negative;
-            }
-
-            // If no thought offsets found (some conditions apply thoughts programmatically),
-            // fall back to name-based heuristics for known condition families.
-            if (IsKnownPositiveCondition(defName))
-            {
-                return MoodImpact.Positive;
-            }
-
-            if (IsKnownNegativeCondition(defName))
-            {
-                return MoodImpact.Negative;
-            }
-
-            // If we can't determine the impact, default to neutral. The LLM will use the
-            // condition label and gameContext to figure out how the pawn feels.
-            return MoodImpact.Neutral;
-        }
-
-        private static bool TryReadConditionGender(GameCondition condition, out Gender gender)
-        {
-            gender = Gender.None;
-            if (condition == null)
-            {
-                return false;
-            }
-
-            FieldInfo field = condition.GetType().GetField("gender", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (field == null || field.FieldType != typeof(Gender))
-            {
-                return false;
-            }
-
-            gender = (Gender)field.GetValue(condition);
-            return true;
-        }
-
-        // Scans DefDatabase<ThoughtDef> for any thoughts that reference the given
-        // GameConditionDef via their `gameCondition` field, then sums the baseMoodEffect
-        // across all stages. RimWorld's relationship is inverted: ThoughtDef points to
-        // GameConditionDef, not vice versa. Returns 0 if no matching thoughts are found.
-        public static float GetMoodOffsetFromConditionThoughts(GameConditionDef conditionDef)
-        {
-            if (conditionDef == null)
-            {
-                return 0f;
-            }
-
-            float totalOffset = 0f;
-            List<ThoughtDef> allThoughtDefs = DefDatabase<ThoughtDef>.AllDefsListForReading;
-            for (int i = 0; i < allThoughtDefs.Count; i++)
-            {
-                ThoughtDef td = allThoughtDefs[i];
-                if (td == null || td.gameCondition != conditionDef)
-                {
-                    continue;
-                }
-
-                if (td.stages == null)
-                {
-                    continue;
-                }
-
-                for (int j = 0; j < td.stages.Count; j++)
-                {
-                    if (td.stages[j] != null)
-                    {
-                        totalOffset += td.stages[j].baseMoodEffect;
-                    }
-                }
-            }
-
-            return totalOffset;
-        }
-
-        // Checks the pawn's current mood thoughts for any that come from the given GameCondition,
-        // matching by the thought's `gameCondition` field pointing to our condition def.
-        // Returns the total mood offset from matching thoughts, or 0 if none are found.
-        private static float GetMoodOffsetFromPawnThoughts(GameCondition condition, Pawn pawn)
-        {
-            if (condition == null || condition.def == null || pawn?.needs?.mood?.thoughts == null)
-            {
-                return 0f;
-            }
-
-            float totalOffset = 0f;
-            List<Thought> thoughts = new List<Thought>();
-            pawn.needs.mood.thoughts.GetAllMoodThoughts(thoughts);
-
-            for (int i = 0; i < thoughts.Count; i++)
-            {
-                Thought thought = thoughts[i];
-                if (thought == null || thought.def == null)
-                {
-                    continue;
-                }
-
-                // Match thoughts whose def references this condition (DefDatabase link).
-                if (thought.def.gameCondition == condition.def)
-                {
-                    totalOffset += thought.MoodOffset();
-                }
-            }
-
-            return totalOffset;
-        }
-
-        // Known GameConditionDefs that are always positive for every colonist. The list is XML-tuned
-        // (DiaryTuningDef.positiveMoodConditionDefNames); entries are plain strings so a DLC-only
-        // condition simply never appears without its DLC. See AGENTS.md ("DLC-safety").
-        private static bool IsKnownPositiveCondition(string defName)
-        {
-            return DefNameListContains(DiaryTuning.Current.positiveMoodConditionDefNames, defName);
-        }
-
-        // Known GameConditionDefs that are always negative for affected colonists. Excludes condition
-        // causers and gender-targeted effects (those vary per pawn). XML-tuned via
-        // DiaryTuningDef.negativeMoodConditionDefNames.
-        private static bool IsKnownNegativeCondition(string defName)
-        {
-            return DefNameListContains(DiaryTuning.Current.negativeMoodConditionDefNames, defName);
-        }
-
-        // Case-insensitive exact defName membership used by the mood-condition fallbacks above.
-        // Null/empty defName never matches; a null/empty list never matches.
-        private static bool DefNameListContains(List<string> defNames, string defName)
-        {
-            if (string.IsNullOrEmpty(defName) || defNames == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < defNames.Count; i++)
-            {
-                if (string.Equals(defNames[i], defName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return DiaryLineCleaner.CleanLine(thing.LabelNoCount);
         }
     }
 }

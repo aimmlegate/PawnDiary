@@ -208,15 +208,15 @@ namespace PawnDiary
 
         private static string RitualTitle(LordJob_Ritual ritualJob, Precept_Ritual ritual)
         {
-            string title = DiaryContextBuilder.CleanLine(ritualJob?.RitualLabel);
+            string title = DiaryLineCleaner.CleanLine(ritualJob?.RitualLabel);
             if (string.IsNullOrWhiteSpace(title))
             {
-                title = DiaryContextBuilder.CleanLine(ritual?.LabelCap);
+                title = DiaryLineCleaner.CleanLine(ritual?.LabelCap);
             }
 
             if (string.IsNullOrWhiteSpace(title))
             {
-                title = DiaryContextBuilder.CleanLine(ritual?.def?.label);
+                title = DiaryLineCleaner.CleanLine(ritual?.def?.label);
             }
 
             return string.IsNullOrWhiteSpace(title) ? RitualEventData.FallbackTitle : title;
@@ -259,7 +259,7 @@ namespace PawnDiary
                 role = assignments?.RoleForPawn(pawn, true);
             }
 
-            string assignedRole = role == null ? string.Empty : DiaryContextBuilder.CleanLine(role.LabelCap.Resolve());
+            string assignedRole = role == null ? string.Empty : DiaryLineCleaner.CleanLine(role.LabelCap.Resolve());
             string perspectiveLabel = RitualPerspectiveLabel(perspective);
             if (string.IsNullOrWhiteSpace(assignedRole))
             {
