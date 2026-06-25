@@ -28,6 +28,7 @@ namespace DiaryPipelineTests
             TestApiLaneIdentityAndLabels();
             TestApiEndpointPolicy();
             TestApiRequestAuth();
+            TestLlmRequestJsonBuilder();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -425,6 +426,68 @@ namespace DiaryPipelineTests
                 IEnumerable<string> values;
                 AssertTrue("none has no api-key", !none.Headers.TryGetValues("api-key", out values));
             }
+        }
+
+        private static void TestLlmRequestJsonBuilder()
+        {
+            string chat = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            {
+                apiMode = ApiCompatibilityMode.OpenAIChatCompletions,
+                modelName = "chat \"model\"",
+                systemPrompt = "  System\nprompt  ",
+                rawText = "User line\twith \"quote\" and \\slash" + (char)1,
+                temperature = 0.7f,
+                maxTokens = 64,
+                reasoningEffort = " HIGH "
+            });
+            AssertEqual(
+                "chat request json",
+                "{\"model\":\"chat \\\"model\\\"\",\"messages\":[{\"role\":\"system\",\"content\":\"System\\nprompt\"},{\"role\":\"user\",\"content\":\"User line\\twith \\\"quote\\\" and \\\\slash\\u0001\"}],\"temperature\":0.7,\"max_tokens\":64,\"reasoning_effort\":\"high\"}",
+                chat);
+
+            string chatDefault = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            {
+                apiMode = (ApiCompatibilityMode)999,
+                modelName = "chat",
+                rawText = "Only user",
+                temperature = 0.25f,
+                maxTokens = 8,
+                reasoningEffort = "default"
+            });
+            AssertEqual(
+                "chat request default reasoning",
+                "{\"model\":\"chat\",\"messages\":[{\"role\":\"user\",\"content\":\"Only user\"}],\"temperature\":0.25,\"max_tokens\":8}",
+                chatDefault);
+
+            string responses = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            {
+                apiMode = ApiCompatibilityMode.OpenAIResponses,
+                modelName = "o3",
+                systemPrompt = " Instructions ",
+                rawText = "Entry",
+                temperature = 1f,
+                maxTokens = 64,
+                reasoningEffort = "medium"
+            });
+            AssertEqual(
+                "responses request json",
+                "{\"model\":\"o3\",\"input\":\"Entry\",\"temperature\":1,\"max_output_tokens\":192,\"instructions\":\"Instructions\",\"reasoning\":{\"effort\":\"medium\"}}",
+                responses);
+
+            string responsesNone = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            {
+                apiMode = ApiCompatibilityMode.OpenAIResponses,
+                modelName = "o3",
+                systemPrompt = " ",
+                rawText = string.Empty,
+                temperature = 0f,
+                maxTokens = 64,
+                reasoningEffort = "none"
+            });
+            AssertEqual(
+                "responses request none reasoning",
+                "{\"model\":\"o3\",\"input\":\"\",\"temperature\":0,\"max_output_tokens\":64,\"reasoning\":{\"effort\":\"none\"}}",
+                responsesNone);
         }
 
         private static void TestDomainClassifier()

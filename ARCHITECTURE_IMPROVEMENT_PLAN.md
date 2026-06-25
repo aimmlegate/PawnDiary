@@ -467,6 +467,11 @@ Docs:
 
 Priority: Low
 
+Status: Resolved 2026-06-25. Extracted pure `Pipeline/LlmRequestJsonBuilder`, kept the existing
+mode-specific request body behavior in that builder, rewired `LlmClient` as the transport adapter, and
+covered Chat Completions / Responses serialization in `DiaryPipelineTests`; Debug build and all five
+pure test projects pass (626 assertions).
+
 Evidence:
 - `Source/Generation/LlmClient.cs:1099-1225` request JSON construction and escaping.
 

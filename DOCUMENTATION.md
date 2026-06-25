@@ -43,7 +43,7 @@ PawnDiary/
 |   |-- Generation/              context builders, prompt assembler, LLM client, DLC reads
 |   |-- Models/                  saved/display models (DiaryEvent, DiaryEntry, PawnDiaryRecord)
 |   |-- Patches/                 Harmony startup + hooks + inspect command
-|   |-- Pipeline/                pure prompt/response/decor contracts + API endpoint policy
+|   |-- Pipeline/                pure prompt/response/decor contracts + API endpoint/request policy
 |   |-- Settings/                settings save data, API settings controller, settings UI partials
 |   |-- UI/                      hidden Diary inspect tab + partials, text formatting
 |   `-- Util/                    MiniJson (runtime-safe JSON; do not replace)
@@ -62,11 +62,11 @@ Key files:
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
 | `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
-| `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, response cleanup, API lane policy/identity, domain recovery, text decoration. |
+| `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, text decoration. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
-| `Generation/LlmClient.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
+| `Generation/LlmClient.cs`, `Pipeline/LlmRequestJsonBuilder.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency, pure request body serialization, and pure provider response parsing. |
 | `Settings/PawnDiaryMod*.cs`, `ApiConnectionController.cs`, `PawnDiarySettings.cs`, `PersonaPresetStore.cs`, `PromptOverrideDictionary.cs` | Settings entry point, split settings UI sections, settings-window API fetch/test controller, saved settings data (connection, generation, system-prompt overrides), the writing-style (persona) preset catalog store, and the reusable per-key event-prompt override map. |
 | `UI/ITab_Pawn_Diary*.cs`, `DiaryTextFormat.cs` | Hidden Diary inspect tab, cards, paging, debug controls, safe rich-text formatting. |
 | `Util/MiniJson.cs` | Runtime-safe JSON parser; do not add external JSON dependencies. |
@@ -256,8 +256,9 @@ Layer boundaries:
 - Bridge: `DiaryPipelineAdapters`.
 - Pure: `DiaryEvent`/`PawnDiaryRecord` (saved models — they store plain values only and never read a
   live `Pawn`), `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
-  `DiaryLineCleaner`, `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`, `LlmResponseParser`,
-  `DiaryResponsePostprocessor`, `DiaryTextDecorations`.
+  `DiaryLineCleaner`, `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`,
+  `LlmRequestJsonBuilder`, `LlmResponseParser`, `DiaryResponsePostprocessor`,
+  `DiaryTextDecorations`.
 
 **Writing styles** come from `DiaryPersonaDef` + settings overrides/custom rows. The Def and save
 field names still say "Persona" for compatibility, but the player-facing feature is writing styles.
@@ -405,8 +406,9 @@ routing mode; recipient follow-ups and title requests pin to the prior successfu
 unless it's cooling and another is ready. Per-lane semaphores enforce concurrency;
 `ServicePointManager.DefaultConnectionLimit` is raised for Mono.
 
-`LlmClient` builds mode-specific URLs/payloads, retries transient errors up to three times per lane,
-and surfaces timeout/permanent/empty/incomplete responses as failure text. Transient failures and
+`LlmClient` builds mode-specific URLs, maps generation requests into `LlmRequestJsonBuilder`'s pure
+request-body snapshot, retries transient errors up to three times per lane, and surfaces
+timeout/permanent/empty/incomplete responses as failure text. Transient failures and
 timeouts apply an automatic cooldown growing 10s→20s→40s→80s→160s→cap 300s; any success clears it.
 Cooling lanes are skipped while another is ready but still tried when every lane is cooling. Each
 failover pass snapshots readiness once so a cooldown expiring/added mid-loop can't skip every lane.

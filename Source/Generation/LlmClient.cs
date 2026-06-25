@@ -1084,18 +1084,20 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Builds the JSON body for the selected compatibility mode using manual concatenation
-        /// rather than System.Text.Json, which may not be available in all RimWorld runtimes.
+        /// Adapts the transport request into the pure request serializer's primitive snapshot.
         /// </summary>
         private static string BuildRequestJson(LlmGenerationRequest request)
         {
-            switch (request.apiMode)
+            return LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
             {
-                case ApiCompatibilityMode.OpenAIResponses:
-                    return BuildOpenAIResponsesRequestJson(request);
-                default:
-                    return BuildOpenAIChatRequestJson(request);
-            }
+                apiMode = request.apiMode,
+                modelName = request.modelName,
+                systemPrompt = request.systemPrompt,
+                rawText = request.rawText,
+                reasoningEffort = request.reasoningEffort,
+                maxTokens = request.maxTokens,
+                temperature = request.temperature
+            });
         }
 
         /// <summary>
@@ -1112,71 +1114,6 @@ namespace PawnDiary
             }
         }
 
-        private static string BuildOpenAIChatRequestJson(LlmGenerationRequest request)
-        {
-            string json = "{"
-                + "\"model\":\"" + JsonEscape(request.modelName) + "\","
-                + "\"messages\":[" + BuildMessagesJson(request) + "],"
-                + "\"temperature\":" + JsonNumber(request.temperature) + ","
-                + "\"max_tokens\":" + request.maxTokens;
-
-            string reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort);
-            if (HasExplicitReasoningEffort(reasoningEffort))
-            {
-                json += ",\"reasoning_effort\":\"" + JsonEscape(reasoningEffort) + "\"";
-            }
-
-            return json + "}";
-        }
-
-        private static string BuildOpenAIResponsesRequestJson(LlmGenerationRequest request)
-        {
-            string json = "{"
-                + "\"model\":\"" + JsonEscape(request.modelName) + "\","
-                + "\"input\":\"" + JsonEscape(request.rawText) + "\","
-                + "\"temperature\":" + JsonNumber(request.temperature) + ","
-                + "\"max_output_tokens\":" + MaxOutputTokensForRequest(request);
-
-            if (!string.IsNullOrWhiteSpace(request.systemPrompt))
-            {
-                json += ",\"instructions\":\"" + JsonEscape(request.systemPrompt.Trim()) + "\"";
-            }
-
-            string reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort);
-            if (HasExplicitReasoningEffort(reasoningEffort))
-            {
-                json += ",\"reasoning\":{\"effort\":\"" + JsonEscape(reasoningEffort) + "\"}";
-            }
-
-            return json + "}";
-        }
-
-        /// <summary>
-        /// Constructs the JSON array of message objects. Prepends a system message when
-        /// the request includes one so the model adopts the intended writing style.
-        /// </summary>
-        private static string BuildMessagesJson(LlmGenerationRequest request)
-        {
-            string userMessage = "{\"role\":\"user\",\"content\":\"" + JsonEscape(request.rawText) + "\"}";
-            if (string.IsNullOrWhiteSpace(request.systemPrompt))
-            {
-                return userMessage;
-            }
-
-            return "{\"role\":\"system\",\"content\":\"" + JsonEscape(request.systemPrompt.Trim()) + "\"},"
-                + userMessage;
-        }
-
-        private static string JsonNumber(float value)
-        {
-            return value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        }
-
-        private static bool HasExplicitReasoningEffort(string effort)
-        {
-            return !string.Equals(PawnDiarySettings.NormalizeReasoningEffort(effort), PawnDiarySettings.DefaultReasoningEffort, StringComparison.Ordinal);
-        }
-
         private static bool SameAttemptLane(ApiEndpointConfig left, ApiEndpointConfig right)
         {
             if (left == null || right == null)
@@ -1186,71 +1123,6 @@ namespace PawnDiary
 
             return ApiLaneIdentity.ForAttempt(left.url, left.model, left.apiMode, left.authMode, left.customAuthHeaderName, left.apiKey)
                 == ApiLaneIdentity.ForAttempt(right.url, right.model, right.apiMode, right.authMode, right.customAuthHeaderName, right.apiKey);
-        }
-
-        private static int MaxOutputTokensForRequest(LlmGenerationRequest request)
-        {
-            if (request.apiMode == ApiCompatibilityMode.OpenAIResponses
-                && HasExplicitReasoningEffort(request.reasoningEffort)
-                && !string.Equals(PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort), "none", StringComparison.Ordinal))
-            {
-                // Responses counts hidden reasoning tokens against max_output_tokens. Keep the
-                // saved diary text locally capped to maxTokens, but give reasoning models enough
-                // room to think and still produce visible text.
-                return Math.Max(request.maxTokens + 128, request.maxTokens * 3);
-            }
-
-            return request.maxTokens;
-        }
-
-        /// <summary>
-        /// Minimal JSON string escaper — handles the characters most likely to appear in
-        /// free-form narrative text (backslash, quote, newlines, tabs, control chars) and
-        /// produces Unicode escapes for the rest. Avoids a full JSON library dependency.
-        /// </summary>
-        private static string JsonEscape(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return string.Empty;
-            }
-
-            StringBuilder builder = new StringBuilder(value.Length + 16); // pre-allocate slight overshoot to reduce copies
-            for (int i = 0; i < value.Length; i++)
-            {
-                char c = value[i];
-                switch (c)
-                {
-                    case '\\':
-                        builder.Append("\\\\");
-                        break;
-                    case '"':
-                        builder.Append("\\\"");
-                        break;
-                    case '\n':
-                        builder.Append("\\n");
-                        break;
-                    case '\r':
-                        builder.Append("\\r");
-                        break;
-                    case '\t':
-                        builder.Append("\\t");
-                        break;
-                    default:
-                        if (char.IsControl(c))
-                        {
-                            builder.Append("\\u");
-                            builder.Append(((int)c).ToString("x4"));
-                        }
-                        else
-                        {
-                            builder.Append(c);
-                        }
-                        break;
-                }
-            }
-
-            return builder.ToString();
         }
 
         /// <summary>

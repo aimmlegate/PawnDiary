@@ -6,6 +6,16 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **LLM request JSON serialization extracted.** Chat Completions and OpenAI Responses request-body
+  construction moved out of `LlmClient` into pure `Pipeline/LlmRequestJsonBuilder.cs`; `LlmClient`
+  now only maps its transport request into a primitive snapshot before sending. The extracted builder
+  preserves the existing mode-specific fields (`messages` vs `input`, `max_tokens` vs
+  `max_output_tokens`, `reasoning_effort` vs Responses `reasoning`, and the Responses reasoning-token
+  allowance). `DiaryPipelineTests` now covers exact serialized bodies for both compatibility modes,
+  invalid-mode fallback, string escaping, system-prompt trimming, default reasoning omission, and
+  `none` reasoning without token expansion. The Debug DLL was rebuilt; all five pure test projects pass
+  (626 assertions).
+
 - **Event store extracted from `DiaryGameComponent`.** The saved `diaryEvents` list and the O(1)
   id->event lookup index that mirrors it now live in a dedicated `Core/DiaryEventRepository.cs`,
   giving the event store one clear owner. The repository owns `FindEvent`, `Register`, `RemoveEvent`/
