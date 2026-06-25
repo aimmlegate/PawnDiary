@@ -225,7 +225,9 @@ namespace PawnDiary
             return cut >= 0 ? endpointUrl.Substring(0, cut) : endpointUrl;
         }
 
-        private static string OneLine(string value)
+        /// <summary>Collapses whitespace/newlines/tabs to a single trimmed line. Shared so log/status
+        /// trimmers (e.g. ApiConnectionController.TrimForStatus) don't each re-implement it.</summary>
+        internal static string OneLine(string value)
         {
             return (value ?? string.Empty)
                 .Replace('\r', ' ')

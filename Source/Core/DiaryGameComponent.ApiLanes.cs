@@ -39,28 +39,18 @@ namespace PawnDiary
             // recorded meta is the lane that actually produced the initiator's entry).
             if (DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole))
             {
-                string initiatorEndpoint = diaryEvent.initiatorLlmEndpoint;
-                string initiatorModel = diaryEvent.initiatorLlmModel;
-                if (!string.IsNullOrWhiteSpace(initiatorEndpoint) && !string.IsNullOrWhiteSpace(initiatorModel))
+                ApiEndpointConfig pinned = FindPinnableLane(targets, diaryEvent.initiatorLlmEndpoint, diaryEvent.initiatorLlmModel);
+                if (pinned != null)
                 {
-                    foreach (ApiEndpointConfig candidate in targets)
-                    {
-                        if (SameGenerationLane(candidate, initiatorEndpoint, initiatorModel))
-                        {
-                            if (CanUsePinnedLane(targets, candidate))
-                            {
-                                reason = "recipient pinned to initiator lane";
-                                return candidate;
-                            }
+                    reason = "recipient pinned to initiator lane";
+                    return pinned;
+                }
 
-                            LogApiDebug("Recipient pin lane is cooling; using routing mode instead event=" + diaryEvent.eventId + " lane=" + LaneLabel(candidate));
-                            break;
-                        }
-                    }
-
+                if (!string.IsNullOrWhiteSpace(diaryEvent.initiatorLlmEndpoint) && !string.IsNullOrWhiteSpace(diaryEvent.initiatorLlmModel))
+                {
                     LogApiDebug(
                         "Recipient pin missed for event=" + diaryEvent.eventId
-                        + " initiatorLane=" + initiatorModel + " @ " + initiatorEndpoint
+                        + " initiatorLane=" + diaryEvent.initiatorLlmModel + " @ " + diaryEvent.initiatorLlmEndpoint
                         + "; falling back to round-robin");
                 }
             }
@@ -122,6 +112,34 @@ namespace PawnDiary
                 if (SameGenerationLane(candidate, requested, true))
                 {
                     return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the first active lane matching a recorded endpoint+model that is also usable right
+        /// now, so a follow-up request can be pinned to the lane an earlier request in the pair
+        /// already used (recipient entry → initiator's lane; title → the same role's main entry
+        /// lane). This keeps a paired event and its title on one model. Returns the lane when the
+        /// first match is usable; returns null when there is no recorded lane, no match, or the
+        /// matched lane is cooling — in every null case the caller falls back to round-robin. This
+        /// is the single home for the pin-then-fall-back primitive so the two policy sites
+        /// (<see cref="SelectApiTarget"/> and the title queue) cannot drift apart.
+        /// </summary>
+        private static ApiEndpointConfig FindPinnableLane(List<ApiEndpointConfig> targets, string endpointUrl, string modelName)
+        {
+            if (string.IsNullOrWhiteSpace(endpointUrl) || string.IsNullOrWhiteSpace(modelName))
+            {
+                return null;
+            }
+
+            foreach (ApiEndpointConfig candidate in targets)
+            {
+                if (SameGenerationLane(candidate, endpointUrl, modelName))
+                {
+                    return CanUsePinnedLane(targets, candidate) ? candidate : null;
                 }
             }
 

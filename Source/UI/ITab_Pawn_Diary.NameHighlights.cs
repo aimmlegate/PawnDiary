@@ -22,6 +22,10 @@ namespace PawnDiary
         private Pawn cachedNameHighlightsPawn;
         private int cachedNameHighlightsTick = -1;
         private List<DiaryNameHighlight> cachedNameHighlights = new List<DiaryNameHighlight>();
+        // Monotonic version of the highlight set above. Bumped every time a fresh set is built so the
+        // entry-height cache (CachedEntryHeight) can tell when the highlights — which render bold and
+        // can change text wrapping — were rebuilt off the live colony without a render-token change.
+        private int nameHighlightsVersion;
 
         private List<DiaryNameHighlight> NameHighlightsFor(Pawn selectedPawn)
         {
@@ -38,6 +42,8 @@ namespace PawnDiary
             cachedNameHighlightsPawn = selectedPawn;
             cachedNameHighlightsTick = tick;
             cachedNameHighlights = BuildPawnNameHighlights(selectedPawn);
+            // A new set may carry renamed/recolored names; bump so the height cache re-measures once.
+            nameHighlightsVersion++;
             return cachedNameHighlights;
         }
 

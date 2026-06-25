@@ -99,6 +99,9 @@ namespace PawnDiary
         /// <summary>
         /// Removes a single event by id from the list and the index. No-op if the id is blank or not
         /// present. The caller is responsible for scrubbing per-pawn diary references afterwards.
+        /// Uses the O(1) id index to resolve the event (so an absent id short-circuits without
+        /// scanning history and without allocating a predicate closure); the bulk path that may touch
+        /// several ids stays in <see cref="RemoveEvents"/>.
         /// </summary>
         public void RemoveEvent(string eventId)
         {
@@ -107,7 +110,12 @@ namespace PawnDiary
                 return;
             }
 
-            diaryEvents.RemoveAll(e => e != null && e.eventId == eventId);
+            if (!eventsById.TryGetValue(eventId, out DiaryEvent diaryEvent) || diaryEvent == null)
+            {
+                return;
+            }
+
+            diaryEvents.Remove(diaryEvent);
             eventsById.Remove(eventId);
         }
 

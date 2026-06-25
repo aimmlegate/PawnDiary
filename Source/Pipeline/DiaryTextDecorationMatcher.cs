@@ -5,6 +5,7 @@
 // pure console tests and cannot accidentally reach live Pawn, DefDatabase, settings, GUI, or IO state.
 using System;
 using System.Collections.Generic;
+using static PawnDiary.DiaryTextDecorationText;
 
 namespace PawnDiary
 {
@@ -357,11 +358,6 @@ namespace PawnDiary
             return string.Compare(left.decoration, right.decoration, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool KindEquals(string actual, string expected)
-        {
-            return string.Equals(Trim(actual), expected, StringComparison.OrdinalIgnoreCase);
-        }
-
         private static void AddUnique(List<string> values, string value)
         {
             value = Trim(value);
@@ -381,6 +377,9 @@ namespace PawnDiary
             values.Add(value);
         }
 
+        // Trim and KindEquals now live in DiaryTextDecorationText (shared with the rich-text
+        // decorators); see the `using static` at the top of this file.
+
         private static bool HasAny(List<string> values)
         {
             if (values == null)
@@ -397,11 +396,6 @@ namespace PawnDiary
             }
 
             return false;
-        }
-
-        private static string Trim(string value)
-        {
-            return value == null ? string.Empty : value.Trim();
         }
     }
 }

@@ -301,24 +301,11 @@ namespace PawnDiary
             if (target == null)
             {
                 // Pin the title to the same lane the main entry used, when available — keeps a
-                // paired event on one model (recipient title and initiator title both come from
-                // the same lane). Falls back to round-robin for first-time titles on a new role.
-                string mainEndpoint = diaryEvent.LlmEndpointForRole(povRole);
-                string mainModel = diaryEvent.LlmModelForRole(povRole);
-                if (!string.IsNullOrWhiteSpace(mainEndpoint) && !string.IsNullOrWhiteSpace(mainModel))
-                {
-                    foreach (ApiEndpointConfig candidate in targets)
-                    {
-                        if (SameGenerationLane(candidate, mainEndpoint, mainModel))
-                        {
-                            if (CanUsePinnedLane(targets, candidate))
-                            {
-                                target = candidate;
-                            }
-                            break;
-                        }
-                    }
-                }
+                // paired event and its title on one model. Reuses the shared pin primitive so the
+                // title follows the same lane-selection rules as the main entry's recipient pin
+                // (one policy, not two). Falls back to round-robin for first-time titles on a new
+                // role or when the main lane is cooling.
+                target = FindPinnableLane(targets, diaryEvent.LlmEndpointForRole(povRole), diaryEvent.LlmModelForRole(povRole));
 
                 if (target == null)
                 {

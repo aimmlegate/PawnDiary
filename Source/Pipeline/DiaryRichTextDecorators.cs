@@ -4,8 +4,10 @@
 // through unchanged and mutate only visible words/letters, so generated diary text can be styled
 // without corrupting existing UI formatting.
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using static PawnDiary.DiaryTextDecorationText;
 
 namespace PawnDiary
 {
@@ -14,6 +16,21 @@ namespace PawnDiary
     /// </summary>
     internal static class DiaryRichTextDecorators
     {
+        // Maps each decoration-kind id to the transform that renders it. Rule SELECTION is fully
+        // data-driven (XML DiaryTextDecorationDefs, matched generically), so the APPLY side is a
+        // registry too: adding a kind is one entry here instead of a new branch in an if-ladder, and
+        // a kind that gets selected but is not registered is a single lookup miss rather than a silent
+        // fall-through. DiaryTextDecorationDefs surfaces any such gap once, at Def load. The signature
+        // is uniform (rich, intensity, seed, baseFontSize) even though only the staggered sizer uses
+        // baseFontSize, so every applier plugs in the same way.
+        private static readonly Dictionary<string, Func<string, int, int, int, string>> Appliers =
+            new Dictionary<string, Func<string, int, int, int, string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                { DiaryTextDecorationKinds.StaggeredWordSizes, (rich, intensity, seed, baseFontSize) => ApplyStaggeredWordSizes(rich, intensity, seed, baseFontSize) },
+                { DiaryTextDecorationKinds.DimmedWords, (rich, intensity, seed, baseFontSize) => ApplyDimmedWordsToRichText(rich, intensity, seed) },
+                { DiaryTextDecorationKinds.Zalgo, (rich, intensity, seed, baseFontSize) => ApplyZalgoToRichText(rich, intensity, seed) }
+            };
+
         private static readonly char[] ZalgoMarks =
         {
             (char)0x0307, // dot above
@@ -27,6 +44,16 @@ namespace PawnDiary
             (char)0x0315, // comma above right
             (char)0x0336  // long stroke overlay
         };
+
+        /// <summary>
+        /// True when a decoration-kind id has a registered renderer in <see cref="Appliers"/>. The
+        /// impure Def loader (<see cref="DiaryTextDecorationDefs"/>) uses this to warn once about a
+        /// rule whose kind would otherwise be selected but produce no visible effect.
+        /// </summary>
+        internal static bool IsKnownKind(string decoration)
+        {
+            return Appliers.ContainsKey(Trim(decoration));
+        }
 
         internal static string ApplyToRichText(string rich, DiaryTextDecorationPlan plan, int seed, int baseFontSize)
         {
@@ -44,23 +71,15 @@ namespace PawnDiary
                     continue;
                 }
 
+                // Unknown kinds are skipped here; DiaryTextDecorationDefs has already warned about them
+                // at load, so this stays a quiet no-op on the per-frame draw path.
+                if (!Appliers.TryGetValue(Trim(rule.decoration), out Func<string, int, int, int, string> applier))
+                {
+                    continue;
+                }
+
                 int ruleSeed = seed ^ MixHash(rule.sequence, i + 17, rule.intensity);
-                if (KindEquals(rule.decoration, DiaryTextDecorationKinds.StaggeredWordSizes))
-                {
-                    result = ApplyStaggeredWordSizes(result, rule.intensity, ruleSeed, baseFontSize);
-                    continue;
-                }
-
-                if (KindEquals(rule.decoration, DiaryTextDecorationKinds.DimmedWords))
-                {
-                    result = ApplyDimmedWordsToRichText(result, rule.intensity, ruleSeed);
-                    continue;
-                }
-
-                if (KindEquals(rule.decoration, DiaryTextDecorationKinds.Zalgo))
-                {
-                    result = ApplyZalgoToRichText(result, rule.intensity, ruleSeed);
-                }
+                result = applier(result, rule.intensity, ruleSeed, baseFontSize);
             }
 
             return result;
@@ -235,39 +254,14 @@ namespace PawnDiary
             return result.ToString();
         }
 
-        private static bool TryCopyRichTextTag(string rich, ref int index, StringBuilder result)
-        {
-            if (index >= rich.Length || rich[index] != '<')
-            {
-                return false;
-            }
-
-            int tagEnd = rich.IndexOf('>', index);
-            if (tagEnd < 0)
-            {
-                return false;
-            }
-
-            result.Append(rich, index, tagEnd - index + 1);
-            index = tagEnd + 1;
-            return true;
-        }
-
-        private static bool KindEquals(string actual, string expected)
-        {
-            return string.Equals(Trim(actual), expected, StringComparison.OrdinalIgnoreCase);
-        }
+        // Trim, KindEquals, and TryCopyRichTextTag now live in DiaryTextDecorationText (shared with
+        // the rule matcher and the name highlighter); see the `using static` at the top of this file.
 
         private static int ClampIntensity(int intensity)
         {
             if (intensity < 0) return 0;
             if (intensity > 4) return 4;
             return intensity;
-        }
-
-        private static string Trim(string value)
-        {
-            return value == null ? string.Empty : value.Trim();
         }
 
         private static int MixHash(int seed, int wordIndex, int length)

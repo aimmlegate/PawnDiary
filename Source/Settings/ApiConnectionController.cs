@@ -478,22 +478,13 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            value = OneLine(value);
+            value = ApiLaneLabels.OneLine(value);
             return value.Length <= 80 ? value : value.Substring(0, 80) + "...";
         }
 
         private static string TrimForLog(string value)
         {
             return ApiLaneLabels.TrimForLog(value);
-        }
-
-        private static string OneLine(string value)
-        {
-            return (value ?? string.Empty)
-                .Replace('\r', ' ')
-                .Replace('\n', ' ')
-                .Replace('\t', ' ')
-                .Trim();
         }
 
         // Result of one model fetch, handed from the await continuation to the main-thread draw.

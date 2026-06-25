@@ -35,6 +35,7 @@ namespace PawnDiary
                 {
                     cached = DefDatabase<DiaryTextDecorationDef>.GetNamedSilentFail("Diary_TextDecorations");
                     resolved = true;
+                    WarnUnknownDecorationKinds(cached);
                 }
 
                 if (cached != null && cached.rules != null)
@@ -45,6 +46,41 @@ namespace PawnDiary
                 // This getter runs per text block per frame from the diary UI, so build the fallback
                 // list once and reuse it rather than re-allocating every call when the Def is absent.
                 return fallbackCached ?? (fallbackCached = FallbackRules());
+            }
+        }
+
+        // Logs once (at first Def resolution) if the XML declares a decoration kind that has no
+        // registered renderer in DiaryRichTextDecorators. Selection is data-driven, so such a rule
+        // would be matched and sorted but render nothing; surfacing it here turns a silent no-op into
+        // an actionable warning for pack authors. The built-in FallbackRules only use known kinds, so
+        // they never trip this.
+        private static void WarnUnknownDecorationKinds(DiaryTextDecorationDef def)
+        {
+            if (def?.rules == null)
+            {
+                return;
+            }
+
+            HashSet<string> reported = null;
+            for (int i = 0; i < def.rules.Count; i++)
+            {
+                DiaryTextDecorationRule rule = def.rules[i];
+                string kind = rule?.decoration;
+                if (string.IsNullOrWhiteSpace(kind) || DiaryRichTextDecorators.IsKnownKind(kind))
+                {
+                    continue;
+                }
+
+                reported = reported ?? new HashSet<string>();
+                if (reported.Add(kind.Trim()))
+                {
+                    Log.Warning("[PawnDiary] DiaryTextDecorationDef rule uses unknown decoration kind '"
+                        + kind.Trim()
+                        + "'; it will be selected but render nothing. Known kinds: "
+                        + DiaryTextDecorationKinds.StaggeredWordSizes + ", "
+                        + DiaryTextDecorationKinds.DimmedWords + ", "
+                        + DiaryTextDecorationKinds.Zalgo + ".");
+                }
             }
         }
 

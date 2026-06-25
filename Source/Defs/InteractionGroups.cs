@@ -354,35 +354,17 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            if (ContainsDefName(deathVictimInitiatorDefNames, defName))
+            if (InteractionGroups.ContainsDefName(deathVictimInitiatorDefNames, defName))
             {
                 return DiaryEvent.InitiatorRole;
             }
 
-            if (ContainsDefName(deathVictimRecipientDefNames, defName))
+            if (InteractionGroups.ContainsDefName(deathVictimRecipientDefNames, defName))
             {
                 return DiaryEvent.RecipientRole;
             }
 
             return string.Empty;
-        }
-
-        private static bool ContainsDefName(List<string> defNames, string defName)
-        {
-            if (defNames == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < defNames.Count; i++)
-            {
-                if (string.Equals(defNames[i], defName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 
@@ -693,6 +675,28 @@ namespace PawnDiary
             }
 
             return InstructionForGroup(ClassifyQuest(signal));
+        }
+
+        // Case-insensitive exact defName membership shared across impure classifiers
+        // (DiaryInteractionGroupDef.DeathVictimRoleFor, MoodImpactClassifier's known-condition
+        // fallbacks). Null/empty defName and null/empty list never match. Promoted here so the
+        // Ordinal-IgnoreCase scan has one home instead of being re-implemented per caller.
+        internal static bool ContainsDefName(List<string> defNames, string defName)
+        {
+            if (string.IsNullOrEmpty(defName) || defNames == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < defNames.Count; i++)
+            {
+                if (string.Equals(defNames[i], defName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

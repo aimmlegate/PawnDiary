@@ -6,6 +6,28 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Post-refactor review fixes (correctness + dedup).** A focused review of the refactor landed
+  seven fixes and deferred two larger design items. **Card height cache** (`ITab_Pawn_Diary`) now
+  invalidates on the name-highlight set version too, so a colonist rename/death/relationship change
+  while a diary card is open re-measures it instead of drawing clipped or gapped until the next diary
+  state change (the real correctness bug). **Text decoration apply** (`DiaryRichTextDecorators`) is
+  now a decoration-kind→applier registry instead of an `if`-ladder, with `DiaryTextDecorationDef`
+  validating each kind once at Def-load (an unknown `decoration` from a mod now logs a warning
+  instead of silently no-op'ing). **API lane pinning** has one shared primitive
+  (`FindPinnableLane`) used by both the main entry's recipient-pin and the title-queue pin, so the
+  two policy sites can't drift. Mechanical dedup: `DiaryEventRepository.RemoveEvent` resolves via
+  the O(1) id index instead of a `RemoveAll` scan (and skips absent ids without allocating);
+  `InteractionGroups.ContainsDefName` is now the single shared defName-membership scan (used by
+  `MoodImpactClassifier` too); `ApiLaneLabels.OneLine` is the single shared whitespace-collapse
+  helper (used by `ApiConnectionController.TrimForStatus` too); and the split decoration helpers
+  share `DiaryTextDecorationText` instead of three private copies of tag/kind/trim helpers. Pure
+  tests pass (260 assertions across the three projects); Debug DLL rebuilt. Behavior and save shape
+  are unchanged. Two 🟠 design items were assessed and deferred with rationale: the `PovSlot` facade
+  property collapse (a 51-property internal-API migration on a save-adjacent model, best as a
+  dedicated focused change) and threading transport config through the dispatch DTO (the dispatch
+  methods are the SKILL.md-sanctioned place for settings reads and are not unit-testable in
+  isolation, so the cited benefit needs a far larger refactor).
+
 - **`DiaryEvent` per-POV duplication collapsed into `PovSlot` slots.** The three triplicated
   initiator/recipient/neutral field families and their ~20 three-way `if initiator / if recipient /
   else neutral` accessor ladders are gone. Per-POV state now lives in three `PovSlot` value-typed

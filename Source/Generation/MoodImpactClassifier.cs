@@ -210,7 +210,7 @@ namespace PawnDiary
         // condition simply never appears without its DLC. See AGENTS.md ("DLC-safety").
         private static bool IsKnownPositiveCondition(string defName)
         {
-            return DefNameListContains(DiaryTuning.Current.positiveMoodConditionDefNames, defName);
+            return InteractionGroups.ContainsDefName(DiaryTuning.Current.positiveMoodConditionDefNames, defName);
         }
 
         // Known GameConditionDefs that are always negative for affected colonists. Excludes condition
@@ -218,27 +218,7 @@ namespace PawnDiary
         // DiaryTuningDef.negativeMoodConditionDefNames.
         private static bool IsKnownNegativeCondition(string defName)
         {
-            return DefNameListContains(DiaryTuning.Current.negativeMoodConditionDefNames, defName);
-        }
-
-        // Case-insensitive exact defName membership used by the mood-condition fallbacks above.
-        // Null/empty defName never matches; a null/empty list never matches.
-        private static bool DefNameListContains(List<string> defNames, string defName)
-        {
-            if (string.IsNullOrEmpty(defName) || defNames == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < defNames.Count; i++)
-            {
-                if (string.Equals(defNames[i], defName, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return InteractionGroups.ContainsDefName(DiaryTuning.Current.negativeMoodConditionDefNames, defName);
         }
     }
 }

@@ -33,13 +33,17 @@ namespace PawnDiary
         // Cached full (expanded) card heights keyed by entry key, reused across draw frames so the
         // measure pass does not recompute wrapped-text height for every expanded card ~60x/second.
         // Cleared wholesale on anything that can alter a card's height: a new render token (entry
-        // text/status changed anywhere, since the version is global), a different card width, or the
-        // debug-info toggle flipping. Collapsed cards never enter this cache; they use the constant
-        // CollapsedEntryHeight directly.
+        // text/status changed anywhere, since the version is global), a different card width, the
+        // debug-info toggle flipping, or a new name-highlight set. The highlight set matters because
+        // highlighted names render bold (<b>…</b>), which widens glyphs and can change where the body
+        // text wraps; it is rebuilt off the live colony on its own tick cadence (NameHighlightsFor),
+        // independent of the render token, so it gets its own version guard. Collapsed cards never
+        // enter this cache; they use the constant CollapsedEntryHeight directly.
         private readonly Dictionary<string, float> entryHeightCache = new Dictionary<string, float>();
         private float entryHeightCacheWidth = -1f;
         private bool entryHeightCacheShowDebug;
         private DiaryRenderToken entryHeightCacheToken;
+        private int entryHeightCacheHighlightVersion = -1;
 
         // Diary tab presentation values are XML-backed via DiaryUiStyleDef. These accessors keep the
         // drawing code readable while letting modders retune spacing/colors without recompiling.
@@ -561,8 +565,10 @@ namespace PawnDiary
         /// reusing the result across draw frames. Finished entry text is stable, so re-measuring
         /// every expanded card 60x/second while the tab is open is pure waste once it has been laid
         /// out. The cache is dropped wholesale whenever something that can change a card's height
-        /// changes: the pawn's render token (entry text/status), the card width, or the debug-info
-        /// toggle. Collapsed cards bypass this entirely via the constant CollapsedEntryHeight.
+        /// changes: the pawn's render token (entry text/status), the card width, the debug-info
+        /// toggle, or the name-highlight set (bold highlight markup can change text wrapping, and the
+        /// highlight set changes off the live colony without bumping the render token). Collapsed
+        /// cards bypass this entirely via the constant CollapsedEntryHeight.
         /// </summary>
         private float CachedEntryHeight(
             DiaryEntryView entry,
@@ -574,11 +580,13 @@ namespace PawnDiary
         {
             if (width != entryHeightCacheWidth
                 || showLlmDebugInfo != entryHeightCacheShowDebug
+                || nameHighlightsVersion != entryHeightCacheHighlightVersion
                 || !token.Equals(entryHeightCacheToken))
             {
                 entryHeightCache.Clear();
                 entryHeightCacheWidth = width;
                 entryHeightCacheShowDebug = showLlmDebugInfo;
+                entryHeightCacheHighlightVersion = nameHighlightsVersion;
                 entryHeightCacheToken = token;
             }
 

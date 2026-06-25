@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static PawnDiary.DiaryTextDecorationText;
 
 namespace PawnDiary
 {
@@ -159,23 +160,8 @@ namespace PawnDiary
             result.Append("</b></color>");
         }
 
-        private static bool TryCopyRichTextTag(string rich, ref int index, StringBuilder result)
-        {
-            if (index >= rich.Length || rich[index] != '<')
-            {
-                return false;
-            }
-
-            int tagEnd = rich.IndexOf('>', index);
-            if (tagEnd < 0)
-            {
-                return false;
-            }
-
-            result.Append(rich, index, tagEnd - index + 1);
-            index = tagEnd + 1;
-            return true;
-        }
+        // TryCopyRichTextTag now lives in DiaryTextDecorationText (shared with the decoration
+        // pipeline); see the `using static` at the top of this file.
 
         private static bool BoundaryBefore(string text, int index)
         {

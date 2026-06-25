@@ -402,9 +402,12 @@ for prompt-only cards, else generated text).
 
 The tab redraws every frame (RimWorld immediate-mode UI), so long histories are kept cheap with two
 guards in `FillTab`: expanded-card heights are measured once and cached by entry key (cleared when
-the pawn render token, card width, or debug toggle changes), and the draw pass **viewport-culls** —
-cards whose row is entirely above or below the visible scroll slice are skipped, so a year page with
-hundreds of entries only measures/renders the handful on screen rather than the whole page.
+the pawn render token, card width, debug toggle, **or name-highlight set version** changes — the
+highlight version is bumped whenever the colony pawn-name/color set is rebuilt, so a rename, death,
+or relationship flip re-measures an open card whose highlighted rich text otherwise re-wraps), and
+the draw pass **viewport-culls** — cards whose row is entirely above or below the visible scroll
+slice are skipped, so a year page with hundreds of entries only measures/renders the handful on
+screen rather than the whole page.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
@@ -414,7 +417,12 @@ cues add stronger page washes and header rules; generated text is never mutated 
 `DiaryTextDecorations` facade delegates to focused pure helpers: `DiaryTextDecorationContracts` for
 DTOs/constants, `DiaryTextDecorationMatcher` for XML rule selection and context matching,
 `DiaryTextDecorationFactCodec` for saved hediff/trait snapshots, and `DiaryRichTextDecorators` for
-tag-preserving text mutation. The same `Diary_TextDecorations` `StaggeredWordSizes` rule list is also
+tag-preserving text mutation. Rule *selection* and rich-text *application* are both data-driven: the
+renderer maps each decoration kind to its applier through a kind→applier registry (not an `if`
+ladder), so an unknown `decoration` value from a mod XML is reported once at Def-load time via
+`DiaryTextDecorationDef` instead of silently no-op'ing. Shared pure text helpers
+(`DiaryTextDecorationText`) back both the matcher and the rich-text decorators so tag handling and
+kind/trim comparisons can't drift between them. The same `Diary_TextDecorations` `StaggeredWordSizes` rule list is also
 the single source of truth for which hediffs count as intoxicating at capture time (via
 `DiaryTextDecorations.HediffMatchesStaggeredRules`), so modders/DLCs extend the set by editing XML — no
 parallel hardcoded keyword list. Live humanlike pawn names in prose are highlighted — colonists use
