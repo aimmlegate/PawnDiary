@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Diary tab visible-entry cache extracted.** `ITab_Pawn_Diary` now delegates raw entry reuse,
+  dev-filtered visibility, year pages, transient formatting preview insertion, generating counts, and
+  selected-year ordering to a dedicated UI-layer `DiaryTabVisibleEntriesCache`. Card measurement and
+  rendering stay in the tab partials, and behavior/save data are unchanged.
+
 - **`DiaryTextDecorations` split behind a facade.** The stable public `DiaryTextDecorations` API now
   delegates to focused pure helpers: `DiaryTextDecorationContracts` (DTOs/constants),
   `DiaryTextDecorationMatcher` (rule selection, condition matching, context tags),

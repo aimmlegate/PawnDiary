@@ -68,7 +68,7 @@ Key files:
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
 | `Generation/LlmClient.cs`, `Pipeline/LlmRequestJsonBuilder.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency, pure request body serialization, and pure provider response parsing. |
 | `Settings/PawnDiaryMod*.cs`, `ApiConnectionController.cs`, `PawnDiarySettings.cs`, `PersonaPresetStore.cs`, `PromptOverrideDictionary.cs` | Settings entry point, split settings UI sections, settings-window API fetch/test controller, saved settings data (connection, generation, system-prompt overrides), the writing-style (persona) preset catalog store, and the reusable per-key event-prompt override map. |
-| `UI/ITab_Pawn_Diary*.cs`, `DiaryTextFormat.cs` | Hidden Diary inspect tab, cards, paging, debug controls, safe rich-text formatting. |
+| `UI/ITab_Pawn_Diary*.cs`, `UI/DiaryTabVisibleEntriesCache.cs`, `DiaryTextFormat.cs` | Hidden Diary inspect tab, its pawn/render-token visible-entry cache, cards, paging, debug controls, safe rich-text formatting. |
 | `Util/MiniJson.cs` | Runtime-safe JSON parser; do not add external JSON dependencies. |
 
 ---
@@ -369,8 +369,10 @@ Social-log diary links and linked-POV navigation open the same tab in either mod
 
 The Diary UI shows completed pages in production. Dev mode adds generation enablement, writing-style
 picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient
-formatting previews, and mock-page fill. Histories page by in-game year. Cards show date/title,
-accent, group chip, model id, linked POV previews, and title-pending animation.
+formatting previews, and mock-page fill. `DiaryTabVisibleEntriesCache` owns the tab's impure
+pawn/render-token entry cache, visible-entry filters, year pages, and selected-year ordering so
+`FillTab` can stay focused on immediate-mode layout and drawing. Histories page by in-game year. Cards
+show date/title, accent, group chip, model id, linked POV previews, and title-pending animation.
 
 The dev-mode **Prompt suite** button opens a data-driven dropdown of event categories (driven by
 `DiaryGameComponent.AllSuiteEntries`, so new categories auto-appear). Picking one deletes any prior

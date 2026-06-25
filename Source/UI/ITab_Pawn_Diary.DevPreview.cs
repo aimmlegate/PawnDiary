@@ -33,7 +33,6 @@ namespace PawnDiary
         // The currently selected transient preview. It is UI state only: no DiaryEvent is registered
         // and nothing is saved, so closing the tab/game drops it.
         private DevDiaryPreviewKind devPreviewKind = DevDiaryPreviewKind.None;
-        private DevDiaryPreviewKind cachedVisiblePreviewKind = DevDiaryPreviewKind.None;
 
         /// <summary>
         /// Draws compact dev-mode text buttons that switch the transient formatting preview.
@@ -128,27 +127,12 @@ namespace PawnDiary
             GUI.enabled = oldEnabled;
         }
 
-        /// <summary>
-        /// Inserts the transient preview into the visible entry cache before real saved entries.
-        /// </summary>
-        private void AddDevPreviewEntryIfNeeded(List<DiaryEntryView> entries, List<int> years, Pawn pawn)
-        {
-            if (devPreviewKind == DevDiaryPreviewKind.None || entries == null || years == null)
-            {
-                return;
-            }
-
-            DiaryEntryView preview = BuildDevPreviewEntry(pawn, devPreviewKind);
-            entries.Add(preview);
-            AddYearIfMissing(years, EntryYear(preview));
-        }
-
         private void SetDevPreviewKind(DevDiaryPreviewKind kind, Pawn pawn)
         {
             devPreviewKind = kind;
             yearFilterPawnId = null;
             scrollPosition.y = 0f;
-            cachedOrderedVisibleRevision = -1;
+            visibleEntriesCache.InvalidateOrdering();
 
             if (kind != DevDiaryPreviewKind.None)
             {

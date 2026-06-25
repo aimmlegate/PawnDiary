@@ -592,6 +592,13 @@ Docs:
 
 Priority: Low
 
+Status: Resolved 2026-06-25. Extracted the first cache slice into
+`Source/UI/DiaryTabVisibleEntriesCache.cs`, a UI-layer helper owned by the tab that stores live pawn /
+render-token state, visible-entry filters, year pages, transient dev previews, generating counts, and
+per-year ordering. `FillTab` now asks that helper for raw entries, visible entries, years, and ordered
+pages while keeping measurement and drawing local. Behavior and save data are unchanged; no pure test
+applies because the helper stores live `Pawn` references and uses RimWorld UI state.
+
 Evidence:
 - `Source/UI/ITab_Pawn_Diary.cs:22-36` caches.
 - `:56` style accessors.
