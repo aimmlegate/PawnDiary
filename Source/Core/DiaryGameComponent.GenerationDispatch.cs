@@ -52,7 +52,10 @@ namespace PawnDiary
             string capturedPrompt = DiaryPromptCapture.Format(promptPlan.systemPrompt, rawText);
             diaryEvent.SetPrompt(povRole, PromptTestModeEnabled() ? capturedPrompt : rawText);
 
-            if (PawnDiaryMod.Settings == null)
+            // Fetch settings once into a local so the method operates on one consistent snapshot
+            // (matching QueueTitleRequest) instead of reaching the global static at every step.
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            if (settings == null)
             {
                 diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoLlmSettings".Translate());
                 return;
@@ -69,8 +72,8 @@ namespace PawnDiary
             // Pick which configured API lane handles this request. New events spread across all
             // lanes (parallelism); the recipient half of a paired event reuses the initiator's lane
             // so a sequential pair stays on one model.
-            List<ApiEndpointConfig> targets = PawnDiaryMod.Settings.ActiveEndpoints();
-            LogApiLaneConfiguration(PawnDiaryMod.Settings, targets);
+            List<ApiEndpointConfig> targets = settings.ActiveEndpoints();
+            LogApiLaneConfiguration(settings, targets);
             if (targets.Count == 0)
             {
                 diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoApiConfigured".Translate());
@@ -78,7 +81,7 @@ namespace PawnDiary
             }
 
             string selectionReason;
-            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride, PawnDiaryMod.Settings.apiRoutingMode, out selectionReason);
+            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride, settings.apiRoutingMode, out selectionReason);
             List<ApiEndpointConfig> failoverTargets = BuildFailoverTargets(targets, target);
             LogApiDebug(
                 "Queue event=" + diaryEvent.eventId
@@ -91,7 +94,7 @@ namespace PawnDiary
             diaryEvent.MarkQueued(povRole);
 
             DiaryResponseRules responseRules = promptPlan.responseRules
-                ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, false, PawnDiaryMod.Settings.maxTokens);
+                ?? DiaryResponseRules.ForRequest(diaryEvent.eventId, povRole, false, settings.maxTokens);
             if (string.IsNullOrWhiteSpace(responseRules.eventId))
             {
                 responseRules.eventId = diaryEvent.eventId;
@@ -100,7 +103,7 @@ namespace PawnDiary
             responseRules.isTitle = false;
             if (responseRules.maxTokens <= 0)
             {
-                responseRules.maxTokens = PawnDiaryMod.Settings.maxTokens;
+                responseRules.maxTokens = settings.maxTokens;
             }
 
             LlmClient.Enqueue(new LlmGenerationRequest
@@ -120,9 +123,9 @@ namespace PawnDiary
                 reasoningEffort = target.reasoningEffort,
                 // The other configured lanes, tried in order if this one errors ("use next model").
                 failoverTargets = failoverTargets,
-                timeoutSeconds = PawnDiaryMod.Settings.timeoutSeconds,
-                maxTokens = PawnDiaryMod.Settings.maxTokens,
-                temperature = PawnDiaryMod.Settings.temperature,
+                timeoutSeconds = settings.timeoutSeconds,
+                maxTokens = settings.maxTokens,
+                temperature = settings.temperature,
                 responseRules = responseRules
             });
         }

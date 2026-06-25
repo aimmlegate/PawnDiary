@@ -26,7 +26,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   property collapse (a 51-property internal-API migration on a save-adjacent model, best as a
   dedicated focused change) and threading transport config through the dispatch DTO (the dispatch
   methods are the SKILL.md-sanctioned place for settings reads and are not unit-testable in
-  isolation, so the cited benefit needs a far larger refactor).
+  isolation, so the cited benefit needs a far larger refactor). As a light, low-risk slice of the
+  latter, `QueuePrompt` now fetches `PawnDiaryMod.Settings` once into a local (matching the
+  existing `QueueTitleRequest` pattern) instead of reaching the global static ~10 times per
+  dispatch; behavior is unchanged.
 
 - **`DiaryEvent` per-POV duplication collapsed into `PovSlot` slots.** The three triplicated
   initiator/recipient/neutral field families and their ~20 three-way `if initiator / if recipient /
