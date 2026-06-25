@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Localized colony name moved off the saved model.** `DiaryEvent.NameForRole` — which reached
+  `.Translate()` to render the neutral/colony POV name — is removed. Its sole caller, the adapter's
+  pair direct-speech instruction builder (`DiaryPipelineAdapters.DirectSpeechInstructionFor`), now
+  picks the saved initiator/recipient name itself and falls back to the localized
+  `PawnDiary.Prompt.Colony` label for neutral, matching the colony-name handling already used
+  elsewhere in the adapter. Direct-speech prompt text is byte-for-byte unchanged; the persisted
+  model no longer touches localization, restoring the pure/impure boundary.
 - **Prompt instruction resolution moved off the settings save DTO.** The `InstructionFor*` family
   (classify a Def/signal into its group, then roll one `instructions` variant at capture) no longer
   lives on `PawnDiarySettings` — it is now static on `InteractionGroups`, beside `Classify*`. These

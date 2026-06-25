@@ -352,7 +352,12 @@ namespace PawnDiary
             }
 
             bool isInitiator = string.Equals(povRole, DiaryPipelineRoles.Initiator, StringComparison.OrdinalIgnoreCase);
-            string povName = diaryEvent.NameForRole(povRole);
+            bool isRecipient = string.Equals(povRole, DiaryPipelineRoles.Recipient, StringComparison.OrdinalIgnoreCase);
+            // The persisted model no longer resolves localized names: pick the saved
+            // initiator/recipient name here and fall back to the localized colony label for neutral.
+            string povName = isInitiator ? diaryEvent.initiatorName
+                : isRecipient ? diaryEvent.recipientName
+                : "PawnDiary.Prompt.Colony".Translate().Resolve();
             string otherName = isInitiator ? diaryEvent.recipientName : diaryEvent.initiatorName;
             string key = isInitiator
                 ? "PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator"

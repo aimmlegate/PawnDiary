@@ -1072,24 +1072,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the display name for the given role, or "colony" for neutral.
-        /// </summary>
-        public string NameForRole(string povRole)
-        {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorName;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientName;
-            }
-
-            return "PawnDiary.Prompt.Colony".Translate();
-        }
-
-        /// <summary>
         /// Returns the surroundings description for the given role (defaults to initiator's surroundings for neutral).
         /// </summary>
         public string SurroundingsForRole(string povRole)

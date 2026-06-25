@@ -21,7 +21,7 @@ Use this as a planning document, not as a mandate to do every refactor at once. 
 ## Recommended Run Order
 
 1. API lane identity/labels: highest dedup value, low behavior risk.
-2. Barrier fixes: ~~`PawnFactCapture`~~ (done), ~~`InstructionFor*` off settings DTO~~ (done), `NameForRole` localization move.
+2. Barrier fixes: ~~`PawnFactCapture`~~ (done), ~~`InstructionFor*` off settings DTO~~ (done), ~~`NameForRole` localization move~~ (done).
 3. Tunables to XML: intoxication, consciousness thresholds, mood condition families.
 4. `DiaryContextBuilder` split.
 5. `PawnDiaryMod` settings UI/async split.
@@ -165,6 +165,15 @@ Docs:
 ## Run Card 4: Move `DiaryEvent.NameForRole` Localization To Adapter
 
 Priority: Low
+
+Status: Resolved 2026-06-25. `DiaryEvent.NameForRole` (which called `.Translate()` for the
+neutral/colony POV) was deleted; its sole caller, the adapter's
+`DiaryPipelineAdapters.DirectSpeechInstructionFor`, now resolves the saved initiator/recipient
+name inline and falls back to `"PawnDiary.Prompt.Colony".Translate().Resolve()` for neutral —
+matching the colony-name handling already used by `ToPayload`. Role comparison is unchanged
+(`RoleEquals` and the adapter's existing check are both `string.Equals(..., OrdinalIgnoreCase)`),
+direct-speech prompt text is unchanged, the Debug DLL was rebuilt, and no pure test applies (the
+touched code is impure and `NameForRole` was never pure-testable).
 
 Evidence:
 - `Source/Models/DiaryEvent.cs:1089` calls `.Translate()`.
