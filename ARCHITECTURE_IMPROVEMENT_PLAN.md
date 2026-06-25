@@ -203,6 +203,23 @@ Docs:
 
 Priority: High
 
+Status: Resolved 2026-06-25. Three pockets of hardcoded feature policy moved to XML with the
+original values as code fallbacks. The first-person Consciousness gate
+(`DiaryTuningDef.minimumConsciousnessForFirstPersonGeneration`, default 0.11) and the 0..4
+display-staggering intensity thresholds for low Consciousness and intoxication severity are now
+`DiaryTuningDef` fields (read via `DiaryTuning.Current` in `PawnFactCapture` and
+`DiaryGameComponent.Generation`). The positive/negative mood-impact `GameCondition` defName families
+are now `DiaryTuningDef.positiveMoodConditionDefNames` / `negativeMoodConditionDefNames`, read by
+`DiaryContextBuilder.IsKnownPositiveCondition` / `IsKnownNegativeCondition` through a shared
+case-insensitive exact-match helper. Capture-time intoxication detection no longer keeps a parallel
+keyword list: `PawnFactCapture.IsIntoxicatingHediff` builds a hediff fact and reuses the same
+`Diary_TextDecorations` `StaggeredWordSizes` rule list as render-time decoration, via a new pure
+`DiaryTextDecorations.HediffMatchesStaggeredRules` (robust to partially-populated modder rules: an
+unset name list contributes nothing rather than matching everything). The decoration rule's label
+list gains `hangover` (XML + C# fallback) to preserve alcohol-withdrawal coverage. `DiaryTuningDef.xml`
+ships the matching values; a new `DiaryTextDecorationTests` case covers the helper; the Debug DLL was
+rebuilt; all five pure test projects pass (609 assertions). No save-format, DLC, or localization change.
+
 Evidence:
 - `Source/Models/DiaryEvent.cs:1327-1338` hardcoded intoxication keyword list.
 - `Source/Models/DiaryEvent.cs:1271-1289` display staggering thresholds.

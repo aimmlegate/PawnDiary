@@ -107,23 +107,26 @@ namespace PawnDiary
                 return 0;
             }
 
+            // Thresholds are XML-tuned (DiaryTuningDef). First band the level falls into wins,
+            // checked 4 -> 1; otherwise the pawn writes normally.
             float consciousness = pawn.health.capacities.GetLevel(PawnCapacityDefOf.Consciousness);
-            if (consciousness < 0.14f)
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            if (consciousness < tuning.staggeredConsciousnessIntensity4Below)
             {
                 return 4;
             }
 
-            if (consciousness < 0.20f)
+            if (consciousness < tuning.staggeredConsciousnessIntensity3Below)
             {
                 return 3;
             }
 
-            if (consciousness < 0.35f)
+            if (consciousness < tuning.staggeredConsciousnessIntensity2Below)
             {
                 return 2;
             }
 
-            if (consciousness < 0.55f)
+            if (consciousness < tuning.staggeredConsciousnessIntensity1Below)
             {
                 return 1;
             }
@@ -154,6 +157,10 @@ namespace PawnDiary
             return intensity;
         }
 
+        // An intoxicating hediff is whatever the XML text-decoration rules classify as
+        // StaggeredWordSizes (see Diary_TextDecorations). Routing through that rule list keeps a
+        // single data-owned source of truth for "which hediffs distort speech" and lets modders/DLCs
+        // extend the set without a code change. See AGENTS.md ("DLC-safety"/string matchers).
         private static bool IsIntoxicatingHediff(Hediff hediff)
         {
             if (hediff == null || !hediff.Visible)
@@ -161,41 +168,37 @@ namespace PawnDiary
                 return false;
             }
 
-            string defName = hediff.def?.defName ?? string.Empty;
-            string label = hediff.Label ?? string.Empty;
-            string text = (defName + " " + label).ToLowerInvariant();
-            return text.Contains("drunk")
-                || text.Contains("alcohol")
-                || text.Contains("hangover")
-                || text.Contains("smokeleaf")
-                || text.Contains("psychite")
-                || text.Contains("yayo")
-                || text.Contains("flake")
-                || text.Contains("gojuice")
-                || text.Contains("go-juice")
-                || text.Contains("wake-up")
-                || text.Contains("wakeup")
-                || defName.EndsWith("High", StringComparison.OrdinalIgnoreCase);
+            DiaryTextDecorationHediffFact fact = new DiaryTextDecorationHediffFact
+            {
+                defName = hediff.def?.defName ?? string.Empty,
+                label = hediff.Label ?? string.Empty,
+                severity = hediff.Severity,
+                visible = hediff.Visible
+            };
+            return DiaryTextDecorations.HediffMatchesStaggeredRules(DiaryTextDecorationDefs.CurrentRules, fact);
         }
 
         private static int IntoxicationSeverityToIntensity(float severity)
         {
-            if (severity >= 1.05f)
+            // Thresholds are XML-tuned (DiaryTuningDef). First band the severity reaches wins,
+            // checked 4 -> 1; otherwise the hediff is too mild to distort.
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            if (severity >= tuning.intoxicationSeverityIntensity4At)
             {
                 return 4;
             }
 
-            if (severity >= 0.80f)
+            if (severity >= tuning.intoxicationSeverityIntensity3At)
             {
                 return 3;
             }
 
-            if (severity >= 0.55f)
+            if (severity >= tuning.intoxicationSeverityIntensity2At)
             {
                 return 2;
             }
 
-            if (severity >= 0.30f)
+            if (severity >= tuning.intoxicationSeverityIntensity1At)
             {
                 return 1;
             }

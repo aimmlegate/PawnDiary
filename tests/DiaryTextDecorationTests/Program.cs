@@ -22,6 +22,7 @@ namespace DiaryTextDecorationTests
             TestNameHighlighterRespectsBoundariesAndLongestName();
             TestPawnFactSerializationRoundTrip();
             TestEventTagsFromContext();
+            TestIntoxicationHediffReusesStaggeredRules();
 
             Console.WriteLine("DiaryTextDecorationTests passed " + assertions + " assertions.");
             return 0;
@@ -319,6 +320,76 @@ namespace DiaryTextDecorationTests
             AssertTrue("context tag key value", context.eventTags.Contains("mood_event=Aurora"));
             AssertTrue("context tag bare value", context.eventTags.Contains("lonely_tag"));
             AssertEqual("shared context value", "Aurora", DiaryTextDecorations.ContextValue(gameContext, "mood_event"));
+        }
+
+        // Capture-time intoxication detection now routes through the same XML-owned matcher list as
+        // render-time decoration (HediffMatchesStaggeredRules), instead of a parallel hardcoded
+        // keyword list. This mirrors the production Diary_TextDecorations staggered rule shape.
+        private static void TestIntoxicationHediffReusesStaggeredRules()
+        {
+            DiaryTextDecorationRule staggeredRule = new DiaryTextDecorationRule
+            {
+                decoration = DiaryTextDecorationKinds.StaggeredWordSizes,
+                scope = DiaryTextDecorationScopes.DirectSpeech,
+                enabled = true,
+                when = new DiaryTextDecorationCondition
+                {
+                    anyHediffDefName = new List<string> { "AlcoholHigh" },
+                    anyHediffLabelContains = new List<string> { "drunk", "hangover" }
+                }
+            };
+            // An unrelated non-stagger rule must not classify a hediff as intoxicating.
+            DiaryTextDecorationRule dimmedRule = new DiaryTextDecorationRule
+            {
+                decoration = DiaryTextDecorationKinds.DimmedWords,
+                enabled = true,
+                when = new DiaryTextDecorationCondition
+                {
+                    anyHediffLabelContains = new List<string> { "drunk" }
+                }
+            };
+            List<DiaryTextDecorationRule> rules = new List<DiaryTextDecorationRule> { staggeredRule, dimmedRule };
+
+            // Matched by exact defName.
+            AssertTrue("defName match intoxicated",
+                DiaryTextDecorations.HediffMatchesStaggeredRules(rules, new DiaryTextDecorationHediffFact
+                {
+                    defName = "AlcoholHigh",
+                    label = "alcohol",
+                    visible = true
+                }));
+            // Matched case-insensitively by label substring (hangover / drunk).
+            AssertTrue("label contains hangover",
+                DiaryTextDecorations.HediffMatchesStaggeredRules(rules, new DiaryTextDecorationHediffFact
+                {
+                    defName = "AlcoholHangover",
+                    label = "alcohol hangover",
+                    visible = true
+                }));
+            // A non-intoxicating hediff does not match.
+            AssertTrue("flu not intoxicated",
+                !DiaryTextDecorations.HediffMatchesStaggeredRules(rules, new DiaryTextDecorationHediffFact
+                {
+                    defName = "Flu",
+                    label = "flu",
+                    visible = true
+                }));
+            // A hidden hediff never matches even if its name would.
+            AssertTrue("hidden hediff ignored",
+                !DiaryTextDecorations.HediffMatchesStaggeredRules(rules, new DiaryTextDecorationHediffFact
+                {
+                    defName = "AlcoholHigh",
+                    label = "drunk",
+                    visible = false
+                }));
+            // The DimmedWords rule's "drunk" matcher must not bleed into intoxication classification.
+            AssertTrue("dimmed-only rule not intoxicating",
+                !DiaryTextDecorations.HediffMatchesStaggeredRules(new List<DiaryTextDecorationRule> { dimmedRule },
+                    new DiaryTextDecorationHediffFact { defName = "X", label = "drunk", visible = true }));
+            // Null/empty inputs are safe.
+            AssertTrue("null rules safe", !DiaryTextDecorations.HediffMatchesStaggeredRules(null,
+                new DiaryTextDecorationHediffFact { defName = "AlcoholHigh", visible = true }));
+            AssertTrue("null fact safe", !DiaryTextDecorations.HediffMatchesStaggeredRules(rules, null));
         }
 
         private static int CountCombiningMarks(string text)

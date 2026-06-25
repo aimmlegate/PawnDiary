@@ -100,6 +100,45 @@
     <bleedVisibleAbove>0.01</bleedVisibleAbove>
     <lowCapacityThreshold>0.80</lowCapacityThreshold>
 
+    <!-- Consciousness: first-person generation gate. Pawns below this level still record events,
+         but non-neutral LLM generation waits until they are conscious enough again. Separate from
+         the display-staggering thresholds below (this is about authorship, not typography). -->
+    <minimumConsciousnessForFirstPersonGeneration>0.11</minimumConsciousnessForFirstPersonGeneration>
+
+    <!-- Display staggering: low-consciousness handwriting distortion (0..4 intensity). A pawn whose
+         Consciousness level is below a band gets at least that intensity; the first matching band
+         wins (checked 4 -> 1). -->
+    <staggeredConsciousnessIntensity4Below>0.14</staggeredConsciousnessIntensity4Below>
+    <staggeredConsciousnessIntensity3Below>0.20</staggeredConsciousnessIntensity3Below>
+    <staggeredConsciousnessIntensity2Below>0.35</staggeredConsciousnessIntensity2Below>
+    <staggeredConsciousnessIntensity1Below>0.55</staggeredConsciousnessIntensity1Below>
+
+    <!-- Display staggering: intoxication severity distortion (0..4 intensity). Driven by an
+         intoxicating hediff's severity; which hediffs count as intoxicating is owned by the
+         Diary_TextDecorations rules. The first band the severity reaches wins (checked 4 -> 1). -->
+    <intoxicationSeverityIntensity4At>1.05</intoxicationSeverityIntensity4At>
+    <intoxicationSeverityIntensity3At>0.80</intoxicationSeverityIntensity3At>
+    <intoxicationSeverityIntensity2At>0.55</intoxicationSeverityIntensity2At>
+    <intoxicationSeverityIntensity1At>0.30</intoxicationSeverityIntensity1At>
+
+    <!-- Mood-impact condition families. GameCondition defNames that are always positive (or always
+         negative) for affected colonists, used as the name-based fallback when a condition has no
+         measurable mood offset. Matched case-insensitively by exact defName. Plain strings only;
+         a DLC-only entry (e.g. GrayPall) is inert without its DLC. -->
+    <positiveMoodConditionDefNames>
+      <li>Aurora</li>
+      <li>Party</li>
+      <li>PsychicSoothe</li>
+      <li>PsychicEmanation</li>
+    </positiveMoodConditionDefNames>
+    <negativeMoodConditionDefNames>
+      <li>Eclipse</li>
+      <li>ToxicFallout</li>
+      <li>VolcanicWinter</li>
+      <li>Flashstorm</li>
+      <li>GrayPall</li>
+    </negativeMoodConditionDefNames>
+
     <!-- Misc -->
     <diaryLineMaxChars>160</diaryLineMaxChars>
     <!-- Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can

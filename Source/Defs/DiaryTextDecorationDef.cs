@@ -88,6 +88,7 @@ namespace PawnDiary
                         {
                             "drunk",
                             "alcohol",
+                            "hangover",
                             "smokeleaf",
                             "psychite",
                             "yayo",

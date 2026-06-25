@@ -136,6 +136,57 @@ namespace PawnDiary
         public float bleedVisibleAbove = 0.01f;    // report bleeding only above this rate
         public float lowCapacityThreshold = 0.80f; // report a capacity only when below this level
 
+        // ---- Consciousness: first-person generation gate ----
+        // Pawns below this Consciousness level do not write first-person entries. Events still
+        // record and neutral death/arrival descriptions still generate; only non-neutral LLM work
+        // waits until the pawn is conscious enough again. Kept separate from the display staggering
+        // thresholds below because this gate is about prompt authorship, not typography.
+        public float minimumConsciousnessForFirstPersonGeneration = 0.11f;
+
+        // ---- Display staggering: low-consciousness handwriting distortion ----
+        // The 0..4 "staggered handwriting" intensity saved on each DiaryEvent POV. A pawn whose
+        // Consciousness level is below a band's threshold gets at least that intensity. Higher
+        // intensity means more distorted text. Read at capture time by PawnFactCapture and applied
+        // (for display) through the XML decoration rules. Values are upper bounds per intensity
+        // step; the first band the level falls into wins (checked 4 -> 1).
+        public float staggeredConsciousnessIntensity4Below = 0.14f;
+        public float staggeredConsciousnessIntensity3Below = 0.20f;
+        public float staggeredConsciousnessIntensity2Below = 0.35f;
+        public float staggeredConsciousnessIntensity1Below = 0.55f;
+
+        // ---- Display staggering: intoxication severity distortion ----
+        // Same 0..4 intensity scale, but driven by an intoxicating hediff's severity. A hediff is
+        // treated as intoxicating only when it matches the XML decoration rules (see
+        // Diary_TextDecorations), so the classification list is data-owned and DLC/mod extensible.
+        // Values are lower bounds per intensity step; the first band the severity reaches wins
+        // (checked 4 -> 1).
+        public float intoxicationSeverityIntensity4At = 1.05f;
+        public float intoxicationSeverityIntensity3At = 0.80f;
+        public float intoxicationSeverityIntensity2At = 0.55f;
+        public float intoxicationSeverityIntensity1At = 0.30f;
+
+        // ---- Mood-impact condition families ----
+        // GameCondition defNames that are always positive (or always negative) for affected
+        // colonists, used as the name-based fallback in DetermineMoodImpact when a condition has no
+        // measurable mood offset. Matched case-insensitively by exact defName. These are plain
+        // strings, never def references, so a DLC-only entry like GrayPall (Anomaly) sits inert
+        // without its DLC — see AGENTS.md ("DLC-safety").
+        public List<string> positiveMoodConditionDefNames = new List<string>
+        {
+            "Aurora",
+            "Party",
+            "PsychicSoothe",
+            "PsychicEmanation"
+        };
+        public List<string> negativeMoodConditionDefNames = new List<string>
+        {
+            "Eclipse",
+            "ToxicFallout",
+            "VolcanicWinter",
+            "Flashstorm",
+            "GrayPall"
+        };
+
         // ---- Misc ----
         public int diaryLineMaxChars = 160;   // truncate the "last wrote" continuity line to this
         // Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can

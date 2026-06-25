@@ -21,10 +21,10 @@ namespace PawnDiary
         // request — we do NOT add a player setting for it.
         private const int TitleMaxTokens = 40;
         private const string PromptTestEndpointLabel = "prompt-test-mode";
-        // Pawns below 11% Consciousness should not write first-person entries. Events still record,
-        // and neutral death/arrival descriptions still generate, but non-neutral LLM work waits
-        // until the pawn is conscious enough again.
-        private const float MinimumConsciousnessForFirstPersonGeneration = 0.11f;
+        // Pawns below the XML-tuned Consciousness floor (DiaryTuningDef.minimumConsciousnessForFirstPersonGeneration,
+        // default 0.11) should not write first-person entries. Events still record, and neutral
+        // death/arrival descriptions still generate, but non-neutral LLM work waits until the pawn
+        // is conscious enough again. Read via DiaryTuning.Current so it can be retuned in XML.
 
         private void EnsureGenerationQueued(DiaryEvent diaryEvent, string povRole,
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
@@ -1143,7 +1143,7 @@ namespace PawnDiary
             }
 
             return pawn.health.capacities.GetLevel(PawnCapacityDefOf.Consciousness)
-                >= MinimumConsciousnessForFirstPersonGeneration;
+                >= DiaryTuning.Current.minimumConsciousnessForFirstPersonGeneration;
         }
 
         /// <summary>
@@ -1195,7 +1195,7 @@ namespace PawnDiary
         private static string IncapacitatedSkipReason()
         {
             return "PawnDiary.Error.SkippedIncapacitated".Translate(
-                Mathf.RoundToInt(MinimumConsciousnessForFirstPersonGeneration * 100f)).Resolve();
+                Mathf.RoundToInt(DiaryTuning.Current.minimumConsciousnessForFirstPersonGeneration * 100f)).Resolve();
         }
 
         /// <summary>

@@ -6,6 +6,18 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Hardcoded tunables moved to XML.** Three pockets of feature policy that lived in C# are now
+  XML-owned with the original values as code fallbacks, so they retune without a recompile and
+  modders/DLCs can extend them by string without code: (1) the first-person Consciousness gate
+  (`DiaryTuningDef.minimumConsciousnessForFirstPersonGeneration`, default 0.11); (2) the 0..4
+  display-staggering intensity thresholds for low Consciousness and intoxication severity; (3) the
+  positive/negative mood-impact `GameCondition` defName families. Capture-time intoxication
+  detection (`PawnFactCapture.IsIntoxicatingHediff`) no longer keeps its own keyword list — it
+  reuses the same `Diary_TextDecorations` `StaggeredWordSizes` rule list as render-time decoration,
+  via a new pure helper `DiaryTextDecorations.HediffMatchesStaggeredRules` (with a focused test for
+  exact/substring/hidden/non-stagger cases). The decoration rule's label list gains `hangover` to
+  preserve alcohol-withdrawal coverage. Behavior is unchanged for the shipped values; no save-format,
+  DLC, or localization change.
 - **Localized colony name moved off the saved model.** `DiaryEvent.NameForRole` — which reached
   `.Translate()` to render the neutral/colony POV name — is removed. Its sole caller, the adapter's
   pair direct-speech instruction builder (`DiaryPipelineAdapters.DirectSpeechInstructionFor`), now

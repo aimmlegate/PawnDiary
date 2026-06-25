@@ -92,7 +92,9 @@ Key files:
 
 `GameComponentTick` drains completed results, flushes main-thread debug logs, recovers orphaned
 pending entries, and queues pending work roughly every 120 ticks. Pending generation state resets on
-load. Non-neutral POVs below 11% Consciousness are skipped; neutral arrival/death bypass that guard.
+load. Non-neutral POVs below the XML-tuned Consciousness floor
+(`DiaryTuningDef.minimumConsciousnessForFirstPersonGeneration`, default 0.11) are skipped; neutral
+arrival/death bypass that guard.
 
 ---
 
@@ -202,10 +204,12 @@ internal contact.
 
 `DiarySignalPolicyDefs.xml` owns thought/work policy: thresholds, tokens, staged progression, ambient
 batching, scan odds, cooldowns. `DiaryTuningDef.xml` keeps shared fallback tuning for mood/health
-buckets, nearby context, minimum first-person age, day-reflection signal kinds/weights, weather
-mention chances, and scanner intervals. Hediff groups define Immediate vs DayReflection mode,
-visible/bad/injury gates, severity thresholds, and weights. Tale groups can declare death victim role
-lists, keeping death classification data-owned and DLC/mod friendly.
+buckets, nearby context, minimum first-person age, the first-person Consciousness gate, the 0..4
+low-consciousness/intoxication display-staggering thresholds, mood-impact condition families
+(positive/negative `GameCondition` defNames), day-reflection signal kinds/weights, weather mention
+chances, and scanner intervals. Hediff groups define Immediate vs DayReflection mode, visible/bad/injury
+gates, severity thresholds, and weights. Tale groups can declare death victim role lists, keeping
+death classification data-owned and DLC/mod friendly.
 
 ---
 
@@ -361,8 +365,11 @@ for prompt-only cards, else generated text).
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
 owns display-only decorations: intoxication/anesthesia speech uses the strongest staggered word-size
 setting; extreme-dark speech dims selected words (vs. strange-chat Zalgo); combat/social-fight/mental
-cues add stronger page washes and header rules; generated text is never mutated on save. Live
-humanlike pawn names in prose are highlighted — colonists use their favorite color when available,
+cues add stronger page washes and header rules; generated text is never mutated on save. The same
+`Diary_TextDecorations` `StaggeredWordSizes` rule list is also the single source of truth for which
+hediffs count as intoxicating at capture time (via `DiaryTextDecorations.HediffMatchesStaggeredRules`),
+so modders/DLCs extend the set by editing XML — no parallel hardcoded keyword list. Live humanlike
+pawn names in prose are highlighted — colonists use their favorite color when available,
 slaves/prisoners/enemies/neutral pawns use XML-backed status colors, ambiguous/uncolored matches
 fall back to bold.
 

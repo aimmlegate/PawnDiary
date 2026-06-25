@@ -177,6 +177,59 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True when a single saved hediff fact matches the name condition of any enabled
+        /// <see cref="DiaryTextDecorationKinds.StaggeredWordSizes"/> rule. This lets capture-time
+        /// intoxication detection reuse the SAME XML-owned matcher list as render-time decoration
+        /// (see <c>Diary_TextDecorations</c>), so there is one source of truth for "which hediffs
+        /// count as intoxicating" instead of a parallel hardcoded keyword list. A non-visible fact
+        /// never matches. Rules without a hediff-name criterion are skipped (an unconditional
+        /// stagger rule must not classify every hediff as intoxicating). Pure.
+        /// </summary>
+        public static bool HediffMatchesStaggeredRules(
+            IEnumerable<DiaryTextDecorationRule> rules,
+            DiaryTextDecorationHediffFact fact)
+        {
+            if (rules == null || fact == null || !fact.visible)
+            {
+                return false;
+            }
+
+            foreach (DiaryTextDecorationRule rule in rules)
+            {
+                if (rule == null || !rule.enabled)
+                {
+                    continue;
+                }
+
+                if (!KindEquals(rule.decoration, DiaryTextDecorationKinds.StaggeredWordSizes))
+                {
+                    continue;
+                }
+
+                DiaryTextDecorationCondition when = rule.when;
+                if (when == null)
+                {
+                    continue;
+                }
+
+                // A rule "names" a hediff only via a populated list that the fact actually hits.
+                // Unlike the render-time matcher (where an unset category means "no constraint"),
+                // here an unset list must NOT count as a match — otherwise one populated list plus
+                // two unset ones would classify every hediff as intoxicating. This keeps partial
+                // modder rules correct.
+                bool named = (HasAny(when.anyHediffDefName) && MatchesAny(when.anyHediffDefName, fact.defName))
+                    || (HasAny(when.anyHediffDefNameContains) && MatchesAnyContains(when.anyHediffDefNameContains, fact.defName))
+                    || (HasAny(when.anyHediffLabelContains) && MatchesAnyContains(when.anyHediffLabelContains, fact.label));
+                if (named)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Applies an ordered plan to a Unity rich-text string, preserving existing tags.
         /// </summary>
         public static string ApplyToRichText(string rich, DiaryTextDecorationPlan plan, int seed, int baseFontSize)

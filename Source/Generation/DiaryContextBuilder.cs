@@ -1341,34 +1341,40 @@ namespace PawnDiary
             return totalOffset;
         }
 
-        // Known GameConditionDefs that are always positive for every colonist.
+        // Known GameConditionDefs that are always positive for every colonist. The list is XML-tuned
+        // (DiaryTuningDef.positiveMoodConditionDefNames); entries are plain strings so a DLC-only
+        // condition simply never appears without its DLC. See AGENTS.md ("DLC-safety").
         private static bool IsKnownPositiveCondition(string defName)
         {
-            if (string.IsNullOrEmpty(defName))
-            {
-                return false;
-            }
-
-            return string.Equals(defName, "Aurora", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, "Party", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, "PsychicSoothe", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, "PsychicEmanation", StringComparison.OrdinalIgnoreCase);
+            return DefNameListContains(DiaryTuning.Current.positiveMoodConditionDefNames, defName);
         }
 
-        // Known GameConditionDefs that are always negative for affected colonists.
-        // Excludes condition causers and gender-targeted effects (those vary per pawn).
+        // Known GameConditionDefs that are always negative for affected colonists. Excludes condition
+        // causers and gender-targeted effects (those vary per pawn). XML-tuned via
+        // DiaryTuningDef.negativeMoodConditionDefNames.
         private static bool IsKnownNegativeCondition(string defName)
         {
-            if (string.IsNullOrEmpty(defName))
+            return DefNameListContains(DiaryTuning.Current.negativeMoodConditionDefNames, defName);
+        }
+
+        // Case-insensitive exact defName membership used by the mood-condition fallbacks above.
+        // Null/empty defName never matches; a null/empty list never matches.
+        private static bool DefNameListContains(List<string> defNames, string defName)
+        {
+            if (string.IsNullOrEmpty(defName) || defNames == null)
             {
                 return false;
             }
 
-            return string.Equals(defName, "Eclipse", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, "ToxicFallout", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, "VolcanicWinter", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, "Flashstorm", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, "GrayPall", StringComparison.OrdinalIgnoreCase);
+            for (int i = 0; i < defNames.Count; i++)
+            {
+                if (string.Equals(defNames[i], defName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
