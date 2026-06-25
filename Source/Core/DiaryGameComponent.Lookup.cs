@@ -153,7 +153,7 @@ namespace PawnDiary
             }
 
             string pawnId = pawn.GetUniqueLoadID();
-            DiaryEvent diaryEvent = FindEvent(eventId);
+            DiaryEvent diaryEvent = events.FindEvent(eventId);
             if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
             {
                 return;
@@ -189,7 +189,7 @@ namespace PawnDiary
             }
 
             string pawnId = pawn.GetUniqueLoadID();
-            DiaryEvent diaryEvent = FindEvent(eventId);
+            DiaryEvent diaryEvent = events.FindEvent(eventId);
             if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
             {
                 return;
@@ -221,7 +221,7 @@ namespace PawnDiary
             int? finalDeathTick = null;
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (diaryEvent == null || !diaryEvent.IsDeathDescriptionFor(pawnId))
                 {
                     continue;
@@ -252,7 +252,7 @@ namespace PawnDiary
             {
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
-                    DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                    DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                     if (diaryEvent == null || !diaryEvent.IsArrivalDescriptionFor(pawnId))
                     {
                         continue;
@@ -267,11 +267,12 @@ namespace PawnDiary
 
             // Be forgiving of old/odd saves where an arrival event exists but was not present in
             // the pawn's event-id list: the boundary is still known from the event itself.
-            if (!firstArrivalTick.HasValue && diaryEvents != null)
+            if (!firstArrivalTick.HasValue)
             {
-                for (int i = 0; i < diaryEvents.Count; i++)
+                IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+                for (int i = 0; i < allEvents.Count; i++)
                 {
-                    DiaryEvent diaryEvent = diaryEvents[i];
+                    DiaryEvent diaryEvent = allEvents[i];
                     if (diaryEvent == null || !diaryEvent.IsArrivalDescriptionFor(pawnId))
                     {
                         continue;
@@ -353,7 +354,7 @@ namespace PawnDiary
             {
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
-                    DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                    DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                     if (diaryEvent == null)
                     {
                         continue;
@@ -385,11 +386,12 @@ namespace PawnDiary
 
             // Forgiving fallback (mirrors FirstArrivalTickFor): an arrival event that exists but was
             // never added to this pawn's event-id list still defines the tick boundary.
-            if (!bounds.firstArrivalTick.HasValue && diaryEvents != null)
+            if (!bounds.firstArrivalTick.HasValue)
             {
-                for (int i = 0; i < diaryEvents.Count; i++)
+                IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+                for (int i = 0; i < allEvents.Count; i++)
                 {
-                    DiaryEvent diaryEvent = diaryEvents[i];
+                    DiaryEvent diaryEvent = allEvents[i];
                     if (diaryEvent != null
                         && diaryEvent.IsArrivalDescriptionFor(pawnId)
                         && (!bounds.firstArrivalTick.HasValue || diaryEvent.tick < bounds.firstArrivalTick.Value))
@@ -528,7 +530,7 @@ namespace PawnDiary
 
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (diaryEvent != null && diaryEvent.IsArrivalDescriptionFor(pawnId))
                 {
                     return i;
@@ -548,7 +550,7 @@ namespace PawnDiary
             int finalDeathIndex = -1;
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (diaryEvent != null && diaryEvent.IsDeathDescriptionFor(pawnId))
                 {
                     finalDeathIndex = i;
@@ -604,70 +606,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Locates a DiaryEvent by its unique ID via the O(1) lookup index (see
-        /// <see cref="eventsById"/>). The index is kept in sync by <see cref="RegisterDiaryEvent"/>
-        /// and rebuilt on load by <see cref="RebuildEventIndex"/>.
-        /// </summary>
-        private DiaryEvent FindEvent(string eventId)
-        {
-            if (string.IsNullOrWhiteSpace(eventId))
-            {
-                return null;
-            }
-
-            DiaryEvent diaryEvent;
-            return eventsById.TryGetValue(eventId, out diaryEvent) ? diaryEvent : null;
-        }
-
-        /// <summary>
-        /// Adds a freshly created event to both the master list and the O(1) lookup index, keeping the
-        /// two in sync. Every event-creation path funnels through here (see AddPairwiseEvent /
-        /// AddSoloEvent) so <see cref="FindEvent"/> can stay a constant-time dictionary lookup.
-        /// </summary>
-        private void RegisterDiaryEvent(DiaryEvent diaryEvent)
-        {
-            if (diaryEvent == null)
-            {
-                return;
-            }
-
-            diaryEvents.Add(diaryEvent);
-            if (!string.IsNullOrWhiteSpace(diaryEvent.eventId) && !eventsById.ContainsKey(diaryEvent.eventId))
-            {
-                eventsById[diaryEvent.eventId] = diaryEvent;
-            }
-        }
-
-        /// <summary>
-        /// Rebuilds the eventId -> event index from the loaded master list. Called once after a save
-        /// loads (the index itself is never serialized). First occurrence wins, matching the old
-        /// linear FindEvent scan — duplicate ids are not expected (eventIds are GUIDs) but this keeps
-        /// behavior identical if any occur, and it tolerates null entries from odd saves.
-        /// </summary>
-        private void RebuildEventIndex()
-        {
-            eventsById.Clear();
-            if (diaryEvents == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < diaryEvents.Count; i++)
-            {
-                DiaryEvent diaryEvent = diaryEvents[i];
-                if (diaryEvent == null || string.IsNullOrWhiteSpace(diaryEvent.eventId))
-                {
-                    continue;
-                }
-
-                if (!eventsById.ContainsKey(diaryEvent.eventId))
-                {
-                    eventsById[diaryEvent.eventId] = diaryEvent;
-                }
-            }
-        }
-
-        /// <summary>
         /// Removes blank, duplicate, and dangling event references from per-pawn diary indexes. The
         /// saved event list is the source of truth; records should not keep pointing at events that no
         /// longer exist or were corrupted out of a save.
@@ -679,10 +617,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (eventsById.Count == 0 && diaryEvents != null && diaryEvents.Count > 0)
-            {
-                RebuildEventIndex();
-            }
+            events.EnsureIndexReady();
 
             for (int i = 0; i < diaries.Count; i++)
             {
@@ -702,7 +637,7 @@ namespace PawnDiary
                 for (int j = diary.eventIds.Count - 1; j >= 0; j--)
                 {
                     string eventId = diary.eventIds[j];
-                    if (string.IsNullOrWhiteSpace(eventId) || !eventsById.ContainsKey(eventId))
+                    if (string.IsNullOrWhiteSpace(eventId) || !events.ContainsEvent(eventId))
                     {
                         diary.eventIds.RemoveAt(j);
                         continue;
@@ -727,7 +662,7 @@ namespace PawnDiary
         /// </summary>
         public DiaryEvent FindEventById(string eventId)
         {
-            return FindEvent(eventId);
+            return events.FindEvent(eventId);
         }
 
         /// <summary>

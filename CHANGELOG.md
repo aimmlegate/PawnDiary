@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Event store extracted from `DiaryGameComponent`.** The saved `diaryEvents` list and the O(1)
+  id->event lookup index that mirrors it now live in a dedicated `Core/DiaryEventRepository.cs`,
+  giving the event store one clear owner. The repository owns `FindEvent`, `Register`, `RemoveEvent`/
+  `RemoveEvents`, `RebuildIndex`, `EnsureIndexReady`, a never-null `AllEvents` view, and the
+  `"diaryEvents"` Scribe key (via `ExposeEvents`); `DiaryGameComponent` constructs it, delegates
+  serialization from `ExposeData`, and rebuilds the index from its own `PostLoadInit`, so it stays the
+  only RimWorld lifecycle/save owner. All partials now go through the repository (`events.FindEvent`,
+  `events.Register`, `events.AllEvents`, `events.RemoveEvents`, `events.ContainsEvent`), replacing the
+  old `diaryEvents`/`eventsById` field reads and the private `FindEvent`/`RegisterDiaryEvent`/
+  `RebuildEventIndex` methods. The dead `if (diaryEvents == null)` guards (the store is now guaranteed
+  non-null across new game, load, and `PostLoadInit`) were dropped. The Scribe key is unchanged, so
+  existing saves load unchanged; behavior is identical. The Debug DLL was rebuilt; all five pure test
+  projects pass (622 assertions).
+
 - **`DiaryGameComponent.Generation.cs` split by pipeline stage.** The largest partial (~1200 lines,
   which mixed queue orchestration, lane selection, LLM dispatch, result application, and
   eligibility/rule resolution) is now four cohesive files plus a small relocation.

@@ -199,16 +199,17 @@ namespace PawnDiary
 
         private bool HasRecentWorkEvent(Pawn pawn, string currentWorkTypeDefName, int windowTicks, bool sameWorkOnly)
         {
-            if (pawn == null || string.IsNullOrWhiteSpace(currentWorkTypeDefName) || windowTicks <= 0 || diaryEvents == null)
+            if (pawn == null || string.IsNullOrWhiteSpace(currentWorkTypeDefName) || windowTicks <= 0)
             {
                 return false;
             }
 
             int minTick = Find.TickManager.TicksGame - windowTicks;
             string pawnId = pawn.GetUniqueLoadID();
-            for (int i = diaryEvents.Count - 1; i >= 0; i--)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = allEvents.Count - 1; i >= 0; i--)
             {
-                DiaryEvent diaryEvent = diaryEvents[i];
+                DiaryEvent diaryEvent = allEvents[i];
                 if (diaryEvent == null)
                 {
                     continue;

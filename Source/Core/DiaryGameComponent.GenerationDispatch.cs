@@ -140,7 +140,7 @@ namespace PawnDiary
                 return;
             }
 
-            DiaryEvent diaryEvent = FindEvent(result.eventId);
+            DiaryEvent diaryEvent = events.FindEvent(result.eventId);
             if (diaryEvent == null)
             {
                 return;

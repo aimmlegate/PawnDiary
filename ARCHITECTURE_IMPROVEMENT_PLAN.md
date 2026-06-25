@@ -419,6 +419,23 @@ Docs:
 
 Priority: Medium
 
+Status: Resolved 2026-06-25. Implemented as a new `Source/Core/DiaryEventRepository.cs` owning the
+saved `diaryEvents` list, the `eventsById` lookup index, and `FindEvent`/`Register`/`RemoveEvent`/
+`RemoveEvents`/`RebuildIndex`/`EnsureIndexReady`, plus a never-null `AllEvents` view and the
+`ExposeEvents("diaryEvents")` Scribe helper. `DiaryGameComponent` constructs the repository and
+remains the only RimWorld lifecycle/save owner: `ExposeData` delegates the event list to the
+repository and rebuilds the index from `PostLoadInit`. Every partial now goes through the repository
+(`events.FindEvent`, `events.Register`, `events.AllEvents`, `events.ContainsEvent`,
+`events.RemoveEvents`); the private `FindEvent`/`RegisterDiaryEvent`/`RebuildEventIndex` were removed
+and the dead `if (diaryEvents == null)` guards were dropped (the store is guaranteed non-null). The
+`"diaryEvents"` Scribe key is unchanged, so existing saves load unchanged; behavior is identical. The
+secondary state-bag suggestion (`PendingBatchState`/`RecentDedupState`) was intentionally not taken:
+those dictionaries are each scoped to one `Record*` domain and already routed through the shared
+`RecentlyRecorded` helpers, so a bag would add churn without reducing real coupling. The Debug DLL
+was rebuilt; all five pure test projects pass (622 assertions). No pure test was added because the
+repository holds `DiaryEvent` (an `IExposable`) and calls `Scribe`, so it is not Verse-free and cannot
+join the standalone pure test projects.
+
 Evidence:
 - `Source/Core/DiaryGameComponent.cs:60-118` central saved/transient state.
 - `Source/Core/DiaryGameComponent.cs:331` tick orchestration.

@@ -403,7 +403,7 @@ namespace PawnDiary
 
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (diaryEvent != null && diaryEvent.IsDeathDescriptionFor(pawnId))
                 {
                     return true;

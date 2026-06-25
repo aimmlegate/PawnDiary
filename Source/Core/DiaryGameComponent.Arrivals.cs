@@ -99,14 +99,15 @@ namespace PawnDiary
 
         private bool HasArrivalEventFor(string pawnId)
         {
-            if (string.IsNullOrWhiteSpace(pawnId) || diaryEvents == null)
+            if (string.IsNullOrWhiteSpace(pawnId))
             {
                 return false;
             }
 
-            for (int i = 0; i < diaryEvents.Count; i++)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                if (diaryEvents[i] != null && diaryEvents[i].IsArrivalDescriptionFor(pawnId))
+                if (allEvents[i] != null && allEvents[i].IsArrivalDescriptionFor(pawnId))
                 {
                     return true;
                 }

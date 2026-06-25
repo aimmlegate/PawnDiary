@@ -66,16 +66,12 @@ namespace PawnDiary
 
         private void QueueAllPendingGenerations()
         {
-            if (diaryEvents == null)
-            {
-                return;
-            }
-
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache = new Dictionary<string, DiaryBoundsCacheEntry>();
             Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
-            for (int i = 0; i < diaryEvents.Count; i++)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                DiaryEvent diaryEvent = diaryEvents[i];
+                DiaryEvent diaryEvent = allEvents[i];
                 if (diaryEvent == null)
                 {
                     continue;
@@ -127,14 +123,15 @@ namespace PawnDiary
             Dictionary<string, Pawn> livePawnsById = null)
         {
             PawnDiarySettings settings = PawnDiaryMod.Settings;
-            if (settings == null || !settings.generateTitles || diaryEvents == null)
+            if (settings == null || !settings.generateTitles)
             {
                 return;
             }
 
-            for (int i = 0; i < diaryEvents.Count; i++)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                DiaryEvent diaryEvent = diaryEvents[i];
+                DiaryEvent diaryEvent = allEvents[i];
                 if (diaryEvent == null)
                 {
                     continue;
@@ -183,16 +180,11 @@ namespace PawnDiary
         /// </summary>
         private void RecoverOrphanedPendingGenerations()
         {
-            if (diaryEvents == null)
-            {
-                orphanCandidatesLastScan.Clear();
-                return;
-            }
-
             HashSet<string> orphansThisScan = new HashSet<string>();
-            for (int i = 0; i < diaryEvents.Count; i++)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                DiaryEvent diaryEvent = diaryEvents[i];
+                DiaryEvent diaryEvent = allEvents[i];
                 if (diaryEvent == null)
                 {
                     continue;
@@ -247,7 +239,7 @@ namespace PawnDiary
             Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (diaryEvent == null)
                 {
                     continue;

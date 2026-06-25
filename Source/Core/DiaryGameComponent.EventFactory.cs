@@ -1,7 +1,7 @@
 // The DiaryEvent factory: the two constructors every Record* hook funnels through.
 // AddPairwiseEvent/AddSoloEvent stamp a new DiaryEvent with an id, date, the fallback game text, and
 // the per-POV context summaries used by prompt policies (pawn, surroundings, continuity, weapon),
-// register it in diaryEvents, and cross-reference the involved pawns' records. The per-event text and
+// register it in the event store, and cross-reference the involved pawns' records. The per-event text and
 // context builders that feed these (tale helpers, mental-break text, …) live in each event's own
 // file — DiaryGameComponent.Tales.cs, .MentalStates.cs, etc.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
@@ -47,10 +47,10 @@ namespace PawnDiary
                 recipientPawnSummary = DiaryContextBuilder.BuildPawnSummary(recipient),
                 initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(initiator),
                 recipientSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(recipient),
-                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, diaryEvents),
-                recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, diaryEvents),
-                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), diaryEvents),
-                recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), diaryEvents),
+                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, events.AllEvents),
+                recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, events.AllEvents),
+                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), events.AllEvents),
+                recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), events.AllEvents),
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(initiator),
                 recipientWeapon = DiaryContextBuilder.EquippedWeapon(recipient),
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
@@ -67,7 +67,7 @@ namespace PawnDiary
             diaryEvent.SetStaggeredIntensity(DiaryEvent.RecipientRole, PawnFactCapture.StaggeredIntensity(recipient));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole, PawnFactCapture.TextDecorationFacts(initiator));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.RecipientRole, PawnFactCapture.TextDecorationFacts(recipient));
-            RegisterDiaryEvent(diaryEvent);
+            events.Register(diaryEvent);
             AddEventRef(initiator, diaryEvent.eventId);
             AddEventRef(recipient, diaryEvent.eventId);
             return diaryEvent;
@@ -100,9 +100,9 @@ namespace PawnDiary
                 recipientPawnSummary = "n/a",
                 initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn),
                 recipientSurroundings = "n/a",
-                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, diaryEvents),
+                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, events.AllEvents),
                 recipientContinuity = "none",
-                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), diaryEvents),
+                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), events.AllEvents),
                 recipientLastOpener = string.Empty,
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(pawn),
                 recipientWeapon = string.Empty,
@@ -115,7 +115,7 @@ namespace PawnDiary
             MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, pawn);
             diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole, PawnFactCapture.StaggeredIntensity(pawn));
             diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole, PawnFactCapture.TextDecorationFacts(pawn));
-            RegisterDiaryEvent(diaryEvent);
+            events.Register(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId);
             return diaryEvent;
         }

@@ -48,7 +48,7 @@ namespace PawnDiary
             {
                 int mockIndex = existingMockCount + i;
                 DiaryEvent diaryEvent = BuildMockDiaryEvent(pawn, mockIndex, targetCount, startTicksAbs, visibleTickBase);
-                RegisterDiaryEvent(diaryEvent);
+                events.Register(diaryEvent);
                 diary.eventIds.Add(diaryEvent.eventId);
             }
 
@@ -66,7 +66,7 @@ namespace PawnDiary
             int count = 0;
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (diaryEvent != null
                     && string.Equals(diaryEvent.interactionDefName, DevMockDefName, StringComparison.Ordinal)
                     && diaryEvent.initiatorPawnId == pawnId)

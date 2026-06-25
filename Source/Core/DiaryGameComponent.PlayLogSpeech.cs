@@ -187,14 +187,10 @@ namespace PawnDiary
 
         private bool HasRememberedGeneratedSpeechPlayLogEvents()
         {
-            if (diaryEvents == null)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                return false;
-            }
-
-            for (int i = 0; i < diaryEvents.Count; i++)
-            {
-                if (diaryEvents[i] != null && diaryEvents[i].HasGeneratedSpeechPlayLogEntry())
+                if (allEvents[i] != null && allEvents[i].HasGeneratedSpeechPlayLogEntry())
                 {
                     return true;
                 }
@@ -205,14 +201,15 @@ namespace PawnDiary
 
         private void PruneStaleGeneratedSpeechPlayLogEventIds(HashSet<int> liveLogIds)
         {
-            if (diaryEvents == null || liveLogIds == null)
+            if (liveLogIds == null)
             {
                 return;
             }
 
-            for (int i = 0; i < diaryEvents.Count; i++)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                DiaryEvent diaryEvent = diaryEvents[i];
+                DiaryEvent diaryEvent = allEvents[i];
                 if (diaryEvent != null
                     && diaryEvent.HasGeneratedSpeechPlayLogEntry()
                     && !liveLogIds.Contains(diaryEvent.generatedSpeechPlayLogEntryId))

@@ -62,7 +62,7 @@ namespace PawnDiary
                 DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
-                    DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                    DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                     if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
                     {
                         continue;
@@ -102,7 +102,7 @@ namespace PawnDiary
             DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
                 {
                     continue;
@@ -200,7 +200,7 @@ namespace PawnDiary
             DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
-                DiaryEvent diaryEvent = FindEvent(diary.eventIds[i]);
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 if (diaryEvent == null || !diaryEvent.MatchesPlayLogEntry(playLogEntryId))
                 {
                     continue;

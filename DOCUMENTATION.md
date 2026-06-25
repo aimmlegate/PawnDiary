@@ -59,7 +59,8 @@ Key files:
 |---|---|
 | `Patches/DiaryModStartup.cs`, `Patches/DiaryPatches.cs` | Startup, hidden-tab registration, Harmony hooks. |
 | `Capture/*` | Event Catalog: `DiaryEventType`, `XxxEventData` (+`Decide`), `XxxEventSpec`, `DiaryEventCatalog`. |
-| `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, lookup indexes, generation queue (one partial per source). |
+| `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
+| `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
 | `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, response cleanup, API lane policy/identity, domain recovery, text decoration. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
@@ -425,8 +426,11 @@ reset after two scans. If no enabled lane has a model, the entry fails with
 
 ## 10. Persistence
 
-`DiaryGameComponent.ExposeData` saves `diaries` and `diaryEvents`. Event indexes and transient
-day-reflection guards rebuild on load; per-pawn event-id lists prune blank/duplicate/dangling refs.
+`DiaryGameComponent.ExposeData` saves `diaries` (per-pawn records) and the `diaryEvents` list owned
+by its `DiaryEventRepository`. The id->event lookup index and transient day-reflection guards rebuild
+on load; per-pawn event-id lists prune blank/duplicate/dangling refs. The component remains the only
+RimWorld lifecycle/save owner; the repository encapsulates the event list, its index, and the
+non-null store invariant.
 
 **Add/remove safety:** adding Pawn Diary to an existing save creates an empty diary component on the
 next load and records future events only. Removing it is gameplay-safe — the mod persists no custom

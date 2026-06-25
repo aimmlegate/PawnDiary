@@ -61,15 +61,12 @@ namespace PawnDiary
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
-        // All diary events across every pawn. Persisted via ExposeData.
-        private List<DiaryEvent> diaryEvents = new List<DiaryEvent>();
-        // O(1) lookup index (eventId -> DiaryEvent) mirroring diaryEvents. NOT saved: rebuilt from
-        // diaryEvents after load (RebuildEventIndex) and kept in sync as events are created
-        // (RegisterDiaryEvent). FindEvent used to linear-scan diaryEvents; cheap per call, but it is
-        // called inside per-event loops — the diary tab redraws every frame and the arrival/death
-        // boundary checks loop a pawn's events — so the scan made those hot paths grow quadratically
-        // with colony history. This index keeps the lookups constant-time. See Lookup.cs.
-        private readonly Dictionary<string, DiaryEvent> eventsById = new Dictionary<string, DiaryEvent>();
+        // The saved event store: every DiaryEvent across all pawns plus the O(1) id->event lookup
+        // index that mirrors it. Owns FindEvent/Register/RebuildIndex and the "diaryEvents" Scribe
+        // key. Extracted out of this class so the event store has one clear owner (Run Card 10); this
+        // class remains the only RimWorld lifecycle/save owner and drives the repository from
+        // ExposeData/GameComponentTick. See DiaryEventRepository.cs.
+        private readonly DiaryEventRepository events = new DiaryEventRepository();
         // Interaction batches still accumulating lines; keyed by group/pair/optional def. Not saved
         // because ExposeData flushes first.
         private readonly Dictionary<string, PendingInteractionBatch> pendingInteractionBatches = new Dictionary<string, PendingInteractionBatch>();
@@ -292,7 +289,7 @@ namespace PawnDiary
             }
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
-            Scribe_Collections.Look(ref diaryEvents, "diaryEvents", LookMode.Deep);
+            events.ExposeEvents("diaryEvents");
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
             // pruned so stale LogIDs cannot accumulate or block future injection.
@@ -311,11 +308,6 @@ namespace PawnDiary
                     diaries = new List<PawnDiaryRecord>();
                 }
 
-                if (diaryEvents == null)
-                {
-                    diaryEvents = new List<DiaryEvent>();
-                }
-
                 if (generatedSpeechPlayLogTexts == null)
                 {
                     generatedSpeechPlayLogTexts = new Dictionary<int, string>();
@@ -324,7 +316,7 @@ namespace PawnDiary
                 // The lookup index is not serialized; rebuild it from the loaded events so FindEvent
                 // works immediately (the first generation scan and any UI draw run before any new
                 // event is recorded this session).
-                RebuildEventIndex();
+                events.RebuildIndex();
                 RebuildWrittenDayReflectionsFromEvents();
                 PruneDiaryEventRefs();
                 PruneStaleGeneratedSpeechPlayLogState();

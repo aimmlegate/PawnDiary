@@ -141,9 +141,10 @@ namespace PawnDiary
 
             // diaryEvents is appended in tick order, so scan newest-first and stop once we drop below
             // the target day — this bounds the work to today's events instead of the whole history.
-            for (int i = diaryEvents.Count - 1; i >= 0; i--)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = allEvents.Count - 1; i >= 0; i--)
             {
-                DiaryEvent ev = diaryEvents[i];
+                DiaryEvent ev = allEvents[i];
                 if (ev == null)
                 {
                     continue;
@@ -598,14 +599,10 @@ namespace PawnDiary
         private void RebuildWrittenDayReflectionsFromEvents()
         {
             writtenDayReflections.Clear();
-            if (diaryEvents == null)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                return;
-            }
-
-            for (int i = 0; i < diaryEvents.Count; i++)
-            {
-                DiaryEvent ev = diaryEvents[i];
+                DiaryEvent ev = allEvents[i];
                 if (ev == null
                     || !string.Equals(ev.interactionDefName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase)
                     || string.IsNullOrWhiteSpace(ev.initiatorPawnId))

@@ -154,15 +154,16 @@ namespace PawnDiary
         /// </summary>
         public int ClearPromptSuiteForDev()
         {
-            if (!Prefs.DevMode || diaryEvents == null || diaryEvents.Count == 0)
+            if (!Prefs.DevMode || events.Count == 0)
             {
                 return 0;
             }
 
             HashSet<string> toRemove = new HashSet<string>();
-            for (int i = 0; i < diaryEvents.Count; i++)
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
             {
-                DiaryEvent diaryEvent = diaryEvents[i];
+                DiaryEvent diaryEvent = allEvents[i];
                 if (diaryEvent != null && DiaryContextFields.HasMarker(diaryEvent.gameContext, DevPromptSuiteMarkerKey))
                 {
                     toRemove.Add(diaryEvent.eventId);
@@ -176,11 +177,7 @@ namespace PawnDiary
 
             // Drop from the master list + lookup index first, then scrub refs from every pawn diary so
             // no saved record points at a removed event.
-            diaryEvents.RemoveAll(e => e != null && toRemove.Contains(e.eventId));
-            foreach (string id in toRemove)
-            {
-                eventsById.Remove(id);
-            }
+            events.RemoveEvents(toRemove);
 
             if (diaries != null)
             {
