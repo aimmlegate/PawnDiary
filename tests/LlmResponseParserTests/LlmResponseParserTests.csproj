@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Source\Generation\LlmResponseParser.cs" Link="LlmResponseParser.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryDirectSpeechParser.cs" Link="DiaryDirectSpeechParser.cs" />
     <Compile Include="..\..\Source\Util\MiniJson.cs" Link="MiniJson.cs" />
   </ItemGroup>
 </Project>

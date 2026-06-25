@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using PawnDiary;
 
@@ -17,6 +18,7 @@ namespace LlmResponseParserTests
             TestReasoningScrubNoCloseTag();
             TestGeneratedTextCleanup();
             TestGeneratedTagSanitizer();
+            TestSpeechMarkerConstantsMirrorDirectSpeechParser();
             TestMiniJsonRejectsMalformedNumbers();
             TestMiniJsonRejectsExcessiveDepth();
 
@@ -228,6 +230,30 @@ namespace LlmResponseParserTests
                 "title sanitizes bracket tags",
                 "The Storm Watch",
                 LlmResponseParser.CleanGeneratedText("[[The Storm Watch]]", 20, true));
+        }
+
+        private static void TestSpeechMarkerConstantsMirrorDirectSpeechParser()
+        {
+            AssertEqual(
+                "speech open marker mirrors direct parser",
+                DiaryDirectSpeechParser.DefaultOpenMarker,
+                PrivateStringConstant(typeof(LlmResponseParser), "SpeechOpenMarker"));
+
+            AssertEqual(
+                "speech close marker mirrors direct parser",
+                DiaryDirectSpeechParser.DefaultCloseMarker,
+                PrivateStringConstant(typeof(LlmResponseParser), "SpeechCloseMarker"));
+        }
+
+        private static string PrivateStringConstant(Type type, string fieldName)
+        {
+            FieldInfo field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static);
+            if (field == null)
+            {
+                throw new InvalidOperationException(type.FullName + "." + fieldName + " was not found.");
+            }
+
+            return field.GetRawConstantValue() as string ?? string.Empty;
         }
 
         private static void TestMiniJsonRejectsMalformedNumbers()

@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **LLM parser speech-marker guard added.** `LlmResponseParserTests` now asserts the response
+  parser's private `[[speech]]` sentinels still mirror `DiaryDirectSpeechParser`'s public defaults,
+  preventing the two marker parsers from silently diverging. `LlmResponseParserTests` pass (38
+  assertions); the Debug build succeeds.
+
 - **LLM request JSON serialization extracted.** Chat Completions and OpenAI Responses request-body
   construction moved out of `LlmClient` into pure `Pipeline/LlmRequestJsonBuilder.cs`; `LlmClient`
   now only maps its transport request into a primitive snapshot before sending. The extracted builder

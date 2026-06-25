@@ -499,6 +499,10 @@ Docs:
 
 Priority: Low
 
+Status: Resolved 2026-06-25. Added a focused `LlmResponseParserTests` assertion that the private
+response-parser speech markers match `DiaryDirectSpeechParser` defaults, with no production code
+changes.
+
 Evidence:
 - `Source/Generation/LlmResponseParser.cs:1082-1083` mirrors speech markers from `DiaryDirectSpeechParser`.
 
