@@ -156,24 +156,15 @@ namespace PawnDiary
         public string initiatorWeapon { get => initiatorSlot.weapon; set => initiatorSlot.weapon = value; }
         public string recipientWeapon { get => recipientSlot.weapon; set => recipientSlot.weapon = value; }
 
-        // Assembled prompt + LLM output (all three roles).
-        public string initiatorPrompt { get => initiatorSlot.prompt; set => initiatorSlot.prompt = value; }
-        public string recipientPrompt { get => recipientSlot.prompt; set => recipientSlot.prompt = value; }
-        public string neutralPrompt { get => neutralSlot.prompt; set => neutralSlot.prompt = value; }
+        // Generated LLM output (all three roles).
         public string initiatorGeneratedText { get => initiatorSlot.generatedText; set => initiatorSlot.generatedText = value; }
         public string recipientGeneratedText { get => recipientSlot.generatedText; set => recipientSlot.generatedText = value; }
         public string neutralGeneratedText { get => neutralSlot.generatedText; set => neutralSlot.generatedText = value; }
-        public string initiatorRawResponse { get => initiatorSlot.rawResponse; set => initiatorSlot.rawResponse = value; }
-        public string recipientRawResponse { get => recipientSlot.rawResponse; set => recipientSlot.rawResponse = value; }
-        public string neutralRawResponse { get => neutralSlot.rawResponse; set => neutralSlot.rawResponse = value; }
 
-        // Generation status + error (all three roles).
+        // Generation status (all three roles).
         public string initiatorStatus { get => initiatorSlot.status; set => initiatorSlot.status = value; }
         public string recipientStatus { get => recipientSlot.status; set => recipientSlot.status = value; }
         public string neutralStatus { get => neutralSlot.status; set => neutralSlot.status = value; }
-        public string initiatorError { get => initiatorSlot.error; set => initiatorSlot.error = value; }
-        public string recipientError { get => recipientSlot.error; set => recipientSlot.error = value; }
-        public string neutralError { get => neutralSlot.error; set => neutralSlot.error = value; }
 
         // Recorded LLM lane (all three roles).
         public string initiatorLlmEndpoint { get => initiatorSlot.llmEndpoint; set => initiatorSlot.llmEndpoint = value; }
@@ -191,14 +182,11 @@ namespace PawnDiary
         public string recipientTitle { get => recipientSlot.title; set => recipientSlot.title = value; }
         public string neutralTitle { get => neutralSlot.title; set => neutralSlot.title = value; }
 
-        // Per-POV title-generation status and error. Reuse PendingStatus/CompleteStatus/FailedStatus
+        // Per-POV title-generation status. Reuse PendingStatus/CompleteStatus/FailedStatus
         // from the main-entry vocabulary so the title follow-up rides the same status machine.
         public string initiatorTitleStatus { get => initiatorSlot.titleStatus; set => initiatorSlot.titleStatus = value; }
         public string recipientTitleStatus { get => recipientSlot.titleStatus; set => recipientSlot.titleStatus = value; }
         public string neutralTitleStatus { get => neutralSlot.titleStatus; set => neutralSlot.titleStatus = value; }
-        public string initiatorTitleError { get => initiatorSlot.titleError; set => initiatorSlot.titleError = value; }
-        public string recipientTitleError { get => recipientSlot.titleError; set => recipientSlot.titleError = value; }
-        public string neutralTitleError { get => neutralSlot.titleError; set => neutralSlot.titleError = value; }
 
         // Display-only typography intensity captured from the live POV pawn at record time.
         // 0 = normal; 1..4 = increasingly staggered variable-size words for intoxication or low

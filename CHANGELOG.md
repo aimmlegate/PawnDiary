@@ -22,14 +22,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   helper (used by `ApiConnectionController.TrimForStatus` too); and the split decoration helpers
   share `DiaryTextDecorationText` instead of three private copies of tag/kind/trim helpers. Pure
   tests pass (260 assertions across the three projects); Debug DLL rebuilt. Behavior and save shape
-  are unchanged. Two 🟠 design items were assessed and deferred with rationale: the `PovSlot` facade
-  property collapse (a 51-property internal-API migration on a save-adjacent model, best as a
-  dedicated focused change) and threading transport config through the dispatch DTO (the dispatch
-  methods are the SKILL.md-sanctioned place for settings reads and are not unit-testable in
-  isolation, so the cited benefit needs a far larger refactor). As a light, low-risk slice of the
-  latter, `QueuePrompt` now fetches `PawnDiaryMod.Settings` once into a local (matching the
-  existing `QueueTitleRequest` pattern) instead of reaching the global static ~10 times per
-  dispatch; behavior is unchanged.
+  are unchanged. Two 🟠 design items were assessed and handled as low-risk slices. For the `PovSlot`
+  facade collapse, 12 of the 51 facade properties that had zero references anywhere (initiator/
+  recipient/neutral × Prompt/RawResponse/Error/TitleError) were deleted; the underlying slot fields
+  stay scribed and normalized, so save shape is untouched. The remaining 39 facades are mechanical
+  cross-file caller migration (add `XForRole` readers, move callers, delete) with no save impact —
+  safe but wide, left as a dedicated change. For threading transport config through the dispatch
+  DTO, the dispatch methods are the SKILL.md-sanctioned place for settings reads and are not
+  unit-testable in isolation, so the cited benefit needs a far larger refactor; as a light slice,
+  `QueuePrompt` now fetches `PawnDiaryMod.Settings` once into a local (matching the existing
+  `QueueTitleRequest` pattern) instead of reaching the global static ~10 times per dispatch;
+  behavior is unchanged.
 
 - **`DiaryEvent` per-POV duplication collapsed into `PovSlot` slots.** The three triplicated
   initiator/recipient/neutral field families and their ~20 three-way `if initiator / if recipient /
