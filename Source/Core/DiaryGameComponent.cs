@@ -28,7 +28,10 @@
 //   DiaryGameComponent.AmbientThoughts.cs — day-note batching for low-impact temporary thoughts
 //   ──
 //   DiaryGameComponent.EventFactory.cs   — AddPairwiseEvent/AddSoloEvent: build + register DiaryEvents
-//   DiaryGameComponent.Generation.cs     — prompt building, API lane selection, LLM dispatch/apply
+//   DiaryGameComponent.Generation.cs     — deciding what to (re)queue (scan + per-pawn re-enable)
+//   DiaryGameComponent.GenerationDispatch.cs — QueuePrompt choke point, LLM dispatch, apply results, titles
+//   DiaryGameComponent.ApiLanes.cs       — choose which configured API lane handles each request
+//   DiaryGameComponent.GenerationEligibility.cs — generation gates + persona/enchantment/humor rules + pawn lookup
 //   DiaryGameComponent.Lookup.cs         — finding diary records/events + eligibility helpers
 using System;
 using System.Collections.Generic;

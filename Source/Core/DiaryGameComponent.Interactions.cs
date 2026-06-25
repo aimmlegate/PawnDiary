@@ -183,5 +183,24 @@ namespace PawnDiary
                 && IsInteractionSignificant(interactionDef)
                 && (IsDiaryEligible(initiator) || IsDiaryEligible(recipient));
         }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a specific interaction def, or empty string if none.
+        /// </summary>
+        private static string InteractionInstruction(InteractionDef interactionDef)
+        {
+            return InteractionGroups.InstructionFor(interactionDef);
+        }
+
+        /// <summary>
+        /// An interaction is recorded only if its group (see InteractionGroups) is enabled in settings.
+        /// </summary>
+        private static bool IsInteractionSignificant(InteractionDef interactionDef)
+        {
+            return interactionDef != null
+                && !string.IsNullOrWhiteSpace(interactionDef.defName)
+                && PawnDiaryMod.Settings != null
+                && PawnDiaryMod.Settings.IsInteractionEnabled(interactionDef);
+        }
     }
 }

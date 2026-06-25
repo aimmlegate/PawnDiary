@@ -6,6 +6,23 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **`DiaryGameComponent.Generation.cs` split by pipeline stage.** The largest partial (~1200 lines,
+  which mixed queue orchestration, lane selection, LLM dispatch, result application, and
+  eligibility/rule resolution) is now four cohesive files plus a small relocation.
+  `DiaryGameComponent.Generation.cs` keeps the queue orchestration (deciding what to (re)queue:
+  `QueueAllPendingGenerations`, `QueuePendingGenerationsForPawn`, `EnsureGenerationQueued`, orphan
+  recovery, raid-delay gating, death/arrival/pairwise/single routing). New
+  `DiaryGameComponent.GenerationDispatch.cs` owns the `QueuePrompt` choke point, `ApplyLlmResult`,
+  title follow-up, and prompt-test-mode detection (`TitleMaxTokens`/`PromptTestEndpointLabel` moved
+  here). New `DiaryGameComponent.ApiLanes.cs` owns API lane selection, failover, and the English lane
+  debug logging. New `DiaryGameComponent.GenerationEligibility.cs` owns the generation gates
+  (`DiaryGenerationEnabledFor`, Consciousness-floor incapacitation skips), persona/enchantment/humor
+  rule resolution, and the live-pawn snapshot/lookup helpers. Two helpers that only serve
+  interaction recording (`InteractionInstruction`, `IsInteractionSignificant`) moved to their natural
+  home in `DiaryGameComponent.Interactions.cs`. Pure move of `partial class` members — no call site,
+  behavior, or save-data change. Behavior and save data are unchanged; the Debug DLL was rebuilt; all
+  five pure test projects pass (622 assertions).
+
 - **Persona and override state extracted from `PawnDiarySettings`.** The save DTO no longer owns
   writing-style catalog mutation or the per-key override-dictionary plumbing. Writing-style (persona)
   CRUD, normalization, and theme policy moved to a new `Settings/PersonaPresetStore.cs`
