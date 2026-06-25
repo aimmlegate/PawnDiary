@@ -1195,31 +1195,32 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Captures the pawn's hediff/trait names as plain data for later XML text-decoration rules.
+        /// Stores the serialized hediff/trait fact string for a POV role. The value is collected from
+        /// the live pawn by <see cref="PawnFactCapture.TextDecorationFacts"/> at record time, so this
+        /// setter is pure: it only dispatches by role and writes the plain saved field. Neutral pages
+        /// carry no pawn facts and are ignored.
         /// </summary>
-        public void CaptureTextDecorationContext(string povRole, Pawn pawn)
+        public void SetTextDecorationFacts(string povRole, string facts)
         {
-            string serialized = DiaryTextDecorations.SerializePawnFacts(PawnTextDecorationContext(pawn));
             if (RoleEquals(povRole, InitiatorRole))
             {
-                initiatorTextDecorationFacts = serialized;
+                initiatorTextDecorationFacts = facts;
                 return;
             }
 
             if (RoleEquals(povRole, RecipientRole))
             {
-                recipientTextDecorationFacts = serialized;
+                recipientTextDecorationFacts = facts;
             }
         }
 
         /// <summary>
-        /// Captures the display-only "staggered handwriting" severity for a POV pawn at record time.
-        /// New to C#/RimWorld? The live Pawn object is not saved with the event, so we store the small
-        /// 0..4 result here while the pawn's health state is available.
+        /// Stores the display-only "staggered handwriting" intensity (0..4) for a POV role. The value
+        /// is collected from the live pawn by <see cref="PawnFactCapture.StaggeredIntensity"/> at
+        /// record time; this setter is pure and only dispatches by role. Neutral pages are ignored.
         /// </summary>
-        public void CaptureStaggeredIntensity(string povRole, Pawn pawn)
+        public void SetStaggeredIntensity(string povRole, int intensity)
         {
-            int intensity = StaggeredIntensityForPawn(pawn);
             if (RoleEquals(povRole, InitiatorRole))
             {
                 initiatorStaggeredIntensity = intensity;
@@ -1248,121 +1249,6 @@ namespace PawnDiary
             return 0;
         }
 
-        private static int StaggeredIntensityForPawn(Pawn pawn)
-        {
-            if (pawn == null || pawn.health == null)
-            {
-                return 0;
-            }
-
-            int intensity = LowConsciousnessStaggeredIntensity(pawn);
-            int intoxication = IntoxicationStaggeredIntensity(pawn);
-            return ClampStaggeredIntensity(Math.Max(intensity, intoxication));
-        }
-
-        private static int LowConsciousnessStaggeredIntensity(Pawn pawn)
-        {
-            if (pawn?.health?.capacities == null)
-            {
-                return 0;
-            }
-
-            float consciousness = pawn.health.capacities.GetLevel(PawnCapacityDefOf.Consciousness);
-            if (consciousness < 0.14f)
-            {
-                return 4;
-            }
-
-            if (consciousness < 0.20f)
-            {
-                return 3;
-            }
-
-            if (consciousness < 0.35f)
-            {
-                return 2;
-            }
-
-            if (consciousness < 0.55f)
-            {
-                return 1;
-            }
-
-            return 0;
-        }
-
-        private static int IntoxicationStaggeredIntensity(Pawn pawn)
-        {
-            List<Hediff> hediffs = pawn?.health?.hediffSet?.hediffs;
-            if (hediffs == null)
-            {
-                return 0;
-            }
-
-            int intensity = 0;
-            for (int i = 0; i < hediffs.Count; i++)
-            {
-                Hediff hediff = hediffs[i];
-                if (!IsIntoxicatingHediff(hediff))
-                {
-                    continue;
-                }
-
-                intensity = Math.Max(intensity, IntoxicationSeverityToIntensity(hediff.Severity));
-            }
-
-            return intensity;
-        }
-
-        private static bool IsIntoxicatingHediff(Hediff hediff)
-        {
-            if (hediff == null || !hediff.Visible)
-            {
-                return false;
-            }
-
-            string defName = hediff.def?.defName ?? string.Empty;
-            string label = hediff.Label ?? string.Empty;
-            string text = (defName + " " + label).ToLowerInvariant();
-            return text.Contains("drunk")
-                || text.Contains("alcohol")
-                || text.Contains("hangover")
-                || text.Contains("smokeleaf")
-                || text.Contains("psychite")
-                || text.Contains("yayo")
-                || text.Contains("flake")
-                || text.Contains("gojuice")
-                || text.Contains("go-juice")
-                || text.Contains("wake-up")
-                || text.Contains("wakeup")
-                || defName.EndsWith("High", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int IntoxicationSeverityToIntensity(float severity)
-        {
-            if (severity >= 1.05f)
-            {
-                return 4;
-            }
-
-            if (severity >= 0.80f)
-            {
-                return 3;
-            }
-
-            if (severity >= 0.55f)
-            {
-                return 2;
-            }
-
-            if (severity >= 0.30f)
-            {
-                return 1;
-            }
-
-            return 0;
-        }
-
         private static int ClampStaggeredIntensity(int intensity)
         {
             if (intensity < 0)
@@ -1371,53 +1257,6 @@ namespace PawnDiary
             }
 
             return intensity > 4 ? 4 : intensity;
-        }
-
-        private static DiaryTextDecorationContext PawnTextDecorationContext(Pawn pawn)
-        {
-            DiaryTextDecorationContext context = new DiaryTextDecorationContext();
-            List<Hediff> hediffs = pawn?.health?.hediffSet?.hediffs;
-            if (hediffs != null)
-            {
-                for (int i = 0; i < hediffs.Count; i++)
-                {
-                    Hediff hediff = hediffs[i];
-                    if (hediff == null)
-                    {
-                        continue;
-                    }
-
-                    context.hediffs.Add(new DiaryTextDecorationHediffFact
-                    {
-                        defName = hediff.def?.defName ?? string.Empty,
-                        label = hediff.Label ?? string.Empty,
-                        severity = hediff.Severity,
-                        visible = hediff.Visible
-                    });
-                }
-            }
-
-            List<Trait> traits = pawn?.story?.traits?.allTraits;
-            if (traits != null)
-            {
-                for (int i = 0; i < traits.Count; i++)
-                {
-                    Trait trait = traits[i];
-                    if (trait == null)
-                    {
-                        continue;
-                    }
-
-                    context.traits.Add(new DiaryTextDecorationTraitFact
-                    {
-                        defName = trait.def?.defName ?? string.Empty,
-                        label = trait.LabelCap ?? string.Empty,
-                        degree = trait.Degree
-                    });
-                }
-            }
-
-            return context;
         }
 
         private static string DecorationDomainForContext(string context)

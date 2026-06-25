@@ -21,7 +21,7 @@ Use this as a planning document, not as a mandate to do every refactor at once. 
 ## Recommended Run Order
 
 1. API lane identity/labels: highest dedup value, low behavior risk.
-2. Barrier fixes: `PawnFactCapture`, `InstructionFor*` off settings DTO, `NameForRole` localization move.
+2. Barrier fixes: ~~`PawnFactCapture`~~ (done), `InstructionFor*` off settings DTO, `NameForRole` localization move.
 3. Tunables to XML: intoxication, consciousness thresholds, mood condition families.
 4. `DiaryContextBuilder` split.
 5. `PawnDiaryMod` settings UI/async split.
@@ -77,6 +77,13 @@ Docs:
 ## Run Card 2: Extract `PawnFactCapture` From `DiaryEvent`
 
 Priority: High
+
+Status: Resolved 2026-06-25. Implemented as a new guarded collector
+`Source/Generation/PawnFactCapture.cs` (modeled after `DlcContext`) owning the live pawn reads, with
+pure value setters `DiaryEvent.SetTextDecorationFacts` / `SetStaggeredIntensity` replacing the old
+`Pawn`-taking capture methods. Event-record call sites in `DiaryGameComponent.EventFactory.cs` now
+snapshot plain `int`/`string` values and store them. Saved fields and Scribe keys are unchanged, the
+Debug DLL was rebuilt, and all five pure test projects pass (602 assertions).
 
 Evidence:
 - `Source/Models/DiaryEvent.cs:1200` (`CaptureTextDecorationContext`)

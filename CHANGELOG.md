@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Live-pawn fact capture extracted from the saved model.** `DiaryEvent` no longer reads live
+  `Pawn` state. Its two capture methods (hediff/trait text-decoration facts and the 0..4
+  staggered-handwriting intensity) became pure value setters (`SetTextDecorationFacts` /
+  `SetStaggeredIntensity`); the live health/hediff/capacity/trait reads moved to a new guarded
+  collector, `Generation/PawnFactCapture.cs`, alongside `DlcContext`. Event-record call sites now
+  snapshot plain `int`/`string` values and hand them to the model. Restores the pure/impure barrier,
+  keeps saved fields and Scribe keys identical (old saves load unchanged), and adds no DLC
+  dependencies (base-game accessors only).
 - **API lane identity centralized.** Gate/cooldown keys, failover duplicate checks, successful-lane
   pinning, settings fetch/test stale-result checks, and sanitized lane labels now go through shared
   pure helpers with tests for each equality mode.

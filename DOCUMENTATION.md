@@ -62,7 +62,7 @@ Key files:
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, lookup indexes, generation queue (one partial per source). |
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
 | `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, response cleanup, API lane policy/identity, domain recovery, text decoration. |
-| `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs` | Pawn/surroundings/relationship/health/weapon context; all DLC reads centralized and guarded here. |
+| `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`). |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
 | `Generation/LlmClient.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
@@ -243,9 +243,11 @@ text or text matching the localized XML value clears the override, so XML stays 
 Layer boundaries:
 
 - Impure: event hooks, `DiaryGameComponent`, settings, XML lookup, localization, IO, RNG, save
-  mutation, transport.
+  mutation, transport, and live-pawn fact collection (`DlcContext`, `PawnFactCapture`,
+  `DiaryContextBuilder`'s summary builders).
 - Bridge: `DiaryPipelineAdapters`.
-- Pure: `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
+- Pure: `DiaryEvent`/`PawnDiaryRecord` (saved models — they store plain values only and never read a
+  live `Pawn`), `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
   `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`, `LlmResponseParser`,
   `DiaryResponsePostprocessor`, `DiaryTextDecorations`.
 

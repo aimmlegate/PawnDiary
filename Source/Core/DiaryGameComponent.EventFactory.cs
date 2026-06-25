@@ -60,10 +60,13 @@ namespace PawnDiary
 
             MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, initiator);
             MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.RecipientRole, recipient);
-            diaryEvent.CaptureStaggeredIntensity(DiaryEvent.InitiatorRole, initiator);
-            diaryEvent.CaptureStaggeredIntensity(DiaryEvent.RecipientRole, recipient);
-            diaryEvent.CaptureTextDecorationContext(DiaryEvent.InitiatorRole, initiator);
-            diaryEvent.CaptureTextDecorationContext(DiaryEvent.RecipientRole, recipient);
+            // Snapshot display-only pawn facts (staggered handwriting, text-decoration hediff/trait
+            // names) from the live pawns here, then store plain values on the model. After this the
+            // DiaryEvent never touches Pawn state. See PawnFactCapture / AGENTS.md ("barrier").
+            diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole, PawnFactCapture.StaggeredIntensity(initiator));
+            diaryEvent.SetStaggeredIntensity(DiaryEvent.RecipientRole, PawnFactCapture.StaggeredIntensity(recipient));
+            diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole, PawnFactCapture.TextDecorationFacts(initiator));
+            diaryEvent.SetTextDecorationFacts(DiaryEvent.RecipientRole, PawnFactCapture.TextDecorationFacts(recipient));
             RegisterDiaryEvent(diaryEvent);
             AddEventRef(initiator, diaryEvent.eventId);
             AddEventRef(recipient, diaryEvent.eventId);
@@ -110,8 +113,8 @@ namespace PawnDiary
             };
 
             MarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, pawn);
-            diaryEvent.CaptureStaggeredIntensity(DiaryEvent.InitiatorRole, pawn);
-            diaryEvent.CaptureTextDecorationContext(DiaryEvent.InitiatorRole, pawn);
+            diaryEvent.SetStaggeredIntensity(DiaryEvent.InitiatorRole, PawnFactCapture.StaggeredIntensity(pawn));
+            diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole, PawnFactCapture.TextDecorationFacts(pawn));
             RegisterDiaryEvent(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId);
             return diaryEvent;
