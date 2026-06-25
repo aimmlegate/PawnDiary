@@ -38,6 +38,9 @@
     <entryLabelMaxWidth>148</entryLabelMaxWidth>
     <entryFadeDurationSeconds>0.55</entryFadeDurationSeconds>
     <titleFadeDurationSeconds>0.8</titleFadeDurationSeconds>
+    <inspectTabUnreadUnderlineWidth>34</inspectTabUnreadUnderlineWidth>
+    <inspectTabUnreadUnderlineHeight>2</inspectTabUnreadUnderlineHeight>
+    <inspectTabUnreadUnderlineBottomPadding>4</inspectTabUnreadUnderlineBottomPadding>
 
     <!-- Linked-entry preview card -->
     <linkedEntryPadding>8</linkedEntryPadding>
@@ -107,6 +110,7 @@
     <linkedEntryBorderColor><r>0.35</r><g>0.45</g><b>0.55</b><a>1</a></linkedEntryBorderColor>
     <linkedEntryTextColor><r>0.65</r><g>0.70</g><b>0.75</b><a>1</a></linkedEntryTextColor>
     <linkedEntryHoverColor><r>0.25</r><g>0.30</g><b>0.38</b><a>0.90</a></linkedEntryHoverColor>
+    <inspectTabUnreadUnderlineColor><r>1</r><g>1</g><b>1</b><a>0.82</a></inspectTabUnreadUnderlineColor>
     <defaultCueColor><preset>name</preset></defaultCueColor>
     <quietCueColor><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></quietCueColor>
     <pawnNameSlaveColor><r>0.96</r><g>0.72</g><b>0.26</b><a>1</a></pawnNameSlaveColor>

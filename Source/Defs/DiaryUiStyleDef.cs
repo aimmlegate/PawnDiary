@@ -126,6 +126,9 @@ namespace PawnDiary
         public float entryLabelMaxWidth = 148f;
         public float entryFadeDurationSeconds = 0.55f;
         public float titleFadeDurationSeconds = 0.8f;
+        public float inspectTabUnreadUnderlineWidth = 34f;
+        public float inspectTabUnreadUnderlineHeight = 2f;
+        public float inspectTabUnreadUnderlineBottomPadding = 4f;
 
         // ---- Linked-entry card ----
         public float linkedEntryPadding = 8f;
@@ -195,6 +198,7 @@ namespace PawnDiary
         public DiaryUiColorSpec linkedEntryBorderColor = Color(0.35f, 0.45f, 0.55f, 1f);
         public DiaryUiColorSpec linkedEntryTextColor = Color(0.65f, 0.70f, 0.75f, 1f);
         public DiaryUiColorSpec linkedEntryHoverColor = Color(0.25f, 0.30f, 0.38f, 0.90f);
+        public DiaryUiColorSpec inspectTabUnreadUnderlineColor = Color(1f, 1f, 1f, 0.82f);
         public DiaryUiColorSpec defaultCueColor = Preset("name");
         public DiaryUiColorSpec quietCueColor = Color(0.74f, 0.74f, 0.70f, 1f);
         public DiaryUiColorSpec pawnNameSlaveColor = Color(0.96f, 0.72f, 0.26f, 1f);
@@ -252,6 +256,7 @@ namespace PawnDiary
         public Color LinkedEntryBorderColor => linkedEntryBorderColor.ToColor(new Color(0.35f, 0.45f, 0.55f));
         public Color LinkedEntryTextColor => linkedEntryTextColor.ToColor(new Color(0.65f, 0.70f, 0.75f));
         public Color LinkedEntryHoverColor => linkedEntryHoverColor.ToColor(new Color(0.25f, 0.30f, 0.38f, 0.90f));
+        public Color InspectTabUnreadUnderlineColor => inspectTabUnreadUnderlineColor.ToColor(new Color(1f, 1f, 1f, 0.82f));
         public Color DefaultCueColor => defaultCueColor.ToColor(ColoredText.NameColor);
         public Color QuietCueColor => quietCueColor.ToColor(new Color(0.74f, 0.74f, 0.70f));
         public Color PawnNameSlaveColor => pawnNameSlaveColor.ToColor(new Color(0.96f, 0.72f, 0.26f));
