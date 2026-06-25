@@ -6,6 +6,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Public release metadata cleaned.** Workshop-facing metadata and README copy now present the mod
+  as a public release. The publish script reports the DLL that remains in the uploadable payload and
+  preserves dependency package IDs while cleaning the mod's own published package ID.
 - **Hidden per-entry humor cues added.** Eligible first-person diary entries now occasionally carry
   one subtle structural writing cue appended to the system prompt — never a "be funny" instruction,
   always a single sentence-shape license (a flat understatement coda, a dry inventory, a clerical
@@ -148,7 +151,7 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-17 — 2026-06-18
 
-- **Beta release + publishing flow prepared** (Workshop metadata, preview art, publish script,
+- **Workshop release + publishing flow prepared** (Workshop metadata, preview art, publish script,
   package-id cleanup, verification hooks).
 - **LLM compatibility broadened:** OpenAI-compatible Chat Completions, OpenAI Responses, and native
   Ollama Chat; reasoning/thinking output cleanup; debug raw-response views. (Native Ollama was later

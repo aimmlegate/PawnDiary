@@ -13,7 +13,7 @@
   on local payload prep and is suitable for simple, repeatable Workshop uploads.
 
 .PARAMETER Version
-  Optional version stamp used for the temp build folder name. Defaults to beta-<today>.
+  Optional version stamp used for the temp build folder name. Defaults to release-<today>.
 
 .PARAMETER OutDir
   Output folder for the release payload. Defaults to <repo>/dist/<published packageId>.
@@ -40,7 +40,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = "beta-$(Get-Date -Format yyyyMMdd)",
+    [string]$Version = "release-$(Get-Date -Format yyyyMMdd)",
     [string]$OutDir,
     [string]$Configuration = "Release",
     [string]$PackageId,
@@ -103,11 +103,8 @@ function Set-AboutValue {
     param([string]$Text, [string]$Element, [string]$Value)
     $escapedValue = [System.Security.SecurityElement]::Escape($Value)
     $replacementValue = $escapedValue -replace '\$', '$$'
-    return [regex]::Replace(
-        $Text,
-        "(?s)(<$Element>\s*)(.*?)(\s*</$Element>)",
-        ('${1}' + $replacementValue + '${3}')
-    )
+    $regex = [regex]::new("(?s)(<$Element>\s*)(.*?)(\s*</$Element>)")
+    return $regex.Replace($Text, ('${1}' + $replacementValue + '${3}'), 1)
 }
 
 function Remove-DevelopmentPostfix {
@@ -319,7 +316,8 @@ if (-not [string]::IsNullOrWhiteSpace($Author)) {
 # Assemblies for Workshop release.
 $asmDir = Join-Path $OutDir "1.6\Assemblies"
 New-Item -ItemType Directory -Force -Path $asmDir | Out-Null
-Copy-Item -LiteralPath $builtDll -Destination $asmDir -Force
+$payloadDll = Join-Path $asmDir "PawnDiary.dll"
+Copy-Item -LiteralPath $builtDll -Destination $payloadDll -Force
 $harmony = Join-Path $buildOut "0Harmony.dll"
 if (Test-Path $harmony) {
     Copy-Item -LiteralPath $harmony -Destination $asmDir -Force
@@ -338,7 +336,7 @@ $payloadBytes = ($payloadFiles | Measure-Object -Property Length -Sum).Sum
 Write-Step "Done"
 Write-Host "Uploadable payload prepared:" -ForegroundColor Green
 Write-Host "  $OutDir"
-Write-Host "  Built DLL: $builtDll"
+Write-Host "  Payload DLL: $payloadDll"
 Write-Host "  Prepared About.xml: $aboutDest"
 Write-Host ("  shipped {0} files, {1:N2} MB" -f $payloadFiles.Count, ($payloadBytes / 1MB))
 

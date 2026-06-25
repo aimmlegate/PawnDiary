@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
-  <name>Pawn Diary (Beta)</name>
+  <name>Pawn Diary</name>
   <author>aimmlegate</author>
   <modIconPath IgnoreIfNoMatchingField="True">UI/PawnDiaryModIcon</modIconPath>
   <packageId>aimmlegate.pawndiary.development</packageId>
@@ -22,9 +22,9 @@
   <loadAfter>
     <li>brrainz.harmony</li>
   </loadAfter>
-  <description>BETA / WORK IN PROGRESS - expect rough edges, changing defaults, and ongoing prompt tuning; output quality depends on your model and settings.
+  <description>Pawn Diary gives RimWorld colonists a private journal. Output quality depends on your model and settings.
 
-Pawn Diary gives RimWorld colonists a private journal. It watches meaningful colony moments - social interactions, fights, mental breaks, raids, medicine, crafting, work, mood events, thoughts, arrivals, deaths, and end-of-day reflections - then asks a local or OpenAI-compatible language model to rewrite them as short diary pages in each colonist's own voice.
+It watches meaningful colony moments - social interactions, fights, mental breaks, raids, medicine, crafting, work, mood events, thoughts, arrivals, deaths, and end-of-day reflections - then asks a local or OpenAI-compatible language model to rewrite them as short diary pages in each colonist's own voice.
 
 Entries appear in a per-colonist Diary tab. Two-colonist events get paired points of view, so each pawn can remember the same moment differently. Arrivals and deaths bookend a pawn's story with neutral pages, and optional writing styles shape each voice without touching gameplay.
 

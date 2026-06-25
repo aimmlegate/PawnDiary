@@ -1,8 +1,7 @@
 # Pawn Diary
 
-> **Beta / work in progress.** Pawn Diary is being published to the Steam Workshop as a **hidden beta**
-> for testing. Expect rough edges, changing defaults, and ongoing prompt tuning — output quality
-> depends heavily on your model and settings. Feedback and bug reports are very welcome.
+Pawn Diary is available on the Steam Workshop. Output quality depends heavily on your model and
+settings; feedback and bug reports are welcome.
 
 Pawn Diary gives RimWorld colonists a private journal. It watches meaningful colony moments and asks
 a local or OpenAI-compatible language model to rewrite them as short diary pages in each pawn's own
@@ -45,9 +44,7 @@ groups in the mod settings.
 
 ## Status
 
-Pawn Diary is an early **beta** under active development, currently shipping as a **hidden Steam
-Workshop** release for testing. Expect rough edges, especially around model behavior and prompt
-tuning. The mod targets base RimWorld 1.6 and keeps DLC content optional.
+Pawn Diary is under active development and targets base RimWorld 1.6. DLC content stays optional.
 
 ## Prompt Lab
 
@@ -63,21 +60,20 @@ See `prompt-lab/README.md` for fixtures and per-model markdown output.
 ## Building & Releasing
 
 `scripts/publish.ps1` builds the DLL, copies **only** the files the mod needs to run
-(`About/`, both assemblies, `1.6/Defs/`, `Languages/`) into a clean
-`dist/<published packageId>` folder, strips the dev `.development` package suffix (and legacy
-`(developement)` / `(development)` markers) from the published `About.xml` name/packageId, and
-snapshots that payload onto a `release/<version>` branch plus a `v<version>` tag. Your current branch
-and the committed Debug DLL are left untouched.
+(`About/`, both assemblies, `1.6/Defs/`, `Textures/`, `Languages/`, and release docs) into a clean
+`dist/<published packageId>` folder, and strips the dev `.development` package suffix (plus legacy
+`(developement)` / `(development)` markers) from the published `About.xml` name/packageId. Your
+current branch and the committed Debug DLL are left untouched.
 
 ```powershell
-# Versioned release: builds dist/<published packageId> + release branch/tag
-powershell -File scripts/publish.ps1 -Version 1.0.0-beta.1
+# Prepare dist/<published packageId> for upload:
+powershell -File scripts/publish.ps1 -Version 1.0.0
 
-# Just refresh the uploadable dist/ folder, no git snapshot:
+# Refresh the uploadable dist/ folder using the default version stamp:
 powershell -File scripts/publish.ps1 -SkipBranch
 
-# Re-run an existing version (overwrite branch/tag): add -Force
-# Ship the Debug build instead of Release:           -Configuration Debug
+# Replace an existing installed Mods junction: add -Force
+# Ship the Debug build instead of Release:    -Configuration Debug
 ```
 
 **Uploading to the Steam Workshop:** the mod is published through RimWorld's in-game
@@ -86,8 +82,7 @@ folder verbatim — so upload the clean `dist/<published packageId>`, not this d
 Copy it into `…/RimWorld/Mods/<published packageId>` and temporarily move this dev folder
 out of `Mods` so RimWorld does not see two mods with the same clean packageId.
 `About/PublishedFileId.txt` ships with the payload, so the upload updates the existing
-item. RimWorld publishes items as public, so set **Visibility → Friends Only** on the
-item's Steam page afterwards.
+item.
 
 ## Documentation
 
