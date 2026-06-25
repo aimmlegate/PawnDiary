@@ -301,6 +301,10 @@ Docs:
 
 Priority: Medium
 
+Status: Completed 2026-06-25. `PawnDiaryMod` is now a small partial entry point, settings UI sections
+live in focused partial files, and settings-window model fetch/connection-test state lives in
+`ApiConnectionController`.
+
 Evidence:
 - `Source/Settings/PawnDiaryMod.cs:89` whole settings window.
 - `:169` API endpoint editor.

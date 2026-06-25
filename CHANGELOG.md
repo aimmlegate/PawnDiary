@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **`PawnDiaryMod` settings UI split.** The RimWorld `Mod` entry point now stays small while the
+  settings window is split into focused partial files for the top-level layout, API lanes, Prompt
+  Studio, Persona Studio, and shared widget helpers. The settings-window model fetch and connection
+  test state moved into `ApiConnectionController`, which owns pending async results, stale-row
+  matching, and cancellation while still applying translated status text and settings mutations on the
+  main draw thread. Behavior and save data are unchanged; the Debug DLL was rebuilt.
 - **`DiaryContextBuilder` split by concern.** The one static builder that mixed pure formatting,
   impure Pawn/Map collection, and GameCondition mood-impact policy is now separated so each concern
   has its own home and the pure piece is testable without the game. `DiaryContextBuilder` keeps only

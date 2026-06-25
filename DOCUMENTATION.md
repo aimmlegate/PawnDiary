@@ -44,7 +44,7 @@ PawnDiary/
 |   |-- Models/                  saved/display models (DiaryEvent, DiaryEntry, PawnDiaryRecord)
 |   |-- Patches/                 Harmony startup + hooks + inspect command
 |   |-- Pipeline/                pure prompt/response/decor contracts + API endpoint policy
-|   |-- Settings/                settings data + UI
+|   |-- Settings/                settings save data, API settings controller, settings UI partials
 |   |-- UI/                      hidden Diary inspect tab + partials, text formatting
 |   `-- Util/                    MiniJson (runtime-safe JSON; do not replace)
 |-- prompt-lab/                  Node prompt-testing harness (golden + generated fixtures)
@@ -66,7 +66,7 @@ Key files:
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
 | `Generation/LlmClient.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
-| `Settings/PawnDiaryMod.cs`, `PawnDiarySettings.cs` | Settings data and settings UI. |
+| `Settings/PawnDiaryMod*.cs`, `ApiConnectionController.cs`, `PawnDiarySettings.cs` | Settings entry point, split settings UI sections, settings-window API fetch/test controller, and saved settings data. |
 | `UI/ITab_Pawn_Diary*.cs`, `DiaryTextFormat.cs` | Hidden Diary inspect tab, cards, paging, debug controls, safe rich-text formatting. |
 | `Util/MiniJson.cs` | Runtime-safe JSON parser; do not add external JSON dependencies. |
 
@@ -307,6 +307,15 @@ weights, system-prompt overrides, per-event prompt/enhancement overrides, XML-ba
 and writing-style presets. Dev mode reveals **prompt test mode** in mod settings: real gameplay
 events still assemble their prompts, but the queue marks the POV prompt-only and never calls the LLM;
 those cards show in the Diary tab while dev mode is on.
+
+Settings code is split by immediate-mode UI responsibility. `PawnDiaryMod.cs` is the RimWorld `Mod`
+entry point and settings writer. `PawnDiaryMod.SettingsWindow.cs` owns the top-level scroll layout,
+`PawnDiaryMod.ApiLanes.cs` draws API rows and request tuning, `PawnDiaryMod.PromptStudio.cs` draws
+system/event prompt overrides, `PawnDiaryMod.PersonaStudio.cs` draws writing-style preset editing,
+and `PawnDiaryMod.SettingsWidgets.cs` holds shared row/button/label helpers. `ApiConnectionController`
+owns settings-window model fetches and connection tests, including pending async result handoff and
+stale-row matching; localized UI text and shared settings mutations are still applied on the main
+settings draw thread.
 
 **API lanes** support OpenAI-compatible Chat Completions and OpenAI Responses (model fetch/pick,
 per-row connection tests, per-row auth, per-row reasoning effort, and the shared request-tuning
