@@ -126,8 +126,8 @@ namespace PawnDiary
         private void DrawSelectedEventPromptEditor(Rect innerRect, ref float y, DiaryEventPromptDef selected)
         {
             string eventKey = EventPromptKeyForSettings(selected);
-            string currentPrompt = Settings.EffectiveEventPrompt(eventKey, selected.prompt);
-            string currentEnhancement = Settings.EffectiveEventEnhancement(eventKey, selected.enhancement);
+            string currentPrompt = Settings.eventPromptOverrides.Effective(eventKey, selected.prompt);
+            string currentEnhancement = Settings.eventEnhancementOverrides.Effective(eventKey, selected.enhancement);
 
             DrawFieldLabel(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptPromptField".Translate());
             y += 22f;
@@ -135,7 +135,7 @@ namespace PawnDiary
             string editedPrompt = Widgets.TextArea(promptRect, currentPrompt ?? string.Empty);
             if (!string.Equals(editedPrompt, currentPrompt ?? string.Empty, StringComparison.Ordinal))
             {
-                Settings.SetEventPromptOverride(eventKey, editedPrompt, selected.prompt);
+                Settings.eventPromptOverrides.Set(eventKey, editedPrompt, selected.prompt);
             }
 
             y += EventPromptTextAreaHeight + 8f;
@@ -145,7 +145,7 @@ namespace PawnDiary
             string editedEnhancement = Widgets.TextArea(enhancementRect, currentEnhancement ?? string.Empty);
             if (!string.Equals(editedEnhancement, currentEnhancement ?? string.Empty, StringComparison.Ordinal))
             {
-                Settings.SetEventEnhancementOverride(eventKey, editedEnhancement, selected.enhancement);
+                Settings.eventEnhancementOverrides.Set(eventKey, editedEnhancement, selected.enhancement);
             }
 
             y += EventPromptTextAreaHeight + 10f;
@@ -153,12 +153,12 @@ namespace PawnDiary
             Rect enhancementResetRect = new Rect(innerRect.x + innerRect.width / 2f + 4f, y, innerRect.width / 2f - 4f, 30f);
             if (ButtonTextFit(promptResetRect, "PawnDiary.Settings.RestoreEventPromptDefault".Translate()))
             {
-                Settings.ResetEventPromptOverride(eventKey);
+                Settings.eventPromptOverrides.Reset(eventKey);
             }
 
             if (ButtonTextFit(enhancementResetRect, "PawnDiary.Settings.RestoreEventEnhancementDefault".Translate()))
             {
-                Settings.ResetEventEnhancementOverride(eventKey);
+                Settings.eventEnhancementOverrides.Reset(eventKey);
             }
         }
 
@@ -239,7 +239,7 @@ namespace PawnDiary
                         key = PromptStudioEventPrefix + eventKey,
                         label = EventPromptOptionLabel(def),
                         eventPromptDef = def,
-                        IsCustomized = () => Settings.HasEventPromptOverride(eventKey) || Settings.HasEventEnhancementOverride(eventKey)
+                        IsCustomized = () => Settings.eventPromptOverrides.HasOverride(eventKey) || Settings.eventEnhancementOverrides.HasOverride(eventKey)
                     });
                 }
             }

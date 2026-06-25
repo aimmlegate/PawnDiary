@@ -66,7 +66,7 @@ Key files:
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
 | `Generation/LlmClient.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency and pure provider response parsing. |
-| `Settings/PawnDiaryMod*.cs`, `ApiConnectionController.cs`, `PawnDiarySettings.cs` | Settings entry point, split settings UI sections, settings-window API fetch/test controller, and saved settings data. |
+| `Settings/PawnDiaryMod*.cs`, `ApiConnectionController.cs`, `PawnDiarySettings.cs`, `PersonaPresetStore.cs`, `PromptOverrideDictionary.cs` | Settings entry point, split settings UI sections, settings-window API fetch/test controller, saved settings data (connection, generation, system-prompt overrides), the writing-style (persona) preset catalog store, and the reusable per-key event-prompt override map. |
 | `UI/ITab_Pawn_Diary*.cs`, `DiaryTextFormat.cs` | Hidden Diary inspect tab, cards, paging, debug controls, safe rich-text formatting. |
 | `Util/MiniJson.cs` | Runtime-safe JSON parser; do not add external JSON dependencies. |
 
@@ -316,6 +316,17 @@ and `PawnDiaryMod.SettingsWidgets.cs` holds shared row/button/label helpers. `Ap
 owns settings-window model fetches and connection tests, including pending async result handoff and
 stale-row matching; localized UI text and shared settings mutations are still applied on the main
 settings draw thread.
+
+`PawnDiarySettings` stays the save owner (connection, generation, system-prompt overrides, value
+clamping) but no longer holds catalog/override logic. Writing-style (persona) CRUD, normalization,
+and theme policy live in `PersonaPresetStore` (field `PawnDiarySettings.personaPresets`), and the
+per-key event-prompt/event-enhancement override maps are each a reusable `PromptOverrideDictionary`
+(fields `eventPromptOverrides` / `eventEnhancementOverrides`). Both are `IExposable` and serialize
+under their original Scribe keys (`personaPresets`, `eventPromptOverrides`, `eventEnhancementOverrides`)
+so existing saves keep loading. Callers go through the stores directly — e.g.
+`settings.personaPresets.OverrideFor(...)` and `settings.eventPromptOverrides.Effective(...)`; only
+the two operations that span both event maps (`ResetAllEventPromptOverrides`,
+`CustomizedEventPromptCount`) remain on `PawnDiarySettings`.
 
 **API lanes** support OpenAI-compatible Chat Completions and OpenAI Responses (model fetch/pick,
 per-row connection tests, per-row auth, per-row reasoning effort, and the shared request-tuning

@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Persona and override state extracted from `PawnDiarySettings`.** The save DTO no longer owns
+  writing-style catalog mutation or the per-key override-dictionary plumbing. Writing-style (persona)
+  CRUD, normalization, and theme policy moved to a new `Settings/PersonaPresetStore.cs`
+  (`PersonaPresetConfig` moved with it); the duplicated lookup/set/reset/normalize code behind the
+  event-prompt and event-enhancement override maps collapsed into one reusable
+  `Settings/PromptOverrideDictionary.cs`. `PawnDiarySettings` constructs one of each
+  (`personaPresets`, `eventPromptOverrides`, `eventEnhancementOverrides`) and delegates save/load to
+  them; each store serializes under its original Scribe key (`personaPresets`, `eventPromptOverrides`,
+  `eventEnhancementOverrides`), so existing saves keep loading unchanged. Callers now go through the
+  stores directly (e.g. `settings.personaPresets.OverrideFor(...)`,
+  `settings.eventPromptOverrides.Effective(...)`); only the two operations spanning both event maps
+  (`ResetAllEventPromptOverrides`, `CustomizedEventPromptCount`) stay on `PawnDiarySettings`. System-
+  prompt overrides, connection, and generation settings are unchanged. Behavior and save data are
+  unchanged; the Debug DLL was rebuilt; all five pure test projects pass (622 assertions).
 - **`PawnDiaryMod` settings UI split.** The RimWorld `Mod` entry point now stays small while the
   settings window is split into focused partial files for the top-level layout, API lanes, Prompt
   Studio, Persona Studio, and shared widget helpers. The settings-window model fetch and connection

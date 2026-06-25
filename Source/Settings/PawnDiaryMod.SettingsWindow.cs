@@ -14,7 +14,7 @@ namespace PawnDiary
         public override void DoSettingsWindowContents(Rect inRect)
         {
             Settings.EnsureEndpointsList();
-            Settings.EnsurePersonaPresetList();
+            Settings.personaPresets.EnsureList();
             // Apply any completed async API-tool results on the main thread before drawing rows.
             apiConnectionController.ApplyPendingResults();
 

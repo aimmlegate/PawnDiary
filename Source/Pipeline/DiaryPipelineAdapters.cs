@@ -96,10 +96,10 @@ namespace PawnDiary
             DiaryEventPromptDef eventPrompt = DiaryEventPrompts.ForKey(eventPromptKey);
             string eventPromptText = PawnDiaryMod.Settings == null
                 ? eventPrompt?.prompt
-                : PawnDiaryMod.Settings.EffectiveEventPrompt(eventPromptKey, eventPrompt?.prompt);
+                : PawnDiaryMod.Settings.eventPromptOverrides.Effective(eventPromptKey, eventPrompt?.prompt);
             string eventEnhancementText = PawnDiaryMod.Settings == null
                 ? eventPrompt?.enhancement
-                : PawnDiaryMod.Settings.EffectiveEventEnhancement(eventPromptKey, eventPrompt?.enhancement);
+                : PawnDiaryMod.Settings.eventEnhancementOverrides.Effective(eventPromptKey, eventPrompt?.enhancement);
             DiaryPolicySnapshot snapshot = new DiaryPolicySnapshot
             {
                 group = new DiaryGroupPolicy

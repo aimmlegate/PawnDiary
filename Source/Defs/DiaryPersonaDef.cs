@@ -239,8 +239,8 @@ namespace PawnDiary
                 return baseList;
             }
 
-            settings.EnsurePersonaPresetList();
-            if (settings.personaPresets == null || settings.personaPresets.Count == 0)
+            settings.personaPresets.EnsureList();
+            if (settings.personaPresets.presets == null || settings.personaPresets.presets.Count == 0)
             {
                 return baseList;
             }
@@ -254,11 +254,11 @@ namespace PawnDiary
                     continue;
                 }
 
-                PersonaPresetConfig overridePreset = settings.PersonaOverrideFor(source.defName);
+                PersonaPresetConfig overridePreset = settings.personaPresets.OverrideFor(source.defName);
                 merged.Add(BuildPersona(source, overridePreset));
             }
 
-            List<PersonaPresetConfig> custom = settings.CustomPersonas();
+            List<PersonaPresetConfig> custom = settings.personaPresets.Customs();
             for (int i = 0; i < custom.Count; i++)
             {
                 PersonaPresetConfig customPreset = custom[i];

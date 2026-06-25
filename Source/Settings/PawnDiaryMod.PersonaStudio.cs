@@ -20,8 +20,8 @@ namespace PawnDiary
         private void DrawPersonaStudioBlock(Listing_Standard listing)
         {
             int total = DiaryPersonas.All.Count;
-            int custom = Settings.CustomPersonas().Count;
-            int customized = Settings.personaPresets == null ? 0 : Settings.personaPresets.Count(preset => preset != null && !preset.custom);
+            int custom = Settings.personaPresets.Customs().Count;
+            int customized = Settings.personaPresets.presets == null ? 0 : Settings.personaPresets.presets.Count(preset => preset != null && !preset.custom);
             float tagPickerHeight = PersonaTagPickerHeight();
 
             Rect cardRect = listing.GetRect(412f + tagPickerHeight);
@@ -38,12 +38,12 @@ namespace PawnDiary
             Rect clearRect = new Rect(innerRect.x + innerRect.width / 2f + 4f, y, innerRect.width / 2f - 4f, 30f);
             if (ButtonTextFit(addRect, "PawnDiary.Settings.AddPersonaPreset".Translate()))
             {
-                selectedPersonaKey = Settings.AddCustomPersona();
+                selectedPersonaKey = Settings.personaPresets.AddCustom();
             }
 
             if (ButtonTextFit(clearRect, "PawnDiary.Settings.ResetPersonaPresets".Translate()))
             {
-                Settings.ResetPersonaPresets();
+                Settings.personaPresets.ResetAll();
                 selectedPersonaKey = null;
             }
 
@@ -95,9 +95,9 @@ namespace PawnDiary
 
         private void DrawSelectedPersonaFields(Rect innerRect, ref float y, DiaryPersonaDef selected, float tagPickerHeight)
         {
-            bool custom = Settings.CustomPersonaFor(selected.defName) != null;
+            bool custom = Settings.personaPresets.CustomFor(selected.defName) != null;
             DiaryPersonaDef baseDef = BasePersonaForSettings(selected);
-            PersonaPresetConfig overridePreset = custom ? Settings.CustomPersonaFor(selected.defName) : Settings.PersonaOverrideFor(selected.defName);
+            PersonaPresetConfig overridePreset = custom ? Settings.personaPresets.CustomFor(selected.defName) : Settings.personaPresets.OverrideFor(selected.defName);
             string currentLabel = overridePreset?.label ?? baseDef?.label ?? string.Empty;
             string currentRule = overridePreset?.rule ?? baseDef?.rule ?? string.Empty;
             List<string> currentThemes = new List<string>(overridePreset?.themes ?? baseDef?.themes ?? new List<string>());
@@ -140,7 +140,7 @@ namespace PawnDiary
             {
                 if (custom)
                 {
-                    PersonaPresetConfig customPreset = Settings.CustomPersonaFor(selected.defName);
+                    PersonaPresetConfig customPreset = Settings.personaPresets.CustomFor(selected.defName);
                     if (customPreset != null)
                     {
                         customPreset.label = editedLabel ?? string.Empty;
@@ -156,11 +156,11 @@ namespace PawnDiary
                         && editedThemes.SequenceEqual(baseDef?.themes ?? new List<string>());
                     if (matchesDefault)
                     {
-                        Settings.ResetPersonaOverride(selected.defName);
+                        Settings.personaPresets.ResetOverride(selected.defName);
                     }
                     else
                     {
-                        Settings.SetPersonaOverride(
+                        Settings.personaPresets.SetOverride(
                             selected.defName,
                             editedLabel,
                             editedRule,
@@ -175,7 +175,7 @@ namespace PawnDiary
             {
                 if (ButtonTextFit(actionRect, "PawnDiary.Settings.DeletePersonaPreset".Translate()))
                 {
-                    Settings.RemoveCustomPersona(selected.defName);
+                    Settings.personaPresets.RemoveCustom(selected.defName);
                     selectedPersonaKey = null;
                 }
             }
@@ -183,7 +183,7 @@ namespace PawnDiary
             {
                 if (ButtonTextFit(actionRect, "PawnDiary.Settings.RestorePersonaPreset".Translate()))
                 {
-                    Settings.ResetPersonaOverride(selected.defName);
+                    Settings.personaPresets.ResetOverride(selected.defName);
                 }
             }
         }
@@ -264,7 +264,7 @@ namespace PawnDiary
                 return false;
             }
 
-            return Settings.PersonaOverrideFor(defName) != null || Settings.CustomPersonaFor(defName) != null;
+            return Settings.personaPresets.OverrideFor(defName) != null || Settings.personaPresets.CustomFor(defName) != null;
         }
 
         private string PersonaOptionLabel(DiaryPersonaDef persona)

@@ -25,7 +25,7 @@ Use this as a planning document, not as a mandate to do every refactor at once. 
 3. Tunables to XML: intoxication, consciousness thresholds, mood condition families.
 4. ~~`DiaryContextBuilder` split~~ (done).
 5. `PawnDiaryMod` settings UI/async split.
-6. `PawnDiarySettings` persona/override extraction.
+6. ~~`PawnDiarySettings` persona/override extraction~~ (done).
 7. `DiaryGameComponent.Generation` split: lane selection, titles, pawn lookup.
 8. `DiaryGameComponent` repository/state bags.
 9. Tier-3 cleanups as opportunity allows.
@@ -342,6 +342,17 @@ Docs:
 ## Run Card 8: Extract Persona And Override State From `PawnDiarySettings`
 
 Priority: Low to Medium
+
+Status: Resolved 2026-06-25. Writing-style (persona) CRUD, normalization, and theme policy moved to a
+new `Source/Settings/PersonaPresetStore.cs` (with `PersonaPresetConfig`), and the duplicated
+per-key override-dictionary plumbing behind the event-prompt and event-enhancement maps collapsed into
+one reusable `Source/Settings/PromptOverrideDictionary.cs`. `PawnDiarySettings` owns one instance of
+each (`personaPresets`, `eventPromptOverrides`, `eventEnhancementOverrides`) and delegates `ExposeData`
+to them; each serializes under its original Scribe key, so existing saves load unchanged. Callers go
+through the stores directly; only `ResetAllEventPromptOverrides` and `CustomizedEventPromptCount`
+remain on settings (they span both event maps). System-prompt, connection, and generation settings are
+unchanged. Behavior and save data unchanged; Debug DLL rebuilt; all five pure test projects pass
+(622 assertions).
 
 Evidence:
 - `Source/Settings/PawnDiarySettings.cs:1146-1358` persona CRUD.

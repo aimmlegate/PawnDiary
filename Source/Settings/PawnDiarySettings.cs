@@ -1,9 +1,10 @@
-// All mod settings (connection, generation options, prompt overrides, per-group enable overrides,
-// and writing-style edits) plus value clamping and save/load. Prompt templates, signal policies, and
-// per-group instructions are XML Defs, not save settings.
+// Connection + generation mod settings, the system-prompt overrides, and value clamping/save-load.
+// Writing-style (persona) catalog edits live in PersonaPresetStore and the reusable event-prompt
+// override dictionaries live in PromptOverrideDictionary; PawnDiarySettings owns one of each and
+// delegates save/load to them. Prompt templates, signal policies, and per-group instructions are
+// XML Defs, not save settings.
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -77,48 +78,6 @@ namespace PawnDiary
         }
     }
 
-    /// <summary>
-    /// One editable writing-style preset row persisted in settings. Rows are either:
-    /// - an override of an XML style Def (custom = false, defName matches the Def), or
-    /// - a fully custom style created in settings (custom = true).
-    /// The type name keeps "Persona" for save compatibility with older settings.
-    /// </summary>
-    public class PersonaPresetConfig : IExposable
-    {
-        // Stable key used everywhere styles are referenced (per-pawn record, prompt context, picker).
-        public string defName = string.Empty;
-        // Human-readable picker label shown in UI.
-        public string label = string.Empty;
-        // Writing-style rule appended to first-person prompts.
-        public string rule = string.Empty;
-        // Internal theme tags used for weighted first-roll style selection.
-        public List<string> themes = new List<string>();
-        // True when this row is a user-created style (not an override of an XML Def).
-        public bool custom;
-
-        public PersonaPresetConfig()
-        {
-        }
-
-        public PersonaPresetConfig(string defName, string label, string rule, IEnumerable<string> themes, bool custom)
-        {
-            this.defName = defName ?? string.Empty;
-            this.label = label ?? string.Empty;
-            this.rule = rule ?? string.Empty;
-            this.themes = PawnDiarySettings.NormalizeThemes(themes);
-            this.custom = custom;
-        }
-
-        public void ExposeData()
-        {
-            Scribe_Values.Look(ref defName, "defName", string.Empty);
-            Scribe_Values.Look(ref label, "label", string.Empty);
-            Scribe_Values.Look(ref rule, "rule", string.Empty);
-            Scribe_Collections.Look(ref themes, "themes", LookMode.Value);
-            Scribe_Values.Look(ref custom, "custom", false);
-        }
-    }
-
     public class PawnDiarySettings : ModSettings
     {
         // The configured API lanes used for generation. Requests are distributed according to
@@ -177,9 +136,10 @@ namespace PawnDiary
         public string titleSystemPromptOverride = string.Empty;
         // Optional saved overrides for the broad event-source prompt fields. Keys are
         // DiaryEventPromptDef.eventType values such as "Interaction" or "Raid"; blank means
-        // "use the XML default" so Defs stay the canonical prompt catalog.
-        public Dictionary<string, string> eventPromptOverrides = new Dictionary<string, string>();
-        public Dictionary<string, string> eventEnhancementOverrides = new Dictionary<string, string>();
+        // "use the XML default" so Defs stay the canonical prompt catalog. Each map is a
+        // PromptOverrideDictionary that owns its own Scribe key and lookup/normalize plumbing.
+        public PromptOverrideDictionary eventPromptOverrides = new PromptOverrideDictionary("eventPromptOverrides");
+        public PromptOverrideDictionary eventEnhancementOverrides = new PromptOverrideDictionary("eventEnhancementOverrides");
         // Player-facing multipliers for the two random entry gates:
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
@@ -189,17 +149,15 @@ namespace PawnDiary
         // is now XML-only (DiaryInteractionGroupDef.defaultEnabled); this dictionary remains only so
         // old configs load without losing unrelated settings.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
-        // Writing-style preset edits made in settings: XML override rows plus user-created custom styles.
-        public List<PersonaPresetConfig> personaPresets = new List<PersonaPresetConfig>();
+        // Writing-style preset edits made in settings: XML override rows plus user-created custom
+        // styles. Owned by PersonaPresetStore, which holds the CRUD and normalization logic.
+        public PersonaPresetStore personaPresets = new PersonaPresetStore();
 
-        // Parallel lists used by Scribe_Collections for serializing the dictionaries (Unity's
-        // serialization cannot handle Dictionary directly).
+        // Parallel lists used by Scribe_Collections for serializing the group-enabled dictionary
+        // (Unity's serialization cannot handle Dictionary directly). The event-override maps keep
+        // their own scratch lists inside PromptOverrideDictionary.
         private List<string> groupEnabledKeys;
         private List<bool> groupEnabledValues;
-        private List<string> eventPromptOverrideKeys;
-        private List<string> eventPromptOverrideValues;
-        private List<string> eventEnhancementOverrideKeys;
-        private List<string> eventEnhancementOverrideValues;
 
         // Default local LLM server endpoint (LM Studio/OpenAI-compatible local servers).
         public const string DefaultEndpointUrl = ApiEndpointPolicy.DefaultEndpointUrl;
@@ -231,12 +189,12 @@ namespace PawnDiary
             Scribe_Values.Look(ref systemPromptReflectionOverride, "systemPromptReflectionOverride", string.Empty);
             Scribe_Values.Look(ref systemPromptNeutralOverride, "systemPromptNeutralOverride", string.Empty);
             Scribe_Values.Look(ref titleSystemPromptOverride, "titleSystemPromptOverride", string.Empty);
-            Scribe_Collections.Look(ref eventPromptOverrides, "eventPromptOverrides", LookMode.Value, LookMode.Value, ref eventPromptOverrideKeys, ref eventPromptOverrideValues);
-            Scribe_Collections.Look(ref eventEnhancementOverrides, "eventEnhancementOverrides", LookMode.Value, LookMode.Value, ref eventEnhancementOverrideKeys, ref eventEnhancementOverrideValues);
+            eventPromptOverrides.ExposeData();
+            eventEnhancementOverrides.ExposeData();
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
-            Scribe_Collections.Look(ref personaPresets, "personaPresets", LookMode.Deep);
+            personaPresets.ExposeData();
 
             ClampValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -373,220 +331,23 @@ namespace PawnDiary
         }
 
         // ---- Event prompt helpers ----
-
-        /// <summary>Returns the event-type prompt, using a saved override when present.</summary>
-        public string EffectiveEventPrompt(string eventType, string xmlDefault)
-        {
-            EnsureEventPromptDictionaries();
-            return PromptOverrideOrDefault(EventOverrideFor(eventPromptOverrides, eventType), xmlDefault);
-        }
-
-        /// <summary>Returns the event-type enhancement, using a saved override when present.</summary>
-        public string EffectiveEventEnhancement(string eventType, string xmlDefault)
-        {
-            EnsureEventPromptDictionaries();
-            return PromptOverrideOrDefault(EventOverrideFor(eventEnhancementOverrides, eventType), xmlDefault);
-        }
-
-        /// <summary>Stores or clears the prompt override for one broad event source.</summary>
-        public void SetEventPromptOverride(string eventType, string prompt, string xmlDefault)
-        {
-            EnsureEventPromptDictionaries();
-            SetEventOverride(eventPromptOverrides, eventType, NormalizePromptOverride(prompt, xmlDefault));
-        }
-
-        /// <summary>Stores or clears the enhancement override for one broad event source.</summary>
-        public void SetEventEnhancementOverride(string eventType, string enhancement, string xmlDefault)
-        {
-            EnsureEventPromptDictionaries();
-            SetEventOverride(eventEnhancementOverrides, eventType, NormalizePromptOverride(enhancement, xmlDefault));
-        }
-
-        /// <summary>Clears one event prompt override so XML supplies the text again.</summary>
-        public void ResetEventPromptOverride(string eventType)
-        {
-            EnsureEventPromptDictionaries();
-            RemoveEventOverride(eventPromptOverrides, eventType);
-        }
-
-        /// <summary>Clears one event enhancement override so XML supplies the text again.</summary>
-        public void ResetEventEnhancementOverride(string eventType)
-        {
-            EnsureEventPromptDictionaries();
-            RemoveEventOverride(eventEnhancementOverrides, eventType);
-        }
+        // Per-key lookup/set/reset and "is customized" live on PromptOverrideDictionary now; these
+        // two span both the prompt and enhancement maps, so they stay here and delegate.
 
         /// <summary>Clears both saved event prompt dictionaries.</summary>
         public void ResetAllEventPromptOverrides()
         {
-            EnsureEventPromptDictionaries();
             eventPromptOverrides.Clear();
             eventEnhancementOverrides.Clear();
-        }
-
-        /// <summary>True when the event prompt text differs from its XML default.</summary>
-        public bool HasEventPromptOverride(string eventType)
-        {
-            EnsureEventPromptDictionaries();
-            return !string.IsNullOrWhiteSpace(EventOverrideFor(eventPromptOverrides, eventType));
-        }
-
-        /// <summary>True when the event enhancement text differs from its XML default.</summary>
-        public bool HasEventEnhancementOverride(string eventType)
-        {
-            EnsureEventPromptDictionaries();
-            return !string.IsNullOrWhiteSpace(EventOverrideFor(eventEnhancementOverrides, eventType));
         }
 
         /// <summary>Counts event types with either prompt or enhancement text customized.</summary>
         public int CustomizedEventPromptCount()
         {
-            EnsureEventPromptDictionaries();
             HashSet<string> keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            AddOverrideKeys(keys, eventPromptOverrides);
-            AddOverrideKeys(keys, eventEnhancementOverrides);
+            eventPromptOverrides.AddKeysTo(keys);
+            eventEnhancementOverrides.AddKeysTo(keys);
             return keys.Count;
-        }
-
-        private void EnsureEventPromptDictionaries()
-        {
-            if (eventPromptOverrides == null)
-            {
-                eventPromptOverrides = new Dictionary<string, string>();
-            }
-
-            if (eventEnhancementOverrides == null)
-            {
-                eventEnhancementOverrides = new Dictionary<string, string>();
-            }
-        }
-
-        private string EventOverrideFor(Dictionary<string, string> overrides, string eventType)
-        {
-            EnsureEventPromptDictionaries();
-            string key = EventPromptKey(eventType);
-            if (string.IsNullOrEmpty(key) || overrides == null)
-            {
-                return string.Empty;
-            }
-
-            string value;
-            if (overrides.TryGetValue(key, out value))
-            {
-                return value ?? string.Empty;
-            }
-
-            foreach (KeyValuePair<string, string> pair in overrides)
-            {
-                if (string.Equals(pair.Key, key, StringComparison.OrdinalIgnoreCase))
-                {
-                    return pair.Value ?? string.Empty;
-                }
-            }
-
-            return string.Empty;
-        }
-
-        private void SetEventOverride(Dictionary<string, string> overrides, string eventType, string value)
-        {
-            EnsureEventPromptDictionaries();
-            string key = EventPromptKey(eventType);
-            if (string.IsNullOrEmpty(key) || overrides == null)
-            {
-                return;
-            }
-
-            RemoveEventOverride(overrides, key);
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                overrides[key] = value;
-            }
-        }
-
-        private void RemoveEventOverride(Dictionary<string, string> overrides, string eventType)
-        {
-            string key = EventPromptKey(eventType);
-            if (string.IsNullOrEmpty(key) || overrides == null)
-            {
-                return;
-            }
-
-            List<string> keysToRemove = null;
-            foreach (string existingKey in overrides.Keys)
-            {
-                if (string.Equals(existingKey, key, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (keysToRemove == null)
-                    {
-                        keysToRemove = new List<string>();
-                    }
-
-                    keysToRemove.Add(existingKey);
-                }
-            }
-
-            if (keysToRemove == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < keysToRemove.Count; i++)
-            {
-                overrides.Remove(keysToRemove[i]);
-            }
-        }
-
-        private static string EventPromptKey(string eventType)
-        {
-            return (eventType ?? string.Empty).Trim();
-        }
-
-        private static void AddOverrideKeys(HashSet<string> keys, Dictionary<string, string> overrides)
-        {
-            if (keys == null || overrides == null)
-            {
-                return;
-            }
-
-            foreach (KeyValuePair<string, string> pair in overrides)
-            {
-                if (!string.IsNullOrWhiteSpace(pair.Key) && !string.IsNullOrWhiteSpace(pair.Value))
-                {
-                    keys.Add(pair.Key.Trim());
-                }
-            }
-        }
-
-        private static void NormalizeEventOverrideDictionary(Dictionary<string, string> overrides)
-        {
-            if (overrides == null)
-            {
-                return;
-            }
-
-            List<string> keysToRemove = null;
-            foreach (KeyValuePair<string, string> pair in overrides)
-            {
-                if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
-                {
-                    if (keysToRemove == null)
-                    {
-                        keysToRemove = new List<string>();
-                    }
-
-                    keysToRemove.Add(pair.Key);
-                }
-            }
-
-            if (keysToRemove == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < keysToRemove.Count; i++)
-            {
-                overrides.Remove(keysToRemove[i]);
-            }
         }
 
         // ---- API endpoint helpers ----
@@ -931,8 +692,9 @@ namespace PawnDiary
         public void ClampValues()
         {
             EnsureGroupDictionaries();
-            EnsureEventPromptDictionaries();
-            EnsurePersonaPresetList();
+            eventPromptOverrides.Normalize();
+            eventEnhancementOverrides.Normalize();
+            personaPresets.Normalize();
 
             EnsureEndpointsList();
 
@@ -946,11 +708,8 @@ namespace PawnDiary
             systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;
             systemPromptNeutralOverride = systemPromptNeutralOverride ?? string.Empty;
             titleSystemPromptOverride = titleSystemPromptOverride ?? string.Empty;
-            NormalizeEventOverrideDictionary(eventPromptOverrides);
-            NormalizeEventOverrideDictionary(eventEnhancementOverrides);
             workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
             socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
-            NormalizePersonaPresets();
         }
 
         /// <summary>
@@ -968,234 +727,8 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>
-        /// Ensures the style preset edit list is non-null (defensive against deserialization gaps).
-        /// </summary>
-        public void EnsurePersonaPresetList()
-        {
-            if (personaPresets == null)
-            {
-                personaPresets = new List<PersonaPresetConfig>();
-            }
-        }
-
-        /// <summary>
-        /// Finds an override row for an XML writing-style Def by defName.
-        /// </summary>
-        public PersonaPresetConfig PersonaOverrideFor(string defName)
-        {
-            EnsurePersonaPresetList();
-            return personaPresets.FirstOrDefault(preset =>
-                preset != null
-                && !preset.custom
-                && preset.defName == defName);
-        }
-
-        /// <summary>
-        /// Finds a custom writing-style row by defName.
-        /// </summary>
-        public PersonaPresetConfig CustomPersonaFor(string defName)
-        {
-            EnsurePersonaPresetList();
-            return personaPresets.FirstOrDefault(preset =>
-                preset != null
-                && preset.custom
-                && preset.defName == defName);
-        }
-
-        /// <summary>
-        /// Returns only user-created writing styles (custom=true) for catalog merging and UI.
-        /// </summary>
-        public List<PersonaPresetConfig> CustomPersonas()
-        {
-            EnsurePersonaPresetList();
-            return personaPresets
-                .Where(preset => preset != null && preset.custom)
-                .ToList();
-        }
-
-        /// <summary>
-        /// Upserts an override row for an XML writing-style Def.
-        /// </summary>
-        public void SetPersonaOverride(string defName, string label, string rule, IEnumerable<string> themes)
-        {
-            if (string.IsNullOrWhiteSpace(defName))
-            {
-                return;
-            }
-
-            EnsurePersonaPresetList();
-            PersonaPresetConfig existing = PersonaOverrideFor(defName);
-            if (existing == null)
-            {
-                existing = new PersonaPresetConfig(
-                    defName,
-                    label,
-                    rule,
-                    themes,
-                    false);
-                personaPresets.Add(existing);
-            }
-            else
-            {
-                existing.label = label ?? string.Empty;
-                existing.rule = rule ?? string.Empty;
-                existing.themes = NormalizeThemes(themes);
-                existing.custom = false;
-            }
-
-            DiaryPersonas.InvalidateCache();
-        }
-
-        /// <summary>
-        /// Removes an override row for an XML writing-style Def, restoring XML defaults.
-        /// </summary>
-        public void ResetPersonaOverride(string defName)
-        {
-            if (string.IsNullOrWhiteSpace(defName) || personaPresets == null)
-            {
-                return;
-            }
-
-            if (personaPresets.RemoveAll(preset => preset != null && !preset.custom && preset.defName == defName) > 0)
-            {
-                DiaryPersonas.InvalidateCache();
-            }
-        }
-
-        /// <summary>
-        /// Adds a new custom writing-style row and returns its generated defName.
-        /// </summary>
-        public string AddCustomPersona()
-        {
-            EnsurePersonaPresetList();
-            string defName = NextCustomPersonaDefName();
-            personaPresets.Add(new PersonaPresetConfig(
-                defName,
-                "PawnDiary.Settings.NewPersonaLabel".Translate().Resolve(),
-                string.Empty,
-                new[] { DiaryPersonas.PredefinedThemeTags[0] },
-                true));
-            DiaryPersonas.InvalidateCache();
-            return defName;
-        }
-
-        /// <summary>
-        /// Deletes one user-created writing-style row.
-        /// </summary>
-        public void RemoveCustomPersona(string defName)
-        {
-            if (string.IsNullOrWhiteSpace(defName) || personaPresets == null)
-            {
-                return;
-            }
-
-            if (personaPresets.RemoveAll(preset => preset != null && preset.custom && preset.defName == defName) > 0)
-            {
-                DiaryPersonas.InvalidateCache();
-            }
-        }
-
-        /// <summary>
-        /// Removes all style overrides and custom styles, restoring pure XML style defs.
-        /// </summary>
-        public void ResetPersonaPresets()
-        {
-            EnsurePersonaPresetList();
-            personaPresets.Clear();
-            DiaryPersonas.InvalidateCache();
-        }
-
-        // Generates deterministic custom style keys so they are stable across saves and merges.
-        private string NextCustomPersonaDefName()
-        {
-            const string prefix = "DiaryPersona_Custom_";
-            int next = 1;
-            HashSet<string> used = new HashSet<string>(StringComparer.Ordinal);
-
-            List<DiaryPersonaDef> defs = DefDatabase<DiaryPersonaDef>.AllDefsListForReading;
-            if (defs != null)
-            {
-                for (int i = 0; i < defs.Count; i++)
-                {
-                    if (!string.IsNullOrWhiteSpace(defs[i]?.defName))
-                    {
-                        used.Add(defs[i].defName);
-                    }
-                }
-            }
-
-            for (int i = 0; i < personaPresets.Count; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(personaPresets[i]?.defName))
-                {
-                    used.Add(personaPresets[i].defName);
-                }
-            }
-
-            while (used.Contains(prefix + next))
-            {
-                next++;
-            }
-
-            return prefix + next;
-        }
-
-        // Keeps writing-style preset edits safe and deterministic after load:
-        // - strips invalid/unknown tags
-        // - guarantees custom styles keep at least one predefined tag
-        // - drops malformed rows and duplicate keys
-        private void NormalizePersonaPresets()
-        {
-            EnsurePersonaPresetList();
-
-            HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
-            List<PersonaPresetConfig> normalized = new List<PersonaPresetConfig>();
-            for (int i = 0; i < personaPresets.Count; i++)
-            {
-                PersonaPresetConfig preset = personaPresets[i];
-                if (preset == null || string.IsNullOrWhiteSpace(preset.defName))
-                {
-                    continue;
-                }
-
-                if (!seen.Add(preset.defName))
-                {
-                    continue;
-                }
-
-                preset.label = preset.label ?? string.Empty;
-                preset.rule = preset.rule ?? string.Empty;
-
-                if (preset.themes == null)
-                {
-                    preset.themes = new List<string>();
-                }
-
-                preset.themes = NormalizeThemes(preset.themes);
-
-                if (preset.custom && preset.themes.Count == 0)
-                {
-                    preset.themes.Add(DiaryPersonas.PredefinedThemeTags[0]);
-                }
-
-                normalized.Add(preset);
-            }
-
-            personaPresets = normalized;
-        }
-
-        internal static List<string> NormalizeThemes(IEnumerable<string> themes)
-        {
-            HashSet<string> allowedTags = new HashSet<string>(DiaryPersonas.PredefinedThemeTags, StringComparer.Ordinal);
-            return themes == null
-                ? new List<string>()
-                : themes
-                    .Where(theme => !string.IsNullOrWhiteSpace(theme))
-                    .Select(theme => theme.Trim().ToLowerInvariant())
-                    .Where(theme => allowedTags.Contains(theme))
-                    .Distinct()
-                    .ToList();
-        }
+        // Writing-style (persona) CRUD, normalization, and theme policy moved to PersonaPresetStore;
+        // call settings.personaPresets.* directly. The reusable event-prompt override map plumbing
+        // lives on PromptOverrideDictionary (settings.eventPromptOverrides / eventEnhancementOverrides).
     }
 }
