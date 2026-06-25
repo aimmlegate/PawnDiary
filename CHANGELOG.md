@@ -6,9 +6,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
-- **Diary tab unread marker added.** In inspect-tab mode, the Diary tab now shows a small white
-  underline when the selected pawn has newly finished diary pages. The tab intentionally does not
-  show the command-mode writing/loading dots; opening the Diary still acknowledges the marker.
+- **Diary tab unread marker added.** In inspect-tab mode, the Diary tab now shows a small white dot
+  at the top center when the selected pawn has newly finished diary pages. The tab intentionally
+  does not show the command-mode writing/loading dots; opening the Diary still acknowledges it.
 
 - **Diary tab is now the default surface.** Fresh settings now show Diary in the normal pawn inspect
   tab row by default. The settings toggle remains, but now disabling it moves Diary back to the
