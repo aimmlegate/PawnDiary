@@ -11,8 +11,8 @@ using Verse;
 
 namespace PawnDiary
 {
-    // Inspector tab that shows the selected pawn's diary. It stays registered with the inspect pane
-    // so RimWorld can host it, but the visible entry point is a pawn/corpse command button.
+    // Inspector tab that shows the selected pawn's diary. It is visible in the pawn tab row by
+    // default, and can be hidden when the player prefers the bottom command button instead.
     /// <summary>
     /// Partial implementation of the pawn Diary inspector tab.
     /// </summary>
@@ -519,9 +519,9 @@ namespace PawnDiary
                     DrawModelName(modelRect, entry.LlmModel);
                 }
 
-                // Dev-only copy badge sits in the reserved bottom-left footer, drawn last so it
-                // floats above the page wash/highlight without competing with body text or model name.
-                DrawCopyButton(localEntryRect, entry);
+                // Dev-only footer icons sit in the reserved bottom-left footer, drawn last so they
+                // float above the page wash/highlight without competing with body text or model name.
+                DrawDevFooterButtons(localEntryRect, entry, pawn, component);
 
                 GUI.EndGroup();
                 curY += height + EntryGap;

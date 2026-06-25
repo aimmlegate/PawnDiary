@@ -221,6 +221,90 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dev UI action: rewrite an existing diary page using the current API routing/model settings.
+        /// Pairwise entries reset both POVs when both are eligible so the linked preview stays in sync.
+        /// Returns false when the event cannot be found, is already being written, or generation is off.
+        /// </summary>
+        public bool RegenerateEntry(Pawn pawn, DiaryEntryView entry)
+        {
+            if (pawn == null || entry == null || string.IsNullOrWhiteSpace(entry.EventId))
+            {
+                return false;
+            }
+
+            DiaryEvent diaryEvent = events.FindEvent(entry.EventId);
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(entry.PovRole))
+            {
+                return false;
+            }
+
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = new Dictionary<string, DiaryBoundsCacheEntry>();
+            Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
+
+            if (diaryEvent.HasDeathDescription() || diaryEvent.HasArrivalDescription())
+            {
+                return RegenerateRole(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
+            }
+
+            if (!diaryEvent.solo && DiaryEvent.RoleIsInitiatorOrRecipient(entry.PovRole))
+            {
+                return RegeneratePairwiseEntry(diaryEvent, boundsCache, livePawnsById);
+            }
+
+            return RegenerateRole(diaryEvent, entry.PovRole, boundsCache, livePawnsById);
+        }
+
+        private bool RegeneratePairwiseEntry(
+            DiaryEvent diaryEvent,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            if (diaryEvent == null || diaryEvent.IsPending(DiaryEvent.InitiatorRole) || diaryEvent.IsPending(DiaryEvent.RecipientRole))
+            {
+                return false;
+            }
+
+            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole, boundsCache);
+            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole, boundsCache);
+            if (!initiatorEnabled && !recipientEnabled)
+            {
+                return false;
+            }
+
+            if (initiatorEnabled)
+            {
+                diaryEvent.PrepareForRegeneration(DiaryEvent.InitiatorRole);
+            }
+
+            if (recipientEnabled)
+            {
+                diaryEvent.PrepareForRegeneration(DiaryEvent.RecipientRole);
+            }
+
+            QueueSequentialPairwiseRewrite(diaryEvent, null, boundsCache, livePawnsById);
+            return true;
+        }
+
+        private bool RegenerateRole(
+            DiaryEvent diaryEvent,
+            string povRole,
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
+            Dictionary<string, Pawn> livePawnsById)
+        {
+            if (diaryEvent == null
+                || string.IsNullOrWhiteSpace(povRole)
+                || diaryEvent.IsPending(povRole)
+                || !DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
+            {
+                return false;
+            }
+
+            diaryEvent.PrepareForRegeneration(povRole);
+            EnsureGenerationQueued(diaryEvent, povRole, boundsCache, livePawnsById);
+            return true;
+        }
+
+        /// <summary>
         /// Finds the generated diary entry that belongs to a clicked RimWorld social-log row.
         /// Returns null when the event was not recorded, belongs to another pawn, or has not
         /// produced visible LLM text yet; callers should keep vanilla click behavior in that case.

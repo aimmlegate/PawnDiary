@@ -593,6 +593,31 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Prepares an existing POV to be written again from the current prompt/model settings.
+        /// The old generated page is kept visible until a new result replaces it; transient request
+        /// metadata, raw response, error, and title fields are cleared so the fresh run is honest.
+        /// </summary>
+        public void PrepareForRegeneration(string povRole)
+        {
+            if (string.IsNullOrWhiteSpace(povRole))
+            {
+                return;
+            }
+
+            DiaryStateVersion.Bump();
+            ref PovSlot slot = ref SlotFor(povRole);
+            slot.prompt = string.Empty;
+            slot.rawResponse = string.Empty;
+            slot.status = NotGeneratedStatus;
+            slot.error = null;
+            slot.llmEndpoint = string.Empty;
+            slot.llmModel = string.Empty;
+            slot.title = string.Empty;
+            slot.titleStatus = NotGeneratedStatus;
+            slot.titleError = null;
+        }
+
+        /// <summary>
         /// Marks a POV role as failed and records the error message.
         /// </summary>
         public void MarkFailed(string povRole, string error)

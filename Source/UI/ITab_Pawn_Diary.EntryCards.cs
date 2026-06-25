@@ -41,21 +41,22 @@ namespace PawnDiary
             return entry.GeneratedText;
         }
 
-        // Dev-only copy badge geometry. The footer reserves a thin strip at the bottom of expanded
-        // cards (dev mode only) so the badge clears both the body text and the model-name line drawn
-        // just above it. Production card heights are unchanged because DevCopyFooter is 0 outside dev.
+        // Dev-only footer badge geometry. The footer reserves a thin strip at the bottom of expanded
+        // cards (dev mode only) so the tiny action icons clear both the body text and the model-name
+        // line drawn just above it. Production card heights are unchanged because DevCopyFooter is 0
+        // outside dev.
         private const float DevCopyButtonSize = 16f;
+        private const float DevFooterButtonGap = 6f;
         private const float DevCopyButtonFooter = 20f;
         private static float DevCopyFooter => Prefs.DevMode ? DevCopyButtonFooter : 0f;
 
         /// <summary>
-        /// Dev-only: draws a small, subtle copy-to-clipboard button anchored to the bottom-left of an
-        /// expanded card. On click it copies the entry's prompt (for prompt-only cards) or its
-        /// generated/visible text to the system clipboard. Drawn AFTER the body text and model-name
-        /// line so it lives in its own reserved footer strip (see DevCopyFooter) and never overlaps or
-        /// clips them. Only called from the expanded-card path; collapsed cards have no copy button.
+        /// Dev-only: draws small, subtle utility icons anchored to the bottom-left of an expanded
+        /// card. Drawn AFTER the body text and model-name line so they live in their own reserved
+        /// footer strip (see DevCopyFooter) and never overlap or clip them. Collapsed cards have no
+        /// footer icons.
         /// </summary>
-        private static void DrawCopyButton(Rect cardRect, DiaryEntryView entry)
+        private static void DrawDevFooterButtons(Rect cardRect, DiaryEntryView entry, Pawn pawn, DiaryGameComponent component)
         {
             if (!Prefs.DevMode || entry == null)
             {
@@ -68,24 +69,82 @@ namespace PawnDiary
                 DevCopyButtonSize,
                 DevCopyButtonSize);
 
+            DrawCopyButton(copyRect, entry);
+
+            Rect regenerateRect = new Rect(
+                copyRect.xMax + DevFooterButtonGap,
+                copyRect.y,
+                DevCopyButtonSize,
+                DevCopyButtonSize);
+
+            DrawRegenerateButton(regenerateRect, entry, pawn, component);
+        }
+
+        /// <summary>
+        /// Dev-only: copies the entry's prompt (for prompt-only cards) or generated/visible text to
+        /// the system clipboard.
+        /// </summary>
+        private static void DrawCopyButton(Rect copyRect, DiaryEntryView entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            if (!DrawDevFooterIcon(copyRect, TexButton.Copy, "PawnDiary.Tab.CopyEntryTip".Translate()))
+            {
+                return;
+            }
+
+            string text = EntryCopyText(entry);
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                GUIUtility.systemCopyBuffer = text;
+                Messages.Message("PawnDiary.Tab.CopyEntryCopied".Translate(), MessageTypeDefOf.NeutralEvent, false);
+            }
+        }
+
+        /// <summary>
+        /// Dev-only: queues this saved entry for regeneration, including the linked POV for pairwise
+        /// events when that other POV is still eligible for generation.
+        /// </summary>
+        private static void DrawRegenerateButton(Rect regenerateRect, DiaryEntryView entry, Pawn pawn, DiaryGameComponent component)
+        {
+            if (entry == null || pawn == null || component == null || IsGenerating(entry) || IsPromptOnly(entry))
+            {
+                return;
+            }
+
+            if (!DrawDevFooterIcon(regenerateRect, TexButton.Reload, "PawnDiary.Tab.RegenerateEntryTip".Translate()))
+            {
+                return;
+            }
+
+            if (component.RegenerateEntry(pawn, entry))
+            {
+                Messages.Message("PawnDiary.Tab.RegenerateEntryQueued".Translate(), MessageTypeDefOf.NeutralEvent, false);
+            }
+            else
+            {
+                Messages.Message("PawnDiary.Tab.RegenerateEntryUnavailable".Translate(), MessageTypeDefOf.RejectInput, false);
+            }
+        }
+
+        private static bool DrawDevFooterIcon(Rect rect, Texture2D icon, string tooltip)
+        {
             // CSS-opacity style: dim at rest, slight brighten on hover so it still reads as clickable.
-            bool hover = Mouse.IsOver(copyRect);
+            bool hover = Mouse.IsOver(rect);
             Color oldColor = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, hover ? 0.85f : 0.5f);
-            bool clicked = Widgets.ButtonImage(copyRect, TexButton.Copy);
+            bool clicked = Widgets.ButtonImage(rect, icon);
             GUI.color = oldColor;
 
-            TooltipHandler.TipRegion(copyRect, "PawnDiary.Tab.CopyEntryTip".Translate());
-
-            if (clicked)
+            if (!string.IsNullOrWhiteSpace(tooltip))
             {
-                string text = EntryCopyText(entry);
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    GUIUtility.systemCopyBuffer = text;
-                    Messages.Message("PawnDiary.Tab.CopyEntryCopied".Translate(), MessageTypeDefOf.NeutralEvent, false);
-                }
+                TooltipHandler.TipRegion(rect, tooltip);
             }
+
+            return clicked;
         }
 
         /// <summary>

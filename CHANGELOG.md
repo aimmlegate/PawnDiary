@@ -6,6 +6,15 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Diary tab is now the default surface.** Fresh settings now show Diary in the normal pawn inspect
+  tab row by default. The settings toggle remains, but now disabling it moves Diary back to the
+  selected-pawn/corpse bottom command button alternative.
+
+- **Dev-only diary-page regeneration added.** Expanded diary cards in dev mode now show a small
+  reload icon next to the copy icon. It requeues the saved page through the current API routing/model
+  settings, keeps the old page visible while the new request is pending, clears stale title/debug
+  metadata, and regenerates the linked POV too for paired entries when that POV is still available.
+
 - **Post-refactor review fixes (correctness + dedup).** A focused review of the refactor landed
   seven fixes and deferred two larger design items. **Card height cache** (`ITab_Pawn_Diary`) now
   invalidates on the name-highlight set version too, so a colonist rename/death/relationship change

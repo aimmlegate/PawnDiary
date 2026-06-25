@@ -370,10 +370,10 @@ in every mode.
 `DiaryEventPromptDef` event types, with the selected editor in one highlighted block. Writing-style
 presets likewise use one block for summary/add/reset/selection/rule editing/tag toggles.
 
-The Diary surface is an inspect tab internally. By default, selecting one eligible colonist (or
-colonist corpse) adds a **Diary** command button (journal-and-pen icon) that opens/closes the hidden
-tab. A settings toggle can instead show Diary in the normal pawn inspect-tab row and hide the bottom
-command. In command mode, the command overlays a subtle underline for newly finished pages and
+The Diary surface is an inspect tab internally. By default, Diary appears in the normal pawn
+inspect-tab row for eligible colonists (and colonist corpses). A settings toggle can instead hide the
+tab row entry and add a **Diary** bottom command button (journal-and-pen icon) for the selected pawn
+or corpse. In command mode, the command overlays a subtle underline for newly finished pages and
 pulsing dots while any page or title is still being written. In tab mode, the Diary tab is left
 plain, with no tab-strip status indicator. Opening the pawn's Diary acknowledges the finished-page
 marker.
@@ -397,8 +397,10 @@ real hook checks.
 
 The tab is sized by `tabWidth`/`tabHeight` (`DiaryUiStyleDef.xml`). Newest cards start expanded
 (`autoExpandedEntryCount`, default 3); older history starts collapsed; clicking a header toggles
-either. In dev mode every expanded card shows a subtle bottom-left copy button (copies the prompt
-for prompt-only cards, else generated text).
+either. In dev mode expanded cards show a subtle bottom-left copy icon (copies the prompt for
+prompt-only cards, else generated text). Non-prompt pages that are not already being written also
+show a regenerate icon, which queues the saved page through the current API routing/model settings
+and regenerates the linked POV too when a paired entry has one available.
 
 The tab redraws every frame (RimWorld immediate-mode UI), so long histories are kept cheap with two
 guards in `FillTab`: expanded-card heights are measured once and cached by entry key (cleared when
