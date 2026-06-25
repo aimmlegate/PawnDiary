@@ -376,15 +376,16 @@ editors include the optional forced-model text field; it must match an enabled A
 to affect routing. Writing-style presets likewise use one block for summary/add/reset/selection/rule
 editing/tag toggles.
 
-The Diary surface is an inspect tab internally. By default, Diary appears in the normal pawn
-inspect-tab row for eligible colonists (and colonist corpses). A settings toggle can instead hide the
-tab row entry and add a **Diary** bottom command button (journal-and-pen icon) for the selected pawn
-or corpse. In command mode, the command overlays a subtle underline for newly finished pages and
-pulsing dots while any page or title is still being written. In tab mode, the Diary tab shows only a
-small white Unicode marker near the tab's right edge for newly finished pages; the glyph, size, and
-x/y placement are owned by `DiaryUiStyleDef.xml`, and the tab deliberately does not show a
-loading/writing indicator. Opening the pawn's Diary acknowledges the finished-page marker.
-Social-log diary links and linked-POV navigation open the same tab in either mode.
+The Diary surface is an inspect tab internally. Startup registers the same `ITab_Pawn_Diary` on
+every humanlike pawn race and on that race's corpse def, so by default Diary appears in the normal
+pawn inspect-tab row for eligible colonists and selected colonist corpses. A settings toggle can
+instead hide the tab row entry and add a **Diary** bottom command button (journal-and-pen icon) for
+the selected pawn or corpse. In command mode, the command overlays a subtle underline for newly
+finished pages and pulsing dots while any page or title is still being written. In tab mode, the
+Diary tab shows only a small white Unicode marker near the tab's right edge for newly finished
+pages; the glyph, size, and x/y placement are owned by `DiaryUiStyleDef.xml`, and the tab deliberately
+does not show a loading/writing indicator. Opening the pawn's Diary acknowledges the finished-page
+marker. Social-log diary links and linked-POV navigation open the same tab in either mode.
 
 The Diary UI shows completed pages in production. Dev mode adds generation enablement, writing-style
 picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient

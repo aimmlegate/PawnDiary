@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Diary tab now appears on selected colonist corpses.** Startup registration now adds the shared
+  `ITab_Pawn_Diary` to each humanlike race's corpse def as well as the live pawn def, so the existing
+  corpse-aware Diary UI can show in inspect-tab mode after a colonist dies.
+
 - **Optional event-model routing added.** `DiaryEventPromptDef` and Prompt Studio now have a raw
   forced-model field. When it matches an enabled configured API row's model name, main entries for
   that event source try that model first; blank/unknown values are ignored, and failed forced calls

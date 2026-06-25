@@ -1,6 +1,7 @@
 // Mod entry point. [StaticConstructorOnStartup] makes RimWorld run this class's static
 // constructor once at game load (there is no main()). We use it to apply our Harmony patches and
-// register the hidden Diary inspector tab after the vanilla Needs tab on every humanlike pawn.
+// register the hidden Diary inspector tab after the vanilla Needs tab on every humanlike pawn
+// and on those pawns' corpse defs.
 // See AGENTS.md ("[StaticConstructorOnStartup]").
 using System;
 using System.Collections.Generic;
@@ -36,12 +37,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Registers the hidden Diary inspector tab for every humanlike pawn, placing it after Needs.
+        /// Registers the hidden Diary inspector tab for every humanlike pawn and matching corpse def,
+        /// placing it after Needs where that tab exists.
         /// </summary>
-        // Add the Diary inspector tab to every humanlike pawn. It is hidden from the tab strip by
-        // ITab_Pawn_Diary.Hidden, but must stay registered so command buttons and diary links can
-        // open it through RimWorld's inspect pane. If another path already inserted it, remove that
-        // earlier slot first so the tab ends up consistently after the vanilla Needs tab.
+        // Add the Diary inspector tab to every humanlike pawn and its corpse ThingDef. It is hidden
+        // from the tab strip by ITab_Pawn_Diary.Hidden, but must stay registered so command buttons,
+        // diary links, and selected corpses can open it through RimWorld's inspect pane.
         private static void InjectDiaryTab()
         {
             foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
@@ -51,38 +52,53 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (def.inspectorTabs == null)
-                {
-                    def.inspectorTabs = new List<Type>();
-                }
+                RegisterDiaryTabOn(def);
+                RegisterDiaryTabOn(def.race.corpseDef);
+            }
+        }
 
-                if (def.inspectorTabsResolved == null)
-                {
-                    def.inspectorTabsResolved = new List<InspectTabBase>();
-                }
+        /// <summary>
+        /// Adds the Diary inspector tab to one ThingDef, removing any previous slot first so its
+        /// position is deterministic even when several pawn races share a corpse def.
+        /// </summary>
+        private static void RegisterDiaryTabOn(ThingDef def)
+        {
+            if (def == null)
+            {
+                return;
+            }
 
-                def.inspectorTabs.RemoveAll(tab => tab == typeof(ITab_Pawn_Diary));
-                int needsIndex = def.inspectorTabs.IndexOf(typeof(ITab_Pawn_Needs));
-                if (needsIndex >= 0)
-                {
-                    def.inspectorTabs.Insert(needsIndex + 1, typeof(ITab_Pawn_Diary));
-                }
-                else
-                {
-                    def.inspectorTabs.Add(typeof(ITab_Pawn_Diary));
-                }
+            if (def.inspectorTabs == null)
+            {
+                def.inspectorTabs = new List<Type>();
+            }
 
-                InspectTabBase instance = InspectTabManager.GetSharedInstance(typeof(ITab_Pawn_Diary));
-                def.inspectorTabsResolved.RemoveAll(tab => tab is ITab_Pawn_Diary);
-                int resolvedNeedsIndex = def.inspectorTabsResolved.FindIndex(tab => tab is ITab_Pawn_Needs);
-                if (resolvedNeedsIndex >= 0)
-                {
-                    def.inspectorTabsResolved.Insert(resolvedNeedsIndex + 1, instance);
-                }
-                else
-                {
-                    def.inspectorTabsResolved.Add(instance);
-                }
+            if (def.inspectorTabsResolved == null)
+            {
+                def.inspectorTabsResolved = new List<InspectTabBase>();
+            }
+
+            def.inspectorTabs.RemoveAll(tab => tab == typeof(ITab_Pawn_Diary));
+            int needsIndex = def.inspectorTabs.IndexOf(typeof(ITab_Pawn_Needs));
+            if (needsIndex >= 0)
+            {
+                def.inspectorTabs.Insert(needsIndex + 1, typeof(ITab_Pawn_Diary));
+            }
+            else
+            {
+                def.inspectorTabs.Add(typeof(ITab_Pawn_Diary));
+            }
+
+            InspectTabBase instance = InspectTabManager.GetSharedInstance(typeof(ITab_Pawn_Diary));
+            def.inspectorTabsResolved.RemoveAll(tab => tab is ITab_Pawn_Diary);
+            int resolvedNeedsIndex = def.inspectorTabsResolved.FindIndex(tab => tab is ITab_Pawn_Needs);
+            if (resolvedNeedsIndex >= 0)
+            {
+                def.inspectorTabsResolved.Insert(resolvedNeedsIndex + 1, instance);
+            }
+            else
+            {
+                def.inspectorTabsResolved.Add(instance);
             }
         }
     }
