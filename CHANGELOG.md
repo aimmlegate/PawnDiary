@@ -34,6 +34,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   `QueueTitleRequest` pattern) instead of reaching the global static ~10 times per dispatch;
   behavior is unchanged.
 
+- **Removed dead diary-bounds helpers.** Deleted three transitively-dead private methods in
+  `DiaryGameComponent.Lookup.cs` (`EventFallsOutsideDiaryBoundsByIndex` and its two exclusive helpers
+  `FirstArrivalIndexFor` / `FinalDeathIndexFor`), superseded by the live tick-based
+  `EventFallsOutsideDiaryBounds` / `...ForPawn` checks. A scan of all 888 private/internal methods
+  found no other dead code (the only other flags were a live overload and a Harmony reflection
+  method). Behavior and save data unchanged; Debug DLL rebuilt.
+
 - **`DiaryEvent` per-POV duplication collapsed into `PovSlot` slots.** The three triplicated
   initiator/recipient/neutral field families and their ~20 three-way `if initiator / if recipient /
   else neutral` accessor ladders are gone. Per-POV state now lives in three `PovSlot` value-typed
