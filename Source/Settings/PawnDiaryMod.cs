@@ -1727,11 +1727,8 @@ namespace PawnDiary
 
             ApiEndpointConfig endpoint = Settings.apiEndpoints[result.targetIndex];
             return endpoint != null
-                && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
-                && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
-                && PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == result.authMode
-                && string.Equals(ApiEndpointPolicy.EffectiveAuthHeaderName(endpoint.authMode, endpoint.customAuthHeaderName), result.customAuthHeaderName ?? string.Empty, StringComparison.Ordinal)
-                && endpoint.apiMode == result.apiMode;
+                && ApiLaneIdentity.ForFetchTarget(endpoint.url, endpoint.apiKey, endpoint.authMode, endpoint.customAuthHeaderName, endpoint.apiMode)
+                == ApiLaneIdentity.ForFetchTarget(result.endpointUrl, result.apiKey, result.authMode, result.customAuthHeaderName, result.apiMode);
         }
 
         /// <summary>
@@ -1746,13 +1743,8 @@ namespace PawnDiary
 
             ApiEndpointConfig endpoint = Settings.apiEndpoints[result.targetIndex];
             return endpoint != null
-                && string.Equals(endpoint.url ?? string.Empty, result.endpointUrl ?? string.Empty, StringComparison.Ordinal)
-                && string.Equals(endpoint.apiKey ?? string.Empty, result.apiKey ?? string.Empty, StringComparison.Ordinal)
-                && string.Equals(endpoint.model ?? string.Empty, result.model ?? string.Empty, StringComparison.Ordinal)
-                && PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == result.authMode
-                && string.Equals(ApiEndpointPolicy.EffectiveAuthHeaderName(endpoint.authMode, endpoint.customAuthHeaderName), result.customAuthHeaderName ?? string.Empty, StringComparison.Ordinal)
-                && PawnDiarySettings.NormalizeApiMode(endpoint.apiMode) == result.apiMode
-                && string.Equals(PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort), result.reasoningEffort ?? string.Empty, StringComparison.Ordinal);
+                && ApiLaneIdentity.ForConnectionTest(endpoint.url, endpoint.apiKey, endpoint.model, endpoint.authMode, endpoint.customAuthHeaderName, endpoint.apiMode, endpoint.reasoningEffort)
+                == ApiLaneIdentity.ForConnectionTest(result.endpointUrl, result.apiKey, result.model, result.authMode, result.customAuthHeaderName, result.apiMode, result.reasoningEffort);
         }
 
         private static string ConnectionTestLaneLabel(ConnectionTestResult result)
@@ -1767,34 +1759,7 @@ namespace PawnDiary
 
         private static string ConnectionTestLaneLabel(string endpointUrl, string modelName, ApiCompatibilityMode apiMode)
         {
-            string model = string.IsNullOrWhiteSpace(modelName) ? "<blank-model>" : modelName;
-            string endpoint = string.IsNullOrWhiteSpace(endpointUrl)
-                ? "<blank-url>"
-                : EndpointUtility.BuildGenerationUrl(SanitizeEndpointUrlForLog(endpointUrl), apiMode);
-            return model + " [" + apiMode + "] @ " + endpoint;
-        }
-
-        private static string SanitizeEndpointUrlForLog(string endpointUrl)
-        {
-            if (string.IsNullOrWhiteSpace(endpointUrl))
-            {
-                return string.Empty;
-            }
-
-            int query = endpointUrl.IndexOf('?');
-            int fragment = endpointUrl.IndexOf('#');
-            int cut = -1;
-            if (query >= 0)
-            {
-                cut = query;
-            }
-
-            if (fragment >= 0 && (cut < 0 || fragment < cut))
-            {
-                cut = fragment;
-            }
-
-            return cut >= 0 ? endpointUrl.Substring(0, cut) : endpointUrl;
+            return ApiLaneLabels.Label(endpointUrl, modelName, apiMode);
         }
 
         private static string TrimForStatus(string value)
@@ -1810,13 +1775,7 @@ namespace PawnDiary
 
         private static string TrimForLog(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            value = OneLine(value);
-            return value.Length <= 180 ? value : value.Substring(0, 180) + "...";
+            return ApiLaneLabels.TrimForLog(value);
         }
 
         private static string OneLine(string value)

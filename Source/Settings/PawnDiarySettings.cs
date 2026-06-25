@@ -11,17 +11,6 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Which request/response shape an API lane speaks. Most providers that advertise
-    /// "OpenAI-compatible" should use <see cref="OpenAIChatCompletions"/>; the Responses mode covers
-    /// newer OpenAI reasoning models.
-    /// </summary>
-    public enum ApiCompatibilityMode
-    {
-        OpenAIChatCompletions,
-        OpenAIResponses
-    }
-
-    /// <summary>
     /// One configured API "lane": a single compatible endpoint, its optional key, and the one
     /// model it serves. Many of these can be listed (see <see cref="PawnDiarySettings.apiEndpoints"/>)
     /// so diary generation is spread across them in parallel. We keep it to one model per row on
@@ -213,22 +202,11 @@ namespace PawnDiary
         private List<string> eventEnhancementOverrideValues;
 
         // Default local LLM server endpoint (LM Studio/OpenAI-compatible local servers).
-        public const string DefaultEndpointUrl = "http://localhost:1234/v1";
+        public const string DefaultEndpointUrl = ApiEndpointPolicy.DefaultEndpointUrl;
         // Placeholder model name; real value depends on the local server's loaded model.
         public const string DefaultModelName = "local-model";
         // Sentinel value stored in settings to mean "do not send a reasoning override".
-        public const string DefaultReasoningEffort = "default";
-
-        private static readonly HashSet<string> ValidReasoningEfforts = new HashSet<string>
-        {
-            DefaultReasoningEffort,
-            "none",
-            "minimal",
-            "low",
-            "medium",
-            "high",
-            "xhigh"
-        };
+        public const string DefaultReasoningEffort = ApiEndpointPolicy.DefaultReasoningEffort;
 
         public override void ExposeData()
         {
@@ -717,8 +695,7 @@ namespace PawnDiary
         /// </summary>
         public static string NormalizeReasoningEffort(string effort)
         {
-            string normalized = (effort ?? DefaultReasoningEffort).Trim().ToLowerInvariant();
-            return ValidReasoningEfforts.Contains(normalized) ? normalized : DefaultReasoningEffort;
+            return ApiEndpointPolicy.NormalizeReasoningEffort(effort);
         }
 
         /// <summary>Normalizes invalid routing enum values loaded from hand-edited settings.</summary>
@@ -736,9 +713,7 @@ namespace PawnDiary
         /// <summary>Normalizes invalid compatibility enum values loaded from hand-edited settings.</summary>
         public static ApiCompatibilityMode NormalizeApiMode(ApiCompatibilityMode mode)
         {
-            return mode == ApiCompatibilityMode.OpenAIResponses
-                ? ApiCompatibilityMode.OpenAIResponses
-                : ApiCompatibilityMode.OpenAIChatCompletions;
+            return ApiEndpointPolicy.NormalizeApiMode(mode);
         }
 
         // ---- Interaction group helpers ----

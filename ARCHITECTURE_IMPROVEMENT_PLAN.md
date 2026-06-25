@@ -36,6 +36,10 @@ Use this as a planning document, not as a mandate to do every refactor at once. 
 
 Priority: High
 
+Status: Resolved 2026-06-25. Implemented as shared pure `ApiLaneIdentity` and `ApiLaneLabels`
+helpers with call-site rewrites, focused `DiaryPipelineTests`, documentation updates, and a Debug
+DLL rebuild.
+
 Evidence:
 - `Source/Generation/LlmClient.cs:416` (`LaneKey`)
 - `Source/Generation/LlmClient.cs:1189` (`SameAttemptLane`)

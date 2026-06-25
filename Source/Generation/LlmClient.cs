@@ -198,15 +198,15 @@ namespace PawnDiary
         // requests are in flight at once; lanes run independently so several APIs work in
         // parallel. The cap per lane is `maxConcurrentRequests` (set it to 1 for a local model
         // that serves one request at a time). Gates are created lazily and rebuilt when the limit changes.
-        private static ConcurrentDictionary<string, SemaphoreSlim> sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+        private static ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim> sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>();
 
         // Runtime-only transient-failure backoff per lane. Protected by a simple lock because the
         // main thread reads it for routing while background HTTP workers update it after failures.
         private static readonly object laneCooldownLock = new object();
-        private static readonly Dictionary<string, LaneCooldownState> laneCooldowns = new Dictionary<string, LaneCooldownState>();
+        private static readonly Dictionary<ApiLaneIdentity, LaneCooldownState> laneCooldowns = new Dictionary<ApiLaneIdentity, LaneCooldownState>();
         // Set after settings are written. Null means we have not received a settings snapshot yet,
         // so old saves/early startup should keep accepting cooldown updates normally.
-        private static HashSet<string> configuredLaneKeys;
+        private static HashSet<ApiLaneIdentity> configuredLaneKeys;
 
         // Advances deterministic lane selection for balanced and preference-weighted routing.
         // Incremented atomically because requests may be enqueued from different threads.
@@ -243,7 +243,7 @@ namespace PawnDiary
             ApplyDebugLoggingSetting();
             CancellationTokenSource oldCancellation = sessionCancellation;
             sessionCancellation = new CancellationTokenSource();
-            sendGates = new ConcurrentDictionary<string, SemaphoreSlim>(); // fresh per-lane gates at the current limit
+            sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>(); // fresh per-lane gates at the current limit
             lock (laneCooldownLock)
             {
                 laneCooldowns.Clear();
@@ -262,7 +262,7 @@ namespace PawnDiary
         {
             // Safe to swap at any time: in-flight workers hold their own gate reference
             // and release that one, so they never touch these new gates.
-            sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+            sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>();
         }
 
         /// <summary>
@@ -273,17 +273,17 @@ namespace PawnDiary
         {
             // Safe to swap at any time: in-flight workers hold their own gate reference
             // and release that one, so they never touch these new gates.
-            sendGates = new ConcurrentDictionary<string, SemaphoreSlim>();
+            sendGates = new ConcurrentDictionary<ApiLaneIdentity, SemaphoreSlim>();
 
-            HashSet<string> activeKeys = BuildLaneKeySet(activeLanes);
+            HashSet<ApiLaneIdentity> activeKeys = BuildLaneKeySet(activeLanes);
             int removedCount = 0;
             lock (laneCooldownLock)
             {
                 configuredLaneKeys = activeKeys;
                 if (laneCooldowns.Count > 0)
                 {
-                    List<string> staleKeys = new List<string>();
-                    foreach (string key in laneCooldowns.Keys)
+                    List<ApiLaneIdentity> staleKeys = new List<ApiLaneIdentity>();
+                    foreach (ApiLaneIdentity key in laneCooldowns.Keys)
                     {
                         if (!activeKeys.Contains(key))
                         {
@@ -391,40 +391,31 @@ namespace PawnDiary
                 return false;
             }
 
-            return IsLaneCooling(LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.customAuthHeaderName, lane.apiKey));
+            return IsLaneCooling(ApiLaneIdentity.ForGate(lane.url, lane.model, lane.apiMode, lane.authMode, lane.customAuthHeaderName, lane.apiKey));
         }
 
         /// <summary>
         /// Builds the gate key identifying an API lane. Requests sharing endpoint, model, mode, auth
         /// style, and key share a lane (and therefore its in-flight cap and cooldown state).
         /// </summary>
-        private static string GateKey(LlmGenerationRequest request)
+        private static ApiLaneIdentity GateKey(LlmGenerationRequest request)
         {
-            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.customAuthHeaderName, request.apiKey);
+            return LaneIdentity(request);
         }
 
-        private static string LaneKey(LlmGenerationRequest request)
+        private static ApiLaneIdentity LaneIdentity(LlmGenerationRequest request)
         {
             if (request == null)
             {
-                return string.Empty;
+                return default(ApiLaneIdentity);
             }
 
-            return LaneKey(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.customAuthHeaderName, request.apiKey);
+            return ApiLaneIdentity.ForGate(request.endpointUrl, request.modelName, request.apiMode, request.authMode, request.customAuthHeaderName, request.apiKey);
         }
 
-        private static string LaneKey(string endpointUrl, string modelName, ApiCompatibilityMode apiMode, ApiAuthMode authMode, string customAuthHeaderName, string apiKey)
+        private static HashSet<ApiLaneIdentity> BuildLaneKeySet(List<ApiEndpointConfig> lanes)
         {
-            string endpoint = EndpointUtility.NormalizeBaseEndpoint(endpointUrl ?? string.Empty).Trim().ToLowerInvariant();
-            string model = (modelName ?? string.Empty).Trim();
-            ApiAuthMode normalizedAuthMode = PawnDiarySettings.NormalizeAuthMode(authMode);
-            string headerName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName);
-            return apiMode + "\n" + endpoint + "\n" + model + "\n" + normalizedAuthMode + "\n" + headerName + "\n" + ApiEndpointPolicy.EffectiveApiKey(normalizedAuthMode, apiKey);
-        }
-
-        private static HashSet<string> BuildLaneKeySet(List<ApiEndpointConfig> lanes)
-        {
-            HashSet<string> keys = new HashSet<string>();
+            HashSet<ApiLaneIdentity> keys = new HashSet<ApiLaneIdentity>();
             if (lanes == null)
             {
                 return keys;
@@ -437,8 +428,8 @@ namespace PawnDiary
                     continue;
                 }
 
-                string key = LaneKey(lane.url, lane.model, lane.apiMode, lane.authMode, lane.customAuthHeaderName, lane.apiKey);
-                if (!string.IsNullOrEmpty(key))
+                ApiLaneIdentity key = ApiLaneIdentity.ForGate(lane.url, lane.model, lane.apiMode, lane.authMode, lane.customAuthHeaderName, lane.apiKey);
+                if (!key.Empty)
                 {
                     keys.Add(key);
                 }
@@ -452,7 +443,7 @@ namespace PawnDiary
         /// </summary>
         private static SemaphoreSlim GetOrCreateGate(LlmGenerationRequest request)
         {
-            string key = GateKey(request);
+            ApiLaneIdentity key = GateKey(request);
             return sendGates.GetOrAdd(key, _ => new SemaphoreSlim(ResolveConcurrency(), MaxConcurrencyCap));
         }
 
@@ -471,9 +462,9 @@ namespace PawnDiary
             return requested > MaxConcurrencyCap ? MaxConcurrencyCap : requested;
         }
 
-        private static bool IsLaneCooling(string laneKey)
+        private static bool IsLaneCooling(ApiLaneIdentity laneKey)
         {
-            if (string.IsNullOrEmpty(laneKey))
+            if (laneKey.Empty)
             {
                 return false;
             }
@@ -528,8 +519,8 @@ namespace PawnDiary
 
         private static void MarkLaneCooldown(LlmGenerationRequest request, string error)
         {
-            string key = LaneKey(request);
-            if (string.IsNullOrEmpty(key))
+            ApiLaneIdentity key = LaneIdentity(request);
+            if (key.Empty)
             {
                 return;
             }
@@ -569,8 +560,8 @@ namespace PawnDiary
 
         private static void ClearLaneCooldown(LlmGenerationRequest request)
         {
-            string key = LaneKey(request);
-            if (string.IsNullOrEmpty(key))
+            ApiLaneIdentity key = LaneIdentity(request);
+            if (key.Empty)
             {
                 return;
             }
@@ -1193,20 +1184,8 @@ namespace PawnDiary
                 return false;
             }
 
-            ApiAuthMode leftAuthMode = PawnDiarySettings.NormalizeAuthMode(left.authMode);
-            ApiAuthMode rightAuthMode = PawnDiarySettings.NormalizeAuthMode(right.authMode);
-            return string.Equals(EndpointUtility.NormalizeBaseEndpoint(left.url), EndpointUtility.NormalizeBaseEndpoint(right.url), StringComparison.OrdinalIgnoreCase)
-                && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
-                && left.apiMode == right.apiMode
-                && leftAuthMode == rightAuthMode
-                && string.Equals(
-                    ApiEndpointPolicy.EffectiveAuthHeaderName(left.authMode, left.customAuthHeaderName),
-                    ApiEndpointPolicy.EffectiveAuthHeaderName(right.authMode, right.customAuthHeaderName),
-                    StringComparison.Ordinal)
-                && string.Equals(
-                    ApiEndpointPolicy.EffectiveApiKey(leftAuthMode, left.apiKey),
-                    ApiEndpointPolicy.EffectiveApiKey(rightAuthMode, right.apiKey),
-                    StringComparison.Ordinal);
+            return ApiLaneIdentity.ForAttempt(left.url, left.model, left.apiMode, left.authMode, left.customAuthHeaderName, left.apiKey)
+                == ApiLaneIdentity.ForAttempt(right.url, right.model, right.apiMode, right.authMode, right.customAuthHeaderName, right.apiKey);
         }
 
         private static int MaxOutputTokensForRequest(LlmGenerationRequest request)
@@ -1280,13 +1259,7 @@ namespace PawnDiary
         /// </summary>
         private static string TrimForLog(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            value = value.Trim();
-            return value.Length <= 180 ? value : value.Substring(0, 180) + "...";
+            return ApiLaneLabels.TrimForLog(value);
         }
 
         /// <summary>
@@ -1395,11 +1368,7 @@ namespace PawnDiary
                 return "<null>";
             }
 
-            return (string.IsNullOrWhiteSpace(lane.model) ? "<blank-model>" : lane.model)
-                + " ["
-                + lane.apiMode
-                + "] @ "
-                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildGenerationUrl(lane.url, lane.apiMode));
+            return ApiLaneLabels.Label(lane.url, lane.model, lane.apiMode);
         }
 
         private static string LaneLabel(LlmGenerationRequest request)
@@ -1409,11 +1378,7 @@ namespace PawnDiary
                 return "<null>";
             }
 
-            return (string.IsNullOrWhiteSpace(request.modelName) ? "<blank-model>" : request.modelName)
-                + " ["
-                + request.apiMode
-                + "] @ "
-                + (string.IsNullOrWhiteSpace(request.endpointUrl) ? "<blank-url>" : EndpointUtility.BuildGenerationUrl(request.endpointUrl, request.apiMode));
+            return ApiLaneLabels.Label(request.endpointUrl, request.modelName, request.apiMode);
         }
 
         /// <summary>Drains all results from the completed queue, discarding them. Used on session transitions.</summary>

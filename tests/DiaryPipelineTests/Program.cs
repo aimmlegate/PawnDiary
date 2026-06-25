@@ -25,6 +25,7 @@ namespace DiaryPipelineTests
             TestGeneratedTextKeepsTrailingSpeech();
             TestPromptCaptureFormatting();
             TestApiLaneSelector();
+            TestApiLaneIdentityAndLabels();
             TestApiEndpointPolicy();
             TestApiRequestAuth();
 
@@ -292,6 +293,13 @@ namespace DiaryPipelineTests
 
         private static void TestApiEndpointPolicy()
         {
+            AssertEqual("normalize chat compatibility", ApiCompatibilityMode.OpenAIChatCompletions,
+                ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.OpenAIChatCompletions));
+            AssertEqual("normalize responses compatibility", ApiCompatibilityMode.OpenAIResponses,
+                ApiEndpointPolicy.NormalizeApiMode(ApiCompatibilityMode.OpenAIResponses));
+            AssertEqual("normalize invalid compatibility", ApiCompatibilityMode.OpenAIChatCompletions,
+                ApiEndpointPolicy.NormalizeApiMode((ApiCompatibilityMode)999));
+
             AssertEqual("normalize bearer auth", ApiAuthMode.BearerToken,
                 ApiEndpointPolicy.NormalizeAuthMode(ApiAuthMode.BearerToken));
             AssertEqual("normalize query auth", ApiAuthMode.QueryParameterKey,
@@ -310,6 +318,10 @@ namespace DiaryPipelineTests
                 ApiEndpointPolicy.NormalizeCustomHeaderName(" x-api-key "));
             AssertEqual("custom header rejects invalid spaces", "x-goog-api-key",
                 ApiEndpointPolicy.NormalizeCustomHeaderName("bad header"));
+            AssertEqual("reasoning trims and lowercases", "xhigh",
+                ApiEndpointPolicy.NormalizeReasoningEffort(" XHIGH "));
+            AssertEqual("reasoning invalid falls back", "default",
+                ApiEndpointPolicy.NormalizeReasoningEffort("extreme"));
 
             AssertEqual("cooldown zero is first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(0));
             AssertEqual("cooldown first failure", 10, ApiEndpointPolicy.CooldownSecondsForFailures(1));
@@ -318,6 +330,51 @@ namespace DiaryPipelineTests
             AssertEqual("cooldown fifth failure", 160, ApiEndpointPolicy.CooldownSecondsForFailures(5));
             AssertEqual("cooldown caps", 300, ApiEndpointPolicy.CooldownSecondsForFailures(6));
             AssertEqual("cooldown remains capped", 300, ApiEndpointPolicy.CooldownSecondsForFailures(20));
+        }
+
+        private static void TestApiLaneIdentityAndLabels()
+        {
+            AssertEqual("gate normalizes endpoint suffix and trims model",
+                ApiLaneIdentity.ForGate(
+                    "HTTPS://EXAMPLE.test/v1/chat/completions/",
+                    " model ",
+                    ApiCompatibilityMode.OpenAIChatCompletions,
+                    ApiAuthMode.BearerToken,
+                    string.Empty,
+                    " secret "),
+                ApiLaneIdentity.ForGate(
+                    "https://example.test/v1",
+                    "model",
+                    ApiCompatibilityMode.OpenAIChatCompletions,
+                    ApiAuthMode.BearerToken,
+                    string.Empty,
+                    "secret"));
+            AssertEqual("gate ignores stale no-auth key",
+                ApiLaneIdentity.ForGate("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.None, string.Empty, "old"),
+                ApiLaneIdentity.ForGate("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.None, string.Empty, "new"));
+            AssertTrue("attempt preserves raw model spacing",
+                ApiLaneIdentity.ForAttempt("https://example.test/v1", "m ", ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.BearerToken, string.Empty, "k")
+                != ApiLaneIdentity.ForAttempt("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIChatCompletions, ApiAuthMode.BearerToken, string.Empty, "k"));
+            AssertEqual("generation pin matches recorded full URL",
+                ApiLaneIdentity.ForGeneration("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIResponses),
+                ApiLaneIdentity.ForGeneration("https://EXAMPLE.test/v1/responses", "m", ApiCompatibilityMode.OpenAIResponses));
+            AssertTrue("generation auth includes effective key",
+                ApiLaneIdentity.ForGenerationWithAuth("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIResponses, ApiAuthMode.BearerToken, string.Empty, "a")
+                != ApiLaneIdentity.ForGenerationWithAuth("https://example.test/v1", "m", ApiCompatibilityMode.OpenAIResponses, ApiAuthMode.BearerToken, string.Empty, "b"));
+            AssertTrue("fetch target keeps raw URL exact",
+                ApiLaneIdentity.ForFetchTarget("https://example.test/v1/", "k", ApiAuthMode.BearerToken, string.Empty, ApiCompatibilityMode.OpenAIChatCompletions)
+                != ApiLaneIdentity.ForFetchTarget("https://example.test/v1", "k", ApiAuthMode.BearerToken, string.Empty, ApiCompatibilityMode.OpenAIChatCompletions));
+            AssertEqual("connection test normalizes mode and reasoning",
+                ApiLaneIdentity.ForConnectionTest("https://example.test/v1", "k", "m", ApiAuthMode.CustomHeader, "x-api-key", (ApiCompatibilityMode)999, " HIGH "),
+                ApiLaneIdentity.ForConnectionTest("https://example.test/v1", "k", "m", ApiAuthMode.CustomHeader, "x-api-key", ApiCompatibilityMode.OpenAIChatCompletions, "high"));
+            AssertEqual("label strips query and fragment",
+                "m [OpenAIResponses] @ https://example.test/v1/responses",
+                ApiLaneLabels.Label("https://example.test/v1?key=secret#frag", "m", ApiCompatibilityMode.OpenAIResponses));
+            AssertEqual("label blank placeholders",
+                "<blank-model> [OpenAIChatCompletions] @ <blank-url>",
+                ApiLaneLabels.Label(" ", " ", ApiCompatibilityMode.OpenAIChatCompletions));
+            AssertEqual("trim log makes one line", "first second third",
+                ApiLaneLabels.TrimForLog(" first\nsecond\tthird "));
         }
 
         private static void TestApiRequestAuth()
@@ -761,6 +818,26 @@ namespace DiaryPipelineTests
         }
 
         private static void AssertEqual(string name, ApiAuthMode expected, ApiAuthMode actual)
+        {
+            assertions++;
+            if (expected != actual)
+            {
+                throw new InvalidOperationException(
+                    name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");
+            }
+        }
+
+        private static void AssertEqual(string name, ApiCompatibilityMode expected, ApiCompatibilityMode actual)
+        {
+            assertions++;
+            if (expected != actual)
+            {
+                throw new InvalidOperationException(
+                    name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");
+            }
+        }
+
+        private static void AssertEqual(string name, ApiLaneIdentity expected, ApiLaneIdentity actual)
         {
             assertions++;
             if (expected != actual)

@@ -19,7 +19,7 @@ namespace PawnDiary
         {
             if (string.IsNullOrWhiteSpace(endpoint))
             {
-                return PawnDiarySettings.DefaultEndpointUrl;
+                return ApiEndpointPolicy.DefaultEndpointUrl;
             }
 
             string normalized = endpoint.Trim().TrimEnd('/');

@@ -637,8 +637,7 @@ namespace PawnDiary
                 {
                     foreach (ApiEndpointConfig candidate in targets)
                     {
-                        if (string.Equals(EndpointUtility.BuildGenerationUrl(candidate.url, candidate.apiMode), initiatorEndpoint, StringComparison.OrdinalIgnoreCase)
-                            && string.Equals(candidate.model, initiatorModel, StringComparison.Ordinal))
+                        if (SameGenerationLane(candidate, initiatorEndpoint, initiatorModel))
                         {
                             if (CanUsePinnedLane(targets, candidate))
                             {
@@ -728,26 +727,21 @@ namespace PawnDiary
                 return false;
             }
 
-            bool sameLane = string.Equals(EndpointUtility.BuildGenerationUrl(left.url, left.apiMode), EndpointUtility.BuildGenerationUrl(right.url, right.apiMode), StringComparison.OrdinalIgnoreCase)
-                && string.Equals(left.model ?? string.Empty, right.model ?? string.Empty, StringComparison.Ordinal)
-                && left.apiMode == right.apiMode;
-
-            if (!sameLane || !includeApiKey)
+            if (includeApiKey)
             {
-                return sameLane;
+                return ApiLaneIdentity.ForGenerationWithAuth(left.url, left.model, left.apiMode, left.authMode, left.customAuthHeaderName, left.apiKey)
+                    == ApiLaneIdentity.ForGenerationWithAuth(right.url, right.model, right.apiMode, right.authMode, right.customAuthHeaderName, right.apiKey);
             }
 
-            ApiAuthMode leftAuthMode = PawnDiarySettings.NormalizeAuthMode(left.authMode);
-            ApiAuthMode rightAuthMode = PawnDiarySettings.NormalizeAuthMode(right.authMode);
-            return leftAuthMode == rightAuthMode
-                && string.Equals(
-                    ApiEndpointPolicy.EffectiveAuthHeaderName(left.authMode, left.customAuthHeaderName),
-                    ApiEndpointPolicy.EffectiveAuthHeaderName(right.authMode, right.customAuthHeaderName),
-                    StringComparison.Ordinal)
-                && string.Equals(
-                    ApiEndpointPolicy.EffectiveApiKey(leftAuthMode, left.apiKey),
-                    ApiEndpointPolicy.EffectiveApiKey(rightAuthMode, right.apiKey),
-                    StringComparison.Ordinal);
+            return ApiLaneIdentity.ForGeneration(left.url, left.model, left.apiMode)
+                == ApiLaneIdentity.ForGeneration(right.url, right.model, right.apiMode);
+        }
+
+        private static bool SameGenerationLane(ApiEndpointConfig lane, string endpointUrl, string modelName)
+        {
+            return lane != null
+                && ApiLaneIdentity.ForGeneration(lane.url, lane.model, lane.apiMode)
+                == ApiLaneIdentity.ForGeneration(endpointUrl, modelName, lane.apiMode);
         }
 
         /// <summary>
@@ -816,11 +810,7 @@ namespace PawnDiary
                 return "<null>";
             }
 
-            return (string.IsNullOrWhiteSpace(lane.model) ? "<blank-model>" : lane.model)
-                + " ["
-                + lane.apiMode
-                + "] @ "
-                + (string.IsNullOrWhiteSpace(lane.url) ? "<blank-url>" : EndpointUtility.BuildGenerationUrl(lane.url, lane.apiMode));
+            return ApiLaneLabels.Label(lane.url, lane.model, lane.apiMode);
         }
 
 
@@ -1025,8 +1015,7 @@ namespace PawnDiary
                 {
                     foreach (ApiEndpointConfig candidate in targets)
                     {
-                        if (string.Equals(EndpointUtility.BuildGenerationUrl(candidate.url, candidate.apiMode), mainEndpoint, StringComparison.OrdinalIgnoreCase)
-                            && string.Equals(candidate.model, mainModel, StringComparison.Ordinal))
+                        if (SameGenerationLane(candidate, mainEndpoint, mainModel))
                         {
                             if (CanUsePinnedLane(targets, candidate))
                             {

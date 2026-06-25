@@ -6,6 +6,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **API lane identity centralized.** Gate/cooldown keys, failover duplicate checks, successful-lane
+  pinning, settings fetch/test stale-result checks, and sanitized lane labels now go through shared
+  pure helpers with tests for each equality mode.
 - **Public release metadata cleaned.** Workshop-facing metadata and README copy now present the mod
   as a public release. The publish script reports the DLL that remains in the uploadable payload and
   preserves dependency package IDs while cleaning the mod's own published package ID.

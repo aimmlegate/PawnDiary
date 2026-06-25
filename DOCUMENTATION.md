@@ -61,7 +61,7 @@ Key files:
 | `Capture/*` | Event Catalog: `DiaryEventType`, `XxxEventData` (+`Decide`), `XxxEventSpec`, `DiaryEventCatalog`. |
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, lookup indexes, generation queue (one partial per source). |
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
-| `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, response cleanup, domain recovery, text decoration. |
+| `Generation/DiaryPromptBuilder.cs`, `Pipeline/*` | Prompt facade plus pure planning, response cleanup, API lane policy/identity, domain recovery, text decoration. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs` | Pawn/surroundings/relationship/health/weapon context; all DLC reads centralized and guarded here. |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
@@ -246,7 +246,8 @@ Layer boundaries:
   mutation, transport.
 - Bridge: `DiaryPipelineAdapters`.
 - Pure: `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
-  `LlmResponseParser`, `DiaryResponsePostprocessor`, `DiaryTextDecorations`.
+  `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`, `LlmResponseParser`,
+  `DiaryResponsePostprocessor`, `DiaryTextDecorations`.
 
 **Writing styles** come from `DiaryPersonaDef` + settings overrides/custom rows. The Def and save
 field names still say "Persona" for compatibility, but the player-facing feature is writing styles.
@@ -307,6 +308,14 @@ Query-key auth replaces any existing `key=` while preserving URL fragments; logs
 Old `api-key`/`x-api-key` rows migrate to custom-header auth. Gemini's OpenAI-compatible endpoint
 (`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`) uses Chat-compatible
 mode with the Reasoning selector sending `reasoning_effort`.
+
+`ApiLaneIdentity` owns the comparison modes used by the API lane system: concurrency gates/cooldowns,
+failover duplicate removal, successful-lane pinning, model-fetch stale-result checks, and connection
+test stale-result checks. Those modes intentionally do not compare the exact same fields. For example,
+generation gates use normalized endpoint/model/effective auth and ignore reasoning effort, while
+settings fetch/test results use exact raw row snapshots so an in-flight result is discarded after a row
+edit. `ApiLaneLabels` formats sanitized English debug labels and strips query/fragment text before a
+URL reaches logs.
 
 Row order is editable with compact arrows. The global routing mode controls how strongly order
 affects primary selection: **Balanced** spreads primaries equally, **Prefer top rows** favors earlier
@@ -473,9 +482,9 @@ dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 ```
 
 `DiaryCapturePolicyTests` covers Event Catalog decisions/dispatch; `DiaryPipelineTests` covers prompt
-planning and domain recovery; `PromptVariantsTests` covers instruction/tone pool selection
-(fallback, determinism, negative-seed normalization, blank-skip); `LlmResponseParserTests` and
-`DiaryTextDecorationTests` cover their respective pure helpers.
+planning, API lane policy/identity, and domain recovery; `PromptVariantsTests` covers instruction/tone
+pool selection (fallback, determinism, negative-seed normalization, blank-skip);
+`LlmResponseParserTests` and `DiaryTextDecorationTests` cover their respective pure helpers.
 
 **Live hook validation (RimBridge/GABS).** Use a disposable save with dev mode on, RimBridge/GABS
 connected, and prompt test mode enabled. Prompt test mode intercepts only after a real event reaches
