@@ -9,6 +9,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 - **Public release metadata cleaned.** Workshop-facing metadata and README copy now present the mod
   as a public release. The publish script reports the DLL that remains in the uploadable payload and
   preserves dependency package IDs while cleaning the mod's own published package ID.
+- **Translation readiness tightened.** English DefInjected stubs now cover prompt final
+  instructions, new quest/raid interaction groups, and interaction tone variant pools, so
+  translators do not have to chase raw Def XML fallbacks for model-facing prose.
 - **Hidden per-entry humor cues added.** Eligible first-person diary entries now occasionally carry
   one subtle structural writing cue appended to the system prompt — never a "be funny" instruction,
   always a single sentence-shape license (a flat understatement coda, a dry inventory, a clerical

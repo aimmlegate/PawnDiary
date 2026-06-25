@@ -197,4 +197,124 @@
   <abilityUsed.tone>with focused exertion and practical consequence</abilityUsed.tone>
   <abilityUsed.tones.0>focused and concrete, about the moment of use rather than a broad summary</abilityUsed.tones.0>
   <abilityUsed.tones.1>practical and sensory, grounded in the named ability, target, and cooldown rarity</abilityUsed.tones.1>
+  <animal.tones.0>soft and patient, focused on trust through action</animal.tones.0>
+  <animal.tones.1>practical and warm, fondness shown without sentimentality</animal.tones.1>
+  <anomaly.tones.0>skin-prickling and sensory, with no explanation</anomaly.tones.0>
+  <anomaly.tones.1>cold and alien, focused on what feels off</anomaly.tones.1>
+  <conversion.tones.0>fervent and declarative, like belief under pressure</conversion.tones.0>
+  <conversion.tones.1>inward and doubtful, focused on conviction cracking</conversion.tones.1>
+  <dayreflection.tones.0>tired and reflective, weighing what still matters</dayreflection.tones.0>
+  <dayreflection.tones.1>softly closing, like the day finally going quiet</dayreflection.tones.1>
+  <heartfelt.tones.0>gentle and open, letting warmth show plainly</heartfelt.tones.0>
+  <heartfelt.tones.1>quietly held, warmth shown through small restraint</heartfelt.tones.1>
+  <hediffLabor.tones.0>urgent and bodily, breath and pain setting the pace</hediffLabor.tones.0>
+  <hediffLabor.tones.1>threshold-tense, focused on fear, care, and waiting</hediffLabor.tones.1>
+  <hediffMajorHealth.tones.0>vulnerable and bodily, symptoms shaping every thought</hediffMajorHealth.tones.0>
+  <hediffMajorHealth.tones.1>quietly frightened, weakness changing the day&apos;s scale</hediffMajorHealth.tones.1>
+  <hediffPregnancy.tones.0>body-aware and intimate, uncertainty held close</hediffPregnancy.tones.0>
+  <hediffPregnancy.tones.1>future-facing and quiet, hope and fear in balance</hediffPregnancy.tones.1>
+  <inspiration.tones.0>bright and decisive, thought turning into a plan</inspiration.tones.0>
+  <inspiration.tones.1>electric and restless, purpose pushing the body forward</inspiration.tones.1>
+  <insults.tones.0>hot and clipped, like anger held in the teeth</insults.tones.0>
+  <insults.tones.1>cold and cutting, focused on the sting afterward</insults.tones.1>
+  <insultspree.tones.0>needling and repetitive, like anger looking for targets</insultspree.tones.0>
+  <insultspree.tones.1>sour and exhausted, cruelty sounding almost automatic</insultspree.tones.1>
+  <mentalbreak.tones.0>fragmented and breathless, thought under too much pressure</mentalbreak.tones.0>
+  <mentalbreak.tones.1>numb and sideways, reality narrowed to one impulse</mentalbreak.tones.1>
+  <moodeventMixed.tones.0>uneasy and conditional, the pawn unsure how to feel</moodeventMixed.tones.0>
+  <moodeventMixed.tones.1>alert and bodily, tracking how the condition lands</moodeventMixed.tones.1>
+  <moodeventNegative.tones.0>heavy and low, every detail pressing downward</moodeventNegative.tones.0>
+  <moodeventNegative.tones.1>irritated and weathered, strain showing in patience</moodeventNegative.tones.1>
+  <moodeventPositive.tones.0>open and eased, letting relief into the sentence</moodeventPositive.tones.0>
+  <moodeventPositive.tones.1>quietly grateful, focused on tension leaving the body</moodeventPositive.tones.1>
+  <questAccepted.label>Quest accepted</questAccepted.label>
+  <questAccepted.instruction>a new quest taken on—anticipation, curiosity, and the weight of a promise made. Write the hope or doubt it stirs</questAccepted.instruction>
+  <questAccepted.tone>with anticipation and wary curiosity</questAccepted.tone>
+  <questAccepted.tones.0>wary and forward-looking, promise weighed against risk</questAccepted.tones.0>
+  <questAccepted.tones.1>curious but guarded, hope kept under practical doubt</questAccepted.tones.1>
+  <questCompleted.label>Quest completed</questCompleted.label>
+  <questCompleted.instruction>a quest fulfilled—relief, satisfaction, and the cost paid along the way. Write the earned resolution</questCompleted.instruction>
+  <questCompleted.tone>with hard-won relief and quiet satisfaction</questCompleted.tone>
+  <questCompleted.tones.0>relieved and settled, like a debt finally paid</questCompleted.tones.0>
+  <questCompleted.tones.1>tired but proud, satisfaction measured against the cost</questCompleted.tones.1>
+  <questFailed.label>Quest failed</questFailed.label>
+  <questFailed.instruction>a quest lost—regret, grief, and the consequences of the failure. Write the weight of what slipped away</questFailed.instruction>
+  <questFailed.tone>with regret and heavy loss</questFailed.tone>
+  <questFailed.tones.0>heavy and regretful, focused on what slipped away</questFailed.tones.0>
+  <questFailed.tones.1>quietly grieving, consequence felt more than explained</questFailed.tones.1>
+  <raid.tones.0>tense and tactical, waiting for the fight to break open</raid.tones.0>
+  <raid.tones.1>urgent but anticipatory, fear gathering before contact</raid.tones.1>
+  <raidDropPod.label>Drop-pod raids</raidDropPod.label>
+  <raidDropPod.instruction>raiders punching straight into the colony by drop pod—sudden impact, no long warning, danger already inside the perimeter. Write the shock of instant contact</raidDropPod.instruction>
+  <raidDropPod.instructions.0>a drop-pod raid landing inside or near the colony — open on impact, alarms, and the scramble before anyone has time to prepare</raidDropPod.instructions.0>
+  <raidDropPod.instructions.1>a drop-pod raid with no slow approach — write the first stunned seconds, then the pawn&apos;s immediate choice of cover, weapon, or flight</raidDropPod.instructions.1>
+  <raidDropPod.instructions.2>raiders dropping from above — keep it sudden and close; do not write as if there was a long siege or approach unless supplied facts say so</raidDropPod.instructions.2>
+  <raidDropPod.tone>with shocked, impact-fast danger</raidDropPod.tone>
+  <raidDropPod.tones.0>impact-fast and disoriented, danger already inside the walls</raidDropPod.tones.0>
+  <raidDropPod.tones.1>shocked and close-quarters, every sentence reacting to sudden contact</raidDropPod.tones.1>
+  <raidFriendly.label>Friendly arrivals &amp; raids</raidFriendly.label>
+  <raidFriendly.instruction>a friendly force arriving at the colony—reinforcements, allies, or a peaceful drop. Write the relief or unease they bring</raidFriendly.instruction>
+  <raidFriendly.tone>with cautious relief or uneasy gratitude</raidFriendly.tone>
+  <raidFriendly.tones.0>cautiously relieved, trust arriving slowly</raidFriendly.tones.0>
+  <raidFriendly.tones.1>uneasy and grateful, help still feeling like risk</raidFriendly.tones.1>
+  <raidInfestation.label>Infestations</raidInfestation.label>
+  <raidInfestation.instruction>an infestation erupting from the colony&apos;s own ground—chitin, tunnels, enclosed panic, and danger already among the rooms. Write it as sudden internal horror, not a normal raid</raidInfestation.instruction>
+  <raidInfestation.instructions.0>an infestation breaking open inside the colony — open on sound, dust, claws, darkness, or the room changing from safe to hostile</raidInfestation.instructions.0>
+  <raidInfestation.instructions.1>insects bursting from within the base — write cramped fear and immediate survival, not a distant enemy approach</raidInfestation.instructions.1>
+  <raidInfestation.instructions.2>an underground threat erupting into lived-in space — keep it close, sensory, and practical; do not invent a resolved fight</raidInfestation.instructions.2>
+  <raidInfestation.tone>with claustrophobic, chitin-close panic</raidInfestation.tone>
+  <raidInfestation.tones.0>claustrophobic and horrified, safety turning into a breach</raidInfestation.tones.0>
+  <raidInfestation.tones.1>close, filthy, and panicked, the threat already underfoot</raidInfestation.tones.1>
+  <recruit.tones.0>controlled and strategic, every sentence weighing leverage</recruit.tones.0>
+  <recruit.tones.1>tight and wary, focused on power in the room</recruit.tones.1>
+  <ritual.tones.0>ceremonial and still, aware of watching eyes</ritual.tones.0>
+  <ritual.tones.1>reverent but uneasy, focused on duty and consequence</ritual.tones.1>
+  <romance.tones.0>close and physical, with restrained vulnerability</romance.tones.0>
+  <romance.tones.1>quietly reflective, focused on what changed</romance.tones.1>
+  <romance_relation.tones.0>formal and life-changing, with quiet restraint</romance_relation.tones.0>
+  <romance_relation.tones.1>private and raw, focused on the bond shifting</romance_relation.tones.1>
+  <slavery.tones.0>oppressive and heavy, focused on control</slavery.tones.0>
+  <slavery.tones.1>quietly defiant, with anger kept under pressure</slavery.tones.1>
+  <smalltalk.tones.0>loose and conversational, carried by small pauses</smalltalk.tones.0>
+  <smalltalk.tones.1>plain and companionable, ordinary detail doing the work</smalltalk.tones.1>
+  <socialfight.tones.0>fast and physical, driven by impact and breath</socialfight.tones.0>
+  <socialfight.tones.1>shocked and aftermath-heavy, anger cooling into consequence</socialfight.tones.1>
+  <strangechat.tones.0>ordinary on the surface, wrong underneath</strangechat.tones.0>
+  <strangechat.tones.1>quietly uncanny, ending before the wrongness resolves</strangechat.tones.1>
+  <taleanomaly.tones.0>uncanny and watchful, refusing explanation</taleanomaly.tones.0>
+  <taleanomaly.tones.1>intimate and contaminated, as if the wrongness got close</taleanomaly.tones.1>
+  <talecombat.tones.0>visceral and immediate, body first and thought second</talecombat.tones.0>
+  <talecombat.tones.1>stunned and aftershock-heavy, danger echoing afterward</talecombat.tones.1>
+  <talehealth.tones.0>fragile and clinical, focused on body and risk</talehealth.tones.0>
+  <talehealth.tones.1>relieved but shaken, trust or fear still present</talehealth.tones.1>
+  <taleincident.tones.0>reeling and urgent, focused on the scramble</taleincident.tones.0>
+  <taleincident.tones.1>hollow and stunned, focused on the damage after</taleincident.tones.1>
+  <talelife.tones.0>hushed and consequential, aware life has turned</talelife.tones.0>
+  <talelife.tones.1>immediate and personal, focused on the first changed breath</talelife.tones.1>
+  <talequality.tones.0>proud and tactile, focused on hands and material</talequality.tones.0>
+  <talequality.tones.1>bone-tired and satisfied, accomplishment after strain</talequality.tones.1>
+  <talequiet.tones.0>private and spare, one small feeling held close</talequiet.tones.0>
+  <talequiet.tones.1>light and brief, a passing note rather than a confession</talequiet.tones.1>
+  <talework.tones.0>steady and practical, pride kept close to the work</talework.tones.0>
+  <talework.tones.1>quietly pleased, focused on skill settling into the body</talework.tones.1>
+  <teaching.tones.0>patient and instructive, focused on small progress</teaching.tones.0>
+  <teaching.tones.1>playful but grounded, affection shown through attention</teaching.tones.1>
+  <thoughtNegative.tones.0>low and nagging, the thought returning in loops</thoughtNegative.tones.0>
+  <thoughtNegative.tones.1>tight and bodily, irritation or hurt sitting in the gut</thoughtNegative.tones.1>
+  <thoughtOther.tones.0>brief and half-felt, gone almost as it arrives</thoughtOther.tones.0>
+  <thoughtOther.tones.1>plain and observational, naming the mood without drama</thoughtOther.tones.1>
+  <thoughtPositive.tones.0>small and bright, like tension briefly loosening</thoughtPositive.tones.0>
+  <thoughtPositive.tones.1>quietly buoyant, focused on a thought worth keeping</thoughtPositive.tones.1>
+  <thoughtPregnancyFamily.tones.0>restrained and intimate, emotion held carefully</thoughtPregnancyFamily.tones.0>
+  <thoughtPregnancyFamily.tones.1>body-aware and uncertain, hope and fear both possible</thoughtPregnancyFamily.tones.1>
+  <trial.tones.0>formal and brittle, each sentence like testimony</trial.tones.0>
+  <trial.tones.1>watched and exposed, focused on shame or defense</trial.tones.1>
+  <workDarkStudy.tones.0>close and sensory, dread coming through the work itself</workDarkStudy.tones.0>
+  <workDarkStudy.tones.1>quietly contaminated, curiosity feeling like a mistake</workDarkStudy.tones.1>
+  <workPassion.tones.0>focused and satisfied, pleasure kept practical</workPassion.tones.0>
+  <workPassion.tones.1>absorbed and tactile, passion showing through the task</workPassion.tones.1>
+  <workRoutine.tones.0>matter-of-fact and rhythmic, ordinary work continuing</workRoutine.tones.0>
+  <workRoutine.tones.1>quietly practical, attention on tools and sequence</workRoutine.tones.1>
+  <workStrain.tones.0>weary and blunt, frustration in the hands</workStrain.tones.0>
+  <workStrain.tones.1>grimy and resigned, irritation kept under duty</workStrain.tones.1>
 </LanguageData>
