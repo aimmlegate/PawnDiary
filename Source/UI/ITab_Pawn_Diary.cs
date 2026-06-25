@@ -30,6 +30,17 @@ namespace PawnDiary
         private float[] fullHeightsBuffer = new float[0];
         private float[] heightsBuffer = new float[0];
 
+        // Cached full (expanded) card heights keyed by entry key, reused across draw frames so the
+        // measure pass does not recompute wrapped-text height for every expanded card ~60x/second.
+        // Cleared wholesale on anything that can alter a card's height: a new render token (entry
+        // text/status changed anywhere, since the version is global), a different card width, or the
+        // debug-info toggle flipping. Collapsed cards never enter this cache; they use the constant
+        // CollapsedEntryHeight directly.
+        private readonly Dictionary<string, float> entryHeightCache = new Dictionary<string, float>();
+        private float entryHeightCacheWidth = -1f;
+        private bool entryHeightCacheShowDebug;
+        private DiaryRenderToken entryHeightCacheToken;
+
         // Diary tab presentation values are XML-backed via DiaryUiStyleDef. These accessors keep the
         // drawing code readable while letting modders retune spacing/colors without recompiling.
         private static DiaryUiStyleDef UiStyle => DiaryUiStyles.Current;
@@ -312,9 +323,11 @@ namespace PawnDiary
                 bool expanded = IsEntryExpanded(entry, i);
                 float expansionBlend = ExpansionBlendFor(entryKey, expanded, animationDelta);
                 // Fully collapsed cards only need header height, so avoid expensive wrapped-text
-                // measurement until they are expanding or open.
+                // measurement until they are expanding or open. Expanded cards are measured once and
+                // then cached (see CachedEntryHeight) so reading a long page does not re-measure text
+                // every frame.
                 float fullHeight = (expanded || expansionBlend > 0f)
-                    ? EntryHeight(entry, viewWidth, showLlmDebugInfo, nameHighlights)
+                    ? CachedEntryHeight(entry, entryKey, viewWidth, showLlmDebugInfo, token, nameHighlights)
                     : CollapsedEntryHeight;
 
                 entryKeys[i] = entryKey;
@@ -343,6 +356,24 @@ namespace PawnDiary
                 float expansionBlend = expansionBlends[i];
                 float fullHeight = fullHeights[i];
                 float height = heights[i];
+
+                // Viewport culling. Widgets.BeginScrollView clips the pixels a card paints, but
+                // RimWorld still executes every immediate-mode call (box draws, Text.CalcSize,
+                // labels, tooltip regions) for offscreen cards. On a year page with hundreds of
+                // entries that work tanks FPS while the tab is open, so skip cards whose row is
+                // entirely above or below the visible scroll slice. The heights were measured once
+                // in the pass above, so this adds no per-frame text measurement. Cards are laid out
+                // top-to-bottom by curY, so once a row is fully past the bottom we can stop.
+                if (curY + height < scrollPosition.y)
+                {
+                    curY += height + EntryGap;
+                    continue;
+                }
+                if (curY > scrollPosition.y + outRect.height)
+                {
+                    break;
+                }
+
                 Rect entryRect = new Rect(0f, curY, viewRect.width, height);
 
                 Color accentColor = EntryAccentColor(entry);
@@ -523,6 +554,41 @@ namespace PawnDiary
             {
                 Array.Resize(ref heightsBuffer, count);
             }
+        }
+
+        /// <summary>
+        /// Returns the full (expanded) card height for an entry, measuring wrapped text once and
+        /// reusing the result across draw frames. Finished entry text is stable, so re-measuring
+        /// every expanded card 60x/second while the tab is open is pure waste once it has been laid
+        /// out. The cache is dropped wholesale whenever something that can change a card's height
+        /// changes: the pawn's render token (entry text/status), the card width, or the debug-info
+        /// toggle. Collapsed cards bypass this entirely via the constant CollapsedEntryHeight.
+        /// </summary>
+        private float CachedEntryHeight(
+            DiaryEntryView entry,
+            string entryKey,
+            float width,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            List<DiaryNameHighlight> nameHighlights)
+        {
+            if (width != entryHeightCacheWidth
+                || showLlmDebugInfo != entryHeightCacheShowDebug
+                || !token.Equals(entryHeightCacheToken))
+            {
+                entryHeightCache.Clear();
+                entryHeightCacheWidth = width;
+                entryHeightCacheShowDebug = showLlmDebugInfo;
+                entryHeightCacheToken = token;
+            }
+
+            float height;
+            if (!entryHeightCache.TryGetValue(entryKey, out height))
+            {
+                height = EntryHeight(entry, width, showLlmDebugInfo, nameHighlights);
+                entryHeightCache[entryKey] = height;
+            }
+            return height;
         }
 
 

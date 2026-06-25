@@ -79,24 +79,81 @@ namespace PawnDiary
             return views;
         }
 
+        // Memoized completed/pending counts for CommandStatusFor, keyed by pawn id + render token.
+        // The Diary tab asks for this status every frame via AcknowledgeGeneratedEntriesFor, and the
+        // count scan builds a DiaryEntryView per in-bounds entry (ToViewFor does group classification
+        // + linked-entry preview building), so without this cache the tab's cost grew with the pawn's
+        // whole history every frame. Invalidated whenever the pawn or its render token changes (new or
+        // changed entry text/status). unacknowledgedCount is NOT cached: it depends on the acknowledged
+        // counter, which AcknowledgeGeneratedEntriesFor can move without a token change.
+        private string cachedStatusPawnId;
+        private DiaryRenderToken cachedStatusToken;
+        private int cachedStatusCompleted;
+        private int cachedStatusPending;
+
         /// <summary>
         /// Returns the current completed/pending counts for the selected-pawn Diary command badge.
         /// Opening the Diary tab calls <see cref="AcknowledgeGeneratedEntriesFor"/>; this reader only
         /// mutates old saves once, baselining pre-existing pages so they do not all appear "new."
         /// </summary>
+        /// <remarks>
+        /// Per-frame caller: the Diary tab calls this via <see cref="AcknowledgeGeneratedEntriesFor"/>
+        /// every draw frame. The expensive part (the per-event <see cref="DiaryEvent.ToViewFor"/> scan)
+        /// is memoized by the pawn's render token and only reruns when an entry's text or status
+        /// changes. <c>unacknowledgedCount</c> is derived fresh each call.
+        /// </remarks>
         public DiaryCommandStatus CommandStatusFor(Pawn pawn)
         {
-            DiaryCommandStatus status = default(DiaryCommandStatus);
             if (pawn == null)
             {
-                return status;
+                return default(DiaryCommandStatus);
             }
 
             string pawnId = pawn.GetUniqueLoadID();
+            DiaryRenderToken token = RenderTokenFor(pawn);
+            if (cachedStatusPawnId != pawnId || !token.Equals(cachedStatusToken))
+            {
+                CountCompletedAndPending(pawn, pawnId, out int completed, out int pending);
+                cachedStatusPawnId = pawnId;
+                cachedStatusToken = token;
+                cachedStatusCompleted = completed;
+                cachedStatusPending = pending;
+            }
+
+            DiaryCommandStatus status = default(DiaryCommandStatus);
+            status.completedCount = cachedStatusCompleted;
+            status.pendingCount = cachedStatusPending;
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            int acknowledged = diary == null ? 0 : diary.acknowledgedGeneratedEntryCount;
+            if (acknowledged < 0)
+            {
+                // Old save / first read: treat the already-completed backlog as acknowledged so the
+                // badge does not flag every existing page as "new".
+                acknowledged = status.completedCount;
+                if (diary != null)
+                {
+                    diary.acknowledgedGeneratedEntryCount = acknowledged;
+                }
+            }
+            status.unacknowledgedCount = Math.Max(0, status.completedCount - acknowledged);
+            return status;
+        }
+
+        /// <summary>
+        /// Counts in-bounds completed and pending entries for a pawn. Extracted from
+        /// <see cref="CommandStatusFor"/> so the result can be memoized by render token; the counting
+        /// logic is unchanged (it still mirrors <see cref="DiaryEvent.ToViewFor"/> so the generated-
+        /// text and pending flags stay in sync with what the tab renders).
+        /// </summary>
+        private void CountCompletedAndPending(Pawn pawn, string pawnId, out int completed, out int pending)
+        {
+            completed = 0;
+            pending = 0;
             PawnDiaryRecord diary = FindDiary(pawn, false);
             if (diary == null || diary.eventIds == null)
             {
-                return status;
+                return;
             }
 
             DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
@@ -116,26 +173,14 @@ namespace PawnDiary
 
                 if (!string.IsNullOrWhiteSpace(view.GeneratedText))
                 {
-                    status.completedCount++;
+                    completed++;
                 }
 
                 if (view.LlmStatus == DiaryEvent.PendingStatus || view.TitlePending)
                 {
-                    status.pendingCount++;
+                    pending++;
                 }
             }
-
-            if (diary.acknowledgedGeneratedEntryCount < 0)
-            {
-                diary.acknowledgedGeneratedEntryCount = status.completedCount;
-                status.unacknowledgedCount = 0;
-            }
-            else
-            {
-                status.unacknowledgedCount = Math.Max(0, status.completedCount - diary.acknowledgedGeneratedEntryCount);
-            }
-
-            return status;
         }
 
         /// <summary>

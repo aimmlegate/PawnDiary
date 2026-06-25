@@ -6,6 +6,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **Diary tab per-frame cost capped for long histories.** Two hot paths that ran every draw frame
+  and scaled with the pawn's whole entry list no longer do so. `CommandStatusFor` (called every
+  frame via `AcknowledgeGeneratedEntriesFor`) rebuilt a `DiaryEntryView` for every in-bounds event
+  just to count completed/pending; it now memoizes those counts by render token (recomputing only
+  when entry text/status changes) and derives the acknowledge-dependent `unacknowledgedCount` fresh.
+  And `FillTab` now viewport-culls the draw pass (cards entirely outside the visible scroll slice are
+  skipped instead of running every widget call) plus caches expanded-card wrapped-text heights by
+  entry key across frames. Opening a year page with hundreds of entries (e.g. dev mock fill) no
+  longer tanks FPS while the tab is open; counting/rendering behavior and save data are unchanged.
+  Debug DLL rebuilt.
+
 - **Diary tab visible-entry cache extracted.** `ITab_Pawn_Diary` now delegates raw entry reuse,
   dev-filtered visibility, year pages, transient formatting preview insertion, generating counts, and
   selected-year ordering to a dedicated UI-layer `DiaryTabVisibleEntriesCache`. Card measurement and

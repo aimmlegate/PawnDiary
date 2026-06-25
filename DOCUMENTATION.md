@@ -388,6 +388,12 @@ The tab is sized by `tabWidth`/`tabHeight` (`DiaryUiStyleDef.xml`). Newest cards
 either. In dev mode every expanded card shows a subtle bottom-left copy button (copies the prompt
 for prompt-only cards, else generated text).
 
+The tab redraws every frame (RimWorld immediate-mode UI), so long histories are kept cheap with two
+guards in `FillTab`: expanded-card heights are measured once and cached by entry key (cleared when
+the pawn render token, card width, or debug toggle changes), and the draw pass **viewport-culls** —
+cards whose row is entirely above or below the visible scroll slice are skipped, so a year page with
+hundreds of entries only measures/renders the handful on screen rather than the whole page.
+
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
 owns display-only decorations: intoxication/anesthesia speech uses the strongest staggered word-size
