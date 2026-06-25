@@ -50,6 +50,13 @@ namespace LlmResponseParserTests
                     LlmResponseMode.OpenAIChatCompletions));
 
             AssertEqual(
+                "chat sibling reasoning field ignored",
+                "Visible answer.",
+                LlmResponseParser.ParseGeneratedText(
+                    Root("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"reasoning\":\"Wait, looking at the instructions: hidden draft\",\"content\":\"Visible answer.\"}}]}"),
+                    LlmResponseMode.OpenAIChatCompletions));
+
+            AssertEqual(
                 "responses output_text fallback",
                 "Preferred text.",
                 LlmResponseParser.ParseGeneratedText(
@@ -133,6 +140,32 @@ namespace LlmResponseParserTests
                 "reasoning heading final response",
                 "Visible.",
                 LlmResponseParser.StripReasoningTextBlocks("Thinking:\nsecret\nFinal response: Visible."));
+
+            AssertEqual(
+                "instruction self-edit transcript keeps last rewrite",
+                "Stirring the pot by the conduit, the desert's ugliness faded for a moment. Talking mechanoids with Townsend - just a look, a pause - and I felt steadied.",
+                LlmResponseParser.StripReasoningTextBlocks(
+                    "Cooking in this ugly stretch of desert, Townsend and I found a moment.\n"
+                    + "[[speech]]It's good to talk to someone who gets it.[[/speech]]\n\n"
+                    + "Wait, looking at the instructions: \"If the notes are thin, react specifically to what happened rather than inventing detail.\" "
+                    + "The notes say \"Gerald connected on the topic of mechanoids with Townsend\" and \"warmth exchanged\". I should focus on that connection.\n\n"
+                    + "Let me refine:\n"
+                    + "The desert heat, the ugly view, cooking at the stove... but Townsend was there. The mechanoid talk shifted something between us.\n"
+                    + "[[speech]]Same wavelength.[[/speech]]\n\n"
+                    + "Or maybe shorter, more restrained:\n"
+                    + "Stirring the pot by the conduit, the desert's ugliness faded for a moment. Talking mechanoids with Townsend - just a look, a pause - and I felt steadied."));
+
+            AssertEqual(
+                "instruction echo without rewrite keeps visible draft",
+                "I wrote down the meal before the thought wandered.",
+                LlmResponseParser.StripReasoningTextBlocks(
+                    "I wrote down the meal before the thought wandered.\n\n"
+                    + "Wait, looking at the instructions: I should not invent detail."));
+
+            AssertEqual(
+                "in-world wait line survives",
+                "Wait, Townsend paused by the stove.",
+                LlmResponseParser.StripReasoningTextBlocks("Wait, Townsend paused by the stove."));
         }
 
         // Covers the trickier fallback branches of StripTaggedReasoningBlocks: an opening reasoning

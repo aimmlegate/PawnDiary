@@ -4,6 +4,16 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-06-26
+
+- **Thinking-model self-edit cleanup tightened.** Response cleanup now recognizes instruction-echo
+  self-revision transcripts from reasoning/chat-template models, such as "Wait, looking at the
+  instructions..." followed by "Let me refine:" or a shorter final version. When a clean rewrite
+  follows, the last rewrite is saved; otherwise the visible draft before the self-audit is kept.
+  `LlmResponseParserTests` cover the reported leak shape, Chat Completions responses that put this
+  audit in a sibling `message.reasoning` field, and an in-world "Wait," line that should survive
+  unchanged.
+
 ## 2026-06-25
 
 - **Diary tab now appears on selected colonist corpses.** Startup registration now adds the shared

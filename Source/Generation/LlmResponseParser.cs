@@ -21,7 +21,8 @@ namespace PawnDiary
 
     /// <summary>
     /// Stateless helpers that extract visible model text, surface provider errors, strip known
-    /// reasoning blocks, and apply the local length/sentence cleanup before diary text is saved.
+    /// reasoning blocks/self-edit transcripts, and apply the local length/sentence cleanup before
+    /// diary text is saved.
     /// </summary>
     public static class LlmResponseParser
     {
@@ -97,6 +98,7 @@ namespace PawnDiary
             cleaned = StripOrphanClosingReasoningTags(cleaned);
             cleaned = StripReasoningFencedBlocks(cleaned);
             cleaned = StripReasoningHeadingPrefix(cleaned);
+            cleaned = StripInstructionReflectionTranscript(cleaned);
             return CompactReasoningCleanupWhitespace(cleaned).Trim();
         }
 
@@ -581,6 +583,187 @@ namespace PawnDiary
             return trimmedStart.Substring(finalIndex + labelLength).TrimStart();
         }
 
+        /// <summary>
+        /// Removes visible "thinking out loud" rewrites from models that ignore hidden-reasoning
+        /// boundaries and emit prompt self-audits such as "Wait, looking at the instructions...".
+        /// When a later rewrite marker exists, the last rewrite wins; otherwise the visible draft
+        /// before the self-audit is kept.
+        /// </summary>
+        private static string StripInstructionReflectionTranscript(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            string[] lines = normalized.Split('\n');
+            int reflectionLine = FirstInstructionReflectionLine(lines);
+            if (reflectionLine < 0)
+            {
+                return text;
+            }
+
+            int answerLine;
+            int answerColumn;
+            if (TryFindLastRevisionAnswerStart(lines, reflectionLine + 1, true, out answerLine, out answerColumn))
+            {
+                return TextFromLineSegment(lines, answerLine, answerColumn);
+            }
+
+            return TextBeforeLine(lines, reflectionLine);
+        }
+
+        private static int FirstInstructionReflectionLine(string[] lines)
+        {
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string comparable = lines[i].TrimStart().ToLowerInvariant();
+                if (IsInstructionReflectionLine(comparable))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static bool IsInstructionReflectionLine(string comparable)
+        {
+            if (string.IsNullOrWhiteSpace(comparable))
+            {
+                return false;
+            }
+
+            if (StartsWithAny(comparable, InstructionReflectionPrefixes()))
+            {
+                return true;
+            }
+
+            return comparable.StartsWith("wait,", StringComparison.Ordinal)
+                && (comparable.Contains("instruction")
+                    || comparable.Contains("prompt")
+                    || comparable.Contains("notes say"));
+        }
+
+        private static bool TryFindLastRevisionAnswerStart(
+            string[] lines,
+            int startLine,
+            bool allowDirectiveLabels,
+            out int answerLine,
+            out int answerColumn)
+        {
+            answerLine = -1;
+            answerColumn = 0;
+            for (int i = Math.Max(0, startLine); i < lines.Length; i++)
+            {
+                int column;
+                if (TryGetRevisionAnswerStart(lines[i], allowDirectiveLabels, out column)
+                    && HasNonWhitespaceFrom(lines, i, column))
+                {
+                    answerLine = i;
+                    answerColumn = column;
+                }
+            }
+
+            return answerLine >= 0;
+        }
+
+        private static bool TryGetRevisionAnswerStart(string line, bool allowDirectiveLabels, out int answerColumn)
+        {
+            answerColumn = 0;
+            if (line == null)
+            {
+                return false;
+            }
+
+            int leading = 0;
+            while (leading < line.Length && char.IsWhiteSpace(line[leading]))
+            {
+                leading++;
+            }
+
+            string comparable = line.Substring(leading).ToLowerInvariant();
+            string[] labels = RevisionAnswerLabels();
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (comparable.StartsWith(labels[i], StringComparison.Ordinal))
+                {
+                    answerColumn = leading + labels[i].Length;
+                    return true;
+                }
+            }
+
+            if (!allowDirectiveLabels || !StartsWithAny(comparable, RevisionDirectivePrefixes()))
+            {
+                return false;
+            }
+
+            int colon = line.IndexOf(':', leading);
+            if (colon < 0 || colon - leading > 120)
+            {
+                return false;
+            }
+
+            answerColumn = colon + 1;
+            return true;
+        }
+
+        private static bool HasNonWhitespaceFrom(string[] lines, int lineIndex, int column)
+        {
+            for (int i = Math.Max(0, lineIndex); i < lines.Length; i++)
+            {
+                string line = lines[i] ?? string.Empty;
+                int start = i == lineIndex ? Math.Min(Math.Max(0, column), line.Length) : 0;
+                for (int j = start; j < line.Length; j++)
+                {
+                    if (!char.IsWhiteSpace(line[j]))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static string TextFromLineSegment(string[] lines, int lineIndex, int column)
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = Math.Max(0, lineIndex); i < lines.Length; i++)
+            {
+                string line = lines[i] ?? string.Empty;
+                string segment = i == lineIndex
+                    ? line.Substring(Math.Min(Math.Max(0, column), line.Length))
+                    : line;
+
+                if (builder.Length > 0)
+                {
+                    builder.Append('\n');
+                }
+
+                builder.Append(segment);
+            }
+
+            return builder.ToString().Trim();
+        }
+
+        private static string TextBeforeLine(string[] lines, int lineIndex)
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < Math.Min(lineIndex, lines.Length); i++)
+            {
+                if (builder.Length > 0)
+                {
+                    builder.Append('\n');
+                }
+
+                builder.Append(lines[i]);
+            }
+
+            return builder.ToString().Trim();
+        }
+
         private static int FindLineStartingWithAny(string text, string[] labels, out int labelLength)
         {
             int lineStart = 0;
@@ -665,6 +848,73 @@ namespace PawnDiary
         private static string[] FinalAnswerLabels()
         {
             return new[] { "final:", "final answer:", "final response:", "answer:", "response:", "result:", "diary:", "entry:", "output:" };
+        }
+
+        private static string[] InstructionReflectionPrefixes()
+        {
+            return new[]
+            {
+                "wait, looking at the instructions",
+                "wait, the instructions",
+                "wait, the prompt",
+                "looking at the instructions",
+                "the instructions say",
+                "the prompt says",
+                "the notes say",
+                "source notes say",
+                "notes say",
+                "i should focus",
+                "i need to focus",
+                "i should avoid",
+                "i need to avoid",
+                "i should not invent",
+                "i shouldn't invent"
+            };
+        }
+
+        private static string[] RevisionAnswerLabels()
+        {
+            return new[]
+            {
+                "final:",
+                "final answer:",
+                "final response:",
+                "answer:",
+                "response:",
+                "result:",
+                "diary:",
+                "entry:",
+                "output:",
+                "revised:",
+                "revision:",
+                "revised version:",
+                "rewrite:",
+                "clean version:",
+                "cleaned up:"
+            };
+        }
+
+        private static string[] RevisionDirectivePrefixes()
+        {
+            return new[]
+            {
+                "let me refine",
+                "let me revise",
+                "let me rewrite",
+                "let's refine",
+                "let's revise",
+                "let's rewrite",
+                "i'll refine",
+                "i'll revise",
+                "i'll rewrite",
+                "i will refine",
+                "i will revise",
+                "i will rewrite",
+                "or maybe",
+                "maybe shorter",
+                "shorter version",
+                "more restrained"
+            };
         }
 
         private static string CompactReasoningCleanupWhitespace(string text)

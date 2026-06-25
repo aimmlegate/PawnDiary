@@ -462,10 +462,15 @@ before JSON parsing/logging. Successful responses are trimmed locally to `maxTok
 complete sentences.
 
 `LlmResponseParser` extracts typed visible output before fallback fields and strips
-structured/transcript reasoning before debug/save. The save-time sanitizer preserves valid speech
-blocks while removing hallucinated bracket tags and echoed schema punctuation. API keys are never
-logged or saved in event metadata. New game sessions cancel stale requests. Orphaned pending entries
-reset after two scans. If no enabled lane has a model, the entry fails with
+structured/transcript reasoning plus visible instruction-echo self-edit drafts before debug/save.
+Chat Completions responses may include a sibling `message.reasoning` field; that field is ignored
+and only `message.content` is eligible for saved diary text.
+When a model writes a metaprompt audit followed by rewrite labels such as "Let me refine:" or a
+shorter final version, the last clean rewrite is kept; if no rewrite follows, the visible draft
+before the audit is kept. The save-time sanitizer preserves valid speech blocks while removing
+hallucinated bracket tags and echoed schema punctuation. API keys are never logged or saved in event
+metadata. New game sessions cancel stale requests. Orphaned pending entries reset after two scans.
+If no enabled lane has a model, the entry fails with
 `PawnDiary.Error.NoApiConfigured`.
 
 ---
