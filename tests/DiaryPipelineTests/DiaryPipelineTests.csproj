@@ -12,6 +12,10 @@
     <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="DiaryEventDomainClassifier.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryResponsePostprocessor.cs" Link="DiaryResponsePostprocessor.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryDirectSpeechParser.cs" Link="DiaryDirectSpeechParser.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryTextDecorationContracts.cs" Link="DiaryTextDecorationContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryTextDecorationMatcher.cs" Link="DiaryTextDecorationMatcher.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryTextDecorationFactCodec.cs" Link="DiaryTextDecorationFactCodec.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryRichTextDecorators.cs" Link="DiaryRichTextDecorators.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptCapture.cs" Link="DiaryPromptCapture.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />

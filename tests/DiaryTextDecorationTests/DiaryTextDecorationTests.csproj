@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Source\Pipeline\DiaryTextDecorationContracts.cs" Link="DiaryTextDecorationContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryTextDecorationMatcher.cs" Link="DiaryTextDecorationMatcher.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryTextDecorationFactCodec.cs" Link="DiaryTextDecorationFactCodec.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryRichTextDecorators.cs" Link="DiaryRichTextDecorators.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryNameHighlighter.cs" Link="DiaryNameHighlighter.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />

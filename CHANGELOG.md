@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **`DiaryTextDecorations` split behind a facade.** The stable public `DiaryTextDecorations` API now
+  delegates to focused pure helpers: `DiaryTextDecorationContracts` (DTOs/constants),
+  `DiaryTextDecorationMatcher` (rule selection, condition matching, context tags),
+  `DiaryTextDecorationFactCodec` (saved hediff/trait facts), and `DiaryRichTextDecorators`
+  (tag-preserving rich-text mutation). Behavior and save data are unchanged; the decoration and
+  pipeline pure test harnesses pass.
+
 - **Diary pipeline adapter moved out of the pure folder.** The intentionally impure
   `DiaryPipelineAdapters` bridge now lives at `Source/Generation/DiaryPipelineAdapters.cs`, beside
   `DiaryPromptBuilder`, while keeping its namespace/API unchanged. `Source/Pipeline` is now reserved

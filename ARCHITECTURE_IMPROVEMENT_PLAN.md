@@ -561,6 +561,10 @@ Docs:
 
 Priority: Low
 
+Status: Resolved 2026-06-25. `DiaryTextDecorations` is now a stable facade over split pure files for
+contracts, matching, fact serialization, and rich-text transforms. Documentation and changelog were
+updated, `DiaryTextDecorationTests` and `DiaryPipelineTests` pass, and the Debug build succeeds.
+
 Evidence:
 - `Source/Pipeline/DiaryTextDecorations.cs` combines constants/DTOs, rule matching, rich-text mutation, fact serialization, tag parsing, and condition matching.
 

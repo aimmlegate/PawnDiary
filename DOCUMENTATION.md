@@ -62,7 +62,7 @@ Key files:
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
 | `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
 | `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
-| `Generation/DiaryPromptBuilder.cs`, `Generation/DiaryPipelineAdapters.cs`, `Pipeline/*` | Prompt facade plus impure pipeline adapter, pure planning, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, text decoration. |
+| `Generation/DiaryPromptBuilder.cs`, `Generation/DiaryPipelineAdapters.cs`, `Pipeline/*` | Prompt facade plus impure pipeline adapter, pure planning, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, and text decoration. `DiaryTextDecorations` is the stable facade over split decoration contracts, rule matching, fact codec, and rich-text transforms. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
 | `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
@@ -259,7 +259,7 @@ Layer boundaries:
   live `Pawn`), `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
   `DiaryLineCleaner`, `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`,
   `LlmRequestJsonBuilder`, `LlmResponseParser`, `DiaryResponsePostprocessor`,
-  `DiaryTextDecorations`.
+  `DiaryTextDecorations` and its split decoration helpers.
 
 **Writing styles** come from `DiaryPersonaDef` + settings overrides/custom rows. The Def and save
 field names still say "Persona" for compatibility, but the player-facing feature is writing styles.
@@ -390,13 +390,16 @@ for prompt-only cards, else generated text).
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
 owns display-only decorations: intoxication/anesthesia speech uses the strongest staggered word-size
 setting; extreme-dark speech dims selected words (vs. strange-chat Zalgo); combat/social-fight/mental
-cues add stronger page washes and header rules; generated text is never mutated on save. The same
-`Diary_TextDecorations` `StaggeredWordSizes` rule list is also the single source of truth for which
-hediffs count as intoxicating at capture time (via `DiaryTextDecorations.HediffMatchesStaggeredRules`),
-so modders/DLCs extend the set by editing XML — no parallel hardcoded keyword list. Live humanlike
-pawn names in prose are highlighted — colonists use their favorite color when available,
-slaves/prisoners/enemies/neutral pawns use XML-backed status colors, ambiguous/uncolored matches
-fall back to bold.
+cues add stronger page washes and header rules; generated text is never mutated on save. The public
+`DiaryTextDecorations` facade delegates to focused pure helpers: `DiaryTextDecorationContracts` for
+DTOs/constants, `DiaryTextDecorationMatcher` for XML rule selection and context matching,
+`DiaryTextDecorationFactCodec` for saved hediff/trait snapshots, and `DiaryRichTextDecorators` for
+tag-preserving text mutation. The same `Diary_TextDecorations` `StaggeredWordSizes` rule list is also
+the single source of truth for which hediffs count as intoxicating at capture time (via
+`DiaryTextDecorations.HediffMatchesStaggeredRules`), so modders/DLCs extend the set by editing XML — no
+parallel hardcoded keyword list. Live humanlike pawn names in prose are highlighted — colonists use
+their favorite color when available, slaves/prisoners/enemies/neutral pawns use XML-backed status
+colors, ambiguous/uncolored matches fall back to bold.
 
 ---
 
