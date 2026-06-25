@@ -165,6 +165,7 @@ namespace PawnDiary
         public string eventPromptKey;
         public string eventPrompt;
         public string eventEnhancement;
+        public string forcedModelName;
         public bool important = true;
         public bool combat;
         public string colorCue;
@@ -248,6 +249,7 @@ namespace PawnDiary
         public string eventId;
         public string povRole;
         public string templateKey;
+        public string forcedModelName;
         public string systemPrompt;
         public string userPrompt;
         public string debugLabel;

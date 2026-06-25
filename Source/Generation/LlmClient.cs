@@ -58,6 +58,12 @@ namespace PawnDiary
         public string reasoningEffort;
 
         /// <summary>
+        /// True when XML/settings event-prompt policy asked for this primary model explicitly. Forced
+        /// primaries are attempted even if their lane is cooling; normal failover still runs on error.
+        /// </summary>
+        public bool forcePrimaryLane;
+
+        /// <summary>
         /// Ordered alternate lanes (endpoint + key + model) to try if the primary lane above errors —
         /// "on error, use the next model". Optional; null/empty means no failover. Populated by the
         /// diary system with the other configured APIs.
@@ -701,7 +707,8 @@ namespace PawnDiary
                     // Point the request at this lane so the gate key, HTTP call, and reported
                     // result all reflect the model we are about to try.
                     ApiEndpointConfig target = targets[t];
-                    if (hasReadyLaneAtStart && !LaneWasReady(readyAtStart, t))
+                    bool forcedPrimaryAttempt = request.forcePrimaryLane && t == 0;
+                    if (!forcedPrimaryAttempt && hasReadyLaneAtStart && !LaneWasReady(readyAtStart, t))
                     {
                         LogDebug("Skipped cooling lane event=" + request.eventId + " role=" + request.povRole + " lane=" + LaneLabel(target));
                         continue;

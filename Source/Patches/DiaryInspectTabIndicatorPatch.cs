@@ -1,6 +1,6 @@
 // Draws the Diary tab's unread marker in RimWorld's normal pawn inspect-tab row.
 // The bottom gizmo has its own command overlay; this patch is only for tab mode, where players
-// asked for a quieter signal: a small white dot for newly finished pages and no writing dots.
+// asked for a quieter signal: a small Unicode mark near the tab's right edge and no writing dots.
 // New to this? See AGENTS.md ("Harmony patches").
 using System.Collections.Generic;
 using HarmonyLib;
@@ -11,7 +11,7 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>
-    /// Adds a small unread dot to the Diary inspect-tab button.
+    /// Adds a small unread marker to the Diary inspect-tab button.
     /// </summary>
     [HarmonyPatch(typeof(InspectPaneUtility), "DoTabs")]
     public static class DiaryInspectTabIndicatorPatch
@@ -21,11 +21,9 @@ namespace PawnDiary
         // per-tab local helper, whose name is fragile across game builds.
         private const float VanillaInspectTabWidth = 75f;
         private const float VanillaInspectTabHeight = 30f;
-        private const int DotTextureSize = 16;
-        private static Texture2D unreadDotTexture;
 
         /// <summary>
-        /// After vanilla draws the tab strip, overlays the Diary unread dot if this pawn has
+        /// After vanilla draws the tab strip, overlays the Diary unread marker if this pawn has
         /// completed pages that have not yet been acknowledged by opening the Diary tab.
         /// </summary>
         public static void Postfix(IInspectPane pane)
@@ -52,7 +50,7 @@ namespace PawnDiary
             Rect tabRect;
             if (TryDiaryTabRect(pane, out tabRect))
             {
-                DrawUnreadDot(tabRect);
+                DrawUnreadMarker(tabRect);
             }
         }
 
@@ -122,71 +120,39 @@ namespace PawnDiary
         /// <summary>
         /// Draws the tab-mode unread marker. No writing/loading indicator is drawn in tab mode.
         /// </summary>
-        private static void DrawUnreadDot(Rect tabRect)
+        private static void DrawUnreadMarker(Rect tabRect)
         {
             DiaryUiStyleDef style = DiaryUiStyles.Current;
-            float size = Mathf.Clamp(style.inspectTabUnreadDotSize, 3f, 9f);
-            float topPadding = Mathf.Max(0f, style.inspectTabUnreadDotTopPadding);
-            Rect dotRect = new Rect(
-                tabRect.center.x - size * 0.5f,
-                tabRect.y + topPadding,
-                size,
-                size);
+            string icon = string.IsNullOrEmpty(style.inspectTabUnreadIcon)
+                ? "•"
+                : style.inspectTabUnreadIcon;
+            float width = Mathf.Clamp(style.inspectTabUnreadIconWidth, 8f, 18f);
+            float height = Mathf.Clamp(style.inspectTabUnreadIconHeight, 10f, 26f);
+            float rightPadding = Mathf.Max(0f, style.inspectTabUnreadIconRightPadding);
+            float xOffset = style.inspectTabUnreadIconXOffset;
+            float yOffset = style.inspectTabUnreadIconYOffset;
+            Rect iconRect = new Rect(
+                tabRect.xMax - rightPadding - width + xOffset,
+                tabRect.y + (tabRect.height - height) * 0.5f + yOffset,
+                width,
+                height);
 
             Color oldColor = GUI.color;
-            GUI.color = style.InspectTabUnreadDotColor;
-            GUI.DrawTexture(dotRect, UnreadDotTexture);
+            GameFont oldFont = Text.Font;
+            TextAnchor oldAnchor = Text.Anchor;
+
+            GUI.color = style.InspectTabUnreadIconColor;
+            Text.Font = GameFont.Small;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(iconRect, icon);
+
             GUI.color = oldColor;
+            Text.Font = oldFont;
+            Text.Anchor = oldAnchor;
 
             TooltipHandler.TipRegion(
-                dotRect.ExpandedBy(5f),
+                iconRect.ExpandedBy(5f),
                 "PawnDiary.Command.NewPagesTip".Translate());
-        }
-
-        /// <summary>
-        /// Tiny antialiased white circle used as the unread marker. The final tint comes from GUI.color.
-        /// </summary>
-        private static Texture2D UnreadDotTexture
-        {
-            get
-            {
-                if (unreadDotTexture == null)
-                {
-                    unreadDotTexture = BuildUnreadDotTexture();
-                }
-
-                return unreadDotTexture;
-            }
-        }
-
-        /// <summary>
-        /// Builds a small circle texture once so the tab marker reads as a dot instead of a square.
-        /// </summary>
-        private static Texture2D BuildUnreadDotTexture()
-        {
-            Texture2D texture = new Texture2D(DotTextureSize, DotTextureSize);
-            texture.name = "PawnDiaryUnreadDot";
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-
-            float center = (DotTextureSize - 1) * 0.5f;
-            float radius = center;
-            Color[] pixels = new Color[DotTextureSize * DotTextureSize];
-            for (int y = 0; y < DotTextureSize; y++)
-            {
-                for (int x = 0; x < DotTextureSize; x++)
-                {
-                    float dx = x - center;
-                    float dy = y - center;
-                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
-                    float alpha = Mathf.Clamp01(radius + 0.5f - distance);
-                    pixels[y * DotTextureSize + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply(false, true);
-            return texture;
         }
     }
 }

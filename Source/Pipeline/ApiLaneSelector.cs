@@ -2,6 +2,7 @@
 // state, and logging; this file only turns "how many lanes exist, which are ready, and what routing
 // mode did the player choose?" into a stable primary-lane index that tests can cover without
 // RimWorld assemblies.
+using System;
 using System.Collections.Generic;
 
 namespace PawnDiary
@@ -45,6 +46,31 @@ namespace PawnDiary
                 default:
                     return Balanced(laneCount, safeCounter, readyLanes, anyReady);
             }
+        }
+
+        /// <summary>
+        /// Finds the first configured model matching an event prompt's optional forced-model text.
+        /// Blank, unknown, or whitespace-only values return -1 so callers can use normal routing.
+        /// </summary>
+        public static int SelectForcedModelIndex(IList<string> modelNames, string forcedModelName)
+        {
+            string requested = (forcedModelName ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(requested) || modelNames == null)
+            {
+                return -1;
+            }
+
+            for (int i = 0; i < modelNames.Count; i++)
+            {
+                string modelName = modelNames[i];
+                if (!string.IsNullOrWhiteSpace(modelName)
+                    && string.Equals(modelName.Trim(), requested, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>Normalizes invalid enum values loaded from old or hand-edited settings.</summary>

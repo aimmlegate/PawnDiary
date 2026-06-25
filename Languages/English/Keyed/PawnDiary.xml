@@ -196,7 +196,7 @@
   <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
   <PawnDiary.Settings.ShowPromptStudio>Show prompts</PawnDiary.Settings.ShowPromptStudio>
   <PawnDiary.Settings.HidePromptStudio>Hide prompts</PawnDiary.Settings.HidePromptStudio>
-  <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts and per-event prompt guidance. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
+  <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts, per-event prompt guidance, and optional event model routing. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
   <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates and {1} event prompt types loaded; {2} event types customized in settings</PawnDiary.Settings.PromptStudioSummary>
   <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and writing-style catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
   <PawnDiary.Settings.ResetEventPromptOverrides>Restore event defaults</PawnDiary.Settings.ResetEventPromptOverrides>
@@ -206,8 +206,10 @@
   <PawnDiary.Settings.EditingEventPrompt>Editing event prompt: {0}</PawnDiary.Settings.EditingEventPrompt>
   <PawnDiary.Settings.EventPromptPromptField>event prompt field</PawnDiary.Settings.EventPromptPromptField>
   <PawnDiary.Settings.EventPromptEnhancementField>event enhancement field</PawnDiary.Settings.EventPromptEnhancementField>
+  <PawnDiary.Settings.EventPromptForcedModelField>forced model</PawnDiary.Settings.EventPromptForcedModelField>
   <PawnDiary.Settings.RestoreEventPromptDefault>Restore prompt</PawnDiary.Settings.RestoreEventPromptDefault>
   <PawnDiary.Settings.RestoreEventEnhancementDefault>Restore enhancement</PawnDiary.Settings.RestoreEventEnhancementDefault>
+  <PawnDiary.Settings.RestoreEventForcedModelDefault>Restore model</PawnDiary.Settings.RestoreEventForcedModelDefault>
   <PawnDiary.Settings.SystemPromptDiary>Diary entries system prompt</PawnDiary.Settings.SystemPromptDiary>
   <PawnDiary.Settings.SystemPromptReflection>Day reflection system prompt</PawnDiary.Settings.SystemPromptReflection>
   <PawnDiary.Settings.SystemPromptNeutral>Neutral chronicle system prompt</PawnDiary.Settings.SystemPromptNeutral>

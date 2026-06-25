@@ -141,6 +141,7 @@ namespace PawnDiary
         // PromptOverrideDictionary that owns its own Scribe key and lookup/normalize plumbing.
         public PromptOverrideDictionary eventPromptOverrides = new PromptOverrideDictionary("eventPromptOverrides");
         public PromptOverrideDictionary eventEnhancementOverrides = new PromptOverrideDictionary("eventEnhancementOverrides");
+        public PromptOverrideDictionary eventForcedModelOverrides = new PromptOverrideDictionary("eventForcedModelOverrides");
         // Player-facing multipliers for the two random entry gates:
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
@@ -192,6 +193,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref titleSystemPromptOverride, "titleSystemPromptOverride", string.Empty);
             eventPromptOverrides.ExposeData();
             eventEnhancementOverrides.ExposeData();
+            eventForcedModelOverrides.ExposeData();
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
@@ -333,21 +335,23 @@ namespace PawnDiary
 
         // ---- Event prompt helpers ----
         // Per-key lookup/set/reset and "is customized" live on PromptOverrideDictionary now; these
-        // two span both the prompt and enhancement maps, so they stay here and delegate.
+        // methods span all event-prompt maps, so they stay here and delegate.
 
-        /// <summary>Clears both saved event prompt dictionaries.</summary>
+        /// <summary>Clears all saved event prompt dictionaries.</summary>
         public void ResetAllEventPromptOverrides()
         {
             eventPromptOverrides.Clear();
             eventEnhancementOverrides.Clear();
+            eventForcedModelOverrides.Clear();
         }
 
-        /// <summary>Counts event types with either prompt or enhancement text customized.</summary>
+        /// <summary>Counts event types with prompt, enhancement, or forced-model text customized.</summary>
         public int CustomizedEventPromptCount()
         {
             HashSet<string> keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             eventPromptOverrides.AddKeysTo(keys);
             eventEnhancementOverrides.AddKeysTo(keys);
+            eventForcedModelOverrides.AddKeysTo(keys);
             return keys.Count;
         }
 
@@ -695,6 +699,7 @@ namespace PawnDiary
             EnsureGroupDictionaries();
             eventPromptOverrides.Normalize();
             eventEnhancementOverrides.Normalize();
+            eventForcedModelOverrides.Normalize();
             personaPresets.Normalize();
 
             EnsureEndpointsList();
@@ -730,6 +735,7 @@ namespace PawnDiary
 
         // Writing-style (persona) CRUD, normalization, and theme policy moved to PersonaPresetStore;
         // call settings.personaPresets.* directly. The reusable event-prompt override map plumbing
-        // lives on PromptOverrideDictionary (settings.eventPromptOverrides / eventEnhancementOverrides).
+        // lives on PromptOverrideDictionary (settings.eventPromptOverrides / eventEnhancementOverrides
+        // / eventForcedModelOverrides).
     }
 }

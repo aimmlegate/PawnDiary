@@ -81,7 +81,9 @@ namespace PawnDiary
             }
 
             string selectionReason;
-            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride, settings.apiRoutingMode, out selectionReason);
+            bool forcePrimaryLane;
+            ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride,
+                promptPlan.forcedModelName, settings.apiRoutingMode, out selectionReason, out forcePrimaryLane);
             List<ApiEndpointConfig> failoverTargets = BuildFailoverTargets(targets, target);
             LogApiDebug(
                 "Queue event=" + diaryEvent.eventId
@@ -121,6 +123,7 @@ namespace PawnDiary
                 customAuthHeaderName = target.customAuthHeaderName,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
+                forcePrimaryLane = forcePrimaryLane,
                 // The other configured lanes, tried in order if this one errors ("use next model").
                 failoverTargets = failoverTargets,
                 timeoutSeconds = settings.timeoutSeconds,

@@ -59,10 +59,12 @@ namespace DiaryPipelineTests
 
         private static void TestSoloPromptPlan()
         {
+            DiaryPolicySnapshot policy = Policy(combat: false, important: true);
+            policy.group.forcedModelName = "story-model";
             DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
             {
                 payload = SoloPayload("e-solo", "quiet work", "Alice repaired the generator alone."),
-                policy = Policy(combat: false, important: true),
+                policy = policy,
                 povRole = DiaryPipelineRoles.Initiator,
                 personaVoiceBlock = "Write like Alice.",
                 promptEnchantment = "Her hands shake.",
@@ -78,6 +80,8 @@ namespace DiaryPipelineTests
             AssertContains("solo event enhancement", plan.userPrompt, "event enhancement: Keep the event focused.");
             AssertContains("solo context", plan.userPrompt, "important context: Her hands shake.");
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
+            AssertEqual("solo forced model carried", "story-model", plan.forcedModelName);
+            AssertTrue("solo forced model not prompt text", !plan.userPrompt.Contains("story-model"));
         }
 
         private static void TestDualPovPromptPlans()
@@ -347,6 +351,12 @@ namespace DiaryPipelineTests
                 ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.FailoverOnly, 10, Ready(false, true, true)));
             AssertEqual("all cooling falls back to first", 0,
                 ApiLaneSelector.SelectPrimaryIndex(3, ApiLaneRoutingMode.FailoverOnly, 10, Ready(false, false, false)));
+            AssertEqual("forced model matches by trimmed case-insensitive model", 1,
+                ApiLaneSelector.SelectForcedModelIndex(new List<string> { "fast", " Story-Model ", "fallback" }, "story-model"));
+            AssertEqual("blank forced model ignored", -1,
+                ApiLaneSelector.SelectForcedModelIndex(new List<string> { "fast" }, " "));
+            AssertEqual("unknown forced model ignored", -1,
+                ApiLaneSelector.SelectForcedModelIndex(new List<string> { "fast" }, "missing"));
         }
 
         private static void TestApiEndpointPolicy()

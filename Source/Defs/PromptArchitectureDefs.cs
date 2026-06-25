@@ -50,6 +50,9 @@ namespace PawnDiary
         public string eventType;
         public string prompt;
         public string enhancement;
+        // Optional raw API model id. When it matches an active configured API row, entries for this
+        // broad event source try that model first; blank or unknown values are ignored.
+        public string forcedModel;
     }
 
     /// <summary>

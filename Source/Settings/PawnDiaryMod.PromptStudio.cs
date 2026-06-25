@@ -128,6 +128,7 @@ namespace PawnDiary
             string eventKey = EventPromptKeyForSettings(selected);
             string currentPrompt = Settings.eventPromptOverrides.Effective(eventKey, selected.prompt);
             string currentEnhancement = Settings.eventEnhancementOverrides.Effective(eventKey, selected.enhancement);
+            string currentForcedModel = Settings.eventForcedModelOverrides.Effective(eventKey, selected.forcedModel);
 
             DrawFieldLabel(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptPromptField".Translate());
             y += 22f;
@@ -148,9 +149,21 @@ namespace PawnDiary
                 Settings.eventEnhancementOverrides.Set(eventKey, editedEnhancement, selected.enhancement);
             }
 
-            y += EventPromptTextAreaHeight + 10f;
-            Rect promptResetRect = new Rect(innerRect.x, y, innerRect.width / 2f - 4f, 30f);
-            Rect enhancementResetRect = new Rect(innerRect.x + innerRect.width / 2f + 4f, y, innerRect.width / 2f - 4f, 30f);
+            y += EventPromptTextAreaHeight + 8f;
+            DrawFieldLabel(new Rect(innerRect.x, y, innerRect.width, 20f), "PawnDiary.Settings.EventPromptForcedModelField".Translate());
+            y += 22f;
+            Rect forcedModelRect = new Rect(innerRect.x, y, innerRect.width, 28f);
+            string editedForcedModel = Widgets.TextField(forcedModelRect, currentForcedModel ?? string.Empty);
+            if (!string.Equals(editedForcedModel, currentForcedModel ?? string.Empty, StringComparison.Ordinal))
+            {
+                Settings.eventForcedModelOverrides.Set(eventKey, editedForcedModel, selected.forcedModel);
+            }
+
+            y += 38f;
+            float buttonWidth = innerRect.width / 3f - 6f;
+            Rect promptResetRect = new Rect(innerRect.x, y, buttonWidth, 30f);
+            Rect enhancementResetRect = new Rect(promptResetRect.xMax + 9f, y, buttonWidth, 30f);
+            Rect forcedModelResetRect = new Rect(enhancementResetRect.xMax + 9f, y, buttonWidth, 30f);
             if (ButtonTextFit(promptResetRect, "PawnDiary.Settings.RestoreEventPromptDefault".Translate()))
             {
                 Settings.eventPromptOverrides.Reset(eventKey);
@@ -159,6 +172,11 @@ namespace PawnDiary
             if (ButtonTextFit(enhancementResetRect, "PawnDiary.Settings.RestoreEventEnhancementDefault".Translate()))
             {
                 Settings.eventEnhancementOverrides.Reset(eventKey);
+            }
+
+            if (ButtonTextFit(forcedModelResetRect, "PawnDiary.Settings.RestoreEventForcedModelDefault".Translate()))
+            {
+                Settings.eventForcedModelOverrides.Reset(eventKey);
             }
         }
 
@@ -239,7 +257,9 @@ namespace PawnDiary
                         key = PromptStudioEventPrefix + eventKey,
                         label = EventPromptOptionLabel(def),
                         eventPromptDef = def,
-                        IsCustomized = () => Settings.eventPromptOverrides.HasOverride(eventKey) || Settings.eventEnhancementOverrides.HasOverride(eventKey)
+                        IsCustomized = () => Settings.eventPromptOverrides.HasOverride(eventKey)
+                            || Settings.eventEnhancementOverrides.HasOverride(eventKey)
+                            || Settings.eventForcedModelOverrides.HasOverride(eventKey)
                     });
                 }
             }
@@ -283,7 +303,7 @@ namespace PawnDiary
 
         private static float PromptStudioBlockHeight(PromptStudioOption option)
         {
-            return option != null && option.IsEvent ? 362f : 300f;
+            return option != null && option.IsEvent ? 424f : 300f;
         }
 
         private static List<DiaryEventPromptDef> EventPromptDefsForSettings()

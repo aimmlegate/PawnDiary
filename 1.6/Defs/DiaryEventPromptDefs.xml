@@ -2,7 +2,9 @@
 <!--
   Broad event-type prompt policy. These Defs are the first layer of event-specific prompt control:
   `prompt` names what kind of source the LLM is writing from, and `enhancement` adds source-level
-  constraints. Narrower flavor still comes from DiaryInteractionGroupDef.instruction/tone.
+  constraints. Optional `forcedModel` is a raw configured API model id to try first for that event
+  source; blank or unknown values are ignored. Narrower flavor still comes from
+  DiaryInteractionGroupDef.instruction/tone.
 -->
 <Defs>
 

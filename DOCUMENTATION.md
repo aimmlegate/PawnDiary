@@ -228,9 +228,11 @@ arrival-description, and title shapes.
 
 System prompts are intentionally short (global safety/format only). Event-type guidance lives in
 `DiaryEventPromptDef`: `prompt` → `event prompt:`, `enhancement` → `event enhancement:`, rendered
-before per-group `instruction:`/`tone:` flavor. The first-person system prompt asks for one sensory
-detail, one emotional beat, and one implied consequence/tension from supplied facts — without
-inventing facts.
+before per-group `instruction:`/`tone:` flavor. Its optional raw `forcedModel` field can name one
+configured active API model to try first for that event source; blank, misspelled, disabled, or
+missing models are ignored and normal routing applies. The first-person system prompt asks for one
+sensory detail, one emotional beat, and one implied consequence/tension from supplied facts —
+without inventing facts.
 
 **Variant pools.** Each group may carry `instructions` / `tones` lists so an event type doesn't
 repeat verbatim. When a pool has any non-blank entry, the pure `PromptVariants.Pick` selects one
@@ -249,8 +251,9 @@ unsupplied facts (exact words, witnesses, named aftermath) unless gated behind s
 Prompt-lab parses the same pools and `--all-variants` crosses instruction/tone/enchantment variants
 with a coverage check.
 
-**Prompt Studio** can save per-event overrides for `DiaryEventPromptDef.prompt`/`.enhancement`; empty
-text or text matching the localized XML value clears the override, so XML stays the default catalog.
+**Prompt Studio** can save per-event overrides for `DiaryEventPromptDef.prompt`/`.enhancement` and
+the optional forced model string; empty text or text matching the XML/default value clears the
+override, so XML stays the default catalog.
 
 Layer boundaries:
 
@@ -318,10 +321,10 @@ default; successful main entries queue a capped title follow-up pinned to the su
 
 Core settings: API lanes, lane routing mode, request tuning (timeout/concurrency/max tokens/
 temperature), title generation, atmospheric formatting, prompt enchantments, work/social generation
-weights, system-prompt overrides, per-event prompt/enhancement overrides, XML-backed event filters,
-and writing-style presets. Dev mode reveals **prompt test mode** in mod settings: real gameplay
-events still assemble their prompts, but the queue marks the POV prompt-only and never calls the LLM;
-those cards show in the Diary tab while dev mode is on.
+weights, system-prompt overrides, per-event prompt/enhancement/forced-model overrides,
+XML-backed event filters, and writing-style presets. Dev mode reveals **prompt test mode** in mod
+settings: real gameplay events still assemble their prompts, but the queue marks the POV prompt-only
+and never calls the LLM; those cards show in the Diary tab while dev mode is on.
 
 Settings code is split by immediate-mode UI responsibility. `PawnDiaryMod.cs` is the RimWorld `Mod`
 entry point and settings writer. `PawnDiaryMod.SettingsWindow.cs` owns the top-level scroll layout,
@@ -335,9 +338,10 @@ settings draw thread.
 `PawnDiarySettings` stays the save owner (connection, generation, system-prompt overrides, value
 clamping) but no longer holds catalog/override logic. Writing-style (persona) CRUD, normalization,
 and theme policy live in `PersonaPresetStore` (field `PawnDiarySettings.personaPresets`), and the
-per-key event-prompt/event-enhancement override maps are each a reusable `PromptOverrideDictionary`
-(fields `eventPromptOverrides` / `eventEnhancementOverrides`). Both are `IExposable` and serialize
-under their original Scribe keys (`personaPresets`, `eventPromptOverrides`, `eventEnhancementOverrides`)
+per-key event-prompt/event-enhancement/forced-model override maps are each a reusable
+`PromptOverrideDictionary` (fields `eventPromptOverrides`, `eventEnhancementOverrides`,
+`eventForcedModelOverrides`). They are `IExposable` and serialize under stable Scribe keys
+(`personaPresets`, `eventPromptOverrides`, `eventEnhancementOverrides`, `eventForcedModelOverrides`)
 so existing saves keep loading. Callers go through the stores directly — e.g.
 `settings.personaPresets.OverrideFor(...)` and `settings.eventPromptOverrides.Effective(...)`; only
 the two operations that span both event maps (`ResetAllEventPromptOverrides`,
@@ -367,15 +371,18 @@ rows, **Failover only** always starts with the first ready row. Row order is als
 in every mode.
 
 **Prompt Studio** is a collapsible section; its selector covers shared system prompts and
-`DiaryEventPromptDef` event types, with the selected editor in one highlighted block. Writing-style
-presets likewise use one block for summary/add/reset/selection/rule editing/tag toggles.
+`DiaryEventPromptDef` event types, with the selected editor in one highlighted block. Event prompt
+editors include the optional forced-model text field; it must match an enabled API row's model name
+to affect routing. Writing-style presets likewise use one block for summary/add/reset/selection/rule
+editing/tag toggles.
 
 The Diary surface is an inspect tab internally. By default, Diary appears in the normal pawn
 inspect-tab row for eligible colonists (and colonist corpses). A settings toggle can instead hide the
 tab row entry and add a **Diary** bottom command button (journal-and-pen icon) for the selected pawn
 or corpse. In command mode, the command overlays a subtle underline for newly finished pages and
 pulsing dots while any page or title is still being written. In tab mode, the Diary tab shows only a
-small white dot at the top center for newly finished pages; it deliberately does not show a
+small white Unicode marker near the tab's right edge for newly finished pages; the glyph, size, and
+x/y placement are owned by `DiaryUiStyleDef.xml`, and the tab deliberately does not show a
 loading/writing indicator. Opening the pawn's Diary acknowledges the finished-page marker.
 Social-log diary links and linked-POV navigation open the same tab in either mode.
 
@@ -436,8 +443,10 @@ colors, ambiguous/uncolored matches fall back to bold.
 ## 9. LLM Reliability
 
 Each enabled endpoint/model/mode/auth row is an API lane. New requests choose a primary lane by the
-routing mode; recipient follow-ups and title requests pin to the prior successful lane when possible
-unless it's cooling and another is ready. Per-lane semaphores enforce concurrency;
+routing mode unless their event prompt has a forced model matching an active row; forced primaries
+are attempted first even if cooling, then normal failover runs on error. Recipient follow-ups and
+title requests pin to the prior successful lane when possible unless it's cooling and another is
+ready. Per-lane semaphores enforce concurrency;
 `ServicePointManager.DefaultConnectionLimit` is raised for Mono.
 
 `LlmClient` builds mode-specific URLs, maps generation requests into `LlmRequestJsonBuilder`'s pure
@@ -521,9 +530,10 @@ prompts/writing-style rules/shared prompts. Variant pools localize through index
 (`<group.instructions.0>`, `<group.instructions.1>`, `<group.tones.0>`, …) — one per list position;
 keep blanks out so indices stay aligned.
 
-Kept English on purpose: prompt schema labels (`event:`, `role:`, `thought=`), role/sentinel words
-(`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), internal defNames/theme tags, and
-background-thread `LlmClient` debug/error strings (`.Translate()` is not thread-safe).
+Kept English/raw on purpose: prompt schema labels (`event:`, `role:`, `thought=`), role/sentinel
+words (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), internal defNames/theme tags,
+configured API model ids such as `DiaryEventPromptDef.forcedModel`, and background-thread
+`LlmClient` debug/error strings (`.Translate()` is not thread-safe).
 
 To add a language, copy `Languages/English` to `Languages/<Language>`, translate Keyed values, and
 optionally add DefInjected translations for XML Def text.

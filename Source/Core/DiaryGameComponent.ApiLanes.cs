@@ -18,10 +18,27 @@ namespace PawnDiary
         /// Chooses the primary API lane for a request from the given active lanes (non-empty).
         /// The recipient of a paired event reuses the lane the initiator used — matched
         /// by the endpoint+model recorded on the event — so the sequential pair shares one model.
-        /// Everything else uses the saved routing mode to spread or prioritize load across APIs.
+        /// Event prompt forced-model text wins when it names an active row; everything else uses the
+        /// saved routing mode to spread or prioritize load across APIs.
         /// </summary>
-        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets, ApiEndpointConfig primaryOverride, ApiLaneRoutingMode routingMode, out string reason)
+        private static ApiEndpointConfig SelectApiTarget(DiaryEvent diaryEvent, string povRole, List<ApiEndpointConfig> targets,
+            ApiEndpointConfig primaryOverride, string forcedModelName, ApiLaneRoutingMode routingMode, out string reason,
+            out bool forcePrimaryLane)
         {
+            forcePrimaryLane = false;
+            ApiEndpointConfig forcedTarget = FindForcedModelLane(targets, forcedModelName);
+            if (forcedTarget != null)
+            {
+                forcePrimaryLane = true;
+                reason = "forced by event prompt model " + forcedTarget.model;
+                return forcedTarget;
+            }
+
+            if (!string.IsNullOrWhiteSpace(forcedModelName))
+            {
+                LogApiDebug("Event forced model ignored because no active API lane has model=" + ApiLaneLabels.TrimForLog(forcedModelName));
+            }
+
             ApiEndpointConfig overrideTarget = FindMatchingActiveLane(targets, primaryOverride);
             if (overrideTarget != null)
             {
@@ -59,6 +76,23 @@ namespace PawnDiary
             int index = ApiLaneSelector.SelectPrimaryIndex(targets.Count, routingMode, counter, LaneReadiness(targets));
             reason = "routing " + ApiLaneSelector.Normalize(routingMode) + " selected index " + index + " of " + targets.Count;
             return targets[index];
+        }
+
+        private static ApiEndpointConfig FindForcedModelLane(List<ApiEndpointConfig> targets, string forcedModelName)
+        {
+            if (targets == null)
+            {
+                return null;
+            }
+
+            List<string> modelNames = new List<string>();
+            foreach (ApiEndpointConfig target in targets)
+            {
+                modelNames.Add(target == null ? string.Empty : target.model);
+            }
+
+            int index = ApiLaneSelector.SelectForcedModelIndex(modelNames, forcedModelName);
+            return index >= 0 && index < targets.Count ? targets[index] : null;
         }
 
         private static bool CanUsePinnedLane(List<ApiEndpointConfig> targets, ApiEndpointConfig lane)

@@ -100,6 +100,9 @@ namespace PawnDiary
             string eventEnhancementText = PawnDiaryMod.Settings == null
                 ? eventPrompt?.enhancement
                 : PawnDiaryMod.Settings.eventEnhancementOverrides.Effective(eventPromptKey, eventPrompt?.enhancement);
+            string forcedModelName = PawnDiaryMod.Settings == null
+                ? eventPrompt?.forcedModel
+                : PawnDiaryMod.Settings.eventForcedModelOverrides.Effective(eventPromptKey, eventPrompt?.forcedModel);
             DiaryPolicySnapshot snapshot = new DiaryPolicySnapshot
             {
                 group = new DiaryGroupPolicy
@@ -110,6 +113,7 @@ namespace PawnDiary
                     eventPromptKey = eventPromptKey,
                     eventPrompt = eventPromptText,
                     eventEnhancement = eventEnhancementText,
+                    forcedModelName = forcedModelName,
                     important = payload?.display == null || payload.display.important,
                     combat = GroupCombat(payload, group),
                     colorCue = payload?.display?.colorCue,

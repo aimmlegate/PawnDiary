@@ -43,6 +43,7 @@ namespace PawnDiary
                 eventId = payload.eventId,
                 povRole = request.povRole,
                 templateKey = templateKey,
+                forcedModelName = policy.group?.forcedModelName,
                 systemPrompt = systemPrompt,
                 userPrompt = userPrompt,
                 debugLabel = templateKey + ":" + (request.povRole ?? string.Empty),
@@ -127,6 +128,7 @@ namespace PawnDiary
             {
                 povRole = string.Empty,
                 templateKey = DiaryPipelineTemplates.SoloDefault,
+                forcedModelName = string.Empty,
                 systemPrompt = string.Empty,
                 userPrompt = string.Empty,
                 responseRules = new DiaryResponseRules()

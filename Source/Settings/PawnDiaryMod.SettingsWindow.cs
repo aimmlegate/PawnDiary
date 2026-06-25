@@ -108,7 +108,7 @@ namespace PawnDiary
                 height += 30f;
             }
 
-            height += Settings.showPromptStudio ? 430f : 44f;
+            height += Settings.showPromptStudio ? 492f : 44f;
             height += 460f + PersonaTagPickerHeight();
 
             return height + 120f; // breathing room for translated labels and RimWorld skin variance

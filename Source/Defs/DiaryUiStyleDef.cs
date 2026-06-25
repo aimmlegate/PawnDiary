@@ -126,8 +126,12 @@ namespace PawnDiary
         public float entryLabelMaxWidth = 148f;
         public float entryFadeDurationSeconds = 0.55f;
         public float titleFadeDurationSeconds = 0.8f;
-        public float inspectTabUnreadDotSize = 5f;
-        public float inspectTabUnreadDotTopPadding = 4f;
+        public string inspectTabUnreadIcon = "•";
+        public float inspectTabUnreadIconWidth = 10f;
+        public float inspectTabUnreadIconHeight = 22f;
+        public float inspectTabUnreadIconRightPadding = 6f;
+        public float inspectTabUnreadIconXOffset = 4f;
+        public float inspectTabUnreadIconYOffset = 0.5f;
 
         // ---- Linked-entry card ----
         public float linkedEntryPadding = 8f;
@@ -197,7 +201,7 @@ namespace PawnDiary
         public DiaryUiColorSpec linkedEntryBorderColor = Color(0.35f, 0.45f, 0.55f, 1f);
         public DiaryUiColorSpec linkedEntryTextColor = Color(0.65f, 0.70f, 0.75f, 1f);
         public DiaryUiColorSpec linkedEntryHoverColor = Color(0.25f, 0.30f, 0.38f, 0.90f);
-        public DiaryUiColorSpec inspectTabUnreadDotColor = Color(1f, 1f, 1f, 0.90f);
+        public DiaryUiColorSpec inspectTabUnreadIconColor = Color(1f, 1f, 1f, 0.90f);
         public DiaryUiColorSpec defaultCueColor = Preset("name");
         public DiaryUiColorSpec quietCueColor = Color(0.74f, 0.74f, 0.70f, 1f);
         public DiaryUiColorSpec pawnNameSlaveColor = Color(0.96f, 0.72f, 0.26f, 1f);
@@ -255,7 +259,7 @@ namespace PawnDiary
         public Color LinkedEntryBorderColor => linkedEntryBorderColor.ToColor(new Color(0.35f, 0.45f, 0.55f));
         public Color LinkedEntryTextColor => linkedEntryTextColor.ToColor(new Color(0.65f, 0.70f, 0.75f));
         public Color LinkedEntryHoverColor => linkedEntryHoverColor.ToColor(new Color(0.25f, 0.30f, 0.38f, 0.90f));
-        public Color InspectTabUnreadDotColor => inspectTabUnreadDotColor.ToColor(new Color(1f, 1f, 1f, 0.90f));
+        public Color InspectTabUnreadIconColor => inspectTabUnreadIconColor.ToColor(new Color(1f, 1f, 1f, 0.90f));
         public Color DefaultCueColor => defaultCueColor.ToColor(ColoredText.NameColor);
         public Color QuietCueColor => quietCueColor.ToColor(new Color(0.74f, 0.74f, 0.70f));
         public Color PawnNameSlaveColor => pawnNameSlaveColor.ToColor(new Color(0.96f, 0.72f, 0.26f));
