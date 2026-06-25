@@ -703,6 +703,17 @@ Docs:
 
 Priority: Low, high blast radius, do last
 
+Status: Resolved 2026-06-25. Implemented as a `public struct PovSlot` value type holding all
+per-POV fields, three `initiatorSlot`/`recipientSlot`/`neutralSlot` storage fields, and a single
+`private ref PovSlot SlotFor(role)` dispatcher that collapses the ~20 three-way accessor ladders to
+one-liners. The three `ApplyLlmResultToInitiator/Recipient/Neutral` methods collapsed into one
+`ApplyLlmResultToSlot(result, ref slot)`, and `PostLoadInit` normalization into one
+`NormalizeLoadedSlot`. The historical public field names survive as facade properties so the ~60
+external references compile unchanged; the flat Scribe keys are preserved so the save shape is
+identical (old saves across the refactor boundary are no longer supported, per the explicit
+relaxation). Neutral special-cases and all `DiaryStateVersion.Bump()` side-effects preserved. Debug
+build clean (0 warnings/0 errors); pure tests green.
+
 Evidence:
 - `Source/Models/DiaryEvent.cs:1690-1942` has repeated initiator/recipient/neutral accessors.
 - `Source/Models/DiaryEvent.cs:135-198` writes per-POV fields with explicit Scribe keys.

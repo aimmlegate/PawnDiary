@@ -61,7 +61,7 @@ Key files:
 | `Capture/*` | Event Catalog: `DiaryEventType`, `XxxEventData` (+`Decide`), `XxxEventSpec`, `DiaryEventCatalog`. |
 | `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
 | `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
-| `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. |
+| `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. `DiaryEvent` stores per-POV (initiator/recipient/neutral) state in three `PovSlot` value-typed fields reached through one `SlotFor(role)` dispatcher; the historical public field names (`initiatorStatus`, `recipientPawnId`, `neutralTitle`, ...) survive as facade properties so callers compile unchanged. |
 | `Generation/DiaryPromptBuilder.cs`, `Generation/DiaryPipelineAdapters.cs`, `Generation/PromptEnchantments.cs`, `Generation/PromptEnchantmentCollector.cs`, `Pipeline/*` | Prompt facade plus impure pipeline adapter/collectors, pure planning, prompt-enchantment selection, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, and text decoration. `DiaryTextDecorations` is the stable facade over split decoration contracts, rule matching, fact codec, and rich-text transforms. |
 | `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; prompt-enchantment live health/capacity/status snapshots in `PromptEnchantmentCollector`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
 | `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
@@ -468,15 +468,16 @@ rewritten. Legacy/dev saves that used generated Social-log injection may keep sy
 
 `DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, LLM metadata, semantic
 `colorCue`, titles, assembled prompts, compact per-POV hediff/trait facts, legacy staggered
-intensity, and capped pre-cleanup debug text. Decorated rich text is not persisted. Classification is
-inferred from stable `gameContext` fields (`tale=`, `mental_state=`, `mood_event=`, `thought=`,
-`inspiration=`, `romance=`, `work=`, `hediff=`, `raid=`, `quest=`). Pending requests are not
-persisted (statuses reset on load; scans requeue). Death/arrival caches evict oldest stale entries at
-their cap and clear when a new session starts.
-
-TODO: `DiaryEvent` still stores repeated `initiator*`/`recipient*`/`neutral*` field families; a
-future migration should introduce saved role-slot objects, hydrate them from legacy fields, move
-callers to slot accessors, then retire direct legacy writes.
+intensity, and capped pre-cleanup debug text. Per-POV state is held in three `PovSlot`
+value-typed fields (`initiatorSlot`/`recipientSlot`/`neutralSlot`) and serialized straight out of
+them under the same flat keys (`initiatorStatus`, `neutralTitle`, ...) as before, so the on-disk
+shape is unchanged; role→storage is decided in one place, `SlotFor(role)`. Decorated rich text is
+not persisted. Classification is inferred from stable `gameContext` fields (`tale=`, `mental_state=`,
+`mood_event=`, `thought=`, `inspiration=`, `romance=`, `work=`, `hediff=`, `raid=`, `quest=`).
+Pending requests are not persisted (statuses reset on load; scans requeue). Death/arrival caches
+evict oldest stale entries at their cap and clear when a new session starts. Old saves from before
+the `PovSlot` refactor are no longer supported (the flat Scribe keys are unchanged, but save
+compatibility is no longer guaranteed across the refactor boundary).
 
 ---
 

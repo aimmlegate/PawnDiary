@@ -6,6 +6,24 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-25
 
+- **`DiaryEvent` per-POV duplication collapsed into `PovSlot` slots.** The three triplicated
+  initiator/recipient/neutral field families and their ~20 three-way `if initiator / if recipient /
+  else neutral` accessor ladders are gone. Per-POV state now lives in three `PovSlot` value-typed
+  fields, and role→storage is decided in exactly one place: `SlotFor(role)` (a `ref PovSlot` return,
+  the idiomatic C# 7.3 way to hand out interior access to a value-typed field). The historical
+  public field names (`initiatorStatus`, `recipientPawnId`, `neutralTitle`, ...) survive as facade
+  properties, so the ~60 external references across 12+ files, object initializers, and direct
+  member reads/writes compile and behave unchanged. The three near-identical
+  `ApplyLlmResultToInitiator/Recipient/Neutral` methods collapsed into one
+  `ApplyLlmResultToSlot(result, ref slot)` helper, and `PostLoadInit`'s bespoke per-role
+  normalization collapsed into one `NormalizeLoadedSlot` (with the two genuine cross-slot defaults
+  preserved exactly: recipient surroundings borrow the initiator's value, and neutral raw text
+  merges both POVs). All neutral special-cases (continuity `"none"`, last-opener `""`, staggered
+  `0`, decoration-facts `""`, surroundings borrowing initiator's) and every `DiaryStateVersion.Bump`
+  side-effect are preserved. The flat Scribe keys are unchanged, so the save shape is identical; old
+  saves from before the refactor are no longer supported. Behavior and save data (for fresh saves)
+  are unchanged; Debug DLL rebuilt.
+
 - **Prompt enchantments split into collector/planner.** `PromptEnchantments.RuleFor` is now a small
   runtime facade; live `Pawn`/`Hediff`/capacity/DLC reads and localization live in
   `PromptEnchantmentCollector`, which snapshots plain `PromptEnchantmentCandidate` DTOs for the pure

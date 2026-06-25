@@ -1,6 +1,9 @@
 // One recorded event (interaction / social fight / mental break / notable tale) and all of its
-// generation state for up to two points of view. Pure model: fields, save/load,
-// and prompt/result plumbing. Split out of DiaryGameComponent.cs. See DOCUMENTATION.md.
+// generation state for up to two points of view. Per-POV (initiator/recipient/neutral) state lives
+// in three PovSlot value-typed fields and is reached through SlotFor(role), the single place that
+// maps a role to its storage; the historical public field names survive as facade properties. Pure
+// model: fields, save/load, and prompt/result plumbing. Split out of DiaryGameComponent.cs. See
+// DOCUMENTATION.md.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -37,6 +40,63 @@ namespace PawnDiary
         public const string QuietColorCue = "quiet";
         private const int MaxPersistedRawResponseChars = 4000;
 
+        // ---------------------------------------------------------------------------------------------
+        // Per-POV storage.
+        //
+        // Every point-of-view (initiator / recipient / neutral) used to be a full triplicated field
+        // family (initiatorStatus / recipientStatus / neutralStatus, ...). Those ~60 fields are now
+        // three PovSlot value-typed fields below, and role -> storage is decided in exactly one place:
+        // SlotFor(role). The historical public field names (initiatorStatus, recipientPawnId,
+        // neutralTitle, ...) survive as facade properties after the slot fields so external callers
+        // and object initializers compile unchanged.
+        // ---------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Holds the per-point-of-view state for ONE role (initiator, recipient, or neutral). All
+        /// three roles share the generation-pipeline fields (prompt, generated text, raw response,
+        /// status/error, LLM lane, title + title status/error, raw text). The pawn-specific fields
+        /// (pawn id/name/summary/surroundings/continuity/last-opener/weapon/staggered intensity/
+        /// text-decoration facts) are only ever populated for the initiator and recipient slots; the
+        /// neutral slot leaves them empty and they are never read through a pawn path. This is a
+        /// value type so the three slots live inline on <see cref="DiaryEvent"/> and Scribe can take
+        /// refs to their fields directly (a class would need an extra allocation and indirection).
+        /// </summary>
+        public struct PovSlot
+        {
+            // Generation-pipeline fields, persisted for every role (including neutral).
+            public string prompt;
+            public string generatedText;
+            public string rawResponse;
+            public string status;
+            public string error;
+            public string llmEndpoint;
+            public string llmModel;
+            public string title;
+            public string titleStatus;
+            public string titleError;
+            public string text;
+            // Pawn-specific fields, persisted only for initiator/recipient; always empty for neutral.
+            public string pawnId;
+            public string name;
+            public string pawnSummary;
+            public string surroundings;
+            public string continuity;
+            public string lastOpener;
+            public string weapon;
+            public int staggeredIntensity;
+            public string textDecorationFacts;
+        }
+
+        // The three POV storage slots. Value-typed, so they live inline here and are mutated in
+        // place through SlotFor(role) or the facade properties below.
+        private PovSlot initiatorSlot;
+        private PovSlot recipientSlot;
+        private PovSlot neutralSlot;
+
+        // ---------------------------------------------------------------------------------------------
+        // Event-level (non-POV) fields. These describe the event itself, not any one POV.
+        // ---------------------------------------------------------------------------------------------
+
         public string eventId; // unique ID for this event, stable across saves
         public List<int> playLogEntryIds = new List<int>(); // Verse.LogEntry ids that produced this diary event
         public int tick; // game tick when the event was recorded
@@ -48,88 +108,116 @@ namespace PawnDiary
         // injection. Empty for events with no underlying InteractionDef (mental states, tales).
         public string playLogInteractionDefName;
         public string interactionLabel; // display label for the interaction type
-        public string initiatorPawnId; // RimWorld unique load ID of the initiating pawn
-        public string recipientPawnId; // RimWorld unique load ID of the receiving pawn
-        public string initiatorName; // display name of the initiator
-        public string recipientName; // display name of the recipient
-        public string initiatorText; // raw game-side description from the initiator's POV
-        public string recipientText; // raw game-side description from the recipient's POV
-        public string neutralText; // merged description combining both POVs for neutral view
         public string gameContext; // metadata string describing game state at event time
         public string instruction; // group-specific prompt instruction appended to LLM calls
         public string colorCue; // stable semantic UI color key; empty older saves derive it from group/context
-        public string initiatorPawnSummary; // LLM-oriented summary of initiator's traits/backstory
-        public string recipientPawnSummary; // LLM-oriented summary of recipient's traits/backstory
-        public string initiatorSurroundings; // textual description of initiator's surroundings
-        public string recipientSurroundings; // textual description of recipient's surroundings
-        public string initiatorContinuity; // context string carrying forward initiator's prior entries
-        public string recipientContinuity; // context string carrying forward recipient's prior entries
-        public string initiatorLastOpener; // first sentence of initiator's last diary entry (avoid repeats)
-        public string recipientLastOpener; // first sentence of recipient's last diary entry (avoid repeats)
-        public string initiatorWeapon; // currently equipped weapon of initiator (combat only)
-        public string recipientWeapon; // currently equipped weapon of recipient (combat only)
-        public string initiatorPrompt; // assembled prompt text sent to the LLM for initiator POV
-        public string recipientPrompt; // assembled prompt text sent to the LLM for recipient POV
-        public string neutralPrompt; // assembled prompt text sent to the LLM for neutral POV
-        public string initiatorGeneratedText; // text returned by the LLM for initiator POV
-        public string recipientGeneratedText; // text returned by the LLM for recipient POV
-        public string neutralGeneratedText; // text returned by the LLM for neutral POV
-        public string initiatorRawResponse; // pre-length-cleanup final-answer text for initiator POV debug
-        public string recipientRawResponse; // pre-length-cleanup final-answer text for recipient POV debug
-        public string neutralRawResponse; // pre-length-cleanup final-answer text for neutral POV debug
-        public string initiatorStatus; // generation status for initiator POV
-        public string recipientStatus; // generation status for recipient POV
-        public string neutralStatus; // generation status for neutral POV
-        public string initiatorError; // error message from a failed initiator generation
-        public string recipientError; // error message from a failed recipient generation
-        public string neutralError; // error message from a failed neutral generation
-        public string initiatorLlmEndpoint; // LLM endpoint used for initiator POV generation
-        public string recipientLlmEndpoint; // LLM endpoint used for recipient POV generation
-        public string neutralLlmEndpoint; // LLM endpoint used for neutral POV generation
-        public string initiatorLlmModel; // LLM model name used for initiator POV generation
-        public string recipientLlmModel; // LLM model name used for recipient POV generation
-        public string neutralLlmModel; // LLM model name used for neutral POV generation
         public bool solo; // true for events with a single POV (e.g. mental breaks)
-        // Per-POV title: short chat-style subject derived from the generated entry.
-        // Populated by the "Generate LLM titles" follow-up call; empty means the diary card
-        // header stays date-only. Separate from the per-POV status fields so the main-entry
-        // recovery logic is untouched.
-        public string initiatorTitle;
-        public string recipientTitle;
-        public string neutralTitle;
-        // Per-POV title-generation status and error. Reuse PendingStatus/CompleteStatus/FailedStatus
-        // from the main-entry vocabulary so the title follow-up rides the same status machine.
-        public string initiatorTitleStatus;
-        public string recipientTitleStatus;
-        public string neutralTitleStatus;
-        public string initiatorTitleError;
-        public string recipientTitleError;
-        public string neutralTitleError;
 
         // Mood impact direction for mood-event diary entries: "positive", "negative", or "neutral".
         // Reflects how the condition actually feels for the pawn (e.g. PsychicSuppressorMale is
         // "neutral" for female pawns). Used in gameContext (mood_impact=) and to select text keys.
         // Empty string for non-mood events.
         public string moodImpact;
-        // Display-only typography intensity captured from the live POV pawn at record time.
-        // 0 = normal; 1..4 = increasingly staggered variable-size words for intoxication or low
-        // Consciousness. Kept for old saves/prompt contracts; current display decorations are driven
-        // by the XML text-decoration context fields below.
-        public int initiatorStaggeredIntensity;
-        public int recipientStaggeredIntensity;
-        // Compact serialized hediff/trait facts captured from the POV pawn at record time. The UI
-        // combines these with event metadata and lets XML DiaryTextDecorationDef rules choose visual
-        // text decorations without reading live pawn state.
-        public string initiatorTextDecorationFacts;
-        public string recipientTextDecorationFacts;
+
         // LogID of the optional generated direct-speech Social-log row. -1 means no row has been
         // added for this event. Stored so a duplicate result or later load will not add another.
         public int generatedSpeechPlayLogEntryId = -1;
 
-        // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the
-        // keys written to the save file — renaming one breaks saved games. The PostLoadInit
-        // block below keeps loaded fields non-null and normalizes status.
-        // See AGENTS.md ("IExposable").
+        // ---------------------------------------------------------------------------------------------
+        // Public per-POV field facades.
+        //
+        // These preserve the historical public field names so external callers, object initializers,
+        // and direct member reads/writes compile unchanged. They are PROPERTIES (not fields): they
+        // read/write the matching field on the role's PovSlot above. Because properties cannot be
+        // passed by ref, save/load and internal mutation go through the slot fields and SlotFor(role)
+        // instead — never through these facades.
+        // ---------------------------------------------------------------------------------------------
+
+        // Pawn identity / display (initiator + recipient only; neutral has no pawn).
+        public string initiatorPawnId { get => initiatorSlot.pawnId; set => initiatorSlot.pawnId = value; }
+        public string recipientPawnId { get => recipientSlot.pawnId; set => recipientSlot.pawnId = value; }
+        public string initiatorName { get => initiatorSlot.name; set => initiatorSlot.name = value; }
+        public string recipientName { get => recipientSlot.name; set => recipientSlot.name = value; }
+
+        // Raw game-side description text (all three roles).
+        public string initiatorText { get => initiatorSlot.text; set => initiatorSlot.text = value; }
+        public string recipientText { get => recipientSlot.text; set => recipientSlot.text = value; }
+        public string neutralText { get => neutralSlot.text; set => neutralSlot.text = value; }
+
+        // Pawn context summaries (initiator + recipient only).
+        public string initiatorPawnSummary { get => initiatorSlot.pawnSummary; set => initiatorSlot.pawnSummary = value; }
+        public string recipientPawnSummary { get => recipientSlot.pawnSummary; set => recipientSlot.pawnSummary = value; }
+        public string initiatorSurroundings { get => initiatorSlot.surroundings; set => initiatorSlot.surroundings = value; }
+        public string recipientSurroundings { get => recipientSlot.surroundings; set => recipientSlot.surroundings = value; }
+        public string initiatorContinuity { get => initiatorSlot.continuity; set => initiatorSlot.continuity = value; }
+        public string recipientContinuity { get => recipientSlot.continuity; set => recipientSlot.continuity = value; }
+        public string initiatorLastOpener { get => initiatorSlot.lastOpener; set => initiatorSlot.lastOpener = value; }
+        public string recipientLastOpener { get => recipientSlot.lastOpener; set => recipientSlot.lastOpener = value; }
+        public string initiatorWeapon { get => initiatorSlot.weapon; set => initiatorSlot.weapon = value; }
+        public string recipientWeapon { get => recipientSlot.weapon; set => recipientSlot.weapon = value; }
+
+        // Assembled prompt + LLM output (all three roles).
+        public string initiatorPrompt { get => initiatorSlot.prompt; set => initiatorSlot.prompt = value; }
+        public string recipientPrompt { get => recipientSlot.prompt; set => recipientSlot.prompt = value; }
+        public string neutralPrompt { get => neutralSlot.prompt; set => neutralSlot.prompt = value; }
+        public string initiatorGeneratedText { get => initiatorSlot.generatedText; set => initiatorSlot.generatedText = value; }
+        public string recipientGeneratedText { get => recipientSlot.generatedText; set => recipientSlot.generatedText = value; }
+        public string neutralGeneratedText { get => neutralSlot.generatedText; set => neutralSlot.generatedText = value; }
+        public string initiatorRawResponse { get => initiatorSlot.rawResponse; set => initiatorSlot.rawResponse = value; }
+        public string recipientRawResponse { get => recipientSlot.rawResponse; set => recipientSlot.rawResponse = value; }
+        public string neutralRawResponse { get => neutralSlot.rawResponse; set => neutralSlot.rawResponse = value; }
+
+        // Generation status + error (all three roles).
+        public string initiatorStatus { get => initiatorSlot.status; set => initiatorSlot.status = value; }
+        public string recipientStatus { get => recipientSlot.status; set => recipientSlot.status = value; }
+        public string neutralStatus { get => neutralSlot.status; set => neutralSlot.status = value; }
+        public string initiatorError { get => initiatorSlot.error; set => initiatorSlot.error = value; }
+        public string recipientError { get => recipientSlot.error; set => recipientSlot.error = value; }
+        public string neutralError { get => neutralSlot.error; set => neutralSlot.error = value; }
+
+        // Recorded LLM lane (all three roles).
+        public string initiatorLlmEndpoint { get => initiatorSlot.llmEndpoint; set => initiatorSlot.llmEndpoint = value; }
+        public string recipientLlmEndpoint { get => recipientSlot.llmEndpoint; set => recipientSlot.llmEndpoint = value; }
+        public string neutralLlmEndpoint { get => neutralSlot.llmEndpoint; set => neutralSlot.llmEndpoint = value; }
+        public string initiatorLlmModel { get => initiatorSlot.llmModel; set => initiatorSlot.llmModel = value; }
+        public string recipientLlmModel { get => recipientSlot.llmModel; set => recipientSlot.llmModel = value; }
+        public string neutralLlmModel { get => neutralSlot.llmModel; set => neutralSlot.llmModel = value; }
+
+        // Per-POV title: short chat-style subject derived from the generated entry.
+        // Populated by the "Generate LLM titles" follow-up call; empty means the diary card
+        // header stays date-only. Separate from the per-POV status fields so the main-entry
+        // recovery logic is untouched.
+        public string initiatorTitle { get => initiatorSlot.title; set => initiatorSlot.title = value; }
+        public string recipientTitle { get => recipientSlot.title; set => recipientSlot.title = value; }
+        public string neutralTitle { get => neutralSlot.title; set => neutralSlot.title = value; }
+
+        // Per-POV title-generation status and error. Reuse PendingStatus/CompleteStatus/FailedStatus
+        // from the main-entry vocabulary so the title follow-up rides the same status machine.
+        public string initiatorTitleStatus { get => initiatorSlot.titleStatus; set => initiatorSlot.titleStatus = value; }
+        public string recipientTitleStatus { get => recipientSlot.titleStatus; set => recipientSlot.titleStatus = value; }
+        public string neutralTitleStatus { get => neutralSlot.titleStatus; set => neutralSlot.titleStatus = value; }
+        public string initiatorTitleError { get => initiatorSlot.titleError; set => initiatorSlot.titleError = value; }
+        public string recipientTitleError { get => recipientSlot.titleError; set => recipientSlot.titleError = value; }
+        public string neutralTitleError { get => neutralSlot.titleError; set => neutralSlot.titleError = value; }
+
+        // Display-only typography intensity captured from the live POV pawn at record time.
+        // 0 = normal; 1..4 = increasingly staggered variable-size words for intoxication or low
+        // Consciousness. Kept for old saves/prompt contracts; current display decorations are driven
+        // by the XML text-decoration context fields below.
+        public int initiatorStaggeredIntensity { get => initiatorSlot.staggeredIntensity; set => initiatorSlot.staggeredIntensity = value; }
+        public int recipientStaggeredIntensity { get => recipientSlot.staggeredIntensity; set => recipientSlot.staggeredIntensity = value; }
+
+        // Compact serialized hediff/trait facts captured from the POV pawn at record time. The UI
+        // combines these with event metadata and lets XML DiaryTextDecorationDef rules choose visual
+        // text decorations without reading live pawn state.
+        public string initiatorTextDecorationFacts { get => initiatorSlot.textDecorationFacts; set => initiatorSlot.textDecorationFacts = value; }
+        public string recipientTextDecorationFacts { get => recipientSlot.textDecorationFacts; set => recipientSlot.textDecorationFacts = value; }
+
+        // Save/load hook (runs for BOTH directions). The string tags ("eventId", ...) are the keys
+        // written to the save file. Per-POV state is persisted straight out of the three PovSlot
+        // fields via ScribePawnSlot / ScribeNeutralSlot under the same flat key names as before the
+        // refactor, so the save shape is unchanged. The PostLoadInit block below keeps loaded fields
+        // non-null and normalizes status. See AGENTS.md ("IExposable").
         public void ExposeData()
         {
             Scribe_Values.Look(ref eventId, "eventId");
@@ -140,294 +228,92 @@ namespace PawnDiary
             Scribe_Values.Look(ref interactionDefName, "interactionDefName");
             Scribe_Values.Look(ref playLogInteractionDefName, "playLogInteractionDefName");
             Scribe_Values.Look(ref interactionLabel, "interactionLabel");
-            Scribe_Values.Look(ref initiatorPawnId, "initiatorPawnId");
-            Scribe_Values.Look(ref recipientPawnId, "recipientPawnId");
-            Scribe_Values.Look(ref initiatorName, "initiatorName");
-            Scribe_Values.Look(ref recipientName, "recipientName");
-            Scribe_Values.Look(ref initiatorText, "initiatorText");
-            Scribe_Values.Look(ref recipientText, "recipientText");
-            Scribe_Values.Look(ref neutralText, "neutralText");
             Scribe_Values.Look(ref gameContext, "gameContext");
             Scribe_Values.Look(ref instruction, "instruction");
             Scribe_Values.Look(ref colorCue, "colorCue");
-            Scribe_Values.Look(ref initiatorPawnSummary, "initiatorPawnSummary");
-            Scribe_Values.Look(ref recipientPawnSummary, "recipientPawnSummary");
-            Scribe_Values.Look(ref initiatorSurroundings, "initiatorSurroundings");
-            Scribe_Values.Look(ref recipientSurroundings, "recipientSurroundings");
-            Scribe_Values.Look(ref initiatorContinuity, "initiatorContinuity");
-            Scribe_Values.Look(ref recipientContinuity, "recipientContinuity");
-            Scribe_Values.Look(ref initiatorLastOpener, "initiatorLastOpener");
-            Scribe_Values.Look(ref recipientLastOpener, "recipientLastOpener");
-            Scribe_Values.Look(ref initiatorWeapon, "initiatorWeapon");
-            Scribe_Values.Look(ref recipientWeapon, "recipientWeapon");
-            Scribe_Values.Look(ref initiatorPrompt, "initiatorPrompt");
-            Scribe_Values.Look(ref recipientPrompt, "recipientPrompt");
-            Scribe_Values.Look(ref neutralPrompt, "neutralPrompt");
-            Scribe_Values.Look(ref initiatorGeneratedText, "initiatorGeneratedText");
-            Scribe_Values.Look(ref recipientGeneratedText, "recipientGeneratedText");
-            Scribe_Values.Look(ref neutralGeneratedText, "neutralGeneratedText");
-            Scribe_Values.Look(ref initiatorRawResponse, "initiatorRawResponse");
-            Scribe_Values.Look(ref recipientRawResponse, "recipientRawResponse");
-            Scribe_Values.Look(ref neutralRawResponse, "neutralRawResponse");
-            Scribe_Values.Look(ref initiatorStatus, "initiatorStatus");
-            Scribe_Values.Look(ref recipientStatus, "recipientStatus");
-            Scribe_Values.Look(ref neutralStatus, "neutralStatus");
-            Scribe_Values.Look(ref initiatorError, "initiatorError");
-            Scribe_Values.Look(ref recipientError, "recipientError");
-            Scribe_Values.Look(ref neutralError, "neutralError");
-            Scribe_Values.Look(ref initiatorLlmEndpoint, "initiatorLlmEndpoint");
-            Scribe_Values.Look(ref recipientLlmEndpoint, "recipientLlmEndpoint");
-            Scribe_Values.Look(ref neutralLlmEndpoint, "neutralLlmEndpoint");
-            Scribe_Values.Look(ref initiatorLlmModel, "initiatorLlmModel");
-            Scribe_Values.Look(ref recipientLlmModel, "recipientLlmModel");
-            Scribe_Values.Look(ref neutralLlmModel, "neutralLlmModel");
             Scribe_Values.Look(ref moodImpact, "moodImpact");
-            Scribe_Values.Look(ref initiatorTitle, "initiatorTitle");
-            Scribe_Values.Look(ref recipientTitle, "recipientTitle");
-            Scribe_Values.Look(ref neutralTitle, "neutralTitle");
-            Scribe_Values.Look(ref initiatorTitleStatus, "initiatorTitleStatus");
-            Scribe_Values.Look(ref recipientTitleStatus, "recipientTitleStatus");
-            Scribe_Values.Look(ref neutralTitleStatus, "neutralTitleStatus");
-            Scribe_Values.Look(ref initiatorTitleError, "initiatorTitleError");
-            Scribe_Values.Look(ref recipientTitleError, "recipientTitleError");
-            Scribe_Values.Look(ref neutralTitleError, "neutralTitleError");
-            Scribe_Values.Look(ref initiatorStaggeredIntensity, "initiatorStaggeredIntensity", 0);
-            Scribe_Values.Look(ref recipientStaggeredIntensity, "recipientStaggeredIntensity", 0);
-            Scribe_Values.Look(ref initiatorTextDecorationFacts, "initiatorTextDecorationFacts");
-            Scribe_Values.Look(ref recipientTextDecorationFacts, "recipientTextDecorationFacts");
+
+            // Per-POV storage: each slot is scribed under its historical flat keys. Initiator and
+            // recipient carry the full field set; neutral carries only the generation-pipeline
+            // fields (no pawn-specific state), matching the original neutral save shape.
+            ScribePawnSlot(InitiatorRole, ref initiatorSlot);
+            ScribePawnSlot(RecipientRole, ref recipientSlot);
+            ScribeNeutralSlot(ref neutralSlot);
+
             Scribe_Values.Look(ref generatedSpeechPlayLogEntryId, "generatedSpeechPlayLogEntryId", -1);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                // Keep loaded fields non-null so later code can stay simple.
-                if (string.IsNullOrWhiteSpace(eventId))
-                {
-                    eventId = Guid.NewGuid().ToString("N");
-                }
+                NormalizeOnLoad();
+            }
+        }
 
-                if (playLogEntryIds == null)
-                {
-                    playLogEntryIds = new List<int>();
-                }
+        // Post-load cleanup. Event-level fields get non-null defaults / derived fallbacks; each POV
+        // slot is normalized via NormalizeLoadedSlot; then the two cross-slot defaults that borrow a
+        // sibling's already-normalized value are applied (recipient surroundings <- initiator
+        // surroundings; neutral raw text <- merged initiator+recipient text).
+        private void NormalizeOnLoad()
+        {
+            // Keep loaded event-level fields non-null and derive fallback context/color/instruction.
+            if (string.IsNullOrWhiteSpace(eventId))
+            {
+                eventId = Guid.NewGuid().ToString("N");
+            }
 
-                date = EmptyIfNull(date);
-                interactionDefName = EmptyIfNull(interactionDefName);
-                playLogInteractionDefName = EmptyIfNull(playLogInteractionDefName);
-                interactionLabel = EmptyIfNull(interactionLabel);
-                initiatorPawnId = EmptyIfNull(initiatorPawnId);
-                recipientPawnId = EmptyIfNull(recipientPawnId);
-                initiatorName = EmptyIfNull(initiatorName);
-                recipientName = EmptyIfNull(recipientName);
-                initiatorText = EmptyIfNull(initiatorText);
-                recipientText = EmptyIfNull(recipientText);
-                initiatorGeneratedText = EmptyIfNull(initiatorGeneratedText);
-                recipientGeneratedText = EmptyIfNull(recipientGeneratedText);
-                neutralGeneratedText = EmptyIfNull(neutralGeneratedText);
-                initiatorError = EmptyIfNull(initiatorError);
-                recipientError = EmptyIfNull(recipientError);
-                neutralError = EmptyIfNull(neutralError);
-                initiatorLlmEndpoint = EmptyIfNull(initiatorLlmEndpoint);
-                recipientLlmEndpoint = EmptyIfNull(recipientLlmEndpoint);
-                neutralLlmEndpoint = EmptyIfNull(neutralLlmEndpoint);
-                initiatorLlmModel = EmptyIfNull(initiatorLlmModel);
-                recipientLlmModel = EmptyIfNull(recipientLlmModel);
-                neutralLlmModel = EmptyIfNull(neutralLlmModel);
+            if (playLogEntryIds == null)
+            {
+                playLogEntryIds = new List<int>();
+            }
 
-                if (string.IsNullOrWhiteSpace(initiatorStatus))
-                {
-                    initiatorStatus = NotGeneratedStatus;
-                }
+            date = EmptyIfNull(date);
+            interactionDefName = EmptyIfNull(interactionDefName);
+            playLogInteractionDefName = EmptyIfNull(playLogInteractionDefName);
+            interactionLabel = EmptyIfNull(interactionLabel);
 
-                if (string.IsNullOrWhiteSpace(recipientStatus))
-                {
-                    recipientStatus = NotGeneratedStatus;
-                }
+            if (string.IsNullOrWhiteSpace(gameContext))
+            {
+                gameContext = "def=" + interactionDefName + "; label=" + interactionLabel;
+            }
 
-                if (string.IsNullOrWhiteSpace(neutralText))
-                {
-                    neutralText = string.Equals(initiatorText, recipientText, StringComparison.OrdinalIgnoreCase)
-                        ? initiatorText
-                        : initiatorName + ": " + initiatorText + "\n" + recipientName + ": " + recipientText;
-                }
+            if (string.IsNullOrWhiteSpace(instruction))
+            {
+                instruction = interactionLabel;
+            }
 
-                if (initiatorRawResponse == null)
-                {
-                    initiatorRawResponse = string.Empty;
-                }
+            if (string.IsNullOrWhiteSpace(colorCue))
+            {
+                colorCue = ResolveColorCue(interactionDefName, gameContext);
+            }
 
-                if (recipientRawResponse == null)
-                {
-                    recipientRawResponse = string.Empty;
-                }
+            // Mood impact defaults to neutral when no mood direction was saved.
+            // "positive"/"negative" are set at record time for mood-event entries.
+            if (string.IsNullOrWhiteSpace(moodImpact))
+            {
+                moodImpact = MoodImpact.Neutral;
+            }
 
-                if (neutralRawResponse == null)
-                {
-                    neutralRawResponse = string.Empty;
-                }
+            // Per-slot normalization: null/blank pipeline fields are cleaned and statuses upgraded
+            // or cleared. Neutral has no pawn-specific fields to normalize.
+            NormalizeLoadedSlot(ref initiatorSlot, hasPawnFields: true);
+            NormalizeLoadedSlot(ref recipientSlot, hasPawnFields: true);
+            NormalizeLoadedSlot(ref neutralSlot, hasPawnFields: false);
 
-                if (string.IsNullOrWhiteSpace(gameContext))
-                {
-                    gameContext = "def=" + interactionDefName + "; label=" + interactionLabel;
-                }
+            // Cross-slot defaults that depend on an already-normalized sibling slot.
+            // Initiator surroundings fall back to "unknown"; recipient surroundings then borrow the
+            // (possibly just-defaulted) initiator value when blank.
+            initiatorSlot.surroundings = string.IsNullOrWhiteSpace(initiatorSlot.surroundings)
+                ? "unknown"
+                : initiatorSlot.surroundings;
+            recipientSlot.surroundings = string.IsNullOrWhiteSpace(recipientSlot.surroundings)
+                ? initiatorSlot.surroundings
+                : recipientSlot.surroundings;
 
-                if (string.IsNullOrWhiteSpace(instruction))
-                {
-                    instruction = interactionLabel;
-                }
-
-                if (string.IsNullOrWhiteSpace(colorCue))
-                {
-                    colorCue = ResolveColorCue(interactionDefName, gameContext);
-                }
-
-                if (string.IsNullOrWhiteSpace(initiatorPawnSummary))
-                {
-                    initiatorPawnSummary = "unknown";
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientPawnSummary))
-                {
-                    recipientPawnSummary = "unknown";
-                }
-
-                if (string.IsNullOrWhiteSpace(initiatorSurroundings))
-                {
-                    initiatorSurroundings = "unknown";
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientSurroundings))
-                {
-                    recipientSurroundings = initiatorSurroundings;
-                }
-
-                if (string.IsNullOrWhiteSpace(initiatorContinuity))
-                {
-                    initiatorContinuity = "none";
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientContinuity))
-                {
-                    recipientContinuity = "none";
-                }
-
-                if (string.IsNullOrWhiteSpace(initiatorLastOpener))
-                {
-                    initiatorLastOpener = string.Empty;
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientLastOpener))
-                {
-                    recipientLastOpener = string.Empty;
-                }
-
-                if (string.IsNullOrWhiteSpace(initiatorWeapon))
-                {
-                    initiatorWeapon = string.Empty;
-                }
-
-                if (string.IsNullOrWhiteSpace(recipientWeapon))
-                {
-                    recipientWeapon = string.Empty;
-                }
-
-                if (initiatorPrompt == null)
-                {
-                    initiatorPrompt = string.Empty;
-                }
-
-                if (recipientPrompt == null)
-                {
-                    recipientPrompt = string.Empty;
-                }
-
-                if (neutralPrompt == null)
-                {
-                    neutralPrompt = string.Empty;
-                }
-
-                // Mood impact defaults to neutral when no mood direction was saved.
-                // "positive"/"negative" are set at record time for mood-event entries.
-                if (string.IsNullOrWhiteSpace(moodImpact))
-                {
-                    moodImpact = MoodImpact.Neutral;
-                }
-
-                if (string.IsNullOrWhiteSpace(neutralStatus))
-                {
-                    neutralStatus = NotGeneratedStatus;
-                }
-
-                // Empty title fields render a date-only card header.
-                if (initiatorTitle == null)
-                {
-                    initiatorTitle = string.Empty;
-                }
-
-                if (recipientTitle == null)
-                {
-                    recipientTitle = string.Empty;
-                }
-
-                if (neutralTitle == null)
-                {
-                    neutralTitle = string.Empty;
-                }
-
-                if (initiatorTitleStatus == null)
-                {
-                    initiatorTitleStatus = string.Empty;
-                }
-
-                if (recipientTitleStatus == null)
-                {
-                    recipientTitleStatus = string.Empty;
-                }
-
-                if (neutralTitleStatus == null)
-                {
-                    neutralTitleStatus = string.Empty;
-                }
-
-                if (initiatorTitleError == null)
-                {
-                    initiatorTitleError = string.Empty;
-                }
-
-                if (recipientTitleError == null)
-                {
-                    recipientTitleError = string.Empty;
-                }
-
-                if (neutralTitleError == null)
-                {
-                    neutralTitleError = string.Empty;
-                }
-
-                // Normalize statuses: treat stale "pending" or empty as not_generated,
-                // and upgrade to "complete" if generated text is already present
-                initiatorStatus = NormalizeLoadedStatus(initiatorStatus, initiatorGeneratedText);
-                recipientStatus = NormalizeLoadedStatus(recipientStatus, recipientGeneratedText);
-                neutralStatus = NormalizeLoadedStatus(neutralStatus, neutralGeneratedText);
-                // Title requests run on the same async client, but use separate status fields.
-                // If a save/load interrupts an in-flight title call, no result will arrive for this
-                // session, so pending title statuses must be cleared or the title retry guard will
-                // keep treating the missing request as active forever.
-                initiatorTitleStatus = NormalizeLoadedTitleStatus(initiatorTitleStatus, initiatorTitle);
-                recipientTitleStatus = NormalizeLoadedTitleStatus(recipientTitleStatus, recipientTitle);
-                neutralTitleStatus = NormalizeLoadedTitleStatus(neutralTitleStatus, neutralTitle);
-
-                initiatorStaggeredIntensity = ClampStaggeredIntensity(initiatorStaggeredIntensity);
-                recipientStaggeredIntensity = ClampStaggeredIntensity(recipientStaggeredIntensity);
-                if (initiatorTextDecorationFacts == null)
-                {
-                    initiatorTextDecorationFacts = string.Empty;
-                }
-
-                if (recipientTextDecorationFacts == null)
-                {
-                    recipientTextDecorationFacts = string.Empty;
-                }
-
+            // Neutral raw text is not pawn-authored; if none was saved, merge both POVs' raw text.
+            if (string.IsNullOrWhiteSpace(neutralSlot.text))
+            {
+                neutralSlot.text = string.Equals(initiatorSlot.text, recipientSlot.text, StringComparison.OrdinalIgnoreCase)
+                    ? initiatorSlot.text
+                    : initiatorSlot.name + ": " + initiatorSlot.text + "\n" + recipientSlot.name + ": " + recipientSlot.text;
             }
         }
 
@@ -436,27 +322,117 @@ namespace PawnDiary
             return value ?? string.Empty;
         }
 
+        // Scribes the full per-POV field set for an initiator/recipient slot under the historical
+        // flat keys ("<prefix>PawnId", "<prefix>Status", ...). The slot is passed by ref so Scribe
+        // can take refs to its fields directly. Save format is unchanged from before the refactor.
+        private static void ScribePawnSlot(string prefix, ref PovSlot slot)
+        {
+            Scribe_Values.Look(ref slot.pawnId, prefix + "PawnId");
+            Scribe_Values.Look(ref slot.name, prefix + "Name");
+            Scribe_Values.Look(ref slot.text, prefix + "Text");
+            Scribe_Values.Look(ref slot.pawnSummary, prefix + "PawnSummary");
+            Scribe_Values.Look(ref slot.surroundings, prefix + "Surroundings");
+            Scribe_Values.Look(ref slot.continuity, prefix + "Continuity");
+            Scribe_Values.Look(ref slot.lastOpener, prefix + "LastOpener");
+            Scribe_Values.Look(ref slot.weapon, prefix + "Weapon");
+            Scribe_Values.Look(ref slot.prompt, prefix + "Prompt");
+            Scribe_Values.Look(ref slot.generatedText, prefix + "GeneratedText");
+            Scribe_Values.Look(ref slot.rawResponse, prefix + "RawResponse");
+            Scribe_Values.Look(ref slot.status, prefix + "Status");
+            Scribe_Values.Look(ref slot.error, prefix + "Error");
+            Scribe_Values.Look(ref slot.llmEndpoint, prefix + "LlmEndpoint");
+            Scribe_Values.Look(ref slot.llmModel, prefix + "LlmModel");
+            Scribe_Values.Look(ref slot.title, prefix + "Title");
+            Scribe_Values.Look(ref slot.titleStatus, prefix + "TitleStatus");
+            Scribe_Values.Look(ref slot.titleError, prefix + "TitleError");
+            Scribe_Values.Look(ref slot.staggeredIntensity, prefix + "StaggeredIntensity", 0);
+            Scribe_Values.Look(ref slot.textDecorationFacts, prefix + "TextDecorationFacts");
+        }
+
+        // Neutral chronicle pages carry only the generation-pipeline fields (no pawn id/name/summary/
+        // surroundings/continuity/weapon/decoration), so only those are persisted, under the original
+        // "neutral*" keys. This keeps the neutral save shape identical to pre-refactor rows.
+        private static void ScribeNeutralSlot(ref PovSlot slot)
+        {
+            Scribe_Values.Look(ref slot.text, "neutralText");
+            Scribe_Values.Look(ref slot.prompt, "neutralPrompt");
+            Scribe_Values.Look(ref slot.generatedText, "neutralGeneratedText");
+            Scribe_Values.Look(ref slot.rawResponse, "neutralRawResponse");
+            Scribe_Values.Look(ref slot.status, "neutralStatus");
+            Scribe_Values.Look(ref slot.error, "neutralError");
+            Scribe_Values.Look(ref slot.llmEndpoint, "neutralLlmEndpoint");
+            Scribe_Values.Look(ref slot.llmModel, "neutralLlmModel");
+            Scribe_Values.Look(ref slot.title, "neutralTitle");
+            Scribe_Values.Look(ref slot.titleStatus, "neutralTitleStatus");
+            Scribe_Values.Look(ref slot.titleError, "neutralTitleError");
+        }
+
+        // Cleans one slot's loaded state. Generation-pipeline fields are null-coalesced and their
+        // statuses upgraded/cleared for every role. Pawn-specific fields are normalized only for
+        // initiator/recipient (hasPawnFields); surroundings is left to the caller, because the
+        // recipient borrows the initiator's already-normalized surroundings value.
+        private static void NormalizeLoadedSlot(ref PovSlot slot, bool hasPawnFields)
+        {
+            slot.text = EmptyIfNull(slot.text);
+            slot.generatedText = EmptyIfNull(slot.generatedText);
+            slot.error = EmptyIfNull(slot.error);
+            slot.llmEndpoint = EmptyIfNull(slot.llmEndpoint);
+            slot.llmModel = EmptyIfNull(slot.llmModel);
+            slot.rawResponse = EmptyIfNull(slot.rawResponse);
+            slot.prompt = EmptyIfNull(slot.prompt);
+            slot.title = EmptyIfNull(slot.title);
+            slot.titleError = EmptyIfNull(slot.titleError);
+            // Normalize statuses: treat stale "pending" or empty as not_generated, and upgrade to
+            // "complete" if generated text/title is already present.
+            slot.status = NormalizeLoadedStatus(slot.status, slot.generatedText);
+            slot.titleStatus = NormalizeLoadedTitleStatus(slot.titleStatus, slot.title);
+
+            if (!hasPawnFields)
+            {
+                return;
+            }
+
+            slot.pawnId = EmptyIfNull(slot.pawnId);
+            slot.name = EmptyIfNull(slot.name);
+            slot.pawnSummary = string.IsNullOrWhiteSpace(slot.pawnSummary) ? "unknown" : slot.pawnSummary;
+            slot.continuity = string.IsNullOrWhiteSpace(slot.continuity) ? "none" : slot.continuity;
+            slot.lastOpener = string.IsNullOrWhiteSpace(slot.lastOpener) ? string.Empty : slot.lastOpener;
+            slot.weapon = string.IsNullOrWhiteSpace(slot.weapon) ? string.Empty : slot.weapon;
+            slot.staggeredIntensity = ClampStaggeredIntensity(slot.staggeredIntensity);
+            slot.textDecorationFacts = slot.textDecorationFacts ?? string.Empty;
+        }
+
+        /// <summary>
+        /// The ONE place that maps a POV role to its storage. Returns the slot by ref so callers can
+        /// read or mutate it in place (<c>SlotFor(role).status = x</c>). Under C# 7.3 a ref return is
+        /// the idiomatic way to hand out interior access to a value-typed field (ref struct fields,
+        /// a newer feature, are unavailable here). Unknown roles fall through to the initiator slot;
+        /// this branch is unreachable in practice (real callers always pass one of the three role
+        /// constants or a validated role from <see cref="RoleForPawn"/> / a generation result), and
+        /// the original readers were themselves inconsistent here (most fell back to neutral, while
+        /// the LLM-endpoint/model readers fell back to initiator).
+        /// </summary>
+        private ref PovSlot SlotFor(string povRole)
+        {
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return ref recipientSlot;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                return ref neutralSlot;
+            }
+
+            return ref initiatorSlot;
+        }
+
         /// <summary>
         /// Stores the assembled prompt text for a specific POV role.
         /// </summary>
         public void SetPrompt(string povRole, string prompt)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                initiatorPrompt = prompt;
-                return;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                recipientPrompt = prompt;
-                return;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                neutralPrompt = prompt;
-            }
+            SlotFor(povRole).prompt = prompt;
         }
 
         /// <summary>
@@ -464,52 +440,20 @@ namespace PawnDiary
         /// </summary>
         public void SetLlmMeta(string povRole, string endpoint, string model)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                initiatorLlmEndpoint = endpoint;
-                initiatorLlmModel = model;
-                return;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                recipientLlmEndpoint = endpoint;
-                recipientLlmModel = model;
-                return;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                neutralLlmEndpoint = endpoint;
-                neutralLlmModel = model;
-            }
+            ref PovSlot slot = ref SlotFor(povRole);
+            slot.llmEndpoint = endpoint;
+            slot.llmModel = model;
         }
 
         /// <summary>
         /// Stores the LLM-generated title for a specific POV role. Mirrors
-        /// <see cref="SetLlmMeta"/>; an empty string clears the stored title so the view renders
+        /// <see cref="SetLlmMeta"/>; an empty/null string clears the stored title so the view renders
         /// a date-only card header.
         /// </summary>
         public void SetTitle(string povRole, string title)
         {
             DiaryStateVersion.Bump();
-            string value = title ?? string.Empty;
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                initiatorTitle = value;
-                return;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                recipientTitle = value;
-                return;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                neutralTitle = value;
-            }
+            SlotFor(povRole).title = title ?? string.Empty;
         }
 
         /// <summary>
@@ -519,17 +463,7 @@ namespace PawnDiary
         /// </summary>
         public string TitleForRole(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorTitle ?? string.Empty;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientTitle ?? string.Empty;
-            }
-
-            return neutralTitle ?? string.Empty;
+            return SlotFor(povRole).title ?? string.Empty;
         }
 
         /// <summary>
@@ -584,32 +518,12 @@ namespace PawnDiary
 
         private string LlmEndpointFor(string povRole)
         {
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientLlmEndpoint;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                return neutralLlmEndpoint;
-            }
-
-            return initiatorLlmEndpoint;
+            return SlotFor(povRole).llmEndpoint;
         }
 
         private string LlmModelFor(string povRole)
         {
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientLlmModel;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                return neutralLlmModel;
-            }
-
-            return initiatorLlmModel;
+            return SlotFor(povRole).llmModel;
         }
 
         /// <summary>
@@ -720,7 +634,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Applies an LLM generation result to the appropriate POV slot based on result.povRole.
-        /// Dispatches to the initiator, recipient, or neutral handler.
+        /// Unknown roles are ignored (no slot is mutated), preserving the historical no-op
+        /// fall-through. The per-role bodies collapsed into <see cref="ApplyLlmResultToSlot"/>.
         /// </summary>
         public void ApplyLlmResult(LlmGenerationResult result)
         {
@@ -735,20 +650,19 @@ namespace PawnDiary
 
             if (RoleEquals(result.povRole, InitiatorRole))
             {
-                ApplyLlmResultToInitiator(result);
+                ApplyLlmResultToSlot(result, ref initiatorSlot);
                 return;
             }
 
             if (RoleEquals(result.povRole, RecipientRole))
             {
-                ApplyLlmResultToRecipient(result);
+                ApplyLlmResultToSlot(result, ref recipientSlot);
                 return;
             }
 
             if (RoleEquals(result.povRole, NeutralRole))
             {
-                ApplyLlmResultToNeutral(result);
-                return;
+                ApplyLlmResultToSlot(result, ref neutralSlot);
             }
 
         }
@@ -1073,15 +987,16 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns the surroundings description for the given role (defaults to initiator's surroundings for neutral).
+        /// Neutral deliberately borrows the initiator's stored value rather than keeping its own copy.
         /// </summary>
         public string SurroundingsForRole(string povRole)
         {
             if (RoleEquals(povRole, RecipientRole))
             {
-                return recipientSurroundings;
+                return recipientSlot.surroundings;
             }
 
-            return initiatorSurroundings;
+            return initiatorSlot.surroundings;
         }
 
         /// <summary>
@@ -1165,7 +1080,7 @@ namespace PawnDiary
         {
             if (RoleEquals(povRole, RecipientRole))
             {
-                return recipientTextDecorationFacts ?? string.Empty;
+                return recipientSlot.textDecorationFacts ?? string.Empty;
             }
 
             if (RoleEquals(povRole, NeutralRole))
@@ -1173,7 +1088,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            return initiatorTextDecorationFacts ?? string.Empty;
+            return initiatorSlot.textDecorationFacts ?? string.Empty;
         }
 
         /// <summary>
@@ -1186,13 +1101,13 @@ namespace PawnDiary
         {
             if (RoleEquals(povRole, InitiatorRole))
             {
-                initiatorTextDecorationFacts = facts;
+                initiatorSlot.textDecorationFacts = facts;
                 return;
             }
 
             if (RoleEquals(povRole, RecipientRole))
             {
-                recipientTextDecorationFacts = facts;
+                recipientSlot.textDecorationFacts = facts;
             }
         }
 
@@ -1205,13 +1120,13 @@ namespace PawnDiary
         {
             if (RoleEquals(povRole, InitiatorRole))
             {
-                initiatorStaggeredIntensity = intensity;
+                initiatorSlot.staggeredIntensity = intensity;
                 return;
             }
 
             if (RoleEquals(povRole, RecipientRole))
             {
-                recipientStaggeredIntensity = intensity;
+                recipientSlot.staggeredIntensity = intensity;
             }
         }
 
@@ -1219,12 +1134,12 @@ namespace PawnDiary
         {
             if (RoleEquals(povRole, InitiatorRole))
             {
-                return ClampStaggeredIntensity(initiatorStaggeredIntensity);
+                return ClampStaggeredIntensity(initiatorSlot.staggeredIntensity);
             }
 
             if (RoleEquals(povRole, RecipientRole))
             {
-                return ClampStaggeredIntensity(recipientStaggeredIntensity);
+                return ClampStaggeredIntensity(recipientSlot.staggeredIntensity);
             }
 
             // Neutral chronicle pages are not written by the pawn, so they never get staggered words.
@@ -1473,17 +1388,19 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns the continuity context string for the given role, or "none" for neutral.
+        /// Neutral is a hardcoded default rather than a stored field, so it stays special-cased
+        /// here instead of routing through the slot.
         /// </summary>
         public string ContinuityForRole(string povRole)
         {
             if (RoleEquals(povRole, InitiatorRole))
             {
-                return initiatorContinuity;
+                return initiatorSlot.continuity;
             }
 
             if (RoleEquals(povRole, RecipientRole))
             {
-                return recipientContinuity;
+                return recipientSlot.continuity;
             }
 
             return "none";
@@ -1497,12 +1414,12 @@ namespace PawnDiary
         {
             if (RoleEquals(povRole, InitiatorRole))
             {
-                return initiatorLastOpener;
+                return initiatorSlot.lastOpener;
             }
 
             if (RoleEquals(povRole, RecipientRole))
             {
-                return recipientLastOpener;
+                return recipientSlot.lastOpener;
             }
 
             return string.Empty;
@@ -1510,139 +1427,52 @@ namespace PawnDiary
 
         private string TextFor(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorText;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientText;
-            }
-
-            return neutralText;
+            return SlotFor(povRole).text;
         }
 
         private string GeneratedTextFor(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorGeneratedText;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientGeneratedText;
-            }
-
-            return neutralGeneratedText;
+            return SlotFor(povRole).generatedText;
         }
 
         private string StatusFor(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorStatus;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientStatus;
-            }
-
-            return neutralStatus;
+            return SlotFor(povRole).status;
         }
 
         private string ErrorFor(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorError;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientError;
-            }
-
-            return neutralError;
+            return SlotFor(povRole).error;
         }
 
         private string PromptFor(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorPrompt ?? string.Empty;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientPrompt ?? string.Empty;
-            }
-
-            return neutralPrompt ?? string.Empty;
+            return SlotFor(povRole).prompt ?? string.Empty;
         }
 
         private string RawResponseFor(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorRawResponse;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientRawResponse;
-            }
-
-            return neutralRawResponse;
+            return SlotFor(povRole).rawResponse;
         }
 
-        private void ApplyLlmResultToInitiator(LlmGenerationResult result)
+        /// <summary>
+        /// Writes a generation result into one POV slot. Replaces the former per-role
+        /// ApplyLlmResultToInitiator/Recipient/Neutral triplet; the slot is passed by ref so the
+        /// value-typed storage is mutated in place.
+        /// </summary>
+        private void ApplyLlmResultToSlot(LlmGenerationResult result, ref PovSlot slot)
         {
             if (result.success)
             {
-                initiatorGeneratedText = result.generatedText;
-                initiatorRawResponse = TrimPersistedRawResponse(result.rawResponse);
-                initiatorStatus = CompleteStatus;
-                initiatorError = null;
+                slot.generatedText = result.generatedText;
+                slot.rawResponse = TrimPersistedRawResponse(result.rawResponse);
+                slot.status = CompleteStatus;
+                slot.error = null;
             }
             else
             {
-                initiatorStatus = FailedStatus;
-                initiatorError = result.error;
-            }
-        }
-
-        private void ApplyLlmResultToRecipient(LlmGenerationResult result)
-        {
-            if (result.success)
-            {
-                recipientGeneratedText = result.generatedText;
-                recipientRawResponse = TrimPersistedRawResponse(result.rawResponse);
-                recipientStatus = CompleteStatus;
-                recipientError = null;
-            }
-            else
-            {
-                recipientStatus = FailedStatus;
-                recipientError = result.error;
-            }
-        }
-
-        private void ApplyLlmResultToNeutral(LlmGenerationResult result)
-        {
-            if (result.success)
-            {
-                neutralGeneratedText = result.generatedText;
-                neutralRawResponse = TrimPersistedRawResponse(result.rawResponse);
-                neutralStatus = CompleteStatus;
-                neutralError = null;
-            }
-            else
-            {
-                neutralStatus = FailedStatus;
-                neutralError = result.error;
+                slot.status = FailedStatus;
+                slot.error = result.error;
             }
         }
 
@@ -1668,98 +1498,28 @@ namespace PawnDiary
             // Status drives which entries the tab shows and its "writing…" indicator; invalidate the
             // tab's per-frame view cache (see DiaryRenderToken).
             DiaryStateVersion.Bump();
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                initiatorStatus = status;
-                return;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                recipientStatus = status;
-                return;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                neutralStatus = status;
-            }
+            SlotFor(povRole).status = status;
         }
 
         private void SetError(string povRole, string error)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                initiatorError = error;
-                return;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                recipientError = error;
-                return;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                neutralError = error;
-            }
+            SlotFor(povRole).error = error;
         }
 
         private void SetTitleStatus(string povRole, string status)
         {
             DiaryStateVersion.Bump();
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                initiatorTitleStatus = status;
-                return;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                recipientTitleStatus = status;
-                return;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                neutralTitleStatus = status;
-            }
+            SlotFor(povRole).titleStatus = status;
         }
 
         private void SetTitleError(string povRole, string error)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                initiatorTitleError = error;
-                return;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                recipientTitleError = error;
-                return;
-            }
-
-            if (RoleEquals(povRole, NeutralRole))
-            {
-                neutralTitleError = error;
-            }
+            SlotFor(povRole).titleError = error;
         }
 
         private string TitleStatusFor(string povRole)
         {
-            if (RoleEquals(povRole, InitiatorRole))
-            {
-                return initiatorTitleStatus;
-            }
-
-            if (RoleEquals(povRole, RecipientRole))
-            {
-                return recipientTitleStatus;
-            }
-
-            return neutralTitleStatus;
+            return SlotFor(povRole).titleStatus;
         }
 
         private static string NormalizeLoadedStatus(string status, string generatedText)
