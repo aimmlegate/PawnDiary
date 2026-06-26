@@ -6,62 +6,36 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
-- **Event prompt policy can now target modded XML keys.** `DiaryEventPromptDef` resolution tries the
-  exact source defName, matched interaction group defName, domain classifier key, then broad domain,
-  so compatibility patches can add prompt text, event enhancement text, and forced-model preference
-  entirely through XML.
+- **Event prompt policy can now target modded XML keys.** `DiaryEventPromptDef` resolution now falls
+  back through source defName, interaction group, classifier key, and broad domain, letting
+  compatibility patches add prompts, enhancement text, and forced-model preferences in XML.
 
-- **Immediate-mode UI hardened against draw-time exceptions.** The diary tab's scroll view and
-  per-card `GUI.BeginGroup`, and the settings window's scroll view + `Listing_Standard`, now run
-  inside `try/finally` blocks that always balance Unity's shared GUI clip stack, so one unexpected
-  throw mid-draw degrades to a missing card/section instead of corrupting the rest of the frame's UI.
-  The two Harmony patches that draw into vanilla surfaces — the inspect-tab unread marker and the
-  bottom diary gizmo (build + status overlay) — wrap their bodies in `try/catch` with `Log.ErrorOnce`,
-  so a failure can no longer break RimWorld's inspect tab strip or gizmo bar for every selected pawn.
-  Behavior is otherwise unchanged.
+- **Runtime exception handling hardened.** Harmony hooks, diary ticking, save/load work, startup tab
+  injection, and immediate-mode UI drawing now isolate diary failures with balanced cleanup and
+  one-time logging, so capture or draw faults no longer break vanilla gameplay, saving/loading, the
+  inspect tab strip, or the gizmo bar. Behavior is otherwise unchanged.
 
-- **Gameplay hooks, tick, and save/load hardened against exceptions.** Every Harmony prefix/postfix
-  now runs through a `DiaryPatchSafety.Run`/`RunPrefix` choke point that logs once and lets the
-  patched vanilla method continue, so a diary-capture fault can no longer break death, recruitment,
-  incidents/raids, mental states, tales, quests, abilities, rituals, conditions, social logging, or
-  relations. `GameComponentTick` (per-tick scans + LLM result application + log flush) is wrapped so a
-  failed tick is logged and skipped rather than surfacing in RimWorld's tick loop; `ExposeData`'s
-  pre-save flush/prune and post-load index rebuild are guarded so a diary-data fault can't abort a
-  save or load; and `DiaryModStartup` isolates fragile-patch registration and per-`ThingDef` tab
-  injection so one failure can't half-initialize the mod. Behavior is otherwise unchanged.
+- **Mental-break diary card green softened.** Mental-break cards now use a muted sage accent with a
+  lower-intensity wash and header rule.
 
-- **Mental-break diary card green softened.** The mental-break cue now uses an explicit muted sage
-  accent instead of RimWorld's brighter ally preset, with lower page-wash and header-rule intensity
-  so those diary items read as marked without popping as aggressively.
+- **SpeakUp interactions now route as promoted chitchat.** Interaction groups can match by source
+  package ID, skip PlayLog grammar rendering, and disable themselves when listed packages are loaded;
+  the built-in SpeakUp group treats `JPT.speakup` rows as low-odds ambient social texture.
 
-- **SpeakUp interactions now route as promoted chitchat.** Interaction groups can match live Defs by
-  source package ID, opt out of PlayLog grammar rendering during capture, and disable themselves when
-  a listed package is loaded. The built-in `speakup_chitchat` group matches `JPT.speakup`, batches
-  rows as ambient social texture, uses stricter thresholds and lower promotion odds than normal
-  small talk, and suppresses the normal `smalltalk` group while SpeakUp is loaded.
-
-- **Tagged social-log grammar now renders under a reply-suppression guard.** Pawn Diary can use
-  generated conversation text in prompts when the optional guard is registered, and falls back to
-  neutral interaction text when it is not.
+- **Tagged social-log grammar now renders under a reply-suppression guard.** Generated conversation
+  text is used in prompts when the optional guard is registered, with neutral fallback text otherwise.
 
 - **Built-in writing styles retuned around author-inspired mechanics.** The 30 stock
-  `DiaryPersonaDef` presets now use distinct mechanical labels/rules inspired by recognizable
-  literary habits without naming authors in the injected prompt. Each rule includes a tiny synthetic
-  example for small local models, DefInjected English stubs were kept in sync, and the hardcoded
-  fallback now matches the new default `spare-iceberg` style.
+  `DiaryPersonaDef` presets now use distinct mechanical rules, small synthetic examples, synced
+  DefInjected English stubs, and the new default `spare-iceberg` fallback.
 
-- **Diary tab unread marker skips world inspect panes.** The tab-strip marker now confirms the active
-  inspect pane contains the Diary tab before reading selected map objects, and treats RimWorld's
-  world-inspect UI as "no diary pawn" so world generation/world-map screens cannot throw from
-  `Find.Selector`.
+- **Diary tab unread marker skips world inspect panes.** The marker now verifies it is drawing on the
+  Diary inspect tab and treats world-inspect UI as having no diary pawn, avoiding selector errors on
+  world screens.
 
-- **Thinking-model self-edit cleanup tightened.** Response cleanup now recognizes instruction-echo
-  self-revision transcripts from reasoning/chat-template models, such as "Wait, looking at the
-  instructions..." followed by "Let me refine:" or a shorter final version. When a clean rewrite
-  follows, the last rewrite is saved; otherwise the visible draft before the self-audit is kept.
-  `LlmResponseParserTests` cover the reported leak shape, Chat Completions responses that put this
-  audit in a sibling `message.reasoning` field, and an in-world "Wait," line that should survive
-  unchanged.
+- **Thinking-model self-edit cleanup tightened.** Response cleanup now strips common reasoning-model
+  self-revision transcripts while preserving legitimate in-world "Wait," prose, with parser tests for
+  the reported leak shapes.
 
 ## 2026-06-25
 
