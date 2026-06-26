@@ -22,7 +22,10 @@ namespace PawnDiary
         /// </summary>
         public static void Prefix(Pawn __instance, DamageInfo? dinfo, Hediff exactCulprit)
         {
-            DeathContextCache.Capture(__instance, dinfo, exactCulprit);
+            DiaryPatchSafety.Run("PawnKillPatch.Prefix", () =>
+            {
+                DeathContextCache.Capture(__instance, dinfo, exactCulprit);
+            });
         }
 
         /// <summary>
@@ -31,7 +34,10 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Pawn __instance)
         {
-            DiaryGameComponent.Current?.RecordDeathFallback(__instance);
+            DiaryPatchSafety.Run("PawnKillPatch.Postfix", () =>
+            {
+                DiaryGameComponent.Current?.RecordDeathFallback(__instance);
+            });
         }
     }
 }

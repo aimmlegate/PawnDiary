@@ -282,10 +282,20 @@ namespace PawnDiary
         {
             if (Scribe.mode == LoadSaveMode.Saving)
             {
-                FlushAllInteractionBatches();
-                FlushAllTaleBatches();
-                FlushAllAmbientThoughtNotes();
-                PruneDiaryEventRefs();
+                // Pre-save flushing/pruning is our own bookkeeping; never let it abort the actual
+                // save (the Scribe.Look calls below) — a partial flush is far better than a lost save.
+                try
+                {
+                    FlushAllInteractionBatches();
+                    FlushAllTaleBatches();
+                    FlushAllAmbientThoughtNotes();
+                    PruneDiaryEventRefs();
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[Pawn Diary] Pre-save diary flush failed: " + e,
+                        "DiaryGameComponent.ExposeData.Save".GetHashCode());
+                }
             }
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
@@ -295,7 +305,15 @@ namespace PawnDiary
             // pruned so stale LogIDs cannot accumulate or block future injection.
             if (Scribe.mode == LoadSaveMode.Saving)
             {
-                PruneStaleGeneratedSpeechPlayLogState();
+                try
+                {
+                    PruneStaleGeneratedSpeechPlayLogState();
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[Pawn Diary] Pre-save speech-log prune failed: " + e,
+                        "DiaryGameComponent.ExposeData.SpeechPrune".GetHashCode());
+                }
             }
 
             Scribe_Collections.Look(ref generatedSpeechPlayLogTexts, "generatedSpeechPlayLogTexts", LookMode.Value, LookMode.Value,
@@ -313,17 +331,44 @@ namespace PawnDiary
                     generatedSpeechPlayLogTexts = new Dictionary<int, string>();
                 }
 
-                // The lookup index is not serialized; rebuild it from the loaded events so FindEvent
-                // works immediately (the first generation scan and any UI draw run before any new
-                // event is recorded this session).
-                events.RebuildIndex();
-                RebuildWrittenDayReflectionsFromEvents();
-                PruneDiaryEventRefs();
-                PruneStaleGeneratedSpeechPlayLogState();
+                // Post-load rebuilds derive transient indexes from loaded data; a throw here must not
+                // abort the whole game load, so degrade to whatever loaded and log once. The null
+                // guards above stay outside the try because the rest of the session depends on them.
+                try
+                {
+                    // The lookup index is not serialized; rebuild it from the loaded events so FindEvent
+                    // works immediately (the first generation scan and any UI draw run before any new
+                    // event is recorded this session).
+                    events.RebuildIndex();
+                    RebuildWrittenDayReflectionsFromEvents();
+                    PruneDiaryEventRefs();
+                    PruneStaleGeneratedSpeechPlayLogState();
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[Pawn Diary] Post-load diary rebuild failed: " + e,
+                        "DiaryGameComponent.ExposeData.PostLoad".GetHashCode());
+                }
             }
         }
 
         public override void GameComponentTick()
+        {
+            // This runs every tick. An exception escaping here would surface inside RimWorld's tick
+            // loop, so wrap the whole body: a failed tick skips that tick's diary bookkeeping and is
+            // logged once, while the game keeps ticking normally.
+            try
+            {
+                GameComponentTickInner();
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] GameComponentTick failed and was skipped: " + e,
+                    "DiaryGameComponent.GameComponentTick".GetHashCode());
+            }
+        }
+
+        private void GameComponentTickInner()
         {
             FlushReadyInteractionBatches();
             FlushReadyTaleBatches();

@@ -26,16 +26,19 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Hediff hediff)
         {
-            Pawn pawn = hediff?.pawn;
-            // RimWorld rolls old-age injuries onto starting pawns during generation, before the game
-            // is playing; skip those so RecordHediffAppeared does not read TicksAbs (via CurrentDayIndex)
-            // before the world clock exists. Starting hediffs are baselined by the first scan instead.
-            if (pawn == null || !pawn.IsColonist || !DiaryGameComponent.GamePlaying)
+            DiaryPatchSafety.Run("HealthTrackerAddHediffPatch", () =>
             {
-                return;
-            }
+                Pawn pawn = hediff?.pawn;
+                // RimWorld rolls old-age injuries onto starting pawns during generation, before the game
+                // is playing; skip those so RecordHediffAppeared does not read TicksAbs (via CurrentDayIndex)
+                // before the world clock exists. Starting hediffs are baselined by the first scan instead.
+                if (pawn == null || !pawn.IsColonist || !DiaryGameComponent.GamePlaying)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordHediffAppeared(pawn, hediff);
+                DiaryGameComponent.Current?.RecordHediffAppeared(pawn, hediff);
+            });
         }
     }
 }

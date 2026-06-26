@@ -24,12 +24,15 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Quest __instance)
         {
-            if (__instance == null)
+            DiaryPatchSafety.Run("QuestAcceptPatch", () =>
             {
-                return;
-            }
+                if (__instance == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordQuestAccepted(__instance);
+                DiaryGameComponent.Current?.RecordQuestAccepted(__instance);
+            });
         }
     }
 
@@ -86,15 +89,18 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(object __instance)
         {
-            object parentClosure = ParentClosureField?.GetValue(__instance);
-            object questWindow = QuestWindowField?.GetValue(parentClosure);
-            Quest quest = SelectedQuestField?.GetValue(questWindow) as Quest;
-            if (quest == null || !quest.EverAccepted)
+            DiaryPatchSafety.Run("QuestUiAcceptPatch", () =>
             {
-                return;
-            }
+                object parentClosure = ParentClosureField?.GetValue(__instance);
+                object questWindow = QuestWindowField?.GetValue(parentClosure);
+                Quest quest = SelectedQuestField?.GetValue(questWindow) as Quest;
+                if (quest == null || !quest.EverAccepted)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordQuestAccepted(quest);
+                DiaryGameComponent.Current?.RecordQuestAccepted(quest);
+            });
         }
     }
 
@@ -113,17 +119,20 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Quest __instance, QuestEndOutcome outcome)
         {
-            if (__instance == null)
+            DiaryPatchSafety.Run("QuestEndPatch", () =>
             {
-                return;
-            }
+                if (__instance == null)
+                {
+                    return;
+                }
 
-            if (outcome != QuestEndOutcome.Success && outcome != QuestEndOutcome.Fail)
-            {
-                return;
-            }
+                if (outcome != QuestEndOutcome.Success && outcome != QuestEndOutcome.Fail)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordQuestEnded(__instance, outcome);
+                DiaryGameComponent.Current?.RecordQuestEnded(__instance, outcome);
+            });
         }
     }
 }

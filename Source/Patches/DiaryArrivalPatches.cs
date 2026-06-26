@@ -21,7 +21,10 @@ namespace PawnDiary
         /// </summary>
         public static void Prefix(Pawn __instance, Faction newFaction, Pawn recruiter)
         {
-            ArrivalContextCache.Capture(__instance, newFaction, recruiter);
+            DiaryPatchSafety.Run("PawnSetFactionPatch.Prefix", () =>
+            {
+                ArrivalContextCache.Capture(__instance, newFaction, recruiter);
+            });
         }
 
         /// <summary>
@@ -30,17 +33,20 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Pawn __instance, Faction newFaction)
         {
-            // Scenario setup flips starting pawns to the player faction during generation, before the
-            // game is playing; skip those so we don't record arrivals (and read TicksAbs) too early.
-            // Founding colonists are recorded by the first-playing-tick scan instead.
-            if (__instance == null || newFaction != Faction.OfPlayer || !__instance.IsColonist
-                || !DiaryGameComponent.GamePlaying)
+            DiaryPatchSafety.Run("PawnSetFactionPatch.Postfix", () =>
             {
-                return;
-            }
+                // Scenario setup flips starting pawns to the player faction during generation, before the
+                // game is playing; skip those so we don't record arrivals (and read TicksAbs) too early.
+                // Founding colonists are recorded by the first-playing-tick scan instead.
+                if (__instance == null || newFaction != Faction.OfPlayer || !__instance.IsColonist
+                    || !DiaryGameComponent.GamePlaying)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordColonistArrival(__instance,
-                ArrivalContextCache.ConsumeOrBuild(__instance, "set_faction"));
+                DiaryGameComponent.Current?.RecordColonistArrival(__instance,
+                    ArrivalContextCache.ConsumeOrBuild(__instance, "set_faction"));
+            });
         }
     }
 }

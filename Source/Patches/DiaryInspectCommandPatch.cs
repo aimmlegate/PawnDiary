@@ -2,6 +2,7 @@
 // RimWorld asks selected things for Gizmos (bottom action buttons). We append one command that opens
 // the same hidden ITab_Pawn_Diary hosted by the inspect pane, so the diary UI behavior stays shared.
 // New to this? See AGENTS.md ("Harmony patches").
+using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using RimWorld;
@@ -77,9 +78,25 @@ namespace PawnDiary
                 }
             }
 
-            if (ShouldShowDiaryCommand(selectedThing, diaryPawn))
+            // Building the command runs inside vanilla's gizmo enumeration every frame, so an
+            // unguarded throw here would break the whole gizmo bar. Build defensively and only yield
+            // on success (the yield stays outside the try, which C# requires).
+            Command_Action diaryCommand = null;
+            try
             {
-                yield return CreateDiaryCommand(diaryPawn);
+                if (ShouldShowDiaryCommand(selectedThing, diaryPawn))
+                {
+                    diaryCommand = CreateDiaryCommand(diaryPawn);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] Building the diary gizmo failed: " + e, 0x7D1A0002);
+            }
+
+            if (diaryCommand != null)
+            {
+                yield return diaryCommand;
             }
         }
 
@@ -148,7 +165,17 @@ namespace PawnDiary
             public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
             {
                 GizmoResult result = base.GizmoOnGUI(topLeft, maxWidth, parms);
-                DrawDiaryStatus(topLeft, maxWidth);
+                // The status overlay draws into the gizmo bar every frame; isolate it so an overlay
+                // failure can't take the vanilla button (or the rest of the bar) down with it.
+                try
+                {
+                    DrawDiaryStatus(topLeft, maxWidth);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[Pawn Diary] Diary gizmo overlay draw failed: " + e, 0x7D1A0003);
+                }
+
                 return result;
             }
 

@@ -28,12 +28,15 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Tale __result, TaleDef def)
         {
-            if (__result == null || def == null)
+            DiaryPatchSafety.Run("TaleRecorderPatch", () =>
             {
-                return;
-            }
+                if (__result == null || def == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordTale(__result, def);
+                DiaryGameComponent.Current?.RecordTale(__result, def);
+            });
         }
     }
 
@@ -63,18 +66,21 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(bool __result, MentalStateHandler __instance, MentalStateDef stateDef, string reason, Pawn otherPawn)
         {
-            if (!__result || stateDef == null || __instance == null)
+            DiaryPatchSafety.Run("MentalStateStartPatch", () =>
             {
-                return;
-            }
+                if (!__result || stateDef == null || __instance == null)
+                {
+                    return;
+                }
 
-            Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
-            if (pawn == null)
-            {
-                return;
-            }
+                Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
+                if (pawn == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordMentalState(pawn, stateDef, otherPawn, reason);
+                DiaryGameComponent.Current?.RecordMentalState(pawn, stateDef, otherPawn, reason);
+            });
         }
     }
 
@@ -92,12 +98,15 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(bool __result, InspirationHandler __instance, InspirationDef def, string reason)
         {
-            if (!__result || __instance == null || __instance.pawn == null || def == null)
+            DiaryPatchSafety.Run("InspirationStartPatch", () =>
             {
-                return;
-            }
+                if (!__result || __instance == null || __instance.pawn == null || def == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordInspiration(__instance.pawn, def, reason);
+                DiaryGameComponent.Current?.RecordInspiration(__instance.pawn, def, reason);
+            });
         }
     }
 
@@ -117,18 +126,21 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(GameCondition cond)
         {
-            if (cond == null || cond.def == null)
+            DiaryPatchSafety.Run("GameConditionStartPatch", () =>
             {
-                return;
-            }
+                if (cond == null || cond.def == null)
+                {
+                    return;
+                }
 
-            // TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now.
-            if (cond.def.defName == "ProblemCauser")
-            {
-                return;
-            }
+                // TODO: ProblemCauser conditions are too complex to handle correctly — skipped for now.
+                if (cond.def.defName == "ProblemCauser")
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordMoodEvent(cond);
+                DiaryGameComponent.Current?.RecordMoodEvent(cond);
+            });
         }
     }
 
@@ -150,12 +162,15 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(IncidentWorker __instance, IncidentParms parms, bool __result)
         {
-            if (!__result || !IsRaidLikeIncident(__instance) || parms == null || __instance.def == null)
+            DiaryPatchSafety.Run("RaidExecutePatch", () =>
             {
-                return;
-            }
+                if (!__result || !IsRaidLikeIncident(__instance) || parms == null || __instance.def == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordRaid(parms, __instance.def);
+                DiaryGameComponent.Current?.RecordRaid(parms, __instance.def);
+            });
         }
 
         private static bool IsRaidLikeIncident(IncidentWorker worker)
@@ -185,12 +200,15 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(LordJob_Ritual __instance, float progress, bool cancelled)
         {
-            if (__instance == null || cancelled)
+            DiaryPatchSafety.Run("RitualOutcomePatch", () =>
             {
-                return;
-            }
+                if (__instance == null || cancelled)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordRitualFinished(__instance, progress, cancelled);
+                DiaryGameComponent.Current?.RecordRitualFinished(__instance, progress, cancelled);
+            });
         }
     }
 
@@ -208,13 +226,16 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(LordToil_PsychicRitual __instance)
         {
-            PsychicRitual psychicRitual = __instance?.RitualData?.psychicRitual;
-            if (psychicRitual == null)
+            DiaryPatchSafety.Run("PsychicRitualCompletedPatch", () =>
             {
-                return;
-            }
+                PsychicRitual psychicRitual = __instance?.RitualData?.psychicRitual;
+                if (psychicRitual == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success: true);
+                DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success: true);
+            });
         }
     }
 
@@ -232,12 +253,15 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Ability __instance, LocalTargetInfo target, LocalTargetInfo dest, bool __result)
         {
-            if (!__result || __instance == null)
+            DiaryPatchSafety.Run("AbilityActivateLocalPatch", () =>
             {
-                return;
-            }
+                if (!__result || __instance == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target, dest);
+                DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target, dest);
+            });
         }
     }
 
@@ -254,12 +278,15 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Ability __instance, GlobalTargetInfo target, bool __result)
         {
-            if (!__result || __instance == null)
+            DiaryPatchSafety.Run("AbilityActivateGlobalPatch", () =>
             {
-                return;
-            }
+                if (!__result || __instance == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target);
+                DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target);
+            });
         }
     }
 }

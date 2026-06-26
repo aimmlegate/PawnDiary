@@ -44,18 +44,21 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory __0)
         {
-            if (__instance == null || __0 == null || __0.def == null)
+            DiaryPatchSafety.Run("ThoughtGainPatch", () =>
             {
-                return;
-            }
+                if (__instance == null || __0 == null || __0.def == null)
+                {
+                    return;
+                }
 
-            Pawn pawn = __instance.pawn;
-            if (pawn == null)
-            {
-                return;
-            }
+                Pawn pawn = __instance.pawn;
+                if (pawn == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordThought(pawn, __0);
+                DiaryGameComponent.Current?.RecordThought(pawn, __0);
+            });
         }
     }
 }

@@ -351,182 +351,204 @@ namespace PawnDiary
             scrollPosition.y = Mathf.Clamp(scrollPosition.y, 0f, Mathf.Max(0f, viewHeight - outRect.height));
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
+            // Immediate-mode safety net: BeginScrollView and the per-card GUI.BeginGroup below push
+            // onto Unity's shared GUI clip stack, and their matching EndGroup/EndScrollView calls pop
+            // it. If a draw call throws mid-card those pops are skipped, leaving the stack unbalanced
+            // and corrupting the rest of the frame's UI — not just this tab. The finally closes
+            // whatever is still open, so one bad entry degrades to a missing card, never a broken UI.
             float curY = 0f;
             Color dialogueColor = PreferredDialogueColor(pawn);
-            for (int i = 0; i < ordered.Count; i++)
+            bool entryGroupOpen = false;
+            try
             {
-                DiaryEntryView entry = ordered[i];
-                bool expanded = expandedTargets[i];
-                float expansionBlend = expansionBlends[i];
-                float fullHeight = fullHeights[i];
-                float height = heights[i];
-
-                // Viewport culling. Widgets.BeginScrollView clips the pixels a card paints, but
-                // RimWorld still executes every immediate-mode call (box draws, Text.CalcSize,
-                // labels, tooltip regions) for offscreen cards. On a year page with hundreds of
-                // entries that work tanks FPS while the tab is open, so skip cards whose row is
-                // entirely above or below the visible scroll slice. The heights were measured once
-                // in the pass above, so this adds no per-frame text measurement. Cards are laid out
-                // top-to-bottom by curY, so once a row is fully past the bottom we can stop.
-                if (curY + height < scrollPosition.y)
+                for (int i = 0; i < ordered.Count; i++)
                 {
-                    curY += height + EntryGap;
-                    continue;
-                }
-                if (curY > scrollPosition.y + outRect.height)
-                {
-                    break;
-                }
+                    DiaryEntryView entry = ordered[i];
+                    bool expanded = expandedTargets[i];
+                    float expansionBlend = expansionBlends[i];
+                    float fullHeight = fullHeights[i];
+                    float height = heights[i];
 
-                Rect entryRect = new Rect(0f, curY, viewRect.width, height);
-
-                Color accentColor = EntryAccentColor(entry);
-                GUI.BeginGroup(entryRect);
-                Rect localEntryRect = new Rect(0f, 0f, entryRect.width, fullHeight);
-                Rect visibleEntryRect = new Rect(0f, 0f, entryRect.width, height);
-                // Keep the full-card chrome while a row is still animating. Swapping to the compact
-                // renderer early made the border/header framing appear to jump near the closed state.
-                bool compactCollapsed = !expanded && expansionBlend <= 0f;
-                if (compactCollapsed)
-                {
-                    DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend);
-                    if (Widgets.ButtonInvisible(visibleEntryRect, false))
+                    // Viewport culling. Widgets.BeginScrollView clips the pixels a card paints, but
+                    // RimWorld still executes every immediate-mode call (box draws, Text.CalcSize,
+                    // labels, tooltip regions) for offscreen cards. On a year page with hundreds of
+                    // entries that work tanks FPS while the tab is open, so skip cards whose row is
+                    // entirely above or below the visible scroll slice. The heights were measured once
+                    // in the pass above, so this adds no per-frame text measurement. Cards are laid out
+                    // top-to-bottom by curY, so once a row is fully past the bottom we can stop.
+                    if (curY + height < scrollPosition.y)
                     {
-                        SetEntryExpanded(entry, true);
+                        curY += height + EntryGap;
+                        continue;
+                    }
+                    if (curY > scrollPosition.y + outRect.height)
+                    {
+                        break;
                     }
 
-                    GUI.EndGroup();
-                    curY += height + EntryGap;
-                    continue;
-                }
+                    Rect entryRect = new Rect(0f, curY, viewRect.width, height);
 
-                Widgets.DrawMenuSection(localEntryRect);
-                // Faint warm "page" wash behind the body text, drawn under the hover highlight so
-                // mouseover still reads. Starts below the title bar and inside the accent strip.
-                Rect pageRect = new Rect(
-                    localEntryRect.x + EntryAccentWidth + 2f,
-                    localEntryRect.y + EntryTitleHeight,
-                    Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 4f),
-                    Mathf.Max(0f, localEntryRect.height - EntryTitleHeight - 2f));
-                Widgets.DrawBoxSolid(pageRect, EntryPageTintColor(entry));
-                Widgets.DrawHighlightIfMouseover(visibleEntryRect);
+                    Color accentColor = EntryAccentColor(entry);
+                    GUI.BeginGroup(entryRect);
+                    entryGroupOpen = true;
+                    Rect localEntryRect = new Rect(0f, 0f, entryRect.width, fullHeight);
+                    Rect visibleEntryRect = new Rect(0f, 0f, entryRect.width, height);
+                    // Keep the full-card chrome while a row is still animating. Swapping to the compact
+                    // renderer early made the border/header framing appear to jump near the closed state.
+                    bool compactCollapsed = !expanded && expansionBlend <= 0f;
+                    if (compactCollapsed)
+                    {
+                        DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend);
+                        if (Widgets.ButtonInvisible(visibleEntryRect, false))
+                        {
+                            SetEntryExpanded(entry, true);
+                        }
 
-                Rect titleRect = new Rect(localEntryRect.x, localEntryRect.y, localEntryRect.width, EntryTitleHeight);
-                Widgets.DrawTitleBG(titleRect);
+                        GUI.EndGroup();
+                        entryGroupOpen = false;
+                        curY += height + EntryGap;
+                        continue;
+                    }
 
-                // Group "spine" down the left edge, with a soft inner highlight for depth, then a warm
-                // hairline under the header so the body reads as its own page block.
-                Rect accentRect = new Rect(localEntryRect.x + 1f, localEntryRect.y + 1f, EntryAccentWidth, localEntryRect.height - 2f);
-                Widgets.DrawBoxSolid(accentRect, accentColor);
-                Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
-                Widgets.DrawBoxSolid(
-                    new Rect(
-                        localEntryRect.x + EntryAccentWidth + 8f,
+                    Widgets.DrawMenuSection(localEntryRect);
+                    // Faint warm "page" wash behind the body text, drawn under the hover highlight so
+                    // mouseover still reads. Starts below the title bar and inside the accent strip.
+                    Rect pageRect = new Rect(
+                        localEntryRect.x + EntryAccentWidth + 2f,
                         localEntryRect.y + EntryTitleHeight,
-                        Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 20f),
-                        1f),
-                    EntryHeaderRuleColor(entry));
+                        Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 4f),
+                        Mathf.Max(0f, localEntryRect.height - EntryTitleHeight - 2f));
+                    Widgets.DrawBoxSolid(pageRect, EntryPageTintColor(entry));
+                    Widgets.DrawHighlightIfMouseover(visibleEntryRect);
 
-                Rect groupRect = GroupLabelRect(titleRect, entry.GroupLabel);
-                if (groupRect.width > 0f)
-                {
-                    DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
-                }
-                float headerRight = groupRect.width > 0f ? groupRect.x - 6f : localEntryRect.xMax - 8f;
-                DrawEntryHeader(
-                    new Rect(localEntryRect.x + 34f, localEntryRect.y + 5f, Mathf.Max(80f, headerRight - localEntryRect.x - 34f), 22f),
-                    entry,
-                    accentColor);
-                DrawExpansionIndicator(titleRect, expanded, expansionBlend, accentColor);
-                if (Widgets.ButtonInvisible(titleRect, false))
-                {
-                    SetEntryExpanded(entry, !expanded);
-                }
+                    Rect titleRect = new Rect(localEntryRect.x, localEntryRect.y, localEntryRect.width, EntryTitleHeight);
+                    Widgets.DrawTitleBG(titleRect);
 
-                TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
+                    // Group "spine" down the left edge, with a soft inner highlight for depth, then a warm
+                    // hairline under the header so the body reads as its own page block.
+                    Rect accentRect = new Rect(localEntryRect.x + 1f, localEntryRect.y + 1f, EntryAccentWidth, localEntryRect.height - 2f);
+                    Widgets.DrawBoxSolid(accentRect, accentColor);
+                    Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
+                    Widgets.DrawBoxSolid(
+                        new Rect(
+                            localEntryRect.x + EntryAccentWidth + 8f,
+                            localEntryRect.y + EntryTitleHeight,
+                            Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 20f),
+                            1f),
+                        EntryHeaderRuleColor(entry));
 
-                // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
-                // recipient (shows the initiator's perspective first). When this pawn is the
-                // initiator, the linked recipient entry goes AFTER the main text instead.
-                float textY = localEntryRect.y + EntryTextTop;
-                LinkedEntryView linked = entry.LinkedEntry;
-                bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
-                bool linkedAfter = linked != null && !linkedBefore;
-                bool showModelName = HasModelName(entry);
-                string bodyText = EntryBodyText(entry, showLlmDebugInfo);
-                string debugText = showLlmDebugInfo && !IsPromptOnly(entry) ? entry.DebugText : string.Empty;
-                float innerTextWidth = localEntryRect.width - 20f;
-                string atmosphereCue = EntryAtmosphereCue(entry);
-                bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
-                DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
-                int roleplaySeed = StableTextSeed(entryKeys[i]);
-                IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : nameHighlights;
-                float mainTextHeight = RoleplayTextHeight(
-                    bodyText,
-                    innerTextWidth,
-                    atmosphereCue,
-                    allowDirectSpeechBlocks,
-                    decorationContext,
-                    roleplaySeed,
-                    entryNameHighlights);
-                float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
+                    Rect groupRect = GroupLabelRect(titleRect, entry.GroupLabel);
+                    if (groupRect.width > 0f)
+                    {
+                        DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
+                    }
+                    float headerRight = groupRect.width > 0f ? groupRect.x - 6f : localEntryRect.xMax - 8f;
+                    DrawEntryHeader(
+                        new Rect(localEntryRect.x + 34f, localEntryRect.y + 5f, Mathf.Max(80f, headerRight - localEntryRect.x - 34f), 22f),
+                        entry,
+                        accentColor);
+                    DrawExpansionIndicator(titleRect, expanded, expansionBlend, accentColor);
+                    if (Widgets.ButtonInvisible(titleRect, false))
+                    {
+                        SetEntryExpanded(entry, !expanded);
+                    }
 
-                if (linkedBefore)
-                {
-                    Rect linkedRect = new Rect(localEntryRect.x + 10f, textY, localEntryRect.width - 20f, LinkedEntryTotalHeight);
-                    DrawLinkedEntry(linked, linkedRect, pawn);
-                    textY = linkedRect.yMax + LinkedEntryPadding;
-                }
+                    TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
 
-                Rect textRect = new Rect(localEntryRect.x + 12f, textY, localEntryRect.width - 20f, mainTextHeight);
-                if (IsGenerating(entry))
-                {
-                    DrawWritingPlaceholder(textRect);
-                }
-                else
-                {
-                    DrawRoleplayText(
-                        textRect,
+                    // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
+                    // recipient (shows the initiator's perspective first). When this pawn is the
+                    // initiator, the linked recipient entry goes AFTER the main text instead.
+                    float textY = localEntryRect.y + EntryTextTop;
+                    LinkedEntryView linked = entry.LinkedEntry;
+                    bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
+                    bool linkedAfter = linked != null && !linkedBefore;
+                    bool showModelName = HasModelName(entry);
+                    string bodyText = EntryBodyText(entry, showLlmDebugInfo);
+                    string debugText = showLlmDebugInfo && !IsPromptOnly(entry) ? entry.DebugText : string.Empty;
+                    float innerTextWidth = localEntryRect.width - 20f;
+                    string atmosphereCue = EntryAtmosphereCue(entry);
+                    bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
+                    DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
+                    int roleplaySeed = StableTextSeed(entryKeys[i]);
+                    IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : nameHighlights;
+                    float mainTextHeight = RoleplayTextHeight(
                         bodyText,
-                        dialogueColor,
-                        EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend),
+                        innerTextWidth,
                         atmosphereCue,
                         allowDirectSpeechBlocks,
                         decorationContext,
                         roleplaySeed,
                         entryNameHighlights);
+                    float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
+
+                    if (linkedBefore)
+                    {
+                        Rect linkedRect = new Rect(localEntryRect.x + 10f, textY, localEntryRect.width - 20f, LinkedEntryTotalHeight);
+                        DrawLinkedEntry(linked, linkedRect, pawn);
+                        textY = linkedRect.yMax + LinkedEntryPadding;
+                    }
+
+                    Rect textRect = new Rect(localEntryRect.x + 12f, textY, localEntryRect.width - 20f, mainTextHeight);
+                    if (IsGenerating(entry))
+                    {
+                        DrawWritingPlaceholder(textRect);
+                    }
+                    else
+                    {
+                        DrawRoleplayText(
+                            textRect,
+                            bodyText,
+                            dialogueColor,
+                            EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend),
+                            atmosphereCue,
+                            allowDirectSpeechBlocks,
+                            decorationContext,
+                            roleplaySeed,
+                            entryNameHighlights);
+                    }
+                    float afterTextY = textRect.yMax;
+
+                    if (linkedAfter)
+                    {
+                        Rect linkedRect = new Rect(localEntryRect.x + 10f, afterTextY + LinkedEntryPadding, localEntryRect.width - 20f, LinkedEntryTotalHeight);
+                        DrawLinkedEntry(linked, linkedRect, pawn);
+                        afterTextY = linkedRect.yMax;
+                    }
+
+                    if (debugTextHeight > 0f)
+                    {
+                        Rect debugRect = new Rect(localEntryRect.x + 12f, afterTextY + DebugTextTopPadding, localEntryRect.width - 20f, debugTextHeight);
+                        DrawDebugText(debugRect, debugText);
+                    }
+
+                    if (showModelName)
+                    {
+                        // Anchor above the dev-only footer (DevCopyFooter, 0 outside dev mode) so the
+                        // bottom-left copy badge never overlaps or clips the model name.
+                        Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
+                        DrawModelName(modelRect, entry.LlmModel);
+                    }
+
+                    // Dev-only footer icons sit in the reserved bottom-left footer, drawn last so they
+                    // float above the page wash/highlight without competing with body text or model name.
+                    DrawDevFooterButtons(localEntryRect, entry, pawn, component);
+
+                    GUI.EndGroup();
+                    entryGroupOpen = false;
+                    curY += height + EntryGap;
                 }
-                float afterTextY = textRect.yMax;
-
-                if (linkedAfter)
-                {
-                    Rect linkedRect = new Rect(localEntryRect.x + 10f, afterTextY + LinkedEntryPadding, localEntryRect.width - 20f, LinkedEntryTotalHeight);
-                    DrawLinkedEntry(linked, linkedRect, pawn);
-                    afterTextY = linkedRect.yMax;
-                }
-
-                if (debugTextHeight > 0f)
-                {
-                    Rect debugRect = new Rect(localEntryRect.x + 12f, afterTextY + DebugTextTopPadding, localEntryRect.width - 20f, debugTextHeight);
-                    DrawDebugText(debugRect, debugText);
-                }
-
-                if (showModelName)
-                {
-                    // Anchor above the dev-only footer (DevCopyFooter, 0 outside dev mode) so the
-                    // bottom-left copy badge never overlaps or clips the model name.
-                    Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                    DrawModelName(modelRect, entry.LlmModel);
-                }
-
-                // Dev-only footer icons sit in the reserved bottom-left footer, drawn last so they
-                // float above the page wash/highlight without competing with body text or model name.
-                DrawDevFooterButtons(localEntryRect, entry, pawn, component);
-
-                GUI.EndGroup();
-                curY += height + EntryGap;
             }
-            Widgets.EndScrollView();
+            finally
+            {
+                // Close a card group left open by a mid-card throw before ending the scroll view, so
+                // the GUI clip stack is balanced no matter where the loop above stopped.
+                if (entryGroupOpen)
+                {
+                    GUI.EndGroup();
+                }
+
+                Widgets.EndScrollView();
+            }
         }
 
         /// <summary>

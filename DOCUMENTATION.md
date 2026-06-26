@@ -136,6 +136,20 @@ are discovered by `PatchAll`; fragile reflection/generated-name hooks (`ThoughtG
 `QuestUiAcceptPatch`) register through `DiaryPatchRegistrar` so missing targets warn and no-op rather
 than aborting startup.
 
+Every prefix/postfix body is exception-isolated. A hook runs *inside* the vanilla method it patches
+(`Pawn.Kill`, `Pawn.SetFaction`, `Pawn_HealthTracker.AddHediff`, `IncidentWorker.TryExecute`,
+`MentalStateHandler.TryStartMentalState`, `TaleRecorder.RecordTale`, `Quest.Accept`/`End`,
+`PlayLog.Add`, ...), so a throw escaping our capture would break that game mechanic for everyone.
+`DiaryPatchSafety.Run`/`RunPrefix` wrap each body: a failure is logged once (`Log.ErrorOnce`, keyed
+per patch so a recurring fault reports a single time) and swallowed, leaving the vanilla method's own
+result untouched — `RunPrefix` returns the "let vanilla proceed" value. The same discipline covers the
+per-tick `GameComponentTick` (a failed tick is logged and skipped, the game keeps ticking), the
+self-bookkeeping blocks of `ExposeData` (pre-save flush/prune and post-load index rebuild are guarded
+so a diary-data fault can't abort a save or load — the raw `Scribe.Look` calls are left to RimWorld's
+own scribe error handling), and `DiaryModStartup` (each stage — `PatchAll`, fragile registration, and
+per-`ThingDef` tab injection — is isolated so one failure can't half-initialize the mod). The two
+patches that draw into vanilla UI surfaces are guarded the same way (see §8).
+
 ---
 
 ## 5. Event Catalog
@@ -435,6 +449,16 @@ or relationship flip re-measures an open card whose highlighted rich text otherw
 the draw pass **viewport-culls** — cards whose row is entirely above or below the visible scroll
 slice are skipped, so a year page with hundreds of entries only measures/renders the handful on
 screen rather than the whole page.
+
+Immediate-mode draws that push onto Unity's shared GUI clip stack are wrapped so a single
+unexpected throw degrades gracefully instead of corrupting the rest of the frame's UI. `FillTab`
+runs its scroll view and per-card `GUI.BeginGroup` inside a `try/finally` (tracking an
+`entryGroupOpen` flag) that always closes the open group and ends the scroll view; the settings
+window does the same around its scroll view and `Listing_Standard`. The two Harmony patches that
+draw into *vanilla* shared surfaces — the inspect-tab unread marker (`DiaryInspectTabIndicatorPatch`)
+and the bottom command gizmo plus its status overlay (`DiaryInspectCommandPatch`) — wrap their
+draw/build bodies in `try/catch` with `Log.ErrorOnce`, so a failure there drops only the marker or
+overlay for a frame rather than breaking RimWorld's inspect tab strip or gizmo bar for every pawn.
 
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`

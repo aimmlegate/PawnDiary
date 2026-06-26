@@ -27,45 +27,53 @@ namespace PawnDiary
             Listing_Standard listing = new Listing_Standard();
             Widgets.BeginScrollView(outRect, ref settingsScrollPosition, viewRect);
             listing.Begin(viewRect);
-
-            listing.Gap(4f);
-            DrawApiEndpointsEditor(listing);
-
-            SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
-            listing.CheckboxLabeled(
-                "PawnDiary.Settings.ShowDiaryInspectTab".Translate(),
-                ref Settings.showDiaryInspectTab,
-                "PawnDiary.Settings.ShowDiaryInspectTabTip".Translate());
-            listing.CheckboxLabeled(
-                "PawnDiary.Settings.GenerateTitles".Translate(),
-                ref Settings.generateTitles,
-                "PawnDiary.Settings.GenerateTitlesTip".Translate());
-            listing.CheckboxLabeled(
-                "PawnDiary.Settings.EnableAtmosphericFormatting".Translate(),
-                ref Settings.enableAtmosphericFormatting,
-                "PawnDiary.Settings.EnableAtmosphericFormattingTip".Translate());
-            listing.CheckboxLabeled(
-                "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
-                ref Settings.enablePromptEnchantments,
-                "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
-            if (Prefs.DevMode)
+            // Same immediate-mode safety net as the diary tab: BeginScrollView pushes onto Unity's
+            // shared GUI clip stack. If a detail renderer below throws, the finally still ends the
+            // listing and the scroll view, so a bad row degrades to a missing section instead of an
+            // unbalanced clip stack that corrupts the whole settings window (and the frame after it).
+            try
             {
+                listing.Gap(4f);
+                DrawApiEndpointsEditor(listing);
+
+                SectionTitle(listing, "PawnDiary.Settings.GenerationHeader".Translate());
                 listing.CheckboxLabeled(
-                    "PawnDiary.Settings.PromptTestMode".Translate(),
-                    ref Settings.promptTestMode,
-                    "PawnDiary.Settings.PromptTestModeTip".Translate());
+                    "PawnDiary.Settings.ShowDiaryInspectTab".Translate(),
+                    ref Settings.showDiaryInspectTab,
+                    "PawnDiary.Settings.ShowDiaryInspectTabTip".Translate());
+                listing.CheckboxLabeled(
+                    "PawnDiary.Settings.GenerateTitles".Translate(),
+                    ref Settings.generateTitles,
+                    "PawnDiary.Settings.GenerateTitlesTip".Translate());
+                listing.CheckboxLabeled(
+                    "PawnDiary.Settings.EnableAtmosphericFormatting".Translate(),
+                    ref Settings.enableAtmosphericFormatting,
+                    "PawnDiary.Settings.EnableAtmosphericFormattingTip".Translate());
+                listing.CheckboxLabeled(
+                    "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
+                    ref Settings.enablePromptEnchantments,
+                    "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
+                if (Prefs.DevMode)
+                {
+                    listing.CheckboxLabeled(
+                        "PawnDiary.Settings.PromptTestMode".Translate(),
+                        ref Settings.promptTestMode,
+                        "PawnDiary.Settings.PromptTestModeTip".Translate());
+                }
+
+                listing.Label("PawnDiary.Settings.WorkGenerationWeight".Translate(Settings.workGenerationWeight.ToString("0.##")));
+                Settings.workGenerationWeight = listing.Slider(Settings.workGenerationWeight, 0f, 5f);
+                listing.Label("PawnDiary.Settings.SocialGenerationWeight".Translate(Settings.socialGenerationWeight.ToString("0.##")));
+                Settings.socialGenerationWeight = listing.Slider(Settings.socialGenerationWeight, 0f, 5f);
+
+                DrawPromptStudio(listing);
+                DrawPersonaStudio(listing);
             }
-
-            listing.Label("PawnDiary.Settings.WorkGenerationWeight".Translate(Settings.workGenerationWeight.ToString("0.##")));
-            Settings.workGenerationWeight = listing.Slider(Settings.workGenerationWeight, 0f, 5f);
-            listing.Label("PawnDiary.Settings.SocialGenerationWeight".Translate(Settings.socialGenerationWeight.ToString("0.##")));
-            Settings.socialGenerationWeight = listing.Slider(Settings.socialGenerationWeight, 0f, 5f);
-
-            DrawPromptStudio(listing);
-            DrawPersonaStudio(listing);
-
-            listing.End();
-            Widgets.EndScrollView();
+            finally
+            {
+                listing.End();
+                Widgets.EndScrollView();
+            }
 
             // Remember the real content height so next frame's scroll view fits it exactly.
             lastSettingsContentHeight = Mathf.Max(listing.CurHeight + 24f, inRect.height);

@@ -6,6 +6,25 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Immediate-mode UI hardened against draw-time exceptions.** The diary tab's scroll view and
+  per-card `GUI.BeginGroup`, and the settings window's scroll view + `Listing_Standard`, now run
+  inside `try/finally` blocks that always balance Unity's shared GUI clip stack, so one unexpected
+  throw mid-draw degrades to a missing card/section instead of corrupting the rest of the frame's UI.
+  The two Harmony patches that draw into vanilla surfaces — the inspect-tab unread marker and the
+  bottom diary gizmo (build + status overlay) — wrap their bodies in `try/catch` with `Log.ErrorOnce`,
+  so a failure can no longer break RimWorld's inspect tab strip or gizmo bar for every selected pawn.
+  Behavior is otherwise unchanged.
+
+- **Gameplay hooks, tick, and save/load hardened against exceptions.** Every Harmony prefix/postfix
+  now runs through a `DiaryPatchSafety.Run`/`RunPrefix` choke point that logs once and lets the
+  patched vanilla method continue, so a diary-capture fault can no longer break death, recruitment,
+  incidents/raids, mental states, tales, quests, abilities, rituals, conditions, social logging, or
+  relations. `GameComponentTick` (per-tick scans + LLM result application + log flush) is wrapped so a
+  failed tick is logged and skipped rather than surfacing in RimWorld's tick loop; `ExposeData`'s
+  pre-save flush/prune and post-load index rebuild are guarded so a diary-data fault can't abort a
+  save or load; and `DiaryModStartup` isolates fragile-patch registration and per-`ThingDef` tab
+  injection so one failure can't half-initialize the mod. Behavior is otherwise unchanged.
+
 - **Mental-break diary card green softened.** The mental-break cue now uses an explicit muted sage
   accent instead of RimWorld's brighter ally preset, with lower page-wash and header-rule intensity
   so those diary items read as marked without popping as aggressively.

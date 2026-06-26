@@ -30,9 +30,26 @@ namespace PawnDiary
 
             // Registered manually (not via PatchAll) because these reflection/generated-name targets
             // may change between RimWorld versions. The registrar keeps that fragility in one place.
-            DiaryPatchRegistrar.RegisterFragilePatches(harmony);
+            // Each stage is isolated so one failing stage can't abort the others or this whole static
+            // constructor (which would leave the mod half-initialized and spam at load).
+            try
+            {
+                DiaryPatchRegistrar.RegisterFragilePatches(harmony);
+            }
+            catch (Exception e)
+            {
+                Log.Error("[Pawn Diary] Fragile patch registration failed: " + e);
+            }
 
-            InjectDiaryTab();
+            try
+            {
+                InjectDiaryTab();
+            }
+            catch (Exception e)
+            {
+                Log.Error("[Pawn Diary] Diary tab injection failed: " + e);
+            }
+
             Log.Message("[Pawn Diary] Loaded.");
         }
 
@@ -52,8 +69,18 @@ namespace PawnDiary
                     continue;
                 }
 
-                RegisterDiaryTabOn(def);
-                RegisterDiaryTabOn(def.race.corpseDef);
+                // Guard per-def so one malformed (often modded) race can't stop the Diary tab from
+                // registering on every other pawn.
+                try
+                {
+                    RegisterDiaryTabOn(def);
+                    RegisterDiaryTabOn(def.race.corpseDef);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[Pawn Diary] Failed to register Diary tab on " + def.defName + ": " + e,
+                        ("DiaryTabInject:" + def.defName).GetHashCode());
+                }
             }
         }
 

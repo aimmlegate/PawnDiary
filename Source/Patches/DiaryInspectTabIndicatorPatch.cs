@@ -2,6 +2,7 @@
 // The bottom gizmo has its own command overlay; this patch is only for tab mode, where players
 // asked for a quieter signal: a small Unicode mark near the tab's right edge and no writing dots.
 // New to this? See AGENTS.md ("Harmony patches").
+using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using RimWorld;
@@ -28,32 +29,42 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(IInspectPane pane)
         {
-            if (pane == null
-                || PawnDiaryMod.Settings == null
-                || !PawnDiaryMod.Settings.showDiaryInspectTab)
+            // This postfix runs every frame on vanilla's inspect-tab strip for every selection, so an
+            // unguarded throw would break that strip game-wide, not just the Diary tab. Wrap the whole
+            // body: a failure here drops the unread marker for one frame, nothing more.
+            try
             {
-                return;
-            }
+                if (pane == null
+                    || PawnDiaryMod.Settings == null
+                    || !PawnDiaryMod.Settings.showDiaryInspectTab)
+                {
+                    return;
+                }
 
-            Rect tabRect;
-            if (!TryDiaryTabRect(pane, out tabRect))
+                Rect tabRect;
+                if (!TryDiaryTabRect(pane, out tabRect))
+                {
+                    return;
+                }
+
+                Pawn pawn = SelectedDiaryPawn();
+                if (!ITab_Pawn_Diary.CanShowDiaryFor(pawn))
+                {
+                    return;
+                }
+
+                DiaryGameComponent component = DiaryGameComponent.Current;
+                if (component == null || !component.CommandStatusFor(pawn).HasNewPages)
+                {
+                    return;
+                }
+
+                DrawUnreadMarker(tabRect);
+            }
+            catch (Exception e)
             {
-                return;
+                Log.ErrorOnce("[Pawn Diary] Diary inspect-tab marker draw failed: " + e, 0x7D1A0001);
             }
-
-            Pawn pawn = SelectedDiaryPawn();
-            if (!ITab_Pawn_Diary.CanShowDiaryFor(pawn))
-            {
-                return;
-            }
-
-            DiaryGameComponent component = DiaryGameComponent.Current;
-            if (component == null || !component.CommandStatusFor(pawn).HasNewPages)
-            {
-                return;
-            }
-
-            DrawUnreadMarker(tabRect);
         }
 
         /// <summary>

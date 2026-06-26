@@ -1,6 +1,7 @@
 // Social-log Harmony patches. These hooks capture vanilla social interactions, redirect finished
 // diary-entry clicks from the Social tab, and let generated direct-speech rows display parsed text.
 // New to this? See AGENTS.md ("Harmony patches").
+using System;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -26,32 +27,35 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(LogEntry entry)
         {
-            if (GeneratedSpeechPlayLog.IsAddingGeneratedSpeechEntry)
+            DiaryPatchSafety.Run("PlayLogAddPatch", () =>
             {
-                return;
-            }
+                if (GeneratedSpeechPlayLog.IsAddingGeneratedSpeechEntry)
+                {
+                    return;
+                }
 
-            PlayLogEntry_Interaction interactionEntry = entry as PlayLogEntry_Interaction;
-            if (interactionEntry == null)
-            {
-                return;
-            }
+                PlayLogEntry_Interaction interactionEntry = entry as PlayLogEntry_Interaction;
+                if (interactionEntry == null)
+                {
+                    return;
+                }
 
-            InteractionDef interactionDef = IntDefField?.GetValue(interactionEntry) as InteractionDef;
-            Pawn initiator = InitiatorField?.GetValue(interactionEntry) as Pawn;
-            Pawn recipient = RecipientField?.GetValue(interactionEntry) as Pawn;
-            DiaryGameComponent component = DiaryGameComponent.Current;
-            if (component == null || !component.ShouldCaptureInteractionFromPlayLog(initiator, recipient, interactionDef))
-            {
-                return;
-            }
+                InteractionDef interactionDef = IntDefField?.GetValue(interactionEntry) as InteractionDef;
+                Pawn initiator = InitiatorField?.GetValue(interactionEntry) as Pawn;
+                Pawn recipient = RecipientField?.GetValue(interactionEntry) as Pawn;
+                DiaryGameComponent component = DiaryGameComponent.Current;
+                if (component == null || !component.ShouldCaptureInteractionFromPlayLog(initiator, recipient, interactionDef))
+                {
+                    return;
+                }
 
-            bool renderGameText = component.ShouldRenderInteractionTextFromPlayLog(interactionDef);
-            string initiatorGameText = renderGameText ? GameTextFromPov(interactionEntry, initiator) : string.Empty;
-            string recipientGameText = renderGameText ? GameTextFromPov(interactionEntry, recipient) : string.Empty;
+                bool renderGameText = component.ShouldRenderInteractionTextFromPlayLog(interactionDef);
+                string initiatorGameText = renderGameText ? GameTextFromPov(interactionEntry, initiator) : string.Empty;
+                string recipientGameText = renderGameText ? GameTextFromPov(interactionEntry, recipient) : string.Empty;
 
-            component.RecordInteraction(initiator, recipient, interactionDef,
-                initiatorGameText, recipientGameText, interactionEntry.LogID);
+                component.RecordInteraction(initiator, recipient, interactionDef,
+                    initiatorGameText, recipientGameText, interactionEntry.LogID);
+            });
         }
 
         /// <summary>
@@ -104,21 +108,32 @@ namespace PawnDiary
         /// </summary>
         public static bool Prefix(PlayLogEntry_Interaction __instance, ref string __result)
         {
-            // Fast path: when this game has no generated speech rows at all, skip the per-row lookup
-            // entirely and let every interaction render through vanilla grammar.
-            if (!GeneratedSpeechPlayLog.HasGeneratedSpeechRows)
+            // Inline guard (a ref parameter can't be captured by the DiaryPatchSafety lambda helper):
+            // on any failure, fall through to vanilla grammar instead of breaking row rendering.
+            try
             {
+                // Fast path: when this game has no generated speech rows at all, skip the per-row lookup
+                // entirely and let every interaction render through vanilla grammar.
+                if (!GeneratedSpeechPlayLog.HasGeneratedSpeechRows)
+                {
+                    return true;
+                }
+
+                string text;
+                if (!GeneratedSpeechPlayLog.TryGetText(__instance, out text))
+                {
+                    return true;
+                }
+
+                __result = text;
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] PlayLogGeneratedSpeechTextPatch failed and was skipped: " + e,
+                    "PlayLogGeneratedSpeechTextPatch".GetHashCode());
                 return true;
             }
-
-            string text;
-            if (!GeneratedSpeechPlayLog.TryGetText(__instance, out text))
-            {
-                return true;
-            }
-
-            __result = text;
-            return false;
         }
     }
 
@@ -135,37 +150,41 @@ namespace PawnDiary
         /// </summary>
         public static bool Prefix(PlayLogEntry_Interaction __instance, Thing pov)
         {
-            if (__instance == null)
+            // Fall back to vanilla click handling on any failure (fallback = true).
+            return DiaryPatchSafety.RunPrefix("PlayLogInteractionClickPatch", true, () =>
             {
+                if (__instance == null)
+                {
+                    return true;
+                }
+
+                Pawn pawn = pov as Pawn;
+                if (pawn == null)
+                {
+                    return true;
+                }
+
+                DiaryEntryView entry = DiaryGameComponent.Current?.GeneratedEntryForPlayLogEntry(pawn, __instance.LogID);
+                if (entry == null)
+                {
+                    return true;
+                }
+
+                if (!EnsureSelected(pawn))
+                {
+                    return true;
+                }
+
+                ITab_Pawn_Diary.RequestScrollToEntry(pawn, entry.EventId);
+                InspectTabBase opened = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+                if (opened is ITab_Pawn_Diary)
+                {
+                    return false;
+                }
+
+                ITab_Pawn_Diary.ClearPendingScrollRequest();
                 return true;
-            }
-
-            Pawn pawn = pov as Pawn;
-            if (pawn == null)
-            {
-                return true;
-            }
-
-            DiaryEntryView entry = DiaryGameComponent.Current?.GeneratedEntryForPlayLogEntry(pawn, __instance.LogID);
-            if (entry == null)
-            {
-                return true;
-            }
-
-            if (!EnsureSelected(pawn))
-            {
-                return true;
-            }
-
-            ITab_Pawn_Diary.RequestScrollToEntry(pawn, entry.EventId);
-            InspectTabBase opened = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
-            if (opened is ITab_Pawn_Diary)
-            {
-                return false;
-            }
-
-            ITab_Pawn_Diary.ClearPendingScrollRequest();
-            return true;
+            });
         }
 
         /// <summary>
@@ -226,18 +245,21 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn)
         {
-            if (__instance == null || def == null || otherPawn == null)
+            DiaryPatchSafety.Run("PawnRelationAddPatch", () =>
             {
-                return;
-            }
+                if (__instance == null || def == null || otherPawn == null)
+                {
+                    return;
+                }
 
-            Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
-            if (pawn == null)
-            {
-                return;
-            }
+                Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
+                if (pawn == null)
+                {
+                    return;
+                }
 
-            DiaryGameComponent.Current?.RecordRomance(pawn, otherPawn, def);
+                DiaryGameComponent.Current?.RecordRomance(pawn, otherPawn, def);
+            });
         }
     }
 }
