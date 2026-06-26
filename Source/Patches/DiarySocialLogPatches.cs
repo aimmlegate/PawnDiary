@@ -67,7 +67,10 @@ namespace PawnDiary
 
             try
             {
-                return interactionEntry.ToGameStringFromPOV(pawn, false);
+                using (SpeakUpReplySchedulingGuardPatch.SuppressDuringCapture())
+                {
+                    return interactionEntry.ToGameStringFromPOV(pawn, false);
+                }
             }
             catch
             {

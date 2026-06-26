@@ -124,9 +124,11 @@ arrival/death bypass that guard.
 `PlayLog.Add` preflights eligibility and XML significance before rendering RimWorld's POV grammar
 strings, so routine social-log rows that can't become diary entries stay cheap. Interaction groups can
 also set `captureRenderedGameText=false` for compatibility with mods whose grammar rendering has side
-effects; those rows use Pawn Diary's safe fallback text instead. Generated Social-log speech patches
-the concrete 1.6 worker `ToGameStringFromPOV_Worker` with an old-name fallback so a display-method
-rename can't abort `PatchAll` before later hooks register.
+effects; those rows use Pawn Diary's safe fallback text instead. Tagged social-log grammar is rendered
+only when Pawn Diary has registered an optional reply-suppression guard for the conversation framework;
+otherwise the capture hook falls back so observing a row cannot schedule extra gameplay interactions.
+Generated Social-log speech patches the concrete 1.6 worker `ToGameStringFromPOV_Worker` with an
+old-name fallback so a display-method rename can't abort `PatchAll` before later hooks register.
 
 Harmony hooks are split by capture domain under `Source/Patches/`: deaths, arrivals, health,
 thoughts, quests, social log/relations, and broader gameplay signals. Most use `[HarmonyPatch]` and
@@ -183,10 +185,10 @@ domain-scoped by exact `defName`, substring token, or (for live Defs) source `ma
 order matters and catch-all groups go last. Package matching exists for compatibility routing without
 hard-referencing another mod or enumerating every def it adds. Groups can also set
 `disableWhenPackageIdsLoaded` to go quiet while another loaded package provides better coverage. The
-built-in `speakup_chitchat` group matches `JPT.speakup`, skips grammar rendering during capture,
-batches SpeakUp rows as ambient social texture, and uses the same promotion curve as normal small talk.
-The normal `smalltalk` group disables itself while SpeakUp is loaded because SpeakUp supplies more
-varied chitchat rows.
+built-in `speakup_chitchat` group matches `JPT.speakup`, renders SpeakUp text only under the optional
+reply-suppression guard, batches SpeakUp rows as ambient social texture, and uses the same promotion
+curve as normal small talk. The normal `smalltalk` group disables itself while SpeakUp is loaded
+because SpeakUp supplies more varied chitchat rows.
 
 **Quest domain** is unusual: its `matchDefNames` are lifecycle signals
 (`accepted`/`completed`/`failed`), not defNames — one `DiaryEventType.Quest` fans out to three prompt

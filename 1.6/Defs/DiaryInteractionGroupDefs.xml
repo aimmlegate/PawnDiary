@@ -72,9 +72,10 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
-    <!-- SpeakUp schedules follow-up dialogue from social-log grammar rendering. Capture safe
-         fallback text instead of calling ToGameStringFromPOV inside PlayLog.Add. -->
-    <captureRenderedGameText>false</captureRenderedGameText>
+    <!-- SpeakUp schedules follow-up dialogue from social-log grammar rendering. Pawn Diary renders
+         text only when its optional reply-suppression guard is active; otherwise tagged grammar
+         still falls back safely. -->
+    <captureRenderedGameText>true</captureRenderedGameText>
     <batch>
       <mode>AmbientDayNote</mode>
       <windowTicks>60000</windowTicks>
@@ -101,7 +102,7 @@
     </promotion>
     <instruction>ordinary SpeakUp conversation - treat it as chitchat unless the pair's mood, need, or relationship tension makes the small moment land harder</instruction>
     <instructions>
-      <li>SpeakUp chatter - write it as low-stakes back-and-forth; do not invent a quoted line</li>
+      <li>SpeakUp chatter - use the supplied line if present; otherwise write low-stakes back-and-forth without inventing a quote</li>
       <li>SpeakUp chatter - focus on the feeling under the small talk: ease, awkwardness, pressure, or distance</li>
       <li>SpeakUp chatter - let the ordinary rhythm matter only if the pawn's state makes it matter</li>
     </instructions>

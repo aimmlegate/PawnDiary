@@ -11,6 +11,7 @@ using PawnDiary.Capture;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.Grammar;
 
 namespace PawnDiary
 {
@@ -193,7 +194,89 @@ namespace PawnDiary
         public bool ShouldRenderInteractionTextFromPlayLog(InteractionDef interactionDef)
         {
             DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
-            return group == null || group.captureRenderedGameText;
+            if (group != null && !group.captureRenderedGameText)
+            {
+                return false;
+            }
+
+            return !HasTaggedLogGrammar(interactionDef)
+                || SpeakUpReplySchedulingGuardPatch.CanRenderTaggedGrammarSafely;
+        }
+
+        // Conversation-framework mods can attach grammar tags to social-log rules and use those
+        // tags to schedule follow-up interactions while RimWorld renders the log text. Pawn Diary is
+        // only observing the row, so it avoids rendering tagged grammar here and lets the recorder
+        // fall back to neutral interaction text instead.
+        private static bool HasTaggedLogGrammar(InteractionDef interactionDef)
+        {
+            if (interactionDef == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                return HasTaggedLogGrammar(interactionDef.logRulesInitiator, new HashSet<RulePack>());
+            }
+            catch
+            {
+                // If a third-party rule pack is malformed, prefer neutral fallback text over risking
+                // an exception inside RimWorld's PlayLog.Add flow.
+                return true;
+            }
+        }
+
+        private static bool HasTaggedLogGrammar(RulePack rulePack, HashSet<RulePack> visited)
+        {
+            if (rulePack == null || visited == null || visited.Contains(rulePack))
+            {
+                return false;
+            }
+
+            visited.Add(rulePack);
+
+            if (HasTaggedRule(rulePack.Rules)
+                || HasTaggedRule(rulePack.UntranslatedRules))
+            {
+                return true;
+            }
+
+            if (rulePack.include == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < rulePack.include.Count; i++)
+            {
+                RulePackDef included = rulePack.include[i];
+                if (included != null
+                    && (HasTaggedRule(included.RulesPlusIncludes)
+                        || HasTaggedRule(included.UntranslatedRulesPlusIncludes)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasTaggedRule(List<Rule> rules)
+        {
+            if (rules == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                Rule_String stringRule = rules[i] as Rule_String;
+                if (stringRule != null && !string.IsNullOrWhiteSpace(stringRule.tag))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

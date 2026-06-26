@@ -12,6 +12,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   rows as ambient social texture, uses the same promotion odds as normal small talk, and suppresses
   the normal `smalltalk` group while SpeakUp is loaded.
 
+- **Tagged social-log grammar now renders under a reply-suppression guard.** Pawn Diary can use
+  generated conversation text in prompts when the optional guard is registered, and falls back to
+  neutral interaction text when it is not.
+
 - **Built-in writing styles retuned around author-inspired mechanics.** The 30 stock
   `DiaryPersonaDef` presets now use distinct mechanical labels/rules inspired by recognizable
   literary habits without naming authors in the injected prompt. Each rule includes a tiny synthetic

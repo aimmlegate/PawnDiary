@@ -18,6 +18,7 @@ namespace PawnDiary
         {
             ThoughtGainPatch.TryRegister(harmony);
             QuestUiAcceptPatch.TryRegister(harmony);
+            SpeakUpReplySchedulingGuardPatch.TryRegister(harmony);
         }
     }
 }

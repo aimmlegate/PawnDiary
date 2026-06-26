@@ -2,7 +2,7 @@
 <LanguageData>
   <speakup_chitchat.label>SpeakUp chatter</speakup_chitchat.label>
   <speakup_chitchat.instruction>ordinary SpeakUp conversation - treat it as chitchat unless the pair&apos;s mood, need, or relationship tension makes the small moment land harder</speakup_chitchat.instruction>
-  <speakup_chitchat.instructions.0>SpeakUp chatter - write it as low-stakes back-and-forth; do not invent a quoted line</speakup_chitchat.instructions.0>
+  <speakup_chitchat.instructions.0>SpeakUp chatter - use the supplied line if present; otherwise write low-stakes back-and-forth without inventing a quote</speakup_chitchat.instructions.0>
   <speakup_chitchat.instructions.1>SpeakUp chatter - focus on the feeling under the small talk: ease, awkwardness, pressure, or distance</speakup_chitchat.instructions.1>
   <speakup_chitchat.instructions.2>SpeakUp chatter - let the ordinary rhythm matter only if the pawn&apos;s state makes it matter</speakup_chitchat.instructions.2>
   <speakup_chitchat.tone>with light, everyday social texture</speakup_chitchat.tone>
