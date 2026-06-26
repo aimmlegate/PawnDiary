@@ -70,6 +70,7 @@ namespace PawnDiary
             LlmClient.ApplyLaneConfiguration(Settings.ActiveEndpoints());
             LlmClient.ApplyDebugLoggingSetting();
             DiaryGameComponent.Current?.ApplyActiveEventLimitFromSettings();
+            DiaryGameComponent.Current?.QueueMissingTitlesFromSettings();
             base.WriteSettings();
         }
     }

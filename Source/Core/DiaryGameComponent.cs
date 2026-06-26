@@ -142,8 +142,12 @@ namespace PawnDiary
 
         // How often (in ticks) GameComponentTick rescans saved events to (re)queue any pending
         // generations, and the next tick that scan is allowed to run.
-        private const int GenerationScanIntervalTicks = 120;
+        private const int GenerationScanIntervalTicks = 200;
         private int nextGenerationScanTick;
+        // Orphan recovery needs a full active-event pass, but only handles rare entries stranded on
+        // "writing..." after a dropped background request. Run it less often than normal queue scans.
+        private const int OrphanRecoveryScanIntervalTicks = 600;
+        private int nextOrphanRecoveryScanTick;
 
         // Quest acceptance has a direct Harmony hook, but a light state scan covers UI or modded
         // accept paths that do not pass through the expected method.
@@ -229,6 +233,7 @@ namespace PawnDiary
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
             // their diary entries stuck on "Generating" with no way to re-queue them this session.
             nextGenerationScanTick = 0;
+            nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
@@ -265,6 +270,7 @@ namespace PawnDiary
             // "pending" status normalized back to "not generated" (DiaryEvent.NormalizeLoadedStatus),
             // so the scan below re-queues them in the current session.
             nextGenerationScanTick = 0;
+            nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
@@ -277,6 +283,7 @@ namespace PawnDiary
             ResetThoughtProgressionState(true);
             ResetHediffProgressionState(true);
             QueueAllPendingGenerations();
+            QueueMissingTitles();
         }
 
         public override void ExposeData()
@@ -444,10 +451,15 @@ namespace PawnDiary
                 baselineHediffProgressionsOnNextScan = false;
             }
 
+            if (now >= nextOrphanRecoveryScanTick)
+            {
+                nextOrphanRecoveryScanTick = now + OrphanRecoveryScanIntervalTicks;
+                RecoverOrphanedPendingGenerations();
+            }
+
             if (now >= nextGenerationScanTick)
             {
                 nextGenerationScanTick = now + GenerationScanIntervalTicks;
-                RecoverOrphanedPendingGenerations();
                 QueueAllPendingGenerations();
             }
 

@@ -59,7 +59,8 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 8. `LlmClient` sends requests and returns results to the main thread; successful main pages may queue
    a title follow-up.
 
-`GameComponentTick` runs game-time scans and rescans roughly every 120 ticks. Completed LLM results
+`GameComponentTick` runs game-time scans and generation rescans roughly every 200 ticks. Orphaned
+"writing..." recovery is a separate, slower full-history pass every 600 ticks. Completed LLM results
 and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so requests that
 were already queued can finish and apply while the game is paused. Pending generation is not saved;
 it resets on load and is requeued. First-person generation is skipped for pawns below the XML
@@ -136,7 +137,9 @@ Humor cues are hidden, XML-weighted, and folded into the writing-style block. Di
 only in selected first-person interaction prompts with a closed `[[speech]]...[[/speech]]` block.
 
 Generated Social-log speech injection remains disabled/hidden. The saved setting exists for
-compatibility, but the call site is off. Title generation is enabled by default.
+compatibility, but the call site is off. Title generation is enabled by default. Successful main
+entries queue their own title follow-up immediately; the full missing-title sweep runs only after
+load or when settings are saved, not on every generation rescan.
 
 ## 7. Settings And UI
 

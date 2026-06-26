@@ -109,15 +109,13 @@ namespace PawnDiary
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
                 }
-
             }
-
-            QueueMissingTitles(boundsCache, livePawnsById);
         }
 
         /// <summary>
-        /// Title requests are not persisted as live work; after load or after enabling title
-        /// generation later, sweep completed entries and queue any missing titles once.
+        /// Title requests are not persisted as live work. Normal successful main-entry results queue
+        /// their own title immediately; this one-shot sweep is only for load/settings catch-up, not
+        /// the recurring generation scanner.
         /// </summary>
         private void QueueMissingTitles(Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
             Dictionary<string, Pawn> livePawnsById = null)
@@ -165,6 +163,23 @@ namespace PawnDiary
             }
 
             QueueTitleRequest(diaryEvent, povRole, null, boundsCache, livePawnsById);
+        }
+
+        /// <summary>
+        /// Public settings hook: when the player enables title generation later, queue titles for
+        /// completed active entries once instead of scanning every generation tick forever.
+        /// </summary>
+        public void QueueMissingTitlesFromSettings()
+        {
+            try
+            {
+                QueueMissingTitles();
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] Missing-title catch-up failed: " + e,
+                    "DiaryGameComponent.QueueMissingTitlesFromSettings".GetHashCode());
+            }
         }
 
         /// <summary>
