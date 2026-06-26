@@ -58,10 +58,11 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 8. `LlmClient` sends requests and returns results to the main thread; successful main pages may queue
    a title follow-up.
 
-`GameComponentTick` drains completed LLM results, flushes debug logs, and rescans roughly every 120
-ticks. Pending generation is not saved; it resets on load and is requeued. First-person generation is
-skipped for pawns below the XML Consciousness floor, while neutral arrival/death pages bypass that
-guard.
+`GameComponentTick` runs game-time scans and rescans roughly every 120 ticks. Completed LLM results
+and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so requests that
+were already queued can finish and apply while the game is paused. Pending generation is not saved;
+it resets on load and is requeued. First-person generation is skipped for pawns below the XML
+Consciousness floor, while neutral arrival/death pages bypass that guard.
 
 ## 4. Event Sources
 

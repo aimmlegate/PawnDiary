@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Queued generation now settles while paused.** Completed LLM results and their follow-up title or
+  recipient requests are drained from the real-time update hook, while game-tick scanners stay tied
+  to unpaused simulation ticks.
+
 - **Workshop payload now ships source and reference docs.** `scripts/publish.ps1` now copies
   `Source/`, `DOCUMENTATION.md`, `CHANGELOG.md`, and `EVENT_PROMPT_MAP.md` into the generated
   `dist` mod while skipping transient build artifacts.

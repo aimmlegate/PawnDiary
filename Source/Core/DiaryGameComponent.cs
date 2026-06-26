@@ -3,7 +3,8 @@
 // -> build a DiaryEvent with context -> queue an LLM
 // request -> apply the result each tick -> hand views to the UI. Context/prompt building live in
 // DiaryContextBuilder / DiaryPromptBuilder; the saved data models in DiaryEvent / PawnDiaryRecord.
-// This is a RimWorld GameComponent (lifecycle hooks: GameComponentTick, ExposeData, etc.).
+// This is a RimWorld GameComponent (lifecycle hooks: GameComponentTick, GameComponentUpdate,
+// ExposeData, etc.).
 // New to C#/RimWorld? See AGENTS.md.
 //
 // ── This class is large, so it is split across several files using C# `partial class` ──
@@ -46,7 +47,7 @@ namespace PawnDiary
 {
     /// <summary>
     /// Central coordinator for the diary system: records events, queues LLM generation, applies
-    /// finished results each tick, persists everything on save/load, and serves entry views to
+    /// finished results on ticks/updates, persists everything on save/load, and serves entry views to
     /// the UI. Reach the live instance via <see cref="Current"/>.
     /// </summary>
     public partial class DiaryGameComponent : GameComponent
@@ -368,6 +369,28 @@ namespace PawnDiary
             }
         }
 
+        public override void GameComponentUpdate()
+        {
+            // RimWorld stops GameComponentTick while paused, but our LLM requests finish on
+            // background .NET workers. Keep draining completed work on the real-time update hook so
+            // already queued pages, recipient follow-ups, and title follow-ups can settle while the
+            // player is paused.
+            if (!GamePlaying)
+            {
+                return;
+            }
+
+            try
+            {
+                DrainCompletedLlmWork();
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] GameComponentUpdate LLM drain failed and was skipped: " + e,
+                    "DiaryGameComponent.GameComponentUpdate".GetHashCode());
+            }
+        }
+
         private void GameComponentTickInner()
         {
             FlushReadyInteractionBatches();
@@ -426,6 +449,11 @@ namespace PawnDiary
                 QueueAllPendingGenerations();
             }
 
+            DrainCompletedLlmWork();
+        }
+
+        private void DrainCompletedLlmWork()
+        {
             LlmGenerationResult result;
             while (LlmClient.TryDequeueCompleted(out result))
             {
