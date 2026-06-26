@@ -384,8 +384,10 @@ the selected pawn or corpse. In command mode, the command overlays a subtle unde
 finished pages and pulsing dots while any page or title is still being written. In tab mode, the
 Diary tab shows only a small white Unicode marker near the tab's right edge for newly finished
 pages; the glyph, size, and x/y placement are owned by `DiaryUiStyleDef.xml`, and the tab deliberately
-does not show a loading/writing indicator. Opening the pawn's Diary acknowledges the finished-page
-marker. Social-log diary links and linked-POV navigation open the same tab in either mode.
+does not show a loading/writing indicator. The marker patch only touches panes that actually contain
+the Diary tab and treats world-inspect UI as having no selected diary pawn, because the world pane can
+draw before RimWorld has a map selector. Opening the pawn's Diary acknowledges the finished-page marker.
+Social-log diary links and linked-POV navigation open the same tab in either mode.
 
 The Diary UI shows completed pages in production. Dev mode adds generation enablement, writing-style
 picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient

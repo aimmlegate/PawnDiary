@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Diary tab unread marker skips world inspect panes.** The tab-strip marker now confirms the active
+  inspect pane contains the Diary tab before reading selected map objects, and treats RimWorld's
+  world-inspect UI as "no diary pawn" so world generation/world-map screens cannot throw from
+  `Find.Selector`.
+
 - **Thinking-model self-edit cleanup tightened.** Response cleanup now recognizes instruction-echo
   self-revision transcripts from reasoning/chat-template models, such as "Wait, looking at the
   instructions..." followed by "Let me refine:" or a shorter final version. When a clean rewrite

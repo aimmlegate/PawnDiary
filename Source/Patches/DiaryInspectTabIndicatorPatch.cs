@@ -35,6 +35,12 @@ namespace PawnDiary
                 return;
             }
 
+            Rect tabRect;
+            if (!TryDiaryTabRect(pane, out tabRect))
+            {
+                return;
+            }
+
             Pawn pawn = SelectedDiaryPawn();
             if (!ITab_Pawn_Diary.CanShowDiaryFor(pawn))
             {
@@ -47,11 +53,7 @@ namespace PawnDiary
                 return;
             }
 
-            Rect tabRect;
-            if (TryDiaryTabRect(pane, out tabRect))
-            {
-                DrawUnreadMarker(tabRect);
-            }
+            DrawUnreadMarker(tabRect);
         }
 
         /// <summary>
@@ -60,12 +62,24 @@ namespace PawnDiary
         /// </summary>
         private static Pawn SelectedDiaryPawn()
         {
-            if (Find.Selector == null || Find.Selector.NumSelected != 1)
+            Selector selector;
+            try
+            {
+                selector = Find.Selector;
+            }
+            catch (System.InvalidCastException)
+            {
+                // World inspect panes can draw before a map UI exists; in that state Find.Selector
+                // throws while resolving Find.MapUI. The marker only belongs to map pawn tabs.
+                return null;
+            }
+
+            if (selector == null || selector.NumSelected != 1)
             {
                 return null;
             }
 
-            Thing selected = Find.Selector.SingleSelectedThing;
+            Thing selected = selector.SingleSelectedThing;
             Pawn pawn = selected as Pawn;
             if (pawn != null)
             {
