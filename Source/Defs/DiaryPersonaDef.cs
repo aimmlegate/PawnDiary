@@ -46,8 +46,8 @@ namespace PawnDiary
         private static readonly DiaryPersonaDef Fallback = new DiaryPersonaDef
         {
             defName = "DiaryPersona_StoicSurvivor",
-            label = "three-line-note",
-            rule = "This pawn tends to write exactly three short diary sentences: fact, problem, next action. No flourish. For example: \"Wall patched. Rain still gets through. I will fix the gap tomorrow.\""
+            label = "spare-iceberg",
+            rule = "This pawn tends to write two short concrete sentences: visible action first, feeling only implied by the final detail. No explanation. For example: \"Door patched. My hands kept shaking.\""
         };
 
         // Wrapped in a list so All can return a non-null IReadOnlyList even with zero XML defs.

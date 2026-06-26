@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Built-in writing styles retuned around author-inspired mechanics.** The 30 stock
+  `DiaryPersonaDef` presets now use distinct mechanical labels/rules inspired by recognizable
+  literary habits without naming authors in the injected prompt. Each rule includes a tiny synthetic
+  example for small local models, DefInjected English stubs were kept in sync, and the hardcoded
+  fallback now matches the new default `spare-iceberg` style.
+
 - **Diary tab unread marker skips world inspect panes.** The tab-strip marker now confirms the active
   inspect pane contains the Diary tab before reading selected map objects, and treats RimWorld's
   world-inspect UI as "no diary pawn" so world generation/world-map screens cannot throw from

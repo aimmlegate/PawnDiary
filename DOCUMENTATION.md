@@ -278,6 +278,9 @@ penalties. Style text is appended to first-person system prompts only (neutral a
 title prompts are style-free). Each rule describes how a pawn tends to write notes; the wrapper tells
 the model to follow the concrete sentence shape/opening/punctuation/detail choice, and explicitly
 **not** to roleplay a chat persona, add catchphrases, or invent dialogue.
+The built-in catalog distills classic author-like habits into mechanical labels/rules rather than
+prompting named-author imitation; every stock rule ends with a tiny synthetic example so small local
+models have a concrete pattern to copy.
 
 **Prompt enchantments** are XML-weighted live context cues. Eligible first-person prompts may add one
 localized `important context:` field as pressure (not the subject unless the event centers on it).
