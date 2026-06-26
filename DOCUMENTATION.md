@@ -1,603 +1,216 @@
-# Pawn Diary — Architecture & Behavior
+# Pawn Diary - Maintainer Guide
 
-Current-state guide for the mod. Companion: [CHANGELOG.md](CHANGELOG.md) (milestone history).
+Last updated: 2026-06-26
 
-_Last updated: 2026-06-25_
+Related files:
 
----
+- `AGENTS.md`: detailed rules for code agents and deep architecture constraints.
+- `EVENT_PROMPT_MAP.md`: event-to-prompt coverage map.
+- `CHANGELOG.md`: milestone history.
 
 ## 1. Purpose
 
-Pawn Diary records meaningful moments for free colonists and rewrites them as short diary pages
-through configured OpenAI-compatible LLM API lanes. RimWorld loads the compiled DLL at startup;
-Harmony patches, `GameComponent`s, Defs, and inspector tabs are discovered by RimWorld lifecycle
-hooks. There is no `main()`.
+Pawn Diary records meaningful RimWorld colony moments and turns them into short diary pages through
+configured OpenAI-compatible API lanes. RimWorld loads the compiled DLL at startup through Harmony
+patches, Defs, a `GameComponent`, and an inspector tab. There is no `main()`.
 
-Diary ownership and first-person generation require a free humanlike colonist at least
-`DiaryTuningDef.minimumFirstPersonAgeYears` old (13 by default). Animals, prisoners, slaves, enemies,
-visitors, non-colonist participants, and underage colonists never own pages; mixed events become a
-solo entry for the one eligible colonist. Pairwise colonist events generate initiator POV first, then
-recipient POV with the initiator page as hidden continuity.
+Diary pages belong only to free humanlike colonists old enough for first-person writing
+(`DiaryTuningDef.minimumFirstPersonAgeYears`, default 13). Animals, prisoners, slaves, enemies,
+visitors, non-colonists, and underage colonists do not own pages. If only one participant is eligible,
+the event becomes a solo entry. If two eligible colonists are involved, the initiator entry is
+generated first and the recipient entry gets hidden continuity from it.
 
-Neutral arrival pages are first-page entries. Neutral death pages are terminal: later same-tick
-events for that pawn are hidden and not generated.
-
----
+Arrivals and deaths are neutral boundary pages. Arrival pages introduce a pawn's diary; death pages
+end it and hide later same-tick events for that pawn.
 
 ## 2. Repository Map
 
-RimWorld loads `About/`, `1.6/`, and `Languages/`. Source lives under `Source/`; build output
-`1.6/Assemblies/PawnDiary.dll` is committed so a clone runs as a mod.
+RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
+`1.6/Assemblies/PawnDiary.dll`. Source and tests are kept in the repo for development.
 
-```text
-PawnDiary/
-|-- About/                       mod metadata, icon, preview
-|-- 1.6/
-|   |-- Assemblies/              PawnDiary.dll (committed) + bundled 0Harmony.dll fallback
-|   `-- Defs/                    groups, tuning, prompts, writing styles, humor cues, UI/text policy (12 files)
-|-- Languages/                   Keyed + DefInjected localization
-|-- Source/
-|   |-- Capture/                 Event Catalog: pure payloads/specs/registry + CaptureContext/Decision
-|   |-- Core/                    DiaryGameComponent partials (one per source), batching, generation queue
-|   |-- Defs/                    Def classes + XML lookup helpers
-|   |-- Generation/              context builders, prompt adapter/facade, prompt assembler, LLM client, DLC reads
-|   |-- Models/                  saved/display models (DiaryEvent, DiaryEntry, PawnDiaryRecord)
-|   |-- Patches/                 Harmony startup + hooks + inspect command
-|   |-- Pipeline/                pure prompt/response/decor contracts + API endpoint/request policy
-|   |-- Settings/                settings save data, API settings controller, settings UI partials
-|   |-- UI/                      hidden Diary inspect tab + partials, text formatting
-|   `-- Util/                    MiniJson (runtime-safe JSON; do not replace)
-|-- prompt-lab/                  Node prompt-testing harness (golden + generated fixtures)
-|-- tests/                       5 standalone pure-helper test projects
-|-- skills/                      repo workflow skills
-`-- *.md                         AGENTS / DOCUMENTATION / CHANGELOG / README
-```
-
-Key files:
-
-| File | Role |
+| Path | Role |
 |---|---|
-| `Patches/DiaryModStartup.cs`, `Patches/DiaryPatchRegistrar.cs`, `Patches/Diary*Patches.cs` | Startup, hidden-tab registration, defensive manual patch registration, and domain-split Harmony hooks. |
-| `Capture/*` | Event Catalog: `DiaryEventType`, `XxxEventData` (+`Decide`), `XxxEventSpec`, `DiaryEventCatalog`. |
-| `Core/DiaryGameComponent*.cs` | Recording, batching, scans, save/load, generation queue (one partial per source). |
-| `Core/DiaryEventRepository.cs` | The saved event store: every `DiaryEvent` plus the O(1) id->event lookup index that mirrors it. Owns find/register/remove/rebuild and the `"diaryEvents"` Scribe key; `DiaryGameComponent` constructs it and drives serialization from `ExposeData`. |
-| `Models/DiaryEvent.cs`, `Models/PawnDiaryRecord.cs` | Saved event model and per-pawn diary index/settings. `DiaryEvent` stores per-POV (initiator/recipient/neutral) state in three `PovSlot` value-typed fields reached through one `SlotFor(role)` dispatcher; the historical public field names (`initiatorStatus`, `recipientPawnId`, `neutralTitle`, ...) survive as facade properties so callers compile unchanged. |
-| `Generation/DiaryPromptBuilder.cs`, `Generation/DiaryPipelineAdapters.cs`, `Generation/PromptEnchantments.cs`, `Generation/PromptEnchantmentCollector.cs`, `Pipeline/*` | Prompt facade plus impure pipeline adapter/collectors, pure planning, prompt-enchantment selection, request JSON serialization, response cleanup, API lane policy/identity, domain recovery, and text decoration. `DiaryTextDecorations` is the stable facade over split decoration contracts, rule matching, fact codec, and rich-text transforms. |
-| `Generation/DiaryContextBuilder.cs`, `Generation/DlcContext.cs`, `Generation/PawnFactCapture.cs`, `Generation/MoodImpactClassifier.cs` | Pawn/surroundings/relationship/health/weapon context; all live-pawn reads centralized and guarded here (DLC reads in `DlcContext`; display-fact snapshots — staggered-handwriting intensity and text-decoration hediff/trait facts — in `PawnFactCapture`; prompt-enchantment live health/capacity/status snapshots in `PromptEnchantmentCollector`; per-pawn GameCondition mood direction in `MoodImpactClassifier`). `DiaryContextBuilder` now keeps only the impure collectors — its pure one-line text cleaner was extracted to `DiaryLineCleaner` and its localized mood/pain/opinion/age/beauty/bleed band tokens to `DiaryBuckets`. |
-| `Defs/InteractionGroups.cs`, `DiarySignalPolicyDef.cs`, `DiaryTuningDef.cs` | XML classifiers, per-group prompt instruction rollout (classify Def → roll one `instructions` variant at capture), odds, cooldowns, scanner policy, shared tuning. |
-| `DiaryPromptDef.cs`, `PromptArchitectureDefs.cs`, `DiaryPersonaDef.cs`, `DiaryHumorCueDef.cs`, `DiaryUiStyleDef.cs`, `DiaryTextDecorationDef.cs` | XML-owned shared prompts, event prompt policy, writing styles, humor cues, UI, and display policy. |
-| `Generation/LlmClient.cs`, `Pipeline/LlmRequestJsonBuilder.cs`, `LlmResponseParser.cs` | HTTP queue/failover/concurrency, pure request body serialization, and pure provider response parsing. |
-| `Settings/PawnDiaryMod*.cs`, `ApiConnectionController.cs`, `PawnDiarySettings.cs`, `PersonaPresetStore.cs`, `PromptOverrideDictionary.cs` | Settings entry point, split settings UI sections, settings-window API fetch/test controller, saved settings data (connection, generation, system-prompt overrides), the writing-style (persona) preset catalog store, and the reusable per-key event-prompt override map. |
-| `UI/ITab_Pawn_Diary*.cs`, `UI/DiaryTabVisibleEntriesCache.cs`, `DiaryTextFormat.cs` | Hidden Diary inspect tab, its pawn/render-token visible-entry cache, cards, paging, debug controls, safe rich-text formatting. |
-| `Util/MiniJson.cs` | Runtime-safe JSON parser; do not add external JSON dependencies. |
+| `About/` | Mod metadata, preview, icon, dependency declaration. |
+| `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
+| `Languages/` | Keyed and DefInjected English text. |
+| `Source/Capture/` | Pure Event Catalog payloads and decisions. |
+| `Source/Core/` | `DiaryGameComponent` partials: capture adapters, save/load, scans, generation queue. |
+| `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
+| `Source/Pipeline/` | Pure prompt planning, request JSON, response cleanup, text decoration, API policy. |
+| `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
+| `Source/Settings/` | Saved settings, API lane UI/controller, Prompt Studio, Writing Style Studio. |
+| `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
+| `tests/` | Standalone pure-helper test projects. |
+| `prompt-lab/` | Prompt fixture and variant validation harness. |
+| `scripts/publish.ps1` | Local Workshop payload prep. |
 
----
+## 3. Runtime Flow
 
-## 3. Data Flow
+1. A Harmony hook or scanner notices a candidate event.
+2. The adapter snapshots live RimWorld facts, settings/XML gates, dedup state, and any random roll.
+3. The pure Event Catalog decides whether to drop, create a solo/pair/neutral entry, batch, or route
+   to day reflection.
+4. `AddSoloEvent` or `AddPairwiseEvent` creates a saved `DiaryEvent` and indexes it on eligible
+   pawn records.
+5. Generation queues immediately when possible; periodic scans retry pending or orphaned work.
+6. `DiaryPipelineAdapters` copies runtime/XML/localized state into pure pipeline DTOs.
+7. Pure helpers assemble prompts, serialize request JSON, parse provider responses, and clean text.
+8. `LlmClient` sends requests and returns results to the main thread; successful main pages may queue
+   a title follow-up.
 
-1. A Harmony hook or scanner sees a candidate gameplay moment. Recorders no-op until RimWorld is in
-   play (so startup/scenario setup doesn't read calendar ticks too early).
-2. The adapter snapshots live RimWorld facts, XML/settings gates, dedup facts, and any RNG result.
-3. The Event Catalog decides `Drop`, immediate event creation, a neutral prompt route, or a
-   batch/ambient/day-reflection route.
-4. `AddSoloEvent` / `AddPairwiseEvent` creates a saved `DiaryEvent`, semantic `colorCue`, per-POV
-   decoration facts, and references from eligible pawn records.
-5. Generation queues immediately when possible and is retried by periodic scans.
-6. `Generation/DiaryPipelineAdapters` copies event/XML/localization/settings state into DTOs.
-7. Pure pipeline helpers produce a prompt plan, parse provider output, and postprocess text.
-8. `LlmClient` sends requests, handles failover/concurrency, and returns results on the main thread.
-9. `ApplyLlmResult` stores success/failure; title generation (and the disabled speech injection) run
-   after successful main entries.
-10. `EntriesFor` reads saved events for the Diary tab, which caches built views until the pawn render
-    token changes.
-
-`GameComponentTick` drains completed results, flushes main-thread debug logs, recovers orphaned
-pending entries, and queues pending work roughly every 120 ticks. Pending generation state resets on
-load. Non-neutral POVs below the XML-tuned Consciousness floor
-(`DiaryTuningDef.minimumConsciousnessForFirstPersonGeneration`, default 0.11) are skipped; neutral
-arrival/death bypass that guard.
-
----
+`GameComponentTick` drains completed LLM results, flushes debug logs, and rescans roughly every 120
+ticks. Pending generation is not saved; it resets on load and is requeued. First-person generation is
+skipped for pawns below the XML Consciousness floor, while neutral arrival/death pages bypass that
+guard.
 
 ## 4. Event Sources
 
-| Source | Capture | Output |
+| Source | How it is observed | Result |
 |---|---|---|
-| Social interactions | `PlayLog.Add` → `RecordInteraction` | Pairwise, solo, pair batch, or ambient day note by XML group. |
-| Mental states | `MentalStateHandler.TryStartMentalState` | `SocialFighting` pairwise when both eligible; other breaks solo. |
-| Romance relations | `Pawn_RelationsTracker.AddDirectRelation` | Pairwise for Lover/Spouse/ExLover/ExSpouse. |
-| Tales / combat tales | `TaleRecorder.RecordTale` + Tale batch policy | Solo, pairwise, delayed combat batches, or neutral death description. |
-| Arrivals | Starting-colonist scan + `Pawn.SetFaction` | Neutral first-page arrival (prior faction/recruiter/kind/creepjoiner/surroundings). |
-| Deaths | `Pawn.Kill` prefix/postfix + XML-marked death TaleDefs | Neutral final page (cached cause/context); fallback for non-Tale deaths. |
-| Mood events | `GameConditionManager.RegisterCondition` | Once per eligible colonist on affected maps. |
-| Thoughts | `MemoryThoughtHandler.TryGainMemory` | Temporary memories filtered by XML thresholds/tokens; ambient thoughts can batch. |
-| Thought progression | Periodic scan | Hunger/rest/outdoors/chemical stages when they first appear or worsen. |
-| Inspirations | `InspirationHandler.TryStartInspiration` | Solo entry for the inspired pawn. |
-| Hediffs | `Pawn_HealthTracker.AddHediff` + progression scan | Immediate or day-reflection health entries by XML Hediff policy. |
-| Work | Periodic current-job sampling | Skips social/violent work; applies XML odds/cooldowns and `workGenerationWeight`. |
-| Raids / infestations | `IncidentWorker.TryExecute` (filtered to `IncidentWorker_Raid` plus infestation workers) | Once per eligible colonist on the target map; payload = incident/faction defName, raid points, arrival mode, and strategy. Ordinary raids delay LLM generation; drop-pod raids and infestations generate immediately. |
-| Quests | `Quest.Accept` + defensive `MainTabWindow_Quests` patch + `Quest.EverAccepted` scan + `Quest.End` | Only accepted quests recorded. `Success`→"completed", `Fail`→"failed"; one entry per eligible colonist per signal with description/issuer/rewards context. |
-| Rituals | `LordJob_Ritual.ApplyOutcome`, `LordToil_PsychicRitual.RitualCompleted` | Ideology rituals fan out to author/target/participants/spectators with role/title/status. Anomaly psychic rituals fan out from the completion callback, deliberately omit role/title fields, and use darker/stranger instructions. |
-| Abilities | `Ability.Activate` (local + world overloads) | Successful uses become solo entries for the caster, cooldown-weighted (fast abilities rare, rare ones more likely). |
-| Day reflections | Sleep/rest trigger | One reflective entry per pawn/day only when an XML-configured important signal kind exists (`event`/`opinion`/`hediff` by default; `filler` alone cannot trigger unless XML allows). |
-
-`PlayLog.Add` preflights eligibility and XML significance before rendering RimWorld's POV grammar
-strings, so routine social-log rows that can't become diary entries stay cheap. Interaction groups can
-also set `captureRenderedGameText=false` for compatibility with mods whose grammar rendering has side
-effects; those rows use Pawn Diary's safe fallback text instead. Tagged social-log grammar is rendered
-only when Pawn Diary has registered an optional reply-suppression guard for the conversation framework;
-otherwise the capture hook falls back so observing a row cannot schedule extra gameplay interactions.
-Generated Social-log speech patches the concrete 1.6 worker `ToGameStringFromPOV_Worker` with an
-old-name fallback so a display-method rename can't abort `PatchAll` before later hooks register.
-
-Harmony hooks are split by capture domain under `Source/Patches/`: deaths, arrivals, health,
-thoughts, quests, social log/relations, and broader gameplay signals. Most use `[HarmonyPatch]` and
-are discovered by `PatchAll`; fragile reflection/generated-name hooks (`ThoughtGainPatch` and
-`QuestUiAcceptPatch`) register through `DiaryPatchRegistrar` so missing targets warn and no-op rather
-than aborting startup.
-
-Every prefix/postfix body is exception-isolated. A hook runs *inside* the vanilla method it patches
-(`Pawn.Kill`, `Pawn.SetFaction`, `Pawn_HealthTracker.AddHediff`, `IncidentWorker.TryExecute`,
-`MentalStateHandler.TryStartMentalState`, `TaleRecorder.RecordTale`, `Quest.Accept`/`End`,
-`PlayLog.Add`, ...), so a throw escaping our capture would break that game mechanic for everyone.
-`DiaryPatchSafety.Run`/`RunPrefix` wrap each body: a failure is logged once (`Log.ErrorOnce`, keyed
-per patch so a recurring fault reports a single time) and swallowed, leaving the vanilla method's own
-result untouched — `RunPrefix` returns the "let vanilla proceed" value. The same discipline covers the
-per-tick `GameComponentTick` (a failed tick is logged and skipped, the game keeps ticking), the
-self-bookkeeping blocks of `ExposeData` (pre-save flush/prune and post-load index rebuild are guarded
-so a diary-data fault can't abort a save or load — the raw `Scribe.Look` calls are left to RimWorld's
-own scribe error handling), and `DiaryModStartup` (each stage — `PatchAll`, fragile registration, and
-per-`ThingDef` tab injection — is isolated so one failure can't half-initialize the mod). The two
-patches that draw into vanilla UI surfaces are guarded the same way (see §8).
-
----
-
-## 5. Event Catalog
-
-`Source/Capture/` is the pure decision layer:
-
-- `DiaryEventType`: one enum value per source.
-- `XxxEventData : DiaryEventData`: primitive payload plus `static Decide(data, ctx)`.
-- `CaptureContext`: precomputed eligibility, user/signal/ambient enablement, and tick facts.
-- `CaptureDecision`: `Drop`, `GenerateSolo`, `GeneratePair`, `RouteBatch`, `RouteAmbient`,
-  `RouteDayReflection`, `GenerateSoloDeathDescription`, `GeneratePairDeathDescription`, or
-  `GenerateSoloArrivalDescription`.
-- `XxxEventSpec`: wrapper registered in `DiaryEventCatalog`.
-
-Catalog-backed sources: Thought, Inspiration, MoodEvent, MentalState, Tale, Hediff, Interaction,
-Romance, Arrival, Death fallback, Work, ThoughtProgression, DayReflection, Raid, Quest, Ritual,
-Ability.
-
-DayReflection is a meta-source: the adapter counts candidate cues plus the important subset.
-`DiaryTuningDef.daySummaryImportantSignalKinds` controls which kinds are important
-(`event`/`opinion`/`hediff`/`filler`); its `Decide` drops days with no important candidates.
-
-Direct `AddSoloEvent`/`AddPairwiseEvent` call sites outside `RecordXxx` are **sinks** (batch
-flushers, ambient-note flushers, the generation dispatcher, the event factory) — they execute routes
-chosen by catalog-backed sources, they don't decide new captures.
-
-Adding a source:
-
-1. Add a `DiaryEventType` value.
-2. Add `Capture/Events/XxxEventData.cs` (primitive fields, `Decide`, any pure context builder).
-3. Add `Capture/Specs/XxxEventSpec.cs`.
-4. Register it in `DiaryEventCatalog`.
-5. Update the impure adapter to snapshot facts, ask the catalog, then execute the returned route.
-6. Update `DiaryCapturePolicyTests` (including catalog dispatch coverage).
-
-Keep RimWorld/Verse/Unity objects, `.Translate()`, settings reads, `Find.TickManager`, IO, RNG,
-dedup mutation, event creation, and LLM queueing in adapters. Pure code takes DTOs/primitives only.
-
----
-
-## 6. XML Policy
-
-`1.6/Defs/DiaryInteractionGroupDefs.xml` owns group matching, instructions, color cues, batching,
-promotion, Hediff policy, and default enablement. Domains: Interaction, MentalState, Tale, MoodEvent,
-Thought, Inspiration, Romance, Work, Hediff, Raid, Quest, Ritual, Ability. Matching is
-domain-scoped by exact `defName`, substring token, or (for live Defs) source `matchPackageIds`; XML
-order matters and catch-all groups go last. Package matching exists for compatibility routing without
-hard-referencing another mod or enumerating every def it adds. Groups can also set
-`disableWhenPackageIdsLoaded` to go quiet while another loaded package provides better coverage. The
-built-in `speakup_chitchat` group matches `JPT.speakup`, renders SpeakUp text only under the optional
-reply-suppression guard, and batches SpeakUp rows as ambient social texture. Because SpeakUp can
-emit many more social-log rows than vanilla chitchat, this group uses a stricter ambient threshold
-and much lower promotion odds than normal small talk. The normal `smalltalk` group disables itself
-while SpeakUp is loaded because SpeakUp supplies more varied chitchat rows.
-
-`1.6/Defs/DiaryEventPromptDefs.xml` owns the prompt, event enhancement, and optional forced model for
-event sources. Compatibility XML can add a `DiaryEventPromptDef` for an exact source defName, a
-`DiaryInteractionGroupDef.defName`, a domain classifier key, or a broad domain key; runtime tries
-those keys in that order. This lets a mod support patch add a new group plus prompt/enhancement/model
-choice entirely in XML. Prompt, enhancement, and forced model resolve independently, so a specific
-Def can override one field and inherit the others from the next broader policy.
-`1.6/Defs/DiaryPromptEnchantmentDefs.xml` is also XML-only: patches can add new
-hediff/capacity/context enchantments with string defNames and safe silent failure when absent.
-
-**Quest domain** is unusual: its `matchDefNames` are lifecycle signals
-(`accepted`/`completed`/`failed`), not defNames — one `DiaryEventType.Quest` fans out to three prompt
-groups. Saved Quest entries still keep the real `QuestScriptDef`; recovery classifies them from the
-saved `signal=` context field.
-
-**Ritual domain** classifies by string markers only. Ideology/Royalty/Biotech/Odyssey rituals use
-`Precept_Ritual` defName + behavior worker class and carry role facts in context
-(`ritual_title`, `ritual_behavior`, `ritual_perspective`, `ritual_role`, `royal_title`,
-`ideological_role`). Anomaly psychic rituals use `psychic_ritual` + a `PsychicRitual` classifier
-prefix, carry only `psychic_ritual_perspective`, outcome, and plain-word quality, and deliberately
-omit role/title fields. Prompt templates render role/title fields only when present.
-
-`DiaryTuningDef.xml` owns ritual quality bands (progress/power → `terrible`/`weak`/`decent`/`strong`/
-`excellent`/`unknown`). Ritual prompts must let that label shape confidence/aftermath/emotional
-weight without naming or explaining it directly. Psychic-ritual invoker prompts ask only for invented
-or broken ritual words inside a speech block; the visual distortion is applied later by
-`DiaryTextDecorationDefs.xml` from the saved `psychic_ritual_perspective=invoker` context.
-
-**Ability domain** classifies by `AbilityDef` defName + safe string tokens (category, `Psycast`,
-hostile/utility disposition). Saved context uses `ability=`, `ability_label=`, `ability_category=`,
-`ability_target=`, `ability_cooldown_ticks=`. `DiaryTuningDef.xml` controls `abilityDedupTicks` and
-the cooldown-weighted sampling curve.
-
-**Raid domain** classifies by safe incident/arrival/strategy strings, not live pawn or DLC objects.
-Saved context uses `raid=`, `label=`, `faction=`, `points=`, plus optional `arrival_mode=` and
-`strategy=`. `DiaryTuningDef.xml` controls `raidDedupTicks` and `raidGenerationDelayTicks`; the delay
-applies only to ordinary raids so prompts can emphasize warning, positioning, and anticipation.
-Drop-pod raids and infestations bypass the delay and use their own XML instructions for sudden
-internal contact.
-
-`DiarySignalPolicyDefs.xml` owns thought/work policy: thresholds, tokens, staged progression, ambient
-batching, scan odds, cooldowns. `DiaryTuningDef.xml` keeps shared fallback tuning for mood/health
-buckets, nearby context, minimum first-person age, the first-person Consciousness gate, the 0..4
-low-consciousness/intoxication display-staggering thresholds, mood-impact condition families
-(positive/negative `GameCondition` defNames), day-reflection signal kinds/weights, weather mention
-chances, and scanner intervals. Hediff groups define Immediate vs DayReflection mode, visible/bad/injury
-gates, severity thresholds, and weights. Tale groups can declare death victim role lists, keeping
-death classification data-owned and DLC/mod friendly.
-
----
-
-## 7. Prompts And Writing Styles
-
-Prompts are compact `key: value` lines. Empty values and `none`/`n/a`/`unknown` sentinels are
-dropped. Templates include pair, solo, batched, day-reflection, death-description,
-arrival-description, and title shapes.
-
-System prompts are intentionally short (global safety/format only). Event-type guidance lives in
-`DiaryEventPromptDef`: `prompt` → `event prompt:`, `enhancement` → `event enhancement:`, rendered
-before per-group `instruction:`/`tone:` flavor. Its optional raw `forcedModel` field can name one
-configured active API model to try first for that event source; blank, misspelled, disabled, or
-missing models are ignored and normal routing applies. The first-person system prompt asks for one
-sensory detail, one emotional beat, and one implied consequence/tension from supplied facts —
-without inventing facts.
-
-**Variant pools.** Each group may carry `instructions` / `tones` lists so an event type doesn't
-repeat verbatim. When a pool has any non-blank entry, the pure `PromptVariants.Pick` selects one
-wording per entry: `instruction` rolls once at capture (by `InteractionGroups.InstructionForGroup`,
-which the capture path freezes onto the event — never changes after) and is persisted; `tone`
-picks deterministically by event id (stable across save/load and regeneration). The singular
-`instruction`/`tone` remain as fallback/settings-preview. Weighting is XML-owned (list a wording more
-than once to make it common). Don't leave blank `<li>` slots — selection skips whitespace, which
-misaligns indexed DefInjected keys.
-
-Shipped pools are written for **small-model separability**: each `instructions` pool holds ~3
-*lens-distinct* variants (different sensory/narrative/temporal entry points in concrete nouns/verbs,
-not emotional synonyms), and each tone-bearing group ships exactly two `tones` variants that differ
-in rhythm/attention and emotional posture rather than near-synonym moods. Variants must not ask for
-unsupplied facts (exact words, witnesses, named aftermath) unless gated behind supplied context.
-Prompt-lab parses the same pools and `--all-variants` crosses instruction/tone/enchantment variants
-with a coverage check.
-
-**Prompt Studio** can save per-event overrides for `DiaryEventPromptDef.prompt`/`.enhancement` and
-the optional forced model string; empty text or text matching the XML/default value clears the
-override, so XML stays the default catalog.
-
-Layer boundaries:
-
-- Impure: event hooks, `DiaryGameComponent`, settings, XML lookup, localization, IO, RNG, save
-  mutation, transport, and live-pawn fact collection (`DlcContext`, `PawnFactCapture`,
-  `PromptEnchantmentCollector`,
-  `DiaryContextBuilder`'s summary builders, `MoodImpactClassifier`). The collectors delegate
-  formatting to the localized band tokens in `DiaryBuckets` (`.Translate()`-bound, so main-thread)
-  and to the pure text cleaner in `DiaryLineCleaner`.
-- Bridge: `Generation/DiaryPipelineAdapters.cs` copies impure runtime, XML, localization, and
-  settings state into the pure pipeline's DTO contracts.
-- Pure: `DiaryEvent`/`PawnDiaryRecord` (saved models — they store plain values only and never read a
-  live `Pawn`), `DiaryPromptPlanner`, `PromptAssembler`, `PromptVariants`, `DiaryContextFields`,
-  `DiaryLineCleaner`, `PromptEnchantmentPlanner`, `ApiEndpointPolicy`, `ApiLaneSelector`, `ApiLaneIdentity`,
-  `LlmRequestJsonBuilder`, `LlmResponseParser`, `DiaryResponsePostprocessor`,
-  `DiaryTextDecorations` and its split decoration helpers.
-
-**Writing styles** come from `DiaryPersonaDef` + settings overrides/custom rows. The Def and save
-field names still say "Persona" for compatibility, but the player-facing feature is writing styles.
-Weighted selection uses base weight, trait/backstory matches, creepjoiner bonuses, and duplicate
-penalties. Style text is appended to first-person system prompts only (neutral arrival/death and
-title prompts are style-free). Each rule describes how a pawn tends to write notes; the wrapper tells
-the model to follow the concrete sentence shape/opening/punctuation/detail choice, and explicitly
-**not** to roleplay a chat persona, add catchphrases, or invent dialogue.
-The built-in catalog distills classic author-like habits into mechanical labels/rules rather than
-prompting named-author imitation; every stock rule ends with a tiny synthetic example so small local
-models have a concrete pattern to copy.
-
-**Prompt enchantments** are XML-weighted live context cues. Eligible first-person prompts may add one
-localized `important context:` field as pressure (not the subject unless the event centers on it).
-Health/capacity cues can appear on any eligible first-person prompt; important events may also put a
-Royalty title or Ideology role into the same weighted pool — the two are mutually exclusive per
-prompt. These are separate from `DiaryEventPromptDef.enhancement` (static event-type guidance).
-`PromptEnchantments.RuleFor` now only gates settings/Defs/RNG, `PromptEnchantmentCollector` snapshots
-live `Pawn`/`Hediff`/capacity/DLC context into plain candidates, and pure `PromptEnchantmentPlanner`
-does weighted selection plus final `; ` / cue joining. Severity tier thresholds and the cue cap are
-XML-tuned on `DiaryTuningDef` (`promptEnchantment*`, defaults match the shipped 0.05/0.25/0.50/0.75
-hediff bands, 0.55/0.35/0.20 consciousness bands, and 3 cues).
-
-**Humor cues** are a hidden, always-on per-entry writing license. Roughly one in ten eligible
-first-person entries (base rate XML-tunable via `DiaryTuningDef.humorChance`, default `0.10`) gets one
-subtle structural cue appended to its system prompt — never a "be funny" instruction, always a single
-sentence-shape constraint (an understatement coda, a dry inventory, a clerical tally of loss). The
-`DiaryHumorCueDef` catalog (`DiaryHumorCueDefs.xml`) holds Light (dry/absurdist) and Gallows
-(dark/deadpan) tiers; `HumorCues.CueFor` rolls the base rate, derives the stakes tier from the event
-(important, Raid domain, or `combat`/`socialFight`/`mentalBreak` color cue ⇒ Gallows), and weighted-
-picks one cue. The chosen rule rides into the prompt folded inside the **persona voice block**
-(`DiaryPipelineAdapters.HumorVoiceBlock` + `CombinedVoiceBlock`), so it needs no planner/contract
-field and is automatically suppressed on neutral death/arrival/title templates that opt out of
-persona text. There is no settings field or UI; the feature is invisible to the player. Cue `rule`
-and `label` text is localized via `DefInjected`; the `tier` keyword is an internal schema token.
-
-**Direct speech** is allowed only for initiator/single-POV interaction prompts, using one closed
-`[[speech]]...[[/speech]]` block when source notes support it. Recipient follow-ups forbid speech and
-get hidden initiator continuity. Before generated text is saved, response cleanup preserves complete
-speech blocks but sanitizes hallucinated bracket tags: malformed closers repaired, unpaired markers
-stripped to prose, unknown `[[tag]]...[[/tag]]` removed, bracketed prose flattened, and echoed schema
-punctuation (`;` `=` `:` `|`) stripped.
-
-Generated speech Social-log injection is currently disabled/hidden (the compatibility field still
-loads for save safety, settings force it off, and the call site is commented out — RimWorld accepted
-synthetic rows without reliably showing them in the Social tab UI). Title generation is on by
-default; successful main entries queue a capped title follow-up pinned to the successful lane.
-
----
-
-## 8. Settings And UI
-
-Core settings: API lanes, lane routing mode, request tuning (timeout/concurrency/max tokens/
-temperature), title generation, atmospheric formatting, prompt enchantments, work/social generation
-weights, system-prompt overrides, per-event prompt/enhancement/forced-model overrides,
-XML-backed event filters, and writing-style presets. Dev mode reveals **prompt test mode** in mod
-settings: real gameplay events still assemble their prompts, but the queue marks the POV prompt-only
-and never calls the LLM; those cards show in the Diary tab while dev mode is on.
-
-Settings code is split by immediate-mode UI responsibility. `PawnDiaryMod.cs` is the RimWorld `Mod`
-entry point and settings writer. `PawnDiaryMod.SettingsWindow.cs` owns the top-level scroll layout,
-`PawnDiaryMod.ApiLanes.cs` draws API rows and request tuning, `PawnDiaryMod.PromptStudio.cs` draws
-system/event prompt overrides, `PawnDiaryMod.PersonaStudio.cs` draws writing-style preset editing,
-and `PawnDiaryMod.SettingsWidgets.cs` holds shared row/button/label helpers. `ApiConnectionController`
-owns settings-window model fetches and connection tests, including pending async result handoff and
-stale-row matching; localized UI text and shared settings mutations are still applied on the main
-settings draw thread.
-
-`PawnDiarySettings` stays the save owner (connection, generation, system-prompt overrides, value
-clamping) but no longer holds catalog/override logic. Writing-style (persona) CRUD, normalization,
-and theme policy live in `PersonaPresetStore` (field `PawnDiarySettings.personaPresets`), and the
-per-key event-prompt/event-enhancement/forced-model override maps are each a reusable
-`PromptOverrideDictionary` (fields `eventPromptOverrides`, `eventEnhancementOverrides`,
-`eventForcedModelOverrides`). They are `IExposable` and serialize under stable Scribe keys
-(`personaPresets`, `eventPromptOverrides`, `eventEnhancementOverrides`, `eventForcedModelOverrides`)
-so existing saves keep loading. Callers go through the stores directly — e.g.
-`settings.personaPresets.OverrideFor(...)` and `settings.eventPromptOverrides.Effective(...)`; only
-the two operations that span both event maps (`ResetAllEventPromptOverrides`,
-`CustomizedEventPromptCount`) remain on `PawnDiarySettings`.
-
-**API lanes** support OpenAI-compatible Chat Completions and OpenAI Responses (model fetch/pick,
-per-row connection tests, per-row auth, per-row reasoning effort, and the shared request-tuning
-block inside the expanded connection section). Auth styles: Bearer, No auth, or an editable custom
-API-key header defaulting to `x-goog-api-key`, or `key=` query. Endpoint URLs and custom-header text
-normalize on send/load/save boundaries, not every draw, so editing mid-typing isn't rewritten.
-Query-key auth replaces any existing `key=` while preserving URL fragments; logs strip query strings.
-Old `api-key`/`x-api-key` rows migrate to custom-header auth. Gemini's OpenAI-compatible endpoint
-(`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`) uses Chat-compatible
-mode with the Reasoning selector sending `reasoning_effort`.
-
-`ApiLaneIdentity` owns the comparison modes used by the API lane system: concurrency gates/cooldowns,
-failover duplicate removal, successful-lane pinning, model-fetch stale-result checks, and connection
-test stale-result checks. Those modes intentionally do not compare the exact same fields. For example,
-generation gates use normalized endpoint/model/effective auth and ignore reasoning effort, while
-settings fetch/test results use exact raw row snapshots so an in-flight result is discarded after a row
-edit. `ApiLaneLabels` formats sanitized English debug labels and strips query/fragment text before a
-URL reaches logs.
-
-Row order is editable with compact arrows. The global routing mode controls how strongly order
-affects primary selection: **Balanced** spreads primaries equally, **Prefer top rows** favors earlier
-rows, **Failover only** always starts with the first ready row. Row order is also the failover order
-in every mode.
-
-**Prompt Studio** is a collapsible section; its selector covers shared system prompts and
-`DiaryEventPromptDef` event types, with the selected editor in one highlighted block. Event prompt
-editors include the optional forced-model text field; it must match an enabled API row's model name
-to affect routing. Writing-style presets likewise use one block for summary/add/reset/selection/rule
-editing/tag toggles.
-
-The Diary surface is an inspect tab internally. Startup registers the same `ITab_Pawn_Diary` on
-every humanlike pawn race and on that race's corpse def, so by default Diary appears in the normal
-pawn inspect-tab row for eligible colonists and selected colonist corpses. A settings toggle can
-instead hide the tab row entry and add a **Diary** bottom command button (journal-and-pen icon) for
-the selected pawn or corpse. In command mode, the command overlays a subtle underline for newly
-finished pages and pulsing dots while any page or title is still being written. In tab mode, the
-Diary tab shows only a small white Unicode marker near the tab's right edge for newly finished
-pages; the glyph, size, and x/y placement are owned by `DiaryUiStyleDef.xml`, and the tab deliberately
-does not show a loading/writing indicator. The marker patch only touches panes that actually contain
-the Diary tab and treats world-inspect UI as having no selected diary pawn, because the world pane can
-draw before RimWorld has a map selector. Opening the pawn's Diary acknowledges the finished-page marker.
-Social-log diary links and linked-POV navigation open the same tab in either mode.
-
-The Diary UI shows completed pages in production. Dev mode adds generation enablement, writing-style
-picker, pending/raw/failure rows, prompt/status diagnostics, in-progress indicators, transient
-formatting previews, and mock-page fill. `DiaryTabVisibleEntriesCache` owns the tab's impure
-pawn/render-token entry cache, visible-entry filters, year pages, and selected-year ordering so
-`FillTab` can stay focused on immediate-mode layout and drawing. Histories page by in-game year. Cards
-show date/title, accent, group chip, model id, linked POV previews, and title-pending animation.
-
-The dev-mode **Prompt suite** button opens a data-driven dropdown of event categories (driven by
-`DiaryGameComponent.AllSuiteEntries`, so new categories auto-appear). Picking one deletes any prior
-test entry and captures exactly one plain prompt-only card routed through the normal queue; picking
-another replaces it. A companion **Clear test prompts** button removes every prompt-test entry. Pair
-categories also produce a recipient POV card and are omitted when no second colonist exists. Death
-and arrival shapes are excluded (a synthetic one would become the pawn's diary boundary and hide real
-pages). The suite validates prompt planning/queueing/UI display, not Harmony capture — use §13 for
-real hook checks.
-
-The tab is sized by `tabWidth`/`tabHeight` (`DiaryUiStyleDef.xml`). Newest cards start expanded
-(`autoExpandedEntryCount`, default 3); older history starts collapsed; clicking a header toggles
-either. In dev mode expanded cards show a subtle bottom-left copy icon (copies the prompt for
-prompt-only cards, else generated text). Non-prompt pages that are not already being written also
-show a regenerate icon, which queues the saved page through the current API routing/model settings
-and regenerates the linked POV too when a paired entry has one available.
-
-The tab redraws every frame (RimWorld immediate-mode UI), so long histories are kept cheap with two
-guards in `FillTab`: expanded-card heights are measured once and cached by entry key (cleared when
-the pawn render token, card width, debug toggle, **or name-highlight set version** changes — the
-highlight version is bumped whenever the colony pawn-name/color set is rebuilt, so a rename, death,
-or relationship flip re-measures an open card whose highlighted rich text otherwise re-wraps), and
-the draw pass **viewport-culls** — cards whose row is entirely above or below the visible scroll
-slice are skipped, so a year page with hundreds of entries only measures/renders the handful on
-screen rather than the whole page.
-
-Immediate-mode draws that push onto Unity's shared GUI clip stack are wrapped so a single
-unexpected throw degrades gracefully instead of corrupting the rest of the frame's UI. `FillTab`
-runs its scroll view and per-card `GUI.BeginGroup` inside a `try/finally` (tracking an
-`entryGroupOpen` flag) that always closes the open group and ends the scroll view; the settings
-window does the same around its scroll view and `Listing_Standard`. The two Harmony patches that
-draw into *vanilla* shared surfaces — the inspect-tab unread marker (`DiaryInspectTabIndicatorPatch`)
-and the bottom command gizmo plus its status overlay (`DiaryInspectCommandPatch`) — wrap their
-draw/build bodies in `try/catch` with `Log.ErrorOnce`, so a failure there drops only the marker or
-overlay for a frame rather than breaking RimWorld's inspect tab strip or gizmo bar for every pawn.
-
-`DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
-then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
-owns display-only decorations: intoxication/anesthesia speech uses the strongest staggered word-size
-setting; extreme-dark speech dims selected words (vs. strange-chat Zalgo); combat/social-fight cues
-add stronger page washes and header rules, while mental-break cues use a muted green wash/rule so
-the card remains scannable; generated text is never mutated on save. The public
-`DiaryTextDecorations` facade delegates to focused pure helpers: `DiaryTextDecorationContracts` for
-DTOs/constants, `DiaryTextDecorationMatcher` for XML rule selection and context matching,
-`DiaryTextDecorationFactCodec` for saved hediff/trait snapshots, and `DiaryRichTextDecorators` for
-tag-preserving text mutation. Rule *selection* and rich-text *application* are both data-driven: the
-renderer maps each decoration kind to its applier through a kind→applier registry (not an `if`
-ladder), so an unknown `decoration` value from a mod XML is reported once at Def-load time via
-`DiaryTextDecorationDef` instead of silently no-op'ing. Shared pure text helpers
-(`DiaryTextDecorationText`) back both the matcher and the rich-text decorators so tag handling and
-kind/trim comparisons can't drift between them. The same `Diary_TextDecorations` `StaggeredWordSizes` rule list is also
-the single source of truth for which hediffs count as intoxicating at capture time (via
-`DiaryTextDecorations.HediffMatchesStaggeredRules`), so modders/DLCs extend the set by editing XML — no
-parallel hardcoded keyword list. Live humanlike pawn names in prose are highlighted — colonists use
-their favorite color when available, slaves/prisoners/enemies/neutral pawns use XML-backed status
-colors, ambiguous/uncolored matches fall back to bold.
-
----
-
-## 9. LLM Reliability
-
-Each enabled endpoint/model/mode/auth row is an API lane. New requests choose a primary lane by the
-routing mode unless their event prompt has a forced model matching an active row; forced primaries
-are attempted first even if cooling, then normal failover runs on error. Recipient follow-ups and
-title requests pin to the prior successful lane when possible unless it's cooling and another is
-ready. Per-lane semaphores enforce concurrency;
-`ServicePointManager.DefaultConnectionLimit` is raised for Mono.
-
-`LlmClient` builds mode-specific URLs, maps generation requests into `LlmRequestJsonBuilder`'s pure
-request-body snapshot, retries transient errors up to three times per lane, and surfaces
-timeout/permanent/empty/incomplete responses as failure text. Transient failures and
-timeouts apply an automatic cooldown growing 10s→20s→40s→80s→160s→cap 300s; any success clears it.
-Cooling lanes are skipped while another is ready but still tried when every lane is cooling. Each
-failover pass snapshots readiness once so a cooldown expiring/added mid-loop can't skip every lane.
-Lane identity ignores stale key text for `No auth` rows; saving API settings prunes cooldowns for
-removed/reconfigured rows. Generation and model-list HTTP bodies are streamed with hard byte caps
-before JSON parsing/logging. Successful responses are trimmed locally to `maxTokens`, preferring
-complete sentences.
-
-`LlmResponseParser` extracts typed visible output before fallback fields and strips
-structured/transcript reasoning plus visible instruction-echo self-edit drafts before debug/save.
-Chat Completions responses may include a sibling `message.reasoning` field; that field is ignored
-and only `message.content` is eligible for saved diary text.
-When a model writes a metaprompt audit followed by rewrite labels such as "Let me refine:" or a
-shorter final version, the last clean rewrite is kept; if no rewrite follows, the visible draft
-before the audit is kept. The save-time sanitizer preserves valid speech blocks while removing
-hallucinated bracket tags and echoed schema punctuation. API keys are never logged or saved in event
-metadata. New game sessions cancel stale requests. Orphaned pending entries reset after two scans.
-If no enabled lane has a model, the entry fails with
-`PawnDiary.Error.NoApiConfigured`.
-
----
-
-## 10. Persistence
-
-`DiaryGameComponent.ExposeData` saves `diaries` (per-pawn records) and the `diaryEvents` list owned
-by its `DiaryEventRepository`. The id->event lookup index and transient day-reflection guards rebuild
-on load; per-pawn event-id lists prune blank/duplicate/dangling refs. The component remains the only
-RimWorld lifecycle/save owner; the repository encapsulates the event list, its index, and the
-non-null store invariant.
-
-**Add/remove safety:** adding Pawn Diary to an existing save creates an empty diary component on the
-next load and records future events only. Removing it is gameplay-safe — the mod persists no custom
-`ThingDef`/`HediffDef`/`ThoughtDef`/job/need/pawn-or-map component or cross-reference data onto
-vanity objects. The diary history lives inside Pawn Diary's own `GameComponent`; without the mod the
-UI/history is unavailable and RimWorld may leave stale Pawn Diary XML in the save until it's
-rewritten. Legacy/dev saves that used generated Social-log injection may keep synthetic
-`PlayLogEntry_Interaction` rows whose replacement text requires Pawn Diary's component and patch.
-
-`DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, LLM metadata, semantic
-`colorCue`, titles, assembled prompts, compact per-POV hediff/trait facts, legacy staggered
-intensity, and capped pre-cleanup debug text. Per-POV state is held in three `PovSlot`
-value-typed fields (`initiatorSlot`/`recipientSlot`/`neutralSlot`) and serialized straight out of
-them under the same flat keys (`initiatorStatus`, `neutralTitle`, ...) as before, so the on-disk
-shape is unchanged; role→storage is decided in one place, `SlotFor(role)`. Decorated rich text is
-not persisted. Classification is inferred from stable `gameContext` fields (`tale=`, `mental_state=`,
-`mood_event=`, `thought=`, `inspiration=`, `romance=`, `work=`, `hediff=`, `raid=`, `quest=`).
-Pending requests are not persisted (statuses reset on load; scans requeue). Death/arrival caches
-evict oldest stale entries at their cap and clear when a new session starts. Old saves from before
-the `PovSlot` refactor are no longer supported (the flat Scribe keys are unchanged, but save
-compatibility is no longer guaranteed across the refactor boundary).
-
----
-
-## 11. Runtime And DLC Constraints
-
-- RimWorld runs on Unity Mono; use only assemblies in `RimWorldWin64_Data/Managed`. Do not add
-  `System.Web.Extensions`/`JavaScriptSerializer` or external JSON libs (JSON is parsed by `MiniJson`).
-- **Harmony is the only external dependency.** RimWorld 1.6 no longer ships `0Harmony.dll` in
-  `Managed`, so `About/About.xml` declares `brrainz.harmony` under `<modDependencies>`/`<loadAfter>`;
-  a copy is bundled in `1.6/Assemblies/` as a fallback, and the loader dedupes it. Referenced at
-  build time from `Source/Libs/0Harmony.dll` (`Private=False`).
-- No paid DLC is required; optional DLC content must cleanly no-op when absent.
-- Prefer XML string `defName` matchers for DLC-aware content; absent DLC defs never appear.
-- DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` + null checks (Anomaly
-  creepjoiner checks use the same helper).
-- Avoid `DefDatabase<T>.GetNamed("DlcDef")` for optional content; use `GetNamedSilentFail` or XML
-  string matching. XML references to DLC defs need `MayRequire`; plain string matcher lists do not.
-
----
-
-## 12. Localization
-
-Player-facing UI strings and natural-language prompt text live in
-`Languages/English/Keyed/PawnDiary.xml`, resolved with `.Translate()` on the main thread. Def text
-(`label`, `instruction`, `tone`, writing-style `rule`, prompt defs/templates, hediff/body-part
-labels) localizes through DefInjected.
-
-Keep DefInjected English stubs in sync for `DiaryInteractionGroupDef`, `DiaryEventPromptDef`,
-`DiaryPersonaDef`, and `DiaryPromptDef` when editing XML labels/instructions/tones/event
-prompts/writing-style rules/shared prompts. Variant pools localize through indexed DefInjected keys
-(`<group.instructions.0>`, `<group.instructions.1>`, `<group.tones.0>`, …) — one per list position;
-keep blanks out so indices stay aligned.
-
-Kept English/raw on purpose: prompt schema labels (`event:`, `role:`, `thought=`), role/sentinel
-words (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), internal defNames/theme tags,
-configured API model ids such as `DiaryEventPromptDef.forcedModel`, and background-thread
-`LlmClient` debug/error strings (`.Translate()` is not thread-safe).
-
-To add a language, copy `Languages/English` to `Languages/<Language>`, translate Keyed values, and
-optionally add DefInjected translations for XML Def text.
-
----
-
-## 13. Build, Tests, Prompt Lab
+| Social interactions | `PlayLog.Add` | Pair, solo, batched, or ambient note by XML group. |
+| Mental states | `MentalStateHandler.TryStartMentalState` | Social fighting can be pairwise; other breaks are solo. |
+| Romance | `Pawn_RelationsTracker.AddDirectRelation` | Pairwise lover/spouse/ex relation moments. |
+| Tales and combat | `TaleRecorder.RecordTale` | Solo, pair, delayed combat batches, or death description. |
+| Arrivals | Starting-colonist scan and `Pawn.SetFaction` | Neutral first page. |
+| Deaths | `Pawn.Kill` plus XML death TaleDefs | Neutral final page. |
+| Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
+| Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. |
+| Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
+| Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
+| Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy. |
+| Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns. |
+| Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
+| Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries. |
+| Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
+| Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry. |
+| Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. |
+
+Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
+`DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
+per-tick work, save/load bookkeeping, startup registration, and vanilla UI overlays isolate failures
+with one-time logging and preserve vanilla behavior.
+
+## 5. XML Policy
+
+Most feature tuning lives in XML so changes do not require recompiling:
+
+- `DiaryInteractionGroupDefs.xml`: event classification, instructions, tones, color cues, batching,
+  hediff modes, package-aware compatibility routing, and default enablement.
+- `DiaryEventPromptDefs.xml`: event prompt text, event enhancement text, and optional forced model.
+- `DiaryPromptTemplateDefs.xml`: which structured fields each prompt shape renders.
+- `DiaryPromptDef.xml`: shared system/final instructions.
+- `DiaryPersonaDefs.xml`: built-in writing styles.
+- `DiaryPromptEnchantmentDefs.xml` and `DiaryHumorCueDefs.xml`: optional live-context and subtle
+  humor cues.
+- `DiarySignalPolicyDefs.xml` and `DiaryTuningDef.xml`: scan intervals, odds, cooldowns, thresholds,
+  day-reflection policy, and shared fallback tuning.
+- `DiaryUiStyleDef.xml` and `DiaryTextDecorationDefs.xml`: Diary UI dimensions/colors and display
+  rich-text decoration.
+
+Interaction groups match by domain, exact `defName`, substring token, and optional source package
+ID. Event prompt policy resolves from most specific to broadest key: source defName, interaction
+group, classifier key, then domain. Prompt text, enhancement text, and forced-model text resolve
+independently so narrow XML can override one field and inherit the others.
+
+For optional DLC or mod content, prefer string matchers in XML. Do not hard-reference DLC defs in C#
+or XML unless they are guarded; absent DLC content should simply never match.
+
+## 6. Prompts And Writing Styles
+
+Prompts are compact `key: value` lines. Empty values and `none`/`n/a`/`unknown` sentinels are dropped.
+Prompt templates cover pair, solo, batched, day-reflection, neutral death, neutral arrival, and title
+requests.
+
+System prompts stay short and general. Event-specific guidance comes from `DiaryEventPromptDef` and
+per-group instructions/tones. Groups can define instruction/tone variant pools; instructions roll once
+at capture and are saved, while tones are deterministic by event id.
+
+Prompt Studio edits shared system prompts and event prompt/enhancement/forced-model overrides.
+Writing-style presets are saved settings backed by `DiaryPersonaDef`; the code still uses "persona"
+in some field names for save compatibility, but the player-facing feature is writing style.
+
+Prompt enchantments add one weighted live-context pressure cue to eligible first-person prompts.
+Humor cues are hidden, XML-weighted, and folded into the writing-style block. Direct speech is allowed
+only in selected first-person interaction prompts with a closed `[[speech]]...[[/speech]]` block.
+
+Generated Social-log speech injection remains disabled/hidden. The saved setting exists for
+compatibility, but the call site is off. Title generation is enabled by default.
+
+## 7. Settings And UI
+
+Main settings cover API lanes, routing mode, request tuning, title generation, atmospheric
+formatting, prompt enchantments, work/social weights, event filters, prompt overrides, and writing
+style presets. Dev mode exposes prompt-test mode and extra diagnostics.
+
+The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
+appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can
+instead hide the tab and add a bottom command button that opens the same UI.
+
+Production UI shows completed pages. Dev mode also shows pending/failure rows, raw prompt/status
+data, formatting previews, prompt-suite tools, copy buttons, and regeneration controls. Histories page
+by in-game year; newest cards start expanded. Long histories are kept cheap by visible-entry caching,
+height caching, and viewport culling.
+
+`DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
+decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
+
+## 8. API And Reliability
+
+Each enabled endpoint/model/mode/auth row is an API lane. Supported request modes are OpenAI-compatible
+Chat Completions and OpenAI Responses. Auth can be bearer, no auth, custom API-key header, or `key=`
+query parameter. Logs strip secrets and query strings.
+
+Routing modes are Balanced, Prefer top rows, and Failover only. A `DiaryEventPromptDef.forcedModel`
+can try a matching active model first; blank, unknown, disabled, or failed forced lanes fall back to
+normal routing. Recipient follow-ups and title requests try to pin to the previous successful lane.
+
+`LlmClient` handles concurrency, per-lane cooldowns, transient retries, timeout/permanent failures,
+session cancellation on new game/load, and result handoff to the main thread. `LlmResponseParser`
+supports Chat and Responses output shapes, strips reasoning/transcript leaks, cleans malformed speech
+markers, and trims saved text locally.
+
+## 9. Save Data And Compatibility
+
+`DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`) and the event list (`diaryEvents`).
+`DiaryEventRepository` owns the event list and rebuilds its id lookup index after load. Per-pawn event
+lists prune blank, duplicate, or dangling refs.
+
+`DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, prompts, titles, LLM
+metadata, semantic color cue, and compact display facts. Per-role state is stored in initiator,
+recipient, and neutral slots but serialized under the historical flat Scribe keys.
+
+Adding Pawn Diary to an existing save is safe; it starts recording future events. Removing it is
+gameplay-safe because the mod does not persist custom pawn/map components or gameplay defs onto
+vanilla objects. The diary UI/history disappears without the mod, and old generated Social-log rows
+from dev builds may remain in the vanilla play log.
+
+## 10. Runtime And DLC Constraints
+
+- Runtime is RimWorld's Unity Mono. Use only assemblies available in `RimWorldWin64_Data/Managed`
+  plus the bundled/declared Harmony dependency.
+- JSON uses `Source/Util/MiniJson.cs`. Do not add `System.Web.Extensions` or external JSON libraries.
+- Harmony is declared in `About/About.xml`; runtime and build copies of `0Harmony.dll` are kept in
+  `1.6/Assemblies/` and `Source/Libs/`.
+- No paid DLC is required. Optional DLC data must no-op cleanly when absent.
+- DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks.
+- Avoid `DefDatabase<T>.GetNamed("DlcDef")` for optional content; use string matching or
+  `GetNamedSilentFail`.
+
+## 11. Localization
+
+Player-facing UI strings and natural-language prompt text use
+`Languages/English/Keyed/PawnDiary.xml` through `.Translate()` on the main thread. Def text uses
+DefInjected translations.
+
+Keep DefInjected English stubs in sync when editing XML labels, instructions, tones, event prompts,
+writing-style rules, or shared prompts. Variant pools use indexed DefInjected keys such as
+`<group.instructions.0>`; avoid blank list entries so indices stay aligned.
+
+Raw English is intentional for prompt schema labels (`event:`, `role:`, `thought=`), internal role
+and sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), defNames, API
+model ids, and background-thread `LlmClient` errors.
+
+## 12. Build, Tests, Prompt Lab
 
 Build:
 
@@ -605,13 +218,10 @@ Build:
 MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 ```
 
-Output is `1.6/Assemblies/PawnDiary.dll`. If `MSBuild` isn't on `PATH`, locate it with `vswhere` or a
-Visual Studio Developer PowerShell. Enable hooks: `git config core.hooksPath .githooks`.
-`.githooks/verify.ps1` checks staged whitespace, XML/project well-formedness, pure tests, Debug
-MSBuild, committed-DLL freshness, and Harmony freshness. Emergency bypass:
-`PAWNDIARY_SKIP_VERIFY_HOOKS=1`.
+If `MSBuild` is not on `PATH`, use Visual Studio Developer PowerShell or locate it with `vswhere`.
+The Debug build writes `1.6/Assemblies/PawnDiary.dll`, which is committed on purpose.
 
-Pure tests (compile without RimWorld/Unity):
+Pure tests:
 
 ```powershell
 dotnet run --project tests/LlmResponseParserTests/LlmResponseParserTests.csproj
@@ -620,55 +230,6 @@ dotnet run --project tests/DiaryTextDecorationTests/DiaryTextDecorationTests.csp
 dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.csproj
 dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 ```
-
-`DiaryCapturePolicyTests` covers Event Catalog decisions/dispatch; `DiaryPipelineTests` covers prompt
-planning, API lane policy/identity, and domain recovery; `PromptVariantsTests` covers instruction/tone
-pool selection (fallback, determinism, negative-seed normalization, blank-skip);
-`LlmResponseParserTests` and `DiaryTextDecorationTests` cover their respective pure helpers.
-
-**Live hook validation (RimBridge/GABS).** Use a disposable save with dev mode on, RimBridge/GABS
-connected, and prompt test mode enabled. Prompt test mode intercepts only after a real event reaches
-`QueuePrompt`, so a success appears as:
-
-```text
-[PawnDiary debug] Captured prompt without generation event=<id> role=<role>
-```
-
-Restart RimWorld after any DLL rebuild and check the log for `[Pawn Diary] PatchAll failed` first —
-a startup PatchAll error leaves later hooks unregistered, making no-capture results meaningless.
-
-Low-impact real hook checks:
-
-| Hook family | Debug action | Expected |
-|---|---|---|
-| Inspiration | `Actions\Inspiration...\Frenzy_Work` on a colonist | One prompt-only capture. |
-| Mental state | `Actions\Mental state...\Crying`, then `Actions\T: Stop mental state` | One capture, then pawn clears. |
-| Thought | `Actions\Show more actions\T: Give bad thought` | One capture from `TryGainMemory`. |
-| Social `PlayLog.Add` | `Actions\T: Force Interaction` → choose colonist → `insult` | Pairwise captures when the hook is installed and policy allows. |
-| Mood condition | `Actions\Add Game Condition...\Aurora\1 hour` | One capture per eligible affected colonist. |
-
-Automation should keep a `lastLogSequence` cursor and count new capture lines after each step: a solo
-event → one role capture; a pair event → initiator + recipient with the same event id; a neutral
-arrival/death → one neutral capture; a colony-wide fan-out → one initiator per eligible colonist. For
-stronger assertions than the log allows, dump recent saved `DiaryEvent` rows and report
-`interactionDefName`, `gameContext`, involved pawn ids, and per-role status. `scripts/gabs/
-pawndiary-live-smoke.lua` is the smallest hybrid smoke fixture (one GABS call: snapshot cursor →
-`Crying` on a colonist → stop mental state → fail if no new capture log).
-
-Full live auto-test coverage should walk every implemented source/route once (startup arrival, each
-solo/pair/fan-out source, quest accepted/completed/failed, Ideology + Anomaly rituals when DLC is
-present, ability use, tale/death/hediff/work/day-reflection routes). The practical target is proving
-each Harmony/scanner hook is installed and that real RimWorld events reach prompt construction — not
-exercising every XML matcher token (those are covered by prompt-lab and pure catalog tests). Quest
-coverage needs all three lifecycle groups, so accept one quest (covered) and end two more with
-`Success` and `Fail`. In base-game-only runs, mark the DLC-only sources (rituals, psychic rituals,
-Biotech pregnancy) not applicable.
-
-When a live action produces no capture, classify the miss before changing code: vanilla may have
-refused the action, XML/settings policy may have dropped it, the debug action may bypass the vanilla
-hook, the pawn may be ineligible/incapacitated, or Harmony may not have installed the hook.
-Prompt-suite entries are not a substitute — they synthesize `DiaryEvent`s inside the mod instead of
-entering through RimWorld's sources.
 
 Prompt lab:
 
@@ -680,16 +241,26 @@ node run.js --from-defs --save --model <model-name>
 node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 ```
 
-`npm test` runs the C#/JS assembler golden check and verifies the generated all-variants fixture set
-covers every XML prompt template, every `DiaryEventPromptDef` prompt/enhancement, configured
-prompt-enchantment variants, runtime context marker families, and the repeated-pass path. Release
-payloads are made with `scripts/publish.ps1` (throwaway Release DLL, copies only runnable mod files
-including runtime textures into `dist/<published packageId>`).
+Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridge/GABS. Prompt-test
+mode intercepts only after a real event reaches `QueuePrompt`; a successful capture logs:
 
----
+```text
+[PawnDiary debug] Captured prompt without generation event=<id> role=<role>
+```
 
-## 14. Changelog Policy
+Release payloads are prepared with:
 
-`CHANGELOG.md` is a milestone history, not a commit log. Add or update a dated section only for
-user-visible changes, architecture changes, migrations, important fixes, release work, or known
-issues. Prefer one grouped bullet over several micro-entries.
+```powershell
+scripts\publish.ps1
+```
+
+The script builds a throwaway Release DLL and copies runnable mod files, runtime textures, `Source/`
+without `bin`/`obj`, and reference docs into `dist/<published packageId>`.
+
+## 13. When Changing The Mod
+
+- Follow `AGENTS.md` for detailed architecture, DLC, localization, and validation rules.
+- Keep tunable policy in XML when possible.
+- Keep live RimWorld objects at adapter/UI/transport edges; pure helpers should use DTOs/primitives.
+- Add or update focused pure tests when changing pure logic.
+- Update `DOCUMENTATION.md` and `CHANGELOG.md` for behavior, structure, release, or workflow changes.
