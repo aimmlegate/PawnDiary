@@ -141,9 +141,12 @@ namespace PawnDiary
         private List<string> generatedSpeechPlayLogTextValues;
 
         // How often (in ticks) GameComponentTick rescans saved events to (re)queue any pending
-        // generations, and the next tick that scan is allowed to run.
+        // generations once something has explicitly requested a catch-up pass.
         private const int GenerationScanIntervalTicks = 200;
         private int nextGenerationScanTick;
+        // Most new events queue their LLM request immediately, so a full active-event scan is only
+        // needed for load catch-up, delayed raid entries, and orphan recovery.
+        private bool generationScanRequested;
         // Orphan recovery needs a full active-event pass, but only handles rare entries stranded on
         // "writing..." after a dropped background request. Run it less often than normal queue scans.
         private const int OrphanRecoveryScanIntervalTicks = 600;
@@ -233,6 +236,7 @@ namespace PawnDiary
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
             // their diary entries stuck on "Generating" with no way to re-queue them this session.
             nextGenerationScanTick = 0;
+            generationScanRequested = true;
             nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
@@ -270,6 +274,7 @@ namespace PawnDiary
             // "pending" status normalized back to "not generated" (DiaryEvent.NormalizeLoadedStatus),
             // so the scan below re-queues them in the current session.
             nextGenerationScanTick = 0;
+            generationScanRequested = true;
             nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
@@ -282,7 +287,7 @@ namespace PawnDiary
             RebuildWrittenDayReflectionsFromEvents();
             ResetThoughtProgressionState(true);
             ResetHediffProgressionState(true);
-            QueueAllPendingGenerations();
+            RunRequestedGenerationScan();
             QueueMissingTitles();
         }
 
@@ -457,13 +462,29 @@ namespace PawnDiary
                 RecoverOrphanedPendingGenerations();
             }
 
-            if (now >= nextGenerationScanTick)
+            if (generationScanRequested && now >= nextGenerationScanTick)
             {
                 nextGenerationScanTick = now + GenerationScanIntervalTicks;
-                QueueAllPendingGenerations();
+                RunRequestedGenerationScan();
             }
 
             DrainCompletedLlmWork();
+        }
+
+        private void RequestGenerationScan()
+        {
+            generationScanRequested = true;
+        }
+
+        private void RunRequestedGenerationScan()
+        {
+            if (!generationScanRequested)
+            {
+                return;
+            }
+
+            generationScanRequested = false;
+            QueueAllPendingGenerations();
         }
 
         private void DrainCompletedLlmWork()

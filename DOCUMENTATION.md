@@ -59,7 +59,9 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 8. `LlmClient` sends requests and returns results to the main thread; successful main pages may queue
    a title follow-up.
 
-`GameComponentTick` runs game-time scans and generation rescans roughly every 200 ticks. Orphaned
+`GameComponentTick` runs game-time scans continuously, but the expensive active-event generation
+rescan is demand-driven: load catch-up, delayed raid entries, and recovered orphaned work request a
+pass, then the catch-up pass runs at most every 200 ticks until it is no longer needed. Orphaned
 "writing..." recovery is a separate, slower full-history pass every 600 ticks. Completed LLM results
 and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so requests that
 were already queued can finish and apply while the game is paused. Pending generation is not saved;

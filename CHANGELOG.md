@@ -6,10 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
-- **Generation scan pressure reduced.** Normal pending-generation scans now run every 200 ticks,
-  orphaned "writing..." recovery moved to a separate 600-tick pass, and the recurring scan no longer
-  performs a full missing-title sweep; missing titles are swept on load and settings save, while
-  successful main entries still queue their title follow-up immediately.
+- **Generation scan pressure reduced.** Pending-generation catch-up scans are now demand-driven and
+  run at most every 200 ticks after load, delayed raids, or orphan recovery request one. Orphaned
+  "writing..." recovery moved to a separate 600-tick pass, and the recurring scan no longer performs
+  a full missing-title sweep; missing titles are swept on load and settings save, while successful
+  main entries still queue their title follow-up immediately.
 
 - **Active diary event cap added.** Settings now include a numeric hard cap for retained
   `DiaryEvent` records (default 1000). The game keeps the newest events, prunes older event refs

@@ -34,7 +34,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns the diary entries to render for a pawn, bounded by that pawn's arrival and death pages.
-        /// Pure read — no side effects. Generation is driven entirely by the background tick scan.
+        /// Pure read — no side effects. Generation is driven by capture hooks plus demand-driven
+        /// catch-up scans, never by opening the UI.
         /// </summary>
         public IReadOnlyList<DiaryEntryView> EntriesFor(Pawn pawn)
         {

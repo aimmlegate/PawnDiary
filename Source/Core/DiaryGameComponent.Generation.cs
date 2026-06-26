@@ -229,6 +229,7 @@ namespace PawnDiary
             if (orphanCandidatesLastScan.Contains(key))
             {
                 diaryEvent.ResetPendingToNotGenerated(povRole);
+                RequestGenerationScan();
                 LogApiDebug("Recovered orphaned pending generation event=" + diaryEvent.eventId + " role=" + povRole);
             }
             else
@@ -360,6 +361,7 @@ namespace PawnDiary
             int now = Find.TickManager.TicksGame;
             if (now < readyTick)
             {
+                RequestGenerationScan();
                 return true;
             }
 
@@ -376,6 +378,7 @@ namespace PawnDiary
             }
 
             delayedRaidGenerationReadyTicks[DelayedGenerationKey(diaryEvent, povRole)] = Math.Max(0, readyTick);
+            RequestGenerationScan();
         }
 
         private static string DelayedGenerationKey(DiaryEvent diaryEvent, string povRole)
