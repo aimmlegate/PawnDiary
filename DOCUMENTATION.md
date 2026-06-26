@@ -122,9 +122,11 @@ arrival/death bypass that guard.
 | Day reflections | Sleep/rest trigger | One reflective entry per pawn/day only when an XML-configured important signal kind exists (`event`/`opinion`/`hediff` by default; `filler` alone cannot trigger unless XML allows). |
 
 `PlayLog.Add` preflights eligibility and XML significance before rendering RimWorld's POV grammar
-strings, so routine social-log rows that can't become diary entries stay cheap. Generated Social-log
-speech patches the concrete 1.6 worker `ToGameStringFromPOV_Worker` with an old-name fallback so a
-display-method rename can't abort `PatchAll` before later hooks register.
+strings, so routine social-log rows that can't become diary entries stay cheap. Interaction groups can
+also set `captureRenderedGameText=false` for compatibility with mods whose grammar rendering has side
+effects; those rows use Pawn Diary's safe fallback text instead. Generated Social-log speech patches
+the concrete 1.6 worker `ToGameStringFromPOV_Worker` with an old-name fallback so a display-method
+rename can't abort `PatchAll` before later hooks register.
 
 Harmony hooks are split by capture domain under `Source/Patches/`: deaths, arrivals, health,
 thoughts, quests, social log/relations, and broader gameplay signals. Most use `[HarmonyPatch]` and
@@ -177,7 +179,14 @@ dedup mutation, event creation, and LLM queueing in adapters. Pure code takes DT
 `1.6/Defs/DiaryInteractionGroupDefs.xml` owns group matching, instructions, color cues, batching,
 promotion, Hediff policy, and default enablement. Domains: Interaction, MentalState, Tale, MoodEvent,
 Thought, Inspiration, Romance, Work, Hediff, Raid, Quest, Ritual, Ability. Matching is
-domain-scoped by exact `defName` or substring token; XML order matters and catch-all groups go last.
+domain-scoped by exact `defName`, substring token, or (for live Defs) source `matchPackageIds`; XML
+order matters and catch-all groups go last. Package matching exists for compatibility routing without
+hard-referencing another mod or enumerating every def it adds. Groups can also set
+`disableWhenPackageIdsLoaded` to go quiet while another loaded package provides better coverage. The
+built-in `speakup_chitchat` group matches `JPT.speakup`, skips grammar rendering during capture,
+batches SpeakUp rows as ambient social texture, and uses the same promotion curve as normal small talk.
+The normal `smalltalk` group disables itself while SpeakUp is loaded because SpeakUp supplies more
+varied chitchat rows.
 
 **Quest domain** is unusual: its `matchDefNames` are lifecycle signals
 (`accepted`/`completed`/`failed`), not defNames — one `DiaryEventType.Quest` fans out to three prompt

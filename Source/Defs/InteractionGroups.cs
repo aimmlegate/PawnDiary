@@ -197,6 +197,17 @@ namespace PawnDiary
         // whether to add the equipped weapon to the prompt; set per group in XML, default false.
         public bool combat = false;
 
+        // Whether the PlayLog capture hook should call RimWorld's grammar renderer to preserve the
+        // exact social-log text. Some conversation-framework mods schedule follow-up dialogue while
+        // rendering their grammar, so compatibility groups can turn this off and use safe fallback
+        // text instead.
+        public bool captureRenderedGameText = true;
+
+        // Package IDs that suppress this group while any listed mod is loaded. Use this for
+        // compatibility where another mod supplies a richer replacement for a built-in low-value
+        // group, while keeping the original group active in ordinary mod lists.
+        public List<string> disableWhenPackageIdsLoaded;
+
         // Optional batching policy. Interaction groups can merge or ambient-batch social log rows;
         // selected Tale groups can delay and merge bursts into one solo event per pawn.
         public InteractionBatchPolicy batch;
@@ -254,6 +265,11 @@ namespace PawnDiary
         // Substring tokens: a defName that contains any token (case-insensitive) matches. Optional.
         public List<string> matchTokens;
 
+        // Package IDs: a Def from any listed mod package is claimed by this group. This lets
+        // compatibility policy live in XML without referencing another mod's C# types or listing
+        // every InteractionDef it adds. Compared case-insensitively against Def.modContentPack.
+        public List<string> matchPackageIds;
+
         // When true this group matches everything in its domain (the catch-all). Give it the
         // highest `order` in its domain so the specific groups get first claim.
         public bool catchAll = false;
@@ -262,11 +278,30 @@ namespace PawnDiary
         // wins"). Def load order across files is not guaranteed, so this keeps it deterministic.
         public int order = 0;
 
+        // True if this group claims the given live Def. Package matching is available only for live
+        // Defs; saved-event recovery still calls Matches(string) and classifies by defName.
+        public bool Matches(Def sourceDef)
+        {
+            return Matches(sourceDef?.defName, PackageIdFor(sourceDef));
+        }
+
         // True if this group claims the given defName. Check order mirrors the old catalog:
-        // catch-all, then exact defNames, then substring tokens.
+        // catch-all, then exact defNames, then substring tokens. Package IDs are not checked here
+        // because callers such as saved-event recovery only have the persisted defName string.
         public bool Matches(string defName)
         {
+            return Matches(defName, string.Empty);
+        }
+
+        private bool Matches(string defName, string packageId)
+        {
             if (catchAll)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(packageId)
+                && InteractionGroups.ContainsDefName(matchPackageIds, packageId))
             {
                 return true;
             }
@@ -308,6 +343,11 @@ namespace PawnDiary
             return false;
         }
 
+        private static string PackageIdFor(Def sourceDef)
+        {
+            return sourceDef?.modContentPack?.PackageId ?? string.Empty;
+        }
+
         // True when this group should batch matching InteractionDef events. Kept as a helper so
         // callers don't need to know how a missing <batch> node is represented.
         public bool HasBatchPolicy
@@ -344,6 +384,13 @@ namespace PawnDiary
             {
                 return domain == GroupDomain.Hediff && hediff != null && hediff.enabled;
             }
+        }
+
+        // True when XML says this group should go quiet because a replacement/compatibility package
+        // is currently active.
+        public bool DisabledByLoadedPackage()
+        {
+            return InteractionGroups.AnyPackageLoaded(disableWhenPackageIdsLoaded);
         }
 
         // Returns which Tale pawn slot contains the death victim, or empty for non-death tales.
@@ -395,7 +442,7 @@ namespace PawnDiary
         // catch-all ("Other").
         public static DiaryInteractionGroupDef Classify(InteractionDef interactionDef)
         {
-            return ClassifyIn(GroupDomain.Interaction, interactionDef?.defName);
+            return ClassifyIn(GroupDomain.Interaction, interactionDef);
         }
 
         // First MentalState-domain group that matches the state, else the MentalState catch-all
@@ -523,6 +570,29 @@ namespace PawnDiary
                 }
 
                 if (group.Matches(defName))
+                {
+                    return group;
+                }
+
+                fallback = group;
+            }
+
+            return fallback;
+        }
+
+        private static DiaryInteractionGroupDef ClassifyIn(GroupDomain domain, Def sourceDef)
+        {
+            DiaryInteractionGroupDef fallback = null;
+            List<DiaryInteractionGroupDef> all = All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryInteractionGroupDef group = all[i];
+                if (group.domain != domain)
+                {
+                    continue;
+                }
+
+                if (group.Matches(sourceDef))
                 {
                     return group;
                 }
@@ -691,6 +761,31 @@ namespace PawnDiary
             for (int i = 0; i < defNames.Count; i++)
             {
                 if (string.Equals(defNames[i], defName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool AnyPackageLoaded(List<string> packageIds)
+        {
+            if (packageIds == null || packageIds.Count == 0)
+            {
+                return false;
+            }
+
+            List<ModContentPack> loadedMods = LoadedModManager.RunningModsListForReading;
+            if (loadedMods == null || loadedMods.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < loadedMods.Count; i++)
+            {
+                string loadedPackageId = loadedMods[i]?.PackageId;
+                if (ContainsDefName(packageIds, loadedPackageId))
                 {
                     return true;
                 }

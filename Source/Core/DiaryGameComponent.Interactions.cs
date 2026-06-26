@@ -186,6 +186,17 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns whether the PlayLog capture hook may render RimWorld's POV text for this
+        /// interaction. Most vanilla rows are safe to render. Some compatibility groups intentionally
+        /// skip rendering because another mod's grammar renderer can have gameplay side effects.
+        /// </summary>
+        public bool ShouldRenderInteractionTextFromPlayLog(InteractionDef interactionDef)
+        {
+            DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
+            return group == null || group.captureRenderedGameText;
+        }
+
+        /// <summary>
         /// Returns the per-group prompt instruction for a specific interaction def, or empty string if none.
         /// </summary>
         private static string InteractionInstruction(InteractionDef interactionDef)

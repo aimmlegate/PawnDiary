@@ -46,8 +46,9 @@ namespace PawnDiary
                 return;
             }
 
-            string initiatorGameText = GameTextFromPov(interactionEntry, initiator);
-            string recipientGameText = GameTextFromPov(interactionEntry, recipient);
+            bool renderGameText = component.ShouldRenderInteractionTextFromPlayLog(interactionDef);
+            string initiatorGameText = renderGameText ? GameTextFromPov(interactionEntry, initiator) : string.Empty;
+            string recipientGameText = renderGameText ? GameTextFromPov(interactionEntry, recipient) : string.Empty;
 
             component.RecordInteraction(initiator, recipient, interactionDef,
                 initiatorGameText, recipientGameText, interactionEntry.LogID);

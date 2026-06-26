@@ -18,6 +18,12 @@
     defaultEnabled - whether events in this group are recorded by default
     important      - whether entries in this group get the strong importance marker in the Diary tab
     combat         - whether events in this group are combat-related (adds the equipped weapon to the prompt)
+    captureRenderedGameText
+                   - Interaction-domain only. true by default; set false for compatibility groups
+                     whose social-log grammar rendering can have side effects during capture
+    disableWhenPackageIdsLoaded
+                   - optional list of mod package IDs. When any is loaded, this group is treated as
+                     disabled even if defaultEnabled is true.
     colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
                      combat, socialFight, mentalBreak, daze, extremeDark, strangeChat, white, quiet
     batch          - optional Interaction/Tale batching policy:
@@ -52,9 +58,62 @@
                      rule and same weighted-by-duplication behavior as `instructions`.
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
     matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
+    matchPackageIds
+                   - live Defs from these mod package IDs are claimed (case-insensitive). This is
+                     for compatibility routing without hard-referencing another mod or listing every def.
     catchAll       - true = matches everything in its domain (leave matchers empty)
 -->
 <Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>speakup_chitchat</defName>
+    <label>SpeakUp chatter</label>
+    <order>18</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <!-- SpeakUp schedules follow-up dialogue from social-log grammar rendering. Capture safe
+         fallback text instead of calling ToGameStringFromPOV inside PlayLog.Add. -->
+    <captureRenderedGameText>false</captureRenderedGameText>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>SpeakUpAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>3</minEventsToWrite>
+      <maxSampleLines>5</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.04</baseChance>
+      <maxChance>0.6</maxChance>
+      <opinionStrongBonus>0.25</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.2</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.2</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.2</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>ordinary SpeakUp conversation - treat it as chitchat unless the pair's mood, need, or relationship tension makes the small moment land harder</instruction>
+    <instructions>
+      <li>SpeakUp chatter - write it as low-stakes back-and-forth; do not invent a quoted line</li>
+      <li>SpeakUp chatter - focus on the feeling under the small talk: ease, awkwardness, pressure, or distance</li>
+      <li>SpeakUp chatter - let the ordinary rhythm matter only if the pawn's state makes it matter</li>
+    </instructions>
+    <tone>with light, everyday social texture</tone>
+    <tones>
+      <li>loose and conversational, like ordinary talk passing through the room</li>
+      <li>plain and observant, letting tiny social pressure carry the weight</li>
+    </tones>
+    <matchPackageIds>
+      <li>JPT.speakup</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>romance</defName>
@@ -458,6 +517,9 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
+    <disableWhenPackageIdsLoaded>
+      <li>JPT.speakup</li>
+    </disableWhenPackageIdsLoaded>
     <batch>
       <mode>AmbientDayNote</mode>
       <windowTicks>60000</windowTicks>

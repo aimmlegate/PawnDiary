@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **SpeakUp interactions now route as promoted chitchat.** Interaction groups can match live Defs by
+  source package ID, opt out of PlayLog grammar rendering during capture, and disable themselves when
+  a listed package is loaded. The built-in `speakup_chitchat` group matches `JPT.speakup`, batches
+  rows as ambient social texture, uses the same promotion odds as normal small talk, and suppresses
+  the normal `smalltalk` group while SpeakUp is loaded.
+
 - **Built-in writing styles retuned around author-inspired mechanics.** The 30 stock
   `DiaryPersonaDef` presets now use distinct mechanical labels/rules inspired by recognizable
   literary habits without naming authors in the injected prompt. Each rule includes a tiny synthetic

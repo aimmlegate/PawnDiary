@@ -644,7 +644,8 @@ namespace PawnDiary
         /// </summary>
         public bool IsGroupEnabled(string groupKey)
         {
-            return InteractionGroups.ByKey(groupKey)?.defaultEnabled ?? false;
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            return group != null && group.defaultEnabled && !group.DisabledByLoadedPackage();
         }
 
         /// <summary>
