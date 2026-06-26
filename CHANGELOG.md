@@ -6,6 +6,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Workshop preview updated to human-made art.** Updated the preview image; thanks
+  u/KyraDragoness for the provided art.
+
 - **Queued generation now settles while paused.** Completed LLM results and their follow-up title or
   recipient requests are drained from the real-time update hook, while game-tick scanners stay tied
   to unpaused simulation ticks.
