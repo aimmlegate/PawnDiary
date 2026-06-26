@@ -51,7 +51,8 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 3. The pure Event Catalog decides whether to drop, create a solo/pair/neutral entry, batch, or route
    to day reflection.
 4. `AddSoloEvent` or `AddPairwiseEvent` creates a saved `DiaryEvent` and indexes it on eligible
-   pawn records.
+   pawn records. The active-event retention cap then drops oldest events beyond the configured
+   limit and scrubs pawn references to them.
 5. Generation queues immediately when possible; periodic scans retry pending or orphaned work.
 6. `DiaryPipelineAdapters` copies runtime/XML/localized state into pure pipeline DTOs.
 7. Pure helpers assemble prompts, serialize request JSON, parse provider responses, and clean text.
@@ -140,8 +141,9 @@ compatibility, but the call site is off. Title generation is enabled by default.
 ## 7. Settings And UI
 
 Main settings cover API lanes, routing mode, request tuning, title generation, atmospheric
-formatting, prompt enchantments, work/social weights, event filters, prompt overrides, and writing
-style presets. Dev mode exposes prompt-test mode and extra diagnostics.
+formatting, prompt enchantments, work/social weights, the active diary-event cap, event filters,
+prompt overrides, and writing style presets. Dev mode exposes prompt-test mode and extra
+diagnostics.
 
 The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
 appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can
@@ -149,8 +151,8 @@ instead hide the tab and add a bottom command button that opens the same UI.
 
 Production UI shows completed pages. Dev mode also shows pending/failure rows, raw prompt/status
 data, formatting previews, prompt-suite tools, copy buttons, and regeneration controls. Histories page
-by in-game year; newest cards start expanded. Long histories are kept cheap by visible-entry caching,
-height caching, and viewport culling.
+by in-game year; newest cards start expanded. Long histories are kept cheap by the active-event cap,
+visible-entry caching, height caching, and viewport culling.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
@@ -175,6 +177,11 @@ markers, and trims saved text locally.
 `DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`) and the event list (`diaryEvents`).
 `DiaryEventRepository` owns the event list and rebuilds its id lookup index after load. Per-pawn event
 lists prune blank, duplicate, or dangling refs.
+
+The temporary active-event cap keeps only the newest configured number of `DiaryEvent` records
+(default 1000, editable from settings). It runs after load, before save, after new event creation,
+and when settings are saved. Trimmed events are removed from the master list and from every pawn's
+event-id list, so older pages are no longer visible and background scans do not iterate them.
 
 `DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, prompts, titles, LLM
 metadata, semantic color cue, and compact display facts. Per-role state is stored in initiator,

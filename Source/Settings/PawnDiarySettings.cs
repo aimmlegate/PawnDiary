@@ -146,6 +146,10 @@ namespace PawnDiary
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
         public float socialGenerationWeight = 1f;
+        // Hard cap for active saved DiaryEvents. The newest events stay in the live store; older
+        // ones are dropped from the master list and each pawn's event-id list so UI and background
+        // scans never walk thousands of historical pages.
+        public int maxActiveDiaryEvents = DefaultMaxActiveDiaryEvents;
 
         // Legacy per-interaction-group settings, keyed by InteractionGroup.defName. Event filtering
         // is now XML-only (DiaryInteractionGroupDef.defaultEnabled); this dictionary remains only so
@@ -167,6 +171,12 @@ namespace PawnDiary
         public const string DefaultModelName = "local-model";
         // Sentinel value stored in settings to mean "do not send a reasoning override".
         public const string DefaultReasoningEffort = ApiEndpointPolicy.DefaultReasoningEffort;
+        // Temporary retention guard until old diary-event compaction exists. The lower bound keeps
+        // the cap positive; the upper bound prevents the settings UI from reintroducing the
+        // multi-thousand-event scans this guard is meant to avoid.
+        public const int DefaultMaxActiveDiaryEvents = 1000;
+        public const int MinActiveDiaryEvents = 1;
+        public const int MaxActiveDiaryEvents = 2000;
 
         public override void ExposeData()
         {
@@ -196,6 +206,7 @@ namespace PawnDiary
             eventForcedModelOverrides.ExposeData();
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
+            Scribe_Values.Look(ref maxActiveDiaryEvents, "maxActiveDiaryEvents", DefaultMaxActiveDiaryEvents);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             personaPresets.ExposeData();
 
@@ -717,6 +728,15 @@ namespace PawnDiary
             titleSystemPromptOverride = titleSystemPromptOverride ?? string.Empty;
             workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
             socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
+            maxActiveDiaryEvents = ClampActiveDiaryEventLimit(maxActiveDiaryEvents);
+        }
+
+        /// <summary>
+        /// Clamps the active diary-event history cap to the bounded range exposed in settings.
+        /// </summary>
+        public static int ClampActiveDiaryEventLimit(int value)
+        {
+            return Mathf.Clamp(value, MinActiveDiaryEvents, MaxActiveDiaryEvents);
         }
 
         /// <summary>

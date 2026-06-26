@@ -69,6 +69,7 @@ namespace PawnDiary
             Settings.NormalizeEndpointUrls();
             LlmClient.ApplyLaneConfiguration(Settings.ActiveEndpoints());
             LlmClient.ApplyDebugLoggingSetting();
+            DiaryGameComponent.Current?.ApplyActiveEventLimitFromSettings();
             base.WriteSettings();
         }
     }

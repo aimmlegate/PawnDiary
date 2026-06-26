@@ -53,6 +53,7 @@ namespace PawnDiary
             }
 
             diary.pawnName = pawn.LabelShortCap;
+            ApplyActiveEventLimit();
             return entriesToAdd;
         }
 

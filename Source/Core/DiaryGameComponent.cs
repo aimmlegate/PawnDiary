@@ -290,6 +290,7 @@ namespace PawnDiary
                     FlushAllInteractionBatches();
                     FlushAllTaleBatches();
                     FlushAllAmbientThoughtNotes();
+                    ApplyActiveEventLimit();
                     PruneDiaryEventRefs();
                 }
                 catch (Exception e)
@@ -341,6 +342,7 @@ namespace PawnDiary
                     // works immediately (the first generation scan and any UI draw run before any new
                     // event is recorded this session).
                     events.RebuildIndex();
+                    ApplyActiveEventLimit();
                     RebuildWrittenDayReflectionsFromEvents();
                     PruneDiaryEventRefs();
                     PruneStaleGeneratedSpeechPlayLogState();

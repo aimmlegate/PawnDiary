@@ -139,6 +139,31 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Keeps only the newest <paramref name="maxEvents"/> events in the master list and rebuilds
+        /// the id lookup index to match. The caller still owns per-pawn diary refs; after a trim it
+        /// should remove refs whose ids no longer exist in this repository.
+        /// </summary>
+        /// <param name="maxEvents">Maximum number of active events to retain.</param>
+        /// <returns>The number of oldest events removed.</returns>
+        public int TrimToMostRecent(int maxEvents)
+        {
+            if (maxEvents < 0)
+            {
+                maxEvents = 0;
+            }
+
+            if (diaryEvents.Count <= maxEvents)
+            {
+                return 0;
+            }
+
+            int removed = diaryEvents.Count - maxEvents;
+            diaryEvents.RemoveRange(0, removed);
+            RebuildIndex();
+            return removed;
+        }
+
+        /// <summary>
         /// Rebuilds the id->event index from the master list. Called once after a save loads (the
         /// index is never serialized). First occurrence wins, matching the old linear FindEvent scan —
         /// duplicate ids are not expected (eventIds are GUIDs) but this keeps behavior identical if

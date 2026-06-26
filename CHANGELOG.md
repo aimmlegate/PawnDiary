@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Active diary event cap added.** Settings now include a numeric hard cap for retained
+  `DiaryEvent` records (default 1000). The game keeps the newest events, prunes older event refs
+  from pawn diaries, and excludes trimmed pages from UI and background scans.
+
 - **Workshop preview updated to human-made art.** Updated the preview image; thanks
   u/KyraDragoness for the provided art.
 
