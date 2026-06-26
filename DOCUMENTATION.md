@@ -186,9 +186,10 @@ order matters and catch-all groups go last. Package matching exists for compatib
 hard-referencing another mod or enumerating every def it adds. Groups can also set
 `disableWhenPackageIdsLoaded` to go quiet while another loaded package provides better coverage. The
 built-in `speakup_chitchat` group matches `JPT.speakup`, renders SpeakUp text only under the optional
-reply-suppression guard, batches SpeakUp rows as ambient social texture, and uses the same promotion
-curve as normal small talk. The normal `smalltalk` group disables itself while SpeakUp is loaded
-because SpeakUp supplies more varied chitchat rows.
+reply-suppression guard, and batches SpeakUp rows as ambient social texture. Because SpeakUp can
+emit many more social-log rows than vanilla chitchat, this group uses a stricter ambient threshold
+and much lower promotion odds than normal small talk. The normal `smalltalk` group disables itself
+while SpeakUp is loaded because SpeakUp supplies more varied chitchat rows.
 
 **Quest domain** is unusual: its `matchDefNames` are lifecycle signals
 (`accepted`/`completed`/`failed`), not defNames — one `DiaryEventType.Quest` fans out to three prompt

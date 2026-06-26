@@ -9,8 +9,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 - **SpeakUp interactions now route as promoted chitchat.** Interaction groups can match live Defs by
   source package ID, opt out of PlayLog grammar rendering during capture, and disable themselves when
   a listed package is loaded. The built-in `speakup_chitchat` group matches `JPT.speakup`, batches
-  rows as ambient social texture, uses the same promotion odds as normal small talk, and suppresses
-  the normal `smalltalk` group while SpeakUp is loaded.
+  rows as ambient social texture, uses stricter thresholds and lower promotion odds than normal
+  small talk, and suppresses the normal `smalltalk` group while SpeakUp is loaded.
 
 - **Tagged social-log grammar now renders under a reply-suppression guard.** Pawn Diary can use
   generated conversation text in prompts when the optional guard is registered, and falls back to
