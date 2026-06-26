@@ -6,6 +6,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Diary command startup warning fixed.** The hidden-tab command helper is now marked for
+  RimWorld static constructor startup because it owns the cached Unity texture for the command icon.
+
 - **Generation scan pressure reduced.** Pending-generation catch-up scans are now demand-driven and
   run at most every 200 ticks after load, delayed raids, or orphan recovery request one. Orphaned
   "writing..." recovery moved to a separate 600-tick pass, and the recurring scan no longer performs

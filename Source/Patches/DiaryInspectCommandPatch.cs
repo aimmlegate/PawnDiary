@@ -38,12 +38,16 @@ namespace PawnDiary
     /// <summary>
     /// Shared command construction for opening the hidden diary inspect tab.
     /// </summary>
+    [StaticConstructorOnStartup]
     internal static class DiaryInspectCommand
     {
         // Stable command merge key for RimWorld's gizmo grouping. The command is single-select only,
         // but a fixed key keeps the command identity deterministic if vanilla compares commands.
         private const int DiaryCommandGroupKey = 9162301;
         private const string DiaryCommandIconPath = "UI/Commands/PawnDiaryOpen";
+        // RimWorld scans static UnityEngine.Object fields during startup and expects their owning
+        // type to opt into main-thread static construction. The texture is still loaded lazily from
+        // the gizmo UI path below; the attribute keeps RimWorld from flagging this cache as unsafe.
         private static Texture2D diaryCommandIcon;
 
         /// <summary>
