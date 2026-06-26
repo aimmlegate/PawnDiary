@@ -360,7 +360,7 @@ namespace PawnDiary
 
         /// <summary>
         /// Returns the color strip used to mark the entry group. The saved cue key follows
-        /// RimWorld-like meaning (hostile red, mental-break green, quiet gray) instead of hashing
+        /// RimWorld-like meaning (hostile red, muted mental-break green, quiet gray) instead of hashing
         /// localized group labels.
         /// </summary>
         private static Color EntryAccentColor(DiaryEntryView entry)

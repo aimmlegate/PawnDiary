@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Mental-break diary card green softened.** The mental-break cue now uses an explicit muted sage
+  accent instead of RimWorld's brighter ally preset, with lower page-wash and header-rule intensity
+  so those diary items read as marked without popping as aggressively.
+
 - **SpeakUp interactions now route as promoted chitchat.** Interaction groups can match live Defs by
   source package ID, opt out of PlayLog grammar rendering during capture, and disable themselves when
   a listed package is loaded. The built-in `speakup_chitchat` group matches `JPT.speakup`, batches

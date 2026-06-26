@@ -96,8 +96,8 @@
     <combatHeaderRuleColor><r>0.95</r><g>0.18</g><b>0.12</b><a>0.65</a></combatHeaderRuleColor>
     <socialFightPageTintColor><r>0.90</r><g>0.34</g><b>0.05</b><a>0.16</a></socialFightPageTintColor>
     <socialFightHeaderRuleColor><r>1</r><g>0.52</g><b>0.16</b><a>0.68</a></socialFightHeaderRuleColor>
-    <mentalBreakPageTintColor><r>0.18</r><g>0.50</g><b>0.24</b><a>0.15</a></mentalBreakPageTintColor>
-    <mentalBreakHeaderRuleColor><r>0.42</r><g>0.95</g><b>0.46</b><a>0.60</a></mentalBreakHeaderRuleColor>
+    <mentalBreakPageTintColor><r>0.18</r><g>0.34</g><b>0.22</b><a>0.09</a></mentalBreakPageTintColor>
+    <mentalBreakHeaderRuleColor><r>0.40</r><g>0.58</g><b>0.40</b><a>0.42</a></mentalBreakHeaderRuleColor>
     <accentHighlightColor><r>1</r><g>1</g><b>1</b><a>0.10</a></accentHighlightColor>
     <titleTextColor><r>0.88</r><g>0.86</g><b>0.79</b><a>1</a></titleTextColor>
     <pendingTitlePrefixColor><r>0.86</r><g>0.86</g><b>0.86</b><a>0.95</a></pendingTitlePrefixColor>
@@ -137,7 +137,7 @@
     <cueColors>
       <li><cue>combat</cue><color><preset>hostile</preset></color></li>
       <li><cue>socialFight</cue><color><r>1</r><g>0.52</g><b>0.16</b><a>1</a></color></li>
-      <li><cue>mentalBreak</cue><color><preset>ally</preset></color></li>
+      <li><cue>mentalBreak</cue><color><r>0.48</r><g>0.64</g><b>0.48</b><a>1</a></color></li>
       <li><cue>daze</cue><color><preset>gene</preset></color></li>
       <li><cue>extremeDark</cue><color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color></li>
       <li><cue>strangeChat</cue><color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color></li>

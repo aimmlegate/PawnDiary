@@ -184,8 +184,8 @@ namespace PawnDiary
         public DiaryUiColorSpec combatHeaderRuleColor = Color(0.95f, 0.18f, 0.12f, 0.65f);
         public DiaryUiColorSpec socialFightPageTintColor = Color(0.90f, 0.34f, 0.05f, 0.16f);
         public DiaryUiColorSpec socialFightHeaderRuleColor = Color(1f, 0.52f, 0.16f, 0.68f);
-        public DiaryUiColorSpec mentalBreakPageTintColor = Color(0.18f, 0.50f, 0.24f, 0.15f);
-        public DiaryUiColorSpec mentalBreakHeaderRuleColor = Color(0.42f, 0.95f, 0.46f, 0.60f);
+        public DiaryUiColorSpec mentalBreakPageTintColor = Color(0.18f, 0.34f, 0.22f, 0.09f);
+        public DiaryUiColorSpec mentalBreakHeaderRuleColor = Color(0.40f, 0.58f, 0.40f, 0.42f);
         public DiaryUiColorSpec accentHighlightColor = Color(1f, 1f, 1f, 0.10f);
         public DiaryUiColorSpec titleTextColor = Color(0.88f, 0.86f, 0.79f, 1f);
         public DiaryUiColorSpec pendingTitlePrefixColor = Color(0.86f, 0.86f, 0.86f, 0.95f);
@@ -223,7 +223,7 @@ namespace PawnDiary
         {
             Cue(DiaryEvent.CombatColorCue, Preset("hostile")),
             Cue(DiaryEvent.SocialFightColorCue, Color(1f, 0.52f, 0.16f, 1f)),
-            Cue(DiaryEvent.MentalBreakColorCue, Preset("ally")),
+            Cue(DiaryEvent.MentalBreakColorCue, Color(0.48f, 0.64f, 0.48f, 1f)),
             Cue(DiaryEvent.DazeColorCue, Preset("gene")),
             Cue(DiaryEvent.ExtremeDarkColorCue, Color(0.58f, 0.05f, 0.08f, 1f)),
             Cue(DiaryEvent.StrangeChatColorCue, Color(0.42f, 0.96f, 0.50f, 1f)),
@@ -242,8 +242,8 @@ namespace PawnDiary
         public Color CombatHeaderRuleColor => combatHeaderRuleColor.ToColor(new Color(0.95f, 0.18f, 0.12f, 0.65f));
         public Color SocialFightPageTintColor => socialFightPageTintColor.ToColor(new Color(0.90f, 0.34f, 0.05f, 0.16f));
         public Color SocialFightHeaderRuleColor => socialFightHeaderRuleColor.ToColor(new Color(1f, 0.52f, 0.16f, 0.68f));
-        public Color MentalBreakPageTintColor => mentalBreakPageTintColor.ToColor(new Color(0.18f, 0.50f, 0.24f, 0.15f));
-        public Color MentalBreakHeaderRuleColor => mentalBreakHeaderRuleColor.ToColor(new Color(0.42f, 0.95f, 0.46f, 0.60f));
+        public Color MentalBreakPageTintColor => mentalBreakPageTintColor.ToColor(new Color(0.18f, 0.34f, 0.22f, 0.09f));
+        public Color MentalBreakHeaderRuleColor => mentalBreakHeaderRuleColor.ToColor(new Color(0.40f, 0.58f, 0.40f, 0.42f));
         public Color AccentHighlightColor => accentHighlightColor.ToColor(new Color(1f, 1f, 1f, 0.10f));
         public Color TitleTextColor => titleTextColor.ToColor(new Color(0.88f, 0.86f, 0.79f));
         public Color PendingTitlePrefixColor => pendingTitlePrefixColor.ToColor(new Color(0.86f, 0.86f, 0.86f, 0.95f));

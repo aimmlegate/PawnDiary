@@ -439,8 +439,9 @@ screen rather than the whole page.
 `DiaryUiStyleDef.xml` owns visual constants. `DiaryTextFormat` escapes raw model rich-text tags,
 then converts light markdown and valid speech markers to Unity rich text. `DiaryTextDecorationDef`
 owns display-only decorations: intoxication/anesthesia speech uses the strongest staggered word-size
-setting; extreme-dark speech dims selected words (vs. strange-chat Zalgo); combat/social-fight/mental
-cues add stronger page washes and header rules; generated text is never mutated on save. The public
+setting; extreme-dark speech dims selected words (vs. strange-chat Zalgo); combat/social-fight cues
+add stronger page washes and header rules, while mental-break cues use a muted green wash/rule so
+the card remains scannable; generated text is never mutated on save. The public
 `DiaryTextDecorations` facade delegates to focused pure helpers: `DiaryTextDecorationContracts` for
 DTOs/constants, `DiaryTextDecorationMatcher` for XML rule selection and context matching,
 `DiaryTextDecorationFactCodec` for saved hediff/trait snapshots, and `DiaryRichTextDecorators` for
