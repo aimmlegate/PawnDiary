@@ -41,7 +41,7 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// XML prompt policy for one broad event source such as Quest, Raid, Thought, or Work. These
+    /// XML prompt policy for an event source, interaction group, or exact source defName. These
     /// fields render into every first-person prompt as source-level guidance before the narrower
     /// group instruction/tone. Missing XML safely means no event-type guidance.
     /// </summary>
@@ -50,14 +50,14 @@ namespace PawnDiary
         public string eventType;
         public string prompt;
         public string enhancement;
-        // Optional raw API model id. When it matches an active configured API row, entries for this
-        // broad event source try that model first; blank or unknown values are ignored.
+        // Optional raw API model id. When it matches an active configured API row, entries using this
+        // prompt policy try that model first; blank or unknown values are ignored.
         public string forcedModel;
     }
 
     /// <summary>
-    /// Lookup helper for broad event-source prompt policy. The adapter resolves this on the impure
-    /// side and copies only plain strings into the pure pipeline snapshot.
+    /// Lookup helper for event prompt policy. The adapter resolves this on the impure side and copies
+    /// only plain strings into the pure pipeline snapshot.
     /// </summary>
     public static class DiaryEventPrompts
     {
@@ -67,6 +67,55 @@ namespace PawnDiary
         public static DiaryEventPromptDef ForKey(string eventType)
         {
             string key = string.IsNullOrWhiteSpace(eventType) ? "Interaction" : eventType;
+            string resolvedKey;
+            return ForFirstAvailableKey(new List<string> { key }, out resolvedKey);
+        }
+
+        public static DiaryEventPromptDef ForFirstAvailableKey(IList<string> keys, out string resolvedKey)
+        {
+            string fallbackKey = "Interaction";
+            if (keys != null)
+            {
+                for (int i = 0; i < keys.Count; i++)
+                {
+                    string key = keys[i];
+                    if (string.IsNullOrWhiteSpace(key))
+                    {
+                        continue;
+                    }
+
+                    fallbackKey = key.Trim();
+                    DiaryEventPromptDef def = FindForKey(fallbackKey);
+                    if (def != null)
+                    {
+                        resolvedKey = KeyFor(def, fallbackKey);
+                        return def;
+                    }
+                }
+            }
+
+            resolvedKey = fallbackKey;
+            return FallbackFor(fallbackKey);
+        }
+
+        public static string KeyFor(DiaryEventPromptDef def, string fallbackKey)
+        {
+            if (!string.IsNullOrWhiteSpace(def?.eventType))
+            {
+                return def.eventType.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(def?.defName))
+            {
+                return def.defName.Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(fallbackKey) ? "Interaction" : fallbackKey.Trim();
+        }
+
+        public static DiaryEventPromptDef FindForKey(string eventType)
+        {
+            string key = string.IsNullOrWhiteSpace(eventType) ? "Interaction" : eventType.Trim();
             List<DiaryEventPromptDef> defs = DefDatabase<DiaryEventPromptDef>.AllDefsListForReading;
             if (defs != null)
             {
@@ -86,7 +135,7 @@ namespace PawnDiary
                 }
             }
 
-            return FallbackFor(key);
+            return null;
         }
 
         private static DiaryEventPromptDef FallbackFor(string eventType)

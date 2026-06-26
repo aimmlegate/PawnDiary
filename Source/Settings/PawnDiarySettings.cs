@@ -135,8 +135,8 @@ namespace PawnDiary
         public string systemPromptReflectionOverride = string.Empty;
         public string systemPromptNeutralOverride = string.Empty;
         public string titleSystemPromptOverride = string.Empty;
-        // Optional saved overrides for the broad event-source prompt fields. Keys are
-        // DiaryEventPromptDef.eventType values such as "Interaction" or "Raid"; blank means
+        // Optional saved overrides for event prompt fields. Keys are DiaryEventPromptDef.eventType
+        // values such as "Interaction", "Raid", or a mod-added source/group key; blank means
         // "use the XML default" so Defs stay the canonical prompt catalog. Each map is a
         // PromptOverrideDictionary that owns its own Scribe key and lookup/normalize plumbing.
         public PromptOverrideDictionary eventPromptOverrides = new PromptOverrideDictionary("eventPromptOverrides");

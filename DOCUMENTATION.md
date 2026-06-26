@@ -205,6 +205,15 @@ emit many more social-log rows than vanilla chitchat, this group uses a stricter
 and much lower promotion odds than normal small talk. The normal `smalltalk` group disables itself
 while SpeakUp is loaded because SpeakUp supplies more varied chitchat rows.
 
+`1.6/Defs/DiaryEventPromptDefs.xml` owns the prompt, event enhancement, and optional forced model for
+event sources. Compatibility XML can add a `DiaryEventPromptDef` for an exact source defName, a
+`DiaryInteractionGroupDef.defName`, a domain classifier key, or a broad domain key; runtime tries
+those keys in that order. This lets a mod support patch add a new group plus prompt/enhancement/model
+choice entirely in XML. Prompt, enhancement, and forced model resolve independently, so a specific
+Def can override one field and inherit the others from the next broader policy.
+`1.6/Defs/DiaryPromptEnchantmentDefs.xml` is also XML-only: patches can add new
+hediff/capacity/context enchantments with string defNames and safe silent failure when absent.
+
 **Quest domain** is unusual: its `matchDefNames` are lifecycle signals
 (`accepted`/`completed`/`failed`), not defNames — one `DiaryEventType.Quest` fans out to three prompt
 groups. Saved Quest entries still keep the real `QuestScriptDef`; recovery classifies them from the

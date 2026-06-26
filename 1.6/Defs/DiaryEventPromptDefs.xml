@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Broad event-type prompt policy. These Defs are the first layer of event-specific prompt control:
+  Event prompt policy. These Defs are the first layer of event-specific prompt control:
   `prompt` names what kind of source the LLM is writing from, and `enhancement` adds source-level
   constraints. Optional `forcedModel` is a raw configured API model id to try first for that event
   source; blank or unknown values are ignored. Narrower flavor still comes from
   DiaryInteractionGroupDef.instruction/tone.
+
+  Compatibility XML can add a new DiaryEventPromptDef without C# code. Runtime tries keys in this
+  order and uses the first loaded Def: exact source defName, matched DiaryInteractionGroupDef.defName,
+  domain classifier key, then broad event domain (Interaction/Raid/Thought/etc.). Set <eventType> to
+  that key, or use the key itself as <defName> when no separate label is needed. Fields resolve
+  independently, so a specific Def can set only <forcedModel>, only <enhancement>, or only <prompt>
+  and inherit blank fields from the next broader loaded policy.
 -->
 <Defs>
 

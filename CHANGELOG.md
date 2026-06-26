@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-26
 
+- **Event prompt policy can now target modded XML keys.** `DiaryEventPromptDef` resolution tries the
+  exact source defName, matched interaction group defName, domain classifier key, then broad domain,
+  so compatibility patches can add prompt text, event enhancement text, and forced-model preference
+  entirely through XML.
+
 - **Immediate-mode UI hardened against draw-time exceptions.** The diary tab's scroll view and
   per-card `GUI.BeginGroup`, and the settings window's scroll view + `Listing_Standard`, now run
   inside `try/finally` blocks that always balance Unity's shared GUI clip stack, so one unexpected

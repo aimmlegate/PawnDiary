@@ -20,6 +20,7 @@ namespace DiaryPipelineTests
             TestSoloSelection();
             TestSoloBatchSelection();
             TestPromptEnchantmentPlanner();
+            TestEventPromptKeyCandidates();
             TestDomainClassifier();
             TestResponsePostprocessorRules();
             TestDirectSpeechParser();
@@ -631,6 +632,27 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ability=Stun; ability_label=stun"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
+        }
+
+        private static void TestEventPromptKeyCandidates()
+        {
+            List<string> keys = DiaryEventPromptKeys.CandidateKeys(
+                new DiaryEventPayload { defName = "ModdedDinnerTalk" },
+                "modded_feast",
+                "ModdedDinnerTalk",
+                "Interaction");
+            AssertEqual("event prompt key exact first", "ModdedDinnerTalk", keys[0]);
+            AssertEqual("event prompt key group second", "modded_feast", keys[1]);
+            AssertEqual("event prompt key broad last", "Interaction", keys[2]);
+            AssertEqual("event prompt key duplicate removed", 3, keys.Count);
+
+            List<string> ritualKeys = DiaryEventPromptKeys.CandidateKeys(
+                new DiaryEventPayload { defName = "Ritual_Speech" },
+                "ritualRoyal",
+                "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
+                "Ritual");
+            AssertEqual("event prompt key classifier retained", "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech", ritualKeys[2]);
+            AssertEqual("event prompt key ritual fallback", "Ritual", ritualKeys[3]);
         }
 
         private static void TestResponsePostprocessorRules()

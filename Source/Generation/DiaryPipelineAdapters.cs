@@ -91,18 +91,20 @@ namespace PawnDiary
         public static DiaryPolicySnapshot PolicyFor(DiaryEventPayload payload)
         {
             string classifierKey = ClassifierKeyForPayload(payload);
-            string eventPromptKey = EventPromptKeyForPayload(payload);
             DiaryInteractionGroupDef group = GroupForPayload(payload, classifierKey);
-            DiaryEventPromptDef eventPrompt = DiaryEventPrompts.ForKey(eventPromptKey);
-            string eventPromptText = PawnDiaryMod.Settings == null
-                ? eventPrompt?.prompt
-                : PawnDiaryMod.Settings.eventPromptOverrides.Effective(eventPromptKey, eventPrompt?.prompt);
-            string eventEnhancementText = PawnDiaryMod.Settings == null
-                ? eventPrompt?.enhancement
-                : PawnDiaryMod.Settings.eventEnhancementOverrides.Effective(eventPromptKey, eventPrompt?.enhancement);
-            string forcedModelName = PawnDiaryMod.Settings == null
-                ? eventPrompt?.forcedModel
-                : PawnDiaryMod.Settings.eventForcedModelOverrides.Effective(eventPromptKey, eventPrompt?.forcedModel);
+            List<string> eventPromptKeys = DiaryEventPromptKeys.CandidateKeys(
+                payload,
+                group?.defName,
+                classifierKey,
+                FallbackEventPromptKeyForPayload(payload));
+            string eventPromptKey;
+            DiaryEventPrompts.ForFirstAvailableKey(eventPromptKeys, out eventPromptKey);
+            string eventPromptText = ResolveEventPromptField(eventPromptKeys, def => def?.prompt,
+                PawnDiaryMod.Settings?.eventPromptOverrides);
+            string eventEnhancementText = ResolveEventPromptField(eventPromptKeys, def => def?.enhancement,
+                PawnDiaryMod.Settings?.eventEnhancementOverrides);
+            string forcedModelName = ResolveEventPromptField(eventPromptKeys, def => def?.forcedModel,
+                PawnDiaryMod.Settings?.eventForcedModelOverrides);
             DiaryPolicySnapshot snapshot = new DiaryPolicySnapshot
             {
                 group = new DiaryGroupPolicy
@@ -134,6 +136,44 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
             return snapshot;
+        }
+
+        private static string ResolveEventPromptField(IList<string> keys,
+            Func<DiaryEventPromptDef, string> field, PromptOverrideDictionary overrides)
+        {
+            if (keys == null || field == null)
+            {
+                return string.Empty;
+            }
+
+            for (int i = 0; i < keys.Count; i++)
+            {
+                string key = keys[i];
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                DiaryEventPromptDef def = DiaryEventPrompts.FindForKey(key);
+                if (def == null)
+                {
+                    continue;
+                }
+
+                string stableKey = DiaryEventPrompts.KeyFor(def, key);
+                string xmlValue = field(def);
+                if (overrides != null && overrides.HasOverride(stableKey))
+                {
+                    return overrides.Effective(stableKey, xmlValue);
+                }
+
+                if (!string.IsNullOrWhiteSpace(xmlValue))
+                {
+                    return xmlValue;
+                }
+            }
+
+            return string.Empty;
         }
 
         private static DiaryPovPayload PovFor(DiaryEvent diaryEvent, string role)
@@ -309,7 +349,7 @@ namespace PawnDiary
                     payload.domain, payload.gameContext, payload.defName);
         }
 
-        private static string EventPromptKeyForPayload(DiaryEventPayload payload)
+        private static string FallbackEventPromptKeyForPayload(DiaryEventPayload payload)
         {
             if (payload == null)
             {

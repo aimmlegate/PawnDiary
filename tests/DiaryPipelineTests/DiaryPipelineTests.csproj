@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Source\Pipeline\DiaryPipelineContracts.cs" Link="DiaryPipelineContracts.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptPlanner.cs" Link="DiaryPromptPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="DiaryEventDomainClassifier.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryResponsePostprocessor.cs" Link="DiaryResponsePostprocessor.cs" />
