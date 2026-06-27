@@ -600,6 +600,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Newest diary events that remain "hot" for maintenance scans. Older entries are archive
+        /// history: still saved and rendered by the UI, but no longer revisited by retry/title/orphan
+        /// catch-up work.
+        /// </summary>
+        private IReadOnlyList<DiaryEvent> ActiveScanEvents()
+        {
+            return events.MostRecentEvents(DiaryTuning.ActiveScanEventWindow);
+        }
+
+        /// <summary>
         /// Looks up a pawn's diary record by Pawn instance; optionally creates one if missing.
         /// </summary>
         private PawnDiaryRecord FindDiary(Pawn pawn, bool createIfMissing)

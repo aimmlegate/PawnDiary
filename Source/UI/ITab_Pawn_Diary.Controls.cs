@@ -205,7 +205,10 @@ namespace PawnDiary
             if (Widgets.ButtonText(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
             {
 
-                int added = component.FillMockDiaryEntriesForDev(pawn, DevMockDiaryTargetCount);
+                int added = component.FillMockDiaryEntriesForDev(
+                    pawn,
+                    DevMockDiaryTargetCount,
+                    DevMockDiaryTargetYears);
 
                 if (added > 0)
                 {
@@ -242,7 +245,10 @@ namespace PawnDiary
 
                 mockButtonRect,
 
-                "PawnDiary.Tab.FillMockEntriesTip".Translate(DevMockDiaryTargetCount));
+                "PawnDiary.Tab.FillMockEntriesTip".Translate(
+                    DevMockDiaryTargetCount,
+                    DevMockDiaryTargetYears,
+                    DevMockDiaryEntriesPerYear));
 
 
 
@@ -383,12 +389,13 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// True when an entry has actual LLM output ready for the production diary list.
+        /// True when an entry has either actual LLM output or a finished archive fallback ready for
+        /// the production diary list.
         /// </summary>
         private static bool IsGenerated(DiaryEntryView entry)
         {
 
-            return entry != null && !string.IsNullOrWhiteSpace(entry.GeneratedText);
+            return entry != null && (!string.IsNullOrWhiteSpace(entry.GeneratedText) || IsArchivedGenerationFallback(entry));
 
         }
 

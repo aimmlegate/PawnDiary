@@ -94,6 +94,9 @@ namespace PawnDiary
         // arrived yet. The Diary tab uses this to animate the header without pretending the title
         // already exists.
         public readonly bool TitlePending;
+        // True when this POV is still marked pending but its event has fallen out of the active scan
+        // window. The UI then renders a prompt-fact archive fallback instead of an endless loader.
+        public readonly bool ArchivedGenerationStale;
 
         public DiaryEntryView(
             int tick,
@@ -117,7 +120,8 @@ namespace PawnDiary
             string title = null,
             bool titlePending = false,
             string llmRawResponse = null,
-            DiaryTextDecorationContext textDecorationContext = null)
+            DiaryTextDecorationContext textDecorationContext = null,
+            bool archivedGenerationStale = false)
         {
             Tick = tick;
             Date = date;
@@ -142,6 +146,7 @@ namespace PawnDiary
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;
             TitlePending = titlePending;
+            ArchivedGenerationStale = archivedGenerationStale;
         }
 
         /// <summary>
@@ -187,6 +192,11 @@ namespace PawnDiary
         {
             get
             {
+                if (ArchivedGenerationStale)
+                {
+                    return "PawnDiary.Status.GenerationFailed".Translate();
+                }
+
                 if (LlmStatus == DiaryEvent.PendingStatus)
                 {
                     return "PawnDiary.Status.Writing".Translate();

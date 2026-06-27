@@ -202,6 +202,14 @@ namespace PawnDiary
 
         // ---- Misc ----
         public int diaryLineMaxChars = 160;   // truncate the "last wrote" continuity line to this
+        // Newest diary events treated as "hot" for background maintenance scans and prompt-history
+        // context. Older entries remain saved and visible, but are archive history that is not retried
+        // or backfilled by catch-up scanners.
+        public int activeScanEventWindow = 200;
+        // Archived pending entries fall back to a prompt-fact card instead of an endless "writing..."
+        // indicator. These tune the generated display-only fallback.
+        public int archivedFallbackTitleWords = 6;
+        public int archivedFallbackTextMaxChars = 240;
         // Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
         // still appear as context in someone else's entry, but they do not write their own pages.
         public int minimumFirstPersonAgeYears = 13;
@@ -422,6 +430,36 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// XML-tuned count of newest diary events that remain active for background maintenance scans.
+        /// Older entries are archive history: still rendered, but not retried or title-backfilled.
+        /// </summary>
+        public static int ActiveScanEventWindow
+        {
+            get
+            {
+                int value = Current.activeScanEventWindow;
+                return value > 0 ? value : Fallback.activeScanEventWindow;
+            }
+        }
+
+        /// <summary>
+        /// Number of words used for the date-line fallback title on archived entries that never
+        /// generated. This title is display-only; it is not saved back to the event.
+        /// </summary>
+        public static int ArchivedFallbackTitleWords
+        {
+            get { return PositiveOrDefault(Current.archivedFallbackTitleWords, Fallback.archivedFallbackTitleWords); }
+        }
+
+        /// <summary>
+        /// Maximum length of the prompt-fact fallback body for archived entries that never generated.
+        /// </summary>
+        public static int ArchivedFallbackTextMaxChars
+        {
+            get { return PositiveOrDefault(Current.archivedFallbackTextMaxChars, Fallback.archivedFallbackTextMaxChars); }
+        }
+
+        /// <summary>
         /// XML-tuned prompt-enchantment thresholds and cue cap, normalized into a plain DTO for the
         /// collector/planner split. Negative or NaN values fall back to the shipped defaults; zero is
         /// allowed for the cue cap so XML can intentionally suppress cues.
@@ -464,6 +502,11 @@ namespace PawnDiary
         private static float NonNegativeOrDefault(float value, float fallback)
         {
             return value < 0f || float.IsNaN(value) ? fallback : value;
+        }
+
+        private static int PositiveOrDefault(int value, int fallback)
+        {
+            return value > 0 ? value : fallback;
         }
     }
 }

@@ -22,6 +22,7 @@ namespace PawnDiary
         private DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
             string initiatorText, string recipientText, string instruction, string gameContext)
         {
+            IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             string neutralText = string.Equals(initiatorText, recipientText, StringComparison.OrdinalIgnoreCase)
                 ? initiatorText
                 : initiator.LabelShortCap + ": " + initiatorText + " / " + recipient.LabelShortCap + ": " + recipientText;
@@ -47,10 +48,10 @@ namespace PawnDiary
                 recipientPawnSummary = DiaryContextBuilder.BuildPawnSummary(recipient),
                 initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(initiator),
                 recipientSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(recipient),
-                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, events.AllEvents),
-                recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, events.AllEvents),
-                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), events.AllEvents),
-                recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), events.AllEvents),
+                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(initiator, recipient, activeEvents),
+                recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, activeEvents),
+                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), activeEvents),
+                recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), activeEvents),
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(initiator),
                 recipientWeapon = DiaryContextBuilder.EquippedWeapon(recipient),
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
@@ -80,6 +81,7 @@ namespace PawnDiary
         private DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
             string text, string instruction, string gameContext)
         {
+            IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
             DiaryEvent diaryEvent = new DiaryEvent
             {
                 eventId = Guid.NewGuid().ToString("N"),
@@ -101,9 +103,9 @@ namespace PawnDiary
                 recipientPawnSummary = "n/a",
                 initiatorSurroundings = DiaryContextBuilder.BuildSurroundingsSummary(pawn),
                 recipientSurroundings = "n/a",
-                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, events.AllEvents),
+                initiatorContinuity = DiaryContextBuilder.BuildContinuitySummary(pawn, otherPawn, activeEvents),
                 recipientContinuity = "none",
-                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), events.AllEvents),
+                initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), activeEvents),
                 recipientLastOpener = string.Empty,
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(pawn),
                 recipientWeapon = string.Empty,

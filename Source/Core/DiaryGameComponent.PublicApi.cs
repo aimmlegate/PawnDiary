@@ -61,6 +61,7 @@ namespace PawnDiary
                 // call grow with the square of the pawn's entry count. i is the event's own index in
                 // the pawn's list, so we can pass it straight to the bounds check.
                 DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+                HashSet<string> activeEventIds = ActiveScanEventIds();
                 for (int i = 0; i < diary.eventIds.Count; i++)
                 {
                     DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
@@ -69,7 +70,7 @@ namespace PawnDiary
                         continue;
                     }
 
-                    DiaryEntryView view = diaryEvent?.ToViewFor(pawnId);
+                    DiaryEntryView view = diaryEvent?.ToViewFor(pawnId, EventIsArchivedForScans(diaryEvent, activeEventIds));
                     if (view != null)
                     {
                         views.Add(view);
@@ -78,6 +79,30 @@ namespace PawnDiary
             }
 
             return views;
+        }
+
+        private HashSet<string> ActiveScanEventIds()
+        {
+            IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
+            HashSet<string> ids = new HashSet<string>();
+            for (int i = 0; i < activeEvents.Count; i++)
+            {
+                string id = activeEvents[i]?.eventId;
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    ids.Add(id);
+                }
+            }
+
+            return ids;
+        }
+
+        private static bool EventIsArchivedForScans(DiaryEvent diaryEvent, HashSet<string> activeEventIds)
+        {
+            return diaryEvent != null
+                && !string.IsNullOrWhiteSpace(diaryEvent.eventId)
+                && activeEventIds != null
+                && !activeEventIds.Contains(diaryEvent.eventId);
         }
 
         // Memoized completed/pending counts for CommandStatusFor, keyed by pawn id + render token.
@@ -158,6 +183,7 @@ namespace PawnDiary
             }
 
             DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+            HashSet<string> activeEventIds = ActiveScanEventIds();
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
                 DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
@@ -166,7 +192,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                DiaryEntryView view = diaryEvent?.ToViewFor(pawnId);
+                DiaryEntryView view = diaryEvent?.ToViewFor(pawnId, EventIsArchivedForScans(diaryEvent, activeEventIds));
                 if (view == null)
                 {
                     continue;
@@ -177,7 +203,8 @@ namespace PawnDiary
                     completed++;
                 }
 
-                if (view.LlmStatus == DiaryEvent.PendingStatus || view.TitlePending)
+                if ((view.LlmStatus == DiaryEvent.PendingStatus && !view.ArchivedGenerationStale)
+                    || view.TitlePending)
                 {
                     pending++;
                 }

@@ -10,15 +10,15 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         private const string DevMockDefName = "PawnDiary_DevMock";
-        private const int DevMockDaysBetweenEntries = 3;
+        private const int DevMockDaysPerYear = 60;
 
         /// <summary>
         /// Dev-mode helper used by the Diary tab to seed a pawn with many completed fake pages.
         /// Entries are complete immediately, span many display dates, and never enter the LLM queue.
         /// </summary>
-        public int FillMockDiaryEntriesForDev(Pawn pawn, int targetCount)
+        public int FillMockDiaryEntriesForDev(Pawn pawn, int targetCount, int targetYears)
         {
-            if (!Prefs.DevMode || !IsDiaryEligible(pawn) || targetCount <= 0)
+            if (!Prefs.DevMode || !IsDiaryEligible(pawn) || targetCount <= 0 || targetYears <= 0)
             {
                 return 0;
             }
@@ -47,13 +47,19 @@ namespace PawnDiary
             for (int i = 0; i < entriesToAdd; i++)
             {
                 int mockIndex = existingMockCount + i;
-                DiaryEvent diaryEvent = BuildMockDiaryEvent(pawn, mockIndex, targetCount, startTicksAbs, visibleTickBase);
+                DiaryEvent diaryEvent = BuildMockDiaryEvent(
+                    pawn,
+                    mockIndex,
+                    targetCount,
+                    targetYears,
+                    startTicksAbs,
+                    visibleTickBase);
                 events.Register(diaryEvent);
                 diary.eventIds.Add(diaryEvent.eventId);
             }
 
             diary.pawnName = pawn.LabelShortCap;
-            ApplyActiveEventLimit();
+            DiaryStateVersion.Bump();
             return entriesToAdd;
         }
 
@@ -79,15 +85,46 @@ namespace PawnDiary
             return count;
         }
 
+        /// <summary>
+        /// True when dev-mode mock data already exceeds the normal retention cap. This lets the stress
+        /// fixture survive autosaves without weakening retention for ordinary non-dev games.
+        /// </summary>
+        private bool HasDevMockStressHistory(int activeEventLimit)
+        {
+            if (!Prefs.DevMode || activeEventLimit <= 0)
+            {
+                return false;
+            }
+
+            int count = 0;
+            System.Collections.Generic.IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = 0; i < allEvents.Count; i++)
+            {
+                DiaryEvent diaryEvent = allEvents[i];
+                if (diaryEvent != null
+                    && string.Equals(diaryEvent.interactionDefName, DevMockDefName, StringComparison.Ordinal))
+                {
+                    count++;
+                    if (count > activeEventLimit)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static DiaryEvent BuildMockDiaryEvent(
             Pawn pawn,
             int mockIndex,
             int targetCount,
+            int targetYears,
             int startTicksAbs,
             int visibleTickBase)
         {
             int displayNumber = mockIndex + 1;
-            int ticksAbs = MockDateTicksAbs(startTicksAbs, mockIndex, targetCount);
+            int ticksAbs = MockDateTicksAbs(startTicksAbs, mockIndex, targetCount, targetYears);
             int ticksGame = MockGameTick(visibleTickBase, mockIndex);
             string pawnName = pawn.LabelShortCap;
             string generatedText = "PawnDiary.Dev.MockBody".Translate(displayNumber, pawnName).Resolve();
@@ -107,7 +144,9 @@ namespace PawnDiary
                 initiatorText = "PawnDiary.Dev.MockRawText".Translate(pawnName, displayNumber).Resolve(),
                 recipientText = string.Empty,
                 neutralText = generatedText,
-                gameContext = "dev_mock=true; mock_index=" + displayNumber,
+                gameContext = "dev_mock=true; mock_index=" + displayNumber
+                    + "; mock_target_count=" + targetCount
+                    + "; mock_years=" + targetYears,
                 instruction = "dev mock entry",
                 initiatorPawnSummary = "dev mock pawn",
                 recipientPawnSummary = "n/a",
@@ -142,18 +181,19 @@ namespace PawnDiary
             };
         }
 
-        private static int MockDateTicksAbs(int startTicksAbs, int mockIndex, int targetCount)
+        private static int MockDateTicksAbs(int startTicksAbs, int mockIndex, int targetCount, int targetYears)
         {
-            long daysFromNewest = (long)(targetCount - 1 - mockIndex) * DevMockDaysBetweenEntries;
-            long offsetTicks = daysFromNewest * GenDate.TicksPerDay;
-            long candidate = (long)startTicksAbs - offsetTicks;
-
-            if (candidate < 0L)
+            int safeTargetYears = Math.Max(1, targetYears);
+            int totalDays = Math.Max(1, safeTargetYears * DevMockDaysPerYear);
+            long historyStartTick = Math.Max(0L, (long)startTicksAbs - (long)(totalDays - 1) * GenDate.TicksPerDay);
+            if (targetCount <= 1)
             {
-                candidate = (long)startTicksAbs + (long)mockIndex * DevMockDaysBetweenEntries * GenDate.TicksPerDay;
+                return ClampToIntTick(historyStartTick);
             }
 
-            return ClampToIntTick(candidate);
+            long spanTicks = (long)(totalDays - 1) * GenDate.TicksPerDay + GenDate.TicksPerDay - 1L;
+            long offsetTicks = spanTicks * mockIndex / Math.Max(1, targetCount - 1);
+            return ClampToIntTick(historyStartTick + offsetTicks);
         }
 
         private int MockVisibleTickBase(string pawnId, PawnDiaryRecord diary, int startTicksGame, int targetCount)

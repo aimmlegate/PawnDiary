@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-06-26
+Last updated: 2026-06-27
 
 Related files:
 
@@ -61,12 +61,15 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 
 `GameComponentTick` runs game-time scans continuously, but the expensive active-event generation
 rescan is demand-driven: load catch-up, delayed raid entries, and recovered orphaned work request a
-pass, then the catch-up pass runs at most every 200 ticks until it is no longer needed. Orphaned
-"writing..." recovery is a separate, slower full-history pass every 600 ticks. Completed LLM results
-and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so requests that
-were already queued can finish and apply while the game is paused. Pending generation is not saved;
-it resets on load and is requeued. First-person generation is skipped for pawns below the XML
-Consciousness floor, while neutral arrival/death pages bypass that guard.
+pass, then the catch-up pass runs at most every 200 ticks until it is no longer needed. Those
+generation/title/orphan scans use the XML-tuned hot window (`activeScanEventWindow`, default 200);
+older events stay saved and visible as archive history but are not retried or title-backfilled.
+Orphaned "writing..." recovery is a separate, slower hot-window pass every 600 ticks. Completed LLM
+results and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so
+requests that were already queued can finish and apply while the game is paused. Pending generation
+is not saved; it resets on load and is requeued when the event is still inside the hot window.
+First-person generation is skipped for pawns below the XML Consciousness floor, while neutral
+arrival/death pages bypass that guard.
 
 ## 4. Event Sources
 
@@ -158,9 +161,13 @@ the button icon; the icon itself still loads lazily from the main-thread gizmo p
 the vanilla book icon if the mod texture is missing.
 
 Production UI shows completed pages. Dev mode also shows pending/failure rows, raw prompt/status
-data, formatting previews, prompt-suite tools, copy buttons, and regeneration controls. Histories page
-by in-game year; newest cards start expanded. Long histories are kept cheap by the active-event cap,
-visible-entry caching, height caching, and viewport culling.
+data, formatting previews, prompt-suite tools, copy buttons, regeneration controls, and a completed
+mock-page filler for stress testing long histories. That filler seeds 6,000 saved pages over 3
+in-game years (about 2,000 pages per year) without calling the LLM, and dev-mode retention skips
+mock stress histories so autosaves do not immediately shrink the fixture. Histories page by in-game
+year; newest cards start expanded. Long histories are kept cheap by the active-event cap,
+visible-entry caching, cached virtual row offsets/heights, and viewport drawing that only emits cards
+inside the scroll slice. Archived pages use the same cards and controls as hot pages.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
@@ -190,6 +197,15 @@ The temporary active-event cap keeps only the newest configured number of `Diary
 (default 1000, editable from settings). It runs after load, before save, after new event creation,
 and when settings are saved. Trimmed events are removed from the master list and from every pawn's
 event-id list, so older pages are no longer visible and background scans do not iterate them.
+
+Separately, `DiaryTuningDef.activeScanEventWindow` (default 200, XML only) defines the newest saved
+events considered hot for retry, title catch-up, orphan recovery, day-summary event evidence, work
+cooldowns, and prompt continuity/opener history. Events older than that window are archive pages:
+they remain in save data and render in the Diary UI, but maintenance scans do not revisit them. If an
+archived page is still marked pending and has no generated text, the UI stops treating it as active
+writing: it shows a localized "You see that: ..." fallback from the saved prompt facts/raw event
+text, derives a short display-only title from the first few words, and uses the footer note to say the
+page failed to generate instead of showing a model name.
 
 `DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, prompts, titles, LLM
 metadata, semantic color cue, and compact display facts. Per-role state is stored in initiator,

@@ -452,7 +452,7 @@ namespace PawnDiary
         /// Consumes a pending Social-tab jump request by placing the target card near the top
         /// of the scroll view. If the entry disappeared before redraw, clear the stale request.
         /// </summary>
-        private void TryApplyPendingScroll(Pawn pawn, List<DiaryEntryView> ordered, float[] heights, float viewHeight, float outHeight)
+        private void TryApplyPendingScroll(Pawn pawn, List<DiaryEntryView> ordered, float[] offsets, float viewHeight, float outHeight)
         {
 
             if (pawn == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
@@ -475,8 +475,6 @@ namespace PawnDiary
 
 
 
-            float curY = 0f;
-
             for (int i = 0; i < ordered.Count; i++)
             {
 
@@ -487,7 +485,7 @@ namespace PawnDiary
 
                     float maxScroll = Mathf.Max(0f, viewHeight - outHeight);
 
-                    scrollPosition.y = Mathf.Clamp(curY, 0f, maxScroll);
+                    scrollPosition.y = Mathf.Clamp(offsets[i], 0f, maxScroll);
 
                     ClearPendingScrollRequest();
 
@@ -496,8 +494,6 @@ namespace PawnDiary
                 }
 
 
-
-                curY += heights[i] + EntryGap;
 
             }
 

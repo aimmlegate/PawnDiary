@@ -152,6 +152,13 @@
 
     <!-- Misc -->
     <diaryLineMaxChars>160</diaryLineMaxChars>
+    <!-- Newest diary events kept "hot" for background catch-up/title/orphan scans and prompt
+         continuity. Older entries remain saved and visible as archive history. -->
+    <activeScanEventWindow>200</activeScanEventWindow>
+    <!-- Display-only fallback for archived pending entries that are no longer retried. They show
+         prompt facts instead of an endless writing indicator. -->
+    <archivedFallbackTitleWords>6</archivedFallbackTitleWords>
+    <archivedFallbackTextMaxChars>240</archivedFallbackTextMaxChars>
     <!-- Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
          still appear as context in someone else's entry, but do not write their own pages. -->
     <minimumFirstPersonAgeYears>13</minimumFirstPersonAgeYears>

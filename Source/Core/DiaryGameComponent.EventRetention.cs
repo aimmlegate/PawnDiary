@@ -37,6 +37,10 @@ namespace PawnDiary
             int limit = settings == null
                 ? PawnDiarySettings.DefaultMaxActiveDiaryEvents
                 : PawnDiarySettings.ClampActiveDiaryEventLimit(settings.maxActiveDiaryEvents);
+            if (HasDevMockStressHistory(limit))
+            {
+                return;
+            }
 
             int removed = events.TrimToMostRecent(limit);
             if (removed <= 0)

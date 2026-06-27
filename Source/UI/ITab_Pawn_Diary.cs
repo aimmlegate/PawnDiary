@@ -29,6 +29,22 @@ namespace PawnDiary
         private float[] expansionBlendsBuffer = new float[0];
         private float[] fullHeightsBuffer = new float[0];
         private float[] heightsBuffer = new float[0];
+        private float[] entryOffsetsBuffer = new float[0];
+
+        // Virtualized scroll layout for the selected year. The ordered entry List is reused by
+        // DiaryTabVisibleEntriesCache, so the cache key includes its revision/year in addition to the
+        // object reference. Offscreen cards are not drawn, and idle frames reuse row offsets instead
+        // of measuring/summing hundreds of collapsed rows every draw.
+        private List<DiaryEntryView> cachedLayoutEntries;
+        private int cachedLayoutVisibleRevision = -1;
+        private int cachedLayoutSelectedYear = UnknownYear;
+        private float cachedLayoutViewWidth = -1f;
+        private bool cachedLayoutShowDebug;
+        private DiaryRenderToken cachedLayoutToken;
+        private int cachedLayoutHighlightVersion = -1;
+        private int cachedLayoutExpansionVersion = -1;
+        private float cachedLayoutViewHeight;
+        private bool cachedLayoutAnimationSettled = true;
 
         // Cached full (expanded) card heights keyed by entry key, reused across draw frames so the
         // measure pass does not recompute wrapped-text height for every expanded card ~60x/second.
@@ -62,7 +78,9 @@ namespace PawnDiary
         private static float SpeechBlockVerticalPadding => UiStyle.speechBlockVerticalPadding;
         private static float EntryGap => UiStyle.entryGap;
         private static int AutoExpandedEntryCount => UiStyle.autoExpandedEntryCount;
-        private const int DevMockDiaryTargetCount = 360;
+        private const int DevMockDiaryTargetYears = 3;
+        private const int DevMockDiaryEntriesPerYear = 2000;
+        private const int DevMockDiaryTargetCount = DevMockDiaryTargetYears * DevMockDiaryEntriesPerYear;
         private static float CollapsedEntryHeight => UiStyle.CollapsedEntryHeight;
         private static float ExpansionAnimationSpeed => UiStyle.expansionAnimationSpeed;
         private static float LinkedEntryPadding => UiStyle.linkedEntryPadding;
@@ -125,6 +143,7 @@ namespace PawnDiary
         // older pages collapsed", but a player's click on a specific card wins until the tab dies.
         private readonly Dictionary<string, bool> entryExpansionOverrides = new Dictionary<string, bool>();
         private readonly Dictionary<string, float> entryExpansionBlend = new Dictionary<string, float>();
+        private int entryExpansionVersion;
         private float lastExpansionAnimationSeconds;
         // Set by the Social-tab click patch before opening this tab. FillTab consumes it once
         // the relevant pawn's generated entry list is available.
@@ -308,46 +327,27 @@ namespace PawnDiary
 
             // Subtract 16f to leave room for the scrollbar grip inside the scroll view.
             float viewWidth = outRect.width - 16f;
-            // Measure each card once per frame and reuse the result for the scroll-height sum, the
-            // pending-scroll jump, and the draw loop. Wrapping height is otherwise recomputed two or
-            // three times per entry every frame.
             float animationDelta = ExpansionAnimationDelta();
             List<DiaryNameHighlight> nameHighlights = NameHighlightsFor(pawn);
-            EnsureEntryMeasurementBufferCapacity(ordered.Count);
+            RebuildEntryLayoutIfNeeded(
+                ordered,
+                visibleEntriesCache.VisibleRevision,
+                viewWidth,
+                showLlmDebugInfo,
+                token,
+                nameHighlights,
+                animationDelta);
+
             string[] entryKeys = entryKeysBuffer;
             bool[] expandedTargets = expandedTargetsBuffer;
             float[] expansionBlends = expansionBlendsBuffer;
             float[] fullHeights = fullHeightsBuffer;
             float[] heights = heightsBuffer;
-            float viewHeight = 12f; // includes 12f bottom padding
-            for (int i = 0; i < ordered.Count; i++)
-            {
-                DiaryEntryView entry = ordered[i];
-                string entryKey = EntryKey(entry);
-                bool expanded = IsEntryExpanded(entry, i);
-                float expansionBlend = ExpansionBlendFor(entryKey, expanded, animationDelta);
-                // Fully collapsed cards only need header height, so avoid expensive wrapped-text
-                // measurement until they are expanding or open. Expanded cards are measured once and
-                // then cached (see CachedEntryHeight) so reading a long page does not re-measure text
-                // every frame.
-                float fullHeight = (expanded || expansionBlend > 0f)
-                    ? CachedEntryHeight(entry, entryKey, viewWidth, showLlmDebugInfo, token, nameHighlights)
-                    : CollapsedEntryHeight;
-
-                entryKeys[i] = entryKey;
-                expandedTargets[i] = expanded;
-                expansionBlends[i] = expansionBlend;
-                fullHeights[i] = fullHeight;
-                heights[i] = AnimatedEntryHeight(fullHeight, expansionBlend);
-                viewHeight += heights[i];
-                if (i < ordered.Count - 1)
-                {
-                    viewHeight += EntryGap;
-                }
-            }
+            float[] entryOffsets = entryOffsetsBuffer;
+            float viewHeight = cachedLayoutViewHeight;
             Rect viewRect = new Rect(0f, 0f, viewWidth, viewHeight);
 
-            TryApplyPendingScroll(pawn, ordered, heights, viewHeight, outRect.height);
+            TryApplyPendingScroll(pawn, ordered, entryOffsets, viewHeight, outRect.height);
             scrollPosition.y = Mathf.Clamp(scrollPosition.y, 0f, Mathf.Max(0f, viewHeight - outRect.height));
 
             Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
@@ -356,32 +356,26 @@ namespace PawnDiary
             // it. If a draw call throws mid-card those pops are skipped, leaving the stack unbalanced
             // and corrupting the rest of the frame's UI — not just this tab. The finally closes
             // whatever is still open, so one bad entry degrades to a missing card, never a broken UI.
-            float curY = 0f;
             Color dialogueColor = PreferredDialogueColor(pawn);
             bool entryGroupOpen = false;
             try
             {
-                for (int i = 0; i < ordered.Count; i++)
+                float visibleTop = scrollPosition.y;
+                float visibleBottom = scrollPosition.y + outRect.height;
+                int firstVisibleIndex = FirstVisibleEntryIndex(ordered.Count, visibleTop);
+                for (int i = firstVisibleIndex; i < ordered.Count; i++)
                 {
                     DiaryEntryView entry = ordered[i];
                     bool expanded = expandedTargets[i];
                     float expansionBlend = expansionBlends[i];
                     float fullHeight = fullHeights[i];
                     float height = heights[i];
+                    float curY = entryOffsets[i];
 
-                    // Viewport culling. Widgets.BeginScrollView clips the pixels a card paints, but
-                    // RimWorld still executes every immediate-mode call (box draws, Text.CalcSize,
-                    // labels, tooltip regions) for offscreen cards. On a year page with hundreds of
-                    // entries that work tanks FPS while the tab is open, so skip cards whose row is
-                    // entirely above or below the visible scroll slice. The heights were measured once
-                    // in the pass above, so this adds no per-frame text measurement. Cards are laid out
-                    // top-to-bottom by curY, so once a row is fully past the bottom we can stop.
-                    if (curY + height < scrollPosition.y)
-                    {
-                        curY += height + EntryGap;
-                        continue;
-                    }
-                    if (curY > scrollPosition.y + outRect.height)
+                    // Viewport virtualization. Widgets.BeginScrollView clips pixels, but would still
+                    // execute every card's immediate-mode UI calls. Cached offsets let us jump to the
+                    // first visible row and stop once rows fall below the viewport.
+                    if (curY > visibleBottom)
                     {
                         break;
                     }
@@ -406,7 +400,6 @@ namespace PawnDiary
 
                         GUI.EndGroup();
                         entryGroupOpen = false;
-                        curY += height + EntryGap;
                         continue;
                     }
 
@@ -462,7 +455,8 @@ namespace PawnDiary
                     LinkedEntryView linked = entry.LinkedEntry;
                     bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
                     bool linkedAfter = linked != null && !linkedBefore;
-                    bool showModelName = HasModelName(entry);
+                    string footerNote = EntryFooterNote(entry);
+                    bool showModelName = !string.IsNullOrWhiteSpace(footerNote);
                     string bodyText = EntryBodyText(entry, showLlmDebugInfo);
                     string debugText = showLlmDebugInfo && !IsPromptOnly(entry) ? entry.DebugText : string.Empty;
                     float innerTextWidth = localEntryRect.width - 20f;
@@ -526,7 +520,7 @@ namespace PawnDiary
                         // Anchor above the dev-only footer (DevCopyFooter, 0 outside dev mode) so the
                         // bottom-left copy badge never overlaps or clips the model name.
                         Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                        DrawModelName(modelRect, entry.LlmModel);
+                        DrawModelName(modelRect, footerNote);
                     }
 
                     // Dev-only footer icons sit in the reserved bottom-left footer, drawn last so they
@@ -535,7 +529,6 @@ namespace PawnDiary
 
                     GUI.EndGroup();
                     entryGroupOpen = false;
-                    curY += height + EntryGap;
                 }
             }
             finally
@@ -580,6 +573,114 @@ namespace PawnDiary
             {
                 Array.Resize(ref heightsBuffer, count);
             }
+
+            if (entryOffsetsBuffer.Length < count)
+            {
+                Array.Resize(ref entryOffsetsBuffer, count);
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds row offsets/heights for the current year only when something that can affect list
+        /// layout changed. Idle scroll frames reuse this data, so large archived histories do not make
+        /// the tab rescan every card just to compute scroll height.
+        /// </summary>
+        private void RebuildEntryLayoutIfNeeded(
+            List<DiaryEntryView> ordered,
+            int visibleRevision,
+            float viewWidth,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            List<DiaryNameHighlight> nameHighlights,
+            float animationDelta)
+        {
+            bool dirty = cachedLayoutEntries != ordered
+                || cachedLayoutVisibleRevision != visibleRevision
+                || cachedLayoutSelectedYear != selectedYear
+                || cachedLayoutViewWidth != viewWidth
+                || cachedLayoutShowDebug != showLlmDebugInfo
+                || !cachedLayoutToken.Equals(token)
+                || cachedLayoutHighlightVersion != nameHighlightsVersion
+                || cachedLayoutExpansionVersion != entryExpansionVersion
+                || !cachedLayoutAnimationSettled;
+            if (!dirty)
+            {
+                return;
+            }
+
+            int count = ordered?.Count ?? 0;
+            EnsureEntryMeasurementBufferCapacity(count);
+
+            cachedLayoutEntries = ordered;
+            cachedLayoutVisibleRevision = visibleRevision;
+            cachedLayoutSelectedYear = selectedYear;
+            cachedLayoutViewWidth = viewWidth;
+            cachedLayoutShowDebug = showLlmDebugInfo;
+            cachedLayoutToken = token;
+            cachedLayoutHighlightVersion = nameHighlightsVersion;
+            cachedLayoutExpansionVersion = entryExpansionVersion;
+            cachedLayoutAnimationSettled = true;
+
+            float curY = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                DiaryEntryView entry = ordered[i];
+                string entryKey = EntryKey(entry);
+                bool expanded = IsEntryExpanded(entry, i);
+                float expansionBlend = ExpansionBlendFor(entryKey, expanded, animationDelta);
+                if (Mathf.Abs(expansionBlend - (expanded ? 1f : 0f)) > 0.001f)
+                {
+                    cachedLayoutAnimationSettled = false;
+                }
+
+                // Fully collapsed cards only need header height, so avoid expensive wrapped-text
+                // measurement until they are expanding or open. Expanded cards are measured once and
+                // then cached (see CachedEntryHeight) so reading a long page does not re-measure text
+                // every frame.
+                float fullHeight = (expanded || expansionBlend > 0f)
+                    ? CachedEntryHeight(entry, entryKey, viewWidth, showLlmDebugInfo, token, nameHighlights)
+                    : CollapsedEntryHeight;
+
+                entryKeysBuffer[i] = entryKey;
+                expandedTargetsBuffer[i] = expanded;
+                expansionBlendsBuffer[i] = expansionBlend;
+                fullHeightsBuffer[i] = fullHeight;
+                heightsBuffer[i] = AnimatedEntryHeight(fullHeight, expansionBlend);
+                entryOffsetsBuffer[i] = curY;
+
+                curY += heightsBuffer[i];
+                if (i < count - 1)
+                {
+                    curY += EntryGap;
+                }
+            }
+
+            cachedLayoutViewHeight = curY + 12f; // includes bottom padding
+        }
+
+        /// <summary>
+        /// Binary-searches the cached row offsets for the first card that may be visible.
+        /// </summary>
+        private int FirstVisibleEntryIndex(int count, float visibleTop)
+        {
+            int low = 0;
+            int high = count - 1;
+            int result = count;
+            while (low <= high)
+            {
+                int mid = (low + high) / 2;
+                if (entryOffsetsBuffer[mid] + heightsBuffer[mid] < visibleTop)
+                {
+                    low = mid + 1;
+                }
+                else
+                {
+                    result = mid;
+                    high = mid - 1;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>

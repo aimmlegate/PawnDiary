@@ -15,6 +15,7 @@
 // save/load helper for collections; LookMode.Deep means "each element saves/loads itself via its own
 // ExposeData". A `ref` parameter is required by Look so it can substitute a loaded list for the
 // field — that is why the list lives here (only its declaring type can pass it by ref).
+using System.Collections;
 using System.Collections.Generic;
 using Verse;
 
@@ -52,6 +53,26 @@ namespace PawnDiary
         public IReadOnlyList<DiaryEvent> AllEvents
         {
             get { return diaryEvents; }
+        }
+
+        /// <summary>
+        /// Read-only view over the newest <paramref name="maxEvents"/> events. This is the "hot"
+        /// maintenance window: old archived entries stay saved and visible through <see cref="AllEvents"/>,
+        /// but background catch-up scans can stay bounded.
+        /// </summary>
+        public IReadOnlyList<DiaryEvent> MostRecentEvents(int maxEvents)
+        {
+            if (maxEvents <= 0)
+            {
+                return EmptyRecentEvents.List;
+            }
+
+            if (diaryEvents.Count <= maxEvents)
+            {
+                return diaryEvents;
+            }
+
+            return new RecentEventList(diaryEvents, diaryEvents.Count - maxEvents, maxEvents);
         }
 
         /// <summary>
@@ -214,6 +235,48 @@ namespace PawnDiary
             if (Scribe.mode == LoadSaveMode.PostLoadInit && diaryEvents == null)
             {
                 diaryEvents = new List<DiaryEvent>();
+            }
+        }
+
+        private static class EmptyRecentEvents
+        {
+            public static readonly IReadOnlyList<DiaryEvent> List = new DiaryEvent[0];
+        }
+
+        private sealed class RecentEventList : IReadOnlyList<DiaryEvent>
+        {
+            private readonly List<DiaryEvent> source;
+            private readonly int start;
+            private readonly int count;
+
+            public RecentEventList(List<DiaryEvent> source, int start, int count)
+            {
+                this.source = source;
+                this.start = start;
+                this.count = count;
+            }
+
+            public int Count
+            {
+                get { return count; }
+            }
+
+            public DiaryEvent this[int index]
+            {
+                get { return source[start + index]; }
+            }
+
+            public IEnumerator<DiaryEvent> GetEnumerator()
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return source[start + i];
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
             }
         }
     }

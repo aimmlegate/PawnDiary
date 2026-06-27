@@ -146,6 +146,7 @@ namespace PawnDiary
 
 
             entryExpansionOverrides[key] = expanded;
+            entryExpansionVersion++;
 
         }
 

@@ -4,6 +4,18 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-06-27
+
+- **Large diary histories optimized.** The Diary tab now virtualizes its scroll layout with cached
+  row offsets/heights so only visible cards are drawn, while archived pages keep the same appearance.
+  Background diary-event maintenance now uses an XML-only hot window (`activeScanEventWindow`, default
+  200 newest events); older saved entries remain visible but are not retried, title-backfilled, or
+  used for catch-up scans. The dev-mode mock-page filler now seeds 6,000 completed pages across 3
+  in-game years, giving roughly 2,000 pages/year for realistic long-history stress tests without LLM
+  calls, and dev-mode retention leaves that mock stress history intact across autosaves. Archived
+  pending pages that fell out of the hot window now render prompt-fact fallback text instead of an
+  endless writing indicator, with a short fallback title and a "failed to generate" footer.
+
 ## 2026-06-26
 
 - **Diary command startup warning fixed.** The hidden-tab command helper is now marked for

@@ -139,9 +139,9 @@ namespace PawnDiary
         {
             DiaryTuningDef tuning = DiaryTuning.Current;
 
-            // diaryEvents is appended in tick order, so scan newest-first and stop once we drop below
-            // the target day — this bounds the work to today's events instead of the whole history.
-            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            // The active scan window is appended in tick order, so scan newest-first and stop once we
+            // drop below the target day. Archive pages are not day-reflection evidence anymore.
+            IReadOnlyList<DiaryEvent> allEvents = ActiveScanEvents();
             for (int i = allEvents.Count - 1; i >= 0; i--)
             {
                 DiaryEvent ev = allEvents[i];
@@ -592,14 +592,14 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Rebuilds the transient once-per-pawn/day guard from saved DayReflection events after load.
+        /// Rebuilds the transient once-per-pawn/day guard from hot saved DayReflection events after load.
         /// Without this, a pawn that saved while resting could write the same reflection again after
         /// loading because the guard itself is intentionally not part of the save schema.
         /// </summary>
         private void RebuildWrittenDayReflectionsFromEvents()
         {
             writtenDayReflections.Clear();
-            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            IReadOnlyList<DiaryEvent> allEvents = ActiveScanEvents();
             for (int i = 0; i < allEvents.Count; i++)
             {
                 DiaryEvent ev = allEvents[i];

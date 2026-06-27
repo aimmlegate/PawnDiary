@@ -684,7 +684,7 @@ namespace PawnDiary
         /// Builds a read-only view of this event for the given pawn's POV, or null if the pawn is not involved.
         /// For two-pawn events, includes a LinkedEntryView previewing the other pawn's entry.
         /// </summary>
-        public DiaryEntryView ToViewFor(string pawnId)
+        public DiaryEntryView ToViewFor(string pawnId, bool archivedForScans = false)
         {
             string povRole = RoleForPawn(pawnId);
             if (string.IsNullOrWhiteSpace(povRole))
@@ -717,7 +717,13 @@ namespace PawnDiary
             // Title for this pawn's POV: stored LLM title only. When empty, EntryHeader renders
             // the date alone with no separator.
             string titleForPov = TitleForRole(povRole);
-            bool titlePendingForPov = string.IsNullOrWhiteSpace(titleForPov) && IsTitlePending(povRole);
+            bool titlePendingForPov = !archivedForScans
+                && string.IsNullOrWhiteSpace(titleForPov)
+                && IsTitlePending(povRole);
+            string generatedTextForPov = GeneratedTextFor(povRole);
+            bool archivedGenerationStale = archivedForScans
+                && IsPending(povRole)
+                && string.IsNullOrWhiteSpace(generatedTextForPov);
 
             // Build a linked entry for the other pawn in a paired event.
             // Solo events (mental breaks) have no link.
@@ -751,7 +757,7 @@ namespace PawnDiary
                 tick,
                 date,
                 TextFor(povRole),
-                GeneratedTextFor(povRole),
+                generatedTextForPov,
                 StatusFor(povRole),
                 ErrorFor(povRole),
                 LlmEndpointFor(povRole),
@@ -769,7 +775,8 @@ namespace PawnDiary
                 titleForPov,
                 titlePendingForPov,
                 RawResponseFor(povRole),
-                TextDecorationContextForRole(povRole));
+                TextDecorationContextForRole(povRole),
+                archivedGenerationStale);
         }
 
         /// <summary>

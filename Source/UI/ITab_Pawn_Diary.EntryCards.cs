@@ -29,6 +29,11 @@ namespace PawnDiary
                 return entry.LlmPrompt;
             }
 
+            if (IsArchivedGenerationFallback(entry))
+            {
+                return ArchivedGenerationFallbackBody(entry);
+            }
+
             // Generating entries (revealed by the debug toggle OR the dev-only "show generating"
             // toggle) use DisplayText so an in-progress card shows the "writing..." placeholder /
             // raw text instead of rendering blank. Both the measure and draw passes call this, so
@@ -110,7 +115,11 @@ namespace PawnDiary
         /// </summary>
         private static void DrawRegenerateButton(Rect regenerateRect, DiaryEntryView entry, Pawn pawn, DiaryGameComponent component)
         {
-            if (entry == null || pawn == null || component == null || IsGenerating(entry) || IsPromptOnly(entry))
+            if (entry == null
+                || pawn == null
+                || component == null
+                || entry.LlmStatus == DiaryEvent.PendingStatus
+                || IsPromptOnly(entry))
             {
                 return;
             }
@@ -163,6 +172,11 @@ namespace PawnDiary
                 return entry.LlmPrompt;
             }
 
+            if (IsArchivedGenerationFallback(entry))
+            {
+                return ArchivedGenerationFallbackBody(entry);
+            }
+
             if (!string.IsNullOrWhiteSpace(entry.GeneratedText))
             {
                 return entry.GeneratedText;
@@ -176,7 +190,16 @@ namespace PawnDiary
         /// </summary>
         private static bool IsGenerating(DiaryEntryView entry)
         {
-            return entry != null && entry.LlmStatus == DiaryEvent.PendingStatus;
+            return entry != null && entry.LlmStatus == DiaryEvent.PendingStatus && !entry.ArchivedGenerationStale;
+        }
+
+        /// <summary>
+        /// True for archived pending entries that are no longer in the hot retry/title/orphan scan
+        /// window. They render as failed archive fallbacks, not active writing jobs.
+        /// </summary>
+        private static bool IsArchivedGenerationFallback(DiaryEntryView entry)
+        {
+            return entry != null && entry.ArchivedGenerationStale;
         }
 
         /// <summary>
@@ -205,7 +228,7 @@ namespace PawnDiary
         /// </summary>
         private static bool HasModelName(DiaryEntryView entry)
         {
-            return entry != null && !string.IsNullOrWhiteSpace(entry.LlmModel);
+            return !string.IsNullOrWhiteSpace(EntryFooterNote(entry));
         }
 
         /// <summary>
@@ -220,12 +243,28 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            if (!TitlesEnabled() || string.IsNullOrWhiteSpace(entry.Title))
+            string title = EntryDisplayTitle(entry);
+            if (string.IsNullOrWhiteSpace(title))
             {
                 return entry.Date ?? string.Empty;
             }
 
-            return (entry.Date ?? string.Empty) + " \u2014 " + entry.Title;
+            return (entry.Date ?? string.Empty) + " \u2014 " + title;
+        }
+
+        private static string EntryDisplayTitle(DiaryEntryView entry)
+        {
+            if (entry == null || !TitlesEnabled())
+            {
+                return string.Empty;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.Title))
+            {
+                return entry.Title;
+            }
+
+            return IsArchivedGenerationFallback(entry) ? ArchivedGenerationFallbackTitle(entry) : string.Empty;
         }
 
         /// <summary>
@@ -247,7 +286,7 @@ namespace PawnDiary
                 return;
             }
 
-            bool hasTitle = entry != null && TitlesEnabled() && !string.IsNullOrWhiteSpace(entry.Title);
+            bool hasTitle = !string.IsNullOrWhiteSpace(EntryDisplayTitle(entry));
             Color oldColor = GUI.color;
             if (hasTitle)
             {
@@ -527,7 +566,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the model id as a tiny, low-contrast note at the end of a diary card.
+        /// Draws the model id, or the archived failure note, as a tiny low-contrast footer.
         /// </summary>
         private static void DrawModelName(Rect rect, string modelName)
         {
@@ -543,6 +582,224 @@ namespace PawnDiary
             GUI.color = oldColor;
             Text.Anchor = oldAnchor;
             Text.Font = oldFont;
+        }
+
+        private static string EntryFooterNote(DiaryEntryView entry)
+        {
+            if (IsArchivedGenerationFallback(entry))
+            {
+                return "PawnDiary.Tab.ArchivedGenerationFailedFooter".Translate();
+            }
+
+            return entry?.LlmModel ?? string.Empty;
+        }
+
+        private static string ArchivedGenerationFallbackBody(DiaryEntryView entry)
+        {
+            string fact = ArchivedGenerationFallbackFact(entry);
+            if (string.IsNullOrWhiteSpace(fact))
+            {
+                fact = "PawnDiary.Tab.ArchivedGenerationFallbackUnknown".Translate();
+            }
+
+            return "PawnDiary.Tab.ArchivedGenerationFallback".Translate(fact);
+        }
+
+        private static string ArchivedGenerationFallbackTitle(DiaryEntryView entry)
+        {
+            return FirstWords(ArchivedGenerationFallbackFact(entry), DiaryTuning.ArchivedFallbackTitleWords);
+        }
+
+        private static string ArchivedGenerationFallbackFact(DiaryEntryView entry)
+        {
+            if (entry == null)
+            {
+                return string.Empty;
+            }
+
+            string fact = PromptFieldValue(entry.LlmPrompt, "what you saw");
+            if (string.IsNullOrWhiteSpace(fact))
+            {
+                fact = PromptFieldValue(entry.LlmPrompt, "what happened");
+            }
+
+            if (string.IsNullOrWhiteSpace(fact))
+            {
+                fact = PromptFieldValue(entry.LlmPrompt, "death facts");
+            }
+
+            if (string.IsNullOrWhiteSpace(fact))
+            {
+                fact = PromptFieldValue(entry.LlmPrompt, "arrival facts");
+            }
+
+            if (string.IsNullOrWhiteSpace(fact))
+            {
+                fact = PromptFieldValue(entry.LlmPrompt, "entry");
+            }
+
+            if (string.IsNullOrWhiteSpace(fact))
+            {
+                fact = entry.Text;
+            }
+
+            if (string.IsNullOrWhiteSpace(fact))
+            {
+                fact = FirstPromptLine(entry.LlmPrompt);
+            }
+
+            return TrimArchivedFallbackText(CollapseWhitespace(fact));
+        }
+
+        private static string PromptFieldValue(string prompt, string label)
+        {
+            if (string.IsNullOrWhiteSpace(prompt) || string.IsNullOrWhiteSpace(label))
+            {
+                return string.Empty;
+            }
+
+            string normalized = prompt.Replace("\r\n", "\n").Replace('\r', '\n');
+            string prefix = label + ":";
+            int start = 0;
+            while (start < normalized.Length)
+            {
+                int end = normalized.IndexOf('\n', start);
+                if (end < 0)
+                {
+                    end = normalized.Length;
+                }
+
+                string line = normalized.Substring(start, end - start).Trim();
+                if (line.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return line.Substring(prefix.Length).Trim();
+                }
+
+                start = end + 1;
+            }
+
+            return string.Empty;
+        }
+
+        private static string FirstPromptLine(string prompt)
+        {
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                return string.Empty;
+            }
+
+            string normalized = prompt.Replace("\r\n", "\n").Replace('\r', '\n');
+            int start = 0;
+            while (start < normalized.Length)
+            {
+                int end = normalized.IndexOf('\n', start);
+                if (end < 0)
+                {
+                    end = normalized.Length;
+                }
+
+                string line = normalized.Substring(start, end - start).Trim();
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    return line;
+                }
+
+                start = end + 1;
+            }
+
+            return string.Empty;
+        }
+
+        private static string CollapseWhitespace(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            char[] chars = new char[value.Length];
+            int count = 0;
+            bool previousWhitespace = false;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                if (char.IsWhiteSpace(c))
+                {
+                    if (!previousWhitespace && count > 0)
+                    {
+                        chars[count++] = ' ';
+                    }
+
+                    previousWhitespace = true;
+                    continue;
+                }
+
+                chars[count++] = c;
+                previousWhitespace = false;
+            }
+
+            return new string(chars, 0, count).Trim();
+        }
+
+        private static string TrimArchivedFallbackText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            int maxChars = DiaryTuning.ArchivedFallbackTextMaxChars;
+            if (value.Length <= maxChars)
+            {
+                return value;
+            }
+
+            return value.Substring(0, Math.Max(1, maxChars - 3)).TrimEnd() + "...";
+        }
+
+        private static string FirstWords(string value, int maxWords)
+        {
+            if (string.IsNullOrWhiteSpace(value) || maxWords <= 0)
+            {
+                return string.Empty;
+            }
+
+            string normalized = CollapseWhitespace(value);
+            int words = 0;
+            int end = 0;
+            bool inWord = false;
+            for (int i = 0; i < normalized.Length; i++)
+            {
+                bool whitespace = char.IsWhiteSpace(normalized[i]);
+                if (!whitespace && !inWord)
+                {
+                    words++;
+                    inWord = true;
+                }
+                else if (whitespace)
+                {
+                    if (words >= maxWords)
+                    {
+                        break;
+                    }
+
+                    inWord = false;
+                }
+
+                end = i + 1;
+                if (words >= maxWords && whitespace)
+                {
+                    break;
+                }
+            }
+
+            string title = normalized.Substring(0, Math.Min(end, normalized.Length)).Trim();
+            if (end < normalized.Length)
+            {
+                title += "...";
+            }
+
+            return title;
         }
 
         /// <summary>

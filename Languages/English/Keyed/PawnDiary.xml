@@ -34,7 +34,7 @@
   <PawnDiary.Tab.ShowGeneratingEntries>Show pages still being written</PawnDiary.Tab.ShowGeneratingEntries>
   <PawnDiary.Tab.ShowGeneratingEntriesTip>Reveal pages still being written or stuck on "writing..." so you can see which events never finished. Lighter than the full LLM debug view.</PawnDiary.Tab.ShowGeneratingEntriesTip>
   <PawnDiary.Tab.FillMockEntries>Fill with {0} test pages</PawnDiary.Tab.FillMockEntries>
-  <PawnDiary.Tab.FillMockEntriesTip>Dev-only: adds completed mock pages across many in-game dates so long-history scrolling, year paging, and collapse behavior can be tested without calling an LLM.</PawnDiary.Tab.FillMockEntriesTip>
+  <PawnDiary.Tab.FillMockEntriesTip>Dev-only: adds {0} completed mock pages across {1} in-game years, about {2} pages per year, so long-history scrolling, year paging, and collapse behavior can be stress-tested without calling an LLM.</PawnDiary.Tab.FillMockEntriesTip>
   <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
   <PawnDiary.Tab.GeneratePromptSuite>Prompt suite</PawnDiary.Tab.GeneratePromptSuite>
@@ -104,6 +104,9 @@
   <PawnDiary.Tab.RegenerateEntryTip>Dev-only: regenerate this page with the current model routing. Paired pages regenerate both POVs when available.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Queued page regeneration.</PawnDiary.Tab.RegenerateEntryQueued>
   <PawnDiary.Tab.RegenerateEntryUnavailable>This page cannot be regenerated right now.</PawnDiary.Tab.RegenerateEntryUnavailable>
+  <PawnDiary.Tab.ArchivedGenerationFallback>You see that: {0}</PawnDiary.Tab.ArchivedGenerationFallback>
+  <PawnDiary.Tab.ArchivedGenerationFallbackUnknown>something happened, but the prompt details were not saved</PawnDiary.Tab.ArchivedGenerationFallbackUnknown>
+  <PawnDiary.Tab.ArchivedGenerationFailedFooter>failed to generate</PawnDiary.Tab.ArchivedGenerationFailedFooter>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->

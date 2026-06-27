@@ -69,6 +69,16 @@ namespace PawnDiary
             }
 
             /// <summary>
+            /// Monotonic version for the currently visible entry set. The scroll-layout cache uses it
+            /// to know when the ordered list contents changed even though the same List instance is
+            /// reused to avoid allocations.
+            /// </summary>
+            public int VisibleRevision
+            {
+                get { return cachedVisibleRevision; }
+            }
+
+            /// <summary>
             /// Returns the pawn's raw entry views, rebuilding only when the component render token changes.
             /// </summary>
             public IReadOnlyList<DiaryEntryView> EntriesFor(Pawn pawn, DiaryGameComponent component, out DiaryRenderToken token)

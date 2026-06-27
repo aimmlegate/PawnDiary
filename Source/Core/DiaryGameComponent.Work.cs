@@ -206,7 +206,7 @@ namespace PawnDiary
 
             int minTick = Find.TickManager.TicksGame - windowTicks;
             string pawnId = pawn.GetUniqueLoadID();
-            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            IReadOnlyList<DiaryEvent> allEvents = ActiveScanEvents();
             for (int i = allEvents.Count - 1; i >= 0; i--)
             {
                 DiaryEvent diaryEvent = allEvents[i];
