@@ -22,9 +22,22 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   to reduce visible card pop-in/animation while scrolling long years.
   Diary-tab opening now builds long-history year indexes, selected-year cards, and selected-year row
   layout in small XML-budgeted main-thread slices with a loading indicator; inspect-tab/command badges
-  no longer start history scans during pawn selection. The new-page badge is now a saved per-pawn
-  unread flag set when main LLM text finishes and cleared when the Diary tab opens, instead of a
-  history count.
+  no longer start history scans or read saved diary records during pawn selection. The new-page badge
+  is now a saved per-pawn unread flag copied into a transient status cache, set when main LLM text
+  finishes and cleared when the Diary tab opens, instead of a history count. The loading counter now
+  reports the active load phase only: first open, uncached pawn switch, or opening a year with no
+  cached cards yet. The tab now keeps a small LRU of loaded pawn views, so switching back to a recent
+  pawn restores its visible list instead of rebuilding from zero. Same-pawn index refreshes and
+  selected-year card refreshes now build quietly behind the currently visible list. Same-year
+  visual/layout refreshes, including scroll,
+  highlight refreshes, and collapse/expand, no longer replace the visible list with the loading
+  panel, and loaded large years seed the clicked card's current blend so collapse/expand still
+  animates. Selected-year rebuilds now invalidate row layout defensively so stale virtualized offset
+  arrays cannot cause an index error. The UI indexer
+  also no longer scans the entire colony event store for old missing arrival-page fallbacks while the
+  tab opens, and it now indexes the selected pawn's saved refs in one pass. Selected-year loading
+  resumes across frames, and bad/stale saved events are skipped with a one-time log instead of
+  leaving the tab stuck on the loading panel.
   Background diary-event maintenance now uses an XML-only hot window (`activeScanEventWindow`, default
   1000 newest events); older saved entries remain visible but are not retried, title-backfilled, or
   used for catch-up scans. The dev-mode mock-page filler now seeds 6,000 completed pages across 3
@@ -32,7 +45,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   calls, and dev-mode retention leaves that mock stress history intact across autosaves. Archived
   pending pages that fell out of the hot window now render prompt-fact fallback text instead of an
   endless writing indicator, with a short fallback title and a "failed to generate" footer, and saved
-  pending attempts keep that archive fallback after reload.
+  pending attempts keep that archive fallback after reload. The temporary selection-UI disable switch
+  and noisy perf timing logs used during stress testing were removed before release; the Diary tab,
+  gizmo, and normal startup logging are restored.
 
 ## 2026-06-26
 

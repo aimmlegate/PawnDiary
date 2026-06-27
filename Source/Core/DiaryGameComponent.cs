@@ -139,6 +139,10 @@ namespace PawnDiary
         private Dictionary<int, string> generatedSpeechPlayLogTexts = new Dictionary<int, string>();
         private List<int> generatedSpeechPlayLogTextKeys;
         private List<string> generatedSpeechPlayLogTextValues;
+        // Transient closed-window badge cache keyed by pawn id. Inspect-tab/gizmo drawing reads only
+        // this dictionary, never the saved diary lists, so selecting a pawn with thousands of pages
+        // cannot start a diary-record lookup or history scan.
+        private readonly Dictionary<string, DiaryCommandStatus> commandStatusByPawnId = new Dictionary<string, DiaryCommandStatus>();
 
         // How often (in ticks) GameComponentTick rescans saved events to (re)queue any pending
         // generations once something has explicitly requested a catch-up pass.
@@ -231,6 +235,7 @@ namespace PawnDiary
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             generatedSpeechPlayLogTexts.Clear();
+            commandStatusByPawnId.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
@@ -358,6 +363,7 @@ namespace PawnDiary
                     RebuildWrittenDayReflectionsFromEvents();
                     PruneDiaryEventRefs();
                     PruneStaleGeneratedSpeechPlayLogState();
+                    RebuildCommandStatusCache();
                 }
                 catch (Exception e)
                 {

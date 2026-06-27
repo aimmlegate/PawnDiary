@@ -110,6 +110,7 @@ namespace PawnDiary
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
                 }
             }
+
         }
 
         /// <summary>
@@ -147,6 +148,7 @@ namespace PawnDiary
                     QueueMissingTitleForRole(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
                 }
             }
+
         }
 
         private void QueueMissingTitleForRole(DiaryEvent diaryEvent, string povRole,

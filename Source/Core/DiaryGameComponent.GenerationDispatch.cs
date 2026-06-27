@@ -214,6 +214,7 @@ namespace PawnDiary
             if (diary != null)
             {
                 diary.hasUnreadGeneratedEntry = true;
+                SetCachedCommandUnreadFlag(pawnId, true);
             }
         }
 

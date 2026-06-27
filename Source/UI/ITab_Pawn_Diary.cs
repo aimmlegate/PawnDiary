@@ -318,7 +318,7 @@ namespace PawnDiary
             float entriesY = controlsY + controlsHeight + EntryGap;
             Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
 
-            if (visibleEntriesCache.IsLoading)
+            if (visibleEntriesCache.IsIndexLoading)
             {
                 DrawDiaryLoading(outRect, visibleEntriesCache.LoadingProcessed, visibleEntriesCache.LoadingTotal);
                 return;
@@ -378,7 +378,10 @@ namespace PawnDiary
                 out layoutProcessed,
                 out layoutTotal))
             {
-                DrawDiaryLoading(outRect, layoutProcessed, layoutTotal);
+                DrawDiaryLoading(
+                    outRect,
+                    visibleEntriesCache.LoadingProcessed + layoutProcessed,
+                    visibleEntriesCache.LoadingTotal + layoutTotal);
                 return;
             }
 
@@ -442,7 +445,7 @@ namespace PawnDiary
                         DrawCollapsedEntry(entry, visibleEntryRect, accentColor, expanded, expansionBlend);
                         if (Widgets.ButtonInvisible(visibleEntryRect, false))
                         {
-                            SetEntryExpanded(entry, true);
+                            SetEntryExpanded(entry, true, expansionBlend);
                         }
 
                         GUI.EndGroup();
@@ -490,7 +493,7 @@ namespace PawnDiary
                     DrawExpansionIndicator(titleRect, expanded, expansionBlend, accentColor);
                     if (Widgets.ButtonInvisible(titleRect, false))
                     {
-                        SetEntryExpanded(entry, !expanded);
+                        SetEntryExpanded(entry, !expanded, expansionBlend);
                     }
 
                     TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
@@ -645,21 +648,45 @@ namespace PawnDiary
         {
             processed = ordered?.Count ?? 0;
             total = processed;
-            bool dirty = cachedLayoutEntries != ordered
+            int count = ordered?.Count ?? 0;
+            bool listDirty = cachedLayoutEntries != ordered
                 || cachedLayoutVisibleRevision != visibleRevision
-                || cachedLayoutSelectedYear != selectedYear
-                || cachedLayoutViewWidth != viewWidth
+                || cachedLayoutSelectedYear != selectedYear;
+            bool visualLayoutDirty = cachedLayoutViewWidth != viewWidth
                 || cachedLayoutShowDebug != showLlmDebugInfo
                 || !cachedLayoutToken.Equals(token)
-                || cachedLayoutHighlightVersion != nameHighlightsVersion
-                || cachedLayoutExpansionVersion != entryExpansionVersion
+                || cachedLayoutHighlightVersion != nameHighlightsVersion;
+            bool expansionLayoutDirty = cachedLayoutExpansionVersion != entryExpansionVersion
                 || !cachedLayoutAnimationSettled;
+            bool bufferDirty = entryOffsetsBuffer.Length < count || heightsBuffer.Length < count;
+            bool layoutDirty = visualLayoutDirty || expansionLayoutDirty || bufferDirty;
+            bool dirty = listDirty || layoutDirty;
             if (!dirty)
             {
                 return true;
             }
 
-            int count = ordered?.Count ?? 0;
+            if (!listDirty && layoutDirty)
+            {
+                // The selected year's data is already loaded; only row heights or visual layout inputs
+                // changed. Rebuild offsets immediately so scroll, collapse/expand, and highlight
+                // refreshes never swap the visible list for the blocking loading panel.
+                BeginEntryLayoutBuild(ordered, visibleRevision, viewWidth, showLlmDebugInfo, token, count);
+                ProcessEntryLayoutSlice(
+                    ordered,
+                    viewWidth,
+                    showLlmDebugInfo,
+                    token,
+                    nameHighlights,
+                    animationDelta,
+                    count,
+                    true,
+                    expansionLayoutDirty);
+                processed = count;
+                total = count;
+                return true;
+            }
+
             if (!layoutBuildInProgress
                 || layoutBuildEntries != ordered
                 || layoutBuildVisibleRevision != visibleRevision
@@ -673,7 +700,7 @@ namespace PawnDiary
                 BeginEntryLayoutBuild(ordered, visibleRevision, viewWidth, showLlmDebugInfo, token, count);
             }
 
-            ProcessEntryLayoutSlice(ordered, viewWidth, showLlmDebugInfo, token, nameHighlights, animationDelta, count);
+            ProcessEntryLayoutSlice(ordered, viewWidth, showLlmDebugInfo, token, nameHighlights, animationDelta, count, false, false);
             processed = layoutBuildInProgress ? layoutBuildIndex : count;
             total = count;
             return !layoutBuildInProgress;
@@ -709,7 +736,9 @@ namespace PawnDiary
             DiaryRenderToken token,
             List<DiaryNameHighlight> nameHighlights,
             float animationDelta,
-            int count)
+            int count,
+            bool processAll,
+            bool forceAnimation)
         {
             if (!layoutBuildInProgress)
             {
@@ -717,9 +746,13 @@ namespace PawnDiary
             }
 
             int processedThisSlice = 0;
-            int max = Math.Max(1, DiaryTuning.UiHistoryScanMaxEventsPerFrame);
-            float endTime = Time.realtimeSinceStartup + Math.Max(0.0001f, DiaryTuning.UiHistoryScanFrameBudgetSeconds);
-            bool animateLayout = count <= max;
+            int animationMax = Math.Max(1, DiaryTuning.UiHistoryScanMaxEventsPerFrame);
+            int max = processAll ? int.MaxValue : animationMax;
+            float endTime = processAll
+                ? float.MaxValue
+                : Time.realtimeSinceStartup + Math.Max(0.0001f, DiaryTuning.UiHistoryScanFrameBudgetSeconds);
+            bool animateLayout = forceAnimation || count <= animationMax;
+            bool cacheMissingAnimationRows = !forceAnimation || count <= MaxExpansionBlendEntries;
 
             while (layoutBuildIndex < count && processedThisSlice < max)
             {
@@ -727,7 +760,9 @@ namespace PawnDiary
                 DiaryEntryView entry = ordered[i];
                 string entryKey = EntryKey(entry);
                 bool expanded = IsEntryExpanded(entry, i);
-                float expansionBlend = animateLayout ? ExpansionBlendFor(entryKey, expanded, animationDelta) : (expanded ? 1f : 0f);
+                float expansionBlend = animateLayout
+                    ? ExpansionBlendFor(entryKey, expanded, animationDelta, cacheMissingAnimationRows)
+                    : (expanded ? 1f : 0f);
                 if (Mathf.Abs(expansionBlend - (expanded ? 1f : 0f)) > 0.001f)
                 {
                     layoutBuildAnimationSettled = false;
@@ -757,7 +792,7 @@ namespace PawnDiary
                 layoutBuildIndex++;
                 processedThisSlice++;
 
-                if (processedThisSlice > 0 && Time.realtimeSinceStartup >= endTime)
+                if (!processAll && processedThisSlice > 0 && Time.realtimeSinceStartup >= endTime)
                 {
                     break;
                 }

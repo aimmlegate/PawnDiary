@@ -1,5 +1,6 @@
 // Visible-entry cache for the Diary tab. RimWorld redraws inspector tabs every frame, so this
 // helper owns the impure pawn/token-backed lists that can be reused between draw passes.
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -17,6 +18,39 @@ namespace PawnDiary
         /// </summary>
         private sealed class DiaryTabVisibleEntriesCache
         {
+            private const int MaxCachedPawnStates = 6;
+
+            private sealed class CachedPawnState
+            {
+                public Pawn cachedIndexPawn;
+                public DiaryRenderToken cachedIndexToken;
+                public bool cachedIndexShowDebug;
+                public bool cachedIndexShowGenerating;
+                public bool cachedIndexShowPromptOnly;
+                public DevDiaryPreviewKind cachedIndexPreviewKind;
+                public DiaryGameComponent.DiaryTabYearIndex cachedIndex;
+                public DiaryGameComponent.DiaryTabYearIndexBuild cachedIndexBuild;
+                public DiaryEntryView cachedPreviewEntry;
+                public readonly List<int> visibleYears = new List<int>();
+                public readonly Dictionary<int, int> yearCounts = new Dictionary<int, int>();
+                public readonly List<DiaryEntryView> orderedEntries = new List<DiaryEntryView>();
+                public readonly List<DiaryEntryView> quietOrderedEntries = new List<DiaryEntryView>();
+                public int visibleRevision;
+                public int generatingCount;
+                public int completedCount;
+                public int pendingCount;
+                public bool loading;
+                public int loadingProcessed;
+                public int loadingTotal;
+                public bool loadingSelectedYear;
+                public int loadingYear;
+                public int loadingYearCandidateIndex;
+                public string loadingYearPawnId;
+                public bool quietSelectedYearRefresh;
+                public int orderedVisibleRevision;
+                public int orderedYear;
+            }
+
             private Pawn cachedIndexPawn;
             private DiaryRenderToken cachedIndexToken;
             private bool cachedIndexShowDebug;
@@ -30,6 +64,10 @@ namespace PawnDiary
             private readonly List<int> cachedVisibleYears = new List<int>();
             private readonly Dictionary<int, int> cachedYearCounts = new Dictionary<int, int>();
             private readonly List<DiaryEntryView> cachedOrderedEntries = new List<DiaryEntryView>();
+            private readonly List<DiaryEntryView> quietOrderedEntries = new List<DiaryEntryView>();
+            private readonly Dictionary<string, CachedPawnState> cachedPawnStates = new Dictionary<string, CachedPawnState>();
+            private readonly List<string> cachedPawnStateLru = new List<string>();
+            private string currentCacheKey;
             private int cachedVisibleRevision;
             private int cachedGeneratingCount;
             private int cachedCompletedCount;
@@ -41,6 +79,7 @@ namespace PawnDiary
             private int loadingYear;
             private int loadingYearCandidateIndex;
             private string loadingYearPawnId;
+            private bool quietSelectedYearRefresh;
             private int cachedOrderedVisibleRevision = -1;
             private int cachedOrderedYear = int.MinValue;
 
@@ -65,6 +104,11 @@ namespace PawnDiary
             public bool IsLoading
             {
                 get { return loading; }
+            }
+
+            public bool IsIndexLoading
+            {
+                get { return cachedIndexBuild != null && loading; }
             }
 
             public int LoadingProcessed
@@ -114,14 +158,28 @@ namespace PawnDiary
                     return;
                 }
 
+                string cacheKey = CacheKeyFor(pawn, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries, devPreviewKind);
+                if (!string.Equals(cacheKey, currentCacheKey, StringComparison.Ordinal))
+                {
+                    StoreCurrentState();
+                    currentCacheKey = cacheKey;
+                    if (!RestoreCachedState(cacheKey))
+                    {
+                        ClearCurrentState();
+                    }
+                }
+
                 token = component.RenderTokenFor(pawn);
-                if (pawn == cachedIndexPawn
-                    && token.Equals(cachedIndexToken)
+                bool sameVisibleCache = cachedIndexPawn != null
+                    && string.Equals(cacheKey, currentCacheKey, StringComparison.Ordinal)
                     && cachedIndexShowDebug == showLlmDebugInfo
                     && cachedIndexShowGenerating == showGeneratingEntries
                     && cachedIndexShowPromptOnly == showPromptOnlyEntries
-                    && cachedIndexPreviewKind == devPreviewKind
-                    && cachedIndex != null)
+                    && cachedIndexPreviewKind == devPreviewKind;
+                if (sameVisibleCache
+                    && token.Equals(cachedIndexToken)
+                    && cachedIndex != null
+                    && cachedIndexBuild == null)
                 {
                     return;
                 }
@@ -137,23 +195,32 @@ namespace PawnDiary
                     cachedIndexShowPromptOnly = showPromptOnlyEntries;
                     cachedIndexPreviewKind = devPreviewKind;
                     cachedIndexBuild = component.BeginTabYearIndexBuild(pawn, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries);
-                    cachedIndex = null;
-                    cachedPreviewEntry = null;
-                    cachedGeneratingCount = 0;
-                    cachedCompletedCount = 0;
-                    cachedPendingCount = 0;
-                    cachedVisibleYears.Clear();
-                    cachedYearCounts.Clear();
-                    cachedOrderedEntries.Clear();
-                    cachedOrderedVisibleRevision = -1;
-                    loadingSelectedYear = false;
-                    loadingYearCandidateIndex = 0;
-                    loading = true;
+                    if (!(sameVisibleCache && cachedIndex != null))
+                    {
+                        cachedIndex = null;
+                        cachedPreviewEntry = null;
+                        cachedGeneratingCount = 0;
+                        cachedCompletedCount = 0;
+                        cachedPendingCount = 0;
+                        cachedVisibleYears.Clear();
+                        cachedYearCounts.Clear();
+                        cachedOrderedEntries.Clear();
+                        quietOrderedEntries.Clear();
+                        cachedOrderedVisibleRevision = -1;
+                        loadingSelectedYear = false;
+                        quietSelectedYearRefresh = false;
+                        loadingYearCandidateIndex = 0;
+                        loading = true;
+                    }
+                    else
+                    {
+                        loading = false;
+                    }
                 }
 
                 cachedIndexBuild.ProcessSlice(DiaryTuning.UiHistoryScanMaxEventsPerFrame, DiaryTuning.UiHistoryScanFrameBudgetSeconds);
-                loadingProcessed = cachedIndexBuild.processedWork;
-                loadingTotal = cachedIndexBuild.totalWork;
+                loadingTotal = Math.Max(0, cachedIndexBuild.totalWork);
+                loadingProcessed = Math.Min(Math.Max(0, cachedIndexBuild.processedWork), loadingTotal);
                 if (!cachedIndexBuild.IsComplete)
                 {
                     return;
@@ -235,14 +302,23 @@ namespace PawnDiary
                 }
 
                 string pawnId = pawn?.GetUniqueLoadID();
+                bool canRefreshQuietly = cachedOrderedYear == year && cachedOrderedEntries.Count > 0;
                 if (!loadingSelectedYear
                     || loadingYear != year
-                    || loadingYearPawnId != pawnId)
+                    || loadingYearPawnId != pawnId
+                    || quietSelectedYearRefresh != canRefreshQuietly)
                 {
-                    cachedOrderedEntries.Clear();
+                    quietSelectedYearRefresh = canRefreshQuietly;
+                    List<DiaryEntryView> buildTarget = quietSelectedYearRefresh ? quietOrderedEntries : cachedOrderedEntries;
+                    buildTarget.Clear();
+                    if (!quietSelectedYearRefresh)
+                    {
+                        cachedOrderedEntries.Clear();
+                    }
+
                     if (cachedPreviewEntry != null && EntryYear(cachedPreviewEntry) == year)
                     {
-                        cachedOrderedEntries.Add(cachedPreviewEntry);
+                        buildTarget.Add(cachedPreviewEntry);
                     }
 
                     loadingSelectedYear = true;
@@ -251,27 +327,38 @@ namespace PawnDiary
                     loadingYearCandidateIndex = 0;
                 }
 
-                loading = true;
-                loadingProcessed = loadingYearCandidateIndex;
-                loadingTotal = CountForYear(year);
+                List<DiaryEntryView> targetEntries = quietSelectedYearRefresh ? quietOrderedEntries : cachedOrderedEntries;
+                loading = !quietSelectedYearRefresh;
+                int yearTotal = CountForYear(year);
+                loadingTotal = yearTotal;
+                loadingProcessed = Math.Min(targetEntries.Count, yearTotal);
                 bool complete = cachedIndex == null
                     || cachedIndex.AppendEntriesForYearSlice(
-                        cachedOrderedEntries,
+                        targetEntries,
                         pawnId,
                         year,
                         ref loadingYearCandidateIndex,
                         DiaryTuning.UiHistoryScanMaxEventsPerFrame,
                         DiaryTuning.UiHistoryScanFrameBudgetSeconds);
-                loadingProcessed = loadingYearCandidateIndex;
+                loadingProcessed = Math.Min(targetEntries.Count, yearTotal);
                 if (!complete)
                 {
-                    return false;
+                    return quietSelectedYearRefresh;
                 }
 
-                cachedOrderedEntries.Sort((left, right) => right.Tick.CompareTo(left.Tick));
+                targetEntries.Sort((left, right) => right.Tick.CompareTo(left.Tick));
+                if (quietSelectedYearRefresh)
+                {
+                    cachedOrderedEntries.Clear();
+                    cachedOrderedEntries.AddRange(quietOrderedEntries);
+                    quietOrderedEntries.Clear();
+                }
+
+                cachedVisibleRevision++;
                 cachedOrderedVisibleRevision = cachedVisibleRevision;
                 cachedOrderedYear = year;
                 loadingSelectedYear = false;
+                quietSelectedYearRefresh = false;
                 loading = false;
                 loadingProcessed = loadingTotal;
                 return true;
@@ -285,18 +372,149 @@ namespace PawnDiary
                 cachedOrderedVisibleRevision = -1;
             }
 
-            private void ClearIfNeeded()
+            private static string CacheKeyFor(
+                Pawn pawn,
+                bool showLlmDebugInfo,
+                bool showGeneratingEntries,
+                bool showPromptOnlyEntries,
+                DevDiaryPreviewKind devPreviewKind)
             {
-                if (cachedIndex == null
-                    && cachedIndexBuild == null
-                    && cachedVisibleYears.Count == 0
-                    && cachedYearCounts.Count == 0
-                    && cachedPreviewEntry == null
-                    && cachedOrderedEntries.Count == 0)
+                string pawnId = pawn?.GetUniqueLoadID() ?? string.Empty;
+                return pawnId
+                    + "|debug=" + showLlmDebugInfo
+                    + "|generating=" + showGeneratingEntries
+                    + "|promptOnly=" + showPromptOnlyEntries
+                    + "|preview=" + devPreviewKind;
+            }
+
+            private bool HasCurrentState()
+            {
+                return cachedIndexPawn != null
+                    || cachedIndex != null
+                    || cachedIndexBuild != null
+                    || cachedVisibleYears.Count > 0
+                    || cachedYearCounts.Count > 0
+                    || cachedOrderedEntries.Count > 0
+                    || quietOrderedEntries.Count > 0;
+            }
+
+            private void StoreCurrentState()
+            {
+                if (string.IsNullOrWhiteSpace(currentCacheKey) || !HasCurrentState())
                 {
                     return;
                 }
 
+                CachedPawnState state = new CachedPawnState
+                {
+                    cachedIndexPawn = cachedIndexPawn,
+                    cachedIndexToken = cachedIndexToken,
+                    cachedIndexShowDebug = cachedIndexShowDebug,
+                    cachedIndexShowGenerating = cachedIndexShowGenerating,
+                    cachedIndexShowPromptOnly = cachedIndexShowPromptOnly,
+                    cachedIndexPreviewKind = cachedIndexPreviewKind,
+                    cachedIndex = cachedIndex,
+                    cachedIndexBuild = cachedIndexBuild,
+                    cachedPreviewEntry = cachedPreviewEntry,
+                    visibleRevision = cachedVisibleRevision,
+                    generatingCount = cachedGeneratingCount,
+                    completedCount = cachedCompletedCount,
+                    pendingCount = cachedPendingCount,
+                    loading = loading,
+                    loadingProcessed = loadingProcessed,
+                    loadingTotal = loadingTotal,
+                    loadingSelectedYear = loadingSelectedYear,
+                    loadingYear = loadingYear,
+                    loadingYearCandidateIndex = loadingYearCandidateIndex,
+                    loadingYearPawnId = loadingYearPawnId,
+                    quietSelectedYearRefresh = quietSelectedYearRefresh,
+                    orderedVisibleRevision = cachedOrderedVisibleRevision,
+                    orderedYear = cachedOrderedYear
+                };
+                state.visibleYears.AddRange(cachedVisibleYears);
+                foreach (KeyValuePair<int, int> pair in cachedYearCounts)
+                {
+                    state.yearCounts[pair.Key] = pair.Value;
+                }
+
+                state.orderedEntries.AddRange(cachedOrderedEntries);
+                state.quietOrderedEntries.AddRange(quietOrderedEntries);
+                cachedPawnStates[currentCacheKey] = state;
+                TouchCachedState(currentCacheKey);
+                TrimCachedStates();
+            }
+
+            private bool RestoreCachedState(string cacheKey)
+            {
+                CachedPawnState state;
+                if (string.IsNullOrWhiteSpace(cacheKey) || !cachedPawnStates.TryGetValue(cacheKey, out state))
+                {
+                    return false;
+                }
+
+                cachedIndexPawn = state.cachedIndexPawn;
+                cachedIndexToken = state.cachedIndexToken;
+                cachedIndexShowDebug = state.cachedIndexShowDebug;
+                cachedIndexShowGenerating = state.cachedIndexShowGenerating;
+                cachedIndexShowPromptOnly = state.cachedIndexShowPromptOnly;
+                cachedIndexPreviewKind = state.cachedIndexPreviewKind;
+                cachedIndex = state.cachedIndex;
+                cachedIndexBuild = state.cachedIndexBuild;
+                cachedPreviewEntry = state.cachedPreviewEntry;
+                cachedVisibleRevision = state.visibleRevision;
+                cachedGeneratingCount = state.generatingCount;
+                cachedCompletedCount = state.completedCount;
+                cachedPendingCount = state.pendingCount;
+                loading = state.loading;
+                loadingProcessed = state.loadingProcessed;
+                loadingTotal = state.loadingTotal;
+                loadingSelectedYear = state.loadingSelectedYear;
+                loadingYear = state.loadingYear;
+                loadingYearCandidateIndex = state.loadingYearCandidateIndex;
+                loadingYearPawnId = state.loadingYearPawnId;
+                quietSelectedYearRefresh = state.quietSelectedYearRefresh;
+                cachedOrderedVisibleRevision = state.orderedVisibleRevision;
+                cachedOrderedYear = state.orderedYear;
+
+                cachedVisibleYears.Clear();
+                cachedVisibleYears.AddRange(state.visibleYears);
+                cachedYearCounts.Clear();
+                foreach (KeyValuePair<int, int> pair in state.yearCounts)
+                {
+                    cachedYearCounts[pair.Key] = pair.Value;
+                }
+
+                cachedOrderedEntries.Clear();
+                cachedOrderedEntries.AddRange(state.orderedEntries);
+                quietOrderedEntries.Clear();
+                quietOrderedEntries.AddRange(state.quietOrderedEntries);
+                TouchCachedState(cacheKey);
+                return true;
+            }
+
+            private void TouchCachedState(string cacheKey)
+            {
+                if (string.IsNullOrWhiteSpace(cacheKey))
+                {
+                    return;
+                }
+
+                cachedPawnStateLru.Remove(cacheKey);
+                cachedPawnStateLru.Add(cacheKey);
+            }
+
+            private void TrimCachedStates()
+            {
+                while (cachedPawnStateLru.Count > MaxCachedPawnStates)
+                {
+                    string evictedKey = cachedPawnStateLru[0];
+                    cachedPawnStateLru.RemoveAt(0);
+                    cachedPawnStates.Remove(evictedKey);
+                }
+            }
+
+            private void ClearCurrentState()
+            {
                 cachedIndexPawn = null;
                 cachedIndexToken = default(DiaryRenderToken);
                 cachedIndex = null;
@@ -311,10 +529,31 @@ namespace PawnDiary
                 cachedVisibleYears.Clear();
                 cachedYearCounts.Clear();
                 cachedOrderedEntries.Clear();
+                quietOrderedEntries.Clear();
                 loadingSelectedYear = false;
+                quietSelectedYearRefresh = false;
                 loadingYearCandidateIndex = 0;
                 cachedVisibleRevision++;
                 cachedOrderedVisibleRevision = -1;
+            }
+
+            private void ClearIfNeeded()
+            {
+                if (cachedIndex == null
+                    && cachedIndexBuild == null
+                    && cachedVisibleYears.Count == 0
+                    && cachedYearCounts.Count == 0
+                    && cachedPreviewEntry == null
+                    && cachedOrderedEntries.Count == 0
+                    && cachedPawnStates.Count == 0)
+                {
+                    return;
+                }
+
+                ClearCurrentState();
+                currentCacheKey = null;
+                cachedPawnStates.Clear();
+                cachedPawnStateLru.Clear();
             }
 
             private void AddDevPreviewEntryIfNeeded(Pawn pawn, DevDiaryPreviewKind devPreviewKind)

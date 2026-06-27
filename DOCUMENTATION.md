@@ -170,12 +170,25 @@ year; newest cards start expanded. Long histories are kept cheap by the active-e
 visible-entry caching, sliced main-thread year indexing, cached virtual row offsets/heights, and
 viewport drawing that only emits cards inside the scroll slice plus the XML-tuned overscan buffer
 (`virtualizedEntryOverscanHeight`, default 800 pixels above and below the viewport). The sliced indexer
-uses `uiHistoryScanMaxEventsPerFrame` and `uiHistoryScanFrameBudgetSeconds` for both year indexing
+uses `uiHistoryScanMaxEventsPerFrame` and `uiHistoryScanFrameBudgetSeconds` for year indexing,
 selected-year card materialization, and selected-year row layout, so opening a pawn with thousands of
-pages shows a loading panel instead of freezing the game. Inspect-tab and command badges do not start
-history scans during pawn selection; the new-page badge reads a saved per-pawn unread flag that is set
-when main LLM text finishes and cleared when that pawn's Diary tab opens, while writing dots reuse
-cached pending counts after the Diary tab finishes its sliced load.
+pages shows a loading panel instead of freezing the game. The loading panel reports the active load
+phase only when no usable cached list exists yet: first open, uncached pawn switch, or opening a year
+with no cached cards. The tab keeps a small LRU of loaded pawn views so returning to a recent pawn
+restores its visible list instead of rebuilding from zero. Same-pawn index refreshes and
+selected-year card refreshes build quietly behind the currently visible list. Once a year is visible,
+same-year visual/layout refreshes, including scroll,
+highlight refreshes, and collapse/expand, keep the list visible instead of returning to the loading
+panel; loaded large years seed the clicked card's current blend so the clicked card can still animate
+open or closed. Selected-year rebuilds invalidate row layout defensively so virtualized row offset
+arrays cannot be reused against a changed list. The tab indexer does not perform the older
+cross-colony arrival-page fallback scan while opening; it scans the selected pawn's saved diary
+references once, resumes selected-year loading across frames, skips any bad/stale entry with a
+one-time log, then slices the selected year's card and layout work. Inspect-tab and command badges
+do not touch saved diary records during pawn
+selection; they read a transient per-pawn status cache. The new-page badge is backed by a saved
+per-pawn unread flag that is set when main LLM text finishes and cleared when that pawn's Diary tab
+opens, while writing dots reuse cached pending counts after the Diary tab finishes its sliced load.
 Archived pages use the same cards and controls as hot pages.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text

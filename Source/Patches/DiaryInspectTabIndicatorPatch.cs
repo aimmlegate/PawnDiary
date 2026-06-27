@@ -41,12 +41,6 @@ namespace PawnDiary
                     return;
                 }
 
-                Rect tabRect;
-                if (!TryDiaryTabRect(pane, out tabRect))
-                {
-                    return;
-                }
-
                 Pawn pawn = SelectedDiaryPawn();
                 if (!ITab_Pawn_Diary.CanShowDiaryFor(pawn))
                 {
@@ -55,6 +49,12 @@ namespace PawnDiary
 
                 DiaryGameComponent component = DiaryGameComponent.Current;
                 if (component == null || !component.CommandStatusFor(pawn).HasNewPages)
+                {
+                    return;
+                }
+
+                Rect tabRect;
+                if (!TryDiaryTabRect(pane, out tabRect))
                 {
                     return;
                 }

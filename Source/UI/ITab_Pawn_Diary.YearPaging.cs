@@ -475,7 +475,7 @@ namespace PawnDiary
                 if (entry != null && entry.EventId == pendingScrollEventId)
                 {
 
-                    SetEntryExpanded(entry, true);
+                    SetEntryExpanded(entry, true, 1f);
 
                     float maxScroll = Mathf.Max(0f, viewHeight - outHeight);
 

@@ -198,22 +198,7 @@ namespace PawnDiary
             private enum BuildPhase
             {
                 DiaryEvents,
-                ArrivalFallback,
-                FinalizeCandidates,
                 Complete
-            }
-
-            private struct RawCandidate
-            {
-                public DiaryEvent diaryEvent;
-                public int eventIndex;
-                public int year;
-                public bool archivedForScans;
-                public bool hasGeneratedText;
-                public bool archivedGenerationStale;
-                public bool generating;
-                public bool promptOnly;
-                public bool titlePending;
             }
 
             private readonly DiaryGameComponent owner;
@@ -223,14 +208,10 @@ namespace PawnDiary
             private readonly bool showGeneratingEntries;
             private readonly bool showPromptOnlyEntries;
             private readonly HashSet<string> activeEventIds;
-            private readonly IReadOnlyList<DiaryEvent> allEvents;
-            private readonly List<RawCandidate> rawCandidates = new List<RawCandidate>();
 
             private DiaryBounds bounds = new DiaryBounds { firstArrivalIndex = -1, finalDeathIndex = -1 };
             private BuildPhase phase = BuildPhase.DiaryEvents;
             private int diaryIndex;
-            private int allEventsIndex;
-            private int finalizeIndex;
 
             public readonly DiaryRenderToken token;
             public readonly DiaryTabYearIndex index = new DiaryTabYearIndex();
@@ -253,8 +234,7 @@ namespace PawnDiary
                 diary = pawn == null ? null : owner.FindDiary(pawn, false);
                 token = owner.RenderTokenFor(pawn);
                 activeEventIds = owner.ActiveScanEventIds();
-                allEvents = owner.events.AllEvents;
-                totalWork = (diary?.eventIds?.Count ?? 0) * 2 + (allEvents?.Count ?? 0);
+                totalWork = diary?.eventIds?.Count ?? 0;
 
                 if (string.IsNullOrWhiteSpace(pawnId) || diary?.eventIds == null)
                 {
@@ -310,10 +290,6 @@ namespace PawnDiary
                 {
                     case BuildPhase.DiaryEvents:
                         return ProcessDiaryEvent();
-                    case BuildPhase.ArrivalFallback:
-                        return ProcessArrivalFallback();
-                    case BuildPhase.FinalizeCandidates:
-                        return ProcessFinalCandidate();
                     default:
                         return false;
                 }
@@ -323,7 +299,8 @@ namespace PawnDiary
             {
                 if (diary?.eventIds == null || diaryIndex >= diary.eventIds.Count)
                 {
-                    phase = bounds.firstArrivalTick.HasValue ? BuildPhase.FinalizeCandidates : BuildPhase.ArrivalFallback;
+                    index.SortYearsDescending();
+                    phase = BuildPhase.Complete;
                     return false;
                 }
 
@@ -335,7 +312,27 @@ namespace PawnDiary
                     return true;
                 }
 
+                try
+                {
+                    IndexDiaryEvent(diaryEvent, eventIndex);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[Pawn Diary] Skipped one diary tab entry while building the visible index: " + e,
+                        ("DiaryTabYearIndexBuild:" + (diaryEvent.eventId ?? eventIndex.ToString())).GetHashCode());
+                }
+
+                return true;
+            }
+
+            private void IndexDiaryEvent(DiaryEvent diaryEvent, int eventIndex)
+            {
                 TrackBounds(diaryEvent, eventIndex);
+
+                if (EventFallsOutsideKnownSequentialBounds(diaryEvent, eventIndex))
+                {
+                    return;
+                }
 
                 bool archivedForScans = EventIsArchivedForScans(diaryEvent, activeEventIds);
                 string povRole;
@@ -354,21 +351,39 @@ namespace PawnDiary
                     out promptOnly,
                     out titlePending))
                 {
-                    rawCandidates.Add(new RawCandidate
+                    bool visible = showLlmDebugInfo
+                        || hasGeneratedText
+                        || archivedGenerationStale
+                        || (showGeneratingEntries && generating)
+                        || (showPromptOnlyEntries && promptOnly);
+                    if (visible)
                     {
-                        diaryEvent = diaryEvent,
-                        eventIndex = eventIndex,
-                        year = ExtractYear(diaryEvent.date),
-                        archivedForScans = archivedForScans,
-                        hasGeneratedText = hasGeneratedText,
-                        archivedGenerationStale = archivedGenerationStale,
-                        generating = generating,
-                        promptOnly = promptOnly,
-                        titlePending = titlePending
-                    });
-                }
+                        index.Add(
+                            diaryEvent,
+                            ExtractYear(diaryEvent.date),
+                            archivedForScans,
+                            hasGeneratedText,
+                            generating,
+                            titlePending);
+                    }
+                    else
+                    {
+                        if (hasGeneratedText)
+                        {
+                            index.completedCount++;
+                        }
 
-                return true;
+                        if (generating)
+                        {
+                            index.generatingCount++;
+                        }
+
+                        if (generating || titlePending)
+                        {
+                            index.pendingCount++;
+                        }
+                    }
+                }
             }
 
             private void TrackBounds(DiaryEvent diaryEvent, int eventIndex)
@@ -396,74 +411,28 @@ namespace PawnDiary
                 }
             }
 
-            private bool ProcessArrivalFallback()
+            private bool EventFallsOutsideKnownSequentialBounds(DiaryEvent diaryEvent, int eventIndex)
             {
-                if (allEvents == null || allEventsIndex >= allEvents.Count)
+                if (diaryEvent == null)
                 {
-                    phase = BuildPhase.FinalizeCandidates;
-                    return false;
+                    return true;
                 }
 
-                DiaryEvent diaryEvent = allEvents[allEventsIndex];
-                allEventsIndex++;
-                if (diaryEvent != null
-                    && diaryEvent.IsArrivalDescriptionFor(pawnId)
-                    && (!bounds.firstArrivalTick.HasValue || diaryEvent.tick < bounds.firstArrivalTick.Value))
+                if (eventIndex >= 0)
                 {
-                    bounds.firstArrivalTick = diaryEvent.tick;
-                }
-
-                return true;
-            }
-
-            private bool ProcessFinalCandidate()
-            {
-                if (finalizeIndex >= rawCandidates.Count)
-                {
-                    index.SortYearsDescending();
-                    phase = BuildPhase.Complete;
-                    return false;
-                }
-
-                RawCandidate candidate = rawCandidates[finalizeIndex];
-                finalizeIndex++;
-                if (!EventFallsOutsideDiaryBounds(candidate.diaryEvent, candidate.eventIndex, bounds))
-                {
-                    bool visible = showLlmDebugInfo
-                        || candidate.hasGeneratedText
-                        || candidate.archivedGenerationStale
-                        || (showGeneratingEntries && candidate.generating)
-                        || (showPromptOnlyEntries && candidate.promptOnly);
-                    if (visible)
+                    if (bounds.firstArrivalIndex >= 0 && eventIndex < bounds.firstArrivalIndex)
                     {
-                        index.Add(
-                            candidate.diaryEvent,
-                            candidate.year,
-                            candidate.archivedForScans,
-                            candidate.hasGeneratedText,
-                            candidate.generating,
-                            candidate.titlePending);
+                        return true;
                     }
-                    else
+
+                    if (bounds.finalDeathIndex >= 0 && eventIndex > bounds.finalDeathIndex)
                     {
-                        if (candidate.hasGeneratedText)
-                        {
-                            index.completedCount++;
-                        }
-
-                        if (candidate.generating)
-                        {
-                            index.generatingCount++;
-                        }
-
-                        if (candidate.generating || candidate.titlePending)
-                        {
-                            index.pendingCount++;
-                        }
+                        return true;
                     }
                 }
 
-                return true;
+                return EventFallsBeforeFirstArrival(diaryEvent, bounds.firstArrivalTick)
+                    || EventFallsAfterFinalDeath(diaryEvent, bounds.finalDeathTick);
             }
         }
 
@@ -587,23 +556,14 @@ namespace PawnDiary
             return int.TryParse(date.Substring(start, end - start + 1), out year) ? year : UnknownDiaryYear;
         }
 
-        // Memoized completed/pending counts for CommandStatusFor, keyed by pawn id. The cache is
-        // refreshed by the Diary tab after its sliced loading pass, not by selection-time gizmo draw.
-        // The inspect-tab marker and bottom command call this during pawn selection, so cache misses
-        // must stay strictly non-scanning. The Diary tab refreshes this cache after its own sliced
-        // loading pass completes.
-        private string cachedStatusPawnId;
-        private int cachedStatusCompleted;
-        private int cachedStatusPending;
-
         /// <summary>
         /// Returns the current completed/pending counts for the selected-pawn Diary command badge.
         /// Opening the Diary tab calls <see cref="AcknowledgeGeneratedEntriesFor"/>; this reader only
-        /// checks a per-pawn unread flag plus cached writing counts, never saved event history.
+        /// checks an in-memory per-pawn status cache, never saved diary records or event history.
         /// </summary>
         /// <remarks>
         /// Per-frame caller: the inspect tab marker and command overlay call this from GUI draw. A
-        /// cache miss returns no writing count rather than scanning saved entries during pawn selection.
+        /// cache miss returns an empty status rather than touching saved diary state during selection.
         /// </remarks>
         public DiaryCommandStatus CommandStatusFor(Pawn pawn)
         {
@@ -614,15 +574,7 @@ namespace PawnDiary
 
             DiaryCommandStatus status = default(DiaryCommandStatus);
             string pawnId = pawn.GetUniqueLoadID();
-            if (cachedStatusPawnId == pawnId)
-            {
-                status.completedCount = cachedStatusCompleted;
-                status.pendingCount = cachedStatusPending;
-            }
-
-            PawnDiaryRecord diary = FindDiary(pawn, false);
-            status.unacknowledgedCount = diary != null && diary.hasUnreadGeneratedEntry ? 1 : 0;
-            return status;
+            return commandStatusByPawnId.TryGetValue(pawnId, out status) ? status : default(DiaryCommandStatus);
         }
 
         /// <summary>
@@ -637,17 +589,16 @@ namespace PawnDiary
             }
 
             string pawnId = pawn.GetUniqueLoadID();
-            cachedStatusPawnId = pawnId;
-            cachedStatusCompleted = Math.Max(0, completedCount);
-            cachedStatusPending = Math.Max(0, pendingCount);
+            SetCachedCommandStatus(pawnId, completedCount, pendingCount, false);
 
             PawnDiaryRecord diary = FindDiary(pawn, false);
             if (diary != null)
             {
                 diary.hasUnreadGeneratedEntry = false;
-                if (diary.acknowledgedGeneratedEntryCount != cachedStatusCompleted)
+                int normalizedCompleted = Math.Max(0, completedCount);
+                if (diary.acknowledgedGeneratedEntryCount != normalizedCompleted)
                 {
-                    diary.acknowledgedGeneratedEntryCount = cachedStatusCompleted;
+                    diary.acknowledgedGeneratedEntryCount = normalizedCompleted;
                 }
             }
         }
@@ -670,6 +621,72 @@ namespace PawnDiary
             }
 
             diary.hasUnreadGeneratedEntry = false;
+            SetCachedCommandUnreadFlag(diary.pawnId, false);
+        }
+
+        /// <summary>
+        /// Rebuilds the closed-window badge cache after save load. This is the only place old saved
+        /// unread flags are copied into the selection-time dictionary.
+        /// </summary>
+        private void RebuildCommandStatusCache()
+        {
+            commandStatusByPawnId.Clear();
+            if (diaries == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                PawnDiaryRecord diary = diaries[i];
+                if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId) || !diary.hasUnreadGeneratedEntry)
+                {
+                    continue;
+                }
+
+                SetCachedCommandUnreadFlag(diary.pawnId, true);
+            }
+        }
+
+        private void SetCachedCommandStatus(string pawnId, int completedCount, int pendingCount, bool hasUnread)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return;
+            }
+
+            DiaryCommandStatus status = default(DiaryCommandStatus);
+            status.completedCount = Math.Max(0, completedCount);
+            status.pendingCount = Math.Max(0, pendingCount);
+            status.unacknowledgedCount = hasUnread ? 1 : 0;
+
+            if (status.completedCount <= 0 && status.pendingCount <= 0 && status.unacknowledgedCount <= 0)
+            {
+                commandStatusByPawnId.Remove(pawnId);
+                return;
+            }
+
+            commandStatusByPawnId[pawnId] = status;
+        }
+
+        private void SetCachedCommandUnreadFlag(string pawnId, bool hasUnread)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return;
+            }
+
+            DiaryCommandStatus status;
+            commandStatusByPawnId.TryGetValue(pawnId, out status);
+            status.unacknowledgedCount = hasUnread ? 1 : 0;
+
+            if (status.completedCount <= 0 && status.pendingCount <= 0 && status.unacknowledgedCount <= 0)
+            {
+                commandStatusByPawnId.Remove(pawnId);
+                return;
+            }
+
+            commandStatusByPawnId[pawnId] = status;
         }
 
         /// <summary>

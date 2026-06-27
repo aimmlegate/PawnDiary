@@ -394,8 +394,10 @@ namespace PawnDiary
             Widgets.DrawMenuSection(rect);
 
             Rect inner = rect.ContractedBy(14f);
-            string label = total > 0
-                ? "PawnDiary.Tab.LoadingHistoryProgress".Translate(Math.Min(processed, total), total).ToString()
+            int safeTotal = Math.Max(0, total);
+            int safeProcessed = Math.Min(Math.Max(0, processed), safeTotal);
+            string label = safeTotal > 0
+                ? "PawnDiary.Tab.LoadingHistoryProgress".Translate(safeProcessed, safeTotal).ToString()
                 : "PawnDiary.Tab.LoadingHistory".Translate().ToString();
 
             TextAnchor oldAnchor = Text.Anchor;

@@ -131,7 +131,7 @@ namespace PawnDiary
         /// <summary>
         /// Stores a manual expansion choice and keeps the current animation position if one exists.
         /// </summary>
-        private void SetEntryExpanded(DiaryEntryView entry, bool expanded)
+        private void SetEntryExpanded(DiaryEntryView entry, bool expanded, float currentBlend)
         {
 
             string key = EntryKey(entry);
@@ -145,6 +145,14 @@ namespace PawnDiary
 
 
 
+            if (entryExpansionBlend.Count >= MaxExpansionBlendEntries && !entryExpansionBlend.ContainsKey(key))
+            {
+                entryExpansionBlend.Clear();
+            }
+
+            // Large loaded years may have skipped animation tracking during their first layout pass.
+            // Seed the clicked row with the blend currently on screen so it can animate from there.
+            entryExpansionBlend[key] = Mathf.Clamp01(currentBlend);
             entryExpansionOverrides[key] = expanded;
             entryExpansionVersion++;
 
@@ -186,7 +194,7 @@ namespace PawnDiary
         /// Moves one entry's cached animation blend toward its target. New entries start at the
         /// target state so opening a tab does not animate every old page at once.
         /// </summary>
-        private float ExpansionBlendFor(string entryKey, bool expanded, float delta)
+        private float ExpansionBlendFor(string entryKey, bool expanded, float delta, bool cacheMissing)
         {
 
             if (string.IsNullOrEmpty(entryKey))
@@ -204,6 +212,13 @@ namespace PawnDiary
 
             if (!entryExpansionBlend.TryGetValue(entryKey, out current))
             {
+
+                if (!cacheMissing)
+                {
+
+                    return target;
+
+                }
 
                 if (entryExpansionBlend.Count >= MaxExpansionBlendEntries)
                 {
