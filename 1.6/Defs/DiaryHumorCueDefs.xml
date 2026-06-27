@@ -14,8 +14,8 @@
       combat/socialFight/mentalBreak color cue). Both tiers are always eligible; the tier only picks
       the flavor.
   <weight> is relative within the tier (1 = even with peers). The <rule> and <label> are localized
-  via DefInjected (Languages/English/DefInjected/DiaryHumorCueDef/DiaryHumorCueDefs.xml); this file
-  holds the English default copy. <tier> is an internal schema keyword and is NOT localized.
+  via DefInjected (Languages/English/DefInjected/PawnDiary.DiaryHumorCueDef/DiaryHumorCueDefs.xml);
+  this file holds the English default copy. <tier> is an internal schema keyword and is NOT localized.
 
   The chosen cue rides into the prompt folded inside the writing-style voice block, so it is
   automatically suppressed on neutral death/arrival/title templates that opt out of persona text.

@@ -27,9 +27,9 @@ namespace PawnDiary
     public class DiaryHumorCueDef : Def
     {
         // The cue text injected into the prompt. Localized via DefInjected
-        // (Languages/English/DefInjected/DiaryHumorCueDef/DiaryHumorCueDefs.xml); the def XML holds
-        // the English default copy. Each rule is one concrete sentence-shape constraint, never a
-        // request to "be funny".
+        // (Languages/English/DefInjected/PawnDiary.DiaryHumorCueDef/DiaryHumorCueDefs.xml); the def
+        // XML holds the English default copy. Each rule is one concrete sentence-shape constraint,
+        // never a request to "be funny".
         public string rule;
 
         // Internal stakes-flavor keyword: "Light" (dry/absurdist, mundane events) or "Gallows"
