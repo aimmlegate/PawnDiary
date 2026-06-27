@@ -271,23 +271,34 @@ namespace PawnDiary
 
             if (diaryEvent.HasDeathDescription() || diaryEvent.HasArrivalDescription())
             {
-                return RegenerateRole(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById);
+                return RegenerateRole(diaryEvent, DiaryEvent.NeutralRole, boundsCache, livePawnsById, entry.ArchivedGenerationStale);
             }
 
             if (!diaryEvent.solo && DiaryEvent.RoleIsInitiatorOrRecipient(entry.PovRole))
             {
-                return RegeneratePairwiseEntry(diaryEvent, boundsCache, livePawnsById);
+                return RegeneratePairwiseEntry(diaryEvent, boundsCache, livePawnsById,
+                    entry.ArchivedGenerationStale ? entry.PovRole : null);
             }
 
-            return RegenerateRole(diaryEvent, entry.PovRole, boundsCache, livePawnsById);
+            return RegenerateRole(diaryEvent, entry.PovRole, boundsCache, livePawnsById, entry.ArchivedGenerationStale);
         }
 
         private bool RegeneratePairwiseEntry(
             DiaryEvent diaryEvent,
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
-            Dictionary<string, Pawn> livePawnsById)
+            Dictionary<string, Pawn> livePawnsById,
+            string archivedStalePovRole)
         {
-            if (diaryEvent == null || diaryEvent.IsPending(DiaryEvent.InitiatorRole) || diaryEvent.IsPending(DiaryEvent.RecipientRole))
+            if (diaryEvent == null)
+            {
+                return false;
+            }
+
+            bool initiatorPending = diaryEvent.IsPending(DiaryEvent.InitiatorRole);
+            bool recipientPending = diaryEvent.IsPending(DiaryEvent.RecipientRole);
+            bool allowInitiatorReset = DiaryEvent.RoleEquals(archivedStalePovRole, DiaryEvent.InitiatorRole);
+            bool allowRecipientReset = DiaryEvent.RoleEquals(archivedStalePovRole, DiaryEvent.RecipientRole);
+            if ((initiatorPending && !allowInitiatorReset) || (recipientPending && !allowRecipientReset))
             {
                 return false;
             }
@@ -317,11 +328,13 @@ namespace PawnDiary
             DiaryEvent diaryEvent,
             string povRole,
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache,
-            Dictionary<string, Pawn> livePawnsById)
+            Dictionary<string, Pawn> livePawnsById,
+            bool allowArchivedPendingReset)
         {
+            bool pending = diaryEvent != null && diaryEvent.IsPending(povRole);
             if (diaryEvent == null
                 || string.IsNullOrWhiteSpace(povRole)
-                || diaryEvent.IsPending(povRole)
+                || (pending && !allowArchivedPendingReset)
                 || !DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
             {
                 return false;

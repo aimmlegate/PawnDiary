@@ -31,9 +31,47 @@ namespace DiaryPipelineTests
             TestApiEndpointPolicy();
             TestApiRequestAuth();
             TestLlmRequestJsonBuilder();
+            TestArchivedPendingReloadFallbackStatus();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestArchivedPendingReloadFallbackStatus()
+        {
+            string loadedStatus = DiaryGenerationStatus.NormalizeLoadedMainStatus(
+                DiaryGenerationStatus.Pending,
+                string.Empty);
+
+            AssertEqual("pending status resets on load", DiaryGenerationStatus.NotGenerated, loadedStatus);
+            AssertTrue(
+                "load-normalized attempted archived page stays visible",
+                DiaryGenerationStatus.IsArchivedGenerationStale(
+                    archivedForScans: true,
+                    status: loadedStatus,
+                    generatedText: string.Empty,
+                    prompt: "event: argument\nwhat happened: Alice insulted Bob."));
+            AssertTrue(
+                "never-attempted archived page stays hidden",
+                !DiaryGenerationStatus.IsArchivedGenerationStale(
+                    archivedForScans: true,
+                    status: loadedStatus,
+                    generatedText: string.Empty,
+                    prompt: string.Empty));
+            AssertTrue(
+                "hot pending page remains active writing",
+                !DiaryGenerationStatus.IsArchivedGenerationStale(
+                    archivedForScans: false,
+                    status: DiaryGenerationStatus.Pending,
+                    generatedText: string.Empty,
+                    prompt: "event: argument"));
+            AssertTrue(
+                "completed archived page uses generated text",
+                !DiaryGenerationStatus.IsArchivedGenerationStale(
+                    archivedForScans: true,
+                    status: DiaryGenerationStatus.Complete,
+                    generatedText: "I wrote the page.",
+                    prompt: "event: argument"));
         }
 
         private static void TestCombatPromptPlan()

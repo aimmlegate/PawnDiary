@@ -24,12 +24,12 @@ namespace PawnDiary
         public const string InitiatorRole = "initiator";
         public const string RecipientRole = "recipient";
         public const string NeutralRole = "neutral";
-        public const string NotGeneratedStatus = "not_generated";
-        public const string PendingStatus = "pending";
-        public const string CompleteStatus = "complete";
-        public const string FailedStatus = "failed";
-        public const string SkippedStatus = "skipped";
-        public const string PromptOnlyStatus = "prompt_only";
+        public const string NotGeneratedStatus = DiaryGenerationStatus.NotGenerated;
+        public const string PendingStatus = DiaryGenerationStatus.Pending;
+        public const string CompleteStatus = DiaryGenerationStatus.Complete;
+        public const string FailedStatus = DiaryGenerationStatus.Failed;
+        public const string SkippedStatus = DiaryGenerationStatus.Skipped;
+        public const string PromptOnlyStatus = DiaryGenerationStatus.PromptOnly;
         public const string CombatColorCue = "combat";
         public const string SocialFightColorCue = "socialFight";
         public const string MentalBreakColorCue = "mentalBreak";
@@ -721,9 +721,11 @@ namespace PawnDiary
                 && string.IsNullOrWhiteSpace(titleForPov)
                 && IsTitlePending(povRole);
             string generatedTextForPov = GeneratedTextFor(povRole);
-            bool archivedGenerationStale = archivedForScans
-                && IsPending(povRole)
-                && string.IsNullOrWhiteSpace(generatedTextForPov);
+            bool archivedGenerationStale = DiaryGenerationStatus.IsArchivedGenerationStale(
+                archivedForScans,
+                StatusFor(povRole),
+                generatedTextForPov,
+                PromptFor(povRole));
 
             // Build a linked entry for the other pawn in a paired event.
             // Solo events (mental breaks) have no link.
@@ -1544,32 +1546,12 @@ namespace PawnDiary
 
         private static string NormalizeLoadedStatus(string status, string generatedText)
         {
-            if (!string.IsNullOrWhiteSpace(generatedText))
-            {
-                return CompleteStatus;
-            }
-
-            if (RoleEquals(status, PendingStatus))
-            {
-                return NotGeneratedStatus;
-            }
-
-            return string.IsNullOrWhiteSpace(status) ? NotGeneratedStatus : status;
+            return DiaryGenerationStatus.NormalizeLoadedMainStatus(status, generatedText);
         }
 
         private static string NormalizeLoadedTitleStatus(string status, string title)
         {
-            if (!string.IsNullOrWhiteSpace(title))
-            {
-                return CompleteStatus;
-            }
-
-            if (RoleEquals(status, PendingStatus))
-            {
-                return string.Empty;
-            }
-
-            return status ?? string.Empty;
+            return DiaryGenerationStatus.NormalizeLoadedTitleStatus(status, title);
         }
 
         public static bool RoleEquals(string left, string right)

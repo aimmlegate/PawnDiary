@@ -208,7 +208,8 @@ Separately, `DiaryTuningDef.activeScanEventWindow` (default 1000, XML only, a gl
 pawns) defines the newest saved events considered hot for retry, title catch-up, orphan recovery,
 day-summary event evidence, work cooldowns, and prompt continuity/opener history. Events older than that window are archive pages:
 they remain in save data and render in the Diary UI, but maintenance scans do not revisit them. If an
-archived page is still marked pending and has no generated text, the UI stops treating it as active
+archived page has an attempted generation with no generated text (pending in-session, or
+load-normalized back to `not_generated` with a saved prompt), the UI stops treating it as active
 writing: it shows a localized "You see that: ..." fallback from the saved prompt facts/raw event
 text, derives a short display-only title from the first few words, and uses the footer note to say the
 page failed to generate instead of showing a model name.

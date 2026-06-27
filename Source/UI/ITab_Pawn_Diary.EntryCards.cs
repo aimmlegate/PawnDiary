@@ -118,7 +118,7 @@ namespace PawnDiary
             if (entry == null
                 || pawn == null
                 || component == null
-                || entry.LlmStatus == DiaryEvent.PendingStatus
+                || IsGenerating(entry)
                 || IsPromptOnly(entry))
             {
                 return;

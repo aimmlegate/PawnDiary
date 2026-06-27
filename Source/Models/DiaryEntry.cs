@@ -94,8 +94,9 @@ namespace PawnDiary
         // arrived yet. The Diary tab uses this to animate the header without pretending the title
         // already exists.
         public readonly bool TitlePending;
-        // True when this POV is still marked pending but its event has fallen out of the active scan
-        // window. The UI then renders a prompt-fact archive fallback instead of an endless loader.
+        // True when this POV has an attempted but unfinished generation and its event has fallen out of
+        // the active scan window. After load, stale pending work is normalized back to not_generated, so
+        // a saved prompt also counts as proof that the archived page should render a fallback.
         public readonly bool ArchivedGenerationStale;
 
         public DiaryEntryView(
