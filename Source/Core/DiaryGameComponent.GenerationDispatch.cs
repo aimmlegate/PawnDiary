@@ -251,7 +251,9 @@ namespace PawnDiary
 
             if (result.success)
             {
-                string title = result.generatedText;
+                string title = LlmResponseParser.TitleOrFallback(
+                    result.generatedText,
+                    diaryEvent.DisplayTextForRole(result.povRole));
                 if (string.IsNullOrWhiteSpace(title))
                 {
                     diaryEvent.MarkTitleFailed(result.povRole, "PawnDiary.Error.TitleEmptyResponse".Translate());

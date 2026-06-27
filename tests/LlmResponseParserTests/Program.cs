@@ -18,6 +18,7 @@ namespace LlmResponseParserTests
             TestReasoningScrubNoCloseTag();
             TestGeneratedTextCleanup();
             TestGeneratedTagSanitizer();
+            TestTitleFallback();
             TestSpeechMarkerConstantsMirrorDirectSpeechParser();
             TestMiniJsonRejectsMalformedNumbers();
             TestMiniJsonRejectsExcessiveDepth();
@@ -263,6 +264,51 @@ namespace LlmResponseParserTests
                 "title sanitizes bracket tags",
                 "The Storm Watch",
                 LlmResponseParser.CleanGeneratedText("[[The Storm Watch]]", 20, true));
+        }
+
+        private static void TestTitleFallback()
+        {
+            AssertEqual(
+                "plain title kept",
+                "O'Neil's Last Stand",
+                LlmResponseParser.TitleOrFallback(
+                    "O'Neil's Last Stand",
+                    "Alice pulled Bob out of the smoke and into cold rain."));
+
+            AssertEqual(
+                "angle tag title falls back",
+                "Alice pulled Bob out of the...",
+                LlmResponseParser.TitleOrFallback(
+                    "<uncensored_response>",
+                    "Alice pulled Bob out of the smoke and into cold rain."));
+
+            AssertEqual(
+                "bare schema token title falls back",
+                "Alice found the medicine in a...",
+                LlmResponseParser.TitleOrFallback(
+                    "uncensored_response",
+                    "Alice found the medicine in a burned storehouse."));
+
+            AssertEqual(
+                "multiline title falls back",
+                "Alice kept moving through the smoke...",
+                LlmResponseParser.TitleOrFallback(
+                    "Good Title\nExtra commentary",
+                    "Alice kept moving through the smoke despite the heat."));
+
+            AssertEqual(
+                "fallback strips speech markers",
+                "Enough. The hallway filled with smoke...",
+                LlmResponseParser.TitleOrFallback(
+                    "<uncensored_response>",
+                    "[[speech]]Enough.[[/speech]] The hallway filled with smoke."));
+
+            AssertEqual(
+                "short fallback still ellipsizes",
+                "Alice survived...",
+                LlmResponseParser.TitleOrFallback(
+                    "<uncensored_response>",
+                    "Alice survived."));
         }
 
         private static void TestSpeechMarkerConstantsMirrorDirectSpeechParser()

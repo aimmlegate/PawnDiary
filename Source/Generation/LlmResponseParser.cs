@@ -114,6 +114,22 @@ namespace PawnDiary
             return isTitleRequest ? sanitized : TrimTrailingIncompleteSentence(sanitized);
         }
 
+        /// <summary>
+        /// Returns a model title only when it looks like a plain one-line title. Some compatible
+        /// endpoints leak schema/tag tokens such as &lt;uncensored_response&gt;; those are not useful
+        /// player-facing headers, so title callers can fall back to a generic excerpt from the entry.
+        /// </summary>
+        public static string TitleOrFallback(string generatedTitle, string entryText)
+        {
+            string title = CleanGeneratedText(StripReasoningTextBlocks(generatedTitle), 0, true);
+            if (IsUsableGeneratedTitle(title))
+            {
+                return title;
+            }
+
+            return GenericTitleFromText(entryText, GenericTitleFallbackWords);
+        }
+
         /// <summary>Supports the standard choices[0].message.content chat-completions shape.</summary>
         private static string ParseOpenAIChatText(Dictionary<string, object> root)
         {
@@ -946,6 +962,170 @@ namespace PawnDiary
             return CompactGeneratedMarkupWhitespace(sanitized).Trim();
         }
 
+        private static bool IsUsableGeneratedTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return false;
+            }
+
+            bool hasLetterOrDigit = false;
+            for (int i = 0; i < title.Length; i++)
+            {
+                char c = title[i];
+                if (IsUnexpectedTitleCharacter(c))
+                {
+                    return false;
+                }
+
+                if (char.IsLetterOrDigit(c))
+                {
+                    hasLetterOrDigit = true;
+                }
+            }
+
+            return hasLetterOrDigit;
+        }
+
+        private static string GenericTitleFromText(string entryText, int maxWords)
+        {
+            if (string.IsNullOrWhiteSpace(entryText) || maxWords <= 0)
+            {
+                return string.Empty;
+            }
+
+            string normalized = NormalizeMalformedSpeechMarkers(entryText);
+            normalized = SanitizeGeneratedTagMarkers(normalized, false);
+            normalized = StripStandaloneSchemaPunctuationTokens(normalized);
+            normalized = ReplaceUnexpectedTitleCharactersWithSpaces(normalized);
+            normalized = CollapseTitleWhitespace(normalized);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return string.Empty;
+            }
+
+            string firstWords = FirstTitleWords(normalized, maxWords);
+            firstWords = TrimFallbackTitleEnding(firstWords);
+            return string.IsNullOrWhiteSpace(firstWords) ? string.Empty : firstWords + "...";
+        }
+
+        private static string ReplaceUnexpectedTitleCharactersWithSpaces(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                builder.Append(IsUnexpectedTitleCharacter(c) ? ' ' : c);
+            }
+
+            return builder.ToString();
+        }
+
+        private static string CollapseTitleWhitespace(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            bool previousWhitespace = false;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (char.IsWhiteSpace(c))
+                {
+                    if (!previousWhitespace && builder.Length > 0)
+                    {
+                        builder.Append(' ');
+                    }
+
+                    previousWhitespace = true;
+                    continue;
+                }
+
+                builder.Append(c);
+                previousWhitespace = false;
+            }
+
+            return builder.ToString().Trim();
+        }
+
+        private static string FirstTitleWords(string normalized, int maxWords)
+        {
+            int words = 0;
+            int end = 0;
+            bool inWord = false;
+            for (int i = 0; i < normalized.Length; i++)
+            {
+                bool whitespace = char.IsWhiteSpace(normalized[i]);
+                if (!whitespace && !inWord)
+                {
+                    words++;
+                    inWord = true;
+                }
+                else if (whitespace)
+                {
+                    if (words >= maxWords)
+                    {
+                        break;
+                    }
+
+                    inWord = false;
+                }
+
+                end = i + 1;
+                if (words >= maxWords && whitespace)
+                {
+                    break;
+                }
+            }
+
+            return normalized.Substring(0, Math.Min(end, normalized.Length)).Trim();
+        }
+
+        private static string TrimFallbackTitleEnding(string title)
+        {
+            return string.IsNullOrWhiteSpace(title)
+                ? string.Empty
+                : title.Trim().TrimEnd('.', ',', ';', ':', '!', '?', '"', '\'');
+        }
+
+        private static bool IsUnexpectedTitleCharacter(char c)
+        {
+            if (char.IsControl(c))
+            {
+                return true;
+            }
+
+            switch (c)
+            {
+                case '<':
+                case '>':
+                case '[':
+                case ']':
+                case '{':
+                case '}':
+                case '_':
+                case '=':
+                case '|':
+                case '\\':
+                case '/':
+                case '`':
+                case '~':
+                case '*':
+                case '#':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         private static string NormalizeMalformedSpeechMarkers(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -1331,6 +1511,7 @@ namespace PawnDiary
         // DiaryDirectSpeechParser.Default{Open,Close}Marker.
         private const string SpeechOpenMarker = "[[speech]]";
         private const string SpeechCloseMarker = "[[/speech]]";
+        private const int GenericTitleFallbackWords = 6;
 
         /// <summary>
         /// Returns the index just past the last closed direct-speech block, or 0 when none is present.
