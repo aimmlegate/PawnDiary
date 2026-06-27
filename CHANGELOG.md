@@ -18,6 +18,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 - **Large diary histories optimized.** The Diary tab now virtualizes its scroll layout with cached
   row offsets/heights so only visible cards are drawn, while archived pages keep the same appearance.
+  The virtualized draw slice now includes an XML-tuned 800-pixel overscan above and below the viewport
+  to reduce visible card pop-in/animation while scrolling long years.
   Background diary-event maintenance now uses an XML-only hot window (`activeScanEventWindow`, default
   1000 newest events); older saved entries remain visible but are not retried, title-backfilled, or
   used for catch-up scans. The dev-mode mock-page filler now seeds 6,000 completed pages across 3

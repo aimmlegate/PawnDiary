@@ -168,7 +168,8 @@ in-game years (about 2,000 pages per year) without calling the LLM, and dev-mode
 mock stress histories so autosaves do not immediately shrink the fixture. Histories page by in-game
 year; newest cards start expanded. Long histories are kept cheap by the active-event cap,
 visible-entry caching, cached virtual row offsets/heights, and viewport drawing that only emits cards
-inside the scroll slice. Archived pages use the same cards and controls as hot pages.
+inside the scroll slice plus the XML-tuned overscan buffer (`virtualizedEntryOverscanHeight`, default
+800 pixels above and below the viewport). Archived pages use the same cards and controls as hot pages.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.

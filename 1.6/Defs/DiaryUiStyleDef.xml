@@ -34,6 +34,9 @@
     <autoExpandedEntryCount>3</autoExpandedEntryCount>
     <collapsedEntryChromePadding>2</collapsedEntryChromePadding>
     <expansionAnimationSpeed>5.5</expansionAnimationSpeed>
+    <!-- Extra pixels rendered above and below the visible scroll area. This smooths fast scrolling
+         without drawing the full diary year. -->
+    <virtualizedEntryOverscanHeight>800</virtualizedEntryOverscanHeight>
     <entryAccentWidth>6</entryAccentWidth>
     <entryLabelMaxWidth>148</entryLabelMaxWidth>
     <entryFadeDurationSeconds>0.55</entryFadeDurationSeconds>

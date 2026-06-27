@@ -122,6 +122,9 @@ namespace PawnDiary
         public int autoExpandedEntryCount = 3;
         public float collapsedEntryChromePadding = 2f;
         public float expansionAnimationSpeed = 5.5f;
+        // Extra pixels rendered above and below the scroll viewport. This keeps newly visible rows
+        // already initialized during fast scrolling while preserving virtualization for long years.
+        public float virtualizedEntryOverscanHeight = 800f;
         public float entryAccentWidth = 6f;
         public float entryLabelMaxWidth = 148f;
         public float entryFadeDurationSeconds = 0.55f;
@@ -232,6 +235,7 @@ namespace PawnDiary
         };
 
         public float CollapsedEntryHeight => entryTitleHeight + collapsedEntryChromePadding;
+        public float VirtualizedEntryOverscanHeight => virtualizedEntryOverscanHeight > 0f && !float.IsNaN(virtualizedEntryOverscanHeight) ? virtualizedEntryOverscanHeight : 0f;
         public Color QuietTextColor => quietTextColor.ToColor(new Color(0.42f, 0.48f, 0.52f));
         public Color NarrativeTextColor => narrativeTextColor.ToColor(new Color(0.78f, 0.78f, 0.72f));
         public Color FallbackDialogueColor => fallbackDialogueColor.ToColor(new Color(0.58f, 0.80f, 1f));

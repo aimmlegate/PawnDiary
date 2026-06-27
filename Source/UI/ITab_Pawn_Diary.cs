@@ -97,6 +97,7 @@ namespace PawnDiary
         private static float EntryLabelMaxWidth => UiStyle.entryLabelMaxWidth;
         private static float EntryFadeDurationSeconds => UiStyle.entryFadeDurationSeconds;
         private static float TitleFadeDurationSeconds => UiStyle.titleFadeDurationSeconds;
+        private static float VirtualizedEntryOverscanHeight => UiStyle.VirtualizedEntryOverscanHeight;
         private static float WritingDotSize => UiStyle.writingDotSize;
         private static float WritingDotGap => UiStyle.writingDotGap;
         private static float AtmosphereInset => UiStyle.atmosphereInset;
@@ -360,8 +361,9 @@ namespace PawnDiary
             bool entryGroupOpen = false;
             try
             {
-                float visibleTop = scrollPosition.y;
-                float visibleBottom = scrollPosition.y + outRect.height;
+                float overscanHeight = VirtualizedEntryOverscanHeight;
+                float visibleTop = Mathf.Max(0f, scrollPosition.y - overscanHeight);
+                float visibleBottom = Mathf.Min(viewHeight, scrollPosition.y + outRect.height + overscanHeight);
                 int firstVisibleIndex = FirstVisibleEntryIndex(ordered.Count, visibleTop);
                 for (int i = firstVisibleIndex; i < ordered.Count; i++)
                 {
@@ -374,7 +376,9 @@ namespace PawnDiary
 
                     // Viewport virtualization. Widgets.BeginScrollView clips pixels, but would still
                     // execute every card's immediate-mode UI calls. Cached offsets let us jump to the
-                    // first visible row and stop once rows fall below the viewport.
+                    // first buffered row and stop once rows fall below the buffered viewport. The
+                    // overscan keeps rows alive just outside the screen during fast scrolls, avoiding
+                    // visible pop-in/animation at the exact viewport edge.
                     if (curY > visibleBottom)
                     {
                         break;
