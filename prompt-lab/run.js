@@ -1047,7 +1047,9 @@ function generatedContextForGroup(group, kind) {
     return `raid=${defName}; label=${label}`;
   }
   if (domain === 'Quest') {
-    return `quest=${defName}; label=${label}`;
+    const lower = defName.toLowerCase();
+    const signal = lower.includes('completed') ? 'completed' : lower.includes('failed') ? 'failed' : 'accepted';
+    return `quest=${defName}; label=${label}; quest_label=${label}; quest_signal=${signal}`;
   }
 
   return `def=${defName}; label=${label}`;

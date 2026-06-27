@@ -32,7 +32,7 @@
   <DiaryEventPrompt_Raid.enhancement>Write close to the body: noise, cover, orders, fear, pain, smoke, blood, or the scramble to survive. Keep every detail grounded; do not invent battle outcomes.</DiaryEventPrompt_Raid.enhancement>
   <DiaryEventPrompt_Quest.label>quest</DiaryEventPrompt_Quest.label>
   <DiaryEventPrompt_Quest.prompt>Write a quest lifecycle event as promise, resolution, or loss.</DiaryEventPrompt_Quest.prompt>
-  <DiaryEventPrompt_Quest.enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not invent rewards, blame, or consequences.</DiaryEventPrompt_Quest.enhancement>
+  <DiaryEventPrompt_Quest.enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not copy the quest name verbatim into the diary line, and do not invent rewards, blame, or consequences.</DiaryEventPrompt_Quest.enhancement>
   <DiaryEventPrompt_Ritual.label>ritual</DiaryEventPrompt_Ritual.label>
   <DiaryEventPrompt_Ritual.prompt>Write a finished Ideology ritual from the pawn&apos;s assigned place in it.</DiaryEventPrompt_Ritual.prompt>
   <DiaryEventPrompt_Ritual.enhancement>Use the supplied ritual role, ritual title, behavior, quality, and pawn status fields. Let quality shape confidence, aftermath, and emotional weight, but do not name or explain the quality label directly. Keep the entry grounded in what completion would feel like from that role; do not invent ritual effects beyond the supplied outcome.</DiaryEventPrompt_Ritual.enhancement>

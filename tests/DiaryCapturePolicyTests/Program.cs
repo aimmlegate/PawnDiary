@@ -42,6 +42,7 @@ namespace DiaryCapturePolicyTests
             TestRaidDecide();
             TestRaidBuildGameContextFormat();
             TestQuestDecide();
+            TestQuestBuildDisplayLabel();
             TestQuestBuildGameContextFormat();
             TestRitualDecide();
             TestRitualQualityLabel();
@@ -753,19 +754,35 @@ namespace DiaryCapturePolicyTests
                 QuestEventData.Decide(Quest("failed"), Ctx()));
         }
 
+        private static void TestQuestBuildDisplayLabel()
+        {
+            AssertEqual("quest display keeps natural generated name",
+                "A Stolen Cache",
+                QuestEventData.BuildDisplayLabel("A Stolen Cache", "OpportunityQuest_Friendlies", "OpportunityQuest_Friendlies"));
+            AssertEqual("quest display rejects placeholder generated name",
+                "Opportunity Friendlies",
+                QuestEventData.BuildDisplayLabel("QuestName", "OpportunityQuest_Friendlies", "OpportunityQuest_Friendlies"));
+            AssertEqual("quest display humanizes defName fallback and cuts Quest",
+                "Ancient Complex Threat",
+                QuestEventData.BuildDisplayLabel("", "", "AncientComplexQuest_Threat"));
+            AssertEqual("quest display humanizes pascal fallback",
+                "Refugee Chased",
+                QuestEventData.BuildDisplayLabel(null, null, "RefugeeChased"));
+        }
+
         private static void TestQuestBuildGameContextFormat()
         {
             // The leading "quest=" marker is load-bearing for UI domain classification; the signal
             // field routes prompt group selection. The description is intentionally NOT here (it
             // is prose and lives in the localized event text). Field order locked by this test.
             AssertEqual("quest accepted context",
-                "quest=OpportunityQuest_Friendlies; signal=accepted; label=A Stolen Cache; faction=Outlander; rewards=Silver x100, Medicine x5",
+                "quest=OpportunityQuest_Friendlies; signal=accepted; label=A Stolen Cache; faction=Outlander; rewards=Silver x100, Medicine x5; quest_label=A Stolen Cache; quest_signal=accepted; quest_faction=Outlander; quest_rewards=Silver x100, Medicine x5",
                 QuestEventData.BuildGameContext("OpportunityQuest_Friendlies", "accepted", "A Stolen Cache", "Outlander", "Silver x100, Medicine x5"));
             AssertEqual("quest completed sentinels",
-                "quest=UntitledQuest; signal=completed; label=untitled; faction=unknown; rewards=none",
+                "quest=UntitledQuest; signal=completed; label=untitled; faction=unknown; rewards=none; quest_label=untitled; quest_signal=completed; quest_faction=unknown; quest_rewards=none",
                 QuestEventData.BuildGameContext("UntitledQuest", "completed", "untitled", "unknown", "none"));
             AssertEqual("quest failed context",
-                "quest=ThreatQuest; signal=failed; label=the thrumbo pulse; faction=Pirate; rewards=none",
+                "quest=ThreatQuest; signal=failed; label=the thrumbo pulse; faction=Pirate; rewards=none; quest_label=the thrumbo pulse; quest_signal=failed; quest_faction=Pirate; quest_rewards=none",
                 QuestEventData.BuildGameContext("ThreatQuest", "failed", "the thrumbo pulse", "Pirate", "none"));
         }
 

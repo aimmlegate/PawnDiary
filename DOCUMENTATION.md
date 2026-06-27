@@ -89,7 +89,7 @@ arrival/death pages bypass that guard.
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
-| Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries. |
+| Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
 | Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry. |
@@ -189,6 +189,11 @@ breakouts.
 Prompts are compact `key: value` lines. Empty values and `none`/`n/a`/`unknown` sentinels are dropped.
 Prompt templates cover pair, solo, batched, day-reflection, neutral death, neutral arrival, and title
 requests.
+Quest prompts keep the raw `quest=` defName only in saved context for UI/domain classification; the
+model-facing fields use `quest_label`, `quest_signal`, `quest_faction`, and `quest_rewards`. The
+label path rejects placeholder `QuestName`, humanizes PascalCase/underscore fallbacks, removes the
+standalone word `Quest`, and the Quest event enhancement tells the model not to copy the quest name
+verbatim into the diary line.
 
 System prompts stay short and general. Event-specific guidance comes from `DiaryEventPromptDef` and
 per-group instructions/tones. Groups can define instruction/tone variant pools; instructions roll once
@@ -211,7 +216,9 @@ Direct speech is allowed only in selected first-person interaction prompts with 
 Generated Social-log speech injection remains disabled/hidden. The saved setting exists for
 compatibility, but the call site is off. Title generation is enabled by default. Successful main
 entries queue their own title follow-up immediately; the full missing-title sweep runs only after
-load or when settings are saved, not on every generation rescan.
+load or when settings are saved, not on every generation rescan. Title responses are validated
+before they are saved: markup/control/schema characters such as leaked tag tokens are rejected, and
+the stored title falls back to the first few words of the finished diary entry with `...` appended.
 
 ## 7. Settings And UI
 

@@ -6,6 +6,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Bad LLM titles now fall back to generic excerpts.** Title follow-up responses are rejected when
+  they contain markup/control/schema characters such as `<uncensored_response>`, multi-line
+  commentary, or underscore tokens. The saved title then falls back to the first few words of the
+  completed diary entry with `...` appended.
+
+- **Quest prompt labels normalized.** Quest entries now reject placeholder `QuestName`, humanize
+  PascalCase or underscore-style quest fallback names, remove the standalone word `Quest`, and expose
+  model-facing `quest_*` prompt fields so raw quest defNames stay out of generated diary text. The
+  Quest prompt enhancement now tells models to use quest facts without copying the quest name
+  verbatim.
+
 - **Hediffs can temporarily force writing styles.** New `DiaryHediffPersonaOverrideDef` XML rules map
   active hediff defNames to a `DiaryPersonaDef` at prompt time without changing the pawn's saved
   style. `Inhumanized` now forces a dark void style, has specific prompt-enchantment condition/cue

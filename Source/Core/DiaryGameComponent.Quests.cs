@@ -302,27 +302,13 @@ namespace PawnDiary
 
         /// <summary>
         /// Builds the human-readable quest label, preferring the generated quest name, then the
-        /// script def's label, then the defName. Cleaned for prompt embedding.
+        /// script def's label, then a humanized defName. The pure helper strips placeholder and
+        /// code-like names such as "QuestName" or "OpportunityQuest_Friendlies" before prompts see
+        /// them. New to C#/RimWorld? See AGENTS.md ("pure pipeline").
         /// </summary>
         private static string BuildQuestLabel(Quest quest)
         {
-            string label = quest.name;
-            if (string.IsNullOrWhiteSpace(label))
-            {
-                label = quest.root?.label;
-            }
-
-            if (string.IsNullOrWhiteSpace(label))
-            {
-                label = quest.root?.defName;
-            }
-
-            if (string.IsNullOrWhiteSpace(label))
-            {
-                return "unknown";
-            }
-
-            return DiaryLineCleaner.CleanLine(label);
+            return QuestEventData.BuildDisplayLabel(quest.name, quest.root?.label, quest.root?.defName);
         }
 
         /// <summary>

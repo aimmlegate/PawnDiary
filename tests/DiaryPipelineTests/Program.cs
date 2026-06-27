@@ -13,6 +13,7 @@ namespace DiaryPipelineTests
         {
             TestCombatPromptPlan();
             TestSoloPromptPlan();
+            TestQuestPromptPlanFields();
             TestDualPovPromptPlans();
             TestRecipientFollowupPlan();
             TestNeutralGenerationPlans();
@@ -123,6 +124,32 @@ namespace DiaryPipelineTests
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
             AssertEqual("solo forced model carried", "story-model", plan.forcedModelName);
             AssertTrue("solo forced model not prompt text", !plan.userPrompt.Contains("story-model"));
+        }
+
+        private static void TestQuestPromptPlanFields()
+        {
+            DiaryEventPayload payload = SoloPayload(
+                "e-quest",
+                "quest",
+                "Alice accepted a quest: Opportunity Friendlies.");
+            payload.gameContext = "quest=OpportunityQuest_Friendlies; signal=accepted; label=Opportunity Friendlies; faction=Outlander; rewards=Silver x100"
+                + "; quest_label=Opportunity Friendlies; quest_signal=accepted; quest_faction=Outlander; quest_rewards=Silver x100";
+
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = "Write like Alice.",
+                maxTokens = 30
+            });
+
+            AssertEqual("quest uses important solo template", DiaryPipelineTemplates.SoloImportant, plan.templateKey);
+            AssertContains("quest prompt name field", plan.userPrompt, "quest name: Opportunity Friendlies");
+            AssertContains("quest prompt lifecycle field", plan.userPrompt, "quest lifecycle: accepted");
+            AssertContains("quest prompt faction field", plan.userPrompt, "quest faction: Outlander");
+            AssertContains("quest prompt rewards field", plan.userPrompt, "quest rewards: Silver x100");
+            AssertTrue("quest raw defName is not rendered", !plan.userPrompt.Contains("OpportunityQuest_Friendlies"));
         }
 
         private static void TestDualPovPromptPlans()
@@ -1213,6 +1240,10 @@ namespace DiaryPipelineTests
                     Field("what happened", "PovText"),
                     Field("event prompt", "EventPrompt"),
                     Field("event enhancement", "EventEnhancement"),
+                    ContextField("quest name", "quest_label"),
+                    ContextField("quest lifecycle", "quest_signal"),
+                    ContextField("quest faction", "quest_faction"),
+                    ContextField("quest rewards", "quest_rewards"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("initiator entry", "HiddenInitiatorEntry"),
@@ -1241,6 +1272,17 @@ namespace DiaryPipelineTests
         private static DiaryPromptFieldPolicy Field(string label, string source)
         {
             return new DiaryPromptFieldPolicy { label = label, source = source, enabled = true };
+        }
+
+        private static DiaryPromptFieldPolicy ContextField(string label, string contextKey)
+        {
+            return new DiaryPromptFieldPolicy
+            {
+                label = label,
+                source = "GameContext",
+                contextKey = contextKey,
+                enabled = true
+            };
         }
 
         private static List<bool> Ready(params bool[] values)

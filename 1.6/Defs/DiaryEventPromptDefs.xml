@@ -100,7 +100,7 @@
     <label>quest</label>
     <eventType>Quest</eventType>
     <prompt>Write a quest lifecycle event as promise, resolution, or loss.</prompt>
-    <enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not invent rewards, blame, or consequences.</enhancement>
+    <enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not copy the quest name verbatim into the diary line, and do not invent rewards, blame, or consequences.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
