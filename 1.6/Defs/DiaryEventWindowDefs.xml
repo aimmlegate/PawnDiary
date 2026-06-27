@@ -3,8 +3,9 @@
 
   <!--
     Generic event-window example:
-    - source can be Incident, Quest, ThingSpawned, Letter, ProximityLetter, or VoidMonolith today.
-    - signal examples: executed, accepted, completed, failed, spawned, received.
+    - source can be Incident, Quest, ThingSpawned, Letter, ProximityLetter, VoidMonolith,
+      PawnAge, Hediff, or PrisonBreak today.
+    - signal examples: executed, accepted, completed, failed, spawned, received, birthday, added.
     - matchDefNames are plain strings, so DLC/modded content is safe when absent.
 
     To watch a mech cluster, add another PawnDiary.DiaryEventWindowDef with:
@@ -29,6 +30,11 @@
     To watch a completed void monolith activation, use:
       <source>VoidMonolith</source>
       <signal>activated</signal>
+
+    To watch a specific hediff appearing on one pawn, use:
+      <source>Hediff</source>
+      <signal>added</signal>
+      <matchDefNames><li>SomeHediffDef</li></matchDefNames>
   -->
 
   <PawnDiary.DiaryEventWindowDef>
@@ -137,6 +143,102 @@
       <li>
         <source>VoidMonolith</source>
         <signal>activated</signal>
+      </li>
+    </startSignals>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>Birthday</defName>
+    <label>birthday</label>
+    <windowKey>Birthday</windowKey>
+    <enabled>true</enabled>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn's birthday as an uneasy RimWorld milestone, not a celebration; focus on age, fragility, and what another year can cost on the rim</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.Birthday.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>PawnAge</source>
+        <signal>birthday</signal>
+        <matchDefNames>
+          <li>Birthday</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>HeartAttack</defName>
+    <label>heart attack</label>
+    <windowKey>HeartAttack</windowKey>
+    <enabled>true</enabled>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn's heart attack as immediate bodily danger; keep it personal, physical, and urgent without inventing treatment outcomes</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.HeartAttack.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>Hediff</source>
+        <signal>added</signal>
+        <matchDefNames>
+          <li>HeartAttack</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>PrisonBreak</defName>
+    <label>prison break</label>
+    <windowKey>PrisonBreak</windowKey>
+    <enabled>true</enabled>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>Map</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the colony's reaction to a prison break as sudden danger and alarm; focus on the pawn's position in the colony response, not the prisoners' inner thoughts</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.PrisonBreak.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>PrisonBreak</source>
+        <signal>started</signal>
+        <matchDefNames>
+          <li>PrisonBreak</li>
+        </matchDefNames>
       </li>
     </startSignals>
 

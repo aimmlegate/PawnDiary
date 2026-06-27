@@ -422,6 +422,10 @@
   <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>{0} never learned what the gray flesh meant: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0} discovered the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} completed an interaction with the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.Birthday.Start>{0} reached biological age {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
+  <PawnDiary.Event.EventWindow.HeartAttack.Start>{0} suffered a heart attack: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
+  <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0} heard the prison break alarm: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>
+  <PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>prison break</PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because the initiator diary page failed to write.</PawnDiary.Error.SkippedInitiatorFailed>

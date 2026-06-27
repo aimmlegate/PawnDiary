@@ -1,7 +1,8 @@
 // XML event windows: a generic bridge from neutral game signals to long-lived prompt context.
-// Signals come from broad hooks (incidents, quests, spawned things, letters, proximity letters,
-// and special story objects). XML decides which signals matter, what diary entries they create, how
-// long the window lasts, and how strongly it biases prompt enchantments while active.
+// Signals come from broad hooks (incidents, quests, health changes, spawned things, letters,
+// proximity letters, and special story objects). XML decides which signals matter, what diary
+// entries they create, how long the window lasts, and how strongly it biases prompt enchantments
+// while active.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -17,10 +18,16 @@ namespace PawnDiary
         private const string EventWindowSourceLetter = "Letter";
         private const string EventWindowSourceProximityLetter = "ProximityLetter";
         private const string EventWindowSourceVoidMonolith = "VoidMonolith";
+        private const string EventWindowSourcePawnAge = "PawnAge";
+        private const string EventWindowSourceHediff = "Hediff";
+        private const string EventWindowSourcePrisonBreak = "PrisonBreak";
         private const string EventWindowSignalExecuted = "executed";
         private const string EventWindowSignalSpawned = "spawned";
         private const string EventWindowSignalReceived = "received";
         private const string EventWindowSignalActivated = "activated";
+        private const string EventWindowSignalBirthday = "birthday";
+        private const string EventWindowSignalAdded = "added";
+        private const string EventWindowSignalStarted = "started";
         private const string EventWindowPhaseStart = "start";
         private const string EventWindowPhaseEnd = "end";
         private const string EventWindowPhaseTimeout = "timeout";
@@ -134,6 +141,70 @@ namespace PawnDiary
                 label,
                 MapForSignalSubject(subjectPawn),
                 subjectPawn);
+        }
+
+        /// <summary>
+        /// Convenience wrapper for biological birthdays, keyed by a stable pseudo-def name.
+        /// </summary>
+        public void RecordEventWindowBirthday(Pawn pawn, int birthdayAge)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            RecordEventWindowSignal(
+                EventWindowSourcePawnAge,
+                "Birthday",
+                EventWindowSignalBirthday,
+                birthdayAge > 0 ? birthdayAge.ToString() : string.Empty,
+                MapForSignalSubject(pawn),
+                pawn);
+        }
+
+        /// <summary>
+        /// Convenience wrapper for newly-added hediffs, keyed by HediffDef name.
+        /// </summary>
+        public void RecordEventWindowHediffAdded(Pawn pawn, Hediff hediff)
+        {
+            if (pawn == null || hediff == null || hediff.def == null)
+            {
+                return;
+            }
+
+            string label = DiaryLineCleaner.CleanLine(hediff.LabelCap);
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = DiaryLineCleaner.CleanLine(hediff.def.LabelCap.Resolve());
+            }
+
+            RecordEventWindowSignal(
+                EventWindowSourceHediff,
+                hediff.def.defName,
+                EventWindowSignalAdded,
+                label,
+                MapForSignalSubject(pawn),
+                pawn);
+        }
+
+        /// <summary>
+        /// Convenience wrapper for prisoner breakouts. Map-scoped XML rules decide who records it.
+        /// </summary>
+        public void RecordEventWindowPrisonBreak(Pawn initiator, string label, List<Pawn> escapingPrisoners)
+        {
+            Map map = MapForSignalSubject(initiator) ?? FirstPawnMap(escapingPrisoners);
+            string cleanedLabel = DiaryLineCleaner.CleanLine(label);
+            if (string.IsNullOrWhiteSpace(cleanedLabel))
+            {
+                cleanedLabel = "PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel".Translate().Resolve();
+            }
+
+            RecordEventWindowSignal(
+                EventWindowSourcePrisonBreak,
+                "PrisonBreak",
+                EventWindowSignalStarted,
+                cleanedLabel,
+                map);
         }
 
         /// <summary>
@@ -786,6 +857,25 @@ namespace PawnDiary
         private static Map MapForSignalSubject(Pawn subjectPawn)
         {
             return subjectPawn != null && subjectPawn.Spawned ? subjectPawn.Map : null;
+        }
+
+        private static Map FirstPawnMap(List<Pawn> pawns)
+        {
+            if (pawns == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < pawns.Count; i++)
+            {
+                Pawn pawn = pawns[i];
+                if (pawn != null && pawn.Spawned)
+                {
+                    return pawn.Map;
+                }
+            }
+
+            return null;
         }
 
         private static int MapUniqueId(Map map)

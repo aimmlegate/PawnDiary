@@ -13,4 +13,13 @@
   <VoidMonolithActivation.label>void monolith activation</VoidMonolithActivation.label>
   <VoidMonolithActivation.instruction>write the pawn's completed interaction with the void monolith as extreme dark anomaly dread; focus on the psychic pressure, the structure changing, and the sense that something beyond the colony has noticed</VoidMonolithActivation.instruction>
 
+  <Birthday.label>birthday</Birthday.label>
+  <Birthday.instruction>write the pawn's birthday as an uneasy RimWorld milestone, not a celebration; focus on age, fragility, and what another year can cost on the rim</Birthday.instruction>
+
+  <HeartAttack.label>heart attack</HeartAttack.label>
+  <HeartAttack.instruction>write the pawn's heart attack as immediate bodily danger; keep it personal, physical, and urgent without inventing treatment outcomes</HeartAttack.instruction>
+
+  <PrisonBreak.label>prison break</PrisonBreak.label>
+  <PrisonBreak.instruction>write the colony's reaction to a prison break as sudden danger and alarm; focus on the pawn's position in the colony response, not the prisoners' inner thoughts</PrisonBreak.instruction>
+
 </LanguageData>

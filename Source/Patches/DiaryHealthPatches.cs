@@ -37,7 +37,9 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordHediffAppeared(pawn, hediff);
+                DiaryGameComponent component = DiaryGameComponent.Current;
+                component?.RecordEventWindowHediffAdded(pawn, hediff);
+                component?.RecordHediffAppeared(pawn, hediff);
             });
         }
     }

@@ -426,6 +426,31 @@ namespace DiaryPipelineTests
                 subjectPawnId = "Pawn_Bruno_2",
                 subjectLabel = "Bruno"
             };
+            EventWindowSignalFacts birthday = new EventWindowSignalFacts
+            {
+                source = "PawnAge",
+                signal = "birthday",
+                defName = "Birthday",
+                label = "73",
+                subjectPawnId = "Pawn_Cora_3",
+                subjectLabel = "Cora"
+            };
+            EventWindowSignalFacts heartAttack = new EventWindowSignalFacts
+            {
+                source = "Hediff",
+                signal = "added",
+                defName = "HeartAttack",
+                label = "heart attack",
+                subjectPawnId = "Pawn_Dan_4",
+                subjectLabel = "Dan"
+            };
+            EventWindowSignalFacts prisonBreak = new EventWindowSignalFacts
+            {
+                source = "PrisonBreak",
+                signal = "started",
+                defName = "PrisonBreak",
+                label = "Prison break"
+            };
             AssertTrue(
                 "event window letter exact def match",
                 EventWindowPolicy.Matches(
@@ -465,6 +490,36 @@ namespace DiaryPipelineTests
                         matchDefNames = new List<string> { "Waking" }
                     },
                     voidMonolithActivation));
+            AssertTrue(
+                "event window birthday match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "PawnAge",
+                        signal = "birthday",
+                        matchDefNames = new List<string> { "Birthday" }
+                    },
+                    birthday));
+            AssertTrue(
+                "event window hediff added match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "Hediff",
+                        signal = "added",
+                        matchDefNames = new List<string> { "HeartAttack" }
+                    },
+                    heartAttack));
+            AssertTrue(
+                "event window prison break match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "PrisonBreak",
+                        signal = "started",
+                        matchDefNames = new List<string> { "PrisonBreak" }
+                    },
+                    prisonBreak));
             AssertTrue(
                 "event window subject token match",
                 EventWindowPolicy.Matches(

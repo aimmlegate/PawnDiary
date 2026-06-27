@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-06-27
+Last updated: 2026-06-28
 
 Related files:
 
@@ -90,7 +90,7 @@ arrival/death pages bypass that guard.
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries. |
-| Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
+| Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. |
@@ -148,11 +148,12 @@ are not hediffs.
 `DiaryEventWindowDef` rows define `startSignals`, `endSignals`, `timeoutTicks`, phase diary text,
 and active prompt policy. Current signal sources are `Incident/executed`, `Quest/accepted`,
 `Quest/completed`, `Quest/failed`, `ThingSpawned/spawned`, `Letter/received`,
-`ProximityLetter/received`, and `VoidMonolith/activated`; matchers are exact defName strings or
-broad tokens. `keepActive=false` makes the start signal a one-shot diary event without saving an
-active window. `recordScope=SubjectPawn` records only the pawn carried by the signal, used by
-vanilla letter triggers such as ancient danger, proximity-letter triggers such as void monolith
-discovery, and completed monolith activations. An active window is saved, can write
+`ProximityLetter/received`, `VoidMonolith/activated`, `PawnAge/birthday`, `Hediff/added`, and
+`PrisonBreak/started`; matchers are exact defName strings or broad tokens. `keepActive=false` makes
+the start signal a one-shot diary event without saving an active window. `recordScope=SubjectPawn`
+records only the pawn carried by the signal, used by vanilla letter triggers such as ancient danger,
+proximity-letter triggers such as void monolith discovery, completed monolith activations, birthdays,
+and target health events. An active window is saved, can write
 start/end/timeout diary entries, and can add a weighted prompt candidate while multiplying ordinary
 prompt enchantments down. Setting
 `normalPromptWeightMultiplier` to `0` makes the window fully override ordinary health/status prompt
@@ -164,7 +165,13 @@ built-in `VoidMonolithDiscovery` rule matches the Anomaly `VoidMonolith` proximi
 records a single extreme-dark discovery entry for the nearby pawn only. The built-in
 `VoidMonolithActivation` rule matches completed void monolith activations, uses the reached
 `MonolithLevelDef` as its signal defName for future XML splits, and records one extreme-dark entry
-for the activating pawn.
+for the activating pawn. `Birthday` records a target-only uneasy aging entry from the direct
+`BirthdayBiological` hook instead of inferring the moment from age-related hediffs. `HeartAttack`
+records a target-only danger entry from `Hediff/added` with defName `HeartAttack`; vanilla pawn heart
+attacks do not emit their own letter or message, while Anomaly's `MessageHeartAttack` belongs to the
+fleshmass heart and is unrelated. `PrisonBreak` records one danger entry for every eligible colonist
+on the affected map from the shared prison-break utility overload used by both natural and sparked
+breakouts.
 
 ## 6. Prompts And Writing Styles
 

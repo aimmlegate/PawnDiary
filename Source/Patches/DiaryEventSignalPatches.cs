@@ -221,6 +221,34 @@ namespace PawnDiary
         }
     }
 
+    // Fires whenever RimWorld processes a biological birthday. Birthdays are not just flavor in
+    // RimWorld: vanilla immediately runs age-related hediff givers from this path.
+    /// <summary>
+    /// Captures biological birthdays for XML event-window rules.
+    /// </summary>
+    [HarmonyPatch(typeof(Pawn_AgeTracker), "BirthdayBiological")]
+    public static class BiologicalBirthdayEventWindowPatch
+    {
+        private static readonly FieldInfo PawnField = AccessTools.Field(typeof(Pawn_AgeTracker), "pawn");
+
+        /// <summary>
+        /// Harmony Postfix for Pawn_AgeTracker.BirthdayBiological. The event is target-pawn scoped in XML.
+        /// </summary>
+        public static void Postfix(Pawn_AgeTracker __instance, int birthdayAge)
+        {
+            DiaryPatchSafety.Run("BiologicalBirthdayEventWindowPatch", () =>
+            {
+                Pawn pawn = PawnField?.GetValue(__instance) as Pawn;
+                if (pawn == null || !DiaryGameComponent.GamePlaying)
+                {
+                    return;
+                }
+
+                DiaryGameComponent.Current?.RecordEventWindowBirthday(pawn, birthdayAge);
+            });
+        }
+    }
+
     /// <summary>
     /// Captures ThingComp proximity letters for XML event-window rules.
     /// </summary>
@@ -497,6 +525,67 @@ namespace PawnDiary
         {
             public string defName;
             public string label;
+        }
+    }
+
+    /// <summary>
+    /// Captures prisoner breakouts for XML event-window rules.
+    /// </summary>
+    public static class PrisonBreakEventWindowPatch
+    {
+        private const string TargetTypeName = "RimWorld.PrisonBreakUtility";
+        private const string TargetMethodName = "StartPrisonBreak";
+
+        /// <summary>
+        /// Registers the by-ref overload used by both natural and sparked prisoner breakouts.
+        /// </summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            if (harmony == null)
+            {
+                return;
+            }
+
+            Type targetType = AccessTools.TypeByName(TargetTypeName);
+            if (targetType == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find PrisonBreakUtility; prison-break event windows will not be captured.");
+                return;
+            }
+
+            MethodBase target = AccessTools.Method(targetType, TargetMethodName, new[]
+            {
+                typeof(Pawn),
+                typeof(string).MakeByRefType(),
+                typeof(string).MakeByRefType(),
+                typeof(LetterDef).MakeByRefType(),
+                typeof(List<Pawn>).MakeByRefType()
+            });
+            if (target == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find PrisonBreakUtility.StartPrisonBreak by-ref overload; prison-break event windows will not be captured.");
+                return;
+            }
+
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(PrisonBreakEventWindowPatch), nameof(Postfix)));
+        }
+
+        /// <summary>
+        /// Forwards the breakout after vanilla has collected the escaping pawns and letter label.
+        /// </summary>
+        private static void Postfix(Pawn initiator, ref string letterLabel, ref List<Pawn> escapingPrisoners)
+        {
+            string capturedLabel = letterLabel;
+            List<Pawn> capturedPrisoners = escapingPrisoners;
+            DiaryPatchSafety.Run("PrisonBreakEventWindowPatch", () =>
+            {
+                if ((capturedPrisoners == null || capturedPrisoners.Count == 0) && initiator == null)
+                {
+                    return;
+                }
+
+                DiaryGameComponent.Current?.RecordEventWindowPrisonBreak(initiator, capturedLabel, capturedPrisoners);
+            });
         }
     }
 

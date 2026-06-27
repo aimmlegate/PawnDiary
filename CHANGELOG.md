@@ -4,6 +4,17 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-06-28
+
+- **Birthday, heart attack, and prison-break diary events added.** XML event windows now include
+  one-shot `Birthday` and `HeartAttack` rules scoped to the target pawn, plus a map-scoped
+  `PrisonBreak` rule that writes for every eligible colonist on the affected map. Birthdays are
+  captured from `Pawn_AgeTracker.BirthdayBiological` so the diary records the aging milestone itself
+  instead of only any age-related hediffs it may cause. Heart attacks are matched from live
+  `Hediff/added` signals because vanilla pawn heart attacks do not emit a separate letter or message.
+  Prison breaks are captured from the shared `PrisonBreakUtility.StartPrisonBreak` overload used by
+  both natural and sparked breakouts.
+
 ## 2026-06-27
 
 - **Anomaly GameCondition mood routing tightened.** `DeathPall` now routes through the negative
