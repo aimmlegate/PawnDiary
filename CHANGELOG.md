@@ -6,182 +6,54 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
-- **Bad LLM titles now fall back to generic excerpts.** Title follow-up responses are rejected when
-  they contain markup/control/schema characters such as `<uncensored_response>`, multi-line
-  commentary, or underscore tokens. The saved title then falls back to the first few words of the
-  completed diary entry with `...` appended.
+- **Prompt and title cleanup tightened.** Bad title follow-up responses with
+  markup/control/schema characters now fall back to generic diary excerpts, while quest prompt facts
+  reject placeholder names, humanize fallback names, and keep raw quest defNames out of generated
+  text.
 
-- **Quest prompt labels normalized.** Quest entries now reject placeholder `QuestName`, humanize
-  PascalCase or underscore-style quest fallback names, remove the standalone word `Quest`, and expose
-  model-facing `quest_*` prompt fields so raw quest defNames stay out of generated diary text. The
-  Quest prompt enhancement now tells models to use quest facts without copying the quest name
-  verbatim.
+- **Condition-driven writing styles added.** `DiaryHediffPersonaOverrideDef` XML rules can
+  temporarily force a writing style from active hediff defNames without changing the pawn's saved
+  style, covering inhumanization, memory loss, joywire/bliss, mindscrew pain, and trauma-savant
+  silence.
 
-- **Hediffs can temporarily force writing styles.** New `DiaryHediffPersonaOverrideDef` XML rules map
-  active hediff defNames to a `DiaryPersonaDef` at prompt time without changing the pawn's saved
-  style. `Inhumanized` now forces a dark void style, has specific prompt-enchantment condition/cue
-  text, and joins the Anomaly hediff capture group so gaining it can create an immediate diary event.
-  Vanilla `Alzheimers` and `Dementia` now force a lost-thread memory style; Anomaly `CrumblingMind`
-  shares that style, while `CrumbledMind` uses a stronger mind-crumbled variant. Vanilla `Joywire`
-  now forces a bright-fog happiness-haze style, and Anomaly `BlissLobotomy` uses a stronger
-  blank-bliss variant while the hediff is active. Royalty `Mindscrew` now forces a pain-needle style
-  while that optional hediff is active, and vanilla `TraumaSavant` forces a high-priority silent
-  style that forbids dialogue and `[[speech]]` blocks.
-
-- **Birthday, heart attack, and prison-break diary events added.** XML event windows now include
-  one-shot `Birthday` and `HeartAttack` rules scoped to the target pawn, plus a map-scoped
-  `PrisonBreak` rule that writes for every eligible colonist on the affected map. Birthdays are
-  captured from `Pawn_AgeTracker.BirthdayBiological` so the diary records the aging milestone itself
-  instead of only any age-related hediffs it may cause. Heart attacks are matched from live
-  `Hediff/added` signals because vanilla pawn heart attacks do not emit a separate letter or message.
-  Prison breaks are captured from the shared `PrisonBreakUtility.StartPrisonBreak` overload used by
-  both natural and sparked breakouts.
+- **Birthday, heart attack, and prison-break events added.** XML event windows now record one-shot
+  birthday and heart-attack entries for the affected pawn, plus map-scoped prison-break entries for
+  eligible colonists on the affected map.
 
 ## 2026-06-27
 
-- **Anomaly GameCondition mood routing tightened.** `DeathPall` now routes through the negative
-  MoodEvent group and the XML mood-impact fallback list, so the existing GameCondition diary path
-  frames it as a threatening colony-wide condition instead of a generic passing mood.
-  `UnnaturalDarkness` now routes through the mixed MoodEvent group because its Anomaly ThoughtDef
-  can be frightening for ordinary pawns but positive for pawns that welcome the void.
+- **XML event-window support expanded.** `DiaryEventWindowDef` can now create start/end/timeout
+  diary entries from incident, quest lifecycle, spawned-thing, and letter signals, with built-in
+  windows for metalhorror suspicion, ancient dangers, and void monolith discovery or activation.
 
-- **Generic XML event windows added.** `DiaryEventWindowDef` can now start and end saved narrative
-  windows from generic incident, quest lifecycle, spawned-thing, and letter signals, write
-  start/end/timeout diary entries, and add high-weight prompt context while active. XML controls
-  trigger matchers, timeout ticks, phase text, instruction, prompt weight, subject-vs-map recording,
-  and the multiplier applied to ordinary prompt enchantments. The built-in `MetalhorrorSuspicion`
-  window starts when gray flesh appears (`GrayFleshSample` / `Filth_GrayFleshNoticeable`), ends when
-  `Metalhorror` spawns, and times out after ten RimWorld days if the emergence never arrives.
-  `AncientDanger` now matches vanilla's `AncientShrineWarning` letter and records a one-shot diary
-  entry for the pawn who approached the ancient wall. `VoidMonolithDiscovery` now matches the
-  Anomaly `VoidMonolith` proximity letter and records one extreme-dark discovery entry for the
-  nearby pawn. `VoidMonolithActivation` now matches completed void monolith activations/upgrades,
-  carrying the reached `MonolithLevelDef` as the signal defName for future XML-specific routing.
+- **Anomaly and hediff prompt routing improved.** `DeathPall` and `UnnaturalDarkness` now route
+  through more specific mood groups, Anomaly hediffs such as revenant hypnosis and cube effects can
+  trigger immediate/progression entries, and common drug hediffs gained localized prompt condition
+  overrides.
 
-- **Anomaly hediff thoughts added.** `RevenantHypnosis`, `CubeInterest`, `CubeWithdrawal`,
-  `CubeRage`, and `CorpseTorment` now have a dedicated Hediff-domain diary group that creates
-  immediate entries when the condition appears and when its severity crosses configured progression
-  steps. Their prompt enchantments now send explicit condition/cue text (`cube withdrawal`,
-  `trance pressure`, `compulsive focus`, etc.) plus a Def-overridable condition detail, falling back
-  to the cleaned localized game Hediff description when no override is set. The matches stay
-  string-only, so no-Anomaly games simply never see those signals.
-
-- **Drug hediff prompt overrides added.** `AlcoholHigh`, `Hangover`, `AmbrosiaHigh`,
-  `GoJuiceHigh`, `LuciferiumHigh`, `FlakeHigh`, `PsychiteTeaHigh`, `YayoHigh`, and
-  `SmokeleafHigh` now have localized prompt condition/description overrides and XML cue keys
-  based on their vanilla Hediff and Thought defs. Flake and yayo were split into separate prompt
-  enchantment defs so each can send its own condition detail.
-
-- **Diary history cap is now per pawn.** The "Diary pages to keep" setting now applies to each
-  colonist's own history (default 3000, range 1–10000) instead of a single colony-wide total. Each
-  pawn keeps its newest pages; a page shared by two pawns survives until both drop it. Existing saved
-  values still load (the setting reuses its old key), so an old global value is reinterpreted as a
-  per-pawn cap — generally more history kept, never less. The background hot window (`activeScanEventWindow`)
-  was raised to 1000 newest events colony-wide so a busy multi-colonist colony keeps more recent pages
-  warm for retry/title backfill; with the per-pawn cap, scan cost no longer scales with how deep each
-  pawn's history goes. The trim/keep decision is a pure `DiaryRetentionPlan` covered by a new
-  `DiaryRetentionTests` suite (shared-event survival, oldest-first dropping, edge cases).
-
-- **Large diary histories optimized.** The Diary tab now virtualizes its scroll layout with cached
-  row offsets/heights so only visible cards are drawn, while archived pages keep the same appearance.
-  The virtualized draw slice now includes an XML-tuned 800-pixel overscan above and below the viewport
-  to reduce visible card pop-in/animation while scrolling long years.
-  Diary-tab opening now builds long-history year indexes, selected-year cards, and selected-year row
-  layout in small XML-budgeted main-thread slices with a loading indicator; inspect-tab/command badges
-  no longer start history scans or read saved diary records during pawn selection. The new-page badge
-  is now a saved per-pawn unread flag copied into a transient status cache, set when main LLM text
-  finishes and cleared when the Diary tab opens, instead of a history count. The loading counter now
-  reports the active load phase only: first open, uncached pawn switch, or opening a year with no
-  cached cards yet. The tab now keeps a small LRU of loaded pawn views, so switching back to a recent
-  pawn restores its visible list instead of rebuilding from zero. Same-pawn index refreshes and
-  selected-year card refreshes now build quietly behind the currently visible list. Same-year
-  visual/layout refreshes, including scroll,
-  highlight refreshes, and collapse/expand, no longer replace the visible list with the loading
-  panel, and loaded large years seed the clicked card's current blend so collapse/expand still
-  animates. Selected-year rebuilds now invalidate row layout defensively so stale virtualized offset
-  arrays cannot cause an index error. The UI indexer
-  also no longer scans the entire colony event store for old missing arrival-page fallbacks while the
-  tab opens, and it now indexes the selected pawn's saved refs in one pass. Selected-year loading
-  resumes across frames, and bad/stale saved events are skipped with a one-time log instead of
-  leaving the tab stuck on the loading panel.
-  Background diary-event maintenance now uses an XML-only hot window (`activeScanEventWindow`, default
-  1000 newest events); older saved entries remain visible but are not retried, title-backfilled, or
-  used for catch-up scans. The dev-mode mock-page filler now seeds 6,000 completed pages across 3
-  in-game years, giving roughly 2,000 pages/year for realistic long-history stress tests without LLM
-  calls, and dev-mode retention leaves that mock stress history intact across autosaves. Archived
-  pending pages that fell out of the hot window now render prompt-fact fallback text instead of an
-  endless writing indicator, with a short fallback title and a "failed to generate" footer, and saved
-  pending attempts keep that archive fallback after reload. The temporary selection-UI disable switch
-  and noisy perf timing logs used during stress testing were removed before release; the Diary tab,
-  gizmo, and normal startup logging are restored. Post-review cleanup: the now-unused `EntriesFor`
-  reader (and its private `EmptyEntries` singleton) superseded by the sliced year indexer were
-  removed along with the dead write to the legacy `acknowledgedGeneratedEntryCount` field (its Scribe
-  key stays for save compatibility), and stale comments were repointed at the current draw path.
+- **Long-history retention and UI performance reworked.** The history cap is now per pawn, the
+  retention plan is covered by pure tests, background maintenance uses a bounded hot window, and the
+  Diary tab virtualizes long lists with sliced loading, unread flags, pawn-view reuse, stale-entry
+  handling, archived-pending fallbacks, and dev-mode stress history.
 
 ## 2026-06-26
 
-- **Custom DefInjected folder names fixed.** Pawn Diary's English DefInjected folders now use fully
-  qualified `PawnDiary.*` type names so RimWorld loads the translations instead of reporting
-  "dir ... doesn't correspond to any def type" language errors.
+- **Localization, packaging, and maintainer docs cleaned up.** DefInjected folder names were fixed,
+  the Workshop preview was replaced with human-made art, publish output now includes source and
+  reference docs, and `DOCUMENTATION.md` was condensed into a current-state guide.
 
-- **Diary command startup warning fixed.** The hidden-tab command helper is now marked for
-  RimWorld static constructor startup because it owns the cached Unity texture for the command icon.
+- **Generation and retention reliability improved.** Catch-up scans became demand-driven, orphan
+  recovery moved to its own pass, retained diary events gained a settings cap, and completed LLM
+  results now drain while the game is paused.
 
-- **Generation scan pressure reduced.** Pending-generation catch-up scans are now demand-driven and
-  run at most every 200 ticks after load, delayed raids, or orphan recovery request one. Orphaned
-  "writing..." recovery moved to a separate 600-tick pass, and the recurring scan no longer performs
-  a full missing-title sweep; missing titles are swept on load and settings save, while successful
-  main entries still queue their title follow-up immediately.
+- **Prompt and compatibility policy expanded.** Event prompt lookup now falls back through several
+  XML keys for modded compatibility, SpeakUp rows route as promoted chitchat, tagged social-log
+  grammar uses a reply-suppression guard, and stock writing styles were retuned around distinct
+  mechanics.
 
-- **Active diary event cap added.** Settings now include a numeric hard cap for retained
-  `DiaryEvent` records (default 1000). The game keeps the newest events, prunes older event refs
-  from pawn diaries, and excludes trimmed pages from UI and background scans.
-
-- **Workshop preview updated to human-made art.** Updated the preview image; thanks
-  u/KyraDragoness for the provided art.
-
-- **Queued generation now settles while paused.** Completed LLM results and their follow-up title or
-  recipient requests are drained from the real-time update hook, while game-tick scanners stay tied
-  to unpaused simulation ticks.
-
-- **Workshop payload now ships source and reference docs.** `scripts/publish.ps1` now copies
-  `Source/`, `DOCUMENTATION.md`, `CHANGELOG.md`, and `EVENT_PROMPT_MAP.md` into the generated
-  `dist` mod while skipping transient build artifacts.
-
-- **Documentation condensed for human maintainers.** `DOCUMENTATION.md` is now a shorter current-state
-  guide with implementation playbook detail moved back to `AGENTS.md`, `EVENT_PROMPT_MAP.md`, code
-  comments, and tests.
-
-- **Event prompt policy can now target modded XML keys.** `DiaryEventPromptDef` lookup now falls
-  back through source defName, interaction group, classifier key, and broad domain, so compatibility
-  patches can add prompt text, enhancement text, and forced-model preferences in XML.
-
-- **Runtime exception handling hardened.** Harmony hooks, diary ticks, save/load work, startup tab
-  injection, and immediate-mode UI drawing now isolate diary failures with balanced cleanup and
-  one-time logging, so capture or draw faults no longer break vanilla surfaces.
-
-- **Mental-break diary card green softened.** Mental-break cards now use a muted sage accent with a
-  lower-intensity wash and header rule.
-
-- **SpeakUp interactions now route as promoted chitchat.** The built-in SpeakUp group matches
-  `JPT.speakup` rows by source package, treats them as low-odds ambient social texture, and suppresses
-  normal smalltalk routing while SpeakUp is loaded.
-
-- **Tagged social-log grammar now renders under a reply-suppression guard.** Generated conversation
-  text is used in prompts only when the optional guard is registered, with neutral fallback text
-  otherwise.
-
-- **Built-in writing styles retuned around author-inspired mechanics.** The 30 stock
-  `DiaryPersonaDef` presets now use distinct mechanical rules, small synthetic examples, synced
-  DefInjected English stubs, and the new default `spare-iceberg` fallback.
-
-- **Diary tab unread marker skips world inspect panes.** The marker now verifies it is drawing on the
-  Diary inspect tab and treats world-inspect UI as having no diary pawn, avoiding selector errors on
-  world screens.
-
-- **Thinking-model self-edit cleanup tightened.** Response cleanup now strips common reasoning-model
-  self-revision transcripts while preserving legitimate in-world "Wait," prose, with parser tests for
-  the reported leak shapes.
+- **Runtime and UI hardening landed.** Diary hooks, ticks, save/load work, startup tab injection,
+  and immediate-mode drawing now isolate failures; mental-break card styling was softened; unread
+  markers skip world inspect panes; and thinking-model self-edit cleanup gained parser coverage.
 
 ## 2026-06-25
 
