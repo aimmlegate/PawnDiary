@@ -319,8 +319,8 @@ namespace PawnDiary
         /// A pawn's arrival/death boundary, as both list index and tick. The single-event
         /// <see cref="EventFallsOutsideDiaryBounds(DiaryEvent,string,PawnDiaryRecord)"/> overload
         /// re-derives this for every event; computing it once with <see cref="ComputeDiaryBounds"/>
-        /// and reusing it (see <see cref="EntriesFor"/>) turns the per-frame diary redraw from
-        /// O(events^2) into O(events).
+        /// and reusing it across a pawn's events (see <see cref="GeneratedEntryForPlayLogEntry"/>)
+        /// keeps those bounded scans O(events) instead of O(events^2).
         /// </summary>
         private struct DiaryBounds
         {
@@ -746,12 +746,5 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>
-        /// Singleton empty list returned when a pawn has no diary entries, avoiding per-call allocations.
-        /// </summary>
-        private static class EmptyEntries
-        {
-            public static readonly IReadOnlyList<DiaryEntryView> List = new List<DiaryEntryView>();
-        }
     }
 }

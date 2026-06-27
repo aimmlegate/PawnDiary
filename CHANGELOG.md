@@ -47,7 +47,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   endless writing indicator, with a short fallback title and a "failed to generate" footer, and saved
   pending attempts keep that archive fallback after reload. The temporary selection-UI disable switch
   and noisy perf timing logs used during stress testing were removed before release; the Diary tab,
-  gizmo, and normal startup logging are restored.
+  gizmo, and normal startup logging are restored. Post-review cleanup: the now-unused `EntriesFor`
+  reader (and its private `EmptyEntries` singleton) superseded by the sliced year indexer were
+  removed along with the dead write to the legacy `acknowledgedGeneratedEntryCount` field (its Scribe
+  key stays for save compatibility), and stale comments were repointed at the current draw path.
 
 ## 2026-06-26
 

@@ -1,6 +1,7 @@
 // The hidden inspector tab (UI) that renders the selected pawn's finished diary entries.
 // RimWorld calls FillTab() to draw it using immediate-mode GUI (the whole tab is re-emitted each
-// frame) after a pawn/corpse command opens it. It reads entries via DiaryGameComponent.EntriesFor.
+// frame) after a pawn/corpse command opens it. It indexes saved events through
+// DiaryGameComponent.BeginTabYearIndexBuild and materializes the selected year's cards on demand.
 // See AGENTS.md ("lifecycle").
 using System;
 using System.Collections.Generic;

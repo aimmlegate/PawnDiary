@@ -437,55 +437,6 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the diary entries to render for a pawn, bounded by that pawn's arrival and death pages.
-        /// Pure read — no side effects. Generation is driven by capture hooks plus demand-driven
-        /// catch-up scans, never by opening the UI.
-        /// </summary>
-        public IReadOnlyList<DiaryEntryView> EntriesFor(Pawn pawn)
-        {
-            if (pawn == null)
-            {
-                return EmptyEntries.List;
-            }
-
-            string pawnId = pawn.GetUniqueLoadID();
-
-            PawnDiaryRecord diary = FindDiary(pawn, false);
-            if (diary == null)
-            {
-                return EmptyEntries.List;
-            }
-
-            List<DiaryEntryView> views = new List<DiaryEntryView>();
-
-            if (diary.eventIds != null)
-            {
-                // This runs every frame the tab is open. Compute the arrival/death boundary once for
-                // the pawn, then reuse it for every event below — re-deriving it per event made this
-                // call grow with the square of the pawn's entry count. i is the event's own index in
-                // the pawn's list, so we can pass it straight to the bounds check.
-                DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
-                HashSet<string> activeEventIds = ActiveScanEventIds();
-                for (int i = 0; i < diary.eventIds.Count; i++)
-                {
-                    DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
-                    if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
-                    {
-                        continue;
-                    }
-
-                    DiaryEntryView view = diaryEvent?.ToViewFor(pawnId, EventIsArchivedForScans(diaryEvent, activeEventIds));
-                    if (view != null)
-                    {
-                        views.Add(view);
-                    }
-                }
-            }
-
-            return views;
-        }
-
-        /// <summary>
         /// Starts a frame-sliced Diary tab index build. Call <see cref="DiaryTabYearIndexBuild.ProcessSlice" />
         /// from the UI until <see cref="DiaryTabYearIndexBuild.IsComplete" /> is true.
         /// </summary>
@@ -595,11 +546,6 @@ namespace PawnDiary
             if (diary != null)
             {
                 diary.hasUnreadGeneratedEntry = false;
-                int normalizedCompleted = Math.Max(0, completedCount);
-                if (diary.acknowledgedGeneratedEntryCount != normalizedCompleted)
-                {
-                    diary.acknowledgedGeneratedEntryCount = normalizedCompleted;
-                }
             }
         }
 
@@ -818,9 +764,9 @@ namespace PawnDiary
                 return null;
             }
 
-            // Compute the arrival/death boundary once and reuse the index-based check, mirroring
-            // EntriesFor. The per-event (pawnId, diary) overload re-derives the boundary on every
-            // call, which made this loop grow with the square of the pawn's entry count.
+            // Compute the arrival/death boundary once and reuse the index-based check. The per-event
+            // (pawnId, diary) overload re-derives the boundary on every call, which made this loop
+            // grow with the square of the pawn's entry count.
             DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
             for (int i = 0; i < diary.eventIds.Count; i++)
             {
