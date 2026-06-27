@@ -20,6 +20,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   row offsets/heights so only visible cards are drawn, while archived pages keep the same appearance.
   The virtualized draw slice now includes an XML-tuned 800-pixel overscan above and below the viewport
   to reduce visible card pop-in/animation while scrolling long years.
+  Diary-tab opening now builds long-history year indexes, selected-year cards, and selected-year row
+  layout in small XML-budgeted main-thread slices with a loading indicator; inspect-tab/command badges
+  no longer start history scans during pawn selection. The new-page badge is now a saved per-pawn
+  unread flag set when main LLM text finishes and cleared when the Diary tab opens, instead of a
+  history count.
   Background diary-event maintenance now uses an XML-only hot window (`activeScanEventWindow`, default
   1000 newest events); older saved entries remain visible but are not retried, title-backfilled, or
   used for catch-up scans. The dev-mode mock-page filler now seeds 6,000 completed pages across 3

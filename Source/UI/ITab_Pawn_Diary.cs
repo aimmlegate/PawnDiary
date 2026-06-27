@@ -45,6 +45,18 @@ namespace PawnDiary
         private int cachedLayoutExpansionVersion = -1;
         private float cachedLayoutViewHeight;
         private bool cachedLayoutAnimationSettled = true;
+        private bool layoutBuildInProgress;
+        private List<DiaryEntryView> layoutBuildEntries;
+        private int layoutBuildVisibleRevision = -1;
+        private int layoutBuildSelectedYear = UnknownYear;
+        private float layoutBuildViewWidth = -1f;
+        private bool layoutBuildShowDebug;
+        private DiaryRenderToken layoutBuildToken;
+        private int layoutBuildHighlightVersion = -1;
+        private int layoutBuildExpansionVersion = -1;
+        private int layoutBuildIndex;
+        private float layoutBuildCurY;
+        private bool layoutBuildAnimationSettled = true;
 
         // Cached full (expanded) card heights keyed by entry key, reused across draw frames so the
         // measure pass does not recompute wrapped-text height for every expanded card ~60x/second.
@@ -253,18 +265,24 @@ namespace PawnDiary
             DiaryGameComponent component = DiaryGameComponent.Current;
             component?.AcknowledgeGeneratedEntriesFor(pawn);
 
-            // Only rebuild the entry views when something actually changed; otherwise the tab would
-            // re-classify and re-parse every entry ~60 times a second while it is just being read.
-            DiaryRenderToken token;
-            IReadOnlyList<DiaryEntryView> entries = visibleEntriesCache.EntriesFor(pawn, component, out token);
             bool showLlmDebugInfo = ShouldShowLlmDebugInfo();
             // Dev-mode-only: when on, reveal in-progress/stuck entries in the list (the full debug
             // toggle already shows them, so this only matters when debug info is off).
             bool showGeneratingEntries = ShouldShowGeneratingEntries();
             bool showPromptOnlyEntries = ShouldShowPromptOnlyEntries();
-            visibleEntriesCache.RebuildVisibleEntriesIfNeeded(entries, pawn, token, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries, devPreviewKind);
+            // Build a cheap year/count index first. Full DiaryEntryView cards are materialized only
+            // for selectedYear below, so selecting a pawn with thousands of archived pages stays
+            // responsive.
+            DiaryRenderToken token;
+            visibleEntriesCache.RebuildIndexIfNeeded(
+                pawn,
+                component,
+                showLlmDebugInfo,
+                showGeneratingEntries,
+                showPromptOnlyEntries,
+                devPreviewKind,
+                out token);
             int generatingCount = visibleEntriesCache.GeneratingCount;
-            List<DiaryEntryView> visibleEntries = visibleEntriesCache.VisibleEntries;
 
             Rect headerRect = new Rect(rect.x, rect.y, rect.width, 34f);
             if (generatingCount > 0)
@@ -300,25 +318,42 @@ namespace PawnDiary
             float entriesY = controlsY + controlsHeight + EntryGap;
             Rect outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
 
-            if (visibleEntries.Count == 0)
+            if (visibleEntriesCache.IsLoading)
+            {
+                DrawDiaryLoading(outRect, visibleEntriesCache.LoadingProcessed, visibleEntriesCache.LoadingTotal);
+                return;
+            }
+
+            component?.AcknowledgeGeneratedEntriesFor(
+                pawn,
+                visibleEntriesCache.CompletedCount,
+                visibleEntriesCache.PendingCount,
+                token);
+
+            List<int> years = visibleEntriesCache.VisibleYears;
+            if (years.Count == 0)
             {
                 Widgets.Label(outRect, (showLlmDebugInfo ? "PawnDiary.Tab.NoEntries" : "PawnDiary.Tab.NoGeneratedEntries").Translate());
                 return;
             }
 
-            List<int> years = visibleEntriesCache.VisibleYears;
             EnsureSelectedYear(pawn, years);
-            SelectYearForPendingScroll(pawn, visibleEntries);
+            SelectYearForPendingScroll(pawn, visibleEntriesCache);
 
             if (years.Count > 1)
             {
                 Rect yearRect = new Rect(rect.x, entriesY, rect.width, YearFilterHeight);
-                DrawYearFilter(yearRect, years, visibleEntries);
+                DrawYearFilter(yearRect, years, visibleEntriesCache);
                 entriesY = yearRect.yMax + YearFilterGap;
                 outRect = new Rect(rect.x, entriesY, rect.width, rect.yMax - entriesY);
             }
 
-            List<DiaryEntryView> ordered = visibleEntriesCache.OrderedEntriesForSelectedYear(selectedYear);
+            List<DiaryEntryView> ordered;
+            if (!visibleEntriesCache.TryGetOrderedEntriesForSelectedYear(pawn, selectedYear, out ordered))
+            {
+                DrawDiaryLoading(outRect, visibleEntriesCache.LoadingProcessed, visibleEntriesCache.LoadingTotal);
+                return;
+            }
 
             if (ordered.Count == 0)
             {
@@ -330,14 +365,22 @@ namespace PawnDiary
             float viewWidth = outRect.width - 16f;
             float animationDelta = ExpansionAnimationDelta();
             List<DiaryNameHighlight> nameHighlights = NameHighlightsFor(pawn);
-            RebuildEntryLayoutIfNeeded(
+            int layoutProcessed;
+            int layoutTotal;
+            if (!RebuildEntryLayoutIfNeeded(
                 ordered,
                 visibleEntriesCache.VisibleRevision,
                 viewWidth,
                 showLlmDebugInfo,
                 token,
                 nameHighlights,
-                animationDelta);
+                animationDelta,
+                out layoutProcessed,
+                out layoutTotal))
+            {
+                DrawDiaryLoading(outRect, layoutProcessed, layoutTotal);
+                return;
+            }
 
             string[] entryKeys = entryKeysBuffer;
             bool[] expandedTargets = expandedTargetsBuffer;
@@ -589,15 +632,19 @@ namespace PawnDiary
         /// layout changed. Idle scroll frames reuse this data, so large archived histories do not make
         /// the tab rescan every card just to compute scroll height.
         /// </summary>
-        private void RebuildEntryLayoutIfNeeded(
+        private bool RebuildEntryLayoutIfNeeded(
             List<DiaryEntryView> ordered,
             int visibleRevision,
             float viewWidth,
             bool showLlmDebugInfo,
             DiaryRenderToken token,
             List<DiaryNameHighlight> nameHighlights,
-            float animationDelta)
+            float animationDelta,
+            out int processed,
+            out int total)
         {
+            processed = ordered?.Count ?? 0;
+            total = processed;
             bool dirty = cachedLayoutEntries != ordered
                 || cachedLayoutVisibleRevision != visibleRevision
                 || cachedLayoutSelectedYear != selectedYear
@@ -609,32 +656,81 @@ namespace PawnDiary
                 || !cachedLayoutAnimationSettled;
             if (!dirty)
             {
-                return;
+                return true;
             }
 
             int count = ordered?.Count ?? 0;
-            EnsureEntryMeasurementBufferCapacity(count);
-
-            cachedLayoutEntries = ordered;
-            cachedLayoutVisibleRevision = visibleRevision;
-            cachedLayoutSelectedYear = selectedYear;
-            cachedLayoutViewWidth = viewWidth;
-            cachedLayoutShowDebug = showLlmDebugInfo;
-            cachedLayoutToken = token;
-            cachedLayoutHighlightVersion = nameHighlightsVersion;
-            cachedLayoutExpansionVersion = entryExpansionVersion;
-            cachedLayoutAnimationSettled = true;
-
-            float curY = 0f;
-            for (int i = 0; i < count; i++)
+            if (!layoutBuildInProgress
+                || layoutBuildEntries != ordered
+                || layoutBuildVisibleRevision != visibleRevision
+                || layoutBuildSelectedYear != selectedYear
+                || layoutBuildViewWidth != viewWidth
+                || layoutBuildShowDebug != showLlmDebugInfo
+                || !layoutBuildToken.Equals(token)
+                || layoutBuildHighlightVersion != nameHighlightsVersion
+                || layoutBuildExpansionVersion != entryExpansionVersion)
             {
+                BeginEntryLayoutBuild(ordered, visibleRevision, viewWidth, showLlmDebugInfo, token, count);
+            }
+
+            ProcessEntryLayoutSlice(ordered, viewWidth, showLlmDebugInfo, token, nameHighlights, animationDelta, count);
+            processed = layoutBuildInProgress ? layoutBuildIndex : count;
+            total = count;
+            return !layoutBuildInProgress;
+        }
+
+        private void BeginEntryLayoutBuild(
+            List<DiaryEntryView> ordered,
+            int visibleRevision,
+            float viewWidth,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            int count)
+        {
+            EnsureEntryMeasurementBufferCapacity(count);
+            layoutBuildInProgress = true;
+            layoutBuildEntries = ordered;
+            layoutBuildVisibleRevision = visibleRevision;
+            layoutBuildSelectedYear = selectedYear;
+            layoutBuildViewWidth = viewWidth;
+            layoutBuildShowDebug = showLlmDebugInfo;
+            layoutBuildToken = token;
+            layoutBuildHighlightVersion = nameHighlightsVersion;
+            layoutBuildExpansionVersion = entryExpansionVersion;
+            layoutBuildIndex = 0;
+            layoutBuildCurY = 0f;
+            layoutBuildAnimationSettled = true;
+        }
+
+        private void ProcessEntryLayoutSlice(
+            List<DiaryEntryView> ordered,
+            float viewWidth,
+            bool showLlmDebugInfo,
+            DiaryRenderToken token,
+            List<DiaryNameHighlight> nameHighlights,
+            float animationDelta,
+            int count)
+        {
+            if (!layoutBuildInProgress)
+            {
+                return;
+            }
+
+            int processedThisSlice = 0;
+            int max = Math.Max(1, DiaryTuning.UiHistoryScanMaxEventsPerFrame);
+            float endTime = Time.realtimeSinceStartup + Math.Max(0.0001f, DiaryTuning.UiHistoryScanFrameBudgetSeconds);
+            bool animateLayout = count <= max;
+
+            while (layoutBuildIndex < count && processedThisSlice < max)
+            {
+                int i = layoutBuildIndex;
                 DiaryEntryView entry = ordered[i];
                 string entryKey = EntryKey(entry);
                 bool expanded = IsEntryExpanded(entry, i);
-                float expansionBlend = ExpansionBlendFor(entryKey, expanded, animationDelta);
+                float expansionBlend = animateLayout ? ExpansionBlendFor(entryKey, expanded, animationDelta) : (expanded ? 1f : 0f);
                 if (Mathf.Abs(expansionBlend - (expanded ? 1f : 0f)) > 0.001f)
                 {
-                    cachedLayoutAnimationSettled = false;
+                    layoutBuildAnimationSettled = false;
                 }
 
                 // Fully collapsed cards only need header height, so avoid expensive wrapped-text
@@ -650,16 +746,39 @@ namespace PawnDiary
                 expansionBlendsBuffer[i] = expansionBlend;
                 fullHeightsBuffer[i] = fullHeight;
                 heightsBuffer[i] = AnimatedEntryHeight(fullHeight, expansionBlend);
-                entryOffsetsBuffer[i] = curY;
+                entryOffsetsBuffer[i] = layoutBuildCurY;
 
-                curY += heightsBuffer[i];
+                layoutBuildCurY += heightsBuffer[i];
                 if (i < count - 1)
                 {
-                    curY += EntryGap;
+                    layoutBuildCurY += EntryGap;
+                }
+
+                layoutBuildIndex++;
+                processedThisSlice++;
+
+                if (processedThisSlice > 0 && Time.realtimeSinceStartup >= endTime)
+                {
+                    break;
                 }
             }
 
-            cachedLayoutViewHeight = curY + 12f; // includes bottom padding
+            if (layoutBuildIndex < count)
+            {
+                return;
+            }
+
+            cachedLayoutEntries = layoutBuildEntries;
+            cachedLayoutVisibleRevision = layoutBuildVisibleRevision;
+            cachedLayoutSelectedYear = layoutBuildSelectedYear;
+            cachedLayoutViewWidth = layoutBuildViewWidth;
+            cachedLayoutShowDebug = layoutBuildShowDebug;
+            cachedLayoutToken = layoutBuildToken;
+            cachedLayoutHighlightVersion = layoutBuildHighlightVersion;
+            cachedLayoutExpansionVersion = layoutBuildExpansionVersion;
+            cachedLayoutAnimationSettled = layoutBuildAnimationSettled;
+            cachedLayoutViewHeight = layoutBuildCurY + 12f; // includes bottom padding
+            layoutBuildInProgress = false;
         }
 
         /// <summary>

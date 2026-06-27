@@ -815,6 +815,84 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Resolves the POV role the Diary tab would display for this pawn without building a full
+        /// <see cref="DiaryEntryView" />. Arrival/death boundary pages are neutral entries even though
+        /// the pawn is not stored in the ordinary initiator/recipient slots.
+        /// </summary>
+        public bool TryGetDisplayRoleForPawn(string pawnId, out string povRole)
+        {
+            povRole = RoleForPawn(pawnId);
+
+            if (HasDeathDescription())
+            {
+                if (!IsDeathDescriptionFor(pawnId))
+                {
+                    povRole = null;
+                    return false;
+                }
+
+                povRole = NeutralRole;
+                return true;
+            }
+
+            if (HasArrivalDescription())
+            {
+                if (!IsArrivalDescriptionFor(pawnId))
+                {
+                    povRole = null;
+                    return false;
+                }
+
+                povRole = NeutralRole;
+                return true;
+            }
+
+            return !string.IsNullOrWhiteSpace(povRole);
+        }
+
+        /// <summary>
+        /// Cheap status snapshot for Diary-tab indexing and badges. It mirrors the visibility/status
+        /// decisions made by <see cref="ToViewFor" /> but avoids group lookup, linked preview building,
+        /// and text-decoration parsing for entries outside the selected year.
+        /// </summary>
+        public bool TryGetTabStateForPawn(
+            string pawnId,
+            bool archivedForScans,
+            out string povRole,
+            out bool hasGeneratedText,
+            out bool archivedGenerationStale,
+            out bool generating,
+            out bool promptOnly,
+            out bool titlePending)
+        {
+            hasGeneratedText = false;
+            archivedGenerationStale = false;
+            generating = false;
+            promptOnly = false;
+            titlePending = false;
+
+            if (!TryGetDisplayRoleForPawn(pawnId, out povRole))
+            {
+                return false;
+            }
+
+            string generatedText = GeneratedTextFor(povRole);
+            string status = StatusFor(povRole);
+            hasGeneratedText = !string.IsNullOrWhiteSpace(generatedText);
+            archivedGenerationStale = DiaryGenerationStatus.IsArchivedGenerationStale(
+                archivedForScans,
+                status,
+                generatedText,
+                PromptFor(povRole));
+            generating = RoleEquals(status, PendingStatus) && !archivedGenerationStale;
+            promptOnly = RoleEquals(status, PromptOnlyStatus);
+            titlePending = !archivedForScans
+                && string.IsNullOrWhiteSpace(TitleForRole(povRole))
+                && IsTitlePending(povRole);
+            return true;
+        }
+
+        /// <summary>
         /// Returns the POV role string for a pawn involved in this event, or null if the pawn is not part of it.
         /// </summary>
         public string RoleForPawn(string pawnId)

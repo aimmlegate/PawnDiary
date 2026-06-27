@@ -386,6 +386,35 @@ namespace PawnDiary
 
         }
 
+        /// <summary>
+        /// Shows while the Diary tab is indexing a very large saved history over several frames.
+        /// </summary>
+        private static void DrawDiaryLoading(Rect rect, int processed, int total)
+        {
+            Widgets.DrawMenuSection(rect);
+
+            Rect inner = rect.ContractedBy(14f);
+            string label = total > 0
+                ? "PawnDiary.Tab.LoadingHistoryProgress".Translate(Math.Min(processed, total), total).ToString()
+                : "PawnDiary.Tab.LoadingHistory".Translate().ToString();
+
+            TextAnchor oldAnchor = Text.Anchor;
+            GameFont oldFont = Text.Font;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Small;
+            Widgets.Label(new Rect(inner.x, inner.y + 18f, inner.width, 28f), label);
+            Text.Anchor = oldAnchor;
+            Text.Font = oldFont;
+
+            float dotsWidth = WritingDotSize * 3f + WritingDotGap * 2f;
+            Rect dotsRect = new Rect(
+                inner.x + inner.width * 0.5f - dotsWidth * 0.5f,
+                inner.y + 54f,
+                dotsWidth,
+                12f);
+            DrawWritingDots(dotsRect, UiStyle.WritingPlaceholderHighColor, 0.65f);
+        }
+
 
 
         /// <summary>

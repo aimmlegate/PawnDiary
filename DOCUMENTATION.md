@@ -167,9 +167,16 @@ mock-page filler for stress testing long histories. That filler seeds 6,000 save
 in-game years (about 2,000 pages per year) without calling the LLM, and dev-mode retention skips
 mock stress histories so autosaves do not immediately shrink the fixture. Histories page by in-game
 year; newest cards start expanded. Long histories are kept cheap by the active-event cap,
-visible-entry caching, cached virtual row offsets/heights, and viewport drawing that only emits cards
-inside the scroll slice plus the XML-tuned overscan buffer (`virtualizedEntryOverscanHeight`, default
-800 pixels above and below the viewport). Archived pages use the same cards and controls as hot pages.
+visible-entry caching, sliced main-thread year indexing, cached virtual row offsets/heights, and
+viewport drawing that only emits cards inside the scroll slice plus the XML-tuned overscan buffer
+(`virtualizedEntryOverscanHeight`, default 800 pixels above and below the viewport). The sliced indexer
+uses `uiHistoryScanMaxEventsPerFrame` and `uiHistoryScanFrameBudgetSeconds` for both year indexing
+selected-year card materialization, and selected-year row layout, so opening a pawn with thousands of
+pages shows a loading panel instead of freezing the game. Inspect-tab and command badges do not start
+history scans during pawn selection; the new-page badge reads a saved per-pawn unread flag that is set
+when main LLM text finishes and cleared when that pawn's Diary tab opens, while writing dots reuse
+cached pending counts after the Diary tab finishes its sliced load.
+Archived pages use the same cards and controls as hot pages.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.

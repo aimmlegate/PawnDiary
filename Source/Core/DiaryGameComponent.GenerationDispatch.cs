@@ -161,6 +161,10 @@ namespace PawnDiary
             }
 
             diaryEvent.ApplyLlmResult(result);
+            if (result.success && !string.IsNullOrWhiteSpace(result.generatedText))
+            {
+                MarkGeneratedEntryUnread(diaryEvent, result.povRole);
+            }
 
             // Record the lane that actually produced the text. After failover this may differ from
             // the primary lane chosen at queue time, so updating it here keeps the debug block
@@ -187,6 +191,29 @@ namespace PawnDiary
                 && string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(result.povRole)))
             {
                 QueueTitleRequest(diaryEvent, result.povRole, successfulLane);
+            }
+        }
+
+        /// <summary>
+        /// Sets the cheap "new page" badge flag for the pawn whose main POV just finished. This runs
+        /// when the generation result is applied, so the inspect command never has to scan history.
+        /// </summary>
+        private void MarkGeneratedEntryUnread(DiaryEvent diaryEvent, string povRole)
+        {
+            string pawnId = PawnIdForRole(diaryEvent, povRole);
+            if (string.IsNullOrWhiteSpace(pawnId) && DiaryEvent.RoleEquals(povRole, DiaryEvent.NeutralRole))
+            {
+                pawnId = DiaryContextFields.Value(diaryEvent.gameContext, "arrival_pawn_id");
+                if (string.IsNullOrWhiteSpace(pawnId))
+                {
+                    pawnId = DiaryContextFields.Value(diaryEvent.gameContext, "death_victim_id");
+                }
+            }
+
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
+            if (diary != null)
+            {
+                diary.hasUnreadGeneratedEntry = true;
             }
         }
 

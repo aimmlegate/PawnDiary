@@ -11,36 +11,36 @@ namespace PawnDiary
     public partial class ITab_Pawn_Diary
     {
         /// <summary>
-        /// Caches raw diary views, the currently visible subset, year pages, and per-year ordering.
+        /// Caches the selected pawn's lightweight year index and materializes full card views only for
+        /// the currently selected year. This keeps pawn switching cheap even when dev fixtures seed
+        /// thousands of archived pages.
         /// </summary>
         private sealed class DiaryTabVisibleEntriesCache
         {
-            // Sentinel for no entries; avoids allocating a new empty list on every frame when the component is null.
-            private static readonly IReadOnlyList<DiaryEntryView> EmptyList = new List<DiaryEntryView>();
+            private Pawn cachedIndexPawn;
+            private DiaryRenderToken cachedIndexToken;
+            private bool cachedIndexShowDebug;
+            private bool cachedIndexShowGenerating;
+            private bool cachedIndexShowPromptOnly;
+            private DevDiaryPreviewKind cachedIndexPreviewKind = DevDiaryPreviewKind.None;
+            private DiaryGameComponent.DiaryTabYearIndex cachedIndex;
+            private DiaryGameComponent.DiaryTabYearIndexBuild cachedIndexBuild;
+            private DiaryEntryView cachedPreviewEntry;
 
-            // Per-frame cache for the heaviest part of drawing the tab: rebuilding a DiaryEntryView for
-            // every one of the pawn's events (each runs group classification + gameContext parsing). The
-            // built list is reused until the pawn's render token changes: a new event, or an entry's
-            // status/text/title changing. A tab that is merely being read does no rebuild work.
-            private Pawn cachedEntriesPawn;
-            private DiaryRenderToken cachedEntriesToken;
-            private IReadOnlyList<DiaryEntryView> cachedEntries = EmptyList;
-
-            // The visible subset, year list, and per-year ordering are derived from cachedEntries.
-            // FillTab runs every draw frame, so these buffers avoid per-frame LINQ/List churn while the
-            // selected pawn, render token, dev toggles, and transient preview stay unchanged.
-            private IReadOnlyList<DiaryEntryView> cachedVisibleSource = EmptyList;
-            private Pawn cachedVisiblePawn;
-            private DiaryRenderToken cachedVisibleToken;
-            private bool cachedVisibleShowDebug;
-            private bool cachedVisibleShowGenerating;
-            private bool cachedVisibleShowPromptOnly;
-            private DevDiaryPreviewKind cachedVisiblePreviewKind = DevDiaryPreviewKind.None;
+            private readonly List<int> cachedVisibleYears = new List<int>();
+            private readonly Dictionary<int, int> cachedYearCounts = new Dictionary<int, int>();
+            private readonly List<DiaryEntryView> cachedOrderedEntries = new List<DiaryEntryView>();
             private int cachedVisibleRevision;
             private int cachedGeneratingCount;
-            private readonly List<DiaryEntryView> cachedVisibleEntries = new List<DiaryEntryView>();
-            private readonly List<int> cachedVisibleYears = new List<int>();
-            private readonly List<DiaryEntryView> cachedOrderedEntries = new List<DiaryEntryView>();
+            private int cachedCompletedCount;
+            private int cachedPendingCount;
+            private bool loading;
+            private int loadingProcessed;
+            private int loadingTotal;
+            private bool loadingSelectedYear;
+            private int loadingYear;
+            private int loadingYearCandidateIndex;
+            private string loadingYearPawnId;
             private int cachedOrderedVisibleRevision = -1;
             private int cachedOrderedYear = int.MinValue;
 
@@ -52,16 +52,33 @@ namespace PawnDiary
                 get { return cachedGeneratingCount; }
             }
 
-            /// <summary>
-            /// Current visible entries, including any transient dev preview entry.
-            /// </summary>
-            public List<DiaryEntryView> VisibleEntries
+            public int CompletedCount
             {
-                get { return cachedVisibleEntries; }
+                get { return cachedCompletedCount; }
+            }
+
+            public int PendingCount
+            {
+                get { return cachedPendingCount; }
+            }
+
+            public bool IsLoading
+            {
+                get { return loading; }
+            }
+
+            public int LoadingProcessed
+            {
+                get { return loadingProcessed; }
+            }
+
+            public int LoadingTotal
+            {
+                get { return loadingTotal; }
             }
 
             /// <summary>
-            /// Distinct years represented by <see cref="VisibleEntries" />, newest first.
+            /// Distinct years represented by entries visible under the current dev filters, newest first.
             /// </summary>
             public List<int> VisibleYears
             {
@@ -69,9 +86,8 @@ namespace PawnDiary
             }
 
             /// <summary>
-            /// Monotonic version for the currently visible entry set. The scroll-layout cache uses it
-            /// to know when the ordered list contents changed even though the same List instance is
-            /// reused to avoid allocations.
+            /// Monotonic version for the current visible year index. The scroll-layout cache uses it
+            /// to know when selected-year contents may have changed even though lists are reused.
             /// </summary>
             public int VisibleRevision
             {
@@ -79,128 +95,228 @@ namespace PawnDiary
             }
 
             /// <summary>
-            /// Returns the pawn's raw entry views, rebuilding only when the component render token changes.
+            /// Rebuilds the lightweight year index only when the pawn, render token, or tab filters
+            /// change. No full card views are created here for saved entries.
             /// </summary>
-            public IReadOnlyList<DiaryEntryView> EntriesFor(Pawn pawn, DiaryGameComponent component, out DiaryRenderToken token)
+            public void RebuildIndexIfNeeded(
+                Pawn pawn,
+                DiaryGameComponent component,
+                bool showLlmDebugInfo,
+                bool showGeneratingEntries,
+                bool showPromptOnlyEntries,
+                DevDiaryPreviewKind devPreviewKind,
+                out DiaryRenderToken token)
             {
                 token = default(DiaryRenderToken);
                 if (component == null)
                 {
-                    return EmptyList;
+                    ClearIfNeeded();
+                    return;
                 }
 
                 token = component.RenderTokenFor(pawn);
-                if (pawn != cachedEntriesPawn || !token.Equals(cachedEntriesToken) || cachedEntries == null)
-                {
-                    cachedEntries = component.EntriesFor(pawn);
-                    cachedEntriesPawn = pawn;
-                    cachedEntriesToken = token;
-                }
-
-                return cachedEntries;
-            }
-
-            /// <summary>
-            /// Refreshes the filtered entries and year list only when the backing render token or view
-            /// toggles change. This is the allocation-sensitive part of the immediate-mode tab draw.
-            /// </summary>
-            public void RebuildVisibleEntriesIfNeeded(
-                IReadOnlyList<DiaryEntryView> entries,
-                Pawn pawn,
-                DiaryRenderToken token,
-                bool showLlmDebugInfo,
-                bool showGeneratingEntries,
-                bool showPromptOnlyEntries,
-                DevDiaryPreviewKind devPreviewKind)
-            {
-                if (cachedVisibleSource == entries
-                    && cachedVisiblePawn == pawn
-                    && token.Equals(cachedVisibleToken)
-                    && cachedVisibleShowDebug == showLlmDebugInfo
-                    && cachedVisibleShowGenerating == showGeneratingEntries
-                    && cachedVisibleShowPromptOnly == showPromptOnlyEntries
-                    && cachedVisiblePreviewKind == devPreviewKind)
+                if (pawn == cachedIndexPawn
+                    && token.Equals(cachedIndexToken)
+                    && cachedIndexShowDebug == showLlmDebugInfo
+                    && cachedIndexShowGenerating == showGeneratingEntries
+                    && cachedIndexShowPromptOnly == showPromptOnlyEntries
+                    && cachedIndexPreviewKind == devPreviewKind
+                    && cachedIndex != null)
                 {
                     return;
                 }
 
-                cachedVisibleSource = entries;
-                cachedVisiblePawn = pawn;
-                cachedVisibleToken = token;
-                cachedVisibleShowDebug = showLlmDebugInfo;
-                cachedVisibleShowGenerating = showGeneratingEntries;
-                cachedVisibleShowPromptOnly = showPromptOnlyEntries;
-                cachedVisiblePreviewKind = devPreviewKind;
-                cachedGeneratingCount = 0;
-                cachedVisibleEntries.Clear();
-                cachedVisibleYears.Clear();
-
-                AddDevPreviewEntryIfNeeded(pawn, devPreviewKind);
-
-                if (entries != null)
+                if (cachedIndexBuild == null
+                    || !cachedIndexBuild.Matches(pawn, token, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries)
+                    || cachedIndexPreviewKind != devPreviewKind)
                 {
-                    for (int i = 0; i < entries.Count; i++)
-                    {
-                        DiaryEntryView entry = entries[i];
-                        bool generating = IsGenerating(entry);
-                        if (generating)
-                        {
-                            cachedGeneratingCount++;
-                        }
+                    cachedIndexPawn = pawn;
+                    cachedIndexToken = token;
+                    cachedIndexShowDebug = showLlmDebugInfo;
+                    cachedIndexShowGenerating = showGeneratingEntries;
+                    cachedIndexShowPromptOnly = showPromptOnlyEntries;
+                    cachedIndexPreviewKind = devPreviewKind;
+                    cachedIndexBuild = component.BeginTabYearIndexBuild(pawn, showLlmDebugInfo, showGeneratingEntries, showPromptOnlyEntries);
+                    cachedIndex = null;
+                    cachedPreviewEntry = null;
+                    cachedGeneratingCount = 0;
+                    cachedCompletedCount = 0;
+                    cachedPendingCount = 0;
+                    cachedVisibleYears.Clear();
+                    cachedYearCounts.Clear();
+                    cachedOrderedEntries.Clear();
+                    cachedOrderedVisibleRevision = -1;
+                    loadingSelectedYear = false;
+                    loadingYearCandidateIndex = 0;
+                    loading = true;
+                }
 
-                        if (entry != null
-                            && (showLlmDebugInfo
-                                || IsGenerated(entry)
-                                || (showGeneratingEntries && generating)
-                                || (showPromptOnlyEntries && IsPromptOnly(entry))))
-                        {
-                            cachedVisibleEntries.Add(entry);
-                            AddYearIfMissing(cachedVisibleYears, EntryYear(entry));
-                        }
+                cachedIndexBuild.ProcessSlice(DiaryTuning.UiHistoryScanMaxEventsPerFrame, DiaryTuning.UiHistoryScanFrameBudgetSeconds);
+                loadingProcessed = cachedIndexBuild.processedWork;
+                loadingTotal = cachedIndexBuild.totalWork;
+                if (!cachedIndexBuild.IsComplete)
+                {
+                    return;
+                }
+
+                cachedIndexPawn = pawn;
+                cachedIndexToken = token;
+                cachedIndexShowDebug = showLlmDebugInfo;
+                cachedIndexShowGenerating = showGeneratingEntries;
+                cachedIndexShowPromptOnly = showPromptOnlyEntries;
+                cachedIndexPreviewKind = devPreviewKind;
+                cachedIndex = cachedIndexBuild.index;
+                cachedIndexBuild = null;
+                cachedPreviewEntry = null;
+                cachedGeneratingCount = cachedIndex == null ? 0 : cachedIndex.generatingCount;
+                cachedCompletedCount = cachedIndex == null ? 0 : cachedIndex.completedCount;
+                cachedPendingCount = cachedIndex == null ? 0 : cachedIndex.pendingCount;
+                loading = false;
+                loadingProcessed = loadingTotal;
+
+                cachedVisibleYears.Clear();
+                cachedYearCounts.Clear();
+
+                if (cachedIndex != null)
+                {
+                    for (int i = 0; i < cachedIndex.years.Count; i++)
+                    {
+                        int year = cachedIndex.years[i];
+                        AddYearCount(year, cachedIndex.CountForYear(year));
                     }
                 }
 
+                AddDevPreviewEntryIfNeeded(pawn, devPreviewKind);
                 cachedVisibleYears.Sort((left, right) => right.CompareTo(left));
                 cachedVisibleRevision++;
+                cachedOrderedVisibleRevision = -1;
             }
 
             /// <summary>
-            /// Reuses the selected-year ordering until the visible-entry cache or selected year changes.
+            /// Returns how many visible entries belong to a year, used by the year pager label/menu.
             /// </summary>
-            public List<DiaryEntryView> OrderedEntriesForSelectedYear(int year)
+            public int CountForYear(int year)
             {
-                if (cachedOrderedVisibleRevision == cachedVisibleRevision && cachedOrderedYear == year)
+                int count;
+                return cachedYearCounts.TryGetValue(year, out count) ? count : 0;
+            }
+
+            /// <summary>
+            /// Finds the year for a visible event id without building every card view.
+            /// </summary>
+            public bool TryGetYearForEvent(string eventId, out int year)
+            {
+                if (cachedPreviewEntry != null && cachedPreviewEntry.EventId == eventId)
                 {
-                    return cachedOrderedEntries;
+                    year = EntryYear(cachedPreviewEntry);
+                    return true;
                 }
 
-                cachedOrderedEntries.Clear();
-                for (int i = 0; i < cachedVisibleEntries.Count; i++)
+                if (cachedIndex != null && cachedIndex.TryGetYearForEvent(eventId, out year))
                 {
-                    DiaryEntryView entry = cachedVisibleEntries[i];
-                    if (EntryYear(entry) == year)
+                    return true;
+                }
+
+                year = UnknownYear;
+                return false;
+            }
+
+            /// <summary>
+            /// Builds and caches full card views for one selected year in small slices. Long archived
+            /// years still use viewport virtualization after this; older years are not materialized
+            /// until selected.
+            /// </summary>
+            public bool TryGetOrderedEntriesForSelectedYear(Pawn pawn, int year, out List<DiaryEntryView> ordered)
+            {
+                ordered = cachedOrderedEntries;
+                if (cachedOrderedVisibleRevision == cachedVisibleRevision && cachedOrderedYear == year)
+                {
+                    return true;
+                }
+
+                string pawnId = pawn?.GetUniqueLoadID();
+                if (!loadingSelectedYear
+                    || loadingYear != year
+                    || loadingYearPawnId != pawnId)
+                {
+                    cachedOrderedEntries.Clear();
+                    if (cachedPreviewEntry != null && EntryYear(cachedPreviewEntry) == year)
                     {
-                        cachedOrderedEntries.Add(entry);
+                        cachedOrderedEntries.Add(cachedPreviewEntry);
                     }
+
+                    loadingSelectedYear = true;
+                    loadingYear = year;
+                    loadingYearPawnId = pawnId;
+                    loadingYearCandidateIndex = 0;
+                }
+
+                loading = true;
+                loadingProcessed = loadingYearCandidateIndex;
+                loadingTotal = CountForYear(year);
+                bool complete = cachedIndex == null
+                    || cachedIndex.AppendEntriesForYearSlice(
+                        cachedOrderedEntries,
+                        pawnId,
+                        year,
+                        ref loadingYearCandidateIndex,
+                        DiaryTuning.UiHistoryScanMaxEventsPerFrame,
+                        DiaryTuning.UiHistoryScanFrameBudgetSeconds);
+                loadingProcessed = loadingYearCandidateIndex;
+                if (!complete)
+                {
+                    return false;
                 }
 
                 cachedOrderedEntries.Sort((left, right) => right.Tick.CompareTo(left.Tick));
                 cachedOrderedVisibleRevision = cachedVisibleRevision;
                 cachedOrderedYear = year;
-                return cachedOrderedEntries;
+                loadingSelectedYear = false;
+                loading = false;
+                loadingProcessed = loadingTotal;
+                return true;
             }
 
             /// <summary>
-            /// Forces the next selected-year ordering request to rebuild from the visible list.
+            /// Forces the next selected-year ordering request to rebuild from the cached year index.
             /// </summary>
             public void InvalidateOrdering()
             {
                 cachedOrderedVisibleRevision = -1;
             }
 
-            /// <summary>
-            /// Inserts the transient preview into the visible entry cache before real saved entries.
-            /// </summary>
+            private void ClearIfNeeded()
+            {
+                if (cachedIndex == null
+                    && cachedIndexBuild == null
+                    && cachedVisibleYears.Count == 0
+                    && cachedYearCounts.Count == 0
+                    && cachedPreviewEntry == null
+                    && cachedOrderedEntries.Count == 0)
+                {
+                    return;
+                }
+
+                cachedIndexPawn = null;
+                cachedIndexToken = default(DiaryRenderToken);
+                cachedIndex = null;
+                cachedIndexBuild = null;
+                cachedPreviewEntry = null;
+                cachedGeneratingCount = 0;
+                cachedCompletedCount = 0;
+                cachedPendingCount = 0;
+                loading = false;
+                loadingProcessed = 0;
+                loadingTotal = 0;
+                cachedVisibleYears.Clear();
+                cachedYearCounts.Clear();
+                cachedOrderedEntries.Clear();
+                loadingSelectedYear = false;
+                loadingYearCandidateIndex = 0;
+                cachedVisibleRevision++;
+                cachedOrderedVisibleRevision = -1;
+            }
+
             private void AddDevPreviewEntryIfNeeded(Pawn pawn, DevDiaryPreviewKind devPreviewKind)
             {
                 if (devPreviewKind == DevDiaryPreviewKind.None)
@@ -208,20 +324,24 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryEntryView preview = BuildDevPreviewEntry(pawn, devPreviewKind);
-                cachedVisibleEntries.Add(preview);
-                AddYearIfMissing(cachedVisibleYears, EntryYear(preview));
+                cachedPreviewEntry = BuildDevPreviewEntry(pawn, devPreviewKind);
+                AddYearCount(EntryYear(cachedPreviewEntry), 1);
             }
 
-            /// <summary>
-            /// Appends a year once. The list is tiny in practice, so a linear scan avoids a per-frame set.
-            /// </summary>
-            private static void AddYearIfMissing(List<int> years, int year)
+            private void AddYearCount(int year, int count)
             {
-                if (!years.Contains(year))
+                if (count <= 0)
                 {
-                    years.Add(year);
+                    return;
                 }
+
+                if (!cachedYearCounts.ContainsKey(year))
+                {
+                    cachedYearCounts[year] = 0;
+                    cachedVisibleYears.Add(year);
+                }
+
+                cachedYearCounts[year] += count;
             }
         }
     }

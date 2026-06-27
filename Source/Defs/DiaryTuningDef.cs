@@ -211,6 +211,10 @@ namespace PawnDiary
         // indicator. These tune the generated display-only fallback.
         public int archivedFallbackTitleWords = 6;
         public int archivedFallbackTextMaxChars = 240;
+        // Diary UI long-history indexing is sliced across frames so selecting a pawn never scans
+        // thousands of entries in one draw. These cap per-frame work for the tab and command badges.
+        public int uiHistoryScanMaxEventsPerFrame = 60;
+        public float uiHistoryScanFrameBudgetSeconds = 0.00075f;
         // Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
         // still appear as context in someone else's entry, but they do not write their own pages.
         public int minimumFirstPersonAgeYears = 13;
@@ -458,6 +462,22 @@ namespace PawnDiary
         public static int ArchivedFallbackTextMaxChars
         {
             get { return PositiveOrDefault(Current.archivedFallbackTextMaxChars, Fallback.archivedFallbackTextMaxChars); }
+        }
+
+        /// <summary>
+        /// Maximum saved events the Diary UI may index in one frame while loading a long pawn history.
+        /// </summary>
+        public static int UiHistoryScanMaxEventsPerFrame
+        {
+            get { return PositiveOrDefault(Current.uiHistoryScanMaxEventsPerFrame, Fallback.uiHistoryScanMaxEventsPerFrame); }
+        }
+
+        /// <summary>
+        /// Approximate wall-clock budget per frame for sliced Diary UI history indexing.
+        /// </summary>
+        public static float UiHistoryScanFrameBudgetSeconds
+        {
+            get { return NonNegativeOrDefault(Current.uiHistoryScanFrameBudgetSeconds, Fallback.uiHistoryScanFrameBudgetSeconds); }
         }
 
         /// <summary>

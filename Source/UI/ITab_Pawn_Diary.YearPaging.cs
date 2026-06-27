@@ -18,7 +18,7 @@ namespace PawnDiary
         /// that actually have visible entries, newest first; all entries for the selected year are
         /// shown in the scroll view below.
         /// </summary>
-        private void DrawYearFilter(Rect rect, List<int> years, List<DiaryEntryView> entries)
+        private void DrawYearFilter(Rect rect, List<int> years, DiaryTabVisibleEntriesCache entriesCache)
         {
 
             if (years == null || years.Count <= 1)
@@ -73,7 +73,7 @@ namespace PawnDiary
 
 
 
-            int entryCount = CountEntriesForYear(entries, selectedYear);
+            int entryCount = entriesCache == null ? 0 : entriesCache.CountForYear(selectedYear);
 
             if (Widgets.ButtonText(labelRect, "PawnDiary.Tab.YearFilter".Translate(YearLabel(selectedYear), entryCount)))
             {
@@ -89,7 +89,7 @@ namespace PawnDiary
 
                         YearLabel(optionYear),
 
-                        CountEntriesForYear(entries, optionYear)).ToString();
+                        entriesCache == null ? 0 : entriesCache.CountForYear(optionYear)).ToString();
 
                     options.Add(new FloatMenuOption(label, delegate
 
@@ -224,10 +224,10 @@ namespace PawnDiary
         /// A Social-tab or linked-entry jump may target an older year. Switch the pager first so
         /// TryApplyPendingScroll can find the event in the filtered list and place it on screen.
         /// </summary>
-        private void SelectYearForPendingScroll(Pawn pawn, List<DiaryEntryView> visibleEntries)
+        private void SelectYearForPendingScroll(Pawn pawn, DiaryTabVisibleEntriesCache entriesCache)
         {
 
-            if (pawn == null || visibleEntries == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
+            if (pawn == null || entriesCache == null || string.IsNullOrWhiteSpace(pendingScrollPawnId) || string.IsNullOrWhiteSpace(pendingScrollEventId))
             {
 
                 return;
@@ -245,23 +245,15 @@ namespace PawnDiary
 
 
 
-            for (int i = 0; i < visibleEntries.Count; i++)
+            int year;
+            if (entriesCache.TryGetYearForEvent(pendingScrollEventId, out year))
             {
 
-                DiaryEntryView entry = visibleEntries[i];
+                selectedYear = year;
 
-                if (entry != null && entry.EventId == pendingScrollEventId)
-                {
+                yearFilterPawnId = pendingScrollPawnId;
 
-                    selectedYear = EntryYear(entry);
-
-                    yearFilterPawnId = pendingScrollPawnId;
-
-                    SetEntryExpanded(entry, true);
-
-                    return;
-
-                }
+                return;
 
             }
 
@@ -482,6 +474,8 @@ namespace PawnDiary
 
                 if (entry != null && entry.EventId == pendingScrollEventId)
                 {
+
+                    SetEntryExpanded(entry, true);
 
                     float maxScroll = Mathf.Max(0f, viewHeight - outHeight);
 

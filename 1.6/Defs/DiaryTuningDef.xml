@@ -160,6 +160,10 @@
          prompt facts instead of an endless writing indicator. -->
     <archivedFallbackTitleWords>6</archivedFallbackTitleWords>
     <archivedFallbackTextMaxChars>240</archivedFallbackTextMaxChars>
+    <!-- Diary UI long-history loading budget. Work is sliced across frames so opening a diary with
+         thousands of pages does not freeze the game. -->
+    <uiHistoryScanMaxEventsPerFrame>60</uiHistoryScanMaxEventsPerFrame>
+    <uiHistoryScanFrameBudgetSeconds>0.00075</uiHistoryScanFrameBudgetSeconds>
     <!-- Minimum biological age for first-person diary ownership/generation. Pre-teen colonists can
          still appear as context in someone else's entry, but do not write their own pages. -->
     <minimumFirstPersonAgeYears>13</minimumFirstPersonAgeYears>
