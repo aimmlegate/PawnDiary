@@ -41,6 +41,7 @@ namespace PawnDiary
         // Visible hediffs matched by defName string. String matching keeps DLC/modded names safe:
         // absent defs simply never appear on a pawn and therefore never match.
         public List<string> hediffDefNames = new List<string>();
+        public bool visibleOnly = true;
         public float minHediffSeverity = 0f;
         public List<PromptEnchantmentSeverityTier> hediffSeverityTiers = new List<PromptEnchantmentSeverityTier>();
 

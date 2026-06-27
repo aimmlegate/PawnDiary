@@ -6,6 +6,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Hediffs can temporarily force writing styles.** New `DiaryHediffPersonaOverrideDef` XML rules map
+  active hediff defNames to a `DiaryPersonaDef` at prompt time without changing the pawn's saved
+  style. `Inhumanized` now forces a dark void style, has specific prompt-enchantment condition/cue
+  text, and joins the Anomaly hediff capture group so gaining it can create an immediate diary event.
+  Vanilla `Alzheimers` and `Dementia` now force a lost-thread memory style; Anomaly `CrumblingMind`
+  shares that style, while `CrumbledMind` uses a stronger mind-crumbled variant. Vanilla `Joywire`
+  now forces a bright-fog happiness-haze style, and Anomaly `BlissLobotomy` uses a stronger
+  blank-bliss variant while the hediff is active. Royalty `Mindscrew` now forces a pain-needle style
+  while that optional hediff is active, and vanilla `TraumaSavant` forces a high-priority silent
+  style that forbids dialogue and `[[speech]]` blocks.
+
 - **Birthday, heart attack, and prison-break diary events added.** XML event windows now include
   one-shot `Birthday` and `HeartAttack` rules scoped to the target pawn, plus a map-scoped
   `PrisonBreak` rule that writes for every eligible colonist on the affected map. Birthdays are

@@ -505,11 +505,13 @@
   <PawnDiary.Prompt.Health.Condition.CubeWithdrawal>cube withdrawal</PawnDiary.Prompt.Health.Condition.CubeWithdrawal>
   <PawnDiary.Prompt.Health.Condition.CubeRage>cube rage</PawnDiary.Prompt.Health.Condition.CubeRage>
   <PawnDiary.Prompt.Health.Condition.CorpseTorment>corpse torment</PawnDiary.Prompt.Health.Condition.CorpseTorment>
+  <PawnDiary.Prompt.Health.Condition.Inhumanized>inhumanized</PawnDiary.Prompt.Health.Condition.Inhumanized>
   <PawnDiary.Prompt.Health.Description.RevenantHypnosis>a revenant's psychic hold keeps dragging attention into trance and blank obedience</PawnDiary.Prompt.Health.Description.RevenantHypnosis>
   <PawnDiary.Prompt.Health.Description.CubeInterest>the cube keeps returning to mind until ordinary thoughts feel secondary</PawnDiary.Prompt.Health.Description.CubeInterest>
   <PawnDiary.Prompt.Health.Description.CubeWithdrawal>separation from the cube becomes an aching need that crowds out other concerns</PawnDiary.Prompt.Health.Description.CubeWithdrawal>
   <PawnDiary.Prompt.Health.Description.CubeRage>the cube fixation has curdled into violent, narrowing anger</PawnDiary.Prompt.Health.Description.CubeRage>
   <PawnDiary.Prompt.Health.Description.CorpseTorment>death-haunted torment presses into thought and will not settle like ordinary grief</PawnDiary.Prompt.Health.Description.CorpseTorment>
+  <PawnDiary.Prompt.Health.Description.Inhumanized>human warmth and ordinary attachment have gone distant; the pawn's thoughts should feel cold, void-touched, and detached from people without inventing new lore</PawnDiary.Prompt.Health.Description.Inhumanized>
   <PawnDiary.Prompt.Health.Cue.TrancePressure>trance pressure</PawnDiary.Prompt.Health.Cue.TrancePressure>
   <PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>thoughts pulled away</PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>
   <PawnDiary.Prompt.Health.Cue.CompulsiveFocus>compulsive focus</PawnDiary.Prompt.Health.Cue.CompulsiveFocus>
@@ -520,6 +522,9 @@
   <PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>thoughts narrow to anger</PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>
   <PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts>death-haunted thoughts</PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts>
   <PawnDiary.Prompt.Health.Cue.UnnaturalGuilt>unnatural guilt</PawnDiary.Prompt.Health.Cue.UnnaturalGuilt>
+  <PawnDiary.Prompt.Health.Cue.VoidDetachment>void detachment</PawnDiary.Prompt.Health.Cue.VoidDetachment>
+  <PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>human warmth absent</PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>
+  <PawnDiary.Prompt.Health.Cue.DarkVoidVoice>use the forced dark void writing style</PawnDiary.Prompt.Health.Cue.DarkVoidVoice>
   <PawnDiary.Prompt.Context.Important>important context</PawnDiary.Prompt.Context.Important>
   <PawnDiary.Prompt.Context.RoyalTitle>royal title</PawnDiary.Prompt.Context.RoyalTitle>
   <PawnDiary.Prompt.Context.IdeologyRole>ideoligion role</PawnDiary.Prompt.Context.IdeologyRole>

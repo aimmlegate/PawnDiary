@@ -77,7 +77,7 @@ namespace PawnDiary
                 for (int hediffIndex = 0; hediffIndex < hediffs.Count; hediffIndex++)
                 {
                     Hediff hediff = hediffs[hediffIndex];
-                    if (!VisibleHediff(hediff) || !MatchesHediff(def, hediff))
+                    if (!VisibleHediff(def, hediff) || !MatchesHediff(def, hediff))
                     {
                         continue;
                     }
@@ -414,9 +414,9 @@ namespace PawnDiary
                 : PromptText("PawnDiary.Prompt.Health.Cue.Pain");
         }
 
-        private static bool VisibleHediff(Hediff hediff)
+        private static bool VisibleHediff(DiaryPromptEnchantmentDef def, Hediff hediff)
         {
-            return hediff != null && hediff.def != null && hediff.Visible;
+            return hediff != null && hediff.def != null && (def == null || !def.visibleOnly || hediff.Visible);
         }
 
         private static bool MatchesHediff(DiaryPromptEnchantmentDef def, Hediff hediff)

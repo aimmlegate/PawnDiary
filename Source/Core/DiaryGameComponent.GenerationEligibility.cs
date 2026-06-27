@@ -118,13 +118,16 @@ namespace PawnDiary
 
         /// <summary>
         /// Resolves the LLM writing-style rule string for a given POV in an event, falling back to the XML default.
+        /// Active hediff override rules may temporarily replace the saved style while the condition is present.
         /// </summary>
-        private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole)
+        private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             // Missing records fall back to the XML default writing style.
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
-            return DiaryPersonas.RuleFor(diary?.personaDefName);
+            Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
+            return HediffPersonaOverrides.RuleFor(pawn, diary?.personaDefName);
         }
 
         /// <summary>

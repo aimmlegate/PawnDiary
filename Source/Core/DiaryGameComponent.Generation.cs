@@ -335,7 +335,7 @@ namespace PawnDiary
             DiaryPromptPlan promptPlan = DiaryPromptBuilder.BuildInteractionPromptPlan(
                 diaryEvent,
                 povRole,
-                PersonaRuleFor(diaryEvent, povRole),
+                PersonaRuleFor(diaryEvent, povRole, livePawnsById),
                 PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById),
                 0,
                 HumorCueFor(diaryEvent));

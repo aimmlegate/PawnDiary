@@ -113,6 +113,7 @@ Most feature tuning lives in XML so changes do not require recompiling:
 - `DiaryPromptTemplateDefs.xml`: which structured fields each prompt shape renders.
 - `DiaryPromptDef.xml`: shared system/final instructions.
 - `DiaryPersonaDefs.xml`: built-in writing styles.
+- `DiaryHediffPersonaOverrideDefs.xml`: active hediffs that temporarily force a writing style.
 - `DiaryPromptEnchantmentDefs.xml` and `DiaryHumorCueDefs.xml`: optional live-context and subtle
   humor cues.
 - `DiarySignalPolicyDefs.xml` and `DiaryTuningDef.xml`: scan intervals, odds, cooldowns, thresholds,
@@ -132,16 +133,26 @@ instead because its Anomaly ThoughtDef can be negative or positive depending on 
 For optional DLC or mod content, prefer string matchers in XML. Do not hard-reference DLC defs in C#
 or XML unless they are guarded; absent DLC content should simply never match.
 The Anomaly Hediff group follows this pattern: `RevenantHypnosis`, `CubeInterest`,
-`CubeWithdrawal`, `CubeRage`, and `CorpseTorment` are exact string matches that create immediate
-Hediff diary entries on add and on configured severity-step progression when that DLC content is
-present. The same conditions also have prompt-enchantment cues, so any ordinary first-person prompt
-they win adds an `important context:` line such as `high priority; moderate cube withdrawal;
-compulsive absence, restless need; condition detail: ...`. `descriptionOverrideKey` can replace the
-standard game description per Def; otherwise the localized `HediffDef.description` is cleaned and
-capped before it reaches the model. Base-game drug highs use the same override hook for
-`AlcoholHigh`, `Hangover`, `AmbrosiaHigh`, `GoJuiceHigh`, `LuciferiumHigh`, `FlakeHigh`,
-`PsychiteTeaHigh`, `YayoHigh`, and `SmokeleafHigh`, with XML cue keys grounded in the vanilla
-Hediff and Thought defs.
+`CubeWithdrawal`, `CubeRage`, `CorpseTorment`, and `Inhumanized` are exact string matches that create
+immediate Hediff diary entries on add and on configured severity-step progression when that DLC
+content is present. The same conditions also have prompt-enchantment cues, so any ordinary
+first-person prompt they win adds an `important context:` line such as `high priority; moderate cube
+withdrawal; compulsive absence, restless need; condition detail: ...`. `descriptionOverrideKey` can
+replace the standard game description per Def; otherwise the localized `HediffDef.description` is
+cleaned and capped before it reaches the model. `DiaryHediffPersonaOverrideDefs.xml` can also
+temporarily force the prompt POV pawn's writing style from active hediffs; `Inhumanized` currently
+uses this to force the `DiaryPersona_InhumanizedVoid` dark void style while that hediff is active.
+Base-game `Alzheimers`, `Dementia`, and Anomaly `CrumblingMind` share the
+`DiaryPersona_AlzheimersMemory` lost-thread style, while Anomaly `CrumbledMind` uses the stronger
+`DiaryPersona_CrumbledMindCollapse` mind-crumbled style. Base-game `Joywire` forces the
+`DiaryPersona_JoywireHaze` bright-fog style, and Anomaly `BlissLobotomy` uses the stronger
+`DiaryPersona_BlissLobotomyHaze` blank-bliss style. Royalty `Mindscrew` forces the
+`DiaryPersona_MindscrewPain` pain-needle style when that optional DLC hediff is present. Base-game
+`TraumaSavant` has the high-priority `DiaryPersona_TraumaSavantSilent` style, which forbids dialogue
+or `[[speech]]` blocks because the pawn cannot speak. Base-game drug highs use the same
+prompt-enchantment override hook for `AlcoholHigh`, `Hangover`,
+`AmbrosiaHigh`, `GoJuiceHigh`, `LuciferiumHigh`, `FlakeHigh`, `PsychiteTeaHigh`, `YayoHigh`, and
+`SmokeleafHigh`, with XML cue keys grounded in the vanilla Hediff and Thought defs.
 
 Event windows are the generic system for ongoing threats, one-shot warnings, or story beats that
 are not hediffs.
@@ -186,6 +197,9 @@ at capture and are saved, while tones are deterministic by event id.
 Prompt Studio edits shared system prompts and event prompt/enhancement/forced-model overrides.
 Writing-style presets are saved settings backed by `DiaryPersonaDef`; the code still uses "persona"
 in some field names for save compatibility, but the player-facing feature is writing style.
+Active hediffs can temporarily override the saved style through `DiaryHediffPersonaOverrideDef`
+rules. These overrides are prompt-time only: they do not change the saved style picker value, and a
+missing/off-map pawn falls back to its saved style.
 
 Prompt enchantments add one weighted live-context pressure cue to eligible first-person prompts.
 Active event windows feed the same prompt-enchantment planner as extra XML-weighted candidates, so

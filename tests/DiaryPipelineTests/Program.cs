@@ -20,6 +20,7 @@ namespace DiaryPipelineTests
             TestSoloSelection();
             TestSoloBatchSelection();
             TestPromptEnchantmentPlanner();
+            TestHediffPersonaOverridePolicy();
             TestEventWindowPolicy();
             TestEventPromptKeyCandidates();
             TestDomainClassifier();
@@ -349,6 +350,79 @@ namespace DiaryPipelineTests
                     new List<PromptEnchantmentCandidate> { candidates[0] },
                     new PromptEnchantmentTuning { maxImpactCues = 0 },
                     0f));
+        }
+
+        private static void TestHediffPersonaOverridePolicy()
+        {
+            List<HediffPersonaOverrideFact> hediffs = new List<HediffPersonaOverrideFact>
+            {
+                new HediffPersonaOverrideFact
+                {
+                    defName = "Inhumanized",
+                    label = "inhumanized",
+                    severity = 0f,
+                    visible = false
+                },
+                new HediffPersonaOverrideFact
+                {
+                    defName = "Flu",
+                    label = "flu",
+                    severity = 0.42f,
+                    visible = true
+                }
+            };
+
+            AssertEqual(
+                "hediff persona override can include hidden hediff",
+                "DiaryPersona_InhumanizedVoid",
+                HediffPersonaOverridePolicy.SelectPersonaDefName(
+                    new List<HediffPersonaOverrideRule>
+                    {
+                        new HediffPersonaOverrideRule
+                        {
+                            personaDefName = "DiaryPersona_InhumanizedVoid",
+                            visibleOnly = false,
+                            hediffDefNames = new List<string> { "Inhumanized" }
+                        }
+                    },
+                    hediffs));
+
+            AssertEqual(
+                "hediff persona override visible-only rejects hidden hediff",
+                string.Empty,
+                HediffPersonaOverridePolicy.SelectPersonaDefName(
+                    new List<HediffPersonaOverrideRule>
+                    {
+                        new HediffPersonaOverrideRule
+                        {
+                            personaDefName = "DiaryPersona_InhumanizedVoid",
+                            visibleOnly = true,
+                            hediffDefNames = new List<string> { "Inhumanized" }
+                        }
+                    },
+                    hediffs));
+
+            AssertEqual(
+                "hediff persona override higher priority wins",
+                "DiaryPersona_HighPriority",
+                HediffPersonaOverridePolicy.SelectPersonaDefName(
+                    new List<HediffPersonaOverrideRule>
+                    {
+                        new HediffPersonaOverrideRule
+                        {
+                            priority = 1,
+                            personaDefName = "DiaryPersona_LowPriority",
+                            hediffDefNames = new List<string> { "Flu" }
+                        },
+                        new HediffPersonaOverrideRule
+                        {
+                            priority = 10,
+                            personaDefName = "DiaryPersona_HighPriority",
+                            hediffDefNameContains = new List<string> { "fl" },
+                            minSeverity = 0.25f
+                        }
+                    },
+                    hediffs));
         }
 
         private static void TestEventWindowPolicy()
