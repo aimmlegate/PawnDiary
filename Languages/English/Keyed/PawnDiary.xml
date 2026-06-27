@@ -193,7 +193,7 @@
   <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
   <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>
   <PawnDiary.Settings.SocialGenerationWeightHelp>Multiplies the random chance that batched low-stakes social moments are promoted into immediate pairwise diary pages. 1x uses the XML tuning defaults; 0x keeps them batched.</PawnDiary.Settings.SocialGenerationWeightHelp>
-  <PawnDiary.Settings.MaxActiveDiaryEvents>Active diary events to keep ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
+  <PawnDiary.Settings.MaxActiveDiaryEvents>Diary pages to keep per pawn ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>

@@ -160,27 +160,30 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Keeps only the newest <paramref name="maxEvents"/> events in the master list and rebuilds
-        /// the id lookup index to match. The caller still owns per-pawn diary refs; after a trim it
-        /// should remove refs whose ids no longer exist in this repository.
+        /// Keeps only events whose id is in <paramref name="referencedIds"/> and drops the rest —
+        /// master-list events that no pawn references anymore — then rebuilds the id lookup index to
+        /// match. Used by the per-pawn retention sweep, which caps each pawn's refs first and passes
+        /// the union of surviving refs here. Null/blank-id entries are dropped as cleanup.
         /// </summary>
-        /// <param name="maxEvents">Maximum number of active events to retain.</param>
-        /// <returns>The number of oldest events removed.</returns>
-        public int TrimToMostRecent(int maxEvents)
+        /// <param name="referencedIds">Ids still referenced by at least one pawn's diary.</param>
+        /// <returns>The number of unreferenced events removed.</returns>
+        public int RetainOnly(HashSet<string> referencedIds)
         {
-            if (maxEvents < 0)
-            {
-                maxEvents = 0;
-            }
-
-            if (diaryEvents.Count <= maxEvents)
+            if (referencedIds == null)
             {
                 return 0;
             }
 
-            int removed = diaryEvents.Count - maxEvents;
-            diaryEvents.RemoveRange(0, removed);
-            RebuildIndex();
+            int before = diaryEvents.Count;
+            diaryEvents.RemoveAll(e => e == null
+                || string.IsNullOrWhiteSpace(e.eventId)
+                || !referencedIds.Contains(e.eventId));
+            int removed = before - diaryEvents.Count;
+            if (removed > 0)
+            {
+                RebuildIndex();
+            }
+
             return removed;
         }
 

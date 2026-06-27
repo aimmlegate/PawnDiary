@@ -88,7 +88,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the temporary active-event hard cap as a numeric text field instead of a slider.
+        /// Draws the per-pawn diary-history cap as a numeric text field instead of a slider.
         /// Non-digits are removed immediately; parsed values are clamped to the supported range.
         /// </summary>
         private void DrawMaxActiveDiaryEventsField(Listing_Standard listing)

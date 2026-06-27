@@ -62,8 +62,9 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 `GameComponentTick` runs game-time scans continuously, but the expensive active-event generation
 rescan is demand-driven: load catch-up, delayed raid entries, and recovered orphaned work request a
 pass, then the catch-up pass runs at most every 200 ticks until it is no longer needed. Those
-generation/title/orphan scans use the XML-tuned hot window (`activeScanEventWindow`, default 200);
-older events stay saved and visible as archive history but are not retried or title-backfilled.
+generation/title/orphan scans use the XML-tuned hot window (`activeScanEventWindow`, default 1000,
+a global count across all pawns); older events stay saved and visible as archive history but are not
+retried or title-backfilled.
 Orphaned "writing..." recovery is a separate, slower hot-window pass every 600 ticks. Completed LLM
 results and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so
 requests that were already queued can finish and apply while the game is paused. Pending generation
@@ -193,14 +194,19 @@ markers, and trims saved text locally.
 `DiaryEventRepository` owns the event list and rebuilds its id lookup index after load. Per-pawn event
 lists prune blank, duplicate, or dangling refs.
 
-The temporary active-event cap keeps only the newest configured number of `DiaryEvent` records
-(default 1000, editable from settings). It runs after load, before save, after new event creation,
-and when settings are saved. Trimmed events are removed from the master list and from every pawn's
-event-id list, so older pages are no longer visible and background scans do not iterate them.
+The diary-history cap is **per pawn** (default 3000, editable from settings, range 1–10000). Each
+pawn keeps only its newest configured number of pages: `ApplyActiveEventLimit` caps every pawn's
+event-id list to that many refs (oldest dropped first), then sweeps the master list down to the union
+of all surviving refs — so a page shared by two pawns survives until both drop it. It runs after load,
+before save, after new event creation, and when settings are saved. The common (nothing-over-cap)
+path costs one `Count` check per pawn. Because the cap is per pawn, background scan cost no longer
+scales with it: maintenance walks the global hot window below, not each pawn's full history. (The
+`maxActiveDiaryEvents` field/Scribe key keeps its historical name for save compatibility even though
+its meaning is now per pawn.)
 
-Separately, `DiaryTuningDef.activeScanEventWindow` (default 200, XML only) defines the newest saved
-events considered hot for retry, title catch-up, orphan recovery, day-summary event evidence, work
-cooldowns, and prompt continuity/opener history. Events older than that window are archive pages:
+Separately, `DiaryTuningDef.activeScanEventWindow` (default 1000, XML only, a global count across all
+pawns) defines the newest saved events considered hot for retry, title catch-up, orphan recovery,
+day-summary event evidence, work cooldowns, and prompt continuity/opener history. Events older than that window are archive pages:
 they remain in save data and render in the Diary UI, but maintenance scans do not revisit them. If an
 archived page is still marked pending and has no generated text, the UI stops treating it as active
 writing: it shows a localized "You see that: ..." fallback from the saved prompt facts/raw event
@@ -236,7 +242,10 @@ DefInjected translations.
 
 Keep DefInjected English stubs in sync when editing XML labels, instructions, tones, event prompts,
 writing-style rules, or shared prompts. Variant pools use indexed DefInjected keys such as
-`<group.instructions.0>`; avoid blank list entries so indices stay aligned.
+`<group.instructions.0>`; avoid blank list entries so indices stay aligned. Custom Pawn Diary Def
+translation folders use fully qualified C# type names, for example
+`Languages/English/DefInjected/PawnDiary.DiaryInteractionGroupDef/`; simple folder names do not
+resolve for namespaced custom Defs in RimWorld's language loader.
 
 Raw English is intentional for prompt schema labels (`event:`, `role:`, `thought=`), internal role
 and sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), defNames, API

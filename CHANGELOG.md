@@ -6,6 +6,16 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-27
 
+- **Diary history cap is now per pawn.** The "Diary pages to keep" setting now applies to each
+  colonist's own history (default 3000, range 1–10000) instead of a single colony-wide total. Each
+  pawn keeps its newest pages; a page shared by two pawns survives until both drop it. Existing saved
+  values still load (the setting reuses its old key), so an old global value is reinterpreted as a
+  per-pawn cap — generally more history kept, never less. The background hot window (`activeScanEventWindow`)
+  was raised to 1000 newest events colony-wide so a busy multi-colonist colony keeps more recent pages
+  warm for retry/title backfill; with the per-pawn cap, scan cost no longer scales with how deep each
+  pawn's history goes. The trim/keep decision is a pure `DiaryRetentionPlan` covered by a new
+  `DiaryRetentionTests` suite (shared-event survival, oldest-first dropping, edge cases).
+
 - **Large diary histories optimized.** The Diary tab now virtualizes its scroll layout with cached
   row offsets/heights so only visible cards are drawn, while archived pages keep the same appearance.
   Background diary-event maintenance now uses an XML-only hot window (`activeScanEventWindow`, default
@@ -17,6 +27,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   endless writing indicator, with a short fallback title and a "failed to generate" footer.
 
 ## 2026-06-26
+
+- **Custom DefInjected folder names fixed.** Pawn Diary's English DefInjected folders now use fully
+  qualified `PawnDiary.*` type names so RimWorld loads the translations instead of reporting
+  "dir ... doesn't correspond to any def type" language errors.
 
 - **Diary command startup warning fixed.** The hidden-tab command helper is now marked for
   RimWorld static constructor startup because it owns the cached Unity texture for the command icon.

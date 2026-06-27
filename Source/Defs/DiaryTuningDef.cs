@@ -202,10 +202,11 @@ namespace PawnDiary
 
         // ---- Misc ----
         public int diaryLineMaxChars = 160;   // truncate the "last wrote" continuity line to this
-        // Newest diary events treated as "hot" for background maintenance scans and prompt-history
-        // context. Older entries remain saved and visible, but are archive history that is not retried
-        // or backfilled by catch-up scanners.
-        public int activeScanEventWindow = 200;
+        // Newest diary events (colony-wide) treated as "hot" for background maintenance scans and
+        // prompt-history context. Older entries remain saved and visible, but are archive history that
+        // is not retried or backfilled by catch-up scanners. This is a global count across all pawns;
+        // the per-pawn history cap is a mod setting (maxActiveDiaryEvents).
+        public int activeScanEventWindow = 1000;
         // Archived pending entries fall back to a prompt-fact card instead of an endless "writing..."
         // indicator. These tune the generated display-only fallback.
         public int archivedFallbackTitleWords = 6;

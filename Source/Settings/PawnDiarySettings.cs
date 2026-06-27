@@ -146,9 +146,11 @@ namespace PawnDiary
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
         public float socialGenerationWeight = 1f;
-        // Hard cap for active saved DiaryEvents. The newest events stay in the live store; older
-        // ones are dropped from the master list and each pawn's event-id list so UI and background
-        // scans never walk thousands of historical pages.
+        // Per-pawn hard cap for saved diary pages. Each pawn keeps its newest maxActiveDiaryEvents
+        // event references; older ones drop off that pawn's list, and a master-list event is removed
+        // only once no pawn references it anymore (paired/neutral events are shared). The field name
+        // and Scribe key stay "maxActiveDiaryEvents" for save compatibility even though the meaning is
+        // now per pawn rather than global.
         public int maxActiveDiaryEvents = DefaultMaxActiveDiaryEvents;
 
         // Legacy per-interaction-group settings, keyed by InteractionGroup.defName. Event filtering
@@ -171,12 +173,13 @@ namespace PawnDiary
         public const string DefaultModelName = "local-model";
         // Sentinel value stored in settings to mean "do not send a reasoning override".
         public const string DefaultReasoningEffort = ApiEndpointPolicy.DefaultReasoningEffort;
-        // Temporary retention guard until old diary-event compaction exists. The lower bound keeps
-        // the cap positive; the upper bound prevents the settings UI from reintroducing the
-        // multi-thousand-event scans this guard is meant to avoid.
-        public const int DefaultMaxActiveDiaryEvents = 1000;
+        // Per-pawn diary-history retention cap. The lower bound keeps the cap positive; the upper
+        // bound keeps any single pawn's saved history bounded. Background scan cost no longer scales
+        // with this cap — maintenance scans use the global activeScanEventWindow hot set, not the full
+        // per-pawn history — so this ceiling controls saved-history depth/memory, not scan pressure.
+        public const int DefaultMaxActiveDiaryEvents = 3000;
         public const int MinActiveDiaryEvents = 1;
-        public const int MaxActiveDiaryEvents = 2000;
+        public const int MaxActiveDiaryEvents = 10000;
 
         public override void ExposeData()
         {
