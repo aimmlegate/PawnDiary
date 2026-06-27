@@ -25,7 +25,7 @@
                    - optional list of mod package IDs. When any is loaded, this group is treated as
                      disabled even if defaultEnabled is true.
     colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
-                     combat, socialFight, mentalBreak, daze, extremeDark, strangeChat, white, quiet
+                     combat, danger, socialFight, mentalBreak, daze, extremeDark, strangeChat, white, quiet
     batch          - optional Interaction/Tale batching policy:
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
@@ -1032,6 +1032,7 @@
       <li>Eclipse</li>
       <li>PsychicDrone</li>
       <li>GrayPall</li>
+      <li>DeathPall</li>
       <li>ToxicFallout</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
@@ -1053,6 +1054,7 @@
       <!-- <li>ProblemCauser</li> -->
       <li>PsychicSuppressorMale</li>
       <li>PsychicSuppressorFemale</li>
+      <li>UnnaturalDarkness</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1374,6 +1376,41 @@
     <matchDefNames>
       <li>PregnancyLabor</li>
       <li>PregnancyLaborPushing</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffAnomalyCompulsion</defName>
+    <label>Anomaly compulsions</label>
+    <order>690</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>an Anomaly-driven mental affliction pressing into the pawn's thoughts; write obsession, trance, withdrawal, rage, torment, or wrongness as the named condition supports, without explaining the entity or inventing treatment</instruction>
+    <tone>with intrusive, unnatural mental pressure</tone>
+    <tones>
+      <li>intrusive and wrong, thought snagging on something outside itself</li>
+      <li>unsettling and compulsive, the mind pulled where it should not go</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>true</recordOnSeverityIncrease>
+      <severityStep>0.25</severityStep>
+      <dedupTicks>30000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.AnomalyHediffAppeared</appearedTextKey>
+      <progressedTextKey>PawnDiary.Event.AnomalyHediffProgressed</progressedTextKey>
+    </hediff>
+    <matchDefNames>
+      <li>RevenantHypnosis</li>
+      <li>CubeInterest</li>
+      <li>CubeWithdrawal</li>
+      <li>CubeRage</li>
+      <li>CorpseTorment</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

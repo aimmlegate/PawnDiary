@@ -1,0 +1,836 @@
+// XML event windows: a generic bridge from neutral game signals to long-lived prompt context.
+// Signals come from broad hooks (incidents, quests, spawned things, letters, proximity letters,
+// and special story objects). XML decides which signals matter, what diary entries they create, how
+// long the window lasts, and how strongly it biases prompt enchantments while active.
+using System;
+using System.Collections.Generic;
+using RimWorld;
+using Verse;
+
+namespace PawnDiary
+{
+    public partial class DiaryGameComponent
+    {
+        private const string EventWindowSourceIncident = "Incident";
+        private const string EventWindowSourceQuest = "Quest";
+        private const string EventWindowSourceThingSpawned = "ThingSpawned";
+        private const string EventWindowSourceLetter = "Letter";
+        private const string EventWindowSourceProximityLetter = "ProximityLetter";
+        private const string EventWindowSourceVoidMonolith = "VoidMonolith";
+        private const string EventWindowSignalExecuted = "executed";
+        private const string EventWindowSignalSpawned = "spawned";
+        private const string EventWindowSignalReceived = "received";
+        private const string EventWindowSignalActivated = "activated";
+        private const string EventWindowPhaseStart = "start";
+        private const string EventWindowPhaseEnd = "end";
+        private const string EventWindowPhaseTimeout = "timeout";
+
+        /// <summary>
+        /// Generic signal entry point used by Harmony patches and existing recorders.
+        /// </summary>
+        public void RecordEventWindowSignal(string source, string defName, string signal, string label,
+            Map map = null, Pawn subjectPawn = null)
+        {
+            if (!CanRecordGameplayEventNow() || string.IsNullOrWhiteSpace(source))
+            {
+                return;
+            }
+
+            List<DiaryEventWindowDef> defs = DefDatabase<DiaryEventWindowDef>.AllDefsListForReading;
+            if (defs == null || defs.Count == 0)
+            {
+                return;
+            }
+
+            Map signalMap = map ?? MapForSignalSubject(subjectPawn);
+            string subjectLabel = DiaryLineCleaner.CleanLine(subjectPawn == null ? null : subjectPawn.LabelShortCap);
+            EventWindowSignalFacts facts = new EventWindowSignalFacts
+            {
+                source = source,
+                defName = defName ?? string.Empty,
+                signal = signal ?? string.Empty,
+                label = DiaryLineCleaner.CleanLine(label),
+                subjectPawnId = subjectPawn == null ? string.Empty : subjectPawn.GetUniqueLoadID(),
+                subjectLabel = subjectLabel ?? string.Empty
+            };
+
+            for (int i = 0; i < defs.Count; i++)
+            {
+                DiaryEventWindowDef def = defs[i];
+                if (def == null || !def.enabled)
+                {
+                    continue;
+                }
+
+                if (EventWindowPolicy.MatchesAny(RulesFrom(def.endSignals), facts))
+                {
+                    ProcessEventWindowEnd(def, facts, signalMap, subjectPawn);
+                }
+
+                if (EventWindowPolicy.MatchesAny(RulesFrom(def.startSignals), facts))
+                {
+                    ProcessEventWindowStart(def, facts, signalMap, subjectPawn);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Convenience wrapper for successful IncidentWorker.TryExecute signals.
+        /// </summary>
+        public void RecordEventWindowIncident(IncidentDef incidentDef, IncidentParms parms)
+        {
+            if (incidentDef == null)
+            {
+                return;
+            }
+
+            Map map = parms == null ? null : parms.target as Map;
+            RecordEventWindowSignal(
+                EventWindowSourceIncident,
+                incidentDef.defName,
+                EventWindowSignalExecuted,
+                DiaryLineCleaner.CleanLine(incidentDef.LabelCap.Resolve()),
+                map);
+        }
+
+        /// <summary>
+        /// Convenience wrapper for Thing.SpawnSetup signals.
+        /// </summary>
+        public void RecordEventWindowThingSpawned(Thing thing, Map map)
+        {
+            if (thing == null || thing.def == null)
+            {
+                return;
+            }
+
+            string label = DiaryLineCleaner.CleanLine(thing.LabelShortCap);
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = DiaryLineCleaner.CleanLine(thing.def.LabelCap.Resolve());
+            }
+
+            RecordEventWindowSignal(
+                EventWindowSourceThingSpawned,
+                thing.def.defName,
+                EventWindowSignalSpawned,
+                label,
+                map);
+        }
+
+        /// <summary>
+        /// Convenience wrapper for generic vanilla letters. XML matches the stable letter key.
+        /// </summary>
+        public void RecordEventWindowLetter(string letterKey, string label, Pawn subjectPawn)
+        {
+            if (string.IsNullOrWhiteSpace(letterKey))
+            {
+                return;
+            }
+
+            RecordEventWindowSignal(
+                EventWindowSourceLetter,
+                letterKey,
+                EventWindowSignalReceived,
+                label,
+                MapForSignalSubject(subjectPawn),
+                subjectPawn);
+        }
+
+        /// <summary>
+        /// Convenience wrapper for ThingComp proximity letters, keyed by the parent ThingDef name.
+        /// </summary>
+        public void RecordEventWindowProximityLetter(Thing thing, string label, Pawn subjectPawn)
+        {
+            if (thing == null || thing.def == null)
+            {
+                return;
+            }
+
+            string cleanedLabel = DiaryLineCleaner.CleanLine(label);
+            if (string.IsNullOrWhiteSpace(cleanedLabel))
+            {
+                cleanedLabel = DiaryLineCleaner.CleanLine(thing.LabelShortCap);
+            }
+
+            if (string.IsNullOrWhiteSpace(cleanedLabel))
+            {
+                cleanedLabel = DiaryLineCleaner.CleanLine(thing.def.LabelCap.Resolve());
+            }
+
+            RecordEventWindowSignal(
+                EventWindowSourceProximityLetter,
+                thing.def.defName,
+                EventWindowSignalReceived,
+                cleanedLabel,
+                thing.Map,
+                subjectPawn);
+        }
+
+        /// <summary>
+        /// Convenience wrapper for completed void monolith activations, keyed by the reached level defName.
+        /// </summary>
+        public void RecordEventWindowVoidMonolithActivation(Thing thing, string levelDefName, string label,
+            Pawn subjectPawn)
+        {
+            if (thing == null || thing.def == null)
+            {
+                return;
+            }
+
+            string cleanedLabel = DiaryLineCleaner.CleanLine(label);
+            if (string.IsNullOrWhiteSpace(cleanedLabel))
+            {
+                cleanedLabel = DiaryLineCleaner.CleanLine(thing.LabelShortCap);
+            }
+
+            if (string.IsNullOrWhiteSpace(cleanedLabel))
+            {
+                cleanedLabel = DiaryLineCleaner.CleanLine(thing.def.LabelCap.Resolve());
+            }
+
+            RecordEventWindowSignal(
+                EventWindowSourceVoidMonolith,
+                string.IsNullOrWhiteSpace(levelDefName) ? thing.def.defName : levelDefName,
+                EventWindowSignalActivated,
+                cleanedLabel,
+                thing.Map,
+                subjectPawn);
+        }
+
+        private void ProcessEventWindowStart(DiaryEventWindowDef def, EventWindowSignalFacts facts, Map map,
+            Pawn subjectPawn)
+        {
+            int mapUniqueId = MapUniqueId(map);
+            ActiveEventWindowState active = def.keepActive ? ActiveEventWindowFor(def, mapUniqueId) : null;
+            if (def.keepActive && active != null && !def.restartOnStart)
+            {
+                return;
+            }
+
+            string dedupKey = EventWindowDedupKey(def, EventWindowPhaseStart, facts, mapUniqueId);
+            if (IsRecentlyRecorded(recentEventWindowEvents, dedupKey, def.EffectiveDedupTicks()))
+            {
+                return;
+            }
+
+            if (def.keepActive)
+            {
+                if (active == null)
+                {
+                    active = new ActiveEventWindowState();
+                    if (activeEventWindows == null)
+                    {
+                        activeEventWindows = new List<ActiveEventWindowState>();
+                    }
+
+                    activeEventWindows.Add(active);
+                }
+
+                SnapshotEventWindowStart(active, def, facts, mapUniqueId);
+            }
+
+            MarkRecentlyRecorded(recentEventWindowEvents, dedupKey, def.EffectiveDedupTicks());
+
+            if (def.recordStartEvent)
+            {
+                RecordEventWindowPhase(def, active, EventWindowPhaseStart, facts, map, subjectPawn);
+            }
+        }
+
+        private void ProcessEventWindowEnd(DiaryEventWindowDef def, EventWindowSignalFacts facts, Map map,
+            Pawn subjectPawn)
+        {
+            int mapUniqueId = MapUniqueId(map);
+            ActiveEventWindowState active = ActiveEventWindowFor(def, mapUniqueId);
+            if (active == null && !def.recordEndWithoutActive)
+            {
+                return;
+            }
+
+            string dedupKey = EventWindowDedupKey(def, EventWindowPhaseEnd, facts, mapUniqueId);
+            if (IsRecentlyRecorded(recentEventWindowEvents, dedupKey, def.EffectiveDedupTicks()))
+            {
+                return;
+            }
+
+            if (active != null)
+            {
+                activeEventWindows.Remove(active);
+            }
+
+            MarkRecentlyRecorded(recentEventWindowEvents, dedupKey, def.EffectiveDedupTicks());
+            if (def.recordEndEvent)
+            {
+                RecordEventWindowPhase(def, active, EventWindowPhaseEnd, facts, map, subjectPawn);
+            }
+        }
+
+        private void ScanEventWindowTimeouts()
+        {
+            if (activeEventWindows == null || activeEventWindows.Count == 0)
+            {
+                return;
+            }
+
+            int now = Find.TickManager.TicksGame;
+            for (int i = activeEventWindows.Count - 1; i >= 0; i--)
+            {
+                ActiveEventWindowState active = activeEventWindows[i];
+                if (active == null)
+                {
+                    activeEventWindows.RemoveAt(i);
+                    continue;
+                }
+
+                DiaryEventWindowDef def = EventWindowDefFor(active);
+                if (def == null || !def.enabled)
+                {
+                    activeEventWindows.RemoveAt(i);
+                    continue;
+                }
+
+                if (active.expiresTick < 0 || now < active.expiresTick)
+                {
+                    continue;
+                }
+
+                activeEventWindows.RemoveAt(i);
+                if (!def.recordTimeoutEvent)
+                {
+                    continue;
+                }
+
+                EventWindowSignalFacts facts = new EventWindowSignalFacts
+                {
+                    source = active.startSource,
+                    signal = EventWindowPhaseTimeout,
+                    defName = active.startDefName,
+                    label = active.startLabel,
+                    subjectPawnId = active.startSubjectPawnId,
+                    subjectLabel = active.startSubjectLabel
+                };
+                RecordEventWindowPhase(def, active, EventWindowPhaseTimeout, facts,
+                    MapForUniqueId(active.mapUniqueId), null);
+            }
+        }
+
+        private List<PromptEnchantmentCandidate> ActiveEventWindowPromptCandidates(Pawn pawn,
+            out float normalCandidateWeightMultiplier)
+        {
+            normalCandidateWeightMultiplier = 1f;
+            List<PromptEnchantmentCandidate> candidates = new List<PromptEnchantmentCandidate>();
+            if (pawn == null || activeEventWindows == null || activeEventWindows.Count == 0)
+            {
+                return candidates;
+            }
+
+            int pawnMapUniqueId = MapUniqueId(pawn.Map);
+            for (int i = 0; i < activeEventWindows.Count; i++)
+            {
+                ActiveEventWindowState active = activeEventWindows[i];
+                if (active == null || (active.mapUniqueId >= 0 && active.mapUniqueId != pawnMapUniqueId))
+                {
+                    continue;
+                }
+
+                DiaryEventWindowDef def = EventWindowDefFor(active);
+                if (def == null || !def.enabled || !def.promptEnabled)
+                {
+                    continue;
+                }
+
+                if (def.recordScope == EventWindowRecordScope.SubjectPawn
+                    && !string.Equals(active.startSubjectPawnId, pawn.GetUniqueLoadID(), StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                normalCandidateWeightMultiplier *= SafePromptWeightMultiplier(def.normalPromptWeightMultiplier);
+                PromptEnchantmentCandidate candidate = PromptCandidateForEventWindow(def);
+                if (candidate != null)
+                {
+                    candidates.Add(candidate);
+                }
+            }
+
+            return candidates;
+        }
+
+        private PromptEnchantmentCandidate PromptCandidateForEventWindow(DiaryEventWindowDef def)
+        {
+            float weight = SafePromptWeight(def.promptWeight);
+            if (weight <= 0f)
+            {
+                return null;
+            }
+
+            List<string> cues = new List<string>();
+            if (!string.IsNullOrWhiteSpace(def.promptDescriptionKey))
+            {
+                string description = def.promptDescriptionKey.Translate().Resolve();
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    cues.Add("PawnDiary.Prompt.EventWindow.Detail".Translate(description).Resolve());
+                }
+            }
+
+            if (def.promptCueKeys != null)
+            {
+                for (int i = 0; i < def.promptCueKeys.Count; i++)
+                {
+                    string cueKey = def.promptCueKeys[i];
+                    if (string.IsNullOrWhiteSpace(cueKey))
+                    {
+                        continue;
+                    }
+
+                    string cue = cueKey.Translate().Resolve();
+                    if (!string.IsNullOrWhiteSpace(cue))
+                    {
+                        cues.Add(cue);
+                    }
+                }
+            }
+
+            string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
+            return new PromptEnchantmentCandidate
+            {
+                weight = weight,
+                priorityText = EventWindowPromptText(def.promptPriorityKey,
+                    "PawnDiary.Prompt.EventWindow.Priority"),
+                conditionText = EventWindowPromptText(def.promptConditionKey,
+                    "PawnDiary.Prompt.EventWindow.ConditionFallback", label),
+                configuredCues = cues
+            };
+        }
+
+        private void RecordEventWindowPhase(DiaryEventWindowDef def, ActiveEventWindowState active,
+            string phase, EventWindowSignalFacts facts, Map map, Pawn subjectPawn)
+        {
+            List<Pawn> pawns = EventWindowPawns(def, active, facts, map, subjectPawn);
+            if (pawns.Count == 0)
+            {
+                return;
+            }
+
+            string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
+            string instruction = EventWindowInstruction(def, label);
+            string textKey = EventWindowTextKey(def, phase);
+            string signalLabel = EventWindowSignalLabel(def, active, facts);
+            string gameContext = BuildEventWindowGameContext(def, active, phase, facts);
+
+            for (int i = 0; i < pawns.Count; i++)
+            {
+                Pawn pawn = pawns[i];
+                if (pawn == null || !IsDiaryEligible(pawn))
+                {
+                    continue;
+                }
+
+                string text = textKey.Translate(pawn.LabelShortCap, signalLabel).Resolve();
+                DiaryEvent diaryEvent = AddSoloEvent(pawn, null, def.defName, label, text, instruction, gameContext);
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(def.colorCue))
+                {
+                    diaryEvent.colorCue = def.colorCue;
+                }
+
+                QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            }
+        }
+
+        private List<Pawn> EventWindowPawns(DiaryEventWindowDef def, ActiveEventWindowState active,
+            EventWindowSignalFacts facts, Map map, Pawn subjectPawn)
+        {
+            List<Pawn> pawns = new List<Pawn>();
+            HashSet<string> seenPawnIds = new HashSet<string>();
+            if (def != null && def.recordScope == EventWindowRecordScope.SubjectPawn)
+            {
+                Pawn pawn = EventWindowSubjectPawn(active, facts, map, subjectPawn);
+                if (pawn != null)
+                {
+                    pawns.Add(pawn);
+                }
+
+                return pawns;
+            }
+
+            if (map != null)
+            {
+                AddEventWindowPawnsFromMap(map, pawns, seenPawnIds);
+                return pawns;
+            }
+
+            List<Map> maps = Find.Maps;
+            for (int i = 0; i < maps.Count; i++)
+            {
+                AddEventWindowPawnsFromMap(maps[i], pawns, seenPawnIds);
+            }
+
+            return pawns;
+        }
+
+        private Pawn EventWindowSubjectPawn(ActiveEventWindowState active, EventWindowSignalFacts facts,
+            Map map, Pawn subjectPawn)
+        {
+            if (subjectPawn != null)
+            {
+                return subjectPawn;
+            }
+
+            string pawnId = facts == null ? null : facts.subjectPawnId;
+            if (string.IsNullOrWhiteSpace(pawnId) && active != null)
+            {
+                pawnId = active.startSubjectPawnId;
+            }
+
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            Pawn pawn = EventWindowSubjectPawnFromMap(map, pawnId);
+            if (pawn != null)
+            {
+                return pawn;
+            }
+
+            List<Map> maps = Find.Maps;
+            for (int i = 0; i < maps.Count; i++)
+            {
+                pawn = EventWindowSubjectPawnFromMap(maps[i], pawnId);
+                if (pawn != null)
+                {
+                    return pawn;
+                }
+            }
+
+            return null;
+        }
+
+        private static Pawn EventWindowSubjectPawnFromMap(Map map, string pawnId)
+        {
+            if (map == null || map.mapPawns == null || string.IsNullOrWhiteSpace(pawnId))
+            {
+                return null;
+            }
+
+            List<Pawn> colonists = map.mapPawns.FreeColonists;
+            for (int i = 0; i < colonists.Count; i++)
+            {
+                Pawn pawn = colonists[i];
+                if (pawn != null && string.Equals(pawn.GetUniqueLoadID(), pawnId, StringComparison.Ordinal))
+                {
+                    return pawn;
+                }
+            }
+
+            return null;
+        }
+
+        private void AddEventWindowPawnsFromMap(Map map, List<Pawn> pawns, HashSet<string> seenPawnIds)
+        {
+            if (map == null || map.mapPawns == null)
+            {
+                return;
+            }
+
+            List<Pawn> colonists = map.mapPawns.FreeColonists;
+            for (int i = 0; i < colonists.Count; i++)
+            {
+                Pawn pawn = colonists[i];
+                if (pawn == null)
+                {
+                    continue;
+                }
+
+                string pawnId = pawn.GetUniqueLoadID();
+                if (seenPawnIds.Add(pawnId))
+                {
+                    pawns.Add(pawn);
+                }
+            }
+        }
+
+        private static string EventWindowInstruction(DiaryEventWindowDef def, string label)
+        {
+            if (!string.IsNullOrWhiteSpace(def.instruction))
+            {
+                return def.instruction;
+            }
+
+            return "PawnDiary.Event.EventWindow.Generic.Instruction".Translate(label).Resolve();
+        }
+
+        private static string EventWindowTextKey(DiaryEventWindowDef def, string phase)
+        {
+            if (string.Equals(phase, EventWindowPhaseStart, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(def.startTextKey))
+            {
+                return def.startTextKey;
+            }
+
+            if (string.Equals(phase, EventWindowPhaseEnd, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(def.endTextKey))
+            {
+                return def.endTextKey;
+            }
+
+            if (string.Equals(phase, EventWindowPhaseTimeout, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(def.timeoutTextKey))
+            {
+                return def.timeoutTextKey;
+            }
+
+            return "PawnDiary.Event.EventWindow.Generic." + phase;
+        }
+
+        private static string EventWindowPromptText(string preferredKey, string fallbackKey)
+        {
+            return !string.IsNullOrWhiteSpace(preferredKey)
+                ? preferredKey.Translate().Resolve()
+                : fallbackKey.Translate().Resolve();
+        }
+
+        private static string EventWindowPromptText(string preferredKey, string fallbackKey, string fallbackArg)
+        {
+            return !string.IsNullOrWhiteSpace(preferredKey)
+                ? preferredKey.Translate().Resolve()
+                : fallbackKey.Translate(fallbackArg).Resolve();
+        }
+
+        private static string EventWindowSignalLabel(DiaryEventWindowDef def, ActiveEventWindowState active,
+            EventWindowSignalFacts facts)
+        {
+            string label = DiaryLineCleaner.CleanLine(facts == null ? null : facts.label);
+            if (string.IsNullOrWhiteSpace(label) && active != null)
+            {
+                label = DiaryLineCleaner.CleanLine(active.startLabel);
+            }
+
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
+            }
+
+            return label;
+        }
+
+        private static string BuildEventWindowGameContext(DiaryEventWindowDef def, ActiveEventWindowState active,
+            string phase, EventWindowSignalFacts facts)
+        {
+            List<string> parts = new List<string>
+            {
+                "event_window=" + SafeContextValue(def.EffectiveWindowKey()),
+                "phase=" + SafeContextValue(phase)
+            };
+
+            AddContextPart(parts, "source", facts == null ? null : facts.source);
+            AddContextPart(parts, "signal", facts == null ? null : facts.signal);
+            AddContextPart(parts, "def", facts == null ? null : facts.defName);
+            AddContextPart(parts, "label", facts == null ? null : facts.label);
+            AddContextPart(parts, "subject", facts == null ? null : facts.subjectLabel);
+            AddContextPart(parts, "subject_id", facts == null ? null : facts.subjectPawnId);
+            if (active != null)
+            {
+                AddContextPart(parts, "startSource", active.startSource);
+                AddContextPart(parts, "startSignal", active.startSignal);
+                AddContextPart(parts, "startDef", active.startDefName);
+                AddContextPart(parts, "startLabel", active.startLabel);
+                AddContextPart(parts, "startSubject", active.startSubjectLabel);
+                AddContextPart(parts, "startSubjectId", active.startSubjectPawnId);
+            }
+
+            return string.Join("; ", parts.ToArray());
+        }
+
+        private static void AddContextPart(List<string> parts, string key, string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                parts.Add(key + "=" + SafeContextValue(value));
+            }
+        }
+
+        private static string SafeContextValue(string value)
+        {
+            return DiaryLineCleaner.CleanLine(value) ?? string.Empty;
+        }
+
+        private static List<EventWindowTriggerRule> RulesFrom(List<DiaryEventWindowTriggerDef> triggers)
+        {
+            List<EventWindowTriggerRule> rules = new List<EventWindowTriggerRule>();
+            if (triggers == null)
+            {
+                return rules;
+            }
+
+            for (int i = 0; i < triggers.Count; i++)
+            {
+                DiaryEventWindowTriggerDef trigger = triggers[i];
+                if (trigger != null)
+                {
+                    rules.Add(trigger.ToRule());
+                }
+            }
+
+            return rules;
+        }
+
+        private void SnapshotEventWindowStart(ActiveEventWindowState active, DiaryEventWindowDef def,
+            EventWindowSignalFacts facts, int mapUniqueId)
+        {
+            int now = Find.TickManager.TicksGame;
+            active.windowDefName = def.defName;
+            active.windowKey = def.EffectiveWindowKey();
+            active.startedTick = now;
+            active.expiresTick = def.timeoutTicks > 0 ? now + def.timeoutTicks : -1;
+            active.mapUniqueId = mapUniqueId;
+            active.startSource = facts.source ?? string.Empty;
+            active.startSignal = facts.signal ?? string.Empty;
+            active.startDefName = facts.defName ?? string.Empty;
+            active.startLabel = facts.label ?? string.Empty;
+            active.startSubjectPawnId = facts.subjectPawnId ?? string.Empty;
+            active.startSubjectLabel = facts.subjectLabel ?? string.Empty;
+        }
+
+        private ActiveEventWindowState ActiveEventWindowFor(DiaryEventWindowDef def, int mapUniqueId)
+        {
+            if (def == null || activeEventWindows == null)
+            {
+                return null;
+            }
+
+            string key = def.EffectiveWindowKey();
+            for (int i = 0; i < activeEventWindows.Count; i++)
+            {
+                ActiveEventWindowState active = activeEventWindows[i];
+                if (active != null
+                    && string.Equals(active.windowKey, key, StringComparison.OrdinalIgnoreCase)
+                    && active.mapUniqueId == mapUniqueId)
+                {
+                    return active;
+                }
+            }
+
+            return null;
+        }
+
+        private static DiaryEventWindowDef EventWindowDefFor(ActiveEventWindowState active)
+        {
+            if (active == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(active.windowDefName))
+            {
+                DiaryEventWindowDef byDefName = DefDatabase<DiaryEventWindowDef>.GetNamedSilentFail(active.windowDefName);
+                if (byDefName != null)
+                {
+                    return byDefName;
+                }
+            }
+
+            List<DiaryEventWindowDef> defs = DefDatabase<DiaryEventWindowDef>.AllDefsListForReading;
+            if (defs == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < defs.Count; i++)
+            {
+                DiaryEventWindowDef def = defs[i];
+                if (def != null
+                    && string.Equals(def.EffectiveWindowKey(), active.windowKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return def;
+                }
+            }
+
+            return null;
+        }
+
+        private void NormalizeActiveEventWindows()
+        {
+            if (activeEventWindows == null)
+            {
+                activeEventWindows = new List<ActiveEventWindowState>();
+                return;
+            }
+
+            for (int i = activeEventWindows.Count - 1; i >= 0; i--)
+            {
+                ActiveEventWindowState active = activeEventWindows[i];
+                if (active == null || string.IsNullOrWhiteSpace(active.windowDefName))
+                {
+                    activeEventWindows.RemoveAt(i);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(active.windowKey))
+                {
+                    DiaryEventWindowDef def = EventWindowDefFor(active);
+                    active.windowKey = def == null ? active.windowDefName : def.EffectiveWindowKey();
+                }
+
+                active.startSubjectPawnId = active.startSubjectPawnId ?? string.Empty;
+                active.startSubjectLabel = active.startSubjectLabel ?? string.Empty;
+            }
+        }
+
+        private static Map MapForSignalSubject(Pawn subjectPawn)
+        {
+            return subjectPawn != null && subjectPawn.Spawned ? subjectPawn.Map : null;
+        }
+
+        private static int MapUniqueId(Map map)
+        {
+            return map == null ? -1 : map.uniqueID;
+        }
+
+        private static Map MapForUniqueId(int mapUniqueId)
+        {
+            if (mapUniqueId < 0)
+            {
+                return null;
+            }
+
+            List<Map> maps = Find.Maps;
+            for (int i = 0; i < maps.Count; i++)
+            {
+                Map map = maps[i];
+                if (map != null && map.uniqueID == mapUniqueId)
+                {
+                    return map;
+                }
+            }
+
+            return null;
+        }
+
+        private static string EventWindowDedupKey(DiaryEventWindowDef def, string phase,
+            EventWindowSignalFacts facts, int mapUniqueId)
+        {
+            return def.defName + "|" + phase + "|" + mapUniqueId + "|"
+                + (facts == null ? string.Empty : facts.source) + "|"
+                + (facts == null ? string.Empty : facts.signal) + "|"
+                + (facts == null ? string.Empty : facts.defName) + "|"
+                + (facts == null ? string.Empty : facts.subjectPawnId);
+        }
+
+        private static float SafePromptWeight(float value)
+        {
+            return float.IsNaN(value) || value < 0f ? 0f : value;
+        }
+
+        private static float SafePromptWeightMultiplier(float value)
+        {
+            return float.IsNaN(value) || value < 0f ? 0f : value;
+        }
+    }
+}

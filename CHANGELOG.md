@@ -6,6 +6,39 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-27
 
+- **Anomaly GameCondition mood routing tightened.** `DeathPall` now routes through the negative
+  MoodEvent group and the XML mood-impact fallback list, so the existing GameCondition diary path
+  frames it as a threatening colony-wide condition instead of a generic passing mood.
+  `UnnaturalDarkness` now routes through the mixed MoodEvent group because its Anomaly ThoughtDef
+  can be frightening for ordinary pawns but positive for pawns that welcome the void.
+
+- **Generic XML event windows added.** `DiaryEventWindowDef` can now start and end saved narrative
+  windows from generic incident, quest lifecycle, spawned-thing, and letter signals, write
+  start/end/timeout diary entries, and add high-weight prompt context while active. XML controls
+  trigger matchers, timeout ticks, phase text, instruction, prompt weight, subject-vs-map recording,
+  and the multiplier applied to ordinary prompt enchantments. The built-in `MetalhorrorSuspicion`
+  window starts when gray flesh appears (`GrayFleshSample` / `Filth_GrayFleshNoticeable`), ends when
+  `Metalhorror` spawns, and times out after ten RimWorld days if the emergence never arrives.
+  `AncientDanger` now matches vanilla's `AncientShrineWarning` letter and records a one-shot diary
+  entry for the pawn who approached the ancient wall. `VoidMonolithDiscovery` now matches the
+  Anomaly `VoidMonolith` proximity letter and records one extreme-dark discovery entry for the
+  nearby pawn. `VoidMonolithActivation` now matches completed void monolith activations/upgrades,
+  carrying the reached `MonolithLevelDef` as the signal defName for future XML-specific routing.
+
+- **Anomaly hediff thoughts added.** `RevenantHypnosis`, `CubeInterest`, `CubeWithdrawal`,
+  `CubeRage`, and `CorpseTorment` now have a dedicated Hediff-domain diary group that creates
+  immediate entries when the condition appears and when its severity crosses configured progression
+  steps. Their prompt enchantments now send explicit condition/cue text (`cube withdrawal`,
+  `trance pressure`, `compulsive focus`, etc.) plus a Def-overridable condition detail, falling back
+  to the cleaned localized game Hediff description when no override is set. The matches stay
+  string-only, so no-Anomaly games simply never see those signals.
+
+- **Drug hediff prompt overrides added.** `AlcoholHigh`, `Hangover`, `AmbrosiaHigh`,
+  `GoJuiceHigh`, `LuciferiumHigh`, `FlakeHigh`, `PsychiteTeaHigh`, `YayoHigh`, and
+  `SmokeleafHigh` now have localized prompt condition/description overrides and XML cue keys
+  based on their vanilla Hediff and Thought defs. Flake and yayo were split into separate prompt
+  enchantment defs so each can send its own condition detail.
+
 - **Diary history cap is now per pawn.** The "Diary pages to keep" setting now applies to each
   colonist's own history (default 3000, range 1–10000) instead of a single colony-wide total. Each
   pawn keeps its newest pages; a page shared by two pawns survives until both drop it. Existing saved

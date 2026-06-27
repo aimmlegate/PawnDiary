@@ -189,6 +189,12 @@
     <chance>0.55</chance>
     <weight>0.9</weight>
     <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.AlcoholHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.AlcoholHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.LoosenedJudgment</li>
+      <li>PawnDiary.Prompt.Health.Cue.ReducedCapacities</li>
+    </cueKeys>
     <hediffDefNames>
       <li>AlcoholHigh</li>
     </hediffDefNames>
@@ -223,6 +229,12 @@
     <chance>0.6</chance>
     <weight>0.9</weight>
     <severity>1.1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.Hangover</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.Hangover</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.DulledAwareness</li>
+      <li>PawnDiary.Prompt.Health.Cue.PoundingAftereffects</li>
+    </cueKeys>
     <hediffDefNames>
       <li>Hangover</li>
     </hediffDefNames>
@@ -250,11 +262,51 @@
   </PawnDiary.DiaryPromptEnchantmentDef>
 
   <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AmbrosiaHigh</defName>
+    <label>ambrosia warmth</label>
+    <chance>0.45</chance>
+    <weight>0.8</weight>
+    <severity>0.9</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.AmbrosiaHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.AmbrosiaHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.RelaxedEnergy</li>
+      <li>PawnDiary.Prompt.Health.Cue.SoftMoodLift</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>AmbrosiaHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_GoJuiceHigh</defName>
+    <label>go-juice high</label>
+    <chance>0.65</chance>
+    <weight>1.1</weight>
+    <severity>1.25</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.GoJuiceHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.GoJuiceHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CombatRush</li>
+      <li>PawnDiary.Prompt.Health.Cue.SharpenedBody</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>GoJuiceHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
     <defName>DiaryEnchant_LuciferiumHigh</defName>
     <label>luciferium high</label>
     <chance>0.45</chance>
     <weight>1</weight>
     <severity>1.2</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.LuciferiumHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.LuciferiumHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.ArtificialClarity</li>
+      <li>PawnDiary.Prompt.Health.Cue.MechaniteDebt</li>
+    </cueKeys>
     <hediffDefNames>
       <li>LuciferiumHigh</li>
     </hediffDefNames>
@@ -342,13 +394,52 @@
   </PawnDiary.DiaryPromptEnchantmentDef>
 
   <PawnDiary.DiaryPromptEnchantmentDef>
-    <defName>DiaryEnchant_PsychiteHigh</defName>
-    <label>hard psychite high</label>
+    <defName>DiaryEnchant_FlakeHigh</defName>
+    <label>flake high</label>
     <chance>0.65</chance>
     <weight>1</weight>
     <severity>1.15</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.FlakeHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.FlakeHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria</li>
+      <li>PawnDiary.Prompt.Health.Cue.DebilitatingHigh</li>
+    </cueKeys>
     <hediffDefNames>
       <li>FlakeHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychiteTeaHigh</defName>
+    <label>psychite tea high</label>
+    <chance>0.45</chance>
+    <weight>0.8</weight>
+    <severity>0.95</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.PsychiteTeaHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.MildPsychiteLift</li>
+      <li>PawnDiary.Prompt.Health.Cue.EasyEnergy</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>PsychiteTeaHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_YayoHigh</defName>
+    <label>yayo high</label>
+    <chance>0.65</chance>
+    <weight>1</weight>
+    <severity>1.15</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.YayoHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.YayoHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria</li>
+      <li>PawnDiary.Prompt.Health.Cue.RestlessDrive</li>
+    </cueKeys>
+    <hediffDefNames>
       <li>YayoHigh</li>
     </hediffDefNames>
   </PawnDiary.DiaryPromptEnchantmentDef>
@@ -359,6 +450,12 @@
     <chance>0.55</chance>
     <weight>0.8</weight>
     <severity>1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.SmokeleafHigh</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.SmokeleafHigh</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.FuzzyWellBeing</li>
+      <li>PawnDiary.Prompt.Health.Cue.SlowedBody</li>
+    </cueKeys>
     <hediffDefNames>
       <li>SmokeleafHigh</li>
     </hediffDefNames>
@@ -565,11 +662,34 @@
   </PawnDiary.DiaryPromptEnchantmentDef>
 
   <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_RevenantHypnosis</defName>
+    <label>revenant hypnosis</label>
+    <chance>0.85</chance>
+    <weight>1.5</weight>
+    <severity>1.6</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.RevenantHypnosis</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.RevenantHypnosis</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.TrancePressure</li>
+      <li>PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway</li>
+    </cueKeys>
+    <hediffDefNames>
+      <li>RevenantHypnosis</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
     <defName>DiaryEnchant_CubeInterest</defName>
     <label>cube interest</label>
     <chance>0.55</chance>
     <weight>1</weight>
     <severity>1.1</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CubeInterest</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CubeInterest</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CompulsiveFocus</li>
+      <li>PawnDiary.Prompt.Health.Cue.ObjectFixation</li>
+    </cueKeys>
     <hediffDefNames>
       <li>CubeInterest</li>
     </hediffDefNames>
@@ -581,6 +701,12 @@
     <chance>0.85</chance>
     <weight>1.4</weight>
     <severity>1.5</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CubeWithdrawal</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CubeWithdrawal</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CompulsiveAbsence</li>
+      <li>PawnDiary.Prompt.Health.Cue.RestlessNeed</li>
+    </cueKeys>
     <hediffDefNames>
       <li>CubeWithdrawal</li>
     </hediffDefNames>
@@ -614,6 +740,12 @@
     <chance>1</chance>
     <weight>1.8</weight>
     <severity>1.8</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CubeRage</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CubeRage</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent</li>
+      <li>PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger</li>
+    </cueKeys>
     <hediffDefNames>
       <li>CubeRage</li>
     </hediffDefNames>
@@ -637,6 +769,12 @@
     <chance>0.85</chance>
     <weight>1.4</weight>
     <severity>1.5</severity>
+    <conditionKey>PawnDiary.Prompt.Health.Condition.CorpseTorment</conditionKey>
+    <descriptionOverrideKey>PawnDiary.Prompt.Health.Description.CorpseTorment</descriptionOverrideKey>
+    <cueKeys>
+      <li>PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts</li>
+      <li>PawnDiary.Prompt.Health.Cue.UnnaturalGuilt</li>
+    </cueKeys>
     <hediffDefNames>
       <li>CorpseTorment</li>
     </hediffDefNames>

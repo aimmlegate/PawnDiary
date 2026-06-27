@@ -86,10 +86,11 @@ arrival/death pages bypass that guard.
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
-| Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy. |
+| Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries. |
+| Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. |
@@ -105,6 +106,9 @@ Most feature tuning lives in XML so changes do not require recompiling:
 
 - `DiaryInteractionGroupDefs.xml`: event classification, instructions, tones, color cues, batching,
   hediff modes, package-aware compatibility routing, and default enablement.
+- `DiaryEventWindowDefs.xml`: generic start/end/timeout windows or one-shot events over incident,
+  quest, spawned thing, letter, proximity-letter, and special story-object signals, including phase
+  diary text and active prompt weighting.
 - `DiaryEventPromptDefs.xml`: event prompt text, event enhancement text, and optional forced model.
 - `DiaryPromptTemplateDefs.xml`: which structured fields each prompt shape renders.
 - `DiaryPromptDef.xml`: shared system/final instructions.
@@ -120,9 +124,47 @@ Interaction groups match by domain, exact `defName`, substring token, and option
 ID. Event prompt policy resolves from most specific to broadest key: source defName, interaction
 group, classifier key, then domain. Prompt text, enhancement text, and forced-model text resolve
 independently so narrow XML can override one field and inherit the others.
+Mood-impact fallback lists in `DiaryTuningDef.xml` classify GameCondition defNames that are always
+positive or negative when no live thought offset is measurable; Anomaly `GrayPall` and `DeathPall`
+are negative string matches there. `UnnaturalDarkness` is routed through the mixed MoodEvent group
+instead because its Anomaly ThoughtDef can be negative or positive depending on the pawn.
 
 For optional DLC or mod content, prefer string matchers in XML. Do not hard-reference DLC defs in C#
 or XML unless they are guarded; absent DLC content should simply never match.
+The Anomaly Hediff group follows this pattern: `RevenantHypnosis`, `CubeInterest`,
+`CubeWithdrawal`, `CubeRage`, and `CorpseTorment` are exact string matches that create immediate
+Hediff diary entries on add and on configured severity-step progression when that DLC content is
+present. The same conditions also have prompt-enchantment cues, so any ordinary first-person prompt
+they win adds an `important context:` line such as `high priority; moderate cube withdrawal;
+compulsive absence, restless need; condition detail: ...`. `descriptionOverrideKey` can replace the
+standard game description per Def; otherwise the localized `HediffDef.description` is cleaned and
+capped before it reaches the model. Base-game drug highs use the same override hook for
+`AlcoholHigh`, `Hangover`, `AmbrosiaHigh`, `GoJuiceHigh`, `LuciferiumHigh`, `FlakeHigh`,
+`PsychiteTeaHigh`, `YayoHigh`, and `SmokeleafHigh`, with XML cue keys grounded in the vanilla
+Hediff and Thought defs.
+
+Event windows are the generic system for ongoing threats, one-shot warnings, or story beats that
+are not hediffs.
+`DiaryEventWindowDef` rows define `startSignals`, `endSignals`, `timeoutTicks`, phase diary text,
+and active prompt policy. Current signal sources are `Incident/executed`, `Quest/accepted`,
+`Quest/completed`, `Quest/failed`, `ThingSpawned/spawned`, `Letter/received`,
+`ProximityLetter/received`, and `VoidMonolith/activated`; matchers are exact defName strings or
+broad tokens. `keepActive=false` makes the start signal a one-shot diary event without saving an
+active window. `recordScope=SubjectPawn` records only the pawn carried by the signal, used by
+vanilla letter triggers such as ancient danger, proximity-letter triggers such as void monolith
+discovery, and completed monolith activations. An active window is saved, can write
+start/end/timeout diary entries, and can add a weighted prompt candidate while multiplying ordinary
+prompt enchantments down. Setting
+`normalPromptWeightMultiplier` to `0` makes the window fully override ordinary health/status prompt
+enchantments until it ends or times out. The built-in `MetalhorrorSuspicion` window starts from
+`GrayFleshSample` or `Filth_GrayFleshNoticeable`, ends on `Metalhorror`, and times out after ten
+RimWorld days if the emergence never arrives. The built-in `AncientDanger` rule matches vanilla's
+`AncientShrineWarning` letter key and records a single entry for the approaching pawn only. The
+built-in `VoidMonolithDiscovery` rule matches the Anomaly `VoidMonolith` proximity letter and
+records a single extreme-dark discovery entry for the nearby pawn only. The built-in
+`VoidMonolithActivation` rule matches completed void monolith activations, uses the reached
+`MonolithLevelDef` as its signal defName for future XML splits, and records one extreme-dark entry
+for the activating pawn.
 
 ## 6. Prompts And Writing Styles
 
@@ -139,8 +181,11 @@ Writing-style presets are saved settings backed by `DiaryPersonaDef`; the code s
 in some field names for save compatibility, but the player-facing feature is writing style.
 
 Prompt enchantments add one weighted live-context pressure cue to eligible first-person prompts.
-Humor cues are hidden, XML-weighted, and folded into the writing-style block. Direct speech is allowed
-only in selected first-person interaction prompts with a closed `[[speech]]...[[/speech]]` block.
+Active event windows feed the same prompt-enchantment planner as extra XML-weighted candidates, so
+an unresolved colony threat can shape unrelated diary pages until the configured end signal or
+timeout closes it. Humor cues are hidden, XML-weighted, and folded into the writing-style block.
+Direct speech is allowed only in selected first-person interaction prompts with a closed
+`[[speech]]...[[/speech]]` block.
 
 Generated Social-log speech injection remains disabled/hidden. The saved setting exists for
 compatibility, but the call site is off. Title generation is enabled by default. Successful main
@@ -211,9 +256,11 @@ markers, and trims saved text locally.
 
 ## 9. Save Data And Compatibility
 
-`DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`) and the event list (`diaryEvents`).
-`DiaryEventRepository` owns the event list and rebuilds its id lookup index after load. Per-pawn event
-lists prune blank, duplicate, or dangling refs.
+`DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`), the event list (`diaryEvents`),
+and active XML event windows (`activeEventWindows`). `DiaryEventRepository` owns the event list and
+rebuilds its id lookup index after load. Per-pawn event lists prune blank, duplicate, or dangling
+refs. Active event windows normalize after load so renamed/missing defs fail closed instead of
+blocking future prompt context.
 
 The diary-history cap is **per pawn** (default 3000, editable from settings, range 1–10000). Each
 pawn keeps only its newest configured number of pages: `ApplyActiveEventLimit` caps every pawn's

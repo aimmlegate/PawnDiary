@@ -154,6 +154,9 @@
   <hediffLabor.label>Labor</hediffLabor.label>
   <hediffLabor.instruction>labor and birth approaching; write urgency, pain, fear, care, and the threshold before birth without skipping ahead to the baby unless supplied</hediffLabor.instruction>
   <hediffLabor.tone>with urgent bodily strain</hediffLabor.tone>
+  <hediffAnomalyCompulsion.label>Anomaly compulsions</hediffAnomalyCompulsion.label>
+  <hediffAnomalyCompulsion.instruction>an Anomaly-driven mental affliction pressing into the pawn&apos;s thoughts; write obsession, trance, withdrawal, rage, torment, or wrongness as the named condition supports, without explaining the entity or inventing treatment</hediffAnomalyCompulsion.instruction>
+  <hediffAnomalyCompulsion.tone>with intrusive, unnatural mental pressure</hediffAnomalyCompulsion.tone>
   <hediffMajorHealth.label>Major health changes</hediffMajorHealth.label>
   <hediffMajorHealth.instruction>a new or worsening health condition that stayed with the pawn through the day</hediffMajorHealth.instruction>
   <hediffMajorHealth.tone>with bodily unease and vulnerability</hediffMajorHealth.tone>
@@ -213,6 +216,8 @@
   <dayreflection.tones.1>softly closing, like the day finally going quiet</dayreflection.tones.1>
   <heartfelt.tones.0>gentle and open, letting warmth show plainly</heartfelt.tones.0>
   <heartfelt.tones.1>quietly held, warmth shown through small restraint</heartfelt.tones.1>
+  <hediffAnomalyCompulsion.tones.0>intrusive and wrong, thought snagging on something outside itself</hediffAnomalyCompulsion.tones.0>
+  <hediffAnomalyCompulsion.tones.1>unsettling and compulsive, the mind pulled where it should not go</hediffAnomalyCompulsion.tones.1>
   <hediffLabor.tones.0>urgent and bodily, breath and pain setting the pace</hediffLabor.tones.0>
   <hediffLabor.tones.1>threshold-tense, focused on fear, care, and waiting</hediffLabor.tones.1>
   <hediffMajorHealth.tones.0>vulnerable and bodily, symptoms shaping every thought</hediffMajorHealth.tones.0>

@@ -53,11 +53,15 @@ namespace PawnDiary
         public float maxCapacity = -1f;
 
         // Optional model-facing text controls. Keys are Keyed translations; empty values use the
-        // same generic health wording as hediff enchantments.
+        // same generic health wording as hediff enchantments. descriptionOverrideKey lets XML
+        // replace RimWorld's live HediffDef.description when the game text is too mechanical or vague
+        // for diary prose; descriptionOverrideText is a last-resort raw string for external defs.
         public string conditionKey;
         public string conditionLabel;
         public string intensityKey;
         public string priorityKey;
+        public string descriptionOverrideKey;
+        public string descriptionOverrideText;
         public List<string> cueKeys = new List<string>();
     }
 
@@ -70,26 +74,72 @@ namespace PawnDiary
         /// <summary>
         /// Returns one live context prompt for this pawn, or empty when disabled/no match.
         /// </summary>
-        public static string RuleFor(Pawn pawn, bool includeImportantEventContext = false)
+        public static string RuleFor(Pawn pawn, bool includeImportantEventContext = false,
+            IList<PromptEnchantmentCandidate> extraCandidates = null,
+            float normalCandidateWeightMultiplier = 1f)
         {
             if (pawn == null || PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
             {
                 return string.Empty;
             }
 
+            PromptEnchantmentTuning tuning = DiaryTuning.PromptEnchantmentTuning;
+            List<PromptEnchantmentCandidate> candidates = new List<PromptEnchantmentCandidate>();
             List<DiaryPromptEnchantmentDef> defs = DefDatabase<DiaryPromptEnchantmentDef>.AllDefsListForReading;
-            if (defs == null || defs.Count == 0)
+            if (defs != null && defs.Count > 0)
             {
-                return string.Empty;
+                candidates = PromptEnchantmentCollector.Collect(
+                    pawn,
+                    defs,
+                    includeImportantEventContext,
+                    tuning);
+                ApplyNormalCandidateWeightMultiplier(candidates, normalCandidateWeightMultiplier);
             }
 
-            PromptEnchantmentTuning tuning = DiaryTuning.PromptEnchantmentTuning;
-            List<PromptEnchantmentCandidate> candidates = PromptEnchantmentCollector.Collect(
-                pawn,
-                defs,
-                includeImportantEventContext,
-                tuning);
+            AddExtraCandidates(candidates, extraCandidates);
             return PromptEnchantmentPlanner.Build(candidates, tuning, Rand.Range(0f, 1f));
+        }
+
+        private static void ApplyNormalCandidateWeightMultiplier(List<PromptEnchantmentCandidate> candidates,
+            float multiplier)
+        {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return;
+            }
+
+            float safeMultiplier = float.IsNaN(multiplier) || multiplier < 0f ? 0f : multiplier;
+            if (safeMultiplier == 1f)
+            {
+                return;
+            }
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                PromptEnchantmentCandidate candidate = candidates[i];
+                if (candidate != null)
+                {
+                    candidate.weight *= safeMultiplier;
+                }
+            }
+        }
+
+        private static void AddExtraCandidates(List<PromptEnchantmentCandidate> candidates,
+            IList<PromptEnchantmentCandidate> extraCandidates)
+        {
+            if (candidates == null || extraCandidates == null || extraCandidates.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < extraCandidates.Count; i++)
+            {
+                PromptEnchantmentCandidate candidate = extraCandidates[i];
+                if (candidate != null)
+                {
+                    candidates.Add(candidate);
+                }
+            }
         }
     }
 }

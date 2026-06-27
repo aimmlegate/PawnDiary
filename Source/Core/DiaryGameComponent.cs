@@ -68,6 +68,10 @@ namespace PawnDiary
         // class remains the only RimWorld lifecycle/save owner and drives the repository from
         // ExposeData/GameComponentTick. See DiaryEventRepository.cs.
         private readonly DiaryEventRepository events = new DiaryEventRepository();
+        // Saved XML event-window state. Each row is a long-running narrative window such as "gray
+        // flesh was found, but the metalhorror has not emerged yet." The Def remains XML-owned; this
+        // list only remembers active runtime instances across save/load.
+        private List<ActiveEventWindowState> activeEventWindows = new List<ActiveEventWindowState>();
         // Interaction batches still accumulating lines; keyed by group/pair/optional def. Not saved
         // because ExposeData flushes first.
         private readonly Dictionary<string, PendingInteractionBatch> pendingInteractionBatches = new Dictionary<string, PendingInteractionBatch>();
@@ -111,6 +115,8 @@ namespace PawnDiary
         // Transient (not saved) guard against a quest lifecycle signal double-firing (e.g. a
         // multi-map transition or a fluke double-call). Keys by quest id + signal.
         private readonly Dictionary<string, int> recentQuestEvents = new Dictionary<string, int>();
+        // Transient (not saved) guard against generic event-window start/end signals double-firing.
+        private readonly Dictionary<string, int> recentEventWindowEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against a ritual outcome double-firing. Keys by ritual,
         // organizer, target, and finish tick.
         private readonly Dictionary<string, int> recentRitualEvents = new Dictionary<string, int>();
@@ -160,6 +166,11 @@ namespace PawnDiary
         // accept paths that do not pass through the expected method.
         private const int QuestAcceptanceScanIntervalTicks = 120;
         private int nextQuestAcceptanceScanTick;
+
+        // Active event windows are few, but scanning timeouts on a short interval avoids work every
+        // tick and still closes expired prompt context promptly.
+        private const int EventWindowTimeoutScanIntervalTicks = 250;
+        private int nextEventWindowTimeoutScanTick;
 
         // Ambient notes read like end-of-day memories, so when a pawn goes to sleep or rests we try
         // to write any sufficiently full low-stakes note for that pawn. This is only a periodic scan
@@ -232,6 +243,8 @@ namespace PawnDiary
             recentRaidEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
+            recentEventWindowEvents.Clear();
+            activeEventWindows.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             generatedSpeechPlayLogTexts.Clear();
@@ -244,6 +257,7 @@ namespace PawnDiary
             generationScanRequested = true;
             nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
+            nextEventWindowTimeoutScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
@@ -272,6 +286,7 @@ namespace PawnDiary
             recentRaidEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
+            recentEventWindowEvents.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
@@ -282,6 +297,7 @@ namespace PawnDiary
             generationScanRequested = true;
             nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
+            nextEventWindowTimeoutScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
@@ -319,6 +335,7 @@ namespace PawnDiary
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             events.ExposeEvents("diaryEvents");
+            Scribe_Collections.Look(ref activeEventWindows, "activeEventWindows", LookMode.Deep);
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
             // pruned so stale LogIDs cannot accumulate or block future injection.
@@ -350,6 +367,11 @@ namespace PawnDiary
                     generatedSpeechPlayLogTexts = new Dictionary<int, string>();
                 }
 
+                if (activeEventWindows == null)
+                {
+                    activeEventWindows = new List<ActiveEventWindowState>();
+                }
+
                 // Post-load rebuilds derive transient indexes from loaded data; a throw here must not
                 // abort the whole game load, so degrade to whatever loaded and log once. The null
                 // guards above stay outside the try because the rest of the session depends on them.
@@ -359,6 +381,7 @@ namespace PawnDiary
                     // works immediately (the first generation scan and any UI draw run before any new
                     // event is recorded this session).
                     events.RebuildIndex();
+                    NormalizeActiveEventWindows();
                     ApplyActiveEventLimit();
                     RebuildWrittenDayReflectionsFromEvents();
                     PruneDiaryEventRefs();
@@ -446,6 +469,12 @@ namespace PawnDiary
             {
                 nextQuestAcceptanceScanTick = now + QuestAcceptanceScanIntervalTicks;
                 ScanAcceptedQuestsForDiaryEvents();
+            }
+
+            if (now >= nextEventWindowTimeoutScanTick)
+            {
+                nextEventWindowTimeoutScanTick = now + EventWindowTimeoutScanIntervalTicks;
+                ScanEventWindowTimeouts();
             }
 
             if (!initialArrivalScanPending && now >= nextThoughtProgressionScanTick)

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <!--
+    Generic event-window example:
+    - source can be Incident, Quest, ThingSpawned, Letter, ProximityLetter, or VoidMonolith today.
+    - signal examples: executed, accepted, completed, failed, spawned, received.
+    - matchDefNames are plain strings, so DLC/modded content is safe when absent.
+
+    To watch a mech cluster, add another PawnDiary.DiaryEventWindowDef with:
+      <source>Incident</source>
+      <signal>executed</signal>
+      <matchDefNames><li>MechCluster</li></matchDefNames>
+
+    To watch any accepted quest, use:
+      <source>Quest</source>
+      <signal>accepted</signal>
+
+    To watch a stable vanilla letter key, use:
+      <source>Letter</source>
+      <signal>received</signal>
+      <matchDefNames><li>SomeLetterMessageKey</li></matchDefNames>
+
+    To watch a ThingComp proximity letter, match the parent ThingDef:
+      <source>ProximityLetter</source>
+      <signal>received</signal>
+      <matchDefNames><li>SomeThingDef</li></matchDefNames>
+
+    To watch a completed void monolith activation, use:
+      <source>VoidMonolith</source>
+      <signal>activated</signal>
+  -->
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>MetalhorrorSuspicion</defName>
+    <label>metalhorror suspicion</label>
+    <windowKey>MetalhorrorSuspicion</windowKey>
+    <enabled>true</enabled>
+    <timeoutTicks>600000</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>true</recordEndEvent>
+    <recordEndWithoutActive>true</recordEndWithoutActive>
+    <recordTimeoutEvent>true</recordTimeoutEvent>
+    <instruction>write this as an unresolved colony horror: keep it grounded in what the pawn can observe, carry suspicion into ordinary details, and do not name hidden game mechanics beyond the supplied facts</instruction>
+    <colorCue>extremeDark</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start</startTextKey>
+    <endTextKey>PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End</endTextKey>
+    <timeoutTextKey>PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout</timeoutTextKey>
+
+    <startSignals>
+      <li>
+        <source>ThingSpawned</source>
+        <signal>spawned</signal>
+        <matchDefNames>
+          <li>GrayFleshSample</li>
+          <li>Filth_GrayFleshNoticeable</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <endSignals>
+      <li>
+        <source>ThingSpawned</source>
+        <signal>spawned</signal>
+        <matchDefNames>
+          <li>Metalhorror</li>
+        </matchDefNames>
+      </li>
+    </endSignals>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>100</promptWeight>
+    <normalPromptWeightMultiplier>0</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh</li>
+      <li>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear</li>
+      <li>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VoidMonolithDiscovery</defName>
+    <label>void monolith discovery</label>
+    <windowKey>VoidMonolithDiscovery</windowKey>
+    <enabled>true</enabled>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn's first discovery of the void monolith as extreme dark anomaly dread; make the structure feel inhuman and psychic, but keep the moment grounded in what the pawn can see and feel</instruction>
+    <colorCue>extremeDark</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>ProximityLetter</source>
+        <signal>received</signal>
+        <matchDefNames>
+          <li>VoidMonolith</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>VoidMonolithActivation</defName>
+    <label>void monolith activation</label>
+    <windowKey>VoidMonolithActivation</windowKey>
+    <enabled>true</enabled>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn's completed interaction with the void monolith as extreme dark anomaly dread; focus on the psychic pressure, the structure changing, and the sense that something beyond the colony has noticed</instruction>
+    <colorCue>extremeDark</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.VoidMonolithActivation.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>VoidMonolith</source>
+        <signal>activated</signal>
+      </li>
+    </startSignals>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>AncientDanger</defName>
+    <label>ancient danger</label>
+    <windowKey>AncientDanger</windowKey>
+    <enabled>true</enabled>
+    <timeoutTicks>-1</timeoutTicks>
+    <dedupTicks>2500</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>false</keepActive>
+    <recordScope>SubjectPawn</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn's immediate foreboding at the ancient wall as one personal moment; keep the danger uncertain and do not reveal what is inside</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.AncientDanger.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>Letter</source>
+        <signal>received</signal>
+        <matchDefNames>
+          <li>AncientShrineWarning</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <promptEnabled>false</promptEnabled>
+    <promptWeight>0</promptWeight>
+  </PawnDiary.DiaryEventWindowDef>
+
+</Defs>

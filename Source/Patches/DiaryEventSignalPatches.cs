@@ -1,8 +1,9 @@
 // Non-social gameplay signal Harmony patches. These hooks forward tales, mental states,
-// inspirations, map conditions, raids, rituals, and ability use into DiaryGameComponent; the richer
-// capture decisions stay in the component and pure Event Catalog helpers.
+// inspirations, map conditions, raids, proximity letters, rituals, and ability use into
+// DiaryGameComponent; the richer capture decisions stay in the component and pure Event Catalog helpers.
 // New to this? See AGENTS.md ("Harmony patches").
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
@@ -144,11 +145,9 @@ namespace PawnDiary
         }
     }
 
-    // Fires once per raid-like incident (RaidEnemy / RaidFriendly / RaidBeacon / Infestation).
-    // IncidentWorker.TryExecute is the single public entry point every incident flows through, so we
-    // filter in the postfix (after pawns/threats have spawned) and forward the IncidentParms +
-    // IncidentDef. Infestation is detected by worker type name so the raid diary path stays based on
-    // plain strings rather than extra incident-worker dependencies.
+    // Fires once per successful incident. IncidentWorker.TryExecute is the single public entry point
+    // every incident flows through, so we first emit a generic XML event-window signal for incidents
+    // such as mech clusters, then keep the existing raid-like diary path for raids/infestations.
     /// <summary>
     /// Captures successful raid-like incident execution after spawned threats are available.
     /// </summary>
@@ -164,12 +163,22 @@ namespace PawnDiary
         {
             DiaryPatchSafety.Run("RaidExecutePatch", () =>
             {
-                if (!__result || !IsRaidLikeIncident(__instance) || parms == null || __instance.def == null)
+                if (!__result || parms == null || __instance == null || __instance.def == null)
                 {
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordRaid(parms, __instance.def);
+                DiaryGameComponent component = DiaryGameComponent.Current;
+                if (component == null)
+                {
+                    return;
+                }
+
+                component.RecordEventWindowIncident(__instance.def, parms);
+                if (IsRaidLikeIncident(__instance))
+                {
+                    component.RecordRaid(parms, __instance.def);
+                }
             });
         }
 
@@ -183,6 +192,381 @@ namespace PawnDiary
             string workerTypeName = worker?.GetType().Name;
             return !string.IsNullOrWhiteSpace(workerTypeName)
                 && workerTypeName.IndexOf("Infestation", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+    }
+
+    // Fires after any Thing spawns into a map. Event-window XML filters by defName/source, so this
+    // generic hook can cover visible clues and threat emergence without hardcoding Anomaly types.
+    /// <summary>
+    /// Captures spawned things as generic event-window signals.
+    /// </summary>
+    [HarmonyPatch(typeof(Thing), nameof(Thing.SpawnSetup), new[] { typeof(Map), typeof(bool) })]
+    public static class ThingSpawnedEventWindowPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for Thing.SpawnSetup. Respawns during save/load are skipped so loading a
+        /// map does not replay every active window trigger.
+        /// </summary>
+        public static void Postfix(Thing __instance, Map map, bool respawningAfterLoad)
+        {
+            DiaryPatchSafety.Run("ThingSpawnedEventWindowPatch", () =>
+            {
+                if (respawningAfterLoad || __instance == null || __instance.def == null)
+                {
+                    return;
+                }
+
+                DiaryGameComponent.Current?.RecordEventWindowThingSpawned(__instance, map);
+            });
+        }
+    }
+
+    /// <summary>
+    /// Captures ThingComp proximity letters for XML event-window rules.
+    /// </summary>
+    public static class ProximityLetterEventWindowPatch
+    {
+        private const string TargetTypeName = "RimWorld.CompProximityLetter";
+        private const string PropsTypeName = "RimWorld.CompProperties_ProximityLetter";
+        private const string TargetMethodName = "CompTick";
+        private const string LetterSentFieldName = "letterSent";
+        private const string LetterLabelFieldName = "letterLabel";
+        private const string RadiusFieldName = "radius";
+        private const float FallbackRadius = 8f;
+
+        private static FieldInfo LetterSentField;
+        private static FieldInfo LetterLabelField;
+        private static FieldInfo RadiusField;
+
+        /// <summary>
+        /// Registers the patch only when RimWorld exposes CompProximityLetter.CompTick in this build.
+        /// </summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            if (harmony == null)
+            {
+                return;
+            }
+
+            Type targetType = AccessTools.TypeByName(TargetTypeName);
+            if (targetType == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find CompProximityLetter; proximity-letter event windows will not be captured.");
+                return;
+            }
+
+            MethodBase target = AccessTools.DeclaredMethod(targetType, TargetMethodName);
+            Type propsType = AccessTools.TypeByName(PropsTypeName);
+            LetterSentField = AccessTools.Field(targetType, LetterSentFieldName);
+            LetterLabelField = AccessTools.Field(propsType, LetterLabelFieldName);
+            RadiusField = AccessTools.Field(propsType, RadiusFieldName);
+
+            if (target == null || LetterSentField == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find CompProximityLetter.CompTick; proximity-letter event windows will not be captured.");
+                return;
+            }
+
+            harmony.Patch(
+                target,
+                prefix: new HarmonyMethod(typeof(ProximityLetterEventWindowPatch), nameof(Prefix)),
+                postfix: new HarmonyMethod(typeof(ProximityLetterEventWindowPatch), nameof(Postfix)));
+        }
+
+        /// <summary>
+        /// Saves the pre-tick state so the postfix can see exactly when the letter was first sent.
+        /// </summary>
+        private static void Prefix(object __instance, ref ProximityLetterState __state)
+        {
+            ProximityLetterState state = null;
+            DiaryPatchSafety.Run("ProximityLetterEventWindowPatch.Prefix", () =>
+            {
+                if (__instance == null || LetterSent(__instance))
+                {
+                    return;
+                }
+
+                ThingComp comp = __instance as ThingComp;
+                Thing parent = comp?.parent;
+                state = new ProximityLetterState
+                {
+                    label = LetterLabel(comp),
+                    subjectPawn = SubjectPawnNear(parent, Radius(comp))
+                };
+            });
+            __state = state;
+        }
+
+        /// <summary>
+        /// Forwards the proximity letter after vanilla marks it sent.
+        /// </summary>
+        private static void Postfix(object __instance, ProximityLetterState __state)
+        {
+            DiaryPatchSafety.Run("ProximityLetterEventWindowPatch.Postfix", () =>
+            {
+                if (__state == null || __instance == null || !LetterSent(__instance))
+                {
+                    return;
+                }
+
+                ThingComp comp = __instance as ThingComp;
+                DiaryGameComponent.Current?.RecordEventWindowProximityLetter(
+                    comp?.parent,
+                    __state.label,
+                    __state.subjectPawn);
+            });
+        }
+
+        private static bool LetterSent(object comp)
+        {
+            object value = LetterSentField?.GetValue(comp);
+            return value is bool && (bool)value;
+        }
+
+        private static string LetterLabel(ThingComp comp)
+        {
+            object value = LetterLabelField?.GetValue(comp?.props);
+            string label = value as string;
+            if (!string.IsNullOrWhiteSpace(label))
+            {
+                return label;
+            }
+
+            return comp?.parent == null ? string.Empty : comp.parent.LabelShortCap;
+        }
+
+        private static float Radius(ThingComp comp)
+        {
+            object value = RadiusField?.GetValue(comp?.props);
+            if (value is float)
+            {
+                return (float)value;
+            }
+
+            if (value is int)
+            {
+                return (int)value;
+            }
+
+            return FallbackRadius;
+        }
+
+        private static Pawn SubjectPawnNear(Thing thing, float radius)
+        {
+            Map map = thing?.Map;
+            if (thing == null || map?.mapPawns == null)
+            {
+                return null;
+            }
+
+            List<Pawn> colonists = map.mapPawns.FreeColonists;
+            for (int i = 0; i < colonists.Count; i++)
+            {
+                Pawn pawn = colonists[i];
+                if (pawn != null && pawn.Spawned && pawn.Position.InHorDistOf(thing.Position, radius))
+                {
+                    return pawn;
+                }
+            }
+
+            return null;
+        }
+
+        private sealed class ProximityLetterState
+        {
+            public string label;
+            public Pawn subjectPawn;
+        }
+    }
+
+    /// <summary>
+    /// Captures completed void monolith activations for XML event-window rules.
+    /// </summary>
+    public static class VoidMonolithActivationEventWindowPatch
+    {
+        private const string TargetTypeName = "RimWorld.Building_VoidMonolith";
+        private const string TargetMethodName = "Activate";
+        private const string AnomalyComponentTypeName = "RimWorld.GameComponent_Anomaly";
+        private const string MonolithLevelDefTypeName = "RimWorld.MonolithLevelDef";
+        private const string LevelDefPropertyName = "LevelDef";
+        private const string LevelInspectTextFieldName = "levelInspectText";
+        private const string MonolithLabelFieldName = "monolithLabel";
+
+        private static MethodInfo AnomalyGetter;
+        private static MethodInfo LevelDefGetter;
+        private static FieldInfo LevelInspectTextField;
+        private static FieldInfo MonolithLabelField;
+
+        /// <summary>
+        /// Registers the patch only when RimWorld exposes Building_VoidMonolith.Activate(Pawn).
+        /// </summary>
+        public static void TryRegister(Harmony harmony)
+        {
+            if (harmony == null)
+            {
+                return;
+            }
+
+            Type targetType = AccessTools.TypeByName(TargetTypeName);
+            if (targetType == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find Building_VoidMonolith; void monolith activation event windows will not be captured.");
+                return;
+            }
+
+            MethodBase target = AccessTools.Method(targetType, TargetMethodName, new[] { typeof(Pawn) });
+            if (target == null)
+            {
+                Log.Warning("[Pawn Diary] Could not find Building_VoidMonolith.Activate(Pawn); void monolith activation event windows will not be captured.");
+                return;
+            }
+
+            Type anomalyComponentType = AccessTools.TypeByName(AnomalyComponentTypeName);
+            Type monolithLevelDefType = AccessTools.TypeByName(MonolithLevelDefTypeName);
+            AnomalyGetter = AccessTools.PropertyGetter(typeof(Find), "Anomaly");
+            LevelDefGetter = anomalyComponentType == null
+                ? null
+                : AccessTools.PropertyGetter(anomalyComponentType, LevelDefPropertyName);
+            LevelInspectTextField = monolithLevelDefType == null
+                ? null
+                : AccessTools.Field(monolithLevelDefType, LevelInspectTextFieldName);
+            MonolithLabelField = monolithLevelDefType == null
+                ? null
+                : AccessTools.Field(monolithLevelDefType, MonolithLabelFieldName);
+
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(VoidMonolithActivationEventWindowPatch), nameof(Postfix)));
+        }
+
+        /// <summary>
+        /// Forwards the completed activation after vanilla advances the monolith level and sends its letter.
+        /// </summary>
+        private static void Postfix(object __instance, Pawn pawn)
+        {
+            DiaryPatchSafety.Run("VoidMonolithActivationEventWindowPatch", () =>
+            {
+                Thing thing = __instance as Thing;
+                if (thing == null)
+                {
+                    return;
+                }
+
+                MonolithLevelFacts facts = CurrentLevelFacts();
+                DiaryGameComponent.Current?.RecordEventWindowVoidMonolithActivation(
+                    thing,
+                    facts.defName,
+                    facts.label,
+                    pawn);
+            });
+        }
+
+        private static MonolithLevelFacts CurrentLevelFacts()
+        {
+            object anomaly = AnomalyGetter?.Invoke(null, null);
+            object levelDef = anomaly == null ? null : LevelDefGetter?.Invoke(anomaly, null);
+            Def def = levelDef as Def;
+            string label = FieldString(LevelInspectTextField, levelDef);
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = FieldString(MonolithLabelField, levelDef);
+            }
+
+            if (string.IsNullOrWhiteSpace(label) && def != null)
+            {
+                label = def.LabelCap.Resolve();
+            }
+
+            return new MonolithLevelFacts
+            {
+                defName = def == null ? string.Empty : def.defName,
+                label = label ?? string.Empty
+            };
+        }
+
+        private static string FieldString(FieldInfo field, object instance)
+        {
+            if (field == null || instance == null)
+            {
+                return string.Empty;
+            }
+
+            object value = field.GetValue(instance);
+            return value as string ?? string.Empty;
+        }
+
+        private struct MonolithLevelFacts
+        {
+            public string defName;
+            public string label;
+        }
+    }
+
+    // Fires when a vanilla SignalAction_Letter actually sends its letter. Ancient danger uses this
+    // path: a hidden RectTrigger sends a signal with the approaching pawn as SUBJECT, then a
+    // SignalAction_Letter displays LetterLabelAncientShrineWarning / AncientShrineWarning.
+    /// <summary>
+    /// Captures generic letter signals for XML event-window rules.
+    /// </summary>
+    [HarmonyPatch(typeof(SignalAction_Letter), "DoAction")]
+    public static class SignalActionLetterEventWindowPatch
+    {
+        /// <summary>
+        /// Harmony Postfix for SignalAction_Letter.DoAction. The hook forwards stable localization
+        /// keys instead of translated text so XML can match events without depending on language.
+        /// </summary>
+        public static void Postfix(SignalAction_Letter __instance, SignalArgs args)
+        {
+            DiaryPatchSafety.Run("SignalActionLetterEventWindowPatch", () =>
+            {
+                if (__instance == null)
+                {
+                    return;
+                }
+
+                string letterKey = LetterEventWindowKey(__instance);
+                if (string.IsNullOrWhiteSpace(letterKey))
+                {
+                    return;
+                }
+
+                Pawn subjectPawn = LetterSubjectPawn(__instance, args);
+                DiaryGameComponent.Current?.RecordEventWindowLetter(
+                    letterKey,
+                    LetterLabel(__instance, subjectPawn, letterKey),
+                    subjectPawn);
+            });
+        }
+
+        private static string LetterEventWindowKey(SignalAction_Letter action)
+        {
+            if (!string.IsNullOrWhiteSpace(action.letterMessageKey))
+            {
+                return action.letterMessageKey;
+            }
+
+            return action.letterLabelKey;
+        }
+
+        private static Pawn LetterSubjectPawn(SignalAction_Letter action, SignalArgs args)
+        {
+            Pawn pawn;
+            if (args.TryGetArg("SUBJECT", out pawn) && pawn != null)
+            {
+                return pawn;
+            }
+
+            return action.fixedPawnReference;
+        }
+
+        private static string LetterLabel(SignalAction_Letter action, Pawn subjectPawn, string fallback)
+        {
+            if (!string.IsNullOrWhiteSpace(action.letterLabelKey))
+            {
+                return subjectPawn == null
+                    ? action.letterLabelKey.Translate().Resolve()
+                    : action.letterLabelKey.Translate(subjectPawn.Named("PAWN")).Resolve();
+            }
+
+            return action.letterDef == null ? fallback : action.letterDef.LabelCap.Resolve();
         }
     }
 

@@ -15,6 +15,10 @@ namespace PawnDiary
     /// </summary>
     internal static class PromptEnchantmentCollector
     {
+        // Defensive prompt budget cap for localized HediffDef.description text. Descriptions can be
+        // several sentences; the prompt only needs enough game-authored context to ground the model.
+        private const int HediffDescriptionMaxChars = 220;
+
         private sealed class MatchTuning
         {
             public readonly float chance;
@@ -103,13 +107,16 @@ namespace PawnDiary
                 return;
             }
 
+            List<string> configuredCues = ConfiguredCues(def, tuning);
+            AppendHediffDescriptionCue(configuredCues, def, hediff);
+
             candidates.Add(new PromptEnchantmentCandidate
             {
                 weight = effectiveWeight,
                 priorityText = PriorityText(def),
-                conditionText = CompactCondition(hediff, tuning),
+                conditionText = HediffConditionText(def, hediff, tuning),
                 impactCues = ImpactCues(hediff),
-                configuredCues = ConfiguredCues(def, tuning)
+                configuredCues = configuredCues
             });
         }
 
@@ -285,8 +292,39 @@ namespace PawnDiary
             return cues;
         }
 
-        private static string CompactCondition(Hediff hediff, PromptEnchantmentTuning tuning)
+        private static string HediffConditionText(DiaryPromptEnchantmentDef def, Hediff hediff,
+            PromptEnchantmentTuning tuning)
         {
+            bool configuredCondition = !string.IsNullOrWhiteSpace(def?.conditionLabel)
+                || !string.IsNullOrWhiteSpace(def?.conditionKey);
+            string condition = HediffConditionLabel(def, hediff);
+            if (!configuredCondition)
+            {
+                string part = hediff.Part == null ? string.Empty : DiaryLineCleaner.CleanLine(hediff.Part.LabelCap);
+                if (!string.IsNullOrWhiteSpace(part))
+                {
+                    condition = PromptText("PawnDiary.Prompt.Health.ConditionInPart", condition, part);
+                }
+            }
+
+            string intensity = HediffIntensity(def, hediff, tuning);
+            return string.IsNullOrWhiteSpace(intensity)
+                ? condition
+                : PromptText("PawnDiary.Prompt.Health.IntensityCondition", intensity, condition);
+        }
+
+        private static string HediffConditionLabel(DiaryPromptEnchantmentDef def, Hediff hediff)
+        {
+            if (!string.IsNullOrWhiteSpace(def?.conditionLabel))
+            {
+                return def.conditionLabel;
+            }
+
+            if (!string.IsNullOrWhiteSpace(def?.conditionKey))
+            {
+                return PromptText(def.conditionKey);
+            }
+
             string condition = DiaryLineCleaner.CleanLine(hediff.LabelCap);
             if (string.IsNullOrWhiteSpace(condition))
             {
@@ -298,16 +336,7 @@ namespace PawnDiary
                 condition = PromptText("PawnDiary.Prompt.Health.ConditionFallback");
             }
 
-            string part = hediff.Part == null ? string.Empty : DiaryLineCleaner.CleanLine(hediff.Part.LabelCap);
-            if (!string.IsNullOrWhiteSpace(part))
-            {
-                condition = PromptText("PawnDiary.Prompt.Health.ConditionInPart", condition, part);
-            }
-
-            string intensity = HediffIntensity(hediff, tuning);
-            return string.IsNullOrWhiteSpace(intensity)
-                ? condition
-                : PromptText("PawnDiary.Prompt.Health.IntensityCondition", intensity, condition);
+            return condition;
         }
 
         private static List<string> ImpactCues(Hediff hediff)
@@ -324,6 +353,43 @@ namespace PawnDiary
             AppendCue(cues, hediff.def != null && hediff.def.makesSickThought,
                 PromptText("PawnDiary.Prompt.Health.Cue.HurtsMood"));
             return cues;
+        }
+
+        private static void AppendHediffDescriptionCue(List<string> cues, DiaryPromptEnchantmentDef def,
+            Hediff hediff)
+        {
+            if (cues == null || hediff?.def == null)
+            {
+                return;
+            }
+
+            string description = HediffDescription(def, hediff);
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                return;
+            }
+
+            if (description.Length > HediffDescriptionMaxChars)
+            {
+                description = description.Substring(0, HediffDescriptionMaxChars) + "...";
+            }
+
+            cues.Add(PromptText("PawnDiary.Prompt.Health.ConditionDescription", description));
+        }
+
+        private static string HediffDescription(DiaryPromptEnchantmentDef def, Hediff hediff)
+        {
+            if (!string.IsNullOrWhiteSpace(def?.descriptionOverrideKey))
+            {
+                return DiaryLineCleaner.CleanLine(PromptText(def.descriptionOverrideKey));
+            }
+
+            if (!string.IsNullOrWhiteSpace(def?.descriptionOverrideText))
+            {
+                return DiaryLineCleaner.CleanLine(def.descriptionOverrideText);
+            }
+
+            return DiaryLineCleaner.CleanLine(hediff.def.description);
         }
 
         private static void AppendCue(List<string> cues, bool include, string value)
@@ -505,8 +571,14 @@ namespace PawnDiary
             return Mathf.Max(0.1f, weight);
         }
 
-        private static string HediffIntensity(Hediff hediff, PromptEnchantmentTuning tuning)
+        private static string HediffIntensity(DiaryPromptEnchantmentDef def, Hediff hediff,
+            PromptEnchantmentTuning tuning)
         {
+            if (!string.IsNullOrWhiteSpace(def?.intensityKey))
+            {
+                return PromptText(def.intensityKey);
+            }
+
             if (hediff == null)
             {
                 return string.Empty;
@@ -630,6 +702,11 @@ namespace PawnDiary
         private static string PromptText(string key)
         {
             return key.Translate().Resolve();
+        }
+
+        private static string PromptText(string key, string arg0)
+        {
+            return key.Translate(arg0).Resolve();
         }
 
         private static string PromptText(string key, string arg0, string arg1)

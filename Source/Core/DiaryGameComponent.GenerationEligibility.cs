@@ -141,7 +141,14 @@ namespace PawnDiary
 
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
-            return PromptEnchantments.RuleFor(pawn, diaryEvent != null && diaryEvent.IsImportant());
+            float normalCandidateWeightMultiplier;
+            List<PromptEnchantmentCandidate> eventWindowCandidates =
+                ActiveEventWindowPromptCandidates(pawn, out normalCandidateWeightMultiplier);
+            return PromptEnchantments.RuleFor(
+                pawn,
+                diaryEvent != null && diaryEvent.IsImportant(),
+                eventWindowCandidates,
+                normalCandidateWeightMultiplier);
         }
 
         /// <summary>

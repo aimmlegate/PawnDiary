@@ -324,6 +324,8 @@
   <PawnDiary.Event.DayReflectionHediffProgressed>a health condition worsened: {0}</PawnDiary.Event.DayReflectionHediffProgressed>
   <PawnDiary.Event.HediffAppeared>{0} developed {1}.</PawnDiary.Event.HediffAppeared>
   <PawnDiary.Event.HediffProgressed>{0}'s {1} worsened.</PawnDiary.Event.HediffProgressed>
+  <PawnDiary.Event.AnomalyHediffAppeared>{0} was gripped by {1}.</PawnDiary.Event.AnomalyHediffAppeared>
+  <PawnDiary.Event.AnomalyHediffProgressed>{0}'s {1} deepened.</PawnDiary.Event.AnomalyHediffProgressed>
   <PawnDiary.Event.PregnancyAppeared>{0} became pregnant.</PawnDiary.Event.PregnancyAppeared>
   <PawnDiary.Event.PregnancyProgressed>{0}'s pregnancy advanced.</PawnDiary.Event.PregnancyProgressed>
   <PawnDiary.Event.LaborAppeared>{0} went into {1}.</PawnDiary.Event.LaborAppeared>
@@ -410,6 +412,17 @@
   <PawnDiary.Event.WorkNegative>{PAWN} was worn down by {WORK}.</PawnDiary.Event.WorkNegative>
   <PawnDiary.Event.WorkDarkStudy>{0} studied what should not be studied: {1}.</PawnDiary.Event.WorkDarkStudy>
 
+  <!-- Event-window text (generic XML-controlled long-running event reactions) -->
+  <PawnDiary.Event.EventWindow.Generic.start>{0} noticed {1}.</PawnDiary.Event.EventWindow.Generic.start>
+  <PawnDiary.Event.EventWindow.Generic.end>{0} saw {1} resolve.</PawnDiary.Event.EventWindow.Generic.end>
+  <PawnDiary.Event.EventWindow.Generic.timeout>{0} kept waiting for an answer about {1}, but none came.</PawnDiary.Event.EventWindow.Generic.timeout>
+  <PawnDiary.Event.EventWindow.Generic.Instruction>write this as an ongoing event window about {0}; use only supplied facts and keep the pawn's uncertainty clear</PawnDiary.Event.EventWindow.Generic.Instruction>
+  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>{0} found gray flesh: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>
+  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>{0} saw the hidden threat reveal itself: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>
+  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>{0} never learned what the gray flesh meant: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>
+  <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0} discovered the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} completed an interaction with the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because the initiator diary page failed to write.</PawnDiary.Error.SkippedInitiatorFailed>
   <PawnDiary.Error.NoLlmSettings>LLM settings are not available.</PawnDiary.Error.NoLlmSettings>
@@ -448,11 +461,76 @@
   <PawnDiary.Prompt.Health.Cue.NearCollapse>near collapse</PawnDiary.Prompt.Health.Cue.NearCollapse>
   <PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>thoughts fragmented</PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>
   <PawnDiary.Prompt.Health.Cue.BarelyAwake>barely awake</PawnDiary.Prompt.Health.Cue.BarelyAwake>
+  <PawnDiary.Prompt.Health.ConditionDescription>condition detail: {0}</PawnDiary.Prompt.Health.ConditionDescription>
+  <PawnDiary.Prompt.Health.Condition.AlcoholHigh>alcohol intoxication</PawnDiary.Prompt.Health.Condition.AlcoholHigh>
+  <PawnDiary.Prompt.Health.Condition.Hangover>hangover</PawnDiary.Prompt.Health.Condition.Hangover>
+  <PawnDiary.Prompt.Health.Condition.AmbrosiaHigh>ambrosia warmth</PawnDiary.Prompt.Health.Condition.AmbrosiaHigh>
+  <PawnDiary.Prompt.Health.Condition.GoJuiceHigh>go-juice high</PawnDiary.Prompt.Health.Condition.GoJuiceHigh>
+  <PawnDiary.Prompt.Health.Condition.LuciferiumHigh>luciferium high</PawnDiary.Prompt.Health.Condition.LuciferiumHigh>
+  <PawnDiary.Prompt.Health.Condition.FlakeHigh>flake high</PawnDiary.Prompt.Health.Condition.FlakeHigh>
+  <PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh>psychite tea high</PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh>
+  <PawnDiary.Prompt.Health.Condition.YayoHigh>yayo high</PawnDiary.Prompt.Health.Condition.YayoHigh>
+  <PawnDiary.Prompt.Health.Condition.SmokeleafHigh>smokeleaf haze</PawnDiary.Prompt.Health.Condition.SmokeleafHigh>
+  <PawnDiary.Prompt.Health.Description.AlcoholHigh>alcohol lifts mood while loosening judgment, slowing movement, and clouding awareness as it deepens</PawnDiary.Prompt.Health.Description.AlcoholHigh>
+  <PawnDiary.Prompt.Health.Description.Hangover>the delayed aftereffect of alcohol leaves the head pounding and consciousness dulled</PawnDiary.Prompt.Health.Description.Hangover>
+  <PawnDiary.Prompt.Health.Description.AmbrosiaHigh>ambrosia brings a gentle warmth, relaxed mood, and a little easy energy</PawnDiary.Prompt.Health.Description.AmbrosiaHigh>
+  <PawnDiary.Prompt.Health.Description.GoJuiceHigh>go-juice drives a pumped but steady combat rush, dulling pain and pushing the body faster</PawnDiary.Prompt.Health.Description.GoJuiceHigh>
+  <PawnDiary.Prompt.Health.Description.LuciferiumHigh>luciferium mechanites sharpen the whole body while leaving an unspoken debt for the next dose</PawnDiary.Prompt.Health.Description.LuciferiumHigh>
+  <PawnDiary.Prompt.Health.Description.FlakeHigh>flake gives a powerful euphoric psychite rush that feels bright but physically debilitating</PawnDiary.Prompt.Health.Description.FlakeHigh>
+  <PawnDiary.Prompt.Health.Description.PsychiteTeaHigh>psychite tea gives a milder euphoric lift, easing pain and adding comfortable energy</PawnDiary.Prompt.Health.Description.PsychiteTeaHigh>
+  <PawnDiary.Prompt.Health.Description.YayoHigh>yayo hits as intense psychite euphoria with restless confidence and a faster body</PawnDiary.Prompt.Health.Description.YayoHigh>
+  <PawnDiary.Prompt.Health.Description.SmokeleafHigh>smokeleaf wraps thought in fuzzy well-being while slowing awareness and movement</PawnDiary.Prompt.Health.Description.SmokeleafHigh>
+  <PawnDiary.Prompt.Health.Cue.LoosenedJudgment>loosened judgment</PawnDiary.Prompt.Health.Cue.LoosenedJudgment>
+  <PawnDiary.Prompt.Health.Cue.ReducedCapacities>reduced capacities</PawnDiary.Prompt.Health.Cue.ReducedCapacities>
+  <PawnDiary.Prompt.Health.Cue.PoundingAftereffects>pounding aftereffects</PawnDiary.Prompt.Health.Cue.PoundingAftereffects>
+  <PawnDiary.Prompt.Health.Cue.RelaxedEnergy>relaxed energy</PawnDiary.Prompt.Health.Cue.RelaxedEnergy>
+  <PawnDiary.Prompt.Health.Cue.SoftMoodLift>soft mood lift</PawnDiary.Prompt.Health.Cue.SoftMoodLift>
+  <PawnDiary.Prompt.Health.Cue.CombatRush>combat rush</PawnDiary.Prompt.Health.Cue.CombatRush>
+  <PawnDiary.Prompt.Health.Cue.SharpenedBody>sharpened body</PawnDiary.Prompt.Health.Cue.SharpenedBody>
+  <PawnDiary.Prompt.Health.Cue.ArtificialClarity>artificial clarity</PawnDiary.Prompt.Health.Cue.ArtificialClarity>
+  <PawnDiary.Prompt.Health.Cue.MechaniteDebt>mechanite debt</PawnDiary.Prompt.Health.Cue.MechaniteDebt>
+  <PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria>hard psychite euphoria</PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria>
+  <PawnDiary.Prompt.Health.Cue.DebilitatingHigh>debilitating high</PawnDiary.Prompt.Health.Cue.DebilitatingHigh>
+  <PawnDiary.Prompt.Health.Cue.MildPsychiteLift>mild psychite lift</PawnDiary.Prompt.Health.Cue.MildPsychiteLift>
+  <PawnDiary.Prompt.Health.Cue.EasyEnergy>easy energy</PawnDiary.Prompt.Health.Cue.EasyEnergy>
+  <PawnDiary.Prompt.Health.Cue.RestlessDrive>restless drive</PawnDiary.Prompt.Health.Cue.RestlessDrive>
+  <PawnDiary.Prompt.Health.Cue.FuzzyWellBeing>fuzzy well-being</PawnDiary.Prompt.Health.Cue.FuzzyWellBeing>
+  <PawnDiary.Prompt.Health.Cue.SlowedBody>slowed body</PawnDiary.Prompt.Health.Cue.SlowedBody>
+  <PawnDiary.Prompt.Health.Condition.RevenantHypnosis>revenant hypnosis</PawnDiary.Prompt.Health.Condition.RevenantHypnosis>
+  <PawnDiary.Prompt.Health.Condition.CubeInterest>cube fixation</PawnDiary.Prompt.Health.Condition.CubeInterest>
+  <PawnDiary.Prompt.Health.Condition.CubeWithdrawal>cube withdrawal</PawnDiary.Prompt.Health.Condition.CubeWithdrawal>
+  <PawnDiary.Prompt.Health.Condition.CubeRage>cube rage</PawnDiary.Prompt.Health.Condition.CubeRage>
+  <PawnDiary.Prompt.Health.Condition.CorpseTorment>corpse torment</PawnDiary.Prompt.Health.Condition.CorpseTorment>
+  <PawnDiary.Prompt.Health.Description.RevenantHypnosis>a revenant's psychic hold keeps dragging attention into trance and blank obedience</PawnDiary.Prompt.Health.Description.RevenantHypnosis>
+  <PawnDiary.Prompt.Health.Description.CubeInterest>the cube keeps returning to mind until ordinary thoughts feel secondary</PawnDiary.Prompt.Health.Description.CubeInterest>
+  <PawnDiary.Prompt.Health.Description.CubeWithdrawal>separation from the cube becomes an aching need that crowds out other concerns</PawnDiary.Prompt.Health.Description.CubeWithdrawal>
+  <PawnDiary.Prompt.Health.Description.CubeRage>the cube fixation has curdled into violent, narrowing anger</PawnDiary.Prompt.Health.Description.CubeRage>
+  <PawnDiary.Prompt.Health.Description.CorpseTorment>death-haunted torment presses into thought and will not settle like ordinary grief</PawnDiary.Prompt.Health.Description.CorpseTorment>
+  <PawnDiary.Prompt.Health.Cue.TrancePressure>trance pressure</PawnDiary.Prompt.Health.Cue.TrancePressure>
+  <PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>thoughts pulled away</PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>
+  <PawnDiary.Prompt.Health.Cue.CompulsiveFocus>compulsive focus</PawnDiary.Prompt.Health.Cue.CompulsiveFocus>
+  <PawnDiary.Prompt.Health.Cue.ObjectFixation>object fixation</PawnDiary.Prompt.Health.Cue.ObjectFixation>
+  <PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>compulsive absence</PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>
+  <PawnDiary.Prompt.Health.Cue.RestlessNeed>restless need</PawnDiary.Prompt.Health.Cue.RestlessNeed>
+  <PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent>compulsion turns violent</PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent>
+  <PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>thoughts narrow to anger</PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>
+  <PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts>death-haunted thoughts</PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts>
+  <PawnDiary.Prompt.Health.Cue.UnnaturalGuilt>unnatural guilt</PawnDiary.Prompt.Health.Cue.UnnaturalGuilt>
   <PawnDiary.Prompt.Context.Important>important context</PawnDiary.Prompt.Context.Important>
   <PawnDiary.Prompt.Context.RoyalTitle>royal title</PawnDiary.Prompt.Context.RoyalTitle>
   <PawnDiary.Prompt.Context.IdeologyRole>ideoligion role</PawnDiary.Prompt.Context.IdeologyRole>
   <PawnDiary.Prompt.Context.Value>{0}: {1}</PawnDiary.Prompt.Context.Value>
   <PawnDiary.Prompt.Context.Cue.RespectIfRelevant>respect this status if it changes how the pawn would frame the event</PawnDiary.Prompt.Context.Cue.RespectIfRelevant>
+  <PawnDiary.Prompt.EventWindow.Priority>active event context</PawnDiary.Prompt.EventWindow.Priority>
+  <PawnDiary.Prompt.EventWindow.ConditionFallback>active event: {0}</PawnDiary.Prompt.EventWindow.ConditionFallback>
+  <PawnDiary.Prompt.EventWindow.Detail>event detail: {0}</PawnDiary.Prompt.EventWindow.Detail>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>override normal context with unresolved anomaly suspicion</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>metalhorror suspicion</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>gray flesh has appeared in the colony, but the source has not revealed itself yet; every ordinary interaction may be shadowed by fear that someone is carrying the thing inside them</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>gray flesh evidence</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>impostor fear</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>unresolved hidden threat</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>
+  <PawnDiary.Event.EventWindow.AncientDanger.Start>Near an ancient wall, {0} felt sudden foreboding: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>

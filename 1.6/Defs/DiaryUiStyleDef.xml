@@ -139,6 +139,7 @@
     <!-- Saved DiaryEvent.colorCue -> card accent color. Cue names come from DiaryInteractionGroupDefs.xml. -->
     <cueColors>
       <li><cue>combat</cue><color><preset>hostile</preset></color></li>
+      <li><cue>danger</cue><color><r>0.94</r><g>0.28</g><b>0.12</b><a>1</a></color></li>
       <li><cue>socialFight</cue><color><r>1</r><g>0.52</g><b>0.16</b><a>1</a></color></li>
       <li><cue>mentalBreak</cue><color><r>0.48</r><g>0.64</g><b>0.48</b><a>1</a></color></li>
       <li><cue>daze</cue><color><preset>gene</preset></color></li>

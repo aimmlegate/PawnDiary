@@ -81,14 +81,6 @@ namespace PawnDiary
                 return;
             }
 
-            // XML owns which lifecycle signals count as diary-worthy. The signal IS the classifier
-            // key: "accepted" -> questAccepted, "completed" -> questCompleted, "failed" -> questFailed.
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyQuest(signal);
-            if (group == null || !PawnDiaryMod.Settings.IsQuestEnabled(signal))
-            {
-                return;
-            }
-
             // Snapshot the quest's rich context once (these scan parts / involved factions).
             string questDefName = quest.root?.defName;
             if (string.IsNullOrEmpty(questDefName))
@@ -97,6 +89,20 @@ namespace PawnDiary
             }
 
             string cleanedLabel = BuildQuestLabel(quest);
+
+            // Event windows are generic XML policy, not the Quest-domain diary group itself. Emit the
+            // lifecycle signal before group gating so XML can watch a quest without forcing all quest
+            // diary entries on.
+            RecordEventWindowSignal(EventWindowSourceQuest, questDefName, signal, cleanedLabel, null);
+
+            // XML owns which lifecycle signals count as diary-worthy. The signal IS the classifier
+            // key: "accepted" -> questAccepted, "completed" -> questCompleted, "failed" -> questFailed.
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyQuest(signal);
+            if (group == null || !PawnDiaryMod.Settings.IsQuestEnabled(signal))
+            {
+                return;
+            }
+
             string factionDefName = BuildQuestFactionDefName(quest);
             string rewards = BuildQuestRewardsSummary(quest);
             string description = BuildQuestDescription(quest);

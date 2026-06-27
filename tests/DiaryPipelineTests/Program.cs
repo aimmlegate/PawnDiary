@@ -20,6 +20,7 @@ namespace DiaryPipelineTests
             TestSoloSelection();
             TestSoloBatchSelection();
             TestPromptEnchantmentPlanner();
+            TestEventWindowPolicy();
             TestEventPromptKeyCandidates();
             TestDomainClassifier();
             TestResponsePostprocessorRules();
@@ -348,6 +349,137 @@ namespace DiaryPipelineTests
                     new List<PromptEnchantmentCandidate> { candidates[0] },
                     new PromptEnchantmentTuning { maxImpactCues = 0 },
                     0f));
+        }
+
+        private static void TestEventWindowPolicy()
+        {
+            EventWindowSignalFacts grayFlesh = new EventWindowSignalFacts
+            {
+                source = "ThingSpawned",
+                signal = "spawned",
+                defName = "GrayFleshSample",
+                label = "gray flesh sample"
+            };
+
+            AssertTrue(
+                "event window exact def match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "ThingSpawned",
+                        signal = "spawned",
+                        matchDefNames = new List<string> { "GrayFleshSample" }
+                    },
+                    grayFlesh));
+            AssertTrue(
+                "event window rejects wrong source",
+                !EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "Incident",
+                        signal = "spawned",
+                        matchDefNames = new List<string> { "GrayFleshSample" }
+                    },
+                    grayFlesh));
+            AssertTrue(
+                "event window token match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "ThingSpawned",
+                        matchTokens = new List<string> { "flesh sample" }
+                    },
+                    grayFlesh));
+            AssertTrue(
+                "event window source signal only",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "Quest",
+                        signal = "accepted"
+                    },
+                    new EventWindowSignalFacts { source = "Quest", signal = "accepted" }));
+            EventWindowSignalFacts ancientDanger = new EventWindowSignalFacts
+            {
+                source = "Letter",
+                signal = "received",
+                defName = "AncientShrineWarning",
+                label = "Ancient danger",
+                subjectPawnId = "Pawn_Alice_1",
+                subjectLabel = "Alice"
+            };
+            EventWindowSignalFacts voidMonolith = new EventWindowSignalFacts
+            {
+                source = "ProximityLetter",
+                signal = "received",
+                defName = "VoidMonolith",
+                label = "Fallen monolith",
+                subjectPawnId = "Pawn_Bruno_2",
+                subjectLabel = "Bruno"
+            };
+            EventWindowSignalFacts voidMonolithActivation = new EventWindowSignalFacts
+            {
+                source = "VoidMonolith",
+                signal = "activated",
+                defName = "Waking",
+                label = "Level 2: Pulsing with psychic energy",
+                subjectPawnId = "Pawn_Bruno_2",
+                subjectLabel = "Bruno"
+            };
+            AssertTrue(
+                "event window letter exact def match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "Letter",
+                        signal = "received",
+                        matchDefNames = new List<string> { "AncientShrineWarning" }
+                    },
+                    ancientDanger));
+            AssertTrue(
+                "event window proximity letter exact def match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "ProximityLetter",
+                        signal = "received",
+                        matchDefNames = new List<string> { "VoidMonolith" }
+                    },
+                    voidMonolith));
+            AssertTrue(
+                "event window void monolith activation match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "VoidMonolith",
+                        signal = "activated"
+                    },
+                    voidMonolithActivation));
+            AssertTrue(
+                "event window void monolith activation level match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "VoidMonolith",
+                        signal = "activated",
+                        matchDefNames = new List<string> { "Waking" }
+                    },
+                    voidMonolithActivation));
+            AssertTrue(
+                "event window subject token match",
+                EventWindowPolicy.Matches(
+                    new EventWindowTriggerRule
+                    {
+                        source = "Letter",
+                        matchTokens = new List<string> { "Alice" }
+                    },
+                    ancientDanger));
+            AssertTrue(
+                "event window blank trigger rejected",
+                !EventWindowPolicy.Matches(new EventWindowTriggerRule(), grayFlesh));
+            AssertTrue(
+                "event window empty rules do not match",
+                !EventWindowPolicy.MatchesAny(new List<EventWindowTriggerRule>(), grayFlesh));
         }
 
         private static void TestPromptCaptureFormatting()
