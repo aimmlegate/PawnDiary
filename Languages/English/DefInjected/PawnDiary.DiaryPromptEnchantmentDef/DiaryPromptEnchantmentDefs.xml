@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DiaryEnchant_RoyalTitle.label>royal title</DiaryEnchant_RoyalTitle.label>
+  <DiaryEnchant_IdeologyRole.label>ideoligion role</DiaryEnchant_IdeologyRole.label>
+  <DiaryEnchant_ConsciousnessClouded.label>clouded consciousness</DiaryEnchant_ConsciousnessClouded.label>
+  <DiaryEnchant_ConsciousnessFading.label>fading consciousness</DiaryEnchant_ConsciousnessFading.label>
+  <DiaryEnchant_ConsciousnessBarelyAwake.label>barely conscious</DiaryEnchant_ConsciousnessBarelyAwake.label>
+  <DiaryEnchant_FeverishBody.label>feverish body</DiaryEnchant_FeverishBody.label>
+  <DiaryEnchant_BloodLossUrgency.label>blood loss urgency</DiaryEnchant_BloodLossUrgency.label>
+  <DiaryEnchant_AlcoholHigh.label>alcohol intoxication</DiaryEnchant_AlcoholHigh.label>
+  <DiaryEnchant_Hangover.label>hangover</DiaryEnchant_Hangover.label>
+  <DiaryEnchant_AmbrosiaHigh.label>ambrosia warmth</DiaryEnchant_AmbrosiaHigh.label>
+  <DiaryEnchant_GoJuiceHigh.label>go-juice high</DiaryEnchant_GoJuiceHigh.label>
+  <DiaryEnchant_LuciferiumHigh.label>luciferium high</DiaryEnchant_LuciferiumHigh.label>
+  <DiaryEnchant_LuciferiumDependency.label>luciferium dependency</DiaryEnchant_LuciferiumDependency.label>
+  <DiaryEnchant_ChemicalCraving.label>chemical craving</DiaryEnchant_ChemicalCraving.label>
+  <DiaryEnchant_FlakeHigh.label>flake high</DiaryEnchant_FlakeHigh.label>
+  <DiaryEnchant_PsychiteTeaHigh.label>psychite tea high</DiaryEnchant_PsychiteTeaHigh.label>
+  <DiaryEnchant_YayoHigh.label>yayo high</DiaryEnchant_YayoHigh.label>
+  <DiaryEnchant_SmokeleafHigh.label>smokeleaf high</DiaryEnchant_SmokeleafHigh.label>
+  <DiaryEnchant_PsychicHangover.label>psychic hangover</DiaryEnchant_PsychicHangover.label>
+  <DiaryEnchant_Blindness.label>blindness</DiaryEnchant_Blindness.label>
+  <DiaryEnchant_MemoryDecay.label>dementia or alzheimer's</DiaryEnchant_MemoryDecay.label>
+  <DiaryEnchant_TraumaSavant.label>trauma savant</DiaryEnchant_TraumaSavant.label>
+  <DiaryEnchant_ResurrectionPsychosis.label>resurrection psychosis</DiaryEnchant_ResurrectionPsychosis.label>
+  <DiaryEnchant_Joywire.label>joywire</DiaryEnchant_Joywire.label>
+  <DiaryEnchant_ParalyticAbasia.label>paralytic abasia</DiaryEnchant_ParalyticAbasia.label>
+  <DiaryEnchant_Mindscrew.label>mindscrew</DiaryEnchant_Mindscrew.label>
+  <DiaryEnchant_Pregnancy.label>pregnancy</DiaryEnchant_Pregnancy.label>
+  <DiaryEnchant_HemogenCraving.label>hemogen craving</DiaryEnchant_HemogenCraving.label>
+  <DiaryEnchant_PsychicBondTorn.label>psychic bond torn</DiaryEnchant_PsychicBondTorn.label>
+  <DiaryEnchant_BlissLobotomy.label>bliss lobotomy</DiaryEnchant_BlissLobotomy.label>
+  <DiaryEnchant_RevenantHypnosis.label>revenant hypnosis</DiaryEnchant_RevenantHypnosis.label>
+  <DiaryEnchant_CubeInterest.label>cube interest</DiaryEnchant_CubeInterest.label>
+  <DiaryEnchant_CubeWithdrawal.label>cube withdrawal</DiaryEnchant_CubeWithdrawal.label>
+  <DiaryEnchant_CubeRage.label>cube rage</DiaryEnchant_CubeRage.label>
+  <DiaryEnchant_VoidShockOrTouched.label>void shock or touched</DiaryEnchant_VoidShockOrTouched.label>
+  <DiaryEnchant_CorpseTorment.label>corpse torment</DiaryEnchant_CorpseTorment.label>
+  <DiaryEnchant_Inhumanized.label>inhumanized</DiaryEnchant_Inhumanized.label>
+  <DiaryEnchant_FleshMutation.label>flesh tentacle or whip</DiaryEnchant_FleshMutation.label>
+</LanguageData>

@@ -354,7 +354,9 @@ writing-style rules, or shared prompts. Variant pools use indexed DefInjected ke
 `<group.instructions.0>`; avoid blank list entries so indices stay aligned. Custom Pawn Diary Def
 translation folders use fully qualified C# type names, for example
 `Languages/English/DefInjected/PawnDiary.DiaryInteractionGroupDef/`; simple folder names do not
-resolve for namespaced custom Defs in RimWorld's language loader.
+resolve for namespaced custom Defs in RimWorld's language loader. English and Russian currently
+mirror ten localization XML files: `Keyed/PawnDiary.xml` plus nine custom-Def `DefInjected`
+folders.
 
 Raw English is intentional for prompt schema labels (`event:`, `role:`, `thought=`), internal role
 and sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), defNames, API

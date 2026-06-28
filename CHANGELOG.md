@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Russian DefInjected coverage completed.** Prompt template field labels, prompt enchantment
+  labels, and condition writing-style override labels now have matching English stubs and Russian
+  translations, clearing the Pawn Diary entries from RimWorld's Russian translation report.
+
 - **Russian Workshop localization packaging added.** `scripts/publish.ps1` now builds Russian as a
   separate language-mod payload by default, excludes it from the main payload, writes translated
   Russian `About.xml` metadata, uses a Russian-localized Workshop preview, and lets the localization
@@ -29,12 +33,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   rebuilt `DiaryPersonaDef` writing styles were left intact.
 
 - **Russian translation added.** A full `Languages/Russian (Русский)/` set ships alongside the
-  English source: every Keyed UI/prompt string and all six DefInjected files (event prompts, event
-  windows, humor cues, interaction groups, personas, shared prompts). Game terms follow RimWorld's
-  official Russian glossary (e.g. налёт, нашествие насекомых, серая плоть, монолит пустоты, Go-сок,
-  люциферий, психиновый чай). The writing-style personas are **not** translated literally — each is
-  rebuilt on a fitting Russian literary tradition with fresh synthetic examples and no author names.
-  Key parity and `{0}`/`{PAWN}`/`{WORK}` placeholder integrity verified against the English source.
+  English source: every Keyed UI/prompt string and the initial DefInjected files for event prompts,
+  event windows, humor cues, interaction groups, personas, and shared prompts. Game terms follow
+  RimWorld's official Russian glossary (e.g. налёт, нашествие насекомых, серая плоть, монолит
+  пустоты, Go-сок, люциферий, психиновый чай). The writing-style personas are **not** translated
+  literally — each is rebuilt on a fitting Russian literary tradition with fresh synthetic examples
+  and no author names. Key parity and `{0}`/`{PAWN}`/`{WORK}` placeholder integrity verified against
+  the English source.
 
 - **Prompt and title cleanup tightened.** Bad title follow-up responses with
   markup/control/schema characters now fall back to generic diary excerpts, while quest prompt facts

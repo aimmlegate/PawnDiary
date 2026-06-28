@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <DiaryEnchant_RoyalTitle.label>титул</DiaryEnchant_RoyalTitle.label>
+  <DiaryEnchant_IdeologyRole.label>роль в идеолигии</DiaryEnchant_IdeologyRole.label>
+  <DiaryEnchant_ConsciousnessClouded.label>помутнённое сознание</DiaryEnchant_ConsciousnessClouded.label>
+  <DiaryEnchant_ConsciousnessFading.label>угасающее сознание</DiaryEnchant_ConsciousnessFading.label>
+  <DiaryEnchant_ConsciousnessBarelyAwake.label>едва в сознании</DiaryEnchant_ConsciousnessBarelyAwake.label>
+  <DiaryEnchant_FeverishBody.label>лихорадящее тело</DiaryEnchant_FeverishBody.label>
+  <DiaryEnchant_BloodLossUrgency.label>угроза кровопотери</DiaryEnchant_BloodLossUrgency.label>
+  <DiaryEnchant_AlcoholHigh.label>опьянение</DiaryEnchant_AlcoholHigh.label>
+  <DiaryEnchant_Hangover.label>похмелье</DiaryEnchant_Hangover.label>
+  <DiaryEnchant_AmbrosiaHigh.label>тепло амброзии</DiaryEnchant_AmbrosiaHigh.label>
+  <DiaryEnchant_GoJuiceHigh.label>действие Go-сока</DiaryEnchant_GoJuiceHigh.label>
+  <DiaryEnchant_LuciferiumHigh.label>действие люциферия</DiaryEnchant_LuciferiumHigh.label>
+  <DiaryEnchant_LuciferiumDependency.label>зависимость от люциферия</DiaryEnchant_LuciferiumDependency.label>
+  <DiaryEnchant_ChemicalCraving.label>химическая тяга</DiaryEnchant_ChemicalCraving.label>
+  <DiaryEnchant_FlakeHigh.label>кайф от хлопьев психина</DiaryEnchant_FlakeHigh.label>
+  <DiaryEnchant_PsychiteTeaHigh.label>кайф от психинового чая</DiaryEnchant_PsychiteTeaHigh.label>
+  <DiaryEnchant_YayoHigh.label>кайф от порошка психина</DiaryEnchant_YayoHigh.label>
+  <DiaryEnchant_SmokeleafHigh.label>кайф от дымолиста</DiaryEnchant_SmokeleafHigh.label>
+  <DiaryEnchant_PsychicHangover.label>псионическое похмелье</DiaryEnchant_PsychicHangover.label>
+  <DiaryEnchant_Blindness.label>слепота</DiaryEnchant_Blindness.label>
+  <DiaryEnchant_MemoryDecay.label>деменция или болезнь Альцгеймера</DiaryEnchant_MemoryDecay.label>
+  <DiaryEnchant_TraumaSavant.label>одарённость после травмы</DiaryEnchant_TraumaSavant.label>
+  <DiaryEnchant_ResurrectionPsychosis.label>психоз после воскрешения</DiaryEnchant_ResurrectionPsychosis.label>
+  <DiaryEnchant_Joywire.label>чип счастья</DiaryEnchant_Joywire.label>
+  <DiaryEnchant_ParalyticAbasia.label>паралитическая абазия</DiaryEnchant_ParalyticAbasia.label>
+  <DiaryEnchant_Mindscrew.label>мозгорез</DiaryEnchant_Mindscrew.label>
+  <DiaryEnchant_Pregnancy.label>беременность</DiaryEnchant_Pregnancy.label>
+  <DiaryEnchant_HemogenCraving.label>гемогенное голодание</DiaryEnchant_HemogenCraving.label>
+  <DiaryEnchant_PsychicBondTorn.label>разорванная пси-связь</DiaryEnchant_PsychicBondTorn.label>
+  <DiaryEnchant_BlissLobotomy.label>блаженство от лоботомии</DiaryEnchant_BlissLobotomy.label>
+  <DiaryEnchant_RevenantHypnosis.label>гипноз ревенанта</DiaryEnchant_RevenantHypnosis.label>
+  <DiaryEnchant_CubeInterest.label>интерес к кубу</DiaryEnchant_CubeInterest.label>
+  <DiaryEnchant_CubeWithdrawal.label>кубическая ломка</DiaryEnchant_CubeWithdrawal.label>
+  <DiaryEnchant_CubeRage.label>кубический гнев</DiaryEnchant_CubeRage.label>
+  <DiaryEnchant_VoidShockOrTouched.label>шок пустоты или касание пустоты</DiaryEnchant_VoidShockOrTouched.label>
+  <DiaryEnchant_CorpseTorment.label>месть мертвеца</DiaryEnchant_CorpseTorment.label>
+  <DiaryEnchant_Inhumanized.label>обесчеловечивание</DiaryEnchant_Inhumanized.label>
+  <DiaryEnchant_FleshMutation.label>плотяное щупальце или кнут</DiaryEnchant_FleshMutation.label>
+</LanguageData>
