@@ -37,7 +37,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordTale(__result, def);
+                DiaryEvents.Submit(new TaleSignal(__result, def));
             });
         }
     }

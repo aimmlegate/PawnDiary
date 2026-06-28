@@ -134,6 +134,12 @@ namespace PawnDiary
             DelayGenerationUntil(diaryEvent, povRole, readyTick);
         }
 
+        /// <summary>Queues the neutral death-description prompt for a death-shaped entry.</summary>
+        internal void QueueDeathDescriptionFor(DiaryEvent diaryEvent)
+        {
+            QueueDeathDescription(diaryEvent);
+        }
+
         /// <summary>
         /// Shared "ask the catalog" step: looks up the Spec for the payload's event type and runs the
         /// pure Decide. Returns false (and a Drop decision) when the payload is missing, no Spec is

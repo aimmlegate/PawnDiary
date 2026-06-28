@@ -110,6 +110,48 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// A pawn can receive a neutral death-description page if it is a humanlike colonist — even
+        /// post-mortem, when IsDiaryEligible no longer holds. Shared by the Tale death-description path
+        /// and the Death fallback path. internal so the Tale signal in PawnDiary.Ingestion can read it.
+        /// Moved verbatim from the old DiaryGameComponent.Tales.cs.
+        /// </summary>
+        internal static bool IsDeathDescriptionEligible(Pawn pawn)
+        {
+            return pawn != null && IsHumanlike(pawn) && pawn.IsColonist;
+        }
+
+        /// <summary>
+        /// True when the pawn already has a neutral death-description page, so the Tale path and the
+        /// Pawn.Kill fallback do not both write one. internal so the Death fallback signal can read it
+        /// via DiaryGameComponent.Current. Moved verbatim from the old DiaryGameComponent.Tales.cs.
+        /// </summary>
+        internal bool HasDeathDescriptionFor(Pawn pawn)
+        {
+            string pawnId = pawn?.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (diary?.eventIds == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
+                if (diaryEvent != null && diaryEvent.IsDeathDescriptionFor(pawnId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Returns whether a pawn is old enough for first-person diary ownership/generation.
         /// </summary>
         private static bool IsFirstPersonDiaryAgeEligible(Pawn pawn)
@@ -196,7 +238,7 @@ namespace PawnDiary
         /// Adds the death-description event to the deceased colonist's diary even after death state
         /// makes the usual live-colonist eligibility checks unreliable.
         /// </summary>
-        private void AddDeathEventRef(Pawn pawn, string eventId)
+        internal void AddDeathEventRef(Pawn pawn, string eventId)
         {
             if (!IsDeathDescriptionEligible(pawn) || string.IsNullOrWhiteSpace(eventId))
             {

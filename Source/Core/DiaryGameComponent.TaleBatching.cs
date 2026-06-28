@@ -16,7 +16,7 @@ namespace PawnDiary
         /// <summary>
         /// Returns the classified Tale group when that group has an enabled per-pawn batch policy.
         /// </summary>
-        private static DiaryInteractionGroupDef TaleBatchGroupFor(TaleDef taleDef)
+        internal static DiaryInteractionGroupDef TaleBatchGroupFor(TaleDef taleDef)
         {
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyTale(taleDef);
             return group != null && group.HasTaleBatchPolicy ? group : null;
@@ -26,7 +26,7 @@ namespace PawnDiary
         /// Adds one Tale to each eligible pawn's pending solo batch instead of creating an immediate
         /// event. Each pawn gets their own final first-person diary entry when the batch flushes.
         /// </summary>
-        private void RecordBatchedTale(DiaryInteractionGroupDef group, Pawn firstPawn, Pawn secondPawn,
+        internal void RecordBatchedTale(DiaryInteractionGroupDef group, Pawn firstPawn, Pawn secondPawn,
             bool firstEligible, bool secondEligible, TaleDef taleDef, string taleLabel, Def attachedDef,
             string instruction)
         {
@@ -87,6 +87,38 @@ namespace PawnDiary
             {
                 FlushTaleBatch(key, batch);
             }
+        }
+
+        /// <summary>
+        /// Builds the raw game text for a single-pawn tale, localized because it is shown in the Diary
+        /// tab and also passed to the model as "what happened". Shared by the immediate Tale path
+        /// (TaleSignal) and this batch flush. internal so the signal in PawnDiary.Ingestion can reuse it.
+        /// Moved from the old DiaryGameComponent.Tales.cs.
+        /// </summary>
+        internal static string BuildTaleSoloText(Pawn povPawn, string label, Pawn otherPawn, Def attachedDef)
+        {
+            string text = otherPawn != null
+                ? "PawnDiary.Event.TaleSoloWithOther".Translate(povPawn.LabelShortCap, label, otherPawn.LabelShortCap).Resolve()
+                : "PawnDiary.Event.TaleSolo".Translate(povPawn.LabelShortCap, label).Resolve();
+
+            return AppendAttachedDefText(text, attachedDef);
+        }
+
+        /// <summary>
+        /// Appends the TaleData_Def label when vanilla supplied one (research project, skill, damage
+        /// type, crafted object kind). Shared by the Tale text builders. Moved from Tales.cs.
+        /// </summary>
+        internal static string AppendAttachedDefText(string text, Def attachedDef)
+        {
+            if (attachedDef == null)
+            {
+                return text;
+            }
+
+            string label = DiaryLineCleaner.CleanLine(attachedDef.LabelCap.Resolve());
+            return string.IsNullOrWhiteSpace(label)
+                ? text
+                : text + "PawnDiary.Event.TaleAttachedDef".Translate(label).Resolve();
         }
 
         /// <summary>

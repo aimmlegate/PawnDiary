@@ -2,6 +2,7 @@
 // death state, then provide a fallback neutral death page when vanilla does not emit a death Tale.
 // New to this? See AGENTS.md ("Harmony patches").
 using HarmonyLib;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -36,7 +37,7 @@ namespace PawnDiary
         {
             DiaryPatchSafety.Run("PawnKillPatch.Postfix", () =>
             {
-                DiaryGameComponent.Current?.RecordDeathFallback(__instance);
+                DiaryEvents.Submit(new DeathFallbackSignal(__instance));
             });
         }
     }
