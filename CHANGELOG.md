@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Russian prompt and event wording hardened.** Russian event facts, prompt instructions, persona
+  examples, dev previews, and psy terminology now avoid gendered placeholder grammar, replace
+  literal calques such as "psychocasts", and document the neutral-placeholder rule for future
+  localization edits.
+
 - **Russian UI wording reworked.** Visible Russian Keyed strings now avoid rough technical
   anglicisms in the diary tab, model-connection settings, prompt editor, persona editor, dev
   controls, and debug/error messages; the Russian glossary and localization notes now document the

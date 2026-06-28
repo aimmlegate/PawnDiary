@@ -376,12 +376,16 @@ labels: prefer plain Russian words such as "address", "connection", "distributio
 "instruction" over "endpoint", "routing", "studio", or "system prompt" translations. Keep raw
 `API`, `OpenAI`, `URL`, `Bearer`, `XML`, and `UTF-8` only where they name a protocol, product,
 scheme, format, or file encoding. Russian prompt prose should be idiomatic instructions for the
-model rather than literal English calques. Russian humor cues should likewise
-use local dry, bureaucratic, and household understatement patterns instead of translating English
-deadpan/punchline mechanics. When adding or renaming an English key, add the matching Russian key in
-the same file, or the entry silently falls back to English in a Russian game. Canonical game-term
-translations are recorded in `Languages/Russian (Русский)/GLOSSARY.md` (mined from RimWorld's
-official RU language packs); reuse it so terminology stays consistent with the base game.
+model rather than literal English calques. Russian strings that contain dynamic pawn, target, work,
+or event placeholders should avoid making the placeholder the subject of a gendered or numbered
+past-tense verb/adjective unless the code guarantees that agreement. Prefer neutral forms such as
+`У {0}: ...`, `{0}: ...`, `Событие у {0}: ...`, `Применение способности {1}: {0}`, or passive and
+impersonal constructions. Russian humor cues should likewise use local dry, bureaucratic, and
+household understatement patterns instead of translating English deadpan/punchline mechanics. When
+adding or renaming an English key, add the matching Russian key in the same file, or the entry
+silently falls back to English in a Russian game. Canonical game-term translations are recorded in
+`Languages/Russian (Русский)/GLOSSARY.md` (mined from RimWorld's official RU language packs); reuse
+it so terminology stays consistent with the base game.
 
 ## 12. Build, Tests, Prompt Lab
 

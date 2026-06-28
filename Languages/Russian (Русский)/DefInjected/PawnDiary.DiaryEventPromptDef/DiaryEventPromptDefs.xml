@@ -6,7 +6,7 @@
   <DiaryEventPrompt_MentalState.label>нервный срыв</DiaryEventPrompt_MentalState.label>
   <DiaryEventPrompt_MentalState.prompt>Опиши психическое состояние как давление на мысль, порыв и действие.</DiaryEventPrompt_MentalState.prompt>
   <DiaryEventPrompt_MentalState.enhancement>Дай срыву ход: мысль, порыв, тело, действие. Оставайся в рамках названного состояния и наблюдаемого поведения; не ставь диагнозы сверх фактов.</DiaryEventPrompt_MentalState.enhancement>
-  <DiaryEventPrompt_Tale.label>сказание</DiaryEventPrompt_Tale.label>
+  <DiaryEventPrompt_Tale.label>памятное событие</DiaryEventPrompt_Tale.label>
   <DiaryEventPrompt_Tale.prompt>Опиши значимое несоциальное событие RimWorld как личный опыт или память поселенца.</DiaryEventPrompt_Tale.prompt>
   <DiaryEventPrompt_Tale.enhancement>Ищи напряжение в самих фактах: опасность, гордость, стыд, облегчение, увечье или последствия. Не превращай запись в обычную болтовню.</DiaryEventPrompt_Tale.enhancement>
   <DiaryEventPrompt_MoodEvent.label>событие настроения</DiaryEventPrompt_MoodEvent.label>
@@ -46,6 +46,6 @@
   <DiaryEventPrompt_Arrival.prompt>Напиши фактическую заметку о том, как поселенец оказался в поселении.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Пусть появление ощущается как порог: пыль, потрясение, тишина, облегчение, подозрение или первый вид убежища. Используй только факты сценария и прихода.</DiaryEventPrompt_Arrival.enhancement>
   <DiaryEventPrompt_Death.label>смерть</DiaryEventPrompt_Death.label>
-  <DiaryEventPrompt_Death.prompt>Напиши фактическую заметку о том, как погиб поселенец.</DiaryEventPrompt_Death.prompt>
+  <DiaryEventPrompt_Death.prompt>Напиши фактическую заметку об обстоятельствах смерти поселенца.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Смерть опиши резко и точно, с одной конкретной деталью причины или места. Используй только факты о причине, части тела, оружии, состоянии и обстановке. Кратко.</DiaryEventPrompt_Death.enhancement>
 </LanguageData>

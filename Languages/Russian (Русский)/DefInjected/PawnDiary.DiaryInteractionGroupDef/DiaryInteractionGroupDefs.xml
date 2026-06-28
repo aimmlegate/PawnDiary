@@ -170,7 +170,7 @@
   <ritualRoyal.instruction>завершён ритуал Royalty; пусть церемония ощущается придворной, титульной, псионической или связанной с древом души, если так подсказывает название</ritualRoyal.instruction>
   <ritualRoyal.tone>с формальным рангом и ритуальной властью</ritualRoyal.tone>
   <ritualRoyal.tones.0>придворно и заряжено рангом, титулом, свидетелями и публичной властью</ritualRoyal.tones.0>
-  <ritualRoyal.tones.1>приглушённо психофокусом и связано традицией, церемония больше тела одного поселенца</ritualRoyal.tones.1>
+  <ritualRoyal.tones.1>приглушённо пси-фокусом и связано традицией, церемония больше тела одного поселенца</ritualRoyal.tones.1>
   <ritualChildbirth.label>Ритуал рождения</ritualChildbirth.label>
   <ritualChildbirth.instruction>завершён ритуал рождения; запись медицински и эмоционально уместная: боль, забота, риск, изнеможение, облегчение или страх важнее мистики</ritualChildbirth.instruction>
   <ritualChildbirth.tone>с клинической нежностью и телесной срочностью</ritualChildbirth.tone>
@@ -181,7 +181,7 @@
   <ritualGravship.tone>с техническим давлением и сосредоточенностью дня запуска</ritualGravship.tone>
   <ritualGravship.tones.0>технично и процедурно, с упором на системы, тягу, полёт и касание земли</ritualGravship.tones.0>
   <ritualGravship.tones.1>напряжённо и по-экипажному, с предстартовыми проверками, жёсткой вибрацией и последствиями посадки</ritualGravship.tones.1>
-  <ritualAnomalyPsychic.label>Психические ритуалы</ritualAnomalyPsychic.label>
+  <ritualAnomalyPsychic.label>Псионические ритуалы</ritualAnomalyPsychic.label>
   <ritualAnomalyPsychic.instruction>завершён псионический ритуал Anomaly; пиши тревожную тьму, страх, неправильность, давление пустоты и последствия, которые не надо объяснять до конца</ritualAnomalyPsychic.instruction>
   <ritualAnomalyPsychic.tone>с оккультным ужасом и непостижимым давлением</ritualAnomalyPsychic.tone>
   <ritualAnomalyPsychic.tones.0>тревожно и темно, со страхом, неправильностью, давлением пустоты и чувственным ужасом</ritualAnomalyPsychic.tones.0>
@@ -191,10 +191,10 @@
   <ritualFinished.tone>с церемониальным весом и личными последствиями</ritualFinished.tone>
   <ritualFinished.tones.0>церемониально и телесно, внимание приковано к роли, титулу и последствию</ritualFinished.tones.0>
   <ritualFinished.tones.1>формально, но лично, публичный смысл ритуала вдавливается в частную мысль</ritualFinished.tones.1>
-  <abilityPsycast.label>Психокасты</abilityPsycast.label>
-  <abilityPsycast.instruction>применена психическая способность; момент держится на сосредоточенности, воле, психическом давлении и видимом последствии, без лишних эффектов</abilityPsycast.instruction>
-  <abilityPsycast.tone>с психической сосредоточенностью и заряженной сдержанностью</abilityPsycast.tone>
-  <abilityPsycast.tones.0>сдержанно и психически, с упором на усилие, давление и видимый результат способности</abilityPsycast.tones.0>
+  <abilityPsycast.label>Пси-способности</abilityPsycast.label>
+  <abilityPsycast.instruction>применена пси-способность; момент держится на сосредоточенности, воле, псионическом давлении и видимом последствии, без лишних эффектов</abilityPsycast.instruction>
+  <abilityPsycast.tone>с псионической сосредоточенностью и заряженной сдержанностью</abilityPsycast.tone>
+  <abilityPsycast.tones.0>псионически сдержанно, с упором на усилие, давление и видимый результат способности</abilityPsycast.tones.0>
   <abilityPsycast.tones.1>приглушённо и мощно, ум делает работу, которую тело едва может объяснить</abilityPsycast.tones.1>
   <abilityHostile.label>Боевые способности</abilityHostile.label>
   <abilityHostile.instruction>враждебная способность в опасности; активация как тактическое действие под давлением, с опорой на способность и цель</abilityHostile.instruction>
@@ -202,7 +202,7 @@
   <abilityHostile.tones.0>срочно и тактически, с упором на решение применить силу именно сейчас</abilityHostile.tones.0>
   <abilityHostile.tones.1>резко и жёстко, но лишь насколько поддерживают переданные факты способности</abilityHostile.tones.1>
   <abilityUsed.label>Способности</abilityUsed.label>
-  <abilityUsed.instruction>поселенец применил способность; пиши решение, усилие, цель, если она передана, и ближайшее последствие без новых механик и исходов</abilityUsed.instruction>
+  <abilityUsed.instruction>применена способность; пиши решение, усилие, цель, если она передана, и ближайшее последствие без новых механик и исходов</abilityUsed.instruction>
   <abilityUsed.tone>с сосредоточенным усилием и практическим последствием</abilityUsed.tone>
   <abilityUsed.tones.0>сосредоточенно и конкретно, о моменте применения, а не о широкой сводке</abilityUsed.tones.0>
   <abilityUsed.tones.1>практично и чувственно, с опорой на названную способность, цель и редкость перезарядки</abilityUsed.tones.1>
