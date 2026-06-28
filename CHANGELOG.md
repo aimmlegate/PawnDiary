@@ -7,8 +7,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 ## 2026-06-28
 
 - **Russian DefInjected coverage completed.** Prompt template field labels, prompt enchantment
-  labels, and condition writing-style override labels now have matching English stubs and Russian
-  translations, clearing the Pawn Diary entries from RimWorld's Russian translation report.
+  labels, condition writing-style override labels, and ritual-quality prompt context labels now have
+  matching English stubs and Russian translations, clearing the Pawn Diary entries from RimWorld's
+  Russian translation report.
 
 - **Russian Workshop localization packaging added.** `scripts/publish.ps1` now builds Russian as a
   separate language-mod payload by default, excludes it from the main payload, writes translated

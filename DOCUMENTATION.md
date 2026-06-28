@@ -355,12 +355,14 @@ writing-style rules, or shared prompts. Variant pools use indexed DefInjected ke
 translation folders use fully qualified C# type names, for example
 `Languages/English/DefInjected/PawnDiary.DiaryInteractionGroupDef/`; simple folder names do not
 resolve for namespaced custom Defs in RimWorld's language loader. English and Russian currently
-mirror ten localization XML files: `Keyed/PawnDiary.xml` plus nine custom-Def `DefInjected`
-folders.
+mirror eleven localization XML files: `Keyed/PawnDiary.xml` plus ten custom-Def `DefInjected`
+folders, including prompt-template field labels and ritual-quality labels that can reach prompts.
 
-Raw English is intentional for prompt schema labels (`event:`, `role:`, `thought=`), internal role
-and sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), defNames, API
-model ids, and background-thread `LlmClient` errors.
+Raw English is intentional for internal prompt/context schema tokens (`thought=`, saved context
+keys, role ids), sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`),
+defNames, API model ids, and background-thread `LlmClient` errors. XML-owned prompt-template labels
+are localized through `DiaryPromptTemplateDef` DefInjected entries so Russian prompts do not mix
+localized guidance with English field names.
 
 The source tree carries a Russian translation under `Languages/Russian (Русский)/` (folder name
 matches RimWorld's Core language def), mirroring the English `Keyed` + `DefInjected` layout

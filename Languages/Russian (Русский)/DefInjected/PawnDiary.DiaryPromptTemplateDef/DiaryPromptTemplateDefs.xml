@@ -155,4 +155,80 @@
   <DiaryPromptTemplate_ArrivalDescription.fields.4.label>что произошло</DiaryPromptTemplate_ArrivalDescription.fields.4.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.5.label>обстоятельства появления</DiaryPromptTemplate_ArrivalDescription.fields.5.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.6.label>поселенец</DiaryPromptTemplate_ArrivalDescription.fields.6.label>
+  <DiaryPromptTemplate_PairDefault.fields.0.label>событие</DiaryPromptTemplate_PairDefault.fields.0.label>
+  <DiaryPromptTemplate_PairDefault.fields.1.label>точка зрения</DiaryPromptTemplate_PairDefault.fields.1.label>
+  <DiaryPromptTemplate_PairDefault.fields.2.label>роль</DiaryPromptTemplate_PairDefault.fields.2.label>
+  <DiaryPromptTemplate_PairDefault.fields.3.label>с кем</DiaryPromptTemplate_PairDefault.fields.3.label>
+  <DiaryPromptTemplate_PairDefault.fields.5.label>инструкция</DiaryPromptTemplate_PairDefault.fields.5.label>
+  <DiaryPromptTemplate_PairDefault.fields.10.label>способность</DiaryPromptTemplate_PairDefault.fields.10.label>
+  <DiaryPromptTemplate_PairDefault.fields.20.label>обстановка</DiaryPromptTemplate_PairDefault.fields.20.label>
+  <DiaryPromptTemplate_PairDefault.fields.21.label>тон</DiaryPromptTemplate_PairDefault.fields.21.label>
+  <DiaryPromptTemplate_PairDefault.fields.22.label>отношения</DiaryPromptTemplate_PairDefault.fields.22.label>
+  <DiaryPromptTemplate_PairImportant.fields.0.label>событие</DiaryPromptTemplate_PairImportant.fields.0.label>
+  <DiaryPromptTemplate_PairImportant.fields.1.label>точка зрения</DiaryPromptTemplate_PairImportant.fields.1.label>
+  <DiaryPromptTemplate_PairImportant.fields.2.label>роль</DiaryPromptTemplate_PairImportant.fields.2.label>
+  <DiaryPromptTemplate_PairImportant.fields.3.label>с кем</DiaryPromptTemplate_PairImportant.fields.3.label>
+  <DiaryPromptTemplate_PairImportant.fields.5.label>инструкция</DiaryPromptTemplate_PairImportant.fields.5.label>
+  <DiaryPromptTemplate_PairImportant.fields.10.label>способность</DiaryPromptTemplate_PairImportant.fields.10.label>
+  <DiaryPromptTemplate_PairImportant.fields.20.label>обстановка</DiaryPromptTemplate_PairImportant.fields.20.label>
+  <DiaryPromptTemplate_PairImportant.fields.21.label>тон</DiaryPromptTemplate_PairImportant.fields.21.label>
+  <DiaryPromptTemplate_PairImportant.fields.22.label>отношения</DiaryPromptTemplate_PairImportant.fields.22.label>
+  <DiaryPromptTemplate_PairCombat.fields.0.label>событие</DiaryPromptTemplate_PairCombat.fields.0.label>
+  <DiaryPromptTemplate_PairCombat.fields.1.label>точка зрения</DiaryPromptTemplate_PairCombat.fields.1.label>
+  <DiaryPromptTemplate_PairCombat.fields.2.label>роль</DiaryPromptTemplate_PairCombat.fields.2.label>
+  <DiaryPromptTemplate_PairCombat.fields.3.label>с кем</DiaryPromptTemplate_PairCombat.fields.3.label>
+  <DiaryPromptTemplate_PairCombat.fields.5.label>инструкция</DiaryPromptTemplate_PairCombat.fields.5.label>
+  <DiaryPromptTemplate_PairCombat.fields.10.label>способность</DiaryPromptTemplate_PairCombat.fields.10.label>
+  <DiaryPromptTemplate_PairCombat.fields.19.label>ты</DiaryPromptTemplate_PairCombat.fields.19.label>
+  <DiaryPromptTemplate_PairCombat.fields.21.label>обстановка</DiaryPromptTemplate_PairCombat.fields.21.label>
+  <DiaryPromptTemplate_PairCombat.fields.22.label>тон</DiaryPromptTemplate_PairCombat.fields.22.label>
+  <DiaryPromptTemplate_PairCombat.fields.23.label>отношения</DiaryPromptTemplate_PairCombat.fields.23.label>
+  <DiaryPromptTemplate_PairCombat.fields.25.label>оружие</DiaryPromptTemplate_PairCombat.fields.25.label>
+  <DiaryPromptTemplate_PairBatched.fields.0.label>событие</DiaryPromptTemplate_PairBatched.fields.0.label>
+  <DiaryPromptTemplate_PairBatched.fields.1.label>точка зрения</DiaryPromptTemplate_PairBatched.fields.1.label>
+  <DiaryPromptTemplate_PairBatched.fields.2.label>роль</DiaryPromptTemplate_PairBatched.fields.2.label>
+  <DiaryPromptTemplate_PairBatched.fields.3.label>с кем</DiaryPromptTemplate_PairBatched.fields.3.label>
+  <DiaryPromptTemplate_PairBatched.fields.5.label>инструкция</DiaryPromptTemplate_PairBatched.fields.5.label>
+  <DiaryPromptTemplate_PairBatched.fields.10.label>способность</DiaryPromptTemplate_PairBatched.fields.10.label>
+  <DiaryPromptTemplate_PairBatched.fields.20.label>обстановка</DiaryPromptTemplate_PairBatched.fields.20.label>
+  <DiaryPromptTemplate_PairBatched.fields.21.label>тон</DiaryPromptTemplate_PairBatched.fields.21.label>
+  <DiaryPromptTemplate_SoloDefault.fields.0.label>событие</DiaryPromptTemplate_SoloDefault.fields.0.label>
+  <DiaryPromptTemplate_SoloDefault.fields.1.label>точка зрения</DiaryPromptTemplate_SoloDefault.fields.1.label>
+  <DiaryPromptTemplate_SoloDefault.fields.3.label>инструкция</DiaryPromptTemplate_SoloDefault.fields.3.label>
+  <DiaryPromptTemplate_SoloDefault.fields.12.label>способность</DiaryPromptTemplate_SoloDefault.fields.12.label>
+  <DiaryPromptTemplate_SoloDefault.fields.22.label>обстановка</DiaryPromptTemplate_SoloDefault.fields.22.label>
+  <DiaryPromptTemplate_SoloDefault.fields.23.label>тон</DiaryPromptTemplate_SoloDefault.fields.23.label>
+  <DiaryPromptTemplate_SoloImportant.fields.0.label>событие</DiaryPromptTemplate_SoloImportant.fields.0.label>
+  <DiaryPromptTemplate_SoloImportant.fields.1.label>точка зрения</DiaryPromptTemplate_SoloImportant.fields.1.label>
+  <DiaryPromptTemplate_SoloImportant.fields.3.label>инструкция</DiaryPromptTemplate_SoloImportant.fields.3.label>
+  <DiaryPromptTemplate_SoloImportant.fields.4.label>ты</DiaryPromptTemplate_SoloImportant.fields.4.label>
+  <DiaryPromptTemplate_SoloImportant.fields.13.label>способность</DiaryPromptTemplate_SoloImportant.fields.13.label>
+  <DiaryPromptTemplate_SoloImportant.fields.23.label>обстановка</DiaryPromptTemplate_SoloImportant.fields.23.label>
+  <DiaryPromptTemplate_SoloImportant.fields.24.label>тон</DiaryPromptTemplate_SoloImportant.fields.24.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.0.label>событие</DiaryPromptTemplate_SoloInternalState.fields.0.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.1.label>точка зрения</DiaryPromptTemplate_SoloInternalState.fields.1.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.3.label>инструкция</DiaryPromptTemplate_SoloInternalState.fields.3.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.8.label>способность</DiaryPromptTemplate_SoloInternalState.fields.8.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.18.label>обстановка</DiaryPromptTemplate_SoloInternalState.fields.18.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.19.label>тон</DiaryPromptTemplate_SoloInternalState.fields.19.label>
+  <DiaryPromptTemplate_SoloBatched.fields.0.label>событие</DiaryPromptTemplate_SoloBatched.fields.0.label>
+  <DiaryPromptTemplate_SoloBatched.fields.1.label>точка зрения</DiaryPromptTemplate_SoloBatched.fields.1.label>
+  <DiaryPromptTemplate_SoloBatched.fields.3.label>инструкция</DiaryPromptTemplate_SoloBatched.fields.3.label>
+  <DiaryPromptTemplate_SoloBatched.fields.8.label>способность</DiaryPromptTemplate_SoloBatched.fields.8.label>
+  <DiaryPromptTemplate_SoloBatched.fields.18.label>обстановка</DiaryPromptTemplate_SoloBatched.fields.18.label>
+  <DiaryPromptTemplate_SoloBatched.fields.19.label>тон</DiaryPromptTemplate_SoloBatched.fields.19.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.0.label>событие</DiaryPromptTemplate_SoloDayReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.1.label>точка зрения</DiaryPromptTemplate_SoloDayReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.3.label>инструкция</DiaryPromptTemplate_SoloDayReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.4.label>ты</DiaryPromptTemplate_SoloDayReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.9.label>способность</DiaryPromptTemplate_SoloDayReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.19.label>обстановка</DiaryPromptTemplate_SoloDayReflection.fields.19.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.20.label>тон</DiaryPromptTemplate_SoloDayReflection.fields.20.label>
+  <DiaryPromptTemplate_DeathDescription.fields.0.label>событие</DiaryPromptTemplate_DeathDescription.fields.0.label>
+  <DiaryPromptTemplate_DeathDescription.fields.3.label>погибший</DiaryPromptTemplate_DeathDescription.fields.3.label>
+  <DiaryPromptTemplate_DeathDescription.fields.7.label>обстановка</DiaryPromptTemplate_DeathDescription.fields.7.label>
+  <DiaryPromptTemplate_ArrivalDescription.fields.0.label>событие</DiaryPromptTemplate_ArrivalDescription.fields.0.label>
+  <DiaryPromptTemplate_ArrivalDescription.fields.3.label>поселенец</DiaryPromptTemplate_ArrivalDescription.fields.3.label>
+  <DiaryPromptTemplate_ArrivalDescription.fields.7.label>обстановка</DiaryPromptTemplate_ArrivalDescription.fields.7.label>
+  <DiaryPromptTemplate_Title.fields.0.label>запись</DiaryPromptTemplate_Title.fields.0.label>
 </LanguageData>
