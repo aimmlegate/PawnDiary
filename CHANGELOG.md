@@ -6,6 +6,19 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Memory decay kept as prompt context.** `Alzheimers`, `Dementia`, and Anomaly `CrumblingMind`
+  now use the regular memory-decay prompt enchantment only; the automatic lost-thread writing-style
+  override was removed, while `CrumbledMind` keeps its stronger collapse style override.
+
+- **Hediff prompt/style duplication fixed.** When an active hediff temporarily overrides the writing
+  style, matching hediff prompt-enchantment candidates are now suppressed so localized condition
+  guidance does not appear twice in the same prompt; unrelated prompt enchantments can still win.
+
+- **External game/mod prompt text capped.** Imported RimWorld or mod text used in prompts, including
+  hediff descriptions, live labels, DLC title/role labels, scenario descriptions, and quest
+  descriptions, is now flattened to one line and capped at two sentences; Pawn Diary's own prompt
+  XML/Keyed instructions and writing styles are left uncapped.
+
 - **Russian prompt and event wording hardened.** Russian event facts, prompt instructions, persona
   examples, dev previews, and psy terminology now avoid gendered placeholder grammar, replace
   literal calques such as "psychocasts", and document the neutral-placeholder rule for future

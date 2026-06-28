@@ -126,13 +126,13 @@ namespace PawnDiary
             Scenario scenario = Verse.Current.Game?.Scenario;
             if (scenario != null)
             {
-                string scenarioName = DiaryLineCleaner.CleanLine(scenario.name);
+                string scenarioName = PromptTextSanitizer.LocalizedPromptText(scenario.name);
                 if (!string.IsNullOrWhiteSpace(scenarioName))
                 {
                     parts.Add("scenario_name=" + scenarioName);
                 }
 
-                string scenarioDescription = DiaryLineCleaner.CleanLine(scenario.description);
+                string scenarioDescription = PromptTextSanitizer.LocalizedPromptText(scenario.description);
                 if (!string.IsNullOrWhiteSpace(scenarioDescription))
                 {
                     parts.Add("scenario_description=" + scenarioDescription);

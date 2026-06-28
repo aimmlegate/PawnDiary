@@ -151,6 +151,7 @@ namespace PawnDiary
 
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
+            List<string> suppressedHediffDefNames = HediffPersonaOverrides.SuppressedPromptHediffDefNamesFor(pawn);
             float normalCandidateWeightMultiplier;
             List<PromptEnchantmentCandidate> eventWindowCandidates =
                 ActiveEventWindowPromptCandidates(pawn, out normalCandidateWeightMultiplier);
@@ -158,7 +159,8 @@ namespace PawnDiary
                 pawn,
                 diaryEvent != null && diaryEvent.IsImportant(),
                 eventWindowCandidates,
-                normalCandidateWeightMultiplier);
+                normalCandidateWeightMultiplier,
+                suppressedHediffDefNames);
         }
 
         /// <summary>

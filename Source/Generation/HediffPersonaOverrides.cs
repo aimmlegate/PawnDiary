@@ -16,7 +16,7 @@ namespace PawnDiary
         /// </summary>
         public static string RuleFor(Pawn pawn, string fallbackPersonaDefName)
         {
-            string overridePersonaDefName = PersonaDefNameFor(pawn);
+            string overridePersonaDefName = SelectionFor(pawn).personaDefName;
             return DiaryPersonas.RuleFor(string.IsNullOrWhiteSpace(overridePersonaDefName)
                 ? fallbackPersonaDefName
                 : overridePersonaDefName);
@@ -27,17 +27,33 @@ namespace PawnDiary
         /// </summary>
         public static string PersonaDefNameFor(Pawn pawn)
         {
+            return SelectionFor(pawn).personaDefName;
+        }
+
+        /// <summary>
+        /// Returns hediff defNames already represented by the active writing-style override. Prompt
+        /// enchantments skip these so the final prompt does not repeat the same condition twice.
+        /// </summary>
+        public static List<string> SuppressedPromptHediffDefNamesFor(Pawn pawn)
+        {
+            return SelectionFor(pawn).matchedHediffDefNames;
+        }
+
+        private static HediffPersonaOverrideSelection SelectionFor(Pawn pawn)
+        {
             List<DiaryHediffPersonaOverrideDef> defs =
                 DefDatabase<DiaryHediffPersonaOverrideDef>.AllDefsListForReading;
             if (pawn == null || defs == null || defs.Count == 0)
             {
-                return string.Empty;
+                return new HediffPersonaOverrideSelection();
             }
 
-            string selected = HediffPersonaOverridePolicy.SelectPersonaDefName(
+            HediffPersonaOverrideSelection selected = HediffPersonaOverridePolicy.SelectOverride(
                 RulesFor(defs),
                 FactsFor(pawn));
-            return DiaryPersonas.ForDefName(selected) == null ? string.Empty : selected;
+            return DiaryPersonas.ForDefName(selected.personaDefName) == null
+                ? new HediffPersonaOverrideSelection()
+                : selected;
         }
 
         private static List<HediffPersonaOverrideRule> RulesFor(

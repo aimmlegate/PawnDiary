@@ -509,13 +509,14 @@
 
   <PawnDiary.DiaryPromptEnchantmentDef>
     <defName>DiaryEnchant_MemoryDecay</defName>
-    <label>dementia or alzheimer's</label>
+    <label>memory decay</label>
     <chance>0.8</chance>
     <weight>1.2</weight>
     <severity>1.3</severity>
     <hediffDefNames>
       <li>Dementia</li>
       <li>Alzheimers</li>
+      <li>CrumblingMind</li>
     </hediffDefNames>
   </PawnDiary.DiaryPromptEnchantmentDef>
 

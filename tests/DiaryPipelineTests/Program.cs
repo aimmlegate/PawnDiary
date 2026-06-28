@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
+using System.Xml.Linq;
 using PawnDiary;
 
 namespace DiaryPipelineTests
@@ -13,6 +15,7 @@ namespace DiaryPipelineTests
         {
             TestCombatPromptPlan();
             TestSoloPromptPlan();
+            TestOwnedPromptTextIsNotSentenceCapped();
             TestQuestPromptPlanFields();
             TestDualPovPromptPlans();
             TestRecipientFollowupPlan();
@@ -22,6 +25,8 @@ namespace DiaryPipelineTests
             TestSoloBatchSelection();
             TestPromptEnchantmentPlanner();
             TestHediffPersonaOverridePolicy();
+            TestMemoryDecayXmlPolicy();
+            TestPromptTextSanitizer();
             TestEventWindowPolicy();
             TestEventPromptKeyCandidates();
             TestDomainClassifier();
@@ -124,6 +129,29 @@ namespace DiaryPipelineTests
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
             AssertEqual("solo forced model carried", "story-model", plan.forcedModelName);
             AssertTrue("solo forced model not prompt text", !plan.userPrompt.Contains("story-model"));
+        }
+
+        private static void TestOwnedPromptTextIsNotSentenceCapped()
+        {
+            DiaryPolicySnapshot policy = Policy(combat: false, important: true);
+            policy.group.eventPrompt = "Owned prompt one. Owned prompt two. Owned prompt three.";
+            policy.group.eventEnhancement = "Owned enhancement one. Owned enhancement two. Owned enhancement three.";
+            DiaryTemplatePolicy template = policy.Template(DiaryPipelineTemplates.SoloImportant);
+            template.finalInstruction = "Owned final one. Owned final two. Owned final three.";
+
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = SoloPayload("e-owned-prompt", "quiet work", "Alice repaired the generator alone."),
+                policy = policy,
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = "Owned style one. Owned style two. Owned style three.",
+                maxTokens = 30
+            });
+
+            AssertContains("owned event prompt not capped", plan.userPrompt, "Owned prompt three.");
+            AssertContains("owned event enhancement not capped", plan.userPrompt, "Owned enhancement three.");
+            AssertContains("owned final instruction not capped", plan.userPrompt, "Owned final three.");
+            AssertContains("owned persona block not capped", plan.systemPrompt, "Owned style three.");
         }
 
         private static void TestQuestPromptPlanFields()
@@ -377,6 +405,35 @@ namespace DiaryPipelineTests
                     new List<PromptEnchantmentCandidate> { candidates[0] },
                     new PromptEnchantmentTuning { maxImpactCues = 0 },
                     0f));
+
+            List<PromptEnchantmentCandidate> filtered = PromptEnchantmentPlanner.WithoutSuppressedHediffSources(
+                new List<PromptEnchantmentCandidate>
+                {
+                    PromptCandidate(
+                        "persona-covered",
+                        "inhumanized",
+                        5f,
+                        null,
+                        null,
+                        "Inhumanized"),
+                    PromptCandidate(
+                        "kept",
+                        "flu",
+                        1f,
+                        null,
+                        null,
+                        "Flu"),
+                    PromptCandidate(
+                        "status",
+                        "royal title",
+                        1f,
+                        null,
+                        null)
+                },
+                new List<string> { "inhumanized" });
+            AssertEqual("prompt enchantment suppressed source count", 2, filtered.Count);
+            AssertEqual("prompt enchantment kept unsuppressed source", "Flu", filtered[0].sourceHediffDefName);
+            AssertEqual("prompt enchantment kept non-hediff source", string.Empty, filtered[1].sourceHediffDefName ?? string.Empty);
         }
 
         private static void TestHediffPersonaOverridePolicy()
@@ -450,6 +507,94 @@ namespace DiaryPipelineTests
                         }
                     },
                     hediffs));
+
+            HediffPersonaOverrideSelection selectedOverride = HediffPersonaOverridePolicy.SelectOverride(
+                new List<HediffPersonaOverrideRule>
+                {
+                    new HediffPersonaOverrideRule
+                    {
+                        priority = 1,
+                        personaDefName = "DiaryPersona_LowPriority",
+                        hediffDefNames = new List<string> { "Flu" }
+                    },
+                    new HediffPersonaOverrideRule
+                    {
+                        priority = 10,
+                        personaDefName = "DiaryPersona_InhumanizedVoid",
+                        visibleOnly = false,
+                        hediffDefNames = new List<string> { "Inhumanized" }
+                    }
+                },
+                new List<HediffPersonaOverrideFact>
+                {
+                    hediffs[0],
+                    new HediffPersonaOverrideFact
+                    {
+                        defName = "Inhumanized",
+                        label = "inhumanized duplicate",
+                        severity = 0f,
+                        visible = false
+                    },
+                    hediffs[1]
+                });
+            AssertEqual("hediff persona override selection persona", "DiaryPersona_InhumanizedVoid", selectedOverride.personaDefName);
+            AssertEqual("hediff persona override matched source unique count", 1, selectedOverride.matchedHediffDefNames.Count);
+            AssertEqual("hediff persona override matched source", "Inhumanized", selectedOverride.matchedHediffDefNames[0]);
+        }
+
+        private static void TestMemoryDecayXmlPolicy()
+        {
+            string[] memoryDecayHediffs = { "Alzheimers", "Dementia", "CrumblingMind" };
+            XDocument overrides = XDocument.Load(RepoPath("1.6", "Defs", "DiaryHediffPersonaOverrideDefs.xml"));
+            foreach (XElement def in overrides.Descendants("PawnDiary.DiaryHediffPersonaOverrideDef"))
+            {
+                string defName = ChildValue(def, "defName");
+                for (int i = 0; i < memoryDecayHediffs.Length; i++)
+                {
+                    AssertTrue(
+                        "memory decay is not a persona override: " + defName + " excludes " + memoryDecayHediffs[i],
+                        !HasHediffDefName(def, memoryDecayHediffs[i]));
+                }
+            }
+
+            XDocument enchantments = XDocument.Load(RepoPath("1.6", "Defs", "DiaryPromptEnchantmentDefs.xml"));
+            XElement memoryDecay = FindDef(enchantments, "PawnDiary.DiaryPromptEnchantmentDef", "DiaryEnchant_MemoryDecay");
+            AssertTrue("memory decay prompt enchantment exists", memoryDecay != null);
+            if (memoryDecay == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < memoryDecayHediffs.Length; i++)
+            {
+                AssertTrue(
+                    "memory decay prompt enchantment includes " + memoryDecayHediffs[i],
+                    HasHediffDefName(memoryDecay, memoryDecayHediffs[i]));
+            }
+        }
+
+        private static void TestPromptTextSanitizer()
+        {
+            AssertEqual(
+                "external prompt text keeps first two sentences",
+                "First sentence. Second sentence!",
+                PromptTextSanitizer.LocalizedPromptText("First sentence. Second sentence! Third sentence?"));
+            AssertEqual(
+                "external prompt text guards line breaks and rich text",
+                "First bold line. Second line.",
+                PromptTextSanitizer.LocalizedPromptText("First <b>bold</b> line.\r\nSecond line.\nThird line."));
+            AssertEqual(
+                "external prompt text strips control characters inside line",
+                "Alpha Beta. Gamma.",
+                PromptTextSanitizer.LocalizedPromptText("Alpha\tBeta.\u0007Gamma. Delta."));
+            AssertEqual(
+                "external prompt text includes closing quote",
+                "\"First.\" Second.",
+                PromptTextSanitizer.LocalizedPromptText("\"First.\" Second. Third."));
+            AssertEqual(
+                "external prompt text handles sentence without terminal punctuation",
+                "One long localized label without punctuation",
+                PromptTextSanitizer.LocalizedPromptText("One long localized label without punctuation"));
         }
 
         private static void TestEventWindowPolicy()
@@ -1363,13 +1508,14 @@ namespace DiaryPipelineTests
         }
 
         private static PromptEnchantmentCandidate PromptCandidate(string priorityText, string conditionText,
-            float weight, string[] impactCues, string[] configuredCues)
+            float weight, string[] impactCues, string[] configuredCues, string sourceHediffDefName = null)
         {
             return new PromptEnchantmentCandidate
             {
                 priorityText = priorityText,
                 conditionText = conditionText,
                 weight = weight,
+                sourceHediffDefName = sourceHediffDefName,
                 impactCues = impactCues == null
                     ? new List<string>()
                     : new List<string>(impactCues),
@@ -1377,6 +1523,76 @@ namespace DiaryPipelineTests
                     ? new List<string>()
                     : new List<string>(configuredCues)
             };
+        }
+
+        private static string RepoPath(params string[] parts)
+        {
+            string directory = AppContext.BaseDirectory;
+            while (!string.IsNullOrEmpty(directory))
+            {
+                if (File.Exists(Path.Combine(directory, "DOCUMENTATION.md"))
+                    && Directory.Exists(Path.Combine(directory, "1.6")))
+                {
+                    string path = directory;
+                    for (int i = 0; i < parts.Length; i++)
+                    {
+                        path = Path.Combine(path, parts[i]);
+                    }
+
+                    return path;
+                }
+
+                DirectoryInfo parent = Directory.GetParent(directory);
+                directory = parent?.FullName;
+            }
+
+            throw new InvalidOperationException("Could not locate repository root from " + AppContext.BaseDirectory);
+        }
+
+        private static XElement FindDef(XDocument document, string elementName, string defName)
+        {
+            foreach (XElement element in document.Descendants(elementName))
+            {
+                if (string.Equals(ChildValue(element, "defName"), defName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return element;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool HasHediffDefName(XElement def, string hediffDefName)
+        {
+            if (def == null)
+            {
+                return false;
+            }
+
+            foreach (XElement list in def.Descendants("hediffDefNames"))
+            {
+                foreach (XElement item in list.Elements("li"))
+                {
+                    if (string.Equals((item.Value ?? string.Empty).Trim(), hediffDefName,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static string ChildValue(XElement element, string childName)
+        {
+            if (element == null)
+            {
+                return string.Empty;
+            }
+
+            XElement child = element.Element(childName);
+            return child == null ? string.Empty : (child.Value ?? string.Empty).Trim();
         }
 
         private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)

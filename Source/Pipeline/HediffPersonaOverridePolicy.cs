@@ -32,6 +32,16 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Result of the hediff-persona match. The matched hediff names let prompt-time callers avoid
+    /// repeating the same condition as both a writing-style override and an "important context" cue.
+    /// </summary>
+    public sealed class HediffPersonaOverrideSelection
+    {
+        public string personaDefName = string.Empty;
+        public List<string> matchedHediffDefNames = new List<string>();
+    }
+
+    /// <summary>
     /// Selects the temporary writing-style override that should apply to a prompt, if any.
     /// </summary>
     public static class HediffPersonaOverridePolicy
@@ -39,31 +49,47 @@ namespace PawnDiary
         public static string SelectPersonaDefName(IList<HediffPersonaOverrideRule> rules,
             IList<HediffPersonaOverrideFact> hediffs)
         {
+            return SelectOverride(rules, hediffs).personaDefName;
+        }
+
+        public static HediffPersonaOverrideSelection SelectOverride(IList<HediffPersonaOverrideRule> rules,
+            IList<HediffPersonaOverrideFact> hediffs)
+        {
             if (rules == null || rules.Count == 0 || hediffs == null || hediffs.Count == 0)
             {
-                return string.Empty;
+                return new HediffPersonaOverrideSelection();
             }
 
-            string selectedPersona = string.Empty;
+            HediffPersonaOverrideRule selectedRule = null;
             int selectedPriority = int.MinValue;
             for (int i = 0; i < rules.Count; i++)
             {
                 HediffPersonaOverrideRule rule = rules[i];
                 if (rule == null
                     || string.IsNullOrWhiteSpace(rule.personaDefName)
-                    || (!string.IsNullOrWhiteSpace(selectedPersona) && rule.priority <= selectedPriority))
+                    || (selectedRule != null && rule.priority <= selectedPriority))
                 {
                     continue;
                 }
 
                 if (MatchesAnyHediff(rule, hediffs))
                 {
-                    selectedPersona = rule.personaDefName.Trim();
+                    selectedRule = rule;
                     selectedPriority = rule.priority;
                 }
             }
 
-            return selectedPersona;
+            if (selectedRule == null)
+            {
+                return new HediffPersonaOverrideSelection();
+            }
+
+            HediffPersonaOverrideSelection selection = new HediffPersonaOverrideSelection
+            {
+                personaDefName = selectedRule.personaDefName.Trim()
+            };
+            AddMatchedHediffDefNames(selection.matchedHediffDefNames, selectedRule, hediffs);
+            return selection;
         }
 
         private static bool MatchesAnyHediff(HediffPersonaOverrideRule rule,
@@ -98,6 +124,24 @@ namespace PawnDiary
             }
 
             return HediffNameMatches(rule, hediff);
+        }
+
+        private static void AddMatchedHediffDefNames(List<string> names,
+            HediffPersonaOverrideRule rule, IList<HediffPersonaOverrideFact> hediffs)
+        {
+            if (names == null || rule == null || hediffs == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < hediffs.Count; i++)
+            {
+                HediffPersonaOverrideFact hediff = hediffs[i];
+                if (Matches(rule, hediff) && !string.IsNullOrWhiteSpace(hediff.defName))
+                {
+                    AddUnique(names, hediff.defName);
+                }
+            }
         }
 
         private static bool HediffNameMatches(HediffPersonaOverrideRule rule,
@@ -137,6 +181,24 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        private static void AddUnique(List<string> values, string value)
+        {
+            if (values == null || string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (string.Equals(values[i], value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            values.Add(value);
         }
 
         private static bool MatchesAnyContains(List<string> needles, string candidate)

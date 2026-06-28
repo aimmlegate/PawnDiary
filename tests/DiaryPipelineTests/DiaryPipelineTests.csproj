@@ -21,6 +21,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryRichTextDecorators.cs" Link="DiaryRichTextDecorators.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryTextDecorations.cs" Link="DiaryTextDecorations.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptCapture.cs" Link="DiaryPromptCapture.cs" />
+    <Compile Include="..\..\Source\Pipeline\PromptTextSanitizer.cs" Link="PromptTextSanitizer.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptEnchantmentPlanner.cs" Link="PromptEnchantmentPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\HediffPersonaOverridePolicy.cs" Link="HediffPersonaOverridePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\EventWindowPolicy.cs" Link="EventWindowPolicy.cs" />

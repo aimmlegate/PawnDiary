@@ -21,18 +21,6 @@
   </PawnDiary.DiaryHediffPersonaOverrideDef>
 
   <PawnDiary.DiaryHediffPersonaOverrideDef>
-    <defName>HediffPersonaOverride_Alzheimers</defName>
-    <label>Memory-decay writing style</label>
-    <priority>30</priority>
-    <personaDefName>DiaryPersona_AlzheimersMemory</personaDefName>
-    <hediffDefNames>
-      <li>Alzheimers</li>
-      <li>Dementia</li>
-      <li>CrumblingMind</li>
-    </hediffDefNames>
-  </PawnDiary.DiaryHediffPersonaOverrideDef>
-
-  <PawnDiary.DiaryHediffPersonaOverrideDef>
     <defName>HediffPersonaOverride_CrumbledMind</defName>
     <label>Crumbled mind collapsed writing style</label>
     <priority>40</priority>

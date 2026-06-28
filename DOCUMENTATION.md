@@ -139,12 +139,15 @@ content is present. The same conditions also have prompt-enchantment cues, so an
 first-person prompt they win adds an `important context:` line such as `high priority; moderate cube
 withdrawal; compulsive absence, restless need; condition detail: ...`. `descriptionOverrideKey` can
 replace the standard game description per Def; otherwise the localized `HediffDef.description` is
-cleaned and capped before it reaches the model. `DiaryHediffPersonaOverrideDefs.xml` can also
-temporarily force the prompt POV pawn's writing style from active hediffs; `Inhumanized` currently
+cleaned and capped before it reaches the model. If a hediff also wins a temporary writing-style
+override, its matching prompt-enchantment candidate is suppressed so the localized condition text
+does not repeat as both style and context; unrelated hediff/status candidates remain eligible.
+`DiaryHediffPersonaOverrideDefs.xml` can also temporarily force the prompt POV pawn's writing style
+from active hediffs; `Inhumanized` currently
 uses this to force the `DiaryPersona_InhumanizedVoid` dark void style while that hediff is active.
-Base-game `Alzheimers`, `Dementia`, and Anomaly `CrumblingMind` share the
-`DiaryPersona_AlzheimersMemory` lost-thread style, while Anomaly `CrumbledMind` uses the stronger
-`DiaryPersona_CrumbledMindCollapse` mind-crumbled style. Base-game `Joywire` forces the
+Base-game `Alzheimers`, base-game `Dementia`, and Anomaly `CrumblingMind` stay regular
+memory-decay prompt enchantments rather than writing-style overrides, while Anomaly `CrumbledMind`
+uses the stronger `DiaryPersona_CrumbledMindCollapse` mind-crumbled style. Base-game `Joywire` forces the
 `DiaryPersona_JoywireHaze` bright-fog style, and Anomaly `BlissLobotomy` uses the stronger
 `DiaryPersona_BlissLobotomyHaze` blank-bliss style. Royalty `Mindscrew` forces the
 `DiaryPersona_MindscrewPain` pain-needle style when that optional DLC hediff is present. Base-game
@@ -210,9 +213,18 @@ Writing-style presets are saved settings backed by `DiaryPersonaDef`; the code s
 in some field names for save compatibility, but the player-facing feature is writing style.
 Active hediffs can temporarily override the saved style through `DiaryHediffPersonaOverrideDef`
 rules. These overrides are prompt-time only: they do not change the saved style picker value, and a
-missing/off-map pawn falls back to its saved style.
+missing/off-map pawn falls back to its saved style. Memory-decay hediffs such as `Alzheimers`,
+`Dementia`, and `CrumblingMind` deliberately remain prompt enchantments instead of automatic style
+overrides.
 
 Prompt enchantments add one weighted live-context pressure cue to eligible first-person prompts.
+When a hediff-driven writing-style override is active, the hediff sources that selected that override
+are removed from the normal prompt-enchantment pool to avoid duplicating the same condition in the
+system style block and the `important context:` line.
+Imported game/mod prompt text such as live hediff descriptions, hediff/capacity labels, DLC title or
+role labels, scenario descriptions, and quest descriptions is flattened to one prompt line and capped
+to its first two sentences before being sent to the model. Pawn Diary's own XML/Keyed prompt
+instructions, writing styles, humor cues, and field labels are not sentence-capped by this guard.
 Active event windows feed the same prompt-enchantment planner as extra XML-weighted candidates, so
 an unresolved colony threat can shape unrelated diary pages until the configured end signal or
 timeout closes it. Dev prompt-suite fixtures opt out of live prompt enchantments, including active

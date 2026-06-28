@@ -444,7 +444,7 @@ namespace PawnDiary
                     return string.Empty;
                 }
 
-                description = DiaryLineCleaner.CleanLine(description);
+                description = PromptTextSanitizer.LocalizedPromptText(description);
                 if (description.Length > QuestDescriptionCap)
                 {
                     return description.Substring(0, QuestDescriptionCap) + "...";

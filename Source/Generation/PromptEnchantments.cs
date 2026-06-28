@@ -77,7 +77,8 @@ namespace PawnDiary
         /// </summary>
         public static string RuleFor(Pawn pawn, bool includeImportantEventContext = false,
             IList<PromptEnchantmentCandidate> extraCandidates = null,
-            float normalCandidateWeightMultiplier = 1f)
+            float normalCandidateWeightMultiplier = 1f,
+            IList<string> suppressedHediffDefNames = null)
         {
             if (pawn == null || PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
             {
@@ -94,6 +95,9 @@ namespace PawnDiary
                     defs,
                     includeImportantEventContext,
                     tuning);
+                candidates = PromptEnchantmentPlanner.WithoutSuppressedHediffSources(
+                    candidates,
+                    suppressedHediffDefNames);
                 ApplyNormalCandidateWeightMultiplier(candidates, normalCandidateWeightMultiplier);
             }
 

@@ -47,6 +47,7 @@ namespace PawnDiary
     public sealed class PromptEnchantmentCandidate
     {
         public float weight;
+        public string sourceHediffDefName;
         public string priorityText;
         public string conditionText;
         public List<string> impactCues = new List<string>();
@@ -70,6 +71,28 @@ namespace PawnDiary
 
             PromptEnchantmentCandidate candidate = PickWeighted(candidates, totalWeight, roll01);
             return FormatCandidate(candidate, tuning);
+        }
+
+        public static List<PromptEnchantmentCandidate> WithoutSuppressedHediffSources(
+            IList<PromptEnchantmentCandidate> candidates, IList<string> suppressedHediffDefNames)
+        {
+            List<PromptEnchantmentCandidate> kept = new List<PromptEnchantmentCandidate>();
+            if (candidates == null)
+            {
+                return kept;
+            }
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                PromptEnchantmentCandidate candidate = candidates[i];
+                if (candidate == null
+                    || !StringInList(candidate.sourceHediffDefName, suppressedHediffDefNames))
+                {
+                    kept.Add(candidate);
+                }
+            }
+
+            return kept;
         }
 
         private static float TotalWeight(IList<PromptEnchantmentCandidate> candidates)
@@ -180,6 +203,24 @@ namespace PawnDiary
             }
 
             return value;
+        }
+
+        private static bool StringInList(string value, IList<string> values)
+        {
+            if (string.IsNullOrWhiteSpace(value) || values == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (string.Equals(value, values[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

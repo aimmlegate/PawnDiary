@@ -113,6 +113,7 @@ namespace PawnDiary
             candidates.Add(new PromptEnchantmentCandidate
             {
                 weight = effectiveWeight,
+                sourceHediffDefName = hediff.def?.defName,
                 priorityText = PriorityText(def),
                 conditionText = HediffConditionText(def, hediff, tuning),
                 impactCues = ImpactCues(hediff),
@@ -193,7 +194,7 @@ namespace PawnDiary
                 return;
             }
 
-            string label = DiaryLineCleaner.CleanLine(capacityDef.LabelCap.Resolve());
+            string label = PromptTextSanitizer.OneLine(capacityDef.LabelCap.Resolve());
             candidates.Add(new PromptEnchantmentCandidate
             {
                 weight = effectiveWeight,
@@ -300,7 +301,9 @@ namespace PawnDiary
             string condition = HediffConditionLabel(def, hediff);
             if (!configuredCondition)
             {
-                string part = hediff.Part == null ? string.Empty : DiaryLineCleaner.CleanLine(hediff.Part.LabelCap);
+                string part = hediff.Part == null
+                    ? string.Empty
+                    : PromptTextSanitizer.LocalizedPromptText(hediff.Part.LabelCap);
                 if (!string.IsNullOrWhiteSpace(part))
                 {
                     condition = PromptText("PawnDiary.Prompt.Health.ConditionInPart", condition, part);
@@ -325,10 +328,10 @@ namespace PawnDiary
                 return PromptText(def.conditionKey);
             }
 
-            string condition = DiaryLineCleaner.CleanLine(hediff.LabelCap);
+            string condition = PromptTextSanitizer.LocalizedPromptText(hediff.LabelCap);
             if (string.IsNullOrWhiteSpace(condition))
             {
-                condition = DiaryLineCleaner.CleanLine(hediff.def?.label);
+                condition = PromptTextSanitizer.LocalizedPromptText(hediff.def?.label);
             }
 
             if (string.IsNullOrWhiteSpace(condition))
@@ -389,7 +392,7 @@ namespace PawnDiary
                 return DiaryLineCleaner.CleanLine(def.descriptionOverrideText);
             }
 
-            return DiaryLineCleaner.CleanLine(hediff.def.description);
+            return PromptTextSanitizer.LocalizedPromptText(hediff.def.description);
         }
 
         private static void AppendCue(List<string> cues, bool include, string value)

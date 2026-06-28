@@ -29,7 +29,7 @@ namespace PawnDiary
             List<string> parts = new List<string>
             {
                 "def=" + interactionDef.defName,
-                "label=" + DiaryLineCleaner.CleanLine(interactionLabel)
+                "label=" + ExternalText(interactionLabel)
             };
 
             string worker = interactionDef.Worker?.GetType().Name;
@@ -40,12 +40,12 @@ namespace PawnDiary
 
             if (interactionDef.initiatorThought != null)
             {
-                parts.Add("initiatorThought=" + DiaryLineCleaner.CleanLine(interactionDef.initiatorThought.LabelCap.Resolve()));
+                parts.Add("initiatorThought=" + ExternalText(interactionDef.initiatorThought.LabelCap.Resolve()));
             }
 
             if (interactionDef.recipientThought != null)
             {
-                parts.Add("recipientThought=" + DiaryLineCleaner.CleanLine(interactionDef.recipientThought.LabelCap.Resolve()));
+                parts.Add("recipientThought=" + ExternalText(interactionDef.recipientThought.LabelCap.Resolve()));
             }
 
             return string.Join("; ", parts.ToArray());
@@ -66,7 +66,7 @@ namespace PawnDiary
             PawnRelationDef relation = PawnRelationUtility.GetMostImportantRelation(povPawn, otherPawn);
             if (relation != null)
             {
-                string relationLabel = DiaryLineCleaner.CleanLine(relation.GetGenderSpecificLabelCap(otherPawn));
+                string relationLabel = ExternalText(relation.GetGenderSpecificLabelCap(otherPawn));
                 if (!string.IsNullOrWhiteSpace(relationLabel))
                 {
                     parts.Add(relationLabel);
@@ -115,7 +115,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = DiaryLineCleaner.CleanLine(memory.LabelCap);
+                string label = ExternalText(memory.LabelCap);
                 if (string.IsNullOrWhiteSpace(label))
                 {
                     continue;
@@ -304,7 +304,7 @@ namespace PawnDiary
 
             if (room != null)
             {
-                string roomRole = DiaryLineCleaner.CleanLine(room.GetRoomRoleLabel());
+                string roomRole = ExternalText(room.GetRoomRoleLabel());
                 if (!string.IsNullOrWhiteSpace(roomRole))
                 {
                     parts.Add(roomRole);
@@ -322,12 +322,12 @@ namespace PawnDiary
                 WeatherDef weather = pawn.Map.weatherManager?.CurWeatherPerceived;
                 if (ShouldMentionWeather(weather))
                 {
-                    parts.Add(DiaryLineCleaner.CleanLine(weather.label));
+                    parts.Add(ExternalText(weather.label));
                 }
 
                 if (pawn.Map.Biome != null)
                 {
-                    parts.Add(DiaryLineCleaner.CleanLine(pawn.Map.Biome.label));
+                    parts.Add(ExternalText(pawn.Map.Biome.label));
                 }
             }
 
@@ -367,14 +367,14 @@ namespace PawnDiary
                 parts.Add("PawnDiary.Ctx.Near".Translate(nearby));
             }
 
-            string jobReport = DiaryLineCleaner.CleanLine(pawn.GetJobReport());
+            string jobReport = ExternalText(pawn.GetJobReport());
             if (!string.IsNullOrWhiteSpace(jobReport))
             {
                 parts.Add("PawnDiary.Ctx.Doing".Translate(jobReport));
             }
             else if (pawn.CurJobDef != null)
             {
-                parts.Add("PawnDiary.Ctx.Doing".Translate(DiaryLineCleaner.CleanLine(pawn.CurJobDef.LabelCap.Resolve())));
+                parts.Add("PawnDiary.Ctx.Doing".Translate(ExternalText(pawn.CurJobDef.LabelCap.Resolve())));
             }
 
             return string.Join(", ", parts.ToArray());
@@ -410,10 +410,10 @@ namespace PawnDiary
                     continue;
                 }
 
-                string label = DiaryLineCleaner.CleanLine(condition.Label);
+                string label = ExternalText(condition.Label);
                 if (string.IsNullOrWhiteSpace(label))
                 {
-                    label = DiaryLineCleaner.CleanLine(condition.def.LabelCap.Resolve());
+                    label = ExternalText(condition.def.LabelCap.Resolve());
                 }
 
                 if (!string.IsNullOrWhiteSpace(label) && seenLabels.Add(label))
@@ -514,7 +514,7 @@ namespace PawnDiary
 
             try
             {
-                return DiaryLineCleaner.CleanLine(archivable.ArchivedLabel);
+                return ExternalText(archivable.ArchivedLabel);
             }
             catch
             {
@@ -607,7 +607,7 @@ namespace PawnDiary
             ThingWithComps primary = pawn.equipment.Primary;
             if (primary != null)
             {
-                return DiaryLineCleaner.CleanLine(primary.LabelNoCount);
+                return ExternalText(primary.LabelNoCount);
             }
 
             // If no primary, check inventory for weapons (for mods that allow multiple)
@@ -626,7 +626,7 @@ namespace PawnDiary
                 if (weapons.Count > 0)
                 {
                     Thing chosen = weapons[UnityEngine.Random.Range(0, weapons.Count)];
-                    return DiaryLineCleaner.CleanLine(chosen.LabelNoCount);
+                    return ExternalText(chosen.LabelNoCount);
                 }
             }
 
@@ -695,7 +695,7 @@ namespace PawnDiary
             return string.Join(", ", pawn.health.hediffSet.hediffs
                 .Where(hediff => hediff != null && hediff.Visible && (hediff.IsCurrentlyLifeThreatening || hediff.Bleeding || hediff.PainOffset > 0f || hediff.SummaryHealthPercentImpact < -0.05f))
                 .OrderByDescending(hediff => hediff.IsCurrentlyLifeThreatening ? 100f : hediff.BleedRate + hediff.PainOffset - hediff.SummaryHealthPercentImpact)
-                .Select(hediff => DiaryLineCleaner.CleanLine(hediff.Label))
+                .Select(hediff => ExternalText(hediff.Label))
                 .Where(label => !string.IsNullOrWhiteSpace(label))
                 .Take(2)
                 .ToArray());
@@ -826,13 +826,13 @@ namespace PawnDiary
                 cumulative += Mathf.Abs(thoughts[i].MoodOffset());
                 if (roll <= cumulative)
                 {
-                    return DiaryLineCleaner.CleanLine(thoughts[i].LabelCap) + " (" + DiaryBuckets.EffectBucket(thoughts[i].MoodOffset()) + ")";
+                    return ExternalText(thoughts[i].LabelCap) + " (" + DiaryBuckets.EffectBucket(thoughts[i].MoodOffset()) + ")";
                 }
             }
 
             // Fallback: return the last one (shouldn't reach here normally)
             Thought last = thoughts[thoughts.Count - 1];
-            return DiaryLineCleaner.CleanLine(last.LabelCap) + " (" + DiaryBuckets.EffectBucket(last.MoodOffset()) + ")";
+            return ExternalText(last.LabelCap) + " (" + DiaryBuckets.EffectBucket(last.MoodOffset()) + ")";
         }
 
         private static string BuildNearbyThingsSummary(Pawn pawn)
@@ -998,10 +998,15 @@ namespace PawnDiary
             Corpse corpse = thing as Corpse;
             if (corpse?.InnerPawn != null)
             {
-                return "PawnDiary.Ctx.Corpse".Translate(DiaryLineCleaner.CleanLine(corpse.InnerPawn.LabelShortCap));
+                return "PawnDiary.Ctx.Corpse".Translate(ExternalText(corpse.InnerPawn.LabelShortCap));
             }
 
-            return DiaryLineCleaner.CleanLine(thing.LabelNoCount);
+            return ExternalText(thing.LabelNoCount);
+        }
+
+        private static string ExternalText(string value)
+        {
+            return PromptTextSanitizer.LocalizedPromptText(value);
         }
     }
 }
