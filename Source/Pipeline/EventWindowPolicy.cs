@@ -84,6 +84,57 @@ namespace PawnDiary
             return false;
         }
 
+        /// <summary>
+        /// Cheap pre-filter for hot signal sources (e.g. every spawned Thing). Returns true only when
+        /// at least one rule could match a signal with this <paramref name="source"/> and
+        /// <paramref name="defName"/>, WITHOUT needing the signal's (possibly expensive) label. It
+        /// deliberately ignores the signal field and over-approximates: rules that use token/substring
+        /// matching, or that match any signal of a source, force a true result because those need the
+        /// full facts to decide. This is a strict superset of <see cref="Matches"/> over
+        /// source+defName, so a false result guarantees no rule can match — letting the caller skip
+        /// resolving the label entirely. A true result just means "build full facts and run
+        /// <see cref="MatchesAny"/>".
+        /// </summary>
+        public static bool CouldMatchByDefName(IList<EventWindowTriggerRule> rules, string source, string defName)
+        {
+            if (rules == null || rules.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                EventWindowTriggerRule rule = rules[i];
+                if (rule == null || !BlankOrEquals(rule.source, source))
+                {
+                    continue;
+                }
+
+                bool hasDefMatchers = HasAny(rule.matchDefNames);
+                bool hasTokenMatchers = HasAny(rule.matchTokens);
+                if (!hasDefMatchers && !hasTokenMatchers)
+                {
+                    // Source/signal-only rule: matches any signal of this source, so it cannot be
+                    // pre-filtered out by defName.
+                    if (HasText(rule.source) || HasText(rule.signal))
+                    {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                // Token/substring matchers read the label and other free-text facts, so they need the
+                // full check; only exact defName matchers can be decided cheaply here.
+                if (hasTokenMatchers || MatchesExact(rule.matchDefNames, defName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool BlankOrEquals(string expected, string actual)
         {
             return string.IsNullOrWhiteSpace(expected)

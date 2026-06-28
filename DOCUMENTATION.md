@@ -184,6 +184,12 @@ fleshmass heart and is unrelated. `PrisonBreak` records one danger entry for eve
 on the affected map from the shared prison-break utility overload used by both natural and sparked
 breakouts.
 
+On hot signal paths (every spawned thing, every added hediff) the recorder first runs a cheap,
+allocation-free pre-filter — `EventWindowPolicy.CouldMatchByDefName` against each def's cached
+trigger rules — and only resolves the signal label when some window could actually match. Optional
+event-window recording is also isolated from the established raid/hediff/quest capture, so a window
+failure can never suppress the diary entry those hooks already write.
+
 ## 6. Prompts And Writing Styles
 
 Prompts are compact `key: value` lines. Empty values and `none`/`n/a`/`unknown` sentinels are dropped.

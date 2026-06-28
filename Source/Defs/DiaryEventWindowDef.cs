@@ -94,5 +94,44 @@ namespace PawnDiary
         {
             return dedupTicks < 0 ? 0 : dedupTicks;
         }
+
+        // Cached pure-rule projections of the XML triggers. Built once on first use and reused: the
+        // signal path is hot (Thing.SpawnSetup fires for every projectile/filth/item), so converting
+        // the XML triggers into matcher DTOs on every signal would allocate a List plus one rule per
+        // trigger for nothing. Defs are immutable after load, so caching here is safe.
+        private List<EventWindowTriggerRule> startRulesCache;
+        private List<EventWindowTriggerRule> endRulesCache;
+
+        /// <summary>Cached pure trigger rules that can START this window.</summary>
+        public List<EventWindowTriggerRule> StartRules()
+        {
+            return startRulesCache ?? (startRulesCache = RulesFrom(startSignals));
+        }
+
+        /// <summary>Cached pure trigger rules that can END this window.</summary>
+        public List<EventWindowTriggerRule> EndRules()
+        {
+            return endRulesCache ?? (endRulesCache = RulesFrom(endSignals));
+        }
+
+        private static List<EventWindowTriggerRule> RulesFrom(List<DiaryEventWindowTriggerDef> triggers)
+        {
+            List<EventWindowTriggerRule> rules = new List<EventWindowTriggerRule>();
+            if (triggers == null)
+            {
+                return rules;
+            }
+
+            for (int i = 0; i < triggers.Count; i++)
+            {
+                DiaryEventWindowTriggerDef trigger = triggers[i];
+                if (trigger != null)
+                {
+                    rules.Add(trigger.ToRule());
+                }
+            }
+
+            return rules;
+        }
     }
 }

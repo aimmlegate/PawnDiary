@@ -636,6 +636,78 @@ namespace DiaryPipelineTests
             AssertTrue(
                 "event window empty rules do not match",
                 !EventWindowPolicy.MatchesAny(new List<EventWindowTriggerRule>(), grayFlesh));
+
+            // CouldMatchByDefName: cheap, label-free pre-filter used on hot signal paths (every
+            // spawned Thing / added Hediff). It must be a strict superset of Matches over
+            // source+defName, so it never yields a false negative — only "maybe, run the full check".
+            List<EventWindowTriggerRule> thingExactRules = new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule
+                {
+                    source = "ThingSpawned",
+                    signal = "spawned",
+                    matchDefNames = new List<string> { "GrayFleshSample", "Filth_GrayFleshNoticeable" }
+                }
+            };
+            AssertTrue(
+                "could-match rejects unknown spawned defName",
+                !EventWindowPolicy.CouldMatchByDefName(thingExactRules, "ThingSpawned", "Bullet_Revolver"));
+            AssertTrue(
+                "could-match accepts known spawned defName (case-insensitive)",
+                EventWindowPolicy.CouldMatchByDefName(thingExactRules, "ThingSpawned", "grayfleshsample"));
+            AssertTrue(
+                "could-match rejects wrong source",
+                !EventWindowPolicy.CouldMatchByDefName(thingExactRules, "Hediff", "GrayFleshSample"));
+            AssertTrue(
+                "could-match is a superset of Matches",
+                EventWindowPolicy.CouldMatchByDefName(thingExactRules, grayFlesh.source, grayFlesh.defName));
+
+            List<EventWindowTriggerRule> hediffExactRules = new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule
+                {
+                    source = "Hediff",
+                    signal = "added",
+                    matchDefNames = new List<string> { "HeartAttack" }
+                }
+            };
+            AssertTrue(
+                "could-match ignores signal and over-approximates by defName",
+                EventWindowPolicy.CouldMatchByDefName(hediffExactRules, "Hediff", "HeartAttack"));
+            AssertTrue(
+                "could-match rejects non-listed hediff defName",
+                !EventWindowPolicy.CouldMatchByDefName(hediffExactRules, "Hediff", "Flu"));
+
+            List<EventWindowTriggerRule> tokenRules = new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule { source = "Letter", matchTokens = new List<string> { "Alice" } }
+            };
+            AssertTrue(
+                "could-match forces full check for token matchers",
+                EventWindowPolicy.CouldMatchByDefName(tokenRules, "Letter", "AnyDefName"));
+
+            List<EventWindowTriggerRule> sourceOnlyRules = new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule { source = "VoidMonolith", signal = "activated" }
+            };
+            AssertTrue(
+                "could-match accepts source/signal-only rule for any defName",
+                EventWindowPolicy.CouldMatchByDefName(sourceOnlyRules, "VoidMonolith", "MonolithLevelWhatever"));
+
+            List<EventWindowTriggerRule> blankSourceExactRules = new List<EventWindowTriggerRule>
+            {
+                new EventWindowTriggerRule { matchDefNames = new List<string> { "SomeDef" } }
+            };
+            AssertTrue(
+                "could-match honors blank (any) source",
+                EventWindowPolicy.CouldMatchByDefName(blankSourceExactRules, "AnySource", "SomeDef"));
+            AssertTrue(
+                "could-match blank trigger rejected",
+                !EventWindowPolicy.CouldMatchByDefName(
+                    new List<EventWindowTriggerRule> { new EventWindowTriggerRule() }, "ThingSpawned", "Bullet"));
+            AssertTrue(
+                "could-match empty rules do not match",
+                !EventWindowPolicy.CouldMatchByDefName(new List<EventWindowTriggerRule>(), "ThingSpawned", "Bullet"));
         }
 
         private static void TestPromptCaptureFormatting()

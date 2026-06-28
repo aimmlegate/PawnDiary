@@ -20,6 +20,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   birthday and heart-attack entries for the affected pawn, plus map-scoped prison-break entries for
   eligible colonists on the affected map.
 
+- **Event-window capture hardened after review.** The hot `Thing.SpawnSetup` and `AddHediff` signal
+  paths now skip label resolution and per-signal rule allocation unless a window could match, via
+  cached trigger rules and a pure `EventWindowPolicy.CouldMatchByDefName` pre-filter (covered by
+  tests). Optional event-window recording is isolated so a failure there can no longer skip the
+  established raid/hediff/quest capture, and the English DefInjected stubs for the new condition
+  writing styles and the raid prompt/enhancement were brought back in sync with the source defs.
+
 ## 2026-06-27
 
 - **XML event-window support expanded.** `DiaryEventWindowDef` can now create start/end/timeout

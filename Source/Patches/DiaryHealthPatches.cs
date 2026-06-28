@@ -38,8 +38,16 @@ namespace PawnDiary
                 }
 
                 DiaryGameComponent component = DiaryGameComponent.Current;
-                component?.RecordEventWindowHediffAdded(pawn, hediff);
-                component?.RecordHediffAppeared(pawn, hediff);
+                if (component == null)
+                {
+                    return;
+                }
+
+                // Isolate the optional event-window signal so a failure there cannot skip the mature
+                // hediff capture below (both ran in this one DiaryPatchSafety.Run lambda before).
+                DiaryPatchSafety.Run("HealthTrackerAddHediffPatch.EventWindow",
+                    () => component.RecordEventWindowHediffAdded(pawn, hediff));
+                component.RecordHediffAppeared(pawn, hediff);
             });
         }
     }

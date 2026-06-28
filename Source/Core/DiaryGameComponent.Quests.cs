@@ -92,8 +92,16 @@ namespace PawnDiary
 
             // Event windows are generic XML policy, not the Quest-domain diary group itself. Emit the
             // lifecycle signal before group gating so XML can watch a quest without forcing all quest
-            // diary entries on.
-            RecordEventWindowSignal(EventWindowSourceQuest, questDefName, signal, cleanedLabel, null);
+            // diary entries on. Isolate it so an event-window failure cannot skip the quest capture below.
+            try
+            {
+                RecordEventWindowSignal(EventWindowSourceQuest, questDefName, signal, cleanedLabel, null);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce("[Pawn Diary] Quest event-window signal failed and was skipped: " + e,
+                    "DiaryGameComponent.Quests.EventWindow".GetHashCode());
+            }
 
             // XML owns which lifecycle signals count as diary-worthy. The signal IS the classifier
             // key: "accepted" -> questAccepted, "completed" -> questCompleted, "failed" -> questFailed.

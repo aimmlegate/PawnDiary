@@ -174,7 +174,10 @@ namespace PawnDiary
                     return;
                 }
 
-                component.RecordEventWindowIncident(__instance.def, parms);
+                // Isolate the optional event-window signal so a failure there cannot skip the mature
+                // raid capture below (both ran in this one DiaryPatchSafety.Run lambda before).
+                DiaryPatchSafety.Run("RaidExecutePatch.EventWindow",
+                    () => component.RecordEventWindowIncident(__instance.def, parms));
                 if (IsRaidLikeIncident(__instance))
                 {
                     component.RecordRaid(parms, __instance.def);

@@ -69,12 +69,12 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (EventWindowPolicy.MatchesAny(RulesFrom(def.endSignals), facts))
+                if (EventWindowPolicy.MatchesAny(def.EndRules(), facts))
                 {
                     ProcessEventWindowEnd(def, facts, signalMap, subjectPawn);
                 }
 
-                if (EventWindowPolicy.MatchesAny(RulesFrom(def.startSignals), facts))
+                if (EventWindowPolicy.MatchesAny(def.StartRules(), facts))
                 {
                     ProcessEventWindowStart(def, facts, signalMap, subjectPawn);
                 }
@@ -106,6 +106,15 @@ namespace PawnDiary
         public void RecordEventWindowThingSpawned(Thing thing, Map map)
         {
             if (thing == null || thing.def == null)
+            {
+                return;
+            }
+
+            // Thing.SpawnSetup is one of the hottest paths in the game (every projectile, filth, item,
+            // and plant). Resolving LabelShortCap + cleaning it for every spawn is wasted work unless
+            // some def could actually match this thing, so gate on the cheap pre-check first.
+            if (!CanRecordGameplayEventNow()
+                || !CouldMatchEventWindow(EventWindowSourceThingSpawned, thing.def.defName))
             {
                 return;
             }
@@ -168,6 +177,14 @@ namespace PawnDiary
         public void RecordEventWindowHediffAdded(Pawn pawn, Hediff hediff)
         {
             if (pawn == null || hediff == null || hediff.def == null)
+            {
+                return;
+            }
+
+            // AddHediff fires for every colonist wound in combat; skip the label work unless a def
+            // could match this hediff's defName.
+            if (!CanRecordGameplayEventNow()
+                || !CouldMatchEventWindow(EventWindowSourceHediff, hediff.def.defName))
             {
                 return;
             }
@@ -732,24 +749,41 @@ namespace PawnDiary
             return DiaryLineCleaner.CleanLine(value) ?? string.Empty;
         }
 
-        private static List<EventWindowTriggerRule> RulesFrom(List<DiaryEventWindowTriggerDef> triggers)
+        /// <summary>
+        /// Cheap pre-check used by hot signal wrappers (spawned things, added hediffs) before they
+        /// resolve a label: returns true only when some enabled event-window def could match this
+        /// source+defName. Uses each def's cached rule projection, so it allocates nothing on the hot
+        /// path. A false result guarantees no def can match, so the caller can skip the label work.
+        /// </summary>
+        private static bool CouldMatchEventWindow(string source, string defName)
         {
-            List<EventWindowTriggerRule> rules = new List<EventWindowTriggerRule>();
-            if (triggers == null)
+            if (string.IsNullOrWhiteSpace(source))
             {
-                return rules;
+                return false;
             }
 
-            for (int i = 0; i < triggers.Count; i++)
+            List<DiaryEventWindowDef> defs = DefDatabase<DiaryEventWindowDef>.AllDefsListForReading;
+            if (defs == null)
             {
-                DiaryEventWindowTriggerDef trigger = triggers[i];
-                if (trigger != null)
+                return false;
+            }
+
+            for (int i = 0; i < defs.Count; i++)
+            {
+                DiaryEventWindowDef def = defs[i];
+                if (def == null || !def.enabled)
                 {
-                    rules.Add(trigger.ToRule());
+                    continue;
+                }
+
+                if (EventWindowPolicy.CouldMatchByDefName(def.StartRules(), source, defName)
+                    || EventWindowPolicy.CouldMatchByDefName(def.EndRules(), source, defName))
+                {
+                    return true;
                 }
             }
 
-            return rules;
+            return false;
         }
 
         private void SnapshotEventWindowStart(ActiveEventWindowState active, DiaryEventWindowDef def,

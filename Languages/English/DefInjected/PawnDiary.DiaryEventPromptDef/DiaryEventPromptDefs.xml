@@ -28,8 +28,8 @@
   <DiaryEventPrompt_Hediff.prompt>Write a health-condition event through the pawn&apos;s body and mood.</DiaryEventPrompt_Hediff.prompt>
   <DiaryEventPrompt_Hediff.enhancement>Make the body unavoidable: pain, weakness, breath, fever, hunger, balance, or fear. Do not invent treatment, diagnosis, or recovery.</DiaryEventPrompt_Hediff.enhancement>
   <DiaryEventPrompt_Raid.label>raid</DiaryEventPrompt_Raid.label>
-  <DiaryEventPrompt_Raid.prompt>Write a raid or hostile arrival from the pawn&apos;s immediate experience of danger.</DiaryEventPrompt_Raid.prompt>
-  <DiaryEventPrompt_Raid.enhancement>Write close to the body: noise, cover, orders, fear, pain, smoke, blood, or the scramble to survive. Keep every detail grounded; do not invent battle outcomes.</DiaryEventPrompt_Raid.enhancement>
+  <DiaryEventPrompt_Raid.prompt>Write a raid, drop-pod attack, or infestation from the pawn&apos;s immediate experience of danger.</DiaryEventPrompt_Raid.prompt>
+  <DiaryEventPrompt_Raid.enhancement>Use the supplied raid fields, especially arrival mode and strategy. For ordinary raids, favor warning, preparation, first sight, and anticipation of the fight; for drop pods or infestations, write sudden contact already inside or under the colony. Keep every detail grounded and do not invent battle outcomes.</DiaryEventPrompt_Raid.enhancement>
   <DiaryEventPrompt_Quest.label>quest</DiaryEventPrompt_Quest.label>
   <DiaryEventPrompt_Quest.prompt>Write a quest lifecycle event as promise, resolution, or loss.</DiaryEventPrompt_Quest.prompt>
   <DiaryEventPrompt_Quest.enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not copy the quest name verbatim into the diary line, and do not invent rewards, blame, or consequences.</DiaryEventPrompt_Quest.enhancement>
