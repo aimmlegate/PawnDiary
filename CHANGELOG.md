@@ -6,6 +6,23 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Russian humor cues localized as Russian humor.** The hidden per-entry humor prompts now use
+  Russian dry understatement, bureaucratic phrasing, household complaints, and gallows-practical
+  patterns instead of literal English deadpan/punchline translations.
+
+- **Russian localization copyedit pass.** The generated Russian text was tightened after the initial
+  import: UI labels and tooltips are shorter, prompt instructions read as natural Russian instead of
+  literal English calques, glossary-backed RimWorld terms were rechecked, and the intentionally
+  rebuilt `DiaryPersonaDef` writing styles were left intact.
+
+- **Russian translation added.** A full `Languages/Russian (Русский)/` set ships alongside the
+  English source: every Keyed UI/prompt string and all six DefInjected files (event prompts, event
+  windows, humor cues, interaction groups, personas, shared prompts). Game terms follow RimWorld's
+  official Russian glossary (e.g. налёт, нашествие насекомых, серая плоть, монолит пустоты, Go-сок,
+  люциферий, психиновый чай). The writing-style personas are **not** translated literally — each is
+  rebuilt on a fitting Russian literary tradition with fresh synthetic examples and no author names.
+  Key parity and `{0}`/`{PAWN}`/`{WORK}` placeholder integrity verified against the English source.
+
 - **Prompt and title cleanup tightened.** Bad title follow-up responses with
   markup/control/schema characters now fall back to generic diary excerpts, while quest prompt facts
   reject placeholder names, humanize fallback names, and keep raw quest defNames out of generated

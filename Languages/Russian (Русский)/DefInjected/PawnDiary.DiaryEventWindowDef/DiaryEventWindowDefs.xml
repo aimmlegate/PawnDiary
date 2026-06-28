@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+
+  <MetalhorrorSuspicion.label>подозрение на металлическую жуть</MetalhorrorSuspicion.label>
+  <MetalhorrorSuspicion.instruction>пиши это как нерешённый ужас поселения: только то, что поселенец видит; подозрение пусть ложится на обычные детали, без скрытых игровых механик сверх фактов</MetalhorrorSuspicion.instruction>
+
+  <AncientDanger.label>древняя опасность</AncientDanger.label>
+  <AncientDanger.instruction>опиши короткое предчувствие у древней стены как личный момент; опасность остаётся неясной, содержимое внутри не раскрывай</AncientDanger.instruction>
+
+  <VoidMonolithDiscovery.label>обнаружение монолита пустоты</VoidMonolithDiscovery.label>
+  <VoidMonolithDiscovery.instruction>опиши первое обнаружение монолита пустоты как тёмный аномальный ужас; постройка кажется нечеловеческой и психической, но держись того, что поселенец видит и чувствует</VoidMonolithDiscovery.instruction>
+
+  <VoidMonolithActivation.label>активация монолита пустоты</VoidMonolithActivation.label>
+  <VoidMonolithActivation.instruction>опиши завершённое взаимодействие с монолитом пустоты как тёмный аномальный ужас; в центре психическое давление, изменение постройки и чувство, что снаружи поселения что-то заметило</VoidMonolithActivation.instruction>
+
+  <Birthday.label>день рождения</Birthday.label>
+  <Birthday.instruction>опиши день рождения поселенца как тревожную веху RimWorld, не как праздник; возраст, хрупкость и цена ещё одного года важнее поздравлений</Birthday.instruction>
+
+  <HeartAttack.label>сердечный приступ</HeartAttack.label>
+  <HeartAttack.instruction>опиши сердечный приступ как прямую телесную опасность: лично, физически, срочно, без выдуманных исходов лечения</HeartAttack.instruction>
+
+  <PrisonBreak.label>побег</PrisonBreak.label>
+  <PrisonBreak.instruction>опиши реакцию поселения на побег как внезапную тревогу; сосредоточься на действиях поселенца, а не на мыслях пленников</PrisonBreak.instruction>
+
+</LanguageData>

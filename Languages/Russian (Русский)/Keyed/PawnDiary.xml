@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Русские строки мода Pawn Diary. Это перевод значений из английского файла-эталона
+  (Languages/English/Keyed/PawnDiary.xml). Ключи и плейсхолдеры ({0}, {1}, {PAWN}, {WORK})
+  сохранены без изменений; маркеры [[speech]]...[[/speech]] и переводы строк (&#10;) оставлены
+  как есть. Игровые термины переданы вариантами из официального русского перевода RimWorld.
+
+  Плейсхолдеры {0}, {1}, ... подставляются кодом по порядку.
+-->
+<LanguageData>
+
+  <!-- Ярлык дневника: вкладка осмотра поселенца и необязательная командная кнопка. -->
+  <PawnDiaryTabLabel>Дневник</PawnDiaryTabLabel>
+  <PawnDiary.Command.OpenDiaryDesc>Открыть или закрыть дневник поселенца.</PawnDiary.Command.OpenDiaryDesc>
+  <PawnDiary.Command.NewPagesTip>Есть новые страницы.</PawnDiary.Command.NewPagesTip>
+  <PawnDiary.Command.WritingTip>Страница пишется.</PawnDiary.Command.WritingTip>
+
+  <!-- ===== Интерфейс вкладки «Дневник» ===== -->
+  <PawnDiary.Tab.DiaryHeader>Дневник {0}</PawnDiary.Tab.DiaryHeader>
+  <PawnDiary.Tab.NoEntries>Страниц пока нет.</PawnDiary.Tab.NoEntries>
+  <PawnDiary.Tab.NoGeneratedEntries>Готовых страниц пока нет.</PawnDiary.Tab.NoGeneratedEntries>
+  <PawnDiary.Tab.LoadingHistory>Загрузка дневника...</PawnDiary.Tab.LoadingHistory>
+  <PawnDiary.Tab.LoadingHistoryProgress>Загрузка дневника... {0}/{1}</PawnDiary.Tab.LoadingHistoryProgress>
+  <PawnDiary.Tab.GenerateForPawn>Писать дневник для поселенца</PawnDiary.Tab.GenerateForPawn>
+  <PawnDiary.Tab.GenerateForPawnTip>Если выключено, события запоминаются, но новые страницы для этого поселенца не отправляются в LLM.</PawnDiary.Tab.GenerateForPawnTip>
+  <PawnDiary.Tab.ShowPersonaSettings>Манера письма</PawnDiary.Tab.ShowPersonaSettings>
+  <PawnDiary.Tab.ShowPersonaSettingsTip>Показать ручной выбор манеры письма во вкладке дневника.</PawnDiary.Tab.ShowPersonaSettingsTip>
+  <PawnDiary.Tab.ShowLlmDebugInfo>Отладка LLM</PawnDiary.Tab.ShowLlmDebugInfo>
+  <PawnDiary.Tab.ShowLlmDebugInfoTip>Показать сырые, ожидающие и ошибочные записи: эндпойнт, модель, статус, ошибка и диагностика запроса.</PawnDiary.Tab.ShowLlmDebugInfoTip>
+  <PawnDiary.Tab.ShowGeneratingEntries>Пишущиеся страницы</PawnDiary.Tab.ShowGeneratingEntries>
+  <PawnDiary.Tab.ShowGeneratingEntriesTip>Показать страницы в работе или зависшие на «пишется...». Легче полной отладки LLM.</PawnDiary.Tab.ShowGeneratingEntriesTip>
+  <PawnDiary.Tab.FillMockEntries>Добавить {0} тест. страниц</PawnDiary.Tab.FillMockEntries>
+  <PawnDiary.Tab.FillMockEntriesTip>Только разработка: добавляет {0} готовых тестовых страниц за {1} игровых лет, около {2} в год, чтобы проверить длинную историю, годы и сворачивание без LLM.</PawnDiary.Tab.FillMockEntriesTip>
+  <PawnDiary.Tab.MockEntriesAdded>Добавлено {0} тестовых страниц для {1}.</PawnDiary.Tab.MockEntriesAdded>
+  <PawnDiary.Tab.MockEntriesAlreadyFilled>В дневнике {1} уже есть {0} тестовых страниц.</PawnDiary.Tab.MockEntriesAlreadyFilled>
+  <PawnDiary.Tab.GeneratePromptSuite>Тест запросов</PawnDiary.Tab.GeneratePromptSuite>
+  <PawnDiary.Tab.GeneratePromptSuiteTip>Только разработка: включает тест запросов и список категорий событий. Выбор категории создаёт одну страницу только с запросом; новый выбор заменяет старую. Для парных категорий нужен второй поселенец.</PawnDiary.Tab.GeneratePromptSuiteTip>
+  <PawnDiary.Tab.ClearPromptSuite>Очистить тест запросов</PawnDiary.Tab.ClearPromptSuite>
+  <PawnDiary.Tab.ClearPromptSuiteTip>Только разработка: удалить все тестовые запросы из дневников всех поселенцев.</PawnDiary.Tab.ClearPromptSuiteTip>
+  <PawnDiary.Tab.PromptSuiteShown>Сохранён тестовый запрос для {0}: {1}.</PawnDiary.Tab.PromptSuiteShown>
+  <PawnDiary.Tab.PromptSuiteCleared>Удалено тестовых запросов: {0}.</PawnDiary.Tab.PromptSuiteCleared>
+  <PawnDiary.Tab.PromptSuiteEmpty>Для {0} тестовый запрос не сохранён. Включите дневник для поселенца и попробуйте снова.</PawnDiary.Tab.PromptSuiteEmpty>
+  <PawnDiary.Dev.PromptSuite.Instruction>напиши короткую запись дневника для синтетического тестового события</PawnDiary.Dev.PromptSuite.Instruction>
+  <PawnDiary.Dev.PromptSuite.Reason>синтетический тест разработки</PawnDiary.Dev.PromptSuite.Reason>
+  <PawnDiary.Dev.PromptSuite.Insult.Label>Оскорбление</PawnDiary.Dev.PromptSuite.Insult.Label>
+  <PawnDiary.Dev.PromptSuite.Insult.Initiator>Я оскорбил {0}.</PawnDiary.Dev.PromptSuite.Insult.Initiator>
+  <PawnDiary.Dev.PromptSuite.Insult.Recipient>{0} оскорбил меня.</PawnDiary.Dev.PromptSuite.Insult.Recipient>
+  <PawnDiary.Dev.PromptSuite.SocialFight.Label>Потасовка</PawnDiary.Dev.PromptSuite.SocialFight.Label>
+  <PawnDiary.Dev.PromptSuite.SocialFight.Initiator>Мы сошлись врукопашную с {0}.</PawnDiary.Dev.PromptSuite.SocialFight.Initiator>
+  <PawnDiary.Dev.PromptSuite.SocialFight.Recipient>Мы сошлись врукопашную с {0}.</PawnDiary.Dev.PromptSuite.SocialFight.Recipient>
+  <PawnDiary.Dev.PromptSuite.Romance.Label>Свадьба</PawnDiary.Dev.PromptSuite.Romance.Label>
+  <PawnDiary.Dev.PromptSuite.Romance.Initiator>Мы с {0} поженились.</PawnDiary.Dev.PromptSuite.Romance.Initiator>
+  <PawnDiary.Dev.PromptSuite.Romance.Recipient>Мы с {0} поженились.</PawnDiary.Dev.PromptSuite.Romance.Recipient>
+  <PawnDiary.Dev.PromptSuite.MentalBreak.Label>Слепая ярость</PawnDiary.Dev.PromptSuite.MentalBreak.Label>
+  <PawnDiary.Dev.PromptSuite.MentalBreak.Text>{0} сорвался и впал в слепую ярость.</PawnDiary.Dev.PromptSuite.MentalBreak.Text>
+  <PawnDiary.Dev.PromptSuite.Hediff.Label>Заболел</PawnDiary.Dev.PromptSuite.Hediff.Label>
+  <PawnDiary.Dev.PromptSuite.Hediff.Text>{0} слёг с гриппом.</PawnDiary.Dev.PromptSuite.Hediff.Text>
+  <PawnDiary.Dev.PromptSuite.Inspiration.Label>Воодушевление</PawnDiary.Dev.PromptSuite.Inspiration.Label>
+  <PawnDiary.Dev.PromptSuite.Inspiration.Text>{0} охватила вспышка воодушевления.</PawnDiary.Dev.PromptSuite.Inspiration.Text>
+  <PawnDiary.Dev.PromptSuite.Work.Label>Исследование</PawnDiary.Dev.PromptSuite.Work.Label>
+  <PawnDiary.Dev.PromptSuite.Work.Text>{0} работал за столом для исследований.</PawnDiary.Dev.PromptSuite.Work.Text>
+  <PawnDiary.Dev.PromptSuite.Thought.Label>Ел без стола</PawnDiary.Dev.PromptSuite.Thought.Label>
+  <PawnDiary.Dev.PromptSuite.Thought.Text>{0} поел с пола.</PawnDiary.Dev.PromptSuite.Thought.Text>
+  <PawnDiary.Dev.PromptSuite.MoodEvent.Label>Жара</PawnDiary.Dev.PromptSuite.MoodEvent.Label>
+  <PawnDiary.Dev.PromptSuite.MoodEvent.Text>На поселение опустилась палящая жара.</PawnDiary.Dev.PromptSuite.MoodEvent.Text>
+  <PawnDiary.Dev.PromptSuite.Tale.Label>Завершено исследование</PawnDiary.Dev.PromptSuite.Tale.Label>
+  <PawnDiary.Dev.PromptSuite.Tale.Text>{0} завершил долгий исследовательский проект.</PawnDiary.Dev.PromptSuite.Tale.Text>
+  <PawnDiary.Dev.PromptSuite.DayReflection.Label>Конец дня</PawnDiary.Dev.PromptSuite.DayReflection.Label>
+  <PawnDiary.Dev.PromptSuite.DayReflection.Text>День принёс сосредоточенное исследование, жгучее оскорбление и подступающую жару.</PawnDiary.Dev.PromptSuite.DayReflection.Text>
+  <PawnDiary.Tab.DevPreviewPlain>Текст</PawnDiary.Tab.DevPreviewPlain>
+  <PawnDiary.Tab.DevPreviewMarkdown>Разметка</PawnDiary.Tab.DevPreviewMarkdown>
+  <PawnDiary.Tab.DevPreviewSpeech>Речь</PawnDiary.Tab.DevPreviewSpeech>
+  <PawnDiary.Tab.DevPreviewStaggered>Дрожь</PawnDiary.Tab.DevPreviewStaggered>
+  <PawnDiary.Tab.DevPreviewCombat>Бой</PawnDiary.Tab.DevPreviewCombat>
+  <PawnDiary.Tab.DevPreviewSocialFight>Драка</PawnDiary.Tab.DevPreviewSocialFight>
+  <PawnDiary.Tab.DevPreviewMental>Срыв</PawnDiary.Tab.DevPreviewMental>
+  <PawnDiary.Tab.DevPreviewDark>Тьма</PawnDiary.Tab.DevPreviewDark>
+  <PawnDiary.Tab.DevPreviewStrange>Странность</PawnDiary.Tab.DevPreviewStrange>
+  <PawnDiary.Tab.DevPreviewDeath>Смерть</PawnDiary.Tab.DevPreviewDeath>
+  <PawnDiary.Tab.DevPreviewLinked>Связь</PawnDiary.Tab.DevPreviewLinked>
+  <PawnDiary.Tab.DevPreviewWriting>Пишется</PawnDiary.Tab.DevPreviewWriting>
+  <PawnDiary.Tab.DevPreviewTitle>Заголовок</PawnDiary.Tab.DevPreviewTitle>
+  <PawnDiary.Tab.DevPreviewClear>Очистить</PawnDiary.Tab.DevPreviewClear>
+  <PawnDiary.Tab.DevPreviewTip>Только разработка: показывает временную страницу сверху списка для проверки переносов, разметки, связей, анимаций, цветов, речи и атмосферного оформления без тестовых событий.</PawnDiary.Tab.DevPreviewTip>
+  <PawnDiary.Tab.PersonaButton>Манера письма: {0}</PawnDiary.Tab.PersonaButton>
+  <PawnDiary.Tab.LinkedInitiator>{0}, инициатор:</PawnDiary.Tab.LinkedInitiator>
+  <PawnDiary.Tab.LinkedRecipient>{0}, адресат:</PawnDiary.Tab.LinkedRecipient>
+  <PawnDiary.Tab.LinkedNotGenerated>[ещё не написано]</PawnDiary.Tab.LinkedNotGenerated>
+  <PawnDiary.Tab.LinkedNoText>[текста пока нет]</PawnDiary.Tab.LinkedNoText>
+  <PawnDiary.Tab.LinkedTooltip>Открыть запись {0} об этом событии</PawnDiary.Tab.LinkedTooltip>
+  <PawnDiary.Tab.NewerYear>Позже</PawnDiary.Tab.NewerYear>
+  <PawnDiary.Tab.OlderYear>Раньше</PawnDiary.Tab.OlderYear>
+  <PawnDiary.Tab.YearFilter>{0}: {1} стр.</PawnDiary.Tab.YearFilter>
+  <PawnDiary.Tab.YearSelectorTip>Выбрать год дневника.</PawnDiary.Tab.YearSelectorTip>
+  <PawnDiary.Tab.YearLabel>Год {0}</PawnDiary.Tab.YearLabel>
+  <PawnDiary.Tab.UnknownYear>Без даты</PawnDiary.Tab.UnknownYear>
+  <PawnDiary.Tab.ExpandCollapseTip>Развернуть или свернуть страницу.</PawnDiary.Tab.ExpandCollapseTip>
+  <PawnDiary.Tab.CopyEntryTip>Только разработка: скопировать текст страницы. Карточки с одним запросом копируют запрос, остальные — готовый текст.</PawnDiary.Tab.CopyEntryTip>
+  <PawnDiary.Tab.CopyEntryCopied>Страница скопирована.</PawnDiary.Tab.CopyEntryCopied>
+  <PawnDiary.Tab.RegenerateEntryTip>Только разработка: пересоздать страницу с текущей маршрутизацией моделей. Парные страницы обновят оба взгляда, если доступны.</PawnDiary.Tab.RegenerateEntryTip>
+  <PawnDiary.Tab.RegenerateEntryQueued>Страница поставлена на пересоздание.</PawnDiary.Tab.RegenerateEntryQueued>
+  <PawnDiary.Tab.RegenerateEntryUnavailable>Сейчас страницу пересоздать нельзя.</PawnDiary.Tab.RegenerateEntryUnavailable>
+  <PawnDiary.Tab.ArchivedGenerationFallback>Событие: {0}</PawnDiary.Tab.ArchivedGenerationFallback>
+  <PawnDiary.Tab.ArchivedGenerationFallbackUnknown>что-то произошло, но запрос не был сохранён</PawnDiary.Tab.ArchivedGenerationFallbackUnknown>
+  <PawnDiary.Tab.ArchivedGenerationFailedFooter>генерация не удалась</PawnDiary.Tab.ArchivedGenerationFailedFooter>
+  <PawnDiary.Persona.DefaultLabel>по умолчанию</PawnDiary.Persona.DefaultLabel>
+
+  <!-- Статус записи в её заголовке -->
+  <PawnDiary.Status.Writing>пишется</PawnDiary.Status.Writing>
+  <PawnDiary.Status.WritingEllipsis>пишется...</PawnDiary.Status.WritingEllipsis>
+  <PawnDiary.Status.GenerationFailed>не удалось</PawnDiary.Status.GenerationFailed>
+  <PawnDiary.Status.Skipped>пропущено</PawnDiary.Status.Skipped>
+  <PawnDiary.Status.PromptOnly>запрос сохранён</PawnDiary.Status.PromptOnly>
+  <PawnDiary.Error.SkippedIncapacitated>Пропущено: сознание поселенца было ниже {0}% перед генерацией.</PawnDiary.Error.SkippedIncapacitated>
+  <PawnDiary.Error.PromptTestModeCaptured>Тест запросов сохранил этот запрос без отправки в LLM.</PawnDiary.Error.PromptTestModeCaptured>
+
+  <!-- ===== Окно настроек мода ===== -->
+  <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
+  <PawnDiary.Settings.Connection>Подключение</PawnDiary.Settings.Connection>
+  <PawnDiary.Settings.GenerationHeader>Генерация дневника</PawnDiary.Settings.GenerationHeader>
+  <PawnDiary.Settings.ApisHeader>API: включённые строки работают параллельно, по одной модели в каждой</PawnDiary.Settings.ApisHeader>
+  <PawnDiary.Settings.ShowModelSettings>Модели</PawnDiary.Settings.ShowModelSettings>
+  <PawnDiary.Settings.HideModelSettings>Скрыть модели</PawnDiary.Settings.HideModelSettings>
+  <PawnDiary.Settings.ApisSummary>Активно {0} из {1} строк моделей</PawnDiary.Settings.ApisSummary>
+  <PawnDiary.Settings.ApiLabel>API {0}</PawnDiary.Settings.ApiLabel>
+  <PawnDiary.Settings.ApiEnabled>Вкл.</PawnDiary.Settings.ApiEnabled>
+  <PawnDiary.Settings.MoveApiUp>Вверх</PawnDiary.Settings.MoveApiUp>
+  <PawnDiary.Settings.MoveApiDown>Вниз</PawnDiary.Settings.MoveApiDown>
+  <PawnDiary.Settings.AddApi>+ Добавить API</PawnDiary.Settings.AddApi>
+  <PawnDiary.Settings.RemoveApi>− Удалить</PawnDiary.Settings.RemoveApi>
+  <PawnDiary.Settings.Endpoint>Эндпойнт</PawnDiary.Settings.Endpoint>
+  <PawnDiary.Settings.ApiKey>Ключ API</PawnDiary.Settings.ApiKey>
+  <PawnDiary.Settings.ModelName>Название модели</PawnDiary.Settings.ModelName>
+  <PawnDiary.Settings.ApiCompatibility>Тип</PawnDiary.Settings.ApiCompatibility>
+  <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-совместимый</PawnDiary.Settings.ApiCompatibility.Chat>
+  <PawnDiary.Settings.ApiCompatibility.Responses>OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
+  <PawnDiary.Settings.ApiAuthMode>Доступ</PawnDiary.Settings.ApiAuthMode>
+  <PawnDiary.Settings.ApiAuthMode.Bearer>Bearer-токен</PawnDiary.Settings.ApiAuthMode.Bearer>
+  <PawnDiary.Settings.ApiAuthMode.None>Без авторизации</PawnDiary.Settings.ApiAuthMode.None>
+  <PawnDiary.Settings.ApiAuthMode.CustomHeader>Свой заголовок</PawnDiary.Settings.ApiAuthMode.CustomHeader>
+  <PawnDiary.Settings.CustomAuthHeaderTip>Имя HTTP-заголовка для ключа API: x-goog-api-key, api-key или x-api-key.</PawnDiary.Settings.CustomAuthHeaderTip>
+  <PawnDiary.Settings.ApiAuthMode.QueryParameterKey>key= в URL</PawnDiary.Settings.ApiAuthMode.QueryParameterKey>
+  <PawnDiary.Settings.RequestTuning>Параметры запроса</PawnDiary.Settings.RequestTuning>
+  <PawnDiary.Settings.ApiRouting>Маршрутизация</PawnDiary.Settings.ApiRouting>
+  <PawnDiary.Settings.ApiRouting.Balanced>Сбалансированно</PawnDiary.Settings.ApiRouting.Balanced>
+  <PawnDiary.Settings.ApiRouting.PreferTopRows>Сначала верхние</PawnDiary.Settings.ApiRouting.PreferTopRows>
+  <PawnDiary.Settings.ApiRouting.FailoverOnly>Только запасные</PawnDiary.Settings.ApiRouting.FailoverOnly>
+  <PawnDiary.Settings.ReasoningEffort>Рассуждение</PawnDiary.Settings.ReasoningEffort>
+  <PawnDiary.Settings.ReasoningEffort.Default>Как в API</PawnDiary.Settings.ReasoningEffort.Default>
+  <PawnDiary.Settings.ReasoningEffort.None>Нет</PawnDiary.Settings.ReasoningEffort.None>
+  <PawnDiary.Settings.ReasoningEffort.Minimal>Минимальное</PawnDiary.Settings.ReasoningEffort.Minimal>
+  <PawnDiary.Settings.ReasoningEffort.Low>Низкое</PawnDiary.Settings.ReasoningEffort.Low>
+  <PawnDiary.Settings.ReasoningEffort.Medium>Среднее</PawnDiary.Settings.ReasoningEffort.Medium>
+  <PawnDiary.Settings.ReasoningEffort.High>Высокое</PawnDiary.Settings.ReasoningEffort.High>
+  <PawnDiary.Settings.ReasoningEffort.XHigh>Очень высокое</PawnDiary.Settings.ReasoningEffort.XHigh>
+  <PawnDiary.Settings.ToggleOn>Вкл</PawnDiary.Settings.ToggleOn>
+  <PawnDiary.Settings.ToggleOff>Выкл</PawnDiary.Settings.ToggleOff>
+  <PawnDiary.Settings.FetchModels>Получить</PawnDiary.Settings.FetchModels>
+  <PawnDiary.Settings.FetchingModels>Получение...</PawnDiary.Settings.FetchingModels>
+  <PawnDiary.Settings.NoModelsReturned>Моделей нет.</PawnDiary.Settings.NoModelsReturned>
+  <PawnDiary.Settings.ModelsFound>Найдено моделей: {0}.</PawnDiary.Settings.ModelsFound>
+  <PawnDiary.Settings.FetchFailed>Сбой получения: {0}</PawnDiary.Settings.FetchFailed>
+  <PawnDiary.Settings.TestConnection>Проверить API</PawnDiary.Settings.TestConnection>
+  <PawnDiary.Settings.TestingConnection>Проверка...</PawnDiary.Settings.TestingConnection>
+  <PawnDiary.Settings.ConnectionTestSucceeded>Подключено: {0}</PawnDiary.Settings.ConnectionTestSucceeded>
+  <PawnDiary.Settings.ConnectionTestFailed>Сбой подключения: {0}</PawnDiary.Settings.ConnectionTestFailed>
+  <PawnDiary.Settings.ConnectionTestMissingEndpoint>Нужен URL эндпойнта.</PawnDiary.Settings.ConnectionTestMissingEndpoint>
+  <PawnDiary.Settings.ConnectionTestMissingModel>Нужно имя модели.</PawnDiary.Settings.ConnectionTestMissingModel>
+  <PawnDiary.Settings.ConnectionTestPrompt>Ответь одним коротким предложением: API подключён.</PawnDiary.Settings.ConnectionTestPrompt>
+  <PawnDiary.Settings.ShowDiaryInspectTab>Вкладка «Дневник» в осмотре</PawnDiary.Settings.ShowDiaryInspectTab>
+  <PawnDiary.Settings.ShowDiaryInspectTabTip>Если выключено, дневник открывается нижней кнопкой у выбранного поселенца или трупа.</PawnDiary.Settings.ShowDiaryInspectTabTip>
+  <PawnDiary.Settings.GenerateTitles>Короткие заголовки страниц</PawnDiary.Settings.GenerateTitles>
+  <PawnDiary.Settings.GenerateTitlesTip>Если включено, после каждой страницы LLM пишет короткий заголовок отдельным запросом. Это добавляет задержку и расход токенов. Если выключено, в заголовке остаётся дата.</PawnDiary.Settings.GenerateTitlesTip>
+  <PawnDiary.Settings.EnableAtmosphericFormatting>Редкое атмосферное оформление</PawnDiary.Settings.EnableAtmosphericFormatting>
+  <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, крайние страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Затрагивает срывы, аномалии, тёмные записи, смерть и сильное нарушение состояния. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
+  <PawnDiary.Settings.EnablePromptEnchantments>Контекстные подсказки</PawnDiary.Settings.EnablePromptEnchantments>
+  <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку живого контекста. XML задаёт состояния здоровья, важные события и их вес.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Речь в журнал общения</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>
+  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>Если включено, готовая запись инициатора с корректным блоком речи добавляет строку в журнал общения. Моды, следящие за журналом, смогут реагировать после ответа LLM.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
+  <PawnDiary.Settings.PromptTestMode>Тест запросов: только сохранять</PawnDiary.Settings.PromptTestMode>
+  <PawnDiary.Settings.PromptTestModeTip>Только разработка: игровые события собирают и сохраняют системный и пользовательский запрос, но не отправляют дневник или заголовок в LLM. Карточки с запросом видны во вкладке дневника в режиме разработки.</PawnDiary.Settings.PromptTestModeTip>
+  <PawnDiary.Settings.Temperature>Температура LLM: {0}</PawnDiary.Settings.Temperature>
+  <PawnDiary.Settings.TemperatureHelp>Случайность модели для дневника и заголовков. Ниже — ровнее и буквальнее; выше — разнообразнее и атмосфернее, но риск отхода от фактов больше.</PawnDiary.Settings.TemperatureHelp>
+  <PawnDiary.Settings.TimeoutSeconds>Таймаут запроса: {0} с</PawnDiary.Settings.TimeoutSeconds>
+  <PawnDiary.Settings.TimeoutSecondsHelp>Сколько секунд ждать строку API перед резервом или ошибкой. Медленным локальным моделям может быть мало 30 секунд.</PawnDiary.Settings.TimeoutSecondsHelp>
+  <PawnDiary.Settings.MaxTokens>Макс. токенов ответа: {0}</PawnDiary.Settings.MaxTokens>
+  <PawnDiary.Settings.MaxTokensHelp>Верхний предел токенов ответа до локальной очистки. Больше токенов даёт длиннее страницы, но медленнее и менее лаконично.</PawnDiary.Settings.MaxTokensHelp>
+  <PawnDiary.Settings.WorkGenerationWeight>Вес работы: {0}x</PawnDiary.Settings.WorkGenerationWeight>
+  <PawnDiary.Settings.WorkGenerationWeightHelp>Множитель шанса, что выборка работы станет страницей. 1x — значения XML; 0x — случайные страницы о работе отключены.</PawnDiary.Settings.WorkGenerationWeightHelp>
+  <PawnDiary.Settings.SocialGenerationWeight>Вес общения: {0}x</PawnDiary.Settings.SocialGenerationWeight>
+  <PawnDiary.Settings.SocialGenerationWeightHelp>Множитель шанса, что мелкие социальные моменты сразу станут парными страницами. 1x — значения XML; 0x — они копятся в пачку.</PawnDiary.Settings.SocialGenerationWeightHelp>
+  <PawnDiary.Settings.MaxActiveDiaryEvents>Страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
+  <PawnDiary.Settings.MaxConcurrent>Макс. одновременных запросов на API: {0}</PawnDiary.Settings.MaxConcurrent>
+  <PawnDiary.Settings.MaxConcurrentHelp>Сколько запросов одновременно выполняет каждый API; остальные ждут в его очереди. Разные API работают параллельно. Для локальной модели по одному запросу оставьте 1; повышайте только если эндпойнт умеет параллелить.</PawnDiary.Settings.MaxConcurrentHelp>
+  <PawnDiary.Settings.ResetConnection>Сбросить подключение</PawnDiary.Settings.ResetConnection>
+  <PawnDiary.Settings.PromptStudioTitle>Студия запросов</PawnDiary.Settings.PromptStudioTitle>
+  <PawnDiary.Settings.ShowPromptStudio>Показать запросы</PawnDiary.Settings.ShowPromptStudio>
+  <PawnDiary.Settings.HidePromptStudio>Скрыть запросы</PawnDiary.Settings.HidePromptStudio>
+  <PawnDiary.Settings.PromptStudioHelp>Здесь правятся системные запросы, подсказки событий и маршрутизация моделей. Шаблоны, итоговые инструкции и фильтры остаются в XML-дефах.</PawnDiary.Settings.PromptStudioHelp>
+  <PawnDiary.Settings.PromptStudioSummary>XML-шаблонов: {0}; типов событий: {1}; изменено вручную: {2}</PawnDiary.Settings.PromptStudioSummary>
+  <PawnDiary.Settings.PromptStudioXmlNote>Поля, фильтры, инструкции групп и стандартные манеры письма редактируются в XML и применяются после перезапуска RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
+  <PawnDiary.Settings.ResetEventPromptOverrides>Сбросить события</PawnDiary.Settings.ResetEventPromptOverrides>
+  <PawnDiary.Settings.EventPromptPickerHeader>Prompt события</PawnDiary.Settings.EventPromptPickerHeader>
+  <PawnDiary.Settings.PromptTypePickerHeader>Тип запроса</PawnDiary.Settings.PromptTypePickerHeader>
+  <PawnDiary.Settings.EventPromptNoneLoaded>Дефы запросов событий не загружены</PawnDiary.Settings.EventPromptNoneLoaded>
+  <PawnDiary.Settings.EditingEventPrompt>Prompt события: {0}</PawnDiary.Settings.EditingEventPrompt>
+  <PawnDiary.Settings.EventPromptPromptField>запрос события</PawnDiary.Settings.EventPromptPromptField>
+  <PawnDiary.Settings.EventPromptEnhancementField>усиление события</PawnDiary.Settings.EventPromptEnhancementField>
+  <PawnDiary.Settings.EventPromptForcedModelField>принудительная модель</PawnDiary.Settings.EventPromptForcedModelField>
+  <PawnDiary.Settings.RestoreEventPromptDefault>Сбросить запрос</PawnDiary.Settings.RestoreEventPromptDefault>
+  <PawnDiary.Settings.RestoreEventEnhancementDefault>Восстановить усиление</PawnDiary.Settings.RestoreEventEnhancementDefault>
+  <PawnDiary.Settings.RestoreEventForcedModelDefault>Восстановить модель</PawnDiary.Settings.RestoreEventForcedModelDefault>
+  <PawnDiary.Settings.SystemPromptDiary>Системный запрос записей дневника</PawnDiary.Settings.SystemPromptDiary>
+  <PawnDiary.Settings.SystemPromptReflection>Системный запрос итога дня</PawnDiary.Settings.SystemPromptReflection>
+  <PawnDiary.Settings.SystemPromptNeutral>Системный запрос нейтральной хроники</PawnDiary.Settings.SystemPromptNeutral>
+  <PawnDiary.Settings.SystemPromptTitle>Системный запрос генерации заголовков</PawnDiary.Settings.SystemPromptTitle>
+  <PawnDiary.Settings.SystemPromptField>системный запрос</PawnDiary.Settings.SystemPromptField>
+  <PawnDiary.Settings.RestorePromptDefault>Вернуть XML</PawnDiary.Settings.RestorePromptDefault>
+  <PawnDiary.Settings.PromptStatusCustomized>Отличается от XML</PawnDiary.Settings.PromptStatusCustomized>
+  <PawnDiary.Settings.PromptStatusDefault>Значение из XML</PawnDiary.Settings.PromptStatusDefault>
+  <PawnDiary.Settings.PersonaStudioTitle>Манеры письма</PawnDiary.Settings.PersonaStudioTitle>
+  <PawnDiary.Settings.PersonaStudioHelp>Редактируйте ярлыки, правила стиля и теги из DiaryPersonaDefs.xml или добавляйте свои. Теги задают начальные веса для новых поселенцев.</PawnDiary.Settings.PersonaStudioHelp>
+  <PawnDiary.Settings.PersonaStudioSummary>Манер: {0}; своих: {1}; изменено: {2}</PawnDiary.Settings.PersonaStudioSummary>
+  <PawnDiary.Settings.PersonaStudioTagsHelp>У своей манеры нужен хотя бы один тег.</PawnDiary.Settings.PersonaStudioTagsHelp>
+  <PawnDiary.Settings.AddPersonaPreset>Добавить свою манеру</PawnDiary.Settings.AddPersonaPreset>
+  <PawnDiary.Settings.NewPersonaLabel>Новая манера письма</PawnDiary.Settings.NewPersonaLabel>
+  <PawnDiary.Settings.ResetPersonaPresets>Сбросить все манеры</PawnDiary.Settings.ResetPersonaPresets>
+  <PawnDiary.Settings.PersonaPickerHeader>Манера</PawnDiary.Settings.PersonaPickerHeader>
+  <PawnDiary.Settings.EditingPersona>Правка манеры: {0}</PawnDiary.Settings.EditingPersona>
+  <PawnDiary.Settings.PersonaBadgeBuiltIn>Встроенная</PawnDiary.Settings.PersonaBadgeBuiltIn>
+  <PawnDiary.Settings.PersonaBadgeCustom>Своя</PawnDiary.Settings.PersonaBadgeCustom>
+  <PawnDiary.Settings.PersonaLabel>Ярлык</PawnDiary.Settings.PersonaLabel>
+  <PawnDiary.Settings.PersonaRule>Правило стиля для запроса от первого лица</PawnDiary.Settings.PersonaRule>
+  <PawnDiary.Settings.PersonaTags>Теги тем и начальные веса</PawnDiary.Settings.PersonaTags>
+  <PawnDiary.Settings.RestorePersonaPreset>Сбросить манеру</PawnDiary.Settings.RestorePersonaPreset>
+  <PawnDiary.Settings.DeletePersonaPreset>Удалить свою манеру</PawnDiary.Settings.DeletePersonaPreset>
+  <PawnDiary.Settings.PersonaTag.grim>мрачный</PawnDiary.Settings.PersonaTag.grim>
+  <PawnDiary.Settings.PersonaTag.warm>тёплый</PawnDiary.Settings.PersonaTag.warm>
+  <PawnDiary.Settings.PersonaTag.hostile>враждебный</PawnDiary.Settings.PersonaTag.hostile>
+  <PawnDiary.Settings.PersonaTag.anxious>тревожный</PawnDiary.Settings.PersonaTag.anxious>
+  <PawnDiary.Settings.PersonaTag.analytical>аналитичный</PawnDiary.Settings.PersonaTag.analytical>
+  <PawnDiary.Settings.PersonaTag.dramatic>драматичный</PawnDiary.Settings.PersonaTag.dramatic>
+  <PawnDiary.Settings.PersonaTag.social>социальный</PawnDiary.Settings.PersonaTag.social>
+  <PawnDiary.Settings.PersonaTag.whimsical>причудливый</PawnDiary.Settings.PersonaTag.whimsical>
+  <PawnDiary.Settings.PersonaTag.noble>благородный</PawnDiary.Settings.PersonaTag.noble>
+  <PawnDiary.Settings.PersonaTag.void>пустотный</PawnDiary.Settings.PersonaTag.void>
+  <PawnDiary.Settings.PickModel>Выбрать</PawnDiary.Settings.PickModel>
+  <PawnDiary.Settings.NoModelsYet>Модели ещё не получены</PawnDiary.Settings.NoModelsYet>
+
+  <!-- ===== Сырой текст события (показан в дневнике И передан модели как «что произошло») ===== -->
+  <PawnDiary.Event.Interaction>{0}: {1} с {2}.</PawnDiary.Event.Interaction>
+  <PawnDiary.Event.SocialFight>{0} и {1} сорвались и подрались.</PawnDiary.Event.SocialFight>
+  <PawnDiary.Event.MentalBreak>У {0} случился нервный срыв ({1})</PawnDiary.Event.MentalBreak>
+  <PawnDiary.Event.Inspiration>{0} обрёл воодушевление: {1}</PawnDiary.Event.Inspiration>
+  <PawnDiary.Event.Romance>{0} и {2} теперь {1}.</PawnDiary.Event.Romance>
+  <PawnDiary.Event.Raid>{0} пережил налёт.</PawnDiary.Event.Raid>
+  <PawnDiary.Event.QuestAccepted>{0} принял задание: {1}. {2}</PawnDiary.Event.QuestAccepted>
+  <PawnDiary.Event.QuestCompleted>{0} выполнил задание: {1}. {2}</PawnDiary.Event.QuestCompleted>
+  <PawnDiary.Event.QuestFailed>{0} провалил задание: {1}. {2}</PawnDiary.Event.QuestFailed>
+  <PawnDiary.Event.DirectedAt>, направлено на {0}</PawnDiary.Event.DirectedAt>
+  <PawnDiary.Event.ReasonSuffix>. Причина: {0}</PawnDiary.Event.ReasonSuffix>
+  <PawnDiary.Event.BatchFallback>{0} пережил несколько моментов {2} с {1}.</PawnDiary.Event.BatchFallback>
+  <PawnDiary.Event.BatchLabel>{0}</PawnDiary.Event.BatchLabel>
+  <PawnDiary.Event.BatchBrief>Короткий обмен: {0}.</PawnDiary.Event.BatchBrief>
+  <PawnDiary.Event.BatchHeader>Несколько моментов {0}:</PawnDiary.Event.BatchHeader>
+  <PawnDiary.Event.BatchInstruction>напиши одну запись об общем обмене {0}, не отдельный отчёт по каждому моменту</PawnDiary.Event.BatchInstruction>
+  <PawnDiary.Event.TaleBatchFallback>{0} пережил несколько моментов: {1}.</PawnDiary.Event.TaleBatchFallback>
+  <PawnDiary.Event.TaleBatchLabel>{0}</PawnDiary.Event.TaleBatchLabel>
+  <PawnDiary.Event.TaleBatchHeader>Несколько моментов {0}:</PawnDiary.Event.TaleBatchHeader>
+  <PawnDiary.Event.TaleBatchInstruction>напиши одну личную запись об общей полосе {0}, не отдельный отчёт по каждому моменту</PawnDiary.Event.TaleBatchInstruction>
+  <PawnDiary.Event.CombatBatchLabel>После боя</PawnDiary.Event.CombatBatchLabel>
+  <PawnDiary.Event.CombatBatchBrief>Бой оставил след.</PawnDiary.Event.CombatBatchBrief>
+  <PawnDiary.Event.CombatBatchHeader>Несколько боевых моментов:</PawnDiary.Event.CombatBatchHeader>
+  <PawnDiary.Event.CombatBatchFallback>{0} пережил тяжёлую полосу боёв.</PawnDiary.Event.CombatBatchFallback>
+  <PawnDiary.Event.CombatBatchInstruction>напиши одну личную запись об общем бое; строки боевого журнала используй как факты, но не отчитывайся отдельно о каждой ране, обездвиживании или убийстве</PawnDiary.Event.CombatBatchInstruction>
+  <PawnDiary.Event.InsultBatchLabel>Обмен оскорблениями</PawnDiary.Event.InsultBatchLabel>
+  <PawnDiary.Event.InsultBatchBrief>Резкое оскорбление.</PawnDiary.Event.InsultBatchBrief>
+  <PawnDiary.Event.InsultBatchHeader>Несколько оскорблений:</PawnDiary.Event.InsultBatchHeader>
+  <PawnDiary.Event.InsultBatchFallback>{0} и {1} обменялись несколькими оскорблениями.</PawnDiary.Event.InsultBatchFallback>
+  <PawnDiary.Event.InsultBatchInstruction>напиши одну запись об общем конфликте; строки журнала используй как факты, но не отчитывайся отдельно о каждом оскорблении</PawnDiary.Event.InsultBatchInstruction>
+  <PawnDiary.Event.AmbientDayLabel>{0}</PawnDiary.Event.AmbientDayLabel>
+  <PawnDiary.Event.AmbientDayHeader>Фон дня: несколько моментов {0}:</PawnDiary.Event.AmbientDayHeader>
+  <PawnDiary.Event.AmbientDayMore>были и другие тихие моменты.</PawnDiary.Event.AmbientDayMore>
+  <PawnDiary.Event.AmbientDayFallback>У {0} сегодня было несколько тихих моментов: {1}.</PawnDiary.Event.AmbientDayFallback>
+  <PawnDiary.Event.AmbientDayInstruction>напиши один естественный абзац о фоне дня; не веди журнал, не перечисляй каждый момент, не упоминай числа и называй имена только там, где они эмоционально важны</PawnDiary.Event.AmbientDayInstruction>
+  <PawnDiary.Event.AmbientSocialLabel>Социальный день</PawnDiary.Event.AmbientSocialLabel>
+  <PawnDiary.Event.AmbientSocialHeader>Мимолётное общение дня:</PawnDiary.Event.AmbientSocialHeader>
+  <PawnDiary.Event.AmbientSocialFallback>{0} прошёл через несколько мелких социальных моментов.</PawnDiary.Event.AmbientSocialFallback>
+  <PawnDiary.Event.AmbientSocialInstruction>напиши один естественный абзац о социальной атмосфере дня; разговоры ниже считай фоном, не отчётом; не перечисляй имена и числа без эмоциональной причины</PawnDiary.Event.AmbientSocialInstruction>
+  <PawnDiary.Event.AmbientStrangeChatLabel>Тревожные разговоры</PawnDiary.Event.AmbientStrangeChatLabel>
+  <PawnDiary.Event.AmbientStrangeChatHeader>Странные разговоры оставили тревогу:</PawnDiary.Event.AmbientStrangeChatHeader>
+  <PawnDiary.Event.AmbientStrangeChatFallback>{0} весь день чувствовал послевкусие странных разговоров.</PawnDiary.Event.AmbientStrangeChatFallback>
+  <PawnDiary.Event.AmbientStrangeChatInstruction>напиши один естественный абзац о тревоге после этих странных разговоров; беседы ниже считай фоном, не отдельными отчётами; неправильность не объясняй</PawnDiary.Event.AmbientStrangeChatInstruction>
+  <PawnDiary.Event.AmbientAnimalLabel>Уход за животными</PawnDiary.Event.AmbientAnimalLabel>
+  <PawnDiary.Event.AmbientAnimalHeader>Моменты ухода за животными:</PawnDiary.Event.AmbientAnimalHeader>
+  <PawnDiary.Event.AmbientAnimalFallback>{0} провёл часть дня среди животных поселения.</PawnDiary.Event.AmbientAnimalFallback>
+  <PawnDiary.Event.AmbientAnimalInstruction>напиши один естественный абзац о работе с животными сегодня; не превращай его в журнал дрессировки и называй животных или работников только там, где это лично</PawnDiary.Event.AmbientAnimalInstruction>
+  <PawnDiary.Event.AmbientTeachingLabel>Обучение</PawnDiary.Event.AmbientTeachingLabel>
+  <PawnDiary.Event.AmbientTeachingHeader>Моменты обучения и учёбы:</PawnDiary.Event.AmbientTeachingHeader>
+  <PawnDiary.Event.AmbientTeachingFallback>{0} провёл часть дня в обучении и учёбе.</PawnDiary.Event.AmbientTeachingFallback>
+  <PawnDiary.Event.AmbientTeachingInstruction>напиши один естественный абзац об обучении или учёбе сегодня; не пересказывай уроки по одному, сосредоточься на отношениях или настроении после них</PawnDiary.Event.AmbientTeachingInstruction>
+  <PawnDiary.Event.AmbientThoughtLabel>Мимолётные чувства</PawnDiary.Event.AmbientThoughtLabel>
+  <PawnDiary.Event.AmbientThoughtHeader>Мелкие чувства и впечатления:</PawnDiary.Event.AmbientThoughtHeader>
+  <PawnDiary.Event.AmbientThoughtFallback>{0} пронёс через день несколько мимолётных чувств.</PawnDiary.Event.AmbientThoughtFallback>
+  <PawnDiary.Event.AmbientThoughtInstruction>напиши один естественный абзац об эмоциональном фоне этих чувств; не перечисляй каждую мысль, не упоминай числа и называй источник только там, где он важен поселенцу</PawnDiary.Event.AmbientThoughtInstruction>
+  <PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator>Взгляд инициатора {0}: если заметки содержат или явно подразумевают слова {0}, добавь ровно одну отдельную короткую строку [[speech]]...[[/speech]]. Внутри только слова {0}, без повествования. Пример: Я велел {1} прекратить.&#10;[[speech]]Хватит.[[/speech]] Нельзя: помечать ответ {1}, мысли или выдуманную речь. Если {0} не говорил, блока речи не нужно; пиши личную реакцию {0}.</PawnDiary.Prompt.PairDirectSpeechInstruction.Initiator>
+  <PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient>Взгляд адресата {0}: не используй [[speech]] в этой второй записи. Любые сказанные слова перескажи как личную реакцию {0} на {1}; не цитируй {1}, не помечай мысли как речь и не выдумывай слова для {0}.</PawnDiary.Prompt.PairDirectSpeechInstruction.Recipient>
+  <PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>Одинарный взгляд {0}: если заметки содержат или явно подразумевают слова {0}, добавь ровно одну отдельную короткую строку [[speech]]...[[/speech]]. Внутри только слова {0}, без повествования. Пример: Я пробормотал себе под нос.&#10;[[speech]]Только не снова.[[/speech]] Нельзя: помечать другого поселенца, мысли или выдуманную речь. Если {0} не говорил, блока речи не нужно; пиши личную реакцию {0}.</PawnDiary.Prompt.SoloInteractionDirectSpeechInstruction>
+  <!-- Итог дня (вечерняя сводка, сотканная из выбранных за день моментов) -->
+  <PawnDiary.Event.DayReflectionLabel>Оглядываясь на день</PawnDiary.Event.DayReflectionLabel>
+  <PawnDiary.Event.DayReflectionHeader>Вот что осталось у {0} от дня:</PawnDiary.Event.DayReflectionHeader>
+  <PawnDiary.Event.DayReflectionFallback>{0} лёг спать после тихого, ничем не примечательного дня.</PawnDiary.Event.DayReflectionFallback>
+  <PawnDiary.Event.DayReflectionInstruction>напиши один короткий вдумчивый абзац, где {0} заканчивает день и оглядывается назад; связывай только моменты ниже, которые всё ещё держались бы в голове, и пиши его манерой; размышляй о том, как день ощущался, а не пересказывай каждое событие; без списка и чисел</PawnDiary.Event.DayReflectionInstruction>
+  <PawnDiary.Event.DayReflectionFillerLine>обычный фон разговоров и мимолётных настроений</PawnDiary.Event.DayReflectionFillerLine>
+  <PawnDiary.Event.DayReflectionOpinionWarmed>заметно потеплел к {0}</PawnDiary.Event.DayReflectionOpinionWarmed>
+  <PawnDiary.Event.DayReflectionOpinionCooled>заметно охладел к {0}</PawnDiary.Event.DayReflectionOpinionCooled>
+  <PawnDiary.Event.DayReflectionHediff>появилась новая хворь: {0}</PawnDiary.Event.DayReflectionHediff>
+  <PawnDiary.Event.DayReflectionHediffProgressed>состояние здоровья ухудшилось: {0}</PawnDiary.Event.DayReflectionHediffProgressed>
+  <PawnDiary.Event.HediffAppeared>У {0} развилось состояние: {1}.</PawnDiary.Event.HediffAppeared>
+  <PawnDiary.Event.HediffProgressed>У {0} ухудшилось состояние: {1}.</PawnDiary.Event.HediffProgressed>
+  <PawnDiary.Event.AnomalyHediffAppeared>{0} захватило: {1}.</PawnDiary.Event.AnomalyHediffAppeared>
+  <PawnDiary.Event.AnomalyHediffProgressed>У {0} усилилось: {1}.</PawnDiary.Event.AnomalyHediffProgressed>
+  <PawnDiary.Event.PregnancyAppeared>{0} забеременела.</PawnDiary.Event.PregnancyAppeared>
+  <PawnDiary.Event.PregnancyProgressed>Беременность {0} продвинулась.</PawnDiary.Event.PregnancyProgressed>
+  <PawnDiary.Event.LaborAppeared>У {0} начались роды: {1}.</PawnDiary.Event.LaborAppeared>
+  <PawnDiary.Event.TaleSolo>{0} пережил {1}.</PawnDiary.Event.TaleSolo>
+  <PawnDiary.Event.TaleSoloWithOther>{0} пережил {1} с участием {2}.</PawnDiary.Event.TaleSoloWithOther>
+  <PawnDiary.Event.TalePair>{0} и {1} оказались в событии: {2}.</PawnDiary.Event.TalePair>
+  <PawnDiary.Event.TaleAttachedDef> Связано: {0}.</PawnDiary.Event.TaleAttachedDef>
+  <PawnDiary.Event.DeathFallbackLabel>смерть</PawnDiary.Event.DeathFallbackLabel>
+  <PawnDiary.Event.DeathFallback>{0} умер.</PawnDiary.Event.DeathFallback>
+  <PawnDiary.Event.ArrivalLabel>Появление</PawnDiary.Event.ArrivalLabel>
+  <PawnDiary.Event.StartingArrival>{0} был одним из основателей поселения.</PawnDiary.Event.StartingArrival>
+  <PawnDiary.Event.JoinedArrival>{0} присоединился к поселению.</PawnDiary.Event.JoinedArrival>
+  <PawnDiary.Event.RitualFinished>{0} завершил ритуал {1} как {2}; роль в ритуале: {3}.</PawnDiary.Event.RitualFinished>
+  <PawnDiary.Ritual.Role.Author>устроитель</PawnDiary.Ritual.Role.Author>
+  <PawnDiary.Ritual.Role.Target>цель</PawnDiary.Ritual.Role.Target>
+  <PawnDiary.Ritual.Role.Participant>участник</PawnDiary.Ritual.Role.Participant>
+  <PawnDiary.Ritual.Role.Spectator>зритель</PawnDiary.Ritual.Role.Spectator>
+  <PawnDiary.PsychicRitual.Role.Invoker>заклинатель</PawnDiary.PsychicRitual.Role.Invoker>
+  <PawnDiary.Event.RitualInstruction.Author>пиши как устроитель ритуала после завершения; чувствуй ответственность, публичное давление и цену или доказательство этой церемонии</PawnDiary.Event.RitualInstruction.Author>
+  <PawnDiary.Event.RitualInstruction.Target>пиши как цель ритуала после завершения; в центре то, каково быть выделенным, увиденным, изменённым, осуждённым, почтённым или использованным</PawnDiary.Event.RitualInstruction.Target>
+  <PawnDiary.Event.RitualInstruction.Participant>пиши как участник ритуала после завершения; роль и название ритуала должны давить конкретно, а не быть украшением</PawnDiary.Event.RitualInstruction.Participant>
+  <PawnDiary.Event.RitualInstruction.Spectator>пиши как зритель завершённого ритуала; сосредоточься на наблюдении, осуждении, причастности, сомнении, трепете, неловкости или облегчении на краю церемонии</PawnDiary.Event.RitualInstruction.Spectator>
+  <PawnDiary.Event.PsychicRitualFinished>{0} завершил псионический ритуал {1} как {2}.</PawnDiary.Event.PsychicRitualFinished>
+  <PawnDiary.Event.AbilityUsed>{0} применил способность {1}.</PawnDiary.Event.AbilityUsed>
+  <PawnDiary.Event.AbilityUsedOn>{0} применил способность {1} на {2}.</PawnDiary.Event.AbilityUsedOn>
+  <PawnDiary.Event.PsychicRitualInstruction.Invoker>пиши как заклинатель после псионического ритуала; атмосфера тревожная, пугающая, тёмная или непостижимая; добавь ровно один короткий отдельный блок [[speech]]...[[/speech]] с выдуманными, ломаными или полупонятыми ритуальными словами заклинателя, без повествования внутри блока</PawnDiary.Event.PsychicRitualInstruction.Invoker>
+  <PawnDiary.Event.PsychicRitualInstruction.Target>пиши как цель псионического ритуала после завершения; событие пугает, оскверняет или мрачно цепенит, но оккультный механизм не объясняй</PawnDiary.Event.PsychicRitualInstruction.Target>
+  <PawnDiary.Event.PsychicRitualInstruction.Participant>пиши как причастный к псионическому ритуалу после завершения; атмосфера тревожная, пугающая и не до конца понятная</PawnDiary.Event.PsychicRitualInstruction.Participant>
+  <PawnDiary.Event.PsychicRitualInstruction.Spectator>пиши как наблюдавший завершение псионического ритуала; в центре ужас, неправильность, страх, тишина, странный звук или облегчение на краю события</PawnDiary.Event.PsychicRitualInstruction.Spectator>
+
+  <!-- Тестовые записи режима разработки: только для кнопки нагрузочного теста вкладки «Дневник». -->
+  <PawnDiary.Dev.MockLabel>Тест интерфейса дневника</PawnDiary.Dev.MockLabel>
+  <PawnDiary.Dev.MockTitle>Тестовая страница {0}</PawnDiary.Dev.MockTitle>
+  <PawnDiary.Dev.MockRawText>{0} получил тестовое событие дневника {1}.</PawnDiary.Dev.MockRawText>
+  <PawnDiary.Dev.MockBody>Тестовая страница дневника {0}. {1} протащил это нарочно искусственное воспоминание через день, чтобы дневник можно было проверить на длинной многолетней истории.</PawnDiary.Dev.MockBody>
+  <PawnDiary.Dev.PreviewPawnFallback>этот поселенец</PawnDiary.Dev.PreviewPawnFallback>
+  <PawnDiary.Dev.PreviewLabel>Предпросмотр оформления</PawnDiary.Dev.PreviewLabel>
+  <PawnDiary.Dev.PreviewRawText>{0} отрисовал предпросмотр оформления дневника «{1}».</PawnDiary.Dev.PreviewRawText>
+  <PawnDiary.Dev.PreviewLinkedPawn>Другой поселенец</PawnDiary.Dev.PreviewLinkedPawn>
+  <PawnDiary.Dev.PreviewLinkedTitle>Связанный предпросмотр</PawnDiary.Dev.PreviewLinkedTitle>
+  <PawnDiary.Dev.PreviewLinkedText>Предпросмотр другой точки зрения должен быть внутри основной карточки: своя рамка, акцентная полоса, ярлык и обрезанный текст.</PawnDiary.Dev.PreviewLinkedText>
+  <PawnDiary.Dev.PreviewTitlePlain>Простой текст</PawnDiary.Dev.PreviewTitlePlain>
+  <PawnDiary.Dev.PreviewTitleMarkdown>Разметка</PawnDiary.Dev.PreviewTitleMarkdown>
+  <PawnDiary.Dev.PreviewTitleSpeech>Блок речи</PawnDiary.Dev.PreviewTitleSpeech>
+  <PawnDiary.Dev.PreviewTitleStaggered>Скачущая речь</PawnDiary.Dev.PreviewTitleStaggered>
+  <PawnDiary.Dev.PreviewTitleCombat>Боевая страница</PawnDiary.Dev.PreviewTitleCombat>
+  <PawnDiary.Dev.PreviewTitleSocialFight>Потасовка</PawnDiary.Dev.PreviewTitleSocialFight>
+  <PawnDiary.Dev.PreviewTitleMental>Нервный срыв</PawnDiary.Dev.PreviewTitleMental>
+  <PawnDiary.Dev.PreviewTitleDark>Крайняя тьма</PawnDiary.Dev.PreviewTitleDark>
+  <PawnDiary.Dev.PreviewTitleStrange>Странная речь</PawnDiary.Dev.PreviewTitleStrange>
+  <PawnDiary.Dev.PreviewTitleDeath>Страница смерти</PawnDiary.Dev.PreviewTitleDeath>
+  <PawnDiary.Dev.PreviewTitleLinked>Связанная карточка</PawnDiary.Dev.PreviewTitleLinked>
+  <PawnDiary.Dev.PreviewTitleWriting>Пишется</PawnDiary.Dev.PreviewTitleWriting>
+  <PawnDiary.Dev.PreviewTitlePending>Ожидание заголовка</PawnDiary.Dev.PreviewTitlePending>
+  <PawnDiary.Dev.PreviewBodyPlain>Это смоделированная страница дневника для {0}. Она включает **жирную память**, *тревожный акцент* и «слова в кавычках» внутри обычной прозы.&#10;&#10;Второй абзац намеренно длиннее, чтобы можно было проверить перенос, отступы и низ страницы, не дожидаясь LLM.</PawnDiary.Dev.PreviewBodyPlain>
+  <PawnDiary.Dev.PreviewBodyMarkdown># Строка вроде заголовка&#10;- Маркер списка должен стать компактным буллетом.&#10;&gt; Маркер цитаты должен исчезнуть, а слова остаться.&#10;Эта строка проверяет **жирный**, *курсив* и «строчные сказанные слова» в обычном рендерере тела.</PawnDiary.Dev.PreviewBodyMarkdown>
+  <PawnDiary.Dev.PreviewBodySpeech>{0} пишет короткую обычную строку, прежде чем сказать что-то вслух.&#10;[[speech]]Эта строка должна стать цветным блоком речи.[[/speech]]&#10;После речи обычное повествование должно вернуться к стилю тела дневника.</PawnDiary.Dev.PreviewBodySpeech>
+  <PawnDiary.Dev.PreviewBodyStaggered>{0} пытается удержать страницу ровной после лишней выпивки.&#10;[[speech]]Я могу написать это ровно. Комната всё кренится, буквы всё соскальзывают, и я почти уверен, что никто не заметит.[[/speech]]&#10;Только сказанный блок должен подхватить настроенное оформление со скачущим размером слов.</PawnDiary.Dev.PreviewBodyStaggered>
+  <PawnDiary.Dev.PreviewBodyCombat>{0} проверяет цвет боевого дневника и более длинную, жёсткую форму записи. Страница должна держать боевой акцент, а обычный текст — спокойно обходить сильные глаголы, рубленые фразы и **важные** детали урона.&#10;&#10;Второй боевой абзац проверяет нижний отступ после плотного рассказа о дыме, крови, приказах и больной тишине после боя.</PawnDiary.Dev.PreviewBodyCombat>
+  <PawnDiary.Dev.PreviewBodySocialFight>{0} проверяет акцент потасовки: страница должна быть злой, но без полного боевого цвета. Короткие строки остаются читаемыми, карточка даёт оранжевый сигнал конфликта и достаточно места после текста.</PawnDiary.Dev.PreviewBodySocialFight>
+  <PawnDiary.Dev.PreviewBodyMental>{0} проверяет раздробленную раскладку нервного срыва. Одна мысль стоит неподвижно. Другая срывается вбок. Комната всё равно отвечает. Руки дрожат. Поле всё движется.&#10;&#10;Второй абзац проверяет, что раздробленные отступы всё ещё уважают разрывы пустых строк, пока короткие ломаные предложения рассыпаются по странице.</PawnDiary.Dev.PreviewBodyMental>
+  <PawnDiary.Dev.PreviewBodyDark>{0} проверяет сигнал крайней тьмы и тревожную раскладку. Страница должна уйти в тёмно-красный акцент, но остаться читаемой.&#10;[[speech]]Что-то шевельнулось там, где не было света.[[/speech]]&#10;Сказанная строка должна приглушать отдельные слова, а не искажать глифы как странная речь.</PawnDiary.Dev.PreviewBodyDark>
+  <PawnDiary.Dev.PreviewBodyStrange>{0} записывает момент так бережно, как может, но строки не хотят держаться на месте.&#10;[[speech]]Стены ответили прежде, чем я заговорил.[[/speech]]&#10;Странный предпросмотр сохраняет тревожную раскладку и цветовой сигнал, который задаёт Zalgo-искажение прямой речи.</PawnDiary.Dev.PreviewBodyStrange>
+  <PawnDiary.Dev.PreviewBodyDeath>Страница предпросмотра смерти {0} должна осесть в центрированную мемориальную раскладку. Слова — не настоящий некролог; они здесь лишь чтобы проверить бледный акцент, отступы и тихие переносы строк.&#10;&#10;Остаётся отмеренная тишина, бережно удержанное имя и достаточно текста, чтобы доказать, что мемориальная карточка может дышать без обрезки.</PawnDiary.Dev.PreviewBodyDeath>
+  <PawnDiary.Dev.PreviewBodyLinked>{0} проверяет основную сторону парной карточки дневника. Связанный предпросмотр сверху или снизу должен верно резервировать высоту, оставаться внутри своей рамки и не давать основному тексту обрезаться.&#10;&#10;Эта страница также проверяет, что связанная карточка и текст тела используют разные цвета и отступы.</PawnDiary.Dev.PreviewBodyLinked>
+  <PawnDiary.Dev.PreviewBodyWriting>{0} проверяет заглушку письма в процессе. Это тело хранится как сырые данные предпросмотра, но карточка должна показывать анимированные точки письма вместо готовой прозы, пока статус ожидается.</PawnDiary.Dev.PreviewBodyWriting>
+  <PawnDiary.Dev.PreviewBodyTitle>{0} проверяет заголовок в ожидании. Тело готово, но заголовок должен сохранять дату видимой и анимировать маленькие точки там, где появится сгенерированный заголовок.</PawnDiary.Dev.PreviewBodyTitle>
+
+  <!-- Текст события настроения (записи дневника из GameCondition) -->
+  <PawnDiary.Event.MoodEvent>{0} пережил событие: {1}.</PawnDiary.Event.MoodEvent>
+  <PawnDiary.Event.MoodEventPositive>{1} подняло настроение {0}.</PawnDiary.Event.MoodEventPositive>
+  <PawnDiary.Event.MoodEventNegative>{1} тревожило {0}.</PawnDiary.Event.MoodEventNegative>
+
+  <!-- Текст мысли (записи дневника из временных мыслей) -->
+  <PawnDiary.Event.Thought>{0} думал о: {1}.</PawnDiary.Event.Thought>
+  <PawnDiary.Event.ThoughtPositive>{1} обрадовало {0}.</PawnDiary.Event.ThoughtPositive>
+  <PawnDiary.Event.ThoughtNegative>{1} тревожило {0}.</PawnDiary.Event.ThoughtNegative>
+  <PawnDiary.Event.ThoughtProgressionNegative>У {0} стало хуже: {1}.</PawnDiary.Event.ThoughtProgressionNegative>
+  <PawnDiary.Event.ThoughtProgressionInstruction>это ухудшение продолжающейся нужды или ситуации; пиши о нынешней тяжести, не считай это новой мыслью и не повторяй прежние стадии</PawnDiary.Event.ThoughtProgressionInstruction>
+
+  <!-- Текст работы (записи дневника из периодической выборки WorkTypeDef) -->
+  <PawnDiary.Event.WorkPositive>{PAWN} нашёл удовольствие в {WORK}.</PawnDiary.Event.WorkPositive>
+  <PawnDiary.Event.WorkNeutral>{PAWN} занимался {WORK}.</PawnDiary.Event.WorkNeutral>
+  <PawnDiary.Event.WorkNegative>{WORK} вымотала {PAWN}.</PawnDiary.Event.WorkNegative>
+  <PawnDiary.Event.WorkDarkStudy>{0} изучал то, что не следует изучать: {1}.</PawnDiary.Event.WorkDarkStudy>
+
+  <!-- Текст окна события (общие долгие реакции на события, управляемые XML) -->
+  <PawnDiary.Event.EventWindow.Generic.start>{0} заметил {1}.</PawnDiary.Event.EventWindow.Generic.start>
+  <PawnDiary.Event.EventWindow.Generic.end>{0} увидел, чем закончилось {1}.</PawnDiary.Event.EventWindow.Generic.end>
+  <PawnDiary.Event.EventWindow.Generic.timeout>{0} так и не дождался ответа о {1}.</PawnDiary.Event.EventWindow.Generic.timeout>
+  <PawnDiary.Event.EventWindow.Generic.Instruction>напиши это как продолжающееся событие о {0}; используй только переданные факты и ясно держи неопределённость поселенца</PawnDiary.Event.EventWindow.Generic.Instruction>
+  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>{0} нашёл серую плоть: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>
+  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>{0} увидел, как скрытая угроза раскрылась: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>
+  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>{0} так и не узнал, что значила серая плоть: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>
+  <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0} обнаружил монолит пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
+  <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} завершил взаимодействие с монолитом пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
+  <PawnDiary.Event.EventWindow.Birthday.Start>{0} достиг биологического возраста {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
+  <PawnDiary.Event.EventWindow.HeartAttack.Start>{0} перенёс сердечный приступ: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
+  <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0} услышал тревогу о побеге: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>
+  <PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>побег</PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>
+
+  <!-- Заметки об ошибках (записаны в основном потоке; показаны в отладочном блоке записи) -->
+  <PawnDiary.Error.SkippedInitiatorFailed>Пропущено: страницу инициатора написать не удалось.</PawnDiary.Error.SkippedInitiatorFailed>
+  <PawnDiary.Error.NoLlmSettings>Настройки LLM недоступны.</PawnDiary.Error.NoLlmSettings>
+  <PawnDiary.Error.NoApiConfigured>Не настроен ни один API. Добавьте эндпойнт и модель в настройках мода.</PawnDiary.Error.NoApiConfigured>
+  <PawnDiary.Error.TitleEmptyResponse>Запрос заголовка не вернул пригодный текст.</PawnDiary.Error.TitleEmptyResponse>
+
+  <!-- ===== Контекст запроса: описательные слова, что читает модель (КЛЮЧИ полей остаются английскими) ===== -->
+  <!-- Блок манеры письма, добавляемый к системному запросу от первого лица при отправке. {0} —
+       ярлык манеры плюс правило (например, «three-line-note: Этот поселенец склонен писать...»). -->
+  <PawnDiary.Prompt.PersonaVoice>Манера письма этого поселенца: {0} Следуй форме фраз, началу, пунктуации и выбору деталей из правила. Не играй чат-персонажа, не добавляй крылатые фразы и не выдумывай диалоги.</PawnDiary.Prompt.PersonaVoice>
+  <!-- Подсказка юмора на запись (скрытая, всегда включённая). {0} — одна структурная вольность формы
+       предложения, выбранная по флёру ставок. Добавляется после блока манеры письма только для подходящих записей. -->
+  <PawnDiary.Prompt.HumorVoice>Для этой записи разрешён один русский приём сухой подачи: {0} Уложись в одно предложение и не ломай манеру выше. Не шути напрямую, не вставляй анекдот, мем или комический диалог.</PawnDiary.Prompt.HumorVoice>
+  <PawnDiary.Prompt.SocialEvent>социальное событие</PawnDiary.Prompt.SocialEvent>
+  <PawnDiary.Prompt.Colony>поселение</PawnDiary.Prompt.Colony>
+  <PawnDiary.Prompt.Health.HighPriority>высокий приоритет</PawnDiary.Prompt.Health.HighPriority>
+  <PawnDiary.Prompt.Health.ConsciousnessFallback>сознание</PawnDiary.Prompt.Health.ConsciousnessFallback>
+  <PawnDiary.Prompt.Health.ConditionFallback>состояние здоровья</PawnDiary.Prompt.Health.ConditionFallback>
+  <PawnDiary.Prompt.Health.ConditionInPart>{0} в {1}</PawnDiary.Prompt.Health.ConditionInPart>
+  <PawnDiary.Prompt.Health.IntensityCondition>{0} {1}</PawnDiary.Prompt.Health.IntensityCondition>
+  <PawnDiary.Prompt.Health.Intensity.Minor>лёгкое</PawnDiary.Prompt.Health.Intensity.Minor>
+  <PawnDiary.Prompt.Health.Intensity.Moderate>среднее</PawnDiary.Prompt.Health.Intensity.Moderate>
+  <PawnDiary.Prompt.Health.Intensity.Major>сильное</PawnDiary.Prompt.Health.Intensity.Major>
+  <PawnDiary.Prompt.Health.Intensity.Critical>критическое</PawnDiary.Prompt.Health.Intensity.Critical>
+  <PawnDiary.Prompt.Health.Cue.LifeThreatening>угроза жизни</PawnDiary.Prompt.Health.Cue.LifeThreatening>
+  <PawnDiary.Prompt.Health.Cue.Bleeding>кровотечение</PawnDiary.Prompt.Health.Cue.Bleeding>
+  <PawnDiary.Prompt.Health.Cue.HeavyBleeding>сильное кровотечение</PawnDiary.Prompt.Health.Cue.HeavyBleeding>
+  <PawnDiary.Prompt.Health.Cue.Pain>боль</PawnDiary.Prompt.Health.Cue.Pain>
+  <PawnDiary.Prompt.Health.Cue.SeverePain>сильная боль</PawnDiary.Prompt.Health.Cue.SeverePain>
+  <PawnDiary.Prompt.Health.Cue.WeakensBody>ослабляет тело</PawnDiary.Prompt.Health.Cue.WeakensBody>
+  <PawnDiary.Prompt.Health.Cue.AddictionPressure>давление зависимости</PawnDiary.Prompt.Health.Cue.AddictionPressure>
+  <PawnDiary.Prompt.Health.Cue.HurtsMood>бьёт по настроению</PawnDiary.Prompt.Health.Cue.HurtsMood>
+  <PawnDiary.Prompt.Health.Cue.DulledAwareness>притуплённое восприятие</PawnDiary.Prompt.Health.Cue.DulledAwareness>
+  <PawnDiary.Prompt.Health.Cue.FoggedAwareness>замутнённое восприятие</PawnDiary.Prompt.Health.Cue.FoggedAwareness>
+  <PawnDiary.Prompt.Health.Cue.SluggishThoughts>вялые мысли</PawnDiary.Prompt.Health.Cue.SluggishThoughts>
+  <PawnDiary.Prompt.Health.Cue.NearCollapse>на грани обморока</PawnDiary.Prompt.Health.Cue.NearCollapse>
+  <PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>мысли раздроблены</PawnDiary.Prompt.Health.Cue.ThoughtsFragmented>
+  <PawnDiary.Prompt.Health.Cue.BarelyAwake>едва в сознании</PawnDiary.Prompt.Health.Cue.BarelyAwake>
+  <PawnDiary.Prompt.Health.ConditionDescription>подробность состояния: {0}</PawnDiary.Prompt.Health.ConditionDescription>
+  <PawnDiary.Prompt.Health.Condition.AlcoholHigh>опьянение</PawnDiary.Prompt.Health.Condition.AlcoholHigh>
+  <PawnDiary.Prompt.Health.Condition.Hangover>похмелье</PawnDiary.Prompt.Health.Condition.Hangover>
+  <PawnDiary.Prompt.Health.Condition.AmbrosiaHigh>тепло амброзии</PawnDiary.Prompt.Health.Condition.AmbrosiaHigh>
+  <PawnDiary.Prompt.Health.Condition.GoJuiceHigh>действие Go-сока</PawnDiary.Prompt.Health.Condition.GoJuiceHigh>
+  <PawnDiary.Prompt.Health.Condition.LuciferiumHigh>действие люциферия</PawnDiary.Prompt.Health.Condition.LuciferiumHigh>
+  <PawnDiary.Prompt.Health.Condition.FlakeHigh>кайф от хлопьев психина</PawnDiary.Prompt.Health.Condition.FlakeHigh>
+  <PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh>кайф от психинового чая</PawnDiary.Prompt.Health.Condition.PsychiteTeaHigh>
+  <PawnDiary.Prompt.Health.Condition.YayoHigh>кайф от порошка психина</PawnDiary.Prompt.Health.Condition.YayoHigh>
+  <PawnDiary.Prompt.Health.Condition.SmokeleafHigh>кайф от дымолиста</PawnDiary.Prompt.Health.Condition.SmokeleafHigh>
+  <PawnDiary.Prompt.Health.Description.AlcoholHigh>алкоголь поднимает настроение, но развязывает рассудок, замедляет тело и мутит восприятие</PawnDiary.Prompt.Health.Description.AlcoholHigh>
+  <PawnDiary.Prompt.Health.Description.Hangover>после алкоголя остаётся раскалывающаяся голова и тупое сознание</PawnDiary.Prompt.Health.Description.Hangover>
+  <PawnDiary.Prompt.Health.Description.AmbrosiaHigh>амброзия даёт мягкое тепло, спокойное настроение и немного лёгкой энергии</PawnDiary.Prompt.Health.Description.AmbrosiaHigh>
+  <PawnDiary.Prompt.Health.Description.GoJuiceHigh>Go-сок несёт ровный боевой подъём, глушит боль и гонит тело быстрее</PawnDiary.Prompt.Health.Description.GoJuiceHigh>
+  <PawnDiary.Prompt.Health.Description.LuciferiumHigh>механиты люциферия обостряют тело и оставляют невысказанный долг до следующей дозы</PawnDiary.Prompt.Health.Description.LuciferiumHigh>
+  <PawnDiary.Prompt.Health.Description.FlakeHigh>хлопья психина дают яркую, мощную эйфорию и физическое истощение</PawnDiary.Prompt.Health.Description.FlakeHigh>
+  <PawnDiary.Prompt.Health.Description.PsychiteTeaHigh>психиновый чай мягче поднимает настроение, унимает боль и добавляет энергии</PawnDiary.Prompt.Health.Description.PsychiteTeaHigh>
+  <PawnDiary.Prompt.Health.Description.YayoHigh>порошок психина бьёт резкой эйфорией, беспокойной уверенностью и быстрым телом</PawnDiary.Prompt.Health.Description.YayoHigh>
+  <PawnDiary.Prompt.Health.Description.SmokeleafHigh>дымолист укутывает мысли ватным покоем и замедляет восприятие с телом</PawnDiary.Prompt.Health.Description.SmokeleafHigh>
+  <PawnDiary.Prompt.Health.Cue.LoosenedJudgment>ослабленная рассудительность</PawnDiary.Prompt.Health.Cue.LoosenedJudgment>
+  <PawnDiary.Prompt.Health.Cue.ReducedCapacities>снижены способности</PawnDiary.Prompt.Health.Cue.ReducedCapacities>
+  <PawnDiary.Prompt.Health.Cue.PoundingAftereffects>раскалывающая отдача</PawnDiary.Prompt.Health.Cue.PoundingAftereffects>
+  <PawnDiary.Prompt.Health.Cue.RelaxedEnergy>расслабленная энергия</PawnDiary.Prompt.Health.Cue.RelaxedEnergy>
+  <PawnDiary.Prompt.Health.Cue.SoftMoodLift>мягкий подъём настроения</PawnDiary.Prompt.Health.Cue.SoftMoodLift>
+  <PawnDiary.Prompt.Health.Cue.CombatRush>боевой подъём</PawnDiary.Prompt.Health.Cue.CombatRush>
+  <PawnDiary.Prompt.Health.Cue.SharpenedBody>тело обострено</PawnDiary.Prompt.Health.Cue.SharpenedBody>
+  <PawnDiary.Prompt.Health.Cue.ArtificialClarity>искусственная ясность</PawnDiary.Prompt.Health.Cue.ArtificialClarity>
+  <PawnDiary.Prompt.Health.Cue.MechaniteDebt>долг механитов</PawnDiary.Prompt.Health.Cue.MechaniteDebt>
+  <PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria>жёсткая психиновая эйфория</PawnDiary.Prompt.Health.Cue.HardPsychiteEuphoria>
+  <PawnDiary.Prompt.Health.Cue.DebilitatingHigh>изматывающий кайф</PawnDiary.Prompt.Health.Cue.DebilitatingHigh>
+  <PawnDiary.Prompt.Health.Cue.MildPsychiteLift>мягкий психиновый подъём</PawnDiary.Prompt.Health.Cue.MildPsychiteLift>
+  <PawnDiary.Prompt.Health.Cue.EasyEnergy>лёгкая энергия</PawnDiary.Prompt.Health.Cue.EasyEnergy>
+  <PawnDiary.Prompt.Health.Cue.RestlessDrive>беспокойный напор</PawnDiary.Prompt.Health.Cue.RestlessDrive>
+  <PawnDiary.Prompt.Health.Cue.FuzzyWellBeing>ватный покой</PawnDiary.Prompt.Health.Cue.FuzzyWellBeing>
+  <PawnDiary.Prompt.Health.Cue.SlowedBody>тело замедлено</PawnDiary.Prompt.Health.Cue.SlowedBody>
+  <PawnDiary.Prompt.Health.Condition.RevenantHypnosis>гипноз ревенанта</PawnDiary.Prompt.Health.Condition.RevenantHypnosis>
+  <PawnDiary.Prompt.Health.Condition.CubeInterest>интерес к кубу</PawnDiary.Prompt.Health.Condition.CubeInterest>
+  <PawnDiary.Prompt.Health.Condition.CubeWithdrawal>кубическая ломка</PawnDiary.Prompt.Health.Condition.CubeWithdrawal>
+  <PawnDiary.Prompt.Health.Condition.CubeRage>кубический гнев</PawnDiary.Prompt.Health.Condition.CubeRage>
+  <PawnDiary.Prompt.Health.Condition.CorpseTorment>месть мертвеца</PawnDiary.Prompt.Health.Condition.CorpseTorment>
+  <PawnDiary.Prompt.Health.Condition.Inhumanized>обесчеловечивание</PawnDiary.Prompt.Health.Condition.Inhumanized>
+  <PawnDiary.Prompt.Health.Description.RevenantHypnosis>психическая хватка ревенанта тянет внимание в транс и пустую покорность</PawnDiary.Prompt.Health.Description.RevenantHypnosis>
+  <PawnDiary.Prompt.Health.Description.CubeInterest>куб снова и снова возвращается в мысли, пока всё остальное кажется второстепенным</PawnDiary.Prompt.Health.Description.CubeInterest>
+  <PawnDiary.Prompt.Health.Description.CubeWithdrawal>разлука с кубом становится ноющей нуждой и вытесняет остальное</PawnDiary.Prompt.Health.Description.CubeWithdrawal>
+  <PawnDiary.Prompt.Health.Description.CubeRage>интерес к кубу перешёл в жестокий, узкий гнев</PawnDiary.Prompt.Health.Description.CubeRage>
+  <PawnDiary.Prompt.Health.Description.CorpseTorment>месть мертвеца держит пси-связь с мёртвым двойником и выбивает сознание</PawnDiary.Prompt.Health.Description.CorpseTorment>
+  <PawnDiary.Prompt.Health.Description.Inhumanized>человеческое тепло и привязанность отдалились; мысли поселенца холодные, тронутые пустотой и отрешённые от людей, без новой выдуманной мифологии</PawnDiary.Prompt.Health.Description.Inhumanized>
+  <PawnDiary.Prompt.Health.Cue.TrancePressure>давление транса</PawnDiary.Prompt.Health.Cue.TrancePressure>
+  <PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>мысли утягивает прочь</PawnDiary.Prompt.Health.Cue.ThoughtsPulledAway>
+  <PawnDiary.Prompt.Health.Cue.CompulsiveFocus>навязчивая сосредоточенность</PawnDiary.Prompt.Health.Cue.CompulsiveFocus>
+  <PawnDiary.Prompt.Health.Cue.ObjectFixation>фиксация на предмете</PawnDiary.Prompt.Health.Cue.ObjectFixation>
+  <PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>навязчивое отсутствие</PawnDiary.Prompt.Health.Cue.CompulsiveAbsence>
+  <PawnDiary.Prompt.Health.Cue.RestlessNeed>беспокойная нужда</PawnDiary.Prompt.Health.Cue.RestlessNeed>
+  <PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent>одержимость срывается в насилие</PawnDiary.Prompt.Health.Cue.CompulsionTurnsViolent>
+  <PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>мысли сужаются до злости</PawnDiary.Prompt.Health.Cue.ThoughtsNarrowToAnger>
+  <PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts>мысли о смерти не отпускают</PawnDiary.Prompt.Health.Cue.DeathHauntedThoughts>
+  <PawnDiary.Prompt.Health.Cue.UnnaturalGuilt>неестественная вина</PawnDiary.Prompt.Health.Cue.UnnaturalGuilt>
+  <PawnDiary.Prompt.Health.Cue.VoidDetachment>отрешённость пустоты</PawnDiary.Prompt.Health.Cue.VoidDetachment>
+  <PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>человеческого тепла нет</PawnDiary.Prompt.Health.Cue.HumanWarmthAbsent>
+  <PawnDiary.Prompt.Health.Cue.DarkVoidVoice>используй вынужденную тёмную манеру письма пустоты</PawnDiary.Prompt.Health.Cue.DarkVoidVoice>
+  <PawnDiary.Prompt.Context.Important>важный контекст</PawnDiary.Prompt.Context.Important>
+  <PawnDiary.Prompt.Context.RoyalTitle>титул</PawnDiary.Prompt.Context.RoyalTitle>
+  <PawnDiary.Prompt.Context.IdeologyRole>роль в идеолигии</PawnDiary.Prompt.Context.IdeologyRole>
+  <PawnDiary.Prompt.Context.Value>{0}: {1}</PawnDiary.Prompt.Context.Value>
+  <PawnDiary.Prompt.Context.Cue.RespectIfRelevant>учти этот статус, если он меняет взгляд поселенца на событие</PawnDiary.Prompt.Context.Cue.RespectIfRelevant>
+  <PawnDiary.Prompt.EventWindow.Priority>активный контекст события</PawnDiary.Prompt.EventWindow.Priority>
+  <PawnDiary.Prompt.EventWindow.ConditionFallback>активное событие: {0}</PawnDiary.Prompt.EventWindow.ConditionFallback>
+  <PawnDiary.Prompt.EventWindow.Detail>деталь события: {0}</PawnDiary.Prompt.EventWindow.Detail>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>обычный контекст перекрыт нерешённым подозрением аномалии</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>подозрение на металлическую жуть</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>в поселении появилась серая плоть, но источник ещё не найден; любое обычное общение может омрачить страх, что кто-то носит эту тварь внутри</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>улика серой плоти</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>страх подмены</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>
+  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>скрытая угроза не раскрыта</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>
+  <PawnDiary.Event.EventWindow.AncientDanger.Start>У древней стены {0} ощутил внезапное предчувствие: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
+
+  <PawnDiary.Ctx.Opinion>отношение {0}</PawnDiary.Ctx.Opinion>
+  <PawnDiary.Ctx.Because>потому что {0}</PawnDiary.Ctx.Because>
+  <PawnDiary.Ctx.LastWrote>последняя запись: «{0}»</PawnDiary.Ctx.LastWrote>
+  <PawnDiary.Ctx.With>с {0}</PawnDiary.Ctx.With>
+  <PawnDiary.Ctx.Outdoors>на улице</PawnDiary.Ctx.Outdoors>
+  <PawnDiary.Ctx.Indoors>в помещении</PawnDiary.Ctx.Indoors>
+  <PawnDiary.Ctx.Cold>холод</PawnDiary.Ctx.Cold>
+  <PawnDiary.Ctx.Hot>жара</PawnDiary.Ctx.Hot>
+  <PawnDiary.Ctx.Surroundings>окружение: {0}</PawnDiary.Ctx.Surroundings>
+  <PawnDiary.Ctx.ActiveConditions>активные условия: {0}</PawnDiary.Ctx.ActiveConditions>
+  <PawnDiary.Ctx.RecentThreat>недавняя угроза: {0}</PawnDiary.Ctx.RecentThreat>
+  <PawnDiary.Ctx.Near>рядом {0}</PawnDiary.Ctx.Near>
+  <PawnDiary.Ctx.Doing>занят: {0}</PawnDiary.Ctx.Doing>
+  <PawnDiary.Ctx.Downed>обездвижен</PawnDiary.Ctx.Downed>
+  <PawnDiary.Ctx.PainShock>болевой шок</PawnDiary.Ctx.PainShock>
+  <PawnDiary.Ctx.Fire>огонь</PawnDiary.Ctx.Fire>
+  <PawnDiary.Ctx.Corpse>труп {0}</PawnDiary.Ctx.Corpse>
+
+  <!-- Ключевые слова способностей (показаны при нарушении) -->
+  <PawnDiary.Capacity.Moving>движение нарушено</PawnDiary.Capacity.Moving>
+  <PawnDiary.Capacity.Talking>речь нарушена</PawnDiary.Capacity.Talking>
+  <PawnDiary.Capacity.Sight>зрение нарушено</PawnDiary.Capacity.Sight>
+  <PawnDiary.Capacity.Hearing>слух нарушен</PawnDiary.Capacity.Hearing>
+
+  <!-- «Корзины» настроения / красоты / боли / отношения -->
+  <PawnDiary.Bucket.Mood.Happy>счастлив</PawnDiary.Bucket.Mood.Happy>
+  <PawnDiary.Bucket.Mood.Stable>спокоен</PawnDiary.Bucket.Mood.Stable>
+  <PawnDiary.Bucket.Mood.Stressed>в напряжении</PawnDiary.Bucket.Mood.Stressed>
+  <PawnDiary.Bucket.Mood.Miserable>несчастен</PawnDiary.Bucket.Mood.Miserable>
+  <PawnDiary.Bucket.Beauty.Beautiful>прекрасно</PawnDiary.Bucket.Beauty.Beautiful>
+  <PawnDiary.Bucket.Beauty.Pleasant>приятно</PawnDiary.Bucket.Beauty.Pleasant>
+  <PawnDiary.Bucket.Beauty.Neutral>нейтрально</PawnDiary.Bucket.Beauty.Neutral>
+  <PawnDiary.Bucket.Beauty.Ugly>уродливо</PawnDiary.Bucket.Beauty.Ugly>
+  <PawnDiary.Bucket.Beauty.Hideous>отвратительно</PawnDiary.Bucket.Beauty.Hideous>
+  <PawnDiary.Bucket.Pain.Minor>лёгкая</PawnDiary.Bucket.Pain.Minor>
+  <PawnDiary.Bucket.Pain.Moderate>средняя</PawnDiary.Bucket.Pain.Moderate>
+  <PawnDiary.Bucket.Pain.Severe>сильная</PawnDiary.Bucket.Pain.Severe>
+  <PawnDiary.Bucket.Bleeding.Minor>лёгкое</PawnDiary.Bucket.Bleeding.Minor>
+  <PawnDiary.Bucket.Bleeding.Moderate>среднее</PawnDiary.Bucket.Bleeding.Moderate>
+  <PawnDiary.Bucket.Bleeding.Severe>сильное</PawnDiary.Bucket.Bleeding.Severe>
+  <PawnDiary.Bucket.Opinion.Devoted>преданное</PawnDiary.Bucket.Opinion.Devoted>
+  <PawnDiary.Bucket.Opinion.Friendly>дружеское</PawnDiary.Bucket.Opinion.Friendly>
+  <PawnDiary.Bucket.Opinion.Neutral>нейтральное</PawnDiary.Bucket.Opinion.Neutral>
+  <PawnDiary.Bucket.Opinion.Strained>натянутое</PawnDiary.Bucket.Opinion.Strained>
+  <PawnDiary.Bucket.Opinion.Hostile>враждебное</PawnDiary.Bucket.Opinion.Hostile>
+  <PawnDiary.Bucket.Age.Child>ребёнок</PawnDiary.Bucket.Age.Child>
+  <PawnDiary.Bucket.Age.Teen>подросток</PawnDiary.Bucket.Age.Teen>
+  <PawnDiary.Bucket.Age.Adult>взрослый</PawnDiary.Bucket.Age.Adult>
+  <PawnDiary.Bucket.Age.OlderAdult>в годах</PawnDiary.Bucket.Age.OlderAdult>
+  <PawnDiary.Bucket.Age.Elder>старик</PawnDiary.Bucket.Age.Elder>
+  <PawnDiary.Bucket.Effect.Positive>положительный</PawnDiary.Bucket.Effect.Positive>
+  <PawnDiary.Bucket.Effect.StrongPositive>сильно положительный</PawnDiary.Bucket.Effect.StrongPositive>
+  <PawnDiary.Bucket.Effect.Negative>отрицательный</PawnDiary.Bucket.Effect.Negative>
+  <PawnDiary.Bucket.Effect.StrongNegative>сильно отрицательный</PawnDiary.Bucket.Effect.StrongNegative>
+
+</LanguageData>

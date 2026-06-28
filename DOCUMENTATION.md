@@ -354,6 +354,19 @@ Raw English is intentional for prompt schema labels (`event:`, `role:`, `thought
 and sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), defNames, API
 model ids, and background-thread `LlmClient` errors.
 
+A Russian translation ships under `Languages/Russian (Русский)/` (folder name matches RimWorld's
+Core language def), mirroring the English `Keyed` + `DefInjected` layout key-for-key. Game terms use
+the official RimWorld Russian glossary; the `DiaryPersonaDef` writing styles are deliberately *not*
+literal translations but reconstructions on Russian literary traditions with synthetic, author-less
+examples. Russian UI strings should stay compact enough for RimWorld's narrow settings and tab
+surfaces, while Russian prompt prose should be idiomatic instructions for the model rather than
+literal English calques. Russian humor cues should likewise use local dry, bureaucratic, and
+household understatement patterns instead of translating English deadpan/punchline mechanics. When
+adding or renaming an English key, add the matching Russian key in the same file, or the entry
+silently falls back to English in a Russian game. Canonical game-term translations are recorded in
+`Languages/Russian (Русский)/GLOSSARY.md` (mined from RimWorld's official RU language packs); reuse
+it so terminology stays consistent with the base game.
+
 ## 12. Build, Tests, Prompt Lab
 
 Build:

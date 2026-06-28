@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <speakup_chitchat.label>Болтовня SpeakUp</speakup_chitchat.label>
+  <speakup_chitchat.instruction>обычный разговор SpeakUp; считай его болтовнёй, если настроение, нужда или напряжение пары не делают момент важнее</speakup_chitchat.instruction>
+  <speakup_chitchat.instructions.0>болтовня SpeakUp: используй переданную реплику, если она есть; иначе напиши мелкий обмен словами без выдуманной цитаты</speakup_chitchat.instructions.0>
+  <speakup_chitchat.instructions.1>болтовня SpeakUp: покажи чувство под пустяком, будь то лёгкость, неловкость, давление или отстранённость</speakup_chitchat.instructions.1>
+  <speakup_chitchat.instructions.2>болтовня SpeakUp: обычный ритм важен только настолько, насколько его делает важным состояние поселенца</speakup_chitchat.instructions.2>
+  <speakup_chitchat.tone>с лёгкой, повседневной социальной фактурой</speakup_chitchat.tone>
+  <romance.label>Романтика и свидания</romance.label>
+  <romance.instruction>искра между двумя людьми: шаг навстречу, украдкой брошенный взгляд, шёпот обещания или разбитое сердце</romance.instruction>
+  <romance.instructions.0>романтика: пиши через тело, через сокращающееся расстояние, задержанное прикосновение, отдёрнутую руку</romance.instructions.0>
+  <romance.instructions.1>романтика: пиши через мысль за глазами, через то, что хотели сказать или почти признали</romance.instructions.1>
+  <romance.instructions.2>романтика: пиши короткий миг после, задержанное дыхание, чтение чужого лица, новое напряжение между ними</romance.instructions.2>
+  <romance.tone>с нежным, трепетным теплом</romance.tone>
+  <romance_relation.label>Романтические вехи</romance_relation.label>
+  <romance_relation.instruction>отношения становятся официальными, оформляются или рвутся; в центре перемена между двумя людьми, не переписка и не отчёт</romance_relation.instruction>
+  <romance_relation.tone>с сокровенным эмоциональным весом</romance_relation.tone>
+  <recruit.label>Вербовка и плен</recruit.label>
+  <recruit.instruction>напряжение тюремщика и пленника: контакт, слом воли или первые семена бунта</recruit.instruction>
+  <recruit.tone>с выверенным, расчётливым напряжением</recruit.tone>
+  <slavery.label>Рабство</slavery.label>
+  <slavery.instruction>тяжесть цепей — подавление надсмотрщиком или первая искра неповиновения</slavery.instruction>
+  <slavery.tone>с мрачной, гнетущей тревогой</slavery.tone>
+  <conversion.label>Идеолигия и обращение</conversion.label>
+  <conversion.instruction>битва убеждений: обращение, наставление, проповедь или давление веры на веру</conversion.instruction>
+  <conversion.tone>с пылкой, напористой убеждённостью</conversion.tone>
+  <trial.label>Суды и обвинения</trial.label>
+  <trial.instruction>тяжесть приговора: обвинение, защита и свидетели вокруг</trial.instruction>
+  <trial.tone>с напряжённым, формальным давлением</trial.tone>
+  <strangechat.label>Странный разговор</strangechat.label>
+  <strangechat.instruction>что-то неправильное в обычном разговоре: странная беседа оставляет тревогу в воздухе. Не объясняй её</strangechat.instruction>
+  <strangechat.tone>с ползущим ужасом; неправильность не разрешай</strangechat.tone>
+  <anomaly.label>Аномалия и тьма</anomaly.label>
+  <anomaly.instruction>что-то неправильное: тревожный обмен оставляет беспокойство. Не объясняй его</anomaly.instruction>
+  <anomaly.tone>с ползущей жутью и чувством неправильности; не объясняй её</anomaly.tone>
+  <insults.label>Оскорбления и драки</insults.label>
+  <insults.instruction>жало презрения: оскорбление, обида или кулаки, которые вот-вот полетят</insults.instruction>
+  <insults.instructions.0>оскорбление или обида: покажи, как слова попали в цель, что сказали, каким тоном и что это вызвало</insults.instructions.0>
+  <insults.instructions.1>оскорбление или обида: пиши через тело, через румянец, сжатую челюсть, полшага вперёд</insults.instructions.1>
+  <insults.instructions.2>оскорбление или обида: покажи комнату, кто услышал, кто отвёл глаза, какая тишина осталась после</insults.instructions.2>
+  <insults.tone>с резким, жгучим жаром</insults.tone>
+  <ritual.label>Ритуалы и речи</ritual.label>
+  <ritual.instruction>торжественный публичный момент: ритуал, церемония или обращение. Поселение смотрит</ritual.instruction>
+  <ritual.tone>с торжественным, церемониальным весом</ritual.tone>
+  <animal.label>Уход за животными</animal.label>
+  <animal.instruction>тихая связь — разговор с животным, приручение, дрессировка или прощание</animal.instruction>
+  <animal.tone>с тихой, мягкой нежностью</animal.tone>
+  <heartfelt.label>Душевный разговор</heartfelt.label>
+  <heartfelt.instruction>обмен теплом — глубокий разговор, добрые слова или мягкая рука, поддержавшая кого-то</heartfelt.instruction>
+  <heartfelt.tone>с мягким, нежным теплом</heartfelt.tone>
+  <teaching.label>Обучение и уроки</teaching.label>
+  <teaching.instruction>урок, переданный дальше — взрослый учит ребёнка или играет с ним</teaching.instruction>
+  <teaching.tone>с терпеливой, тихой нежностью</teaching.tone>
+  <smalltalk.label>Обычная болтовня</smalltalk.label>
+  <smalltalk.instruction>праздная болтовня: мелкий разговор, который заполняет тишину</smalltalk.instruction>
+  <smalltalk.instructions.0>болтовня: пиши через пустяк, через погоду, еду или недодуманное мнение</smalltalk.instructions.0>
+  <smalltalk.instructions.1>болтовня: пиши то, что под ней, лёгкость, неловкость или чувство, не названное вслух</smalltalk.instructions.1>
+  <smalltalk.instructions.2>болтовня: пиши ритм реплик, паузы и то «ничего», которым коротают время</smalltalk.instructions.2>
+  <smalltalk.tone>с лёгкой, непринуждённой близостью</smalltalk.tone>
+  <dayreflection.label>Итог дня</dayreflection.label>
+  <dayreflection.instruction>тихое вечернее размышление, оглядывающееся на весь день</dayreflection.instruction>
+  <dayreflection.tone>с тихим, оседающим вечерним покоем</dayreflection.tone>
+  <arrival.label>Появление</arrival.label>
+  <other.label>Тихий день</other.label>
+  <other.instruction>социальное взаимодействие между поселенцами</other.instruction>
+  <socialfight.label>Потасовки</socialfight.label>
+  <socialfight.instruction>сорвавшиеся нервы: двое сошлись врукопашную. Пиши это как жар и удар</socialfight.instruction>
+  <socialfight.tone>с сырой, адреналиновой яростью</socialfight.tone>
+  <insultspree.label>Поток оскорблений</insultspree.label>
+  <insultspree.instruction>поселенец срывается в повторяющуюся словесную жестокость; предпочитай настоящие записи об оскорблениях из журнала, когда они есть</insultspree.instruction>
+  <insultspree.tone>с кислой, занозистой злостью</insultspree.tone>
+  <mentalbreak.label>Нервные срывы</mentalbreak.label>
+  <mentalbreak.instruction>разум ломается: пиши внутреннюю бурю поселенца и то, что он сделал</mentalbreak.instruction>
+  <mentalbreak.instructions.0>нервный срыв: пиши спираль, мысль не унимается, логика сгибается, давление берёт верх</mentalbreak.instructions.0>
+  <mentalbreak.instructions.1>нервный срыв: пиши через тело, руки, блуждающие ноги, действие без решения</mentalbreak.instructions.1>
+  <mentalbreak.instructions.2>нервный срыв: пиши сбитые чувства, слишком громкий шум, слишком резкие края, мир под неверным углом</mentalbreak.instructions.2>
+  <mentalbreak.tone>с издёрганной, захлёстывающей силой</mentalbreak.tone>
+  <talecombat.label>Бой, ранения и смерть</talecombat.label>
+  <talecombat.instruction>кровь и опасность: бой, ранение, смерть или спасение. Пиши, каково было это пережить</talecombat.instruction>
+  <talecombat.instructions.0>бой, ранение или спасение: начни со звука, тревоги, треска, крика или тишины после</talecombat.instructions.0>
+  <talecombat.instructions.1>бой, ранение или спасение: начни с удара по телу, толчка, жара, влаги, конечности, которая не отзывается</talecombat.instructions.1>
+  <talecombat.instructions.2>бой, ранение или спасение: начни с другого человека, лица напротив, руки, которая выдернула, тела, которое упало</talecombat.instructions.2>
+  <talecombat.tone>со страхом и нутряной опасностью</talecombat.tone>
+  <talehealth.label>Здоровье и медицина</talehealth.label>
+  <talehealth.instruction>хрупкость тела: операция, болезнь, переохлаждение или выздоровление. Пиши страх, облегчение или доверие</talehealth.instruction>
+  <talehealth.tone>с хрупким страхом и облегчением</talehealth.tone>
+  <talelife.label>Жизненные вехи</talelife.label>
+  <talelife.instruction>поворотная точка: рождение, плен, привязанность или новое начало. Пиши это как изменившуюся жизнь</talelife.instruction>
+  <talelife.tone>с тихим весом поворотной точки</talelife.tone>
+  <talequality.label>Шедевры и легендарные изделия</talequality.label>
+  <talequality.instruction>руки сделали нечто долговечное: гордость, усталость и вес созидания</talequality.instruction>
+  <talequality.tone>с гордым, до костей усталым удовлетворением</talequality.tone>
+  <talework.label>Труд и достижения</talework.label>
+  <talework.instruction>удовлетворение от труда: ремесло, изучение, добыча или выросший навык. Гордость должна быть приземлённой</talework.instruction>
+  <talework.tone>с ровной, приземлённой гордостью</talework.tone>
+  <taleanomaly.label>Ужас аномалии</taleanomaly.label>
+  <taleanomaly.instruction>страх и неизвестное: аномалия, мутация, контакт с пустотой. Пиши тревогу, не объясняя её</taleanomaly.instruction>
+  <taleanomaly.tone>со страхом и жутью; оставь это без объяснений</taleanomaly.tone>
+  <taleincident.label>Налёты, бедствия и события поселения</taleincident.label>
+  <taleincident.instruction>поселение потрясено: налёт, бедствие или кризис. Пиши, каково было это пережить</taleincident.instruction>
+  <taleincident.tone>с шатким, оглушённым напряжением бедствия</taleincident.tone>
+  <talequiet.label>Тихие личные моменты</talequiet.label>
+  <talequiet.instruction>тихая заметка: отдых, молитва или мелкое смущение. Кратко и лично</talequiet.instruction>
+  <talequiet.tone>с маленькой, потаённой тишиной</talequiet.tone>
+  <taleother.label>Примечательный день</taleother.label>
+  <taleother.instruction>примечательное несоциальное событие RimWorld с участием поселенца</taleother.instruction>
+  <moodeventPositive.label>Положительные события настроения</moodeventPositive.label>
+  <moodeventPositive.instruction>что-то подняло настроение: хорошее событие в масштабе поселения, от которого отпускает сердце</moodeventPositive.instruction>
+  <moodeventPositive.tone>с приподнятым, отпущенным духом</moodeventPositive.tone>
+  <moodeventNegative.label>Отрицательные события настроения</moodeventNegative.label>
+  <moodeventNegative.instruction>что-то давит: плохое событие в масштабе поселения, от которого внутри становится туго</moodeventNegative.instruction>
+  <moodeventNegative.tone>с придавливающим напряжением</moodeventNegative.tone>
+  <moodeventMixed.label>Неоднозначные события настроения</moodeventMixed.label>
+  <moodeventMixed.instruction>условие задевает всех по-разному; пиши, как оно ощущается именно этому поселенцу</moodeventMixed.instruction>
+  <moodeventMixed.tone>с тревожным, неоднозначным зарядом</moodeventMixed.tone>
+  <moodeventOther.label>Мимолётные настроения</moodeventOther.label>
+  <moodeventOther.instruction>событие в масштабе поселения, влияющее на настроение поселенца</moodeventOther.instruction>
+  <thoughtPregnancyFamily.label>Память о беременности</thoughtPregnancyFamily.label>
+  <thoughtPregnancyFamily.instruction>беременность, потеря плода или прерывание беременности как личная семейная новость; пиши сдержанно и не своди чувства поселенца к одной простой эмоции</thoughtPregnancyFamily.instruction>
+  <thoughtPregnancyFamily.tone>с сокровенным, сдержанным весом</thoughtPregnancyFamily.tone>
+  <thoughtPositive.label>Положительные мысли</thoughtPositive.label>
+  <thoughtPositive.instruction>мимолётный подъём: положительная мысль скрасила день. Соизмеряй силу с эффектом на настроение: мелкие радости тихие, сильные дают тепло и детали</thoughtPositive.instruction>
+  <thoughtPositive.instructions.0>положительная мысль: покажи, что её вызвало, маленькое увиденное, услышанное или вспомненное. Соизмеряй с подъёмом настроения</thoughtPositive.instructions.0>
+  <thoughtPositive.instructions.1>положительная мысль: покажи, как тело отпускает, плечи, дыхание, полуулыбка, которой никто не видел. Соизмеряй с подъёмом настроения</thoughtPositive.instructions.1>
+  <thoughtPositive.instructions.2>положительная мысль: покажи желание удержать это, повторить или рассказать кому-то. Соизмеряй с подъёмом настроения</thoughtPositive.instructions.2>
+  <thoughtPositive.tone>с маленьким, светлеющим подъёмом</thoughtPositive.tone>
+  <thoughtNegative.label>Отрицательные мысли</thoughtNegative.label>
+  <thoughtNegative.instruction>груз на уме: отрицательная мысль задержалась. Соизмеряй силу с эффектом на настроение: мелкие досады беглые, тяжёлые дают сырой вес</thoughtNegative.instruction>
+  <thoughtNegative.instructions.0>отрицательная мысль: покажи, что зацепило, мелкий укол или фразу, которая повторяется. Соизмеряй с ударом по настроению</thoughtNegative.instructions.0>
+  <thoughtNegative.instructions.1>отрицательная мысль: покажи, как тело сжимается, челюсть, нутро, беспокойные руки. Соизмеряй с ударом по настроению</thoughtNegative.instructions.1>
+  <thoughtNegative.instructions.2>отрицательная мысль: покажи петлю, возвращение и угол, под которым она не отпускает. Соизмеряй с ударом по настроению</thoughtNegative.instructions.2>
+  <thoughtNegative.tone>с низким, ноющим грузом</thoughtNegative.tone>
+  <thoughtOther.label>Мимолётные мысли</thoughtOther.label>
+  <thoughtOther.instruction>временная мысль мелькнула в уме поселенца. Соизмеряй силу с эффектом на настроение</thoughtOther.instruction>
+  <thoughtOther.tone>с мимолётным, полуощутимым сдвигом</thoughtOther.tone>
+  <inspiration.label>Воодушевление</inspiration.label>
+  <inspiration.instruction>внезапная полезная ясность: ум поселенца загорается целью. Опирайся на вид воодушевления и причину, если игра её дала</inspiration.instruction>
+  <inspiration.tone>с ярким, сосредоточенным порывом</inspiration.tone>
+  <workDarkStudy.label>Тёмные исследования</workDarkStudy.label>
+  <workDarkStudy.instruction>тёмные изыскания должны тревожить каждый раз; пиши работу как личный контакт с чем-то неправильным, жутким и неразрешённым</workDarkStudy.instruction>
+  <workDarkStudy.tone>с ползущим, неразрешённым ужасом</workDarkStudy.tone>
+  <workPassion.label>Любимая работа</workPassion.label>
+  <workPassion.instruction>работа задевает увлечение поселенца: положительная, сосредоточенная, тихо приятная, но без вида, будто в поселении легко</workPassion.instruction>
+  <workPassion.tone>с приземлённым удовлетворением</workPassion.tone>
+  <workStrain.label>Тягостная работа</workStrain.label>
+  <workStrain.instruction>работа кажется скучной, грязной, неловкой или досадной; особенно уборка, чёрный труд или дело, где поселенцу не хватает навыка</workStrain.instruction>
+  <workStrain.tone>с усталым раздражением</workStrain.tone>
+  <workRoutine.label>Рутинная работа</workRoutine.label>
+  <workRoutine.instruction>обычная работа в поселении без сильного увлечения и без провала: нейтрально, практично, кратко, с фактурой задачи</workRoutine.instruction>
+  <workRoutine.tone>с ровной, будничной рутиной</workRoutine.tone>
+  <hediffPregnancy.label>Беременность</hediffPregnancy.label>
+  <hediffPregnancy.instruction>беременность как начало, меняющее жизнь; поселенец замечает тело, будущее, страх, надежду или неопределённость, радость не предполагается</hediffPregnancy.instruction>
+  <hediffPregnancy.tone>с сокровенной неопределённостью и тихим весом</hediffPregnancy.tone>
+  <hediffLabor.label>Роды</hediffLabor.label>
+  <hediffLabor.instruction>приближаются схватки и роды; пиши срочность, боль, страх, заботу и порог рождения, не забегая к младенцу, если он не передан</hediffLabor.instruction>
+  <hediffLabor.tone>со срочным телесным напряжением</hediffLabor.tone>
+  <hediffAnomalyCompulsion.label>Принуждения аномалии</hediffAnomalyCompulsion.label>
+  <hediffAnomalyCompulsion.instruction>аномалия давит на мысли поселенца; пиши одержимость, транс, ломку, ярость, муку или неправильность согласно названному состоянию, не объясняя сущность и не выдумывая лечение</hediffAnomalyCompulsion.instruction>
+  <hediffAnomalyCompulsion.tone>с навязчивым, неестественным душевным давлением</hediffAnomalyCompulsion.tone>
+  <hediffMajorHealth.label>Серьёзные перемены здоровья</hediffMajorHealth.label>
+  <hediffMajorHealth.instruction>новое или ухудшающееся состояние здоровья, которое держалось весь день</hediffMajorHealth.instruction>
+  <hediffMajorHealth.tone>с телесной тревогой и уязвимостью</hediffMajorHealth.tone>
+  <raid.label>Налёты</raid.label>
+  <raid.instruction>поселение под ударом: насилие, страх и отчаянное выживание. Пиши, каково было это пережить</raid.instruction>
+  <raid.instructions.0>поселение под ударом: начни с пространства, двери, укрытия или проёма, через который они придут</raid.instructions.0>
+  <raid.instructions.1>поселение под ударом: начни с тела, рывка, дыхания, заминки при хватке за оружие</raid.instructions.1>
+  <raid.instructions.2>поселение под ударом: начни с последствий, дыма, крови на полу, того, кто не отзывается</raid.instructions.2>
+  <raid.tone>с потрясённым, кризисным напряжением</raid.tone>
+  <ritualRoyal.label>Имперские ритуалы</ritualRoyal.label>
+  <ritualRoyal.instruction>завершён ритуал Royalty; пусть церемония ощущается придворной, титульной, псионической или связанной с древом души, если так подсказывает название</ritualRoyal.instruction>
+  <ritualRoyal.tone>с формальным рангом и ритуальной властью</ritualRoyal.tone>
+  <ritualRoyal.tones.0>придворно и заряжено рангом, титулом, свидетелями и публичной властью</ritualRoyal.tones.0>
+  <ritualRoyal.tones.1>приглушённо психофокусом и связано традицией, церемония больше тела одного поселенца</ritualRoyal.tones.1>
+  <ritualChildbirth.label>Ритуал рождения</ritualChildbirth.label>
+  <ritualChildbirth.instruction>завершён ритуал рождения; запись медицински и эмоционально уместная: боль, забота, риск, изнеможение, облегчение или страх важнее мистики</ritualChildbirth.instruction>
+  <ritualChildbirth.tone>с клинической нежностью и телесной срочностью</ritualChildbirth.tone>
+  <ritualChildbirth.tones.0>медицински, сокровенно и бережно вокруг боли, заботы, опасности и облегчения</ritualChildbirth.tones.0>
+  <ritualChildbirth.tones.1>нежно, но без сентиментальности, с упором на тело, помощников и непосредственный исход</ritualChildbirth.tones.1>
+  <ritualGravship.label>Запуск гравикорабля</ritualGravship.label>
+  <ritualGravship.instruction>завершён ритуал запуска или посадки гравикорабля; пиши технически, операционно и опасно: системы, отсчёт, подъём, полёт, посадка и дисциплина экипажа</ritualGravship.instruction>
+  <ritualGravship.tone>с техническим давлением и сосредоточенностью дня запуска</ritualGravship.tone>
+  <ritualGravship.tones.0>технично и процедурно, с упором на системы, тягу, полёт и касание земли</ritualGravship.tones.0>
+  <ritualGravship.tones.1>напряжённо и по-экипажному, с предстартовыми проверками, жёсткой вибрацией и последствиями посадки</ritualGravship.tones.1>
+  <ritualAnomalyPsychic.label>Психические ритуалы</ritualAnomalyPsychic.label>
+  <ritualAnomalyPsychic.instruction>завершён псионический ритуал Anomaly; пиши тревожную тьму, страх, неправильность, давление пустоты и последствия, которые не надо объяснять до конца</ritualAnomalyPsychic.instruction>
+  <ritualAnomalyPsychic.tone>с оккультным ужасом и непостижимым давлением</ritualAnomalyPsychic.tone>
+  <ritualAnomalyPsychic.tones.0>тревожно и темно, со страхом, неправильностью, давлением пустоты и чувственным ужасом</ritualAnomalyPsychic.tones.0>
+  <ritualAnomalyPsychic.tones.1>пугающе, обрывочно и наполовину непостижимо, будто язык отказывает вокруг ритуала</ritualAnomalyPsychic.tones.1>
+  <ritualFinished.label>Ритуалы</ritualFinished.label>
+  <ritualFinished.instruction>завершён ритуал; пиши церемонию как социальный, духовный или политический момент с места, которое занял в ней поселенец</ritualFinished.instruction>
+  <ritualFinished.tone>с церемониальным весом и личными последствиями</ritualFinished.tone>
+  <ritualFinished.tones.0>церемониально и телесно, внимание приковано к роли, титулу и последствию</ritualFinished.tones.0>
+  <ritualFinished.tones.1>формально, но лично, публичный смысл ритуала вдавливается в частную мысль</ritualFinished.tones.1>
+  <abilityPsycast.label>Психокасты</abilityPsycast.label>
+  <abilityPsycast.instruction>применена психическая способность; момент держится на сосредоточенности, воле, психическом давлении и видимом последствии, без лишних эффектов</abilityPsycast.instruction>
+  <abilityPsycast.tone>с психической сосредоточенностью и заряженной сдержанностью</abilityPsycast.tone>
+  <abilityPsycast.tones.0>сдержанно и психически, с упором на усилие, давление и видимый результат способности</abilityPsycast.tones.0>
+  <abilityPsycast.tones.1>приглушённо и мощно, ум делает работу, которую тело едва может объяснить</abilityPsycast.tones.1>
+  <abilityHostile.label>Боевые способности</abilityHostile.label>
+  <abilityHostile.instruction>враждебная способность в опасности; активация как тактическое действие под давлением, с опорой на способность и цель</abilityHostile.instruction>
+  <abilityHostile.tone>с тактическим давлением и внезапной силой</abilityHostile.tone>
+  <abilityHostile.tones.0>срочно и тактически, с упором на решение применить силу именно сейчас</abilityHostile.tones.0>
+  <abilityHostile.tones.1>резко и жёстко, но лишь насколько поддерживают переданные факты способности</abilityHostile.tones.1>
+  <abilityUsed.label>Способности</abilityUsed.label>
+  <abilityUsed.instruction>поселенец применил способность; пиши решение, усилие, цель, если она передана, и ближайшее последствие без новых механик и исходов</abilityUsed.instruction>
+  <abilityUsed.tone>с сосредоточенным усилием и практическим последствием</abilityUsed.tone>
+  <abilityUsed.tones.0>сосредоточенно и конкретно, о моменте применения, а не о широкой сводке</abilityUsed.tones.0>
+  <abilityUsed.tones.1>практично и чувственно, с опорой на названную способность, цель и редкость перезарядки</abilityUsed.tones.1>
+  <animal.tones.0>мягко и терпеливо, с упором на доверие через действие</animal.tones.0>
+  <animal.tones.1>практично и тепло, нежность без сентиментальности</animal.tones.1>
+  <anomaly.tones.0>с мурашками и чувственно, без объяснений</anomaly.tones.0>
+  <anomaly.tones.1>холодно и чуждо, с упором на то, что ощущается неправильным</anomaly.tones.1>
+  <conversion.tones.0>пылко и утвердительно, как вера под давлением</conversion.tones.0>
+  <conversion.tones.1>внутренне и с сомнением, с упором на трескающуюся убеждённость</conversion.tones.1>
+  <dayreflection.tones.0>устало и вдумчиво, взвешивая, что ещё важно</dayreflection.tones.0>
+  <dayreflection.tones.1>мягко завершаясь, будто день наконец затихает</dayreflection.tones.1>
+  <heartfelt.tones.0>мягко и открыто, позволяя теплу проявиться прямо</heartfelt.tones.0>
+  <heartfelt.tones.1>тихо сдержанно, тепло показано через малую сдержанность</heartfelt.tones.1>
+  <hediffAnomalyCompulsion.tones.0>навязчиво и неправильно, мысль цепляется за что-то вне себя</hediffAnomalyCompulsion.tones.0>
+  <hediffAnomalyCompulsion.tones.1>тревожно и принудительно, ум тянет туда, куда не следует</hediffAnomalyCompulsion.tones.1>
+  <hediffLabor.tones.0>срочно и телесно, дыхание и боль задают темп</hediffLabor.tones.0>
+  <hediffLabor.tones.1>на пороге напряжения, с упором на страх, заботу и ожидание</hediffLabor.tones.1>
+  <hediffMajorHealth.tones.0>уязвимо и телесно, симптомы определяют каждую мысль</hediffMajorHealth.tones.0>
+  <hediffMajorHealth.tones.1>тихо испуганно, слабость меняет масштаб дня</hediffMajorHealth.tones.1>
+  <hediffPregnancy.tones.0>телесно и сокровенно, неопределённость держат близко</hediffPregnancy.tones.0>
+  <hediffPregnancy.tones.1>обращено в будущее и тихо, надежда и страх в равновесии</hediffPregnancy.tones.1>
+  <inspiration.tones.0>ярко и решительно, мысль обращается в замысел</inspiration.tones.0>
+  <inspiration.tones.1>электрически и беспокойно, цель толкает тело вперёд</inspiration.tones.1>
+  <insults.tones.0>горячо и отрывисто, как злость, зажатая в зубах</insults.tones.0>
+  <insults.tones.1>холодно и режуще, с упором на жало после</insults.tones.1>
+  <insultspree.tones.0>занозисто и навязчиво, как злость в поисках мишеней</insultspree.tones.0>
+  <insultspree.tones.1>кисло и измотанно, жестокость звучит почти машинально</insultspree.tones.1>
+  <mentalbreak.tones.0>обрывочно и задыхаясь, мысль под слишком большим давлением</mentalbreak.tones.0>
+  <mentalbreak.tones.1>оцепенело и вкось, реальность сужена до одного порыва</mentalbreak.tones.1>
+  <moodeventMixed.tones.0>тревожно и неоднозначно, поселенец не уверен, что чувствовать</moodeventMixed.tones.0>
+  <moodeventMixed.tones.1>настороженно и телесно, отслеживая, как ложится условие</moodeventMixed.tones.1>
+  <moodeventNegative.tones.0>тяжело и низко, каждая деталь давит вниз</moodeventNegative.tones.0>
+  <moodeventNegative.tones.1>раздражённо и обветренно, напряжение проступает в терпении</moodeventNegative.tones.1>
+  <moodeventPositive.tones.0>открыто и отпущенно, впуская облегчение в предложение</moodeventPositive.tones.0>
+  <moodeventPositive.tones.1>тихо благодарно, с упором на то, как напряжение покидает тело</moodeventPositive.tones.1>
+  <questAccepted.label>Задание принято</questAccepted.label>
+  <questAccepted.instruction>взято новое задание: предвкушение, любопытство и вес обещания. Пиши надежду или сомнение, которое оно будит</questAccepted.instruction>
+  <questAccepted.tone>с предвкушением и осторожным любопытством</questAccepted.tone>
+  <questAccepted.tones.0>осторожно и с взглядом вперёд, обещание взвешено против риска</questAccepted.tones.0>
+  <questAccepted.tones.1>любопытно, но настороженно; надежду держит практичное сомнение</questAccepted.tones.1>
+  <questCompleted.label>Задание выполнено</questCompleted.label>
+  <questCompleted.instruction>задание исполнено: облегчение, удовлетворение и цена пути. Пиши заслуженную развязку</questCompleted.instruction>
+  <questCompleted.tone>с трудно добытым облегчением и тихим удовлетворением</questCompleted.tone>
+  <questCompleted.tones.0>облегчённо и спокойно, как после наконец отданного долга</questCompleted.tones.0>
+  <questCompleted.tones.1>устало, но гордо, удовлетворение соизмерено с ценой</questCompleted.tones.1>
+  <questFailed.label>Задание провалено</questFailed.label>
+  <questFailed.instruction>задание потеряно: сожаление, горечь и последствия провала. Пиши вес того, что ускользнуло</questFailed.instruction>
+  <questFailed.tone>с сожалением и тяжёлой утратой</questFailed.tone>
+  <questFailed.tones.0>тяжело и с сожалением, с упором на то, что ускользнуло</questFailed.tones.0>
+  <questFailed.tones.1>тихо и горестно, последствия больше ощущаются, чем объясняются</questFailed.tones.1>
+  <raid.tones.0>напряжённо и тактически, в ожидании, когда бой прорвётся</raid.tones.0>
+  <raid.tones.1>срочно, но с предчувствием, страх сгущается перед столкновением</raid.tones.1>
+  <raidDropPod.label>Налёты из транспортных капсул</raidDropPod.label>
+  <raidDropPod.instruction>налётчики врываются прямо в поселение через транспортные капсулы: внезапный удар, без долгого предупреждения, опасность уже внутри периметра</raidDropPod.instruction>
+  <raidDropPod.instructions.0>налёт из транспортных капсул внутри или у поселения: начни с удара, тревог и суматохи, пока никто не успел подготовиться</raidDropPod.instructions.0>
+  <raidDropPod.instructions.1>налёт из транспортных капсул без медленного приближения: первые оглушённые секунды, затем мгновенный выбор поселенца, укрытие, оружие или бегство</raidDropPod.instructions.1>
+  <raidDropPod.instructions.2>налётчики падают сверху; держи это внезапным и близким, без долгой осады или подхода, если факты не говорят обратного</raidDropPod.instructions.2>
+  <raidDropPod.tone>с потрясением мгновенного удара</raidDropPod.tone>
+  <raidDropPod.tones.0>стремительно как удар и дезориентированно, опасность уже внутри стен</raidDropPod.tones.0>
+  <raidDropPod.tones.1>потрясённо и в упор, каждое предложение откликается на внезапное столкновение</raidDropPod.tones.1>
+  <raidFriendly.label>Дружественные прибытия и налёты</raidFriendly.label>
+  <raidFriendly.instruction>дружественный отряд прибывает в поселение: подкрепление, союзники или мирная высадка. Пиши облегчение или тревогу, которую они приносят</raidFriendly.instruction>
+  <raidFriendly.tone>с осторожным облегчением или тревожной благодарностью</raidFriendly.tone>
+  <raidFriendly.tones.0>осторожно облегчённо, доверие приходит медленно</raidFriendly.tones.0>
+  <raidFriendly.tones.1>тревожно и благодарно, помощь всё ещё ощущается как риск</raidFriendly.tones.1>
+  <raidInfestation.label>Нашествия насекомых</raidInfestation.label>
+  <raidInfestation.instruction>насекомые прорываются из-под земли поселения: хитин, тоннели, тесная паника и опасность среди комнат. Это внезапный внутренний ужас, не обычный налёт</raidInfestation.instruction>
+  <raidInfestation.instructions.0>нашествие внутри поселения: начни со звука, пыли, когтей, темноты или комнаты, которая из безопасной стала враждебной</raidInfestation.instructions.0>
+  <raidInfestation.instructions.1>насекомые прорываются изнутри базы; пиши тесный страх и мгновенное выживание, не приближение далёкого врага</raidInfestation.instructions.1>
+  <raidInfestation.instructions.2>подземная угроза входит в обжитое пространство; держи это близким, чувственным и практичным, не выдумывай итог боя</raidInfestation.instructions.2>
+  <raidInfestation.tone>с клаустрофобной, хитиновой паникой</raidInfestation.tone>
+  <raidInfestation.tones.0>клаустрофобно и в ужасе, безопасность оборачивается прорывом</raidInfestation.tones.0>
+  <raidInfestation.tones.1>близко, грязно и в панике, угроза уже под ногами</raidInfestation.tones.1>
+  <recruit.tones.0>сдержанно и стратегически, каждое предложение взвешивает рычаг</recruit.tones.0>
+  <recruit.tones.1>туго и настороженно, с упором на власть в комнате</recruit.tones.1>
+  <ritual.tones.0>церемониально и неподвижно, с оглядкой на смотрящие глаза</ritual.tones.0>
+  <ritual.tones.1>благоговейно, но тревожно, с упором на долг и последствие</ritual.tones.1>
+  <romance.tones.0>близко и телесно, со сдержанной уязвимостью</romance.tones.0>
+  <romance.tones.1>тихо и вдумчиво, с упором на то, что изменилось</romance.tones.1>
+  <romance_relation.tones.0>формально, но судьбоносно, с тихой сдержанностью</romance_relation.tones.0>
+  <romance_relation.tones.1>лично и обнажённо, с упором на сдвиг связи</romance_relation.tones.1>
+  <slavery.tones.0>гнетуще и тяжело, с упором на контроль</slavery.tones.0>
+  <slavery.tones.1>тихо непокорно, со злостью, удержанной под давлением</slavery.tones.1>
+  <speakup_chitchat.tones.0>свободно и разговорно, как обычная речь, проходящая через комнату</speakup_chitchat.tones.0>
+  <speakup_chitchat.tones.1>просто и наблюдательно, давая крошечному социальному давлению нести вес</speakup_chitchat.tones.1>
+  <smalltalk.tones.0>свободно и разговорно, ведомо мелкими паузами</smalltalk.tones.0>
+  <smalltalk.tones.1>просто и по-приятельски, обычная деталь делает работу</smalltalk.tones.1>
+  <socialfight.tones.0>быстро и телесно, ведомо ударом и дыханием</socialfight.tones.0>
+  <socialfight.tones.1>потрясённо и тяжело, злость остывает в последствиях</socialfight.tones.1>
+  <strangechat.tones.0>обычно на поверхности, неправильно под ней</strangechat.tones.0>
+  <strangechat.tones.1>тихо жутко, обрываясь прежде, чем неправильность разрешится</strangechat.tones.1>
+  <taleanomaly.tones.0>жутко и настороженно, отказываясь от объяснений</taleanomaly.tones.0>
+  <taleanomaly.tones.1>лично и заражённо, будто неправильность подобралась близко</taleanomaly.tones.1>
+  <talecombat.tones.0>нутряно и мгновенно, сперва тело, потом мысль</talecombat.tones.0>
+  <talecombat.tones.1>оглушённо и с отголосками, опасность отзывается после</talecombat.tones.1>
+  <talehealth.tones.0>хрупко и клинично, с упором на тело и риск</talehealth.tones.0>
+  <talehealth.tones.1>облегчённо, но потрясённо, доверие или страх ещё рядом</talehealth.tones.1>
+  <taleincident.tones.0>шатко и срочно, с упором на суматоху</taleincident.tones.0>
+  <taleincident.tones.1>опустошённо и оглушённо, с упором на урон после</taleincident.tones.1>
+  <talelife.tones.0>приглушённо и весомо, с осознанием, что жизнь повернула</talelife.tones.0>
+  <talelife.tones.1>мгновенно и лично, с упором на первый изменившийся вздох</talelife.tones.1>
+  <talequality.tones.0>гордо и осязаемо, с упором на руки и материал</talequality.tones.0>
+  <talequality.tones.1>до костей устало и удовлетворённо, как свершение после надрыва</talequality.tones.1>
+  <talequiet.tones.0>лично и скупо, одно маленькое чувство держат близко</talequiet.tones.0>
+  <talequiet.tones.1>легко и кратко, мимолётная заметка, а не признание</talequiet.tones.1>
+  <talework.tones.0>ровно и практично, гордость держат близко к работе</talework.tones.0>
+  <talework.tones.1>тихо и довольно, с упором на навык, который оседает в теле</talework.tones.1>
+  <teaching.tones.0>терпеливо и наставительно, с упором на маленький прогресс</teaching.tones.0>
+  <teaching.tones.1>игриво, но приземлённо, привязанность показана через внимание</teaching.tones.1>
+  <thoughtNegative.tones.0>низко и ноюще, мысль возвращается петлями</thoughtNegative.tones.0>
+  <thoughtNegative.tones.1>туго и телесно, раздражение или обида сидят в нутре</thoughtNegative.tones.1>
+  <thoughtOther.tones.0>кратко и полуощутимо, ушло почти сразу</thoughtOther.tones.0>
+  <thoughtOther.tones.1>просто и наблюдательно, называя настроение без драмы</thoughtOther.tones.1>
+  <thoughtPositive.tones.0>маленько и ярко, как напряжение, которое ненадолго отпустило</thoughtPositive.tones.0>
+  <thoughtPositive.tones.1>тихо приподнято, с упором на мысль, что стоит сохранить</thoughtPositive.tones.1>
+  <thoughtPregnancyFamily.tones.0>сдержанно и сокровенно, эмоцию держат бережно</thoughtPregnancyFamily.tones.0>
+  <thoughtPregnancyFamily.tones.1>телесно и неопределённо, надежда и страх оба возможны</thoughtPregnancyFamily.tones.1>
+  <trial.tones.0>формально и хрупко, каждое предложение как показание</trial.tones.0>
+  <trial.tones.1>под взглядами и обнажённо, с упором на стыд или защиту</trial.tones.1>
+  <workDarkStudy.tones.0>близко и чувственно, ужас проступает сквозь саму работу</workDarkStudy.tones.0>
+  <workDarkStudy.tones.1>тихо заражённо, любопытство ощущается как ошибка</workDarkStudy.tones.1>
+  <workPassion.tones.0>сосредоточенно и удовлетворённо, удовольствие держат практичным</workPassion.tones.0>
+  <workPassion.tones.1>поглощённо и осязаемо, увлечённость проступает сквозь задачу</workPassion.tones.1>
+  <workRoutine.tones.0>буднично и ритмично, обычная работа продолжается</workRoutine.tones.0>
+  <workRoutine.tones.1>тихо практично, внимание на инструментах и последовательности</workRoutine.tones.1>
+  <workStrain.tones.0>устало и резко, досада в руках</workStrain.tones.0>
+  <workStrain.tones.1>грязно и обречённо, раздражение удержано под долгом</workStrain.tones.1>
+</LanguageData>
