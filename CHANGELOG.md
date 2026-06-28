@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Prompt suite context isolation fixed.** Dev prompt-suite captures now ignore live prompt
+  enchantments, including active event-window context such as metalhorror suspicion, so one manual
+  event-window test cannot bleed into later prompt fixtures.
+
 - **Russian DefInjected coverage completed.** Prompt template field labels, prompt enchantment
   labels, condition writing-style override labels, and ritual-quality prompt context labels now have
   matching English stubs and Russian translations, clearing the Pawn Diary entries from RimWorld's

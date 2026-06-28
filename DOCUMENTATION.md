@@ -215,7 +215,9 @@ missing/off-map pawn falls back to its saved style.
 Prompt enchantments add one weighted live-context pressure cue to eligible first-person prompts.
 Active event windows feed the same prompt-enchantment planner as extra XML-weighted candidates, so
 an unresolved colony threat can shape unrelated diary pages until the configured end signal or
-timeout closes it. Humor cues are hidden, XML-weighted, and folded into the writing-style block.
+timeout closes it. Dev prompt-suite fixtures opt out of live prompt enchantments, including active
+event-window candidates, so captured test prompts stay isolated from earlier manual event-window
+tests. Humor cues are hidden, XML-weighted, and folded into the writing-style block.
 Direct speech is allowed only in selected first-person interaction prompts with a closed
 `[[speech]]...[[/speech]]` block.
 

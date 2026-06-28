@@ -132,11 +132,18 @@ namespace PawnDiary
 
         /// <summary>
         /// Resolves the optional live prompt enchantment for the POV pawn. Missing live pawn data
-        /// simply means no enchantment, preserving neutral death/arrival and title flows.
+        /// simply means no enchantment, preserving neutral death/arrival and title flows. Dev prompt
+        /// suite fixtures are deliberately isolated from live health/event-window state so one manual
+        /// test (for example metalhorror suspicion) cannot bleed into later captured prompt fixtures.
         /// </summary>
         private string PromptEnchantmentRuleFor(DiaryEvent diaryEvent, string povRole,
             Dictionary<string, Pawn> livePawnsById = null)
         {
+            if (diaryEvent != null && DiaryContextFields.HasMarker(diaryEvent.gameContext, DevPromptSuiteMarkerKey))
+            {
+                return string.Empty;
+            }
+
             if (!DiaryPromptBuilder.ShouldResolvePromptEnchantment(diaryEvent))
             {
                 return string.Empty;
