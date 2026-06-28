@@ -179,6 +179,11 @@
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>Если включено, готовая запись инициатора с корректным блоком речи добавляет строку в журнал общения. Моды, следящие за журналом, смогут реагировать после ответа LLM.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
   <PawnDiary.Settings.PromptTestMode>Тест запросов: только сохранять</PawnDiary.Settings.PromptTestMode>
   <PawnDiary.Settings.PromptTestModeTip>Только разработка: игровые события собирают и сохраняют системный и пользовательский запрос, но не отправляют дневник или заголовок в LLM. Карточки с запросом видны во вкладке дневника в режиме разработки.</PawnDiary.Settings.PromptTestModeTip>
+  <PawnDiary.Settings.ExportAllDiaries>Экспорт всех страниц</PawnDiary.Settings.ExportAllDiaries>
+  <PawnDiary.Settings.ExportAllDiariesTip>Только разработка: записать все сохранённые страницы дневников и события в UTF-8 файл в папке данных сохранений RimWorld. Путь к файлу копируется в буфер обмена.</PawnDiary.Settings.ExportAllDiariesTip>
+  <PawnDiary.Settings.ExportAllDiariesDone>Страницы дневника экспортированы: {0}. Путь скопирован в буфер обмена.</PawnDiary.Settings.ExportAllDiariesDone>
+  <PawnDiary.Settings.ExportAllDiariesFailed>Экспорт дневника не удался: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
+  <PawnDiary.Settings.ExportAllDiariesNoGame>Начните или загрузите игру перед экспортом дневника.</PawnDiary.Settings.ExportAllDiariesNoGame>
   <PawnDiary.Settings.Temperature>Температура LLM: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Случайность модели для дневника и заголовков. Ниже — ровнее и буквальнее; выше — разнообразнее и атмосфернее, но риск отхода от фактов больше.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Таймаут запроса: {0} с</PawnDiary.Settings.TimeoutSeconds>

@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Dev diary export added.** RimWorld Dev Mode now shows an "Export all diary pages" settings
+  button that writes the current game's saved pawn pages and backing event records to a UTF-8 text
+  file under RimWorld's save-data folder and copies the path to the clipboard.
+
 - **Diary tab access hardened.** The inspect-tab draw path and command/link open helpers now
   re-apply Diary tab registration once after startup, and command-only access temporarily unhides
   the registered tab before calling RimWorld's inspect-pane opener.

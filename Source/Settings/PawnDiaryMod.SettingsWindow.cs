@@ -1,5 +1,6 @@
 // Top-level settings-window layout for Pawn Diary. Detail renderers live in the sibling partial
 // files so the RimWorld Mod entry point is not also one monolithic IMGUI class.
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -64,6 +65,14 @@ namespace PawnDiary
                         "PawnDiary.Settings.PromptTestMode".Translate(),
                         ref Settings.promptTestMode,
                         "PawnDiary.Settings.PromptTestModeTip".Translate());
+
+                    Rect exportRect = listing.GetRect(28f);
+                    if (ButtonTextFit(exportRect, "PawnDiary.Settings.ExportAllDiaries".Translate()))
+                    {
+                        HandleExportAllDiaries();
+                    }
+
+                    TooltipHandler.TipRegion(exportRect, "PawnDiary.Settings.ExportAllDiariesTip".Translate());
                 }
 
                 listing.Label("PawnDiary.Settings.WorkGenerationWeight".Translate(Settings.workGenerationWeight.ToString("0.##")));
@@ -179,13 +188,47 @@ namespace PawnDiary
             height += 315f;
             if (Prefs.DevMode)
             {
-                height += 30f;
+                height += 62f;
             }
 
             height += Settings.showPromptStudio ? 492f : 44f;
             height += 460f + PersonaTagPickerHeight();
 
             return height + 120f; // breathing room for translated labels and RimWorld skin variance
+        }
+
+        /// <summary>
+        /// Dev-only settings action: writes the current game's complete saved diary state to disk and
+        /// copies the path to the OS clipboard for quick inspection.
+        /// </summary>
+        private static void HandleExportAllDiaries()
+        {
+            DiaryGameComponent component = DiaryGameComponent.Current;
+            if (component == null)
+            {
+                Messages.Message(
+                    "PawnDiary.Settings.ExportAllDiariesNoGame".Translate(),
+                    MessageTypeDefOf.RejectInput,
+                    false);
+                return;
+            }
+
+            string filePath;
+            string error;
+            if (component.TryExportAllDiariesForDev(out filePath, out error))
+            {
+                GUIUtility.systemCopyBuffer = filePath;
+                Messages.Message(
+                    "PawnDiary.Settings.ExportAllDiariesDone".Translate(filePath),
+                    MessageTypeDefOf.PositiveEvent,
+                    false);
+                return;
+            }
+
+            Messages.Message(
+                "PawnDiary.Settings.ExportAllDiariesFailed".Translate(error),
+                MessageTypeDefOf.RejectInput,
+                false);
         }
     }
 }

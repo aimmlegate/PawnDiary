@@ -230,8 +230,10 @@ the stored title falls back to the first few words of the finished diary entry w
 
 Main settings cover API lanes, routing mode, request tuning, title generation, atmospheric
 formatting, prompt enchantments, work/social weights, the active diary-event cap, event filters,
-prompt overrides, and writing style presets. Dev mode exposes prompt-test mode and extra
-diagnostics.
+prompt overrides, and writing style presets. Dev mode exposes prompt-test mode, a full diary export
+button, and extra diagnostics. The export writes every saved pawn diary page plus the backing event
+records to `PawnDiaryExports/` under RimWorld's save-data folder, and copies the generated file path
+to the clipboard.
 
 The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
 appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can

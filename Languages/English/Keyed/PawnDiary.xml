@@ -185,6 +185,11 @@
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>When enabled, a completed initiator diary entry with a valid speech block adds one new Social-log line containing that generated spoken text. This can let mods that watch new interaction log entries react after the LLM result is ready.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
   <PawnDiary.Settings.PromptTestMode>Prompt test mode: capture prompts only</PawnDiary.Settings.PromptTestMode>
   <PawnDiary.Settings.PromptTestModeTip>Dev-only: real gameplay events assemble and save their system and user prompts, but no diary or title request is sent to an LLM. Prompt-only cards appear in the Diary tab while dev mode is on.</PawnDiary.Settings.PromptTestModeTip>
+  <PawnDiary.Settings.ExportAllDiaries>Export all diary pages</PawnDiary.Settings.ExportAllDiaries>
+  <PawnDiary.Settings.ExportAllDiariesTip>Dev-only: writes every saved pawn diary page and backing event record to a UTF-8 text file under the RimWorld save-data folder. The exported path is copied to the clipboard.</PawnDiary.Settings.ExportAllDiariesTip>
+  <PawnDiary.Settings.ExportAllDiariesDone>Exported diary pages to {0}. Path copied to clipboard.</PawnDiary.Settings.ExportAllDiariesDone>
+  <PawnDiary.Settings.ExportAllDiariesFailed>Diary export failed: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
+  <PawnDiary.Settings.ExportAllDiariesNoGame>Start or load a game before exporting diary pages.</PawnDiary.Settings.ExportAllDiariesNoGame>
   <PawnDiary.Settings.Temperature>LLM temperature: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Controls model randomness for diary and title requests. Lower values are steadier and more literal; higher values are more varied and atmospheric but can drift from supplied facts.</PawnDiary.Settings.TemperatureHelp>
   <PawnDiary.Settings.TimeoutSeconds>Request timeout: {0}s</PawnDiary.Settings.TimeoutSeconds>
