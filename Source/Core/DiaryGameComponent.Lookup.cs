@@ -6,6 +6,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -102,7 +103,8 @@ namespace PawnDiary
         /// A pawn qualifies for diary tracking if it is a humanlike colonist old enough to write
         /// first-person entries. Pre-teen colonists can still appear as "other pawn" context.
         /// </summary>
-        private static bool IsDiaryEligible(Pawn pawn)
+        // internal: part of the DiarySignal capture surface (signals snapshot eligibility into CaptureContext).
+        internal static bool IsDiaryEligible(Pawn pawn)
         {
             return IsHumanlike(pawn) && pawn.IsColonist && IsFirstPersonDiaryAgeEligible(pawn);
         }
@@ -124,6 +126,25 @@ namespace PawnDiary
         private static bool CanRecordGameplayEventNow()
         {
             return GamePlaying;
+        }
+
+        /// <summary>
+        /// Builds a CaptureContext from the impure eligibility/enable facts the caller already
+        /// computed. Centralized so every source — the partial-class Record methods and the
+        /// DiarySignal capture classes alike — reads the same way and the pure Decider sees a
+        /// consistent snapshot. internal so signals in PawnDiary.Ingestion can reuse it.
+        /// </summary>
+        internal static CaptureContext BuildCaptureContext(
+            bool eligible, bool userEnabled, bool signalEnabled, bool ambientSignalEnabled)
+        {
+            return new CaptureContext
+            {
+                Eligible = eligible,
+                UserEnabled = userEnabled,
+                SignalEnabled = signalEnabled,
+                AmbientSignalEnabled = ambientSignalEnabled,
+                Now = Find.TickManager.TicksGame,
+            };
         }
 
         /// <summary>

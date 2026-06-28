@@ -3,6 +3,7 @@
 // New to this? See AGENTS.md ("Harmony patches").
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -57,7 +58,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordThought(pawn, __0);
+                DiaryEvents.Submit(new ThoughtSignal(pawn, __0));
             });
         }
     }

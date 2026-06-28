@@ -83,6 +83,29 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// The transient dedup key for this romance event (raw, source-prefixed). Uses a canonical,
+        /// order-independent pair key so the mirrored AddDirectRelation call from the other
+        /// participant collapses to the same key. Lifted out of the old RecordRomance unchanged.
+        /// </summary>
+        public string DedupKey()
+        {
+            return "romance|" + CanonicalPairKey(FirstPawnId, SecondPawnId) + "|" + DefName;
+        }
+
+        /// <summary>
+        /// Deterministic, order-independent key for a pawn-id pair. Pure mirror of the component's
+        /// PairKey helper so the dedup key can be built (and tested) without RimWorld.
+        /// </summary>
+        public static string CanonicalPairKey(string firstId, string secondId)
+        {
+            firstId = firstId ?? string.Empty;
+            secondId = secondId ?? string.Empty;
+            return string.CompareOrdinal(firstId, secondId) <= 0
+                ? firstId + "|" + secondId
+                : secondId + "|" + firstId;
+        }
+
+        /// <summary>
         /// Maps a relation defName to the short kind token embedded in gameContext. Modded
         /// relation defs that aren't one of the four vanilla ones fall back to the raw defName.
         /// </summary>

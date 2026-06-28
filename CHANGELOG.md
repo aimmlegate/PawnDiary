@@ -4,6 +4,20 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-06-29
+
+- **Unified event ingestion behind a `DiaryEvents.Submit` bus.** Every captured event now enters
+  through one front door and runs a single shared pipeline (`DiaryGameComponent.Dispatch`):
+  guard → pure catalog `Decide` → consolidated dedup → `Emit`. Each source's capture+emit logic
+  moved out of a bespoke `RecordXxx` method into a small uniform `DiarySignal` subclass under
+  `Source/Ingestion/`; colony-wide sources use `DiaryFanoutSignal` so the colony dedup
+  (peek-then-mark-after-first) lives in one place. The ~12 per-source dedup dictionaries collapse to
+  one transient `recentEvents` store keyed by the existing raw source-prefixed keys. This is internal
+  plumbing only — no `DiaryEvent` field, Scribe key, `interactionDefName`, or `gameContext` format
+  changed, so saves load identically. First wave migrated: Thought, Inspiration, Ability (solo),
+  Romance (pair), Raid, MoodEvent (fan-out); remaining sources migrate incrementally to the same
+  pattern and coexist via the shared dedup store. See DOCUMENTATION.md §3.1 and the §4 coverage table.
+
 ## 2026-06-28
 
 - **Memory decay kept as prompt context.** `Alzheimers`, `Dementia`, and Anomaly `CrumblingMind`

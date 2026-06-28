@@ -116,6 +116,16 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// The transient dedup key for this thought event (raw, source-prefixed). Lifted verbatim out
+        /// of the old RecordThought so the shared recent-events store keys it exactly as before:
+        /// one window per pawn + thought defName.
+        /// </summary>
+        public string DedupKey()
+        {
+            return "thought|" + PawnId + "|" + DefName;
+        }
+
+        /// <summary>
         /// Case-insensitive substring match: returns true if defName contains any of the tokens.
         /// Empty/null defName or token lists never match. Moved here from the old
         /// DiaryGameComponent.Thoughts.cs MatchesAnyToken helper unchanged.

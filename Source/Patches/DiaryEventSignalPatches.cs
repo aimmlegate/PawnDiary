@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Ingestion;
 using RimWorld;
 using RimWorld.Planet;
 using Verse;
@@ -106,7 +107,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordInspiration(__instance.pawn, def, reason);
+                DiaryEvents.Submit(new InspirationSignal(__instance.pawn, def, reason));
             });
         }
     }
@@ -140,7 +141,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordMoodEvent(cond);
+                DiaryEvents.Submit(new MoodEventFanoutSignal(cond));
             });
         }
     }
@@ -180,7 +181,7 @@ namespace PawnDiary
                     () => component.RecordEventWindowIncident(__instance.def, parms));
                 if (IsRaidLikeIncident(__instance))
                 {
-                    component.RecordRaid(parms, __instance.def);
+                    DiaryEvents.Submit(new RaidFanoutSignal(parms, __instance.def));
                 }
             });
         }
@@ -736,7 +737,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target, dest);
+                DiaryEvents.Submit(new AbilitySignal(__instance, target, dest));
             });
         }
     }
@@ -761,7 +762,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target);
+                DiaryEvents.Submit(new AbilitySignal(__instance, target));
             });
         }
     }

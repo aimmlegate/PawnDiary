@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -258,7 +259,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordRomance(pawn, otherPawn, def);
+                DiaryEvents.Submit(new RomanceSignal(pawn, otherPawn, def));
             });
         }
     }

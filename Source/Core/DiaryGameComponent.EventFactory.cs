@@ -19,7 +19,7 @@ namespace PawnDiary
         /// Creates a DiaryEvent involving two pawns (initiator + recipient), enriches it with context
         /// summaries, registers it, and cross-references both pawns' diary records.
         /// </summary>
-        private DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
+        internal DiaryEvent AddPairwiseEvent(Pawn initiator, Pawn recipient, string defName, string label,
             string initiatorText, string recipientText, string instruction, string gameContext)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();
@@ -78,7 +78,7 @@ namespace PawnDiary
         /// <summary>
         /// Creates a solo DiaryEvent (single-POV, e.g. a mental break) with no recipient role.
         /// </summary>
-        private DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
+        internal DiaryEvent AddSoloEvent(Pawn pawn, Pawn otherPawn, string defName, string label,
             string text, string instruction, string gameContext)
         {
             IReadOnlyList<DiaryEvent> activeEvents = ActiveScanEvents();

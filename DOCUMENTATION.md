@@ -34,7 +34,8 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions. |
-| `Source/Core/` | `DiaryGameComponent` partials: capture adapters, save/load, scans, generation queue. |
+| `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
+| `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
 | `Source/Pipeline/` | Pure prompt planning, request JSON, response cleanup, text decoration, API policy. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
@@ -72,7 +73,65 @@ is not saved; it resets on load and is requeued when the event is still inside t
 First-person generation is skipped for pawns below the XML Consciousness floor, while neutral
 arrival/death pages bypass that guard.
 
+### 3.1 Ingestion bus (`DiaryEvents.Submit`)
+
+Every captured event enters through one front door: `DiaryEvents.Submit(signal)` (`Source/Ingestion/`).
+A Harmony hook (or scanner) builds the matching `DiarySignal` subclass and submits it; the shared
+dispatcher `DiaryGameComponent.Dispatch` then runs the universal steps that each `RecordXxx` method
+used to copy-paste:
+
+1. **guard** — `CanRecordGameplayEventNow` (game must be in play);
+2. **decide** — `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` (the pure, XML-backed
+   filter);
+3. **dedup** — one consolidated transient `recentEvents` store, keyed by the signal's raw
+   source-prefixed key (e.g. `"thought|pawnId|defName"`);
+4. **emit** — `signal.Emit(sink, decision)` builds the localized text + game-context, creates the
+   `DiaryEvent` via the factory, and queues generation (or routes to the ambient/batch sinks).
+
+A `DiarySignal` is the impure capture+emit half of one source; the pure decision and game-context
+format stay in `Source/Capture/Events/*EventData.cs` (unit-tested without RimWorld). Colony-wide
+sources extend `DiaryFanoutSignal`: the dispatcher peeks the colony dedup key once, runs each
+per-pawn child through the same decide→dedup→emit path, and marks the colony key only after at least
+one entry emits. Signals reach the component through a narrow internal emit surface
+(`AddSoloEvent`/`AddPairwiseEvent`, `QueueSolo`/`QueuePair`/`DelaySolo`, `RecordAmbientThought`,
+`BuildCaptureContext`, `IsDiaryEligible`) so generation internals stay private.
+
+Adding a reaction to a new event is now: write one Harmony hook + one `DiarySignal` subclass (capture
+into a payload, build the context, emit), register the source's `Spec` in the catalog, and add its
+XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-implemented.
+
+**Migration status (this is in progress):** the `Submit` bus and dispatch pipeline are live, and
+the following sources route through it today — **Thought, Inspiration, Ability, Romance, Raid,
+MoodEvent** (covering all three shapes: solo, pair, fan-out). The remaining catalog sources still
+use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
+the identical pattern; their dedup keys already share the consolidated store via the same raw
+prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
+each source's current ingestion path.
+
 ## 4. Event Sources
+
+The catalog of every event the diary reacts to (`DiaryEventType`), with its current ingestion path.
+"Signal" = migrated to the `Submit` bus; "RecordX" = legacy method pending migration.
+
+| Event type | Observed by | Ingestion | Shape |
+|---|---|---|---|
+| Thought | `MemoryThoughtHandler.TryGainMemory` | `ThoughtSignal` | solo (+ ambient) |
+| Inspiration | `InspirationHandler.TryStartInspiration` | `InspirationSignal` | solo |
+| Ability | `Ability.Activate` overloads | `AbilitySignal` | solo (sampled) |
+| Romance | `Pawn_RelationsTracker.AddDirectRelation` | `RomanceSignal` | pair |
+| Raid | `IncidentWorker.TryExecute` | `RaidFanoutSignal` | fan-out |
+| MoodEvent | `GameConditionManager.RegisterCondition` | `MoodEventFanoutSignal` | fan-out |
+| MentalState | `MentalStateHandler.TryStartMentalState` | `RecordMentalState` (pending) | pair + solo |
+| Tale | `TaleRecorder.RecordTale` | `RecordTale` (pending) | solo / batch / death |
+| Hediff | `Pawn_HealthTracker.AddHediff` + scan | `RecordHediffAppeared` (pending) | solo / day-reflection |
+| Interaction | `PlayLog.Add` | `RecordInteraction` (pending) | pair / solo / batch / ambient |
+| Work | Periodic job sampling | `ScanPawnWork…` (pending) | solo |
+| ThoughtProgression | Periodic scan | `Scan…Progression` (pending) | solo |
+| DayReflection | Sleep/rest flush | route-sink (pending) | solo |
+| Quest | `Quest.Accept`/`End` + state scan | `RecordQuest…` (pending) | fan-out |
+| Ritual | Ideology/psychic ritual completion | `RecordRitualFinished` (pending) | fan-out |
+| Death | `Pawn.Kill` + death TaleDefs | `RecordDeath…` (pending) | neutral description |
+| Arrival | Starting scan + `Pawn.SetFaction` | `RecordColonistArrival` (pending) | neutral description |
 
 | Source | How it is observed | Result |
 |---|---|---|

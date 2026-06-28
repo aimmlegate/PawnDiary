@@ -244,6 +244,7 @@ namespace PawnDiary
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
+            recentEvents.Clear();
             activeEventWindows.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
@@ -287,6 +288,7 @@ namespace PawnDiary
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
+            recentEvents.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
