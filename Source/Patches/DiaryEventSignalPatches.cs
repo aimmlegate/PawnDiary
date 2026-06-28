@@ -81,7 +81,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordMentalState(pawn, stateDef, otherPawn, reason);
+                DiaryEvents.Submit(new MentalStateSignal(pawn, stateDef, otherPawn, reason));
             });
         }
     }
@@ -684,7 +684,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordRitualFinished(__instance, progress, cancelled);
+                DiaryEvents.Submit(new RitualFanoutSignal(__instance, progress, cancelled));
             });
         }
     }
@@ -711,7 +711,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success: true);
+                DiaryEvents.Submit(new PsychicRitualFanoutSignal(psychicRitual, success: true));
             });
         }
     }

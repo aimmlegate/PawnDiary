@@ -14,9 +14,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   (peek-then-mark-after-first) lives in one place. The ~12 per-source dedup dictionaries collapse to
   one transient `recentEvents` store keyed by the existing raw source-prefixed keys. This is internal
   plumbing only — no `DiaryEvent` field, Scribe key, `interactionDefName`, or `gameContext` format
-  changed, so saves load identically. First wave migrated: Thought, Inspiration, Ability (solo),
-  Romance (pair), Raid, MoodEvent (fan-out); remaining sources migrate incrementally to the same
-  pattern and coexist via the shared dedup store. See DOCUMENTATION.md §3.1 and the §4 coverage table.
+  changed, so saves load identically. Migrated so far: Thought, Inspiration, Ability (solo), Romance,
+  MentalState (pair), Raid, MoodEvent, Ritual, PsychicRitual (fan-out); remaining sources migrate
+  incrementally to the same pattern and coexist via the shared dedup store. See DOCUMENTATION.md §3.1
+  and the §4 coverage table.
 
 ## 2026-06-28
 

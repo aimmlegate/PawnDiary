@@ -102,7 +102,7 @@ XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-imp
 
 **Migration status (this is in progress):** the `Submit` bus and dispatch pipeline are live, and
 the following sources route through it today — **Thought, Inspiration, Ability, Romance, Raid,
-MoodEvent** (covering all three shapes: solo, pair, fan-out). The remaining catalog sources still
+MoodEvent, MentalState, Ritual/PsychicRitual** (covering all three shapes: solo, pair, fan-out). The remaining catalog sources still
 use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
 the identical pattern; their dedup keys already share the consolidated store via the same raw
 prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
@@ -121,7 +121,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | Romance | `Pawn_RelationsTracker.AddDirectRelation` | `RomanceSignal` | pair |
 | Raid | `IncidentWorker.TryExecute` | `RaidFanoutSignal` | fan-out |
 | MoodEvent | `GameConditionManager.RegisterCondition` | `MoodEventFanoutSignal` | fan-out |
-| MentalState | `MentalStateHandler.TryStartMentalState` | `RecordMentalState` (pending) | pair + solo |
+| MentalState | `MentalStateHandler.TryStartMentalState` | `MentalStateSignal` | pair + solo |
 | Tale | `TaleRecorder.RecordTale` | `RecordTale` (pending) | solo / batch / death |
 | Hediff | `Pawn_HealthTracker.AddHediff` + scan | `RecordHediffAppeared` (pending) | solo / day-reflection |
 | Interaction | `PlayLog.Add` | `RecordInteraction` (pending) | pair / solo / batch / ambient |
@@ -129,7 +129,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | ThoughtProgression | Periodic scan | `Scan…Progression` (pending) | solo |
 | DayReflection | Sleep/rest flush | route-sink (pending) | solo |
 | Quest | `Quest.Accept`/`End` + state scan | `RecordQuest…` (pending) | fan-out |
-| Ritual | Ideology/psychic ritual completion | `RecordRitualFinished` (pending) | fan-out |
+| Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `RecordDeath…` (pending) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `RecordColonistArrival` (pending) | neutral description |
 

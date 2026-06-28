@@ -93,19 +93,6 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// Deterministic, order-independent key for a pawn-id pair. Pure mirror of the component's
-        /// PairKey helper so the dedup key can be built (and tested) without RimWorld.
-        /// </summary>
-        public static string CanonicalPairKey(string firstId, string secondId)
-        {
-            firstId = firstId ?? string.Empty;
-            secondId = secondId ?? string.Empty;
-            return string.CompareOrdinal(firstId, secondId) <= 0
-                ? firstId + "|" + secondId
-                : secondId + "|" + firstId;
-        }
-
-        /// <summary>
         /// Maps a relation defName to the short kind token embedded in gameContext. Modded
         /// relation defs that aren't one of the four vanilla ones fall back to the raw defName.
         /// </summary>

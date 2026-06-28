@@ -19,5 +19,19 @@ namespace PawnDiary.Capture
 
         /// <summary>Tick the event was observed. Used for dedup keys and for ordering on display.</summary>
         public int Tick;
+
+        /// <summary>
+        /// Deterministic, order-independent key for a pawn-id pair. Shared by pair sources (romance
+        /// milestones, social fights) so the mirrored second call from the other participant collapses
+        /// to the same dedup key. Pure: usable from the catalog payloads and from the standalone tests.
+        /// </summary>
+        public static string CanonicalPairKey(string firstId, string secondId)
+        {
+            firstId = firstId ?? string.Empty;
+            secondId = secondId ?? string.Empty;
+            return string.CompareOrdinal(firstId, secondId) <= 0
+                ? firstId + "|" + secondId
+                : secondId + "|" + firstId;
+        }
     }
 }
