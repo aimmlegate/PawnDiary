@@ -32,7 +32,7 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 |---|---|
 | `About/` | Mod metadata, preview, icon, dependency declaration. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
-| `Languages/` | Keyed and DefInjected English text. |
+| `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions. |
 | `Source/Core/` | `DiaryGameComponent` partials: capture adapters, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
@@ -360,18 +360,18 @@ Raw English is intentional for prompt schema labels (`event:`, `role:`, `thought
 and sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`), defNames, API
 model ids, and background-thread `LlmClient` errors.
 
-A Russian translation ships under `Languages/Russian (Русский)/` (folder name matches RimWorld's
-Core language def), mirroring the English `Keyed` + `DefInjected` layout key-for-key. Game terms use
-the official RimWorld Russian glossary; the `DiaryPersonaDef` writing styles are deliberately *not*
-literal translations but reconstructions on Russian literary traditions with synthetic, author-less
-examples. Russian UI strings should stay compact enough for RimWorld's narrow settings and tab
-surfaces, while Russian prompt prose should be idiomatic instructions for the model rather than
-literal English calques. Russian humor cues should likewise use local dry, bureaucratic, and
-household understatement patterns instead of translating English deadpan/punchline mechanics. When
-adding or renaming an English key, add the matching Russian key in the same file, or the entry
-silently falls back to English in a Russian game. Canonical game-term translations are recorded in
-`Languages/Russian (Русский)/GLOSSARY.md` (mined from RimWorld's official RU language packs); reuse
-it so terminology stays consistent with the base game.
+The source tree carries a Russian translation under `Languages/Russian (Русский)/` (folder name
+matches RimWorld's Core language def), mirroring the English `Keyed` + `DefInjected` layout
+key-for-key. Game terms use the official RimWorld Russian glossary; the `DiaryPersonaDef` writing
+styles are deliberately *not* literal translations but reconstructions on Russian literary
+traditions with synthetic, author-less examples. Russian UI strings should stay compact enough for
+RimWorld's narrow settings and tab surfaces, while Russian prompt prose should be idiomatic
+instructions for the model rather than literal English calques. Russian humor cues should likewise
+use local dry, bureaucratic, and household understatement patterns instead of translating English
+deadpan/punchline mechanics. When adding or renaming an English key, add the matching Russian key in
+the same file, or the entry silently falls back to English in a Russian game. Canonical game-term
+translations are recorded in `Languages/Russian (Русский)/GLOSSARY.md` (mined from RimWorld's
+official RU language packs); reuse it so terminology stays consistent with the base game.
 
 ## 12. Build, Tests, Prompt Lab
 
@@ -418,7 +418,22 @@ scripts\publish.ps1
 ```
 
 The script builds a throwaway Release DLL and copies runnable mod files, runtime textures, `Source/`
-without `bin`/`obj`, and reference docs into `dist/<published packageId>`.
+without `bin`/`obj`, and reference docs into `dist/<published packageId>`. Russian is packaged as a
+separate Workshop localization mod by default:
+
+```powershell
+scripts\publish.ps1
+```
+
+That produces the normal main payload plus `dist/<published packageId>.russian`. The main payload
+excludes `Languages/Russian (Русский)/`; the localization payload contains only its own translated
+Russian `About/` metadata, `About/Preview-Russian.png` copied as the Workshop `Preview.png`, and the
+Russian language folder. It declares a dependency/load-after on the main published packageId and uses
+packageId `<published packageId>.russian` unless overridden with `-RussianLocalizationPackageId`.
+Before updating an existing localization Workshop item, either pass
+`-RussianLocalizationPublishedFileId <id>` or store that id in `About/PublishedFileId-Russian.txt`;
+the script copies it into the localization payload as `About/PublishedFileId.txt`. Use
+`-IncludeRussianInMainPayload` only for a legacy bundled-language payload.
 
 ## 13. When Changing The Mod
 

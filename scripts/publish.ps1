@@ -37,6 +37,32 @@
 
 .PARAMETER LinkName
   Folder name to create under -ModsDir for the junction.
+
+.PARAMETER SplitRussianLocalization
+  Build a second payload for the Russian language files and remove Russian from the main payload.
+  This is the default release behavior; the switch is accepted for explicitness and compatibility.
+
+.PARAMETER IncludeRussianInMainPayload
+  Legacy packaging mode: keep Russian in the main payload and skip the separate localization payload.
+
+.PARAMETER RussianLocalizationOutDir
+  Output folder for the Russian localization payload. Defaults to
+  <repo>/dist/<published packageId>.russian.
+
+.PARAMETER RussianLocalizationPackageId
+  Override the Russian localization packageId. Defaults to <published packageId>.russian.
+
+.PARAMETER RussianLocalizationPublishedFileId
+  Workshop item id for the Russian localization payload. When set, it is written as that payload's
+  About/PublishedFileId.txt. Leave blank before the first Workshop upload.
+
+.PARAMETER RussianLocalizationPublishedFileIdPath
+  Optional source file for the Russian localization Workshop id. Defaults to
+  About/PublishedFileId-Russian.txt and is copied as About/PublishedFileId.txt when present.
+
+.PARAMETER RussianLocalizationLinkName
+  Folder name to create under -ModsDir for the Russian localization junction when both
+  -InstallToMods and the separate Russian localization payload are enabled.
 #>
 [CmdletBinding()]
 param(
@@ -48,6 +74,13 @@ param(
     [switch]$InstallToMods,
     [string]$ModsDir,
     [string]$LinkName,
+    [switch]$SplitRussianLocalization,
+    [switch]$IncludeRussianInMainPayload,
+    [string]$RussianLocalizationOutDir,
+    [string]$RussianLocalizationPackageId,
+    [string]$RussianLocalizationPublishedFileId,
+    [string]$RussianLocalizationPublishedFileIdPath = "About\PublishedFileId-Russian.txt",
+    [string]$RussianLocalizationLinkName,
     [switch]$SkipBranch,
     [switch]$Force
 )
@@ -107,6 +140,17 @@ function Set-AboutValue {
     return $regex.Replace($Text, ('${1}' + $replacementValue + '${3}'), 1)
 }
 
+function Escape-XmlText {
+    param([string]$Value)
+    if ([string]::IsNullOrEmpty($Value)) { return "" }
+    return [System.Security.SecurityElement]::Escape($Value)
+}
+
+function Get-Utf8TextFromBase64 {
+    param([string]$Value)
+    return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($Value))
+}
+
 function Remove-DevelopmentPostfix {
     param([string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return "" }
@@ -129,13 +173,13 @@ function Get-SafeFolderName {
 }
 
 function Copy-Payload {
-    param([string]$RelPath, [switch]$Required)
+    param([string]$RelPath, [switch]$Required, [string]$DestinationRoot = $OutDir)
     $src = Join-Path $repoRoot $RelPath
     if (-not (Test-Path -LiteralPath $src)) {
         if ($Required) { throw "Required path missing: $RelPath" }
         return $false
     }
-    $dest = Join-Path $OutDir $RelPath
+    $dest = Join-Path $DestinationRoot $RelPath
     New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null
     Copy-Item -LiteralPath $src -Destination $dest -Recurse -Force
     return $true
@@ -155,6 +199,146 @@ function Copy-SourcePayload {
         Sort-Object FullName -Descending
     foreach ($dir in $artifactDirs) {
         Remove-Item -LiteralPath $dir.FullName -Recurse -Force
+    }
+}
+
+function Get-RussianLanguageFolderName {
+    param([string]$LanguagesRoot)
+
+    if (-not (Test-Path -LiteralPath $LanguagesRoot)) {
+        throw "Missing required path: Languages"
+    }
+
+    $folder = Get-ChildItem -LiteralPath $LanguagesRoot -Directory |
+        Where-Object { $_.Name -like "Russian*" } |
+        Select-Object -First 1
+    if (-not $folder) {
+        throw "Russian language folder was not found under Languages."
+    }
+    return $folder.Name
+}
+
+function Remove-LanguageFromPayload {
+    param([string]$PayloadRoot, [string]$LanguageFolderName)
+
+    $languagePath = Join-Path (Join-Path $PayloadRoot "Languages") $LanguageFolderName
+    if (Test-Path -LiteralPath $languagePath) {
+        Remove-Item -LiteralPath $languagePath -Recurse -Force
+        Write-Host "  language  : excluded $LanguageFolderName from main payload"
+    }
+}
+
+function Copy-RussianLocalizationPreview {
+    param([string]$DestinationRoot)
+
+    $localizedPreview = Join-Path $repoRoot "About\Preview-Russian.png"
+    $destination = Join-Path $DestinationRoot "About\Preview.png"
+    New-Item -ItemType Directory -Force -Path (Split-Path $destination -Parent) | Out-Null
+    if (Test-Path -LiteralPath $localizedPreview) {
+        Copy-Item -LiteralPath $localizedPreview -Destination $destination -Force
+        return "About\Preview-Russian.png"
+    }
+
+    Copy-Payload "About\Preview.png" -Required -DestinationRoot $DestinationRoot | Out-Null
+    return "About\Preview.png"
+}
+
+function New-RussianLocalizationAboutXml {
+    param(
+        [string]$Name,
+        [string]$PackageId,
+        [string]$Author,
+        [string]$MainPackageId,
+        [string]$MainDisplayName,
+        [string]$MainPublishedFileId
+    )
+
+    $localizedDescription = Get-Utf8TextFromBase64 "0KDRg9GB0YHQutCw0Y8g0LvQvtC60LDQu9C40LfQsNGG0LjRjyDQtNC70Y8gUGF3biBEaWFyeS4g0KLRgNC10LHRg9C10YIg0L7RgdC90L7QstC90L7QuSDQvNC+0LQgUGF3biBEaWFyeSDQuCDQtNC+0LvQttC90LAg0LfQsNCz0YDRg9C20LDRgtGM0YHRjyDQv9C+0YHQu9C1INC90LXQs9C+Lg=="
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add('<?xml version="1.0" encoding="utf-8"?>')
+    $lines.Add('<ModMetaData>')
+    $lines.Add("  <name>$(Escape-XmlText $Name)</name>")
+    $lines.Add("  <author>$(Escape-XmlText $Author)</author>")
+    $lines.Add("  <packageId>$(Escape-XmlText $PackageId)</packageId>")
+    $lines.Add('  <supportedVersions>')
+    $lines.Add('    <li>1.6</li>')
+    $lines.Add('  </supportedVersions>')
+    $lines.Add('  <modDependencies>')
+    $lines.Add('    <li>')
+    $lines.Add("      <packageId>$(Escape-XmlText $MainPackageId)</packageId>")
+    $lines.Add("      <displayName>$(Escape-XmlText $MainDisplayName)</displayName>")
+    if (-not [string]::IsNullOrWhiteSpace($MainPublishedFileId)) {
+        $mainSteamUrl = "steam://url/CommunityFilePage/$MainPublishedFileId"
+        $lines.Add("      <steamWorkshopUrl>$(Escape-XmlText $mainSteamUrl)</steamWorkshopUrl>")
+    }
+    $lines.Add('    </li>')
+    $lines.Add('  </modDependencies>')
+    $lines.Add('  <loadAfter>')
+    $lines.Add("    <li>$(Escape-XmlText $MainPackageId)</li>")
+    $lines.Add('  </loadAfter>')
+    $lines.Add("  <description>$(Escape-XmlText $localizedDescription)</description>")
+    $lines.Add('</ModMetaData>')
+    return ($lines -join [Environment]::NewLine) + [Environment]::NewLine
+}
+
+function New-RussianLocalizationPayload {
+    param(
+        [string]$DestinationRoot,
+        [string]$LanguageFolderName,
+        [string]$LocalizationName,
+        [string]$LocalizationPackageId,
+        [string]$LocalizationAuthor,
+        [string]$MainPackageId,
+        [string]$MainDisplayName,
+        [string]$MainPublishedFileId,
+        [string]$PublishedFileId,
+        [string]$PublishedFileIdPath
+    )
+
+    if (Test-Path -LiteralPath $DestinationRoot) { Remove-Item -LiteralPath $DestinationRoot -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $DestinationRoot | Out-Null
+
+    $previewSource = Copy-RussianLocalizationPreview -DestinationRoot $DestinationRoot
+    Write-Host "  ru preview: $previewSource"
+    Copy-Payload "About\ModIcon.png" -DestinationRoot $DestinationRoot | Out-Null
+
+    $languageSource = Join-Path (Join-Path $repoRoot "Languages") $LanguageFolderName
+    if (-not (Test-Path -LiteralPath $languageSource)) {
+        throw "Required Russian language folder missing: $languageSource"
+    }
+    $languageDestination = Join-Path (Join-Path $DestinationRoot "Languages") $LanguageFolderName
+    New-Item -ItemType Directory -Force -Path (Split-Path $languageDestination -Parent) | Out-Null
+    Copy-Item -LiteralPath $languageSource -Destination $languageDestination -Recurse -Force
+
+    $aboutDestination = Join-Path $DestinationRoot "About\About.xml"
+    New-Item -ItemType Directory -Force -Path (Split-Path $aboutDestination -Parent) | Out-Null
+    $aboutXml = New-RussianLocalizationAboutXml `
+        -Name $LocalizationName `
+        -PackageId $LocalizationPackageId `
+        -Author $LocalizationAuthor `
+        -MainPackageId $MainPackageId `
+        -MainDisplayName $MainDisplayName `
+        -MainPublishedFileId $MainPublishedFileId
+    [System.IO.File]::WriteAllText($aboutDestination, $aboutXml, (New-Object System.Text.UTF8Encoding($false)))
+
+    $publishedFileDestination = Join-Path $DestinationRoot "About\PublishedFileId.txt"
+    if (-not [string]::IsNullOrWhiteSpace($PublishedFileId)) {
+        [System.IO.File]::WriteAllText($publishedFileDestination, $PublishedFileId.Trim(), (New-Object System.Text.UTF8Encoding($false)))
+        Write-Host "  ru file id: $($PublishedFileId.Trim())"
+    } elseif (-not [string]::IsNullOrWhiteSpace($PublishedFileIdPath)) {
+        $sourcePublishedFileId = Join-Path $repoRoot $PublishedFileIdPath
+        if (Test-Path -LiteralPath $sourcePublishedFileId) {
+            Copy-Item -LiteralPath $sourcePublishedFileId -Destination $publishedFileDestination -Force
+            Write-Host "  ru file id: copied from $PublishedFileIdPath"
+        } else {
+            Write-Host "  ru file id: none (new Workshop item on first upload)"
+        }
+    }
+
+    return @{
+        AboutPath = $aboutDestination
+        LanguagePath = $languageDestination
     }
 }
 
@@ -215,6 +399,7 @@ if (-not (Test-Path -LiteralPath $sourceAboutPath)) { throw "Missing required fi
 $sourceAboutText = [System.IO.File]::ReadAllText($sourceAboutPath)
 $devModName = Get-AboutValue $sourceAboutText "name"
 $devPackageId = Get-AboutValue $sourceAboutText "packageId"
+$devAuthor = Get-AboutValue $sourceAboutText "author"
 
 $publishedModName = if ([string]::IsNullOrWhiteSpace($PackageId)) {
     Remove-DevelopmentPostfix $devModName
@@ -228,10 +413,36 @@ $publishedPackageId = if ([string]::IsNullOrWhiteSpace($PackageId)) {
 }
 if ([string]::IsNullOrWhiteSpace($publishedModName)) { $publishedModName = "PawnDiary" }
 if ([string]::IsNullOrWhiteSpace($publishedPackageId)) { $publishedPackageId = "aimmlegate.pawndiary" }
+$publishedAuthor = if ([string]::IsNullOrWhiteSpace($Author)) { $devAuthor } else { $Author.Trim() }
+if ([string]::IsNullOrWhiteSpace($publishedAuthor)) { $publishedAuthor = "aimmlegate" }
 
 $payloadFolderName = Get-SafeFolderName $publishedPackageId "pawn-diary"
 if (-not $OutDir) { $OutDir = Join-Path $repoRoot "dist\$payloadFolderName" }
 if (-not $LinkName) { $LinkName = $payloadFolderName }
+
+$buildRussianLocalization = -not $IncludeRussianInMainPayload
+if ($SplitRussianLocalization) { $buildRussianLocalization = $true }
+
+$russianLanguageFolder = $null
+if ($buildRussianLocalization) {
+    $russianLanguageFolder = Get-RussianLanguageFolderName (Join-Path $repoRoot "Languages")
+    if ([string]::IsNullOrWhiteSpace($RussianLocalizationPackageId)) {
+        $RussianLocalizationPackageId = "$publishedPackageId.russian"
+    } else {
+        $RussianLocalizationPackageId = $RussianLocalizationPackageId.Trim()
+    }
+    $russianPayloadFolderName = Get-SafeFolderName $RussianLocalizationPackageId "pawn-diary-russian"
+    if (-not $RussianLocalizationOutDir) {
+        $RussianLocalizationOutDir = Join-Path $repoRoot "dist\$russianPayloadFolderName"
+    }
+    if (-not $RussianLocalizationLinkName) { $RussianLocalizationLinkName = $russianPayloadFolderName }
+
+    $mainPayloadFullPath = [System.IO.Path]::GetFullPath($OutDir)
+    $russianPayloadFullPath = [System.IO.Path]::GetFullPath($RussianLocalizationOutDir)
+    if ($mainPayloadFullPath.TrimEnd('\', '/') -eq $russianPayloadFullPath.TrimEnd('\', '/')) {
+        throw "Russian localization payload must not use the same OutDir as the main payload."
+    }
+}
 
 $resolvedModsDir = Resolve-ModsFolder $ModsDir
 if (-not $resolvedModsDir) {
@@ -245,6 +456,12 @@ Write-Host "  build mode  : $Configuration"
 Write-Host "  mod name    : $publishedModName"
 Write-Host "  packageId   : $publishedPackageId"
 Write-Host "  payload out : $OutDir"
+if ($buildRussianLocalization) {
+    Write-Host "  ru package  : $RussianLocalizationPackageId"
+    Write-Host "  ru out      : $RussianLocalizationOutDir"
+} else {
+    Write-Host "  ru mode     : bundled in main payload"
+}
 if ($SkipBranch -or $Force) {
     Write-Host "  branch mode: disabled (flags accepted for compatibility)"
 }
@@ -287,6 +504,9 @@ Copy-Payload "About\PublishedFileId.txt" | Out-Null
 Copy-Payload "1.6\Defs" -Required | Out-Null
 Copy-Payload "Textures" | Out-Null
 Copy-Payload "Languages" | Out-Null
+if ($buildRussianLocalization) {
+    Remove-LanguageFromPayload -PayloadRoot $OutDir -LanguageFolderName $russianLanguageFolder
+}
 
 $aboutDest = Join-Path $OutDir "About\About.xml"
 $aboutText = [System.IO.File]::ReadAllText($aboutDest)
@@ -323,7 +543,6 @@ if (-not [string]::IsNullOrWhiteSpace($devId)) {
 }
 
 if (-not [string]::IsNullOrWhiteSpace($Author)) {
-    $devAuthor = Get-AboutValue $aboutText "author"
     $aboutText = Set-AboutValue $aboutText "author" $Author.Trim()
     Write-Host "  author    : '$devAuthor' -> '$Author'"
 }
@@ -352,6 +571,29 @@ foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
     Copy-Payload $doc | Out-Null
 }
 
+if ($buildRussianLocalization) {
+    Write-Step "Prepare Russian localization payload"
+    $mainPublishedFileIdPath = Join-Path $repoRoot "About\PublishedFileId.txt"
+    $mainPublishedFileId = ""
+    if (Test-Path -LiteralPath $mainPublishedFileIdPath) {
+        $mainPublishedFileId = [System.IO.File]::ReadAllText($mainPublishedFileIdPath).Trim()
+    }
+
+    $russianLocalizationName = Get-Utf8TextFromBase64 "UGF3biBEaWFyeSAtINGA0YPRgdGB0LrQsNGPINC70L7QutCw0LvQuNC30LDRhtC40Y8="
+
+    $russianPayload = New-RussianLocalizationPayload `
+        -DestinationRoot $RussianLocalizationOutDir `
+        -LanguageFolderName $russianLanguageFolder `
+        -LocalizationName $russianLocalizationName `
+        -LocalizationPackageId $RussianLocalizationPackageId `
+        -LocalizationAuthor $publishedAuthor `
+        -MainPackageId $publishedPackageId `
+        -MainDisplayName $publishedModName `
+        -MainPublishedFileId $mainPublishedFileId `
+        -PublishedFileId $RussianLocalizationPublishedFileId `
+        -PublishedFileIdPath $RussianLocalizationPublishedFileIdPath
+}
+
 Remove-Item -LiteralPath $buildOut -Recurse -Force -ErrorAction SilentlyContinue
 
 $payloadFiles = Get-ChildItem -Recurse -File $OutDir
@@ -362,7 +604,19 @@ Write-Host "  $OutDir"
 Write-Host "  Payload DLL: $payloadDll"
 Write-Host "  Prepared About.xml: $aboutDest"
 Write-Host ("  shipped {0} files, {1:N2} MB" -f $payloadFiles.Count, ($payloadBytes / 1MB))
+if ($buildRussianLocalization) {
+    $russianPayloadFiles = Get-ChildItem -Recurse -File $RussianLocalizationOutDir
+    $russianPayloadBytes = ($russianPayloadFiles | Measure-Object -Property Length -Sum).Sum
+    Write-Host "Russian localization payload prepared:" -ForegroundColor Green
+    Write-Host "  $RussianLocalizationOutDir"
+    Write-Host "  Prepared About.xml: $($russianPayload.AboutPath)"
+    Write-Host "  Language folder: $($russianPayload.LanguagePath)"
+    Write-Host ("  shipped {0} files, {1:N2} MB" -f $russianPayloadFiles.Count, ($russianPayloadBytes / 1MB))
+}
 
 if ($InstallToMods) {
     Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $LinkName -TargetFolder $OutDir -AllowReplace:$Force
+    if ($buildRussianLocalization) {
+        Install-ModJunction -DestinationRoot $resolvedModsDir -FolderName $RussianLocalizationLinkName -TargetFolder $RussianLocalizationOutDir -AllowReplace:$Force
+    }
 }

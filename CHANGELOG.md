@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Russian Workshop localization packaging added.** `scripts/publish.ps1` now builds Russian as a
+  separate language-mod payload by default, excludes it from the main payload, writes translated
+  Russian `About.xml` metadata, uses a Russian-localized Workshop preview, and lets the localization
+  Workshop id live separately.
+
 - **Dev diary export added.** RimWorld Dev Mode now shows an "Export all diary pages" settings
   button that writes the current game's saved pawn pages and backing event records to a UTF-8 text
   file under RimWorld's save-data folder and copies the path to the clipboard.
