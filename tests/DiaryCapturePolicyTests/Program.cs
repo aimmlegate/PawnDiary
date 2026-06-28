@@ -66,6 +66,7 @@ namespace DiaryCapturePolicyTests
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
+            TestDedupKeys();
 
             Console.WriteLine("DiaryCapturePolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -1305,6 +1306,53 @@ namespace DiaryCapturePolicyTests
                 bool defined = Enum.IsDefined(typeof(DiaryEventType), name);
                 AssertTrue("sentinel: " + name + " is still future (not in enum)", !defined);
             }
+        }
+
+        // ── Dedup keys ──
+        // The consolidated recent-events store is keyed by each payload's raw source-prefixed
+        // DedupKey(). The Submit-bus migration moved these key strings out of the old RecordXxx methods
+        // onto the payloads; these tests pin them so a migration cannot silently change which events
+        // collapse together. (Fan-out colony keys include impure ids/ticks and are built in the signal,
+        // not here.)
+
+        private static void TestDedupKeys()
+        {
+            // Thought: one window per pawn + thought defName.
+            AssertEqual("thought dedup key",
+                "thought|P1|AteWithoutTable",
+                new ThoughtEventData { PawnId = "P1", DefName = "AteWithoutTable" }.DedupKey());
+
+            // Romance: canonical (order-independent) pair key + relation defName, so the mirrored
+            // AddDirectRelation call from the other participant collapses to one key.
+            AssertEqual("romance dedup key",
+                "romance|A|B|Lover",
+                new RomanceEventData { FirstPawnId = "A", SecondPawnId = "B", DefName = "Lover" }.DedupKey());
+            AssertEqual("romance dedup key is order-independent",
+                "romance|A|B|Lover",
+                new RomanceEventData { FirstPawnId = "B", SecondPawnId = "A", DefName = "Lover" }.DedupKey());
+
+            // MentalState: a social fight dedups by canonical pair key (collapsing the mirrored second
+            // call); any other break — or a fight whose counterpart is ineligible — dedups per pawn+def.
+            AssertEqual("mental fight dedup key (pair, canonical)",
+                "fight|A|B",
+                new MentalStateEventData { PawnId = "A", DefName = "SocialFighting", OtherPawnId = "B", OtherPawnEligible = true }.DedupKey());
+            AssertEqual("mental fight dedup key order-independent",
+                "fight|A|B",
+                new MentalStateEventData { PawnId = "B", DefName = "SocialFighting", OtherPawnId = "A", OtherPawnEligible = true }.DedupKey());
+            AssertEqual("mental break dedup key (solo)",
+                "break|A|Berserk",
+                new MentalStateEventData { PawnId = "A", DefName = "Berserk" }.DedupKey());
+            AssertEqual("mental ineligible counterpart uses solo break key",
+                "break|A|SocialFighting",
+                new MentalStateEventData { PawnId = "A", DefName = "SocialFighting", OtherPawnId = "B", OtherPawnEligible = false }.DedupKey());
+
+            // Tale: one window per taleDef + both pawn ids (empty when a pawn is absent).
+            AssertEqual("tale dedup key (double pawn)",
+                "tale|KilledMan|A|B",
+                new TaleEventData { DefName = "KilledMan", FirstPawnId = "A", SecondPawnId = "B" }.DedupKey());
+            AssertEqual("tale dedup key (single pawn, empty second)",
+                "tale|DidResearch|A|",
+                new TaleEventData { DefName = "DidResearch", FirstPawnId = "A" }.DedupKey());
         }
 
         // ── Factory helpers ──

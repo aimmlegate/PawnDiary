@@ -60,6 +60,15 @@ namespace PawnDiary.Capture
         public bool IsDeathDescription;
 
         /// <summary>
+        /// The transient dedup key for this tale event (raw, source-prefixed). Lifted verbatim out of
+        /// the old RecordTale: one window per taleDef + both pawn ids (empty when a pawn is absent).
+        /// </summary>
+        public string DedupKey()
+        {
+            return "tale|" + DefName + "|" + (FirstPawnId ?? string.Empty) + "|" + (SecondPawnId ?? string.Empty);
+        }
+
+        /// <summary>
         /// TaleDefs whose events are already captured by narrower hooks. Skipping them here avoids
         /// double diary entries for one social fight or mental break. Mirrored from the pre-refactor
         /// private TaleDefsCoveredElsewhere set unchanged. Public + const so tests can lock it.
