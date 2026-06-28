@@ -371,8 +371,12 @@ matches RimWorld's Core language def), mirroring the English `Keyed` + `DefInjec
 key-for-key. Game terms use the official RimWorld Russian glossary; the `DiaryPersonaDef` writing
 styles are deliberately *not* literal translations but reconstructions on Russian literary
 traditions with synthetic, author-less examples. Russian UI strings should stay compact enough for
-RimWorld's narrow settings and tab surfaces, while Russian prompt prose should be idiomatic
-instructions for the model rather than literal English calques. Russian humor cues should likewise
+RimWorld's narrow settings and tab surfaces, and should avoid unexplained English calques in visible
+labels: prefer plain Russian words such as "address", "connection", "distribution", "editor", and
+"instruction" over "endpoint", "routing", "studio", or "system prompt" translations. Keep raw
+`API`, `OpenAI`, `URL`, `Bearer`, `XML`, and `UTF-8` only where they name a protocol, product,
+scheme, format, or file encoding. Russian prompt prose should be idiomatic instructions for the
+model rather than literal English calques. Russian humor cues should likewise
 use local dry, bureaucratic, and household understatement patterns instead of translating English
 deadpan/punchline mechanics. When adding or renaming an English key, add the matching Russian key in
 the same file, or the entry silently falls back to English in a Russian game. Canonical game-term

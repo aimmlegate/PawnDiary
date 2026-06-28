@@ -13,7 +13,7 @@
   <PawnDiaryTabLabel>Дневник</PawnDiaryTabLabel>
   <PawnDiary.Command.OpenDiaryDesc>Открыть или закрыть дневник поселенца.</PawnDiary.Command.OpenDiaryDesc>
   <PawnDiary.Command.NewPagesTip>Есть новые страницы.</PawnDiary.Command.NewPagesTip>
-  <PawnDiary.Command.WritingTip>Страница пишется.</PawnDiary.Command.WritingTip>
+  <PawnDiary.Command.WritingTip>Страница сейчас пишется.</PawnDiary.Command.WritingTip>
 
   <!-- ===== Интерфейс вкладки «Дневник» ===== -->
   <PawnDiary.Tab.DiaryHeader>Дневник {0}</PawnDiary.Tab.DiaryHeader>
@@ -21,25 +21,25 @@
   <PawnDiary.Tab.NoGeneratedEntries>Готовых страниц пока нет.</PawnDiary.Tab.NoGeneratedEntries>
   <PawnDiary.Tab.LoadingHistory>Загрузка дневника...</PawnDiary.Tab.LoadingHistory>
   <PawnDiary.Tab.LoadingHistoryProgress>Загрузка дневника... {0}/{1}</PawnDiary.Tab.LoadingHistoryProgress>
-  <PawnDiary.Tab.GenerateForPawn>Писать дневник для поселенца</PawnDiary.Tab.GenerateForPawn>
-  <PawnDiary.Tab.GenerateForPawnTip>Если выключено, события запоминаются, но новые страницы для этого поселенца не отправляются в LLM.</PawnDiary.Tab.GenerateForPawnTip>
-  <PawnDiary.Tab.ShowPersonaSettings>Манера письма</PawnDiary.Tab.ShowPersonaSettings>
+  <PawnDiary.Tab.GenerateForPawn>Вести дневник этого поселенца</PawnDiary.Tab.GenerateForPawn>
+  <PawnDiary.Tab.GenerateForPawnTip>Если выключено, события всё равно запоминаются здесь, но новые страницы для этого поселенца не отправляются на написание.</PawnDiary.Tab.GenerateForPawnTip>
+  <PawnDiary.Tab.ShowPersonaSettings>Настройка стиля</PawnDiary.Tab.ShowPersonaSettings>
   <PawnDiary.Tab.ShowPersonaSettingsTip>Показать ручной выбор манеры письма во вкладке дневника.</PawnDiary.Tab.ShowPersonaSettingsTip>
-  <PawnDiary.Tab.ShowLlmDebugInfo>Отладка LLM</PawnDiary.Tab.ShowLlmDebugInfo>
-  <PawnDiary.Tab.ShowLlmDebugInfoTip>Показать сырые, ожидающие и ошибочные записи: эндпойнт, модель, статус, ошибка и диагностика запроса.</PawnDiary.Tab.ShowLlmDebugInfoTip>
-  <PawnDiary.Tab.ShowGeneratingEntries>Пишущиеся страницы</PawnDiary.Tab.ShowGeneratingEntries>
-  <PawnDiary.Tab.ShowGeneratingEntriesTip>Показать страницы в работе или зависшие на «пишется...». Легче полной отладки LLM.</PawnDiary.Tab.ShowGeneratingEntriesTip>
-  <PawnDiary.Tab.FillMockEntries>Добавить {0} тест. страниц</PawnDiary.Tab.FillMockEntries>
-  <PawnDiary.Tab.FillMockEntriesTip>Только разработка: добавляет {0} готовых тестовых страниц за {1} игровых лет, около {2} в год, чтобы проверить длинную историю, годы и сворачивание без LLM.</PawnDiary.Tab.FillMockEntriesTip>
+  <PawnDiary.Tab.ShowLlmDebugInfo>Отладка модели</PawnDiary.Tab.ShowLlmDebugInfo>
+  <PawnDiary.Tab.ShowLlmDebugInfoTip>Показать черновые, ожидающие и ошибочные записи: адрес API, модель, статус, ошибку и подробности запроса.</PawnDiary.Tab.ShowLlmDebugInfoTip>
+  <PawnDiary.Tab.ShowGeneratingEntries>Страницы в работе</PawnDiary.Tab.ShowGeneratingEntries>
+  <PawnDiary.Tab.ShowGeneratingEntriesTip>Показать страницы, которые ещё пишутся или зависли на «пишется...». Это проще, чем полная отладка модели.</PawnDiary.Tab.ShowGeneratingEntriesTip>
+  <PawnDiary.Tab.FillMockEntries>Добавить {0} тестовых страниц</PawnDiary.Tab.FillMockEntries>
+  <PawnDiary.Tab.FillMockEntriesTip>Только для разработки: добавляет {0} готовых тестовых страниц за {1} игровых лет, около {2} в год, чтобы проверить длинную историю, выбор года и сворачивание страниц без обращения к модели.</PawnDiary.Tab.FillMockEntriesTip>
   <PawnDiary.Tab.MockEntriesAdded>Добавлено {0} тестовых страниц для {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>В дневнике {1} уже есть {0} тестовых страниц.</PawnDiary.Tab.MockEntriesAlreadyFilled>
-  <PawnDiary.Tab.GeneratePromptSuite>Тест запросов</PawnDiary.Tab.GeneratePromptSuite>
-  <PawnDiary.Tab.GeneratePromptSuiteTip>Только разработка: включает тест запросов и список категорий событий. Выбор категории создаёт одну страницу только с запросом; новый выбор заменяет старую. Для парных категорий нужен второй поселенец.</PawnDiary.Tab.GeneratePromptSuiteTip>
-  <PawnDiary.Tab.ClearPromptSuite>Очистить тест запросов</PawnDiary.Tab.ClearPromptSuite>
-  <PawnDiary.Tab.ClearPromptSuiteTip>Только разработка: удалить все тестовые запросы из дневников всех поселенцев.</PawnDiary.Tab.ClearPromptSuiteTip>
-  <PawnDiary.Tab.PromptSuiteShown>Сохранён тестовый запрос для {0}: {1}.</PawnDiary.Tab.PromptSuiteShown>
-  <PawnDiary.Tab.PromptSuiteCleared>Удалено тестовых запросов: {0}.</PawnDiary.Tab.PromptSuiteCleared>
-  <PawnDiary.Tab.PromptSuiteEmpty>Для {0} тестовый запрос не сохранён. Включите дневник для поселенца и попробуйте снова.</PawnDiary.Tab.PromptSuiteEmpty>
+  <PawnDiary.Tab.GeneratePromptSuite>Проверка запросов</PawnDiary.Tab.GeneratePromptSuite>
+  <PawnDiary.Tab.GeneratePromptSuiteTip>Только для разработки: включает проверку запросов и список категорий событий. Выбор категории создаёт одну страницу с самим запросом; новый выбор заменяет старую. Для парных категорий нужен второй поселенец.</PawnDiary.Tab.GeneratePromptSuiteTip>
+  <PawnDiary.Tab.ClearPromptSuite>Очистить проверочные запросы</PawnDiary.Tab.ClearPromptSuite>
+  <PawnDiary.Tab.ClearPromptSuiteTip>Только для разработки: удалить все проверочные запросы из дневников всех поселенцев.</PawnDiary.Tab.ClearPromptSuiteTip>
+  <PawnDiary.Tab.PromptSuiteShown>Сохранён проверочный запрос для {0}: {1}.</PawnDiary.Tab.PromptSuiteShown>
+  <PawnDiary.Tab.PromptSuiteCleared>Удалено проверочных запросов: {0}.</PawnDiary.Tab.PromptSuiteCleared>
+  <PawnDiary.Tab.PromptSuiteEmpty>Для {0} проверочный запрос не сохранён. Включите дневник для поселенца и попробуйте снова.</PawnDiary.Tab.PromptSuiteEmpty>
   <PawnDiary.Dev.PromptSuite.Instruction>напиши короткую запись дневника для синтетического тестового события</PawnDiary.Dev.PromptSuite.Instruction>
   <PawnDiary.Dev.PromptSuite.Reason>синтетический тест разработки</PawnDiary.Dev.PromptSuite.Reason>
   <PawnDiary.Dev.PromptSuite.Insult.Label>Оскорбление</PawnDiary.Dev.PromptSuite.Insult.Label>
@@ -70,174 +70,174 @@
   <PawnDiary.Tab.DevPreviewPlain>Текст</PawnDiary.Tab.DevPreviewPlain>
   <PawnDiary.Tab.DevPreviewMarkdown>Разметка</PawnDiary.Tab.DevPreviewMarkdown>
   <PawnDiary.Tab.DevPreviewSpeech>Речь</PawnDiary.Tab.DevPreviewSpeech>
-  <PawnDiary.Tab.DevPreviewStaggered>Дрожь</PawnDiary.Tab.DevPreviewStaggered>
+  <PawnDiary.Tab.DevPreviewStaggered>Скачет</PawnDiary.Tab.DevPreviewStaggered>
   <PawnDiary.Tab.DevPreviewCombat>Бой</PawnDiary.Tab.DevPreviewCombat>
   <PawnDiary.Tab.DevPreviewSocialFight>Драка</PawnDiary.Tab.DevPreviewSocialFight>
   <PawnDiary.Tab.DevPreviewMental>Срыв</PawnDiary.Tab.DevPreviewMental>
   <PawnDiary.Tab.DevPreviewDark>Тьма</PawnDiary.Tab.DevPreviewDark>
   <PawnDiary.Tab.DevPreviewStrange>Странность</PawnDiary.Tab.DevPreviewStrange>
   <PawnDiary.Tab.DevPreviewDeath>Смерть</PawnDiary.Tab.DevPreviewDeath>
-  <PawnDiary.Tab.DevPreviewLinked>Связь</PawnDiary.Tab.DevPreviewLinked>
+  <PawnDiary.Tab.DevPreviewLinked>Связанные</PawnDiary.Tab.DevPreviewLinked>
   <PawnDiary.Tab.DevPreviewWriting>Пишется</PawnDiary.Tab.DevPreviewWriting>
   <PawnDiary.Tab.DevPreviewTitle>Заголовок</PawnDiary.Tab.DevPreviewTitle>
   <PawnDiary.Tab.DevPreviewClear>Очистить</PawnDiary.Tab.DevPreviewClear>
-  <PawnDiary.Tab.DevPreviewTip>Только разработка: показывает временную страницу сверху списка для проверки переносов, разметки, связей, анимаций, цветов, речи и атмосферного оформления без тестовых событий.</PawnDiary.Tab.DevPreviewTip>
+  <PawnDiary.Tab.DevPreviewTip>Только для разработки: показывает временную страницу сверху списка, чтобы проверить переносы, разметку, связанные карточки, анимации, цвета, речь и атмосферное оформление без тестовых событий.</PawnDiary.Tab.DevPreviewTip>
   <PawnDiary.Tab.PersonaButton>Манера письма: {0}</PawnDiary.Tab.PersonaButton>
-  <PawnDiary.Tab.LinkedInitiator>{0}, инициатор:</PawnDiary.Tab.LinkedInitiator>
-  <PawnDiary.Tab.LinkedRecipient>{0}, адресат:</PawnDiary.Tab.LinkedRecipient>
+  <PawnDiary.Tab.LinkedInitiator>Взгляд {0} (начал событие):</PawnDiary.Tab.LinkedInitiator>
+  <PawnDiary.Tab.LinkedRecipient>Взгляд {0} (ответная сторона):</PawnDiary.Tab.LinkedRecipient>
   <PawnDiary.Tab.LinkedNotGenerated>[ещё не написано]</PawnDiary.Tab.LinkedNotGenerated>
   <PawnDiary.Tab.LinkedNoText>[текста пока нет]</PawnDiary.Tab.LinkedNoText>
   <PawnDiary.Tab.LinkedTooltip>Открыть запись {0} об этом событии</PawnDiary.Tab.LinkedTooltip>
-  <PawnDiary.Tab.NewerYear>Позже</PawnDiary.Tab.NewerYear>
-  <PawnDiary.Tab.OlderYear>Раньше</PawnDiary.Tab.OlderYear>
+  <PawnDiary.Tab.NewerYear>Следующий год</PawnDiary.Tab.NewerYear>
+  <PawnDiary.Tab.OlderYear>Предыдущий год</PawnDiary.Tab.OlderYear>
   <PawnDiary.Tab.YearFilter>{0}: {1} стр.</PawnDiary.Tab.YearFilter>
   <PawnDiary.Tab.YearSelectorTip>Выбрать год дневника.</PawnDiary.Tab.YearSelectorTip>
   <PawnDiary.Tab.YearLabel>Год {0}</PawnDiary.Tab.YearLabel>
   <PawnDiary.Tab.UnknownYear>Без даты</PawnDiary.Tab.UnknownYear>
   <PawnDiary.Tab.ExpandCollapseTip>Развернуть или свернуть страницу.</PawnDiary.Tab.ExpandCollapseTip>
-  <PawnDiary.Tab.CopyEntryTip>Только разработка: скопировать текст страницы. Карточки с одним запросом копируют запрос, остальные — готовый текст.</PawnDiary.Tab.CopyEntryTip>
-  <PawnDiary.Tab.CopyEntryCopied>Страница скопирована.</PawnDiary.Tab.CopyEntryCopied>
-  <PawnDiary.Tab.RegenerateEntryTip>Только разработка: пересоздать страницу с текущей маршрутизацией моделей. Парные страницы обновят оба взгляда, если доступны.</PawnDiary.Tab.RegenerateEntryTip>
-  <PawnDiary.Tab.RegenerateEntryQueued>Страница поставлена на пересоздание.</PawnDiary.Tab.RegenerateEntryQueued>
-  <PawnDiary.Tab.RegenerateEntryUnavailable>Сейчас страницу пересоздать нельзя.</PawnDiary.Tab.RegenerateEntryUnavailable>
+  <PawnDiary.Tab.CopyEntryTip>Только для разработки: скопировать текст страницы. Карточки с запросом копируют сам запрос, остальные — готовый текст.</PawnDiary.Tab.CopyEntryTip>
+  <PawnDiary.Tab.CopyEntryCopied>Текст страницы скопирован.</PawnDiary.Tab.CopyEntryCopied>
+  <PawnDiary.Tab.RegenerateEntryTip>Только для разработки: написать страницу заново с текущими правилами выбора моделей. Парные страницы обновят оба взгляда, если они доступны.</PawnDiary.Tab.RegenerateEntryTip>
+  <PawnDiary.Tab.RegenerateEntryQueued>Страница отправлена на повторное написание.</PawnDiary.Tab.RegenerateEntryQueued>
+  <PawnDiary.Tab.RegenerateEntryUnavailable>Сейчас эту страницу нельзя написать заново.</PawnDiary.Tab.RegenerateEntryUnavailable>
   <PawnDiary.Tab.ArchivedGenerationFallback>Событие: {0}</PawnDiary.Tab.ArchivedGenerationFallback>
   <PawnDiary.Tab.ArchivedGenerationFallbackUnknown>что-то произошло, но запрос не был сохранён</PawnDiary.Tab.ArchivedGenerationFallbackUnknown>
-  <PawnDiary.Tab.ArchivedGenerationFailedFooter>генерация не удалась</PawnDiary.Tab.ArchivedGenerationFailedFooter>
+  <PawnDiary.Tab.ArchivedGenerationFailedFooter>не удалось написать</PawnDiary.Tab.ArchivedGenerationFailedFooter>
   <PawnDiary.Persona.DefaultLabel>по умолчанию</PawnDiary.Persona.DefaultLabel>
 
   <!-- Статус записи в её заголовке -->
   <PawnDiary.Status.Writing>пишется</PawnDiary.Status.Writing>
   <PawnDiary.Status.WritingEllipsis>пишется...</PawnDiary.Status.WritingEllipsis>
-  <PawnDiary.Status.GenerationFailed>не удалось</PawnDiary.Status.GenerationFailed>
+  <PawnDiary.Status.GenerationFailed>ошибка написания</PawnDiary.Status.GenerationFailed>
   <PawnDiary.Status.Skipped>пропущено</PawnDiary.Status.Skipped>
   <PawnDiary.Status.PromptOnly>запрос сохранён</PawnDiary.Status.PromptOnly>
-  <PawnDiary.Error.SkippedIncapacitated>Пропущено: сознание поселенца было ниже {0}% перед генерацией.</PawnDiary.Error.SkippedIncapacitated>
-  <PawnDiary.Error.PromptTestModeCaptured>Тест запросов сохранил этот запрос без отправки в LLM.</PawnDiary.Error.PromptTestModeCaptured>
+  <PawnDiary.Error.SkippedIncapacitated>Пропущено: перед началом написания сознание поселенца было ниже {0}%.</PawnDiary.Error.SkippedIncapacitated>
+  <PawnDiary.Error.PromptTestModeCaptured>Режим проверки запросов сохранил этот запрос без отправки модели.</PawnDiary.Error.PromptTestModeCaptured>
 
   <!-- ===== Окно настроек мода ===== -->
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
-  <PawnDiary.Settings.Connection>Подключение</PawnDiary.Settings.Connection>
-  <PawnDiary.Settings.GenerationHeader>Генерация дневника</PawnDiary.Settings.GenerationHeader>
-  <PawnDiary.Settings.ApisHeader>API: включённые строки работают параллельно, по одной модели в каждой</PawnDiary.Settings.ApisHeader>
-  <PawnDiary.Settings.ShowModelSettings>Модели</PawnDiary.Settings.ShowModelSettings>
+  <PawnDiary.Settings.Connection>Подключение к модели</PawnDiary.Settings.Connection>
+  <PawnDiary.Settings.GenerationHeader>Написание дневника</PawnDiary.Settings.GenerationHeader>
+  <PawnDiary.Settings.ApisHeader>Подключения: включённые строки работают параллельно, по одной модели в каждой</PawnDiary.Settings.ApisHeader>
+  <PawnDiary.Settings.ShowModelSettings>Показать модели</PawnDiary.Settings.ShowModelSettings>
   <PawnDiary.Settings.HideModelSettings>Скрыть модели</PawnDiary.Settings.HideModelSettings>
-  <PawnDiary.Settings.ApisSummary>Активно {0} из {1} строк моделей</PawnDiary.Settings.ApisSummary>
-  <PawnDiary.Settings.ApiLabel>API {0}</PawnDiary.Settings.ApiLabel>
+  <PawnDiary.Settings.ApisSummary>Включено {0} из {1} подключений к моделям</PawnDiary.Settings.ApisSummary>
+  <PawnDiary.Settings.ApiLabel>Подключение {0}</PawnDiary.Settings.ApiLabel>
   <PawnDiary.Settings.ApiEnabled>Вкл.</PawnDiary.Settings.ApiEnabled>
   <PawnDiary.Settings.MoveApiUp>Вверх</PawnDiary.Settings.MoveApiUp>
   <PawnDiary.Settings.MoveApiDown>Вниз</PawnDiary.Settings.MoveApiDown>
-  <PawnDiary.Settings.AddApi>+ Добавить API</PawnDiary.Settings.AddApi>
+  <PawnDiary.Settings.AddApi>+ Добавить подключение</PawnDiary.Settings.AddApi>
   <PawnDiary.Settings.RemoveApi>− Удалить</PawnDiary.Settings.RemoveApi>
-  <PawnDiary.Settings.Endpoint>Эндпойнт</PawnDiary.Settings.Endpoint>
+  <PawnDiary.Settings.Endpoint>Адрес API</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>Ключ API</PawnDiary.Settings.ApiKey>
-  <PawnDiary.Settings.ModelName>Название модели</PawnDiary.Settings.ModelName>
-  <PawnDiary.Settings.ApiCompatibility>Тип</PawnDiary.Settings.ApiCompatibility>
-  <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-совместимый</PawnDiary.Settings.ApiCompatibility.Chat>
-  <PawnDiary.Settings.ApiCompatibility.Responses>OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
-  <PawnDiary.Settings.ApiAuthMode>Доступ</PawnDiary.Settings.ApiAuthMode>
-  <PawnDiary.Settings.ApiAuthMode.Bearer>Bearer-токен</PawnDiary.Settings.ApiAuthMode.Bearer>
+  <PawnDiary.Settings.ModelName>Имя модели</PawnDiary.Settings.ModelName>
+  <PawnDiary.Settings.ApiCompatibility>Формат</PawnDiary.Settings.ApiCompatibility>
+  <PawnDiary.Settings.ApiCompatibility.Chat>Совместимый с OpenAI Chat</PawnDiary.Settings.ApiCompatibility.Chat>
+  <PawnDiary.Settings.ApiCompatibility.Responses>Формат OpenAI Responses</PawnDiary.Settings.ApiCompatibility.Responses>
+  <PawnDiary.Settings.ApiAuthMode>Авторизация</PawnDiary.Settings.ApiAuthMode>
+  <PawnDiary.Settings.ApiAuthMode.Bearer>Токен Bearer</PawnDiary.Settings.ApiAuthMode.Bearer>
   <PawnDiary.Settings.ApiAuthMode.None>Без авторизации</PawnDiary.Settings.ApiAuthMode.None>
   <PawnDiary.Settings.ApiAuthMode.CustomHeader>Свой заголовок</PawnDiary.Settings.ApiAuthMode.CustomHeader>
   <PawnDiary.Settings.CustomAuthHeaderTip>Имя HTTP-заголовка для ключа API: x-goog-api-key, api-key или x-api-key.</PawnDiary.Settings.CustomAuthHeaderTip>
-  <PawnDiary.Settings.ApiAuthMode.QueryParameterKey>key= в URL</PawnDiary.Settings.ApiAuthMode.QueryParameterKey>
-  <PawnDiary.Settings.RequestTuning>Параметры запроса</PawnDiary.Settings.RequestTuning>
-  <PawnDiary.Settings.ApiRouting>Маршрутизация</PawnDiary.Settings.ApiRouting>
-  <PawnDiary.Settings.ApiRouting.Balanced>Сбалансированно</PawnDiary.Settings.ApiRouting.Balanced>
+  <PawnDiary.Settings.ApiAuthMode.QueryParameterKey>Параметр key в URL</PawnDiary.Settings.ApiAuthMode.QueryParameterKey>
+  <PawnDiary.Settings.RequestTuning>Параметры запросов</PawnDiary.Settings.RequestTuning>
+  <PawnDiary.Settings.ApiRouting>Распределение</PawnDiary.Settings.ApiRouting>
+  <PawnDiary.Settings.ApiRouting.Balanced>Равномерно</PawnDiary.Settings.ApiRouting.Balanced>
   <PawnDiary.Settings.ApiRouting.PreferTopRows>Сначала верхние</PawnDiary.Settings.ApiRouting.PreferTopRows>
   <PawnDiary.Settings.ApiRouting.FailoverOnly>Только запасные</PawnDiary.Settings.ApiRouting.FailoverOnly>
-  <PawnDiary.Settings.ReasoningEffort>Рассуждение</PawnDiary.Settings.ReasoningEffort>
-  <PawnDiary.Settings.ReasoningEffort.Default>Как в API</PawnDiary.Settings.ReasoningEffort.Default>
-  <PawnDiary.Settings.ReasoningEffort.None>Нет</PawnDiary.Settings.ReasoningEffort.None>
-  <PawnDiary.Settings.ReasoningEffort.Minimal>Минимальное</PawnDiary.Settings.ReasoningEffort.Minimal>
-  <PawnDiary.Settings.ReasoningEffort.Low>Низкое</PawnDiary.Settings.ReasoningEffort.Low>
-  <PawnDiary.Settings.ReasoningEffort.Medium>Среднее</PawnDiary.Settings.ReasoningEffort.Medium>
-  <PawnDiary.Settings.ReasoningEffort.High>Высокое</PawnDiary.Settings.ReasoningEffort.High>
-  <PawnDiary.Settings.ReasoningEffort.XHigh>Очень высокое</PawnDiary.Settings.ReasoningEffort.XHigh>
+  <PawnDiary.Settings.ReasoningEffort>Глубина рассуждения</PawnDiary.Settings.ReasoningEffort>
+  <PawnDiary.Settings.ReasoningEffort.Default>Как задаёт API</PawnDiary.Settings.ReasoningEffort.Default>
+  <PawnDiary.Settings.ReasoningEffort.None>Выключено</PawnDiary.Settings.ReasoningEffort.None>
+  <PawnDiary.Settings.ReasoningEffort.Minimal>Минимальная</PawnDiary.Settings.ReasoningEffort.Minimal>
+  <PawnDiary.Settings.ReasoningEffort.Low>Низкая</PawnDiary.Settings.ReasoningEffort.Low>
+  <PawnDiary.Settings.ReasoningEffort.Medium>Средняя</PawnDiary.Settings.ReasoningEffort.Medium>
+  <PawnDiary.Settings.ReasoningEffort.High>Высокая</PawnDiary.Settings.ReasoningEffort.High>
+  <PawnDiary.Settings.ReasoningEffort.XHigh>Очень высокая</PawnDiary.Settings.ReasoningEffort.XHigh>
   <PawnDiary.Settings.ToggleOn>Вкл</PawnDiary.Settings.ToggleOn>
   <PawnDiary.Settings.ToggleOff>Выкл</PawnDiary.Settings.ToggleOff>
-  <PawnDiary.Settings.FetchModels>Получить</PawnDiary.Settings.FetchModels>
-  <PawnDiary.Settings.FetchingModels>Получение...</PawnDiary.Settings.FetchingModels>
-  <PawnDiary.Settings.NoModelsReturned>Моделей нет.</PawnDiary.Settings.NoModelsReturned>
+  <PawnDiary.Settings.FetchModels>Обновить</PawnDiary.Settings.FetchModels>
+  <PawnDiary.Settings.FetchingModels>Загрузка...</PawnDiary.Settings.FetchingModels>
+  <PawnDiary.Settings.NoModelsReturned>API не вернул моделей.</PawnDiary.Settings.NoModelsReturned>
   <PawnDiary.Settings.ModelsFound>Найдено моделей: {0}.</PawnDiary.Settings.ModelsFound>
-  <PawnDiary.Settings.FetchFailed>Сбой получения: {0}</PawnDiary.Settings.FetchFailed>
-  <PawnDiary.Settings.TestConnection>Проверить API</PawnDiary.Settings.TestConnection>
+  <PawnDiary.Settings.FetchFailed>Не удалось загрузить: {0}</PawnDiary.Settings.FetchFailed>
+  <PawnDiary.Settings.TestConnection>Проверить подключение</PawnDiary.Settings.TestConnection>
   <PawnDiary.Settings.TestingConnection>Проверка...</PawnDiary.Settings.TestingConnection>
-  <PawnDiary.Settings.ConnectionTestSucceeded>Подключено: {0}</PawnDiary.Settings.ConnectionTestSucceeded>
-  <PawnDiary.Settings.ConnectionTestFailed>Сбой подключения: {0}</PawnDiary.Settings.ConnectionTestFailed>
-  <PawnDiary.Settings.ConnectionTestMissingEndpoint>Нужен URL эндпойнта.</PawnDiary.Settings.ConnectionTestMissingEndpoint>
-  <PawnDiary.Settings.ConnectionTestMissingModel>Нужно имя модели.</PawnDiary.Settings.ConnectionTestMissingModel>
-  <PawnDiary.Settings.ConnectionTestPrompt>Ответь одним коротким предложением: API подключён.</PawnDiary.Settings.ConnectionTestPrompt>
-  <PawnDiary.Settings.ShowDiaryInspectTab>Вкладка «Дневник» в осмотре</PawnDiary.Settings.ShowDiaryInspectTab>
+  <PawnDiary.Settings.ConnectionTestSucceeded>Подключение работает: {0}</PawnDiary.Settings.ConnectionTestSucceeded>
+  <PawnDiary.Settings.ConnectionTestFailed>Подключение не удалось: {0}</PawnDiary.Settings.ConnectionTestFailed>
+  <PawnDiary.Settings.ConnectionTestMissingEndpoint>Укажите адрес API.</PawnDiary.Settings.ConnectionTestMissingEndpoint>
+  <PawnDiary.Settings.ConnectionTestMissingModel>Укажите имя модели.</PawnDiary.Settings.ConnectionTestMissingModel>
+  <PawnDiary.Settings.ConnectionTestPrompt>Ответь одним коротким предложением, что подключение работает.</PawnDiary.Settings.ConnectionTestPrompt>
+  <PawnDiary.Settings.ShowDiaryInspectTab>Показывать вкладку «Дневник»</PawnDiary.Settings.ShowDiaryInspectTab>
   <PawnDiary.Settings.ShowDiaryInspectTabTip>Если выключено, дневник открывается нижней кнопкой у выбранного поселенца или трупа.</PawnDiary.Settings.ShowDiaryInspectTabTip>
   <PawnDiary.Settings.GenerateTitles>Короткие заголовки страниц</PawnDiary.Settings.GenerateTitles>
-  <PawnDiary.Settings.GenerateTitlesTip>Если включено, после каждой страницы LLM пишет короткий заголовок отдельным запросом. Это добавляет задержку и расход токенов. Если выключено, в заголовке остаётся дата.</PawnDiary.Settings.GenerateTitlesTip>
+  <PawnDiary.Settings.GenerateTitlesTip>Если включено, после каждой страницы модель отдельным запросом пишет короткий заголовок. Это добавляет задержку и расход токенов. Если выключено, в заголовке остаётся дата.</PawnDiary.Settings.GenerateTitlesTip>
   <PawnDiary.Settings.EnableAtmosphericFormatting>Редкое атмосферное оформление</PawnDiary.Settings.EnableAtmosphericFormatting>
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, крайние страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Затрагивает срывы, аномалии, тёмные записи, смерть и сильное нарушение состояния. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
-  <PawnDiary.Settings.EnablePromptEnchantments>Контекстные подсказки</PawnDiary.Settings.EnablePromptEnchantments>
-  <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку живого контекста. XML задаёт состояния здоровья, важные события и их вес.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
-  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Речь в журнал общения</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>
-  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>Если включено, готовая запись инициатора с корректным блоком речи добавляет строку в журнал общения. Моды, следящие за журналом, смогут реагировать после ответа LLM.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
-  <PawnDiary.Settings.PromptTestMode>Тест запросов: только сохранять</PawnDiary.Settings.PromptTestMode>
-  <PawnDiary.Settings.PromptTestModeTip>Только разработка: игровые события собирают и сохраняют системный и пользовательский запрос, но не отправляют дневник или заголовок в LLM. Карточки с запросом видны во вкладке дневника в режиме разработки.</PawnDiary.Settings.PromptTestModeTip>
-  <PawnDiary.Settings.ExportAllDiaries>Экспорт всех страниц</PawnDiary.Settings.ExportAllDiaries>
-  <PawnDiary.Settings.ExportAllDiariesTip>Только разработка: записать все сохранённые страницы дневников и события в UTF-8 файл в папке данных сохранений RimWorld. Путь к файлу копируется в буфер обмена.</PawnDiary.Settings.ExportAllDiariesTip>
+  <PawnDiary.Settings.EnablePromptEnchantments>Живой контекст в запросах</PawnDiary.Settings.EnablePromptEnchantments>
+  <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку о текущем состоянии поселенца или поселения. XML задаёт, какие подсказки возможны и как часто они выбираются.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Добавлять речь в журнал общения</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>
+  <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>Если включено, готовая запись первой стороны с корректным блоком речи добавляет строку в журнал общения. Моды, следящие за журналом, смогут реагировать после ответа модели.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
+  <PawnDiary.Settings.PromptTestMode>Проверка запросов: не отправлять модели</PawnDiary.Settings.PromptTestMode>
+  <PawnDiary.Settings.PromptTestModeTip>Только для разработки: игровые события собирают и сохраняют системный и пользовательский запрос, но дневник и заголовок не отправляются модели. Карточки с запросом видны во вкладке дневника в режиме разработки.</PawnDiary.Settings.PromptTestModeTip>
+  <PawnDiary.Settings.ExportAllDiaries>Экспортировать все страницы</PawnDiary.Settings.ExportAllDiaries>
+  <PawnDiary.Settings.ExportAllDiariesTip>Только для разработки: сохранить все страницы дневников и связанные события в UTF-8 файл в папке данных сохранений RimWorld. Путь к файлу копируется в буфер обмена.</PawnDiary.Settings.ExportAllDiariesTip>
   <PawnDiary.Settings.ExportAllDiariesDone>Страницы дневника экспортированы: {0}. Путь скопирован в буфер обмена.</PawnDiary.Settings.ExportAllDiariesDone>
-  <PawnDiary.Settings.ExportAllDiariesFailed>Экспорт дневника не удался: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
-  <PawnDiary.Settings.ExportAllDiariesNoGame>Начните или загрузите игру перед экспортом дневника.</PawnDiary.Settings.ExportAllDiariesNoGame>
-  <PawnDiary.Settings.Temperature>Температура LLM: {0}</PawnDiary.Settings.Temperature>
+  <PawnDiary.Settings.ExportAllDiariesFailed>Не удалось экспортировать дневник: {0}</PawnDiary.Settings.ExportAllDiariesFailed>
+  <PawnDiary.Settings.ExportAllDiariesNoGame>Начните или загрузите игру, чтобы экспортировать дневник.</PawnDiary.Settings.ExportAllDiariesNoGame>
+  <PawnDiary.Settings.Temperature>Температура модели: {0}</PawnDiary.Settings.Temperature>
   <PawnDiary.Settings.TemperatureHelp>Случайность модели для дневника и заголовков. Ниже — ровнее и буквальнее; выше — разнообразнее и атмосфернее, но риск отхода от фактов больше.</PawnDiary.Settings.TemperatureHelp>
-  <PawnDiary.Settings.TimeoutSeconds>Таймаут запроса: {0} с</PawnDiary.Settings.TimeoutSeconds>
-  <PawnDiary.Settings.TimeoutSecondsHelp>Сколько секунд ждать строку API перед резервом или ошибкой. Медленным локальным моделям может быть мало 30 секунд.</PawnDiary.Settings.TimeoutSecondsHelp>
-  <PawnDiary.Settings.MaxTokens>Макс. токенов ответа: {0}</PawnDiary.Settings.MaxTokens>
-  <PawnDiary.Settings.MaxTokensHelp>Верхний предел токенов ответа до локальной очистки. Больше токенов даёт длиннее страницы, но медленнее и менее лаконично.</PawnDiary.Settings.MaxTokensHelp>
-  <PawnDiary.Settings.WorkGenerationWeight>Вес работы: {0}x</PawnDiary.Settings.WorkGenerationWeight>
+  <PawnDiary.Settings.TimeoutSeconds>Ожидание ответа: {0} с</PawnDiary.Settings.TimeoutSeconds>
+  <PawnDiary.Settings.TimeoutSecondsHelp>Сколько секунд ждать ответ от API перед переходом к запасному подключению или ошибке. Медленным локальным моделям может быть мало 30 секунд.</PawnDiary.Settings.TimeoutSecondsHelp>
+  <PawnDiary.Settings.MaxTokens>Предел ответа: {0} токенов</PawnDiary.Settings.MaxTokens>
+  <PawnDiary.Settings.MaxTokensHelp>Максимальная длина ответа до очистки текста. Большее значение даёт более длинные страницы, но они пишутся медленнее и чаще теряют лаконичность.</PawnDiary.Settings.MaxTokensHelp>
+  <PawnDiary.Settings.WorkGenerationWeight>Шанс записей о работе: {0}x</PawnDiary.Settings.WorkGenerationWeight>
   <PawnDiary.Settings.WorkGenerationWeightHelp>Множитель шанса, что выборка работы станет страницей. 1x — значения XML; 0x — случайные страницы о работе отключены.</PawnDiary.Settings.WorkGenerationWeightHelp>
-  <PawnDiary.Settings.SocialGenerationWeight>Вес общения: {0}x</PawnDiary.Settings.SocialGenerationWeight>
+  <PawnDiary.Settings.SocialGenerationWeight>Шанс записей об общении: {0}x</PawnDiary.Settings.SocialGenerationWeight>
   <PawnDiary.Settings.SocialGenerationWeightHelp>Множитель шанса, что мелкие социальные моменты сразу станут парными страницами. 1x — значения XML; 0x — они копятся в пачку.</PawnDiary.Settings.SocialGenerationWeightHelp>
   <PawnDiary.Settings.MaxActiveDiaryEvents>Страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
-  <PawnDiary.Settings.MaxConcurrent>Макс. одновременных запросов на API: {0}</PawnDiary.Settings.MaxConcurrent>
-  <PawnDiary.Settings.MaxConcurrentHelp>Сколько запросов одновременно выполняет каждый API; остальные ждут в его очереди. Разные API работают параллельно. Для локальной модели по одному запросу оставьте 1; повышайте только если эндпойнт умеет параллелить.</PawnDiary.Settings.MaxConcurrentHelp>
-  <PawnDiary.Settings.ResetConnection>Сбросить подключение</PawnDiary.Settings.ResetConnection>
-  <PawnDiary.Settings.PromptStudioTitle>Студия запросов</PawnDiary.Settings.PromptStudioTitle>
+  <PawnDiary.Settings.MaxConcurrent>Одновременных запросов на подключение: {0}</PawnDiary.Settings.MaxConcurrent>
+  <PawnDiary.Settings.MaxConcurrentHelp>Сколько запросов одновременно выполняет каждое подключение; остальные ждут в его очереди. Разные подключения работают параллельно. Для локальной модели оставьте 1; повышайте только если сервер умеет обрабатывать несколько запросов сразу.</PawnDiary.Settings.MaxConcurrentHelp>
+  <PawnDiary.Settings.ResetConnection>Сбросить подключения</PawnDiary.Settings.ResetConnection>
+  <PawnDiary.Settings.PromptStudioTitle>Редактор запросов</PawnDiary.Settings.PromptStudioTitle>
   <PawnDiary.Settings.ShowPromptStudio>Показать запросы</PawnDiary.Settings.ShowPromptStudio>
   <PawnDiary.Settings.HidePromptStudio>Скрыть запросы</PawnDiary.Settings.HidePromptStudio>
-  <PawnDiary.Settings.PromptStudioHelp>Здесь правятся системные запросы, подсказки событий и маршрутизация моделей. Шаблоны, итоговые инструкции и фильтры остаются в XML-дефах.</PawnDiary.Settings.PromptStudioHelp>
-  <PawnDiary.Settings.PromptStudioSummary>XML-шаблонов: {0}; типов событий: {1}; изменено вручную: {2}</PawnDiary.Settings.PromptStudioSummary>
-  <PawnDiary.Settings.PromptStudioXmlNote>Поля, фильтры, инструкции групп и стандартные манеры письма редактируются в XML и применяются после перезапуска RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
-  <PawnDiary.Settings.ResetEventPromptOverrides>Сбросить события</PawnDiary.Settings.ResetEventPromptOverrides>
-  <PawnDiary.Settings.EventPromptPickerHeader>Prompt события</PawnDiary.Settings.EventPromptPickerHeader>
+  <PawnDiary.Settings.PromptStudioHelp>Здесь можно менять системные инструкции, подсказки событий и выбор моделей. Шаблоны, итоговые инструкции и фильтры остаются в XML-описаниях.</PawnDiary.Settings.PromptStudioHelp>
+  <PawnDiary.Settings.PromptStudioSummary>XML-шаблонов: {0}; событий: {1}; ручных правок: {2}</PawnDiary.Settings.PromptStudioSummary>
+  <PawnDiary.Settings.PromptStudioXmlNote>Поля, фильтры, инструкции групп и стандартные манеры письма меняются в XML и вступают в силу после перезапуска RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
+  <PawnDiary.Settings.ResetEventPromptOverrides>Сбросить правки событий</PawnDiary.Settings.ResetEventPromptOverrides>
+  <PawnDiary.Settings.EventPromptPickerHeader>Запрос события</PawnDiary.Settings.EventPromptPickerHeader>
   <PawnDiary.Settings.PromptTypePickerHeader>Тип запроса</PawnDiary.Settings.PromptTypePickerHeader>
-  <PawnDiary.Settings.EventPromptNoneLoaded>Дефы запросов событий не загружены</PawnDiary.Settings.EventPromptNoneLoaded>
-  <PawnDiary.Settings.EditingEventPrompt>Prompt события: {0}</PawnDiary.Settings.EditingEventPrompt>
-  <PawnDiary.Settings.EventPromptPromptField>запрос события</PawnDiary.Settings.EventPromptPromptField>
-  <PawnDiary.Settings.EventPromptEnhancementField>усиление события</PawnDiary.Settings.EventPromptEnhancementField>
-  <PawnDiary.Settings.EventPromptForcedModelField>принудительная модель</PawnDiary.Settings.EventPromptForcedModelField>
-  <PawnDiary.Settings.RestoreEventPromptDefault>Сбросить запрос</PawnDiary.Settings.RestoreEventPromptDefault>
-  <PawnDiary.Settings.RestoreEventEnhancementDefault>Восстановить усиление</PawnDiary.Settings.RestoreEventEnhancementDefault>
-  <PawnDiary.Settings.RestoreEventForcedModelDefault>Восстановить модель</PawnDiary.Settings.RestoreEventForcedModelDefault>
-  <PawnDiary.Settings.SystemPromptDiary>Системный запрос записей дневника</PawnDiary.Settings.SystemPromptDiary>
-  <PawnDiary.Settings.SystemPromptReflection>Системный запрос итога дня</PawnDiary.Settings.SystemPromptReflection>
-  <PawnDiary.Settings.SystemPromptNeutral>Системный запрос нейтральной хроники</PawnDiary.Settings.SystemPromptNeutral>
-  <PawnDiary.Settings.SystemPromptTitle>Системный запрос генерации заголовков</PawnDiary.Settings.SystemPromptTitle>
-  <PawnDiary.Settings.SystemPromptField>системный запрос</PawnDiary.Settings.SystemPromptField>
-  <PawnDiary.Settings.RestorePromptDefault>Вернуть XML</PawnDiary.Settings.RestorePromptDefault>
-  <PawnDiary.Settings.PromptStatusCustomized>Отличается от XML</PawnDiary.Settings.PromptStatusCustomized>
-  <PawnDiary.Settings.PromptStatusDefault>Значение из XML</PawnDiary.Settings.PromptStatusDefault>
+  <PawnDiary.Settings.EventPromptNoneLoaded>Запросы событий не загружены</PawnDiary.Settings.EventPromptNoneLoaded>
+  <PawnDiary.Settings.EditingEventPrompt>Запрос события: {0}</PawnDiary.Settings.EditingEventPrompt>
+  <PawnDiary.Settings.EventPromptPromptField>текст запроса события</PawnDiary.Settings.EventPromptPromptField>
+  <PawnDiary.Settings.EventPromptEnhancementField>дополнительная подсказка события</PawnDiary.Settings.EventPromptEnhancementField>
+  <PawnDiary.Settings.EventPromptForcedModelField>модель для этого события</PawnDiary.Settings.EventPromptForcedModelField>
+  <PawnDiary.Settings.RestoreEventPromptDefault>Вернуть запрос из XML</PawnDiary.Settings.RestoreEventPromptDefault>
+  <PawnDiary.Settings.RestoreEventEnhancementDefault>Вернуть подсказку из XML</PawnDiary.Settings.RestoreEventEnhancementDefault>
+  <PawnDiary.Settings.RestoreEventForcedModelDefault>Вернуть модель из XML</PawnDiary.Settings.RestoreEventForcedModelDefault>
+  <PawnDiary.Settings.SystemPromptDiary>Инструкция для дневниковых записей</PawnDiary.Settings.SystemPromptDiary>
+  <PawnDiary.Settings.SystemPromptReflection>Инструкция для итога дня</PawnDiary.Settings.SystemPromptReflection>
+  <PawnDiary.Settings.SystemPromptNeutral>Инструкция для нейтральной хроники</PawnDiary.Settings.SystemPromptNeutral>
+  <PawnDiary.Settings.SystemPromptTitle>Инструкция для заголовков</PawnDiary.Settings.SystemPromptTitle>
+  <PawnDiary.Settings.SystemPromptField>системная инструкция</PawnDiary.Settings.SystemPromptField>
+  <PawnDiary.Settings.RestorePromptDefault>Вернуть из XML</PawnDiary.Settings.RestorePromptDefault>
+  <PawnDiary.Settings.PromptStatusCustomized>Изменено вручную</PawnDiary.Settings.PromptStatusCustomized>
+  <PawnDiary.Settings.PromptStatusDefault>Из XML</PawnDiary.Settings.PromptStatusDefault>
   <PawnDiary.Settings.PersonaStudioTitle>Манеры письма</PawnDiary.Settings.PersonaStudioTitle>
-  <PawnDiary.Settings.PersonaStudioHelp>Редактируйте ярлыки, правила стиля и теги из DiaryPersonaDefs.xml или добавляйте свои. Теги задают начальные веса для новых поселенцев.</PawnDiary.Settings.PersonaStudioHelp>
+  <PawnDiary.Settings.PersonaStudioHelp>Редактируйте названия, правила стиля и метки из DiaryPersonaDefs.xml или добавляйте свои. Метки задают начальный выбор для новых поселенцев.</PawnDiary.Settings.PersonaStudioHelp>
   <PawnDiary.Settings.PersonaStudioSummary>Манер: {0}; своих: {1}; изменено: {2}</PawnDiary.Settings.PersonaStudioSummary>
-  <PawnDiary.Settings.PersonaStudioTagsHelp>У своей манеры нужен хотя бы один тег.</PawnDiary.Settings.PersonaStudioTagsHelp>
+  <PawnDiary.Settings.PersonaStudioTagsHelp>У своей манеры нужна хотя бы одна метка.</PawnDiary.Settings.PersonaStudioTagsHelp>
   <PawnDiary.Settings.AddPersonaPreset>Добавить свою манеру</PawnDiary.Settings.AddPersonaPreset>
   <PawnDiary.Settings.NewPersonaLabel>Новая манера письма</PawnDiary.Settings.NewPersonaLabel>
   <PawnDiary.Settings.ResetPersonaPresets>Сбросить все манеры</PawnDiary.Settings.ResetPersonaPresets>
   <PawnDiary.Settings.PersonaPickerHeader>Манера</PawnDiary.Settings.PersonaPickerHeader>
   <PawnDiary.Settings.EditingPersona>Правка манеры: {0}</PawnDiary.Settings.EditingPersona>
-  <PawnDiary.Settings.PersonaBadgeBuiltIn>Встроенная</PawnDiary.Settings.PersonaBadgeBuiltIn>
+  <PawnDiary.Settings.PersonaBadgeBuiltIn>Готовая</PawnDiary.Settings.PersonaBadgeBuiltIn>
   <PawnDiary.Settings.PersonaBadgeCustom>Своя</PawnDiary.Settings.PersonaBadgeCustom>
-  <PawnDiary.Settings.PersonaLabel>Ярлык</PawnDiary.Settings.PersonaLabel>
-  <PawnDiary.Settings.PersonaRule>Правило стиля для запроса от первого лица</PawnDiary.Settings.PersonaRule>
-  <PawnDiary.Settings.PersonaTags>Теги тем и начальные веса</PawnDiary.Settings.PersonaTags>
-  <PawnDiary.Settings.RestorePersonaPreset>Сбросить манеру</PawnDiary.Settings.RestorePersonaPreset>
+  <PawnDiary.Settings.PersonaLabel>Название</PawnDiary.Settings.PersonaLabel>
+  <PawnDiary.Settings.PersonaRule>Правило стиля для записи от первого лица</PawnDiary.Settings.PersonaRule>
+  <PawnDiary.Settings.PersonaTags>Метки тем и начальные веса</PawnDiary.Settings.PersonaTags>
+  <PawnDiary.Settings.RestorePersonaPreset>Вернуть манеру из XML</PawnDiary.Settings.RestorePersonaPreset>
   <PawnDiary.Settings.DeletePersonaPreset>Удалить свою манеру</PawnDiary.Settings.DeletePersonaPreset>
   <PawnDiary.Settings.PersonaTag.grim>мрачный</PawnDiary.Settings.PersonaTag.grim>
   <PawnDiary.Settings.PersonaTag.warm>тёплый</PawnDiary.Settings.PersonaTag.warm>
@@ -246,7 +246,7 @@
   <PawnDiary.Settings.PersonaTag.analytical>аналитичный</PawnDiary.Settings.PersonaTag.analytical>
   <PawnDiary.Settings.PersonaTag.dramatic>драматичный</PawnDiary.Settings.PersonaTag.dramatic>
   <PawnDiary.Settings.PersonaTag.social>социальный</PawnDiary.Settings.PersonaTag.social>
-  <PawnDiary.Settings.PersonaTag.whimsical>причудливый</PawnDiary.Settings.PersonaTag.whimsical>
+  <PawnDiary.Settings.PersonaTag.whimsical>чудаковатый</PawnDiary.Settings.PersonaTag.whimsical>
   <PawnDiary.Settings.PersonaTag.noble>благородный</PawnDiary.Settings.PersonaTag.noble>
   <PawnDiary.Settings.PersonaTag.void>пустотный</PawnDiary.Settings.PersonaTag.void>
   <PawnDiary.Settings.PickModel>Выбрать</PawnDiary.Settings.PickModel>
@@ -365,7 +365,7 @@
   <PawnDiary.Dev.PreviewRawText>{0} отрисовал предпросмотр оформления дневника «{1}».</PawnDiary.Dev.PreviewRawText>
   <PawnDiary.Dev.PreviewLinkedPawn>Другой поселенец</PawnDiary.Dev.PreviewLinkedPawn>
   <PawnDiary.Dev.PreviewLinkedTitle>Связанный предпросмотр</PawnDiary.Dev.PreviewLinkedTitle>
-  <PawnDiary.Dev.PreviewLinkedText>Предпросмотр другой точки зрения должен быть внутри основной карточки: своя рамка, акцентная полоса, ярлык и обрезанный текст.</PawnDiary.Dev.PreviewLinkedText>
+  <PawnDiary.Dev.PreviewLinkedText>Предпросмотр другой точки зрения должен быть внутри основной карточки: своя рамка, акцентная полоса, название и обрезанный текст.</PawnDiary.Dev.PreviewLinkedText>
   <PawnDiary.Dev.PreviewTitlePlain>Простой текст</PawnDiary.Dev.PreviewTitlePlain>
   <PawnDiary.Dev.PreviewTitleMarkdown>Разметка</PawnDiary.Dev.PreviewTitleMarkdown>
   <PawnDiary.Dev.PreviewTitleSpeech>Блок речи</PawnDiary.Dev.PreviewTitleSpeech>
@@ -379,7 +379,7 @@
   <PawnDiary.Dev.PreviewTitleLinked>Связанная карточка</PawnDiary.Dev.PreviewTitleLinked>
   <PawnDiary.Dev.PreviewTitleWriting>Пишется</PawnDiary.Dev.PreviewTitleWriting>
   <PawnDiary.Dev.PreviewTitlePending>Ожидание заголовка</PawnDiary.Dev.PreviewTitlePending>
-  <PawnDiary.Dev.PreviewBodyPlain>Это смоделированная страница дневника для {0}. Она включает **жирную память**, *тревожный акцент* и «слова в кавычках» внутри обычной прозы.&#10;&#10;Второй абзац намеренно длиннее, чтобы можно было проверить перенос, отступы и низ страницы, не дожидаясь LLM.</PawnDiary.Dev.PreviewBodyPlain>
+  <PawnDiary.Dev.PreviewBodyPlain>Это смоделированная страница дневника для {0}. Она включает **жирную память**, *тревожный акцент* и «слова в кавычках» внутри обычной прозы.&#10;&#10;Второй абзац намеренно длиннее, чтобы можно было проверить перенос, отступы и низ страницы, не дожидаясь ответа модели.</PawnDiary.Dev.PreviewBodyPlain>
   <PawnDiary.Dev.PreviewBodyMarkdown># Строка вроде заголовка&#10;- Маркер списка должен стать компактным буллетом.&#10;&gt; Маркер цитаты должен исчезнуть, а слова остаться.&#10;Эта строка проверяет **жирный**, *курсив* и «строчные сказанные слова» в обычном рендерере тела.</PawnDiary.Dev.PreviewBodyMarkdown>
   <PawnDiary.Dev.PreviewBodySpeech>{0} пишет короткую обычную строку, прежде чем сказать что-то вслух.&#10;[[speech]]Эта строка должна стать цветным блоком речи.[[/speech]]&#10;После речи обычное повествование должно вернуться к стилю тела дневника.</PawnDiary.Dev.PreviewBodySpeech>
   <PawnDiary.Dev.PreviewBodyStaggered>{0} пытается удержать страницу ровной после лишней выпивки.&#10;[[speech]]Я могу написать это ровно. Комната всё кренится, буквы всё соскальзывают, и я почти уверен, что никто не заметит.[[/speech]]&#10;Только сказанный блок должен подхватить настроенное оформление со скачущим размером слов.</PawnDiary.Dev.PreviewBodyStaggered>
@@ -428,9 +428,9 @@
 
   <!-- Заметки об ошибках (записаны в основном потоке; показаны в отладочном блоке записи) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Пропущено: страницу инициатора написать не удалось.</PawnDiary.Error.SkippedInitiatorFailed>
-  <PawnDiary.Error.NoLlmSettings>Настройки LLM недоступны.</PawnDiary.Error.NoLlmSettings>
-  <PawnDiary.Error.NoApiConfigured>Не настроен ни один API. Добавьте эндпойнт и модель в настройках мода.</PawnDiary.Error.NoApiConfigured>
-  <PawnDiary.Error.TitleEmptyResponse>Запрос заголовка не вернул пригодный текст.</PawnDiary.Error.TitleEmptyResponse>
+  <PawnDiary.Error.NoLlmSettings>Настройки модели недоступны.</PawnDiary.Error.NoLlmSettings>
+  <PawnDiary.Error.NoApiConfigured>Не настроено ни одно подключение. Добавьте адрес API и модель в настройках мода.</PawnDiary.Error.NoApiConfigured>
+  <PawnDiary.Error.TitleEmptyResponse>Модель не вернула пригодный заголовок.</PawnDiary.Error.TitleEmptyResponse>
 
   <!-- ===== Контекст запроса: описательные слова, что читает модель (КЛЮЧИ полей остаются английскими) ===== -->
   <!-- Блок манеры письма, добавляемый к системному запросу от первого лица при отправке. {0} —

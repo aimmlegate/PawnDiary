@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Russian UI wording reworked.** Visible Russian Keyed strings now avoid rough technical
+  anglicisms in the diary tab, model-connection settings, prompt editor, persona editor, dev
+  controls, and debug/error messages; the Russian glossary and localization notes now document the
+  preferred UI terms.
+
 - **Prompt suite context isolation fixed.** Dev prompt-suite captures now ignore live prompt
   enchantments, including active event-window context such as metalhorror suspicion, so one manual
   event-window test cannot bleed into later prompt fixtures.
