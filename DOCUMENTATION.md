@@ -427,22 +427,21 @@ Release payloads are prepared with:
 scripts\publish.ps1
 ```
 
-The script builds a throwaway Release DLL and copies runnable mod files, runtime textures, `Source/`
-without `bin`/`obj`, and reference docs into `dist/<published packageId>`. Russian is packaged as a
-separate Workshop localization mod by default:
+The script builds a throwaway Release DLL, copies runnable mod files, runtime textures, `Source/`
+without `bin`/`obj`, and reference docs into `dist/<published packageId>`, and installs the payloads
+into the detected RimWorld `Mods` folder through junctions by default. Pass `-InstallToMods:$false`
+to prepare `dist/` only.
 
-```powershell
-scripts\publish.ps1
-```
-
-That produces the normal main payload plus `dist/<published packageId>.russian`. The main payload
-excludes `Languages/Russian (Русский)/`; the localization payload contains only its own translated
-Russian `About/` metadata, `About/Preview-Russian.png` copied as the Workshop `Preview.png`, and the
-Russian language folder. It declares a dependency/load-after on the main published packageId and uses
-packageId `<published packageId>.russian` unless overridden with `-RussianLocalizationPackageId`.
-Before updating an existing localization Workshop item, either pass
-`-RussianLocalizationPublishedFileId <id>` or store that id in `About/PublishedFileId-Russian.txt`;
-the script copies it into the localization payload as `About/PublishedFileId.txt`. Use
+Russian is packaged as a separate Workshop localization mod by default. The script produces the
+normal main payload plus `dist/<published packageId>.russian`; the main payload excludes
+`Languages/Russian (Русский)/`. The localization payload contains only its own translated Russian
+`About/` metadata, `About/Preview-Russian.png` copied as the Workshop `Preview.png`, and the Russian
+language folder. It declares a dependency/load-after on the main published packageId, uses packageId
+`<published packageId>.russian` unless overridden with `-RussianLocalizationPackageId`, and installs
+its own junction next to the main mod junction. Before updating an existing localization Workshop
+item, either pass `-RussianLocalizationPublishedFileId <id>` or store that id in
+`About/PublishedFileId-Russian.txt`; the script copies it into the localization payload as
+`About/PublishedFileId.txt`. Use `-SplitRussianLocalization:$false` or
 `-IncludeRussianInMainPayload` only for a legacy bundled-language payload.
 
 ## 13. When Changing The Mod

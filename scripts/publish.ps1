@@ -29,7 +29,8 @@
   Override the published <author> value. By default keeps the source value.
 
 .PARAMETER InstallToMods
-  Create or refresh a junction in your RimWorld Mods folder that points to the built dist payload.
+  Create or refresh junctions in your RimWorld Mods folder that point to the built dist payloads.
+  This is enabled by default; pass -InstallToMods:$false to prepare dist only.
 
 .PARAMETER ModsDir
   RimWorld Mods folder used when -InstallToMods is enabled. Defaults to your current repo's
@@ -40,7 +41,8 @@
 
 .PARAMETER SplitRussianLocalization
   Build a second payload for the Russian language files and remove Russian from the main payload.
-  This is the default release behavior; the switch is accepted for explicitness and compatibility.
+  This is enabled by default; pass -SplitRussianLocalization:$false or -IncludeRussianInMainPayload
+  for the legacy bundled-language payload.
 
 .PARAMETER IncludeRussianInMainPayload
   Legacy packaging mode: keep Russian in the main payload and skip the separate localization payload.
@@ -71,10 +73,10 @@ param(
     [string]$Configuration = "Release",
     [string]$PackageId,
     [string]$Author,
-    [switch]$InstallToMods,
+    [switch]$InstallToMods = $true,
     [string]$ModsDir,
     [string]$LinkName,
-    [switch]$SplitRussianLocalization,
+    [switch]$SplitRussianLocalization = $true,
     [switch]$IncludeRussianInMainPayload,
     [string]$RussianLocalizationOutDir,
     [string]$RussianLocalizationPackageId,
@@ -420,8 +422,8 @@ $payloadFolderName = Get-SafeFolderName $publishedPackageId "pawn-diary"
 if (-not $OutDir) { $OutDir = Join-Path $repoRoot "dist\$payloadFolderName" }
 if (-not $LinkName) { $LinkName = $payloadFolderName }
 
-$buildRussianLocalization = -not $IncludeRussianInMainPayload
-if ($SplitRussianLocalization) { $buildRussianLocalization = $true }
+$buildRussianLocalization = [bool]$SplitRussianLocalization
+if ($IncludeRussianInMainPayload) { $buildRussianLocalization = $false }
 
 $russianLanguageFolder = $null
 if ($buildRussianLocalization) {
@@ -469,7 +471,10 @@ if ($InstallToMods) {
     if (-not $resolvedModsDir) {
         throw "Could not determine Mods folder automatically. Please pass -ModsDir explicitly."
     }
-    Write-Host "  install to  : $resolvedModsDir\$LinkName"
+    Write-Host "  install main: $resolvedModsDir\$LinkName"
+    if ($buildRussianLocalization) {
+        Write-Host "  install ru  : $resolvedModsDir\$RussianLocalizationLinkName"
+    }
 }
 
 Write-Step "Build PawnDiary.dll ($Configuration)"

@@ -22,7 +22,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 - **Russian Workshop localization packaging added.** `scripts/publish.ps1` now builds Russian as a
   separate language-mod payload by default, excludes it from the main payload, writes translated
-  Russian `About.xml` metadata, uses a Russian-localized Workshop preview, and lets the localization
+  Russian `About.xml` metadata, uses a Russian-localized Workshop preview, installs both payloads
+  into the detected RimWorld `Mods` folder through junctions by default, and lets the localization
   Workshop id live separately.
 
 - **Dev diary export added.** RimWorld Dev Mode now shows an "Export all diary pages" settings
