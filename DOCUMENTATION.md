@@ -235,10 +235,14 @@ diagnostics.
 
 The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
 appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can
-instead hide the tab and add a bottom command button that opens the same UI. That command helper is
-marked with RimWorld's `StaticConstructorOnStartup` because it owns the static Unity texture cache for
-the button icon; the icon itself still loads lazily from the main-thread gizmo path and falls back to
-the vanilla book icon if the mod texture is missing.
+instead hide the tab and add a bottom command button that opens the same UI. Programmatic opens from
+that command, Social-log links, and linked-entry cards temporarily expose the hidden tab long enough
+for RimWorld's inspect-pane opener to resolve it, then clear that state when the tab closes. The
+inspect-tab draw path and programmatic open helper also re-apply tab registration once after startup,
+covering load orders where RimWorld finalizes resolved tab lists after static constructors. The
+command helper is marked with RimWorld's `StaticConstructorOnStartup` because it owns the static Unity
+texture cache for the button icon; the icon itself still loads lazily from the main-thread gizmo path
+and falls back to the vanilla book icon if the mod texture is missing.
 
 Production UI shows completed pages. Dev mode also shows pending/failure rows, raw prompt/status
 data, formatting previews, prompt-suite tools, copy buttons, regeneration controls, and a completed

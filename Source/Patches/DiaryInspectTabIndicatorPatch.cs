@@ -23,6 +23,11 @@ namespace PawnDiary
         private const float VanillaInspectTabWidth = 75f;
         private const float VanillaInspectTabHeight = 30f;
 
+        public static void Prefix()
+        {
+            DiaryModStartup.EnsureDiaryTabInjected();
+        }
+
         /// <summary>
         /// After vanilla draws the tab strip, overlays the Diary unread marker if this pawn has
         /// completed pages that have not yet been acknowledged by opening the Diary tab.

@@ -14,6 +14,8 @@ namespace PawnDiary
     [StaticConstructorOnStartup]
     public static class DiaryModStartup
     {
+        private static bool postStartupInjectionDone;
+
         static DiaryModStartup()
         {
             // Apply all attribute-tagged ([HarmonyPatch]) patches. Wrapped so one failing patch
@@ -51,6 +53,29 @@ namespace PawnDiary
             }
 
             Log.Message("[Pawn Diary] Loaded.");
+        }
+
+        /// <summary>
+        /// Re-applies the tab registration once from live UI paths. Static constructors can run before
+        /// every modded ThingDef has its final resolved tab list; this keeps registration reliable
+        /// without scanning all defs every frame.
+        /// </summary>
+        public static void EnsureDiaryTabInjected()
+        {
+            if (postStartupInjectionDone)
+            {
+                return;
+            }
+
+            postStartupInjectionDone = true;
+            try
+            {
+                InjectDiaryTab();
+            }
+            catch (Exception e)
+            {
+                Log.Error("[Pawn Diary] Diary tab reinjection failed: " + e);
+            }
         }
 
         /// <summary>

@@ -916,7 +916,7 @@ namespace PawnDiary
 
             // Request scroll to the shared event and open the diary tab
             ITab_Pawn_Diary.RequestScrollToEntry(otherPawn, link.EventId);
-            InspectTabBase opened = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+            InspectTabBase opened = ITab_Pawn_Diary.OpenDiaryTab();
             if (!(opened is ITab_Pawn_Diary))
             {
                 ITab_Pawn_Diary.ClearPendingScrollRequest();

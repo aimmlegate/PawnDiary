@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-28
 
+- **Diary tab access hardened.** The inspect-tab draw path and command/link open helpers now
+  re-apply Diary tab registration once after startup, and command-only access temporarily unhides
+  the registered tab before calling RimWorld's inspect-pane opener.
+
 - **Russian humor cues localized as Russian humor.** The hidden per-entry humor prompts now use
   Russian dry understatement, bureaucratic phrasing, household complaints, and gallows-practical
   patterns instead of literal English deadpan/punchline translations.

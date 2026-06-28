@@ -147,7 +147,7 @@ namespace PawnDiary
                 return;
             }
 
-            InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+            ITab_Pawn_Diary.OpenDiaryTab();
         }
 
         /// <summary>

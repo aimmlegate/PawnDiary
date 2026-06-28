@@ -176,7 +176,7 @@ namespace PawnDiary
                 }
 
                 ITab_Pawn_Diary.RequestScrollToEntry(pawn, entry.EventId);
-                InspectTabBase opened = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+                InspectTabBase opened = ITab_Pawn_Diary.OpenDiaryTab();
                 if (opened is ITab_Pawn_Diary)
                 {
                     return false;

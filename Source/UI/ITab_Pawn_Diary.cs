@@ -163,6 +163,9 @@ namespace PawnDiary
         // the relevant pawn's generated entry list is available.
         private static string pendingScrollPawnId;
         private static string pendingScrollEventId;
+        // When the player chooses gizmo-only access, Hidden keeps the tab out of the normal tab
+        // strip. Programmatic opens still need one frame where RimWorld can see the registered tab.
+        private static bool commandOpenRequested;
 
         private sealed class RoleplayLineBlock
         {
@@ -203,6 +206,23 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Opens the Diary tab from a gizmo, social-log link, or linked-entry card even when the
+        /// player has hidden the normal inspect-tab button in settings.
+        /// </summary>
+        public static InspectTabBase OpenDiaryTab()
+        {
+            DiaryModStartup.EnsureDiaryTabInjected();
+            commandOpenRequested = true;
+            InspectTabBase opened = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Diary));
+            if (!(opened is ITab_Pawn_Diary))
+            {
+                commandOpenRequested = false;
+            }
+
+            return opened;
+        }
+
+        /// <summary>
         /// Only show the diary tab for colonist pawns (or corpses of colonists).
         /// </summary>
         public override bool IsVisible
@@ -217,7 +237,17 @@ namespace PawnDiary
         /// </summary>
         public override bool Hidden
         {
-            get { return PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.showDiaryInspectTab; }
+            get
+            {
+                return !commandOpenRequested
+                    && (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.showDiaryInspectTab);
+            }
+        }
+
+        protected override void CloseTab()
+        {
+            commandOpenRequested = false;
+            base.CloseTab();
         }
 
         /// <summary>
