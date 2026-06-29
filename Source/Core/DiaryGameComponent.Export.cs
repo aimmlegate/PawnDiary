@@ -61,6 +61,7 @@ namespace PawnDiary
             AppendField(sb, "Current game date", CurrentGameDateForExport());
             AppendField(sb, "Pawn diary records", diaries != null ? diaries.Count.ToString(CultureInfo.InvariantCulture) : "0");
             AppendField(sb, "Saved events", allEvents != null ? allEvents.Count.ToString(CultureInfo.InvariantCulture) : "0");
+            AppendField(sb, "Archived pages", archive.Count.ToString(CultureInfo.InvariantCulture));
             sb.AppendLine();
 
             AppendPawnDiaryExports(sb);
@@ -93,22 +94,26 @@ namespace PawnDiary
                 AppendField(sb, "Writing style def", SafeText(diary.personaDefName));
                 AppendField(sb, "Generation enabled", diary.diaryGenerationEnabled.ToString(CultureInfo.InvariantCulture));
                 AppendField(sb, "Unread generated entry", diary.hasUnreadGeneratedEntry.ToString(CultureInfo.InvariantCulture));
-                AppendField(sb, "Event references", diary.eventIds != null ? diary.eventIds.Count.ToString(CultureInfo.InvariantCulture) : "0");
+                int hotCount = diary.eventIds != null ? diary.eventIds.Count : 0;
+                IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive.EntriesForPawn(diary.pawnId);
+                AppendField(sb, "Hot event references", hotCount.ToString(CultureInfo.InvariantCulture));
+                AppendField(sb, "Archived pages", archivedEntries.Count.ToString(CultureInfo.InvariantCulture));
 
-                if (diary.eventIds == null || diary.eventIds.Count == 0)
+                if (hotCount == 0 && archivedEntries.Count == 0)
                 {
                     sb.AppendLine("  (no pages)");
                     continue;
                 }
 
-                for (int j = 0; j < diary.eventIds.Count; j++)
+                int pageNumber = 1;
+                for (int j = 0; j < hotCount; j++)
                 {
                     string eventId = diary.eventIds[j];
                     DiaryEvent diaryEvent = events.FindEvent(eventId);
                     DiaryEntryView view = diaryEvent != null ? diaryEvent.ToViewFor(diary.pawnId) : null;
 
                     sb.AppendLine();
-                    sb.Append("  Page ").Append(j + 1).AppendLine();
+                    sb.Append("  Page ").Append(pageNumber++).AppendLine();
                     if (diaryEvent == null)
                     {
                         AppendField(sb, "    Missing event id", SafeText(eventId));
@@ -138,6 +143,38 @@ namespace PawnDiary
                     AppendBlock(sb, "    Generated diary text", view.GeneratedText);
                     AppendBlock(sb, "    Prompt", view.LlmPrompt);
                     AppendBlock(sb, "    Raw LLM response", view.LlmRawResponse);
+
+                    if (view.LinkedEntry != null)
+                    {
+                        AppendField(sb, "    Linked pawn", SafeText(view.LinkedEntry.OtherPawnName) + " (" + SafeText(view.LinkedEntry.OtherPawnId) + ")");
+                        AppendField(sb, "    Linked role", SafeText(view.LinkedEntry.OtherRole));
+                        AppendField(sb, "    Linked title", SafeText(view.LinkedEntry.Title));
+                    }
+                }
+
+                for (int j = 0; j < archivedEntries.Count; j++)
+                {
+                    ArchivedDiaryEntry archivedEntry = archivedEntries[j];
+                    DiaryEntryView view = archivedEntry?.ToView();
+                    if (view == null)
+                    {
+                        continue;
+                    }
+
+                    sb.AppendLine();
+                    sb.Append("  Page ").Append(pageNumber++).AppendLine(" (archived)");
+                    AppendField(sb, "    Event id", SafeText(view.EventId));
+                    AppendField(sb, "    Tick", view.Tick.ToString(CultureInfo.InvariantCulture));
+                    AppendField(sb, "    Date", SafeText(view.Date));
+                    AppendField(sb, "    Def", SafeText(archivedEntry.interactionDefName));
+                    AppendField(sb, "    Label", SafeText(archivedEntry.interactionLabel));
+                    AppendField(sb, "    POV", SafeText(view.PovRole));
+                    AppendField(sb, "    Group", SafeText(view.GroupLabel));
+                    AppendField(sb, "    Status", SafeText(view.LlmStatus));
+                    AppendField(sb, "    Title", SafeText(view.Title));
+                    AppendField(sb, "    Model", SafeText(view.LlmModel));
+                    AppendBlock(sb, "    Raw game text", view.Text);
+                    AppendBlock(sb, "    Generated diary text", view.GeneratedText);
 
                     if (view.LinkedEntry != null)
                     {

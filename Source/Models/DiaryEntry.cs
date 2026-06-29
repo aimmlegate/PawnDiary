@@ -98,6 +98,10 @@ namespace PawnDiary
         // the active scan window. After load, stale pending work is normalized back to not_generated, so
         // a saved prompt also counts as proof that the archived page should render a fallback.
         public readonly bool ArchivedGenerationStale;
+        // True when this view was materialized from the compact archive rather than a hot DiaryEvent.
+        // Dev-only regeneration/debug actions use this to avoid promising raw prompt/state that was
+        // intentionally discarded during compaction.
+        public readonly bool Archived;
 
         public DiaryEntryView(
             int tick,
@@ -122,7 +126,8 @@ namespace PawnDiary
             bool titlePending = false,
             string llmRawResponse = null,
             DiaryTextDecorationContext textDecorationContext = null,
-            bool archivedGenerationStale = false)
+            bool archivedGenerationStale = false,
+            bool archived = false)
         {
             Tick = tick;
             Date = date;
@@ -148,6 +153,7 @@ namespace PawnDiary
             Title = title ?? string.Empty;
             TitlePending = titlePending;
             ArchivedGenerationStale = archivedGenerationStale;
+            Archived = archived;
         }
 
         /// <summary>

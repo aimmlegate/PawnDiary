@@ -297,24 +297,33 @@ namespace PawnDiary
         /// </summary>
         private int? FinalDeathTickFor(string pawnId, PawnDiaryRecord diary)
         {
-            if (string.IsNullOrWhiteSpace(pawnId) || diary?.eventIds == null)
+            if (string.IsNullOrWhiteSpace(pawnId))
             {
                 return null;
             }
 
             int? finalDeathTick = null;
-            for (int i = 0; i < diary.eventIds.Count; i++)
+            if (diary?.eventIds != null)
             {
-                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
-                if (diaryEvent == null || !diaryEvent.IsDeathDescriptionFor(pawnId))
+                for (int i = 0; i < diary.eventIds.Count; i++)
                 {
-                    continue;
-                }
+                    DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
+                    if (diaryEvent == null || !diaryEvent.IsDeathDescriptionFor(pawnId))
+                    {
+                        continue;
+                    }
 
-                if (!finalDeathTick.HasValue || diaryEvent.tick > finalDeathTick.Value)
-                {
-                    finalDeathTick = diaryEvent.tick;
+                    if (!finalDeathTick.HasValue || diaryEvent.tick > finalDeathTick.Value)
+                    {
+                        finalDeathTick = diaryEvent.tick;
+                    }
                 }
+            }
+
+            int? archivedDeathTick = archive.FinalDeathTickForPawn(pawnId);
+            if (archivedDeathTick.HasValue && (!finalDeathTick.HasValue || archivedDeathTick.Value > finalDeathTick.Value))
+            {
+                finalDeathTick = archivedDeathTick;
             }
 
             return finalDeathTick;
@@ -367,6 +376,12 @@ namespace PawnDiary
                         firstArrivalTick = diaryEvent.tick;
                     }
                 }
+            }
+
+            int? archivedArrivalTick = archive.FirstArrivalTickForPawn(pawnId);
+            if (archivedArrivalTick.HasValue && (!firstArrivalTick.HasValue || archivedArrivalTick.Value < firstArrivalTick.Value))
+            {
+                firstArrivalTick = archivedArrivalTick;
             }
 
             return firstArrivalTick;
@@ -485,6 +500,18 @@ namespace PawnDiary
                 }
             }
 
+            int? archivedArrivalTick = archive.FirstArrivalTickForPawn(pawnId);
+            if (archivedArrivalTick.HasValue && (!bounds.firstArrivalTick.HasValue || archivedArrivalTick.Value < bounds.firstArrivalTick.Value))
+            {
+                bounds.firstArrivalTick = archivedArrivalTick;
+            }
+
+            int? archivedDeathTick = archive.FinalDeathTickForPawn(pawnId);
+            if (archivedDeathTick.HasValue && (!bounds.finalDeathTick.HasValue || archivedDeathTick.Value > bounds.finalDeathTick.Value))
+            {
+                bounds.finalDeathTick = archivedDeathTick;
+            }
+
             return bounds;
         }
 
@@ -516,6 +543,25 @@ namespace PawnDiary
 
             return EventFallsBeforeFirstArrival(diaryEvent, bounds.firstArrivalTick)
                 || EventFallsAfterFinalDeath(diaryEvent, bounds.finalDeathTick);
+        }
+
+        private static bool ArchivedEntryFallsOutsideDiaryBounds(ArchivedDiaryEntry archivedEntry, DiaryBounds bounds)
+        {
+            if (archivedEntry == null)
+            {
+                return false;
+            }
+
+            if (bounds.firstArrivalTick.HasValue
+                && !archivedEntry.arrivalDescription
+                && archivedEntry.tick < bounds.firstArrivalTick.Value)
+            {
+                return true;
+            }
+
+            return bounds.finalDeathTick.HasValue
+                && !archivedEntry.deathDescription
+                && archivedEntry.tick > bounds.finalDeathTick.Value;
         }
 
         private bool EventFallsOutsideDiaryBoundsForPawn(DiaryEvent diaryEvent, string pawnId,

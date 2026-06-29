@@ -118,6 +118,7 @@ namespace PawnDiary
             if (entry == null
                 || pawn == null
                 || component == null
+                || entry.Archived
                 || IsGenerating(entry)
                 || IsPromptOnly(entry))
             {

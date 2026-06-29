@@ -6,8 +6,8 @@
 // rebuilds when it differs.
 //
 // The token has two parts:
-//   - eventCount: how many events the pawn has. This rises when an event is added (events are
-//     append-only), so additions are detected for free with no instrumentation.
+//   - eventCount/archiveCount: how many hot refs and compact archived rows the pawn has. These change
+//     on event add/compaction, so structural UI changes are detected cheaply.
 //   - DiaryStateVersion: a process-wide counter bumped by DiaryEvent whenever a field the tab
 //     renders changes (status, generated text, title). Bumping in the low-level setters means every
 //     caller is covered automatically.
@@ -37,17 +37,21 @@ namespace PawnDiary
     public readonly struct DiaryRenderToken : System.IEquatable<DiaryRenderToken>
     {
         public readonly int eventCount;
+        public readonly int archiveCount;
         public readonly int stateVersion;
 
-        public DiaryRenderToken(int eventCount, int stateVersion)
+        public DiaryRenderToken(int eventCount, int archiveCount, int stateVersion)
         {
             this.eventCount = eventCount;
+            this.archiveCount = archiveCount;
             this.stateVersion = stateVersion;
         }
 
         public bool Equals(DiaryRenderToken other)
         {
-            return eventCount == other.eventCount && stateVersion == other.stateVersion;
+            return eventCount == other.eventCount
+                && archiveCount == other.archiveCount
+                && stateVersion == other.stateVersion;
         }
 
         public override bool Equals(object obj)
@@ -57,7 +61,7 @@ namespace PawnDiary
 
         public override int GetHashCode()
         {
-            return (eventCount * 397) ^ stateVersion;
+            return ((eventCount * 397) ^ archiveCount) * 397 ^ stateVersion;
         }
     }
 }

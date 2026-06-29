@@ -1,8 +1,9 @@
-// Active event retention for Pawn Diary. This is the per-pawn history cap: each pawn keeps only its
-// newest configured number of diary pages, and a master-list event survives until no pawn references
-// it (paired/neutral events are shared between two pawns). The repository owns the master list and
-// lookup index; this component owns the saved per-pawn diary references, so the trim-and-sweep pass
-// lives here where both sides can be kept consistent.
+// Active event retention for Pawn Diary. This is the per-pawn HOT history cap: each pawn keeps only
+// its newest configured number of full DiaryEvent references. When an older page is safe to keep only
+// for display, retention copies that POV into the compact archive before dropping the hot ref. The
+// repository owns the hot master list and lookup index; the archive owns cold display rows; this
+// component owns the saved per-pawn diary references, so the archive-and-sweep pass lives here where
+// all three can be kept consistent.
 using System;
 using System.Collections.Generic;
 using Verse;
@@ -30,9 +31,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Caps each pawn's diary to its newest configured number of pages, then drops master-list
-        /// events that no pawn references anymore. Runs on every new event, on save/load, and when
-        /// settings are saved.
+        /// Caps each pawn's diary to its newest configured number of hot pages, archiving old
+        /// displayable pages before dropping their hot refs, then drops master-list events that no pawn
+        /// references anymore. Runs on every new event, on save/load, and when settings are saved.
         /// </summary>
         private void ApplyActiveEventLimit()
         {
@@ -55,12 +56,11 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Caps every pawn's event-id list to its newest <paramref name="perPawnLimit"/> references
-        /// (the oldest sit at the front, since refs are appended in tick order), then sweeps the master
-        /// list down to the union of all surviving references. A page shared by two pawns survives
-        /// until both drop it. The trim/keep decision is the pure <see cref="DiaryRetentionPlan"/>; this
-        /// method just supplies the live lists and applies the plan. Returns true when anything changed,
-        /// so callers can skip the version bump on the common no-op path.
+        /// Caps every pawn's hot event-id list to its newest <paramref name="perPawnLimit"/> references
+        /// (the oldest sit at the front, since refs are appended in tick order). Old completed/stale
+        /// displayable pages are first copied into the compact archive; only then is the hot ref removed.
+        /// A hot master-list event survives until no pawn still references it. Returns true when anything
+        /// changed, so callers can skip the version bump on the common no-op path.
         /// </summary>
         private bool TrimDiariesToPerPawnLimit(int perPawnLimit)
         {
@@ -87,36 +87,188 @@ namespace PawnDiary
                 return false;
             }
 
-            // Over the cap: hand the live per-pawn lists to the pure planner. The view aligns
-            // index-for-index with `diaries` (null entries included) so DropCounts line up by position.
-            IReadOnlyList<string>[] perPawnView = new IReadOnlyList<string>[diaries.Count];
+            HashSet<string> activeEventIds = ActiveScanEventIds();
+            bool changed = false;
             for (int i = 0; i < diaries.Count; i++)
             {
-                perPawnView[i] = diaries[i]?.eventIds;
+                PawnDiaryRecord diary = diaries[i];
+                List<string> eventIds = diary?.eventIds;
+                if (diary == null || eventIds == null || eventIds.Count <= perPawnLimit)
+                {
+                    continue;
+                }
+
+                if (ArchiveAndRemoveOverflowRefs(diary, perPawnLimit, activeEventIds))
+                {
+                    changed = true;
+                }
             }
 
-            DiaryRetentionResult plan = DiaryRetentionPlan.Plan(perPawnView, perPawnLimit);
-            if (!plan.TrimmedAny)
+            if (!changed)
             {
                 return false;
             }
 
-            // Apply the drops to each pawn's newest-at-the-end list (front = oldest).
-            for (int i = 0; i < diaries.Count; i++)
+            // Sweep the master list down to events still referenced by at least one HOT pawn diary ref.
+            // Compact archive rows are display-only and deliberately do not keep full DiaryEvent records
+            // alive for generation/title/orphan scans.
+            events.RetainOnly(CollectHotReferencedEventIds());
+            return true;
+        }
+
+        private bool ArchiveAndRemoveOverflowRefs(PawnDiaryRecord diary, int perPawnLimit, HashSet<string> activeEventIds)
+        {
+            if (diary == null || diary.eventIds == null || diary.eventIds.Count <= perPawnLimit)
             {
-                List<string> eventIds = diaries[i]?.eventIds;
-                int drop = i < plan.DropCounts.Length ? plan.DropCounts[i] : 0;
-                if (eventIds != null && drop > 0)
+                return false;
+            }
+
+            int overflow = diary.eventIds.Count - perPawnLimit;
+            string pawnId = diary.pawnId;
+            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+            List<int> removeIndexes = null;
+
+            for (int eventIndex = 0; eventIndex < diary.eventIds.Count && (removeIndexes == null || removeIndexes.Count < overflow); eventIndex++)
+            {
+                string eventId = diary.eventIds[eventIndex];
+                DiaryEvent diaryEvent = events.FindEvent(eventId);
+                bool remove = string.IsNullOrWhiteSpace(eventId) || diaryEvent == null;
+                if (!remove && EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, bounds))
                 {
-                    eventIds.RemoveRange(0, drop);
+                    remove = true;
+                }
+                else if (!remove && TryArchiveDiaryRef(pawnId, diaryEvent, activeEventIds))
+                {
+                    remove = true;
+                }
+                else if (!remove && ShouldDropUnarchiveableRef(pawnId, diaryEvent, activeEventIds))
+                {
+                    remove = true;
+                }
+
+                if (remove)
+                {
+                    if (removeIndexes == null)
+                    {
+                        removeIndexes = new List<int>();
+                    }
+
+                    removeIndexes.Add(eventIndex);
                 }
             }
 
-            // Sweep the master list down to events still referenced by some pawn. The dropped pages are
-            // the oldest colony-wide, so they sit below the activeScanEventWindow hot set and were not
-            // being scanned anyway; this just reclaims their memory.
-            events.RetainOnly(plan.Referenced);
+            if (removeIndexes == null || removeIndexes.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = removeIndexes.Count - 1; i >= 0; i--)
+            {
+                diary.eventIds.RemoveAt(removeIndexes[i]);
+            }
+
             return true;
+        }
+
+        private bool TryArchiveDiaryRef(string pawnId, DiaryEvent diaryEvent, HashSet<string> activeEventIds)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || diaryEvent == null)
+            {
+                return false;
+            }
+
+            bool archivedForScans = EventIsArchivedForScans(diaryEvent, activeEventIds);
+            DiaryEntryView view = diaryEvent.ToViewFor(pawnId, archivedForScans);
+            if (view == null)
+            {
+                return false;
+            }
+
+            bool forceFallback;
+            if (!CanArchiveView(view, out forceFallback))
+            {
+                return false;
+            }
+
+            ArchivedDiaryEntry archivedEntry = ArchivedDiaryEntry.FromEvent(diaryEvent, pawnId, view, forceFallback);
+            return archive.AddOrKeep(archivedEntry);
+        }
+
+        private static bool CanArchiveView(DiaryEntryView view, out bool forceFallback)
+        {
+            if (view == null)
+            {
+                forceFallback = false;
+                return false;
+            }
+
+            DiaryArchiveEligibilityDecision decision = DiaryArchiveEligibility.Evaluate(
+                view.TitlePending,
+                view.GeneratedText,
+                view.ArchivedGenerationStale,
+                view.LlmStatus,
+                view.Text);
+            forceFallback = decision.ForceFallback;
+            return decision.CanArchive;
+        }
+
+        private bool ShouldDropUnarchiveableRef(string pawnId, DiaryEvent diaryEvent, HashSet<string> activeEventIds)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || diaryEvent == null)
+            {
+                return true;
+            }
+
+            // Inside the hot scan window, an unarchiveable row may still be retried, title-backfilled, or
+            // inspected by dev tools. Outside it, rows that have no displayable archive representation are
+            // cold noise and should not keep the pawn permanently over the hot cap.
+            bool archivedForScans = EventIsArchivedForScans(diaryEvent, activeEventIds);
+            if (!archivedForScans)
+            {
+                return false;
+            }
+
+            DiaryEntryView view = diaryEvent.ToViewFor(pawnId, true);
+            if (view == null)
+            {
+                return true;
+            }
+
+            return DiaryArchiveEligibility.ShouldDropColdUndisplayableRef(
+                archivedForScans,
+                view.TitlePending,
+                view.LlmStatus,
+                view.GeneratedText,
+                view.ArchivedGenerationStale);
+        }
+
+        private HashSet<string> CollectHotReferencedEventIds()
+        {
+            HashSet<string> referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (diaries == null)
+            {
+                return referenced;
+            }
+
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                List<string> eventIds = diaries[i]?.eventIds;
+                if (eventIds == null)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < eventIds.Count; j++)
+                {
+                    string eventId = eventIds[j];
+                    if (!string.IsNullOrWhiteSpace(eventId))
+                    {
+                        referenced.Add(eventId);
+                    }
+                }
+            }
+
+            return referenced;
         }
     }
 }

@@ -1,11 +1,12 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-06-28
+Last updated: 2026-06-29
 
 Related files:
 
 - `AGENTS.md`: detailed rules for code agents and deep architecture constraints.
 - `EVENT_PROMPT_MAP.md`: event-to-prompt coverage map.
+- `ARCHIVE_COMPACTION_DESIGN.md`: reviewed-before-code design for real cold archive compaction.
 - `CHANGELOG.md`: milestone history.
 
 ## 1. Purpose
@@ -37,7 +38,7 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
-| `Source/Pipeline/` | Pure prompt planning, request JSON, response cleanup, text decoration, API policy. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, request JSON, response cleanup, text decoration, API policy. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, Prompt Studio, Writing Style Studio. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
@@ -52,8 +53,8 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 3. The pure Event Catalog decides whether to drop, create a solo/pair/neutral entry, batch, or route
    to day reflection.
 4. `AddSoloEvent` or `AddPairwiseEvent` creates a saved `DiaryEvent` and indexes it on eligible
-   pawn records. The active-event retention cap then drops oldest events beyond the configured
-   limit and scrubs pawn references to them.
+   pawn records. The active-event retention cap then archives old displayable POVs into compact
+   `ArchivedDiaryEntry` rows before dropping their hot refs.
 5. Generation queues immediately when possible; periodic scans retry pending or orphaned work.
 6. `DiaryPipelineAdapters` copies runtime/XML/localized state into pure pipeline DTOs.
 7. Pure helpers assemble prompts, serialize request JSON, parse provider responses, and clean text.
@@ -64,8 +65,8 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 rescan is demand-driven: load catch-up, delayed raid entries, and recovered orphaned work request a
 pass, then the catch-up pass runs at most every 200 ticks until it is no longer needed. Those
 generation/title/orphan scans use the XML-tuned hot window (`activeScanEventWindow`, default 1000,
-a global count across all pawns); older events stay saved and visible as archive history but are not
-retried or title-backfilled.
+a global count across all pawns); older hot events can be compacted into archive rows that stay
+visible but are not retried or title-backfilled.
 Orphaned "writing..." recovery is a separate, slower hot-window pass every 600 ticks. Completed LLM
 results and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so
 requests that were already queued can finish and apply while the game is paused. Pending generation
@@ -388,7 +389,8 @@ do not touch saved diary records during pawn
 selection; they read a transient per-pawn status cache. The new-page badge is backed by a saved
 per-pawn unread flag that is set when main LLM text finishes and cleared when that pawn's Diary tab
 opens, while writing dots reuse cached pending counts after the Diary tab finishes its sliced load.
-Archived pages use the same cards and controls as hot pages.
+Archived pages use the same cards and copy controls as hot pages, but dev-only regeneration is hidden
+because compact archive rows intentionally discard prompt/raw-response/retry state.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
@@ -410,31 +412,37 @@ markers, and trims saved text locally.
 
 ## 9. Save Data And Compatibility
 
-`DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`), the event list (`diaryEvents`),
-and active XML event windows (`activeEventWindows`). `DiaryEventRepository` owns the event list and
-rebuilds its id lookup index after load. Per-pawn event lists prune blank, duplicate, or dangling
-refs. Active event windows normalize after load so renamed/missing defs fail closed instead of
-blocking future prompt context.
+`DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`), the hot event list
+(`diaryEvents`), compact archive rows (`diaryArchiveEntries`), and active XML event windows
+(`activeEventWindows`). `DiaryEventRepository` owns the hot event list and rebuilds its id lookup index
+after load. `DiaryArchiveRepository` owns one display-only `ArchivedDiaryEntry` row per archived pawn
+POV, repairs duplicate/null rows after load, and indexes rows by pawn id for the Diary tab. Per-pawn
+event lists prune blank, duplicate, or dangling hot refs. Active event windows normalize after load so
+renamed/missing defs fail closed instead of blocking future prompt context.
 
 The diary-history cap is **per pawn** (default 3000, editable from settings, range 1–10000). Each
-pawn keeps only its newest configured number of pages: `ApplyActiveEventLimit` caps every pawn's
-event-id list to that many refs (oldest dropped first), then sweeps the master list down to the union
-of all surviving refs — so a page shared by two pawns survives until both drop it. It runs after load,
-before save, after new event creation, and when settings are saved. The common (nothing-over-cap)
-path costs one `Count` check per pawn. Because the cap is per pawn, background scan cost no longer
-scales with it: maintenance walks the global hot window below, not each pawn's full history. (The
+pawn keeps only its newest configured number of **hot** pages: `ApplyActiveEventLimit` looks at the
+oldest refs past the cap, copies completed/stale/failed displayable POVs into `diaryArchiveEntries`,
+then removes only those hot refs whose archive row exists (or refs that are invalid/out-of-bounds).
+Still-active pending/not-generated refs stay hot instead of being destroyed. Finally, the hot event
+store is swept down to the union of remaining hot refs, so a shared pair event stays as a full
+`DiaryEvent` until both pawns have either kept or archived their POVs. It runs after load, before save,
+after new event creation, and when settings are saved. The common (nothing-over-cap) path costs one
+`Count` check per pawn. Because the cap is per pawn, background scan cost no longer scales with total
+lifetime history: maintenance walks the global hot window below, not the compact archive. (The
 `maxActiveDiaryEvents` field/Scribe key keeps its historical name for save compatibility even though
-its meaning is now per pawn.)
+its meaning is now per-pawn hot refs.)
 
 Separately, `DiaryTuningDef.activeScanEventWindow` (default 1000, XML only, a global count across all
-pawns) defines the newest saved events considered hot for retry, title catch-up, orphan recovery,
-day-summary event evidence, work cooldowns, and prompt continuity/opener history. Events older than that window are archive pages:
-they remain in save data and render in the Diary UI, but maintenance scans do not revisit them. If an
-archived page has an attempted generation with no generated text (pending in-session, or
-load-normalized back to `not_generated` with a saved prompt), the UI stops treating it as active
-writing: it shows a localized "You see that: ..." fallback from the saved prompt facts/raw event
-text, derives a short display-only title from the first few words, and uses the footer note to say the
-page failed to generate instead of showing a model name.
+pawns) defines the newest saved hot events considered for retry, title catch-up, orphan recovery,
+day-summary event evidence, work cooldowns, and prompt continuity/opener history. Compact archive rows
+never enter those scans. If an old attempted page has no generated text, retention can archive it as a
+display-only fallback: the UI shows a localized "You see that: ..." body from saved raw event facts,
+derives a short display-only title from the first few words, and uses the footer note to say the page
+failed to generate instead of showing a model name. Prompt-only dev capture rows stay hot because the
+archive deliberately does not store full prompt text. The archive/drop eligibility checks live in
+`Source/Pipeline/DiaryArchiveEligibility.cs` so the title-pending, prompt-only, stale-fallback, and
+cold-undisplayable rules are covered without loading RimWorld.
 
 `DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, prompts, titles, LLM
 metadata, semantic color cue, and compact display facts. Per-role state is stored in initiator,
@@ -514,6 +522,7 @@ Pure tests:
 
 ```powershell
 dotnet run --project tests/LlmResponseParserTests/LlmResponseParserTests.csproj
+dotnet run --project tests/DiaryRetentionTests/DiaryRetentionTests.csproj
 dotnet run --project tests/DiaryPipelineTests/DiaryPipelineTests.csproj
 dotnet run --project tests/DiaryTextDecorationTests/DiaryTextDecorationTests.csproj
 dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.csproj

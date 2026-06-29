@@ -41,9 +41,89 @@ namespace DiaryPipelineTests
             TestApiRequestAuth();
             TestLlmRequestJsonBuilder();
             TestArchivedPendingReloadFallbackStatus();
+            TestArchiveEligibility();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestArchiveEligibility()
+        {
+            DiaryArchiveEligibilityDecision generated = DiaryArchiveEligibility.Evaluate(
+                titlePending: false,
+                generatedText: "I wrote the page.",
+                archivedGenerationStale: false,
+                status: DiaryGenerationStatus.Complete,
+                fallbackText: "Alice chatted with Bob.");
+            AssertTrue("generated old page can archive", generated.CanArchive);
+            AssertTrue("generated old page keeps generated text", !generated.ForceFallback);
+
+            DiaryArchiveEligibilityDecision titlePending = DiaryArchiveEligibility.Evaluate(
+                titlePending: true,
+                generatedText: "I wrote the page.",
+                archivedGenerationStale: false,
+                status: DiaryGenerationStatus.Complete,
+                fallbackText: "Alice chatted with Bob.");
+            AssertTrue("title-pending page stays hot", !titlePending.CanArchive);
+
+            DiaryArchiveEligibilityDecision stale = DiaryArchiveEligibility.Evaluate(
+                titlePending: false,
+                generatedText: string.Empty,
+                archivedGenerationStale: true,
+                status: DiaryGenerationStatus.NotGenerated,
+                fallbackText: "Alice chatted with Bob.");
+            AssertTrue("stale attempted page can archive", stale.CanArchive);
+            AssertTrue("stale attempted page forces fallback", stale.ForceFallback);
+
+            DiaryArchiveEligibilityDecision failedWithFallback = DiaryArchiveEligibility.Evaluate(
+                titlePending: false,
+                generatedText: string.Empty,
+                archivedGenerationStale: false,
+                status: DiaryGenerationStatus.Failed,
+                fallbackText: "Alice chatted with Bob.");
+            AssertTrue("failed page with raw text can archive", failedWithFallback.CanArchive);
+            AssertTrue("failed page with raw text forces fallback", failedWithFallback.ForceFallback);
+
+            DiaryArchiveEligibilityDecision failedWithoutFallback = DiaryArchiveEligibility.Evaluate(
+                titlePending: false,
+                generatedText: string.Empty,
+                archivedGenerationStale: false,
+                status: DiaryGenerationStatus.Failed,
+                fallbackText: string.Empty);
+            AssertTrue("failed page without raw text stays unarchiveable", !failedWithoutFallback.CanArchive);
+
+            AssertTrue(
+                "active scan undisplayable page stays hot",
+                !DiaryArchiveEligibility.ShouldDropColdUndisplayableRef(
+                    archivedForScans: false,
+                    titlePending: false,
+                    status: DiaryGenerationStatus.NotGenerated,
+                    generatedText: string.Empty,
+                    archivedGenerationStale: false));
+            AssertTrue(
+                "cold prompt-only page stays hot for dev export",
+                !DiaryArchiveEligibility.ShouldDropColdUndisplayableRef(
+                    archivedForScans: true,
+                    titlePending: false,
+                    status: DiaryGenerationStatus.PromptOnly,
+                    generatedText: string.Empty,
+                    archivedGenerationStale: false));
+            AssertTrue(
+                "cold title-pending page stays hot",
+                !DiaryArchiveEligibility.ShouldDropColdUndisplayableRef(
+                    archivedForScans: true,
+                    titlePending: true,
+                    status: DiaryGenerationStatus.NotGenerated,
+                    generatedText: string.Empty,
+                    archivedGenerationStale: false));
+            AssertTrue(
+                "cold blank undisplayable page drops hot ref",
+                DiaryArchiveEligibility.ShouldDropColdUndisplayableRef(
+                    archivedForScans: true,
+                    titlePending: false,
+                    status: DiaryGenerationStatus.NotGenerated,
+                    generatedText: string.Empty,
+                    archivedGenerationStale: false));
         }
 
         private static void TestArchivedPendingReloadFallbackStatus()

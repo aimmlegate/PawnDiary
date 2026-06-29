@@ -6,6 +6,27 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-29
 
+- **Implemented real archive compaction for old diary events.** Added compact per-POV
+  `ArchivedDiaryEntry` rows saved under the new `diaryArchiveEntries` key and owned by
+  `DiaryArchiveRepository`. The per-pawn cap now means hot `DiaryEvent` refs: old completed pages, stale
+  attempted pages, and failed pages with raw display text are copied to the archive before their hot ref
+  is removed; still-active pending/not-generated refs remain hot. The Diary tab's sliced year index
+  merges hot and archived candidates, render tokens include archive counts, archived arrival/death rows
+  still define diary lifespan, Social-log entry lookup can open archived pages via compact PlayLog ids,
+  and dev export includes archived pages. Archived rows do not regenerate and never enter LLM retry,
+  title catch-up, orphan recovery, day-summary evidence, work cooldown, or prompt-continuity scans.
+  Prompt-only dev capture rows intentionally stay hot because the compact archive discards full prompt
+  text. Archive/drop eligibility lives in the pure `DiaryArchiveEligibility` helper, with focused
+  `DiaryPipelineTests` coverage for title-pending, prompt-only, stale fallback, and cold undisplayable
+  rows. Rebuilt `1.6/Assemblies/PawnDiary.dll`.
+
+- **Archive compaction design captured before implementation.** Added `ARCHIVE_COMPACTION_DESIGN.md`
+  for Plan 3, covering the proposed `diaryArchiveEntries` Scribe key, one-row-per-displayed-POV archive
+  schema, archive repository, archive-then-drop retention flow, UI merge rules, migration path,
+  pending/failed old-entry policy, dev-regeneration limits, hot-cap semantics, and before/after test
+  plan. This is documentation only; runtime retention still uses the existing full-`DiaryEvent`
+  storage until the design is reviewed and implemented.
+
 - **Fixed diary tab lag when switching to a pawn with a large history.** The sliced history loader
   (year index, selected-year card materialization, and row layout) shares a per-frame time budget
   (`uiHistoryScanFrameBudgetSeconds`, ~0.75 ms) so opening a pawn with thousands of pages spreads

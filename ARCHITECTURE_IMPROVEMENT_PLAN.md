@@ -4,10 +4,10 @@ Last updated: 2026-06-29 · Last verified against code: 2026-06-29
 
 Implementation-ready plans for the **unresolved** architecture-improvement work. Resolved/completed
 cards are intentionally omitted. Each plan below is a self-contained slice to hand to one future
-agent. Of the original 12 plans, 11 remain open after **Plan 2 was completed on 2026-06-29** (see
-CHANGELOG); its card is kept below, marked COMPLETED, for reference. All remaining plans were checked
-against the current `Source/` tree on the verify date and confirmed open; current-state notes are
-inline where the code has moved (Plans 8, 10, 11, 12). Plan 12 is the former standalone
+agent. Of the original 12 plans, 10 remain open after **Plans 2 and 3 were completed on 2026-06-29**
+(see CHANGELOG); their cards are kept below, marked COMPLETED, for reference. All remaining plans were
+checked against the current `Source/` tree on the verify date and confirmed open; current-state notes
+are inline where the code has moved (Plans 8, 10, 11, 12). Plan 12 is the former standalone
 lasting-game-state roadmap, folded in here.
 
 ## Global Implementation Protocol
@@ -237,6 +237,13 @@ substring matching with narrower XML policy and, only if necessary, tested match
 ---
 
 # Plan 3 — Real Archive Compaction For Old Diary Events
+
+> **Status: COMPLETED 2026-06-29.** Shipped: `ArchivedDiaryEntry` + `DiaryArchiveRepository` save
+> compact display-only old pages under `diaryArchiveEntries`; retention now archive-then-drops old
+> completed/stale/failed displayable refs; the Diary tab year index merges hot and archived candidates;
+> archived rows do not regenerate or enter LLM/title/orphan scans; dev export and Social-log entry
+> lookup include archive rows. Prompt-only dev rows intentionally stay hot because compaction drops full
+> prompt text. Design record: `ARCHIVE_COMPACTION_DESIGN.md`.
 
 ## Goal
 

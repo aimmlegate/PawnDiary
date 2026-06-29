@@ -43,6 +43,7 @@ namespace PawnDiary
             private struct Candidate
             {
                 public DiaryEvent diaryEvent;
+                public ArchivedDiaryEntry archivedEntry;
                 public int year;
                 public bool archivedForScans;
             }
@@ -89,7 +90,7 @@ namespace PawnDiary
                         continue;
                     }
 
-                    DiaryEntryView view = candidate.diaryEvent?.ToViewFor(pawnId, candidate.archivedForScans);
+                    DiaryEntryView view = CandidateView(candidate, pawnId);
                     if (view != null)
                     {
                         target.Add(view);
@@ -126,7 +127,7 @@ namespace PawnDiary
                     yearCandidateIndex++;
                     processedThisSlice++;
 
-                    DiaryEntryView view = candidate.diaryEvent?.ToViewFor(pawnId, candidate.archivedForScans);
+                    DiaryEntryView view = CandidateView(candidate, pawnId);
                     if (view != null)
                     {
                         target.Add(view);
@@ -141,30 +142,51 @@ namespace PawnDiary
                 return yearCandidateIndex >= indexes.Count;
             }
 
+            private static DiaryEntryView CandidateView(Candidate candidate, string pawnId)
+            {
+                return candidate.archivedEntry != null
+                    ? candidate.archivedEntry.ToView()
+                    : candidate.diaryEvent?.ToViewFor(pawnId, candidate.archivedForScans);
+            }
+
             internal void Add(DiaryEvent diaryEvent, int year, bool archivedForScans, bool hasGeneratedText, bool generating, bool titlePending)
             {
-                int candidateIndex = candidates.Count;
-                candidates.Add(new Candidate
+                AddCandidate(new Candidate
                 {
                     diaryEvent = diaryEvent,
                     year = year,
                     archivedForScans = archivedForScans
-                });
+                }, diaryEvent?.eventId, hasGeneratedText, generating, titlePending);
+            }
 
-                if (!countsByYear.ContainsKey(year))
+            internal void Add(ArchivedDiaryEntry archivedEntry, bool hasGeneratedText)
+            {
+                AddCandidate(new Candidate
                 {
-                    countsByYear[year] = 0;
-                    years.Add(year);
-                    candidateIndexesByYear[year] = new List<int>();
+                    archivedEntry = archivedEntry,
+                    year = archivedEntry == null ? UnknownDiaryYear : archivedEntry.year,
+                    archivedForScans = true
+                }, archivedEntry?.eventId, hasGeneratedText, false, false);
+            }
+
+            private void AddCandidate(Candidate candidate, string eventId, bool hasGeneratedText, bool generating, bool titlePending)
+            {
+                int candidateIndex = candidates.Count;
+                candidates.Add(candidate);
+
+                if (!countsByYear.ContainsKey(candidate.year))
+                {
+                    countsByYear[candidate.year] = 0;
+                    years.Add(candidate.year);
+                    candidateIndexesByYear[candidate.year] = new List<int>();
                 }
 
-                countsByYear[year]++;
-                candidateIndexesByYear[year].Add(candidateIndex);
+                countsByYear[candidate.year]++;
+                candidateIndexesByYear[candidate.year].Add(candidateIndex);
 
-                string eventId = diaryEvent?.eventId;
                 if (!string.IsNullOrWhiteSpace(eventId) && !yearByEventId.ContainsKey(eventId))
                 {
-                    yearByEventId[eventId] = year;
+                    yearByEventId[eventId] = candidate.year;
                 }
 
                 if (hasGeneratedText)
@@ -198,6 +220,7 @@ namespace PawnDiary
             private enum BuildPhase
             {
                 DiaryEvents,
+                ArchiveEntries,
                 Complete
             }
 
@@ -208,10 +231,13 @@ namespace PawnDiary
             private readonly bool showGeneratingEntries;
             private readonly bool showPromptOnlyEntries;
             private readonly HashSet<string> activeEventIds;
+            private readonly IReadOnlyList<ArchivedDiaryEntry> archivedEntries;
+            private readonly HashSet<string> hotDisplayKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             private DiaryBounds bounds = new DiaryBounds { firstArrivalIndex = -1, finalDeathIndex = -1 };
             private BuildPhase phase = BuildPhase.DiaryEvents;
             private int diaryIndex;
+            private int archiveIndex;
 
             public readonly DiaryRenderToken token;
             public readonly DiaryTabYearIndex index = new DiaryTabYearIndex();
@@ -234,11 +260,42 @@ namespace PawnDiary
                 diary = pawn == null ? null : owner.FindDiary(pawn, false);
                 token = owner.RenderTokenFor(pawn);
                 activeEventIds = owner.ActiveScanEventIds();
-                totalWork = diary?.eventIds?.Count ?? 0;
+                archivedEntries = owner.archive.EntriesForPawn(pawnId);
+                SeedBoundsFromArchive();
+                totalWork = (diary?.eventIds?.Count ?? 0) + (archivedEntries?.Count ?? 0);
 
-                if (string.IsNullOrWhiteSpace(pawnId) || diary?.eventIds == null)
+                if (string.IsNullOrWhiteSpace(pawnId))
                 {
                     phase = BuildPhase.Complete;
+                }
+            }
+
+            private void SeedBoundsFromArchive()
+            {
+                if (archivedEntries == null || string.IsNullOrWhiteSpace(pawnId))
+                {
+                    return;
+                }
+
+                for (int i = 0; i < archivedEntries.Count; i++)
+                {
+                    ArchivedDiaryEntry entry = archivedEntries[i];
+                    if (entry == null)
+                    {
+                        continue;
+                    }
+
+                    if (entry.IsArrivalDescriptionFor(pawnId)
+                        && (!bounds.firstArrivalTick.HasValue || entry.tick < bounds.firstArrivalTick.Value))
+                    {
+                        bounds.firstArrivalTick = entry.tick;
+                    }
+
+                    if (entry.IsDeathDescriptionFor(pawnId)
+                        && (!bounds.finalDeathTick.HasValue || entry.tick > bounds.finalDeathTick.Value))
+                    {
+                        bounds.finalDeathTick = entry.tick;
+                    }
                 }
             }
 
@@ -263,6 +320,7 @@ namespace PawnDiary
                 string currentPawnId = pawn?.GetUniqueLoadID();
                 return string.Equals(currentPawnId, pawnId, StringComparison.Ordinal)
                     && currentToken.eventCount == token.eventCount
+                    && currentToken.archiveCount == token.archiveCount
                     && showDebug == showLlmDebugInfo
                     && showGenerating == showGeneratingEntries
                     && showPromptOnly == showPromptOnlyEntries;
@@ -301,6 +359,8 @@ namespace PawnDiary
                 {
                     case BuildPhase.DiaryEvents:
                         return ProcessDiaryEvent();
+                    case BuildPhase.ArchiveEntries:
+                        return ProcessArchivedEntry();
                     default:
                         return false;
                 }
@@ -310,8 +370,7 @@ namespace PawnDiary
             {
                 if (diary?.eventIds == null || diaryIndex >= diary.eventIds.Count)
                 {
-                    index.SortYearsDescending();
-                    phase = BuildPhase.Complete;
+                    phase = BuildPhase.ArchiveEntries;
                     return false;
                 }
 
@@ -331,6 +390,35 @@ namespace PawnDiary
                 {
                     Log.ErrorOnce("[Pawn Diary] Skipped one diary tab entry while building the visible index: " + e,
                         ("DiaryTabYearIndexBuild:" + (diaryEvent.eventId ?? eventIndex.ToString())).GetHashCode());
+                }
+
+                return true;
+            }
+
+            private bool ProcessArchivedEntry()
+            {
+                if (archivedEntries == null || archiveIndex >= archivedEntries.Count)
+                {
+                    index.SortYearsDescending();
+                    phase = BuildPhase.Complete;
+                    return false;
+                }
+
+                ArchivedDiaryEntry archivedEntry = archivedEntries[archiveIndex];
+                archiveIndex++;
+                if (archivedEntry == null)
+                {
+                    return true;
+                }
+
+                try
+                {
+                    IndexArchivedEntry(archivedEntry);
+                }
+                catch (Exception e)
+                {
+                    Log.ErrorOnce("[Pawn Diary] Skipped one archived diary tab entry while building the visible index: " + e,
+                        ("DiaryTabYearIndexBuild.Archive:" + (archivedEntry.eventId ?? archiveIndex.ToString())).GetHashCode());
                 }
 
                 return true;
@@ -369,6 +457,7 @@ namespace PawnDiary
                         || (showPromptOnlyEntries && promptOnly);
                     if (visible)
                     {
+                        hotDisplayKeys.Add(ArchivedDiaryEntry.BuildArchiveKey(diaryEvent.eventId, pawnId, povRole));
                         index.Add(
                             diaryEvent,
                             ExtractYear(diaryEvent.date),
@@ -395,6 +484,31 @@ namespace PawnDiary
                         }
                     }
                 }
+            }
+
+            private void IndexArchivedEntry(ArchivedDiaryEntry archivedEntry)
+            {
+                if (archivedEntry == null
+                    || !string.Equals(archivedEntry.pawnId, pawnId, StringComparison.Ordinal)
+                    || hotDisplayKeys.Contains(archivedEntry.ArchiveKey)
+                    || ArchivedEntryFallsOutsideDiaryBounds(archivedEntry, bounds))
+                {
+                    return;
+                }
+
+                bool hasGeneratedText = archivedEntry.HasGeneratedText;
+                bool visible = showLlmDebugInfo || hasGeneratedText || archivedEntry.archivedGenerationStale;
+                if (!visible)
+                {
+                    if (hasGeneratedText)
+                    {
+                        index.completedCount++;
+                    }
+
+                    return;
+                }
+
+                index.Add(archivedEntry, hasGeneratedText);
             }
 
             private void TrackBounds(DiaryEvent diaryEvent, int eventIndex)
@@ -647,16 +761,20 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Cheap per-frame cache key for a pawn's rendered diary. It changes whenever the pawn gains an
-        /// event (events are append-only, so the count only rises) or any event's rendered state
-        /// changes (<see cref="DiaryStateVersion"/>). The diary tab compares this between frames and
-        /// rebuilds its <see cref="DiaryEntryView"/> list only when it differs, so it does not
-        /// re-classify and re-parse every entry on every frame. See ITab_Pawn_Diary.FillTab.
+        /// Cheap per-frame cache key for a pawn's rendered diary. It changes whenever the pawn gains or
+        /// compacts an event (hot ref count / archive row count) or any rendered state changes
+        /// (<see cref="DiaryStateVersion"/>). The diary tab compares this between frames and rebuilds
+        /// its <see cref="DiaryEntryView"/> list only when it differs, so it does not re-classify and
+        /// re-parse every entry on every frame. See ITab_Pawn_Diary.FillTab.
         /// </summary>
         public DiaryRenderToken RenderTokenFor(Pawn pawn)
         {
             PawnDiaryRecord diary = pawn == null ? null : FindDiary(pawn, false);
-            return new DiaryRenderToken(diary?.eventIds?.Count ?? 0, DiaryStateVersion.Current);
+            string pawnId = pawn?.GetUniqueLoadID();
+            return new DiaryRenderToken(
+                diary?.eventIds?.Count ?? 0,
+                archive.CountForPawn(pawnId),
+                DiaryStateVersion.Current);
         }
 
         /// <summary>
@@ -666,7 +784,7 @@ namespace PawnDiary
         /// </summary>
         public bool RegenerateEntry(Pawn pawn, DiaryEntryView entry)
         {
-            if (pawn == null || entry == null || string.IsNullOrWhiteSpace(entry.EventId))
+            if (pawn == null || entry == null || entry.Archived || string.IsNullOrWhiteSpace(entry.EventId))
             {
                 return false;
             }
@@ -770,30 +888,47 @@ namespace PawnDiary
 
             string pawnId = pawn.GetUniqueLoadID();
             PawnDiaryRecord diary = FindDiary(pawn, false);
-            if (diary == null || diary.eventIds == null)
-            {
-                return null;
-            }
+            IReadOnlyList<ArchivedDiaryEntry> archivedEntries = archive.EntriesForPawn(pawnId);
 
             // Compute the arrival/death boundary once and reuse the index-based check. The per-event
             // (pawnId, diary) overload re-derives the boundary on every call, which made this loop
             // grow with the square of the pawn's entry count.
             DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
-            for (int i = 0; i < diary.eventIds.Count; i++)
+            if (diary?.eventIds != null)
             {
-                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
-                if (diaryEvent == null || !diaryEvent.MatchesPlayLogEntry(playLogEntryId))
+                for (int i = 0; i < diary.eventIds.Count; i++)
+                {
+                    DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
+                    if (diaryEvent == null || !diaryEvent.MatchesPlayLogEntry(playLogEntryId))
+                    {
+                        continue;
+                    }
+
+                    if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
+                    {
+                        continue;
+                    }
+
+                    DiaryEntryView view = diaryEvent.ToViewFor(pawnId);
+                    if (view != null && !string.IsNullOrWhiteSpace(view.GeneratedText))
+                    {
+                        return view;
+                    }
+                }
+            }
+
+            for (int i = 0; i < archivedEntries.Count; i++)
+            {
+                ArchivedDiaryEntry archivedEntry = archivedEntries[i];
+                if (archivedEntry == null
+                    || !archivedEntry.MatchesPlayLogEntry(playLogEntryId)
+                    || ArchivedEntryFallsOutsideDiaryBounds(archivedEntry, bounds))
                 {
                     continue;
                 }
 
-                if (EventFallsOutsideDiaryBounds(diaryEvent, i, bounds))
-                {
-                    continue;
-                }
-
-                DiaryEntryView view = diaryEvent.ToViewFor(pawnId);
-                if (view != null && !string.IsNullOrWhiteSpace(view.GeneratedText))
+                DiaryEntryView view = archivedEntry.ToView();
+                if (view != null && (!string.IsNullOrWhiteSpace(view.GeneratedText) || view.ArchivedGenerationStale))
                 {
                     return view;
                 }

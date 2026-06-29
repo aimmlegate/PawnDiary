@@ -64,6 +64,10 @@ namespace PawnDiary
         // class remains the only RimWorld lifecycle/save owner and drives the repository from
         // ExposeData/GameComponentTick. See DiaryEventRepository.cs.
         private readonly DiaryEventRepository events = new DiaryEventRepository();
+        // Compact archive of old display-only diary pages. Retention converts completed/stale old POVs
+        // here before dropping their heavy hot DiaryEvent refs, so long histories remain visible without
+        // staying in generation/title/orphan scans. Saved under "diaryArchiveEntries".
+        private readonly DiaryArchiveRepository archive = new DiaryArchiveRepository();
         // Saved XML event-window state. Each row is a long-running narrative window such as "gray
         // flesh was found, but the metalhorror has not emerged yet." The Def remains XML-owned; this
         // list only remembers active runtime instances across save/load.
@@ -217,6 +221,7 @@ namespace PawnDiary
             orphanCandidatesLastScan.Clear();
             generatedSpeechPlayLogTexts.Clear();
             commandStatusByPawnId.Clear();
+            archive.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session, and the
             // starting-colonist thoughts (GiveAllStartingPlayerPawnsThought) were queued in it during
             // InitNewGame. Restarting the session now would cancel those in-flight requests and leave
@@ -296,6 +301,7 @@ namespace PawnDiary
 
             Scribe_Collections.Look(ref diaries, "diaries", LookMode.Deep);
             events.ExposeEvents("diaryEvents");
+            archive.ExposeArchive("diaryArchiveEntries");
             Scribe_Collections.Look(ref activeEventWindows, "activeEventWindows", LookMode.Deep);
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
