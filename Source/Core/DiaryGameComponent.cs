@@ -89,25 +89,15 @@ namespace PawnDiary
         private readonly Dictionary<string, PendingAmbientThoughtNote> pendingAmbientThoughtNotes = new Dictionary<string, PendingAmbientThoughtNote>();
         private readonly HashSet<string> writtenAmbientThoughtNotes = new HashSet<string>();
 
-        // Transient (not saved) guard against duplicate mental-state events, e.g. the two
-        // mirrored SocialFighting starts, or a break that re-triggers quickly.
-        private readonly Dictionary<string, int> recentMentalEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against TaleRecorder firing the same notable event repeatedly.
-        private readonly Dictionary<string, int> recentTaleEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against the same mood event firing for the same
-        // GameCondition on multiple maps within a short window.
-        private readonly Dictionary<string, int> recentMoodEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against the same pawn+thought being recorded repeatedly.
+        // Submit-bus sources share one consolidated transient store (see
+        // DiaryGameComponent.Dispatch.cs: recentEvents). The dicts below belong to sources that still
+        // use their legacy scan-loop / record-core ingestion (ThoughtProgression scanner, Hediff,
+        // Quest), plus the generic event-window guard and the raid generation-delay map.
+        // Transient (not saved) guard against the same pawn+thought being recorded repeatedly (the
+        // ThoughtProgression scanner keys into this with a "thoughtprogression|" prefix).
         private readonly Dictionary<string, int> recentThoughtEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against repeated hediff appearance/progression signals.
         private readonly Dictionary<string, int> recentHediffEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against the mirrored AddDirectRelation call from the other
-        // participant when a romance relation is added symmetrically. Keys by canonical pair id +
-        // relation defName.
-        private readonly Dictionary<string, int> recentRomanceEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against a raid incident double-firing or re-firing within the
-        // dedup window (e.g. mirrored multi-map transitions). Keys by incident/map/faction/points.
-        private readonly Dictionary<string, int> recentRaidEvents = new Dictionary<string, int>();
         // Transient (not saved) generation delay for ordinary raids. The event is recorded as soon as
         // RimWorld spawns the threat, but the LLM waits a short XML-tuned window so walk-in raids read
         // more like anticipation/contact than instant combat aftermath.
@@ -117,12 +107,6 @@ namespace PawnDiary
         private readonly Dictionary<string, int> recentQuestEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against generic event-window start/end signals double-firing.
         private readonly Dictionary<string, int> recentEventWindowEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against a ritual outcome double-firing. Keys by ritual,
-        // organizer, target, and finish tick.
-        private readonly Dictionary<string, int> recentRitualEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against an ability activation double-firing. Keys by caster,
-        // ability, target, and activation tick.
-        private readonly Dictionary<string, int> recentAbilityEvents = new Dictionary<string, int>();
         // Transient (not saved) list of quests already seen in the accepted state. Quest.Accept can
         // be reached through more than one RimWorld UI path, so the tick scanner uses this to catch
         // missed acceptance transitions without duplicating hook-driven entries.
@@ -234,13 +218,8 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentMentalEvents.Clear();
-            recentTaleEvents.Clear();
-            recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
-            recentRomanceEvents.Clear();
-            recentRaidEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
@@ -278,13 +257,8 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentMentalEvents.Clear();
-            recentTaleEvents.Clear();
-            recentMoodEvents.Clear();
             recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
-            recentRomanceEvents.Clear();
-            recentRaidEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
