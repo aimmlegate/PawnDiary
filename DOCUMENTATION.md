@@ -100,27 +100,27 @@ Adding a reaction to a new event is now: write one Harmony hook + one `DiarySign
 into a payload, build the context, emit), register the source's `Spec` in the catalog, and add its
 XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-implemented.
 
-**Migration status (this is in progress):** the `Submit` bus and dispatch pipeline are live, and
-the following sources route through it today — **Thought, Inspiration, Ability, Romance, Raid,
-MoodEvent, MentalState, Ritual/PsychicRitual, Tale, Death, Interaction, Arrival** (covering all
-shapes: solo, pair, fan-out, batch, ambient, neutral-description). Tick-scanner sources submit through
-the bus too: Arrival's starting-colonist scan, **Work**'s periodic job sample, and
-**ThoughtProgression**'s situational-need scan all build a signal per pawn and `Submit` it. A scanner
-whose episode state depends on whether the event recorded (ThoughtProgression's recorded-stage set)
-calls `Dispatch` directly to read the emitted result. **Hediff**'s AddHediff hook and severity scan
-both submit a `HediffSignal`. **Quest**'s accept/end hooks and accept-state scanner submit a
-`QuestFanoutSignal` (which also fires the quest event-window signal at capture). The one remaining
-source, **DayReflection**, is an end-of-day aggregation flush rather than a captured event; it is
-being folded in last. The remaining catalog sources still
-use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
-the identical pattern; their dedup keys already share the consolidated store via the same raw
-prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
-each source's current ingestion path.
+**Migration status: complete.** Every catalog source (`DiaryEventType`) now routes through the bus —
+the Harmony-hook sources (Thought, Inspiration, Ability, Romance, MentalState, Tale, Death,
+Interaction, Raid, MoodEvent, Ritual/PsychicRitual, Hediff, Quest, Arrival) and the tick-scanner /
+flush sources (Work, ThoughtProgression, DayReflection). There are no remaining `RecordXxx` capture
+methods. Two patterns reach the bus:
+
+- **One-shot captures** (Harmony hooks) build a `DiarySignal` and call `DiaryEvents.Submit`.
+- **Scanner / flush sources** are still driven by their periodic component scans (work sampling,
+  situational-thought progression, hediff severity, quest accept-state, day reflection), but each scan
+  now builds a signal per pawn and submits it instead of recording inline. A scan whose own episode
+  state depends on whether the event recorded (ThoughtProgression's recorded-stage set, DayReflection's
+  written-day guard) calls `Dispatch` directly and reads its `bool` result.
+
+The per-source dedup dictionaries are gone, replaced by the single consolidated `recentEvents` store
+(legacy scan state like `knownAcceptedQuestIds` and the per-episode staging sets remain, since they
+are not event dedup). The coverage table below lists each source's signal.
 
 ## 4. Event Sources
 
-The catalog of every event the diary reacts to (`DiaryEventType`), with its current ingestion path.
-"Signal" = migrated to the `Submit` bus; "RecordX" = legacy method pending migration.
+The catalog of every event the diary reacts to (`DiaryEventType`), with the `DiarySignal` that carries
+it onto the bus.
 
 | Event type | Observed by | Ingestion | Shape |
 |---|---|---|---|
@@ -136,7 +136,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
 | Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |
-| DayReflection | Sleep/rest flush | route-sink (pending) | solo |
+| DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo |
 | Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |

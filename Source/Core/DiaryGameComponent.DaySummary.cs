@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -104,31 +105,18 @@ namespace PawnDiary
                 SignalTags = tags.ToString(),
                 AlreadyWritten = false,
             };
-            CaptureContext ctx = BuildCaptureContext(
-                eligible: true,
-                userEnabled: true,
-                signalEnabled: DiaryTuning.Current.daySummaryEnabled,
-                ambientSignalEnabled: true);
-
-            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.DayReflection);
-            CaptureDecision decision = spec != null
-                ? spec.Decide(data, ctx)
-                : CaptureDecision.Drop;
-            if (decision != CaptureDecision.GenerateSolo)
-            {
-                return;
-            }
-
-            writtenDayReflections.Add(dayKey);
-
             string label = "PawnDiary.Event.DayReflectionLabel".Translate().Resolve();
             string text = BuildDayReflectionText(pawn, highlights);
             string instruction = "PawnDiary.Event.DayReflectionInstruction".Translate(pawn.LabelShortCap).Resolve();
             string gameContext = DayReflectionEventData.BuildGameContext(
                 data.Day, data.HighlightCount, data.CandidateCount, data.FillerMomentCount, data.SignalTags);
 
-            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, DayReflectionEventData.DefNameToken, label, text, instruction, gameContext);
-            QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
+            // Dispatch through the bus; record this pawn/day as written only if the catalog actually
+            // emitted the reflection — the same coupling the old inline Decide + writtenDayReflections had.
+            if (Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext)))
+            {
+                writtenDayReflections.Add(dayKey);
+            }
         }
 
         /// <summary>

@@ -14,13 +14,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   (peek-then-mark-after-first) lives in one place. The ~12 per-source dedup dictionaries collapse to
   one transient `recentEvents` store keyed by the existing raw source-prefixed keys. This is internal
   plumbing only — no `DiaryEvent` field, Scribe key, `interactionDefName`, or `gameContext` format
-  changed, so saves load identically. Migrated so far: Thought, Inspiration, Ability (solo), Romance,
-  MentalState (pair), Raid, MoodEvent, Ritual, PsychicRitual (fan-out), Tale (batch/death routes),
-  Death (neutral description), Interaction (pair/solo/batch/ambient) — every Harmony-hook-driven
-  source. The remaining sources (Hediff, Arrival, Quest, Work, ThoughtProgression, DayReflection) are
-  tick-scanner-driven or share a record-core with one, so they keep their centralized scan-loop
-  ingestion and coexist via the shared dedup store. Pure DedupKey() tests pin the consolidated-store
-  keys. See
+  changed, so saves load identically. **All 17 catalog sources are migrated** — the Harmony-hook
+  sources (Thought, Inspiration, Ability, Romance, MentalState, Tale, Death, Interaction, Raid,
+  MoodEvent, Ritual/PsychicRitual, Hediff, Quest, Arrival) and the tick-scanner / flush sources
+  (Work, ThoughtProgression, DayReflection), whose periodic scans now build a signal per pawn and
+  submit it. `Dispatch` returns whether it emitted, so a scan whose episode state is coupled to the
+  record outcome (ThoughtProgression's recorded-stage set, DayReflection's written-day guard) reads
+  that result. No `RecordXxx` capture methods remain; the per-source dedup dictionaries are gone,
+  replaced by the consolidated store. Pure DedupKey() tests pin the consolidated-store keys. See
   DOCUMENTATION.md section 3.1 and the section 4 coverage table.
 
 ## 2026-06-28
