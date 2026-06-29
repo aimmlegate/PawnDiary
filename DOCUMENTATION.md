@@ -108,8 +108,10 @@ the bus too: Arrival's starting-colonist scan, **Work**'s periodic job sample, a
 **ThoughtProgression**'s situational-need scan all build a signal per pawn and `Submit` it. A scanner
 whose episode state depends on whether the event recorded (ThoughtProgression's recorded-stage set)
 calls `Dispatch` directly to read the emitted result. **Hediff**'s AddHediff hook and severity scan
-both submit a `HediffSignal`. The remaining sources (**Quest, DayReflection**) are being migrated to
-submit through the bus as well, and coexist with it via the shared dedup store until then. The remaining catalog sources still
+both submit a `HediffSignal`. **Quest**'s accept/end hooks and accept-state scanner submit a
+`QuestFanoutSignal` (which also fires the quest event-window signal at capture). The one remaining
+source, **DayReflection**, is an end-of-day aggregation flush rather than a captured event; it is
+being folded in last. The remaining catalog sources still
 use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
 the identical pattern; their dedup keys already share the consolidated store via the same raw
 prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
@@ -135,7 +137,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |
 | DayReflection | Sleep/rest flush | route-sink (pending) | solo |
-| Quest | `Quest.Accept`/`End` + state scan | `RecordQuest…` (pending) | fan-out |
+| Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |

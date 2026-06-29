@@ -94,9 +94,6 @@ namespace PawnDiary
         // RimWorld spawns the threat, but the LLM waits a short XML-tuned window so walk-in raids read
         // more like anticipation/contact than instant combat aftermath.
         private readonly Dictionary<string, int> delayedRaidGenerationReadyTicks = new Dictionary<string, int>();
-        // Transient (not saved) guard against a quest lifecycle signal double-firing (e.g. a
-        // multi-map transition or a fluke double-call). Keys by quest id + signal.
-        private readonly Dictionary<string, int> recentQuestEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against generic event-window start/end signals double-firing.
         private readonly Dictionary<string, int> recentEventWindowEvents = new Dictionary<string, int>();
         // Transient (not saved) list of quests already seen in the accepted state. Quest.Accept can
@@ -211,7 +208,6 @@ namespace PawnDiary
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
             delayedRaidGenerationReadyTicks.Clear();
-            recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
             recentEvents.Clear();
             activeEventWindows.Clear();
@@ -248,7 +244,6 @@ namespace PawnDiary
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
             delayedRaidGenerationReadyTicks.Clear();
-            recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
             recentEvents.Clear();
             knownAcceptedQuestIds.Clear();
