@@ -88,6 +88,32 @@ namespace PawnDiary.Capture
             return CaptureDecision.GeneratePair;
         }
 
+        /// <summary>The shape the impure interaction emit should build for a decision.</summary>
+        public enum InteractionEmitShape { Drop, Solo, Pair, Batch }
+
+        /// <summary>
+        /// Pure routing for the impure Emit step: maps the catalog decision to the emit shape.
+        /// RouteBatch and RouteAmbient both feed the same batch accumulator, so they collapse to
+        /// Batch. Extracted so the routing — otherwise exercised only inside the RimWorld-coupled
+        /// Emit — is unit-testable. Mirrors InteractionSignal.Emit; the solo POV pawn (initiator vs
+        /// recipient) is a captured eligibility flag the signal applies, not part of this routing.
+        /// </summary>
+        public static InteractionEmitShape PlanEmit(CaptureDecision decision)
+        {
+            switch (decision)
+            {
+                case CaptureDecision.GenerateSolo:
+                    return InteractionEmitShape.Solo;
+                case CaptureDecision.GeneratePair:
+                    return InteractionEmitShape.Pair;
+                case CaptureDecision.RouteBatch:
+                case CaptureDecision.RouteAmbient:
+                    return InteractionEmitShape.Batch;
+                default:
+                    return InteractionEmitShape.Drop;
+            }
+        }
+
         /// <summary>
         /// Pure assembly of the interaction game-context marker. The leading "def=" field and the
         /// optional worker/initiatorThought/recipientThought fields together let the UI recover the

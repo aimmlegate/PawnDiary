@@ -1,13 +1,13 @@
 // Payload + pure decision for a "mood-affecting game condition started" event (the
 // GameConditionManager.RegisterCondition hook). This is the second existing source migrated to
 // the Event Catalog and the first one with multi-pawn fan-out: a single GameCondition (aurora,
-// eclipse, psychic drone, toxic fallout, ...) triggers one RecordMoodEvent call, which then creates
-// a separate solo DiaryEvent for each eligible colonist on affected maps.
+// eclipse, psychic drone, toxic fallout, ...) submits one MoodEventFanoutSignal, which then creates a
+// separate solo DiaryEvent for each eligible colonist on affected maps.
 //
-// The catalog dispatch happens per pawn: RecordMoodEvent iterates affected colonists, builds one
-// MoodEventData per pawn, and asks the catalog for a decision. The condition-level dedup (one
+// The catalog dispatch happens per pawn: MoodEventFanoutSignal iterates affected colonists, builds
+// one MoodEventData per pawn, and asks the catalog for a decision. The condition-level dedup (one
 // window per GameCondition.uniqueID) and the per-pawn duplicate check (a pawn on multiple maps
-// during a transition) stay in RecordMoodEvent — they are per-source-call and per-loop invariants,
+// during a transition) stay in the fan-out signal — they are per-source-call and per-loop invariants,
 // not per-event decisions.
 //
 // The decision itself is trivial: eligible + user-enabled → GenerateSolo. There is no token
@@ -21,9 +21,9 @@ namespace PawnDiary.Capture
 {
     /// <summary>
     /// Captured facts for one colonist experiencing a mood-affecting GameCondition. Filled by
-    /// DiaryGameComponent.RecordMoodEvent inside its per-pawn loop. The shared condition facts
-    /// (defName, label) are copied onto every per-pawn payload because the catalog dispatch is
-    /// per-pawn — each Decide call must be self-contained.
+    /// MoodEventFanoutSignal inside its per-pawn loop. The shared condition facts (defName, label)
+    /// are copied onto every per-pawn payload because the catalog dispatch is per-pawn — each Decide
+    /// call must be self-contained.
     /// </summary>
     public class MoodEventData : DiaryEventData
     {

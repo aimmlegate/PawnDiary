@@ -111,6 +111,19 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// The transient dedup key for this mental-state event (raw, source-prefixed). A social fight
+        /// dedups by canonical pair key (so the mirrored second call collapses); a solo break dedups
+        /// per pawn + defName. Lifted out of the old RecordMentalState unchanged. The matching dedup
+        /// window differs by shape — the signal reads socialFight vs mentalBreak ticks accordingly.
+        /// </summary>
+        public string DedupKey()
+        {
+            return IsSocialFightPair(this)
+                ? "fight|" + CanonicalPairKey(PawnId, OtherPawnId)
+                : "break|" + PawnId + "|" + DefName;
+        }
+
+        /// <summary>
         /// Pure assembly of a PAIR mental-state event's game-context marker (social fights). The
         /// leading "mental_state=" marker is load-bearing for UI domain classification. No
         /// "target=" field because both participants are POV pawns. Reason is appended only if

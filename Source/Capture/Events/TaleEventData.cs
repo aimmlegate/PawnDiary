@@ -60,6 +60,15 @@ namespace PawnDiary.Capture
         public bool IsDeathDescription;
 
         /// <summary>
+        /// The transient dedup key for this tale event (raw, source-prefixed). Lifted verbatim out of
+        /// the old RecordTale: one window per taleDef + both pawn ids (empty when a pawn is absent).
+        /// </summary>
+        public string DedupKey()
+        {
+            return "tale|" + DefName + "|" + (FirstPawnId ?? string.Empty) + "|" + (SecondPawnId ?? string.Empty);
+        }
+
+        /// <summary>
         /// TaleDefs whose events are already captured by narrower hooks. Skipping them here avoids
         /// double diary entries for one social fight or mental break. Mirrored from the pre-refactor
         /// private TaleDefsCoveredElsewhere set unchanged. Public + const so tests can lock it.
@@ -119,6 +128,51 @@ namespace PawnDiary.Capture
             }
 
             return CaptureDecision.GenerateSolo;
+        }
+
+        /// <summary>The shape the impure Tale emit should build for a decision.</summary>
+        public enum TaleEmitShape { Drop, Batch, Solo, Pair }
+
+        /// <summary>Pure routing result for TaleSignal.Emit: shape + whether it is a neutral
+        /// death-description + (for Solo) which captured pawn is the POV.</summary>
+        public struct TaleEmitPlan
+        {
+            public readonly TaleEmitShape Shape;
+            public readonly bool DeathDescription;
+            public readonly bool PovIsFirstPawn;
+
+            public TaleEmitPlan(TaleEmitShape shape, bool deathDescription, bool povIsFirstPawn)
+            {
+                Shape = shape;
+                DeathDescription = deathDescription;
+                PovIsFirstPawn = povIsFirstPawn;
+            }
+        }
+
+        /// <summary>
+        /// Pure routing for the impure Emit step: maps the catalog decision (+ which participant is
+        /// eligible, for solo POV selection) to the shape the sink should build. Extracted so the
+        /// branch logic — otherwise exercised only inside the RimWorld-coupled Emit — is unit-testable.
+        /// Mirrors TaleSignal.Emit exactly: the POV pawn for a solo entry is the first pawn when it is
+        /// eligible, else the second.
+        /// </summary>
+        public static TaleEmitPlan PlanEmit(CaptureDecision decision, bool firstEligible)
+        {
+            switch (decision)
+            {
+                case CaptureDecision.RouteBatch:
+                    return new TaleEmitPlan(TaleEmitShape.Batch, false, false);
+                case CaptureDecision.GeneratePair:
+                    return new TaleEmitPlan(TaleEmitShape.Pair, false, false);
+                case CaptureDecision.GeneratePairDeathDescription:
+                    return new TaleEmitPlan(TaleEmitShape.Pair, true, false);
+                case CaptureDecision.GenerateSolo:
+                    return new TaleEmitPlan(TaleEmitShape.Solo, false, firstEligible);
+                case CaptureDecision.GenerateSoloDeathDescription:
+                    return new TaleEmitPlan(TaleEmitShape.Solo, true, firstEligible);
+                default:
+                    return new TaleEmitPlan(TaleEmitShape.Drop, false, false);
+            }
         }
 
         private static bool HasEligibleDistinctPair(TaleEventData data)

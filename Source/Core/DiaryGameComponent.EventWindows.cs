@@ -13,7 +13,8 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         private const string EventWindowSourceIncident = "Incident";
-        private const string EventWindowSourceQuest = "Quest";
+        // internal: the QuestFanoutSignal emits the quest lifecycle event-window signal at capture.
+        internal const string EventWindowSourceQuest = "Quest";
         private const string EventWindowSourceThingSpawned = "ThingSpawned";
         private const string EventWindowSourceLetter = "Letter";
         private const string EventWindowSourceProximityLetter = "ProximityLetter";

@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -41,63 +42,16 @@ namespace PawnDiary
                 List<Pawn> colonists = map.mapPawns.FreeColonists;
                 for (int i = 0; i < colonists.Count; i++)
                 {
-                    RecordColonistArrival(colonists[i], BuildStartingArrivalContext());
+                    DiaryEvents.Submit(new ArrivalSignal(colonists[i], BuildStartingArrivalContext()));
                 }
             }
 
             return true;
         }
 
-        /// <summary>
-        /// Records the first neutral entry for a pawn: how they became part of the colony. This is
-        /// public because the Pawn.SetFaction Harmony patch calls it after vanilla confirms the join.
-        /// </summary>
-        public void RecordColonistArrival(Pawn pawn, string arrivalContext)
-        {
-            if (!CanRecordGameplayEventNow() || pawn == null || PawnDiaryMod.Settings == null)
-            {
-                return;
-            }
-
-            string pawnId = pawn.GetUniqueLoadID();
-            DiaryInteractionGroupDef arrivalGroup = InteractionGroups.ByKey(ArrivalGroupKey);
-            ArrivalEventData data = new ArrivalEventData
-            {
-                PawnId = pawnId,
-                Tick = Find.TickManager.TicksGame,
-                DefName = ArrivalDefName,
-                PawnLabel = DiaryLineCleaner.CleanLine(pawn.LabelShortCap),
-                PawnLoadId = pawnId,
-                ArrivalContext = arrivalContext,
-                HasExistingArrival = HasArrivalEventFor(pawnId),
-            };
-            CaptureContext ctx = BuildCaptureContext(
-                eligible: IsDiaryEligible(pawn),
-                userEnabled: arrivalGroup == null || PawnDiaryMod.Settings.IsGroupEnabled(arrivalGroup.defName),
-                signalEnabled: true,
-                ambientSignalEnabled: true);
-
-            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Arrival);
-            CaptureDecision decision = spec != null
-                ? spec.Decide(data, ctx)
-                : CaptureDecision.Drop;
-            if (decision != CaptureDecision.GenerateSoloArrivalDescription)
-            {
-                return;
-            }
-
-            bool startingPawn = ArrivalEventData.IsStartingArrival(arrivalContext);
-            string label = "PawnDiary.Event.ArrivalLabel".Translate().Resolve();
-            string text = startingPawn
-                ? "PawnDiary.Event.StartingArrival".Translate(pawn.LabelShortCap).Resolve()
-                : "PawnDiary.Event.JoinedArrival".Translate(pawn.LabelShortCap).Resolve();
-
-            DiaryEvent arrivalEvent = AddSoloEvent(pawn, null, ArrivalDefName, label, text, string.Empty,
-                ArrivalEventData.BuildGameContext(data.PawnLabel, data.PawnLoadId, data.ArrivalContext));
-            QueueArrivalDescription(arrivalEvent);
-        }
-
-        private bool HasArrivalEventFor(string pawnId)
+        // internal: the ArrivalSignal capture reads this through DiaryGameComponent.Current to drop a
+        // duplicate arrival page (the pawn already has one).
+        internal bool HasArrivalEventFor(string pawnId)
         {
             if (string.IsNullOrWhiteSpace(pawnId))
             {

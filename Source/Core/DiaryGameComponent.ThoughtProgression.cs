@@ -6,10 +6,9 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace PawnDiary
@@ -133,89 +132,16 @@ namespace PawnDiary
             }
 
             bool stageAlreadyRecorded = state.recordedStageKeys.Contains(stageKey);
-            if (RecordThoughtProgression(pawn, match, worsened, stageAlreadyRecorded))
+            // Dispatch directly (not the void Submit façade) so we learn whether the event actually
+            // recorded — the recorded-stage set updates only on success, exactly like the old
+            // RecordThoughtProgression bool return.
+            bool recorded = Dispatch(new ThoughtProgressionSignal(
+                pawn, match.thoughtDef, match.thoughtDefName, match.categoryKey, match.label,
+                match.stageIndex, match.severity, match.moodOffset, worsened, stageAlreadyRecorded));
+            if (recorded)
             {
                 state.recordedStageKeys.Add(stageKey);
             }
-        }
-
-        private bool RecordThoughtProgression(Pawn pawn, ThoughtProgressionMatch match,
-            bool worsened, bool stageAlreadyRecorded)
-        {
-            if (pawn == null || match == null || match.thoughtDef == null)
-            {
-                return false;
-            }
-
-            if (PawnDiaryMod.Settings == null)
-            {
-                return false;
-            }
-
-            string pawnId = pawn.GetUniqueLoadID();
-            string moodImpact = MoodImpact.Classify(match.moodOffset);
-            ThoughtProgressionEventData data = new ThoughtProgressionEventData
-            {
-                PawnId = pawnId,
-                Tick = Find.TickManager.TicksGame,
-                DefName = match.thoughtDefName,
-                CategoryKey = match.categoryKey,
-                Label = match.label,
-                StageIndex = match.stageIndex.ToString(),
-                Severity = match.severity.ToString(),
-                MoodImpact = moodImpact,
-                MoodOffset = match.moodOffset.ToString("F1", CultureInfo.InvariantCulture),
-                Worsened = worsened,
-                StageAlreadyRecorded = stageAlreadyRecorded,
-            };
-            CaptureContext ctx = BuildCaptureContext(
-                eligible: IsDiaryEligible(pawn),
-                userEnabled: PawnDiaryMod.Settings.IsThoughtEnabled(match.thoughtDef),
-                signalEnabled: DiarySignalPolicies.Enabled(DiarySignalPolicies.ThoughtProgression),
-                ambientSignalEnabled: true);
-
-            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.ThoughtProgression);
-            CaptureDecision decision = spec != null
-                ? spec.Decide(data, ctx)
-                : CaptureDecision.Drop;
-            if (decision != CaptureDecision.GenerateSolo)
-            {
-                return false;
-            }
-
-            string dedupKey = "thoughtprogression|" + pawnId + "|" + match.categoryKey + "|"
-                + match.thoughtDefName + "|" + match.stageIndex.ToString();
-            if (RecentlyRecorded(recentThoughtEvents, dedupKey, DiarySignalPolicies.ThoughtProgressionDedupTicks))
-            {
-                return false;
-            }
-
-            string instruction = AppendThoughtProgressionInstruction(
-                InteractionGroups.InstructionForThought(match.thoughtDef));
-
-            string gameContext = ThoughtProgressionEventData.BuildGameContext(
-                data.DefName, data.CategoryKey, data.Label, data.StageIndex,
-                data.Severity, data.MoodImpact, data.MoodOffset);
-
-            string text = "PawnDiary.Event.ThoughtProgressionNegative".Translate(
-                pawn.LabelShortCap, match.label).Resolve();
-
-            DiaryEvent diaryEvent = AddSoloEvent(pawn, null, match.thoughtDefName, match.label,
-                text, instruction, gameContext);
-            diaryEvent.moodImpact = moodImpact;
-            QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
-            return true;
-        }
-
-        private static string AppendThoughtProgressionInstruction(string baseInstruction)
-        {
-            string progressionInstruction = "PawnDiary.Event.ThoughtProgressionInstruction".Translate().Resolve();
-            if (string.IsNullOrWhiteSpace(baseInstruction))
-            {
-                return progressionInstruction;
-            }
-
-            return baseInstruction.Trim() + "; " + progressionInstruction;
         }
 
         private static ThoughtProgressionMatch MatchThoughtProgression(Thought thought, List<ThoughtProgressionRule> rules)

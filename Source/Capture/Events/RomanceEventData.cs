@@ -15,8 +15,8 @@ using System;
 namespace PawnDiary.Capture
 {
     /// <summary>
-    /// Captured facts for one romance-relation change. Filled by
-    /// DiaryGameComponent.RecordRomance from the live Pawn pair + the added PawnRelationDef.
+    /// Captured facts for one romance-relation change. Filled by RomanceSignal from the live Pawn
+    /// pair + the added PawnRelationDef.
     /// </summary>
     public class RomanceEventData : DiaryEventData
     {
@@ -80,6 +80,16 @@ namespace PawnDiary.Capture
             }
 
             return CaptureDecision.GeneratePair;
+        }
+
+        /// <summary>
+        /// The transient dedup key for this romance event (raw, source-prefixed). Uses a canonical,
+        /// order-independent pair key so the mirrored AddDirectRelation call from the other
+        /// participant collapses to the same key. Preserves the old romance recorder's key shape.
+        /// </summary>
+        public string DedupKey()
+        {
+            return "romance|" + CanonicalPairKey(FirstPawnId, SecondPawnId) + "|" + DefName;
         }
 
         /// <summary>

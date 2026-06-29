@@ -9,7 +9,7 @@
 // faction defName, raid points, arrival mode, strategy) and copies them onto every per-pawn payload,
 // exactly like MoodEventData copies the shared condition facts onto each colonist's payload.
 // Colony-level dedup (one window per raid, keyed by incident/faction/points/map) lives in
-// RecordRaid, not here.
+// RaidFanoutSignal, not here.
 //
 // The event carries a "raid=" game-context marker so the UI classifies it into the Raid domain.
 // "unknown" is the English sentinel for an absent faction defName (AGENTS.md section 12 carve-out:
@@ -19,10 +19,10 @@ using System;
 namespace PawnDiary.Capture
 {
     /// <summary>
-    /// Captured facts for one colonist living through a raid. Filled by
-    /// DiaryGameComponent.RecordRaid inside its per-pawn loop. Shared raid facts (incident defName,
-    /// raider faction, points) are copied onto every per-pawn payload because catalog dispatch is
-    /// per-pawn — each Decide call must be self-contained.
+    /// Captured facts for one colonist living through a raid. Filled by RaidFanoutSignal inside its
+    /// per-pawn loop. Shared raid facts (incident defName, raider faction, points) are copied onto
+    /// every per-pawn payload because catalog dispatch is per-pawn — each Decide call must be
+    /// self-contained.
     /// </summary>
     public class RaidEventData : DiaryEventData
     {

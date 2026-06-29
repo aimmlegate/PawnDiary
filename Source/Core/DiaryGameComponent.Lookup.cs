@@ -6,6 +6,7 @@
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -13,11 +14,25 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
+        // One dedup entry: the tick the key was recorded AND the source's own window at that moment.
+        // Storing the window per-key (rather than borrowing the current caller's window) is what lets
+        // the shared store hold short- and long-window sources side by side: a prune sweep driven by a
+        // 300-tick source can no longer evict a still-live 60000-tick hediff key. See RecentEventExpiry
+        // for the pure policy these helpers defer to.
+        private struct RecentEventEntry
+        {
+            public int tick;
+            public int windowTicks;
+        }
+
         /// <summary>
         /// Dedup gate: returns true if the same key was recorded within the given tick window, preventing
-        /// duplicate events (e.g. mirrored SocialFighting calls).
+        /// duplicate events (e.g. mirrored SocialFighting calls). Combines check-then-mark for callers
+        /// that decide and emit in one step; callers that need to draw impure state (e.g. an ability's
+        /// RNG roll) between the check and the mark call <see cref="IsRecentlyRecorded"/> and
+        /// <see cref="MarkRecentlyRecorded"/> separately.
         /// </summary>
-        private bool RecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        private bool RecentlyRecorded(Dictionary<string, RecentEventEntry> recentEvents, string key, int windowTicks)
         {
             if (IsRecentlyRecorded(recentEvents, key, windowTicks))
             {
@@ -28,37 +43,44 @@ namespace PawnDiary
             return false;
         }
 
-        private bool IsRecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        private bool IsRecentlyRecorded(Dictionary<string, RecentEventEntry> recentEvents, string key, int windowTicks)
         {
-            if (recentEvents == null || string.IsNullOrEmpty(key))
+            // A zero/negative window means "this source opted out of dedup": do not check, do not mark,
+            // do not prune. Without this guard a zero-window source would have wiped the whole shared
+            // store on its first prune (see RecentEventExpiry.IsWithinWindow).
+            if (recentEvents == null || string.IsNullOrEmpty(key) || windowTicks <= 0)
             {
                 return false;
             }
 
             int now = Find.TickManager.TicksGame;
-            PruneRecentEvents(recentEvents, now, windowTicks);
+            PruneRecentEvents(recentEvents, now);
 
-            int last;
-            return recentEvents.TryGetValue(key, out last) && now - last < windowTicks;
+            RecentEventEntry entry;
+            return recentEvents.TryGetValue(key, out entry)
+                && RecentEventExpiry.IsWithinWindow(entry.tick, windowTicks, now);
         }
 
-        private void MarkRecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        private void MarkRecentlyRecorded(Dictionary<string, RecentEventEntry> recentEvents, string key, int windowTicks)
         {
-            if (recentEvents == null || string.IsNullOrEmpty(key))
+            if (recentEvents == null || string.IsNullOrEmpty(key) || windowTicks <= 0)
             {
                 return;
             }
 
             int now = Find.TickManager.TicksGame;
-            PruneRecentEvents(recentEvents, now, windowTicks);
-            recentEvents[key] = now;
+            PruneRecentEvents(recentEvents, now);
+            recentEvents[key] = new RecentEventEntry { tick = now, windowTicks = windowTicks };
         }
 
         /// <summary>
-        /// Removes dedup keys that are older than their useful window. The dictionaries are transient
-        /// and only answer "did this just happen?", so old keys should not survive a long play session.
+        /// Removes dedup keys that are older than their OWN useful window. The stores are transient and
+        /// only answer "did this just happen?", so old keys should not survive a long play session.
+        /// Each entry carries the window it was recorded with, so a prune triggered by one source only
+        /// ever evicts entries that have actually expired by their own source's window — never a
+        /// longer-window key swept out early by a shorter-window caller.
         /// </summary>
-        private static void PruneRecentEvents(Dictionary<string, int> recentEvents, int now, int windowTicks)
+        private static void PruneRecentEvents(Dictionary<string, RecentEventEntry> recentEvents, int now)
         {
             if (recentEvents == null || recentEvents.Count < RecentEventPruneThreshold)
             {
@@ -66,9 +88,9 @@ namespace PawnDiary
             }
 
             List<string> expiredKeys = null;
-            foreach (KeyValuePair<string, int> pair in recentEvents)
+            foreach (KeyValuePair<string, RecentEventEntry> pair in recentEvents)
             {
-                if (windowTicks <= 0 || now - pair.Value >= windowTicks)
+                if (RecentEventExpiry.IsExpired(pair.Value.tick, pair.Value.windowTicks, now))
                 {
                     if (expiredKeys == null)
                     {
@@ -102,9 +124,52 @@ namespace PawnDiary
         /// A pawn qualifies for diary tracking if it is a humanlike colonist old enough to write
         /// first-person entries. Pre-teen colonists can still appear as "other pawn" context.
         /// </summary>
-        private static bool IsDiaryEligible(Pawn pawn)
+        // internal: part of the DiarySignal capture surface (signals snapshot eligibility into CaptureContext).
+        internal static bool IsDiaryEligible(Pawn pawn)
         {
             return IsHumanlike(pawn) && pawn.IsColonist && IsFirstPersonDiaryAgeEligible(pawn);
+        }
+
+        /// <summary>
+        /// A pawn can receive a neutral death-description page if it is a humanlike colonist — even
+        /// post-mortem, when IsDiaryEligible no longer holds. Shared by the Tale death-description path
+        /// and the Death fallback path. internal so the Tale signal in PawnDiary.Ingestion can read it.
+        /// Moved verbatim from the old DiaryGameComponent.Tales.cs.
+        /// </summary>
+        internal static bool IsDeathDescriptionEligible(Pawn pawn)
+        {
+            return pawn != null && IsHumanlike(pawn) && pawn.IsColonist;
+        }
+
+        /// <summary>
+        /// True when the pawn already has a neutral death-description page, so the Tale path and the
+        /// Pawn.Kill fallback do not both write one. internal so the Death fallback signal can read it
+        /// via DiaryGameComponent.Current. Moved verbatim from the old DiaryGameComponent.Tales.cs.
+        /// </summary>
+        internal bool HasDeathDescriptionFor(Pawn pawn)
+        {
+            string pawnId = pawn?.GetUniqueLoadID();
+            if (string.IsNullOrWhiteSpace(pawnId))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (diary?.eventIds == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < diary.eventIds.Count; i++)
+            {
+                DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
+                if (diaryEvent != null && diaryEvent.IsDeathDescriptionFor(pawnId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -124,6 +189,25 @@ namespace PawnDiary
         private static bool CanRecordGameplayEventNow()
         {
             return GamePlaying;
+        }
+
+        /// <summary>
+        /// Builds a CaptureContext from the impure eligibility/enable facts the caller already
+        /// computed. Centralized so every source — the partial-class Record methods and the
+        /// DiarySignal capture classes alike — reads the same way and the pure Decider sees a
+        /// consistent snapshot. internal so signals in PawnDiary.Ingestion can reuse it.
+        /// </summary>
+        internal static CaptureContext BuildCaptureContext(
+            bool eligible, bool userEnabled, bool signalEnabled, bool ambientSignalEnabled)
+        {
+            return new CaptureContext
+            {
+                Eligible = eligible,
+                UserEnabled = userEnabled,
+                SignalEnabled = signalEnabled,
+                AmbientSignalEnabled = ambientSignalEnabled,
+                Now = Find.TickManager.TicksGame,
+            };
         }
 
         /// <summary>
@@ -175,7 +259,7 @@ namespace PawnDiary
         /// Adds the death-description event to the deceased colonist's diary even after death state
         /// makes the usual live-colonist eligibility checks unreliable.
         /// </summary>
-        private void AddDeathEventRef(Pawn pawn, string eventId)
+        internal void AddDeathEventRef(Pawn pawn, string eventId)
         {
             if (!IsDeathDescriptionEligible(pawn) || string.IsNullOrWhiteSpace(eventId))
             {

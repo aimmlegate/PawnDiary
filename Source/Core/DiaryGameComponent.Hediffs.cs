@@ -9,35 +9,32 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using PawnDiary.Capture;
+using PawnDiary.Ingestion;
 using RimWorld;
 using UnityEngine;
 using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>
+    /// Which capture path produced a hediff signal: the AddHediff hook (Appeared) vs. the periodic
+    /// severity scan (Progressed). Top-level internal so the HediffSignal (PawnDiary.Ingestion) and the
+    /// scanner share one enum.
+    /// </summary>
+    internal enum HediffSignalSource
+    {
+        Appeared,
+        Progressed
+    }
+
     public partial class DiaryGameComponent
     {
-        private enum HediffSignalSource
-        {
-            Appeared,
-            Progressed
-        }
-
         // Active hediff severity baselines, keyed by pawn + HediffDef + body part. Transient:
         // rebuilt by scanner after load so existing conditions do not suddenly become new diary pages.
         private readonly Dictionary<string, ActiveHediffProgressionState> activeHediffProgressions =
             new Dictionary<string, ActiveHediffProgressionState>();
         private int nextHediffProgressionScanTick;
         private bool baselineHediffProgressionsOnNextScan;
-
-        /// <summary>
-        /// Records a colonist's newly-added hediff according to the matching Hediff-domain group.
-        /// Called from the Pawn_HealthTracker.AddHediff Harmony hook.
-        /// </summary>
-        public void RecordHediffAppeared(Pawn pawn, Hediff hediff)
-        {
-            RecordHediffSignal(pawn, hediff, HediffSignalSource.Appeared);
-        }
 
         /// <summary>
         /// Clears transient severity baselines. Loaded games baseline on the first scan so old
@@ -136,7 +133,7 @@ namespace PawnDiary
 
             if (match.stage > previousStage && match.recordable)
             {
-                RecordHediffSignal(match.pawn, match.hediff, HediffSignalSource.Progressed);
+                DiaryEvents.Submit(new HediffSignal(match.pawn, match.hediff, HediffSignalSource.Progressed));
             }
         }
 
@@ -164,73 +161,7 @@ namespace PawnDiary
             };
         }
 
-        private void RecordHediffSignal(Pawn pawn, Hediff hediff, HediffSignalSource source)
-        {
-            if (!CanRecordGameplayEventNow()
-                || pawn == null
-                || hediff == null
-                || hediff.def == null
-                || PawnDiaryMod.Settings == null)
-            {
-                return;
-            }
-
-            if (!IsDiaryEligible(pawn))
-            {
-                return;
-            }
-
-            DiaryInteractionGroupDef group;
-            HediffSignalPolicy policy;
-            if (!TryGetHediffPolicy(hediff, out group, out policy))
-            {
-                return;
-            }
-
-            // AddHediff is the best moment to establish a progression baseline, even when the
-            // hediff is still too mild to record. Later scanner passes can then detect a real worsen.
-            if (source == HediffSignalSource.Appeared)
-            {
-                RememberHediffProgressionState(pawn, hediff, policy);
-            }
-
-            // Snapshot for the catalog drop-gate. The policy flags are pre-computed here because
-            // every check reads RimWorld hediff state; the pure Decider only reads primitives.
-            HediffEventData data = BuildHediffEventData(pawn, hediff, group, policy, source);
-            CaptureContext ctx = BuildCaptureContext(
-                eligible: true,
-                userEnabled: PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
-                signalEnabled: policy.enabled,
-                ambientSignalEnabled: true);
-
-            DiaryEventSpec spec = DiaryEventCatalog.Get(DiaryEventType.Hediff);
-            CaptureDecision decision = spec != null
-                ? spec.Decide(data, ctx)
-                : CaptureDecision.Drop;
-            if (decision == CaptureDecision.Drop)
-            {
-                return;
-            }
-
-            string dedupKey = HediffDedupKey(pawn, hediff, policy, source);
-            if (RecentlyRecorded(recentHediffEvents, dedupKey, Math.Max(0, policy.dedupTicks)))
-            {
-                return;
-            }
-
-            if (decision == CaptureDecision.GenerateSolo)
-            {
-                RecordImmediateHediffEvent(pawn, hediff, group, policy, source, data);
-                return;
-            }
-
-            if (decision == CaptureDecision.RouteDayReflection)
-            {
-                RecordDayReflectionHediffSignal(pawn, hediff, policy, source);
-            }
-        }
-
-        private static HediffEventData BuildHediffEventData(Pawn pawn, Hediff hediff,
+        internal static HediffEventData BuildHediffEventData(Pawn pawn, Hediff hediff,
             DiaryInteractionGroupDef group, HediffSignalPolicy policy, HediffSignalSource source)
         {
             return new HediffEventData
@@ -252,7 +183,7 @@ namespace PawnDiary
             };
         }
 
-        private void RememberHediffProgressionState(Pawn pawn, Hediff hediff, HediffSignalPolicy policy)
+        internal void RememberHediffProgressionState(Pawn pawn, Hediff hediff, HediffSignalPolicy policy)
         {
             if (pawn == null
                 || hediff == null
@@ -275,7 +206,7 @@ namespace PawnDiary
             };
         }
 
-        private void RecordImmediateHediffEvent(Pawn pawn, Hediff hediff, DiaryInteractionGroupDef group,
+        internal void RecordImmediateHediffEvent(Pawn pawn, Hediff hediff, DiaryInteractionGroupDef group,
             HediffSignalPolicy policy, HediffSignalSource source, HediffEventData data)
         {
             string textKey = ImmediateHediffTextKey(policy, source);
@@ -304,7 +235,7 @@ namespace PawnDiary
                 : "PawnDiary.Event.HediffAppeared";
         }
 
-        private void RecordDayReflectionHediffSignal(Pawn pawn, Hediff hediff, HediffSignalPolicy policy,
+        internal void RecordDayReflectionHediffSignal(Pawn pawn, Hediff hediff, HediffSignalPolicy policy,
             HediffSignalSource source)
         {
             if (!DiaryTuning.Current.daySummaryEnabled)
@@ -345,7 +276,7 @@ namespace PawnDiary
             });
         }
 
-        private static bool TryGetHediffPolicy(Hediff hediff, out DiaryInteractionGroupDef group,
+        internal static bool TryGetHediffPolicy(Hediff hediff, out DiaryInteractionGroupDef group,
             out HediffSignalPolicy policy)
         {
             group = null;
@@ -444,7 +375,7 @@ namespace PawnDiary
             return Mathf.FloorToInt(Mathf.Max(0f, hediff.Severity) / policy.severityStep);
         }
 
-        private static string HediffDedupKey(Pawn pawn, Hediff hediff, HediffSignalPolicy policy,
+        internal static string HediffDedupKey(Pawn pawn, Hediff hediff, HediffSignalPolicy policy,
             HediffSignalSource source)
         {
             int stage = source == HediffSignalSource.Progressed ? HediffSeverityStage(hediff, policy) : 0;

@@ -16,7 +16,7 @@ namespace PawnDiary
         /// <summary>
         /// Adds one temporary thought to the pawn's ambient thought note for the current day.
         /// </summary>
-        private void RecordAmbientThought(Pawn pawn, ThoughtDef thoughtDef, string label, float moodOffset,
+        internal void RecordAmbientThought(Pawn pawn, ThoughtDef thoughtDef, string label, float moodOffset,
             string moodImpact, string instruction)
         {
             if (pawn == null || thoughtDef == null)

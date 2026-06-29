@@ -6,6 +6,44 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-29
 
+- **Unified event ingestion behind a `DiaryEvents.Submit` bus.** Every captured event now enters
+  through one front door and runs a single shared pipeline (`DiaryGameComponent.Dispatch`):
+  guard → pure catalog `Decide` → consolidated dedup → `Emit`. Each source's capture+emit logic
+  moved out of a bespoke `RecordXxx` method into a small uniform `DiarySignal` subclass under
+  `Source/Ingestion/`; colony-wide sources use `DiaryFanoutSignal` so the colony dedup
+  (peek-then-mark-after-first) lives in one place. The ~12 per-source dedup dictionaries collapse to
+  one transient `recentEvents` store keyed by the existing raw source-prefixed keys. This is internal
+  plumbing only — no `DiaryEvent` field, Scribe key, `interactionDefName`, or `gameContext` format
+  changed, so saves load identically. **All 17 catalog sources are migrated** — the Harmony-hook
+  sources (Thought, Inspiration, Ability, Romance, MentalState, Tale, Death, Interaction, Raid,
+  MoodEvent, Ritual/PsychicRitual, Hediff, Quest, Arrival) and the tick-scanner / flush sources
+  (Work, ThoughtProgression, DayReflection), whose periodic scans now build a signal per pawn and
+  submit it. `Dispatch` returns whether it emitted, so a scan whose episode state is coupled to the
+  record outcome (ThoughtProgression's recorded-stage set, DayReflection's written-day guard) reads
+  that result. No `RecordXxx` capture methods remain; the per-source dedup dictionaries are gone,
+  replaced by the consolidated store. Pure DedupKey() tests pin the consolidated-store keys, and pure
+  PlanEmit() functions for the two branchy sources (Tale, Interaction) make their emit routing —
+  decision -> shape, plus Tale's solo POV + death-description flags — unit-testable. See
+  DOCUMENTATION.md section 3.1 and the section 4 coverage table.
+
+- **Ingestion-bus review fixes.** Three correctness issues found by adversarial review of the
+  consolidated dedup store, plus stale comments:
+  - The shared `recentEvents` prune sweep used the *current caller's* window against every key, so a
+    short-window source crossing the 512-key threshold could evict a still-live long-window key
+    (e.g. a 300-tick ability evicting a 60000-tick hediff) and re-admit an event the old per-source
+    dictionaries suppressed. Each entry now stores its OWN window and the sweep evicts only keys that
+    have expired by that window (pure policy in `Source/Capture/RecentEventExpiry.cs`, unit-tested).
+  - A zero/negative dedup window now means "opt out of dedup" (no check, no mark, no prune) instead
+    of "treat every shared key as expired", so a tuned-to-zero source can no longer wipe the whole
+    store on its first prune.
+  - `Dispatch` now runs the dedup CHECK before `Decide` and the MARK after, restoring the
+    pre-refactor ability path where dedup ran before the `Rand.Value` roll; a deduped duplicate
+    activation no longer advances RimWorld's global RNG, and a chance-roll failure still does not
+    consume the dedup window.
+  - Updated stale comments and XML-doc comments that still named the deleted `RecordMoodEvent`/
+    `RecordRaid`/`RecordRomance` recorders and the pre-migration "legacy ingestion" map.
+  No `DiaryEvent` field, Scribe key, or save format changed.
+
 - **Gray flesh event-window monitor disabled.** The built-in `MetalhorrorSuspicion` event window is
   now disabled in XML because the `ThingSpawned` gray-flesh signal can leave the suspicion status
   effectively active all the time. The row remains documented as a template until a safer monitor is

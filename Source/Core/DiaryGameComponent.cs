@@ -1,6 +1,5 @@
-// The orchestrator. Owns the saved diary data and drives the whole flow: record an event
-// (RecordInteraction / RecordMentalState / RecordTale / RecordMoodEvent / RecordWork)
-// -> build a DiaryEvent with context -> queue an LLM
+// The orchestrator. Owns the saved diary data and drives the whole flow: submit/capture an event
+// signal -> build a DiaryEvent with context -> queue an LLM
 // request -> apply the result each tick -> hand views to the UI. Context/prompt building live in
 // DiaryContextBuilder / DiaryPromptBuilder; the saved data models in DiaryEvent / PawnDiaryRecord.
 // This is a RimWorld GameComponent (lifecycle hooks: GameComponentTick, GameComponentUpdate,
@@ -56,9 +55,6 @@ namespace PawnDiary
         // The transient dedup dictionaries keep only recent keys. Once any dictionary crosses this
         // size, the shared gate sweeps entries outside that source's configured dedup window.
         private const int RecentEventPruneThreshold = 512;
-        // Synthetic event used for the neutral first entry that explains how a pawn joined.
-        private const string ArrivalGroupKey = "arrival";
-        private const string ArrivalDefName = "PawnDiary_Arrival";
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
@@ -89,40 +85,19 @@ namespace PawnDiary
         private readonly Dictionary<string, PendingAmbientThoughtNote> pendingAmbientThoughtNotes = new Dictionary<string, PendingAmbientThoughtNote>();
         private readonly HashSet<string> writtenAmbientThoughtNotes = new HashSet<string>();
 
-        // Transient (not saved) guard against duplicate mental-state events, e.g. the two
-        // mirrored SocialFighting starts, or a break that re-triggers quickly.
-        private readonly Dictionary<string, int> recentMentalEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against TaleRecorder firing the same notable event repeatedly.
-        private readonly Dictionary<string, int> recentTaleEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against the same mood event firing for the same
-        // GameCondition on multiple maps within a short window.
-        private readonly Dictionary<string, int> recentMoodEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against the same pawn+thought being recorded repeatedly.
-        private readonly Dictionary<string, int> recentThoughtEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against repeated hediff appearance/progression signals.
-        private readonly Dictionary<string, int> recentHediffEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against the mirrored AddDirectRelation call from the other
-        // participant when a romance relation is added symmetrically. Keys by canonical pair id +
-        // relation defName.
-        private readonly Dictionary<string, int> recentRomanceEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against a raid incident double-firing or re-firing within the
-        // dedup window (e.g. mirrored multi-map transitions). Keys by incident/map/faction/points.
-        private readonly Dictionary<string, int> recentRaidEvents = new Dictionary<string, int>();
+        // Submit-bus sources share one consolidated transient store (see
+        // DiaryGameComponent.Dispatch.cs: recentEvents). Every hook-driven source has now been
+        // migrated onto that bus; the transient maps kept here are the remaining scan-loop bookkeeping
+        // (ThoughtProgression / Hediff / Work / DayReflection progression state, the generic
+        // event-window guard, and the raid generation-delay map) — none of them is a legacy recorder.
         // Transient (not saved) generation delay for ordinary raids. The event is recorded as soon as
         // RimWorld spawns the threat, but the LLM waits a short XML-tuned window so walk-in raids read
         // more like anticipation/contact than instant combat aftermath.
         private readonly Dictionary<string, int> delayedRaidGenerationReadyTicks = new Dictionary<string, int>();
-        // Transient (not saved) guard against a quest lifecycle signal double-firing (e.g. a
-        // multi-map transition or a fluke double-call). Keys by quest id + signal.
-        private readonly Dictionary<string, int> recentQuestEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against generic event-window start/end signals double-firing.
-        private readonly Dictionary<string, int> recentEventWindowEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against a ritual outcome double-firing. Keys by ritual,
-        // organizer, target, and finish tick.
-        private readonly Dictionary<string, int> recentRitualEvents = new Dictionary<string, int>();
-        // Transient (not saved) guard against an ability activation double-firing. Keys by caster,
-        // ability, target, and activation tick.
-        private readonly Dictionary<string, int> recentAbilityEvents = new Dictionary<string, int>();
+        // Each entry remembers its own Def-configured dedup window so a prune driven by one window
+        // never evicts a still-live key with a different window (see RecentEventExpiry).
+        private readonly Dictionary<string, RecentEventEntry> recentEventWindowEvents = new Dictionary<string, RecentEventEntry>();
         // Transient (not saved) list of quests already seen in the accepted state. Quest.Accept can
         // be reached through more than one RimWorld UI path, so the tick scanner uses this to catch
         // missed acceptance transitions without duplicating hook-driven entries.
@@ -234,16 +209,9 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentMentalEvents.Clear();
-            recentTaleEvents.Clear();
-            recentMoodEvents.Clear();
-            recentThoughtEvents.Clear();
-            recentHediffEvents.Clear();
-            recentRomanceEvents.Clear();
-            recentRaidEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
-            recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
+            recentEvents.Clear();
             activeEventWindows.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
@@ -277,16 +245,9 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentMentalEvents.Clear();
-            recentTaleEvents.Clear();
-            recentMoodEvents.Clear();
-            recentThoughtEvents.Clear();
-            recentHediffEvents.Clear();
-            recentRomanceEvents.Clear();
-            recentRaidEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
-            recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
+            recentEvents.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and

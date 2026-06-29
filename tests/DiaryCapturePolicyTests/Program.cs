@@ -66,6 +66,9 @@ namespace DiaryCapturePolicyTests
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
+            TestDedupKeys();
+            TestEmitPlans();
+            TestRecentEventExpiry();
 
             Console.WriteLine("DiaryCapturePolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -1305,6 +1308,147 @@ namespace DiaryCapturePolicyTests
                 bool defined = Enum.IsDefined(typeof(DiaryEventType), name);
                 AssertTrue("sentinel: " + name + " is still future (not in enum)", !defined);
             }
+        }
+
+        // ── Dedup keys ──
+        // The consolidated recent-events store is keyed by each payload's raw source-prefixed
+        // DedupKey(). The Submit-bus migration moved these key strings out of the old RecordXxx methods
+        // onto the payloads; these tests pin them so a migration cannot silently change which events
+        // collapse together. (Fan-out colony keys include impure ids/ticks and are built in the signal,
+        // not here.)
+
+        private static void TestDedupKeys()
+        {
+            // Thought: one window per pawn + thought defName.
+            AssertEqual("thought dedup key",
+                "thought|P1|AteWithoutTable",
+                new ThoughtEventData { PawnId = "P1", DefName = "AteWithoutTable" }.DedupKey());
+
+            // Romance: canonical (order-independent) pair key + relation defName, so the mirrored
+            // AddDirectRelation call from the other participant collapses to one key.
+            AssertEqual("romance dedup key",
+                "romance|A|B|Lover",
+                new RomanceEventData { FirstPawnId = "A", SecondPawnId = "B", DefName = "Lover" }.DedupKey());
+            AssertEqual("romance dedup key is order-independent",
+                "romance|A|B|Lover",
+                new RomanceEventData { FirstPawnId = "B", SecondPawnId = "A", DefName = "Lover" }.DedupKey());
+
+            // MentalState: a social fight dedups by canonical pair key (collapsing the mirrored second
+            // call); any other break — or a fight whose counterpart is ineligible — dedups per pawn+def.
+            AssertEqual("mental fight dedup key (pair, canonical)",
+                "fight|A|B",
+                new MentalStateEventData { PawnId = "A", DefName = "SocialFighting", OtherPawnId = "B", OtherPawnEligible = true }.DedupKey());
+            AssertEqual("mental fight dedup key order-independent",
+                "fight|A|B",
+                new MentalStateEventData { PawnId = "B", DefName = "SocialFighting", OtherPawnId = "A", OtherPawnEligible = true }.DedupKey());
+            AssertEqual("mental break dedup key (solo)",
+                "break|A|Berserk",
+                new MentalStateEventData { PawnId = "A", DefName = "Berserk" }.DedupKey());
+            AssertEqual("mental ineligible counterpart uses solo break key",
+                "break|A|SocialFighting",
+                new MentalStateEventData { PawnId = "A", DefName = "SocialFighting", OtherPawnId = "B", OtherPawnEligible = false }.DedupKey());
+
+            // Tale: one window per taleDef + both pawn ids (empty when a pawn is absent).
+            AssertEqual("tale dedup key (double pawn)",
+                "tale|KilledMan|A|B",
+                new TaleEventData { DefName = "KilledMan", FirstPawnId = "A", SecondPawnId = "B" }.DedupKey());
+            AssertEqual("tale dedup key (single pawn, empty second)",
+                "tale|DidResearch|A|",
+                new TaleEventData { DefName = "DidResearch", FirstPawnId = "A" }.DedupKey());
+
+            // ThoughtProgression: one window per pawn + category + thought def + stage (distinct
+            // "thoughtprogression|" prefix so it never collides with plain Thought keys).
+            AssertEqual("thought progression dedup key",
+                "thoughtprogression|P1|need_outdoors|NeedOutdoors|2",
+                new ThoughtProgressionEventData { PawnId = "P1", CategoryKey = "need_outdoors", DefName = "NeedOutdoors", StageIndex = "2" }.DedupKey());
+        }
+
+        // ── Emit routing plans ──
+        // The branchy sources (Tale, Interaction) route inside the impure Emit, which can't run without
+        // RimWorld. PlanEmit extracts that route choice as a pure function so it IS testable; these
+        // assertions lock the decision -> shape mapping (and Tale's solo POV + death-description flags).
+
+        private static void TestEmitPlans()
+        {
+            // Tale: 5 emit shapes from the catalog decision; solo POV is the first pawn iff eligible.
+            TaleEventData.TaleEmitPlan batch = TaleEventData.PlanEmit(CaptureDecision.RouteBatch, true);
+            AssertEqual("tale plan: RouteBatch -> Batch", TaleEventData.TaleEmitShape.Batch, batch.Shape);
+
+            TaleEventData.TaleEmitPlan pair = TaleEventData.PlanEmit(CaptureDecision.GeneratePair, false);
+            AssertEqual("tale plan: GeneratePair -> Pair", TaleEventData.TaleEmitShape.Pair, pair.Shape);
+            AssertTrue("tale plan: GeneratePair not death", !pair.DeathDescription);
+
+            TaleEventData.TaleEmitPlan pairDeath = TaleEventData.PlanEmit(CaptureDecision.GeneratePairDeathDescription, true);
+            AssertEqual("tale plan: pair death -> Pair", TaleEventData.TaleEmitShape.Pair, pairDeath.Shape);
+            AssertTrue("tale plan: pair death flagged", pairDeath.DeathDescription);
+
+            TaleEventData.TaleEmitPlan soloFirst = TaleEventData.PlanEmit(CaptureDecision.GenerateSolo, true);
+            AssertEqual("tale plan: GenerateSolo -> Solo", TaleEventData.TaleEmitShape.Solo, soloFirst.Shape);
+            AssertTrue("tale plan: solo pov is first when first eligible", soloFirst.PovIsFirstPawn);
+            AssertTrue("tale plan: solo not death", !soloFirst.DeathDescription);
+
+            TaleEventData.TaleEmitPlan soloSecond = TaleEventData.PlanEmit(CaptureDecision.GenerateSolo, false);
+            AssertTrue("tale plan: solo pov is second when first ineligible", !soloSecond.PovIsFirstPawn);
+
+            TaleEventData.TaleEmitPlan soloDeath = TaleEventData.PlanEmit(CaptureDecision.GenerateSoloDeathDescription, true);
+            AssertEqual("tale plan: solo death -> Solo", TaleEventData.TaleEmitShape.Solo, soloDeath.Shape);
+            AssertTrue("tale plan: solo death flagged", soloDeath.DeathDescription);
+
+            AssertEqual("tale plan: RouteAmbient -> Drop (tale never ambient)", TaleEventData.TaleEmitShape.Drop,
+                TaleEventData.PlanEmit(CaptureDecision.RouteAmbient, true).Shape);
+            AssertEqual("tale plan: Drop -> Drop", TaleEventData.TaleEmitShape.Drop,
+                TaleEventData.PlanEmit(CaptureDecision.Drop, true).Shape);
+
+            // Interaction: 4 shapes; RouteBatch and RouteAmbient both feed the batch accumulator.
+            AssertEqual("interaction plan: GenerateSolo -> Solo", InteractionEventData.InteractionEmitShape.Solo,
+                InteractionEventData.PlanEmit(CaptureDecision.GenerateSolo));
+            AssertEqual("interaction plan: GeneratePair -> Pair", InteractionEventData.InteractionEmitShape.Pair,
+                InteractionEventData.PlanEmit(CaptureDecision.GeneratePair));
+            AssertEqual("interaction plan: RouteBatch -> Batch", InteractionEventData.InteractionEmitShape.Batch,
+                InteractionEventData.PlanEmit(CaptureDecision.RouteBatch));
+            AssertEqual("interaction plan: RouteAmbient -> Batch", InteractionEventData.InteractionEmitShape.Batch,
+                InteractionEventData.PlanEmit(CaptureDecision.RouteAmbient));
+            AssertEqual("interaction plan: Drop -> Drop", InteractionEventData.InteractionEmitShape.Drop,
+                InteractionEventData.PlanEmit(CaptureDecision.Drop));
+            AssertEqual("interaction plan: death-desc -> Drop (interaction never death)",
+                InteractionEventData.InteractionEmitShape.Drop,
+                InteractionEventData.PlanEmit(CaptureDecision.GenerateSoloDeathDescription));
+        }
+
+        // ── Dedup-window expiry policy ──
+        // The consolidated dedup store holds keys from sources with very different windows. The rule
+        // that keeps it correct is "a key expires by ITS OWN window, never another source's"; this
+        // pins that policy (and the zero-window opt-out) so the pre-refactor per-dictionary bug —
+        // a short-window caller evicting a still-live long-window key — cannot regress.
+
+        private static void TestRecentEventExpiry()
+        {
+            // IsWithinWindow: inside / on-the-edge / outside the caller's current window.
+            AssertTrue("within: inside window", RecentEventExpiry.IsWithinWindow(1000, 500, 1300));
+            AssertTrue("within: edge is exclusive", !RecentEventExpiry.IsWithinWindow(1000, 500, 1500));
+            AssertTrue("within: well past window", !RecentEventExpiry.IsWithinWindow(1000, 500, 9999));
+
+            // IsExpired: only true once the entry's OWN window has fully elapsed.
+            AssertTrue("expired: inside own window", !RecentEventExpiry.IsExpired(1000, 500, 1300));
+            AssertTrue("expired: at own window edge", RecentEventExpiry.IsExpired(1000, 500, 1500));
+            AssertTrue("expired: past own window", RecentEventExpiry.IsExpired(1000, 500, 9999));
+
+            // The regression that motivated the helper: a long-window key recorded at tick 1000 with a
+            // 5000-tick window must NOT be expired at tick 1300 — even though a 300-tick source firing
+            // the prune at tick 1300 would have evicted it under the old "borrow the caller's window"
+            // rule. Expiry must consult the entry's own window, not the caller's.
+            AssertTrue("regression: long-window key not expired by short-window clock",
+                !RecentEventExpiry.IsExpired(1000, 5000, 1300));
+            AssertTrue("regression: long-window key still within its own window",
+                RecentEventExpiry.IsWithinWindow(1000, 5000, 1300));
+
+            // Zero/negative window = "this source opted out of dedup". It must never read as within
+            // window (so the event is never suppressed) and never expire (so a zero-window caller
+            // cannot wipe the shared store on its first prune sweep).
+            AssertTrue("opt-out: zero window never within", !RecentEventExpiry.IsWithinWindow(1000, 0, 1000));
+            AssertTrue("opt-out: zero window never expired", !RecentEventExpiry.IsExpired(1000, 0, 9999));
+            AssertTrue("opt-out: negative window never within", !RecentEventExpiry.IsWithinWindow(1000, -1, 1000));
+            AssertTrue("opt-out: negative window never expired", !RecentEventExpiry.IsExpired(1000, -1, 9999));
         }
 
         // ── Factory helpers ──

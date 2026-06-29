@@ -2,6 +2,7 @@
 // point for pawn joins, so this file keeps that capture edge separate from other Harmony hooks.
 // New to this? See AGENTS.md ("Harmony patches").
 using HarmonyLib;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -44,8 +45,8 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordColonistArrival(__instance,
-                    ArrivalContextCache.ConsumeOrBuild(__instance, "set_faction"));
+                DiaryEvents.Submit(new ArrivalSignal(__instance,
+                    ArrivalContextCache.ConsumeOrBuild(__instance, "set_faction")));
             });
         }
     }

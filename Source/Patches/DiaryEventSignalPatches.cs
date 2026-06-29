@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using PawnDiary.Ingestion;
 using RimWorld;
 using RimWorld.Planet;
 using Verse;
@@ -36,7 +37,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordTale(__result, def);
+                DiaryEvents.Submit(new TaleSignal(__result, def));
             });
         }
     }
@@ -80,7 +81,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordMentalState(pawn, stateDef, otherPawn, reason);
+                DiaryEvents.Submit(new MentalStateSignal(pawn, stateDef, otherPawn, reason));
             });
         }
     }
@@ -106,7 +107,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordInspiration(__instance.pawn, def, reason);
+                DiaryEvents.Submit(new InspirationSignal(__instance.pawn, def, reason));
             });
         }
     }
@@ -122,8 +123,8 @@ namespace PawnDiary
     {
         /// <summary>
         /// Harmony Postfix for GameConditionManager.RegisterCondition. Detects
-        /// mood-affecting game conditions (aurora, eclipse, psychic drone, etc.) and
-        /// forwards each affected colonist to DiaryGameComponent.RecordMoodEvent.
+        /// mood-affecting game conditions (aurora, eclipse, psychic drone, etc.) and submits a
+        /// <see cref="MoodEventFanoutSignal"/> for the affected colonists.
         /// </summary>
         public static void Postfix(GameCondition cond)
         {
@@ -140,7 +141,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordMoodEvent(cond);
+                DiaryEvents.Submit(new MoodEventFanoutSignal(cond));
             });
         }
     }
@@ -155,9 +156,10 @@ namespace PawnDiary
     public static class RaidExecutePatch
     {
         /// <summary>
-        /// Harmony Postfix for IncidentWorker.TryExecute. Forwards successful raid-like incidents to
-        /// DiaryGameComponent.RecordRaid, which fans out to each eligible colonist on the target map.
-        /// Non-raid incidents and failed executions are skipped.
+        /// Harmony Postfix for IncidentWorker.TryExecute. Submits a
+        /// <see cref="RaidFanoutSignal"/> for successful raid-like incidents, which fans out to
+        /// each eligible colonist on the target map. Non-raid incidents and failed executions are
+        /// skipped.
         /// </summary>
         public static void Postfix(IncidentWorker __instance, IncidentParms parms, bool __result)
         {
@@ -180,7 +182,7 @@ namespace PawnDiary
                     () => component.RecordEventWindowIncident(__instance.def, parms));
                 if (IsRaidLikeIncident(__instance))
                 {
-                    component.RecordRaid(parms, __instance.def);
+                    DiaryEvents.Submit(new RaidFanoutSignal(parms, __instance.def));
                 }
             });
         }
@@ -683,7 +685,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordRitualFinished(__instance, progress, cancelled);
+                DiaryEvents.Submit(new RitualFanoutSignal(__instance, progress, cancelled));
             });
         }
     }
@@ -710,7 +712,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordPsychicRitualFinished(psychicRitual, success: true);
+                DiaryEvents.Submit(new PsychicRitualFanoutSignal(psychicRitual, success: true));
             });
         }
     }
@@ -736,7 +738,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target, dest);
+                DiaryEvents.Submit(new AbilitySignal(__instance, target, dest));
             });
         }
     }
@@ -761,7 +763,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordAbilityUsed(__instance, target);
+                DiaryEvents.Submit(new AbilitySignal(__instance, target));
             });
         }
     }
