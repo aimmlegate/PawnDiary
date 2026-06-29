@@ -4,6 +4,14 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-06-30
+
+- **Fixed Diary tab loading flicker during interaction.** Same-year refreshes triggered by completed
+  generation or title updates now rebuild selected-year row layout in place once that year has already
+  rendered, so scrolling and expand/collapse interactions no longer briefly swap the card list for the
+  loading panel. Cold opens, uncached pawn switches, and uncached year loads still show progress.
+  Rebuilt `1.6/Assemblies/PawnDiary.dll`.
+
 ## 2026-06-29
 
 - **Implemented real archive compaction for old diary events.** Added compact per-POV

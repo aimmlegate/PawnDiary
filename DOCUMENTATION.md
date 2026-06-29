@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 Related files:
 
@@ -363,12 +363,12 @@ selected-year card materialization, and selected-year row layout, so opening a p
 pages shows a loading panel instead of freezing the game. The loading panel reports the active load
 phase only when no usable cached list exists yet: first open, uncached pawn switch, or opening a year
 with no cached cards. The tab keeps a small LRU of loaded pawn views so returning to a recent pawn
-restores its visible list instead of rebuilding from zero. Same-pawn index refreshes and
-selected-year card refreshes build quietly behind the currently visible list. Once a year is visible,
-same-year visual/layout refreshes, including scroll,
-highlight refreshes, and collapse/expand, keep the list visible instead of returning to the loading
-panel; loaded large years seed the clicked card's current blend so the clicked card can still animate
-open or closed. Selected-year rebuilds invalidate row layout defensively so virtualized row offset
+restores its visible list instead of rebuilding from zero. Same-pawn index refreshes and selected-year
+card refreshes build quietly behind the currently visible list. Once a year is visible, same-year data
+and layout refreshes, including completed generation/title updates, scroll, highlight refreshes, and
+collapse/expand, rebuild row offsets in place instead of returning to the loading panel; loaded large
+years seed the clicked card's current blend so the clicked card can still animate open or closed.
+Selected-year rebuilds invalidate row layout defensively so virtualized row offset
 arrays cannot be reused against a changed list. An in-progress sliced build (year index, selected-year
 cards, or row layout) is invalidated only by a STRUCTURAL change — a different pawn, a tab filter
 toggle, or a different event count — never by a `DiaryStateVersion` tick. That counter is process-wide,

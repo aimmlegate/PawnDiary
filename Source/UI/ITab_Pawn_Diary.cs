@@ -38,6 +38,7 @@ namespace PawnDiary
         // of measuring/summing hundreds of collapsed rows every draw.
         private List<DiaryEntryView> cachedLayoutEntries;
         private int cachedLayoutVisibleRevision = -1;
+        private string cachedLayoutPawnId;
         private int cachedLayoutSelectedYear = UnknownYear;
         private float cachedLayoutViewWidth = -1f;
         private bool cachedLayoutShowDebug;
@@ -49,6 +50,7 @@ namespace PawnDiary
         private bool layoutBuildInProgress;
         private List<DiaryEntryView> layoutBuildEntries;
         private int layoutBuildVisibleRevision = -1;
+        private string layoutBuildPawnId;
         private int layoutBuildSelectedYear = UnknownYear;
         private float layoutBuildViewWidth = -1f;
         private bool layoutBuildShowDebug;
@@ -401,6 +403,7 @@ namespace PawnDiary
             if (!RebuildEntryLayoutIfNeeded(
                 ordered,
                 visibleEntriesCache.VisibleRevision,
+                pawn.GetUniqueLoadID(),
                 viewWidth,
                 showLlmDebugInfo,
                 token,
@@ -669,6 +672,7 @@ namespace PawnDiary
         private bool RebuildEntryLayoutIfNeeded(
             List<DiaryEntryView> ordered,
             int visibleRevision,
+            string pawnId,
             float viewWidth,
             bool showLlmDebugInfo,
             DiaryRenderToken token,
@@ -682,6 +686,7 @@ namespace PawnDiary
             int count = ordered?.Count ?? 0;
             bool listDirty = cachedLayoutEntries != ordered
                 || cachedLayoutVisibleRevision != visibleRevision
+                || !string.Equals(cachedLayoutPawnId, pawnId, StringComparison.Ordinal)
                 || cachedLayoutSelectedYear != selectedYear;
             // Visual layout only needs to rebuild when a real layout input changed: card width, the
             // debug toggle, or the name-highlight set (bold markup changes wrapping). The render
@@ -706,12 +711,16 @@ namespace PawnDiary
                 return true;
             }
 
-            if (!listDirty && layoutDirty)
+            bool alreadyShowingSelectedYear = cachedLayoutEntries != null
+                && string.Equals(cachedLayoutPawnId, pawnId, StringComparison.Ordinal)
+                && cachedLayoutSelectedYear == selectedYear
+                && cachedLayoutViewHeight > 0f;
+            if ((!listDirty && layoutDirty) || (listDirty && alreadyShowingSelectedYear))
             {
-                // The selected year's data is already loaded; only row heights or visual layout inputs
-                // changed. Rebuild offsets immediately so scroll, collapse/expand, and highlight
-                // refreshes never swap the visible list for the blocking loading panel.
-                BeginEntryLayoutBuild(ordered, visibleRevision, viewWidth, showLlmDebugInfo, token, count);
+                // The selected year's data is already visible. Rebuild offsets immediately so scroll,
+                // collapse/expand, highlight refreshes, and quiet entry updates never swap the list for
+                // the blocking loading panel. Cold loads and explicit year changes still use slices.
+                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count);
                 ProcessEntryLayoutSlice(
                     ordered,
                     viewWidth,
@@ -737,13 +746,14 @@ namespace PawnDiary
             if (!layoutBuildInProgress
                 || layoutBuildEntries != ordered
                 || layoutBuildVisibleRevision != visibleRevision
+                || !string.Equals(layoutBuildPawnId, pawnId, StringComparison.Ordinal)
                 || layoutBuildSelectedYear != selectedYear
                 || layoutBuildViewWidth != viewWidth
                 || layoutBuildShowDebug != showLlmDebugInfo
                 || layoutBuildHighlightVersion != nameHighlightsVersion
                 || layoutBuildExpansionVersion != entryExpansionVersion)
             {
-                BeginEntryLayoutBuild(ordered, visibleRevision, viewWidth, showLlmDebugInfo, token, count);
+                BeginEntryLayoutBuild(ordered, visibleRevision, pawnId, viewWidth, showLlmDebugInfo, token, count);
             }
 
             ProcessEntryLayoutSlice(ordered, viewWidth, showLlmDebugInfo, token, nameHighlights, animationDelta, count, false, false);
@@ -755,6 +765,7 @@ namespace PawnDiary
         private void BeginEntryLayoutBuild(
             List<DiaryEntryView> ordered,
             int visibleRevision,
+            string pawnId,
             float viewWidth,
             bool showLlmDebugInfo,
             DiaryRenderToken token,
@@ -764,6 +775,7 @@ namespace PawnDiary
             layoutBuildInProgress = true;
             layoutBuildEntries = ordered;
             layoutBuildVisibleRevision = visibleRevision;
+            layoutBuildPawnId = pawnId;
             layoutBuildSelectedYear = selectedYear;
             layoutBuildViewWidth = viewWidth;
             layoutBuildShowDebug = showLlmDebugInfo;
@@ -851,6 +863,7 @@ namespace PawnDiary
 
             cachedLayoutEntries = layoutBuildEntries;
             cachedLayoutVisibleRevision = layoutBuildVisibleRevision;
+            cachedLayoutPawnId = layoutBuildPawnId;
             cachedLayoutSelectedYear = layoutBuildSelectedYear;
             cachedLayoutViewWidth = layoutBuildViewWidth;
             cachedLayoutShowDebug = layoutBuildShowDebug;
