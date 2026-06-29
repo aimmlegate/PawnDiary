@@ -19,10 +19,19 @@ namespace PawnDiary
         /// <summary>
         /// Returns the classified interaction group when that group has an enabled batch policy.
         /// </summary>
-        private static DiaryInteractionGroupDef BatchGroupFor(InteractionDef interactionDef)
+        internal static DiaryInteractionGroupDef BatchGroupFor(InteractionDef interactionDef)
         {
             DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
             return group != null && group.HasBatchPolicy ? group : null;
+        }
+
+        /// <summary>
+        /// Returns the per-group prompt instruction for a specific interaction def, or empty string if
+        /// none. Used by the batch flush when it builds the final batched entry.
+        /// </summary>
+        private static string InteractionInstruction(InteractionDef interactionDef)
+        {
+            return InteractionGroups.InstructionFor(interactionDef);
         }
 
         /// <summary>
@@ -31,7 +40,7 @@ namespace PawnDiary
         /// group's batch. Higher odds when the pair's feelings are intense/lopsided or when a pawn
         /// is in an extreme need/mood state. No-op (false) for groups without a promotion policy.
         /// </summary>
-        private static bool ShouldPromoteInteraction(DiaryInteractionGroupDef group, Pawn initiator, Pawn recipient)
+        internal static bool ShouldPromoteInteraction(DiaryInteractionGroupDef group, Pawn initiator, Pawn recipient)
         {
             if (group == null || !group.HasPromotionPolicy || initiator == null || recipient == null)
             {
@@ -113,7 +122,7 @@ namespace PawnDiary
         /// <summary>
         /// Opens or appends to the pending interaction batch for this group/pawn pair.
         /// </summary>
-        private void RecordBatchedInteraction(DiaryInteractionGroupDef group, Pawn initiator, Pawn recipient,
+        internal void RecordBatchedInteraction(DiaryInteractionGroupDef group, Pawn initiator, Pawn recipient,
             InteractionDef interactionDef, string interactionLabel, string initiatorText, string recipientText,
             int playLogEntryId)
         {

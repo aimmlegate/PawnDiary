@@ -16,8 +16,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   plumbing only — no `DiaryEvent` field, Scribe key, `interactionDefName`, or `gameContext` format
   changed, so saves load identically. Migrated so far: Thought, Inspiration, Ability (solo), Romance,
   MentalState (pair), Raid, MoodEvent, Ritual, PsychicRitual (fan-out), Tale (batch/death routes),
-  Death (neutral description); remaining sources migrate incrementally to the same pattern and coexist
-  via the shared dedup store. Pure DedupKey() tests pin the consolidated-store keys. See
+  Death (neutral description), Interaction (pair/solo/batch/ambient) — every Harmony-hook-driven
+  source. The remaining sources (Hediff, Arrival, Quest, Work, ThoughtProgression, DayReflection) are
+  tick-scanner-driven or share a record-core with one, so they keep their centralized scan-loop
+  ingestion and coexist via the shared dedup store. Pure DedupKey() tests pin the consolidated-store
+  keys. See
   DOCUMENTATION.md section 3.1 and the section 4 coverage table.
 
 ## 2026-06-28

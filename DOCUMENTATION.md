@@ -102,8 +102,11 @@ XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-imp
 
 **Migration status (this is in progress):** the `Submit` bus and dispatch pipeline are live, and
 the following sources route through it today — **Thought, Inspiration, Ability, Romance, Raid,
-MoodEvent, MentalState, Ritual/PsychicRitual, Tale, Death** (covering all three shapes: solo, pair,
-fan-out, plus batch and neutral-description routes). The remaining catalog sources still
+MoodEvent, MentalState, Ritual/PsychicRitual, Tale, Death, Interaction** (every Harmony-hook-driven
+source; covering all shapes: solo, pair, fan-out, batch, ambient, neutral-description). The remaining
+sources (**Hediff, Arrival, Quest, Work, ThoughtProgression, DayReflection**) are driven by — or
+share a record-core with — periodic tick scanners rather than a single Harmony hook; they keep their
+existing centralized scan-loop ingestion and coexist with the bus via the shared dedup store. The remaining catalog sources still
 use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
 the identical pattern; their dedup keys already share the consolidated store via the same raw
 prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
@@ -125,7 +128,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | MentalState | `MentalStateHandler.TryStartMentalState` | `MentalStateSignal` | pair + solo |
 | Tale | `TaleRecorder.RecordTale` | `TaleSignal` | solo / batch / death |
 | Hediff | `Pawn_HealthTracker.AddHediff` + scan | `RecordHediffAppeared` (pending) | solo / day-reflection |
-| Interaction | `PlayLog.Add` | `RecordInteraction` (pending) | pair / solo / batch / ambient |
+| Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
 | Work | Periodic job sampling | `ScanPawnWork…` (pending) | solo |
 | ThoughtProgression | Periodic scan | `Scan…Progression` (pending) | solo |
 | DayReflection | Sleep/rest flush | route-sink (pending) | solo |
