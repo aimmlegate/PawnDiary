@@ -69,6 +69,7 @@ namespace DiaryCapturePolicyTests
             TestDedupKeys();
             TestEmitPlans();
             TestRecentEventExpiry();
+            TestGroupNameMatcher();
 
             Console.WriteLine("DiaryCapturePolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -1449,6 +1450,147 @@ namespace DiaryCapturePolicyTests
             AssertTrue("opt-out: zero window never expired", !RecentEventExpiry.IsExpired(1000, 0, 9999));
             AssertTrue("opt-out: negative window never within", !RecentEventExpiry.IsWithinWindow(1000, -1, 1000));
             AssertTrue("opt-out: negative window never expired", !RecentEventExpiry.IsExpired(1000, -1, 9999));
+        }
+
+        // ── Group name matcher (prefix / suffix / CamelCase segment) ──
+        // The thought-classification tightening (Plan 2) replaces blunt substring tokens with exact
+        // defNames plus these precise matchers. The fixtures below lock down the matcher semantics
+        // AND the regression that motivated the change: the substring token "Good" used to claim the
+        // vanilla grief thought "PawnWithGoodOpinionDied". Segment equality still matches that name
+        // (Good is a real segment of it), which is exactly why the shipped XML no longer lists "Good"
+        // as a segment — it lists exact defNames instead. These tests document that contract.
+
+        private static void TestGroupNameMatcher()
+        {
+            // ---- MatchesPrefix ----
+            List<string> negPrefixes = new List<string> { "Terrible", "Banished" };
+            AssertTrue("prefix: matches leading word (Terrible)",
+                GroupNameMatcher.MatchesPrefix("TerribleParty", negPrefixes));
+            AssertTrue("prefix: matches leading word (Banished)",
+                GroupNameMatcher.MatchesPrefix("BanishedColonist", negPrefixes));
+            AssertTrue("prefix: case-insensitive",
+                GroupNameMatcher.MatchesPrefix("TERRIBLEFUNERAL", negPrefixes));
+            AssertTrue("prefix: NOT a substring in the middle",
+                !GroupNameMatcher.MatchesPrefix("PartyTerrible", negPrefixes));
+            AssertTrue("prefix: NOT a suffix",
+                !GroupNameMatcher.MatchesPrefix("NotBanished", negPrefixes));
+            // "Terrible" must not claim a defName that merely contains those letters elsewhere.
+            AssertTrue("prefix: letter-run mismatch does not match",
+                !GroupNameMatcher.MatchesPrefix("Terminus", new List<string> { "Terrible" }));
+
+            // ---- MatchesSuffix ----
+            List<string> diedSuffix = new List<string> { "Died" };
+            AssertTrue("suffix: matches trailing word",
+                GroupNameMatcher.MatchesSuffix("MyKinDied", diedSuffix));
+            AssertTrue("suffix: case-insensitive",
+                GroupNameMatcher.MatchesSuffix("bondedanimalDIED", diedSuffix));
+            AssertTrue("suffix: NOT a prefix/middle",
+                !GroupNameMatcher.MatchesSuffix("DiedAlone", diedSuffix));
+            AssertTrue("suffix: shorter target never matches",
+                !GroupNameMatcher.MatchesSuffix("Die", diedSuffix));
+
+            // ---- MatchesSegment: the precise matcher ----
+            List<string> foodSegment = new List<string> { "Food" };
+            AssertTrue("segment: matches whole CamelCase word (NeedFood)",
+                GroupNameMatcher.MatchesSegment("NeedFood", foodSegment));
+            AssertTrue("segment: matches whole CamelCase word (AteRawFood)",
+                GroupNameMatcher.MatchesSegment("AteRawFood", foodSegment));
+            AssertTrue("segment: matches whole underscore word (Ate_Raw_Food)",
+                GroupNameMatcher.MatchesSegment("Ate_Raw_Food", foodSegment));
+            AssertTrue("segment: case-insensitive",
+                GroupNameMatcher.MatchesSegment("NeedFOOD", foodSegment));
+            // The key safety property: "Food" must NOT match words that merely contain those letters.
+            AssertTrue("segment: NOT inside a larger word (Foodstuff)",
+                !GroupNameMatcher.MatchesSegment("Foodstuff", foodSegment));
+            AssertTrue("segment: NOT glued to a lowercase run (Bloodfood)",
+                !GroupNameMatcher.MatchesSegment("Bloodfood", foodSegment));
+            AssertTrue("segment: NOT a prefix-only word (Foodstuff)",
+                !GroupNameMatcher.MatchesSegment("Foodstuff", foodSegment));
+
+            // Multi-segment list: any one segment equal to any listed token matches.
+            List<string> posSegments = new List<string> { "Impressive", "Spectacular" };
+            AssertTrue("segment: list matches first token",
+                GroupNameMatcher.MatchesSegment("AteInImpressiveDiningRoom", posSegments));
+            AssertTrue("segment: list matches second token",
+                GroupNameMatcher.MatchesSegment("SpectacularSacrifice", posSegments));
+            AssertTrue("segment: list no-match",
+                !GroupNameMatcher.MatchesSegment("TerribleParty", posSegments));
+
+            // ---- SplitSegments: explicit CamelCase / acronym / underscore / digit rules ----
+            AssertSegments("NeedFood", new[] { "Need", "Food" });
+            AssertSegments("AteRawFood", new[] { "Ate", "Raw", "Food" });
+            AssertSegments("PawnWithGoodOpinionDied",
+                new[] { "Pawn", "With", "Good", "Opinion", "Died" });
+            // Underscore is a hard separator and is dropped.
+            AssertSegments("PsychicArchotechEmanator_Major",
+                new[] { "Psychic", "Archotech", "Emanator", "Major" });
+            AssertSegments("ParticipatedInRaid_Respected",
+                new[] { "Participated", "In", "Raid", "Respected" });
+            // Acronym boundary: the last upper of an acronym joins the next lowercase word.
+            AssertSegments("XMLParser", new[] { "XML", "Parser" });
+            AssertSegments("GRUwUTalkingToHumans",
+                new[] { "GR", "Uw", "U", "Talking", "To", "Humans" });
+            // A digit run is treated as lowercase, so it stays with the preceding segment.
+            AssertSegments("Room1", new[] { "Room1" });
+            AssertSegments("Area42North", new[] { "Area42", "North" });
+
+            // ---- The motivating regression, locked down as a contract ----
+            // Substring token "Good" claims the negative grief thought PawnWithGoodOpinionDied.
+            // We verify here that segment "Good" ALSO matches it — so the only safe fix is to NOT
+            // list "Good" as a matcher and to use exact defNames instead. If this assertion ever
+            // flips to false, the segment matcher changed semantics and the thought XML must be
+            // re-audited.
+            AssertTrue("regression: segment Good still matches PawnWithGoodOpinionDied (why Good is not listed)",
+                GroupNameMatcher.MatchesSegment("PawnWithGoodOpinionDied", new List<string> { "Good" }));
+            AssertTrue("regression: segment Died matches the grief thought (negative suffix route)",
+                GroupNameMatcher.MatchesSegment("PawnWithGoodOpinionDied", new List<string> { "Died" }));
+
+            // ---- Null/empty guards (never throw, never match) ----
+            AssertTrue("prefix: null defName never matches",
+                !GroupNameMatcher.MatchesPrefix(null, negPrefixes));
+            AssertTrue("prefix: empty defName never matches",
+                !GroupNameMatcher.MatchesPrefix("", negPrefixes));
+            AssertTrue("prefix: null list never matches",
+                !GroupNameMatcher.MatchesPrefix("TerribleParty", null));
+            AssertTrue("prefix: empty list never matches",
+                !GroupNameMatcher.MatchesPrefix("TerribleParty", new List<string>()));
+            AssertTrue("prefix: blank entries never match",
+                !GroupNameMatcher.MatchesPrefix("TerribleParty", new List<string> { "", "   " }));
+            AssertTrue("suffix: null defName never matches",
+                !GroupNameMatcher.MatchesSuffix(null, diedSuffix));
+            AssertTrue("suffix: null list never matches",
+                !GroupNameMatcher.MatchesSuffix("MyKinDied", null));
+            AssertTrue("segment: null defName never matches",
+                !GroupNameMatcher.MatchesSegment(null, foodSegment));
+            AssertTrue("segment: null list never matches",
+                !GroupNameMatcher.MatchesSegment("NeedFood", null));
+            AssertTrue("segment: empty segments list never matches",
+                !GroupNameMatcher.MatchesSegment("NeedFood", new List<string>()));
+            AssertTrue("split: null returns empty",
+                GroupNameMatcher.SplitSegments(null).Count == 0);
+            AssertTrue("split: empty returns empty",
+                GroupNameMatcher.SplitSegments("").Count == 0);
+        }
+
+        private static void AssertSegments(string value, string[] expected)
+        {
+            assertions++;
+            List<string> actual = GroupNameMatcher.SplitSegments(value);
+            if (actual.Count != expected.Length)
+            {
+                throw new InvalidOperationException(
+                    "SplitSegments(" + value + ") count failed.\nExpected: ["
+                    + string.Join("|", expected) + "]\nActual:   [" + string.Join("|", actual) + "]");
+            }
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (!string.Equals(actual[i], expected[i], StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        "SplitSegments(" + value + ") segment " + i + " failed.\nExpected: ["
+                        + string.Join("|", expected) + "]\nActual:   [" + string.Join("|", actual) + "]");
+                }
+            }
         }
 
         // ── Factory helpers ──

@@ -197,8 +197,18 @@ Most feature tuning lives in XML so changes do not require recompiling:
 - `DiaryUiStyleDef.xml` and `DiaryTextDecorationDefs.xml`: Diary UI dimensions/colors and display
   rich-text decoration.
 
-Interaction groups match by domain, exact `defName`, substring token, and optional source package
-ID. Event prompt policy resolves from most specific to broadest key: source defName, interaction
+Interaction groups match by domain, exact `defName`, and a precision-ordered set of token
+matchers, plus an optional source package ID. From most to least precise, the token matchers are:
+`matchPrefixes` (defName starts with the token), `matchSuffixes` (defName ends with the token),
+`matchSegments` (a whole CamelCase/underscore/digit word of the defName equals the token — `"Food"`
+matches `NeedFood`/`AteRawFood` but not `Foodstuff`), and the legacy blunt `matchTokens` (plain
+case-insensitive substring). Prefer the precise matchers and exact `defName` lists for new groups;
+`matchTokens` stays only for compatibility because a substring like `"Good"` also claims the vanilla
+grief thought `PawnWithGoodOpinionDied`. The pure matcher logic lives in
+`Source/Capture/GroupNameMatcher.cs` (no RimWorld types) so it is unit-tested directly. Across
+groups, lower `order` wins ("first match wins"), so a specific group can intercept a defName before
+a broader group's matcher sees it — the `thoughtPositive` group (order 500) claims the positive
+opinion-flipped `PawnWithBadOpinionDied` before `thoughtNegative`'s `Died` suffix (order 510). Event prompt policy resolves from most specific to broadest key: source defName, interaction
 group, classifier key, then domain. Prompt text, enhancement text, and forced-model text resolve
 independently so narrow XML can override one field and inherit the others.
 Mood-impact fallback lists in `DiaryTuningDef.xml` classify GameCondition defNames that are always

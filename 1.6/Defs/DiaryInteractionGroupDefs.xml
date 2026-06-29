@@ -57,7 +57,20 @@
                      same entry keeps its tone across save/load and regeneration. Same no-blank-<li>
                      rule and same weighted-by-duplication behavior as `instructions`.
     matchDefNames  - exact interaction/mental-state defNames this group claims (case-insensitive)
-    matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed
+    matchTokens    - substrings; a defName containing any token (case-insensitive) is claimed.
+                     BLUNT — a token like "Good" also claims "PawnWithGoodOpinionDied". Prefer the
+                     prefix/suffix/segment matchers below for new groups; keep this only for compat.
+    matchPrefixes  - a defName that STARTS WITH any prefix (case-insensitive) is claimed. Use for
+                     defName families that share a leading word (e.g. "Terrible" -> TerribleParty).
+    matchSuffixes  - a defName that ENDS WITH any suffix (case-insensitive) is claimed. Use for
+                     defName families that share a trailing word (e.g. "Died" grief thoughts).
+    matchSegments  - a defName matches when any of its CamelCase/underscore/digit SEGMENTS equals
+                     any listed segment (case-insensitive). Most precise token-style matcher: "Food"
+                     matches "NeedFood"/"AteRawFood" but NOT "Foodstuff"/"Bloodfood". Prefer over
+                     matchTokens whenever a whole word is the intent.
+    Within a group the matchers are tried in precision order: exact defName, then prefixes, then
+    suffixes, then segments, then substring tokens. Across groups, lower `order` wins (first match
+    wins) — so a more specific group can intercept a name before a broader one's matcher sees it.
     matchPackageIds
                    - live Defs from these mod package IDs are claimed (case-insensitive). This is
                      for compatibility routing without hard-referencing another mod or listing every def.
@@ -1111,31 +1124,126 @@
       <li>small and bright, like tension briefly loosening</li>
       <li>quietly buoyant, focused on a thought worth keeping</li>
     </tones>
-    <!-- TODO: Some tokens (Good, Nice, Love, Social) are broad substring matches that may
-         misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
-    <matchTokens>
-      <li>Apparel</li>
+    <!-- Positive thoughts are matched by exact defName + whole-segment matchers only. The old
+         substring tokens (Good, Nice, Love, Social, ...) were blunt enough to misclassify modded
+         ThoughtDefs and even vanilla grief thoughts (e.g. "Good" claimed the negative
+         "PawnWithGoodOpinionDied"). Exact defNames preserve vanilla coverage; the segment list
+         gives common modded positive thoughts (Impressive/Spectacular/Unforgettable/...) a route
+         without matching words that merely contain the same letters. -->
+    <matchDefNames>
+      <!-- Core: gatherings, speeches, colony optimism -->
+      <li>GotMarried</li>
+      <li>AttendedWedding</li>
+      <li>AttendedParty</li>
+      <li>AttendedConcert</li>
+      <li>HeldConcert</li>
+      <li>EncouragingSpeech</li>
+      <li>InspirationalSpeech</li>
+      <li>NewColonyOptimism</li>
+      <li>NewColonyHope</li>
+      <li>Catharsis</li>
+      <li>Nuzzled</li>
+      <li>KnowBuriedInSarcophagus</li>
+      <li>DefeatedHostileFactionLeader</li>
+      <li>DefeatedHostileFactionLeaderOpinion</li>
+      <li>DefeatedMechCluster</li>
+      <li>DefeatedInsectHive</li>
+      <li>RescuedRelative</li>
+      <li>Rescued</li>
+      <li>TravelAnticipation</li>
+      <!-- Core: impressive rooms -->
+      <li>AteInImpressiveDiningRoom</li>
+      <li>JoyActivityInImpressiveRecRoom</li>
+      <li>SleptInBedroom</li>
+      <!-- Core: positive meals (cannibal variants are positive for cannibal pawns) -->
+      <li>AteLavishMeal</li>
+      <li>AteFineMeal</li>
+      <li>AteHumanlikeMeatDirectCannibal</li>
+      <li>AteHumanlikeMeatAsIngredientCannibal</li>
+      <!-- Core: warm social memories -->
+      <li>DeepTalk</li>
+      <li>KindWords</li>
+      <li>KindWordsMood</li>
+      <li>RapportBuilt</li>
+      <li>HadCatharticFight</li>
+      <li>RescuedMe</li>
+      <li>RescuedMeByOfferingHelp</li>
+      <li>RecruitedMe</li>
+      <li>HoneymoonPhase</li>
+      <li>GotSomeLovin</li>
+      <li>KilledMyRival</li>
+      <li>ArtifactMoodBoost</li>
+      <!-- Opinion-flipped grief: a pawn you disliked dying/going missing is a mood LIFT, so it
+           must be claimed here (order 500) before thoughtNegative's "Died" suffix (order 510). -->
+      <li>PawnWithBadOpinionDied</li>
+      <li>PawnWithBadOpinionLost</li>
+      <!-- Royalty -->
+      <li>HonorableBestowingCeremony</li>
+      <li>GrandioseBestowingCeremony</li>
+      <li>ReignedInThroneroom</li>
+      <li>DecreeMet</li>
+      <!-- Ideology: relics, biosculpter, counsel, raids, trial exoneration -->
+      <li>RelicsCollected</li>
+      <li>BiosculpterPleasure</li>
+      <li>Counselled</li>
+      <li>Counselled_MoodBoost</li>
+      <li>TendedByMedicalSpecialist</li>
+      <li>ParticipatedInRaid_Respected</li>
+      <li>RecentConquest_Respected</li>
+      <li>TrialExonerated</li>
+      <!-- Ideology: positive ritual-quality outcomes -->
+      <li>FunParty</li>
+      <li>UnforgettableParty</li>
+      <li>GoodFuneral</li>
+      <li>HeartwarmingFuneral</li>
+      <li>FunFestival</li>
+      <li>UnforgettableFestival</li>
+      <li>SatisfyingSacrifice</li>
+      <li>SpectacularSacrifice</li>
+      <li>BeautifulSkyLanterns</li>
+      <li>UnforgettableSkyLanterns</li>
+      <li>SatisfyingScarification</li>
+      <li>SpectacularScarification</li>
+      <li>SatisfyingBlinding</li>
+      <li>SpectacularBlinding</li>
+      <li>EffectiveConversion</li>
+      <li>MasterfulConversion</li>
+      <li>GoodDuel</li>
+      <li>UnforgettableDuel</li>
+      <li>SatisfyingExecution</li>
+      <li>SpectacularExecution</li>
+      <!-- Biotech -->
+      <li>BabyBorn</li>
+      <li>GigglingBaby</li>
+      <li>MyGigglingBaby</li>
+      <li>WasTaught</li>
+      <li>GaveLesson</li>
+      <!-- Anomaly: relief/resolution (horror thoughts stay in the catch-all for a neutral tone) -->
+      <li>DarknessLifted</li>
+      <li>HealedMe</li>
+      <li>ClosedTheVoidOpinion</li>
+    </matchDefNames>
+    <!-- Whole-segment equality (CamelCase word must match exactly). Gives common modded positive
+         thoughts a route without the false positives of substring tokens. -->
+    <matchSegments>
+      <li>Impressive</li>
+      <li>Spectacular</li>
+      <li>Unforgettable</li>
+      <li>Heartwarming</li>
+      <li>Satisfying</li>
       <li>Beautiful</li>
-      <li>Good</li>
-      <li>Joy</li>
-      <li>Happy</li>
-      <li>Great</li>
-      <li>Nice</li>
-      <li>Proud</li>
-      <li>Confident</li>
-      <li>Inspired</li>
-      <li>Comfort</li>
-      <li>Warm</li>
-      <li>Cool</li>
-      <li>Refreshed</li>
-      <li>Relaxed</li>
-      <li>Love</li>
-      <li>Social</li>
-      <li>Fun</li>
-      <li>Played</li>
-      <li>Telescope</li>
-      <li>Nature</li>
-    </matchTokens>
+      <li>Masterful</li>
+      <li>Grandiose</li>
+      <li>Honorable</li>
+      <li>Encouraging</li>
+      <li>Inspirational</li>
+      <li>Pleasure</li>
+      <li>Catharsis</li>
+      <li>Cathartic</li>
+      <li>Optimism</li>
+      <li>Hope</li>
+      <li>Rapport</li>
+    </matchSegments>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
@@ -1156,45 +1264,239 @@
       <li>low and nagging, the thought returning in loops</li>
       <li>tight and bodily, irritation or hurt sitting in the gut</li>
     </tones>
-    <!-- TODO: Some tokens (Bad, Sad, Hot, Cold) are broad substring matches that may
-         misclassify modded ThoughtDefs. Review and tighten after playtesting with common mods. -->
+    <!-- Negative thoughts are matched by exact defName + whole-segment matchers only. The old
+         substring tokens (Bad, Sad, Hot, Cold, ...) were blunt enough to misclassify modded
+         ThoughtDefs and vanilla opinion-flipped thoughts (e.g. "Bad" claimed the positive
+         "PawnWithBadOpinionDied", "Good" above claimed the negative "PawnWithGoodOpinionDied").
+         Opinion-flipped death/loss thoughts (PawnWithGood/BadOpinion{Died,Lost}) are intentionally
+         LEFT OUT so they fall to the neutral catch-all instead of getting the wrong-direction tone.
+         Exact defNames preserve vanilla coverage; the segment/prefix lists give common modded
+         negative thoughts a route without matching words that merely contain the same letters. -->
     <matchDefNames>
+      <!-- Need/drug-desire defNames emitted by the ThoughtProgression scanner (see
+           DiarySignalPolicyDefs.xml). These are escalating deprivations, so they belong here. -->
       <li>NeedFood</li>
       <li>NeedRest</li>
       <li>NeedOutdoors</li>
       <li>DrugDesireInterest</li>
       <li>DrugDesireFascination</li>
+      <!-- Core: grief (My*Died / My*Lost families). Opinion-flipped variants stay in the catch-all. -->
+      <li>KnowGuestExecuted</li>
+      <li>KnowColonistExecuted</li>
+      <li>KnowPrisonerDiedInnocent</li>
+      <li>KnowColonistDied</li>
+      <li>BondedAnimalDied</li>
+      <li>MySonDied</li>
+      <li>MyDaughterDied</li>
+      <li>MyHusbandDied</li>
+      <li>MyWifeDied</li>
+      <li>MyFianceDied</li>
+      <li>MyFianceeDied</li>
+      <li>MyLoverDied</li>
+      <li>MyBrotherDied</li>
+      <li>MySisterDied</li>
+      <li>MyGrandchildDied</li>
+      <li>MyFatherDied</li>
+      <li>MyMotherDied</li>
+      <li>MyNieceDied</li>
+      <li>MyNephewDied</li>
+      <li>MyHalfSiblingDied</li>
+      <li>MyAuntDied</li>
+      <li>MyUncleDied</li>
+      <li>MyGrandparentDied</li>
+      <li>MyCousinDied</li>
+      <li>MyKinDied</li>
+      <li>ColonistLost</li>
+      <li>BondedAnimalReleased</li>
+      <li>BondedAnimalLost</li>
+      <li>MySonLost</li>
+      <li>MyDaughterLost</li>
+      <li>MyHusbandLost</li>
+      <li>MyWifeLost</li>
+      <li>MyFianceLost</li>
+      <li>MyFianceeLost</li>
+      <li>MyLoverLost</li>
+      <li>MyBrotherLost</li>
+      <li>MySisterLost</li>
+      <li>MyGrandchildLost</li>
+      <li>MyFatherLost</li>
+      <li>MyMotherLost</li>
+      <li>MyNieceLost</li>
+      <li>MyNephewLost</li>
+      <li>MyHalfSiblingLost</li>
+      <li>MyAuntLost</li>
+      <li>MyUncleLost</li>
+      <li>MyGrandparentLost</li>
+      <li>MyCousinLost</li>
+      <li>MyKinLost</li>
+      <!-- Core: bad conditions, body, labor -->
+      <li>AteWithoutTable</li>
+      <li>SleepDisturbed</li>
+      <li>SleptOutside</li>
+      <li>SleptOnGround</li>
+      <li>SleptInCold</li>
+      <li>SleptInHeat</li>
+      <li>SleptInBarracks</li>
+      <li>SoakingWet</li>
+      <li>OnDuty</li>
+      <!-- Core: imprisonment, organ harvesting, butchery, corpses, witnessing death -->
+      <li>KnowPrisonerSold</li>
+      <li>KnowGuestOrganHarvested</li>
+      <li>KnowColonistOrganHarvested</li>
+      <li>MyOrganHarvested</li>
+      <li>WasImprisoned</li>
+      <li>KnowButcheredHumanlikeCorpse</li>
+      <li>ObservedLayingCorpse</li>
+      <li>ObservedLayingRottingCorpse</li>
+      <li>WitnessedDeathAlly</li>
+      <li>WitnessedDeathNonAlly</li>
+      <li>WitnessedDeathFamily</li>
+      <!-- Core: banishment, denial, failed rescue -->
+      <li>DeniedJoining</li>
+      <li>ColonistBanished</li>
+      <li>ColonistBanishedToDie</li>
+      <li>PrisonerBanishedToDie</li>
+      <li>BondedAnimalBanished</li>
+      <li>FailedToRescueRelative</li>
+      <!-- Core: negative meals -->
+      <li>AteRawFood</li>
+      <li>AteKibble</li>
+      <li>AteCorpse</li>
+      <li>AteHumanlikeMeatDirect</li>
+      <li>AteHumanlikeMeatAsIngredient</li>
+      <li>AteInsectMeatDirect</li>
+      <li>AteInsectMeatAsIngredient</li>
+      <li>AteRottenFood</li>
+      <!-- Core: cruel/angry social memories -->
+      <li>Slighted</li>
+      <li>Insulted</li>
+      <li>InsultedMood</li>
+      <li>HadAngeringFight</li>
+      <li>HarmedMe</li>
+      <li>BotchedMySurgery</li>
+      <li>CrashedTogether</li>
+      <li>SoldMyLovedOne</li>
+      <li>SoldMyBondedAnimal</li>
+      <li>SoldMyBondedAnimalMood</li>
+      <li>ForcedMeToTakeDrugs</li>
+      <li>ForcedMeToTakeDrugsMood</li>
+      <li>ForcedMeToTakeLuciferium</li>
+      <li>ForcedMeToTakeLuciferiumMood</li>
+      <li>RebuffedMyRomanceAttempt</li>
+      <li>RebuffedMyRomanceAttemptMood</li>
+      <li>FailedRomanceAttemptOnMe</li>
+      <li>BrokeUpWithMe</li>
+      <li>BrokeUpWithMeMood</li>
+      <li>CheatedOnMe</li>
+      <li>CheatedOnMeMood</li>
+      <li>DivorcedMe</li>
+      <li>DivorcedMeMood</li>
+      <li>RejectedMyProposal</li>
+      <li>RejectedMyProposalMood</li>
+      <li>IRejectedTheirProposal</li>
+      <li>KilledMyFriend</li>
+      <li>KilledMyLover</li>
+      <li>KilledMyFiance</li>
+      <li>KilledMySpouse</li>
+      <li>KilledMyFather</li>
+      <li>KilledMyMother</li>
+      <li>KilledMySon</li>
+      <li>KilledMyDaughter</li>
+      <li>KilledMyBrother</li>
+      <li>KilledMySister</li>
+      <li>KilledMyKin</li>
+      <li>KilledMyBondedAnimal</li>
+      <!-- Core: bad speeches -->
+      <li>TerribleSpeech</li>
+      <li>UninspiringSpeech</li>
+      <!-- Royalty -->
+      <li>TerribleBestowingCeremony</li>
+      <li>UnimpressiveBestowingCeremony</li>
+      <li>Disinherited</li>
+      <li>DecreeFailed</li>
+      <li>NeuroquakeEcho</li>
+      <li>AteFoodInappropriateForTitle</li>
+      <!-- Ideology: negative ritual-quality outcomes, trials, terror, losses -->
+      <li>TerribleParty</li>
+      <li>BoringParty</li>
+      <li>TerribleFuneral</li>
+      <li>LacklusterFuneral</li>
+      <li>TerribleFestival</li>
+      <li>BoringFestival</li>
+      <li>TerribleSacrifice</li>
+      <li>BoringSacrifice</li>
+      <li>TerribleSkyLanterns</li>
+      <li>UnimpressiveSkyLanterns</li>
+      <li>TerribleScarification</li>
+      <li>BoringScarification</li>
+      <li>TerribleBlinding</li>
+      <li>BoringBlinding</li>
+      <li>TerribleDuel</li>
+      <li>BoringDuel</li>
+      <li>AwkwardExecution</li>
+      <li>TrialFailed</li>
+      <li>TrialConvicted</li>
+      <li>ConnectedTreeDied</li>
+      <li>DryadDied</li>
+      <li>WillDiminished</li>
+      <li>FailedConvertAbilityInitiator</li>
+      <li>FailedConvertAbilityRecipient</li>
+      <li>CounselFailed</li>
+      <li>ObservedTerror</li>
+      <li>ObservedGibbetCage</li>
+      <li>ObservedSkullspike</li>
+      <li>WasEnslaved</li>
+      <li>SleptInRoomWithSlave</li>
+      <li>LookChangeDesired</li>
+      <!-- Biotech -->
+      <li>CryingBaby</li>
+      <li>MyCryingBaby</li>
+      <li>FedOn</li>
+      <li>FedOn_Social</li>
+      <li>PsychicBondTorn</li>
+      <li>XenogermHarvested_Prisoner</li>
+      <!-- Anomaly: victim/guilt/horror thoughts -->
+      <li>AteTwistedMeat</li>
+      <li>PsychicRitualVictim</li>
+      <li>MutatedMyArm</li>
+      <li>PsychicRitualGuilt</li>
+      <li>DrainedMySkills</li>
+      <li>UsedMeForPsychicRitual</li>
+      <li>HeardInhumanRambling</li>
     </matchDefNames>
-    <matchTokens>
-      <li>Pain</li>
-      <li>Ugly</li>
-      <li>Bad</li>
-      <li>Sad</li>
-      <li>Horrible</li>
+    <!-- Whole-segment equality (CamelCase word must match exactly). Gives common modded negative
+         thoughts a route without the false positives of substring tokens. -->
+    <matchSegments>
       <li>Terrible</li>
-      <li>Awful</li>
-      <li>Miserable</li>
-      <li>Depressed</li>
-      <li>Annoyed</li>
-      <li>Disgusted</li>
-      <li>Scared</li>
-      <li>Afraid</li>
-      <li>Cold</li>
-      <li>Hot</li>
-      <li>Wet</li>
-      <li>Dirty</li>
-      <li>Sick</li>
-      <li>Naked</li>
-      <li>Jealous</li>
-      <li>Angry</li>
-      <li>Humiliated</li>
-      <li>Shamed</li>
-      <li>Guilt</li>
-      <li>Bored</li>
-      <li>Tired</li>
-      <li>Exhausted</li>
-      <li>Hungry</li>
-    </matchTokens>
+      <li>Boring</li>
+      <li>Lackluster</li>
+      <li>Unimpressive</li>
+      <li>Awkward</li>
+      <li>Missing</li>
+      <li>Disrespected</li>
+      <li>Sickness</li>
+      <li>Exhaustion</li>
+      <li>Disturbed</li>
+      <li>Rotting</li>
+      <li>Harvested</li>
+      <li>Cheated</li>
+      <li>Divorced</li>
+      <li>Rejected</li>
+      <li>Slighted</li>
+      <li>Insulted</li>
+    </matchSegments>
+    <!-- defName families that START WITH these words. "Banished"/"Imprisoned"/"Failed" lead a
+         reliable negative family across vanilla and mods. -->
+    <matchPrefixes>
+      <li>Banished</li>
+      <li>Imprisoned</li>
+    </matchPrefixes>
+    <!-- "Died" suffix catches grief thoughts (MyKinDied, BondedAnimalDied, ...) for mods that add
+         new relations without us listing every one. Opinion-flipped variants are handled by exact
+         lists above (excluded) so this stays negative-only in practice. -->
+    <matchSuffixes>
+      <li>Died</li>
+    </matchSuffixes>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>

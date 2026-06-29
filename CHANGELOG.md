@@ -6,6 +6,24 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-29
 
+- **Tighter thought classification and broad token matching.** Reduced wrong prompt tone for
+  vanilla and modded thoughts by replacing the risky broad substring tokens on the `thoughtPositive`
+  and `thoughtNegative` groups with precise matchers. The old `matchTokens` lists (`Good`, `Nice`,
+  `Love`, `Social`, `Bad`, `Sad`, `Hot`, `Cold`, ...) were blunt enough to misclassify modded
+  ThoughtDefs and even vanilla opinion-flipped grief thoughts (e.g. the substring `"Good"` claimed
+  the negative `PawnWithGoodOpinionDied`; `"Bad"` claimed the positive `PawnWithBadOpinionDied`).
+  Both groups now ship exact `defName` lists (vanilla + Royalty/Ideology/Biotech/Anomaly memory
+  thoughts) plus conservative whole-segment/prefix/suffix matchers for mod coverage. To enable this,
+  `DiaryInteractionGroupDef` gained three precise matcher fields — `matchPrefixes`, `matchSuffixes`,
+  `matchSegments` (CamelCase/underscore/digit word equality) — tried in precision order before the
+  legacy `matchTokens` substring fallback, which is unchanged for compatibility. The pure matching
+  logic lives in `Source/Capture/GroupNameMatcher.cs` (no RimWorld types) and is unit-tested with
+  tricky fixtures including the motivating regression. Opinion-flipped death/loss thoughts are
+  routed by group order: `PawnWithBadOpinionDied`/`PawnWithBadOpinionLost` are claimed by
+  `thoughtPositive` (order 500) before `thoughtNegative`'s `Died` suffix (order 510), while
+  `PawnWithGoodOpinionDied` correctly routes negative. No save data, Scribe key, or DefInjected
+  label/instruction/tone changed.
+
 - **Unified event ingestion behind a `DiaryEvents.Submit` bus.** Every captured event now enters
   through one front door and runs a single shared pipeline (`DiaryGameComponent.Dispatch`):
   guard → pure catalog `Decide` → consolidated dedup → `Emit`. Each source's capture+emit logic

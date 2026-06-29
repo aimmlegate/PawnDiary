@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -263,7 +264,24 @@ namespace PawnDiary
         public List<string> matchDefNames;
 
         // Substring tokens: a defName that contains any token (case-insensitive) matches. Optional.
+        // BLUNT by design — a token like "Good" also claims "PawnWithGoodOpinionDied". Prefer the
+        // prefix/suffix/segment matchers below for new groups; keep this only for compatibility.
         public List<string> matchTokens;
+
+        // Prefix matchers: a defName that STARTS WITH any prefix (case-insensitive) matches. Optional.
+        // Use for defName families that share a leading word, e.g. "Terrible" -> TerribleParty,
+        // TerribleFuneral. Narrower than matchTokens because the token must begin the defName.
+        public List<string> matchPrefixes;
+
+        // Suffix matchers: a defName that ENDS WITH any suffix (case-insensitive) matches. Optional.
+        // Use for defName families that share a trailing word, e.g. "Died" grief thoughts.
+        public List<string> matchSuffixes;
+
+        // Segment matchers: a defName matches when any of its CamelCase/underscore/digit SEGMENTS
+        // equals any listed segment (case-insensitive). Optional. The most precise of the token-style
+        // matchers: "Food" matches "NeedFood" and "AteRawFood" but NOT "Foodstuff" or "Bloodfood".
+        // Prefer this over matchTokens whenever a whole word is the intent.
+        public List<string> matchSegments;
 
         // Package IDs: a Def from any listed mod package is claimed by this group. This lets
         // compatibility policy live in XML without referencing another mod's C# types or listing
@@ -327,6 +345,25 @@ namespace PawnDiary
                         return true;
                     }
                 }
+            }
+
+            // Precise token matchers (prefix/suffix/whole-segment) are tested before the blunt
+            // substring tokens so a group can claim defName families without misfiring on words
+            // that merely contain the same letters. Each delegates to the pure GroupNameMatcher
+            // helper so the behavior is identical in the unit-test harness (no DefDatabase needed).
+            if (matchPrefixes != null && GroupNameMatcher.MatchesPrefix(defName, matchPrefixes))
+            {
+                return true;
+            }
+
+            if (matchSuffixes != null && GroupNameMatcher.MatchesSuffix(defName, matchSuffixes))
+            {
+                return true;
+            }
+
+            if (matchSegments != null && GroupNameMatcher.MatchesSegment(defName, matchSegments))
+            {
+                return true;
             }
 
             if (matchTokens != null)

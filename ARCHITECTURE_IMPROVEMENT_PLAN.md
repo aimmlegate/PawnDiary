@@ -4,9 +4,11 @@ Last updated: 2026-06-29 · Last verified against code: 2026-06-29
 
 Implementation-ready plans for the **unresolved** architecture-improvement work. Resolved/completed
 cards are intentionally omitted. Each plan below is a self-contained slice to hand to one future
-agent. All 12 plans were checked against the current `Source/` tree on the verify date and confirmed
-open; current-state notes are inline where the code has moved (Plans 8, 10, 11, 12). Plan 12 is the
-former standalone lasting-game-state roadmap, folded in here.
+agent. Of the original 12 plans, 11 remain open after **Plan 2 was completed on 2026-06-29** (see
+CHANGELOG); its card is kept below, marked COMPLETED, for reference. All remaining plans were checked
+against the current `Source/` tree on the verify date and confirmed open; current-state notes are
+inline where the code has moved (Plans 8, 10, 11, 12). Plan 12 is the former standalone
+lasting-game-state roadmap, folded in here.
 
 ## Global Implementation Protocol
 
@@ -150,6 +152,12 @@ working API lane without requiring them to understand the full advanced lane tab
 ---
 
 # Plan 2 — Tighten Thought Classification And Broad Token Matching
+
+> **Status: COMPLETED 2026-06-29.** Shipped: `DiaryInteractionGroupDef` gained `matchPrefixes` /
+> `matchSuffixes` / `matchSegments` (pure helper `Source/Capture/GroupNameMatcher.cs`, unit-tested);
+> `thoughtPositive` / `thoughtNegative` rewritten to exact `defName` lists + conservative
+> segment/prefix/suffix matchers, dropping the risky substring tokens; opinion-flipped death/loss
+> thoughts routed by group order. See CHANGELOG 2026-06-29. Card kept for reference.
 
 ## Goal
 
