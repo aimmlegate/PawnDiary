@@ -368,7 +368,19 @@ same-year visual/layout refreshes, including scroll,
 highlight refreshes, and collapse/expand, keep the list visible instead of returning to the loading
 panel; loaded large years seed the clicked card's current blend so the clicked card can still animate
 open or closed. Selected-year rebuilds invalidate row layout defensively so virtualized row offset
-arrays cannot be reused against a changed list. The tab indexer does not perform the older
+arrays cannot be reused against a changed list. An in-progress sliced build (year index, selected-year
+cards, or row layout) is invalidated only by a STRUCTURAL change — a different pawn, a tab filter
+toggle, or a different event count — never by a `DiaryStateVersion` tick. That counter is process-wide,
+so it advances whenever any pawn's entry status/text/title changes anywhere in the colony; tying the
+build identity to it made active generation reset an in-progress scan to event zero on every tick, so
+a large history could never finish loading. Letting each scan complete once started keeps switching
+responsive under generation; the completed index quietly refreshes behind the visible list to pick up
+the new state within a few frames. Per-event work in those sliced scans is kept cheap by
+`DiaryContextFields`: each indexed event and each materialized card calls it several times (arrival
+and death bounds checks, status reads, and source-domain recovery, which probes up to ~13 markers).
+It scans the context string in place and allocates only when a value is returned, so the common
+"key absent" path is allocation-free — important because the per-frame time budget would otherwise
+run out after only a couple of entries, making a long history take many seconds to load. The tab indexer does not perform the older
 cross-colony arrival-page fallback scan while opening; it scans the selected pawn's saved diary
 references once, resumes selected-year loading across frames, skips any bad/stale entry with a
 one-time log, then slices the selected year's card and layout work. Inspect-tab and command badges

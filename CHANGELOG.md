@@ -6,6 +6,30 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-29
 
+- **Fixed diary tab lag when switching to a pawn with a large history.** The sliced history loader
+  (year index, selected-year card materialization, and row layout) shares a per-frame time budget
+  (`uiHistoryScanFrameBudgetSeconds`, ~0.75 ms) so opening a pawn with thousands of pages spreads
+  the work across frames and shows a loading panel instead of freezing. That budget was being
+  exhausted after only one or two entries per frame, so a long history took many seconds to load
+  (and the panel barely progressed). The cost was `DiaryContextFields`, which every indexed event
+  and every materialized card calls several times — for arrival/death bounds checks, status reads,
+  and source-domain recovery, the last of which probes up to ~13 markers. Each `Value`/`HasMarker`
+  call did `context.Split(';')`, allocating a string array plus a substring per field every time, so
+  indexing a few thousand entries allocated millions of strings. `DiaryContextFields` now scans the
+  context in place and allocates ONLY when a value is actually returned; the common "key absent"
+  path (the overwhelming majority of the classifier's probes) is allocation-free. This cuts per-event
+  cost by roughly an order of magnitude, so large histories load in a fraction of the time and the
+  loading panel progresses visibly. Observable parsing semantics are unchanged (pinned by new
+  `DiaryPipelineTests` cases covering trimming, case-insensitivity, empty segments, internal `=`,
+  and the Pawn_1/Pawn_12 exact-key trap). No save data, Scribe key, or DefInjected text changed.
+- **Hardened sliced builds against concurrent generation (defensive).** While diagnosing the lag, the
+  in-progress year-index build, the in-progress row-layout build, and the completed row-layout cache
+  were made resilient to `DiaryStateVersion` ticks: an in-progress build is now invalidated only by a
+  structural change (different pawn, tab filter, or event count), never by a global state-version
+  tick, and the completed row-layout cache no longer fires a synchronous full rebuild on a tick.
+  State changes still arrive through the existing quiet index/card refresh. This prevents active
+  generation from resetting an in-progress scan, complementing the per-event cost fix above.
+
 - **Tighter thought classification and broad token matching.** Reduced wrong prompt tone for
   vanilla and modded thoughts by replacing the risky broad substring tokens on the `thoughtPositive`
   and `thoughtNegative` groups with precise matchers. The old `matchTokens` lists (`Good`, `Nice`,

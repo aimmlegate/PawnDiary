@@ -249,9 +249,20 @@ namespace PawnDiary
 
             public bool Matches(Pawn pawn, DiaryRenderToken currentToken, bool showDebug, bool showGenerating, bool showPromptOnly)
             {
+                // Only a STRUCTURAL change invalidates an in-progress build: a different pawn, a
+                // different event count (events were added/removed), or a filter toggle. The render
+                // token also carries the process-wide DiaryStateVersion, which ticks whenever ANY
+                // pawn's entry status/text/title changes anywhere in the colony. Testing the full
+                // token here used to discard the in-progress build on every such tick, so during
+                // ordinary generation a large history could never finish loading — each tick reset
+                // the frame-sliced scan back to event zero. The build reads live per-event state as
+                // it goes; a state-version tick mid-build only means a few already-indexed entries
+                // have slightly stale visibility, which the completed-index quiet-refresh path
+                // (RebuildIndexIfNeeded) corrects within a few frames. So the volatile stateVersion
+                // is deliberately ignored here, and only the structural eventCount is compared.
                 string currentPawnId = pawn?.GetUniqueLoadID();
                 return string.Equals(currentPawnId, pawnId, StringComparison.Ordinal)
-                    && currentToken.Equals(token)
+                    && currentToken.eventCount == token.eventCount
                     && showDebug == showLlmDebugInfo
                     && showGenerating == showGeneratingEntries
                     && showPromptOnly == showPromptOnlyEntries;

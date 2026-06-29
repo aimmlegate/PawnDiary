@@ -683,9 +683,18 @@ namespace PawnDiary
             bool listDirty = cachedLayoutEntries != ordered
                 || cachedLayoutVisibleRevision != visibleRevision
                 || cachedLayoutSelectedYear != selectedYear;
+            // Visual layout only needs to rebuild when a real layout input changed: card width, the
+            // debug toggle, or the name-highlight set (bold markup changes wrapping). The render
+            // token is intentionally NOT tested here: its stateVersion half is the process-wide
+            // DiaryStateVersion counter, which ticks whenever ANY pawn's entry status/text/title
+            // changes anywhere in the colony. Testing it made every such tick declare the layout
+            // dirty and trip the synchronous processAll rebuild below, so viewing a large history
+            // during active generation hitched on every tick. Real text changes arrive through a
+            // rebuilt ordered list (new visibleRevision), which listDirty already catches — so the
+            // token term is redundant as well as harmful. (The cachedLayoutToken field is still
+            // recorded for diagnostics; it just no longer drives the dirty decision.)
             bool visualLayoutDirty = cachedLayoutViewWidth != viewWidth
                 || cachedLayoutShowDebug != showLlmDebugInfo
-                || !cachedLayoutToken.Equals(token)
                 || cachedLayoutHighlightVersion != nameHighlightsVersion;
             bool expansionLayoutDirty = cachedLayoutExpansionVersion != entryExpansionVersion
                 || !cachedLayoutAnimationSettled;
@@ -718,13 +727,19 @@ namespace PawnDiary
                 return true;
             }
 
+            // Same reasoning as the visualLayoutDirty check above: the in-progress sliced layout
+            // build must only be invalidated by a STRUCTURAL change (different list, year, width,
+            // filters, highlight set, or expansion version) — never by a global state-version tick.
+            // Letting a tick restart this build made the layout scan reset to row zero every frame
+            // under active generation, so a large history could never finish laying out and the tab
+            // sat on the loading panel. The captured token is still stored (layoutBuildToken) for
+            // diagnostics; it is deliberately not part of the identity test.
             if (!layoutBuildInProgress
                 || layoutBuildEntries != ordered
                 || layoutBuildVisibleRevision != visibleRevision
                 || layoutBuildSelectedYear != selectedYear
                 || layoutBuildViewWidth != viewWidth
                 || layoutBuildShowDebug != showLlmDebugInfo
-                || !layoutBuildToken.Equals(token)
                 || layoutBuildHighlightVersion != nameHighlightsVersion
                 || layoutBuildExpansionVersion != entryExpansionVersion)
             {

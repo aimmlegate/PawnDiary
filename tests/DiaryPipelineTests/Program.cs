@@ -30,6 +30,7 @@ namespace DiaryPipelineTests
             TestEventWindowPolicy();
             TestEventPromptKeyCandidates();
             TestDomainClassifier();
+            TestContextFields();
             TestResponsePostprocessorRules();
             TestDirectSpeechParser();
             TestGeneratedTextKeepsTrailingSpeech();
@@ -1175,6 +1176,84 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ability=Stun; ability_label=stun"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
+        }
+
+        // Pins the exact key/value/trimming semantics of DiaryContextFields, which the Diary tab's
+        // sliced history indexer and the per-entry view builder call several times per event. The
+        // implementation was rewritten to scan in place instead of context.Split(';') on every call;
+        // these tests guard the observable behavior (including the legacy quirks) against drift.
+        private static void TestContextFields()
+        {
+            AssertEqual("basic value", "Pawn_12",
+                DiaryContextFields.Value("death_victim_id=Pawn_12; death_description=true", "death_victim_id"));
+            AssertEqual("last segment value", "true",
+                DiaryContextFields.Value("death_victim_id=Pawn_12; death_description=true", "death_description"));
+            AssertEqual("missing key is empty", string.Empty,
+                DiaryContextFields.Value("death_victim_id=Pawn_12; death_description=true", "arrival_victim_id"));
+            AssertEqual("blank context is empty", string.Empty,
+                DiaryContextFields.Value(string.Empty, "k"));
+            AssertEqual("blank key is empty", string.Empty,
+                DiaryContextFields.Value("k=1", "   "));
+
+            // Case-insensitive key match (saved context keys are lower-case; lookups vary).
+            AssertEqual("case-insensitive key", "V",
+                DiaryContextFields.Value("Key=V", "key"));
+
+            // Values are trimmed; surrounding segment whitespace and whitespace around '=' collapse.
+            AssertEqual("value trimmed", "v",
+                DiaryContextFields.Value("k =  v  ", "k"));
+            AssertEqual("value with internal equals keeps them", "http://x?y=1",
+                DiaryContextFields.Value("url=http://x?y=1; next=2", "url"));
+
+            // Empty / whitespace-only segments and doubled separators are skipped, not matched.
+            AssertEqual("empty segments skipped", "2",
+                DiaryContextFields.Value("a=1;;b=2;;;", "b"));
+            AssertEqual("whitespace-only segment skipped", "2",
+                DiaryContextFields.Value("a=1;   ;b=2", "b"));
+
+            // A segment with no key (no '=' or leading '=') is skipped, never matched as a key.
+            AssertEqual("segment without equals skipped", string.Empty,
+                DiaryContextFields.Value("novalue; k=1", "novalue"));
+            AssertEqual("leading equals treated as empty key", string.Empty,
+                DiaryContextFields.Value("=v; k=1", "=v"));
+
+            // Exact key match avoids the Pawn_1 / Pawn_12 substring trap.
+            AssertEqual("exact key prevents substring trap (Pawn_1)", "Pawn_1",
+                DiaryContextFields.Value("a=Pawn_1; b=Pawn_12", "a"));
+            AssertEqual("exact key prevents substring trap (Pawn_12)", "Pawn_12",
+                DiaryContextFields.Value("a=Pawn_1; b=Pawn_12", "b"));
+
+            // HasField: non-empty value present.
+            AssertTrue("has field when present",
+                DiaryContextFields.HasField("death_description=true; label=x", "death_description"));
+            AssertTrue("has field false when absent",
+                !DiaryContextFields.HasField("death_description=true; label=x", "arrival_description"));
+
+            // FieldEquals: case-insensitive value compare; the EXPECTED value is not trimmed.
+            AssertTrue("field equals case-insensitive value",
+                DiaryContextFields.FieldEquals("death_description=TRUE", "death_description", "true"));
+            AssertTrue("field equals does not trim expected",
+                !DiaryContextFields.FieldEquals("k=true", "k", " true "));
+            AssertTrue("field equals missing key is false",
+                !DiaryContextFields.FieldEquals("k=true", "absent", "true"));
+
+            // IsTrue convenience.
+            AssertTrue("is true matches", DiaryContextFields.IsTrue("death_description=true", "death_description"));
+            AssertTrue("is true rejects other text", !DiaryContextFields.IsTrue("death_description=yes", "death_description"));
+
+            // HasMarker: "key=" form, "key=value" form, and plain substring fallback.
+            AssertTrue("marker key= form present",
+                DiaryContextFields.HasMarker("death_description=true; label=x", "death_description="));
+            AssertTrue("marker key= form absent",
+                !DiaryContextFields.HasMarker("label=x", "death_description="));
+            AssertTrue("marker key=value form present",
+                DiaryContextFields.HasMarker("signal=accepted; label=x", "signal=accepted"));
+            AssertTrue("marker key=value form rejects mismatch",
+                !DiaryContextFields.HasMarker("signal=completed; label=x", "signal=accepted"));
+            AssertTrue("marker plain substring fallback",
+                DiaryContextFields.HasMarker("someTaleData", "Tale"));
+            AssertTrue("marker plain substring respects case-insensitive",
+                DiaryContextFields.HasMarker("someTaleData", "tale"));
         }
 
         private static void TestEventPromptKeyCandidates()
