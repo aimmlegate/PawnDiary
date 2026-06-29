@@ -56,9 +56,6 @@ namespace PawnDiary
         // The transient dedup dictionaries keep only recent keys. Once any dictionary crosses this
         // size, the shared gate sweeps entries outside that source's configured dedup window.
         private const int RecentEventPruneThreshold = 512;
-        // Synthetic event used for the neutral first entry that explains how a pawn joined.
-        private const string ArrivalGroupKey = "arrival";
-        private const string ArrivalDefName = "PawnDiary_Arrival";
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();

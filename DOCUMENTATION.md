@@ -102,11 +102,12 @@ XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-imp
 
 **Migration status (this is in progress):** the `Submit` bus and dispatch pipeline are live, and
 the following sources route through it today — **Thought, Inspiration, Ability, Romance, Raid,
-MoodEvent, MentalState, Ritual/PsychicRitual, Tale, Death, Interaction** (every Harmony-hook-driven
-source; covering all shapes: solo, pair, fan-out, batch, ambient, neutral-description). The remaining
-sources (**Hediff, Arrival, Quest, Work, ThoughtProgression, DayReflection**) are driven by — or
-share a record-core with — periodic tick scanners rather than a single Harmony hook; they keep their
-existing centralized scan-loop ingestion and coexist with the bus via the shared dedup store. The remaining catalog sources still
+MoodEvent, MentalState, Ritual/PsychicRitual, Tale, Death, Interaction, Arrival** (covering all
+shapes: solo, pair, fan-out, batch, ambient, neutral-description). Arrival's starting-colonist scan
+and the SetFaction hook both submit through the bus. The remaining sources (**Hediff, Quest, Work,
+ThoughtProgression, DayReflection**) are driven by — or share a record-core with — periodic tick
+scanners; they are being migrated to submit through the bus as well, and coexist with it via the
+shared dedup store until then. The remaining catalog sources still
 use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
 the identical pattern; their dedup keys already share the consolidated store via the same raw
 prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
@@ -135,7 +136,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | Quest | `Quest.Accept`/`End` + state scan | `RecordQuest…` (pending) | fan-out |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
-| Arrival | Starting scan + `Pawn.SetFaction` | `RecordColonistArrival` (pending) | neutral description |
+| Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |
 
 | Source | How it is observed | Result |
 |---|---|---|

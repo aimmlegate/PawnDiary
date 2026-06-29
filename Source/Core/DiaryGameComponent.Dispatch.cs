@@ -140,6 +140,12 @@ namespace PawnDiary
             QueueDeathDescription(diaryEvent);
         }
 
+        /// <summary>Queues the neutral arrival-description prompt for an arrival-shaped entry.</summary>
+        internal void QueueArrivalDescriptionFor(DiaryEvent diaryEvent)
+        {
+            QueueArrivalDescription(diaryEvent);
+        }
+
         /// <summary>
         /// Shared "ask the catalog" step: looks up the Spec for the payload's event type and runs the
         /// pure Decide. Returns false (and a Drop decision) when the payload is missing, no Spec is
