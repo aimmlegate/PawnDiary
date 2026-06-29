@@ -20,6 +20,16 @@ namespace PawnDiary.Capture
         public bool Worsened;
         public bool StageAlreadyRecorded;
 
+        /// <summary>
+        /// The transient dedup key for this progression event (raw, source-prefixed). Lifted verbatim
+        /// out of the old RecordThoughtProgression: one window per pawn + category + thought def +
+        /// stage. Distinct "thoughtprogression|" prefix so it never collides with plain Thought keys.
+        /// </summary>
+        public string DedupKey()
+        {
+            return "thoughtprogression|" + PawnId + "|" + CategoryKey + "|" + DefName + "|" + StageIndex;
+        }
+
         public static CaptureDecision Decide(ThoughtProgressionEventData data, CaptureContext ctx)
         {
             if (data == null || ctx == null || string.IsNullOrEmpty(data.DefName))

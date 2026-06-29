@@ -90,9 +90,6 @@ namespace PawnDiary
         // DiaryGameComponent.Dispatch.cs: recentEvents). The dicts below belong to sources that still
         // use their legacy scan-loop / record-core ingestion (ThoughtProgression scanner, Hediff,
         // Quest), plus the generic event-window guard and the raid generation-delay map.
-        // Transient (not saved) guard against the same pawn+thought being recorded repeatedly (the
-        // ThoughtProgression scanner keys into this with a "thoughtprogression|" prefix).
-        private readonly Dictionary<string, int> recentThoughtEvents = new Dictionary<string, int>();
         // Transient (not saved) guard against repeated hediff appearance/progression signals.
         private readonly Dictionary<string, int> recentHediffEvents = new Dictionary<string, int>();
         // Transient (not saved) generation delay for ordinary raids. The event is recorded as soon as
@@ -215,7 +212,6 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
@@ -254,7 +250,6 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentThoughtEvents.Clear();
             recentHediffEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();

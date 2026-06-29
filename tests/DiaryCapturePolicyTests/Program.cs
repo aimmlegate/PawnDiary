@@ -1353,6 +1353,12 @@ namespace DiaryCapturePolicyTests
             AssertEqual("tale dedup key (single pawn, empty second)",
                 "tale|DidResearch|A|",
                 new TaleEventData { DefName = "DidResearch", FirstPawnId = "A" }.DedupKey());
+
+            // ThoughtProgression: one window per pawn + category + thought def + stage (distinct
+            // "thoughtprogression|" prefix so it never collides with plain Thought keys).
+            AssertEqual("thought progression dedup key",
+                "thoughtprogression|P1|need_outdoors|NeedOutdoors|2",
+                new ThoughtProgressionEventData { PawnId = "P1", CategoryKey = "need_outdoors", DefName = "NeedOutdoors", StageIndex = "2" }.DedupKey());
         }
 
         // ── Factory helpers ──

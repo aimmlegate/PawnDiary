@@ -33,17 +33,23 @@ namespace PawnDiary
         /// methods exactly: gameplay-time guard, pure Decide, then dedup immediately before the impure
         /// Emit (so a dropped or deduped event never builds text or mutates the save).
         /// </summary>
-        internal void Dispatch(DiarySignal signal)
+        /// <returns>
+        /// True if the signal passed the guard, decision, and dedup and its <c>Emit</c> ran. Most
+        /// callers (the static <see cref="DiaryEvents.Submit(DiarySignal)"/> façade) ignore this, but a
+        /// scanner whose own episode/staging state is coupled to whether the event recorded (e.g.
+        /// ThoughtProgression's recorded-stage set) calls <c>Dispatch</c> directly and reads the result.
+        /// </returns>
+        internal bool Dispatch(DiarySignal signal)
         {
             if (signal == null || !CanRecordGameplayEventNow())
             {
-                return;
+                return false;
             }
 
             CaptureDecision decision;
             if (!TryDecide(signal.Payload, signal.BuildContext(), out decision))
             {
-                return;
+                return false;
             }
 
             // Dedup AFTER the decision, BEFORE the impure build — same ordering as before the refactor.
@@ -51,10 +57,11 @@ namespace PawnDiary
             if (!string.IsNullOrEmpty(key)
                 && RecentlyRecorded(recentEvents, key, signal.DedupWindowTicks))
             {
-                return;
+                return false;
             }
 
             signal.Emit(this, decision);
+            return true;
         }
 
         /// <summary>
