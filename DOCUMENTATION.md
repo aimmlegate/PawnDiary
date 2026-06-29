@@ -103,11 +103,11 @@ XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-imp
 **Migration status (this is in progress):** the `Submit` bus and dispatch pipeline are live, and
 the following sources route through it today — **Thought, Inspiration, Ability, Romance, Raid,
 MoodEvent, MentalState, Ritual/PsychicRitual, Tale, Death, Interaction, Arrival** (covering all
-shapes: solo, pair, fan-out, batch, ambient, neutral-description). Arrival's starting-colonist scan
-and the SetFaction hook both submit through the bus. The remaining sources (**Hediff, Quest, Work,
-ThoughtProgression, DayReflection**) are driven by — or share a record-core with — periodic tick
-scanners; they are being migrated to submit through the bus as well, and coexist with it via the
-shared dedup store until then. The remaining catalog sources still
+shapes: solo, pair, fan-out, batch, ambient, neutral-description). Tick-scanner sources submit through
+the bus too: Arrival's starting-colonist scan and **Work**'s periodic job sample both build a signal
+per pawn and `Submit` it. The remaining sources (**Hediff, Quest, ThoughtProgression, DayReflection**)
+are being migrated to submit through the bus as well, and coexist with it via the shared dedup store
+until then. The remaining catalog sources still
 use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
 the identical pattern; their dedup keys already share the consolidated store via the same raw
 prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
@@ -130,7 +130,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | Tale | `TaleRecorder.RecordTale` | `TaleSignal` | solo / batch / death |
 | Hediff | `Pawn_HealthTracker.AddHediff` + scan | `RecordHediffAppeared` (pending) | solo / day-reflection |
 | Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
-| Work | Periodic job sampling | `ScanPawnWork…` (pending) | solo |
+| Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `Scan…Progression` (pending) | solo |
 | DayReflection | Sleep/rest flush | route-sink (pending) | solo |
 | Quest | `Quest.Accept`/`End` + state scan | `RecordQuest…` (pending) | fan-out |
