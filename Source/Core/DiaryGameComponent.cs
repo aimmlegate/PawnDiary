@@ -90,8 +90,6 @@ namespace PawnDiary
         // DiaryGameComponent.Dispatch.cs: recentEvents). The dicts below belong to sources that still
         // use their legacy scan-loop / record-core ingestion (ThoughtProgression scanner, Hediff,
         // Quest), plus the generic event-window guard and the raid generation-delay map.
-        // Transient (not saved) guard against repeated hediff appearance/progression signals.
-        private readonly Dictionary<string, int> recentHediffEvents = new Dictionary<string, int>();
         // Transient (not saved) generation delay for ordinary raids. The event is recorded as soon as
         // RimWorld spawns the threat, but the LLM waits a short XML-tuned window so walk-in raids read
         // more like anticipation/contact than instant combat aftermath.
@@ -212,7 +210,6 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentHediffEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();
@@ -250,7 +247,6 @@ namespace PawnDiary
             writtenAmbientInteractionNotes.Clear();
             pendingAmbientThoughtNotes.Clear();
             writtenAmbientThoughtNotes.Clear();
-            recentHediffEvents.Clear();
             delayedRaidGenerationReadyTicks.Clear();
             recentQuestEvents.Clear();
             recentEventWindowEvents.Clear();

@@ -107,9 +107,9 @@ shapes: solo, pair, fan-out, batch, ambient, neutral-description). Tick-scanner 
 the bus too: Arrival's starting-colonist scan, **Work**'s periodic job sample, and
 **ThoughtProgression**'s situational-need scan all build a signal per pawn and `Submit` it. A scanner
 whose episode state depends on whether the event recorded (ThoughtProgression's recorded-stage set)
-calls `Dispatch` directly to read the emitted result. The remaining sources (**Hediff, Quest,
-DayReflection**) are being migrated to submit through the bus as well, and coexist with it via the
-shared dedup store until then. The remaining catalog sources still
+calls `Dispatch` directly to read the emitted result. **Hediff**'s AddHediff hook and severity scan
+both submit a `HediffSignal`. The remaining sources (**Quest, DayReflection**) are being migrated to
+submit through the bus as well, and coexist with it via the shared dedup store until then. The remaining catalog sources still
 use their legacy `RecordXxx` methods on `DiaryGameComponent` and are being migrated incrementally to
 the identical pattern; their dedup keys already share the consolidated store via the same raw
 prefixes, so the two styles coexist with no behavior or save change. The coverage table below marks
@@ -130,7 +130,7 @@ The catalog of every event the diary reacts to (`DiaryEventType`), with its curr
 | MoodEvent | `GameConditionManager.RegisterCondition` | `MoodEventFanoutSignal` | fan-out |
 | MentalState | `MentalStateHandler.TryStartMentalState` | `MentalStateSignal` | pair + solo |
 | Tale | `TaleRecorder.RecordTale` | `TaleSignal` | solo / batch / death |
-| Hediff | `Pawn_HealthTracker.AddHediff` + scan | `RecordHediffAppeared` (pending) | solo / day-reflection |
+| Hediff | `Pawn_HealthTracker.AddHediff` + scan | `HediffSignal` | solo / day-reflection |
 | Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
 | Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |

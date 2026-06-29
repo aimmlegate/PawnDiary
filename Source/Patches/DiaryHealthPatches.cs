@@ -2,6 +2,7 @@
 // rules, per-day accumulation, and progression scans live in DiaryGameComponent and XML policy.
 // New to this? See AGENTS.md ("Harmony patches").
 using HarmonyLib;
+using PawnDiary.Ingestion;
 using RimWorld;
 using Verse;
 
@@ -47,7 +48,7 @@ namespace PawnDiary
                 // hediff capture below (both ran in this one DiaryPatchSafety.Run lambda before).
                 DiaryPatchSafety.Run("HealthTrackerAddHediffPatch.EventWindow",
                     () => component.RecordEventWindowHediffAdded(pawn, hediff));
-                component.RecordHediffAppeared(pawn, hediff);
+                DiaryEvents.Submit(new HediffSignal(pawn, hediff, HediffSignalSource.Appeared));
             });
         }
     }

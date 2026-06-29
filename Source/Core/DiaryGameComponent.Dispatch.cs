@@ -46,8 +46,18 @@ namespace PawnDiary
                 return false;
             }
 
+            // Read the payload first and bail before BuildContext: a null payload means the signal's
+            // capture already decided to drop (missing/ineligible inputs, no matching policy), and its
+            // BuildContext may deref state that was never set. This is the common path for sources that
+            // submit for every candidate (e.g. a HediffSignal for a hediff with no diary group).
+            DiaryEventData payload = signal.Payload;
+            if (payload == null)
+            {
+                return false;
+            }
+
             CaptureDecision decision;
-            if (!TryDecide(signal.Payload, signal.BuildContext(), out decision))
+            if (!TryDecide(payload, signal.BuildContext(), out decision))
             {
                 return false;
             }
@@ -93,8 +103,14 @@ namespace PawnDiary
                     continue;
                 }
 
+                DiaryEventData childPayload = child.Payload;
+                if (childPayload == null)
+                {
+                    continue;
+                }
+
                 CaptureDecision decision;
-                if (!TryDecide(child.Payload, child.BuildContext(), out decision))
+                if (!TryDecide(childPayload, child.BuildContext(), out decision))
                 {
                     continue;
                 }
