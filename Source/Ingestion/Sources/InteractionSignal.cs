@@ -101,11 +101,19 @@ namespace PawnDiary.Ingestion
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
+            // Pure routing (unit-tested in DiaryCapturePolicyTests); this method renders the live text
+            // and drives the sink for the chosen shape.
+            InteractionEventData.InteractionEmitShape shape = InteractionEventData.PlanEmit(decision);
+            if (shape == InteractionEventData.InteractionEmitShape.Drop)
+            {
+                return;
+            }
+
             string interactionLabel = interactionDef.LabelCap.Resolve();
             string initiatorText = DiaryLineCleaner.CleanLine(initiatorGameText);
             string recipientText = DiaryLineCleaner.CleanLine(recipientGameText);
 
-            if (decision == CaptureDecision.GenerateSolo)
+            if (shape == InteractionEventData.InteractionEmitShape.Solo)
             {
                 Pawn eligiblePawn = initiatorEligible ? initiator : recipient;
                 Pawn otherPawn = initiatorEligible ? recipient : initiator;
@@ -133,7 +141,7 @@ namespace PawnDiary.Ingestion
                 recipientText = initiatorText;
             }
 
-            if (decision == CaptureDecision.RouteBatch || decision == CaptureDecision.RouteAmbient)
+            if (shape == InteractionEventData.InteractionEmitShape.Batch)
             {
                 if (batchGroup != null)
                 {
@@ -143,11 +151,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            if (decision != CaptureDecision.GeneratePair)
-            {
-                return;
-            }
-
+            // Pair.
             DiaryEvent diaryEvent = sink.AddPairwiseEvent(initiator, recipient, interactionDef.defName, interactionLabel,
                 initiatorText, recipientText,
                 InteractionGroups.InstructionFor(interactionDef),

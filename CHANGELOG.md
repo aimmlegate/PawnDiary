@@ -21,7 +21,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   submit it. `Dispatch` returns whether it emitted, so a scan whose episode state is coupled to the
   record outcome (ThoughtProgression's recorded-stage set, DayReflection's written-day guard) reads
   that result. No `RecordXxx` capture methods remain; the per-source dedup dictionaries are gone,
-  replaced by the consolidated store. Pure DedupKey() tests pin the consolidated-store keys. See
+  replaced by the consolidated store. Pure DedupKey() tests pin the consolidated-store keys, and pure
+  PlanEmit() functions for the two branchy sources (Tale, Interaction) make their emit routing —
+  decision -> shape, plus Tale's solo POV + death-description flags — unit-testable. See
   DOCUMENTATION.md section 3.1 and the section 4 coverage table.
 
 ## 2026-06-28

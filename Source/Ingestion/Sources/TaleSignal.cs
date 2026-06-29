@@ -85,6 +85,14 @@ namespace PawnDiary.Ingestion
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
+            // Pure routing (unit-tested in DiaryCapturePolicyTests); this method only renders the live
+            // text and drives the sink for the chosen shape.
+            TaleEventData.TaleEmitPlan plan = TaleEventData.PlanEmit(decision, firstEligible);
+            if (plan.Shape == TaleEventData.TaleEmitShape.Drop)
+            {
+                return;
+            }
+
             string label = CleanTaleLabel(taleDef);
             Def attachedDef = AttachedDefFor(tale);
             string instruction = InteractionGroups.InstructionForTale(taleDef);
@@ -94,7 +102,7 @@ namespace PawnDiary.Ingestion
                 gameContext = AppendDeathDescriptionContext(gameContext, deathVictim, firstPawn, secondPawn);
             }
 
-            if (decision == CaptureDecision.RouteBatch)
+            if (plan.Shape == TaleEventData.TaleEmitShape.Batch)
             {
                 if (batchGroup != null)
                 {
@@ -104,13 +112,12 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            if (decision == CaptureDecision.GeneratePair
-                || decision == CaptureDecision.GeneratePairDeathDescription)
+            if (plan.Shape == TaleEventData.TaleEmitShape.Pair)
             {
                 string text = BuildTalePairText(firstPawn, secondPawn, label, attachedDef);
                 DiaryEvent pairEvent = sink.AddPairwiseEvent(firstPawn, secondPawn, taleDef.defName, label,
                     text, text, instruction, gameContext);
-                if (decision == CaptureDecision.GeneratePairDeathDescription)
+                if (plan.DeathDescription)
                 {
                     sink.AddDeathEventRef(deathVictim, pairEvent.eventId);
                     sink.QueueDeathDescriptionFor(pairEvent);
@@ -121,17 +128,12 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            if (decision != CaptureDecision.GenerateSolo
-                && decision != CaptureDecision.GenerateSoloDeathDescription)
-            {
-                return;
-            }
-
-            Pawn povPawn = firstEligible ? firstPawn : secondPawn;
-            Pawn otherPawn = firstEligible ? secondPawn : firstPawn;
+            // Solo.
+            Pawn povPawn = plan.PovIsFirstPawn ? firstPawn : secondPawn;
+            Pawn otherPawn = plan.PovIsFirstPawn ? secondPawn : firstPawn;
             string soloText = DiaryGameComponent.BuildTaleSoloText(povPawn, label, otherPawn, attachedDef);
             DiaryEvent soloEvent = sink.AddSoloEvent(povPawn, otherPawn, taleDef.defName, label, soloText, instruction, gameContext);
-            if (decision == CaptureDecision.GenerateSoloDeathDescription)
+            if (plan.DeathDescription)
             {
                 sink.AddDeathEventRef(deathVictim, soloEvent.eventId);
                 sink.QueueDeathDescriptionFor(soloEvent);

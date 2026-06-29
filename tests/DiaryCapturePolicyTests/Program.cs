@@ -67,6 +67,7 @@ namespace DiaryCapturePolicyTests
             TestCatalogContract();
             TestMigrationSentinel();
             TestDedupKeys();
+            TestEmitPlans();
 
             Console.WriteLine("DiaryCapturePolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -1359,6 +1360,58 @@ namespace DiaryCapturePolicyTests
             AssertEqual("thought progression dedup key",
                 "thoughtprogression|P1|need_outdoors|NeedOutdoors|2",
                 new ThoughtProgressionEventData { PawnId = "P1", CategoryKey = "need_outdoors", DefName = "NeedOutdoors", StageIndex = "2" }.DedupKey());
+        }
+
+        // ── Emit routing plans ──
+        // The branchy sources (Tale, Interaction) route inside the impure Emit, which can't run without
+        // RimWorld. PlanEmit extracts that route choice as a pure function so it IS testable; these
+        // assertions lock the decision -> shape mapping (and Tale's solo POV + death-description flags).
+
+        private static void TestEmitPlans()
+        {
+            // Tale: 5 emit shapes from the catalog decision; solo POV is the first pawn iff eligible.
+            TaleEventData.TaleEmitPlan batch = TaleEventData.PlanEmit(CaptureDecision.RouteBatch, true);
+            AssertEqual("tale plan: RouteBatch -> Batch", TaleEventData.TaleEmitShape.Batch, batch.Shape);
+
+            TaleEventData.TaleEmitPlan pair = TaleEventData.PlanEmit(CaptureDecision.GeneratePair, false);
+            AssertEqual("tale plan: GeneratePair -> Pair", TaleEventData.TaleEmitShape.Pair, pair.Shape);
+            AssertTrue("tale plan: GeneratePair not death", !pair.DeathDescription);
+
+            TaleEventData.TaleEmitPlan pairDeath = TaleEventData.PlanEmit(CaptureDecision.GeneratePairDeathDescription, true);
+            AssertEqual("tale plan: pair death -> Pair", TaleEventData.TaleEmitShape.Pair, pairDeath.Shape);
+            AssertTrue("tale plan: pair death flagged", pairDeath.DeathDescription);
+
+            TaleEventData.TaleEmitPlan soloFirst = TaleEventData.PlanEmit(CaptureDecision.GenerateSolo, true);
+            AssertEqual("tale plan: GenerateSolo -> Solo", TaleEventData.TaleEmitShape.Solo, soloFirst.Shape);
+            AssertTrue("tale plan: solo pov is first when first eligible", soloFirst.PovIsFirstPawn);
+            AssertTrue("tale plan: solo not death", !soloFirst.DeathDescription);
+
+            TaleEventData.TaleEmitPlan soloSecond = TaleEventData.PlanEmit(CaptureDecision.GenerateSolo, false);
+            AssertTrue("tale plan: solo pov is second when first ineligible", !soloSecond.PovIsFirstPawn);
+
+            TaleEventData.TaleEmitPlan soloDeath = TaleEventData.PlanEmit(CaptureDecision.GenerateSoloDeathDescription, true);
+            AssertEqual("tale plan: solo death -> Solo", TaleEventData.TaleEmitShape.Solo, soloDeath.Shape);
+            AssertTrue("tale plan: solo death flagged", soloDeath.DeathDescription);
+
+            AssertEqual("tale plan: RouteAmbient -> Drop (tale never ambient)", TaleEventData.TaleEmitShape.Drop,
+                TaleEventData.PlanEmit(CaptureDecision.RouteAmbient, true).Shape);
+            AssertEqual("tale plan: Drop -> Drop", TaleEventData.TaleEmitShape.Drop,
+                TaleEventData.PlanEmit(CaptureDecision.Drop, true).Shape);
+
+            // Interaction: 4 shapes; RouteBatch and RouteAmbient both feed the batch accumulator.
+            AssertEqual("interaction plan: GenerateSolo -> Solo", InteractionEventData.InteractionEmitShape.Solo,
+                InteractionEventData.PlanEmit(CaptureDecision.GenerateSolo));
+            AssertEqual("interaction plan: GeneratePair -> Pair", InteractionEventData.InteractionEmitShape.Pair,
+                InteractionEventData.PlanEmit(CaptureDecision.GeneratePair));
+            AssertEqual("interaction plan: RouteBatch -> Batch", InteractionEventData.InteractionEmitShape.Batch,
+                InteractionEventData.PlanEmit(CaptureDecision.RouteBatch));
+            AssertEqual("interaction plan: RouteAmbient -> Batch", InteractionEventData.InteractionEmitShape.Batch,
+                InteractionEventData.PlanEmit(CaptureDecision.RouteAmbient));
+            AssertEqual("interaction plan: Drop -> Drop", InteractionEventData.InteractionEmitShape.Drop,
+                InteractionEventData.PlanEmit(CaptureDecision.Drop));
+            AssertEqual("interaction plan: death-desc -> Drop (interaction never death)",
+                InteractionEventData.InteractionEmitShape.Drop,
+                InteractionEventData.PlanEmit(CaptureDecision.GenerateSoloDeathDescription));
         }
 
         // ── Factory helpers ──
