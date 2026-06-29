@@ -81,11 +81,15 @@ dispatcher `DiaryGameComponent.Dispatch` then runs the universal steps that each
 used to copy-paste:
 
 1. **guard** — `CanRecordGameplayEventNow` (game must be in play);
-2. **decide** — `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` (the pure, XML-backed
+2. **dedup-check** — one consolidated transient `recentEvents` store, keyed by the signal's raw
+   source-prefixed key (e.g. `"thought|pawnId|defName"`). The check runs *before* `Decide` so a
+   deduped event skips the pure decision, and so a source that draws impure state before emitting
+   (notably `AbilitySignal`'s `Rand.Value` roll) does not consume that state on a dropped duplicate;
+3. **decide** — `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` (the pure, XML-backed
    filter);
-3. **dedup** — one consolidated transient `recentEvents` store, keyed by the signal's raw
-   source-prefixed key (e.g. `"thought|pawnId|defName"`);
-4. **emit** — `signal.Emit(sink, decision)` builds the localized text + game-context, creates the
+4. **dedup-mark** — the key is marked only after `Decide` passes, so an event the catalog drops
+   (e.g. an ability that fails its cooldown-weighted chance roll) does not consume the window;
+5. **emit** — `signal.Emit(sink, decision)` builds the localized text + game-context, creates the
    `DiaryEvent` via the factory, and queues generation (or routes to the ambient/batch sinks).
 
 A `DiarySignal` is the impure capture+emit half of one source; the pure decision and game-context
@@ -115,7 +119,11 @@ methods. Two patterns reach the bus:
 
 The per-source dedup dictionaries are gone, replaced by the single consolidated `recentEvents` store
 (legacy scan state like `knownAcceptedQuestIds` and the per-episode staging sets remain, since they
-are not event dedup). The coverage table below lists each source's signal.
+are not event dedup). Each entry records the source's OWN dedup window alongside the tick, and the
+prune sweep evicts a key only once THAT window has elapsed (pure policy in
+`Source/Capture/RecentEventExpiry.cs`, unit-tested); a short-window source firing the sweep can
+therefore never evict a still-live long-window key, and a zero/negative window means "opt out of
+dedup" rather than "wipe the store". The coverage table below lists each source's signal.
 
 ## 4. Event Sources
 

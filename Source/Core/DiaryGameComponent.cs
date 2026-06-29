@@ -1,6 +1,5 @@
-// The orchestrator. Owns the saved diary data and drives the whole flow: record an event
-// (RecordInteraction / RecordMentalState / RecordTale / RecordMoodEvent / RecordWork)
-// -> build a DiaryEvent with context -> queue an LLM
+// The orchestrator. Owns the saved diary data and drives the whole flow: submit/capture an event
+// signal -> build a DiaryEvent with context -> queue an LLM
 // request -> apply the result each tick -> hand views to the UI. Context/prompt building live in
 // DiaryContextBuilder / DiaryPromptBuilder; the saved data models in DiaryEvent / PawnDiaryRecord.
 // This is a RimWorld GameComponent (lifecycle hooks: GameComponentTick, GameComponentUpdate,
@@ -87,15 +86,18 @@ namespace PawnDiary
         private readonly HashSet<string> writtenAmbientThoughtNotes = new HashSet<string>();
 
         // Submit-bus sources share one consolidated transient store (see
-        // DiaryGameComponent.Dispatch.cs: recentEvents). The dicts below belong to sources that still
-        // use their legacy scan-loop / record-core ingestion (ThoughtProgression scanner, Hediff,
-        // Quest), plus the generic event-window guard and the raid generation-delay map.
+        // DiaryGameComponent.Dispatch.cs: recentEvents). Every hook-driven source has now been
+        // migrated onto that bus; the transient maps kept here are the remaining scan-loop bookkeeping
+        // (ThoughtProgression / Hediff / Work / DayReflection progression state, the generic
+        // event-window guard, and the raid generation-delay map) — none of them is a legacy recorder.
         // Transient (not saved) generation delay for ordinary raids. The event is recorded as soon as
         // RimWorld spawns the threat, but the LLM waits a short XML-tuned window so walk-in raids read
         // more like anticipation/contact than instant combat aftermath.
         private readonly Dictionary<string, int> delayedRaidGenerationReadyTicks = new Dictionary<string, int>();
         // Transient (not saved) guard against generic event-window start/end signals double-firing.
-        private readonly Dictionary<string, int> recentEventWindowEvents = new Dictionary<string, int>();
+        // Each entry remembers its own Def-configured dedup window so a prune driven by one window
+        // never evicts a still-live key with a different window (see RecentEventExpiry).
+        private readonly Dictionary<string, RecentEventEntry> recentEventWindowEvents = new Dictionary<string, RecentEventEntry>();
         // Transient (not saved) list of quests already seen in the accepted state. Quest.Accept can
         // be reached through more than one RimWorld UI path, so the tick scanner uses this to catch
         // missed acceptance transitions without duplicating hook-driven entries.

@@ -113,14 +113,35 @@ namespace PawnDiary.Ingestion
                 TargetLabel = targetLabel,
                 CooldownTicks = cooldown,
                 RecordChance = chance,
-                Roll = Rand.Value,
+                // Roll is NOT drawn here. The pre-bus RecordAbilityUsed checked dedup before rolling,
+                // so a same-tick duplicate never consumed RimWorld's global RNG. Dispatch now performs
+                // the dedup CHECK before it reads Payload, so the roll is drawn lazily in the Payload
+                // getter below — only on the non-deduped path. This keeps Decide pure (it still reads
+                // Roll) while restoring the old RNG ordering.
             };
 
             dedupKey = "ability|" + caster.GetUniqueLoadID() + "|" + name + "|"
                 + DiaryLineCleaner.CleanLine(targetLabel) + "|" + Find.TickManager.TicksGame;
         }
 
-        public override DiaryEventData Payload => payload;
+        // Roll is drawn on the first Payload read instead of in the constructor. Solo Dispatch reads
+        // Payload only after the dedup check has passed, so a deduped duplicate activation never
+        // advances RimWorld's RNG stream. The rollDrawn guard makes the draw idempotent.
+        private bool rollDrawn;
+
+        public override DiaryEventData Payload
+        {
+            get
+            {
+                if (payload != null && !rollDrawn)
+                {
+                    payload.Roll = Rand.Value;
+                    rollDrawn = true;
+                }
+
+                return payload;
+            }
+        }
 
         // Caster eligibility + the user's group toggle already passed in Init; the sample roll is the
         // only remaining gate and it lives in the pure Decide.

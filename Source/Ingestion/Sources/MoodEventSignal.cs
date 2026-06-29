@@ -1,5 +1,5 @@
 // Mood-event ingestion signal — the impure capture+emit half of the "mood-affecting game condition"
-// source (GameConditionManager.RegisterCondition). Replaces the old DiaryGameComponent.RecordMoodEvent.
+// source (GameConditionManager.RegisterCondition). Replaces the old mood-event recorder.
 // A colony-wide FAN-OUT: one solo entry per eligible colonist on every affected map, with a single
 // condition-level dedup window. The mood-impact direction (positive/negative/neutral) is computed
 // PER PAWN because some conditions affect different sexes differently (e.g. PsychicSuppressorMale),

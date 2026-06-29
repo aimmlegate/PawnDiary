@@ -1,6 +1,6 @@
 // Raid ingestion signal — the impure capture+emit half of the "colony raid" source
 // (IncidentWorker.TryExecute, filtered to raid-like incidents). Replaces the old
-// DiaryGameComponent.RecordRaid. A raid is a colony-wide FAN-OUT: one solo entry per eligible
+// the old raid recorder. A raid is a colony-wide FAN-OUT: one solo entry per eligible
 // colonist on the target map, with a single colony-level dedup window (peek before the loop, mark
 // only after at least one entry emits — handled by the shared DiaryFanoutSignal dispatch).
 //
@@ -41,7 +41,7 @@ namespace PawnDiary.Ingestion
 
         public RaidFanoutSignal(IncidentParms parms, IncidentDef incidentDef)
         {
-            // GamePlaying first (before any Find.TickManager access), mirroring the old RecordRaid's
+            // GamePlaying first (before any Find.TickManager access), mirroring the old raid recorder's
             // leading CanRecordGameplayEventNow guard.
             if (!DiaryGameComponent.GamePlaying || parms == null || incidentDef == null || PawnDiaryMod.Settings == null)
             {

@@ -123,8 +123,8 @@ namespace PawnDiary
     {
         /// <summary>
         /// Harmony Postfix for GameConditionManager.RegisterCondition. Detects
-        /// mood-affecting game conditions (aurora, eclipse, psychic drone, etc.) and
-        /// forwards each affected colonist to DiaryGameComponent.RecordMoodEvent.
+        /// mood-affecting game conditions (aurora, eclipse, psychic drone, etc.) and submits a
+        /// <see cref="MoodEventFanoutSignal"/> for the affected colonists.
         /// </summary>
         public static void Postfix(GameCondition cond)
         {
@@ -156,9 +156,10 @@ namespace PawnDiary
     public static class RaidExecutePatch
     {
         /// <summary>
-        /// Harmony Postfix for IncidentWorker.TryExecute. Forwards successful raid-like incidents to
-        /// DiaryGameComponent.RecordRaid, which fans out to each eligible colonist on the target map.
-        /// Non-raid incidents and failed executions are skipped.
+        /// Harmony Postfix for IncidentWorker.TryExecute. Submits a
+        /// <see cref="RaidFanoutSignal"/> for successful raid-like incidents, which fans out to
+        /// each eligible colonist on the target map. Non-raid incidents and failed executions are
+        /// skipped.
         /// </summary>
         public static void Postfix(IncidentWorker __instance, IncidentParms parms, bool __result)
         {

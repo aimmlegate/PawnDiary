@@ -14,11 +14,25 @@ namespace PawnDiary
 {
     public partial class DiaryGameComponent
     {
+        // One dedup entry: the tick the key was recorded AND the source's own window at that moment.
+        // Storing the window per-key (rather than borrowing the current caller's window) is what lets
+        // the shared store hold short- and long-window sources side by side: a prune sweep driven by a
+        // 300-tick source can no longer evict a still-live 60000-tick hediff key. See RecentEventExpiry
+        // for the pure policy these helpers defer to.
+        private struct RecentEventEntry
+        {
+            public int tick;
+            public int windowTicks;
+        }
+
         /// <summary>
         /// Dedup gate: returns true if the same key was recorded within the given tick window, preventing
-        /// duplicate events (e.g. mirrored SocialFighting calls).
+        /// duplicate events (e.g. mirrored SocialFighting calls). Combines check-then-mark for callers
+        /// that decide and emit in one step; callers that need to draw impure state (e.g. an ability's
+        /// RNG roll) between the check and the mark call <see cref="IsRecentlyRecorded"/> and
+        /// <see cref="MarkRecentlyRecorded"/> separately.
         /// </summary>
-        private bool RecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        private bool RecentlyRecorded(Dictionary<string, RecentEventEntry> recentEvents, string key, int windowTicks)
         {
             if (IsRecentlyRecorded(recentEvents, key, windowTicks))
             {
@@ -29,37 +43,44 @@ namespace PawnDiary
             return false;
         }
 
-        private bool IsRecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        private bool IsRecentlyRecorded(Dictionary<string, RecentEventEntry> recentEvents, string key, int windowTicks)
         {
-            if (recentEvents == null || string.IsNullOrEmpty(key))
+            // A zero/negative window means "this source opted out of dedup": do not check, do not mark,
+            // do not prune. Without this guard a zero-window source would have wiped the whole shared
+            // store on its first prune (see RecentEventExpiry.IsWithinWindow).
+            if (recentEvents == null || string.IsNullOrEmpty(key) || windowTicks <= 0)
             {
                 return false;
             }
 
             int now = Find.TickManager.TicksGame;
-            PruneRecentEvents(recentEvents, now, windowTicks);
+            PruneRecentEvents(recentEvents, now);
 
-            int last;
-            return recentEvents.TryGetValue(key, out last) && now - last < windowTicks;
+            RecentEventEntry entry;
+            return recentEvents.TryGetValue(key, out entry)
+                && RecentEventExpiry.IsWithinWindow(entry.tick, windowTicks, now);
         }
 
-        private void MarkRecentlyRecorded(Dictionary<string, int> recentEvents, string key, int windowTicks)
+        private void MarkRecentlyRecorded(Dictionary<string, RecentEventEntry> recentEvents, string key, int windowTicks)
         {
-            if (recentEvents == null || string.IsNullOrEmpty(key))
+            if (recentEvents == null || string.IsNullOrEmpty(key) || windowTicks <= 0)
             {
                 return;
             }
 
             int now = Find.TickManager.TicksGame;
-            PruneRecentEvents(recentEvents, now, windowTicks);
-            recentEvents[key] = now;
+            PruneRecentEvents(recentEvents, now);
+            recentEvents[key] = new RecentEventEntry { tick = now, windowTicks = windowTicks };
         }
 
         /// <summary>
-        /// Removes dedup keys that are older than their useful window. The dictionaries are transient
-        /// and only answer "did this just happen?", so old keys should not survive a long play session.
+        /// Removes dedup keys that are older than their OWN useful window. The stores are transient and
+        /// only answer "did this just happen?", so old keys should not survive a long play session.
+        /// Each entry carries the window it was recorded with, so a prune triggered by one source only
+        /// ever evicts entries that have actually expired by their own source's window — never a
+        /// longer-window key swept out early by a shorter-window caller.
         /// </summary>
-        private static void PruneRecentEvents(Dictionary<string, int> recentEvents, int now, int windowTicks)
+        private static void PruneRecentEvents(Dictionary<string, RecentEventEntry> recentEvents, int now)
         {
             if (recentEvents == null || recentEvents.Count < RecentEventPruneThreshold)
             {
@@ -67,9 +88,9 @@ namespace PawnDiary
             }
 
             List<string> expiredKeys = null;
-            foreach (KeyValuePair<string, int> pair in recentEvents)
+            foreach (KeyValuePair<string, RecentEventEntry> pair in recentEvents)
             {
-                if (windowTicks <= 0 || now - pair.Value >= windowTicks)
+                if (RecentEventExpiry.IsExpired(pair.Value.tick, pair.Value.windowTicks, now))
                 {
                     if (expiredKeys == null)
                     {

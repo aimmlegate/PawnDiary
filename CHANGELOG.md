@@ -26,6 +26,24 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   decision -> shape, plus Tale's solo POV + death-description flags — unit-testable. See
   DOCUMENTATION.md section 3.1 and the section 4 coverage table.
 
+- **Ingestion-bus review fixes.** Three correctness issues found by adversarial review of the
+  consolidated dedup store, plus stale comments:
+  - The shared `recentEvents` prune sweep used the *current caller's* window against every key, so a
+    short-window source crossing the 512-key threshold could evict a still-live long-window key
+    (e.g. a 300-tick ability evicting a 60000-tick hediff) and re-admit an event the old per-source
+    dictionaries suppressed. Each entry now stores its OWN window and the sweep evicts only keys that
+    have expired by that window (pure policy in `Source/Capture/RecentEventExpiry.cs`, unit-tested).
+  - A zero/negative dedup window now means "opt out of dedup" (no check, no mark, no prune) instead
+    of "treat every shared key as expired", so a tuned-to-zero source can no longer wipe the whole
+    store on its first prune.
+  - `Dispatch` now runs the dedup CHECK before `Decide` and the MARK after, restoring the
+    pre-refactor ability path where dedup ran before the `Rand.Value` roll; a deduped duplicate
+    activation no longer advances RimWorld's global RNG, and a chance-roll failure still does not
+    consume the dedup window.
+  - Updated stale comments and XML-doc comments that still named the deleted `RecordMoodEvent`/
+    `RecordRaid`/`RecordRomance` recorders and the pre-migration "legacy ingestion" map.
+  No `DiaryEvent` field, Scribe key, or save format changed.
+
 ## 2026-06-28
 
 - **Memory decay kept as prompt context.** `Alzheimers`, `Dementia`, and Anomaly `CrumblingMind`

@@ -1,6 +1,6 @@
 // Romance ingestion signal — the impure capture+emit half of the "romance relation changed" source
 // (Pawn_RelationsTracker.AddDirectRelation, filtered to Lover/Spouse/ExLover/ExSpouse). Replaces the
-// old DiaryGameComponent.RecordRomance. This is a PAIR source: it records one DiaryEvent with both
+// old romance recorder. This is a PAIR source: it records one DiaryEvent with both
 // pawns' POV entries so each gets their own first-person take on the relationship change.
 //
 // The pure decision + game-context format live in Source/Capture/Events/RomanceEventData.cs.
@@ -29,7 +29,7 @@ namespace PawnDiary.Ingestion
             this.otherPawn = otherPawn;
             this.relationDef = relationDef;
 
-            // Same guard as the old RecordRomance (GamePlaying first, before any Find.TickManager
+            // Same guard as the old romance recorder (GamePlaying first, before any Find.TickManager
             // access below): drop unless the game is playing and both pawns + the def + settings are
             // present. A null payload tells the dispatcher to drop.
             if (!DiaryGameComponent.GamePlaying || pawn == null || otherPawn == null

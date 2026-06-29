@@ -90,7 +90,9 @@ namespace PawnDiary.Ingestion
 
         /// <summary>
         /// The per-pawn signals to run, already filtered to eligible colonists (and de-duplicated by
-        /// pawn id). Each child runs the same Decide → per-pawn-dedup → Emit path as a solo signal.
+        /// pawn id). Fan-out children use their own dispatcher path: payload/context snapshot → Decide
+        /// → optional per-pawn dedup → Emit. The solo dispatcher checks dedup before payload capture so
+        /// side-effecting solo payloads (currently Ability's RNG roll) can be skipped on duplicates.
         /// </summary>
         public abstract IEnumerable<DiarySignal> PerPawnSignals();
     }

@@ -68,6 +68,7 @@ namespace DiaryCapturePolicyTests
             TestMigrationSentinel();
             TestDedupKeys();
             TestEmitPlans();
+            TestRecentEventExpiry();
 
             Console.WriteLine("DiaryCapturePolicyTests passed " + assertions + " assertions.");
             return 0;
@@ -1412,6 +1413,42 @@ namespace DiaryCapturePolicyTests
             AssertEqual("interaction plan: death-desc -> Drop (interaction never death)",
                 InteractionEventData.InteractionEmitShape.Drop,
                 InteractionEventData.PlanEmit(CaptureDecision.GenerateSoloDeathDescription));
+        }
+
+        // ── Dedup-window expiry policy ──
+        // The consolidated dedup store holds keys from sources with very different windows. The rule
+        // that keeps it correct is "a key expires by ITS OWN window, never another source's"; this
+        // pins that policy (and the zero-window opt-out) so the pre-refactor per-dictionary bug —
+        // a short-window caller evicting a still-live long-window key — cannot regress.
+
+        private static void TestRecentEventExpiry()
+        {
+            // IsWithinWindow: inside / on-the-edge / outside the caller's current window.
+            AssertTrue("within: inside window", RecentEventExpiry.IsWithinWindow(1000, 500, 1300));
+            AssertTrue("within: edge is exclusive", !RecentEventExpiry.IsWithinWindow(1000, 500, 1500));
+            AssertTrue("within: well past window", !RecentEventExpiry.IsWithinWindow(1000, 500, 9999));
+
+            // IsExpired: only true once the entry's OWN window has fully elapsed.
+            AssertTrue("expired: inside own window", !RecentEventExpiry.IsExpired(1000, 500, 1300));
+            AssertTrue("expired: at own window edge", RecentEventExpiry.IsExpired(1000, 500, 1500));
+            AssertTrue("expired: past own window", RecentEventExpiry.IsExpired(1000, 500, 9999));
+
+            // The regression that motivated the helper: a long-window key recorded at tick 1000 with a
+            // 5000-tick window must NOT be expired at tick 1300 — even though a 300-tick source firing
+            // the prune at tick 1300 would have evicted it under the old "borrow the caller's window"
+            // rule. Expiry must consult the entry's own window, not the caller's.
+            AssertTrue("regression: long-window key not expired by short-window clock",
+                !RecentEventExpiry.IsExpired(1000, 5000, 1300));
+            AssertTrue("regression: long-window key still within its own window",
+                RecentEventExpiry.IsWithinWindow(1000, 5000, 1300));
+
+            // Zero/negative window = "this source opted out of dedup". It must never read as within
+            // window (so the event is never suppressed) and never expire (so a zero-window caller
+            // cannot wipe the shared store on its first prune sweep).
+            AssertTrue("opt-out: zero window never within", !RecentEventExpiry.IsWithinWindow(1000, 0, 1000));
+            AssertTrue("opt-out: zero window never expired", !RecentEventExpiry.IsExpired(1000, 0, 9999));
+            AssertTrue("opt-out: negative window never within", !RecentEventExpiry.IsWithinWindow(1000, -1, 1000));
+            AssertTrue("opt-out: negative window never expired", !RecentEventExpiry.IsExpired(1000, -1, 9999));
         }
 
         // ── Factory helpers ──

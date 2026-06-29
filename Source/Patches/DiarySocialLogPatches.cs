@@ -217,10 +217,10 @@ namespace PawnDiary
     }
 
     // Fires when a pawn gains a direct relation with another pawn (Lover, Spouse, Rival,
-    // Cousin, Parent, ...). RecordRomance filters to the four vanilla romance relations and
-    // emits a pairwise diary event for the relation change. Pair dedup (canonical pair key in
-    // RecordRomance) collapses the mirrored call when RimWorld adds the relation symmetrically on
-    // the other pawn's tracker.
+    // Cousin, Parent, ...). RomanceSignal filters to the four vanilla romance relations and emits a
+    // pairwise diary event for the relation change. Pair dedup (canonical pair key on the payload)
+    // collapses the mirrored call when RimWorld adds the relation symmetrically on the other pawn's
+    // tracker.
     /// <summary>
     /// Captures direct relation additions so romance relation changes can become pairwise entries.
     /// </summary>
@@ -240,9 +240,9 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Harmony Postfix for Pawn_RelationsTracker.AddDirectRelation. Forwards the relation
-        /// change to DiaryGameComponent.RecordRomance, which filters to romance relations and
-        /// records a pairwise diary event when both pawns are eligible.
+        /// Harmony Postfix for Pawn_RelationsTracker.AddDirectRelation. Submits a
+        /// <see cref="RomanceSignal"/>, which filters to romance relations and records a pairwise
+        /// diary event when both pawns are eligible.
         /// </summary>
         public static void Postfix(Pawn_RelationsTracker __instance, PawnRelationDef def, Pawn otherPawn)
         {
