@@ -4,8 +4,9 @@ Last updated: 2026-06-29 · Last verified against code: 2026-06-29
 
 Implementation-ready plans for the **unresolved** architecture-improvement work. Resolved/completed
 cards are intentionally omitted. Each plan below is a self-contained slice to hand to one future
-agent. Of the original 12 plans, 10 remain open after **Plans 2 and 3 were completed on 2026-06-29**
-(see CHANGELOG); their cards are kept below, marked COMPLETED, for reference. All remaining plans were
+agent. Of the original 12 plans, 9 remain open after **Plans 2 and 3 were completed on 2026-06-29**
+and **Plan 6 was completed on 2026-06-30** (see CHANGELOG); their cards are kept below, marked
+COMPLETED, for reference. All remaining plans were
 checked against the current `Source/` tree on the verify date and confirmed open; current-state notes
 are inline where the code has moved (Plans 8, 10, 11, 12). Plan 12 is the former standalone
 lasting-game-state roadmap, folded in here.
@@ -506,6 +507,16 @@ canonical policy layer for maintainers.
 ---
 
 # Plan 6 — Save And Settings Compatibility Fixtures
+
+> **Status: COMPLETED 2026-06-30.** Shipped: pure post-load repair extracted from
+> `DiaryEvent.NormalizeOnLoad` / `ArchivedDiaryEntry.NormalizeOnLoad` into
+> `Source/Pipeline/DiarySaveNormalization.cs` (null-coalesces, cross-slot surroundings chain,
+> neutral-text merge, legacy `gameContext`/`instruction` rebuild, year extraction, defensive clamps);
+> new pure `tests/DiarySaveNormalizationTests/` (46 assertions) covers the fixture inventory and is
+> wired into `.githooks/verify.ps1`. Step 4 chose **Option B**: `tests/SAVE_COMPATIBILITY_SMOKETEST.md`
+> runbook for the real-Scribe/settings/colorCue/GUID pieces that cannot be pure-tested. Stable
+> Scribe-key contract + migration pattern documented in `DOCUMENTATION.md §9` (§9a/§9b/§9c). No Scribe
+> keys renamed; behavior unchanged. See CHANGELOG 2026-06-30. Card kept for reference.
 
 ## Goal
 

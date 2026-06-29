@@ -460,6 +460,63 @@ gameplay-safe because the mod does not persist custom pawn/map components or gam
 vanilla objects. The diary UI/history disappears without the mod, and old generated Social-log rows
 from dev builds may remain in the vanilla play log.
 
+### 9a. Scribe-key stability contract
+
+The string tags passed to `Scribe_Values.Look` / `Scribe_Collections.Look` (e.g. `"eventId"`,
+`"interactionDefName"`, `"initiatorPawnId"`, `"neutralText"`, `"maxActiveDiaryEvents"`,
+`"apiEndpoints"`, `"interactionGroupEnabled"`) are a **public, stable save-format API**. Renaming
+any of them silently breaks every existing player save: the old key stops being read on load and
+the field falls back to its default, so a completed diary page can look freshly-reset, a setting can
+revert, or a pair event can lose a POV. Treat every Scribe key the way you would a network or on-disk
+schema field.
+
+Authoritative key lists (read these before renaming anything):
+- `DiaryEvent.ExposeData` + `DiaryEvent.ScribePawnSlot` / `ScribeNeutralSlot` — the hot-event save
+  shape, including the flat `initiator*` / `recipient*` / `neutral*` POV key names that predate the
+  `PovSlot` refactor and are deliberately preserved.
+- `ArchivedDiaryEntry.ExposeData` — the compact archive-row save shape.
+- `DiaryGameComponent.ExposeData` (`diaries`, `diaryEvents`, `diaryArchiveEntries`,
+  `activeEventWindows`) and the per-pawn record list — the top-level containers.
+- `PawnDiarySettings.ExposeData` (and the `PersonaPresetStore` / `PromptOverrideDictionary`
+  `ExposeData` helpers it calls) — the mod-settings shape, including the persona-preset and
+  event-prompt-override maps.
+
+Historically-preserved names that must NOT be renamed even though their meaning has shifted:
+- `maxActiveDiaryEvents` — the field now means the per-pawn hot-page cap, but the Scribe key keeps
+  its original name so older settings files load without losing the configured value.
+
+### 9b. Post-load repair, and where it is tested
+
+Loaded fields are never assumed non-null or in-range. Each `IExposable` model has a
+`NormalizeOnLoad` step that runs in `LoadSaveMode.PostLoadInit` to repair cross-version saves. The
+pure, RimWorld-free parts of that repair (null-coalesces, the cross-slot surroundings chain, the
+neutral-text merge, the legacy `gameContext`/`instruction` rebuild, year extraction, status
+reclassification, defensive clamps) live in `Source/Pipeline/DiarySaveNormalization.cs` and
+`Source/Pipeline/DiaryGenerationStatus.cs`, and are unit-tested by
+`tests/DiarySaveNormalizationTests/` (and the status fixtures in `tests/DiaryPipelineTests/`).
+
+The impure parts that cannot be pure-tested stay on the save models:
+- **Fresh `eventId` minting** for pre-id saves (`Guid.NewGuid` is non-deterministic).
+- **`colorCue` resolution** for older saves (`DiaryEvent.ResolveColorCue` classifies via
+  `GroupForDisplay`, which reads the loaded `DefDatabase`).
+- **The Scribe read/write round-trip itself**, including settings legacy-field repair
+  (`PawnDiarySettings.ClampValues`, `NormalizeEndpointUrls`, persona-preset/override-map
+  rehydration). These are covered by the in-game smoke procedure in
+  `tests/SAVE_COMPATIBILITY_SMOKETEST.md` — run it whenever you touch any `ExposeData` or rename a
+  Scribe key.
+
+### 9c. Allowed migration pattern
+
+The only accepted reason to rename a stable Scribe key is an intentional format change with a
+migration plan, and even then:
+
+1. Keep reading the **old** key during a transition window so existing saves load.
+2. On load, if the old key is present and the new key is absent, copy the value across.
+3. Write only the new key on save.
+4. Document the rename, the window, and the removal date in `CHANGELOG.md` and this section.
+
+Never rename a key "for cleanliness" alone.
+
 ## 10. Runtime And DLC Constraints
 
 - Runtime is RimWorld's Unity Mono. Use only assemblies available in `RimWorldWin64_Data/Managed`
@@ -534,6 +591,7 @@ dotnet run --project tests/DiaryPipelineTests/DiaryPipelineTests.csproj
 dotnet run --project tests/DiaryTextDecorationTests/DiaryTextDecorationTests.csproj
 dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.csproj
 dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
+dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTests.csproj
 ```
 
 Prompt lab:

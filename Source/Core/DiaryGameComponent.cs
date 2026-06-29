@@ -257,8 +257,8 @@ namespace PawnDiary
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
             // cancelled any requests left over from a previous Game. Loaded events have had their
-            // "pending" status normalized back to "not generated" (DiaryEvent.NormalizeLoadedStatus),
-            // so the scan below re-queues them in the current session.
+            // "pending" status normalized back to "not generated" (DiaryGenerationStatus, via
+            // DiarySaveNormalization on the slot), so the scan below re-queues them in this session.
             nextGenerationScanTick = 0;
             generationScanRequested = true;
             nextOrphanRecoveryScanTick = 0;

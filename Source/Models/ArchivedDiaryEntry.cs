@@ -99,7 +99,7 @@ namespace PawnDiary
                 povRole = view.PovRole,
                 tick = view.Tick,
                 date = view.Date,
-                year = ExtractYear(view.Date),
+                year = DiarySaveNormalization.ExtractYear(view.Date),
                 text = archivedText,
                 generatedText = view.GeneratedText,
                 status = string.IsNullOrWhiteSpace(view.LlmStatus)
@@ -249,71 +249,43 @@ namespace PawnDiary
             }
         }
 
+        // Post-load cleanup. Every field is a plain string/int/bool null-coalesce plus status
+        // normalization (DiaryGenerationStatus) and year extraction. All of it delegates to the pure
+        // DiarySaveNormalization helpers so the regression-prone default/derive branches can be tested
+        // without RimWorld. See DOCUMENTATION.md §9.
         private void NormalizeOnLoad()
         {
-            eventId = eventId ?? string.Empty;
+            eventId = DiarySaveNormalization.NormalizeString(eventId);
             if (playLogEntryIds == null)
             {
                 playLogEntryIds = new List<int>();
             }
 
-            pawnId = pawnId ?? string.Empty;
-            povRole = povRole ?? string.Empty;
-            date = date ?? string.Empty;
-            text = text ?? string.Empty;
-            generatedText = generatedText ?? string.Empty;
+            pawnId = DiarySaveNormalization.NormalizeString(pawnId);
+            povRole = DiarySaveNormalization.NormalizeString(povRole);
+            date = DiarySaveNormalization.NormalizeString(date);
+            text = DiarySaveNormalization.NormalizeString(text);
+            generatedText = DiarySaveNormalization.NormalizeString(generatedText);
             status = DiaryGenerationStatus.NormalizeLoadedMainStatus(status, generatedText);
-            llmModel = llmModel ?? string.Empty;
-            title = title ?? string.Empty;
-            groupLabel = groupLabel ?? string.Empty;
-            interactionDefName = interactionDefName ?? string.Empty;
-            interactionLabel = interactionLabel ?? string.Empty;
-            colorCue = colorCue ?? string.Empty;
-            atmosphereCue = atmosphereCue ?? string.Empty;
-            textDecorationFacts = textDecorationFacts ?? string.Empty;
-            decorationDomain = decorationDomain ?? string.Empty;
-            decorationGameContext = decorationGameContext ?? string.Empty;
-            linkedPawnId = linkedPawnId ?? string.Empty;
-            linkedPawnName = linkedPawnName ?? string.Empty;
-            linkedRole = linkedRole ?? string.Empty;
-            linkedPreviewText = linkedPreviewText ?? string.Empty;
-            linkedTitle = linkedTitle ?? string.Empty;
+            llmModel = DiarySaveNormalization.NormalizeString(llmModel);
+            title = DiarySaveNormalization.NormalizeString(title);
+            groupLabel = DiarySaveNormalization.NormalizeString(groupLabel);
+            interactionDefName = DiarySaveNormalization.NormalizeString(interactionDefName);
+            interactionLabel = DiarySaveNormalization.NormalizeString(interactionLabel);
+            colorCue = DiarySaveNormalization.NormalizeString(colorCue);
+            atmosphereCue = DiarySaveNormalization.NormalizeString(atmosphereCue);
+            textDecorationFacts = DiarySaveNormalization.NormalizeString(textDecorationFacts);
+            decorationDomain = DiarySaveNormalization.NormalizeString(decorationDomain);
+            decorationGameContext = DiarySaveNormalization.NormalizeString(decorationGameContext);
+            linkedPawnId = DiarySaveNormalization.NormalizeString(linkedPawnId);
+            linkedPawnName = DiarySaveNormalization.NormalizeString(linkedPawnName);
+            linkedRole = DiarySaveNormalization.NormalizeString(linkedRole);
+            linkedPreviewText = DiarySaveNormalization.NormalizeString(linkedPreviewText);
+            linkedTitle = DiarySaveNormalization.NormalizeString(linkedTitle);
             if (year == UnknownYear && !string.IsNullOrWhiteSpace(date))
             {
-                year = ExtractYear(date);
+                year = DiarySaveNormalization.ExtractYear(date);
             }
-        }
-
-        private static int ExtractYear(string date)
-        {
-            if (string.IsNullOrWhiteSpace(date))
-            {
-                return UnknownYear;
-            }
-
-            int end = -1;
-            for (int i = date.Length - 1; i >= 0; i--)
-            {
-                if (char.IsDigit(date[i]))
-                {
-                    end = i;
-                    break;
-                }
-            }
-
-            if (end < 0)
-            {
-                return UnknownYear;
-            }
-
-            int start = end;
-            while (start > 0 && char.IsDigit(date[start - 1]))
-            {
-                start--;
-            }
-
-            int parsedYear;
-            return int.TryParse(date.Substring(start, end - start + 1), out parsedYear) ? parsedYear : UnknownYear;
         }
     }
 }

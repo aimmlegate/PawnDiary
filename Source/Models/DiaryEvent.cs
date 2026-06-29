@@ -240,9 +240,14 @@ namespace PawnDiary
         // slot is normalized via NormalizeLoadedSlot; then the two cross-slot defaults that borrow a
         // sibling's already-normalized value are applied (recipient surroundings <- initiator
         // surroundings; neutral raw text <- merged initiator+recipient text).
+        //
+        // The pure default/merge/clamp logic lives in DiarySaveNormalization so it can be tested
+        // without RimWorld. Two impure steps stay here: minting a fresh eventId for pre-id saves
+        // (Guid is non-deterministic) and resolving the color cue (ResolveColorCue hits DefDatabase
+        // via GroupForDisplay). See DOCUMENTATION.md §9.
         private void NormalizeOnLoad()
         {
-            // Keep loaded event-level fields non-null and derive fallback context/color/instruction.
+            // Keep loaded event-level fields non-null and derive fallback context/instruction.
             if (string.IsNullOrWhiteSpace(eventId))
             {
                 eventId = Guid.NewGuid().ToString("N");
@@ -253,21 +258,23 @@ namespace PawnDiary
                 playLogEntryIds = new List<int>();
             }
 
-            date = EmptyIfNull(date);
-            interactionDefName = EmptyIfNull(interactionDefName);
-            playLogInteractionDefName = EmptyIfNull(playLogInteractionDefName);
-            interactionLabel = EmptyIfNull(interactionLabel);
+            date = DiarySaveNormalization.NormalizeString(date);
+            interactionDefName = DiarySaveNormalization.NormalizeString(interactionDefName);
+            playLogInteractionDefName = DiarySaveNormalization.NormalizeString(playLogInteractionDefName);
+            interactionLabel = DiarySaveNormalization.NormalizeString(interactionLabel);
 
             if (string.IsNullOrWhiteSpace(gameContext))
             {
-                gameContext = "def=" + interactionDefName + "; label=" + interactionLabel;
+                gameContext = DiarySaveNormalization.BuildDefaultGameContext(interactionDefName, interactionLabel);
             }
 
             if (string.IsNullOrWhiteSpace(instruction))
             {
-                instruction = interactionLabel;
+                instruction = DiarySaveNormalization.BuildDefaultInstruction(interactionLabel);
             }
 
+            // Color-cue resolution is the one impure default: it classifies via GroupForDisplay, which
+            // reads the loaded DefDatabase. Stays here so the pure helper has no Def dependency.
             if (string.IsNullOrWhiteSpace(colorCue))
             {
                 colorCue = ResolveColorCue(interactionDefName, gameContext);
@@ -277,7 +284,7 @@ namespace PawnDiary
             // "positive"/"negative" are set at record time for mood-event entries.
             if (string.IsNullOrWhiteSpace(moodImpact))
             {
-                moodImpact = MoodImpact.Neutral;
+                moodImpact = DiarySaveNormalization.DefaultMoodImpact;
             }
 
             // Per-slot normalization: null/blank pipeline fields are cleaned and statuses upgraded
@@ -286,28 +293,25 @@ namespace PawnDiary
             NormalizeLoadedSlot(ref recipientSlot, hasPawnFields: true);
             NormalizeLoadedSlot(ref neutralSlot, hasPawnFields: false);
 
-            // Cross-slot defaults that depend on an already-normalized sibling slot.
-            // Initiator surroundings fall back to "unknown"; recipient surroundings then borrow the
-            // (possibly just-defaulted) initiator value when blank.
-            initiatorSlot.surroundings = string.IsNullOrWhiteSpace(initiatorSlot.surroundings)
-                ? "unknown"
-                : initiatorSlot.surroundings;
-            recipientSlot.surroundings = string.IsNullOrWhiteSpace(recipientSlot.surroundings)
-                ? initiatorSlot.surroundings
-                : recipientSlot.surroundings;
+            // Cross-slot defaults that depend on an already-normalized sibling slot. The initiator
+            // falls back to "unknown"; the recipient then borrows the initiator's value when blank.
+            string resolvedInitiatorSurroundings;
+            string resolvedRecipientSurroundings;
+            DiarySaveNormalization.ResolveSurroundingsChain(
+                initiatorSlot.surroundings,
+                recipientSlot.surroundings,
+                out resolvedInitiatorSurroundings,
+                out resolvedRecipientSurroundings);
+            initiatorSlot.surroundings = resolvedInitiatorSurroundings;
+            recipientSlot.surroundings = resolvedRecipientSurroundings;
 
             // Neutral raw text is not pawn-authored; if none was saved, merge both POVs' raw text.
-            if (string.IsNullOrWhiteSpace(neutralSlot.text))
-            {
-                neutralSlot.text = string.Equals(initiatorSlot.text, recipientSlot.text, StringComparison.OrdinalIgnoreCase)
-                    ? initiatorSlot.text
-                    : initiatorSlot.name + ": " + initiatorSlot.text + "\n" + recipientSlot.name + ": " + recipientSlot.text;
-            }
-        }
-
-        private static string EmptyIfNull(string value)
-        {
-            return value ?? string.Empty;
+            neutralSlot.text = DiarySaveNormalization.BuildDefaultNeutralText(
+                neutralSlot.text,
+                initiatorSlot.name,
+                initiatorSlot.text,
+                recipientSlot.name,
+                recipientSlot.text);
         }
 
         // Scribes the full per-POV field set for an initiator/recipient slot under the historical
@@ -358,36 +362,37 @@ namespace PawnDiary
         // Cleans one slot's loaded state. Generation-pipeline fields are null-coalesced and their
         // statuses upgraded/cleared for every role. Pawn-specific fields are normalized only for
         // initiator/recipient (hasPawnFields); surroundings is left to the caller, because the
-        // recipient borrows the initiator's already-normalized surroundings value.
+        // recipient borrows the initiator's already-normalized surroundings value. The default/clamp
+        // math delegates to DiarySaveNormalization; status tokens delegate to DiaryGenerationStatus.
         private static void NormalizeLoadedSlot(ref PovSlot slot, bool hasPawnFields)
         {
-            slot.text = EmptyIfNull(slot.text);
-            slot.generatedText = EmptyIfNull(slot.generatedText);
-            slot.error = EmptyIfNull(slot.error);
-            slot.llmEndpoint = EmptyIfNull(slot.llmEndpoint);
-            slot.llmModel = EmptyIfNull(slot.llmModel);
-            slot.rawResponse = EmptyIfNull(slot.rawResponse);
-            slot.prompt = EmptyIfNull(slot.prompt);
-            slot.title = EmptyIfNull(slot.title);
-            slot.titleError = EmptyIfNull(slot.titleError);
+            slot.text = DiarySaveNormalization.NormalizeString(slot.text);
+            slot.generatedText = DiarySaveNormalization.NormalizeString(slot.generatedText);
+            slot.error = DiarySaveNormalization.NormalizeString(slot.error);
+            slot.llmEndpoint = DiarySaveNormalization.NormalizeString(slot.llmEndpoint);
+            slot.llmModel = DiarySaveNormalization.NormalizeString(slot.llmModel);
+            slot.rawResponse = DiarySaveNormalization.NormalizeString(slot.rawResponse);
+            slot.prompt = DiarySaveNormalization.NormalizeString(slot.prompt);
+            slot.title = DiarySaveNormalization.NormalizeString(slot.title);
+            slot.titleError = DiarySaveNormalization.NormalizeString(slot.titleError);
             // Normalize statuses: treat stale "pending" or empty as not_generated, and upgrade to
             // "complete" if generated text/title is already present.
-            slot.status = NormalizeLoadedStatus(slot.status, slot.generatedText);
-            slot.titleStatus = NormalizeLoadedTitleStatus(slot.titleStatus, slot.title);
+            slot.status = DiaryGenerationStatus.NormalizeLoadedMainStatus(slot.status, slot.generatedText);
+            slot.titleStatus = DiaryGenerationStatus.NormalizeLoadedTitleStatus(slot.titleStatus, slot.title);
 
             if (!hasPawnFields)
             {
                 return;
             }
 
-            slot.pawnId = EmptyIfNull(slot.pawnId);
-            slot.name = EmptyIfNull(slot.name);
-            slot.pawnSummary = string.IsNullOrWhiteSpace(slot.pawnSummary) ? "unknown" : slot.pawnSummary;
-            slot.continuity = string.IsNullOrWhiteSpace(slot.continuity) ? "none" : slot.continuity;
-            slot.lastOpener = string.IsNullOrWhiteSpace(slot.lastOpener) ? string.Empty : slot.lastOpener;
-            slot.weapon = string.IsNullOrWhiteSpace(slot.weapon) ? string.Empty : slot.weapon;
-            slot.staggeredIntensity = ClampStaggeredIntensity(slot.staggeredIntensity);
-            slot.textDecorationFacts = slot.textDecorationFacts ?? string.Empty;
+            slot.pawnId = DiarySaveNormalization.NormalizeString(slot.pawnId);
+            slot.name = DiarySaveNormalization.NormalizeString(slot.name);
+            slot.pawnSummary = DiarySaveNormalization.NormalizeWhitespaceOrDefault(slot.pawnSummary, DiarySaveNormalization.DefaultPawnSummary);
+            slot.continuity = DiarySaveNormalization.NormalizeWhitespaceOrDefault(slot.continuity, DiarySaveNormalization.DefaultContinuity);
+            slot.lastOpener = DiarySaveNormalization.NormalizeString(slot.lastOpener);
+            slot.weapon = DiarySaveNormalization.NormalizeString(slot.weapon);
+            slot.staggeredIntensity = DiarySaveNormalization.ClampStaggeredIntensity(slot.staggeredIntensity);
+            slot.textDecorationFacts = DiarySaveNormalization.NormalizeString(slot.textDecorationFacts);
         }
 
         /// <summary>
@@ -1620,16 +1625,6 @@ namespace PawnDiary
         private string TitleStatusFor(string povRole)
         {
             return SlotFor(povRole).titleStatus;
-        }
-
-        private static string NormalizeLoadedStatus(string status, string generatedText)
-        {
-            return DiaryGenerationStatus.NormalizeLoadedMainStatus(status, generatedText);
-        }
-
-        private static string NormalizeLoadedTitleStatus(string status, string title)
-        {
-            return DiaryGenerationStatus.NormalizeLoadedTitleStatus(status, title);
         }
 
         public static bool RoleEquals(string left, string right)

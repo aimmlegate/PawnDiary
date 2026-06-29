@@ -6,6 +6,26 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Save/settings compatibility fixtures (Plan 6).** Turned the save-model post-load repair path into
+  fixture-covered, regression-detectable code. The pure parts of `DiaryEvent.NormalizeOnLoad` and
+  `ArchivedDiaryEntry.NormalizeOnLoad` (null-coalesces, the cross-slot surroundings chain where a pair
+  event's recipient borrows the initiator's surroundings, the neutral-chronicle text merge, the legacy
+  `gameContext`/`instruction` rebuild, year extraction, and defensive clamps) moved into a new pure
+  helper `Source/Pipeline/DiarySaveNormalization.cs`. The impure steps stayed on the save models:
+  fresh-`eventId` GUID minting, `DefDatabase`-backed `ResolveColorCue`, the Scribe read/write
+  round-trip itself, and settings clamp/rebuild. Behavior is unchanged; **no Scribe keys were
+  renamed**. Dead private wrappers (`DiaryEvent.EmptyIfNull`/`NormalizeLoadedStatus`/
+  `NormalizeLoadedTitleStatus`, and `ArchivedDiaryEntry.ExtractYear` — its two call sites now route
+  through the pure helper) were removed. Added `tests/DiarySaveNormalizationTests/` (46 assertions)
+  covering the Plan 6 fixture inventory (pre-title, failed, pending archived fallback candidate, pair
+  event with recipient state, neutral arrival/death merge, legacy-field rebuild, missing/blank-field
+  repair) and wired it into `.githooks/verify.ps1`. Plan 6 Step 4 chose **Option B** for the Scribe
+  round-trip itself: added `tests/SAVE_COMPATIBILITY_SMOKETEST.md`, a repeatable in-game smoke
+  runbook for the parts that cannot be pure-tested (real Scribe XML round-trip, legacy
+  persona/prompt/group settings repair, color-cue resolution, GUID minting). Documented the stable
+  Scribe-key contract and migration pattern in `DOCUMENTATION.md §9` (new §9a/§9b/§9c) and added the
+  new test project to the doc test list. Rebuilt `1.6/Assemblies/PawnDiary.dll`.
+
 - **Hardened archive compaction after review.** A failed/stale page now keeps the same body and title
   after it is compacted: the shared, pure `DiaryArchiveFallback` resolver derives the fallback fact from
   the saved prompt at archive time and bakes it into the archived `text`, and the Diary card re-resolves
