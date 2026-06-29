@@ -42,9 +42,91 @@ namespace DiaryPipelineTests
             TestLlmRequestJsonBuilder();
             TestArchivedPendingReloadFallbackStatus();
             TestArchiveEligibility();
+            TestArchiveFallbackFact();
+            TestArchiveOverflowSelection();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        // Pins the shared fallback-fact picker that keeps a stale/failed page's body and title identical
+        // before and after compaction. Compaction bakes ResolveFact(prompt, rawText) into the archived
+        // text; the live card later re-resolves from that text (prompt gone) and must land on the same
+        // string. The final assertion locks that round-trip.
+        private static void TestArchiveFallbackFact()
+        {
+            AssertEqual(
+                "fallback prefers what-happened over raw text",
+                "Alice insulted Bob.",
+                DiaryArchiveFallback.ResolveFact("event: argument\nwhat happened: Alice insulted Bob.", "Bob was nearby."));
+            AssertEqual(
+                "fallback prefers what-you-saw over what-happened",
+                "the freezer door ajar",
+                DiaryArchiveFallback.ResolveFact("what you saw: the freezer door ajar\nwhat happened: ignored", "raw"));
+            AssertEqual(
+                "fallback reads death facts",
+                "damage=Cut; weapon=knife",
+                DiaryArchiveFallback.ResolveFact("event: death\ndeath facts: damage=Cut; weapon=knife", "Alice died."));
+            AssertEqual(
+                "fallback uses raw text when prompt has no fact field",
+                "Alice repaired the generator.",
+                DiaryArchiveFallback.ResolveFact("event: quiet work\npov: Alice", "Alice repaired the generator."));
+            AssertEqual(
+                "archived row with no prompt falls back to baked text",
+                "damage=Cut; weapon=knife",
+                DiaryArchiveFallback.ResolveFact(string.Empty, "damage=Cut; weapon=knife"));
+            AssertEqual(
+                "fallback uses first prompt line as last resort",
+                "event: strange dream",
+                DiaryArchiveFallback.ResolveFact("event: strange dream\npov: Alice", string.Empty));
+            AssertEqual(
+                "fully blank fallback is empty",
+                string.Empty,
+                DiaryArchiveFallback.ResolveFact(string.Empty, string.Empty));
+
+            // The fix-A invariant: bake the hot fact into text, then re-resolve with no prompt -> same fact.
+            string hotPrompt = "event: death\ndeath facts: damage=Cut; weapon=knife; surroundings=near the freezer";
+            string hotRaw = "Alice died from blood loss.";
+            string baked = DiaryArchiveFallback.ResolveFact(hotPrompt, hotRaw);
+            AssertEqual(
+                "compaction fact round-trips through baked text",
+                baked,
+                DiaryArchiveFallback.ResolveFact(string.Empty, baked));
+        }
+
+        // Pins the pure overflow-trim selection: oldest-first, capped at the budget, skipping refs that
+        // must stay hot without consuming budget.
+        private static void TestArchiveOverflowSelection()
+        {
+            AssertEqual(
+                "overflow selection caps at budget",
+                "0,1",
+                JoinInts(DiaryArchiveCompactionPlanner.SelectOverflowRemovals(new List<bool> { true, true, true }, 2)));
+            AssertEqual(
+                "overflow selection skips kept refs",
+                "1,3",
+                JoinInts(DiaryArchiveCompactionPlanner.SelectOverflowRemovals(new List<bool> { false, true, false, true }, 2)));
+            AssertEqual(
+                "overflow selection stops when removable runs out",
+                "0",
+                JoinInts(DiaryArchiveCompactionPlanner.SelectOverflowRemovals(new List<bool> { true, false, false }, 5)));
+            AssertEqual(
+                "overflow selection drops nothing at zero budget",
+                string.Empty,
+                JoinInts(DiaryArchiveCompactionPlanner.SelectOverflowRemovals(new List<bool> { true, true }, 0)));
+            AssertEqual(
+                "overflow selection tolerates null list",
+                string.Empty,
+                JoinInts(DiaryArchiveCompactionPlanner.SelectOverflowRemovals(null, 3)));
+            AssertEqual(
+                "overflow selection drops nothing when none removable",
+                string.Empty,
+                JoinInts(DiaryArchiveCompactionPlanner.SelectOverflowRemovals(new List<bool> { false, false }, 2)));
+        }
+
+        private static string JoinInts(List<int> values)
+        {
+            return values == null ? string.Empty : string.Join(",", values);
         }
 
         private static void TestArchiveEligibility()

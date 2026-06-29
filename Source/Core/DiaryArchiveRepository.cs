@@ -60,6 +60,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True when <paramref name="entry"/> is a well-formed archive row this store would accept (the
+        /// same gate <see cref="AddOrKeep"/> applies). Lets retention decide a ref is safe to drop while
+        /// only committing the write for refs it actually removes.
+        /// </summary>
+        public bool WouldAccept(ArchivedDiaryEntry entry)
+        {
+            return IsValid(entry);
+        }
+
+        /// <summary>
         /// Adds an archive row unless an equivalent row already exists. Returns true when the caller may
         /// safely remove the hot pawn ref: either the new row was stored, or a duplicate was already there.
         /// </summary>

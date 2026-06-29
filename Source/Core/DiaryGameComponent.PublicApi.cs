@@ -450,6 +450,11 @@ namespace PawnDiary
                     out promptOnly,
                     out titlePending))
                 {
+                    // Claim this exact POV key even when the hot event is currently hidden (e.g.
+                    // mid-regeneration with "show generating" off): it stops a leftover archive row for
+                    // the same page from surfacing as a duplicate while the hot ref still exists.
+                    hotDisplayKeys.Add(ArchivedDiaryEntry.BuildArchiveKey(diaryEvent.eventId, pawnId, povRole));
+
                     bool visible = showLlmDebugInfo
                         || hasGeneratedText
                         || archivedGenerationStale
@@ -457,7 +462,6 @@ namespace PawnDiary
                         || (showPromptOnlyEntries && promptOnly);
                     if (visible)
                     {
-                        hotDisplayKeys.Add(ArchivedDiaryEntry.BuildArchiveKey(diaryEvent.eventId, pawnId, povRole));
                         index.Add(
                             diaryEvent,
                             ExtractYear(diaryEvent.date),
@@ -468,11 +472,8 @@ namespace PawnDiary
                     }
                     else
                     {
-                        if (hasGeneratedText)
-                        {
-                            index.completedCount++;
-                        }
-
+                        // A generated page is always visible, so hasGeneratedText is false here — only
+                        // in-flight generating/title work needs tallying for the command badge.
                         if (generating)
                         {
                             index.generatingCount++;
@@ -500,11 +501,9 @@ namespace PawnDiary
                 bool visible = showLlmDebugInfo || hasGeneratedText || archivedEntry.archivedGenerationStale;
                 if (!visible)
                 {
-                    if (hasGeneratedText)
-                    {
-                        index.completedCount++;
-                    }
-
+                    // A generated archive row is always visible (hasGeneratedText feeds `visible`), so a
+                    // hidden row is never a completed page: there is nothing to tally, and archived rows
+                    // never carry in-flight generating/title work.
                     return;
                 }
 

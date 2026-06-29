@@ -79,6 +79,16 @@ namespace PawnDiary
 
             DiaryTextDecorationContext decoration = view.TextDecorationContext;
             LinkedEntryView link = view.LinkedEntry;
+
+            // A failed/stale page (forceFallback) keeps no generated prose, and compaction drops the raw
+            // prompt the live card used to build its fallback body/title. Bake that SAME fact into text
+            // now, while the prompt is still here, so the archived page renders identically afterward
+            // (ArchivedGenerationFallbackFact falls back to text once the prompt is gone). Completed
+            // pages keep their untouched raw event text.
+            string archivedText = forceFallback
+                ? DiaryArchiveFallback.ResolveFact(view.LlmPrompt, view.Text)
+                : view.Text;
+
             return new ArchivedDiaryEntry
             {
                 eventId = view.EventId,
@@ -90,7 +100,7 @@ namespace PawnDiary
                 tick = view.Tick,
                 date = view.Date,
                 year = ExtractYear(view.Date),
-                text = view.Text,
+                text = archivedText,
                 generatedText = view.GeneratedText,
                 status = string.IsNullOrWhiteSpace(view.LlmStatus)
                     ? (string.IsNullOrWhiteSpace(view.GeneratedText) ? DiaryEvent.NotGeneratedStatus : DiaryEvent.CompleteStatus)

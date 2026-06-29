@@ -437,12 +437,19 @@ Separately, `DiaryTuningDef.activeScanEventWindow` (default 1000, XML only, a gl
 pawns) defines the newest saved hot events considered for retry, title catch-up, orphan recovery,
 day-summary event evidence, work cooldowns, and prompt continuity/opener history. Compact archive rows
 never enter those scans. If an old attempted page has no generated text, retention can archive it as a
-display-only fallback: the UI shows a localized "You see that: ..." body from saved raw event facts,
-derives a short display-only title from the first few words, and uses the footer note to say the page
-failed to generate instead of showing a model name. Prompt-only dev capture rows stay hot because the
+display-only fallback: the UI shows a localized "You see that: ..." body, derives a short display-only
+title from the first few words, and uses the footer note to say the page failed to generate instead of
+showing a model name. Because the compact archive drops the raw prompt, the shared pure
+`DiaryArchiveFallback` resolver derives that fallback fact from the prompt **at archive time** and bakes
+it into the archived `text`; the live card re-resolves from that same text afterward, so the body and
+title stay identical before and after compaction. Prompt-only dev capture rows stay hot because the
 archive deliberately does not store full prompt text. The archive/drop eligibility checks live in
-`Source/Pipeline/DiaryArchiveEligibility.cs` so the title-pending, prompt-only, stale-fallback, and
-cold-undisplayable rules are covered without loading RimWorld.
+`Source/Pipeline/DiaryArchiveEligibility.cs`, and the per-pawn overflow trim order lives in the pure
+`Source/Pipeline/DiaryArchiveCompactionPlanner.cs`, so the title-pending, prompt-only, stale-fallback,
+cold-undisplayable, and budget/order rules are covered without loading RimWorld. Retention stages each
+archive row first and commits the write only for refs it actually drops; the dev prompt-suite reset
+clears matching archive rows via `DiaryArchiveRepository.RemoveForEventIds` so a generated-then-compacted
+test entry cannot survive as an orphan.
 
 `DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, prompts, titles, LLM
 metadata, semantic color cue, and compact display facts. Per-role state is stored in initiator,

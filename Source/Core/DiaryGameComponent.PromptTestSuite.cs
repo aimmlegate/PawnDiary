@@ -176,8 +176,11 @@ namespace PawnDiary
             }
 
             // Drop from the master list + lookup index first, then scrub refs from every pawn diary so
-            // no saved record points at a removed event.
+            // no saved record points at a removed event. Also drop any compacted archive rows for these
+            // events: a prompt-suite entry that was generated and later aged into the archive must not
+            // survive the reset as an orphaned page.
             events.RemoveEvents(toRemove);
+            archive.RemoveForEventIds(toRemove);
 
             if (diaries != null)
             {

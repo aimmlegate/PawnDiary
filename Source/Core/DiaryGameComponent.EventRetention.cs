@@ -126,40 +126,43 @@ namespace PawnDiary
             int overflow = diary.eventIds.Count - perPawnLimit;
             string pawnId = diary.pawnId;
             DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
-            List<int> removeIndexes = null;
 
-            for (int eventIndex = 0; eventIndex < diary.eventIds.Count && (removeIndexes == null || removeIndexes.Count < overflow); eventIndex++)
+            // Phase 1 (impure, oldest-first): mark which old refs can leave the hot list and stage the
+            // archive row each archiveable drop needs. The scan stops as soon as it has found `overflow`
+            // removable refs (the original early-out), and archive WRITES are deferred to phase 2 so a
+            // ref is only ever archived if it is actually dropped. removable/staged stay index-aligned.
+            List<bool> removable = new List<bool>();
+            List<ArchivedDiaryEntry> staged = new List<ArchivedDiaryEntry>();
+            int removableCount = 0;
+            for (int eventIndex = 0; eventIndex < diary.eventIds.Count && removableCount < overflow; eventIndex++)
             {
-                string eventId = diary.eventIds[eventIndex];
-                DiaryEvent diaryEvent = events.FindEvent(eventId);
-                bool remove = string.IsNullOrWhiteSpace(eventId) || diaryEvent == null;
-                if (!remove && EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, bounds))
+                ArchivedDiaryEntry stagedEntry;
+                bool canRemove = CanRemoveOverflowRef(
+                    pawnId, diary.eventIds[eventIndex], eventIndex, bounds, activeEventIds, out stagedEntry);
+                removable.Add(canRemove);
+                staged.Add(stagedEntry);
+                if (canRemove)
                 {
-                    remove = true;
-                }
-                else if (!remove && TryArchiveDiaryRef(pawnId, diaryEvent, activeEventIds))
-                {
-                    remove = true;
-                }
-                else if (!remove && ShouldDropUnarchiveableRef(pawnId, diaryEvent, activeEventIds))
-                {
-                    remove = true;
-                }
-
-                if (remove)
-                {
-                    if (removeIndexes == null)
-                    {
-                        removeIndexes = new List<int>();
-                    }
-
-                    removeIndexes.Add(eventIndex);
+                    removableCount++;
                 }
             }
 
-            if (removeIndexes == null || removeIndexes.Count == 0)
+            // Pure rule owns "which indexes, capped at the budget"; phase 1 owns the per-ref yes/no.
+            List<int> removeIndexes = DiaryArchiveCompactionPlanner.SelectOverflowRemovals(removable, overflow);
+            if (removeIndexes.Count == 0)
             {
                 return false;
+            }
+
+            // Phase 2: commit the staged archive rows for the chosen refs, then drop those hot refs
+            // back-to-front so earlier indexes stay valid as we remove.
+            for (int i = 0; i < removeIndexes.Count; i++)
+            {
+                ArchivedDiaryEntry entry = staged[removeIndexes[i]];
+                if (entry != null)
+                {
+                    archive.AddOrKeep(entry);
+                }
             }
 
             for (int i = removeIndexes.Count - 1; i >= 0; i--)
@@ -170,8 +173,47 @@ namespace PawnDiary
             return true;
         }
 
-        private bool TryArchiveDiaryRef(string pawnId, DiaryEvent diaryEvent, HashSet<string> activeEventIds)
+        /// <summary>
+        /// Decides whether one over-cap ref can leave the hot list, staging its archive row via
+        /// <paramref name="staged"/> when the drop is an archive conversion. A ref is removable when its
+        /// event is missing/blank, it sits outside the pawn's arrival/death bounds, it converts cleanly
+        /// into an archive row, or it is a cold blank row the UI would never display. Pure write-free:
+        /// the caller commits any staged archive row only for refs it actually drops.
+        /// </summary>
+        private bool CanRemoveOverflowRef(
+            string pawnId, string eventId, int eventIndex, DiaryBounds bounds, HashSet<string> activeEventIds,
+            out ArchivedDiaryEntry staged)
         {
+            staged = null;
+            DiaryEvent diaryEvent = events.FindEvent(eventId);
+            if (string.IsNullOrWhiteSpace(eventId) || diaryEvent == null)
+            {
+                return true;
+            }
+
+            if (EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, bounds))
+            {
+                return true;
+            }
+
+            if (TryStageArchiveEntry(pawnId, diaryEvent, activeEventIds, out staged))
+            {
+                return true;
+            }
+
+            return ShouldDropUnarchiveableRef(pawnId, diaryEvent, activeEventIds);
+        }
+
+        /// <summary>
+        /// Builds (but does NOT yet store) the compact archive row for one displayable old POV. Returns
+        /// true with a staged row when the page is archiveable and well-formed; false when the POV has no
+        /// view or the archive policy keeps it hot. Deferring the actual write keeps archive contents in
+        /// lock-step with the refs retention really removes.
+        /// </summary>
+        private bool TryStageArchiveEntry(
+            string pawnId, DiaryEvent diaryEvent, HashSet<string> activeEventIds, out ArchivedDiaryEntry staged)
+        {
+            staged = null;
             if (string.IsNullOrWhiteSpace(pawnId) || diaryEvent == null)
             {
                 return false;
@@ -191,7 +233,13 @@ namespace PawnDiary
             }
 
             ArchivedDiaryEntry archivedEntry = ArchivedDiaryEntry.FromEvent(diaryEvent, pawnId, view, forceFallback);
-            return archive.AddOrKeep(archivedEntry);
+            if (!archive.WouldAccept(archivedEntry))
+            {
+                return false;
+            }
+
+            staged = archivedEntry;
+            return true;
         }
 
         private static bool CanArchiveView(DiaryEntryView view, out bool forceFallback)

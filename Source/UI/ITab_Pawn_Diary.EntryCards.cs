@@ -618,97 +618,12 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            string fact = PromptFieldValue(entry.LlmPrompt, "what you saw");
-            if (string.IsNullOrWhiteSpace(fact))
-            {
-                fact = PromptFieldValue(entry.LlmPrompt, "what happened");
-            }
-
-            if (string.IsNullOrWhiteSpace(fact))
-            {
-                fact = PromptFieldValue(entry.LlmPrompt, "death facts");
-            }
-
-            if (string.IsNullOrWhiteSpace(fact))
-            {
-                fact = PromptFieldValue(entry.LlmPrompt, "arrival facts");
-            }
-
-            if (string.IsNullOrWhiteSpace(fact))
-            {
-                fact = PromptFieldValue(entry.LlmPrompt, "entry");
-            }
-
-            if (string.IsNullOrWhiteSpace(fact))
-            {
-                fact = entry.Text;
-            }
-
-            if (string.IsNullOrWhiteSpace(fact))
-            {
-                fact = FirstPromptLine(entry.LlmPrompt);
-            }
-
+            // One shared, pure picker (DiaryArchiveFallback) drives both this live render and the
+            // archive builder, so a stale/failed page shows the identical fact before and after it is
+            // compacted. Archived rows carry no prompt, but compaction bakes the resolved fact into
+            // entry.Text, which is exactly the raw-text tier this resolver falls back to.
+            string fact = DiaryArchiveFallback.ResolveFact(entry.LlmPrompt, entry.Text);
             return TrimArchivedFallbackText(CollapseWhitespace(fact));
-        }
-
-        private static string PromptFieldValue(string prompt, string label)
-        {
-            if (string.IsNullOrWhiteSpace(prompt) || string.IsNullOrWhiteSpace(label))
-            {
-                return string.Empty;
-            }
-
-            string normalized = prompt.Replace("\r\n", "\n").Replace('\r', '\n');
-            string prefix = label + ":";
-            int start = 0;
-            while (start < normalized.Length)
-            {
-                int end = normalized.IndexOf('\n', start);
-                if (end < 0)
-                {
-                    end = normalized.Length;
-                }
-
-                string line = normalized.Substring(start, end - start).Trim();
-                if (line.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    return line.Substring(prefix.Length).Trim();
-                }
-
-                start = end + 1;
-            }
-
-            return string.Empty;
-        }
-
-        private static string FirstPromptLine(string prompt)
-        {
-            if (string.IsNullOrWhiteSpace(prompt))
-            {
-                return string.Empty;
-            }
-
-            string normalized = prompt.Replace("\r\n", "\n").Replace('\r', '\n');
-            int start = 0;
-            while (start < normalized.Length)
-            {
-                int end = normalized.IndexOf('\n', start);
-                if (end < 0)
-                {
-                    end = normalized.Length;
-                }
-
-                string line = normalized.Substring(start, end - start).Trim();
-                if (!string.IsNullOrWhiteSpace(line))
-                {
-                    return line;
-                }
-
-                start = end + 1;
-            }
-
-            return string.Empty;
         }
 
         private static string CollapseWhitespace(string value)

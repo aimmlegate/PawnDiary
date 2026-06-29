@@ -6,6 +6,19 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Hardened archive compaction after review.** A failed/stale page now keeps the same body and title
+  after it is compacted: the shared, pure `DiaryArchiveFallback` resolver derives the fallback fact from
+  the saved prompt at archive time and bakes it into the archived `text`, and the Diary card re-resolves
+  from that same text once the prompt is gone (previously archived stale pages silently fell back to raw
+  event text, which could differ for death/arrival pages). The dev prompt-suite reset
+  (`ClearPromptSuiteForDev`) now also drops matching archived rows via `DiaryArchiveRepository.RemoveForEventIds`,
+  so a generated-then-compacted test entry can no longer survive as an orphan. The tab's hot↔archive
+  dedup now claims a hot POV key even when the hot event is momentarily hidden, preventing a stray
+  duplicate card. Overflow trim selection moved into the pure, tested `DiaryArchiveCompactionPlanner`,
+  and the retention loop now stages archive rows and commits the write only for refs it actually drops.
+  Added `DiaryPipelineTests` coverage for the fallback round-trip and overflow selection. Rebuilt
+  `1.6/Assemblies/PawnDiary.dll`.
+
 - **Fixed Diary tab loading flicker during interaction.** Same-year refreshes triggered by completed
   generation or title updates now rebuild selected-year row layout in place once that year has already
   rendered, so scrolling and expand/collapse interactions no longer briefly swap the card list for the
