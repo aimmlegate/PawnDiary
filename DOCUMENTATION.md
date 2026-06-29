@@ -171,12 +171,14 @@ and target health events. An active window is saved, can write
 start/end/timeout diary entries, and can add a weighted prompt candidate while multiplying ordinary
 prompt enchantments down. Setting
 `normalPromptWeightMultiplier` to `0` makes the window fully override ordinary health/status prompt
-enchantments until it ends or times out. The built-in `MetalhorrorSuspicion` window starts from
-`GrayFleshSample` or `Filth_GrayFleshNoticeable`, ends on `Metalhorror`, and times out after ten
-RimWorld days if the emergence never arrives. The built-in `AncientDanger` rule matches vanilla's
-`AncientShrineWarning` letter key and records a single entry for the approaching pawn only. The
-built-in `VoidMonolithDiscovery` rule matches the Anomaly `VoidMonolith` proximity letter and
-records a single extreme-dark discovery entry for the nearby pawn only. The built-in
+enchantments until it ends or times out. The built-in `MetalhorrorSuspicion` window is currently
+disabled because the gray-flesh `ThingSpawned` signal proved unreliable and could leave the window
+effectively active all the time; the XML row remains as a template for a future safer monitor. When
+enabled, it starts from `GrayFleshSample` or `Filth_GrayFleshNoticeable`, ends on `Metalhorror`, and
+times out after ten RimWorld days if the emergence never arrives. The built-in `AncientDanger` rule
+matches vanilla's `AncientShrineWarning` letter key and records a single entry for the approaching
+pawn only. The built-in `VoidMonolithDiscovery` rule matches the Anomaly `VoidMonolith` proximity
+letter and records a single extreme-dark discovery entry for the nearby pawn only. The built-in
 `VoidMonolithActivation` rule matches completed void monolith activations, uses the reached
 `MonolithLevelDef` as its signal defName for future XML splits, and records one extreme-dark entry
 for the activating pawn. `Birthday` records a target-only uneasy aging entry from the direct

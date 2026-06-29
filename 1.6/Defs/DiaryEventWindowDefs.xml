@@ -41,7 +41,8 @@
     <defName>MetalhorrorSuspicion</defName>
     <label>metalhorror suspicion</label>
     <windowKey>MetalhorrorSuspicion</windowKey>
-    <enabled>true</enabled>
+    <!-- Disabled until gray flesh can be monitored from a more reliable signal than ThingSpawned. -->
+    <enabled>false</enabled>
     <timeoutTicks>600000</timeoutTicks>
     <dedupTicks>2500</dedupTicks>
     <restartOnStart>false</restartOnStart>

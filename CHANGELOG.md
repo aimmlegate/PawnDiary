@@ -4,6 +4,13 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-06-29
+
+- **Gray flesh event-window monitor disabled.** The built-in `MetalhorrorSuspicion` event window is
+  now disabled in XML because the `ThingSpawned` gray-flesh signal can leave the suspicion status
+  effectively active all the time. The row remains documented as a template until a safer monitor is
+  added.
+
 ## 2026-06-28
 
 - **Memory decay kept as prompt context.** `Alzheimers`, `Dementia`, and Anomaly `CrumblingMind`
