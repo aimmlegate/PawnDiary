@@ -431,7 +431,7 @@ namespace DiaryPipelineTests
             AssertEqual("arrival system excludes persona", "System ArrivalDescription", arrival.systemPrompt);
             AssertContains("arrival neutral text", arrival.userPrompt, "what happened: Alice joined the colony from a crash pod.");
             AssertContains("arrival pawn", arrival.userPrompt, "colonist: Alice");
-            AssertContains("arrival facts", arrival.userPrompt, "arrival facts: source=crash pod; scenario=Crashlanded; surroundings=rainy field");
+            AssertContains("arrival facts", arrival.userPrompt, "arrival facts: source=game_start; scenario=Crashlanded; scenario detail=The three survivors awoke among wreckage; childhood=Urbworld urchin; childhood description=Alice grew up among alley markets. She learned whom to trust and when to run.; childhood effects=skill bonuses: Social +3, Melee +2 | disabled work tags: Intellectual; adulthood=Field medic; adulthood description=Alice spent years patching workers after industrial accidents. The sound of alarms became routine.; adulthood effects=skill bonuses: Medical +6 | disabled work: Artistic; surroundings=rainy field");
             AssertContains("arrival pawn summary", arrival.userPrompt, "colonist pawn: Alice was a careful doctor.");
             AssertEqual("arrival neutral role", DiaryPipelineRoles.Neutral, arrival.responseRules.targetRole);
         }
@@ -1629,7 +1629,7 @@ namespace DiaryPipelineTests
                 solo = true,
                 eventNoun = "arrival",
                 neutralText = "Alice joined the colony from a crash pod.",
-                gameContext = "arrival_pawn=Alice; arrival_source=crash pod; scenario_name=Crashlanded; arrival_surroundings=rainy field",
+                gameContext = "arrival_pawn=Alice; arrival_source=game_start; scenario_name=Crashlanded; scenario_description=The three survivors awoke among wreckage; childhood_backstory=Urbworld urchin; childhood_backstory_description=Alice grew up among alley markets. She learned whom to trust and when to run.; childhood_backstory_effects=skill bonuses: Social +3, Melee +2 | disabled work tags: Intellectual; adulthood_backstory=Field medic; adulthood_backstory_description=Alice spent years patching workers after industrial accidents. The sound of alarms became routine.; adulthood_backstory_effects=skill bonuses: Medical +6 | disabled work: Artistic; arrival_surroundings=rainy field",
                 hasArrivalDescription = true,
                 initiator = new DiaryPovPayload
                 {

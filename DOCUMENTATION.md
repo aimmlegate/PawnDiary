@@ -369,6 +369,14 @@ hediff descriptions, labels, titles/roles, scenario text, and quest descriptions
 XML/Keyed prompt text, field labels, writing styles, and humor cues are not sentence-capped by that
 guard.
 
+Starting-colonist arrival prompts are the exception for pawn backstories: the founding arrival
+context includes each pawn's childhood and adulthood title, full in-game backstory description, and
+compact mechanical effects (skill bonuses, disabled work/tasks/tags, required tags, and
+forced/disallowed traits). These backstory descriptions are flattened to one prompt-safe line and
+semicolon-stripped so they stay inside the saved arrival field, but they are not sentence-capped; the
+arrival instruction asks the model to connect those facts with the starting scenario to explain how
+the pawn plausibly reached that beginning.
+
 Direct speech is allowed only in selected first-person interaction prompts, and only inside a closed
 `[[speech]]...[[/speech]]` block. Generated Social-log speech injection remains disabled/hidden; the
 saved setting exists only for compatibility.

@@ -297,6 +297,12 @@ namespace PawnDiary
             AddContextFact(parts, context, "arrival_source", "source");
             AddContextFact(parts, context, "scenario_name", "scenario");
             AddContextFact(parts, context, "scenario_description", "scenario detail");
+            AddContextFact(parts, context, "childhood_backstory", "childhood");
+            AddContextFact(parts, context, "childhood_backstory_description", "childhood description");
+            AddContextFact(parts, context, "childhood_backstory_effects", "childhood effects");
+            AddContextFact(parts, context, "adulthood_backstory", "adulthood");
+            AddContextFact(parts, context, "adulthood_backstory_description", "adulthood description");
+            AddContextFact(parts, context, "adulthood_backstory_effects", "adulthood effects");
             AddContextFact(parts, context, "priorFaction", "prior faction");
             AddContextFact(parts, context, "pawnKind", "pawn kind");
             AddContextFact(parts, context, "recruiter", "recruiter");

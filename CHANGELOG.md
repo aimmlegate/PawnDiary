@@ -18,6 +18,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   dated highlights with XML tuning and optional `forcedModel`. The Diary tab unread marker moved to
   the top center, rewrite moved to a subdued footer icon, and the work/social random-generation
   sliders were merged into one migrated weight.
+- **Starting arrival context improved.** Founding-colonist arrival prompts now receive each pawn's
+  childhood/adulthood title, full in-game backstory description, and compact backstory effects
+  (skill bonuses, disabled work/tasks/tags, required tags, and forced/disallowed traits), and the
+  neutral arrival instruction asks the model to connect those facts with the starting scenario.
 - **Dev event test panel.** Dev mode now exposes `Pawn Diary > Event test panel...` with real vanilla
   triggers for registered diary sources, prompt fixtures, former Diary tab dev tools, persisted
   selections/sections, Def selection for trigger types, and a purge action for compact archived pages.
