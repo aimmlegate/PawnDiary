@@ -51,7 +51,7 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 1. A Harmony hook or scanner notices a candidate event.
 2. The adapter snapshots live RimWorld facts, settings/XML gates, dedup state, and any random roll.
 3. The pure Event Catalog decides whether to drop, create a solo/pair/neutral entry, batch, or route
-   to day reflection.
+   to day/quadrum reflection.
 4. `AddSoloEvent` or `AddPairwiseEvent` creates a saved `DiaryEvent` and indexes it on eligible
    pawn records. The active-event retention cap then archives old displayable POVs into compact
    `ArchivedDiaryEntry` rows before dropping their hot refs; the archive cap separately prunes old
@@ -146,7 +146,7 @@ it onto the bus.
 | Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
 | Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |
-| DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo |
+| DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo day/quadrum reflection |
 | Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
@@ -167,12 +167,12 @@ it onto the bus.
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
-| Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
+| Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted quests are bookkeeping/event-window signals only. Completed and failed quest outcomes create shared-effort entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
 | Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
 | Observed conditions | Periodic live-state scan (map danger, active game conditions, evidence things, pawn hediffs) | Lasting states read from live state, not a guessed duration: bias prompts while present, optionally record start/end pages, and end after a debounce when live state stops showing them (Plan 12; see §5.1). |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
-| Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. |
+| Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
@@ -199,7 +199,7 @@ Most feature tuning lives in XML so changes do not require recompiling:
 - `DiaryPromptEnchantmentDefs.xml` and `DiaryHumorCueDefs.xml`: optional live-context and subtle
   humor cues.
 - `DiarySignalPolicyDefs.xml` and `DiaryTuningDef.xml`: scan intervals, odds, cooldowns, thresholds,
-  day-reflection policy, and shared fallback tuning.
+  day/quadrum-reflection policy, and shared fallback tuning.
 - `DiaryUiStyleDef.xml` and `DiaryTextDecorationDefs.xml`: Diary UI dimensions/colors and display
   rich-text decoration.
 
@@ -340,13 +340,16 @@ silently with no diary page ever recorded).
 ## 6. Prompts And Writing Styles
 
 Prompts are compact `key: value` lines. Empty values and `none`/`n/a`/`unknown` sentinels are dropped.
-Prompt templates cover pair, solo, batched, day-reflection, neutral death, neutral arrival, and title
-requests.
+Prompt templates cover pair, solo, batched, day-reflection, quadrum-reflection, neutral death,
+neutral arrival, and title requests.
 Quest prompts keep the raw `quest=` defName only in saved context for UI/domain classification; the
-model-facing fields use `quest_label`, `quest_signal`, `quest_faction`, and `quest_rewards`. The
-label path rejects placeholder `QuestName`, humanizes PascalCase/underscore fallbacks, removes the
-standalone word `Quest`, and the Quest event enhancement tells the model not to copy the quest name
-verbatim into the diary line.
+model-facing fields use `quest_label`, `quest_signal`, `quest_faction`, and `quest_rewards`.
+Accepted quests are not generated as diary pages; they are tracked for accepted-state bookkeeping
+and generic event-window policy. Completed and failed outcomes fan out to eligible colonists, so
+the Quest prompt frames the result as the colony's shared effort rather than proof that the POV pawn
+personally performed the quest work. The label path rejects placeholder `QuestName`, humanizes
+PascalCase/underscore fallbacks, removes the standalone word `Quest`, and the Quest event
+enhancement tells the model not to copy the quest name verbatim into the diary line.
 
 System prompts stay short and general. Event-specific guidance comes from `DiaryEventPromptDef` and
 per-group instructions/tones. Groups can define instruction/tone variant pools; instructions roll once
@@ -486,6 +489,8 @@ query parameter. Logs strip secrets and query strings.
 Routing modes are Balanced, Prefer top rows, and Failover only. A `DiaryEventPromptDef.forcedModel`
 can try a matching active model first; blank, unknown, disabled, or failed forced lanes fall back to
 normal routing. Recipient follow-ups and title requests try to pin to the previous successful lane.
+The shipped `QuadrumReflection` prompt row can use the same forced-model field for rare long
+reflections.
 
 `LlmClient` handles concurrency, per-lane cooldowns, transient retries, timeout/permanent failures,
 session cancellation on new game/load, and result handoff to the main thread. `LlmResponseParser`
@@ -528,8 +533,8 @@ its meaning is now per-pawn hot refs.)
 
 Separately, `DiaryTuningDef.activeScanEventWindow` (default 1000, XML only, a global count across all
 pawns) defines the newest saved hot events considered for retry, title catch-up, orphan recovery,
-day-summary event evidence, work cooldowns, and prompt continuity/opener history. Compact archive rows
-never enter those scans. If an old attempted page has no generated text, retention can archive it as a
+day-summary and quadrum-reflection evidence, work cooldowns, and prompt continuity/opener history.
+Compact archive rows never enter those scans. If an old attempted page has no generated text, retention can archive it as a
 display-only fallback: the UI shows a localized "You see that: ..." body, derives a short display-only
 title from the first few words, and uses the footer note to say the page failed to generate instead of
 showing a model name. Because the compact archive drops the raw prompt, the shared pure

@@ -21,7 +21,8 @@ candidate keys in this order:
 2. Matched `DiaryInteractionGroupDef.defName`.
 3. Domain classifier key (`signal` for Quest, `defName;behavior` for Ritual, `defName;category` for
    Ability, otherwise the saved source defName).
-4. Broad fallback key: `Death`, `Arrival`, `DayReflection`, or the recovered source domain.
+4. Broad fallback key: `Death`, `Arrival`, `QuadrumReflection`, `DayReflection`, or the recovered
+   source domain.
 
 Each candidate can match either `DiaryEventPromptDef.eventType` or `DiaryEventPromptDef.defName`.
 `prompt`, `enhancement`, and `forcedModel` resolve independently: a narrow XML Def may provide only
@@ -42,10 +43,11 @@ The shipped broad event-prompt rows are:
 | `Work` | Periodic work sampling. |
 | `Hediff` | Immediate hediff and severity-progression entries. |
 | `Raid` | Hostile, friendly, drop-pod, and infestation raid entries. |
-| `Quest` | Accepted, completed, and failed quest lifecycle entries. |
+| `Quest` | Completed and failed quest outcome entries; accepted is bookkeeping/event-window only. |
 | `Ritual` | Finished rituals and Anomaly psychic rituals. |
 | `Ability` | Successful pawn ability uses. |
 | `DayReflection` | End-of-day reflection entries. |
+| `QuadrumReflection` | Rare long reflections across one quadrum. |
 | `Arrival` | Neutral first-page arrival notes. |
 | `Death` | Neutral terminal death notes. |
 
@@ -65,6 +67,7 @@ the `Thought` prompt policy.
 | Pair event with `batch=` | `PairBatched` |
 | Pair event and group is important or missing | `PairImportant` |
 | Pair event and group is non-important | `PairDefault` |
+| Solo quadrum reflection | `SoloQuadrumReflection` |
 | Solo day reflection | `SoloDayReflection` |
 | Solo event with `mood_event=`, `thought=`, `inspiration=`, `work=`, or `hediff=` | `SoloInternalState` |
 | Solo event with `batch=` and combat group | `SoloImportant` |
@@ -109,6 +112,7 @@ Template differences:
 | `SoloInternalState` | Common solo fields only. |
 | `SoloBatched` | Common solo fields only. |
 | `SoloDayReflection` | `you`; direct-speech additions disabled. |
+| `SoloQuadrumReflection` | `you`, `quadrum dates`, `important entry count`; direct-speech additions disabled. |
 | `DeathDescription` | `event`, `event prompt`, `event enhancement`, `deceased`, `what happened`, `death facts`, `deceased pawn`, `setting`. |
 | `ArrivalDescription` | `event`, `event prompt`, `event enhancement`, `colonist`, `what happened`, `arrival facts`, `colonist pawn`, `setting`. |
 | `Title` | `entry` |
@@ -130,10 +134,11 @@ Template differences:
 | Hediffs | `Pawn_HealthTracker.AddHediff` and severity scan; `hediff=`, `source=add|severity_progression`, `group=`, `mode=`, severity/stage/body-part facts. | Immediate entries use `SoloInternalState`; day-reflection-mode hediffs feed the later day reflection instead of generating immediately. |
 | Work | Periodic current-job sampling; `work=`, `work_giver=`, mood/passion/skill/chore/dark-study facts. | `SoloInternalState`. |
 | Raids/infestations | `IncidentWorker.TryExecute` filtered to raid workers; `raid=`, `label=`, `faction=`, `points=`, optional `arrival_mode=` and `strategy=`. | One solo entry per eligible colonist on the target map. `raidFriendly` is non-important (`SoloDefault`); hostile, drop-pod, and infestation groups are important (`SoloImportant`). Ordinary raids delay generation; drop-pod raids and infestations generate immediately. |
-| Quests | `Quest.Accept`, quest UI fallback, accepted-state scan, and `Quest.End`; `quest=`, `signal=accepted|completed|failed`, label/faction/reward facts. | One solo important entry per eligible colonist per signal. The signal selects `questAccepted`, `questCompleted`, or `questFailed`. |
+| Quests | `Quest.Accept`, quest UI fallback, accepted-state scan, and `Quest.End`; `quest=`, `signal=accepted|completed|failed`, label/faction/reward facts. | Accepted signals are tracked but do not generate diary pages. Completed and failed signals create one solo important shared-effort entry per eligible colonist, selecting `questCompleted` or `questFailed`. |
 | Rituals | `LordJob_Ritual.ApplyOutcome` and `LordToil_PsychicRitual.RitualCompleted`; `ritual=` or `psychic_ritual=`, perspective/outcome/quality facts, plus role/title/status for non-psychic rituals. | Solo important entries fanned out to organizer/invoker, target, participants, and spectators. Psychic ritual entries intentionally omit `ritual title` and `ritual role`; invoker prompts require one unsettling speech block. |
 | Abilities | Successful `Ability.Activate` overloads; `ability=`, `ability_label=`, `ability_category=`, cooldown/chance/target facts. | Solo important entries. `abilityHostile` is combat-marked for styling/policy, but solo non-batched ability prompts still use `SoloImportant`. |
 | Day reflections | Sleep/rest summary trigger; `day_reflection=true`, day/highlight/candidate/filler/signal facts. | `SoloDayReflection`, generated only when XML-configured important signal kinds justify the day. |
+| Quadrum reflections | Sleep/rest summary trigger near the end of a quadrum; `day_reflection=true`, `quadrum_reflection=true`, quadrum/date/highlight/candidate/signal facts. | `SoloQuadrumReflection`, generated only once per pawn/quadrum when at least `quadrumReflectionMinImportantEntries` important saved entries exist. The prompt sends at most `quadrumReflectionMaxPromptEvents` dated highlights, while preserving the full qualifying count as context. |
 
 ## 5. Field Source Glossary
 
@@ -144,7 +149,7 @@ Template differences:
 | `PovText`, `NeutralText` | Captured evidence text for first-person or neutral prompts. |
 | `Instruction` | XML group instruction or event-specific instruction frozen at capture time. |
 | `EventPrompt`, `EventEnhancement` | Source-level guidance from `DiaryEventPromptDef` or Prompt Studio overrides. |
-| `PawnSummary` | Snapshot of the POV pawn, used by important/combat/day-reflection templates. |
+| `PawnSummary` | Snapshot of the POV pawn, used by important/combat/day/quadrum-reflection templates. |
 | `PromptEnchantment` | One optional live pressure line; disabled for death, arrival, and title templates. |
 | `Setting`, `Tone`, `Relationship`, `LastOpener`, `Weapon` | Surroundings, XML tone variant, continuity, repeated-opener guard, and equipped weapon. |
 | `HiddenInitiatorEntry` | Initiator's generated entry, only for recipient follow-up pair prompts. |

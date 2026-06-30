@@ -29,6 +29,7 @@
     <Compile Include="..\..\Source\Capture\Events\WorkEventData.cs" Link="Capture\Events\WorkEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\ThoughtProgressionEventData.cs" Link="Capture\Events\ThoughtProgressionEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\DayReflectionEventData.cs" Link="Capture\Events\DayReflectionEventData.cs" />
+    <Compile Include="..\..\Source\Capture\Events\QuadrumReflectionPolicy.cs" Link="Capture\Events\QuadrumReflectionPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Events\RaidEventData.cs" Link="Capture\Events\RaidEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\QuestEventData.cs" Link="Capture\Events\QuestEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\RitualEventData.cs" Link="Capture\Events\RitualEventData.cs" />

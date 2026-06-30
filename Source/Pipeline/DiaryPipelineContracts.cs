@@ -33,6 +33,7 @@ namespace PawnDiary
         public const string SoloInternalState = "SoloInternalState";
         public const string SoloBatched = "SoloBatched";
         public const string SoloDayReflection = "SoloDayReflection";
+        public const string SoloQuadrumReflection = "SoloQuadrumReflection";
         public const string DeathDescription = "DeathDescription";
         public const string ArrivalDescription = "ArrivalDescription";
         public const string Title = "Title";
@@ -89,6 +90,7 @@ namespace PawnDiary
         public bool hasDeathDescription;
         public bool hasArrivalDescription;
         public bool dayReflection;
+        public bool quadrumReflection;
         public bool supportsDirectSpeechInstruction;
         public DiaryPovPayload initiator = new DiaryPovPayload { role = DiaryPipelineRoles.Initiator };
         public DiaryPovPayload recipient = new DiaryPovPayload { role = DiaryPipelineRoles.Recipient };
@@ -151,6 +153,7 @@ namespace PawnDiary
         public bool includePromptEnchantment = true;
         public bool includePersona = true;
         public bool appendDirectSpeechInstruction = true;
+        public int maxTokens;
         public List<DiaryPromptFieldPolicy> fields = new List<DiaryPromptFieldPolicy>();
     }
 

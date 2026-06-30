@@ -814,7 +814,7 @@ function resolvedTemplate(promptData, key) {
     templateKey: key,
     includePromptEnchantment: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title',
     includePersona: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title',
-    appendDirectSpeechInstruction: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title' && key !== 'SoloDayReflection',
+    appendDirectSpeechInstruction: key !== 'DeathDescription' && key !== 'ArrivalDescription' && key !== 'Title' && key !== 'SoloDayReflection' && key !== 'SoloQuadrumReflection',
     fields: fallbackTemplateFields(key).map(([label, source]) => ({ label, source, enabled: true })),
   };
 }
@@ -824,6 +824,7 @@ function templateKeyForFixture(group, context, hasOtherPawn) {
   const important = !!(group && group.important);
   const batched = hasContext(context, 'batch=');
   const dayReflection = isDayReflectionGroup(group, context);
+  const quadrumReflection = isQuadrumReflectionGroup(group, context);
   const internalState = hasAnyContext(context, ['mood_event=', 'thought=', 'inspiration=', 'work=', 'hediff=']);
 
   if (hasOtherPawn) {
@@ -832,6 +833,7 @@ function templateKeyForFixture(group, context, hasOtherPawn) {
     return important ? 'PairImportant' : 'PairDefault';
   }
 
+  if (quadrumReflection) return 'SoloQuadrumReflection';
   if (dayReflection) return 'SoloDayReflection';
   if (internalState) return 'SoloInternalState';
   if (batched) return 'SoloBatched';
@@ -846,7 +848,7 @@ function systemPromptForTemplate(promptData, config, templateKey) {
   if (templateKey === 'DeathDescription' || templateKey === 'ArrivalDescription') {
     return promptData.promptDefs.systemPromptNeutral;
   }
-  if (templateKey === 'SoloDayReflection') {
+  if (templateKey === 'SoloDayReflection' || templateKey === 'SoloQuadrumReflection') {
     return promptData.promptDefs.systemPromptReflection;
   }
   if (templateKey === 'Title') {
@@ -912,6 +914,7 @@ function toAssemblerValues(values) {
 function eventPromptKeyForGroup(group) {
   if (!group) return 'Interaction';
   if (eq(group.defName, 'dayreflection')) return 'DayReflection';
+  if (eq(group.defName, 'quadrumreflection')) return 'QuadrumReflection';
   if (eq(group.defName, 'arrival')) return 'Arrival';
   return group.domain || 'Interaction';
 }
@@ -929,6 +932,7 @@ function eventPromptKeyForTemplate(templateKey) {
   if (eq(templateKey, 'DeathDescription')) return 'Death';
   if (eq(templateKey, 'ArrivalDescription')) return 'Arrival';
   if (eq(templateKey, 'SoloDayReflection')) return 'DayReflection';
+  if (eq(templateKey, 'SoloQuadrumReflection')) return 'QuadrumReflection';
   return '';
 }
 
@@ -1002,10 +1006,18 @@ function isDayReflectionGroup(group, context) {
   return defNameOf(group).toLowerCase() === 'dayreflection' || hasContext(context, 'day_reflection=');
 }
 
+function isQuadrumReflectionGroup(group, context) {
+  return defNameOf(group).toLowerCase() === 'quadrumreflection' || hasContext(context, 'quadrum_reflection=');
+}
+
 function generatedContextForGroup(group, kind) {
   const defName = defNameOf(group);
   const label = cleanValue(generatedGroupLabel(group, defName));
   const domain = domainOf(group);
+
+  if (isQuadrumReflectionGroup(group, '')) {
+    return `day_reflection=true; quadrum_reflection=true; quadrum=1; quadrum_dates=3rd of Aprimay, 5500 - 15th of Aprimay, 5500; important_entries=8; label=${label}`;
+  }
 
   if (isDayReflectionGroup(group, '')) {
     return `day_reflection=true; label=${label}`;
@@ -1093,7 +1105,8 @@ function isInteractionPromptForLab(group, context) {
   return hasContext(context, 'batch=interaction')
     || (domainOf(group) === 'Interaction'
       && defNameOf(group).toLowerCase() !== 'arrival'
-      && defNameOf(group).toLowerCase() !== 'dayreflection');
+      && defNameOf(group).toLowerCase() !== 'dayreflection'
+      && defNameOf(group).toLowerCase() !== 'quadrumreflection');
 }
 
 function pairInstructionForFixture(promptData, group, context, role, povName, otherName, baseInstruction) {
@@ -1124,6 +1137,7 @@ function isGeneratedPairGroup(group) {
   return domain === 'Interaction'
     && defName !== 'arrival'
     && defName !== 'dayreflection'
+    && defName !== 'quadrumreflection'
     && !isAmbientBatch(group);
 }
 

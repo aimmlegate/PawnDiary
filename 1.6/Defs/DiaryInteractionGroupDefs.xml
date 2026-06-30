@@ -651,6 +651,25 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>quadrumreflection</defName>
+    <label>Quadrum reflection</label>
+    <order>135</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a rare long reflection about a whole quadrum of this pawn's life</instruction>
+    <tone>wide, memory-heavy, and reflective across time</tone>
+    <tones>
+      <li>weighing the whole quadrum with distance and consequence</li>
+      <li>life-worn and reflective, connecting what changed over time</li>
+    </tones>
+    <colorCue>quadrumReflection</colorCue>
+    <matchDefNames>
+      <li>QuadrumReflection</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>arrival</defName>
     <label>Arrival</label>
     <order>136</order>
@@ -1852,17 +1871,19 @@
 
   <!-- ===== Quest domain: quest lifecycle (Quest.Accept / Quest.End hooks) ===== -->
   <!-- One DiaryEventType.Quest fans out to three groups: the lifecycle signal (accepted /
-       completed / failed) is the matchDefName. Only accepted quests are recorded; the Accept
-       hook is the entry point, and Quest.End records Success as "completed" and Fail as "failed". -->
+       completed / failed) is the matchDefName. The Accept hook records accepted quests, and
+       Quest.End records Success as "completed" and Fail as "failed". Quest signals fan out to
+       eligible colonists, so prompt wording must not imply the POV pawn was the sole actor.
+       Accepted quests are disabled and blocked by pure policy; completed/failed are generated. -->
 
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>questAccepted</defName>
     <label>Quest accepted</label>
     <order>750</order>
     <domain>Quest</domain>
-    <defaultEnabled>true</defaultEnabled>
+    <defaultEnabled>false</defaultEnabled>
     <important>true</important>
-    <instruction>a new quest taken on—anticipation, curiosity, and the weight of a promise made. Write the hope or doubt it stirs</instruction>
+    <instruction>a new quest the colony has taken on—anticipation, curiosity, and the weight of a promise made together. Write the hope or doubt it stirs in this pawn without claiming they alone accepted it</instruction>
     <tone>with anticipation and wary curiosity</tone>
     <tones>
       <li>wary and forward-looking, promise weighed against risk</li>
@@ -1880,11 +1901,11 @@
     <domain>Quest</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>a quest fulfilled—relief, satisfaction, and the cost paid along the way. Write the earned resolution</instruction>
+    <instruction>a quest fulfilled through the colony's common effort—relief, satisfaction, and the cost paid along the way. Write the earned resolution without claiming this pawn alone completed it</instruction>
     <tone>with hard-won relief and quiet satisfaction</tone>
     <tones>
-      <li>relieved and settled, like a debt finally paid</li>
-      <li>tired but proud, satisfaction measured against the cost</li>
+      <li>relieved and settled, like a shared debt finally paid</li>
+      <li>tired but proud, satisfaction measured against the colony's cost</li>
     </tones>
     <matchDefNames>
       <li>completed</li>
@@ -1898,11 +1919,11 @@
     <domain>Quest</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>a quest lost—regret, grief, and the consequences of the failure. Write the weight of what slipped away</instruction>
+    <instruction>a quest lost by the colony—regret, grief, and the consequences of the failure. Write the weight of what slipped away without assigning blame to this pawn alone</instruction>
     <tone>with regret and heavy loss</tone>
     <tones>
-      <li>heavy and regretful, focused on what slipped away</li>
-      <li>quietly grieving, consequence felt more than explained</li>
+      <li>heavy and regretful, focused on what slipped away from everyone</li>
+      <li>quietly grieving, shared consequence felt more than explained</li>
     </tones>
     <matchDefNames>
       <li>failed</li>

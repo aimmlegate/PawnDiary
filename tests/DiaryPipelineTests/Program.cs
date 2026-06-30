@@ -489,6 +489,16 @@ namespace DiaryPipelineTests
                 povRole = DiaryPipelineRoles.Initiator
             });
             AssertEqual("reflection wins over internal state", DiaryPipelineTemplates.SoloDayReflection, reflectionPlan.templateKey);
+
+            thoughtPayload.quadrumReflection = true;
+            DiaryPromptPlan quadrumPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = thoughtPayload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("quadrum reflection wins over day reflection", DiaryPipelineTemplates.SoloQuadrumReflection, quadrumPlan.templateKey);
+            AssertEqual("quadrum reflection template token cap", 350, quadrumPlan.responseRules.maxTokens);
         }
 
         private static void TestSoloBatchSelection()
@@ -1655,6 +1665,7 @@ namespace DiaryPipelineTests
             AddTemplate(policy, DiaryPipelineTemplates.SoloInternalState, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloBatched, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloDayReflection, includePersona: true);
+            AddTemplate(policy, DiaryPipelineTemplates.SoloQuadrumReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.DeathDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.ArrivalDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.Title, includePersona: false);
@@ -1719,6 +1730,7 @@ namespace DiaryPipelineTests
                 includePersona = includePersona,
                 includePromptEnchantment = key != DiaryPipelineTemplates.Title,
                 appendDirectSpeechInstruction = key != DiaryPipelineTemplates.Title,
+                maxTokens = key == DiaryPipelineTemplates.SoloQuadrumReflection ? 350 : 0,
                 fields = fields
             };
             policy.templates.Add(template);

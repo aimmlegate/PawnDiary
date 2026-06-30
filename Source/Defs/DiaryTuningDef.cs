@@ -380,6 +380,13 @@ namespace PawnDiary
         public float daySummaryWeightHediff = 0.8f;        // a hediff health signal
         public float daySummaryWeightOpinionShift = 0.6f;  // base; scaled up by swing magnitude
         public float daySummaryWeightFiller = 0.15f;       // background small talk / passing feelings
+        // Rare long reflection near the end of each quadrum. The timing window spreads pawns across
+        // several days, and maxPromptEvents is the prompt evidence cap so long histories stay bounded.
+        public bool quadrumReflectionEnabled = true;
+        public int quadrumReflectionTimingWindowDays = 3;
+        public int quadrumReflectionMinImportantEntries = 6;
+        public int quadrumReflectionMaxPromptEvents = 8;
+        public int quadrumReflectionMaxTokens = 350;
 
         // ---- Humor cues (hidden, always-on) ----
         // Base probability (0..1) that an eligible first-person entry gets one structural humor
@@ -470,6 +477,24 @@ namespace PawnDiary
         public static int UiHistoryScanMaxEventsPerFrame
         {
             get { return PositiveOrDefault(Current.uiHistoryScanMaxEventsPerFrame, Fallback.uiHistoryScanMaxEventsPerFrame); }
+        }
+
+        /// <summary>How many final days of a quadrum can host long reflections, used to stagger pawns.</summary>
+        public static int QuadrumReflectionTimingWindowDays
+        {
+            get { return PositiveOrDefault(Current.quadrumReflectionTimingWindowDays, Fallback.quadrumReflectionTimingWindowDays); }
+        }
+
+        /// <summary>Minimum important entries in the quadrum before the long reflection may write.</summary>
+        public static int QuadrumReflectionMinImportantEntries
+        {
+            get { return PositiveOrDefault(Current.quadrumReflectionMinImportantEntries, Fallback.quadrumReflectionMinImportantEntries); }
+        }
+
+        /// <summary>Per-request output cap for the long quadrum reflection prompt.</summary>
+        public static int QuadrumReflectionMaxTokens
+        {
+            get { return PositiveOrDefault(Current.quadrumReflectionMaxTokens, Fallback.quadrumReflectionMaxTokens); }
         }
 
         /// <summary>

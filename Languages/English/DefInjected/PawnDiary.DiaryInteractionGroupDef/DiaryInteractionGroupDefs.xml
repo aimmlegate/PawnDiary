@@ -239,20 +239,20 @@
   <moodeventPositive.tones.0>open and eased, letting relief into the sentence</moodeventPositive.tones.0>
   <moodeventPositive.tones.1>quietly grateful, focused on tension leaving the body</moodeventPositive.tones.1>
   <questAccepted.label>Quest accepted</questAccepted.label>
-  <questAccepted.instruction>a new quest taken on—anticipation, curiosity, and the weight of a promise made. Write the hope or doubt it stirs</questAccepted.instruction>
+  <questAccepted.instruction>a new quest the colony has taken on—anticipation, curiosity, and the weight of a promise made together. Write the hope or doubt it stirs in this pawn without claiming they alone accepted it</questAccepted.instruction>
   <questAccepted.tone>with anticipation and wary curiosity</questAccepted.tone>
   <questAccepted.tones.0>wary and forward-looking, promise weighed against risk</questAccepted.tones.0>
   <questAccepted.tones.1>curious but guarded, hope kept under practical doubt</questAccepted.tones.1>
   <questCompleted.label>Quest completed</questCompleted.label>
-  <questCompleted.instruction>a quest fulfilled—relief, satisfaction, and the cost paid along the way. Write the earned resolution</questCompleted.instruction>
+  <questCompleted.instruction>a quest fulfilled through the colony&apos;s common effort—relief, satisfaction, and the cost paid along the way. Write the earned resolution without claiming this pawn alone completed it</questCompleted.instruction>
   <questCompleted.tone>with hard-won relief and quiet satisfaction</questCompleted.tone>
-  <questCompleted.tones.0>relieved and settled, like a debt finally paid</questCompleted.tones.0>
-  <questCompleted.tones.1>tired but proud, satisfaction measured against the cost</questCompleted.tones.1>
+  <questCompleted.tones.0>relieved and settled, like a shared debt finally paid</questCompleted.tones.0>
+  <questCompleted.tones.1>tired but proud, satisfaction measured against the colony&apos;s cost</questCompleted.tones.1>
   <questFailed.label>Quest failed</questFailed.label>
-  <questFailed.instruction>a quest lost—regret, grief, and the consequences of the failure. Write the weight of what slipped away</questFailed.instruction>
+  <questFailed.instruction>a quest lost by the colony—regret, grief, and the consequences of the failure. Write the weight of what slipped away without assigning blame to this pawn alone</questFailed.instruction>
   <questFailed.tone>with regret and heavy loss</questFailed.tone>
-  <questFailed.tones.0>heavy and regretful, focused on what slipped away</questFailed.tones.0>
-  <questFailed.tones.1>quietly grieving, consequence felt more than explained</questFailed.tones.1>
+  <questFailed.tones.0>heavy and regretful, focused on what slipped away from everyone</questFailed.tones.0>
+  <questFailed.tones.1>quietly grieving, shared consequence felt more than explained</questFailed.tones.1>
   <raid.tones.0>tense and tactical, waiting for the fight to break open</raid.tones.0>
   <raid.tones.1>urgent but anticipatory, fear gathering before contact</raid.tones.1>
   <raidDropPod.label>Drop-pod raids</raidDropPod.label>

@@ -99,8 +99,8 @@
     <defName>DiaryEventPrompt_Quest</defName>
     <label>quest</label>
     <eventType>Quest</eventType>
-    <prompt>Write a quest lifecycle event as promise, resolution, or loss.</prompt>
-    <enhancement>Make the promise feel personal: risk, duty, hope, doubt, cost, relief, or regret. Use the lifecycle signal and supplied quest facts; do not copy the quest name verbatim into the diary line, and do not invent rewards, blame, or consequences.</enhancement>
+    <prompt>Write a quest lifecycle event as a colony promise, shared resolution, or shared loss.</prompt>
+    <enhancement>Make the quest feel personal without assigning the work to this pawn alone. Use the lifecycle signal and supplied quest facts; for completed or failed quests, frame the outcome as the colony's common effort, relief, regret, or cost unless supplied facts explicitly say otherwise. Do not copy the quest name verbatim into the diary line, and do not invent rewards, blame, or consequences.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
@@ -125,6 +125,16 @@
     <eventType>DayReflection</eventType>
     <prompt>Write an end-of-day reflection that weighs the day as a whole.</prompt>
     <enhancement>Choose the supplied moments that still sting, glow, or weigh on the pawn tonight instead of listing every event.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_QuadrumReflection</defName>
+    <label>quadrum reflection</label>
+    <eventType>QuadrumReflection</eventType>
+    <prompt>Write a rare long reflection over a whole quadrum of the pawn's life.</prompt>
+    <enhancement>Use the dated highlights as anchors across time. Mention dates naturally, connect several events into a broader life reflection, and do not list every highlight mechanically.</enhancement>
+    <!-- Optional: set this to the model id of one configured API endpoint to force these longer entries there. -->
+    <forcedModel></forcedModel>
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>

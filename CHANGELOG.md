@@ -6,6 +6,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Quest acceptance no longer generates diary pages.** Quest accept hooks now only mark accepted
+  quests as seen and feed generic event-window policy; diary entries are generated for completed and
+  failed quest outcomes. Quest outcome prompts now frame resolution or loss as colony effort instead
+  of implying the POV pawn personally performed the quest work.
+- **Rare quadrum reflections added.** Pawns can now write one longer reflective page near the end of
+  a quadrum when they have enough important entries. The timing is deterministically spread across a
+  3-day window per pawn/quadrum, the ordinary day reflection is skipped when the quadrum page fires,
+  the prompt uses dated highlights, the UI gets a distinct quadrum-reflection cue, and
+  `DiaryEventPrompt_QuadrumReflection.forcedModel` can pin these longer pages to a specific active
+  model. XML tuning defaults require 6 important entries, send at most 8 highlight events to the
+  prompt, and allow a 350-token response.
 - **Diary tab unread marker moved.** The inspect-tab unread marker now draws at the top middle of
   the Diary tab, with a wider XML-tuned draw box clamped inside the vanilla tab width.
 - **Random generation weight simplified.** The settings page now has one shared random-generation

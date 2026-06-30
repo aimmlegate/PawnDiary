@@ -108,6 +108,7 @@ namespace PawnDiary
                 responseRules.maxTokens = settings.maxTokens;
             }
 
+            int requestMaxTokens = responseRules.maxTokens > 0 ? responseRules.maxTokens : settings.maxTokens;
             LlmClient.Enqueue(new LlmGenerationRequest
             {
                 eventId = diaryEvent.eventId,
@@ -127,7 +128,7 @@ namespace PawnDiary
                 // The other configured lanes, tried in order if this one errors ("use next model").
                 failoverTargets = failoverTargets,
                 timeoutSeconds = settings.timeoutSeconds,
-                maxTokens = settings.maxTokens,
+                maxTokens = requestMaxTokens,
                 temperature = settings.temperature,
                 responseRules = responseRules
             });

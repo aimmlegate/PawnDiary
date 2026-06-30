@@ -75,6 +75,7 @@ namespace PawnDiary
                 hasDeathDescription = diaryEvent.HasDeathDescription(),
                 hasArrivalDescription = diaryEvent.HasArrivalDescription(),
                 dayReflection = diaryEvent.IsDayReflection(),
+                quadrumReflection = diaryEvent.IsQuadrumReflection(),
                 supportsDirectSpeechInstruction = IsInteractionPrompt(diaryEvent),
                 initiator = PovFor(diaryEvent, DiaryPipelineRoles.Initiator),
                 recipient = PovFor(diaryEvent, DiaryPipelineRoles.Recipient),
@@ -132,6 +133,7 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloInternalState);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloBatched);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloDayReflection);
+            AddTemplate(snapshot, DiaryPipelineTemplates.SoloQuadrumReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.DeathDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
@@ -199,6 +201,12 @@ namespace PawnDiary
         private static void AddTemplate(DiaryPolicySnapshot snapshot, string templateKey)
         {
             DiaryPromptTemplateDef template = DiaryPromptTemplates.ForKey(templateKey);
+            int maxTokens = template.maxTokens;
+            if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                maxTokens = DiaryTuning.QuadrumReflectionMaxTokens;
+            }
+
             snapshot.templates.Add(new DiaryTemplatePolicy
             {
                 templateKey = templateKey,
@@ -208,6 +216,7 @@ namespace PawnDiary
                 includePromptEnchantment = template.includePromptEnchantment,
                 includePersona = template.includePersona,
                 appendDirectSpeechInstruction = template.appendDirectSpeechInstruction,
+                maxTokens = maxTokens,
                 fields = CopyFields(DiaryPromptTemplates.FieldsFor(templateKey))
             });
         }
@@ -364,6 +373,11 @@ namespace PawnDiary
             if (payload.hasArrivalDescription)
             {
                 return "Arrival";
+            }
+
+            if (payload.quadrumReflection)
+            {
+                return "QuadrumReflection";
             }
 
             if (payload.dayReflection)

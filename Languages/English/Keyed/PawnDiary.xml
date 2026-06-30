@@ -342,9 +342,9 @@
   <PawnDiary.Event.Inspiration>{0} became inspired: {1}</PawnDiary.Event.Inspiration>
   <PawnDiary.Event.Romance>{0} and {2} are now {1}.</PawnDiary.Event.Romance>
   <PawnDiary.Event.Raid>{0} lived through a raid.</PawnDiary.Event.Raid>
-  <PawnDiary.Event.QuestAccepted>{0} accepted a quest: {1}. {2}</PawnDiary.Event.QuestAccepted>
-  <PawnDiary.Event.QuestCompleted>{0} completed the quest: {1}. {2}</PawnDiary.Event.QuestCompleted>
-  <PawnDiary.Event.QuestFailed>{0} failed the quest: {1}. {2}</PawnDiary.Event.QuestFailed>
+  <PawnDiary.Event.QuestAccepted>The colony accepted a quest: {1}. {2}</PawnDiary.Event.QuestAccepted>
+  <PawnDiary.Event.QuestCompleted>The colony completed the quest: {1}. {2}</PawnDiary.Event.QuestCompleted>
+  <PawnDiary.Event.QuestFailed>The colony failed the quest: {1}. {2}</PawnDiary.Event.QuestFailed>
   <PawnDiary.Event.DirectedAt>, directed at {0}</PawnDiary.Event.DirectedAt>
   <PawnDiary.Event.ReasonSuffix>. Reason: {0}</PawnDiary.Event.ReasonSuffix>
   <PawnDiary.Event.BatchFallback>{0} had several {2} moments with {1}.</PawnDiary.Event.BatchFallback>
@@ -404,6 +404,11 @@
   <PawnDiary.Event.DayReflectionOpinionCooled>grew noticeably colder toward {0}</PawnDiary.Event.DayReflectionOpinionCooled>
   <PawnDiary.Event.DayReflectionHediff>a new affliction took hold: {0}</PawnDiary.Event.DayReflectionHediff>
   <PawnDiary.Event.DayReflectionHediffProgressed>a health condition worsened: {0}</PawnDiary.Event.DayReflectionHediffProgressed>
+  <PawnDiary.Event.QuadrumReflectionLabel>Looking back on the quadrum</PawnDiary.Event.QuadrumReflectionLabel>
+  <PawnDiary.Event.QuadrumReflectionHeader>Across {1}, these moments shaped {0}:</PawnDiary.Event.QuadrumReflectionHeader>
+  <PawnDiary.Event.QuadrumReflectionDateRange>{0} - {1}</PawnDiary.Event.QuadrumReflectionDateRange>
+  <PawnDiary.Event.QuadrumReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.QuadrumReflectionEvidenceLine>
+  <PawnDiary.Event.QuadrumReflectionInstruction>write one longer reflective diary entry as {0} looking back across {1}; mention dates naturally from the supplied highlights; connect the events into what this stretch of life has meant instead of listing them; use only supplied facts and the pawn's writing style</PawnDiary.Event.QuadrumReflectionInstruction>
   <PawnDiary.Event.HediffAppeared>{0} developed {1}.</PawnDiary.Event.HediffAppeared>
   <PawnDiary.Event.HediffProgressed>{0}'s {1} worsened.</PawnDiary.Event.HediffProgressed>
   <PawnDiary.Event.AnomalyHediffAppeared>{0} was gripped by {1}.</PawnDiary.Event.AnomalyHediffAppeared>

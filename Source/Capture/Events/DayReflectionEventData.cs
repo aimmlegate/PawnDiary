@@ -1,17 +1,18 @@
-// Payload + pure decision for the end-of-day reflection meta-source. The adapter gathers live
-// evidence, marks which candidates are genuinely important, and randomly selects the highlight
-// cues; the catalog decides whether a reflection should emit.
+// Payload + pure decision for the day/quadrum reflection meta-source. The adapter gathers live
+// evidence, marks which candidates are genuinely important, and randomly selects the bounded
+// highlight cues; the catalog decides whether a reflection should emit.
 using System;
 using System.Collections.Generic;
 
 namespace PawnDiary.Capture
 {
     /// <summary>
-    /// Captured facts for one pawn/day reflection candidate.
+    /// Captured facts for one pawn day or quadrum reflection candidate.
     /// </summary>
     public class DayReflectionEventData : DiaryEventData
     {
         public const string DefNameToken = "DayReflection";
+        public const string QuadrumDefNameToken = "QuadrumReflection";
         public const string SignalKindEvent = "event";
         public const string SignalKindOpinion = "opinion";
         public const string SignalKindHediff = "hediff";
@@ -76,6 +77,25 @@ namespace PawnDiary.Capture
                 + "; highlights=" + highlightCount
                 + "; candidates=" + candidateCount
                 + "; filler_moments=" + fillerMomentCount
+                + "; signals=" + (signalTags ?? string.Empty);
+        }
+
+        public static string BuildQuadrumGameContext(int day, int quadrum, int quadrumStartDay,
+            int quadrumEndDay, string quadrumDates, int dueDay, int highlightCount,
+            int candidateCount, string signalTags)
+        {
+            return "day_reflection=true"
+                + "; quadrum_reflection=true"
+                + "; day=" + day
+                + "; quadrum=" + quadrum
+                + "; quadrum_start_day=" + quadrumStartDay
+                + "; quadrum_end_day=" + quadrumEndDay
+                + "; quadrum_dates=" + (quadrumDates ?? string.Empty)
+                + "; due_day=" + dueDay
+                + "; highlights=" + highlightCount
+                + "; candidates=" + candidateCount
+                + "; important_entries=" + candidateCount
+                + "; filler_moments=0"
                 + "; signals=" + (signalTags ?? string.Empty);
         }
     }

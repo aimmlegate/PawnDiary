@@ -3,8 +3,8 @@
 // plus the generic event-window lifecycle signal) moved to QuestFanoutSignal
 // (Source/Ingestion/Sources/). What stays here is the thin orchestration that both the Harmony hooks
 // and the scanner share: marking a quest as seen so the scanner does not double-record, mapping an
-// end outcome to a signal, and submitting the fan-out. Only ACCEPTED quests are recorded;
-// RecordQuestEnded maps Success -> "completed" / Fail -> "failed".
+// end outcome to a signal, and submitting the fan-out. Accepted quests are bookkeeping/event-window
+// signals only; RecordQuestEnded maps Success -> "completed" / Fail -> "failed" diary pages.
 // This is one piece of the partial DiaryGameComponent class — see DiaryGameComponent.cs for the map.
 using System.Collections.Generic;
 using PawnDiary.Capture;
@@ -17,9 +17,9 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         /// <summary>
-        /// Records a freshly accepted quest. Called by the <see cref="QuestAcceptPatch"/> Harmony
-        /// postfix on <c>Quest.Accept</c> and by the accept-state scanner. Only accepted quests reach
-        /// this — offered quests from QuestManager.Add are ignored.
+        /// Marks a freshly accepted quest as seen and forwards the lifecycle signal to generic
+        /// event-window policy. Accepted quests do not generate diary pages; completed/failed endings
+        /// do.
         /// </summary>
         public void RecordQuestAccepted(Quest quest)
         {

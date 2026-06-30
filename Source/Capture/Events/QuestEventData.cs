@@ -1,15 +1,14 @@
-// Payload + pure decision for a "quest lifecycle" event (Quest.Accept and Quest.End hooks). Quests
-// are colony-wide: when the player accepts a quest, and again when the quest ends in success or
-// failure, every eligible colonist gets their own solo diary entry so each survivor can react.
+// Payload + pure decision for a quest outcome event (Quest.End hook). Quests are colony-wide: when
+// an accepted quest ends in success or failure, every eligible colonist gets their own solo diary
+// entry so each survivor can react to the shared outcome.
 //
 // One DiaryEventType.Quest value covers all three signals; the Signal field ("accepted",
 // "completed", "failed") routes the event to the right XML group via ClassifyQuest(signal), which
 // is exactly how ArrivalEventData carries a synthetic defName so one Decide can route many cases.
 //
-// Only ACCEPTED quests are recorded, per the requirement "only quest that accepted". Offered quests
-// (QuestManager.Add) are ignored entirely. The Accept hook is the entry point; the End hook records
-// completion/failure only for quests that were previously accepted (vanilla never ends an
-// unaccepted quest, so no extra gating is needed here).
+// Accepted quests are only marked as seen / offered to generic event-window policy. They do not
+// generate diary pages because the mod cannot reliably know which pawn actually worked the quest.
+// Only completed and failed outcomes become diary entries, framed as colony effort.
 //
 // Rich context (quest description, issuer faction defName, rewards summary) is captured upstream
 // and embedded in the localized event text (description) and the game-context marker (rewards +
@@ -21,8 +20,8 @@ using System.Text;
 namespace PawnDiary.Capture
 {
     /// <summary>
-    /// Captured facts for one colonist reacting to a quest lifecycle moment. Filled by
-    /// DiaryGameComponent.RecordQuestAccepted / RecordQuestEnded inside the per-pawn fan-out loop.
+    /// Captured facts for one colonist reacting to a completed or failed quest. Filled by
+    /// DiaryGameComponent.RecordQuestEnded inside the per-pawn fan-out loop.
     /// </summary>
     public class QuestEventData : DiaryEventData
     {
@@ -80,9 +79,8 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
-        /// Pure decision for one colonist's quest entry. An empty signal drops (defensive — the
-        /// offered-but-not-accepted case never reaches this point, since only Accept/End hooks call
-        /// the catalog). Otherwise eligible + user-enabled -> GenerateSolo.
+        /// Pure decision for one colonist's quest entry. Empty or accepted-only signals drop; only
+        /// completed and failed outcomes generate diary pages.
         /// </summary>
         public static CaptureDecision Decide(QuestEventData data, CaptureContext ctx)
         {
@@ -91,10 +89,10 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            // Defensive guard: a payload with no signal cannot route to any Quest group, so it drops.
-            // This mirrors the "do not record offered-but-not-accepted quests" requirement: the hook
-            // layer never constructs such a payload, but the pure layer enforces it independently.
-            if (string.IsNullOrEmpty(data.Signal))
+            // Accepted quests are useful to mark as seen and for generic event-window policy, but not
+            // as diary pages. We only trust completed/failed outcomes enough to write shared-effort
+            // entries for every eligible colonist.
+            if (!IsDiaryOutcomeSignal(data.Signal))
             {
                 return CaptureDecision.Drop;
             }
@@ -105,6 +103,15 @@ namespace PawnDiary.Capture
             }
 
             return CaptureDecision.GenerateSolo;
+        }
+
+        /// <summary>
+        /// Returns true for quest lifecycle signals that are allowed to become diary pages.
+        /// </summary>
+        public static bool IsDiaryOutcomeSignal(string signal)
+        {
+            return string.Equals(signal, SignalCompleted, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(signal, SignalFailed, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

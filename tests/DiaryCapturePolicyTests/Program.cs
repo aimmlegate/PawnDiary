@@ -63,6 +63,8 @@ namespace DiaryCapturePolicyTests
             TestDayReflectionDecide();
             TestDayReflectionImportantSignalKindPolicy();
             TestDayReflectionBuildGameContextFormat();
+            TestQuadrumReflectionPolicy();
+            TestQuadrumReflectionBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -735,23 +737,27 @@ namespace DiaryCapturePolicyTests
             AssertEqual("quest null ctx drops", CaptureDecision.Drop,
                 QuestEventData.Decide(Quest("accepted"), null));
 
-            // The "do not record offered-but-not-accepted" requirement is enforced here: an empty
-            // signal drops (defensive — the hook layer never constructs such a payload, but the pure
-            // layer guards independently).
+            // Empty/offered signals and accepted-only lifecycle signals do not generate pages.
             AssertEqual("quest empty signal drops (offered not accepted)", CaptureDecision.Drop,
                 QuestEventData.Decide(Quest(""), Ctx()));
             AssertEqual("quest null signal drops", CaptureDecision.Drop,
                 QuestEventData.Decide(Quest(null), Ctx()));
+            AssertEqual("quest accepted does not generate", CaptureDecision.Drop,
+                QuestEventData.Decide(Quest("accepted"), Ctx()));
+            AssertEqual("quest accepted is not diary outcome", false,
+                QuestEventData.IsDiaryOutcomeSignal("accepted"));
+            AssertEqual("quest completed is diary outcome", true,
+                QuestEventData.IsDiaryOutcomeSignal("completed"));
+            AssertEqual("quest failed is diary outcome", true,
+                QuestEventData.IsDiaryOutcomeSignal("failed"));
 
             // Eligibility / user gate.
             AssertEqual("quest ineligible drops", CaptureDecision.Drop,
-                QuestEventData.Decide(Quest("accepted"), Ctx(eligible: false)));
+                QuestEventData.Decide(Quest("completed"), Ctx(eligible: false)));
             AssertEqual("quest user disabled drops", CaptureDecision.Drop,
                 QuestEventData.Decide(Quest("completed"), Ctx(user: false)));
 
-            // All three lifecycle signals record through the same Decide.
-            AssertEqual("quest accepted records solo", CaptureDecision.GenerateSolo,
-                QuestEventData.Decide(Quest("accepted"), Ctx()));
+            // Only outcome signals record through the same Decide.
             AssertEqual("quest completed records solo", CaptureDecision.GenerateSolo,
                 QuestEventData.Decide(Quest("completed"), Ctx()));
             AssertEqual("quest failed records solo", CaptureDecision.GenerateSolo,
@@ -1145,6 +1151,42 @@ namespace DiaryCapturePolicyTests
                 DayReflectionEventData.BuildGameContext(42, 1, 1, 0, null));
         }
 
+        private static void TestQuadrumReflectionPolicy()
+        {
+            int due = QuadrumReflectionPolicy.DueDayInQuadrum("Pawn_A", 7, 15, 3);
+            AssertTrue("quadrum due day in final window", due >= 12 && due < 15);
+            AssertEqual("quadrum not due before spread day", false,
+                QuadrumReflectionPolicy.IsDueForPawn("Pawn_A", 7, due - 1, 15, 3));
+            AssertEqual("quadrum due on spread day", true,
+                QuadrumReflectionPolicy.IsDueForPawn("Pawn_A", 7, due, 15, 3));
+            AssertEqual("quadrum due after spread day", true,
+                QuadrumReflectionPolicy.IsDueForPawn("Pawn_A", 7, 14, 15, 3));
+            AssertEqual("quadrum not due outside quadrum", false,
+                QuadrumReflectionPolicy.IsDueForPawn("Pawn_A", 7, 15, 15, 3));
+            AssertEqual("quadrum timing window clamps low", 14,
+                QuadrumReflectionPolicy.DueDayInQuadrum("Pawn_A", 7, 15, 0));
+            AssertEqual("quadrum minimum entries blocks thin history", false,
+                QuadrumReflectionPolicy.HasEnoughHighValueEntries(5, 6));
+            AssertEqual("quadrum minimum entries allows rich history", true,
+                QuadrumReflectionPolicy.HasEnoughHighValueEntries(6, 6));
+        }
+
+        private static void TestQuadrumReflectionBuildGameContextFormat()
+        {
+            AssertEqual("quadrum reflection context",
+                "day_reflection=true; quadrum_reflection=true; day=44; quadrum=2; quadrum_start_day=30; quadrum_end_day=44; quadrum_dates=1st of Aprimay - 15th of Aprimay; due_day=42; highlights=6; candidates=10; important_entries=10; filler_moments=0; signals=event:raid, event:death",
+                DayReflectionEventData.BuildQuadrumGameContext(
+                    44,
+                    2,
+                    30,
+                    44,
+                    "1st of Aprimay - 15th of Aprimay",
+                    42,
+                    6,
+                    10,
+                    "event:raid, event:death"));
+        }
+
         // ── Catalog dispatch ──
 
         private static void TestCatalogDispatch()
@@ -1209,7 +1251,7 @@ namespace DiaryCapturePolicyTests
             AssertTrue("catalog has Quest spec", questSpec is QuestEventSpec);
             AssertEqual("catalog dispatches Quest decision",
                 CaptureDecision.GenerateSolo,
-                questSpec.Decide(Quest("accepted"), Ctx()));
+                questSpec.Decide(Quest("completed"), Ctx()));
 
             DiaryEventSpec ritualSpec = DiaryEventCatalog.Get(DiaryEventType.Ritual);
             AssertTrue("catalog has Ritual spec", ritualSpec is RitualEventSpec);

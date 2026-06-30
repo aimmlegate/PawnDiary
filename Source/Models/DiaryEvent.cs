@@ -982,6 +982,14 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns true when this event is a rare long reflection over a whole quadrum.
+        /// </summary>
+        public bool IsQuadrumReflection()
+        {
+            return DiaryContextFields.IsTrue(gameContext, "quadrum_reflection");
+        }
+
+        /// <summary>
         /// The emotional-register cue for this event's group (e.g. "with creeping dread"), or empty
         /// when the group sets no tone. Event-driven and appended to the user prompt as a "tone:"
         /// field for first-person entries.

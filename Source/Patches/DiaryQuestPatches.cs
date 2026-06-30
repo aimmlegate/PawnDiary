@@ -9,9 +9,9 @@ using Verse;
 
 namespace PawnDiary
 {
-    // Fires when the player accepts a quest (Quest.Accept). This is the diary's entry point for the
-    // whole quest lifecycle: offered-but-not-accepted quests are intentionally ignored (per the
-    // requirement "only quest that accepted"). Accept fans out to every eligible colonist.
+    // Fires when the player accepts a quest (Quest.Accept). Accepted quests are tracked for
+    // bookkeeping and generic event-window policy only; diary pages are written when the quest later
+    // completes or fails.
     /// <summary>
     /// Captures accepted quests through the canonical Quest.Accept lifecycle hook.
     /// </summary>
@@ -20,7 +20,7 @@ namespace PawnDiary
     {
         /// <summary>
         /// Harmony Postfix for Quest.Accept. Forwards the freshly accepted quest to
-        /// DiaryGameComponent.RecordQuestAccepted, which records a solo entry per eligible colonist.
+        /// DiaryGameComponent.RecordQuestAccepted, which marks it seen without generating a page.
         /// </summary>
         public static void Postfix(Quest __instance)
         {
@@ -75,7 +75,7 @@ namespace PawnDiary
                 || SelectedQuestField == null)
             {
                 Log.Warning("[Pawn Diary] Could not find MainTabWindow_Quests quest-accept UI action; "
-                    + "quest accepted diary entries will rely on Quest.Accept only.");
+                    + "quest accepted bookkeeping will rely on Quest.Accept only.");
                 return;
             }
 
@@ -84,8 +84,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Harmony Postfix for the UI accept action. Runs after vanilla acceptance, then forwards the
-        /// selected quest. If Quest.Accept already recorded it, RecordQuestAccepted's dedup key drops
-        /// this duplicate in the same tick.
+        /// selected quest. If Quest.Accept already marked it, RecordQuestAccepted's seen-set update
+        /// keeps the fallback scanner quiet.
         /// </summary>
         public static void Postfix(object __instance)
         {

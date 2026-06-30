@@ -1,9 +1,10 @@
-// Day-reflection ingestion signal — the emit half of the "end-of-day reflection" source. Unlike the
+// Day/quadrum-reflection ingestion signal — the emit half of the reflection source. Unlike the
 // other sources this is not a discrete captured event: the component's sleep-path flush
 // (FlushDaySummaryForPawn) aggregates the day's most notable signals, consumes the per-day filler and
-// hediff batches, selects highlights, and builds the reflection text. That aggregation stays on the
-// component (it reads and mutates day-summary state); this signal is the thin carrier that runs the
-// catalog decision and emits the finished entry through the shared dispatcher.
+// hediff batches, or selects a bounded list of quadrum highlights, then builds the reflection text.
+// That aggregation stays on the component (it reads and mutates day-summary state); this signal is
+// the thin carrier that runs the catalog decision and emits the finished entry through the shared
+// dispatcher.
 //
 // The component Dispatches this directly (not the void Submit façade) and records the pawn/day as
 // written only when Dispatch reports the event emitted — preserving the old inline coupling between
@@ -15,8 +16,8 @@ using Verse;
 namespace PawnDiary.Ingestion
 {
     /// <summary>
-    /// Carries one pawn's already-aggregated end-of-day reflection (payload + pre-built text) and emits
-    /// it as a solo entry. Built by the component's day-summary flush.
+    /// Carries one pawn's already-aggregated day or quadrum reflection (payload + pre-built text) and
+    /// emits it as a solo entry. Built by the component's summary flush.
     /// </summary>
     public sealed class DayReflectionSignal : DiarySignal
     {
@@ -56,7 +57,10 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            DiaryEvent diaryEvent = sink.AddSoloEvent(pawn, null, DayReflectionEventData.DefNameToken,
+            string defName = string.IsNullOrWhiteSpace(payload.DefName)
+                ? DayReflectionEventData.DefNameToken
+                : payload.DefName;
+            DiaryEvent diaryEvent = sink.AddSoloEvent(pawn, null, defName,
                 label, text, instruction, gameContext);
             sink.QueueSolo(diaryEvent, DiaryEvent.InitiatorRole);
         }

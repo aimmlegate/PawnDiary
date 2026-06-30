@@ -323,6 +323,15 @@
     <daySummaryWeightOpinionShift>0.6</daySummaryWeightOpinionShift>
     <daySummaryWeightFiller>0.15</daySummaryWeightFiller>
 
+    <!-- Rare quadrum reflection. Pawns are deterministically spread across the final timing window
+         so a whole colony does not queue long reflections on the same night. maxPromptEvents is the
+         prompt evidence cap; the full qualifying count is still sent as context. -->
+    <quadrumReflectionEnabled>true</quadrumReflectionEnabled>
+    <quadrumReflectionTimingWindowDays>3</quadrumReflectionTimingWindowDays>
+    <quadrumReflectionMinImportantEntries>6</quadrumReflectionMinImportantEntries>
+    <quadrumReflectionMaxPromptEvents>8</quadrumReflectionMaxPromptEvents>
+    <quadrumReflectionMaxTokens>350</quadrumReflectionMaxTokens>
+
     <!-- Humor cues (hidden, always-on). Base probability an eligible first-person entry gets one
          structural humor cue appended to its prompt. No settings UI; this is the single knob. Flavor
          (Light vs Gallows) is chosen separately by event stakes. See DiaryHumorCueDefs.xml for cues. -->

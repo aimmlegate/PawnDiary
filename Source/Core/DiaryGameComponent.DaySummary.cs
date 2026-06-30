@@ -42,6 +42,10 @@ namespace PawnDiary
         // does not get a second reflection. Transient, matching the existing written-note sets.
         private readonly HashSet<string> writtenDayReflections = new HashSet<string>();
 
+        // "pawnId|quadrumIndex" long reflections already written. Rebuilt from saved events on load,
+        // just like the day guard, so reloading during the timing window cannot duplicate one.
+        private readonly HashSet<string> writtenQuadrumReflections = new HashSet<string>();
+
         /// <summary>
         /// Sleep-path entry point: writes this pawn's reflection for the current day (once), weaving
         /// together a weighted-random selection of the day's most notable signals. Quiet days with
@@ -57,6 +61,13 @@ namespace PawnDiary
 
             int day = CurrentDayIndex;
             string pawnId = pawn.GetUniqueLoadID();
+            // Try the rare, longer quadrum reflection first. If it emits, skip the ordinary day
+            // reflection for this sleep/rest moment so the player and model see only one summary.
+            if (TryFlushQuadrumReflectionForPawn(pawn, pawnId, day))
+            {
+                return;
+            }
+
             string dayKey = DaySummaryKey(pawnId, day);
             if (writtenDayReflections.Contains(dayKey))
             {
@@ -120,6 +131,151 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Writes the rare long quadrum reflection when this pawn's spread-out timing window has
+        /// opened and the quadrum contains enough important entries. Returns true only when the
+        /// reflection actually emitted; callers use that to skip the ordinary day reflection.
+        /// </summary>
+        private bool TryFlushQuadrumReflectionForPawn(Pawn pawn, string pawnId, int day)
+        {
+            if (pawn == null
+                || string.IsNullOrWhiteSpace(pawnId)
+                || !DiaryTuning.Current.quadrumReflectionEnabled)
+            {
+                return false;
+            }
+
+            int daysPerQuadrum = GenDate.DaysPerQuadrum;
+            int quadrum = QuadrumIndexForDay(day);
+            int dayInQuadrum = DayInQuadrum(day);
+            int timingWindowDays = DiaryTuning.QuadrumReflectionTimingWindowDays;
+            if (!QuadrumReflectionPolicy.IsDueForPawn(pawnId, quadrum, dayInQuadrum,
+                daysPerQuadrum, timingWindowDays))
+            {
+                return false;
+            }
+
+            string quadrumKey = QuadrumSummaryKey(pawnId, quadrum);
+            if (writtenQuadrumReflections.Contains(quadrumKey))
+            {
+                return false;
+            }
+
+            int quadrumStartDay = QuadrumStartDay(quadrum);
+            int evidenceEndDay = Math.Min(day, quadrumStartDay + daysPerQuadrum - 1);
+            List<QuadrumReflectionSignal> candidates = new List<QuadrumReflectionSignal>();
+            CollectQuadrumReflectionSignals(pawnId, quadrumStartDay, evidenceEndDay, candidates);
+            if (!QuadrumReflectionPolicy.HasEnoughHighValueEntries(candidates.Count,
+                DiaryTuning.QuadrumReflectionMinImportantEntries))
+            {
+                return false;
+            }
+
+            List<QuadrumReflectionSignal> highlights =
+                SelectQuadrumHighlights(candidates, QuadrumReflectionMaxPromptEvents);
+            if (highlights.Count == 0)
+            {
+                return false;
+            }
+
+            highlights.Sort((left, right) => left.tick.CompareTo(right.tick));
+            string signalTags = QuadrumSignalTags(highlights);
+            string quadrumDates = QuadrumDateRangeText(quadrumStartDay, evidenceEndDay);
+            int dueDay = quadrumStartDay + QuadrumReflectionPolicy.DueDayInQuadrum(
+                pawnId, quadrum, daysPerQuadrum, timingWindowDays);
+
+            DayReflectionEventData data = new DayReflectionEventData
+            {
+                PawnId = pawnId,
+                Tick = Find.TickManager.TicksGame,
+                DefName = DayReflectionEventData.QuadrumDefNameToken,
+                Day = day,
+                CandidateCount = candidates.Count,
+                ImportantCandidateCount = candidates.Count,
+                HighlightCount = highlights.Count,
+                FillerMomentCount = 0,
+                SignalTags = signalTags,
+                AlreadyWritten = false,
+            };
+            string label = "PawnDiary.Event.QuadrumReflectionLabel".Translate().Resolve();
+            string text = BuildQuadrumReflectionText(pawn, quadrumDates, highlights);
+            string instruction = "PawnDiary.Event.QuadrumReflectionInstruction"
+                .Translate(pawn.LabelShortCap, quadrumDates).Resolve();
+            string gameContext = DayReflectionEventData.BuildQuadrumGameContext(
+                data.Day,
+                quadrum,
+                quadrumStartDay,
+                evidenceEndDay,
+                quadrumDates,
+                dueDay,
+                data.HighlightCount,
+                data.CandidateCount,
+                data.SignalTags);
+
+            if (Dispatch(new DayReflectionSignal(data, pawn, label, text, instruction, gameContext)))
+            {
+                writtenQuadrumReflections.Add(quadrumKey);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Finds this pawn's important entries inside the current quadrum. Ordinary day/quadrum
+        /// reflections are excluded so summaries never summarize summaries.
+        /// </summary>
+        private void CollectQuadrumReflectionSignals(string pawnId, int startDay, int endDay,
+            List<QuadrumReflectionSignal> candidates)
+        {
+            IReadOnlyList<DiaryEvent> allEvents = events.AllEvents;
+            for (int i = allEvents.Count - 1; i >= 0; i--)
+            {
+                DiaryEvent ev = allEvents[i];
+                if (ev == null)
+                {
+                    continue;
+                }
+
+                int eventDay = DayIndexForGameTick(ev.tick);
+                if (eventDay > endDay)
+                {
+                    continue;
+                }
+
+                if (eventDay < startDay)
+                {
+                    break;
+                }
+
+                if (IsReflectionDefName(ev.interactionDefName) || !ev.IsImportant())
+                {
+                    continue;
+                }
+
+                string role;
+                if (!ev.TryGetDisplayRoleForPawn(pawnId, out role))
+                {
+                    continue;
+                }
+
+                string line = QuadrumEventEvidenceLine(ev, role);
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                float weight = ev.IsCombatRelated()
+                    ? DiaryTuning.Current.daySummaryWeightCriticalEvent
+                    : DiaryTuning.Current.daySummaryWeightMajorEvent;
+                candidates.Add(new QuadrumReflectionSignal(
+                    weight,
+                    ev.tick,
+                    line,
+                    DaySummarySignalTag(DayReflectionEventData.SignalKindEvent, ev.interactionDefName)));
+            }
+        }
+
+        /// <summary>
         /// Adds one signal per important diary event the pawn took part in today. Filler/ambient
         /// entries (not "important") and the reflection's own def are skipped.
         /// </summary>
@@ -149,7 +305,7 @@ namespace PawnDiary
                     break;
                 }
 
-                if (string.Equals(ev.interactionDefName, "DayReflection", StringComparison.OrdinalIgnoreCase))
+                if (IsReflectionDefName(ev.interactionDefName))
                 {
                     continue;
                 }
@@ -450,6 +606,123 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dated evidence cue for a long quadrum reflection. The prompt intentionally receives only
+        /// the selected few highlights, not every important event in the quadrum.
+        /// </summary>
+        private static string QuadrumEventEvidenceLine(DiaryEvent ev, string role)
+        {
+            string line = EventEvidenceLine(ev, role);
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return string.Empty;
+            }
+
+            string date = DiaryLineCleaner.CleanLine(ev.date);
+            return string.IsNullOrWhiteSpace(date)
+                ? line
+                : "PawnDiary.Event.QuadrumReflectionEvidenceLine".Translate(date, line).Resolve();
+        }
+
+        private static string BuildQuadrumReflectionText(Pawn pawn, string quadrumDates,
+            List<QuadrumReflectionSignal> highlights)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("PawnDiary.Event.QuadrumReflectionHeader"
+                .Translate(pawn.LabelShortCap, quadrumDates).Resolve());
+            for (int i = 0; i < highlights.Count; i++)
+            {
+                builder.Append("\n").Append("- ").Append(highlights[i].evidenceLine);
+            }
+
+            return builder.ToString();
+        }
+
+        private static List<QuadrumReflectionSignal> SelectQuadrumHighlights(
+            List<QuadrumReflectionSignal> candidates, int max)
+        {
+            List<QuadrumReflectionSignal> pool = new List<QuadrumReflectionSignal>(candidates);
+            List<QuadrumReflectionSignal> chosen = new List<QuadrumReflectionSignal>();
+            while (chosen.Count < max && pool.Count > 0)
+            {
+                float total = 0f;
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    total += Mathf.Max(0.0001f, pool[i].weight);
+                }
+
+                float roll = Rand.Value * total;
+                float acc = 0f;
+                int picked = pool.Count - 1;
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    acc += Mathf.Max(0.0001f, pool[i].weight);
+                    if (roll <= acc)
+                    {
+                        picked = i;
+                        break;
+                    }
+                }
+
+                chosen.Add(pool[picked]);
+                pool.RemoveAt(picked);
+            }
+
+            return chosen;
+        }
+
+        private static string QuadrumSignalTags(List<QuadrumReflectionSignal> highlights)
+        {
+            StringBuilder tags = new StringBuilder();
+            for (int i = 0; i < highlights.Count; i++)
+            {
+                if (tags.Length > 0)
+                {
+                    tags.Append(", ");
+                }
+
+                tags.Append(highlights[i].contextTag);
+            }
+
+            return tags.ToString();
+        }
+
+        private static string QuadrumDateRangeText(int startDay, int endDay)
+        {
+            return "PawnDiary.Event.QuadrumReflectionDateRange"
+                .Translate(DateStringForDay(startDay), DateStringForDay(endDay)).Resolve();
+        }
+
+        private static string DateStringForDay(int absoluteDay)
+        {
+            int currentDay = CurrentDayIndex;
+            int tickOffset = (absoluteDay - currentDay) * GenDate.TicksPerDay;
+            return GenDate.DateFullStringAt(Find.TickManager.TicksAbs + tickOffset, Vector2.zero);
+        }
+
+        private static bool IsReflectionDefName(string defName)
+        {
+            return string.Equals(defName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, DayReflectionEventData.QuadrumDefNameToken, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int QuadrumIndexForDay(int day)
+        {
+            return day / GenDate.DaysPerQuadrum;
+        }
+
+        private static int DayInQuadrum(int day)
+        {
+            int days = GenDate.DaysPerQuadrum;
+            int value = day % days;
+            return value < 0 ? value + days : value;
+        }
+
+        private static int QuadrumStartDay(int quadrum)
+        {
+            return quadrum * GenDate.DaysPerQuadrum;
+        }
+
+        /// <summary>
         /// Total filler moments (ambient interaction notes + passing-thought note) recorded for this
         /// pawn on this day across all ambient groups.
         /// </summary>
@@ -576,6 +849,7 @@ namespace PawnDiary
             pendingDayHediffs.Clear();
             dayStartOpinions.Clear();
             writtenDayReflections.Clear();
+            writtenQuadrumReflections.Clear();
             opinionSnapshotDay = -1;
         }
 
@@ -587,18 +861,24 @@ namespace PawnDiary
         private void RebuildWrittenDayReflectionsFromEvents()
         {
             writtenDayReflections.Clear();
+            writtenQuadrumReflections.Clear();
             IReadOnlyList<DiaryEvent> allEvents = ActiveScanEvents();
             for (int i = 0; i < allEvents.Count; i++)
             {
                 DiaryEvent ev = allEvents[i];
-                if (ev == null
-                    || !string.Equals(ev.interactionDefName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase)
-                    || string.IsNullOrWhiteSpace(ev.initiatorPawnId))
+                if (ev == null || string.IsNullOrWhiteSpace(ev.initiatorPawnId))
                 {
                     continue;
                 }
 
-                writtenDayReflections.Add(DaySummaryKey(ev.initiatorPawnId, DayIndexForGameTick(ev.tick)));
+                if (string.Equals(ev.interactionDefName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase))
+                {
+                    writtenDayReflections.Add(DaySummaryKey(ev.initiatorPawnId, DayIndexForGameTick(ev.tick)));
+                }
+                else if (string.Equals(ev.interactionDefName, DayReflectionEventData.QuadrumDefNameToken, StringComparison.OrdinalIgnoreCase))
+                {
+                    writtenQuadrumReflections.Add(QuadrumSummaryKey(ev.initiatorPawnId, QuadrumIndexForDay(DayIndexForGameTick(ev.tick))));
+                }
             }
         }
 
@@ -640,6 +920,16 @@ namespace PawnDiary
             get { return Math.Max(1, DiaryTuning.Current.daySummaryMaxHighlights); }
         }
 
+        private static int QuadrumReflectionMaxPromptEvents
+        {
+            get { return Math.Max(1, DiaryTuning.Current.quadrumReflectionMaxPromptEvents); }
+        }
+
+        private static string QuadrumSummaryKey(string pawnId, int quadrum)
+        {
+            return pawnId + "|" + quadrum;
+        }
+
         /// <summary>One major affliction that appeared for a pawn during a day.</summary>
         private struct DayHediffRecord
         {
@@ -663,6 +953,23 @@ namespace PawnDiary
                 this.evidenceLine = evidenceLine;
                 this.contextTag = contextTag;
                 this.important = important;
+            }
+        }
+
+        /// <summary>One dated high-value diary entry competing for a quadrum reflection prompt slot.</summary>
+        private struct QuadrumReflectionSignal
+        {
+            public readonly float weight;
+            public readonly int tick;
+            public readonly string evidenceLine;
+            public readonly string contextTag;
+
+            public QuadrumReflectionSignal(float weight, int tick, string evidenceLine, string contextTag)
+            {
+                this.weight = weight;
+                this.tick = tick;
+                this.evidenceLine = evidenceLine;
+                this.contextTag = contextTag;
             }
         }
     }

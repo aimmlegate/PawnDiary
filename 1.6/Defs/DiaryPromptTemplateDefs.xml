@@ -296,6 +296,31 @@
   </PawnDiary.DiaryPromptTemplateDef>
 
   <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloQuadrumReflection</defName>
+    <templateKey>SoloQuadrumReflection</templateKey>
+    <maxTokens>350</maxTokens>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <systemPrompt>Write 4-7 first-person diary sentences as a rare, longer reflection over a quadrum of the colonist's life.
+Use the colonist's writing style. Mention at least two supplied dates naturally, not as a ledger.
+Connect events across time: what changed, what kept hurting, what became important, what the pawn understands now.
+Do not write a bullet list. Output only diary text. End with normal sentence punctuation.</systemPrompt>
+    <finalInstruction>Write one longer first-person diary entry as this pawn looking back over the quadrum. Use only the supplied dated highlights and pawn context. Mention dates naturally, reflect on life across the span, and avoid listing every event mechanically.</finalInstruction>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>quadrum dates</label><source>GameContext</source><contextKey>quadrum_dates</contextKey></li>
+      <li><label>what happened</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>important entry count</label><source>GameContext</source><contextKey>important_entries</contextKey></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
     <defName>DiaryPromptTemplate_DeathDescription</defName>
     <templateKey>DeathDescription</templateKey>
     <includePromptEnchantment>false</includePromptEnchantment>

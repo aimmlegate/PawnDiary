@@ -38,6 +38,7 @@ namespace PawnDiary
                 request.personaVoiceBlock,
                 template.includePersona);
 
+            int responseMaxTokens = request.maxTokens > 0 ? request.maxTokens : template.maxTokens;
             return new DiaryPromptPlan
             {
                 eventId = payload.eventId,
@@ -47,7 +48,8 @@ namespace PawnDiary
                 systemPrompt = systemPrompt,
                 userPrompt = userPrompt,
                 debugLabel = templateKey + ":" + (request.povRole ?? string.Empty),
-                responseRules = DiaryResponseRules.ForRequest(payload.eventId, request.povRole, request.titleRequest, request.maxTokens)
+                responseRules = DiaryResponseRules.ForRequest(payload.eventId, request.povRole,
+                    request.titleRequest, responseMaxTokens)
             };
         }
 
@@ -102,6 +104,11 @@ namespace PawnDiary
                 }
 
                 return important ? DiaryPipelineTemplates.PairImportant : DiaryPipelineTemplates.PairDefault;
+            }
+
+            if (payload.quadrumReflection)
+            {
+                return DiaryPipelineTemplates.SoloQuadrumReflection;
             }
 
             if (payload.dayReflection)

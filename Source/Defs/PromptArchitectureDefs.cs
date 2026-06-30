@@ -37,6 +37,8 @@ namespace PawnDiary
         // the neutral chronicle/title shapes set it false to stay style-free.
         public bool includePersona = true;
         public bool appendDirectSpeechInstruction = true;
+        // Optional per-template response cap. Zero uses the player's normal maxTokens setting.
+        public int maxTokens = 0;
         public List<DiaryPromptFieldDef> fields = new List<DiaryPromptFieldDef>();
     }
 
@@ -172,6 +174,7 @@ namespace PawnDiary
         public const string SoloInternalState = "SoloInternalState";
         public const string SoloBatched = "SoloBatched";
         public const string SoloDayReflection = "SoloDayReflection";
+        public const string SoloQuadrumReflection = "SoloQuadrumReflection";
         public const string DeathDescription = "DeathDescription";
         public const string ArrivalDescription = "ArrivalDescription";
         public const string Title = "Title";
@@ -247,7 +250,8 @@ namespace PawnDiary
                     : PawnDiaryMod.Settings.EffectiveNeutralSystemPrompt();
             }
 
-            if (string.Equals(templateKey, SoloDayReflection, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(templateKey, SoloDayReflection, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(templateKey, SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase))
             {
                 return PawnDiaryMod.Settings == null
                     ? DiaryPrompts.Current.systemPromptReflection
@@ -353,6 +357,23 @@ namespace PawnDiary
             if (string.Equals(templateKey, Title, StringComparison.OrdinalIgnoreCase))
             {
                 return Fields(Field("entry", "EntryText"));
+            }
+
+            if (string.Equals(templateKey, SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                return Fields(
+                    Field("event", "EventNoun"),
+                    Field("pov", "PovName"),
+                    Field("what happened", "PovText"),
+                    Field("instruction", "Instruction"),
+                    Field("you", "PawnSummary"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"),
+                    ContextField("quadrum", "quadrum"),
+                    ContextField("quadrum dates", "quadrum_dates"),
+                    ContextField("important entry count", "important_entries"),
+                    Field("setting", "Setting"),
+                    Field("my last opener (not repeat)", "LastOpener"));
             }
 
             // Persona is intentionally absent: it is injected into the system prompt
