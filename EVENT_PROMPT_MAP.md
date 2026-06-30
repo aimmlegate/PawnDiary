@@ -45,6 +45,10 @@ The shipped broad event-prompt rows are:
 | `Quest` | Accepted, completed, and failed quest lifecycle entries. |
 | `Ritual` | Finished rituals and Anomaly psychic rituals. |
 | `Ability` | Successful pawn ability uses. |
+| `SkillMilestone` | Pawn skill level milestones. |
+| `FactionRelation` | Player-faction diplomacy transitions. |
+| `TradeDeal` | Significant completed trades and gifts. |
+| `CaravanJourney` | Player caravan departures and arrivals. |
 | `DayReflection` | End-of-day reflection entries. |
 | `Arrival` | Neutral first-page arrival notes. |
 | `Death` | Neutral terminal death notes. |
@@ -93,7 +97,10 @@ Common first-person fields:
 - Policy: `instruction`, `event prompt`, `event enhancement`, `tone`.
 - Optional context families: ritual (`ritual role`, `ritual title`), ability (`ability`, `ability
   category`, `ability target`, `ability cooldown ticks`), raid (`raid arrival mode`, `raid strategy`,
-  `raid points`), DLC status (`royal title`, `ideoligion role`).
+  `raid points`), skill milestones (`skill`, `skill level`, `skill milestone`), diplomacy (`faction`,
+  `faction relation`, `previous relation`), trade (`trade partner`, `trade value`, `trade goods`),
+  caravan journey (`caravan stage`, `caravan route`, `caravan members`), DLC status (`royal title`,
+  `ideoligion role`).
 - Surrounding pressure: `important context`, `setting`, `my last opener (not repeat)`.
 
 Template differences:
@@ -127,6 +134,10 @@ Template differences:
 | Thoughts | `MemoryThoughtHandler.TryGainMemory`; `thought=`, `label=`, mood/duration facts. Ambient thought notes also carry `batch=ambient_day_note`. | `SoloInternalState`; checked before `batch=`, so ambient thought notes stay internal-state prompts. |
 | Thought progression | Periodic needs/thought-stage scan; `thought=`, `thought_progression=`, stage/severity/mood facts. | `SoloInternalState` using the broad `Thought` event-prompt policy. |
 | Inspirations | `InspirationHandler.TryStartInspiration`; `inspiration=`, `label=`, duration/reason facts. | `SoloInternalState`. |
+| Skill milestones | `SkillRecord.Learn`; `skill_milestone=`, `skill_label=`, old/new/milestone level, passion facts. | Solo important via the `skillMilestone` group and broad `SkillMilestone` event prompt. |
+| Faction relations | `Faction.SetRelationDirect`; `faction_relation=`, `faction_label=`, previous/current relation kind, goodwill, optional reason. | Fan-out solo entries. `ally`, `hostile`, and `neutral` classifier keys select specific XML groups; hostile is combat-colored. |
+| Trade deals | `TradeDeal.TryExecute`; `trade_deal=`, `trade_mode=trade|gift`, partner/faction/trader/value/item summary facts. | Solo default entries when the deal crosses the XML value threshold; `trade` and `gift` classifier keys select the XML group. |
+| Caravan journeys | `CaravanExitMapUtility` / `CaravanEnterMapUtility`; `caravan_journey=`, `caravan_signal=departed|arrived`, route/member facts. | Fan-out solo important entries to caravan pawns; signal key selects departed or arrived group. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and severity scan; `hediff=`, `source=add|severity_progression`, `group=`, `mode=`, severity/stage/body-part facts. | Immediate entries use `SoloInternalState`; day-reflection-mode hediffs feed the later day reflection instead of generating immediately. |
 | Work | Periodic current-job sampling; `work=`, `work_giver=`, mood/passion/skill/chore/dark-study facts. | `SoloInternalState`. |
 | Raids/infestations | `IncidentWorker.TryExecute` filtered to raid workers; `raid=`, `label=`, `faction=`, `points=`, optional `arrival_mode=` and `strategy=`. | One solo entry per eligible colonist on the target map. `raidFriendly` is non-important (`SoloDefault`); hostile, drop-pod, and infestation groups are important (`SoloImportant`). Ordinary raids delay generation; drop-pod raids and infestations generate immediately. |

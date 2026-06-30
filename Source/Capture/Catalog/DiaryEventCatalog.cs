@@ -78,6 +78,10 @@ namespace PawnDiary.Capture
             Register(new QuestEventSpec());
             Register(new RitualEventSpec());
             Register(new AbilityEventSpec());
+            Register(new SkillMilestoneEventSpec());
+            Register(new FactionRelationEventSpec());
+            Register(new TradeDealEventSpec());
+            Register(new CaravanJourneyEventSpec());
         }
     }
 }

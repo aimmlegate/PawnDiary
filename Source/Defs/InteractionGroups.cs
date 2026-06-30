@@ -24,6 +24,8 @@ namespace PawnDiary
     // match the quest lifecycle signal ("accepted"/"completed"/"failed") so one DiaryEventType.Quest
     // fans out to three groups; Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
+    // SkillMilestone, FactionRelation, TradeDeal, and CaravanJourney groups classify the new moment
+    // sources added after the event bus was complete.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -39,7 +41,11 @@ namespace PawnDiary
         Raid,
         Quest,
         Ritual,
-        Ability
+        Ability,
+        SkillMilestone,
+        FactionRelation,
+        TradeDeal,
+        CaravanJourney
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -566,6 +572,26 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.Ability, abilityClassifierKey);
         }
 
+        public static DiaryInteractionGroupDef ClassifySkillMilestone(string skillDefName)
+        {
+            return ClassifyIn(GroupDomain.SkillMilestone, skillDefName);
+        }
+
+        public static DiaryInteractionGroupDef ClassifyFactionRelation(string relationKind)
+        {
+            return ClassifyIn(GroupDomain.FactionRelation, relationKind);
+        }
+
+        public static DiaryInteractionGroupDef ClassifyTradeDeal(string tradeClassifierKey)
+        {
+            return ClassifyIn(GroupDomain.TradeDeal, tradeClassifierKey);
+        }
+
+        public static DiaryInteractionGroupDef ClassifyCaravanJourney(string signal)
+        {
+            return ClassifyIn(GroupDomain.CaravanJourney, signal);
+        }
+
         // Same classifier, but for saved events where we only have the stored defName string.
         // The Diary tab and save migration helpers use this to recover labels, importance, and
         // semantic color cues for older entries.
@@ -782,6 +808,46 @@ namespace PawnDiary
             }
 
             return InstructionForGroup(ClassifyQuest(signal));
+        }
+
+        public static string InstructionForSkillMilestone(string skillDefName)
+        {
+            if (string.IsNullOrEmpty(skillDefName))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifySkillMilestone(skillDefName));
+        }
+
+        public static string InstructionForFactionRelation(string relationKind)
+        {
+            if (string.IsNullOrEmpty(relationKind))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyFactionRelation(relationKind));
+        }
+
+        public static string InstructionForTradeDeal(string tradeClassifierKey)
+        {
+            if (string.IsNullOrEmpty(tradeClassifierKey))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyTradeDeal(tradeClassifierKey));
+        }
+
+        public static string InstructionForCaravanJourney(string signal)
+        {
+            if (string.IsNullOrEmpty(signal))
+            {
+                return string.Empty;
+            }
+
+            return InstructionForGroup(ClassifyCaravanJourney(signal));
         }
 
         // Case-insensitive exact defName membership shared across impure classifiers

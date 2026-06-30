@@ -44,6 +44,12 @@ namespace PawnDiary
         public float negativeChanceMultiplier = -1f;
         public float darkStudyChanceMultiplier = -1f;
         public int lowSkillThreshold = -1;
+
+        // Net-new moment sources.
+        public List<int> milestoneLevels;
+        public float minTradeMarketValue = -1f;
+        public int maxTradeSummaryItems = -1;
+        public int maxFanoutPawns = -1;
     }
 
     /// <summary>
@@ -56,6 +62,12 @@ namespace PawnDiary
         public const string AmbientThought = "AmbientThought";
         public const string ThoughtProgression = "ThoughtProgression";
         public const string Work = "Work";
+        public const string SkillMilestone = "SkillMilestone";
+        public const string FactionRelation = "FactionRelation";
+        public const string TradeDeal = "TradeDeal";
+        public const string CaravanJourney = "CaravanJourney";
+
+        private static readonly List<int> DefaultSkillMilestoneLevels = new List<int> { 5, 10, 15, 20 };
 
         public static bool Enabled(string signalKey)
         {
@@ -169,6 +181,51 @@ namespace PawnDiary
         public static int WorkLowSkillThreshold
         {
             get { return IntOrFallback(ForKey(Work).lowSkillThreshold, DiaryTuning.Current.workLowSkillThreshold); }
+        }
+
+        public static List<int> SkillMilestoneLevels
+        {
+            get { return ForKey(SkillMilestone).milestoneLevels ?? DefaultSkillMilestoneLevels; }
+        }
+
+        public static int SkillMilestoneDedupTicks
+        {
+            get { return IntOrFallback(ForKey(SkillMilestone).dedupTicks, 2500); }
+        }
+
+        public static int FactionRelationDedupTicks
+        {
+            get { return IntOrFallback(ForKey(FactionRelation).dedupTicks, 2500); }
+        }
+
+        public static int FactionRelationMaxFanoutPawns
+        {
+            get { return IntOrFallback(ForKey(FactionRelation).maxFanoutPawns, 8); }
+        }
+
+        public static int TradeDealDedupTicks
+        {
+            get { return IntOrFallback(ForKey(TradeDeal).dedupTicks, 2500); }
+        }
+
+        public static float TradeDealMinMarketValue
+        {
+            get { return FloatOrFallback(ForKey(TradeDeal).minTradeMarketValue, 500f); }
+        }
+
+        public static int TradeDealMaxSummaryItems
+        {
+            get { return IntOrFallback(ForKey(TradeDeal).maxTradeSummaryItems, 4); }
+        }
+
+        public static int CaravanJourneyDedupTicks
+        {
+            get { return IntOrFallback(ForKey(CaravanJourney).dedupTicks, 2500); }
+        }
+
+        public static int CaravanJourneyMaxFanoutPawns
+        {
+            get { return IntOrFallback(ForKey(CaravanJourney).maxFanoutPawns, 8); }
         }
 
         // Fallback policies are cached per key so a missing/renamed Def does not allocate a new

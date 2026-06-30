@@ -330,4 +330,44 @@
   <workRoutine.tones.1>тихо практично, внимание на инструментах и последовательности</workRoutine.tones.1>
   <workStrain.tones.0>устало и резко, досада в руках</workStrain.tones.0>
   <workStrain.tones.1>грязно и обречённо, раздражение удержано под долгом</workStrain.tones.1>
+  <skillMilestone.label>Рубежи навыков</skillMilestone.label>
+  <skillMilestone.instruction>навык перешёл важный рубеж: пиши рост как перемену в теле, памяти рук, уверенности или новом давлении оправдать умение</skillMilestone.instruction>
+  <skillMilestone.tone>с заслуженной, практичной гордостью</skillMilestone.tone>
+  <skillMilestone.tones.0>гордо, но приземлённо; навык оседает в руках</skillMilestone.tones.0>
+  <skillMilestone.tones.1>тихо изменённо, умение чувствуется раньше слов</skillMilestone.tones.1>
+  <factionRelationAlly.label>Союз с фракцией</factionRelationAlly.label>
+  <factionRelationAlly.instruction>отношения с фракцией стали союзными: пиши облегчение, подозрение, шанс или практический вес чужой поддержки для поселения</factionRelationAlly.instruction>
+  <factionRelationAlly.tone>с осторожным дипломатическим облегчением</factionRelationAlly.tone>
+  <factionRelationAlly.tones.0>осторожно облегчённо, доверие полезно, но хрупко</factionRelationAlly.tones.0>
+  <factionRelationAlly.tones.1>политично и настороженно, надежда соизмерена со старым риском</factionRelationAlly.tones.1>
+  <factionRelationHostile.label>Вражда с фракцией</factionRelationHostile.label>
+  <factionRelationHostile.instruction>отношения с фракцией стали враждебными: пиши, как политическая опасность становится практической угрозой; не выдумывай нападение без факта</factionRelationHostile.instruction>
+  <factionRelationHostile.tone>с холодной, практичной тревогой</factionRelationHostile.tone>
+  <factionRelationHostile.tones.0>холодно и настороже, опасность получает имя на карте</factionRelationHostile.tones.0>
+  <factionRelationHostile.tones.1>напряжённо и практично, дипломатия рушится в угрозу</factionRelationHostile.tones.1>
+  <factionRelationNeutral.label>Нейтралитет с фракцией</factionRelationNeutral.label>
+  <factionRelationNeutral.instruction>отношения с фракцией вернулись к нейтральным: пиши тревожный сброс, опущенное оружие или неопределённость между врагами и друзьями</factionRelationNeutral.instruction>
+  <factionRelationNeutral.tone>с настороженной дипломатической тишиной</factionRelationNeutral.tone>
+  <factionRelationNeutral.tones.0>настороженно и нерешённо, опасность снижена, но не ушла</factionRelationNeutral.tones.0>
+  <factionRelationNeutral.tones.1>тихо политично, облегчение придержано неопределённостью</factionRelationNeutral.tones.1>
+  <tradeDeal.label>Торговые сделки</tradeDeal.label>
+  <tradeDeal.instruction>завершена значимая сделка: пиши практический обмен, давление торга, облегчение, нехватку или то, как нужды поселения стали вещами</tradeDeal.instruction>
+  <tradeDeal.tone>с практичной, счётной сосредоточенностью</tradeDeal.tone>
+  <tradeDeal.tones.0>практично и внимательно, ценность взвешена против нужды</tradeDeal.tones.0>
+  <tradeDeal.tones.1>деловито, но с облегчением: вещи превращаются в выживание</tradeDeal.tones.1>
+  <tradeGift.label>Дары через торговлю</tradeGift.label>
+  <tradeGift.instruction>значимый дар через окно торговли: пиши намеренную потерю, дипломатию, обязательство или рассчитанный жест, не обычную покупку</tradeGift.instruction>
+  <tradeGift.tone>с намеренной дипломатической сдержанностью</tradeGift.tone>
+  <tradeGift.tones.0>расчётливо и сдержанно, щедрость как инструмент</tradeGift.tones.0>
+  <tradeGift.tones.1>тихо затратно, дар несёт больше своего веса</tradeGift.tones.1>
+  <caravanDeparted.label>Уход каравана</caravanDeparted.label>
+  <caravanDeparted.instruction>караван уходит с карты: пиши отъезд, поклажу, неизвестность, расстояние и первый шаг прочь от безопасности поселения</caravanDeparted.instruction>
+  <caravanDeparted.tone>с дорожным предчувствием</caravanDeparted.tone>
+  <caravanDeparted.tones.0>дорожно и с ожиданием, безопасность остаётся позади</caravanDeparted.tones.0>
+  <caravanDeparted.tones.1>практично и наружу, настроение задают тюки и расстояние</caravanDeparted.tones.1>
+  <caravanArrived.label>Прибытие каравана</caravanArrived.label>
+  <caravanArrived.instruction>караван прибывает на карту: пиши прибытие, облегчение, пыль, кто добрался, и переход от дорожной опасности к новому месту</caravanArrived.instruction>
+  <caravanArrived.tone>с усталым прибытием и настороженным облегчением</caravanArrived.tone>
+  <caravanArrived.tones.0>устало и с облегчением, дорога ещё держится на теле</caravanArrived.tones.0>
+  <caravanArrived.tones.1>настороже и только что на месте, безопасность ещё не вполне заслужила доверие</caravanArrived.tones.1>
 </LanguageData>

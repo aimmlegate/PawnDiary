@@ -198,6 +198,18 @@
   <DiaryPromptTemplate_SoloDefault.fields.12.label>способность</DiaryPromptTemplate_SoloDefault.fields.12.label>
   <DiaryPromptTemplate_SoloDefault.fields.22.label>обстановка</DiaryPromptTemplate_SoloDefault.fields.22.label>
   <DiaryPromptTemplate_SoloDefault.fields.23.label>тон</DiaryPromptTemplate_SoloDefault.fields.23.label>
+  <DiaryPromptTemplate_SoloDefault.fields.25.label>навык</DiaryPromptTemplate_SoloDefault.fields.25.label>
+  <DiaryPromptTemplate_SoloDefault.fields.26.label>уровень навыка</DiaryPromptTemplate_SoloDefault.fields.26.label>
+  <DiaryPromptTemplate_SoloDefault.fields.27.label>рубеж навыка</DiaryPromptTemplate_SoloDefault.fields.27.label>
+  <DiaryPromptTemplate_SoloDefault.fields.28.label>фракция</DiaryPromptTemplate_SoloDefault.fields.28.label>
+  <DiaryPromptTemplate_SoloDefault.fields.29.label>отношение фракции</DiaryPromptTemplate_SoloDefault.fields.29.label>
+  <DiaryPromptTemplate_SoloDefault.fields.30.label>прежнее отношение</DiaryPromptTemplate_SoloDefault.fields.30.label>
+  <DiaryPromptTemplate_SoloDefault.fields.31.label>партнёр сделки</DiaryPromptTemplate_SoloDefault.fields.31.label>
+  <DiaryPromptTemplate_SoloDefault.fields.32.label>ценность сделки</DiaryPromptTemplate_SoloDefault.fields.32.label>
+  <DiaryPromptTemplate_SoloDefault.fields.33.label>товары сделки</DiaryPromptTemplate_SoloDefault.fields.33.label>
+  <DiaryPromptTemplate_SoloDefault.fields.34.label>этап каравана</DiaryPromptTemplate_SoloDefault.fields.34.label>
+  <DiaryPromptTemplate_SoloDefault.fields.35.label>маршрут каравана</DiaryPromptTemplate_SoloDefault.fields.35.label>
+  <DiaryPromptTemplate_SoloDefault.fields.36.label>состав каравана</DiaryPromptTemplate_SoloDefault.fields.36.label>
   <DiaryPromptTemplate_SoloImportant.fields.0.label>событие</DiaryPromptTemplate_SoloImportant.fields.0.label>
   <DiaryPromptTemplate_SoloImportant.fields.1.label>точка зрения</DiaryPromptTemplate_SoloImportant.fields.1.label>
   <DiaryPromptTemplate_SoloImportant.fields.3.label>инструкция</DiaryPromptTemplate_SoloImportant.fields.3.label>
@@ -205,6 +217,18 @@
   <DiaryPromptTemplate_SoloImportant.fields.13.label>способность</DiaryPromptTemplate_SoloImportant.fields.13.label>
   <DiaryPromptTemplate_SoloImportant.fields.23.label>обстановка</DiaryPromptTemplate_SoloImportant.fields.23.label>
   <DiaryPromptTemplate_SoloImportant.fields.24.label>тон</DiaryPromptTemplate_SoloImportant.fields.24.label>
+  <DiaryPromptTemplate_SoloImportant.fields.26.label>навык</DiaryPromptTemplate_SoloImportant.fields.26.label>
+  <DiaryPromptTemplate_SoloImportant.fields.27.label>уровень навыка</DiaryPromptTemplate_SoloImportant.fields.27.label>
+  <DiaryPromptTemplate_SoloImportant.fields.28.label>рубеж навыка</DiaryPromptTemplate_SoloImportant.fields.28.label>
+  <DiaryPromptTemplate_SoloImportant.fields.29.label>фракция</DiaryPromptTemplate_SoloImportant.fields.29.label>
+  <DiaryPromptTemplate_SoloImportant.fields.30.label>отношение фракции</DiaryPromptTemplate_SoloImportant.fields.30.label>
+  <DiaryPromptTemplate_SoloImportant.fields.31.label>прежнее отношение</DiaryPromptTemplate_SoloImportant.fields.31.label>
+  <DiaryPromptTemplate_SoloImportant.fields.32.label>партнёр сделки</DiaryPromptTemplate_SoloImportant.fields.32.label>
+  <DiaryPromptTemplate_SoloImportant.fields.33.label>ценность сделки</DiaryPromptTemplate_SoloImportant.fields.33.label>
+  <DiaryPromptTemplate_SoloImportant.fields.34.label>товары сделки</DiaryPromptTemplate_SoloImportant.fields.34.label>
+  <DiaryPromptTemplate_SoloImportant.fields.35.label>этап каравана</DiaryPromptTemplate_SoloImportant.fields.35.label>
+  <DiaryPromptTemplate_SoloImportant.fields.36.label>маршрут каравана</DiaryPromptTemplate_SoloImportant.fields.36.label>
+  <DiaryPromptTemplate_SoloImportant.fields.37.label>состав каравана</DiaryPromptTemplate_SoloImportant.fields.37.label>
   <DiaryPromptTemplate_SoloInternalState.fields.0.label>событие</DiaryPromptTemplate_SoloInternalState.fields.0.label>
   <DiaryPromptTemplate_SoloInternalState.fields.1.label>точка зрения</DiaryPromptTemplate_SoloInternalState.fields.1.label>
   <DiaryPromptTemplate_SoloInternalState.fields.3.label>инструкция</DiaryPromptTemplate_SoloInternalState.fields.3.label>

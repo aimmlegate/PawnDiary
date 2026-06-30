@@ -1294,6 +1294,14 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
             AssertEqual("ability marker domain", "Ability",
                 DiaryEventDomainClassifier.DomainForContext("ability=Stun; ability_label=stun; ability_category=Psycast"));
+            AssertEqual("skill milestone marker domain", "SkillMilestone",
+                DiaryEventDomainClassifier.DomainForContext("skill_milestone=Shooting; skill_label=shooting; skill_level=10"));
+            AssertEqual("faction relation marker domain", "FactionRelation",
+                DiaryEventDomainClassifier.DomainForContext("faction_relation=Outlander; relation_kind=ally"));
+            AssertEqual("trade deal marker domain", "TradeDeal",
+                DiaryEventDomainClassifier.DomainForContext("trade_deal=trade; trade_mode=gift; trade_partner=Blue Moon"));
+            AssertEqual("caravan journey marker domain", "CaravanJourney",
+                DiaryEventDomainClassifier.DomainForContext("caravan_journey=departed; caravan_signal=departed"));
             AssertEqual("ritual classifier includes behavior when present",
                 "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -1318,6 +1326,24 @@ namespace DiaryPipelineTests
                     "Ability",
                     "ability=Stun; ability_label=stun; ability_category=Psycast",
                     "Stun"));
+            AssertEqual("faction relation classifier uses relation kind",
+                "hostile",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "FactionRelation",
+                    "faction_relation=Pirate; previous_relation_kind=neutral; relation_kind=hostile",
+                    "Pirate"));
+            AssertEqual("trade deal classifier uses trade mode",
+                "gift",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "TradeDeal",
+                    "trade_deal=gift; trade_mode=gift; trade_partner=Blue Moon",
+                    "gift"));
+            AssertEqual("caravan journey classifier uses signal",
+                "arrived",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "CaravanJourney",
+                    "caravan_journey=arrived; caravan_signal=arrived; caravan_route=the map",
+                    "arrived"));
             AssertEqual("raid classifier keeps incident defName",
                 "RaidEnemy",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -1336,6 +1362,14 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
             AssertTrue("ability marker is not interaction prompt",
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ability=Stun; ability_label=stun"));
+            AssertTrue("skill milestone marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("skill_milestone=Shooting; skill_label=shooting"));
+            AssertTrue("faction relation marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("faction_relation=Outlander; relation_kind=ally"));
+            AssertTrue("trade deal marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("trade_deal=trade; trade_mode=trade"));
+            AssertTrue("caravan journey marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("caravan_journey=departed; caravan_signal=departed"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
         }

@@ -544,6 +544,25 @@
   <PawnDiary.Prompt.EventWindow.Detail>event detail: {0}</PawnDiary.Prompt.EventWindow.Detail>
   <PawnDiary.Event.EventWindow.AncientDanger.Start>Near an ancient wall, {0} felt sudden foreboding: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
 
+  <!-- Net-new moment source fallback text -->
+  <PawnDiary.Event.SkillMilestone>{0} reached level {2} in {1}.</PawnDiary.Event.SkillMilestone>
+  <PawnDiary.Event.FactionRelationChanged>{0} saw relations with {1} shift from {2} to {3}.</PawnDiary.Event.FactionRelationChanged>
+  <PawnDiary.Event.FactionRelation.Kind.Ally>allied</PawnDiary.Event.FactionRelation.Kind.Ally>
+  <PawnDiary.Event.FactionRelation.Kind.Hostile>hostile</PawnDiary.Event.FactionRelation.Kind.Hostile>
+  <PawnDiary.Event.FactionRelation.Kind.Neutral>neutral</PawnDiary.Event.FactionRelation.Kind.Neutral>
+  <PawnDiary.Event.TradeDeal.Label>trade deal</PawnDiary.Event.TradeDeal.Label>
+  <PawnDiary.Event.TradeGift.Label>trade gift</PawnDiary.Event.TradeGift.Label>
+  <PawnDiary.Event.TradeDeal>{0} completed a trade with {1}: {2}.</PawnDiary.Event.TradeDeal>
+  <PawnDiary.Event.TradeGift>{0} sent a significant gift to {1}: {2}.</PawnDiary.Event.TradeGift>
+  <PawnDiary.Event.TradeDeal.SummaryFallback>{0} traded items</PawnDiary.Event.TradeDeal.SummaryFallback>
+  <PawnDiary.Event.TradeDeal.UnknownTrader>unknown trader</PawnDiary.Event.TradeDeal.UnknownTrader>
+  <PawnDiary.Event.CaravanJourney.Departed.Label>caravan departure</PawnDiary.Event.CaravanJourney.Departed.Label>
+  <PawnDiary.Event.CaravanJourney.Arrived.Label>caravan arrival</PawnDiary.Event.CaravanJourney.Arrived.Label>
+  <PawnDiary.Event.CaravanJourney.Departed>{0} left with the caravan toward {1}: {2}.</PawnDiary.Event.CaravanJourney.Departed>
+  <PawnDiary.Event.CaravanJourney.Arrived>{0} arrived with the caravan at {1}: {2}.</PawnDiary.Event.CaravanJourney.Arrived>
+  <PawnDiary.Event.CaravanJourney.RouteDestination>destination tile {0}</PawnDiary.Event.CaravanJourney.RouteDestination>
+  <PawnDiary.Event.CaravanJourney.RouteMap>the map</PawnDiary.Event.CaravanJourney.RouteMap>
+
   <!-- Observed-condition prompt biasing (Plan 12). Generic fallbacks mirror the event-window ones;
        per-def keys give each lasting state its own priority/condition/description/cues. -->
   <PawnDiary.Prompt.ObservedCondition.Priority>active condition context</PawnDiary.Prompt.ObservedCondition.Priority>

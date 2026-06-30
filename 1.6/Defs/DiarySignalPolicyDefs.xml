@@ -124,4 +124,42 @@
     <lowSkillThreshold>4</lowSkillThreshold>
   </PawnDiary.DiarySignalPolicyDef>
 
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_SkillMilestone</defName>
+    <signalKey>SkillMilestone</signalKey>
+    <enabled>true</enabled>
+    <dedupTicks>2500</dedupTicks>
+    <milestoneLevels>
+      <li>5</li>
+      <li>10</li>
+      <li>15</li>
+      <li>20</li>
+    </milestoneLevels>
+  </PawnDiary.DiarySignalPolicyDef>
+
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_FactionRelation</defName>
+    <signalKey>FactionRelation</signalKey>
+    <enabled>true</enabled>
+    <dedupTicks>2500</dedupTicks>
+    <maxFanoutPawns>8</maxFanoutPawns>
+  </PawnDiary.DiarySignalPolicyDef>
+
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_TradeDeal</defName>
+    <signalKey>TradeDeal</signalKey>
+    <enabled>true</enabled>
+    <dedupTicks>2500</dedupTicks>
+    <minTradeMarketValue>500</minTradeMarketValue>
+    <maxTradeSummaryItems>4</maxTradeSummaryItems>
+  </PawnDiary.DiarySignalPolicyDef>
+
+  <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_CaravanJourney</defName>
+    <signalKey>CaravanJourney</signalKey>
+    <enabled>true</enabled>
+    <dedupTicks>2500</dedupTicks>
+    <maxFanoutPawns>8</maxFanoutPawns>
+  </PawnDiary.DiarySignalPolicyDef>
+
 </Defs>

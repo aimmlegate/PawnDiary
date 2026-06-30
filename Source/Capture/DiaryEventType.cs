@@ -46,6 +46,14 @@ namespace PawnDiary.Capture
         // Ability: successful pawn Ability.Activate calls. Short-cooldown abilities are sampled
         // less often than long-cooldown abilities to avoid spam.
         Ability,
+        // SkillMilestone: a colonist crosses an XML-configured skill level threshold.
+        SkillMilestone,
+        // FactionRelation: the player's diplomatic relation kind with another faction changes.
+        FactionRelation,
+        // TradeDeal: a negotiator completes an XML-thresholded trade or gift deal.
+        TradeDeal,
+        // CaravanJourney: player caravans depart from or arrive at a map.
+        CaravanJourney,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.

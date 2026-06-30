@@ -141,6 +141,18 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>skill</label><source>GameContext</source><contextKey>skill_label</contextKey></li>
+      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><label>skill milestone</label><source>GameContext</source><contextKey>milestone_level</contextKey></li>
+      <li><label>faction</label><source>GameContext</source><contextKey>faction_label</contextKey></li>
+      <li><label>faction relation</label><source>GameContext</source><contextKey>relation_kind</contextKey></li>
+      <li><label>previous relation</label><source>GameContext</source><contextKey>previous_relation_kind</contextKey></li>
+      <li><label>trade partner</label><source>GameContext</source><contextKey>trade_partner</contextKey></li>
+      <li><label>trade value</label><source>GameContext</source><contextKey>trade_value</contextKey></li>
+      <li><label>trade goods</label><source>GameContext</source><contextKey>trade_summary</contextKey></li>
+      <li><label>caravan stage</label><source>GameContext</source><contextKey>caravan_signal</contextKey></li>
+      <li><label>caravan route</label><source>GameContext</source><contextKey>caravan_route</contextKey></li>
+      <li><label>caravan members</label><source>GameContext</source><contextKey>caravan_members</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -173,6 +185,18 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>skill</label><source>GameContext</source><contextKey>skill_label</contextKey></li>
+      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><label>skill milestone</label><source>GameContext</source><contextKey>milestone_level</contextKey></li>
+      <li><label>faction</label><source>GameContext</source><contextKey>faction_label</contextKey></li>
+      <li><label>faction relation</label><source>GameContext</source><contextKey>relation_kind</contextKey></li>
+      <li><label>previous relation</label><source>GameContext</source><contextKey>previous_relation_kind</contextKey></li>
+      <li><label>trade partner</label><source>GameContext</source><contextKey>trade_partner</contextKey></li>
+      <li><label>trade value</label><source>GameContext</source><contextKey>trade_value</contextKey></li>
+      <li><label>trade goods</label><source>GameContext</source><contextKey>trade_summary</contextKey></li>
+      <li><label>caravan stage</label><source>GameContext</source><contextKey>caravan_signal</contextKey></li>
+      <li><label>caravan route</label><source>GameContext</source><contextKey>caravan_route</contextKey></li>
+      <li><label>caravan members</label><source>GameContext</source><contextKey>caravan_members</contextKey></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

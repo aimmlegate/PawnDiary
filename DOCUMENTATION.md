@@ -106,10 +106,11 @@ into a payload, build the context, emit), register the source's `Spec` in the ca
 XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-implemented.
 
 **Migration status: complete.** Every catalog source (`DiaryEventType`) now routes through the bus —
-the Harmony-hook sources (Thought, Inspiration, Ability, Romance, MentalState, Tale, Death,
-Interaction, Raid, MoodEvent, Ritual/PsychicRitual, Hediff, Quest, Arrival) and the tick-scanner /
-flush sources (Work, ThoughtProgression, DayReflection). There are no remaining `RecordXxx` capture
-methods. Two patterns reach the bus:
+the Harmony-hook sources (Thought, Inspiration, Ability, SkillMilestone, Romance, FactionRelation,
+TradeDeal, CaravanJourney, MentalState, Tale, Death, Interaction, Raid, MoodEvent,
+Ritual/PsychicRitual, Hediff, Quest, Arrival) and the tick-scanner / flush sources (Work,
+ThoughtProgression, DayReflection). There are no remaining `RecordXxx` capture methods. Two
+patterns reach the bus:
 
 - **One-shot captures** (Harmony hooks) build a `DiarySignal` and call `DiaryEvents.Submit`.
 - **Scanner / flush sources** are still driven by their periodic component scans (work sampling,
@@ -136,7 +137,11 @@ it onto the bus.
 | Thought | `MemoryThoughtHandler.TryGainMemory` | `ThoughtSignal` | solo (+ ambient) |
 | Inspiration | `InspirationHandler.TryStartInspiration` | `InspirationSignal` | solo |
 | Ability | `Ability.Activate` overloads | `AbilitySignal` | solo (sampled) |
+| SkillMilestone | `SkillRecord.Learn` | `SkillMilestoneSignal` | solo |
 | Romance | `Pawn_RelationsTracker.AddDirectRelation` | `RomanceSignal` | pair |
+| FactionRelation | `Faction.SetRelationDirect` | `FactionRelationFanoutSignal` | fan-out |
+| TradeDeal | `TradeDeal.TryExecute` | `TradeDealSignal` | solo |
+| CaravanJourney | `CaravanExitMapUtility` / `CaravanEnterMapUtility` | `CaravanJourneyFanoutSignal` | fan-out |
 | Raid | `IncidentWorker.TryExecute` | `RaidFanoutSignal` | fan-out |
 | MoodEvent | `GameConditionManager.RegisterCondition` | `MoodEventFanoutSignal` | fan-out |
 | MentalState | `MentalStateHandler.TryStartMentalState` | `MentalStateSignal` | pair + solo |
@@ -163,6 +168,10 @@ it onto the bus.
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
+| Skill milestones | `SkillRecord.Learn` | XML-configured skill levels (default 5/10/15/20) create solo growth entries. |
+| Faction relations | `Faction.SetRelationDirect` | Player-faction relation kind changes fan out to eligible colonists, capped by XML. |
+| Trade deals | `TradeDeal.TryExecute` | Significant completed trades/gifts above the XML value threshold create negotiator entries. |
+| Caravan journeys | `CaravanExitMapUtility` and `CaravanEnterMapUtility` | Player caravan departures and arrivals fan out to caravan pawns, capped by XML. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
@@ -198,7 +207,8 @@ Most feature tuning lives in XML so changes do not require recompiling:
 - `DiaryPromptEnchantmentDefs.xml` and `DiaryHumorCueDefs.xml`: optional live-context and subtle
   humor cues.
 - `DiarySignalPolicyDefs.xml` and `DiaryTuningDef.xml`: scan intervals, odds, cooldowns, thresholds,
-  day-reflection policy, and shared fallback tuning.
+  skill milestone levels, trade value/summary caps, fan-out caps, day-reflection policy, and shared
+  fallback tuning.
 - `DiaryUiStyleDef.xml` and `DiaryTextDecorationDefs.xml`: Diary UI dimensions/colors and display
   rich-text decoration.
 

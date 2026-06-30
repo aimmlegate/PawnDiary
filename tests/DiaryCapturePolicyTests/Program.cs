@@ -51,6 +51,14 @@ namespace DiaryCapturePolicyTests
             TestAbilityDecide();
             TestAbilityCooldownWeightedChance();
             TestAbilityBuildGameContextFormat();
+            TestSkillMilestoneDecide();
+            TestSkillMilestoneBuildGameContextFormat();
+            TestFactionRelationDecide();
+            TestFactionRelationBuildGameContextFormat();
+            TestTradeDealDecide();
+            TestTradeDealBuildGameContextFormat();
+            TestCaravanJourneyDecide();
+            TestCaravanJourneyBuildGameContextFormat();
             TestArrivalDecide();
             TestArrivalBuildGameContextFormat();
             TestDeathDecide();
@@ -928,6 +936,153 @@ namespace DiaryCapturePolicyTests
                 AbilityEventData.BuildGameContext("JumpPack", "", "", "", -20, 5f));
         }
 
+        // ── Skill milestone ──
+
+        private static void TestSkillMilestoneDecide()
+        {
+            AssertEqual("skill milestone null data drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(null, Ctx()));
+            AssertEqual("skill milestone null ctx drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(SkillMilestone(), null));
+            AssertEqual("skill milestone empty defName drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(SkillMilestone(defName: ""), Ctx()));
+            AssertEqual("skill milestone ineligible drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(SkillMilestone(), Ctx(eligible: false)));
+            AssertEqual("skill milestone user disabled drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(SkillMilestone(), Ctx(user: false)));
+            AssertEqual("skill milestone signal disabled drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(SkillMilestone(), Ctx(signal: false)));
+            AssertEqual("skill milestone no level gain drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(SkillMilestone(oldLevel: 5, newLevel: 5, milestoneLevel: 5), Ctx()));
+            AssertEqual("skill milestone no crossed level drops", CaptureDecision.Drop,
+                SkillMilestoneEventData.Decide(SkillMilestone(oldLevel: 5, newLevel: 6, milestoneLevels: new List<int> { 10 }), Ctx()));
+            AssertEqual("skill milestone crossed records", CaptureDecision.GenerateSolo,
+                SkillMilestoneEventData.Decide(SkillMilestone(oldLevel: 4, newLevel: 5, milestoneLevels: new List<int> { 5, 10 }), Ctx()));
+            AssertEqual("skill milestone explicit milestone records", CaptureDecision.GenerateSolo,
+                SkillMilestoneEventData.Decide(SkillMilestone(oldLevel: 9, newLevel: 10, milestoneLevel: 10), Ctx()));
+            AssertEqual("skill milestone helper returns highest crossed level", 10,
+                SkillMilestoneEventData.CrossedMilestone(4, 11, new List<int> { 10, 5 }));
+        }
+
+        private static void TestSkillMilestoneBuildGameContextFormat()
+        {
+            AssertEqual("skill milestone context full",
+                "skill_milestone=Shooting; skill_label=shooting; old_level=4; skill_level=5; milestone_level=5; passion=minor",
+                SkillMilestoneEventData.BuildGameContext("Shooting", "shooting", 4, 5, 5, "minor"));
+            AssertEqual("skill milestone context fallbacks",
+                "skill_milestone=Cooking; skill_label=Cooking; old_level=9; skill_level=10; milestone_level=10; passion=none",
+                SkillMilestoneEventData.BuildGameContext("Cooking", "", 9, 10, 10, ""));
+        }
+
+        // ── Faction relation ──
+
+        private static void TestFactionRelationDecide()
+        {
+            AssertEqual("faction relation null data drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(null, Ctx()));
+            AssertEqual("faction relation null ctx drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(FactionRelation(), null));
+            AssertEqual("faction relation empty defName drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(FactionRelation(defName: ""), Ctx()));
+            AssertEqual("faction relation ineligible drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(FactionRelation(), Ctx(eligible: false)));
+            AssertEqual("faction relation user disabled drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(FactionRelation(), Ctx(user: false)));
+            AssertEqual("faction relation signal disabled drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(FactionRelation(), Ctx(signal: false)));
+            AssertEqual("faction relation same kind drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(FactionRelation(oldKind: "Neutral", newKind: "neutral"), Ctx()));
+            AssertEqual("faction relation unknown new kind drops", CaptureDecision.Drop,
+                FactionRelationEventData.Decide(FactionRelation(oldKind: "neutral", newKind: "warmer"), Ctx()));
+            AssertEqual("faction relation transition records", CaptureDecision.GenerateSolo,
+                FactionRelationEventData.Decide(FactionRelation(oldKind: "neutral", newKind: "ally"), Ctx()));
+            AssertEqual("faction relation normalizes trim/case", FactionRelationEventData.Hostile,
+                FactionRelationEventData.NormalizeRelationKind(" HOSTILE "));
+        }
+
+        private static void TestFactionRelationBuildGameContextFormat()
+        {
+            AssertEqual("faction relation context with reason",
+                "faction_relation=OutlanderCivil; faction_label=Blue Moon; previous_relation_kind=neutral; relation_kind=ally; old_goodwill=20; goodwill=80; reason=quest reward",
+                FactionRelationEventData.BuildGameContext("OutlanderCivil", "Blue Moon", "neutral", "ally", 20, 80, "quest reward"));
+            AssertEqual("faction relation context fallback",
+                "faction_relation=Pirate; faction_label=Pirate; previous_relation_kind=unknown; relation_kind=hostile; old_goodwill=0; goodwill=-80",
+                FactionRelationEventData.BuildGameContext("Pirate", "", "friend", "hostile", 0, -80, ""));
+        }
+
+        // ── Trade deal ──
+
+        private static void TestTradeDealDecide()
+        {
+            AssertEqual("trade deal null data drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(null, Ctx()));
+            AssertEqual("trade deal null ctx drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(TradeDeal(), null));
+            AssertEqual("trade deal empty defName drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(TradeDeal(defName: ""), Ctx()));
+            AssertEqual("trade deal ineligible drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(TradeDeal(), Ctx(eligible: false)));
+            AssertEqual("trade deal user disabled drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(TradeDeal(), Ctx(user: false)));
+            AssertEqual("trade deal signal disabled drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(TradeDeal(), Ctx(signal: false)));
+            AssertEqual("trade deal no items drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(TradeDeal(itemCount: 0), Ctx()));
+            AssertEqual("trade deal below value threshold drops", CaptureDecision.Drop,
+                TradeDealEventData.Decide(TradeDeal(totalMarketValue: 499.9f, minMarketValue: 500f), Ctx()));
+            AssertEqual("trade deal at value threshold records", CaptureDecision.GenerateSolo,
+                TradeDealEventData.Decide(TradeDeal(totalMarketValue: 500f, minMarketValue: 500f), Ctx()));
+        }
+
+        private static void TestTradeDealBuildGameContextFormat()
+        {
+            AssertEqual("trade deal context full",
+                "trade_deal=TradeDeal; trade_mode=trade; trade_partner=Blue Moon trader; trade_faction=OutlanderCivil; trader_kind=Base_Trader; trade_value=512.5; trade_items=3; trade_summary=medicine x12, silver x200",
+                TradeDealEventData.BuildGameContext(
+                    "TradeDeal", "Blue Moon trader", "OutlanderCivil", "Base_Trader",
+                    "medicine x12, silver x200", 512.5f, 3, false));
+            AssertEqual("trade gift context fallbacks",
+                "trade_deal=TradeGift; trade_mode=gift; trade_partner=unknown; trade_faction=unknown; trader_kind=unknown; trade_value=500; trade_items=1; trade_summary=none",
+                TradeDealEventData.BuildGameContext("TradeGift", "", "", "", "", 500f, 1, true));
+        }
+
+        // ── Caravan journey ──
+
+        private static void TestCaravanJourneyDecide()
+        {
+            AssertEqual("caravan journey null data drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(null, Ctx()));
+            AssertEqual("caravan journey null ctx drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(CaravanJourney(), null));
+            AssertEqual("caravan journey empty signal drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(CaravanJourney(signal: ""), Ctx()));
+            AssertEqual("caravan journey ineligible drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(CaravanJourney(), Ctx(eligible: false)));
+            AssertEqual("caravan journey user disabled drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(CaravanJourney(), Ctx(user: false)));
+            AssertEqual("caravan journey signal disabled drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(CaravanJourney(), Ctx(signal: false)));
+            AssertEqual("caravan journey unknown signal drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(CaravanJourney(signal: "resting"), Ctx()));
+            AssertEqual("caravan journey no pawns drops", CaptureDecision.Drop,
+                CaravanJourneyEventData.Decide(CaravanJourney(pawnCount: 0), Ctx()));
+            AssertEqual("caravan journey known signal records", CaptureDecision.GenerateSolo,
+                CaravanJourneyEventData.Decide(CaravanJourney(signal: "ARRIVED", pawnCount: 2), Ctx()));
+            AssertTrue("caravan journey signal helper is case-insensitive",
+                CaravanJourneyEventData.IsKnownSignal("Departed"));
+        }
+
+        private static void TestCaravanJourneyBuildGameContextFormat()
+        {
+            AssertEqual("caravan journey context full",
+                "caravan_journey=departed; caravan_signal=departed; caravan_label=North caravan; caravan_route=destination tile 101; caravan_members=Alice, Bob; caravan_pawns=2; caravan_animals=1",
+                CaravanJourneyEventData.BuildGameContext(
+                    "departed", "North caravan", "destination tile 101", "Alice, Bob", 2, 1));
+            AssertEqual("caravan journey context fallbacks",
+                "caravan_journey=arrived; caravan_signal=arrived; caravan_label=caravan; caravan_route=unknown; caravan_members=none; caravan_pawns=1; caravan_animals=0",
+                CaravanJourneyEventData.BuildGameContext("arrived", "", "", "", 1, 0));
+        }
+
         // ── Arrival ──
 
         private static void TestArrivalDecide()
@@ -1223,6 +1378,30 @@ namespace DiaryCapturePolicyTests
                 CaptureDecision.GenerateSolo,
                 abilitySpec.Decide(Ability(), Ctx()));
 
+            DiaryEventSpec skillMilestoneSpec = DiaryEventCatalog.Get(DiaryEventType.SkillMilestone);
+            AssertTrue("catalog has SkillMilestone spec", skillMilestoneSpec is SkillMilestoneEventSpec);
+            AssertEqual("catalog dispatches SkillMilestone decision",
+                CaptureDecision.GenerateSolo,
+                skillMilestoneSpec.Decide(SkillMilestone(milestoneLevel: 5), Ctx()));
+
+            DiaryEventSpec factionRelationSpec = DiaryEventCatalog.Get(DiaryEventType.FactionRelation);
+            AssertTrue("catalog has FactionRelation spec", factionRelationSpec is FactionRelationEventSpec);
+            AssertEqual("catalog dispatches FactionRelation decision",
+                CaptureDecision.GenerateSolo,
+                factionRelationSpec.Decide(FactionRelation(), Ctx()));
+
+            DiaryEventSpec tradeDealSpec = DiaryEventCatalog.Get(DiaryEventType.TradeDeal);
+            AssertTrue("catalog has TradeDeal spec", tradeDealSpec is TradeDealEventSpec);
+            AssertEqual("catalog dispatches TradeDeal decision",
+                CaptureDecision.GenerateSolo,
+                tradeDealSpec.Decide(TradeDeal(), Ctx()));
+
+            DiaryEventSpec caravanJourneySpec = DiaryEventCatalog.Get(DiaryEventType.CaravanJourney);
+            AssertTrue("catalog has CaravanJourney spec", caravanJourneySpec is CaravanJourneyEventSpec);
+            AssertEqual("catalog dispatches CaravanJourney decision",
+                CaptureDecision.GenerateSolo,
+                caravanJourneySpec.Decide(CaravanJourney(), Ctx()));
+
             DiaryEventSpec arrivalSpec = DiaryEventCatalog.Get(DiaryEventType.Arrival);
             AssertTrue("catalog has Arrival spec", arrivalSpec is ArrivalEventSpec);
             AssertEqual("catalog dispatches Arrival decision",
@@ -1362,6 +1541,17 @@ namespace DiaryCapturePolicyTests
             AssertEqual("thought progression dedup key",
                 "thoughtprogression|P1|need_outdoors|NeedOutdoors|2",
                 new ThoughtProgressionEventData { PawnId = "P1", CategoryKey = "need_outdoors", DefName = "NeedOutdoors", StageIndex = "2" }.DedupKey());
+
+            // Skill milestone: one window per pawn + skill defName + milestone level.
+            AssertEqual("skill milestone dedup key",
+                "skill_milestone|P1|Shooting|10",
+                new SkillMilestoneEventData { PawnId = "P1", DefName = "Shooting", MilestoneLevel = 10 }.DedupKey());
+
+            // Trade deals are keyed by pawn + partner + tick because identical commodity snapshots can
+            // happen on the same caravan visit, while the tick separates separate completed deals.
+            AssertEqual("trade deal dedup key",
+                "trade_deal|P1|Blue Moon trader|1234",
+                new TradeDealEventData { PawnId = "P1", PartnerLabel = "Blue Moon trader", Tick = 1234 }.DedupKey());
         }
 
         // ── Emit routing plans ──
@@ -1821,6 +2011,86 @@ namespace DiaryCapturePolicyTests
                 CooldownTicks = 600,
                 RecordChance = chance,
                 Roll = roll,
+            };
+        }
+
+        private static SkillMilestoneEventData SkillMilestone(
+            string defName = "Shooting",
+            int oldLevel = 4,
+            int newLevel = 5,
+            int milestoneLevel = 0,
+            List<int> milestoneLevels = null)
+        {
+            return new SkillMilestoneEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Label = "shooting",
+                Passion = "minor",
+                OldLevel = oldLevel,
+                NewLevel = newLevel,
+                MilestoneLevel = milestoneLevel,
+                MilestoneLevels = milestoneLevels ?? new List<int> { 5, 10, 15, 20 },
+            };
+        }
+
+        private static FactionRelationEventData FactionRelation(
+            string defName = "OutlanderCivil",
+            string oldKind = "neutral",
+            string newKind = "ally")
+        {
+            return new FactionRelationEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                Label = "Blue Moon",
+                OldRelationKind = oldKind,
+                NewRelationKind = newKind,
+                OldGoodwill = 20,
+                NewGoodwill = 80,
+                Reason = "quest reward",
+            };
+        }
+
+        private static TradeDealEventData TradeDeal(
+            string defName = "TradeDeal",
+            float totalMarketValue = 750f,
+            float minMarketValue = 500f,
+            int itemCount = 3,
+            bool giftMode = false)
+        {
+            return new TradeDealEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                DefName = defName,
+                PartnerLabel = "Blue Moon trader",
+                PartnerFactionDefName = "OutlanderCivil",
+                TraderKindDefName = "Base_Trader",
+                Summary = "medicine x12, silver x200",
+                TotalMarketValue = totalMarketValue,
+                MinMarketValue = minMarketValue,
+                ItemCount = itemCount,
+                GiftMode = giftMode,
+            };
+        }
+
+        private static CaravanJourneyEventData CaravanJourney(
+            string signal = CaravanJourneyEventData.Departed,
+            int pawnCount = 2)
+        {
+            return new CaravanJourneyEventData
+            {
+                PawnId = "P1",
+                Tick = 0,
+                Signal = signal,
+                CaravanLabel = "North caravan",
+                RouteLabel = "destination tile 101",
+                MemberSummary = "Alice, Bob",
+                PawnCount = pawnCount,
+                AnimalCount = 1,
             };
         }
 

@@ -2065,4 +2065,155 @@
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- ===== SkillMilestone domain: SkillRecord.Learn level thresholds ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>skillMilestone</defName>
+    <label>Skill milestones</label>
+    <order>820</order>
+    <domain>SkillMilestone</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a skill crossing a meaningful threshold—write the earned change in ability as felt progress, muscle memory, confidence, or pressure to live up to it</instruction>
+    <tone>with earned, practical pride</tone>
+    <tones>
+      <li>proud but grounded, the skill settling into the hands</li>
+      <li>quietly changed, competence felt before it is announced</li>
+    </tones>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== FactionRelation domain: player diplomacy relation-kind changes ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>factionRelationAlly</defName>
+    <label>Faction alliance</label>
+    <order>830</order>
+    <domain>FactionRelation</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a faction relation turning allied—write relief, suspicion, opportunity, or the practical weight of having another group on the colony's side</instruction>
+    <tone>with cautious diplomatic relief</tone>
+    <tones>
+      <li>cautiously relieved, trust treated as useful but fragile</li>
+      <li>political and wary, hope measured against old risk</li>
+    </tones>
+    <matchDefNames>
+      <li>ally</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>factionRelationHostile</defName>
+    <label>Faction hostility</label>
+    <order>831</order>
+    <domain>FactionRelation</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>combat</colorCue>
+    <instruction>a faction relation turning hostile—write the moment as political danger becoming practical threat; do not invent an attack unless supplied facts say one happened</instruction>
+    <tone>with cold, practical alarm</tone>
+    <tones>
+      <li>cold and alert, danger becoming a name on the map</li>
+      <li>tense and practical, diplomacy collapsing into threat</li>
+    </tones>
+    <matchDefNames>
+      <li>hostile</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>factionRelationNeutral</defName>
+    <label>Faction neutrality</label>
+    <order>832</order>
+    <domain>FactionRelation</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a faction relation settling back to neutral—write the uneasy reset, the lowered weapons, or the practical uncertainty of not being enemies or friends</instruction>
+    <tone>with wary diplomatic quiet</tone>
+    <tones>
+      <li>wary and undecided, danger lowered but not gone</li>
+      <li>quietly political, relief held back by uncertainty</li>
+    </tones>
+    <matchDefNames>
+      <li>neutral</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== TradeDeal domain: completed significant trades and gifts ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>tradeDeal</defName>
+    <label>Trade deals</label>
+    <order>840</order>
+    <domain>TradeDeal</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a significant trade completed—write it as practical exchange, bargaining pressure, relief, scarcity, or the colony's needs becoming material</instruction>
+    <tone>with practical, ledger-aware focus</tone>
+    <tones>
+      <li>practical and alert, value weighed against need</li>
+      <li>matter-of-fact but relieved, goods becoming survival</li>
+    </tones>
+    <matchDefNames>
+      <li>trade</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>tradeGift</defName>
+    <label>Trade gifts</label>
+    <order>841</order>
+    <domain>TradeDeal</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a significant gift sent through the trade screen—write it as deliberate loss, diplomacy, obligation, or a calculated gesture rather than ordinary shopping</instruction>
+    <tone>with deliberate, diplomatic restraint</tone>
+    <tones>
+      <li>calculated and restrained, generosity treated as a tool</li>
+      <li>quietly costly, a gift carrying more than its weight</li>
+    </tones>
+    <matchDefNames>
+      <li>gift</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== CaravanJourney domain: player caravan departures and arrivals ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>caravanDeparted</defName>
+    <label>Caravan departure</label>
+    <order>850</order>
+    <domain>CaravanJourney</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a caravan leaving the map—write departure, loaded packs, uncertainty, distance, and the first step away from colony safety</instruction>
+    <tone>with road-worn anticipation</tone>
+    <tones>
+      <li>road-worn and anticipatory, safety falling behind</li>
+      <li>practical and outward-looking, packs and distance setting the mood</li>
+    </tones>
+    <matchDefNames>
+      <li>departed</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>caravanArrived</defName>
+    <label>Caravan arrival</label>
+    <order>851</order>
+    <domain>CaravanJourney</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a caravan arriving on a map—write arrival, relief, dust, inventory of who made it, and the change from road danger to a new immediate place</instruction>
+    <tone>with tired arrival and alert relief</tone>
+    <tones>
+      <li>tired and relieved, the road still clinging to the body</li>
+      <li>alert and newly arrived, safety not fully trusted yet</li>
+    </tones>
+    <matchDefNames>
+      <li>arrived</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
 </Defs>

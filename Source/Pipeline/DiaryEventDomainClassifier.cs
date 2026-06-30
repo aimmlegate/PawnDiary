@@ -21,6 +21,10 @@ namespace PawnDiary
         public const string Quest = "Quest";
         public const string Ritual = "Ritual";
         public const string Ability = "Ability";
+        public const string SkillMilestone = "SkillMilestone";
+        public const string FactionRelation = "FactionRelation";
+        public const string TradeDeal = "TradeDeal";
+        public const string CaravanJourney = "CaravanJourney";
 
         /// <summary>
         /// Returns the domain implied by a saved event's game-context marker. Plain social
@@ -41,6 +45,10 @@ namespace PawnDiary
             if (DiaryContextFields.HasMarker(context, "ritual=")) return Ritual;
             if (DiaryContextFields.HasMarker(context, "psychic_ritual=")) return Ritual;
             if (DiaryContextFields.HasMarker(context, "ability=")) return Ability;
+            if (DiaryContextFields.HasMarker(context, "skill_milestone=")) return SkillMilestone;
+            if (DiaryContextFields.HasMarker(context, "faction_relation=")) return FactionRelation;
+            if (DiaryContextFields.HasMarker(context, "trade_deal=")) return TradeDeal;
+            if (DiaryContextFields.HasMarker(context, "caravan_journey=")) return CaravanJourney;
             return Interaction;
         }
 
@@ -80,6 +88,33 @@ namespace PawnDiary
                 if (!string.IsNullOrWhiteSpace(category))
                 {
                     return savedDefName + ";" + category;
+                }
+            }
+
+            if (string.Equals(domain, FactionRelation, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string relationKind = DiaryContextFields.Value(context, "relation_kind");
+                if (!string.IsNullOrWhiteSpace(relationKind))
+                {
+                    return relationKind;
+                }
+            }
+
+            if (string.Equals(domain, TradeDeal, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string tradeMode = DiaryContextFields.Value(context, "trade_mode");
+                if (!string.IsNullOrWhiteSpace(tradeMode))
+                {
+                    return tradeMode;
+                }
+            }
+
+            if (string.Equals(domain, CaravanJourney, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string signal = DiaryContextFields.Value(context, "caravan_signal");
+                if (!string.IsNullOrWhiteSpace(signal))
+                {
+                    return signal;
                 }
             }
 

@@ -198,6 +198,18 @@
   <DiaryPromptTemplate_SoloDefault.fields.12.label>ability</DiaryPromptTemplate_SoloDefault.fields.12.label>
   <DiaryPromptTemplate_SoloDefault.fields.22.label>setting</DiaryPromptTemplate_SoloDefault.fields.22.label>
   <DiaryPromptTemplate_SoloDefault.fields.23.label>tone</DiaryPromptTemplate_SoloDefault.fields.23.label>
+  <DiaryPromptTemplate_SoloDefault.fields.25.label>skill</DiaryPromptTemplate_SoloDefault.fields.25.label>
+  <DiaryPromptTemplate_SoloDefault.fields.26.label>skill level</DiaryPromptTemplate_SoloDefault.fields.26.label>
+  <DiaryPromptTemplate_SoloDefault.fields.27.label>skill milestone</DiaryPromptTemplate_SoloDefault.fields.27.label>
+  <DiaryPromptTemplate_SoloDefault.fields.28.label>faction</DiaryPromptTemplate_SoloDefault.fields.28.label>
+  <DiaryPromptTemplate_SoloDefault.fields.29.label>faction relation</DiaryPromptTemplate_SoloDefault.fields.29.label>
+  <DiaryPromptTemplate_SoloDefault.fields.30.label>previous relation</DiaryPromptTemplate_SoloDefault.fields.30.label>
+  <DiaryPromptTemplate_SoloDefault.fields.31.label>trade partner</DiaryPromptTemplate_SoloDefault.fields.31.label>
+  <DiaryPromptTemplate_SoloDefault.fields.32.label>trade value</DiaryPromptTemplate_SoloDefault.fields.32.label>
+  <DiaryPromptTemplate_SoloDefault.fields.33.label>trade goods</DiaryPromptTemplate_SoloDefault.fields.33.label>
+  <DiaryPromptTemplate_SoloDefault.fields.34.label>caravan stage</DiaryPromptTemplate_SoloDefault.fields.34.label>
+  <DiaryPromptTemplate_SoloDefault.fields.35.label>caravan route</DiaryPromptTemplate_SoloDefault.fields.35.label>
+  <DiaryPromptTemplate_SoloDefault.fields.36.label>caravan members</DiaryPromptTemplate_SoloDefault.fields.36.label>
   <DiaryPromptTemplate_SoloImportant.fields.0.label>event</DiaryPromptTemplate_SoloImportant.fields.0.label>
   <DiaryPromptTemplate_SoloImportant.fields.1.label>pov</DiaryPromptTemplate_SoloImportant.fields.1.label>
   <DiaryPromptTemplate_SoloImportant.fields.3.label>instruction</DiaryPromptTemplate_SoloImportant.fields.3.label>
@@ -205,6 +217,18 @@
   <DiaryPromptTemplate_SoloImportant.fields.13.label>ability</DiaryPromptTemplate_SoloImportant.fields.13.label>
   <DiaryPromptTemplate_SoloImportant.fields.23.label>setting</DiaryPromptTemplate_SoloImportant.fields.23.label>
   <DiaryPromptTemplate_SoloImportant.fields.24.label>tone</DiaryPromptTemplate_SoloImportant.fields.24.label>
+  <DiaryPromptTemplate_SoloImportant.fields.26.label>skill</DiaryPromptTemplate_SoloImportant.fields.26.label>
+  <DiaryPromptTemplate_SoloImportant.fields.27.label>skill level</DiaryPromptTemplate_SoloImportant.fields.27.label>
+  <DiaryPromptTemplate_SoloImportant.fields.28.label>skill milestone</DiaryPromptTemplate_SoloImportant.fields.28.label>
+  <DiaryPromptTemplate_SoloImportant.fields.29.label>faction</DiaryPromptTemplate_SoloImportant.fields.29.label>
+  <DiaryPromptTemplate_SoloImportant.fields.30.label>faction relation</DiaryPromptTemplate_SoloImportant.fields.30.label>
+  <DiaryPromptTemplate_SoloImportant.fields.31.label>previous relation</DiaryPromptTemplate_SoloImportant.fields.31.label>
+  <DiaryPromptTemplate_SoloImportant.fields.32.label>trade partner</DiaryPromptTemplate_SoloImportant.fields.32.label>
+  <DiaryPromptTemplate_SoloImportant.fields.33.label>trade value</DiaryPromptTemplate_SoloImportant.fields.33.label>
+  <DiaryPromptTemplate_SoloImportant.fields.34.label>trade goods</DiaryPromptTemplate_SoloImportant.fields.34.label>
+  <DiaryPromptTemplate_SoloImportant.fields.35.label>caravan stage</DiaryPromptTemplate_SoloImportant.fields.35.label>
+  <DiaryPromptTemplate_SoloImportant.fields.36.label>caravan route</DiaryPromptTemplate_SoloImportant.fields.36.label>
+  <DiaryPromptTemplate_SoloImportant.fields.37.label>caravan members</DiaryPromptTemplate_SoloImportant.fields.37.label>
   <DiaryPromptTemplate_SoloInternalState.fields.0.label>event</DiaryPromptTemplate_SoloInternalState.fields.0.label>
   <DiaryPromptTemplate_SoloInternalState.fields.1.label>pov</DiaryPromptTemplate_SoloInternalState.fields.1.label>
   <DiaryPromptTemplate_SoloInternalState.fields.3.label>instruction</DiaryPromptTemplate_SoloInternalState.fields.3.label>

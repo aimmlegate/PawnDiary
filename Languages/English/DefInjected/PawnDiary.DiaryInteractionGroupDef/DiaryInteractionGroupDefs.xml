@@ -330,4 +330,44 @@
   <workRoutine.tones.1>quietly practical, attention on tools and sequence</workRoutine.tones.1>
   <workStrain.tones.0>weary and blunt, frustration in the hands</workStrain.tones.0>
   <workStrain.tones.1>grimy and resigned, irritation kept under duty</workStrain.tones.1>
+  <skillMilestone.label>Skill milestones</skillMilestone.label>
+  <skillMilestone.instruction>a skill crossing a meaningful threshold—write the earned change in ability as felt progress, muscle memory, confidence, or pressure to live up to it</skillMilestone.instruction>
+  <skillMilestone.tone>with earned, practical pride</skillMilestone.tone>
+  <skillMilestone.tones.0>proud but grounded, the skill settling into the hands</skillMilestone.tones.0>
+  <skillMilestone.tones.1>quietly changed, competence felt before it is announced</skillMilestone.tones.1>
+  <factionRelationAlly.label>Faction alliance</factionRelationAlly.label>
+  <factionRelationAlly.instruction>a faction relation turning allied—write relief, suspicion, opportunity, or the practical weight of having another group on the colony&apos;s side</factionRelationAlly.instruction>
+  <factionRelationAlly.tone>with cautious diplomatic relief</factionRelationAlly.tone>
+  <factionRelationAlly.tones.0>cautiously relieved, trust treated as useful but fragile</factionRelationAlly.tones.0>
+  <factionRelationAlly.tones.1>political and wary, hope measured against old risk</factionRelationAlly.tones.1>
+  <factionRelationHostile.label>Faction hostility</factionRelationHostile.label>
+  <factionRelationHostile.instruction>a faction relation turning hostile—write the moment as political danger becoming practical threat; do not invent an attack unless supplied facts say one happened</factionRelationHostile.instruction>
+  <factionRelationHostile.tone>with cold, practical alarm</factionRelationHostile.tone>
+  <factionRelationHostile.tones.0>cold and alert, danger becoming a name on the map</factionRelationHostile.tones.0>
+  <factionRelationHostile.tones.1>tense and practical, diplomacy collapsing into threat</factionRelationHostile.tones.1>
+  <factionRelationNeutral.label>Faction neutrality</factionRelationNeutral.label>
+  <factionRelationNeutral.instruction>a faction relation settling back to neutral—write the uneasy reset, the lowered weapons, or the practical uncertainty of not being enemies or friends</factionRelationNeutral.instruction>
+  <factionRelationNeutral.tone>with wary diplomatic quiet</factionRelationNeutral.tone>
+  <factionRelationNeutral.tones.0>wary and undecided, danger lowered but not gone</factionRelationNeutral.tones.0>
+  <factionRelationNeutral.tones.1>quietly political, relief held back by uncertainty</factionRelationNeutral.tones.1>
+  <tradeDeal.label>Trade deals</tradeDeal.label>
+  <tradeDeal.instruction>a significant trade completed—write it as practical exchange, bargaining pressure, relief, scarcity, or the colony&apos;s needs becoming material</tradeDeal.instruction>
+  <tradeDeal.tone>with practical, ledger-aware focus</tradeDeal.tone>
+  <tradeDeal.tones.0>practical and alert, value weighed against need</tradeDeal.tones.0>
+  <tradeDeal.tones.1>matter-of-fact but relieved, goods becoming survival</tradeDeal.tones.1>
+  <tradeGift.label>Trade gifts</tradeGift.label>
+  <tradeGift.instruction>a significant gift sent through the trade screen—write it as deliberate loss, diplomacy, obligation, or a calculated gesture rather than ordinary shopping</tradeGift.instruction>
+  <tradeGift.tone>with deliberate, diplomatic restraint</tradeGift.tone>
+  <tradeGift.tones.0>calculated and restrained, generosity treated as a tool</tradeGift.tones.0>
+  <tradeGift.tones.1>quietly costly, a gift carrying more than its weight</tradeGift.tones.1>
+  <caravanDeparted.label>Caravan departure</caravanDeparted.label>
+  <caravanDeparted.instruction>a caravan leaving the map—write departure, loaded packs, uncertainty, distance, and the first step away from colony safety</caravanDeparted.instruction>
+  <caravanDeparted.tone>with road-worn anticipation</caravanDeparted.tone>
+  <caravanDeparted.tones.0>road-worn and anticipatory, safety falling behind</caravanDeparted.tones.0>
+  <caravanDeparted.tones.1>practical and outward-looking, packs and distance setting the mood</caravanDeparted.tones.1>
+  <caravanArrived.label>Caravan arrival</caravanArrived.label>
+  <caravanArrived.instruction>a caravan arriving on a map—write arrival, relief, dust, inventory of who made it, and the change from road danger to a new immediate place</caravanArrived.instruction>
+  <caravanArrived.tone>with tired arrival and alert relief</caravanArrived.tone>
+  <caravanArrived.tones.0>tired and relieved, the road still clinging to the body</caravanArrived.tones.0>
+  <caravanArrived.tones.1>alert and newly arrived, safety not fully trusted yet</caravanArrived.tones.1>
 </LanguageData>

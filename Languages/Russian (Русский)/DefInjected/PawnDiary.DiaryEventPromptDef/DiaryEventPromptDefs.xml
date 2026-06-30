@@ -39,6 +39,18 @@
   <DiaryEventPrompt_Ability.label>способность</DiaryEventPrompt_Ability.label>
   <DiaryEventPrompt_Ability.prompt>Опиши успешное применение способности как момент сосредоточенности, риска или усилия.</DiaryEventPrompt_Ability.prompt>
   <DiaryEventPrompt_Ability.enhancement>Используй название способности, категорию, цель и перезарядку. Короткая перезарядка значит быстрый малый момент, долгая — редкий и весомый выбор. Дополнительных эффектов не выдумывай.</DiaryEventPrompt_Ability.enhancement>
+  <DiaryEventPrompt_SkillMilestone.label>веха навыка</DiaryEventPrompt_SkillMilestone.label>
+  <DiaryEventPrompt_SkillMilestone.prompt>Опиши новый рубеж навыка как ощутимую перемену в том, что поселенец теперь умеет.</DiaryEventPrompt_SkillMilestone.prompt>
+  <DiaryEventPrompt_SkillMilestone.enhancement>Используй навык и достигнутый уровень. Пусть рост чувствуется через практику, усталость, уверенность или новую ответственность; не придумывай итог работы, которого нет в фактах.</DiaryEventPrompt_SkillMilestone.enhancement>
+  <DiaryEventPrompt_FactionRelation.label>отношение фракции</DiaryEventPrompt_FactionRelation.label>
+  <DiaryEventPrompt_FactionRelation.prompt>Опиши дипломатический сдвиг так, как он меняет чувство безопасности, риска или возможности у поселенца.</DiaryEventPrompt_FactionRelation.prompt>
+  <DiaryEventPrompt_FactionRelation.enhancement>Используй фракцию и прежнее/новое отношение. Это политический контекст, который давит лично; не выдумывай встречу, бой или письмо сверх фактов.</DiaryEventPrompt_FactionRelation.enhancement>
+  <DiaryEventPrompt_TradeDeal.label>сделка</DiaryEventPrompt_TradeDeal.label>
+  <DiaryEventPrompt_TradeDeal.prompt>Опиши завершённую торговлю или дар как практический обмен, влияющий на выживание поселения.</DiaryEventPrompt_TradeDeal.prompt>
+  <DiaryEventPrompt_TradeDeal.enhancement>Используй партнёра, ценность и список вещей. Держи запись в торге, нехватке, облегчении, жертве или расчётливой щедрости; не добавляй цен и последствий, которых нет.</DiaryEventPrompt_TradeDeal.enhancement>
+  <DiaryEventPrompt_CaravanJourney.label>путь каравана</DiaryEventPrompt_CaravanJourney.label>
+  <DiaryEventPrompt_CaravanJourney.prompt>Опиши уход или прибытие каравана как порог между безопасностью поселения и риском дороги.</DiaryEventPrompt_CaravanJourney.prompt>
+  <DiaryEventPrompt_CaravanJourney.enhancement>Используй маршрут и состав каравана. Пиши про уход, прибытие, расстояние, усталость или настороженность; весь путь не пересказывай, если таких фактов нет.</DiaryEventPrompt_CaravanJourney.enhancement>
   <DiaryEventPrompt_DayReflection.label>итог дня</DiaryEventPrompt_DayReflection.label>
   <DiaryEventPrompt_DayReflection.prompt>Напиши вечернее размышление о дне целиком.</DiaryEventPrompt_DayReflection.prompt>
   <DiaryEventPrompt_DayReflection.enhancement>Выбери моменты, которые к вечеру всё ещё саднят, греют или давят. Не перечисляй каждое событие.</DiaryEventPrompt_DayReflection.enhancement>

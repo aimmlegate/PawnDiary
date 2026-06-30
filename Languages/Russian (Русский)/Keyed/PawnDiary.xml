@@ -538,6 +538,25 @@
   <PawnDiary.Prompt.EventWindow.Detail>деталь события: {0}</PawnDiary.Prompt.EventWindow.Detail>
   <PawnDiary.Event.EventWindow.AncientDanger.Start>У древней стены внезапное предчувствие у {0}: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
 
+  <!-- Запасной текст для новых источников моментов -->
+  <PawnDiary.Event.SkillMilestone>{0} добрался до {2}-го уровня в навыке «{1}».</PawnDiary.Event.SkillMilestone>
+  <PawnDiary.Event.FactionRelationChanged>{0} заметил, как отношения с {1} сменились: было {2}, стало {3}.</PawnDiary.Event.FactionRelationChanged>
+  <PawnDiary.Event.FactionRelation.Kind.Ally>союз</PawnDiary.Event.FactionRelation.Kind.Ally>
+  <PawnDiary.Event.FactionRelation.Kind.Hostile>вражда</PawnDiary.Event.FactionRelation.Kind.Hostile>
+  <PawnDiary.Event.FactionRelation.Kind.Neutral>нейтралитет</PawnDiary.Event.FactionRelation.Kind.Neutral>
+  <PawnDiary.Event.TradeDeal.Label>сделка</PawnDiary.Event.TradeDeal.Label>
+  <PawnDiary.Event.TradeGift.Label>торговый дар</PawnDiary.Event.TradeGift.Label>
+  <PawnDiary.Event.TradeDeal>{0} завершил сделку с {1}: {2}.</PawnDiary.Event.TradeDeal>
+  <PawnDiary.Event.TradeGift>{0} отправил весомый дар для {1}: {2}.</PawnDiary.Event.TradeGift>
+  <PawnDiary.Event.TradeDeal.SummaryFallback>{0} предметов в обмене</PawnDiary.Event.TradeDeal.SummaryFallback>
+  <PawnDiary.Event.TradeDeal.UnknownTrader>неизвестный торговец</PawnDiary.Event.TradeDeal.UnknownTrader>
+  <PawnDiary.Event.CaravanJourney.Departed.Label>уход каравана</PawnDiary.Event.CaravanJourney.Departed.Label>
+  <PawnDiary.Event.CaravanJourney.Arrived.Label>прибытие каравана</PawnDiary.Event.CaravanJourney.Arrived.Label>
+  <PawnDiary.Event.CaravanJourney.Departed>{0} ушёл с караваном к {1}: {2}.</PawnDiary.Event.CaravanJourney.Departed>
+  <PawnDiary.Event.CaravanJourney.Arrived>{0} прибыл с караваном в {1}: {2}.</PawnDiary.Event.CaravanJourney.Arrived>
+  <PawnDiary.Event.CaravanJourney.RouteDestination>клетка назначения {0}</PawnDiary.Event.CaravanJourney.RouteDestination>
+  <PawnDiary.Event.CaravanJourney.RouteMap>эта карта</PawnDiary.Event.CaravanJourney.RouteMap>
+
   <!-- Смещение промпта наблюдаемыми условиями (План 12). Общие запасные ключи повторяют ключи окон
        событий; ключи на деф дают каждому длящемуся состоянию свой приоритет/условие/описание/подсказки. -->
   <PawnDiary.Prompt.ObservedCondition.Priority>активный контекст условия</PawnDiary.Prompt.ObservedCondition.Priority>

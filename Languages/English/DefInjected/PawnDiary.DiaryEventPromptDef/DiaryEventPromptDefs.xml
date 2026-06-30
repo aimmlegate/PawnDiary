@@ -39,6 +39,18 @@
   <DiaryEventPrompt_Ability.label>ability</DiaryEventPrompt_Ability.label>
   <DiaryEventPrompt_Ability.prompt>Write a successful pawn ability use as a concrete moment of focus, risk, or exertion.</DiaryEventPrompt_Ability.prompt>
   <DiaryEventPrompt_Ability.enhancement>Use the supplied ability name, category, target, and cooldown facts. Treat short-cooldown abilities as quick minor moments and long-cooldown abilities as rarer, weightier choices; do not invent extra effects.</DiaryEventPrompt_Ability.enhancement>
+  <DiaryEventPrompt_SkillMilestone.label>skill milestone</DiaryEventPrompt_SkillMilestone.label>
+  <DiaryEventPrompt_SkillMilestone.prompt>Write a skill milestone as a concrete change in what the pawn can do.</DiaryEventPrompt_SkillMilestone.prompt>
+  <DiaryEventPrompt_SkillMilestone.enhancement>Use the supplied skill and milestone level. Make progress feel earned through practice, strain, confidence, or responsibility; do not invent a specific job outcome that was not supplied.</DiaryEventPrompt_SkillMilestone.enhancement>
+  <DiaryEventPrompt_FactionRelation.label>faction relation</DiaryEventPrompt_FactionRelation.label>
+  <DiaryEventPrompt_FactionRelation.prompt>Write a colony diplomacy shift through how it changes the pawn&apos;s sense of safety, risk, or opportunity.</DiaryEventPrompt_FactionRelation.prompt>
+  <DiaryEventPrompt_FactionRelation.enhancement>Use the supplied faction and before/after relation. Treat it as political context becoming personal pressure; do not invent a meeting, battle, or message beyond supplied facts.</DiaryEventPrompt_FactionRelation.enhancement>
+  <DiaryEventPrompt_TradeDeal.label>trade deal</DiaryEventPrompt_TradeDeal.label>
+  <DiaryEventPrompt_TradeDeal.prompt>Write a completed trade or gift as practical exchange affecting colony survival.</DiaryEventPrompt_TradeDeal.prompt>
+  <DiaryEventPrompt_TradeDeal.enhancement>Use the supplied partner, value, and goods summary. Keep the entry grounded in bargaining, scarcity, relief, sacrifice, or calculated generosity; do not add unsupplied prices or consequences.</DiaryEventPrompt_TradeDeal.enhancement>
+  <DiaryEventPrompt_CaravanJourney.label>caravan journey</DiaryEventPrompt_CaravanJourney.label>
+  <DiaryEventPrompt_CaravanJourney.prompt>Write a caravan departure or arrival as a threshold between colony safety and road risk.</DiaryEventPrompt_CaravanJourney.prompt>
+  <DiaryEventPrompt_CaravanJourney.enhancement>Use the supplied route and member facts. Make the moment about leaving, arriving, distance, fatigue, or vigilance; do not summarize an entire journey unless those facts are supplied.</DiaryEventPrompt_CaravanJourney.enhancement>
   <DiaryEventPrompt_DayReflection.label>day reflection</DiaryEventPrompt_DayReflection.label>
   <DiaryEventPrompt_DayReflection.prompt>Write an end-of-day reflection that weighs the day as a whole.</DiaryEventPrompt_DayReflection.prompt>
   <DiaryEventPrompt_DayReflection.enhancement>Choose the supplied moments that still sting, glow, or weigh on the pawn tonight instead of listing every event.</DiaryEventPrompt_DayReflection.enhancement>

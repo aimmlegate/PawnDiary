@@ -6,6 +6,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Net-new event source expansion (Plan 10).** Added four new live moment sources through the
+  event-bus/catalog path: skill-level milestones (`SkillRecord.Learn`, XML milestone levels),
+  player-faction relation transitions (`Faction.SetRelationDirect`, capped colonist fan-out),
+  significant completed trades/gifts (`TradeDeal.TryExecute`, XML value threshold and summary cap),
+  and caravan departures/arrivals (`CaravanExitMapUtility` / `CaravanEnterMapUtility`, capped caravan
+  pawn fan-out). Each source has a pure `EventData` + `EventSpec`, localized emit text, XML signal
+  policy, interaction groups, broad event prompts, and prompt-template fields; English and Russian
+  DefInjected/Keyed strings were authored separately. Updated the capture policy tests for the new
+  decisions, context formats, catalog registration, and dedup keys, and rebuilt
+  `1.6/Assemblies/PawnDiary.dll`.
+
 - **Lasting game-state capture: observed conditions (Plan 12).** Added a system, parallel to event
   windows, for *lasting* colony states that must be read from live state rather than inferred from a
   guessed duration. A new pure lifecycle diff (`Source/Capture/ObservedConditions/`:

@@ -120,6 +120,38 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_SkillMilestone</defName>
+    <label>skill milestone</label>
+    <eventType>SkillMilestone</eventType>
+    <prompt>Write a skill milestone as a concrete change in what the pawn can do.</prompt>
+    <enhancement>Use the supplied skill and milestone level. Make progress feel earned through practice, strain, confidence, or responsibility; do not invent a specific job outcome that was not supplied.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_FactionRelation</defName>
+    <label>faction relation</label>
+    <eventType>FactionRelation</eventType>
+    <prompt>Write a colony diplomacy shift through how it changes the pawn's sense of safety, risk, or opportunity.</prompt>
+    <enhancement>Use the supplied faction and before/after relation. Treat it as political context becoming personal pressure; do not invent a meeting, battle, or message beyond supplied facts.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_TradeDeal</defName>
+    <label>trade deal</label>
+    <eventType>TradeDeal</eventType>
+    <prompt>Write a completed trade or gift as practical exchange affecting colony survival.</prompt>
+    <enhancement>Use the supplied partner, value, and goods summary. Keep the entry grounded in bargaining, scarcity, relief, sacrifice, or calculated generosity; do not add unsupplied prices or consequences.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_CaravanJourney</defName>
+    <label>caravan journey</label>
+    <eventType>CaravanJourney</eventType>
+    <prompt>Write a caravan departure or arrival as a threshold between colony safety and road risk.</prompt>
+    <enhancement>Use the supplied route and member facts. Make the moment about leaving, arriving, distance, fatigue, or vigilance; do not summarize an entire journey unless those facts are supplied.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_DayReflection</defName>
     <label>day reflection</label>
     <eventType>DayReflection</eventType>
