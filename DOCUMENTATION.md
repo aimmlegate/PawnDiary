@@ -490,8 +490,9 @@ reflections.
 
 `LlmClient` handles concurrency, per-lane cooldowns, transient retries, timeout/permanent failures,
 session cancellation on new game/load, and result handoff to the main thread. `LlmResponseParser`
-supports Chat and Responses output shapes, strips reasoning/transcript leaks, cleans malformed speech
-markers, and trims saved text locally.
+supports Chat and Responses output shapes, strips reasoning/transcript leaks, normalizes or removes
+malformed speech markers (including common `speach` typos and incomplete bracket tags), removes
+model-leaked Unity rich-text angle tags, and trims saved text locally.
 
 ## 9. Save Data And Compatibility
 

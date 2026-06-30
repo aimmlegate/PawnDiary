@@ -198,6 +198,11 @@ namespace LlmResponseParserTests
                 "Visible intro.",
                 LlmResponseParser.StripReasoningTextBlocks("Visible intro. <think>then only private reasoning until the end"));
 
+            AssertEqual(
+                "truncated think opening remove to end",
+                "Visible intro.",
+                LlmResponseParser.StripReasoningTextBlocks("Visible intro. <think"));
+
             // Two paired blocks with different tag names exercise the outer per-tag loop.
             AssertEqual(
                 "multiple paired tags",
@@ -241,6 +246,21 @@ namespace LlmResponseParserTests
                 LlmResponseParser.CleanGeneratedText("[[speech]]We are doing this now.[/speech]]", 50, false));
 
             AssertEqual(
+                "misspelled speech close repaired",
+                "[[speech]]We are doing this now.[[/speech]]",
+                LlmResponseParser.CleanGeneratedText("[[speech]]We are doing this now.[[/speach", 50, false));
+
+            AssertEqual(
+                "misspelled speech pair repaired",
+                "[[speech]]We are doing this now.[[/speech]]",
+                LlmResponseParser.CleanGeneratedText("[[speach]]We are doing this now.[[/speach", 50, false));
+
+            AssertEqual(
+                "truncated misspelled speech open stripped",
+                "I spoke. Enough.",
+                LlmResponseParser.CleanGeneratedText("I spoke. [[speach... Enough.", 50, false));
+
+            AssertEqual(
                 "bracketed prose flattened",
                 "I froze. You do not belong here.",
                 LlmResponseParser.CleanGeneratedText("I froze. [[You do not belong here.]]", 50, false));
@@ -264,6 +284,31 @@ namespace LlmResponseParserTests
                 "unpaired speech marker stripped to prose",
                 "I spoke. Enough.",
                 LlmResponseParser.CleanGeneratedText("I spoke. [[speech]]Enough.", 50, false));
+
+            AssertEqual(
+                "incomplete bracket tag stripped",
+                "The hallway cooled.",
+                LlmResponseParser.CleanGeneratedText("The hallway cooled. [[mood", 50, false));
+
+            AssertEqual(
+                "incomplete bracket tag prefix stripped",
+                "The plan was first.",
+                LlmResponseParser.CleanGeneratedText("The plan was [[work first.", 50, false));
+
+            AssertEqual(
+                "angle rich text tags stripped",
+                "We moved.",
+                LlmResponseParser.CleanGeneratedText("<i>We moved.</i>", 50, false));
+
+            AssertEqual(
+                "incomplete angle rich text tag stripped",
+                "We moved.",
+                LlmResponseParser.CleanGeneratedText("We moved. <color=#ffcc00", 50, false));
+
+            AssertEqual(
+                "less-than prose survives",
+                "I counted 3 < 4 stones.",
+                LlmResponseParser.CleanGeneratedText("I counted 3 < 4 stones.", 50, false));
 
             AssertEqual(
                 "title sanitizes bracket tags",

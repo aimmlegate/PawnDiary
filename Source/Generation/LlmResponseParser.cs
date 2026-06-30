@@ -399,12 +399,9 @@ namespace PawnDiary
                     }
 
                     int openEnd = text.IndexOf('>', open);
-                    if (openEnd < 0)
-                    {
-                        break;
-                    }
+                    int contentStart = openEnd >= 0 ? openEnd + 1 : open + tag.Length + 1;
 
-                    int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, openEnd + 1);
+                    int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, contentStart);
                     if (close >= 0)
                     {
                         int closeEnd = close + closeNeedle.Length;
@@ -413,16 +410,16 @@ namespace PawnDiary
                     }
 
                     int labelLength;
-                    string remainder = text.Substring(openEnd + 1);
+                    string remainder = text.Substring(Math.Min(contentStart, text.Length));
                     int finalRelative = FindLineStartingWithAny(remainder, FinalAnswerLabels(), out labelLength);
                     if (finalRelative >= 0)
                     {
-                        int finalStart = openEnd + 1 + finalRelative;
+                        int finalStart = contentStart + finalRelative;
                         text = text.Remove(open, finalStart - open);
                         continue;
                     }
 
-                    int afterBlankLine = IndexAfterBlankLine(text, openEnd + 1);
+                    int afterBlankLine = IndexAfterBlankLine(text, contentStart);
                     if (afterBlankLine >= 0)
                     {
                         text = text.Remove(open, afterBlankLine - open);
@@ -515,7 +512,7 @@ namespace PawnDiary
                 }
 
                 int after = index + needle.Length;
-                if (after < text.Length && (text[after] == '>' || char.IsWhiteSpace(text[after])))
+                if (after == text.Length || text[after] == '>' || char.IsWhiteSpace(text[after]))
                 {
                     return index;
                 }
@@ -854,11 +851,6 @@ namespace PawnDiary
             return index > 0 && value[index - 1] == expected;
         }
 
-        private static bool IsFollowedBy(string value, int index, char expected)
-        {
-            return index < value.Length && value[index] == expected;
-        }
-
         private static string[] ReasoningFenceLabels()
         {
             return new[] { "think", "thinking", "reasoning", "analysis", "chain-of-thought", "chain of thought", "cot" };
@@ -965,6 +957,7 @@ namespace PawnDiary
             }
 
             string normalized = NormalizeMalformedSpeechMarkers(text);
+            normalized = StripAngleMarkupTags(normalized);
             string sanitized = SanitizeGeneratedTagMarkers(normalized, true);
             sanitized = StripStandaloneSchemaPunctuationTokens(sanitized);
             return CompactGeneratedMarkupWhitespace(sanitized).Trim();
@@ -1003,6 +996,7 @@ namespace PawnDiary
             }
 
             string normalized = NormalizeMalformedSpeechMarkers(entryText);
+            normalized = StripAngleMarkupTags(normalized);
             normalized = SanitizeGeneratedTagMarkers(normalized, false);
             normalized = StripStandaloneSchemaPunctuationTokens(normalized);
             normalized = ReplaceUnexpectedTitleCharactersWithSpaces(normalized);
@@ -1145,54 +1139,81 @@ namespace PawnDiary
             int i = 0;
             while (i < text.Length)
             {
-                if (StartsWithOrdinalIgnoreCase(text, i, "[[/speech]")
-                    && !StartsWithOrdinalIgnoreCase(text, i, SpeechCloseMarker))
+                string replacement;
+                int markerLength;
+                if (TryNormalizeSpeechMarkerAttempt(text, i, out replacement, out markerLength))
                 {
-                    builder.Append(SpeechCloseMarker);
-                    i += "[[/speech]".Length;
+                    builder.Append(replacement);
+                    i += markerLength;
                     continue;
                 }
 
-                if (StartsWithOrdinalIgnoreCase(text, i, "[/speech]]")
-                    && !IsPrecededBy(text, i, '['))
-                {
-                    builder.Append(SpeechCloseMarker);
-                    i += "[/speech]]".Length;
-                    continue;
-                }
+                builder.Append(text[i]);
+                i++;
+            }
 
-                if (StartsWithOrdinalIgnoreCase(text, i, "[/speech]")
-                    && !IsPrecededBy(text, i, '[')
-                    && !IsFollowedBy(text, i + "[/speech]".Length, ']'))
-                {
-                    builder.Append(SpeechCloseMarker);
-                    i += "[/speech]".Length;
-                    continue;
-                }
+            return builder.ToString();
+        }
 
-                if (StartsWithOrdinalIgnoreCase(text, i, "[[speech]")
-                    && !StartsWithOrdinalIgnoreCase(text, i, SpeechOpenMarker))
-                {
-                    builder.Append(SpeechOpenMarker);
-                    i += "[[speech]".Length;
-                    continue;
-                }
+        private static bool TryNormalizeSpeechMarkerAttempt(
+            string text,
+            int index,
+            out string replacement,
+            out int markerLength)
+        {
+            if (TrySpeechMarkerPrefix(text, index, "[[/speech", true, out markerLength)
+                || TrySpeechMarkerPrefix(text, index, "[[/speach", true, out markerLength)
+                || TrySpeechMarkerPrefix(text, index, "[/speech", false, out markerLength)
+                || TrySpeechMarkerPrefix(text, index, "[/speach", false, out markerLength))
+            {
+                replacement = SpeechCloseMarker;
+                return true;
+            }
 
-                if (StartsWithOrdinalIgnoreCase(text, i, "[speech]]")
-                    && !IsPrecededBy(text, i, '['))
-                {
-                    builder.Append(SpeechOpenMarker);
-                    i += "[speech]]".Length;
-                    continue;
-                }
+            if (TrySpeechMarkerPrefix(text, index, "[[speech", true, out markerLength)
+                || TrySpeechMarkerPrefix(text, index, "[[speach", true, out markerLength)
+                || TrySpeechMarkerPrefix(text, index, "[speech", false, out markerLength)
+                || TrySpeechMarkerPrefix(text, index, "[speach", false, out markerLength))
+            {
+                replacement = SpeechOpenMarker;
+                return true;
+            }
 
-                if (StartsWithOrdinalIgnoreCase(text, i, "[speech]")
-                    && !IsPrecededBy(text, i, '[')
-                    && !IsFollowedBy(text, i + "[speech]".Length, ']'))
+            replacement = string.Empty;
+            markerLength = 0;
+            return false;
+        }
+
+        private static bool TrySpeechMarkerPrefix(
+            string text,
+            int index,
+            string prefix,
+            bool allowPrecedingOpenBracket,
+            out int markerLength)
+        {
+            markerLength = MalformedMarkerLengthForPrefix(text, index, prefix);
+            return markerLength > 0 && (allowPrecedingOpenBracket || !IsPrecededBy(text, index, '['));
+        }
+
+        private static string StripAngleMarkupTags(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(text.Length);
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (text[i] == '<')
                 {
-                    builder.Append(SpeechOpenMarker);
-                    i += "[speech]".Length;
-                    continue;
+                    int markerLength = AngleMarkupMarkerLength(text, i);
+                    if (markerLength > 0)
+                    {
+                        i += markerLength;
+                        continue;
+                    }
                 }
 
                 builder.Append(text[i]);
@@ -1262,11 +1283,81 @@ namespace PawnDiary
                     }
                 }
 
+                int incompleteTagLength = IncompleteBracketTagMarkerLength(text, i);
+                if (incompleteTagLength > 0)
+                {
+                    i += incompleteTagLength;
+                    continue;
+                }
+
                 builder.Append(text[i]);
                 i++;
             }
 
             return builder.ToString();
+        }
+
+        private static int AngleMarkupMarkerLength(string text, int index)
+        {
+            if (index < 0 || index >= text.Length || text[index] != '<')
+            {
+                return 0;
+            }
+
+            int i = index + 1;
+            if (i >= text.Length)
+            {
+                return 0;
+            }
+
+            if (text[i] == '/')
+            {
+                i++;
+            }
+
+            int nameStart = i;
+            if (nameStart >= text.Length || !IsAsciiLower(text[nameStart]))
+            {
+                return 0;
+            }
+
+            while (i < text.Length && IsMarkupTagNameCharacter(text[i]))
+            {
+                i++;
+            }
+
+            if (i == nameStart || i - nameStart > 24)
+            {
+                return 0;
+            }
+
+            if (i >= text.Length)
+            {
+                return i - index;
+            }
+
+            char next = text[i];
+            if (next == '>')
+            {
+                return i - index + 1;
+            }
+
+            if (next != '=' && next != '/' && !char.IsWhiteSpace(next))
+            {
+                return 0;
+            }
+
+            while (i < text.Length && text[i] != '<' && text[i] != '\r' && text[i] != '\n')
+            {
+                if (text[i] == '>')
+                {
+                    return i - index + 1;
+                }
+
+                i++;
+            }
+
+            return i - index;
         }
 
         private static int MalformedSpeechMarkerLength(string text, int index)
@@ -1283,6 +1374,18 @@ namespace PawnDiary
                 return length;
             }
 
+            length = MalformedMarkerLengthForPrefix(text, index, "[[speach");
+            if (length > 0)
+            {
+                return length;
+            }
+
+            length = MalformedMarkerLengthForPrefix(text, index, "[[/speach");
+            if (length > 0)
+            {
+                return length;
+            }
+
             length = MalformedMarkerLengthForPrefix(text, index, "[speech");
             if (length > 0 && !IsPrecededBy(text, index, '['))
             {
@@ -1290,6 +1393,18 @@ namespace PawnDiary
             }
 
             length = MalformedMarkerLengthForPrefix(text, index, "[/speech");
+            if (length > 0 && !IsPrecededBy(text, index, '['))
+            {
+                return length;
+            }
+
+            length = MalformedMarkerLengthForPrefix(text, index, "[speach");
+            if (length > 0 && !IsPrecededBy(text, index, '['))
+            {
+                return length;
+            }
+
+            length = MalformedMarkerLengthForPrefix(text, index, "[/speach");
             return length > 0 && !IsPrecededBy(text, index, '[') ? length : 0;
         }
 
@@ -1307,7 +1422,7 @@ namespace PawnDiary
             }
 
             char next = text[afterPrefix];
-            if (next != ']' && next != '>' && !char.IsWhiteSpace(next))
+            if (next != ']' && next != '>' && !char.IsWhiteSpace(next) && IsMarkerNameContinuation(next))
             {
                 return 0;
             }
@@ -1319,13 +1434,86 @@ namespace PawnDiary
             {
                 if (text[markerEnd] == ']' || text[markerEnd] == '>')
                 {
-                    return markerEnd - index + 1;
+                    while (markerEnd < text.Length && (text[markerEnd] == ']' || text[markerEnd] == '>'))
+                    {
+                        markerEnd++;
+                    }
+
+                    return markerEnd - index;
                 }
 
                 markerEnd++;
             }
 
-            return afterPrefix - index;
+            return markerEnd - index;
+        }
+
+        private static int IncompleteBracketTagMarkerLength(string text, int index)
+        {
+            if (index < 0
+                || index + 1 >= text.Length
+                || text[index] != '['
+                || text[index + 1] != '[')
+            {
+                return 0;
+            }
+
+            int i = index + 2;
+            if (i < text.Length && text[i] == '/')
+            {
+                i++;
+            }
+
+            int nameStart = i;
+            if (nameStart >= text.Length || !IsAsciiLower(text[nameStart]))
+            {
+                return 0;
+            }
+
+            while (i < text.Length && IsMarkupTagNameCharacter(text[i]))
+            {
+                i++;
+            }
+
+            if (i == nameStart || i - nameStart > 24)
+            {
+                return 0;
+            }
+
+            if (i >= text.Length)
+            {
+                return i - index;
+            }
+
+            char next = text[i];
+            if (char.IsWhiteSpace(next))
+            {
+                return i - index;
+            }
+
+            if (next != ']' && next != '>')
+            {
+                if (IsMarkerNameContinuation(next))
+                {
+                    return 0;
+                }
+
+                while (i < text.Length
+                    && !char.IsWhiteSpace(text[i])
+                    && text[i] != '[')
+                {
+                    i++;
+                }
+
+                return i - index;
+            }
+
+            while (i < text.Length && (text[i] == ']' || text[i] == '>'))
+            {
+                i++;
+            }
+
+            return i - index;
         }
 
         private static bool IsLowercaseTagName(string value)
@@ -1362,6 +1550,16 @@ namespace PawnDiary
         private static bool IsAsciiLower(char c)
         {
             return c >= 'a' && c <= 'z';
+        }
+
+        private static bool IsMarkupTagNameCharacter(char c)
+        {
+            return IsAsciiLower(c) || char.IsDigit(c) || c == '-' || c == '_';
+        }
+
+        private static bool IsMarkerNameContinuation(char c)
+        {
+            return char.IsLetterOrDigit(c) || c == '-' || c == '_';
         }
 
         private static string StripStandaloneSchemaPunctuationTokens(string text)

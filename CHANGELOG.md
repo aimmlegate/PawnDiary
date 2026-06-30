@@ -4,6 +4,12 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-07-01
+
+- **Generated-text sanitizer hardened.** Response cleanup now repairs or strips incomplete speech
+  markers, common `speach` marker typos, generic unfinished bracket tags, truncated reasoning tags,
+  and model-leaked Unity rich-text angle tags before generated diary text reaches save data or UI.
+
 ## 2026-06-30
 
 - **Mod versioning added.** `About/About.xml` now carries `modVersion` (`0.1.0` initially), and
