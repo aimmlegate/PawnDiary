@@ -20,7 +20,8 @@ namespace PawnDiary
     {
         public string conditionDefName;
         public string conditionKey;
-        // Stored as the enum's int so a future enum addition never breaks an old save's string parse.
+        // Scribed by enum NAME (Scribe_Values.Look persists enums via ToString/Enum.Parse), so adding or
+        // reordering members is save-safe; renaming a member would break old saves and must be avoided.
         public ObservedConditionScope scope = ObservedConditionScope.Map;
         public int mapUniqueId = -1;
         public string subjectPawnId;

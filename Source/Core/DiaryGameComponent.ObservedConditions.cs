@@ -322,7 +322,11 @@ namespace PawnDiary
         private void CollectPawnHediffObservations(DiaryObservedConditionDef def,
             List<ObservedConditionObservation> observations)
         {
-            if (def.matchDefNames == null && def.matchDefNameContains == null && def.matchLabels == null)
+            // Skip the (relatively expensive) pawn/hediff scan when no matcher could ever fire. The Def
+            // initializes these as non-null empty lists, so check Count as well as null.
+            if (IsMatcherListEmpty(def.matchDefNames)
+                && IsMatcherListEmpty(def.matchDefNameContains)
+                && IsMatcherListEmpty(def.matchLabels))
             {
                 return;
             }
@@ -403,61 +407,104 @@ namespace PawnDiary
                     continue;
                 }
 
-                ActiveObservedConditionState row = FindObservedConditionRow(decision.state);
-                if (decision.removeState)
-                {
-                    if (row != null)
-                    {
-                        activeObservedConditions.Remove(row);
-                    }
-                }
-                else if (row != null)
-                {
-                    row.CopyFrom(decision.state);
-                }
-                else
-                {
-                    activeObservedConditions.Add(ActiveObservedConditionState.FromSnapshot(decision.state));
-                }
-
+                // Record the page BEFORE mutating saved state, and let the recorder tell us whether the
+                // transition was satisfied. Only a satisfied recording justifies flipping the start/end
+                // "recorded" flags or dropping the row: if no eligible pawn was available, we keep the
+                // state retryable (startRecorded/endRecorded left false, row retained) so the next scan
+                // re-enters the same transition instead of permanently losing the page.
+                bool pageSatisfied = true;
                 if (decision.recordPage)
                 {
                     DiaryObservedConditionDef def;
                     if (dueDefByKey.TryGetValue(decision.state.conditionKey, out def) && def != null)
                     {
-                        RecordObservedConditionPage(decision, def);
+                        pageSatisfied = RecordObservedConditionPage(decision, def);
                     }
+                }
+
+                ActiveObservedConditionState row = FindObservedConditionRow(decision.state);
+                if (decision.removeState)
+                {
+                    if (pageSatisfied)
+                    {
+                        if (row != null)
+                        {
+                            activeObservedConditions.Remove(row);
+                        }
+                    }
+                    else if (row != null)
+                    {
+                        // End page could not be written yet: keep the row so the end retries next scan,
+                        // persisting missing-since progress but leaving endRecorded false.
+                        ObservedConditionStateSnapshot retryable = decision.state.Clone();
+                        retryable.endRecorded = false;
+                        row.CopyFrom(retryable);
+                    }
+                }
+                else if (row != null)
+                {
+                    if (pageSatisfied)
+                    {
+                        row.CopyFrom(decision.state);
+                    }
+                    else
+                    {
+                        // Start page could not be written yet: persist tick/evidence progress but leave
+                        // startRecorded false so the next scan re-enters StartRecorded.
+                        ObservedConditionStateSnapshot retryable = decision.state.Clone();
+                        retryable.startRecorded = false;
+                        row.CopyFrom(retryable);
+                    }
+                }
+                else
+                {
+                    ObservedConditionStateSnapshot toAdd = decision.state;
+                    if (!pageSatisfied)
+                    {
+                        toAdd = decision.state.Clone();
+                        toAdd.startRecorded = false;
+                        toAdd.endRecorded = false;
+                    }
+
+                    activeObservedConditions.Add(ActiveObservedConditionState.FromSnapshot(toAdd));
                 }
             }
         }
 
         // Records the optional start/end diary page for a condition transition, gated by the def's
-        // recordStartEvent / recordEndEvent flag and deduped per phase/map/subject.
-        private void RecordObservedConditionPage(ObservedConditionDecision decision, DiaryObservedConditionDef def)
+        // recordStartEvent / recordEndEvent flag and deduped per phase/map/subject. Returns true when the
+        // transition is SATISFIED (a page was written, or the def does not record this phase, or it was
+        // already deduped) and false when a page was wanted but could not be written (no eligible pawn),
+        // so the caller can keep the saved state retryable instead of permanently losing the page.
+        private bool RecordObservedConditionPage(ObservedConditionDecision decision, DiaryObservedConditionDef def)
         {
             bool isStart = decision.kind == ObservedConditionDecisionKind.StartRecorded;
             if (isStart && !def.recordStartEvent)
             {
-                return;
+                return true; // def does not record starts: nothing wanted, so the transition is satisfied.
             }
 
             if (!isStart && !def.recordEndEvent)
             {
-                return;
+                return true; // def does not record ends: nothing wanted, so the transition is satisfied.
             }
 
             string phase = isStart ? ObservedConditionPhaseStart : ObservedConditionPhaseEnd;
             string dedupKey = def.defName + "|" + phase + "|" + decision.state.mapUniqueId + "|"
                 + decision.state.subjectPawnId;
-            if (RecentlyRecorded(recentObservedConditionEvents, dedupKey, def.EffectiveDedupTicks()))
+
+            // Check dedup WITHOUT marking: a prior call within the window means a page was already
+            // written, so the transition is satisfied. We only consume the window below, after at least
+            // one page is actually written, so a failed attempt can retry without being suppressed.
+            if (IsRecentlyRecorded(recentObservedConditionEvents, dedupKey, def.EffectiveDedupTicks()))
             {
-                return;
+                return true;
             }
 
             List<Pawn> pawns = ObservedConditionPawns(def, decision.state);
             if (pawns.Count == 0)
             {
-                return;
+                return false; // retryable: no recipient right now.
             }
 
             string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
@@ -466,6 +513,7 @@ namespace PawnDiary
             string signalLabel = ObservedConditionSignalLabel(def, decision.state, label);
             string gameContext = BuildObservedConditionGameContext(def, decision.state, phase);
 
+            bool wroteAny = false;
             for (int i = 0; i < pawns.Count; i++)
             {
                 Pawn pawn = pawns[i];
@@ -481,6 +529,7 @@ namespace PawnDiary
                     continue;
                 }
 
+                wroteAny = true;
                 if (!string.IsNullOrWhiteSpace(def.colorCue))
                 {
                     diaryEvent.colorCue = def.colorCue;
@@ -488,6 +537,14 @@ namespace PawnDiary
 
                 QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
             }
+
+            // Only consume the dedup window once at least one page is actually written.
+            if (wroteAny)
+            {
+                MarkRecentlyRecorded(recentObservedConditionEvents, dedupKey, def.EffectiveDedupTicks());
+            }
+
+            return wroteAny;
         }
 
         // ---------------------------------------------------------------------------------------------
@@ -835,6 +892,13 @@ namespace PawnDiary
             }
 
             return ContainsSubstring(def.matchLabels, label);
+        }
+
+        // True when a matcher list has no entries. The Def initializes these as non-null empty lists, so
+        // observers must check Count (not just null) before deciding a scan is worthwhile.
+        private static bool IsMatcherListEmpty(List<string> values)
+        {
+            return values == null || values.Count == 0;
         }
 
         private static bool ContainsExact(List<string> values, string actual)

@@ -38,6 +38,22 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   and rebuilt `1.6/Assemblies/PawnDiary.dll`. Plan 12 Pass 8 (XML context-fact bridge) stays blocked
   on the not-yet-built XML context-fact pipeline.
 
+- **Observed conditions: review hardening (follow-up to Plan 12).** Made observed-condition page
+  recording transactional so a start/end page can no longer be permanently lost: the adapter now tries
+  to write the page *before* committing the saved-state change, and if no eligible recipient pawn was
+  available it leaves `startRecorded`/`endRecorded` false and retains the row, so the next scan
+  re-enters the transition instead of dropping it; the per-phase dedup key is consumed only after at
+  least one page is actually written (`RecordObservedConditionPage` now returns a satisfied/retryable
+  signal, matching the split `IsRecentlyRecorded`→`MarkRecentlyRecorded` pattern the event-window
+  recorder already uses). The `PawnHediff` observer now skips the pawn/hediff scan when its matcher
+  lists are empty (not just null — the Def initializes them non-null), avoiding a pointless walk on an
+  enabled-but-unconfigured def. Added `DiaryObservedConditionDef.ConfigErrors` load-time validation
+  that rejects `recordScope=SubjectPawn` without `scope=Pawn` (the mismatch clears the subject id and
+  would otherwise never record a page). Corrected the `ActiveObservedConditionState.scope` save-comment
+  (Scribe persists enums by name, not int) and the stale header date in
+  `ARCHITECTURE_IMPROVEMENT_PLAN.md`. No XML, Scribe keys, or pure-policy behavior changed; pure tests
+  still pass (62 assertions) and `1.6/Assemblies/PawnDiary.dll` rebuilt.
+
 - **Save/settings compatibility fixtures (Plan 6).** Turned the save-model post-load repair path into
   fixture-covered, regression-detectable code. The pure parts of `DiaryEvent.NormalizeOnLoad` and
   `ArchivedDiaryEntry.NormalizeOnLoad` (null-coalesces, the cross-slot surroundings chain where a pair

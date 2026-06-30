@@ -1,6 +1,6 @@
 # Pawn Diary — Architecture Improvement Plan (Open Slices)
 
-Last updated: 2026-06-29 · Last verified against code: 2026-06-29
+Last updated: 2026-06-30 · Last verified against code: 2026-06-30
 
 Implementation-ready plans for the **unresolved** architecture-improvement work. Resolved/completed
 cards are intentionally omitted. Each plan below is a self-contained slice to hand to one future

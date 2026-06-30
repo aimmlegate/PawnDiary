@@ -124,5 +124,26 @@ namespace PawnDiary
             return ObservedConditionDefSnapshot.Create(
                 EffectiveConditionKey(), startDebounceTicks, endDebounceTicks);
         }
+
+        /// <summary>
+        /// Load-time validation (the game surfaces these as red errors in the log). Catches
+        /// scope/record-scope combinations that would silently never record a page.
+        /// </summary>
+        public override IEnumerable<string> ConfigErrors()
+        {
+            foreach (string error in base.ConfigErrors())
+            {
+                yield return error;
+            }
+
+            // recordScope=SubjectPawn resolves the page recipient from state.subjectPawnId, but every
+            // non-Pawn scope clears that id when building an observation (see NewObservation). Combined
+            // they would yield an empty subject on every transition and silently never record a page.
+            if (recordScope == ObservedConditionRecordScope.SubjectPawn
+                && scope != ObservedConditionScope.Pawn)
+            {
+                yield return "recordScope=SubjectPawn requires scope=Pawn; any other scope has no subject pawn.";
+            }
+        }
     }
 }

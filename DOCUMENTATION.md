@@ -308,7 +308,11 @@ a never-started condition disappears. The impure adapter then persists/forgets t
 diary pages. Ticks gate debounce only; whether a condition is active is always answered by "is it in
 this scan's observations?", so a save loaded mid-state is rediscovered and a missed signal is recovered
 by the next scan. A def not polled this pass is excluded from the diff entirely, so it never looks
-falsely "missing".
+falsely "missing". Page recording is transactional: the adapter tries to write the start/end page
+*before* committing the saved-state change, and if no eligible recipient was available it leaves
+`startRecorded`/`endRecorded` false and retains the row (rather than dropping it), so the next scan
+re-enters the same transition instead of permanently losing the page; the per-phase dedup key is
+consumed only after at least one page is actually written, mirroring the event-window recorder.
 
 Observer types, all DLC-safe (plain-string / vanilla-API matchers that find nothing when content is
 absent): **MapDanger** (active while a home map's `dangerWatcher.DangerRating` ≥ `minDangerRating`, or
@@ -326,6 +330,11 @@ evidence is physically present — the Anomaly-gated replacement for the retired
 window), and `MetalhorrorEmergence` (PawnHediff, shipped **disabled** with empty matchers until the
 observable post-emergence state is verified — see ARCHITECTURE_IMPROVEMENT_PLAN.md Plan 12 "Open
 questions"; it must never surface hidden mechanics).
+
+`DiaryObservedConditionDef` validates its configuration at load via `ConfigErrors`: `recordScope=
+SubjectPawn` is rejected unless `scope=Pawn`, because every non-Pawn scope clears the subject id when
+building an observation and so could never resolve a page recipient (the mismatch would otherwise fail
+silently with no diary page ever recorded).
 
 ## 6. Prompts And Writing Styles
 
