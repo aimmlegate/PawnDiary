@@ -265,10 +265,8 @@
   <PawnDiary.Settings.TimeoutSecondsHelp>Сколько секунд ждать ответ от API перед переходом к запасному подключению или ошибке. Медленным локальным моделям может быть мало 30 секунд.</PawnDiary.Settings.TimeoutSecondsHelp>
   <PawnDiary.Settings.MaxTokens>Предел ответа: {0} токенов</PawnDiary.Settings.MaxTokens>
   <PawnDiary.Settings.MaxTokensHelp>Максимальная длина ответа до очистки текста. Большее значение даёт более длинные страницы, но они пишутся медленнее и чаще теряют лаконичность.</PawnDiary.Settings.MaxTokensHelp>
-  <PawnDiary.Settings.WorkGenerationWeight>Шанс записей о работе: {0}x</PawnDiary.Settings.WorkGenerationWeight>
-  <PawnDiary.Settings.WorkGenerationWeightHelp>Множитель шанса, что выборка работы станет страницей. 1x — значения XML; 0x — случайные страницы о работе отключены.</PawnDiary.Settings.WorkGenerationWeightHelp>
-  <PawnDiary.Settings.SocialGenerationWeight>Шанс записей об общении: {0}x</PawnDiary.Settings.SocialGenerationWeight>
-  <PawnDiary.Settings.SocialGenerationWeightHelp>Множитель шанса, что мелкие социальные моменты сразу станут парными страницами. 1x — значения XML; 0x — они копятся в пачку.</PawnDiary.Settings.SocialGenerationWeightHelp>
+  <PawnDiary.Settings.GenerationChanceWeight>Вес случайной генерации: {0}x</PawnDiary.Settings.GenerationChanceWeight>
+  <PawnDiary.Settings.GenerationChanceWeightHelp>Множитель шанса для необязательных случайных страниц дневника: выборки работы, продвижения общения и использования способностей. 1x — значения XML; 0x — отключает такие страницы.</PawnDiary.Settings.GenerationChanceWeightHelp>
   <PawnDiary.Settings.MaxActiveDiaryEvents>Страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
   <PawnDiary.Settings.MaxConcurrent>Одновременных запросов на подключение: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>Сколько запросов одновременно выполняет каждое подключение; остальные ждут в его очереди. Разные подключения работают параллельно. Для локальной модели оставьте 1; повышайте только если сервер умеет обрабатывать несколько запросов сразу.</PawnDiary.Settings.MaxConcurrentHelp>

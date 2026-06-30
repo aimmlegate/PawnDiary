@@ -184,7 +184,8 @@ namespace PawnDiary.Ingestion
                 chance *= Math.Max(0f, DiarySignalPolicies.WorkDarkStudyChanceMultiplier);
             }
 
-            float weight = PawnDiaryMod.Settings?.workGenerationWeight ?? 1f;
+            float weight = PawnDiarySettings.ClampGenerationChanceWeight(
+                PawnDiaryMod.Settings?.generationChanceWeight ?? PawnDiarySettings.DefaultGenerationChanceWeight);
             return chance * weight;
         }
 

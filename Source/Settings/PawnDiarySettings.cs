@@ -142,10 +142,9 @@ namespace PawnDiary
         public PromptOverrideDictionary eventPromptOverrides = new PromptOverrideDictionary("eventPromptOverrides");
         public PromptOverrideDictionary eventEnhancementOverrides = new PromptOverrideDictionary("eventEnhancementOverrides");
         public PromptOverrideDictionary eventForcedModelOverrides = new PromptOverrideDictionary("eventForcedModelOverrides");
-        // Player-facing multipliers for the two random entry gates:
-        // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
-        public float workGenerationWeight = 1f;
-        public float socialGenerationWeight = 1f;
+        // Player-facing multiplier for diary-page chance gates. 1x preserves XML tuning defaults;
+        // 0x suppresses optional random pages while guaranteed/important event pages still record.
+        public float generationChanceWeight = DefaultGenerationChanceWeight;
         // Per-pawn hard cap for hot diary pages. Each pawn keeps its newest maxActiveDiaryEvents
         // full event references; older displayable rows compact into the archive before the hot ref is
         // removed. The field name and Scribe key stay "maxActiveDiaryEvents" for save compatibility.
@@ -185,6 +184,9 @@ namespace PawnDiary
         public const int DefaultMaxArchivedDiaryEvents = 10000;
         public const int MinArchivedDiaryEvents = 0;
         public const int MaxArchivedDiaryEvents = 50000;
+        public const float DefaultGenerationChanceWeight = 1f;
+        public const float MinGenerationChanceWeight = 0f;
+        public const float MaxGenerationChanceWeight = 5f;
 
         public override void ExposeData()
         {
@@ -212,8 +214,7 @@ namespace PawnDiary
             eventPromptOverrides.ExposeData();
             eventEnhancementOverrides.ExposeData();
             eventForcedModelOverrides.ExposeData();
-            Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
-            Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
+            ExposeGenerationChanceWeight();
             Scribe_Values.Look(ref maxActiveDiaryEvents, "maxActiveDiaryEvents", DefaultMaxActiveDiaryEvents);
             Scribe_Values.Look(ref maxArchivedDiaryEvents, "maxArchivedDiaryEvents", DefaultMaxArchivedDiaryEvents);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
@@ -735,10 +736,67 @@ namespace PawnDiary
             systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;
             systemPromptNeutralOverride = systemPromptNeutralOverride ?? string.Empty;
             titleSystemPromptOverride = titleSystemPromptOverride ?? string.Empty;
-            workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
-            socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
+            generationChanceWeight = ClampGenerationChanceWeight(generationChanceWeight);
             maxActiveDiaryEvents = ClampActiveDiaryEventLimit(maxActiveDiaryEvents);
             maxArchivedDiaryEvents = ClampArchivedDiaryEventLimit(maxArchivedDiaryEvents);
+        }
+
+        /// <summary>
+        /// Reads/writes the shared chance multiplier and migrates older separate work/social sliders.
+        /// </summary>
+        private void ExposeGenerationChanceWeight()
+        {
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                Scribe_Values.Look(ref generationChanceWeight, "generationChanceWeight", DefaultGenerationChanceWeight);
+                return;
+            }
+
+            float loadedGenerationChanceWeight = float.NaN;
+            Scribe_Values.Look(ref loadedGenerationChanceWeight, "generationChanceWeight", float.NaN);
+            if (Scribe.mode != LoadSaveMode.LoadingVars)
+            {
+                return;
+            }
+
+            float legacyWorkGenerationWeight = float.NaN;
+            float legacySocialGenerationWeight = float.NaN;
+            Scribe_Values.Look(ref legacyWorkGenerationWeight, "workGenerationWeight", float.NaN);
+            Scribe_Values.Look(ref legacySocialGenerationWeight, "socialGenerationWeight", float.NaN);
+
+            generationChanceWeight = float.IsNaN(loadedGenerationChanceWeight)
+                ? MergeLegacyGenerationChanceWeights(legacyWorkGenerationWeight, legacySocialGenerationWeight)
+                : loadedGenerationChanceWeight;
+        }
+
+        /// <summary>
+        /// Merges the old two-slider settings into the one shared slider for upgraded configs.
+        /// </summary>
+        private static float MergeLegacyGenerationChanceWeights(float workWeight, float socialWeight)
+        {
+            bool hasWork = !float.IsNaN(workWeight);
+            bool hasSocial = !float.IsNaN(socialWeight);
+            if (!hasWork && !hasSocial)
+            {
+                return DefaultGenerationChanceWeight;
+            }
+
+            float migratedWorkWeight = hasWork ? workWeight : DefaultGenerationChanceWeight;
+            float migratedSocialWeight = hasSocial ? socialWeight : DefaultGenerationChanceWeight;
+            return (migratedWorkWeight + migratedSocialWeight) * 0.5f;
+        }
+
+        /// <summary>
+        /// Clamps the shared random diary-page generation multiplier to the settings slider range.
+        /// </summary>
+        public static float ClampGenerationChanceWeight(float value)
+        {
+            if (float.IsNaN(value))
+            {
+                return DefaultGenerationChanceWeight;
+            }
+
+            return Mathf.Clamp(value, MinGenerationChanceWeight, MaxGenerationChanceWeight);
         }
 
         /// <summary>

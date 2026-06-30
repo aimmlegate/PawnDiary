@@ -92,6 +92,8 @@ namespace PawnDiary.Ingestion
                 DiaryTuning.Current.abilityUseMinChance,
                 DiaryTuning.Current.abilityUseMaxChance,
                 DiaryTuning.Current.abilityUseReferenceCooldownTicks);
+            float generationChanceWeight = PawnDiarySettings.ClampGenerationChanceWeight(PawnDiaryMod.Settings.generationChanceWeight);
+            chance = Math.Min(1f, Math.Max(0f, chance * generationChanceWeight));
 
             this.pawn = caster;
             this.targetPawn = targetPawn;

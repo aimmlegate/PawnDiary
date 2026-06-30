@@ -77,10 +77,11 @@ namespace PawnDiary
                     TooltipHandler.TipRegion(exportRect, "PawnDiary.Settings.ExportAllDiariesTip".Translate());
                 }
 
-                listing.Label("PawnDiary.Settings.WorkGenerationWeight".Translate(Settings.workGenerationWeight.ToString("0.##")));
-                Settings.workGenerationWeight = listing.Slider(Settings.workGenerationWeight, 0f, 5f);
-                listing.Label("PawnDiary.Settings.SocialGenerationWeight".Translate(Settings.socialGenerationWeight.ToString("0.##")));
-                Settings.socialGenerationWeight = listing.Slider(Settings.socialGenerationWeight, 0f, 5f);
+                listing.Label("PawnDiary.Settings.GenerationChanceWeight".Translate(Settings.generationChanceWeight.ToString("0.##")));
+                Settings.generationChanceWeight = listing.Slider(
+                    Settings.generationChanceWeight,
+                    PawnDiarySettings.MinGenerationChanceWeight,
+                    PawnDiarySettings.MaxGenerationChanceWeight);
                 DrawMaxActiveDiaryEventsField(listing);
                 DrawMaxArchivedDiaryEventsField(listing);
 

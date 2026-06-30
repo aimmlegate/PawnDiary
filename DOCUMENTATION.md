@@ -154,7 +154,7 @@ it onto the bus.
 
 | Source | How it is observed | Result |
 |---|---|---|
-| Social interactions | `PlayLog.Add` | Pair, solo, batched, or ambient note by XML group. |
+| Social interactions | `PlayLog.Add` | Pair, solo, batched, or ambient note by XML group; optional batch promotion is scaled by the shared random-generation setting. |
 | Mental states | `MentalStateHandler.TryStartMentalState` | Social fighting can be pairwise; other breaks are solo. |
 | Romance | `Pawn_RelationsTracker.AddDirectRelation` | Pairwise lover/spouse/ex relation moments. |
 | Tales and combat | `TaleRecorder.RecordTale` | Solo, pair, delayed combat batches, or death description. |
@@ -165,13 +165,13 @@ it onto the bus.
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
-| Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns. |
+| Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
 | Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
 | Observed conditions | Periodic live-state scan (map danger, active game conditions, evidence things, pawn hediffs) | Lasting states read from live state, not a guessed duration: bias prompts while present, optionally record start/end pages, and end after a debounce when live state stops showing them (Plan 12; see §5.1). |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
-| Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry. |
+| Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. |
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
@@ -389,11 +389,11 @@ the stored title falls back to the first few words of the finished diary entry w
 ## 7. Settings And UI
 
 Main settings cover API lanes, routing mode, request tuning, title generation, atmospheric
-formatting, prompt enchantments, work/social weights, the active diary-event cap, event filters,
-prompt overrides, and writing style presets. Dev mode exposes prompt-test mode, a full diary export
-button, and extra diagnostics. The export writes every saved pawn diary page plus the backing event
-records to `PawnDiaryExports/` under RimWorld's save-data folder, and copies the generated file path
-to the clipboard.
+formatting, prompt enchantments, one shared random-generation weight for optional chance-gated pages,
+the active diary-event cap, event filters, prompt overrides, and writing style presets. Dev mode
+exposes prompt-test mode, a full diary export button, and extra diagnostics. The export writes every
+saved pawn diary page plus the backing event records to `PawnDiaryExports/` under RimWorld's
+save-data folder, and copies the generated file path to the clipboard.
 
 The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
 appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can

@@ -47,7 +47,8 @@ namespace PawnDiary
                 return false;
             }
 
-            float weight = PawnDiaryMod.Settings?.socialGenerationWeight ?? 1f;
+            float weight = PawnDiarySettings.ClampGenerationChanceWeight(
+                PawnDiaryMod.Settings?.generationChanceWeight ?? PawnDiarySettings.DefaultGenerationChanceWeight);
             return Rand.Chance(Mathf.Clamp01(PromotionChance(group.promotion, initiator, recipient) * weight));
         }
 

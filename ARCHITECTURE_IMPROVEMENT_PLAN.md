@@ -476,8 +476,8 @@ canonical policy layer for maintainers.
    - Keep it testable with plain inputs where possible.
 
 3. **Wire existing weights through the helper.**
-   - Existing `workGenerationWeight` and `socialGenerationWeight` can map to or coexist with the new
-     controls.
+   - Legacy `workGenerationWeight` and `socialGenerationWeight` values now map into the shared
+     `generationChanceWeight` setting on load.
    - Avoid double-multiplying old settings unexpectedly.
 
 4. **Apply at capture decision boundaries.**

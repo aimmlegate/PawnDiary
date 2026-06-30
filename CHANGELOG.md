@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Random generation weight simplified.** The settings page now has one shared random-generation
+  slider instead of separate work and social sliders. It scales optional chance-gated diary pages
+  for work sampling, batched social promotion, and ability-use sampling; old work/social saved
+  values are migrated into the new setting on load.
 - **Diary page rewrite action moved into normal UI.** Expanded non-archived diary pages now show a
   subdued rewrite icon beside the model/provenance footer, using a Def-backed tint and a pencil-style
   icon instead of the brighter dev-only reload control. Archived compact pages still hide rewrite
