@@ -508,6 +508,19 @@ namespace PawnDiary
                     DevMockDiaryEntriesPerYear));
             y += ActionRowHeight + ActionGap;
 
+            Rect purgeArchiveButtonRect = new Rect(rect.x, y, rect.width, ActionRowHeight);
+            if (Widgets.ButtonText(purgeArchiveButtonRect, "PawnDiary.Tab.PurgeArchivedEntries".Translate()))
+            {
+                int removed = component.PurgeArchivedEntriesForPawnForDev(pawn);
+                Messages.Message(
+                    "PawnDiary.Tab.ArchivedEntriesPurged".Translate(removed, pawn.LabelShortCap),
+                    removed > 0 ? MessageTypeDefOf.PositiveEvent : MessageTypeDefOf.NeutralEvent,
+                    false);
+            }
+
+            TooltipHandler.TipRegion(purgeArchiveButtonRect, "PawnDiary.Tab.PurgeArchivedEntriesTip".Translate());
+            y += ActionRowHeight + ActionGap;
+
             if (Widgets.ButtonText(new Rect(rect.x, y, rect.width, ActionRowHeight), "PawnDiary.Tab.PersonaButton".Translate(PersonaLabel(component.PersonaFor(pawn)))))
             {
                 List<DiaryPersonaDef> personas = new List<DiaryPersonaDef>(DiaryPersonas.All);
@@ -812,7 +825,7 @@ namespace PawnDiary
 
         private static float DiaryToolsViewHeight()
         {
-            return 34f + ActionRowHeight * 2f + ActionGap * 4f + 26f + PreviewGridHeight();
+            return 34f + ActionRowHeight * 3f + ActionGap * 5f + 26f + PreviewGridHeight();
         }
 
         private static float PromptFixturesViewHeight(DiaryGameComponent component, Pawn pawn)

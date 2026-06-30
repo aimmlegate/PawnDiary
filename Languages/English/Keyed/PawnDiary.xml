@@ -39,6 +39,9 @@
   <PawnDiary.Tab.FillMockEntriesTip>Dev-only: adds {0} completed mock pages across {1} in-game years, about {2} pages per year, so long-history scrolling, year paging, and collapse behavior can be stress-tested without calling an LLM.</PawnDiary.Tab.FillMockEntriesTip>
   <PawnDiary.Tab.MockEntriesAdded>Added {0} mock diary pages for {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>{1}'s diary already has {0} mock test pages.</PawnDiary.Tab.MockEntriesAlreadyFilled>
+  <PawnDiary.Tab.PurgeArchivedEntries>Purge archived pages for pawn</PawnDiary.Tab.PurgeArchivedEntries>
+  <PawnDiary.Tab.PurgeArchivedEntriesTip>Dev-only: removes this pawn's compact archived pages without touching active hot diary pages.</PawnDiary.Tab.PurgeArchivedEntriesTip>
+  <PawnDiary.Tab.ArchivedEntriesPurged>Removed {0} archived page(s) for {1}.</PawnDiary.Tab.ArchivedEntriesPurged>
   <PawnDiary.Tab.GeneratePromptSuite>Prompt suite</PawnDiary.Tab.GeneratePromptSuite>
   <PawnDiary.Tab.GeneratePromptSuiteTip>Dev-only: turns on prompt test mode and opens a dropdown of event categories. Pick one to capture a single prompt-only page for that category (plain, no decoration); picking another replaces it. Pair categories need a second colonist.</PawnDiary.Tab.GeneratePromptSuiteTip>
   <PawnDiary.Tab.ClearPromptSuite>Clear test prompts</PawnDiary.Tab.ClearPromptSuite>

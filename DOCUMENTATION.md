@@ -412,8 +412,9 @@ pairwise pages rewrite both POVs when both are still eligible. Dev mode also sho
 rows, raw prompt/status data, and copy buttons. Bulk dev actions live under RimWorld's Debug Actions
 menu as `Pawn Diary > Event test panel...`, which opens a sectioned dev panel for selecting a test
 pawn and partner. The panel has separate Events, Diary, and Fixtures sections and owns the former
-Diary tab action strip: a mock-page filler, the per-pawn persona picker, transient formatting preview
-buttons, real vanilla gameplay triggers, and prompt-only fixture batch/clear tools. The selected pawn,
+Diary tab action strip: a mock-page filler, per-pawn archive purge, the per-pawn persona picker,
+transient formatting preview buttons, real vanilla gameplay triggers, and prompt-only fixture
+batch/clear tools. The selected pawn,
 partner, active section, per-section scroll, selected trigger Def names, and selected fixture IDs are
 saved on `DiaryGameComponent`, so the panel state survives closing/reopening and normal save/load.
 Real trigger buttons cover paths that Pawn Diary patches, such as thoughts, inspirations, mental
@@ -504,7 +505,7 @@ keyless rows drop, duplicate identities collapse, and a row whose Def is gone ag
 (`DropStale`) without errors — old saves simply load an empty list.
 
 Diary history has two **per-pawn** settings. `maxActiveDiaryEvents` is the hot-page cap (default
-3000, range 1-10000): each pawn keeps only its newest configured number of full `DiaryEvent`
+100, range 1-100): each pawn keeps only its newest configured number of full `DiaryEvent`
 references. `ApplyActiveEventLimit` looks at the oldest refs past that cap, copies
 completed/stale/failed displayable POVs into `diaryArchiveEntries`, then removes only those hot refs
 whose archive row exists (or refs that are invalid/out-of-bounds). Still-active pending/not-generated

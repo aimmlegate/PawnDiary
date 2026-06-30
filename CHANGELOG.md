@@ -22,12 +22,15 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   and saves its selected pawn, partner, active section, scroll positions, selected real-trigger Defs,
   and selected prompt fixtures with the current game. The Events section can now change the Def fired
   by the thought, inspiration, mental-state, tale, hediff, game-condition, interaction, relation,
-  incident, quest, and ability triggers.
+  incident, quest, and ability triggers. The Diary section now also has a dev-only purge button for
+  removing the selected pawn's compact archived pages without touching hot diary entries.
 - **Split active and archived per-pawn retention settings.** The settings page now has separate caps
-  for full hot diary pages (`maxActiveDiaryEvents`, default 3000) and compact archived pages
+  for full hot diary pages (`maxActiveDiaryEvents`, default/range cap 100) and compact archived pages
   (`maxArchivedDiaryEvents`, default 10000). Archive retention keeps each pawn's newest compact rows,
   supports 0 archived rows for players who want cold pages purged, and shares the normal retention
-  cache invalidation path on save/load/settings apply.
+  cache invalidation path on save/load/settings apply. Existing settings above 100 are clamped down,
+  compacting older hot pages into archive rows on load/save instead of keeping thousands of full
+  `DiaryEvent` records per pawn.
 - **Review hardening pass (combined bug/perf/security review).** A multi-source review pass.
   - **API key privacy (S1).** API keys are now masked in the settings window by default, with a
     per-row **Show/Hide** toggle (`PawnDiaryMod.ApiLanes.cs`); a key is never rendered in cleartext

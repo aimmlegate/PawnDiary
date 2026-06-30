@@ -110,6 +110,29 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Removes every compact archive row for one pawn. Used only by dev tooling; hot DiaryEvent
+        /// records stay untouched so the button can clear cold display history without changing active
+        /// generation/retry state.
+        /// </summary>
+        public int RemoveForPawn(string pawnId)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || archiveEntries.Count == 0)
+            {
+                return 0;
+            }
+
+            int before = archiveEntries.Count;
+            archiveEntries.RemoveAll(e => e != null && string.Equals(e.pawnId, pawnId, StringComparison.Ordinal));
+            int removed = before - archiveEntries.Count;
+            if (removed > 0)
+            {
+                RebuildIndex();
+            }
+
+            return removed;
+        }
+
+        /// <summary>
         /// Caps each pawn's compact archive to its newest <paramref name="perPawnLimit"/> rows. The
         /// pawn indexes are already in saved/archive order, oldest first, so the shared retention plan can
         /// decide the survivor keys without this repository mutating while it is planning.

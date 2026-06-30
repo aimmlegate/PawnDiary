@@ -174,12 +174,11 @@ namespace PawnDiary
         public const string DefaultModelName = "local-model";
         // Sentinel value stored in settings to mean "do not send a reasoning override".
         public const string DefaultReasoningEffort = ApiEndpointPolicy.DefaultReasoningEffort;
-        // Per-pawn hot diary-history retention cap. The lower bound keeps the cap positive; the upper
-        // bound keeps any single pawn's full event history bounded. Background scan cost no longer
-        // scales with this cap because maintenance scans use the global activeScanEventWindow hot set.
-        public const int DefaultMaxActiveDiaryEvents = 3000;
+        // Per-pawn hot diary-history retention cap. Hot rows keep full generation/retry state, so keep
+        // this deliberately small and let older displayable pages compact into the archive.
+        public const int DefaultMaxActiveDiaryEvents = 100;
         public const int MinActiveDiaryEvents = 1;
-        public const int MaxActiveDiaryEvents = 10000;
+        public const int MaxActiveDiaryEvents = 100;
         // Per-pawn compact archive cap. Archived rows are much smaller than hot DiaryEvent records and
         // never enter generation scans, so the editable ceiling can be higher. 0 means keep no archive
         // rows after they age out of the active hot list.

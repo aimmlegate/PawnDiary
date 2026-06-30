@@ -74,6 +74,26 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dev-only: removes the selected pawn's compact archive rows without touching hot diary events.
+        /// </summary>
+        internal int PurgeArchivedEntriesForPawnForDev(Pawn pawn)
+        {
+            if (!Prefs.DevMode || pawn == null)
+            {
+                return 0;
+            }
+
+            string pawnId = pawn.GetUniqueLoadID();
+            int removed = archive.RemoveForPawn(pawnId);
+            if (removed > 0)
+            {
+                DiaryStateVersion.Bump();
+            }
+
+            return removed;
+        }
+
+        /// <summary>
         /// Saves and restores the debug event panel's remembered UI state with the current game.
         /// </summary>
         internal void ExposeDevPanelStateForDev()
