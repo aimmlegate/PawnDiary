@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pure observed-condition policy + contracts only — no RimWorld/Verse/UnityEngine. The
+         lifecycle diff (ObservedConditionPolicy) and its DTOs are plain C#. The IExposable save model
+         (Source/Models/ActiveObservedConditionState.cs) and the live scanners stay impure and are
+         covered by tests/SAVE_COMPATIBILITY_SMOKETEST.md instead. If any file linked here ever starts
+         using Verse, split the testable core back out rather than referencing the game assemblies. -->
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionObservation.cs" Link="ObservedConditionObservation.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionDefSnapshot.cs" Link="ObservedConditionDefSnapshot.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionStateSnapshot.cs" Link="ObservedConditionStateSnapshot.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionDecision.cs" Link="ObservedConditionDecision.cs" />
+    <Compile Include="..\..\Source\Capture\ObservedConditions\ObservedConditionPolicy.cs" Link="ObservedConditionPolicy.cs" />
+  </ItemGroup>
+</Project>

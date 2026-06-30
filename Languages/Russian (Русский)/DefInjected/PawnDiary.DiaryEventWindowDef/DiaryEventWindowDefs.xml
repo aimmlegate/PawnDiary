@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
 
-  <MetalhorrorSuspicion.label>подозрение на металлическую жуть</MetalhorrorSuspicion.label>
-  <MetalhorrorSuspicion.instruction>пиши это как нерешённый ужас поселения: только то, что поселенец видит; подозрение пусть ложится на обычные детали, без скрытых игровых механик сверх фактов</MetalhorrorSuspicion.instruction>
-
   <AncientDanger.label>древняя опасность</AncientDanger.label>
   <AncientDanger.instruction>опиши короткое предчувствие у древней стены как личный момент; опасность остаётся неясной, содержимое внутри не раскрывай</AncientDanger.instruction>
 

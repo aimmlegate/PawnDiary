@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+
+  <!-- Observed-condition Def text (Plan 12). Labels and the optional instruction are localized via
+       DefInjected (not Keyed), matching how DiaryEventWindowDef text is translated. -->
+
+  <MapThreatActive.label>active map threat</MapThreatActive.label>
+
+  <ToxicFalloutActive.label>toxic fallout</ToxicFalloutActive.label>
+
+  <SolarFlareActive.label>solar flare</SolarFlareActive.label>
+
+  <AnomalyGrayFleshEvidence.label>gray flesh evidence</AnomalyGrayFleshEvidence.label>
+  <AnomalyGrayFleshEvidence.instruction>write this as unresolved colony unease grounded only in the gray flesh the pawn can actually see; carry quiet suspicion into ordinary details and never name hidden game mechanics beyond the supplied evidence</AnomalyGrayFleshEvidence.instruction>
+
+  <MetalhorrorEmergence.label>metalhorror emergence</MetalhorrorEmergence.label>
+
+</LanguageData>

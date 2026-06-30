@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+
+  <!-- Текст дефов наблюдаемых условий (План 12). Метки и необязательная инструкция переводятся через
+       DefInjected (не Keyed), как и текст DiaryEventWindowDef. -->
+
+  <MapThreatActive.label>активная угроза на карте</MapThreatActive.label>
+
+  <ToxicFalloutActive.label>токсичные осадки</ToxicFalloutActive.label>
+
+  <SolarFlareActive.label>солнечная вспышка</SolarFlareActive.label>
+
+  <AnomalyGrayFleshEvidence.label>улики серой плоти</AnomalyGrayFleshEvidence.label>
+  <AnomalyGrayFleshEvidence.instruction>напиши это как нерешённую тревогу поселения, опираясь только на серую плоть, которую поселенец действительно видит; пусть тихое подозрение ложится на обычные детали и никогда не называй скрытые игровые механики сверх переданных улик</AnomalyGrayFleshEvidence.instruction>
+
+  <MetalhorrorEmergence.label>проявление металлической жути</MetalhorrorEmergence.label>
+
+</LanguageData>

@@ -152,14 +152,22 @@ namespace PawnDiary
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
             List<string> suppressedHediffDefNames = HediffPersonaOverrides.SuppressedPromptHediffDefNamesFor(pawn);
-            float normalCandidateWeightMultiplier;
-            List<PromptEnchantmentCandidate> eventWindowCandidates =
-                ActiveEventWindowPromptCandidates(pawn, out normalCandidateWeightMultiplier);
+
+            // Both biasing sources feed the same weighted pool. Each can also dampen ordinary health
+            // context via its own normal-weight multiplier; the two multipliers compose (e.g. an active
+            // gray-flesh condition with multiplier 0 fully overrides normal context).
+            float eventWindowNormalMultiplier;
+            List<PromptEnchantmentCandidate> candidates =
+                ActiveEventWindowPromptCandidates(pawn, out eventWindowNormalMultiplier);
+            float observedConditionNormalMultiplier;
+            candidates.AddRange(
+                ActiveObservedConditionPromptCandidates(pawn, out observedConditionNormalMultiplier));
+
             return PromptEnchantments.RuleFor(
                 pawn,
                 diaryEvent != null && diaryEvent.IsImportant(),
-                eventWindowCandidates,
-                normalCandidateWeightMultiplier,
+                candidates,
+                eventWindowNormalMultiplier * observedConditionNormalMultiplier,
                 suppressedHediffDefNames);
         }
 

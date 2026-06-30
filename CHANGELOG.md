@@ -6,6 +6,53 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Lasting game-state capture: observed conditions (Plan 12).** Added a system, parallel to event
+  windows, for *lasting* colony states that must be read from live state rather than inferred from a
+  guessed duration. A new pure lifecycle diff (`Source/Capture/ObservedConditions/`:
+  `ObservedConditionObservation`/`StateSnapshot`/`DefSnapshot`/`Decision`/`Plan`/`Policy`) decides
+  start/refresh/end purely from "is it in this scan's observations?", with `startDebounceTicks` /
+  `endDebounceTicks` gating recording only — never truth. The impure edge
+  (`Source/Core/DiaryGameComponent.ObservedConditions.cs`) polls each enabled
+  `DiaryObservedConditionDef` on its own `pollIntervalTicks` (checked on a short global gate),
+  snapshots live state into plain DTOs, applies the plan, persists active rows
+  (`ActiveObservedConditionState`, additive Scribe key `activeObservedConditions`), and exposes prompt
+  candidates beside the event-window ones. Ticks gate debounce only, so a save loaded mid-state is
+  rediscovered by the next scan and a missed signal is recovered by scanning. Four observer types,
+  all DLC-safe (plain-string / vanilla-API matchers that find nothing when content is absent):
+  **MapDanger** (home-map `dangerWatcher.DangerRating` / spawned-hostile thresholds), **GameCondition**
+  (exact `gameConditionManager.ActiveConditions` defName match), **ThingPresent** (indexed
+  `ListerThings.ThingsOfDef`, observable evidence only), and **PawnHediff** (pawn-scoped, *visible*
+  hediffs only so hidden mechanics are never surfaced); `RecentEvidence` is reserved and currently a
+  no-op. Shipped defs in `1.6/Defs/DiaryObservedConditionDefs.xml`: `MapThreatActive`,
+  `ToxicFalloutActive`, `SolarFlareActive` (enabled, prompt-tone only) and `AnomalyGrayFleshEvidence`
+  (enabled, Anomaly-gated, records one observable "found gray flesh" page and strongly biases prompts
+  while the evidence is physically present). **Retired the `MetalhorrorSuspicion` event window** —
+  whose fixed timeout could never prove the suspicion was still unresolved and whose `ThingSpawned`
+  start signal left it effectively always active — replacing it with `AnomalyGrayFleshEvidence`;
+  removed its def and EN/RU Keyed + DefInjected strings. Shipped `MetalhorrorEmergence` (PawnHediff)
+  **disabled** with empty matchers pending verification of the observable post-emergence state, so it
+  can never reveal hidden mechanics. Added EN + RU Keyed/DefInjected strings, a new pure test project
+  `tests/DiaryObservedConditionTests/` (62 assertions: start/refresh/end debounce, no duplicate start,
+  save/load rediscovery, stale-Def drop, per-map and per-pawn independence) wired into
+  `.githooks/verify.ps1`, documented the system in `DOCUMENTATION.md §5.1` (plus §4/§6/§9/§12 notes),
+  and rebuilt `1.6/Assemblies/PawnDiary.dll`. Plan 12 Pass 8 (XML context-fact bridge) stays blocked
+  on the not-yet-built XML context-fact pipeline.
+
+- **Observed conditions: review hardening (follow-up to Plan 12).** Made observed-condition page
+  recording transactional so a start/end page can no longer be permanently lost: the adapter now tries
+  to write the page *before* committing the saved-state change, and if no eligible recipient pawn was
+  available it leaves `startRecorded`/`endRecorded` false and retains the row, so the next scan
+  re-enters the transition instead of dropping it; the per-phase dedup key is consumed only after at
+  least one page is actually written (`RecordObservedConditionPage` now returns a satisfied/retryable
+  signal, matching the split `IsRecentlyRecorded`→`MarkRecentlyRecorded` pattern the event-window
+  recorder already uses). The `PawnHediff` observer now skips the pawn/hediff scan when its matcher
+  lists are empty (not just null — the Def initializes them non-null), avoiding a pointless walk on an
+  enabled-but-unconfigured def. Added `DiaryObservedConditionDef.ConfigErrors` load-time validation
+  that rejects `recordScope=SubjectPawn` without `scope=Pawn` (the mismatch clears the subject id and
+  would otherwise never record a page). Corrected the `ActiveObservedConditionState.scope` save-comment
+  (Scribe persists enums by name, not int) and the stale header date in
+  `ARCHITECTURE_IMPROVEMENT_PLAN.md`. No XML, Scribe keys, or pure-policy behavior changed; pure tests
+  still pass (62 assertions) and `1.6/Assemblies/PawnDiary.dll` rebuilt.
 - **Continued Diary UI renderer/measurer extraction (Plan 9).** Moved expanded-card height
   measurement and its render-token/width/debug/highlight invalidation cache into
   `DiaryEntryCardMeasurer`, and routed expanded-card painting through an explicit renderer request so

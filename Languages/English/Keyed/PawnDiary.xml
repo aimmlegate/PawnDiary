@@ -422,15 +422,19 @@
   <PawnDiary.Event.EventWindow.Generic.end>{0} saw {1} resolve.</PawnDiary.Event.EventWindow.Generic.end>
   <PawnDiary.Event.EventWindow.Generic.timeout>{0} kept waiting for an answer about {1}, but none came.</PawnDiary.Event.EventWindow.Generic.timeout>
   <PawnDiary.Event.EventWindow.Generic.Instruction>write this as an ongoing event window about {0}; use only supplied facts and keep the pawn's uncertainty clear</PawnDiary.Event.EventWindow.Generic.Instruction>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>{0} found gray flesh: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>{0} saw the hidden threat reveal itself: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>{0} never learned what the gray flesh meant: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0} discovered the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} completed an interaction with the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0} reached biological age {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0} suffered a heart attack: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0} heard the prison break alarm: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>prison break</PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>
+
+  <!-- Observed-condition text (Plan 12: lasting states read from live game state). {0} is the pawn,
+       {1} is the observable condition/evidence label. Pages are only written when a def opts in. -->
+  <PawnDiary.Event.ObservedCondition.Generic.start>{0} noticed {1}.</PawnDiary.Event.ObservedCondition.Generic.start>
+  <PawnDiary.Event.ObservedCondition.Generic.end>{0} saw {1} pass.</PawnDiary.Event.ObservedCondition.Generic.end>
+  <PawnDiary.Event.ObservedCondition.Generic.Instruction>write this as an ongoing observed condition about {0}; use only the supplied observable facts and keep the pawn's uncertainty clear</PawnDiary.Event.ObservedCondition.Generic.Instruction>
+  <PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>{0} found gray flesh in the colony: {1}.</PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because the initiator diary page failed to write.</PawnDiary.Error.SkippedInitiatorFailed>
@@ -538,13 +542,36 @@
   <PawnDiary.Prompt.EventWindow.Priority>active event context</PawnDiary.Prompt.EventWindow.Priority>
   <PawnDiary.Prompt.EventWindow.ConditionFallback>active event: {0}</PawnDiary.Prompt.EventWindow.ConditionFallback>
   <PawnDiary.Prompt.EventWindow.Detail>event detail: {0}</PawnDiary.Prompt.EventWindow.Detail>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>override normal context with unresolved anomaly suspicion</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>metalhorror suspicion</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>gray flesh has appeared in the colony, but the source has not revealed itself yet; every ordinary interaction may be shadowed by fear that someone is carrying the thing inside them</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>gray flesh evidence</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>impostor fear</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>unresolved hidden threat</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>
   <PawnDiary.Event.EventWindow.AncientDanger.Start>Near an ancient wall, {0} felt sudden foreboding: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
+
+  <!-- Observed-condition prompt biasing (Plan 12). Generic fallbacks mirror the event-window ones;
+       per-def keys give each lasting state its own priority/condition/description/cues. -->
+  <PawnDiary.Prompt.ObservedCondition.Priority>active condition context</PawnDiary.Prompt.ObservedCondition.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ConditionFallback>active condition: {0}</PawnDiary.Prompt.ObservedCondition.ConditionFallback>
+  <PawnDiary.Prompt.ObservedCondition.Detail>condition detail: {0}</PawnDiary.Prompt.ObservedCondition.Detail>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Priority>keep an undercurrent of danger from the ongoing threat</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Condition>an active threat on the colony's map</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Description>the map is still dangerous right now; even an ordinary moment is shadowed by the awareness that the colony is not safe yet</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Alert>on edge</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Alert>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Unsafe>colony not yet safe</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Unsafe>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Priority>let the toxic fallout press on daily life</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Condition>toxic fallout outside</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Description>toxic fallout is still falling; going outside means sickness, so the colony stays shut in and uneasy</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Indoors>stuck indoors</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Indoors>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Sickness>fear of toxic buildup</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Sickness>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Priority>let the solar flare's loss of power color the day</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>a solar flare knocking out power</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>a solar flare has cut electrical power; everything electronic is dead until it passes, forcing the colony back to the basics</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>no power</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>override normal context with unresolved unease about the gray flesh</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>gray flesh still in the colony</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>gray flesh the pawn can actually see is still present in the colony and no one knows what it means; ordinary moments are quietly shadowed by that unease, without naming any hidden mechanic</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>visible gray flesh</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>quiet dread</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>override normal context with the revealed metalhorror threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>a metalhorror that has revealed itself</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>the hidden thing has finally shown itself and the danger is now open and immediate; write only what the pawn can see of the revealed threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>open threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>

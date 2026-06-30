@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <!--
+    Observed conditions (Plan 12): LASTING colony states read from live game state every poll, not
+    one-shot signals with a guessed timeout (those are DiaryEventWindowDef). While a condition is
+    observed, prompts can know about it; when live state stops showing it, it ends after a debounce.
+    A save loaded mid-state is rediscovered by the next scan; a missed signal is recovered by scanning.
+
+    observerType — what live state the scanner reads:
+      MapDanger     active while a (home) map's danger rating / spawned-hostile count crosses thresholds
+      GameCondition active while map.gameConditionManager holds a matching condition defName
+      ThingPresent  active while matching spawned things/filth remain on a map (observable evidence)
+      PawnHediff    active while a matching visible hediff is on a colonist (scope = Pawn)
+      RecentEvidence reserved fallback; no live feed yet (see DOCUMENTATION.md §13)
+
+    DLC / mod safety: every matcher below is a PLAIN STRING (matchDefNames). A def that names content
+    from a DLC you don't own simply never matches — no crash, no null-check, no MayRequire. Never put a
+    real <ThingDef>/<HediffDef> reference here; keep matchers as strings.
+
+    Pages vs tone: recordStartEvent / recordEndEvent default to FALSE. Most lasting states only color
+    prompt tone (promptEnabled). Turn page recording on only for conditions that are colony-narratively
+    important AND observable.
+  -->
+
+  <!-- Pass 4: the safest first real observer. Map danger is broad, visible, and not hidden, so it only
+       biases prompt tone (no diary pages) while a home map is materially dangerous. -->
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>MapThreatActive</defName>
+    <label>active map threat</label>
+    <conditionKey>MapThreatActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>MapDanger</observerType>
+    <pollIntervalTicks>1000</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <!-- Stay "active" a short while after the danger clears so a lull mid-fight doesn't end it. -->
+    <endDebounceTicks>5000</endDebounceTicks>
+    <minDangerRating>Low</minDangerRating>
+    <minHostileCount>0</minHostileCount>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <includeNonPlayerMaps>false</includeNonPlayerMaps>
+
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>6</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Alert</li>
+      <li>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Unsafe</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <!-- Pass 5: game conditions. The game owns start/end truth; we just read ActiveConditions and match
+       the exact defName. Prompt-tone only. All matchers are vanilla base-game condition defNames. -->
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>ToxicFalloutActive</defName>
+    <label>toxic fallout</label>
+    <conditionKey>ToxicFalloutActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>ToxicFallout</li>
+    </matchDefNames>
+
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Indoors</li>
+      <li>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Sickness</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>SolarFlareActive</defName>
+    <label>solar flare</label>
+    <conditionKey>SolarFlareActive</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>GameCondition</observerType>
+    <pollIntervalTicks>1500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>2500</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <matchDefNames>
+      <li>SolarFlare</li>
+    </matchDefNames>
+
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>4</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <!-- Pass 6: replaces the disabled MetalhorrorSuspicion event window. While observable gray-flesh
+       evidence remains on a map, suspicion colors prompts; once colonists clean it up (it disappears
+       from live state), the condition ends naturally — no stuck "always active" window, no timeout.
+       Describes OBSERVABLE EVIDENCE only; it never names hidden anomaly mechanics. matchDefNames are
+       Anomaly content, so this whole def stays inert without the Anomaly DLC. -->
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>AnomalyGrayFleshEvidence</defName>
+    <label>gray flesh evidence</label>
+    <conditionKey>AnomalyGrayFleshEvidence</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>ThingPresent</observerType>
+    <!-- Thing scans are more expensive than reading a danger rating; poll conservatively. -->
+    <pollIntervalTicks>2500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>5000</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <maxEvidenceLabels>3</maxEvidenceLabels>
+    <maxEvidenceChars>160</maxEvidenceChars>
+    <matchDefNames>
+      <li>GrayFleshSample</li>
+      <li>Filth_GrayFleshNoticeable</li>
+    </matchDefNames>
+
+    <!-- One observable "found gray flesh" page when it first appears; no end page (absence of evidence
+         is not proof the threat is resolved). colorCue keeps the entry visibly ominous. -->
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordScope>MapColonists</recordScope>
+    <colorCue>extremeDark</colorCue>
+    <instruction>write this as unresolved colony unease grounded only in the gray flesh the pawn can actually see; carry quiet suspicion into ordinary details and never name hidden game mechanics beyond the supplied evidence</instruction>
+    <startTextKey>PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start</startTextKey>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>40</promptWeight>
+    <!-- Strongly bias away from ordinary health/mood context while suspicion is live. -->
+    <normalPromptWeightMultiplier>0</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh</li>
+      <li>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <!-- Pass 7: confirmed metalhorror emergence as a PAWN-scoped hediff observer. Shipped DISABLED on
+       purpose: the observable post-emergence state has NOT been verified against the Anomaly assembly
+       yet (see ARCHITECTURE_IMPROVEMENT_PLAN.md Plan 12 "Open questions"). Do NOT enable until the
+       matchDefNames below are confirmed to be a hediff the game has already revealed to the player —
+       this must never surface hidden mechanics. matchDefNames is intentionally empty so that, even if
+       enabled by accident, it matches nothing. -->
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>MetalhorrorEmergence</defName>
+    <label>metalhorror emergence</label>
+    <conditionKey>MetalhorrorEmergence</conditionKey>
+    <enabled>false</enabled>
+    <scope>Pawn</scope>
+    <observerType>PawnHediff</observerType>
+    <pollIntervalTicks>2500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>5000</endDebounceTicks>
+    <!-- TODO(verify): add the confirmed, player-visible emerged-metalhorror hediff defName here, e.g.
+         <li>SomeRevealedMetalhorrorHediff</li> — only after checking the live Anomaly state. -->
+    <matchDefNames>
+    </matchDefNames>
+
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordScope>SubjectPawn</recordScope>
+    <colorCue>extremeDark</colorCue>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>60</promptWeight>
+    <normalPromptWeightMultiplier>0</normalPromptWeightMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+</Defs>

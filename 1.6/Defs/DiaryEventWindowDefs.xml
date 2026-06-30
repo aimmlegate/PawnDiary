@@ -37,58 +37,10 @@
       <matchDefNames><li>SomeHediffDef</li></matchDefNames>
   -->
 
-  <PawnDiary.DiaryEventWindowDef>
-    <defName>MetalhorrorSuspicion</defName>
-    <label>metalhorror suspicion</label>
-    <windowKey>MetalhorrorSuspicion</windowKey>
-    <!-- Disabled until gray flesh can be monitored from a more reliable signal than ThingSpawned. -->
-    <enabled>false</enabled>
-    <timeoutTicks>600000</timeoutTicks>
-    <dedupTicks>2500</dedupTicks>
-    <restartOnStart>false</restartOnStart>
-    <recordStartEvent>true</recordStartEvent>
-    <recordEndEvent>true</recordEndEvent>
-    <recordEndWithoutActive>true</recordEndWithoutActive>
-    <recordTimeoutEvent>true</recordTimeoutEvent>
-    <instruction>write this as an unresolved colony horror: keep it grounded in what the pawn can observe, carry suspicion into ordinary details, and do not name hidden game mechanics beyond the supplied facts</instruction>
-    <colorCue>extremeDark</colorCue>
-    <startTextKey>PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start</startTextKey>
-    <endTextKey>PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End</endTextKey>
-    <timeoutTextKey>PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout</timeoutTextKey>
-
-    <startSignals>
-      <li>
-        <source>ThingSpawned</source>
-        <signal>spawned</signal>
-        <matchDefNames>
-          <li>GrayFleshSample</li>
-          <li>Filth_GrayFleshNoticeable</li>
-        </matchDefNames>
-      </li>
-    </startSignals>
-
-    <endSignals>
-      <li>
-        <source>ThingSpawned</source>
-        <signal>spawned</signal>
-        <matchDefNames>
-          <li>Metalhorror</li>
-        </matchDefNames>
-      </li>
-    </endSignals>
-
-    <promptEnabled>true</promptEnabled>
-    <promptWeight>100</promptWeight>
-    <normalPromptWeightMultiplier>0</normalPromptWeightMultiplier>
-    <promptPriorityKey>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority</promptPriorityKey>
-    <promptConditionKey>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition</promptConditionKey>
-    <promptDescriptionKey>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description</promptDescriptionKey>
-    <promptCueKeys>
-      <li>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh</li>
-      <li>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear</li>
-      <li>PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat</li>
-    </promptCueKeys>
-  </PawnDiary.DiaryEventWindowDef>
+  <!-- The former MetalhorrorSuspicion event window was retired in favor of the Plan 12 observed
+       condition "AnomalyGrayFleshEvidence" (1.6/Defs/DiaryObservedConditionDefs.xml). A fixed
+       timeout could never prove the suspicion was still unresolved; the observed condition instead
+       stays active exactly while gray-flesh evidence is physically present on the map. -->
 
   <PawnDiary.DiaryEventWindowDef>
     <defName>VoidMonolithDiscovery</defName>

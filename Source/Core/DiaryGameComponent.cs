@@ -217,6 +217,9 @@ namespace PawnDiary
             recentEventWindowEvents.Clear();
             recentEvents.Clear();
             activeEventWindows.Clear();
+            activeObservedConditions.Clear();
+            recentObservedConditionEvents.Clear();
+            nextObservedConditionPollTick.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             generatedSpeechPlayLogTexts.Clear();
@@ -231,6 +234,7 @@ namespace PawnDiary
             nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
             nextEventWindowTimeoutScanTick = 0;
+            nextObservedConditionScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
@@ -253,6 +257,10 @@ namespace PawnDiary
             delayedRaidGenerationReadyTicks.Clear();
             recentEventWindowEvents.Clear();
             recentEvents.Clear();
+            // Transient observed-condition bookkeeping is rebuilt from scratch; the SAVED
+            // activeObservedConditions list is deliberately NOT cleared here so loaded states survive.
+            recentObservedConditionEvents.Clear();
+            nextObservedConditionPollTick.Clear();
             knownAcceptedQuestIds.Clear();
             orphanCandidatesLastScan.Clear();
             // Do NOT BeginSession here: the constructor already started this Game's session and
@@ -264,6 +272,7 @@ namespace PawnDiary
             nextOrphanRecoveryScanTick = 0;
             nextQuestAcceptanceScanTick = 0;
             nextEventWindowTimeoutScanTick = 0;
+            nextObservedConditionScanTick = 0;
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
@@ -303,6 +312,9 @@ namespace PawnDiary
             events.ExposeEvents("diaryEvents");
             archive.ExposeArchive("diaryArchiveEntries");
             Scribe_Collections.Look(ref activeEventWindows, "activeEventWindows", LookMode.Deep);
+            // Plan 12: saved observed-condition runtime state. Additive key; old saves load an empty
+            // list. See DiaryGameComponent.ObservedConditions.cs.
+            Scribe_Collections.Look(ref activeObservedConditions, "activeObservedConditions", LookMode.Deep);
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
             // pruned so stale LogIDs cannot accumulate or block future injection.
@@ -339,6 +351,11 @@ namespace PawnDiary
                     activeEventWindows = new List<ActiveEventWindowState>();
                 }
 
+                if (activeObservedConditions == null)
+                {
+                    activeObservedConditions = new List<ActiveObservedConditionState>();
+                }
+
                 // Post-load rebuilds derive transient indexes from loaded data; a throw here must not
                 // abort the whole game load, so degrade to whatever loaded and log once. The null
                 // guards above stay outside the try because the rest of the session depends on them.
@@ -349,6 +366,7 @@ namespace PawnDiary
                     // event is recorded this session).
                     events.RebuildIndex();
                     NormalizeActiveEventWindows();
+                    NormalizeActiveObservedConditions();
                     ApplyActiveEventLimit();
                     RebuildWrittenDayReflectionsFromEvents();
                     PruneDiaryEventRefs();
@@ -442,6 +460,12 @@ namespace PawnDiary
             {
                 nextEventWindowTimeoutScanTick = now + EventWindowTimeoutScanIntervalTicks;
                 ScanEventWindowTimeouts();
+            }
+
+            if (!initialArrivalScanPending && now >= nextObservedConditionScanTick)
+            {
+                nextObservedConditionScanTick = now + ObservedConditionScanIntervalTicks;
+                ScanObservedConditions();
             }
 
             if (!initialArrivalScanPending && now >= nextThoughtProgressionScanTick)

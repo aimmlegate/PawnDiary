@@ -89,6 +89,7 @@ Invoke-Native "dotnet" @("run", "--project", "tests\DiaryCapturePolicyTests\Diar
 Invoke-Native "dotnet" @("run", "--project", "tests\PromptVariantsTests\PromptVariantsTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiaryRetentionTests\DiaryRetentionTests.csproj")
 Invoke-Native "dotnet" @("run", "--project", "tests\DiarySaveNormalizationTests\DiarySaveNormalizationTests.csproj")
+Invoke-Native "dotnet" @("run", "--project", "tests\DiaryObservedConditionTests\DiaryObservedConditionTests.csproj")
 
 Write-Step "RimWorld DLL build"
 $msbuild = Find-MSBuild
