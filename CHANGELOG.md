@@ -6,9 +6,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
-- **Maintainer runtime documentation reworked.** `DOCUMENTATION.md` now has a human-readable
-  top-level mod flow with a Mermaid diagram and separate startup, capture, storage, generation,
-  catch-up, UI, and save/load ownership notes.
+- **Maintainer documentation reworked.** `DOCUMENTATION.md` now has a human-readable top-level mod
+  flow with a Mermaid diagram, plus tighter XML policy, prompt, save-compatibility, and localization
+  sections that keep the high-signal rules without the historical text dumps.
 - **Event prompt map replaced with current-state Mermaid diagrams.** `EVENT_PROMPT_MAP.md` now maps
   the event listeners, capture decisions, prompt policy lookup, template selection, prompt
   enchantments, overrides, and active weights from the current code and XML.

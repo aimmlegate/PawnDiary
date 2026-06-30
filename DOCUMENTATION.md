@@ -486,115 +486,76 @@ markers, and trims saved text locally.
 
 ## 9. Save Data And Compatibility
 
-`DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`), the hot event list
-(`diaryEvents`), compact archive rows (`diaryArchiveEntries`), active XML event windows
-(`activeEventWindows`), and active observed conditions (`activeObservedConditions`).
-`DiaryEventRepository` owns the hot event list and rebuilds its id lookup index
-after load. `DiaryArchiveRepository` owns one display-only `ArchivedDiaryEntry` row per archived pawn
-POV, repairs duplicate/null rows after load, and indexes rows by pawn id for the Diary tab. Per-pawn
-event lists prune blank, duplicate, or dangling hot refs. Active event windows normalize after load so
-renamed/missing defs fail closed instead of blocking future prompt context. Active observed conditions
-(`ActiveObservedConditionState`) are additive and normalize after load too: null strings coalesce,
-keyless rows drop, duplicate identities collapse, and a row whose Def is gone ages out on the next scan
-(`DropStale`) without errors — old saves simply load an empty list.
+`DiaryGameComponent.ExposeData` owns the top-level save shape.
 
-Diary history has two **per-pawn** settings. `maxActiveDiaryEvents` is the hot-page cap (default
-100, range 1-100): each pawn keeps only its newest configured number of full `DiaryEvent`
-references. `ApplyActiveEventLimit` looks at the oldest refs past that cap, copies
-completed/stale/failed displayable POVs into `diaryArchiveEntries`, then removes only those hot refs
-whose archive row exists (or refs that are invalid/out-of-bounds). Still-active pending/not-generated
-refs stay hot instead of being destroyed. Finally, the hot event store is swept down to the union of
-remaining hot refs, so a shared pair event stays as a full `DiaryEvent` until both pawns have either
-kept or archived their POVs.
+| Scribe key | Contents |
+|---|---|
+| `diaries` | per-pawn `PawnDiaryRecord` rows |
+| `diaryEvents` | hot full `DiaryEvent` rows |
+| `diaryArchiveEntries` | compact display-only `ArchivedDiaryEntry` rows |
+| `activeEventWindows` | currently active XML event windows |
+| `activeObservedConditions` | currently active live-state observed conditions |
 
-`maxArchivedDiaryEvents` is the compact archive cap (default 10000, range 0-50000). `DiaryArchiveRepository`
-keeps each pawn's newest archived rows and drops older compact rows; 0 means old compact archive pages
-are purged once they fall out of the active hot list. The combined retention pass runs after load,
-before save, after new event creation, and when settings are saved. The common active path
-(nothing-over-cap) costs one `Count` check per pawn, and archive trimming only builds a survivor plan
-when some pawn is over the archive cap. Because the hot cap is per pawn, background scan cost no
-longer scales with total lifetime history: maintenance walks the global hot window below, not the
-compact archive. (The
-`maxActiveDiaryEvents` field/Scribe key keeps its historical name for save compatibility even though
-its meaning is now per-pawn hot refs.)
+Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
+raw/generated text, status, LLM metadata, titles, context, source ids, and per-role state. Compact
+archive rows keep only what the Diary UI needs to render an old page.
 
-Separately, `DiaryTuningDef.activeScanEventWindow` (default 1000, XML only, a global count across all
-pawns) defines the newest saved hot events considered for retry, title catch-up, orphan recovery,
-day-summary and quadrum-reflection evidence, work cooldowns, and prompt continuity/opener history.
-Compact archive rows never enter those scans. If an old attempted page has no generated text, retention can archive it as a
-display-only fallback: the UI shows a localized "You see that: ..." body, derives a short display-only
-title from the first few words, and uses the footer note to say the page failed to generate instead of
-showing a model name. Because the compact archive drops the raw prompt, the shared pure
-`DiaryArchiveFallback` resolver derives that fallback fact from the prompt **at archive time** and bakes
-it into the archived `text`; the live card re-resolves from that same text afterward, so the body and
-title stay identical before and after compaction. Prompt-only dev capture rows stay hot because the
-archive deliberately does not store full prompt text. The archive/drop eligibility checks live in
-`Source/Pipeline/DiaryArchiveEligibility.cs`, and the per-pawn overflow trim order lives in the pure
-`Source/Pipeline/DiaryArchiveCompactionPlanner.cs`, so the title-pending, prompt-only, stale-fallback,
-cold-undisplayable, and budget/order rules are covered without loading RimWorld. Retention stages each
-archive row first and commits the write only for refs it actually drops; the dev prompt-suite reset
-clears matching archive rows via `DiaryArchiveRepository.RemoveForEventIds` so a generated-then-compacted
-test entry cannot survive as an orphan.
+History retention is per pawn:
 
-`DiaryEvent` saves raw/generated text, statuses/errors, context, source ids, prompts, titles, LLM
-metadata, semantic color cue, and compact display facts. Per-role state is stored in initiator,
-recipient, and neutral slots but serialized under the historical flat Scribe keys.
+- `maxActiveDiaryEvents` keeps each pawn's newest hot refs. The key name is historical and must not be
+  renamed.
+- `maxArchivedDiaryEvents` keeps each pawn's newest compact archive rows. A value of `0` purges old
+  compact pages once they fall out of the hot set.
+- Shared pair events remain hot until every linked pawn has either kept or archived its POV.
+- Pending/not-generated hot refs are not destroyed just because the pawn is over the active cap.
 
-Adding Pawn Diary to an existing save is safe; it starts recording future events. Removing it is
-gameplay-safe because the mod does not persist custom pawn/map components or gameplay defs onto
-vanilla objects. The diary UI/history disappears without the mod, and old generated Social-log rows
-from dev builds may remain in the vanilla play log.
+`DiaryTuningDef.activeScanEventWindow` is a separate XML-only global hot-event window. It controls
+retry, title catch-up, orphan recovery, work cooldowns, prompt continuity, opener history, and
+day/quadrum evidence scans. Compact archive rows never enter those scans.
+
+Failed/stale pages can be archived as displayable fallbacks. The fallback body/title is resolved
+before compaction because the archive drops raw prompt data. Prompt-only dev capture rows stay hot for
+the same reason.
+
+Adding Pawn Diary to an existing save is safe; it records future events only. Removing the mod is
+gameplay-safe because it does not attach custom components or gameplay defs to vanilla pawns/maps. The
+diary UI/history disappears without the mod.
 
 ### 9a. Scribe-key stability contract
 
-The string tags passed to `Scribe_Values.Look` / `Scribe_Collections.Look` (e.g. `"eventId"`,
-`"interactionDefName"`, `"initiatorPawnId"`, `"neutralText"`, `"maxActiveDiaryEvents"`,
-`"maxArchivedDiaryEvents"`,
-`"apiEndpoints"`, `"interactionGroupEnabled"`) are a **public, stable save-format API**. Renaming
-any of them silently breaks every existing player save: the old key stops being read on load and
-the field falls back to its default, so a completed diary page can look freshly-reset, a setting can
-revert, or a pair event can lose a POV. Treat every Scribe key the way you would a network or on-disk
-schema field.
+Every string passed to `Scribe_Values.Look` or `Scribe_Collections.Look` is stable save-format API.
+Renaming a key silently makes old saves load defaults instead of player data.
 
-Authoritative key lists (read these before renaming anything):
-- `DiaryEvent.ExposeData` + `DiaryEvent.ScribePawnSlot` / `ScribeNeutralSlot` — the hot-event save
-  shape, including the flat `initiator*` / `recipient*` / `neutral*` POV key names that predate the
-  `PovSlot` refactor and are deliberately preserved.
-- `ArchivedDiaryEntry.ExposeData` — the compact archive-row save shape.
-- `DiaryGameComponent.ExposeData` (`diaries`, `diaryEvents`, `diaryArchiveEntries`,
-  `activeEventWindows`) and the per-pawn record list — the top-level containers.
-- `PawnDiarySettings.ExposeData` (and the `PersonaPresetStore` / `PromptOverrideDictionary`
-  `ExposeData` helpers it calls) — the mod-settings shape, including the persona-preset and
-  event-prompt-override maps.
+Before touching save keys, read:
 
-Historically-preserved names that must NOT be renamed even though their meaning has shifted:
-- `maxActiveDiaryEvents` — the field now means the per-pawn hot-page cap, but the Scribe key keeps
-  its original name so older settings files load without losing the configured value.
+- `DiaryEvent.ExposeData`, `ScribePawnSlot`, and `ScribeNeutralSlot`.
+- `ArchivedDiaryEntry.ExposeData`.
+- `DiaryGameComponent.ExposeData`.
+- `PawnDiarySettings.ExposeData`, plus `PersonaPresetStore` and `PromptOverrideDictionary`.
+
+Do not rename historical flat POV keys such as `initiator*`, `recipient*`, or `neutral*`. Do not
+rename `maxActiveDiaryEvents`; the meaning changed to per-pawn hot refs, but the saved key remains
+the compatibility bridge.
 
 ### 9b. Post-load repair, and where it is tested
 
-Loaded fields are never assumed non-null or in-range. Each `IExposable` model has a
-`NormalizeOnLoad` step that runs in `LoadSaveMode.PostLoadInit` to repair cross-version saves. The
-pure, RimWorld-free parts of that repair (null-coalesces, the cross-slot surroundings chain, the
-neutral-text merge, the legacy `gameContext`/`instruction` rebuild, year extraction, status
-reclassification, defensive clamps) live in `Source/Pipeline/DiarySaveNormalization.cs` and
-`Source/Pipeline/DiaryGenerationStatus.cs`, and are unit-tested by
-`tests/DiarySaveNormalizationTests/` (and the status fixtures in `tests/DiaryPipelineTests/`).
+Loaded data is normalized in `LoadSaveMode.PostLoadInit`; code should not assume loaded strings,
+lists, statuses, indexes, or refs are valid.
 
-The impure parts that cannot be pure-tested stay on the save models:
-- **Fresh `eventId` minting** for pre-id saves (`Guid.NewGuid` is non-deterministic).
-- **`colorCue` resolution** for older saves (`DiaryEvent.ResolveColorCue` classifies via
-  `GroupForDisplay`, which reads the loaded `DefDatabase`).
-- **The Scribe read/write round-trip itself**, including settings legacy-field repair
-  (`PawnDiarySettings.ClampValues`, `NormalizeEndpointUrls`, persona-preset/override-map
-  rehydration). These are covered by the in-game smoke procedure in
-  `tests/SAVE_COMPATIBILITY_SMOKETEST.md` — run it whenever you touch any `ExposeData` or rename a
-  Scribe key.
+Pure repair lives in:
+
+- `Source/Pipeline/DiarySaveNormalization.cs`
+- `Source/Pipeline/DiaryGenerationStatus.cs`
+- `tests/DiarySaveNormalizationTests/`
+- related status fixtures in `tests/DiaryPipelineTests/`
+
+Impure repair stays on save models: GUID minting, `DefDatabase`-based color-cue recovery, index
+rebuilds, and the Scribe round trip. Run `tests/SAVE_COMPATIBILITY_SMOKETEST.md` when changing
+`ExposeData`, saved settings, or Scribe keys.
 
 ### 9c. Allowed migration pattern
 
-The only accepted reason to rename a stable Scribe key is an intentional format change with a
-migration plan, and even then:
+Only rename a Scribe key for an intentional format migration:
 
 1. Keep reading the **old** key during a transition window so existing saves load.
 2. On load, if the old key is present and the new key is absent, copy the value across.
@@ -617,45 +578,40 @@ Never rename a key "for cleanliness" alone.
 
 ## 11. Localization
 
-Player-facing UI strings and natural-language prompt text use
-`Languages/English/Keyed/PawnDiary.xml` through `.Translate()` on the main thread. Def text uses
-DefInjected translations.
+Player-facing UI strings and natural-language prompt text must be localizable.
 
-Keep DefInjected English stubs in sync when editing XML labels, instructions, tones, event prompts,
-writing-style rules, or shared prompts. Variant pools use indexed DefInjected keys such as
-`<group.instructions.0>`; avoid blank list entries so indices stay aligned. Custom Pawn Diary Def
-translation folders use fully qualified C# type names, for example
-`Languages/English/DefInjected/PawnDiary.DiaryInteractionGroupDef/`; simple folder names do not
-resolve for namespaced custom Defs in RimWorld's language loader. English and Russian currently
-mirror eleven localization XML files: `Keyed/PawnDiary.xml` plus ten custom-Def `DefInjected`
-folders, including prompt-template field labels and ritual-quality labels that can reach prompts.
+Use:
 
-Raw English is intentional for internal prompt/context schema tokens (`thought=`, saved context
-keys, role ids), sentinel tokens (`initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`),
-defNames, API model ids, and background-thread `LlmClient` errors. XML-owned prompt-template labels
-are localized through `DiaryPromptTemplateDef` DefInjected entries so Russian prompts do not mix
-localized guidance with English field names.
+- Keyed strings in `Languages/English/Keyed/PawnDiary.xml` for code-owned UI/prompt text.
+- `.Translate()` only on the main thread.
+- DefInjected text for XML Def labels, instructions, tones, prompts, personas, templates, and cues.
 
-The source tree carries a Russian translation under `Languages/Russian (Русский)/` (folder name
-matches RimWorld's Core language def), mirroring the English `Keyed` + `DefInjected` layout
-key-for-key. Game terms use the official RimWorld Russian glossary; the `DiaryPersonaDef` writing
-styles are deliberately *not* literal translations but reconstructions on Russian literary
-traditions with synthetic, author-less examples. Russian UI strings should stay compact enough for
-RimWorld's narrow settings and tab surfaces, and should avoid unexplained English calques in visible
-labels: prefer plain Russian words such as "address", "connection", "distribution", "editor", and
-"instruction" over "endpoint", "routing", "studio", or "system prompt" translations. Keep raw
-`API`, `OpenAI`, `URL`, `Bearer`, `XML`, and `UTF-8` only where they name a protocol, product,
-scheme, format, or file encoding. Russian prompt prose should be idiomatic instructions for the
-model rather than literal English calques. Russian strings that contain dynamic pawn, target, work,
-or event placeholders should avoid making the placeholder the subject of a gendered or numbered
-past-tense verb/adjective unless the code guarantees that agreement. Prefer neutral forms such as
-`У {0}: ...`, `{0}: ...`, `Событие у {0}: ...`, `Применение способности {1}: {0}`, or passive and
-impersonal constructions. Russian humor cues should likewise use local dry, bureaucratic, and
-household understatement patterns instead of translating English deadpan/punchline mechanics. When
-adding or renaming an English key, add the matching Russian key in the same file, or the entry
-silently falls back to English in a Russian game. Canonical game-term translations are recorded in
-`Languages/Russian (Русский)/GLOSSARY.md` (mined from RimWorld's official RU language packs); reuse
-it so terminology stays consistent with the base game.
+Do not translate or localize:
+
+- internal prompt/context schema keys such as `thought=`;
+- role/status/sentinel tokens such as `initiator`, `recipient`, `neutral`, `none`, `n/a`, `unknown`;
+- defNames, API model ids, and saved context keys;
+- background-thread `LlmClient` strings, because `.Translate()` is not thread-safe there.
+
+When editing XML Def text:
+
+- Keep English DefInjected stubs in sync.
+- Use fully qualified custom-Def folders, such as
+  `Languages/English/DefInjected/PawnDiary.DiaryInteractionGroupDef/`.
+- Keep indexed variant pools aligned; avoid blank list entries that shift keys such as
+  `<group.instructions.0>`.
+- Add or update the matching Russian key/file at the same time.
+
+Russian lives in `Languages/Russian (Русский)/` and mirrors the English Keyed + DefInjected layout.
+Use `Languages/Russian (Русский)/GLOSSARY.md` for game terms. Russian UI should stay compact for
+RimWorld's narrow settings/tab surfaces, avoid unexplained English calques, and keep protocol/product
+tokens such as `API`, `OpenAI`, `URL`, `Bearer`, `XML`, and `UTF-8` only where they name the actual
+thing.
+
+Russian prompt prose should be idiomatic, not literal English. For placeholders, avoid making a
+dynamic pawn/target/work value the subject of gendered or numbered past-tense grammar unless the code
+guarantees agreement. Writing styles and humor cues should be culturally rebuilt in Russian rather
+than line-by-line translations.
 
 ## 12. Build, Tests, Prompt Lab
 
