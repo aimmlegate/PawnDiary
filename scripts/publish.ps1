@@ -6,14 +6,15 @@
   This script performs a two-phase publish prep:
 
     1. Build PawnDiary.dll into a throwaway temp folder.
-    2. Assemble a clean payload folder with runnable mod assets, source code, and reference docs,
+    2. Assemble a clean payload folder with runnable mod assets and reference docs,
        then normalize the published mod name/packageId by stripping "(development)" markers.
 
   Branch/tag creation from earlier versions is intentionally disabled; this keeps the script focused
   on local payload prep and is suitable for simple, repeatable Workshop uploads.
 
 .PARAMETER Version
-  Optional version stamp used for the temp build folder name. Defaults to release-<today>.
+  Optional mod version written to About/About.xml in the release payloads. Defaults to the source
+  About.xml <modVersion> value, falling back to release-<today> when the source metadata is blank.
 
 .PARAMETER OutDir
   Output folder for the release payload. Defaults to <repo>/dist/<published packageId>.
@@ -68,7 +69,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = "release-$(Get-Date -Format yyyyMMdd)",
+    [string]$Version,
     [string]$OutDir,
     [string]$Configuration = "Release",
     [string]$PackageId,
@@ -129,7 +130,7 @@ function Find-MSBuild {
 
 function Get-AboutValue {
     param([string]$Text, [string]$Element)
-    $match = [regex]::Match($Text, "(?s)<$Element>\s*(.*?)\s*</$Element>")
+    $match = [regex]::Match($Text, "(?s)<$Element(?:\s[^>]*)?>\s*(.*?)\s*</$Element>")
     if (-not $match.Success) { return "" }
     return $match.Groups[1].Value.Trim()
 }
@@ -138,8 +139,28 @@ function Set-AboutValue {
     param([string]$Text, [string]$Element, [string]$Value)
     $escapedValue = [System.Security.SecurityElement]::Escape($Value)
     $replacementValue = $escapedValue -replace '\$', '$$'
-    $regex = [regex]::new("(?s)(<$Element>\s*)(.*?)(\s*</$Element>)")
+    $regex = [regex]::new("(?s)(<$Element(?:\s[^>]*)?>\s*)(.*?)(\s*</$Element>)")
     return $regex.Replace($Text, ('${1}' + $replacementValue + '${3}'), 1)
+}
+
+function Set-OrAddAboutValue {
+    param([string]$Text, [string]$Element, [string]$Value, [string]$InsertAfterElement)
+    if ([regex]::IsMatch($Text, "(?s)<$Element(?:\s[^>]*)?>")) {
+        return Set-AboutValue $Text $Element $Value
+    }
+
+    $escapedValue = [System.Security.SecurityElement]::Escape($Value)
+    $openElement = if ($Element -eq "modVersion") { 'modVersion IgnoreIfNoMatchingField="True"' } else { $Element }
+    $line = "  <$openElement>$escapedValue</$Element>"
+    if (-not [string]::IsNullOrWhiteSpace($InsertAfterElement)) {
+        $insertRegex = [regex]::new("(?s)(<$InsertAfterElement(?:\s[^>]*)?>.*?</$InsertAfterElement>\s*)")
+        if ($insertRegex.IsMatch($Text)) {
+            return $insertRegex.Replace($Text, ('${1}' + $line + [Environment]::NewLine), 1)
+        }
+    }
+
+    $metadataEndRegex = [regex]::new("(?s)(\s*</ModMetaData>)")
+    return $metadataEndRegex.Replace($Text, ([Environment]::NewLine + $line + '${1}'), 1)
 }
 
 function Escape-XmlText {
@@ -187,23 +208,6 @@ function Copy-Payload {
     return $true
 }
 
-function Copy-SourcePayload {
-    $src = Join-Path $repoRoot "Source"
-    if (-not (Test-Path -LiteralPath $src)) {
-        throw "Required path missing: Source"
-    }
-
-    $dest = Join-Path $OutDir "Source"
-    Copy-Item -LiteralPath $src -Destination $dest -Recurse -Force
-
-    $artifactDirs = Get-ChildItem -LiteralPath $dest -Directory -Recurse -Force |
-        Where-Object { $_.Name -eq "bin" -or $_.Name -eq "obj" } |
-        Sort-Object FullName -Descending
-    foreach ($dir in $artifactDirs) {
-        Remove-Item -LiteralPath $dir.FullName -Recurse -Force
-    }
-}
-
 function Get-RussianLanguageFolderName {
     param([string]$LanguagesRoot)
 
@@ -249,6 +253,7 @@ function New-RussianLocalizationAboutXml {
     param(
         [string]$Name,
         [string]$PackageId,
+        [string]$Version,
         [string]$Author,
         [string]$MainPackageId,
         [string]$MainDisplayName,
@@ -263,6 +268,9 @@ function New-RussianLocalizationAboutXml {
     $lines.Add("  <name>$(Escape-XmlText $Name)</name>")
     $lines.Add("  <author>$(Escape-XmlText $Author)</author>")
     $lines.Add("  <packageId>$(Escape-XmlText $PackageId)</packageId>")
+    if (-not [string]::IsNullOrWhiteSpace($Version)) {
+        $lines.Add("  <modVersion IgnoreIfNoMatchingField=`"True`">$(Escape-XmlText $Version)</modVersion>")
+    }
     $lines.Add('  <supportedVersions>')
     $lines.Add('    <li>1.6</li>')
     $lines.Add('  </supportedVersions>')
@@ -290,6 +298,7 @@ function New-RussianLocalizationPayload {
         [string]$LanguageFolderName,
         [string]$LocalizationName,
         [string]$LocalizationPackageId,
+        [string]$Version,
         [string]$LocalizationAuthor,
         [string]$MainPackageId,
         [string]$MainDisplayName,
@@ -318,6 +327,7 @@ function New-RussianLocalizationPayload {
     $aboutXml = New-RussianLocalizationAboutXml `
         -Name $LocalizationName `
         -PackageId $LocalizationPackageId `
+        -Version $Version `
         -Author $LocalizationAuthor `
         -MainPackageId $MainPackageId `
         -MainDisplayName $MainDisplayName `
@@ -401,6 +411,7 @@ if (-not (Test-Path -LiteralPath $sourceAboutPath)) { throw "Missing required fi
 $sourceAboutText = [System.IO.File]::ReadAllText($sourceAboutPath)
 $devModName = Get-AboutValue $sourceAboutText "name"
 $devPackageId = Get-AboutValue $sourceAboutText "packageId"
+$devVersion = Get-AboutValue $sourceAboutText "modVersion"
 $devAuthor = Get-AboutValue $sourceAboutText "author"
 
 $publishedModName = if ([string]::IsNullOrWhiteSpace($PackageId)) {
@@ -417,6 +428,9 @@ if ([string]::IsNullOrWhiteSpace($publishedModName)) { $publishedModName = "Pawn
 if ([string]::IsNullOrWhiteSpace($publishedPackageId)) { $publishedPackageId = "aimmlegate.pawndiary" }
 $publishedAuthor = if ([string]::IsNullOrWhiteSpace($Author)) { $devAuthor } else { $Author.Trim() }
 if ([string]::IsNullOrWhiteSpace($publishedAuthor)) { $publishedAuthor = "aimmlegate" }
+$publishedVersion = if ([string]::IsNullOrWhiteSpace($Version)) { $devVersion } else { $Version.Trim() }
+if ([string]::IsNullOrWhiteSpace($publishedVersion)) { $publishedVersion = "release-$(Get-Date -Format yyyyMMdd)" }
+$buildVersionSlug = Get-SafeFolderName $publishedVersion "release-$(Get-Date -Format yyyyMMdd)"
 
 $payloadFolderName = Get-SafeFolderName $publishedPackageId "pawn-diary"
 if (-not $OutDir) { $OutDir = Join-Path $repoRoot "dist\$payloadFolderName" }
@@ -453,7 +467,7 @@ if (-not $resolvedModsDir) {
 }
 
 Write-Host "$publishedModName publish prep" -ForegroundColor Green
-Write-Host "  version     : $Version"
+Write-Host "  version     : $publishedVersion"
 Write-Host "  build mode  : $Configuration"
 Write-Host "  mod name    : $publishedModName"
 Write-Host "  packageId   : $publishedPackageId"
@@ -479,7 +493,7 @@ if ($InstallToMods) {
 
 Write-Step "Build PawnDiary.dll ($Configuration)"
 $msbuild = Find-MSBuild
-$buildOut = Join-Path ([System.IO.Path]::GetTempPath()) "pawndiary-build-$Version"
+$buildOut = Join-Path ([System.IO.Path]::GetTempPath()) "pawndiary-build-$buildVersionSlug"
 if (Test-Path -LiteralPath $buildOut) { Remove-Item -LiteralPath $buildOut -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $buildOut | Out-Null
 
@@ -547,6 +561,16 @@ if (-not [string]::IsNullOrWhiteSpace($devId)) {
     throw "About.xml does not contain a <packageId>."
 }
 
+$payloadVersion = Get-AboutValue $aboutText "modVersion"
+$aboutText = Set-OrAddAboutValue $aboutText "modVersion" $publishedVersion "packageId"
+if ([string]::IsNullOrWhiteSpace($payloadVersion)) {
+    Write-Host "  modVersion: $publishedVersion"
+} elseif ($payloadVersion -ne $publishedVersion) {
+    Write-Host "  modVersion: '$payloadVersion' -> '$publishedVersion'"
+} else {
+    Write-Host "  modVersion: $publishedVersion"
+}
+
 if (-not [string]::IsNullOrWhiteSpace($Author)) {
     $aboutText = Set-AboutValue $aboutText "author" $Author.Trim()
     Write-Host "  author    : '$devAuthor' -> '$Author'"
@@ -566,8 +590,7 @@ if (Test-Path -LiteralPath $harmony) {
     Copy-Payload "1.6\Assemblies\0Harmony.dll" -Required | Out-Null
 }
 
-# Ship readable source and reference docs with the Workshop payload.
-Copy-SourcePayload
+# Ship reference docs with the Workshop payload, but keep development source/tests out of releases.
 Copy-Payload "README.md" | Out-Null
 Copy-Payload "DOCUMENTATION.md" -Required | Out-Null
 Copy-Payload "CHANGELOG.md" -Required | Out-Null
@@ -591,6 +614,7 @@ if ($buildRussianLocalization) {
         -LanguageFolderName $russianLanguageFolder `
         -LocalizationName $russianLocalizationName `
         -LocalizationPackageId $RussianLocalizationPackageId `
+        -Version $publishedVersion `
         -LocalizationAuthor $publishedAuthor `
         -MainPackageId $publishedPackageId `
         -MainDisplayName $publishedModName `

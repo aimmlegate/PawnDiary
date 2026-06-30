@@ -27,11 +27,12 @@ end it and hide later same-tick events for that pawn.
 ## 2. Repository Map
 
 RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
-`1.6/Assemblies/PawnDiary.dll`. Source and tests are kept in the repo for development.
+`1.6/Assemblies/PawnDiary.dll`. Source and tests are kept in the repo for development, but the
+Workshop payload omits source code and other development-only folders.
 
 | Path | Role |
 |---|---|
-| `About/` | Mod metadata, preview, icon, dependency declaration. |
+| `About/` | Mod metadata, mod version, preview, icon, dependency declaration. |
 | `1.6/Defs/` | XML-owned policy: event groups, tuning, prompts, styles, UI, text effects. |
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions. |
@@ -668,10 +669,16 @@ Release payloads are prepared with:
 scripts\publish.ps1
 ```
 
-The script builds a throwaway Release DLL, copies runnable mod files, runtime textures, `Source/`
-without `bin`/`obj`, and reference docs into `dist/<published packageId>`, and installs the payloads
-into the detected RimWorld `Mods` folder through junctions by default. Pass `-InstallToMods:$false`
-to prepare `dist/` only.
+The source `About/About.xml` carries the mod's `<modVersion>` (`0.1.0` at introduction). The publish
+script stamps that value into the generated main and Russian localization `About.xml` files; pass
+`-Version <value>` to override the release payload version without editing source metadata.
+
+The script builds a throwaway Release DLL, copies runnable mod files, runtime textures, and reference
+docs into `dist/<published packageId>`, and installs the payloads into the detected RimWorld `Mods`
+folder through junctions by default. The published payload keeps `README.md`, `DOCUMENTATION.md`,
+`CHANGELOG.md`, `EVENT_PROMPT_MAP.md`, and any license file, but intentionally excludes `Source/`,
+`tests/`, `prompt-lab/`, and other development-only files. Pass `-InstallToMods:$false` to prepare
+`dist/` only.
 
 Russian is packaged as a separate Workshop localization mod by default. The script produces the
 normal main payload plus `dist/<published packageId>.russian`; the main payload excludes
