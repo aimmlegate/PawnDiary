@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Continued Diary UI renderer/measurer extraction (Plan 9).** Moved expanded-card height
+  measurement and its render-token/width/debug/highlight invalidation cache into
+  `DiaryEntryCardMeasurer`, and routed expanded-card painting through an explicit renderer request so
+  `FillTab` keeps scroll virtualization, expansion state, and GUI group lifetime while card drawing
+  lives with the entry-card helpers. Behavior and visuals are intended unchanged; the remaining
+  validation is in-game Diary tab smoke because the extracted code depends on Verse/Unity IMGUI text
+  measurement. Rebuilt `1.6/Assemblies/PawnDiary.dll`.
+
 - **Save/settings compatibility fixtures (Plan 6).** Turned the save-model post-load repair path into
   fixture-covered, regression-detectable code. The pure parts of `DiaryEvent.NormalizeOnLoad` and
   `ArchivedDiaryEntry.NormalizeOnLoad` (null-coalesces, the cross-slot surroundings chain where a pair
