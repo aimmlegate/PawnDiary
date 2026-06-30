@@ -41,11 +41,13 @@
     <entryLabelMaxWidth>148</entryLabelMaxWidth>
     <entryFadeDurationSeconds>0.55</entryFadeDurationSeconds>
     <titleFadeDurationSeconds>0.8</titleFadeDurationSeconds>
+    <!-- Unread inspect-tab marker. The legacy "RightPadding" name now acts as horizontal edge
+         padding while the marker is centered at the top of the tab. -->
     <inspectTabUnreadIcon>•</inspectTabUnreadIcon>
-    <inspectTabUnreadIconWidth>10</inspectTabUnreadIconWidth>
+    <inspectTabUnreadIconWidth>24</inspectTabUnreadIconWidth>
     <inspectTabUnreadIconHeight>22</inspectTabUnreadIconHeight>
     <inspectTabUnreadIconRightPadding>6</inspectTabUnreadIconRightPadding>
-    <inspectTabUnreadIconXOffset>4</inspectTabUnreadIconXOffset>
+    <inspectTabUnreadIconXOffset>0</inspectTabUnreadIconXOffset>
     <inspectTabUnreadIconYOffset>0.5</inspectTabUnreadIconYOffset>
 
     <!-- Linked-entry preview card -->

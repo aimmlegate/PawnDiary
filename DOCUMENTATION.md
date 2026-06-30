@@ -405,6 +405,8 @@ covering load orders where RimWorld finalizes resolved tab lists after static co
 command helper is marked with RimWorld's `StaticConstructorOnStartup` because it owns the static Unity
 texture cache for the button icon; the icon itself still loads lazily from the main-thread gizmo path
 and falls back to the vanilla book icon if the mod texture is missing.
+When a selected pawn has unread generated pages, inspect-tab mode draws the XML-tuned unread marker at
+the top middle of the Diary tab; its configured width is clamped to remain inside the vanilla tab.
 
 Production UI shows completed pages. Each expanded non-archived page has a muted rewrite icon beside
 the model/provenance footer, so players can regenerate that page with the current model routing;

@@ -130,10 +130,10 @@ namespace PawnDiary
         public float entryFadeDurationSeconds = 0.55f;
         public float titleFadeDurationSeconds = 0.8f;
         public string inspectTabUnreadIcon = "•";
-        public float inspectTabUnreadIconWidth = 10f;
+        public float inspectTabUnreadIconWidth = 24f;
         public float inspectTabUnreadIconHeight = 22f;
         public float inspectTabUnreadIconRightPadding = 6f;
-        public float inspectTabUnreadIconXOffset = 4f;
+        public float inspectTabUnreadIconXOffset = 0f;
         public float inspectTabUnreadIconYOffset = 0.5f;
 
         // ---- Linked-entry card ----

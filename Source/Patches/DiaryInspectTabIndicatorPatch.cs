@@ -1,6 +1,6 @@
 // Draws the Diary tab's unread marker in RimWorld's normal pawn inspect-tab row.
 // The bottom gizmo has its own command overlay; this patch is only for tab mode, where players
-// asked for a quieter signal: a small Unicode mark near the tab's right edge and no writing dots.
+// asked for a quieter signal: a small Unicode mark near the tab's top middle and no writing dots.
 // New to this? See AGENTS.md ("Harmony patches").
 using System;
 using System.Collections.Generic;
@@ -22,6 +22,10 @@ namespace PawnDiary
         // per-tab local helper, whose name is fragile across game builds.
         private const float VanillaInspectTabWidth = 75f;
         private const float VanillaInspectTabHeight = 30f;
+        private const float MinUnreadMarkerWidth = 8f;
+        private const float MaxUnreadMarkerWidth = 56f;
+        private const float MinUnreadMarkerHeight = 10f;
+        private const float MaxUnreadMarkerHeight = 26f;
 
         public static void Prefix()
         {
@@ -156,14 +160,26 @@ namespace PawnDiary
             string icon = string.IsNullOrEmpty(style.inspectTabUnreadIcon)
                 ? "•"
                 : style.inspectTabUnreadIcon;
-            float width = Mathf.Clamp(style.inspectTabUnreadIconWidth, 8f, 18f);
-            float height = Mathf.Clamp(style.inspectTabUnreadIconHeight, 10f, 26f);
-            float rightPadding = Mathf.Max(0f, style.inspectTabUnreadIconRightPadding);
+            float edgePadding = Mathf.Clamp(
+                style.inspectTabUnreadIconRightPadding,
+                0f,
+                Mathf.Max(0f, (tabRect.width - MinUnreadMarkerWidth) * 0.5f));
+            float maxWidthInsideTab = Mathf.Max(MinUnreadMarkerWidth, tabRect.width - (edgePadding * 2f));
+            float width = Mathf.Clamp(
+                style.inspectTabUnreadIconWidth,
+                MinUnreadMarkerWidth,
+                Mathf.Min(MaxUnreadMarkerWidth, maxWidthInsideTab));
+            float height = Mathf.Clamp(
+                style.inspectTabUnreadIconHeight,
+                MinUnreadMarkerHeight,
+                Mathf.Min(MaxUnreadMarkerHeight, tabRect.height));
             float xOffset = style.inspectTabUnreadIconXOffset;
             float yOffset = style.inspectTabUnreadIconYOffset;
+            float minX = tabRect.x + edgePadding;
+            float maxX = tabRect.xMax - edgePadding - width;
             Rect iconRect = new Rect(
-                tabRect.xMax - rightPadding - width + xOffset,
-                tabRect.y + (tabRect.height - height) * 0.5f + yOffset,
+                Mathf.Clamp(tabRect.x + ((tabRect.width - width) * 0.5f) + xOffset, minX, maxX),
+                Mathf.Clamp(tabRect.y + yOffset, tabRect.y, tabRect.yMax - height),
                 width,
                 height);
 

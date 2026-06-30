@@ -6,6 +6,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Diary tab unread marker moved.** The inspect-tab unread marker now draws at the top middle of
+  the Diary tab, with a wider XML-tuned draw box clamped inside the vanilla tab width.
 - **Random generation weight simplified.** The settings page now has one shared random-generation
   slider instead of separate work and social sliders. It scales optional chance-gated diary pages
   for work sampling, batched social promotion, and ability-use sampling; old work/social saved
