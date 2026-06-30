@@ -416,15 +416,19 @@
   <PawnDiary.Event.EventWindow.Generic.end>{0}: завершение {1}.</PawnDiary.Event.EventWindow.Generic.end>
   <PawnDiary.Event.EventWindow.Generic.timeout>{0}: ожидание ответа о {1} так и осталось без ответа.</PawnDiary.Event.EventWindow.Generic.timeout>
   <PawnDiary.Event.EventWindow.Generic.Instruction>напиши это как продолжающееся событие о {0}; используй только переданные факты и ясно держи неопределённость поселенца</PawnDiary.Event.EventWindow.Generic.Instruction>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>{0}: найдена серая плоть: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>{0}: скрытая угроза раскрылась: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>{0}: смысл серой плоти так и остался неясным: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0}: обнаружение монолита пустоты: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0}: взаимодействие с монолитом пустоты завершено: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0}: биологический возраст {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
   <PawnDiary.Event.EventWindow.HeartAttack.Start>{0}: сердечный приступ: {1}.</PawnDiary.Event.EventWindow.HeartAttack.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.Start>{0}: тревога о побеге: {1}.</PawnDiary.Event.EventWindow.PrisonBreak.Start>
   <PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>побег</PawnDiary.Event.EventWindow.PrisonBreak.SignalLabel>
+
+  <!-- Текст наблюдаемых условий (План 12: длящиеся состояния, считанные из живого состояния игры).
+       {0} — поселенец, {1} — наблюдаемое условие/улика. Страницы пишутся только при включении в дефе. -->
+  <PawnDiary.Event.ObservedCondition.Generic.start>{0} заметил {1}.</PawnDiary.Event.ObservedCondition.Generic.start>
+  <PawnDiary.Event.ObservedCondition.Generic.end>{0} увидел, как {1} проходит.</PawnDiary.Event.ObservedCondition.Generic.end>
+  <PawnDiary.Event.ObservedCondition.Generic.Instruction>напиши это как продолжающееся наблюдаемое условие о {0}; используй только переданные наблюдаемые факты и ясно держи неопределённость поселенца</PawnDiary.Event.ObservedCondition.Generic.Instruction>
+  <PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>{0} нашёл серую плоть в поселении: {1}.</PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>
 
   <!-- Заметки об ошибках (записаны в основном потоке; показаны в отладочном блоке записи) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Пропущено: страницу инициатора написать не удалось.</PawnDiary.Error.SkippedInitiatorFailed>
@@ -532,13 +536,36 @@
   <PawnDiary.Prompt.EventWindow.Priority>активный контекст события</PawnDiary.Prompt.EventWindow.Priority>
   <PawnDiary.Prompt.EventWindow.ConditionFallback>активное событие: {0}</PawnDiary.Prompt.EventWindow.ConditionFallback>
   <PawnDiary.Prompt.EventWindow.Detail>деталь события: {0}</PawnDiary.Prompt.EventWindow.Detail>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>обычный контекст перекрыт нерешённым подозрением аномалии</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>подозрение на металлическую жуть</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>в поселении появилась серая плоть, но источник ещё не найден; любое обычное общение может омрачить страх, что кто-то носит эту тварь внутри</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>улика серой плоти</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>страх подмены</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>скрытая угроза не раскрыта</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>
   <PawnDiary.Event.EventWindow.AncientDanger.Start>У древней стены внезапное предчувствие у {0}: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
+
+  <!-- Смещение промпта наблюдаемыми условиями (План 12). Общие запасные ключи повторяют ключи окон
+       событий; ключи на деф дают каждому длящемуся состоянию свой приоритет/условие/описание/подсказки. -->
+  <PawnDiary.Prompt.ObservedCondition.Priority>активный контекст условия</PawnDiary.Prompt.ObservedCondition.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ConditionFallback>активное условие: {0}</PawnDiary.Prompt.ObservedCondition.ConditionFallback>
+  <PawnDiary.Prompt.ObservedCondition.Detail>деталь условия: {0}</PawnDiary.Prompt.ObservedCondition.Detail>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Priority>сохраняй подспудное чувство опасности от непрекращающейся угрозы</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Condition>активная угроза на карте поселения</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Description>карта всё ещё опасна прямо сейчас; даже обычный момент омрачён осознанием, что поселение пока не в безопасности</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Alert>на взводе</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Alert>
+  <PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Unsafe>поселение ещё не в безопасности</PawnDiary.Prompt.ObservedCondition.MapThreatActive.Cue.Unsafe>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Priority>пусть токсичные осадки давят на повседневную жизнь</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Condition>токсичные осадки снаружи</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Description>токсичные осадки всё ещё идут; выходить наружу — значит болеть, поэтому поселение заперто внутри и тревожится</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Indoors>заперты внутри</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Indoors>
+  <PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Sickness>страх токсичного отравления</PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Cue.Sickness>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Priority>пусть потеря энергии из-за вспышки окрасит день</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>солнечная вспышка вырубила энергию</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>солнечная вспышка отключила электричество; всё электронное мертво, пока она не пройдёт, и поселение откатывается к самому простому</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>нет энергии</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>перекрой обычный контекст нерешённой тревогой из-за серой плоти</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>серая плоть всё ещё в поселении</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>серая плоть, которую поселенец действительно видит, всё ещё присутствует в поселении, и никто не знает, что это значит; обычные моменты тихо омрачены этой тревогой, без упоминания скрытых механик</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>видимая серая плоть</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>тихий ужас</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>перекрой обычный контекст раскрытой угрозой металлической жути</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>металлическая жуть, которая себя раскрыла</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>скрытая тварь наконец показала себя, и опасность теперь открыта и непосредственна; пиши только то, что поселенец видит у раскрытой угрозы</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>открытая угроза</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>
 
   <PawnDiary.Ctx.Opinion>отношение {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>потому что {0}</PawnDiary.Ctx.Because>

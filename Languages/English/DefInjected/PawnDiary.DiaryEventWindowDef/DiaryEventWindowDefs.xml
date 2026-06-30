@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
 
-  <MetalhorrorSuspicion.label>metalhorror suspicion</MetalhorrorSuspicion.label>
-  <MetalhorrorSuspicion.instruction>write this as an unresolved colony horror: keep it grounded in what the pawn can observe, carry suspicion into ordinary details, and do not name hidden game mechanics beyond the supplied facts</MetalhorrorSuspicion.instruction>
-
   <AncientDanger.label>ancient danger</AncientDanger.label>
   <AncientDanger.instruction>write the pawn's immediate foreboding at the ancient wall as one personal moment; keep the danger uncertain and do not reveal what is inside</AncientDanger.instruction>
 

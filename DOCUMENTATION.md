@@ -168,6 +168,7 @@ it onto the bus.
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted, completed, and failed quest entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
 | Event windows | `IncidentWorker.TryExecute`, `Quest` lifecycle, `Thing.SpawnSetup`, `SignalAction_Letter`, `CompProximityLetter`, `Building_VoidMonolith.Activate`, `Pawn_AgeTracker.BirthdayBiological`, `Pawn_HealthTracker.AddHediff`, `PrisonBreakUtility.StartPrisonBreak` | XML starts/ends narrative windows or one-shot events, writes phase entries, and can bias prompts while active. |
+| Observed conditions | Periodic live-state scan (map danger, active game conditions, evidence things, pawn hediffs) | Lasting states read from live state, not a guessed duration: bias prompts while present, optionally record start/end pages, and end after a debounce when live state stops showing them (Plan 12; see §5.1). |
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. |
@@ -186,6 +187,9 @@ Most feature tuning lives in XML so changes do not require recompiling:
 - `DiaryEventWindowDefs.xml`: generic start/end/timeout windows or one-shot events over incident,
   quest, spawned thing, letter, proximity-letter, and special story-object signals, including phase
   diary text and active prompt weighting.
+- `DiaryObservedConditionDefs.xml`: lasting colony states re-derived from live game state each poll
+  (map danger, active game conditions, observable evidence things, pawn hediffs) with start/end
+  debounce, optional diary pages, and active prompt weighting (Plan 12, see §5.1).
 - `DiaryEventPromptDefs.xml`: event prompt text, event enhancement text, and optional forced model.
 - `DiaryPromptTemplateDefs.xml`: which structured fields each prompt shape renders.
 - `DiaryPromptDef.xml`: shared system/final instructions.
@@ -258,11 +262,11 @@ and target health events. An active window is saved, can write
 start/end/timeout diary entries, and can add a weighted prompt candidate while multiplying ordinary
 prompt enchantments down. Setting
 `normalPromptWeightMultiplier` to `0` makes the window fully override ordinary health/status prompt
-enchantments until it ends or times out. The built-in `MetalhorrorSuspicion` window is currently
-disabled because the gray-flesh `ThingSpawned` signal proved unreliable and could leave the window
-effectively active all the time; the XML row remains as a template for a future safer monitor. When
-enabled, it starts from `GrayFleshSample` or `Filth_GrayFleshNoticeable`, ends on `Metalhorror`, and
-times out after ten RimWorld days if the emergence never arrives. The built-in `AncientDanger` rule
+enchantments until it ends or times out. The former `MetalhorrorSuspicion` window was retired in
+favor of the Plan 12 observed condition `AnomalyGrayFleshEvidence` (see §5.1): a fixed `timeoutTicks`
+could never prove the suspicion was still unresolved, and the gray-flesh `ThingSpawned` start signal
+left it effectively always active, so it is now driven by whether gray-flesh evidence is physically
+present on the map. The built-in `AncientDanger` rule
 matches vanilla's `AncientShrineWarning` letter key and records a single entry for the approaching
 pawn only. The built-in `VoidMonolithDiscovery` rule matches the Anomaly `VoidMonolith` proximity
 letter and records a single extreme-dark discovery entry for the nearby pawn only. The built-in
@@ -281,6 +285,47 @@ allocation-free pre-filter — `EventWindowPolicy.CouldMatchByDefName` against e
 trigger rules — and only resolves the signal label when some window could actually match. Optional
 event-window recording is also isolated from the established raid/hediff/quest capture, so a window
 failure can never suppress the diary entry those hooks already write.
+
+### 5.1 Observed conditions (lasting game state, Plan 12)
+
+Event windows react to one-shot *signals* and then guess a duration with `timeoutTicks`. That is
+wrong for *lasting* states (an active raid, toxic fallout, gray-flesh evidence): a fixed timeout
+cannot prove the state is still real, a missed end signal leaves stale context, and a save loaded
+mid-state drifts from reality. Observed conditions fix this by re-deriving truth from **live game
+state** on every poll. `DiaryObservedConditionDef` rows declare one `observerType`, what to match,
+and how to debounce; the rest is generic.
+
+The flow keeps the usual barrier — live reads at the edge, pure decisions in the middle:
+`DiaryGameComponent.ObservedConditions.cs` scans the due defs (each def's own `pollIntervalTicks`,
+checked on a short global gate), snapshots what it currently sees into plain
+`ObservedConditionObservation` DTOs, and hands them to the pure
+`ObservedConditionPolicy.Plan(...)` (under `Source/Capture/ObservedConditions/`, no Verse, unit-tested
+in `tests/DiaryObservedConditionTests`). The policy diffs observations against the saved active state
+and returns decisions: `StartPending` → `StartRecorded` (after `startDebounceTicks`) → `Refresh` while
+seen → `EndPending` → `EndRecorded` (after `endDebounceTicks`), or `DropStale` when the Def is gone or
+a never-started condition disappears. The impure adapter then persists/forgets the saved rows
+(`ActiveObservedConditionState`, Scribe key `activeObservedConditions`) and optionally records start/end
+diary pages. Ticks gate debounce only; whether a condition is active is always answered by "is it in
+this scan's observations?", so a save loaded mid-state is rediscovered and a missed signal is recovered
+by the next scan. A def not polled this pass is excluded from the diff entirely, so it never looks
+falsely "missing".
+
+Observer types, all DLC-safe (plain-string / vanilla-API matchers that find nothing when content is
+absent): **MapDanger** (active while a home map's `dangerWatcher.DangerRating` ≥ `minDangerRating`, or
+spawned hostiles ≥ `minHostileCount`), **GameCondition** (active while `gameConditionManager`
+holds a matching condition defName — the game owns start/end truth), **ThingPresent** (active while
+matching spawned things/filth remain, found via the indexed `ListerThings.ThingsOfDef`, never a
+full-map scan; describes observable evidence only), and **PawnHediff** (pawn-scoped, active while a
+matching **visible** hediff is present — hidden hediffs are skipped so nothing secret is revealed).
+`RecentEvidence` is reserved for a future bounded letter/signal fallback and is currently a no-op.
+
+Shipped defs: `MapThreatActive` (enabled, prompt-tone only), `ToxicFalloutActive` /
+`SolarFlareActive` (enabled GameConditions, prompt-tone only), `AnomalyGrayFleshEvidence` (enabled,
+records one observable "found gray flesh" page and strongly biases prompts toward unease while the
+evidence is physically present — the Anomaly-gated replacement for the retired `MetalhorrorSuspicion`
+window), and `MetalhorrorEmergence` (PawnHediff, shipped **disabled** with empty matchers until the
+observable post-emergence state is verified — see ARCHITECTURE_IMPROVEMENT_PLAN.md Plan 12 "Open
+questions"; it must never surface hidden mechanics).
 
 ## 6. Prompts And Writing Styles
 
@@ -314,9 +359,11 @@ Imported game/mod prompt text such as live hediff descriptions, hediff/capacity 
 role labels, scenario descriptions, and quest descriptions is flattened to one prompt line and capped
 to its first two sentences before being sent to the model. Pawn Diary's own XML/Keyed prompt
 instructions, writing styles, humor cues, and field labels are not sentence-capped by this guard.
-Active event windows feed the same prompt-enchantment planner as extra XML-weighted candidates, so
-an unresolved colony threat can shape unrelated diary pages until the configured end signal or
-timeout closes it. Dev prompt-suite fixtures opt out of live prompt enchantments, including active
+Active event windows and active observed conditions (§5.1) both feed the same prompt-enchantment
+planner as extra XML-weighted candidates, so an unresolved colony threat can shape unrelated diary
+pages until it closes — by the event window's end signal/timeout, or by the observed condition's live
+state ending after its end debounce. Each source can also dampen ordinary health/mood context through
+its own `normalPromptWeightMultiplier`; the two multipliers compose. Dev prompt-suite fixtures opt out of live prompt enchantments, including active
 event-window candidates, so captured test prompts stay isolated from earlier manual event-window
 tests. Humor cues are hidden, XML-weighted, and folded into the writing-style block.
 Direct speech is allowed only in selected first-person interaction prompts with a closed
@@ -413,12 +460,16 @@ markers, and trims saved text locally.
 ## 9. Save Data And Compatibility
 
 `DiaryGameComponent.ExposeData` saves per-pawn records (`diaries`), the hot event list
-(`diaryEvents`), compact archive rows (`diaryArchiveEntries`), and active XML event windows
-(`activeEventWindows`). `DiaryEventRepository` owns the hot event list and rebuilds its id lookup index
+(`diaryEvents`), compact archive rows (`diaryArchiveEntries`), active XML event windows
+(`activeEventWindows`), and active observed conditions (`activeObservedConditions`).
+`DiaryEventRepository` owns the hot event list and rebuilds its id lookup index
 after load. `DiaryArchiveRepository` owns one display-only `ArchivedDiaryEntry` row per archived pawn
 POV, repairs duplicate/null rows after load, and indexes rows by pawn id for the Diary tab. Per-pawn
 event lists prune blank, duplicate, or dangling hot refs. Active event windows normalize after load so
-renamed/missing defs fail closed instead of blocking future prompt context.
+renamed/missing defs fail closed instead of blocking future prompt context. Active observed conditions
+(`ActiveObservedConditionState`) are additive and normalize after load too: null strings coalesce,
+keyless rows drop, duplicate identities collapse, and a row whose Def is gone ages out on the next scan
+(`DropStale`) without errors — old saves simply load an empty list.
 
 The diary-history cap is **per pawn** (default 3000, editable from settings, range 1–10000). Each
 pawn keeps only its newest configured number of **hot** pages: `ApplyActiveEventLimit` looks at the
@@ -592,6 +643,7 @@ dotnet run --project tests/DiaryTextDecorationTests/DiaryTextDecorationTests.csp
 dotnet run --project tests/DiaryCapturePolicyTests/DiaryCapturePolicyTests.csproj
 dotnet run --project tests/PromptVariantsTests/PromptVariantsTests.csproj
 dotnet run --project tests/DiarySaveNormalizationTests/DiarySaveNormalizationTests.csproj
+dotnet run --project tests/DiaryObservedConditionTests/DiaryObservedConditionTests.csproj
 ```
 
 Prompt lab:

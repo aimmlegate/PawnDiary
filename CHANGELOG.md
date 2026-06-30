@@ -6,6 +6,38 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Lasting game-state capture: observed conditions (Plan 12).** Added a system, parallel to event
+  windows, for *lasting* colony states that must be read from live state rather than inferred from a
+  guessed duration. A new pure lifecycle diff (`Source/Capture/ObservedConditions/`:
+  `ObservedConditionObservation`/`StateSnapshot`/`DefSnapshot`/`Decision`/`Plan`/`Policy`) decides
+  start/refresh/end purely from "is it in this scan's observations?", with `startDebounceTicks` /
+  `endDebounceTicks` gating recording only — never truth. The impure edge
+  (`Source/Core/DiaryGameComponent.ObservedConditions.cs`) polls each enabled
+  `DiaryObservedConditionDef` on its own `pollIntervalTicks` (checked on a short global gate),
+  snapshots live state into plain DTOs, applies the plan, persists active rows
+  (`ActiveObservedConditionState`, additive Scribe key `activeObservedConditions`), and exposes prompt
+  candidates beside the event-window ones. Ticks gate debounce only, so a save loaded mid-state is
+  rediscovered by the next scan and a missed signal is recovered by scanning. Four observer types,
+  all DLC-safe (plain-string / vanilla-API matchers that find nothing when content is absent):
+  **MapDanger** (home-map `dangerWatcher.DangerRating` / spawned-hostile thresholds), **GameCondition**
+  (exact `gameConditionManager.ActiveConditions` defName match), **ThingPresent** (indexed
+  `ListerThings.ThingsOfDef`, observable evidence only), and **PawnHediff** (pawn-scoped, *visible*
+  hediffs only so hidden mechanics are never surfaced); `RecentEvidence` is reserved and currently a
+  no-op. Shipped defs in `1.6/Defs/DiaryObservedConditionDefs.xml`: `MapThreatActive`,
+  `ToxicFalloutActive`, `SolarFlareActive` (enabled, prompt-tone only) and `AnomalyGrayFleshEvidence`
+  (enabled, Anomaly-gated, records one observable "found gray flesh" page and strongly biases prompts
+  while the evidence is physically present). **Retired the `MetalhorrorSuspicion` event window** —
+  whose fixed timeout could never prove the suspicion was still unresolved and whose `ThingSpawned`
+  start signal left it effectively always active — replacing it with `AnomalyGrayFleshEvidence`;
+  removed its def and EN/RU Keyed + DefInjected strings. Shipped `MetalhorrorEmergence` (PawnHediff)
+  **disabled** with empty matchers pending verification of the observable post-emergence state, so it
+  can never reveal hidden mechanics. Added EN + RU Keyed/DefInjected strings, a new pure test project
+  `tests/DiaryObservedConditionTests/` (62 assertions: start/refresh/end debounce, no duplicate start,
+  save/load rediscovery, stale-Def drop, per-map and per-pawn independence) wired into
+  `.githooks/verify.ps1`, documented the system in `DOCUMENTATION.md §5.1` (plus §4/§6/§9/§12 notes),
+  and rebuilt `1.6/Assemblies/PawnDiary.dll`. Plan 12 Pass 8 (XML context-fact bridge) stays blocked
+  on the not-yet-built XML context-fact pipeline.
+
 - **Save/settings compatibility fixtures (Plan 6).** Turned the save-model post-load repair path into
   fixture-covered, regression-detectable code. The pure parts of `DiaryEvent.NormalizeOnLoad` and
   `ArchivedDiaryEntry.NormalizeOnLoad` (null-coalesces, the cross-slot surroundings chain where a pair

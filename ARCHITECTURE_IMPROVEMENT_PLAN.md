@@ -9,7 +9,11 @@ and **Plan 6 was completed on 2026-06-30** (see CHANGELOG); their cards are kept
 COMPLETED, for reference. All remaining plans were
 checked against the current `Source/` tree on the verify date and confirmed open; current-state notes
 are inline where the code has moved (Plans 8, 10, 11, 12). Plan 12 is the former standalone
-lasting-game-state roadmap, folded in here.
+lasting-game-state roadmap, folded in here. **Plan 12 Passes 1–7 shipped on 2026-06-30** (the observed
+conditions system: pure policy + tests, Def/XML/strings, GameComponent scanner, and the MapDanger /
+GameCondition / ThingPresent / PawnHediff observers, with the `MetalhorrorSuspicion` window retired in
+favor of `AnomalyGrayFleshEvidence`); **Pass 8 remains blocked** on the not-yet-built XML context-fact
+pipeline. See CHANGELOG 2026-06-30 and the annotated card below.
 
 ## Global Implementation Protocol
 
@@ -952,6 +956,19 @@ workflow for intentional changes.
 ---
 
 # Plan 12 — Lasting Game-State Capture (Observed Conditions)
+
+> **Status: Passes 1–7 SHIPPED 2026-06-30. Pass 8 BLOCKED.** Implemented: the pure
+> `ObservedConditionPolicy` diff + DTOs (`Source/Capture/ObservedConditions/`),
+> `ActiveObservedConditionState` save model, `DiaryObservedConditionDef` + sample defs, the
+> `DiaryGameComponent.ObservedConditions.cs` scanner/adapter (saved `activeObservedConditions`,
+> per-Def poll gate), the MapDanger / GameCondition / ThingPresent / PawnHediff observers, prompt-bias
+> integration beside event windows, and the retirement of the always-on `MetalhorrorSuspicion` event
+> window in favor of the `AnomalyGrayFleshEvidence` observed condition. `MetalhorrorEmergence` ships
+> disabled (empty matchers) pending the Open-Questions verification of an observable post-emergence
+> state. `RecentEvidence` is a defined-but-unwired observer type (no live feed). Pure tests in
+> `tests/DiaryObservedConditionTests` (wired into `.githooks/verify.ps1`). Pass 8 (context-fact bridge)
+> stays blocked: the XML context-fact pipeline it depends on does not exist yet. See CHANGELOG
+> 2026-06-30. Card kept for reference and for the remaining Pass 8 work.
 
 The largest open card, folded in from the former standalone lasting-game-state roadmap. Where Plan 10
 adds *moment* sources, this adds *lasting-state* sources: colony conditions that must be read from

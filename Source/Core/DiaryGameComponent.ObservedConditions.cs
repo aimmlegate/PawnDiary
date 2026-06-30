@@ -153,7 +153,7 @@ namespace PawnDiary
                     CollectPawnHediffObservations(def, observations);
                     break;
                 case ObservedConditionObserverType.RecentEvidence:
-                    // No live feed yet (see DOCUMENTATION.md §13). Intentionally a no-op.
+                    // No live feed yet (see DOCUMENTATION.md §5.1). Intentionally a no-op.
                     break;
             }
         }
@@ -779,7 +779,8 @@ namespace PawnDiary
                 return 0;
             }
 
-            List<Pawn> pawns = map.mapPawns.AllPawnsSpawned;
+            // AllPawnsSpawned is exposed as IReadOnlyList; we only index + count, so no copy is needed.
+            IReadOnlyList<Pawn> pawns = map.mapPawns.AllPawnsSpawned;
             if (pawns == null)
             {
                 return 0;

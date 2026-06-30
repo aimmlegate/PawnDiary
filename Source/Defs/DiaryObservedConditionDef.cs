@@ -25,7 +25,7 @@ namespace PawnDiary
         // Active while a matching visible hediff is present on a colonist (pawn-scoped).
         PawnHediff,
         // Bounded fallback: a recent signal/letter, given a TTL and labelled "recent evidence".
-        // Defined for completeness; no live scanner feeds it yet (see DOCUMENTATION.md §13).
+        // Defined for completeness; no live scanner feeds it yet (see DOCUMENTATION.md §5.1).
         RecentEvidence
     }
 

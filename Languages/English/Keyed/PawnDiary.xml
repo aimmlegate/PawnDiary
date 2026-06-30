@@ -422,9 +422,6 @@
   <PawnDiary.Event.EventWindow.Generic.end>{0} saw {1} resolve.</PawnDiary.Event.EventWindow.Generic.end>
   <PawnDiary.Event.EventWindow.Generic.timeout>{0} kept waiting for an answer about {1}, but none came.</PawnDiary.Event.EventWindow.Generic.timeout>
   <PawnDiary.Event.EventWindow.Generic.Instruction>write this as an ongoing event window about {0}; use only supplied facts and keep the pawn's uncertainty clear</PawnDiary.Event.EventWindow.Generic.Instruction>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>{0} found gray flesh: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Start>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>{0} saw the hidden threat reveal itself: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.End>
-  <PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>{0} never learned what the gray flesh meant: {1}.</PawnDiary.Event.EventWindow.MetalhorrorSuspicion.Timeout>
   <PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>{0} discovered the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithDiscovery.Start>
   <PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>{0} completed an interaction with the void monolith: {1}.</PawnDiary.Event.EventWindow.VoidMonolithActivation.Start>
   <PawnDiary.Event.EventWindow.Birthday.Start>{0} reached biological age {1}.</PawnDiary.Event.EventWindow.Birthday.Start>
@@ -545,12 +542,6 @@
   <PawnDiary.Prompt.EventWindow.Priority>active event context</PawnDiary.Prompt.EventWindow.Priority>
   <PawnDiary.Prompt.EventWindow.ConditionFallback>active event: {0}</PawnDiary.Prompt.EventWindow.ConditionFallback>
   <PawnDiary.Prompt.EventWindow.Detail>event detail: {0}</PawnDiary.Prompt.EventWindow.Detail>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>override normal context with unresolved anomaly suspicion</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Priority>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>metalhorror suspicion</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Condition>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>gray flesh has appeared in the colony, but the source has not revealed itself yet; every ordinary interaction may be shadowed by fear that someone is carrying the thing inside them</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Description>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>gray flesh evidence</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.GrayFlesh>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>impostor fear</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.ImpostorFear>
-  <PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>unresolved hidden threat</PawnDiary.Prompt.EventWindow.MetalhorrorSuspicion.Cue.UnresolvedThreat>
   <PawnDiary.Event.EventWindow.AncientDanger.Start>Near an ancient wall, {0} felt sudden foreboding: {1}.</PawnDiary.Event.EventWindow.AncientDanger.Start>
 
   <!-- Observed-condition prompt biasing (Plan 12). Generic fallbacks mirror the event-window ones;
