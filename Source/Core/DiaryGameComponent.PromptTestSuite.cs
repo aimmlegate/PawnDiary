@@ -1,13 +1,13 @@
-// Dev-only "prompt test suite": a data-driven catalog of synthetic diary-event fixtures. The Diary
-// tab's "Prompt suite" button opens a dropdown of these fixtures; selecting one deletes any prior
-// test entries, builds exactly ONE synthetic event for the chosen category, and routes it through the
-// normal generation queue. With prompt test mode ON, QueuePrompt captures the assembled prompt and
-// stamps the role prompt_only (no LLM call), so the selected category yields one prompt-only card you
-// can inspect in the Diary tab. A separate "Clear test prompts" button deletes every test entry.
+// Dev-only "prompt test suite": a data-driven catalog of synthetic diary-event fixtures. The Debug
+// Actions event panel can batch-generate selected fixtures, deleting any prior test entries first,
+// then routing synthetic events through the normal generation queue. With prompt test mode ON,
+// QueuePrompt captures the assembled prompt and stamps the role prompt_only (no LLM call), so the
+// selected categories yield prompt-only cards you can inspect in the Diary tab. A separate clear
+// action deletes every test entry.
 //
-// Single source of truth: the dropdown iterates `SuiteEntries` below — the SAME registry the builder
-// reads. Adding a future category means appending one entry here (plus its keyed strings); it then
-// auto-appears in the dropdown with no UI-code change and no copy-paste.
+// Single source of truth: the debug panel iterates `SuiteEntries` below — the SAME registry the
+// builder reads. Adding a future category means appending one entry here (plus its keyed strings); it
+// then auto-appears in the panel with no UI-code change and no copy-paste.
 //
 // Pair fixtures cross-reference the selected pawn (initiator) and a second colonist (recipient), so a
 // pair category also produces a recipient POV prompt-only card in that other colonist's Diary tab.
@@ -18,6 +18,7 @@
 // partial classes share private access.
 using System;
 using System.Collections.Generic;
+using PawnDiary.Capture;
 using RimWorld;
 using Verse;
 
@@ -41,13 +42,29 @@ namespace PawnDiary
         {
             public string id;
             public string labelKey;
-            public bool pair;
+            internal DevPromptSuiteFixtureShape shape;
             public string eventDefName;
             public string markers; // gameContext driving tokens, WITHOUT label/reason/dev_prompt_suite
             public string reasonKey; // optional keyed reason appended to context (null for most)
             public string initiatorTextKey; // pair only
             public string recipientTextKey; // pair only
             public string textKey; // solo only
+
+            /// <summary>True when this fixture needs a second eligible colonist.</summary>
+            public bool pair
+            {
+                get { return shape == DevPromptSuiteFixtureShape.Pair; }
+            }
+        }
+
+        // The neutral arrival/death fixtures queue the `neutral` POV instead of a first-person POV.
+        // Keep that difference explicit here so the registry remains readable to people adding tests.
+        internal enum DevPromptSuiteFixtureShape
+        {
+            Solo,
+            Pair,
+            ArrivalDescription,
+            DeathDescription
         }
 
         // The catalog — the single source of truth. Append a row here (plus its keyed strings in
@@ -67,6 +84,10 @@ namespace PawnDiary
                 "PawnDiary.Dev.PromptSuite.Romance.Initiator", "PawnDiary.Dev.PromptSuite.Romance.Recipient"),
             Solo("MentalBreak", "PawnDiary.Dev.PromptSuite.MentalBreak.Label", "Berserk",
                 "mental_state=Berserk", DevPromptSuiteReasonKey, "PawnDiary.Dev.PromptSuite.MentalBreak.Text"),
+            Arrival("Arrival", "PawnDiary.Dev.PromptSuite.Arrival.Label", ArrivalEventData.DefNameToken,
+                "PawnDiary.Dev.PromptSuite.Arrival.Text"),
+            Death("Death", "PawnDiary.Dev.PromptSuite.Death.Label", DeathEventData.DefNameToken,
+                "PawnDiary.Dev.PromptSuite.Death.Text"),
             Solo("Hediff", "PawnDiary.Dev.PromptSuite.Hediff.Label", "Flu",
                 "hediff=Flu; source=add; group=hediffMajorHealth; mode=Immediate; severity=0.45; stage=1",
                 null, "PawnDiary.Dev.PromptSuite.Hediff.Text"),
@@ -78,16 +99,31 @@ namespace PawnDiary
             Solo("Thought", "PawnDiary.Dev.PromptSuite.Thought.Label", "AteWithoutTable",
                 "thought=AteWithoutTable; mood_impact=negative; mood_offset=-5; duration_days=1",
                 null, "PawnDiary.Dev.PromptSuite.Thought.Text"),
+            Solo("ThoughtProgression", "PawnDiary.Dev.PromptSuite.ThoughtProgression.Label", "NeedFood",
+                "thought=NeedFood; thought_progression=need_food; label=Starving; stage_index=3; severity=3; mood_impact=negative; mood_offset=-18.0",
+                null, "PawnDiary.Dev.PromptSuite.ThoughtProgression.Text"),
             Solo("MoodEvent", "PawnDiary.Dev.PromptSuite.MoodEvent.Label", "HeatWave",
                 "mood_event=HeatWave; mood_impact=negative", null, "PawnDiary.Dev.PromptSuite.MoodEvent.Text"),
             Solo("Tale", "PawnDiary.Dev.PromptSuite.Tale.Label", "FinishedResearchProject",
                 "tale=FinishedResearchProject; taleClass=Tale_SinglePawn", null, "PawnDiary.Dev.PromptSuite.Tale.Text"),
+            Solo("Raid", "PawnDiary.Dev.PromptSuite.Raid.Label", "RaidEnemy",
+                "raid=RaidEnemy; label=Raid; faction=Pirate; points=500; arrival_mode=EdgeWalkIn; strategy=ImmediateAttack",
+                null, "PawnDiary.Dev.PromptSuite.Raid.Text"),
+            Solo("Quest", "PawnDiary.Dev.PromptSuite.Quest.Label", "OpportunitySite_ItemStash",
+                "quest=OpportunitySite_ItemStash; signal=accepted; label=The Stash; faction=OutlanderCivil; rewards=medicine x20; quest_label=The Stash; quest_signal=accepted; quest_faction=OutlanderCivil; quest_rewards=medicine x20",
+                null, "PawnDiary.Dev.PromptSuite.Quest.Text"),
+            Solo("Ritual", "PawnDiary.Dev.PromptSuite.Ritual.Label", "Funeral",
+                "ritual=Funeral; ritual_title=Funeral; ritual_behavior=RitualBehaviorWorker_Funeral; ritual_perspective=participant; ritual_role=participant; royal_title=none; ideological_role=none; outcome=finished; quality=good",
+                null, "PawnDiary.Dev.PromptSuite.Ritual.Text"),
+            Solo("Ability", "PawnDiary.Dev.PromptSuite.Ability.Label", "WordOfJoy",
+                "ability=WordOfJoy; ability_label=Word of joy; ability_category=Psycast; ability_cooldown_ticks=60000; ability_record_chance=1; ability_target=Self",
+                null, "PawnDiary.Dev.PromptSuite.Ability.Text"),
             Solo("DayReflection", "PawnDiary.Dev.PromptSuite.DayReflection.Label", "PawnDiary_DayReflection",
                 "day_reflection=true; day=42; highlights=3; candidates=6; filler_moments=2; signals=health,work,social",
                 null, "PawnDiary.Dev.PromptSuite.DayReflection.Text"),
         };
 
-        /// <summary>The full catalog in display order. The dropdown iterates this — never hardcode the
+        /// <summary>The full catalog in display order. The debug panel iterates this — never hardcode the
         /// category list in UI code, or the two will drift.</summary>
         public static IReadOnlyList<DevPromptSuiteEntry> AllSuiteEntries => SuiteEntries;
 
@@ -98,7 +134,7 @@ namespace PawnDiary
             {
                 id = id,
                 labelKey = labelKey,
-                pair = true,
+                shape = DevPromptSuiteFixtureShape.Pair,
                 eventDefName = eventDefName,
                 markers = markers,
                 reasonKey = reasonKey,
@@ -114,7 +150,7 @@ namespace PawnDiary
             {
                 id = id,
                 labelKey = labelKey,
-                pair = false,
+                shape = DevPromptSuiteFixtureShape.Solo,
                 eventDefName = eventDefName,
                 markers = markers,
                 reasonKey = reasonKey,
@@ -122,9 +158,33 @@ namespace PawnDiary
             };
         }
 
+        private static DevPromptSuiteEntry Arrival(string id, string labelKey, string eventDefName, string textKey)
+        {
+            return new DevPromptSuiteEntry
+            {
+                id = id,
+                labelKey = labelKey,
+                shape = DevPromptSuiteFixtureShape.ArrivalDescription,
+                eventDefName = eventDefName,
+                textKey = textKey
+            };
+        }
+
+        private static DevPromptSuiteEntry Death(string id, string labelKey, string eventDefName, string textKey)
+        {
+            return new DevPromptSuiteEntry
+            {
+                id = id,
+                labelKey = labelKey,
+                shape = DevPromptSuiteFixtureShape.DeathDescription,
+                eventDefName = eventDefName,
+                textKey = textKey
+            };
+        }
+
         /// <summary>
         /// Dev-only: the catalog entries buildable for this pawn right now — solo entries always, pair
-        /// entries only when a second colonist is available. The dropdown lists exactly this.
+        /// entries only when a second colonist is available. The debug panel lists exactly this.
         /// </summary>
         public IReadOnlyList<DevPromptSuiteEntry> AvailableSuiteEntriesForDev(Pawn pawn)
         {
@@ -207,14 +267,54 @@ namespace PawnDiary
         /// </summary>
         public bool ShowPromptSuiteEntryForDev(Pawn pawn, DevPromptSuiteEntry entry)
         {
-            if (!Prefs.DevMode || !PromptTestModeEnabled() || !IsDiaryEligible(pawn)
-                || !DiaryGenerationEnabledFor(pawn) || entry == null)
+            if (!CanUsePromptSuiteForDev(pawn) || entry == null)
             {
                 return false;
             }
 
             // Replace semantics: clear previous test entries first so only one is live at a time.
             ClearPromptSuiteForDev();
+            return AppendPromptSuiteEntryForDev(pawn, entry);
+        }
+
+        /// <summary>
+        /// Dev-only batch helper for the RimWorld debug-action panel: replaces current test entries
+        /// with every requested fixture that is buildable for the selected pawn. The caller supplies
+        /// the already-filtered list so the panel can support checkboxes as well as "all".
+        /// </summary>
+        public int ShowPromptSuiteEntriesForDev(Pawn pawn, IEnumerable<DevPromptSuiteEntry> entries)
+        {
+            if (!CanUsePromptSuiteForDev(pawn) || entries == null)
+            {
+                return 0;
+            }
+
+            ClearPromptSuiteForDev();
+
+            int shown = 0;
+            foreach (DevPromptSuiteEntry entry in entries)
+            {
+                if (AppendPromptSuiteEntryForDev(pawn, entry))
+                {
+                    shown++;
+                }
+            }
+
+            return shown;
+        }
+
+        private bool CanUsePromptSuiteForDev(Pawn pawn)
+        {
+            return Prefs.DevMode && PromptTestModeEnabled() && IsDiaryEligible(pawn)
+                && DiaryGenerationEnabledFor(pawn);
+        }
+
+        private bool AppendPromptSuiteEntryForDev(Pawn pawn, DevPromptSuiteEntry entry)
+        {
+            if (!CanUsePromptSuiteForDev(pawn) || entry == null)
+            {
+                return false;
+            }
 
             Pawn partner = null;
             if (entry.pair)
@@ -235,6 +335,12 @@ namespace PawnDiary
             // Capture the prompt immediately. In prompt test mode QueuePrompt is synchronous (it stamps
             // prompt_only and returns), so both POVs of a pair event are captured on this call.
             Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
+            if (diaryEvent.HasArrivalDescription() || diaryEvent.HasDeathDescription())
+            {
+                EnsureGenerationQueued(diaryEvent, DiaryEvent.NeutralRole, null, livePawnsById);
+                return true;
+            }
+
             EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole, null, livePawnsById);
             if (!diaryEvent.solo)
             {
@@ -253,10 +359,7 @@ namespace PawnDiary
         {
             string label = SuiteLabel(entry.labelKey);
             string instruction = SuiteInstruction();
-            string context = entry.markers
-                + "; label=" + label
-                + (string.IsNullOrEmpty(entry.reasonKey) ? string.Empty : "; reason=" + SuiteReason(entry.reasonKey))
-                + "; " + DevPromptSuiteMarker;
+            string context = SuiteContext(entry, pawn, label);
 
             DiaryEvent diaryEvent;
             if (entry.pair)
@@ -284,6 +387,44 @@ namespace PawnDiary
             }
 
             return diaryEvent;
+        }
+
+        private static string SuiteContext(DevPromptSuiteEntry entry, Pawn pawn, string label)
+        {
+            if (entry == null)
+            {
+                return DevPromptSuiteMarker;
+            }
+
+            if (entry.shape == DevPromptSuiteFixtureShape.ArrivalDescription)
+            {
+                string pawnLabel = DiaryLineCleaner.CleanLine(pawn?.LabelShortCap);
+                string pawnId = pawn?.GetUniqueLoadID() ?? string.Empty;
+                string arrivalFacts = "arrival_source=game_start; arrival_context=synthetic_dev_test";
+                return ArrivalEventData.BuildGameContext(pawnLabel, pawnId, arrivalFacts)
+                    + "; label=" + label
+                    + "; " + DevPromptSuiteMarker;
+            }
+
+            if (entry.shape == DevPromptSuiteFixtureShape.DeathDescription)
+            {
+                string pawnLabel = DiaryLineCleaner.CleanLine(pawn?.LabelShortCap);
+                string pawnId = pawn?.GetUniqueLoadID() ?? string.Empty;
+                string deathFacts = "death_cause=synthetic_dev_test; killer=none; weapon=none";
+                return DeathEventData.BuildFallbackGameContext(
+                    entry.eventDefName,
+                    DiaryLineCleaner.CleanLine(label),
+                    pawnLabel,
+                    pawnId,
+                    DiaryEvent.InitiatorRole,
+                    deathFacts)
+                    + "; " + DevPromptSuiteMarker;
+            }
+
+            return entry.markers
+                + "; label=" + label
+                + (string.IsNullOrEmpty(entry.reasonKey) ? string.Empty : "; reason=" + SuiteReason(entry.reasonKey))
+                + "; " + DevPromptSuiteMarker;
         }
 
         /// <summary>

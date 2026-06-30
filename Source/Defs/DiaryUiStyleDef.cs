@@ -198,6 +198,7 @@ namespace PawnDiary
         public DiaryUiColorSpec yearDisabledColor = Color(1f, 1f, 1f, 0.42f);
         public DiaryUiColorSpec expansionIndicatorBaseColor = Color(0.62f, 0.65f, 0.68f, 0.85f);
         public DiaryUiColorSpec modelNameColor = Color(0.45f, 0.48f, 0.50f, 0.62f);
+        public DiaryUiColorSpec regenerateEntryButtonColor = Color(0.48f, 0.51f, 0.53f, 0.46f);
         public DiaryUiColorSpec debugTextColor = Color(0.54f, 0.58f, 0.60f, 0.90f);
         public DiaryUiColorSpec linkedEntryLabelColor = Color(0.80f, 0.85f, 0.92f, 1f);
         public DiaryUiColorSpec linkedEntryBgColor = Color(0.15f, 0.17f, 0.20f, 0.85f);
@@ -257,6 +258,7 @@ namespace PawnDiary
         public Color YearDisabledColor => yearDisabledColor.ToColor(new Color(1f, 1f, 1f, 0.42f));
         public Color ExpansionIndicatorBaseColor => expansionIndicatorBaseColor.ToColor(new Color(0.62f, 0.65f, 0.68f, 0.85f));
         public Color ModelNameColor => modelNameColor.ToColor(new Color(0.45f, 0.48f, 0.50f, 0.62f));
+        public Color RegenerateEntryButtonColor => regenerateEntryButtonColor.ToColor(new Color(0.48f, 0.51f, 0.53f, 0.46f));
         public Color DebugTextColor => debugTextColor.ToColor(new Color(0.54f, 0.58f, 0.60f, 0.90f));
         public Color LinkedEntryLabelColor => linkedEntryLabelColor.ToColor(new Color(0.80f, 0.85f, 0.92f));
         public Color LinkedEntryBgColor => linkedEntryBgColor.ToColor(new Color(0.15f, 0.17f, 0.20f, 0.85f));

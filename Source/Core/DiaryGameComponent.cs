@@ -342,6 +342,7 @@ namespace PawnDiary
 
             Scribe_Collections.Look(ref generatedSpeechPlayLogTexts, "generatedSpeechPlayLogTexts", LookMode.Value, LookMode.Value,
                 ref generatedSpeechPlayLogTextKeys, ref generatedSpeechPlayLogTextValues);
+            ExposeDevPanelStateForDev();
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {

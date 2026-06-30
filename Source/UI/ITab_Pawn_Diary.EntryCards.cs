@@ -46,12 +46,10 @@ namespace PawnDiary
             return entry.GeneratedText;
         }
 
-        // Dev-only footer badge geometry. The footer reserves a thin strip at the bottom of expanded
-        // cards (dev mode only) so the tiny action icons clear both the body text and the model-name
-        // line drawn just above it. Production card heights are unchanged because DevCopyFooter is 0
-        // outside dev.
-        private const float DevCopyButtonSize = 16f;
-        private const float DevFooterButtonGap = 6f;
+        // Tiny footer action geometry. The production regenerate icon sits beside the model-name
+        // provenance line; the dev-only copy icon keeps its own bottom-left strip.
+        private const float EntryFooterActionButtonSize = 16f;
+        private const float EntryFooterActionGap = 6f;
         private const float DevCopyButtonFooter = 20f;
         private static float DevCopyFooter => Prefs.DevMode ? DevCopyButtonFooter : 0f;
 
@@ -139,6 +137,7 @@ namespace PawnDiary
                 bool linkedAfter = linked != null && !linkedBefore;
                 string footerNote = EntryFooterNote(entry);
                 bool showModelName = !string.IsNullOrWhiteSpace(footerNote);
+                bool showRegenerateButton = CanShowRegenerateButton(entry);
                 string bodyText = EntryBodyText(entry, request.ShowLlmDebugInfo);
                 string debugText = request.ShowLlmDebugInfo && entry != null && !IsPromptOnly(entry) ? entry.DebugText : string.Empty;
                 float innerTextWidth = localEntryRect.width - 20f;
@@ -198,29 +197,28 @@ namespace PawnDiary
                     DrawDebugText(debugRect, debugText);
                 }
 
-                if (showModelName)
+                if (showModelName || showRegenerateButton)
                 {
-                    // Anchor above the dev-only footer (DevCopyFooter, 0 outside dev mode) so the
-                    // bottom-left copy badge never overlaps or clips the model name.
-                    Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                    DrawModelName(modelRect, footerNote);
+                    // Anchor above the dev-only copy footer (DevCopyFooter, 0 outside dev mode) so
+                    // the bottom-left copy badge never overlaps or clips the model/action line.
+                    Rect footerRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
+                    DrawModelFooter(footerRect, footerNote, showRegenerateButton, entry, request.Pawn, request.Component);
                 }
 
-                // Dev-only footer icons sit in the reserved bottom-left footer, drawn last so they
-                // float above the page wash/highlight without competing with body text or model name.
-                DrawDevFooterButtons(localEntryRect, entry, request.Pawn, request.Component);
+                // The dev-only copy icon sits in the reserved bottom-left footer, drawn last so it
+                // floats above the page wash/highlight without competing with body text or model name.
+                DrawDevFooterButtons(localEntryRect, entry);
 
                 return toggleExpansion;
             }
         }
 
         /// <summary>
-        /// Dev-only: draws small, subtle utility icons anchored to the bottom-left of an expanded
-        /// card. Drawn AFTER the body text and model-name line so they live in their own reserved
-        /// footer strip (see DevCopyFooter) and never overlap or clip them. Collapsed cards have no
-        /// footer icons.
+        /// Dev-only: draws the copy utility icon anchored to the bottom-left of an expanded card.
+        /// Drawn AFTER the body text and model/action line so it lives in its own reserved footer
+        /// strip (see DevCopyFooter) and never overlaps or clips them.
         /// </summary>
-        private static void DrawDevFooterButtons(Rect cardRect, DiaryEntryView entry, Pawn pawn, DiaryGameComponent component)
+        private static void DrawDevFooterButtons(Rect cardRect, DiaryEntryView entry)
         {
             if (!Prefs.DevMode || entry == null)
             {
@@ -229,19 +227,11 @@ namespace PawnDiary
 
             Rect copyRect = new Rect(
                 cardRect.x + 6f,
-                cardRect.yMax - DevCopyButtonSize - 5f,
-                DevCopyButtonSize,
-                DevCopyButtonSize);
+                cardRect.yMax - EntryFooterActionButtonSize - 5f,
+                EntryFooterActionButtonSize,
+                EntryFooterActionButtonSize);
 
             DrawCopyButton(copyRect, entry);
-
-            Rect regenerateRect = new Rect(
-                copyRect.xMax + DevFooterButtonGap,
-                copyRect.y,
-                DevCopyButtonSize,
-                DevCopyButtonSize);
-
-            DrawRegenerateButton(regenerateRect, entry, pawn, component);
         }
 
         /// <summary>
@@ -269,8 +259,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Dev-only: queues this saved entry for regeneration, including the linked POV for pairwise
-        /// events when that other POV is still eligible for generation.
+        /// Queues this saved entry for regeneration, including the linked POV for pairwise events
+        /// when that other POV is still eligible for generation.
         /// </summary>
         private static void DrawRegenerateButton(Rect regenerateRect, DiaryEntryView entry, Pawn pawn, DiaryGameComponent component)
         {
@@ -284,7 +274,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (!DrawDevFooterIcon(regenerateRect, TexButton.Reload, "PawnDiary.Tab.RegenerateEntryTip".Translate()))
+            if (!DrawRegenerateFooterIcon(regenerateRect, "PawnDiary.Tab.RegenerateEntryTip".Translate()))
             {
                 return;
             }
@@ -306,6 +296,27 @@ namespace PawnDiary
             Color oldColor = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, hover ? 0.85f : 0.5f);
             bool clicked = Widgets.ButtonImage(rect, icon);
+            GUI.color = oldColor;
+
+            if (!string.IsNullOrWhiteSpace(tooltip))
+            {
+                TooltipHandler.TipRegion(rect, tooltip);
+            }
+
+            return clicked;
+        }
+
+        private static bool DrawRegenerateFooterIcon(Rect rect, string tooltip)
+        {
+            bool hover = Mouse.IsOver(rect);
+            Color baseColor = UiStyle.RegenerateEntryButtonColor;
+            Color iconColor = hover
+                ? new Color(baseColor.r, baseColor.g, baseColor.b, Mathf.Clamp01(baseColor.a + 0.18f))
+                : baseColor;
+
+            Color oldColor = GUI.color;
+            GUI.color = iconColor;
+            bool clicked = Widgets.ButtonImage(rect, TexButton.Rename);
             GUI.color = oldColor;
 
             if (!string.IsNullOrWhiteSpace(tooltip))
@@ -389,6 +400,22 @@ namespace PawnDiary
         private static bool HasModelName(DiaryEntryView entry)
         {
             return !string.IsNullOrWhiteSpace(EntryFooterNote(entry));
+        }
+
+        /// <summary>
+        /// True when the expanded card should reserve the model/action footer line.
+        /// </summary>
+        private static bool HasFooterLine(DiaryEntryView entry)
+        {
+            return HasModelName(entry) || CanShowRegenerateButton(entry);
+        }
+
+        private static bool CanShowRegenerateButton(DiaryEntryView entry)
+        {
+            return entry != null
+                && !entry.Archived
+                && !IsGenerating(entry)
+                && !IsPromptOnly(entry);
         }
 
         /// <summary>
@@ -744,6 +771,36 @@ namespace PawnDiary
             Text.Font = oldFont;
         }
 
+        /// <summary>
+        /// Draws the quiet provenance footer and the normal-play rewrite action without letting the
+        /// action icon steal the model text's right edge.
+        /// </summary>
+        private static void DrawModelFooter(
+            Rect rect,
+            string modelName,
+            bool showRegenerateButton,
+            DiaryEntryView entry,
+            Pawn pawn,
+            DiaryGameComponent component)
+        {
+            Rect modelRect = rect;
+            if (showRegenerateButton)
+            {
+                Rect regenerateRect = new Rect(
+                    rect.xMax - EntryFooterActionButtonSize,
+                    rect.y + (rect.height - EntryFooterActionButtonSize) * 0.5f,
+                    EntryFooterActionButtonSize,
+                    EntryFooterActionButtonSize);
+                modelRect.width = Mathf.Max(0f, modelRect.width - EntryFooterActionButtonSize - EntryFooterActionGap);
+                DrawRegenerateButton(regenerateRect, entry, pawn, component);
+            }
+
+            if (!string.IsNullOrWhiteSpace(modelName) && modelRect.width > 0f)
+            {
+                DrawModelName(modelRect, modelName);
+            }
+        }
+
         private static string EntryFooterNote(DiaryEntryView entry)
         {
             if (IsArchivedGenerationFallback(entry))
@@ -1061,7 +1118,7 @@ namespace PawnDiary
                 TextSeed = StableTextSeed(entryKey),
                 NameHighlights = IsPromptOnly(entry) ? null : nameHighlights,
                 HasLinkedEntry = entry != null && entry.LinkedEntry != null,
-                HasFooterNote = HasModelName(entry),
+                HasFooterLine = HasFooterLine(entry),
                 EntryTextTop = EntryTextTop,
                 EntryBottomPadding = EntryBottomPadding,
                 LinkedEntryPadding = LinkedEntryPadding,

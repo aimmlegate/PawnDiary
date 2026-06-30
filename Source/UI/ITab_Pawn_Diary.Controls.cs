@@ -19,36 +19,7 @@ namespace PawnDiary
         /// </summary>
         private static float PawnControlsHeight()
         {
-
-            if (!Prefs.DevMode)
-            {
-
-                return 0f;
-
-            }
-
-
-
-            float lines = 4f; // generation toggle + mock-history filler + two transient formatting preview rows
-
-            if (PawnDiaryMod.Settings != null)
-            {
-
-                lines += 3f; // dev toggles: writing-style controls, LLM diagnostics, show generating
-
-                if (ShouldShowPersonaSettings())
-                {
-
-                    lines += 1f; // writing-style picker
-
-                }
-
-            }
-
-
-
-            return lines * ControlLineHeight + (lines - 1f) * ControlGap;
-
+            return 0f;
         }
 
 

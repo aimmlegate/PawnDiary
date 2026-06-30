@@ -12,7 +12,7 @@ namespace PawnDiary
     /// </summary>
     public partial class ITab_Pawn_Diary
     {
-        private enum DevDiaryPreviewKind
+        internal enum DevDiaryPreviewKind
         {
             None,
             Plain,
@@ -33,6 +33,33 @@ namespace PawnDiary
         // The currently selected transient preview. It is UI state only: no DiaryEvent is registered
         // and nothing is saved, so closing the tab/game drops it.
         private DevDiaryPreviewKind devPreviewKind = DevDiaryPreviewKind.None;
+        private static string pendingDevPreviewPawnId;
+        private static DevDiaryPreviewKind pendingDevPreviewKind = DevDiaryPreviewKind.None;
+        private static int pendingDevPreviewVersion;
+        private int appliedDevPreviewVersion;
+
+        /// <summary>
+        /// Dev panel entry point: request a transient card preview in the pawn's Diary tab.
+        /// </summary>
+        internal static void RequestDevPreviewForDev(Pawn pawn, DevDiaryPreviewKind kind)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            pendingDevPreviewPawnId = pawn.GetUniqueLoadID();
+            pendingDevPreviewKind = kind;
+            pendingDevPreviewVersion++;
+
+            if (pawn.Spawned && Find.Selector != null && !Find.Selector.IsSelected(pawn))
+            {
+                Find.Selector.ClearSelection();
+                Find.Selector.Select(pawn, true, false);
+            }
+
+            OpenDiaryTab();
+        }
 
         /// <summary>
         /// Draws compact dev-mode text buttons that switch the transient formatting preview.
@@ -138,6 +165,22 @@ namespace PawnDiary
             {
                 entryExpansionOverrides[DevPreviewEventId(pawn, kind) + "|" + DiaryEvent.InitiatorRole] = true;
             }
+        }
+
+        private void ApplyPendingDevPreview(Pawn pawn)
+        {
+            if (pawn == null || appliedDevPreviewVersion == pendingDevPreviewVersion)
+            {
+                return;
+            }
+
+            if (!string.Equals(pawn.GetUniqueLoadID(), pendingDevPreviewPawnId, System.StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            appliedDevPreviewVersion = pendingDevPreviewVersion;
+            SetDevPreviewKind(pendingDevPreviewKind, pawn);
         }
 
         private static DiaryEntryView BuildDevPreviewEntry(Pawn pawn, DevDiaryPreviewKind kind)

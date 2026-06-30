@@ -287,6 +287,7 @@ namespace PawnDiary
             // Singleton component that owns all diary state for the current game.
             DiaryGameComponent component = DiaryGameComponent.Current;
             component?.AcknowledgeGeneratedEntriesFor(pawn);
+            ApplyPendingDevPreview(pawn);
 
             bool showLlmDebugInfo = ShouldShowLlmDebugInfo();
             // Dev-mode-only: when on, reveal in-progress/stuck entries in the list (the full debug
@@ -328,7 +329,7 @@ namespace PawnDiary
             // dev mode, so entries sit directly under the header.
             float controlsY = rect.y + 36f;
             float controlsHeight = PawnControlsHeight();
-            if (Prefs.DevMode)
+            if (controlsHeight > 0f)
             {
                 Rect controlsRect = new Rect(rect.x, controlsY, rect.width, controlsHeight);
                 DrawPawnControls(pawn, component, controlsRect);

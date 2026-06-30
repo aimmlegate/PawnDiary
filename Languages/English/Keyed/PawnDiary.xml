@@ -59,6 +59,10 @@
   <PawnDiary.Dev.PromptSuite.Romance.Recipient>{0} and I got married.</PawnDiary.Dev.PromptSuite.Romance.Recipient>
   <PawnDiary.Dev.PromptSuite.MentalBreak.Label>Berserk rage</PawnDiary.Dev.PromptSuite.MentalBreak.Label>
   <PawnDiary.Dev.PromptSuite.MentalBreak.Text>{0} snapped and flew into a berserk rage.</PawnDiary.Dev.PromptSuite.MentalBreak.Text>
+  <PawnDiary.Dev.PromptSuite.Arrival.Label>Arrival</PawnDiary.Dev.PromptSuite.Arrival.Label>
+  <PawnDiary.Dev.PromptSuite.Arrival.Text>{0} joined the colony in a synthetic arrival test.</PawnDiary.Dev.PromptSuite.Arrival.Text>
+  <PawnDiary.Dev.PromptSuite.Death.Label>Death</PawnDiary.Dev.PromptSuite.Death.Label>
+  <PawnDiary.Dev.PromptSuite.Death.Text>{0} died in a synthetic death-description test.</PawnDiary.Dev.PromptSuite.Death.Text>
   <PawnDiary.Dev.PromptSuite.Hediff.Label>Fell ill</PawnDiary.Dev.PromptSuite.Hediff.Label>
   <PawnDiary.Dev.PromptSuite.Hediff.Text>{0} came down with the flu.</PawnDiary.Dev.PromptSuite.Hediff.Text>
   <PawnDiary.Dev.PromptSuite.Inspiration.Label>Inspired</PawnDiary.Dev.PromptSuite.Inspiration.Label>
@@ -67,12 +71,69 @@
   <PawnDiary.Dev.PromptSuite.Work.Text>{0} worked at the research bench.</PawnDiary.Dev.PromptSuite.Work.Text>
   <PawnDiary.Dev.PromptSuite.Thought.Label>Ate without a table</PawnDiary.Dev.PromptSuite.Thought.Label>
   <PawnDiary.Dev.PromptSuite.Thought.Text>{0} ate a meal off the ground.</PawnDiary.Dev.PromptSuite.Thought.Text>
+  <PawnDiary.Dev.PromptSuite.ThoughtProgression.Label>Starving</PawnDiary.Dev.PromptSuite.ThoughtProgression.Label>
+  <PawnDiary.Dev.PromptSuite.ThoughtProgression.Text>{0}'s hunger worsened into starvation.</PawnDiary.Dev.PromptSuite.ThoughtProgression.Text>
   <PawnDiary.Dev.PromptSuite.MoodEvent.Label>Heat wave</PawnDiary.Dev.PromptSuite.MoodEvent.Label>
   <PawnDiary.Dev.PromptSuite.MoodEvent.Text>A blistering heat wave settled over the colony.</PawnDiary.Dev.PromptSuite.MoodEvent.Text>
   <PawnDiary.Dev.PromptSuite.Tale.Label>Finished research</PawnDiary.Dev.PromptSuite.Tale.Label>
   <PawnDiary.Dev.PromptSuite.Tale.Text>{0} completed a long research project.</PawnDiary.Dev.PromptSuite.Tale.Text>
+  <PawnDiary.Dev.PromptSuite.Raid.Label>Raid</PawnDiary.Dev.PromptSuite.Raid.Label>
+  <PawnDiary.Dev.PromptSuite.Raid.Text>{0} heard the alarm as raiders approached the colony.</PawnDiary.Dev.PromptSuite.Raid.Text>
+  <PawnDiary.Dev.PromptSuite.Quest.Label>Quest accepted</PawnDiary.Dev.PromptSuite.Quest.Label>
+  <PawnDiary.Dev.PromptSuite.Quest.Text>{0} learned that the colony accepted a synthetic quest.</PawnDiary.Dev.PromptSuite.Quest.Text>
+  <PawnDiary.Dev.PromptSuite.Ritual.Label>Ritual finished</PawnDiary.Dev.PromptSuite.Ritual.Label>
+  <PawnDiary.Dev.PromptSuite.Ritual.Text>{0} stood among the colonists as a synthetic ritual ended.</PawnDiary.Dev.PromptSuite.Ritual.Text>
+  <PawnDiary.Dev.PromptSuite.Ability.Label>Ability used</PawnDiary.Dev.PromptSuite.Ability.Label>
+  <PawnDiary.Dev.PromptSuite.Ability.Text>{0} used a synthetic psycast ability for the diary test.</PawnDiary.Dev.PromptSuite.Ability.Text>
   <PawnDiary.Dev.PromptSuite.DayReflection.Label>End of day</PawnDiary.Dev.PromptSuite.DayReflection.Label>
   <PawnDiary.Dev.PromptSuite.DayReflection.Text>Today brought focused research, a stinging insult, and a creeping fever.</PawnDiary.Dev.PromptSuite.DayReflection.Text>
+  <PawnDiary.Dev.EventPanel.Title>Pawn Diary event tests</PawnDiary.Dev.EventPanel.Title>
+  <PawnDiary.Dev.EventPanel.NoGame>Load a map and enable dev mode before opening Pawn Diary event tests.</PawnDiary.Dev.EventPanel.NoGame>
+  <PawnDiary.Dev.EventPanel.NoPawn>No eligible colonist is available for diary event tests.</PawnDiary.Dev.EventPanel.NoPawn>
+  <PawnDiary.Dev.EventPanel.Pawn>Pawn</PawnDiary.Dev.EventPanel.Pawn>
+  <PawnDiary.Dev.EventPanel.Partner>Partner</PawnDiary.Dev.EventPanel.Partner>
+  <PawnDiary.Dev.EventPanel.NoPartner>Need a second eligible colonist for pair events.</PawnDiary.Dev.EventPanel.NoPartner>
+  <PawnDiary.Dev.EventPanel.SectionEvents>Events</PawnDiary.Dev.EventPanel.SectionEvents>
+  <PawnDiary.Dev.EventPanel.SectionDiary>Diary</PawnDiary.Dev.EventPanel.SectionDiary>
+  <PawnDiary.Dev.EventPanel.SectionFixtures>Fixtures</PawnDiary.Dev.EventPanel.SectionFixtures>
+  <PawnDiary.Dev.EventPanel.RealEvents>Real game event triggers</PawnDiary.Dev.EventPanel.RealEvents>
+  <PawnDiary.Dev.EventPanel.TriggerChoices>Triggered defs</PawnDiary.Dev.EventPanel.TriggerChoices>
+  <PawnDiary.Dev.EventPanel.TriggerButtons>Trigger buttons</PawnDiary.Dev.EventPanel.TriggerButtons>
+  <PawnDiary.Dev.EventPanel.DefChoice>{0}: {1}</PawnDiary.Dev.EventPanel.DefChoice>
+  <PawnDiary.Dev.EventPanel.FirstPawnAbility>First pawn ability</PawnDiary.Dev.EventPanel.FirstPawnAbility>
+  <PawnDiary.Dev.EventPanel.MissingDef>Missing: {0}</PawnDiary.Dev.EventPanel.MissingDef>
+  <PawnDiary.Dev.EventPanel.ResetTriggerChoices>Reset triggered defs</PawnDiary.Dev.EventPanel.ResetTriggerChoices>
+  <PawnDiary.Dev.EventPanel.DiaryTools>Diary tab tools</PawnDiary.Dev.EventPanel.DiaryTools>
+  <PawnDiary.Dev.EventPanel.CardPreviews>Card previews</PawnDiary.Dev.EventPanel.CardPreviews>
+  <PawnDiary.Dev.EventPanel.PromptFixtures>Prompt-only fixtures</PawnDiary.Dev.EventPanel.PromptFixtures>
+  <PawnDiary.Dev.EventPanel.SelectedFixtures>Selected fixtures: {0}/{1}</PawnDiary.Dev.EventPanel.SelectedFixtures>
+  <PawnDiary.Dev.EventPanel.DevReason>Pawn Diary dev event panel</PawnDiary.Dev.EventPanel.DevReason>
+  <PawnDiary.Dev.EventPanel.TriggerSucceeded>Triggered {0}.</PawnDiary.Dev.EventPanel.TriggerSucceeded>
+  <PawnDiary.Dev.EventPanel.TriggerFailed>Could not trigger {0}.</PawnDiary.Dev.EventPanel.TriggerFailed>
+  <PawnDiary.Dev.EventPanel.ScannerRan>Ran {0}.</PawnDiary.Dev.EventPanel.ScannerRan>
+  <PawnDiary.Dev.EventPanel.TriggerThought>Thought: ate without table</PawnDiary.Dev.EventPanel.TriggerThought>
+  <PawnDiary.Dev.EventPanel.TriggerInspiration>Inspiration: recruitment</PawnDiary.Dev.EventPanel.TriggerInspiration>
+  <PawnDiary.Dev.EventPanel.TriggerMentalState>Mental state: berserk</PawnDiary.Dev.EventPanel.TriggerMentalState>
+  <PawnDiary.Dev.EventPanel.TriggerSocialFight>Mental state: social fight</PawnDiary.Dev.EventPanel.TriggerSocialFight>
+  <PawnDiary.Dev.EventPanel.TriggerTale>Tale: vomited</PawnDiary.Dev.EventPanel.TriggerTale>
+  <PawnDiary.Dev.EventPanel.TriggerHediff>Health: add flu</PawnDiary.Dev.EventPanel.TriggerHediff>
+  <PawnDiary.Dev.EventPanel.TriggerMoodEvent>Game condition: aurora</PawnDiary.Dev.EventPanel.TriggerMoodEvent>
+  <PawnDiary.Dev.EventPanel.TriggerInteraction>Play log: deep talk</PawnDiary.Dev.EventPanel.TriggerInteraction>
+  <PawnDiary.Dev.EventPanel.TriggerRomance>Relation: lovers</PawnDiary.Dev.EventPanel.TriggerRomance>
+  <PawnDiary.Dev.EventPanel.TriggerArrival>Arrival: spawn recruit</PawnDiary.Dev.EventPanel.TriggerArrival>
+  <PawnDiary.Dev.EventPanel.TriggerDeath>Death: kill test colonist</PawnDiary.Dev.EventPanel.TriggerDeath>
+  <PawnDiary.Dev.EventPanel.TriggerRaid>Incident: enemy raid</PawnDiary.Dev.EventPanel.TriggerRaid>
+  <PawnDiary.Dev.EventPanel.TriggerQuest>Quest: accept and complete sample</PawnDiary.Dev.EventPanel.TriggerQuest>
+  <PawnDiary.Dev.EventPanel.TriggerAbility>Ability: first available</PawnDiary.Dev.EventPanel.TriggerAbility>
+  <PawnDiary.Dev.EventPanel.TriggerWorkScan>Work: scan current job</PawnDiary.Dev.EventPanel.TriggerWorkScan>
+  <PawnDiary.Dev.EventPanel.TriggerThoughtProgression>Need: hunger progression scan</PawnDiary.Dev.EventPanel.TriggerThoughtProgression>
+  <PawnDiary.Dev.EventPanel.TriggerDayReflection>Day reflection: write now</PawnDiary.Dev.EventPanel.TriggerDayReflection>
+  <PawnDiary.Dev.EventPanel.GenerateAll>Generate all</PawnDiary.Dev.EventPanel.GenerateAll>
+  <PawnDiary.Dev.EventPanel.GenerateSelected>Generate selected</PawnDiary.Dev.EventPanel.GenerateSelected>
+  <PawnDiary.Dev.EventPanel.SelectAll>Select all</PawnDiary.Dev.EventPanel.SelectAll>
+  <PawnDiary.Dev.EventPanel.SelectNone>Select none</PawnDiary.Dev.EventPanel.SelectNone>
+  <PawnDiary.Dev.EventPanel.Clear>Clear</PawnDiary.Dev.EventPanel.Clear>
+  <PawnDiary.Dev.EventPanel.Generated>Captured {0} prompt-test event(s).</PawnDiary.Dev.EventPanel.Generated>
   <PawnDiary.Tab.DevPreviewPlain>Plain</PawnDiary.Tab.DevPreviewPlain>
   <PawnDiary.Tab.DevPreviewMarkdown>Markdown</PawnDiary.Tab.DevPreviewMarkdown>
   <PawnDiary.Tab.DevPreviewSpeech>Speech</PawnDiary.Tab.DevPreviewSpeech>
@@ -103,7 +164,7 @@
   <PawnDiary.Tab.ExpandCollapseTip>Click the header to expand or collapse this page.</PawnDiary.Tab.ExpandCollapseTip>
   <PawnDiary.Tab.CopyEntryTip>Dev-only: copy this page's text to the clipboard. Prompt-only cards copy the captured prompt; other cards copy the generated text.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Copied page text to clipboard.</PawnDiary.Tab.CopyEntryCopied>
-  <PawnDiary.Tab.RegenerateEntryTip>Dev-only: regenerate this page with the current model routing. Paired pages regenerate both POVs when available.</PawnDiary.Tab.RegenerateEntryTip>
+  <PawnDiary.Tab.RegenerateEntryTip>Rewrite this page with the current model routing. Paired pages regenerate both POVs when available.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Queued page regeneration.</PawnDiary.Tab.RegenerateEntryQueued>
   <PawnDiary.Tab.RegenerateEntryUnavailable>This page cannot be regenerated right now.</PawnDiary.Tab.RegenerateEntryUnavailable>
   <PawnDiary.Tab.ArchivedGenerationFallback>You see that: {0}</PawnDiary.Tab.ArchivedGenerationFallback>

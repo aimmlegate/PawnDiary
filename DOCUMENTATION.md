@@ -406,9 +406,26 @@ command helper is marked with RimWorld's `StaticConstructorOnStartup` because it
 texture cache for the button icon; the icon itself still loads lazily from the main-thread gizmo path
 and falls back to the vanilla book icon if the mod texture is missing.
 
-Production UI shows completed pages. Dev mode also shows pending/failure rows, raw prompt/status
-data, formatting previews, prompt-suite tools, copy buttons, regeneration controls, and a completed
-mock-page filler for stress testing long histories. That filler seeds 6,000 saved pages over 3
+Production UI shows completed pages. Each expanded non-archived page has a muted rewrite icon beside
+the model/provenance footer, so players can regenerate that page with the current model routing;
+pairwise pages rewrite both POVs when both are still eligible. Dev mode also shows pending/failure
+rows, raw prompt/status data, and copy buttons. Bulk dev actions live under RimWorld's Debug Actions
+menu as `Pawn Diary > Event test panel...`, which opens a sectioned dev panel for selecting a test
+pawn and partner. The panel has separate Events, Diary, and Fixtures sections and owns the former
+Diary tab action strip: a mock-page filler, the per-pawn persona picker, transient formatting preview
+buttons, real vanilla gameplay triggers, and prompt-only fixture batch/clear tools. The selected pawn,
+partner, active section, per-section scroll, selected trigger Def names, and selected fixture IDs are
+saved on `DiaryGameComponent`, so the panel state survives closing/reopening and normal save/load.
+Real trigger buttons cover paths that Pawn Diary patches, such as thoughts, inspirations, mental
+states, tales, hediffs, map conditions, social play-log entries, romance relations, arrivals, deaths,
+raids, quests, abilities, and the scanner-based work/day-summary flows. The Events section also lets
+dev mode choose the Def each relevant button fires: memory thought, inspiration, mental state, tale,
+hediff, game condition, interaction, relation, incident, quest script, and pawn ability. Preview
+buttons open the selected pawn's Diary tab only to display the transient card; they do not save diary
+events. The prompt-only section uses the same synthetic fixture registry as the old Diary tab
+prompt-suite controls, but can create a selected prompt-test batch at once and can clear all
+prompt-suite entries afterward. The mock
+filler seeds 6,000 saved pages over 3
 in-game years (about 2,000 pages per year) without calling the LLM, and dev-mode retention skips
 mock stress histories so autosaves do not immediately shrink the fixture. Histories page by in-game
 year; newest cards start expanded. Long histories are kept cheap by the active-event cap,
@@ -451,8 +468,8 @@ do not touch saved diary records during pawn
 selection; they read a transient per-pawn status cache. The new-page badge is backed by a saved
 per-pawn unread flag that is set when main LLM text finishes and cleared when that pawn's Diary tab
 opens, while writing dots reuse cached pending counts after the Diary tab finishes its sliced load.
-Archived pages use the same cards and copy controls as hot pages, but dev-only regeneration is hidden
-because compact archive rows intentionally discard prompt/raw-response/retry state.
+Archived pages use the same cards and dev copy controls as hot pages, but the normal rewrite icon is
+hidden because compact archive rows intentionally discard prompt/raw-response/retry state.
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
@@ -679,8 +696,16 @@ node run.js --from-defs --save --model <model-name>
 node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 ```
 
-Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridge/GABS. Prompt-test
-mode intercepts only after a real event reaches `QueuePrompt`; a successful capture logs:
+Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridge/GABS. RimWorld dev
+mode's Debug Actions menu exposes `Pawn Diary > Event test panel...` for common real trigger paths:
+select an eligible colonist, optionally select a partner, open the Events section, choose any needed
+trigger Defs, and press the relevant real-event button. Some buttons deliberately mutate the
+disposable save, such as spawning a recruit, killing a test colonist, creating a raid, or
+accepting/completing a sample quest. For Diary UI stress checks, use the same panel's Diary section to
+fill mock pages, switch personas, or open transient card previews. For prompt shape checks that do not
+need a real gameplay trigger, use the Fixtures section and generate all or selected fixtures for an
+eligible colonist. Prompt-test mode intercepts only after an event reaches
+`QueuePrompt`; a successful capture logs:
 
 ```text
 [PawnDiary debug] Captured prompt without generation event=<id> role=<role>

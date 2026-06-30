@@ -37,7 +37,7 @@ namespace PawnDiary
         public int TextSeed;
         public IEnumerable<DiaryNameHighlight> NameHighlights;
         public bool HasLinkedEntry;
-        public bool HasFooterNote;
+        public bool HasFooterLine;
         public float EntryTextTop;
         public float EntryBottomPadding;
         public float LinkedEntryPadding;
@@ -131,7 +131,7 @@ namespace PawnDiary
                 height += request.LinkedEntryTotalHeight + request.LinkedEntryPadding;
             }
 
-            if (request.HasFooterNote)
+            if (request.HasFooterLine)
             {
                 height += request.ModelNameTopPadding + request.ModelNameHeight;
             }

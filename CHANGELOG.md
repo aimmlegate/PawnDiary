@@ -6,6 +6,23 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Diary page rewrite action moved into normal UI.** Expanded non-archived diary pages now show a
+  subdued rewrite icon beside the model/provenance footer, using a Def-backed tint and a pencil-style
+  icon instead of the brighter dev-only reload control. Archived compact pages still hide rewrite
+  because their retry state is intentionally discarded.
+- **Dev event test panel added.** RimWorld dev mode now exposes `Pawn Diary > Event test panel...`
+  in Debug Actions. The panel selects an eligible colonist and optional partner, then offers real
+  vanilla trigger buttons for common diary sources: thoughts, inspirations, mental states, tales,
+  hediffs, game conditions, social log entries, romance relations, arrivals, deaths, raids, quests,
+  abilities, work scans, thought progression, and day reflection. It also keeps the prompt-only
+  fixture batch/clear tools, and the prompt suite now covers every registered diary event source,
+  including arrival, death, thought progression, raid, quest, ritual, and ability. The former Diary
+  tab dev action strip moved into this panel too, including mock history fill, persona selection, and
+  transient card-format previews. The panel is now split into Events, Diary, and Fixtures sections
+  and saves its selected pawn, partner, active section, scroll positions, selected real-trigger Defs,
+  and selected prompt fixtures with the current game. The Events section can now change the Def fired
+  by the thought, inspiration, mental-state, tale, hediff, game-condition, interaction, relation,
+  incident, quest, and ability triggers.
 - **Split active and archived per-pawn retention settings.** The settings page now has separate caps
   for full hot diary pages (`maxActiveDiaryEvents`, default 3000) and compact archived pages
   (`maxArchivedDiaryEvents`, default 10000). Archive retention keeps each pawn's newest compact rows,

@@ -53,6 +53,10 @@
   <PawnDiary.Dev.PromptSuite.Romance.Recipient>Мы с {0} поженились.</PawnDiary.Dev.PromptSuite.Romance.Recipient>
   <PawnDiary.Dev.PromptSuite.MentalBreak.Label>Слепая ярость</PawnDiary.Dev.PromptSuite.MentalBreak.Label>
   <PawnDiary.Dev.PromptSuite.MentalBreak.Text>У {0} случился срыв и слепая ярость.</PawnDiary.Dev.PromptSuite.MentalBreak.Text>
+  <PawnDiary.Dev.PromptSuite.Arrival.Label>Прибытие</PawnDiary.Dev.PromptSuite.Arrival.Label>
+  <PawnDiary.Dev.PromptSuite.Arrival.Text>{0} присоединился к поселению в синтетическом тесте прибытия.</PawnDiary.Dev.PromptSuite.Arrival.Text>
+  <PawnDiary.Dev.PromptSuite.Death.Label>Смерть</PawnDiary.Dev.PromptSuite.Death.Label>
+  <PawnDiary.Dev.PromptSuite.Death.Text>{0} погиб в синтетическом тесте описания смерти.</PawnDiary.Dev.PromptSuite.Death.Text>
   <PawnDiary.Dev.PromptSuite.Hediff.Label>Болезнь</PawnDiary.Dev.PromptSuite.Hediff.Label>
   <PawnDiary.Dev.PromptSuite.Hediff.Text>У {0} начался грипп.</PawnDiary.Dev.PromptSuite.Hediff.Text>
   <PawnDiary.Dev.PromptSuite.Inspiration.Label>Воодушевление</PawnDiary.Dev.PromptSuite.Inspiration.Label>
@@ -61,12 +65,69 @@
   <PawnDiary.Dev.PromptSuite.Work.Text>{0}: работа за столом для исследований.</PawnDiary.Dev.PromptSuite.Work.Text>
   <PawnDiary.Dev.PromptSuite.Thought.Label>Еда без стола</PawnDiary.Dev.PromptSuite.Thought.Label>
   <PawnDiary.Dev.PromptSuite.Thought.Text>{0}: еда с пола.</PawnDiary.Dev.PromptSuite.Thought.Text>
+  <PawnDiary.Dev.PromptSuite.ThoughtProgression.Label>Голод</PawnDiary.Dev.PromptSuite.ThoughtProgression.Label>
+  <PawnDiary.Dev.PromptSuite.ThoughtProgression.Text>Голод {0} усилился до истощения.</PawnDiary.Dev.PromptSuite.ThoughtProgression.Text>
   <PawnDiary.Dev.PromptSuite.MoodEvent.Label>Жара</PawnDiary.Dev.PromptSuite.MoodEvent.Label>
   <PawnDiary.Dev.PromptSuite.MoodEvent.Text>На поселение опустилась палящая жара.</PawnDiary.Dev.PromptSuite.MoodEvent.Text>
   <PawnDiary.Dev.PromptSuite.Tale.Label>Завершено исследование</PawnDiary.Dev.PromptSuite.Tale.Label>
   <PawnDiary.Dev.PromptSuite.Tale.Text>{0}: долгий исследовательский проект завершён.</PawnDiary.Dev.PromptSuite.Tale.Text>
+  <PawnDiary.Dev.PromptSuite.Raid.Label>Рейд</PawnDiary.Dev.PromptSuite.Raid.Label>
+  <PawnDiary.Dev.PromptSuite.Raid.Text>{0} услышал тревогу: к поселению приближались налётчики.</PawnDiary.Dev.PromptSuite.Raid.Text>
+  <PawnDiary.Dev.PromptSuite.Quest.Label>Задание принято</PawnDiary.Dev.PromptSuite.Quest.Label>
+  <PawnDiary.Dev.PromptSuite.Quest.Text>{0} узнал, что поселение приняло синтетическое задание.</PawnDiary.Dev.PromptSuite.Quest.Text>
+  <PawnDiary.Dev.PromptSuite.Ritual.Label>Ритуал завершён</PawnDiary.Dev.PromptSuite.Ritual.Label>
+  <PawnDiary.Dev.PromptSuite.Ritual.Text>{0} стоял среди поселенцев, когда синтетический ритуал завершился.</PawnDiary.Dev.PromptSuite.Ritual.Text>
+  <PawnDiary.Dev.PromptSuite.Ability.Label>Способность применена</PawnDiary.Dev.PromptSuite.Ability.Label>
+  <PawnDiary.Dev.PromptSuite.Ability.Text>{0} применил синтетическую пси-способность для теста дневника.</PawnDiary.Dev.PromptSuite.Ability.Text>
   <PawnDiary.Dev.PromptSuite.DayReflection.Label>Конец дня</PawnDiary.Dev.PromptSuite.DayReflection.Label>
   <PawnDiary.Dev.PromptSuite.DayReflection.Text>День принёс сосредоточенное исследование, жгучее оскорбление и подступающую жару.</PawnDiary.Dev.PromptSuite.DayReflection.Text>
+  <PawnDiary.Dev.EventPanel.Title>Тесты событий Pawn Diary</PawnDiary.Dev.EventPanel.Title>
+  <PawnDiary.Dev.EventPanel.NoGame>Загрузите карту и включите режим разработчика, прежде чем открывать тесты событий Pawn Diary.</PawnDiary.Dev.EventPanel.NoGame>
+  <PawnDiary.Dev.EventPanel.NoPawn>Нет подходящего поселенца для тестов событий дневника.</PawnDiary.Dev.EventPanel.NoPawn>
+  <PawnDiary.Dev.EventPanel.Pawn>Поселенец</PawnDiary.Dev.EventPanel.Pawn>
+  <PawnDiary.Dev.EventPanel.Partner>Партнёр</PawnDiary.Dev.EventPanel.Partner>
+  <PawnDiary.Dev.EventPanel.NoPartner>Для парных событий нужен второй подходящий поселенец.</PawnDiary.Dev.EventPanel.NoPartner>
+  <PawnDiary.Dev.EventPanel.SectionEvents>События</PawnDiary.Dev.EventPanel.SectionEvents>
+  <PawnDiary.Dev.EventPanel.SectionDiary>Дневник</PawnDiary.Dev.EventPanel.SectionDiary>
+  <PawnDiary.Dev.EventPanel.SectionFixtures>Шаблоны</PawnDiary.Dev.EventPanel.SectionFixtures>
+  <PawnDiary.Dev.EventPanel.RealEvents>Настоящие игровые события</PawnDiary.Dev.EventPanel.RealEvents>
+  <PawnDiary.Dev.EventPanel.TriggerChoices>Запускаемые Def</PawnDiary.Dev.EventPanel.TriggerChoices>
+  <PawnDiary.Dev.EventPanel.TriggerButtons>Кнопки запуска</PawnDiary.Dev.EventPanel.TriggerButtons>
+  <PawnDiary.Dev.EventPanel.DefChoice>{0}: {1}</PawnDiary.Dev.EventPanel.DefChoice>
+  <PawnDiary.Dev.EventPanel.FirstPawnAbility>Первая способность пешки</PawnDiary.Dev.EventPanel.FirstPawnAbility>
+  <PawnDiary.Dev.EventPanel.MissingDef>Не найдено: {0}</PawnDiary.Dev.EventPanel.MissingDef>
+  <PawnDiary.Dev.EventPanel.ResetTriggerChoices>Сбросить Def запуска</PawnDiary.Dev.EventPanel.ResetTriggerChoices>
+  <PawnDiary.Dev.EventPanel.DiaryTools>Инструменты вкладки дневника</PawnDiary.Dev.EventPanel.DiaryTools>
+  <PawnDiary.Dev.EventPanel.CardPreviews>Предпросмотр карточек</PawnDiary.Dev.EventPanel.CardPreviews>
+  <PawnDiary.Dev.EventPanel.PromptFixtures>Только проверка запросов</PawnDiary.Dev.EventPanel.PromptFixtures>
+  <PawnDiary.Dev.EventPanel.SelectedFixtures>Выбрано шаблонов: {0}/{1}</PawnDiary.Dev.EventPanel.SelectedFixtures>
+  <PawnDiary.Dev.EventPanel.DevReason>Панель тестов событий Pawn Diary</PawnDiary.Dev.EventPanel.DevReason>
+  <PawnDiary.Dev.EventPanel.TriggerSucceeded>Запущено: {0}.</PawnDiary.Dev.EventPanel.TriggerSucceeded>
+  <PawnDiary.Dev.EventPanel.TriggerFailed>Не удалось запустить: {0}.</PawnDiary.Dev.EventPanel.TriggerFailed>
+  <PawnDiary.Dev.EventPanel.ScannerRan>Запущен сканер: {0}.</PawnDiary.Dev.EventPanel.ScannerRan>
+  <PawnDiary.Dev.EventPanel.TriggerThought>Мысль: еда без стола</PawnDiary.Dev.EventPanel.TriggerThought>
+  <PawnDiary.Dev.EventPanel.TriggerInspiration>Воодушевление: вербовка</PawnDiary.Dev.EventPanel.TriggerInspiration>
+  <PawnDiary.Dev.EventPanel.TriggerMentalState>Психика: слепая ярость</PawnDiary.Dev.EventPanel.TriggerMentalState>
+  <PawnDiary.Dev.EventPanel.TriggerSocialFight>Психика: потасовка</PawnDiary.Dev.EventPanel.TriggerSocialFight>
+  <PawnDiary.Dev.EventPanel.TriggerTale>История: рвота</PawnDiary.Dev.EventPanel.TriggerTale>
+  <PawnDiary.Dev.EventPanel.TriggerHediff>Здоровье: добавить грипп</PawnDiary.Dev.EventPanel.TriggerHediff>
+  <PawnDiary.Dev.EventPanel.TriggerMoodEvent>Условие карты: полярное сияние</PawnDiary.Dev.EventPanel.TriggerMoodEvent>
+  <PawnDiary.Dev.EventPanel.TriggerInteraction>Журнал: глубокий разговор</PawnDiary.Dev.EventPanel.TriggerInteraction>
+  <PawnDiary.Dev.EventPanel.TriggerRomance>Отношения: возлюбленные</PawnDiary.Dev.EventPanel.TriggerRomance>
+  <PawnDiary.Dev.EventPanel.TriggerArrival>Прибытие: создать новобранца</PawnDiary.Dev.EventPanel.TriggerArrival>
+  <PawnDiary.Dev.EventPanel.TriggerDeath>Смерть: убить тестового поселенца</PawnDiary.Dev.EventPanel.TriggerDeath>
+  <PawnDiary.Dev.EventPanel.TriggerRaid>Инцидент: вражеский рейд</PawnDiary.Dev.EventPanel.TriggerRaid>
+  <PawnDiary.Dev.EventPanel.TriggerQuest>Задание: принять и завершить пример</PawnDiary.Dev.EventPanel.TriggerQuest>
+  <PawnDiary.Dev.EventPanel.TriggerAbility>Способность: первая доступная</PawnDiary.Dev.EventPanel.TriggerAbility>
+  <PawnDiary.Dev.EventPanel.TriggerWorkScan>Работа: проверить текущую задачу</PawnDiary.Dev.EventPanel.TriggerWorkScan>
+  <PawnDiary.Dev.EventPanel.TriggerThoughtProgression>Потребность: сканер голода</PawnDiary.Dev.EventPanel.TriggerThoughtProgression>
+  <PawnDiary.Dev.EventPanel.TriggerDayReflection>Итог дня: написать сейчас</PawnDiary.Dev.EventPanel.TriggerDayReflection>
+  <PawnDiary.Dev.EventPanel.GenerateAll>Создать все</PawnDiary.Dev.EventPanel.GenerateAll>
+  <PawnDiary.Dev.EventPanel.GenerateSelected>Создать выбранные</PawnDiary.Dev.EventPanel.GenerateSelected>
+  <PawnDiary.Dev.EventPanel.SelectAll>Выбрать все</PawnDiary.Dev.EventPanel.SelectAll>
+  <PawnDiary.Dev.EventPanel.SelectNone>Снять выбор</PawnDiary.Dev.EventPanel.SelectNone>
+  <PawnDiary.Dev.EventPanel.Clear>Очистить</PawnDiary.Dev.EventPanel.Clear>
+  <PawnDiary.Dev.EventPanel.Generated>Сохранено проверочных событий: {0}.</PawnDiary.Dev.EventPanel.Generated>
   <PawnDiary.Tab.DevPreviewPlain>Текст</PawnDiary.Tab.DevPreviewPlain>
   <PawnDiary.Tab.DevPreviewMarkdown>Разметка</PawnDiary.Tab.DevPreviewMarkdown>
   <PawnDiary.Tab.DevPreviewSpeech>Речь</PawnDiary.Tab.DevPreviewSpeech>
@@ -97,7 +158,7 @@
   <PawnDiary.Tab.ExpandCollapseTip>Развернуть или свернуть страницу.</PawnDiary.Tab.ExpandCollapseTip>
   <PawnDiary.Tab.CopyEntryTip>Только для разработки: скопировать текст страницы. Карточки с запросом копируют сам запрос, остальные — готовый текст.</PawnDiary.Tab.CopyEntryTip>
   <PawnDiary.Tab.CopyEntryCopied>Текст страницы скопирован.</PawnDiary.Tab.CopyEntryCopied>
-  <PawnDiary.Tab.RegenerateEntryTip>Только для разработки: написать страницу заново с текущими правилами выбора моделей. Парные страницы обновят оба взгляда, если они доступны.</PawnDiary.Tab.RegenerateEntryTip>
+  <PawnDiary.Tab.RegenerateEntryTip>Написать страницу заново с текущими правилами выбора моделей. Парные страницы обновят оба взгляда, если они доступны.</PawnDiary.Tab.RegenerateEntryTip>
   <PawnDiary.Tab.RegenerateEntryQueued>Страница отправлена на повторное написание.</PawnDiary.Tab.RegenerateEntryQueued>
   <PawnDiary.Tab.RegenerateEntryUnavailable>Сейчас эту страницу нельзя написать заново.</PawnDiary.Tab.RegenerateEntryUnavailable>
   <PawnDiary.Tab.ArchivedGenerationFallback>Событие: {0}</PawnDiary.Tab.ArchivedGenerationFallback>
