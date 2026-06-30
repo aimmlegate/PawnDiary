@@ -71,7 +71,7 @@ namespace PawnDiary
             events.Register(diaryEvent);
             AddEventRef(initiator, diaryEvent.eventId);
             AddEventRef(recipient, diaryEvent.eventId);
-            ApplyActiveEventLimit();
+            ApplyDiaryEventLimits();
             return diaryEvent;
         }
 
@@ -120,7 +120,7 @@ namespace PawnDiary
             diaryEvent.SetTextDecorationFacts(DiaryEvent.InitiatorRole, PawnFactCapture.TextDecorationFacts(pawn));
             events.Register(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId);
-            ApplyActiveEventLimit();
+            ApplyDiaryEventLimits();
             return diaryEvent;
         }
     }

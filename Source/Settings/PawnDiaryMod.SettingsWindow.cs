@@ -8,10 +8,12 @@ namespace PawnDiary
 {
     public partial class PawnDiaryMod
     {
-        // Text buffer for the numeric active-event cap field. RimWorld IMGUI redraws every frame, so
-        // keeping a buffer lets the user edit the value without the field fighting each keystroke.
+        // Text buffers for the numeric retention cap fields. RimWorld IMGUI redraws every frame, so
+        // keeping buffers lets the user edit values without the fields fighting each keystroke.
         private string maxActiveDiaryEventsBuffer;
         private int maxActiveDiaryEventsBufferValue = -1;
+        private string maxArchivedDiaryEventsBuffer;
+        private int maxArchivedDiaryEventsBufferValue = -1;
 
         /// <summary>
         /// Draws the full settings window: API lanes, generation controls, the prompt-text studio,
@@ -80,6 +82,7 @@ namespace PawnDiary
                 listing.Label("PawnDiary.Settings.SocialGenerationWeight".Translate(Settings.socialGenerationWeight.ToString("0.##")));
                 Settings.socialGenerationWeight = listing.Slider(Settings.socialGenerationWeight, 0f, 5f);
                 DrawMaxActiveDiaryEventsField(listing);
+                DrawMaxArchivedDiaryEventsField(listing);
 
                 DrawPromptStudio(listing);
                 DrawPersonaStudio(listing);
@@ -97,7 +100,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the per-pawn diary-history cap as a numeric text field instead of a slider.
+        /// Draws the per-pawn hot diary-history cap as a numeric text field instead of a slider.
         /// Non-digits are removed immediately; parsed values are clamped to the supported range.
         /// </summary>
         private void DrawMaxActiveDiaryEventsField(Listing_Standard listing)
@@ -130,6 +133,44 @@ namespace PawnDiary
                     || parsed > PawnDiarySettings.MaxActiveDiaryEvents)
                 {
                     maxActiveDiaryEventsBuffer = clamped.ToString();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws the per-pawn compact archive cap. 0 is valid here, so the archive can be disabled
+        /// without letting the active hot diary list disappear completely.
+        /// </summary>
+        private void DrawMaxArchivedDiaryEventsField(Listing_Standard listing)
+        {
+            int currentValue = PawnDiarySettings.ClampArchivedDiaryEventLimit(Settings.maxArchivedDiaryEvents);
+            if (maxArchivedDiaryEventsBuffer == null || maxArchivedDiaryEventsBufferValue != currentValue)
+            {
+                maxArchivedDiaryEventsBuffer = currentValue.ToString();
+                maxArchivedDiaryEventsBufferValue = currentValue;
+            }
+
+            Rect rect = listing.GetRect(28f);
+            string edited = DrawCompactTextField(
+                rect,
+                "PawnDiary.Settings.MaxArchivedDiaryEvents".Translate(
+                    PawnDiarySettings.MinArchivedDiaryEvents,
+                    PawnDiarySettings.MaxArchivedDiaryEvents),
+                maxArchivedDiaryEventsBuffer,
+                230f);
+            string numeric = DigitsOnly(edited);
+            maxArchivedDiaryEventsBuffer = numeric;
+
+            int parsed;
+            if (!string.IsNullOrEmpty(numeric) && int.TryParse(numeric, out parsed))
+            {
+                int clamped = PawnDiarySettings.ClampArchivedDiaryEventLimit(parsed);
+                Settings.maxArchivedDiaryEvents = clamped;
+                maxArchivedDiaryEventsBufferValue = clamped;
+                if (parsed < PawnDiarySettings.MinArchivedDiaryEvents
+                    || parsed > PawnDiarySettings.MaxArchivedDiaryEvents)
+                {
+                    maxArchivedDiaryEventsBuffer = clamped.ToString();
                 }
             }
         }
@@ -185,7 +226,7 @@ namespace PawnDiary
             }
 
             // Generation controls, compact prompt studio, and writing-style preset studio.
-            height += 315f;
+            height += 343f;
             if (Prefs.DevMode)
             {
                 height += 62f;

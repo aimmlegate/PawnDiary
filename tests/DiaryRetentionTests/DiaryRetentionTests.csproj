@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Pure per-pawn retention planner only — no RimWorld/Verse/UnityEngine. If DiaryRetentionPlan
-         ever starts using Verse, do NOT link it here; keep the decision pure instead. -->
+    <!-- Pure shared per-pawn retention planner only — no RimWorld/Verse/UnityEngine. If
+         DiaryRetentionPlan ever starts using Verse, do NOT link it here; keep the decision pure instead. -->
     <Compile Include="..\..\Source\Pipeline\DiaryRetentionPlan.cs" Link="Pipeline\DiaryRetentionPlan.cs" />
   </ItemGroup>
 </Project>

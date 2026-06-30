@@ -154,7 +154,7 @@ namespace PawnDiary
                 {
                     line = DiaryLineCleaner.CleanLine(line);
                     int max = DiaryTuning.Current.diaryLineMaxChars;
-                    return line.Length <= max ? line : line.Substring(0, max) + "...";
+                    return line.Length <= max ? line : TextTruncation.SafePrefix(line, max) + "...";
                 }
             }
 
@@ -230,7 +230,7 @@ namespace PawnDiary
 
             // No sentence-ending punctuation found; return the whole text (truncated)
             int max = DiaryTuning.Current.diaryLineMaxChars;
-            return cleaned.Length <= max ? cleaned : cleaned.Substring(0, max) + "...";
+            return cleaned.Length <= max ? cleaned : TextTruncation.SafePrefix(cleaned, max) + "...";
         }
 
         // Cached WeatherDef.defName -> mention chance lookup, rebuilt only when the tuning Def

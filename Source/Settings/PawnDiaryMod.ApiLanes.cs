@@ -10,6 +10,11 @@ namespace PawnDiary
 {
     public partial class PawnDiaryMod
     {
+        // Per-endpoint "show this key in cleartext" choices for the open settings window. Keyed by the
+        // ApiEndpointConfig instance so the choice survives row reordering, and defaulting to absent
+        // means every key starts masked. Session-only UI state; never saved.
+        private static readonly HashSet<ApiEndpointConfig> revealedApiKeys = new HashSet<ApiEndpointConfig>();
+
         /// <summary>
         /// Draws the list of API lanes in a compact, collapsible block. Each row stores one
         /// endpoint/key/model tuple, can be enabled or disabled, and has fetch/pick model buttons.
@@ -236,7 +241,7 @@ namespace PawnDiary
             const float testButtonWidth = 96f;
             Rect testRect = new Rect(keyRect.xMax - testButtonWidth, keyRect.y, testButtonWidth, keyRect.height);
             Rect keyFieldRect = new Rect(keyRect.x, keyRect.y, keyRect.width - testButtonWidth - gap, keyRect.height);
-            endpoint.apiKey = DrawCompactTextField(keyFieldRect, "PawnDiary.Settings.ApiKey".Translate(), endpoint.apiKey, 94f);
+            DrawApiKeyField(keyFieldRect, endpoint, 94f);
             DrawConnectionTestButton(testRect, index);
 
             y += lineHeight + gap;
@@ -259,6 +264,62 @@ namespace PawnDiary
             }
 
             listing.Gap(6f);
+        }
+
+        /// <summary>
+        /// Draws the API-key row with the key masked by default and a Show/Hide toggle. A key is never
+        /// rendered in cleartext until the player explicitly reveals that row, so it is not exposed on
+        /// screen (shoulder-surfing, screenshots, streaming). Reveal state is per-endpoint and
+        /// session-only (see <see cref="revealedApiKeys"/>).
+        /// </summary>
+        private static void DrawApiKeyField(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        {
+            const float gap = 4f;
+            const float toggleWidth = 52f;
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect toggleRect = new Rect(rect.xMax - toggleWidth, rect.y, toggleWidth, rect.height);
+            Rect fieldRect = new Rect(labelRect.xMax + gap, rect.y, Mathf.Max(0f, toggleRect.x - labelRect.xMax - gap - gap), rect.height);
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ApiKey".Translate());
+
+            bool revealed = revealedApiKeys.Contains(endpoint);
+            if (revealed)
+            {
+                endpoint.apiKey = Widgets.TextField(fieldRect, endpoint.apiKey ?? string.Empty);
+            }
+            else
+            {
+                // Masked, non-editable display: a flat box with bullets, never the real key text.
+                Widgets.DrawBoxSolid(fieldRect, new Color(0f, 0f, 0f, 0.12f));
+                Rect maskedRect = new Rect(fieldRect.x + 4f, fieldRect.y, Mathf.Max(0f, fieldRect.width - 8f), fieldRect.height);
+                DrawMutedLabel(maskedRect, MaskedApiKey(endpoint.apiKey));
+            }
+
+            string toggleKey = revealed ? "PawnDiary.Settings.HideApiKey" : "PawnDiary.Settings.RevealApiKey";
+            if (ButtonTextFit(toggleRect, toggleKey.Translate()))
+            {
+                if (revealed)
+                {
+                    revealedApiKeys.Remove(endpoint);
+                }
+                else
+                {
+                    revealedApiKeys.Add(endpoint);
+                }
+            }
+
+            TooltipHandler.TipRegion(toggleRect, "PawnDiary.Settings.RevealApiKeyTip".Translate());
+        }
+
+        /// <summary>Bullet-only stand-in for a hidden API key; length is capped so a long key
+        /// cannot widen the row or hint at the real length.</summary>
+        private static string MaskedApiKey(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return string.Empty;
+            }
+
+            return new string('•', Mathf.Clamp(key.Length, 1, 16));
         }
 
         /// <summary>
@@ -333,6 +394,13 @@ namespace PawnDiary
                     ApiAuthModeOption(endpoint, ApiAuthMode.QueryParameterKey)
                 };
                 Find.WindowStack.Add(new FloatMenu(options));
+            }
+
+            // Query-parameter auth puts the key in the request URL, where the endpoint's own server
+            // logs can capture it. Warn so players reach for a header-based mode when one is available.
+            if (PawnDiarySettings.NormalizeAuthMode(endpoint.authMode) == ApiAuthMode.QueryParameterKey)
+            {
+                TooltipHandler.TipRegion(buttonRect, "PawnDiary.Settings.QueryKeyAuthCaution".Translate());
             }
 
             if (customHeader)

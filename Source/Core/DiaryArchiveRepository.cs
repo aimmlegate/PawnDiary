@@ -109,6 +109,68 @@ namespace PawnDiary
             return removed;
         }
 
+        /// <summary>
+        /// Caps each pawn's compact archive to its newest <paramref name="perPawnLimit"/> rows. The
+        /// pawn indexes are already in saved/archive order, oldest first, so the shared retention plan can
+        /// decide the survivor keys without this repository mutating while it is planning.
+        /// </summary>
+        public bool TrimPerPawnLimit(int perPawnLimit)
+        {
+            if (perPawnLimit < 0 || archiveEntries.Count == 0 || entriesByPawnId.Count == 0)
+            {
+                return false;
+            }
+
+            bool anyOver = false;
+            foreach (KeyValuePair<string, List<ArchivedDiaryEntry>> pair in entriesByPawnId)
+            {
+                List<ArchivedDiaryEntry> entries = pair.Value;
+                if (entries != null && entries.Count > perPawnLimit)
+                {
+                    anyOver = true;
+                    break;
+                }
+            }
+
+            if (!anyOver)
+            {
+                return false;
+            }
+
+            List<IReadOnlyList<string>> perPawnArchiveKeys = new List<IReadOnlyList<string>>();
+            foreach (KeyValuePair<string, List<ArchivedDiaryEntry>> pair in entriesByPawnId)
+            {
+                List<ArchivedDiaryEntry> entries = pair.Value;
+                List<string> keys = new List<string>();
+                if (entries != null)
+                {
+                    for (int i = 0; i < entries.Count; i++)
+                    {
+                        ArchivedDiaryEntry entry = entries[i];
+                        keys.Add(entry == null ? string.Empty : entry.ArchiveKey);
+                    }
+                }
+
+                perPawnArchiveKeys.Add(keys);
+            }
+
+            DiaryRetentionResult plan = DiaryRetentionPlan.Plan(perPawnArchiveKeys, perPawnLimit);
+            if (!plan.TrimmedAny)
+            {
+                return false;
+            }
+
+            int before = archiveEntries.Count;
+            archiveEntries.RemoveAll(e => e == null || !plan.Referenced.Contains(e.ArchiveKey));
+            if (archiveEntries.Count == before)
+            {
+                return false;
+            }
+
+            RebuildIndex();
+            return true;
+        }
+
         public int? FirstArrivalTickForPawn(string pawnId)
         {
             IReadOnlyList<ArchivedDiaryEntry> entries = EntriesForPawn(pawnId);

@@ -215,7 +215,11 @@ namespace PawnDiary
             {
                 if (!ReferenceEquals(candidate, primary))
                 {
-                    failovers.Add(candidate);
+                    // Snapshot, don't alias: this list is stamped onto the request and read on the
+                    // background HTTP worker (BuildAttemptTargets), so handing over a live settings
+                    // object would let a mid-flight settings edit tear the values the worker reads.
+                    // The primary lane is already snapshotted into request primitives in QueuePrompt.
+                    failovers.Add(candidate?.Copy());
                 }
             }
 

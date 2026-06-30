@@ -128,6 +128,11 @@ namespace LlmResponseParserTests
                 LlmResponseParser.StripReasoningTextBlocks("hidden</think>\nVisible."));
 
             AssertEqual(
+                "multiple orphan closing think tags are all stripped",
+                "Visible.",
+                LlmResponseParser.StripReasoningTextBlocks("hidden</think>more hidden</think>Visible."));
+
+            AssertEqual(
                 "fenced reasoning",
                 "Answer.",
                 LlmResponseParser.StripReasoningTextBlocks("```thinking\nsecret\n```\nAnswer."));

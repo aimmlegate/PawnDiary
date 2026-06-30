@@ -146,12 +146,13 @@ namespace PawnDiary
         // work sampling and batched-social promotion. 1x preserves XML tuning defaults.
         public float workGenerationWeight = 1f;
         public float socialGenerationWeight = 1f;
-        // Per-pawn hard cap for saved diary pages. Each pawn keeps its newest maxActiveDiaryEvents
-        // event references; older ones drop off that pawn's list, and a master-list event is removed
-        // only once no pawn references it anymore (paired/neutral events are shared). The field name
-        // and Scribe key stay "maxActiveDiaryEvents" for save compatibility even though the meaning is
-        // now per pawn rather than global.
+        // Per-pawn hard cap for hot diary pages. Each pawn keeps its newest maxActiveDiaryEvents
+        // full event references; older displayable rows compact into the archive before the hot ref is
+        // removed. The field name and Scribe key stay "maxActiveDiaryEvents" for save compatibility.
         public int maxActiveDiaryEvents = DefaultMaxActiveDiaryEvents;
+        // Per-pawn hard cap for compact archived diary pages. Archive rows are display-only, so this
+        // defaults higher than the hot cap; 0 is allowed for players who want old compact rows purged.
+        public int maxArchivedDiaryEvents = DefaultMaxArchivedDiaryEvents;
 
         // Legacy per-interaction-group settings, keyed by InteractionGroup.defName. Event filtering
         // is now XML-only (DiaryInteractionGroupDef.defaultEnabled); this dictionary remains only so
@@ -173,13 +174,18 @@ namespace PawnDiary
         public const string DefaultModelName = "local-model";
         // Sentinel value stored in settings to mean "do not send a reasoning override".
         public const string DefaultReasoningEffort = ApiEndpointPolicy.DefaultReasoningEffort;
-        // Per-pawn diary-history retention cap. The lower bound keeps the cap positive; the upper
-        // bound keeps any single pawn's saved history bounded. Background scan cost no longer scales
-        // with this cap — maintenance scans use the global activeScanEventWindow hot set, not the full
-        // per-pawn history — so this ceiling controls saved-history depth/memory, not scan pressure.
+        // Per-pawn hot diary-history retention cap. The lower bound keeps the cap positive; the upper
+        // bound keeps any single pawn's full event history bounded. Background scan cost no longer
+        // scales with this cap because maintenance scans use the global activeScanEventWindow hot set.
         public const int DefaultMaxActiveDiaryEvents = 3000;
         public const int MinActiveDiaryEvents = 1;
         public const int MaxActiveDiaryEvents = 10000;
+        // Per-pawn compact archive cap. Archived rows are much smaller than hot DiaryEvent records and
+        // never enter generation scans, so the editable ceiling can be higher. 0 means keep no archive
+        // rows after they age out of the active hot list.
+        public const int DefaultMaxArchivedDiaryEvents = 10000;
+        public const int MinArchivedDiaryEvents = 0;
+        public const int MaxArchivedDiaryEvents = 50000;
 
         public override void ExposeData()
         {
@@ -210,6 +216,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref workGenerationWeight, "workGenerationWeight", 1f);
             Scribe_Values.Look(ref socialGenerationWeight, "socialGenerationWeight", 1f);
             Scribe_Values.Look(ref maxActiveDiaryEvents, "maxActiveDiaryEvents", DefaultMaxActiveDiaryEvents);
+            Scribe_Values.Look(ref maxArchivedDiaryEvents, "maxArchivedDiaryEvents", DefaultMaxArchivedDiaryEvents);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             personaPresets.ExposeData();
 
@@ -732,6 +739,7 @@ namespace PawnDiary
             workGenerationWeight = Mathf.Clamp(workGenerationWeight, 0f, 5f);
             socialGenerationWeight = Mathf.Clamp(socialGenerationWeight, 0f, 5f);
             maxActiveDiaryEvents = ClampActiveDiaryEventLimit(maxActiveDiaryEvents);
+            maxArchivedDiaryEvents = ClampArchivedDiaryEventLimit(maxArchivedDiaryEvents);
         }
 
         /// <summary>
@@ -740,6 +748,14 @@ namespace PawnDiary
         public static int ClampActiveDiaryEventLimit(int value)
         {
             return Mathf.Clamp(value, MinActiveDiaryEvents, MaxActiveDiaryEvents);
+        }
+
+        /// <summary>
+        /// Clamps the archived diary-event history cap to the bounded range exposed in settings.
+        /// </summary>
+        public static int ClampArchivedDiaryEventLimit(int value)
+        {
+            return Mathf.Clamp(value, MinArchivedDiaryEvents, MaxArchivedDiaryEvents);
         }
 
         /// <summary>

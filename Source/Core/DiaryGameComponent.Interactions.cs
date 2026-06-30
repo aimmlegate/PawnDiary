@@ -45,6 +45,12 @@ namespace PawnDiary
                 || SpeakUpReplySchedulingGuardPatch.CanRenderTaggedGrammarSafely;
         }
 
+        // Memoized result of the recursive rule-pack walk below, keyed by InteractionDef. The walk is
+        // pure over an InteractionDef's immutable rule graph, but it runs on the PlayLog.Add hot path
+        // (per captured interaction) and allocates a HashSet each call — so cache it once per def.
+        private static readonly Dictionary<InteractionDef, bool> taggedLogGrammarCache =
+            new Dictionary<InteractionDef, bool>();
+
         // Conversation-framework mods can attach grammar tags to social-log rules and use those
         // tags to schedule follow-up interactions while RimWorld renders the log text. Pawn Diary is
         // only observing the row, so it avoids rendering tagged grammar here and lets the recorder
@@ -56,16 +62,25 @@ namespace PawnDiary
                 return false;
             }
 
+            bool tagged;
+            if (taggedLogGrammarCache.TryGetValue(interactionDef, out tagged))
+            {
+                return tagged;
+            }
+
             try
             {
-                return HasTaggedLogGrammar(interactionDef.logRulesInitiator, new HashSet<RulePack>());
+                tagged = HasTaggedLogGrammar(interactionDef.logRulesInitiator, new HashSet<RulePack>());
             }
             catch
             {
                 // If a third-party rule pack is malformed, prefer neutral fallback text over risking
                 // an exception inside RimWorld's PlayLog.Add flow.
-                return true;
+                tagged = true;
             }
+
+            taggedLogGrammarCache[interactionDef] = tagged;
+            return tagged;
         }
 
         private static bool HasTaggedLogGrammar(RulePack rulePack, HashSet<RulePack> visited)

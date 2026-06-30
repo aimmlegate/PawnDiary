@@ -182,7 +182,8 @@ namespace PawnDiary
                 string.Empty,
                 decoration,
                 archivedGenerationStale,
-                true);
+                true,
+                deathDescription ? 1 : (arrivalDescription ? -1 : 0));
         }
 
         public bool IsArrivalDescriptionFor(string requestedPawnId)

@@ -144,6 +144,14 @@ namespace PawnDiary
             {
                 yield return "recordScope=SubjectPawn requires scope=Pawn; any other scope has no subject pawn.";
             }
+
+            // includeHomeMapsOnly short-circuits map eligibility (see MapEligible), so includeNonPlayerMaps
+            // is dead when both are set. Surface the conflict instead of silently preferring home-only.
+            if (includeHomeMapsOnly && includeNonPlayerMaps)
+            {
+                yield return "includeHomeMapsOnly=true makes includeNonPlayerMaps=true ineffective; "
+                    + "set includeHomeMapsOnly=false to observe non-player maps.";
+            }
         }
     }
 }

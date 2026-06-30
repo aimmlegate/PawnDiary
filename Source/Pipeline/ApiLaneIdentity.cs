@@ -2,6 +2,7 @@
 // file so gate keys, cooldown keys, failover dedupe, and settings-row stale-result checks stay in one
 // audited place without depending on RimWorld, Verse, Unity, HTTP, or saved settings objects.
 using System;
+using System.Text.RegularExpressions;
 
 namespace PawnDiary
 {
@@ -198,8 +199,37 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            value = OneLine(value);
-            return value.Length <= 180 ? value : value.Substring(0, 180) + "...";
+            // Redact before trimming so a secret can never be the surviving prefix of a long line.
+            value = OneLine(RedactSecrets(value));
+            return value.Length <= 180 ? value : TextTruncation.SafePrefix(value, 180) + "...";
+        }
+
+        // A bearer token or a key=/token= query parameter can ride along inside an arbitrary error
+        // body or a networking exception message (some HTTP stacks echo the request URI). Anything
+        // that reaches a log line or a player-visible error string passes through here first so the
+        // secret is masked. These are intentionally broad: false positives only ever hide a value.
+        private static readonly Regex QueryKeyPattern = new Regex(
+            @"([?&](?:key|api[_-]?key|access_token|token|auth)=)[^&\s""']+",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex BearerPattern = new Regex(
+            @"\bBearer\s+[A-Za-z0-9._\-]+",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Masks API secrets (a <c>key=</c>/<c>token=</c> query parameter or a <c>Bearer &lt;token&gt;</c>
+        /// value) in arbitrary text — error bodies, exception messages, anything that might be logged
+        /// or shown to the player. Returns the input unchanged when no secret pattern is present.
+        /// </summary>
+        public static string RedactSecrets(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value ?? string.Empty;
+            }
+
+            value = QueryKeyPattern.Replace(value, "$1<redacted>");
+            value = BearerPattern.Replace(value, "Bearer <redacted>");
+            return value;
         }
 
         private static string SanitizeEndpointUrlForLog(string endpointUrl)

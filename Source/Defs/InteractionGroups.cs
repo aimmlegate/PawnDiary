@@ -458,6 +458,16 @@ namespace PawnDiary
     {
         private static List<DiaryInteractionGroupDef> cachedAll;
 
+        // Memoized classification results. The group catalog is immutable after load, so a given Def
+        // (or domain+defName string) always classifies to the same group. These collapse the per-call
+        // O(groups) `Matches` scan — run on the PlayLog.Add hot path (per logged interaction) and in
+        // every periodic capture scan — to one dictionary lookup. Lifetime is tied to `cachedAll`:
+        // both are cleared together if the catalog is ever rebuilt (e.g. a dev "reload defs").
+        private static readonly Dictionary<Def, DiaryInteractionGroupDef> classifyByDef =
+            new Dictionary<Def, DiaryInteractionGroupDef>();
+        private static readonly Dictionary<string, DiaryInteractionGroupDef> classifyByDomainName =
+            new Dictionary<string, DiaryInteractionGroupDef>();
+
         // All groups, sorted by `order` so "first match wins" is deterministic. Cached after the
         // first call because Defs are loaded once at startup and don't change during play.
         public static List<DiaryInteractionGroupDef> All
@@ -469,6 +479,10 @@ namespace PawnDiary
                     cachedAll = DefDatabase<DiaryInteractionGroupDef>.AllDefsListForReading
                         .OrderBy(group => group.order)
                         .ToList();
+                    // The classification memos are derived from this list; drop them so they
+                    // repopulate against the freshly built catalog.
+                    classifyByDef.Clear();
+                    classifyByDomainName.Clear();
                 }
 
                 return cachedAll;
@@ -596,8 +610,17 @@ namespace PawnDiary
 
         private static DiaryInteractionGroupDef ClassifyIn(GroupDomain domain, string defName)
         {
-            DiaryInteractionGroupDef fallback = null;
+            // Touch All first so a catalog rebuild clears the memo before we read it.
             List<DiaryInteractionGroupDef> all = All;
+            string cacheKey = ((int)domain) + "|" + (defName ?? string.Empty);
+            DiaryInteractionGroupDef cached;
+            if (classifyByDomainName.TryGetValue(cacheKey, out cached))
+            {
+                return cached;
+            }
+
+            DiaryInteractionGroupDef fallback = null;
+            DiaryInteractionGroupDef result = null;
             for (int i = 0; i < all.Count; i++)
             {
                 DiaryInteractionGroupDef group = all[i];
@@ -608,19 +631,38 @@ namespace PawnDiary
 
                 if (group.Matches(defName))
                 {
-                    return group;
+                    result = group;
+                    break;
                 }
 
                 fallback = group;
             }
 
-            return fallback;
+            result = result ?? fallback;
+            classifyByDomainName[cacheKey] = result;
+            return result;
         }
 
         private static DiaryInteractionGroupDef ClassifyIn(GroupDomain domain, Def sourceDef)
         {
-            DiaryInteractionGroupDef fallback = null;
+            // Touch All first so a catalog rebuild clears the memo before we read it.
             List<DiaryInteractionGroupDef> all = All;
+
+            // A Def is only ever classified within its own domain, so the Def reference alone is a
+            // sufficient cache key. A null Def falls through to the defName-string path (also memoized).
+            if (sourceDef == null)
+            {
+                return ClassifyIn(domain, (string)null);
+            }
+
+            DiaryInteractionGroupDef cached;
+            if (classifyByDef.TryGetValue(sourceDef, out cached))
+            {
+                return cached;
+            }
+
+            DiaryInteractionGroupDef fallback = null;
+            DiaryInteractionGroupDef result = null;
             for (int i = 0; i < all.Count; i++)
             {
                 DiaryInteractionGroupDef group = all[i];
@@ -631,13 +673,16 @@ namespace PawnDiary
 
                 if (group.Matches(sourceDef))
                 {
-                    return group;
+                    result = group;
+                    break;
                 }
 
                 fallback = group;
             }
 
-            return fallback;
+            result = result ?? fallback;
+            classifyByDef[sourceDef] = result;
+            return result;
         }
 
         // Look up a group by its defName/key (used to read per-group settings). Null if absent.

@@ -44,6 +44,8 @@ namespace DiaryPipelineTests
             TestArchiveEligibility();
             TestArchiveFallbackFact();
             TestArchiveOverflowSelection();
+            TestSurrogateSafeTruncation();
+            TestRedactSecrets();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -1834,6 +1836,45 @@ namespace DiaryPipelineTests
 
             XElement child = element.Element(childName);
             return child == null ? string.Empty : (child.Value ?? string.Empty).Trim();
+        }
+
+        // B1: SafePrefix caps length without ever splitting a UTF-16 surrogate pair. "\U0001F600" is a
+        // grinning-face emoji = one high + one low surrogate (two chars).
+        private static void TestSurrogateSafeTruncation()
+        {
+            string emoji = "\U0001F600"; // 2 UTF-16 chars
+            AssertEqual("plain ASCII truncates exactly", "abc", TextTruncation.SafePrefix("abcdef", 3));
+            AssertEqual("short string is returned whole", "ab", TextTruncation.SafePrefix("ab", 5));
+            AssertEqual("empty input yields empty", string.Empty, TextTruncation.SafePrefix(null, 4));
+            AssertEqual("non-positive cap yields empty", string.Empty, TextTruncation.SafePrefix("abc", 0));
+
+            // "ab" + emoji = chars [a][b][hi][lo]; a cap of 3 would slice between hi and lo, so SafePrefix
+            // must back off to "ab" (2 chars) rather than emit a lone high surrogate.
+            string withEmoji = "ab" + emoji;
+            string capped = TextTruncation.SafePrefix(withEmoji, 3);
+            AssertEqual("cut between surrogates backs off to whole pair", "ab", capped);
+            AssertTrue("result never ends on a lone high surrogate",
+                capped.Length == 0 || !char.IsHighSurrogate(capped[capped.Length - 1]));
+
+            // A cap landing exactly after the pair keeps the whole emoji.
+            AssertEqual("cap after the pair keeps the emoji", withEmoji, TextTruncation.SafePrefix(withEmoji, 4));
+        }
+
+        // S1: RedactSecrets masks key=/token= query parameters and Bearer tokens in arbitrary text.
+        private static void TestRedactSecrets()
+        {
+            AssertEqual("query key is redacted",
+                "GET https://api.test/v1?key=<redacted> failed",
+                ApiLaneLabels.RedactSecrets("GET https://api.test/v1?key=sk-SECRET123 failed"));
+            AssertEqual("token query param is redacted",
+                "url?model=x&token=<redacted>",
+                ApiLaneLabels.RedactSecrets("url?model=x&token=abc.def-123"));
+            AssertEqual("bearer token is redacted",
+                "Authorization: Bearer <redacted>",
+                ApiLaneLabels.RedactSecrets("Authorization: Bearer sk-LIVE_aB.cD-12"));
+            AssertEqual("text without secrets is unchanged",
+                "HTTP 500: upstream timeout",
+                ApiLaneLabels.RedactSecrets("HTTP 500: upstream timeout"));
         }
 
         private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)

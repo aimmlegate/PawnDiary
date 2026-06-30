@@ -111,6 +111,16 @@
   <PawnDiary.Status.GenerationFailed>ошибка написания</PawnDiary.Status.GenerationFailed>
   <PawnDiary.Status.Skipped>пропущено</PawnDiary.Status.Skipped>
   <PawnDiary.Status.PromptOnly>запрос сохранён</PawnDiary.Status.PromptOnly>
+  <!-- Поля отладочного блока LLM (видны на вкладке дневника при включённой отладке). -->
+  <PawnDiary.Debug.Header>Отладка LLM</PawnDiary.Debug.Header>
+  <PawnDiary.Debug.Event>Событие</PawnDiary.Debug.Event>
+  <PawnDiary.Debug.Pov>Ракурс</PawnDiary.Debug.Pov>
+  <PawnDiary.Debug.Endpoint>Адрес</PawnDiary.Debug.Endpoint>
+  <PawnDiary.Debug.Model>Модель</PawnDiary.Debug.Model>
+  <PawnDiary.Debug.Status>Статус</PawnDiary.Debug.Status>
+  <PawnDiary.Debug.Error>Ошибка</PawnDiary.Debug.Error>
+  <PawnDiary.Debug.Prompt>Запрос</PawnDiary.Debug.Prompt>
+  <PawnDiary.Debug.RawResponse>Исходный ответ</PawnDiary.Debug.RawResponse>
   <PawnDiary.Error.SkippedIncapacitated>Пропущено: перед началом написания сознание поселенца было ниже {0}%.</PawnDiary.Error.SkippedIncapacitated>
   <PawnDiary.Error.PromptTestModeCaptured>Режим проверки запросов сохранил этот запрос без отправки модели.</PawnDiary.Error.PromptTestModeCaptured>
 
@@ -130,6 +140,9 @@
   <PawnDiary.Settings.RemoveApi>− Удалить</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Адрес API</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>Ключ API</PawnDiary.Settings.ApiKey>
+  <PawnDiary.Settings.RevealApiKey>Показать</PawnDiary.Settings.RevealApiKey>
+  <PawnDiary.Settings.HideApiKey>Скрыть</PawnDiary.Settings.HideApiKey>
+  <PawnDiary.Settings.RevealApiKeyTip>Показать или скрыть этот ключ API. По умолчанию ключи скрыты, чтобы не отображаться на экране.</PawnDiary.Settings.RevealApiKeyTip>
   <PawnDiary.Settings.ModelName>Имя модели</PawnDiary.Settings.ModelName>
   <PawnDiary.Settings.ApiCompatibility>Формат</PawnDiary.Settings.ApiCompatibility>
   <PawnDiary.Settings.ApiCompatibility.Chat>Совместимый с OpenAI Chat</PawnDiary.Settings.ApiCompatibility.Chat>
@@ -140,6 +153,7 @@
   <PawnDiary.Settings.ApiAuthMode.CustomHeader>Свой заголовок</PawnDiary.Settings.ApiAuthMode.CustomHeader>
   <PawnDiary.Settings.CustomAuthHeaderTip>Имя HTTP-заголовка для ключа API: x-goog-api-key, api-key или x-api-key.</PawnDiary.Settings.CustomAuthHeaderTip>
   <PawnDiary.Settings.ApiAuthMode.QueryParameterKey>Параметр key в URL</PawnDiary.Settings.ApiAuthMode.QueryParameterKey>
+  <PawnDiary.Settings.QueryKeyAuthCaution>Передача ключа как параметра URL может раскрыть его в журналах запросов сервера API. По возможности используйте токен Bearer или свой заголовок.</PawnDiary.Settings.QueryKeyAuthCaution>
   <PawnDiary.Settings.RequestTuning>Параметры запросов</PawnDiary.Settings.RequestTuning>
   <PawnDiary.Settings.ApiRouting>Распределение</PawnDiary.Settings.ApiRouting>
   <PawnDiary.Settings.ApiRouting.Balanced>Равномерно</PawnDiary.Settings.ApiRouting.Balanced>

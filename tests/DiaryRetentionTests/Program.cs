@@ -1,6 +1,7 @@
-// Pure unit tests for the per-pawn diary retention planner (DiaryRetentionPlan.Plan). These exercise
-// the trim-and-keep decision without RimWorld assemblies. Run via: build DiaryRetentionTests.csproj,
-// then execute the resulting exe (exit code 0 = pass), or `dotnet run --project
+// Pure unit tests for the shared per-pawn diary retention planner (DiaryRetentionPlan.Plan). These
+// exercise the trim-and-keep decision used by both hot-event and compact-archive caps without
+// RimWorld assemblies. Run via: build DiaryRetentionTests.csproj, then execute the resulting exe
+// (exit code 0 = pass), or `dotnet run --project
 // tests/DiaryRetentionTests/DiaryRetentionTests.csproj`.
 using System;
 using System.Collections.Generic;

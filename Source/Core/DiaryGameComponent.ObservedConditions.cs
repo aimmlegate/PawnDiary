@@ -947,7 +947,8 @@ namespace PawnDiary
                 return value ?? string.Empty;
             }
 
-            return value.Substring(0, maxChars);
+            // Surrogate-safe so an evidence label ending on an emoji/astral glyph is never half-cut.
+            return TextTruncation.SafePrefix(value, maxChars);
         }
 
         private ActiveObservedConditionState FindObservedConditionRow(ObservedConditionStateSnapshot snapshot)

@@ -374,7 +374,7 @@ namespace PawnDiary
 
             if (description.Length > HediffDescriptionMaxChars)
             {
-                description = description.Substring(0, HediffDescriptionMaxChars) + "...";
+                description = TextTruncation.SafePrefix(description, HediffDescriptionMaxChars) + "...";
             }
 
             cues.Add(PromptText("PawnDiary.Prompt.Health.ConditionDescription", description));

@@ -117,6 +117,16 @@
   <PawnDiary.Status.GenerationFailed>writing failed</PawnDiary.Status.GenerationFailed>
   <PawnDiary.Status.Skipped>writing skipped</PawnDiary.Status.Skipped>
   <PawnDiary.Status.PromptOnly>prompt captured</PawnDiary.Status.PromptOnly>
+  <!-- Dev-only LLM debug block field labels (shown in the diary tab when debug info is on). -->
+  <PawnDiary.Debug.Header>LLM debug</PawnDiary.Debug.Header>
+  <PawnDiary.Debug.Event>Event</PawnDiary.Debug.Event>
+  <PawnDiary.Debug.Pov>POV</PawnDiary.Debug.Pov>
+  <PawnDiary.Debug.Endpoint>Endpoint</PawnDiary.Debug.Endpoint>
+  <PawnDiary.Debug.Model>Model</PawnDiary.Debug.Model>
+  <PawnDiary.Debug.Status>Status</PawnDiary.Debug.Status>
+  <PawnDiary.Debug.Error>Error</PawnDiary.Debug.Error>
+  <PawnDiary.Debug.Prompt>Prompt</PawnDiary.Debug.Prompt>
+  <PawnDiary.Debug.RawResponse>Raw response</PawnDiary.Debug.RawResponse>
   <PawnDiary.Error.SkippedIncapacitated>Skipped because the pawn was below {0}% Consciousness when generation would have started.</PawnDiary.Error.SkippedIncapacitated>
   <PawnDiary.Error.PromptTestModeCaptured>Prompt test mode captured this prompt without sending it to an LLM.</PawnDiary.Error.PromptTestModeCaptured>
 
@@ -136,6 +146,9 @@
   <PawnDiary.Settings.RemoveApi>− Remove</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>API key</PawnDiary.Settings.ApiKey>
+  <PawnDiary.Settings.RevealApiKey>Show</PawnDiary.Settings.RevealApiKey>
+  <PawnDiary.Settings.HideApiKey>Hide</PawnDiary.Settings.HideApiKey>
+  <PawnDiary.Settings.RevealApiKeyTip>Show or hide this API key. Keys stay hidden by default so they are not visible on screen.</PawnDiary.Settings.RevealApiKeyTip>
   <PawnDiary.Settings.ModelName>Model name</PawnDiary.Settings.ModelName>
   <PawnDiary.Settings.ApiCompatibility>Type</PawnDiary.Settings.ApiCompatibility>
   <PawnDiary.Settings.ApiCompatibility.Chat>OpenAI chat-compatible</PawnDiary.Settings.ApiCompatibility.Chat>
@@ -146,6 +159,7 @@
   <PawnDiary.Settings.ApiAuthMode.CustomHeader>Custom header</PawnDiary.Settings.ApiAuthMode.CustomHeader>
   <PawnDiary.Settings.CustomAuthHeaderTip>HTTP header name for the API key, such as x-goog-api-key, api-key, or x-api-key.</PawnDiary.Settings.CustomAuthHeaderTip>
   <PawnDiary.Settings.ApiAuthMode.QueryParameterKey>key= query</PawnDiary.Settings.ApiAuthMode.QueryParameterKey>
+  <PawnDiary.Settings.QueryKeyAuthCaution>Sending the key as a URL query parameter can expose it in the API server's request logs. Prefer Bearer token or a custom header when the endpoint supports it.</PawnDiary.Settings.QueryKeyAuthCaution>
   <PawnDiary.Settings.RequestTuning>Request tuning</PawnDiary.Settings.RequestTuning>
   <PawnDiary.Settings.ApiRouting>Routing</PawnDiary.Settings.ApiRouting>
   <PawnDiary.Settings.ApiRouting.Balanced>Balanced</PawnDiary.Settings.ApiRouting.Balanced>
@@ -200,7 +214,8 @@
   <PawnDiary.Settings.WorkGenerationWeightHelp>Multiplies the random chance that periodic work sampling becomes a diary page. 1x uses the XML tuning defaults; 0x suppresses random work pages.</PawnDiary.Settings.WorkGenerationWeightHelp>
   <PawnDiary.Settings.SocialGenerationWeight>Social random weight: {0}x</PawnDiary.Settings.SocialGenerationWeight>
   <PawnDiary.Settings.SocialGenerationWeightHelp>Multiplies the random chance that batched low-stakes social moments are promoted into immediate pairwise diary pages. 1x uses the XML tuning defaults; 0x keeps them batched.</PawnDiary.Settings.SocialGenerationWeightHelp>
-  <PawnDiary.Settings.MaxActiveDiaryEvents>Diary pages to keep per pawn ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
+  <PawnDiary.Settings.MaxActiveDiaryEvents>Active pages per pawn ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
+  <PawnDiary.Settings.MaxArchivedDiaryEvents>Archived pages per pawn ({0}-{1})</PawnDiary.Settings.MaxArchivedDiaryEvents>
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>

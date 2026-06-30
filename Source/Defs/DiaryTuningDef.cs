@@ -205,7 +205,7 @@ namespace PawnDiary
         // Newest diary events (colony-wide) treated as "hot" for background maintenance scans and
         // prompt-history context. Older entries remain saved and visible, but are archive history that
         // is not retried or backfilled by catch-up scanners. This is a global count across all pawns;
-        // the per-pawn history cap is a mod setting (maxActiveDiaryEvents).
+        // the per-pawn hot and archived history caps are mod settings.
         public int activeScanEventWindow = 1000;
         // Archived pending entries fall back to a prompt-fact card instead of an endless "writing..."
         // indicator. These tune the generated display-only fallback.

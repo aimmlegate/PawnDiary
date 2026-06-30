@@ -210,14 +210,39 @@ namespace PawnDiary
             };
         }
 
+        // One shared free-colonist snapshot per game tick. Several scans (hediff, work, thought
+        // progression, ambient flush, day summary) fire on independent timers and used to each copy the
+        // live list; when two land on the same tick they now share one copy. Reset across game loads
+        // (constructor) because TicksGame can repeat between different games.
+        private static int cachedFreeColonistsTick = -1;
+        private static List<Pawn> cachedFreeColonists;
+
+        /// <summary>Drops the per-tick free-colonist snapshot. Called on each Game construction so a
+        /// loaded game never reuses the previous game's list at a coincidentally equal tick.</summary>
+        private static void ResetFreeColonistSnapshot()
+        {
+            cachedFreeColonistsTick = -1;
+            cachedFreeColonists = null;
+        }
+
         /// <summary>
         /// Returns a one-tick snapshot of the live free-colonist list. RimWorld may change that list
         /// while diary tick work records entries, so scheduled scans should loop this copy instead of
-        /// enumerating <see cref="PawnsFinder.AllMaps_FreeColonists"/> directly.
+        /// enumerating <see cref="PawnsFinder.AllMaps_FreeColonists"/> directly. The copy is cached for
+        /// the current tick and shared across scans (read-only by every caller), so co-firing scans pay
+        /// one allocation instead of one each.
         /// </summary>
         private static List<Pawn> SnapshotFreeColonists()
         {
-            return new List<Pawn>(PawnsFinder.AllMaps_FreeColonists);
+            int tick = Find.TickManager != null ? Find.TickManager.TicksGame : -1;
+            if (tick >= 0 && tick == cachedFreeColonistsTick && cachedFreeColonists != null)
+            {
+                return cachedFreeColonists;
+            }
+
+            cachedFreeColonists = new List<Pawn>(PawnsFinder.AllMaps_FreeColonists);
+            cachedFreeColonistsTick = tick;
+            return cachedFreeColonists;
         }
 
         /// <summary>
@@ -750,19 +775,11 @@ namespace PawnDiary
             }
 
             string pawnId = pawn.GetUniqueLoadID();
-            for (int i = 0; i < diaries.Count; i++)
+            PawnDiaryRecord existingDiary = LookupDiaryByPawnId(pawnId);
+            if (existingDiary != null)
             {
-                PawnDiaryRecord existingDiary = diaries[i];
-                if (existingDiary == null)
-                {
-                    continue;
-                }
-
-                if (existingDiary.pawnId == pawnId)
-                {
-                    EnsurePawnDiaryDefaults(existingDiary);
-                    return existingDiary;
-                }
+                EnsurePawnDiaryDefaults(existingDiary);
+                return existingDiary;
             }
 
             if (!createIfMissing)
@@ -781,6 +798,7 @@ namespace PawnDiary
                 diaryGenerationEnabled = true
             };
             diaries.Add(diary);
+            IndexDiaryRecord(diary);
             return diary;
         }
 
@@ -836,27 +854,67 @@ namespace PawnDiary
         /// </summary>
         private PawnDiaryRecord FindDiaryByPawnId(string pawnId)
         {
+            PawnDiaryRecord diary = LookupDiaryByPawnId(pawnId);
+            if (diary != null)
+            {
+                EnsurePawnDiaryDefaults(diary);
+            }
+
+            return diary;
+        }
+
+        /// <summary>
+        /// O(1) record lookup through <see cref="diariesById"/>, with a defensive rebuild if a caller
+        /// reaches here before the PostLoadInit rebuild (mirrors DiaryEventRepository.EnsureIndexReady).
+        /// Does not apply persona defaults — the public finders above do that on the resolved record.
+        /// </summary>
+        private PawnDiaryRecord LookupDiaryByPawnId(string pawnId)
+        {
             if (string.IsNullOrWhiteSpace(pawnId) || diaries == null)
             {
                 return null;
             }
 
-            for (int i = 0; i < diaries.Count; i++)
+            if (diariesById.Count == 0 && diaries.Count > 0)
             {
-                PawnDiaryRecord diary = diaries[i];
-                if (diary == null)
-                {
-                    continue;
-                }
-
-                if (diary.pawnId == pawnId)
-                {
-                    EnsurePawnDiaryDefaults(diary);
-                    return diary;
-                }
+                RebuildDiaryIndex();
             }
 
-            return null;
+            PawnDiaryRecord diary;
+            return diariesById.TryGetValue(pawnId, out diary) ? diary : null;
+        }
+
+        /// <summary>
+        /// Rebuilds the pawnId->record index from the loaded <see cref="diaries"/> list. The index is
+        /// never serialized; this runs in PostLoadInit. First occurrence of an id wins, matching the
+        /// old linear scan, and null / blank-id records are skipped.
+        /// </summary>
+        private void RebuildDiaryIndex()
+        {
+            diariesById.Clear();
+            if (diaries == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < diaries.Count; i++)
+            {
+                IndexDiaryRecord(diaries[i]);
+            }
+        }
+
+        /// <summary>Adds one record to the lookup index, keeping the first id seen (no overwrite).</summary>
+        private void IndexDiaryRecord(PawnDiaryRecord diary)
+        {
+            if (diary == null || string.IsNullOrWhiteSpace(diary.pawnId))
+            {
+                return;
+            }
+
+            if (!diariesById.ContainsKey(diary.pawnId))
+            {
+                diariesById[diary.pawnId] = diary;
+            }
         }
 
         /// <summary>

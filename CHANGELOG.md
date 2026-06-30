@@ -6,6 +6,49 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Split active and archived per-pawn retention settings.** The settings page now has separate caps
+  for full hot diary pages (`maxActiveDiaryEvents`, default 3000) and compact archived pages
+  (`maxArchivedDiaryEvents`, default 10000). Archive retention keeps each pawn's newest compact rows,
+  supports 0 archived rows for players who want cold pages purged, and shares the normal retention
+  cache invalidation path on save/load/settings apply.
+- **Review hardening pass (combined bug/perf/security review).** A multi-source review pass.
+  - **API key privacy (S1).** API keys are now masked in the settings window by default, with a
+    per-row **Show/Hide** toggle (`PawnDiaryMod.ApiLanes.cs`); a key is never rendered in cleartext
+    until the player reveals that row. `key=`/`token=` query parameters and `Bearer <token>` values
+    are redacted from every log line and from player-visible generation errors (new
+    `ApiLaneLabels.RedactSecrets`, applied in `TrimForLog` and on the result error in `LlmClient`), so
+    a networking message that echoes the request URL can no longer leak the key. Query-parameter auth
+    now shows a caution tooltip recommending header-based auth.
+  - **Hot-path classification memoized (P1/P2/P3).** `InteractionGroups` now caches classification
+    results by `Def` and by `domain+defName` (`classifyByDef`/`classifyByDomainName`, rebuilt with
+    `cachedAll`), collapsing the per-call O(groups) `Matches` scan to a dictionary lookup. This runs on
+    the `PlayLog.Add` hot path (every logged interaction classifies 2–3×) and in every periodic capture
+    scan (the hediff scan was O(colonists × hediffs × groups)). `HasTaggedLogGrammar` — a recursive
+    rule-pack walk that allocated a `HashSet` per captured interaction — is now memoized per
+    `InteractionDef`.
+  - **O(1) diary-record lookup (P5).** Added `diariesById`, a pawnId→record index mirroring the event
+    store's index, so `FindDiary`/`FindDiaryByPawnId` no longer linear-scan every record (including dead
+    colonists) on each captured event. Rebuilt in PostLoadInit; kept in sync on create (`diaries` is
+    append-only).
+  - **Shared per-tick colonist snapshot (P4).** `SnapshotFreeColonists` caches its copy for the current
+    tick so the several scans that fire on independent timers share one allocation when they coincide;
+    reset on each `Game` construction since `TicksGame` can repeat across games. (The diary tab's
+    name-highlight rebuild, P6, was reviewed and left as-is — already 250-tick cached and tab-open only.)
+  - **Correctness fixes (lows).** Failover lanes are now snapshotted with `.Copy()` when stamped onto a
+    request (C1), so a mid-flight settings edit can't tear the values the background HTTP worker reads.
+    The arrival page now reliably sorts as the oldest entry and the death page as the newest on a tick
+    tie via a new `DiaryEntryView.BoundaryRank` (C2), so a game-start thought can't render above the
+    arrival page. `StripOrphanClosingReasoningTags` now removes *every* stray closing reasoning tag of a
+    name, not just the first (C3). `DiaryObservedConditionDef.ConfigErrors` flags the
+    `includeHomeMapsOnly`+`includeNonPlayerMaps` conflict instead of silently preferring home maps (C4).
+    A shared surrogate-safe `TextTruncation.SafePrefix` replaces raw `Substring(0, n)` caps across
+    prompt/UI/evidence/raw-response truncation so an emoji/astral glyph at the cut is never half-sliced
+    (B1). The event-id index now uses `OrdinalIgnoreCase` to match the retention sweep's id set (B2).
+  - **Polish.** The `Pawn.Kill` postfix now pre-filters on death-page eligibility (humanlike colonist)
+    before building/submitting the fallback signal, so the common animal/raider/mech kill does no bus
+    work (D1). The dev-only LLM debug block's field labels are now localized Keyed strings rather than
+    hardcoded English (D2).
+
 - **Lasting game-state capture: observed conditions (Plan 12).** Added a system, parallel to event
   windows, for *lasting* colony states that must be read from live state rather than inferred from a
   guessed duration. A new pure lifecycle diff (`Source/Capture/ObservedConditions/`:

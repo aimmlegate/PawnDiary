@@ -15,6 +15,7 @@
 // save/load helper for collections; LookMode.Deep means "each element saves/loads itself via its own
 // ExposeData". A `ref` parameter is required by Look so it can substitute a loaded list for the
 // field — that is why the list lives here (only its declaring type can pass it by ref).
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Verse;
@@ -36,7 +37,10 @@ namespace PawnDiary
         // diaryEvents after load (RebuildIndex) and kept in sync as events are created (Register) or
         // removed (RemoveEvent / RemoveEvents). FindEvent is called inside per-event loops, so the
         // index keeps those lookups constant-time instead of growing with colony history.
-        private readonly Dictionary<string, DiaryEvent> eventsById = new Dictionary<string, DiaryEvent>();
+        // Ordinal-ignore-case so this index agrees with the retention sweep's referenced-id set
+        // (CollectHotReferencedEventIds uses OrdinalIgnoreCase). Event ids are lowercase GUIDs today, so
+        // this only matters defensively, but the two halves of the same lookup must use one comparer.
+        private readonly Dictionary<string, DiaryEvent> eventsById = new Dictionary<string, DiaryEvent>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>The number of stored events.</summary>
         public int Count

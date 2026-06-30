@@ -452,21 +452,29 @@ namespace PawnDiary
             for (int i = 0; i < tags.Length; i++)
             {
                 string closeNeedle = "</" + tags[i] + ">";
-                int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, 0);
-                if (close < 0)
+                // A model can emit more than one stray closing tag of the same name (e.g. it re-opens
+                // its reasoning template mid-answer). Keep dropping leading orphan closers until the
+                // next one has a real opening tag before it (a genuine block StripTaggedReasoningBlocks
+                // owns) or none remain. `text` shrinks every iteration; the guard bounds it anyway.
+                int guard = 0;
+                while (guard++ < 32)
                 {
-                    continue;
-                }
+                    int close = IndexOfOrdinalIgnoreCase(text, closeNeedle, 0);
+                    if (close < 0)
+                    {
+                        break;
+                    }
 
-                // If a real opening tag precedes this close, StripTaggedReasoningBlocks already
-                // handled it. Do not over-trim the visible answer here.
-                int open = IndexOfOpeningTag(text, tags[i]);
-                if (open >= 0 && open < close)
-                {
-                    continue;
-                }
+                    // If a real opening tag precedes this close, StripTaggedReasoningBlocks already
+                    // handled it. Do not over-trim the visible answer here.
+                    int open = IndexOfOpeningTag(text, tags[i]);
+                    if (open >= 0 && open < close)
+                    {
+                        break;
+                    }
 
-                text = text.Substring(close + closeNeedle.Length);
+                    text = text.Substring(close + closeNeedle.Length);
+                }
             }
 
             return text;

@@ -346,7 +346,14 @@ namespace PawnDiary
                     return quietSelectedYearRefresh;
                 }
 
-                targetEntries.Sort((left, right) => right.Tick.CompareTo(left.Tick));
+                // Newest first by tick; on a tick tie, BoundaryRank keeps the death page (newest) on top
+                // and the arrival page (oldest) at the bottom, so a game-start thought sharing the
+                // arrival tick can never render above the arrival page (List.Sort is not stable).
+                targetEntries.Sort((left, right) =>
+                {
+                    int byTick = right.Tick.CompareTo(left.Tick);
+                    return byTick != 0 ? byTick : right.BoundaryRank.CompareTo(left.BoundaryRank);
+                });
                 if (quietSelectedYearRefresh)
                 {
                     cachedOrderedEntries.Clear();

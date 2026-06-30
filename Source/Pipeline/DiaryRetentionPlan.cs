@@ -1,7 +1,8 @@
-// Pure retention math for the per-pawn diary cap. Given each pawn's event-id list (newest id at the
-// end) and a per-pawn limit, it works out how many of each pawn's oldest pages fall past the cap and
-// which ids still survive somewhere — so the master event store can later drop anything no pawn
-// references anymore. No RimWorld / Verse / Unity types live here, which is exactly what lets a plain
+// Pure retention math for per-pawn diary-style caps. Given each pawn's ordered id/key list (newest id
+// at the end) and a per-pawn limit, it works out how many of each pawn's oldest pages fall past the cap
+// and which ids still survive somewhere. Active retention uses this survivor set to keep shared hot
+// events until every pawn has dropped them; archive retention uses it to keep each pawn's newest
+// compact archive rows. No RimWorld / Verse / Unity types live here, which is exactly what lets a plain
 // console harness exercise the decision without loading the game (tests/DiaryRetentionTests).
 //
 // New to C#/this repo? "pure" here means the method only reads its inputs and returns a result object;
@@ -15,7 +16,7 @@ namespace PawnDiary
 {
     /// <summary>
     /// Outcome of planning one per-pawn retention pass: how many oldest pages each pawn drops, and the
-    /// union of ids still referenced by some pawn afterwards.
+    /// union of ids/keys still referenced by some pawn afterwards.
     /// </summary>
     public sealed class DiaryRetentionResult
     {
@@ -29,16 +30,16 @@ namespace PawnDiary
         public int[] DropCounts;
 
         /// <summary>
-        /// Ids still referenced by at least one pawn after the planned drops. Empty when nothing is
-        /// trimmed (the caller then skips the master sweep). Compared case-insensitively, so a shared
-        /// id survives until every pawn that held it has dropped it.
+        /// Ids/keys still referenced by at least one pawn after the planned drops. Empty when nothing
+        /// is trimmed (the caller then skips the sweep). Compared case-insensitively, so a shared id
+        /// survives until every pawn that held it has dropped it.
         /// </summary>
         public HashSet<string> Referenced;
     }
 
     /// <summary>
-    /// Plans the per-pawn diary history cap. Kept separate from the component so the trim-and-keep
-    /// decision can be unit-tested without RimWorld.
+    /// Plans a per-pawn diary history cap. Kept separate from the component/repository so the
+    /// trim-and-keep decision can be unit-tested without RimWorld.
     /// </summary>
     public static class DiaryRetentionPlan
     {

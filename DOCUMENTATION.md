@@ -54,7 +54,8 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
    to day reflection.
 4. `AddSoloEvent` or `AddPairwiseEvent` creates a saved `DiaryEvent` and indexes it on eligible
    pawn records. The active-event retention cap then archives old displayable POVs into compact
-   `ArchivedDiaryEntry` rows before dropping their hot refs.
+   `ArchivedDiaryEntry` rows before dropping their hot refs; the archive cap separately prunes old
+   compact rows.
 5. Generation queues immediately when possible; periodic scans retry pending or orphaned work.
 6. `DiaryPipelineAdapters` copies runtime/XML/localized state into pure pipeline DTOs.
 7. Pure helpers assemble prompts, serialize request JSON, parse provider responses, and clean text.
@@ -66,7 +67,7 @@ rescan is demand-driven: load catch-up, delayed raid entries, and recovered orph
 pass, then the catch-up pass runs at most every 200 ticks until it is no longer needed. Those
 generation/title/orphan scans use the XML-tuned hot window (`activeScanEventWindow`, default 1000,
 a global count across all pawns); older hot events can be compacted into archive rows that stay
-visible but are not retried or title-backfilled.
+visible but are not retried or title-backfilled until the per-pawn archive cap prunes them.
 Orphaned "writing..." recovery is a separate, slower hot-window pass every 600 ticks. Completed LLM
 results and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so
 requests that were already queued can finish and apply while the game is paused. Pending generation
@@ -485,16 +486,23 @@ renamed/missing defs fail closed instead of blocking future prompt context. Acti
 keyless rows drop, duplicate identities collapse, and a row whose Def is gone ages out on the next scan
 (`DropStale`) without errors — old saves simply load an empty list.
 
-The diary-history cap is **per pawn** (default 3000, editable from settings, range 1–10000). Each
-pawn keeps only its newest configured number of **hot** pages: `ApplyActiveEventLimit` looks at the
-oldest refs past the cap, copies completed/stale/failed displayable POVs into `diaryArchiveEntries`,
-then removes only those hot refs whose archive row exists (or refs that are invalid/out-of-bounds).
-Still-active pending/not-generated refs stay hot instead of being destroyed. Finally, the hot event
-store is swept down to the union of remaining hot refs, so a shared pair event stays as a full
-`DiaryEvent` until both pawns have either kept or archived their POVs. It runs after load, before save,
-after new event creation, and when settings are saved. The common (nothing-over-cap) path costs one
-`Count` check per pawn. Because the cap is per pawn, background scan cost no longer scales with total
-lifetime history: maintenance walks the global hot window below, not the compact archive. (The
+Diary history has two **per-pawn** settings. `maxActiveDiaryEvents` is the hot-page cap (default
+3000, range 1-10000): each pawn keeps only its newest configured number of full `DiaryEvent`
+references. `ApplyActiveEventLimit` looks at the oldest refs past that cap, copies
+completed/stale/failed displayable POVs into `diaryArchiveEntries`, then removes only those hot refs
+whose archive row exists (or refs that are invalid/out-of-bounds). Still-active pending/not-generated
+refs stay hot instead of being destroyed. Finally, the hot event store is swept down to the union of
+remaining hot refs, so a shared pair event stays as a full `DiaryEvent` until both pawns have either
+kept or archived their POVs.
+
+`maxArchivedDiaryEvents` is the compact archive cap (default 10000, range 0-50000). `DiaryArchiveRepository`
+keeps each pawn's newest archived rows and drops older compact rows; 0 means old compact archive pages
+are purged once they fall out of the active hot list. The combined retention pass runs after load,
+before save, after new event creation, and when settings are saved. The common active path
+(nothing-over-cap) costs one `Count` check per pawn, and archive trimming only builds a survivor plan
+when some pawn is over the archive cap. Because the hot cap is per pawn, background scan cost no
+longer scales with total lifetime history: maintenance walks the global hot window below, not the
+compact archive. (The
 `maxActiveDiaryEvents` field/Scribe key keeps its historical name for save compatibility even though
 its meaning is now per-pawn hot refs.)
 
@@ -529,6 +537,7 @@ from dev builds may remain in the vanilla play log.
 
 The string tags passed to `Scribe_Values.Look` / `Scribe_Collections.Look` (e.g. `"eventId"`,
 `"interactionDefName"`, `"initiatorPawnId"`, `"neutralText"`, `"maxActiveDiaryEvents"`,
+`"maxArchivedDiaryEvents"`,
 `"apiEndpoints"`, `"interactionGroupEnabled"`) are a **public, stable save-format API**. Renaming
 any of them silently breaks every existing player save: the old key stops being read on load and
 the field falls back to its default, so a completed diary page can look freshly-reset, a setting can

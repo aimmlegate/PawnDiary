@@ -717,6 +717,10 @@ namespace PawnDiary
                 povRole = NeutralRole;
             }
 
+            // Boundary rank breaks Tick ties so the arrival page (oldest) never sorts above same-tick
+            // startup thoughts and the death page (newest) never sorts below same-tick final events.
+            int boundaryRank = HasDeathDescription() ? 1 : (HasArrivalDescription() ? -1 : 0);
+
             DiaryInteractionGroupDef group = GroupForDisplay();
 
             // Title for this pawn's POV: stored LLM title only. When empty, EntryHeader renders
@@ -783,7 +787,8 @@ namespace PawnDiary
                 titlePendingForPov,
                 RawResponseFor(povRole),
                 TextDecorationContextForRole(povRole),
-                archivedGenerationStale);
+                archivedGenerationStale,
+                boundaryRank: boundaryRank);
         }
 
         /// <summary>
@@ -805,7 +810,7 @@ namespace PawnDiary
             const int MaxPreviewLength = 120;
             if (firstLine.Length > MaxPreviewLength)
             {
-                return firstLine.Substring(0, MaxPreviewLength) + "...";
+                return TextTruncation.SafePrefix(firstLine, MaxPreviewLength) + "...";
             }
 
             return firstLine;
@@ -1594,7 +1599,7 @@ namespace PawnDiary
                 return trimmed;
             }
 
-            return trimmed.Substring(0, MaxPersistedRawResponseChars).TrimEnd()
+            return TextTruncation.SafePrefix(trimmed, MaxPersistedRawResponseChars).TrimEnd()
                 + "\n[raw response truncated]";
         }
 

@@ -239,7 +239,7 @@ namespace PawnDiary.Ingestion
                 description = PromptTextSanitizer.LocalizedPromptText(description);
                 if (description.Length > QuestDescriptionCap)
                 {
-                    return description.Substring(0, QuestDescriptionCap) + "...";
+                    return TextTruncation.SafePrefix(description, QuestDescriptionCap) + "...";
                 }
 
                 return description;

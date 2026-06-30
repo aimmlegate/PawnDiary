@@ -37,6 +37,16 @@ namespace PawnDiary
         {
             DiaryPatchSafety.Run("PawnKillPatch.Postfix", () =>
             {
+                // Pawn.Kill fires for every death — animals, raiders, mechs — but only a humanlike
+                // colonist can ever get a death page. Gate before building/submitting the signal so
+                // the common non-colonist kill does no allocation or bus work. The decider re-checks
+                // eligibility, so this is a fast pre-filter, not the authority. (Capture in the Prefix
+                // is left unconditional: it is cheap and only read back for an eligible pawn.)
+                if (!DiaryGameComponent.IsDeathDescriptionEligible(__instance))
+                {
+                    return;
+                }
+
                 DiaryEvents.Submit(new DeathFallbackSignal(__instance));
             });
         }

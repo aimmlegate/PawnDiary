@@ -829,7 +829,7 @@ namespace PawnDiary
                 return value;
             }
 
-            return value.Substring(0, Math.Max(1, maxChars - 3)).TrimEnd() + "...";
+            return TextTruncation.SafePrefix(value, Math.Max(1, maxChars - 3)).TrimEnd() + "...";
         }
 
         private static string FirstWords(string value, int maxWords)

@@ -58,6 +58,12 @@ namespace PawnDiary
 
         // Per-pawn saved state (event references, persona, enabled flag). Persisted via ExposeData.
         private List<PawnDiaryRecord> diaries = new List<PawnDiaryRecord>();
+        // O(1) pawnId->record index mirroring `diaries`. NOT saved: rebuilt from the loaded list in
+        // PostLoadInit (RebuildDiaryIndex) and kept in sync on create. `diaries` is append-only (never
+        // removed/cleared), so the index only ever grows. Mirrors DiaryEventRepository.eventsById so the
+        // per-pawn lookups (FindDiary / FindDiaryByPawnId), called per captured event, stay constant-time
+        // instead of linear-scanning every record (including dead colonists) as the colony ages.
+        private readonly Dictionary<string, PawnDiaryRecord> diariesById = new Dictionary<string, PawnDiaryRecord>();
         // The saved event store: every DiaryEvent across all pawns plus the O(1) id->event lookup
         // index that mirrors it. Owns FindEvent/Register/RebuildIndex and the "diaryEvents" Scribe
         // key. Extracted out of this class so the event store has one clear owner (Run Card 10); this
@@ -195,6 +201,9 @@ namespace PawnDiary
             LlmClient.BeginSession();
             DeathContextCache.Clear();
             ArrivalContextCache.Clear();
+            // TicksGame can repeat across different games, so drop the per-tick free-colonist snapshot
+            // here (every Game construction) rather than risk reusing the previous game's list.
+            ResetFreeColonistSnapshot();
         }
 
         public static DiaryGameComponent Current
@@ -298,7 +307,7 @@ namespace PawnDiary
                     FlushAllInteractionBatches();
                     FlushAllTaleBatches();
                     FlushAllAmbientThoughtNotes();
-                    ApplyActiveEventLimit();
+                    ApplyDiaryEventLimits();
                     PruneDiaryEventRefs();
                 }
                 catch (Exception e)
@@ -361,13 +370,16 @@ namespace PawnDiary
                 // guards above stay outside the try because the rest of the session depends on them.
                 try
                 {
+                    // The pawnId->record index is not serialized; rebuild it from the loaded diaries
+                    // first so the per-pawn lookups below resolve in O(1).
+                    RebuildDiaryIndex();
                     // The lookup index is not serialized; rebuild it from the loaded events so FindEvent
                     // works immediately (the first generation scan and any UI draw run before any new
                     // event is recorded this session).
                     events.RebuildIndex();
                     NormalizeActiveEventWindows();
                     NormalizeActiveObservedConditions();
-                    ApplyActiveEventLimit();
+                    ApplyDiaryEventLimits();
                     RebuildWrittenDayReflectionsFromEvents();
                     PruneDiaryEventRefs();
                     PruneStaleGeneratedSpeechPlayLogState();

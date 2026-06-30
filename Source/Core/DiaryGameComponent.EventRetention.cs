@@ -1,9 +1,8 @@
-// Active event retention for Pawn Diary. This is the per-pawn HOT history cap: each pawn keeps only
-// its newest configured number of full DiaryEvent references. When an older page is safe to keep only
-// for display, retention copies that POV into the compact archive before dropping the hot ref. The
-// repository owns the hot master list and lookup index; the archive owns cold display rows; this
-// component owns the saved per-pawn diary references, so the archive-and-sweep pass lives here where
-// all three can be kept consistent.
+// Active/archive retention for Pawn Diary. The active cap limits each pawn's HOT full DiaryEvent
+// references; old displayable pages compact into the archive before their hot refs are dropped. The
+// archive cap then limits each pawn's compact display-only rows. The component owns the saved per-pawn
+// diary references, so the archive-and-sweep pass lives here where the hot repository, archive, and
+// pawn records can be kept consistent.
 using System;
 using System.Collections.Generic;
 using Verse;
@@ -13,29 +12,55 @@ namespace PawnDiary
     public partial class DiaryGameComponent
     {
         /// <summary>
-        /// Public settings hook: applies the configured active-event cap to the currently loaded game.
+        /// Public settings hook: applies the configured active and archive caps to the loaded game.
         /// Safe to call from the mod settings window; errors are logged once instead of escaping into
         /// RimWorld's settings UI.
         /// </summary>
-        public void ApplyActiveEventLimitFromSettings()
+        public void ApplyDiaryEventLimitsFromSettings()
         {
             try
             {
-                ApplyActiveEventLimit();
+                ApplyDiaryEventLimits();
             }
             catch (Exception e)
             {
-                Log.ErrorOnce("[Pawn Diary] Active diary event limit failed: " + e,
-                    "DiaryGameComponent.ApplyActiveEventLimitFromSettings".GetHashCode());
+                Log.ErrorOnce("[Pawn Diary] Diary event retention limits failed: " + e,
+                    "DiaryGameComponent.ApplyDiaryEventLimitsFromSettings".GetHashCode());
             }
+        }
+
+        /// <summary>
+        /// Compatibility wrapper for older call sites and dev tools that only knew about the active cap.
+        /// </summary>
+        public void ApplyActiveEventLimitFromSettings()
+        {
+            ApplyDiaryEventLimitsFromSettings();
+        }
+
+        /// <summary>
+        /// Applies both configured retention caps and invalidates cached Diary-tab views once if either
+        /// the hot event refs or compact archive rows changed.
+        /// </summary>
+        private void ApplyDiaryEventLimits()
+        {
+            bool changed = ApplyActiveEventLimit();
+            changed = ApplyArchivedEventLimit() || changed;
+            if (!changed)
+            {
+                return;
+            }
+
+            orphanCandidatesLastScan.Clear();
+            DiaryStateVersion.Bump();
         }
 
         /// <summary>
         /// Caps each pawn's diary to its newest configured number of hot pages, archiving old
         /// displayable pages before dropping their hot refs, then drops master-list events that no pawn
-        /// references anymore. Runs on every new event, on save/load, and when settings are saved.
+        /// references anymore. Runs after new event creation, before save, after load, and when settings
+        /// are saved.
         /// </summary>
-        private void ApplyActiveEventLimit()
+        private bool ApplyActiveEventLimit()
         {
             PawnDiarySettings settings = PawnDiaryMod.Settings;
             int perPawnLimit = settings == null
@@ -43,16 +68,22 @@ namespace PawnDiary
                 : PawnDiarySettings.ClampActiveDiaryEventLimit(settings.maxActiveDiaryEvents);
             if (HasDevMockStressHistory(perPawnLimit))
             {
-                return;
+                return false;
             }
 
-            if (!TrimDiariesToPerPawnLimit(perPawnLimit))
-            {
-                return;
-            }
+            return TrimDiariesToPerPawnLimit(perPawnLimit);
+        }
 
-            orphanCandidatesLastScan.Clear();
-            DiaryStateVersion.Bump();
+        /// <summary>
+        /// Caps each pawn's compact archive to the configured number of display-only rows.
+        /// </summary>
+        private bool ApplyArchivedEventLimit()
+        {
+            PawnDiarySettings settings = PawnDiaryMod.Settings;
+            int perPawnLimit = settings == null
+                ? PawnDiarySettings.DefaultMaxArchivedDiaryEvents
+                : PawnDiarySettings.ClampArchivedDiaryEventLimit(settings.maxArchivedDiaryEvents);
+            return archive.TrimPerPawnLimit(perPawnLimit);
         }
 
         /// <summary>

@@ -806,7 +806,9 @@ namespace PawnDiary
                     povRole = request.povRole,
                     sessionId = request.sessionId,
                     success = false,
-                    error = lastError ?? "Unknown network error.",
+                    // Redact: this error is stored on the event and shown in the diary tab, and a
+                    // networking message can echo the key-bearing request URL (query-param auth).
+                    error = ApiLaneLabels.RedactSecrets(lastError ?? "Unknown network error."),
                     isTitleRequest = request.isTitleRequest
                 });
                 LogDebug("All lanes failed event=" + request.eventId + " role=" + request.povRole + " lastError=" + TrimForLog(lastError));
@@ -826,7 +828,7 @@ namespace PawnDiary
                         povRole = request.povRole,
                         sessionId = request.sessionId,
                         success = false,
-                        error = ex.Message,
+                        error = ApiLaneLabels.RedactSecrets(ex.Message),
                         isTitleRequest = request.isTitleRequest
                     });
                 }

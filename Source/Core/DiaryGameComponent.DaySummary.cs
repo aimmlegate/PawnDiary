@@ -630,7 +630,9 @@ namespace PawnDiary
 
             const int MaxEvidenceLength = 120;
             string trimmed = text.Trim();
-            return trimmed.Length > MaxEvidenceLength ? trimmed.Substring(0, MaxEvidenceLength) + "..." : trimmed;
+            return trimmed.Length > MaxEvidenceLength
+                ? TextTruncation.SafePrefix(trimmed, MaxEvidenceLength) + "..."
+                : trimmed;
         }
 
         private static int DaySummaryMaxHighlights

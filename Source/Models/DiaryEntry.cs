@@ -102,6 +102,11 @@ namespace PawnDiary
         // Dev-only regeneration/debug actions use this to avoid promising raw prompt/state that was
         // intentionally discarded during compaction.
         public readonly bool Archived;
+        // Tie-break rank for entries that share a Tick: a death page (+1) is the hard FINAL page so it
+        // sorts as newest; an arrival page (-1) is the hard FIRST page so it sorts as oldest; everything
+        // else is 0. Game-start thoughts share the arrival tick, and List.Sort is not stable, so without
+        // this a startup thought could render above the arrival page.
+        public readonly int BoundaryRank;
 
         public DiaryEntryView(
             int tick,
@@ -127,7 +132,8 @@ namespace PawnDiary
             string llmRawResponse = null,
             DiaryTextDecorationContext textDecorationContext = null,
             bool archivedGenerationStale = false,
-            bool archived = false)
+            bool archived = false,
+            int boundaryRank = 0)
         {
             Tick = tick;
             Date = date;
@@ -154,6 +160,7 @@ namespace PawnDiary
             TitlePending = titlePending;
             ArchivedGenerationStale = archivedGenerationStale;
             Archived = archived;
+            BoundaryRank = boundaryRank;
         }
 
         /// <summary>
@@ -236,43 +243,45 @@ namespace PawnDiary
         {
             get
             {
-                string debug = "LLM debug";
+                // Dev-only diagnostics, but still on-screen UI, so the field labels are localized like
+                // the rest of the tab (the values — ids, model names, prompt — are data, not strings).
+                string debug = "PawnDiary.Debug.Header".Translate();
 
                 if (!string.IsNullOrWhiteSpace(EventId))
                 {
-                    debug += "\nEvent: " + EventId;
+                    debug += "\n" + "PawnDiary.Debug.Event".Translate() + ": " + EventId;
                 }
 
                 if (!string.IsNullOrWhiteSpace(PovRole))
                 {
-                    debug += "\nPOV: " + PovRole;
+                    debug += "\n" + "PawnDiary.Debug.Pov".Translate() + ": " + PovRole;
                 }
 
                 if (!string.IsNullOrWhiteSpace(LlmEndpoint))
                 {
-                    debug += "\nEndpoint: " + LlmEndpoint;
+                    debug += "\n" + "PawnDiary.Debug.Endpoint".Translate() + ": " + LlmEndpoint;
                 }
 
                 if (!string.IsNullOrWhiteSpace(LlmModel))
                 {
-                    debug += "\nModel: " + LlmModel;
+                    debug += "\n" + "PawnDiary.Debug.Model".Translate() + ": " + LlmModel;
                 }
 
                 if (!string.IsNullOrWhiteSpace(LlmStatus))
                 {
-                    debug += "\nStatus: " + LlmStatus;
+                    debug += "\n" + "PawnDiary.Debug.Status".Translate() + ": " + LlmStatus;
                 }
 
                 if (!string.IsNullOrWhiteSpace(LlmError))
                 {
-                    debug += "\nError: " + LlmError;
+                    debug += "\n" + "PawnDiary.Debug.Error".Translate() + ": " + LlmError;
                 }
 
-                debug += "\nPrompt:\n" + (LlmPrompt ?? Text ?? string.Empty);
+                debug += "\n" + "PawnDiary.Debug.Prompt".Translate() + ":\n" + (LlmPrompt ?? Text ?? string.Empty);
 
                 if (!string.IsNullOrWhiteSpace(LlmRawResponse))
                 {
-                    debug += "\nRaw response:\n" + LlmRawResponse;
+                    debug += "\n" + "PawnDiary.Debug.RawResponse".Translate() + ":\n" + LlmRawResponse;
                 }
 
                 return debug;
