@@ -48,84 +48,157 @@ RimWorld loads `About/`, `1.6/`, `Languages/`, and the compiled DLL in
 
 ## 3. Runtime Flow
 
-1. A Harmony hook or scanner notices a candidate event.
-2. The adapter snapshots live RimWorld facts, settings/XML gates, dedup state, and any random roll.
-3. The pure Event Catalog decides whether to drop, create a solo/pair/neutral entry, batch, or route
-   to day/quadrum reflection.
-4. `AddSoloEvent` or `AddPairwiseEvent` creates a saved `DiaryEvent` and indexes it on eligible
-   pawn records. The active-event retention cap then archives old displayable POVs into compact
-   `ArchivedDiaryEntry` rows before dropping their hot refs; the archive cap separately prunes old
-   compact rows.
-5. Generation queues immediately when possible; periodic scans retry pending or orphaned work.
-6. `DiaryPipelineAdapters` copies runtime/XML/localized state into pure pipeline DTOs.
-7. Pure helpers assemble prompts, serialize request JSON, parse provider responses, and clean text.
-8. `LlmClient` sends requests and returns results to the main thread; successful main pages may queue
-   a title follow-up.
+The mod is a loaded RimWorld library, not a standalone program. Startup, capture, generation,
+storage, and UI are all framework callbacks around one saved `DiaryGameComponent`.
 
-`GameComponentTick` runs game-time scans continuously, but the expensive active-event generation
-rescan is demand-driven: load catch-up, delayed raid entries, and recovered orphaned work request a
-pass, then the catch-up pass runs at most every 200 ticks until it is no longer needed. Those
-generation/title/orphan scans use the XML-tuned hot window (`activeScanEventWindow`, default 1000,
-a global count across all pawns); older hot events can be compacted into archive rows that stay
-visible but are not retried or title-backfilled until the per-pawn archive cap prunes them.
-Orphaned "writing..." recovery is a separate, slower hot-window pass every 600 ticks. Completed LLM
-results and debug logs are drained from both `GameComponentTick` and `GameComponentUpdate`, so
-requests that were already queued can finish and apply while the game is paused. Pending generation
-is not saved; it resets on load and is requeued when the event is still inside the hot window.
-First-person generation is skipped for pawns below the XML Consciousness floor, while neutral
-arrival/death pages bypass that guard.
+This is the top-level shape:
 
-### 3.1 Ingestion bus (`DiaryEvents.Submit`)
+```mermaid
+flowchart TD
+    A["RimWorld loads DLL"] --> B["Startup"]
+    B --> C["Patch game hooks"]
+    B --> D["Register Diary tab"]
+    C --> E["Hooked events"]
+    F["Tick scanners"] --> E
+    E --> G["Submit signal"]
+    G --> H["Dispatch"]
+    H --> I{"Catalog keeps it?"}
+    I -- "No" --> J["Drop"]
+    I -- "Yes" --> K["Save diary event"]
+    K --> L{"Generate now?"}
+    L -- "No" --> M["Pending or catch-up"]
+    L -- "Yes" --> N["Build prompt"]
+    N --> O["LLM request"]
+    O --> P["Apply result"]
+    P --> K
+    K --> Q["Archive old display rows"]
+    K --> R["Diary UI"]
+    Q --> R
+    K --> S["Save/load"]
+```
 
-Every captured event enters through one front door: `DiaryEvents.Submit(signal)` (`Source/Ingestion/`).
-A Harmony hook (or scanner) builds the matching `DiarySignal` subclass and submits it; the shared
-dispatcher `DiaryGameComponent.Dispatch` then runs the universal steps that each `RecordXxx` method
-used to copy-paste:
+### 3.1 Startup
 
-1. **guard** — `CanRecordGameplayEventNow` (game must be in play);
-2. **dedup-check** — one consolidated transient `recentEvents` store, keyed by the signal's raw
-   source-prefixed key (e.g. `"thought|pawnId|defName"`). The check runs *before* `Decide` so a
-   deduped event skips the pure decision, and so a source that draws impure state before emitting
-   (notably `AbilitySignal`'s `Rand.Value` roll) does not consume that state on a dropped duplicate;
-3. **decide** — `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` (the pure, XML-backed
-   filter);
-4. **dedup-mark** — the key is marked only after `Decide` passes, so an event the catalog drops
-   (e.g. an ability that fails its cooldown-weighted chance roll) does not consume the window;
-5. **emit** — `signal.Emit(sink, decision)` builds the localized text + game-context, creates the
-   `DiaryEvent` via the factory, and queues generation (or routes to the ambient/batch sinks).
+`DiaryModStartup` is the startup hook. RimWorld runs its static constructor when the DLL loads.
 
-A `DiarySignal` is the impure capture+emit half of one source; the pure decision and game-context
-format stay in `Source/Capture/Events/*EventData.cs` (unit-tested without RimWorld). Colony-wide
-sources extend `DiaryFanoutSignal`: the dispatcher peeks the colony dedup key once, runs each
-per-pawn child through the same decide→dedup→emit path, and marks the colony key only after at least
-one entry emits. Signals reach the component through a narrow internal emit surface
-(`AddSoloEvent`/`AddPairwiseEvent`, `QueueSolo`/`QueuePair`/`DelaySolo`, `RecordAmbientThought`,
-`BuildCaptureContext`, `IsDiaryEligible`) so generation internals stay private.
+Startup does three jobs:
 
-Adding a reaction to a new event is now: write one Harmony hook + one `DiarySignal` subclass (capture
-into a payload, build the context, emit), register the source's `Spec` in the catalog, and add its
-XML policy. The filter/dedup/route glue is inherited from `Dispatch`, not re-implemented.
+1. Apply normal Harmony patches.
+2. Register fragile reflection patches through `DiaryPatchRegistrar`.
+3. Inject the hidden Diary inspect tab onto humanlike pawn and corpse defs.
 
-**Migration status: complete.** Every catalog source (`DiaryEventType`) now routes through the bus —
-the Harmony-hook sources (Thought, Inspiration, Ability, Romance, MentalState, Tale, Death,
-Interaction, Raid, MoodEvent, Ritual/PsychicRitual, Hediff, Quest, Arrival) and the tick-scanner /
-flush sources (Work, ThoughtProgression, DayReflection). There are no remaining `RecordXxx` capture
-methods. Two patterns reach the bus:
+The Diary tab is hidden from the normal tab strip, but it must still be registered. The inspect
+command, diary links, selected pawns, and selected corpses all open that same registered tab.
 
-- **One-shot captures** (Harmony hooks) build a `DiarySignal` and call `DiaryEvents.Submit`.
-- **Scanner / flush sources** are still driven by their periodic component scans (work sampling,
-  situational-thought progression, hediff severity, quest accept-state, day reflection), but each scan
-  now builds a signal per pawn and submits it instead of recording inline. A scan whose own episode
-  state depends on whether the event recorded (ThoughtProgression's recorded-stage set, DayReflection's
-  written-day guard) calls `Dispatch` directly and reads its `bool` result.
+### 3.2 Capture And Dispatch
 
-The per-source dedup dictionaries are gone, replaced by the single consolidated `recentEvents` store
-(legacy scan state like `knownAcceptedQuestIds` and the per-episode staging sets remain, since they
-are not event dedup). Each entry records the source's OWN dedup window alongside the tick, and the
-prune sweep evicts a key only once THAT window has elapsed (pure policy in
-`Source/Capture/RecentEventExpiry.cs`, unit-tested); a short-window source firing the sweep can
-therefore never evict a still-live long-window key, and a zero/negative window means "opt out of
-dedup" rather than "wipe the store". The coverage table below lists each source's signal.
+There are two ways events reach the diary system.
+
+Harmony hooks submit one-shot events, such as social interactions, mental breaks, quests, raids,
+deaths, arrivals, rituals, abilities, and thoughts.
+
+`DiaryGameComponent` tick scans submit slower state-based events, such as work sampling, thought
+progression, hediff progression, quest state recovery, day reflections, event windows, and observed
+conditions.
+
+Both paths submit a `DiarySignal` through `DiaryEvents.Submit`. From there, every event uses the same
+dispatcher path:
+
+1. Confirm the game is in a recordable state.
+2. Check `recentEvents` for deduplication.
+3. Build a plain capture payload and `CaptureContext`.
+4. Ask the pure Event Catalog whether to record, drop, batch, fan out, or route the event.
+5. Emit the chosen diary event shape.
+
+Live RimWorld objects stay in the signal adapters. The Event Catalog works on DTOs and primitive
+context so its decisions remain testable without loading RimWorld.
+
+### 3.3 Storage And Retention
+
+Recorded events are saved as full hot `DiaryEvent` rows in `DiaryEventRepository`.
+
+Each pawn has a `PawnDiaryRecord` containing references to the hot events that belong to that pawn.
+Pair and shared events can therefore stay as one backing event while appearing in more than one
+pawn's diary.
+
+Retention keeps recent pages hot and moves old displayable POVs into compact `ArchivedDiaryEntry`
+rows owned by `DiaryArchiveRepository`. Archived rows remain visible in the Diary tab, but they no
+longer retry generation, receive title backfill, feed prompt continuity, or count as evidence for
+day/quadrum reflection scans.
+
+### 3.4 Generation
+
+Generation starts only after an event exists in the saved hot store.
+
+`DiaryPipelineAdapters` copy current settings, XML Def policy, localization, and live pawn facts
+into pure pipeline contracts. Pure helpers then plan the prompt, build request JSON, parse provider
+responses, clean generated text, and decide title behavior.
+
+`LlmClient` owns the background HTTP work for OpenAI-compatible API lanes. It handles retries,
+failover, cooldowns, timeouts, and session cancellation. Finished results return to the main thread,
+where the matching `DiaryEvent` is updated with text, status, model metadata, titles, and unread
+flags.
+
+Completed LLM results are drained from both `GameComponentTick` and `GameComponentUpdate`. That means
+requests already in flight can still finish while the game is paused.
+
+### 3.5 Tick Work And Catch-Up
+
+`GameComponentTick` always runs cheap game-time scans.
+
+Expensive generation catch-up is demand-driven. Load catch-up, delayed raid pages, and orphaned
+"writing..." recovery request a pass; the pass scans only the XML-tuned `activeScanEventWindow` hot
+events, which defaults to 1000 events globally.
+
+Pending LLM work itself is not saved. After load, only hot events still inside the active scan window
+can be requeued.
+
+First-person generation is skipped for pawns below the XML Consciousness floor. Neutral arrival and
+death pages bypass that guard because they are boundary chronicle pages, not first-person writing.
+
+### 3.6 Ingestion Bus (`DiaryEvents.Submit`)
+
+Every captured event enters through `DiaryEvents.Submit(signal)` (`Source/Ingestion/`). A Harmony
+hook or scanner builds the matching `DiarySignal` subclass and submits it; the dispatcher then runs
+the universal path:
+
+| Step | What happens |
+|---|---|
+| Guard | `CanRecordGameplayEventNow` rejects events when the game is not in normal play. |
+| Dedup check | `recentEvents` rejects duplicate source keys before payload/context work runs. |
+| Decide | `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` applies pure XML-backed policy. |
+| Dedup mark | The source key is marked only after the catalog keeps the event. |
+| Emit | `signal.Emit(sink, decision)` creates the selected diary event shape and queues follow-up work. |
+
+The dedup order is intentional. The check happens before `Decide`, so a duplicate does not build
+context, run pure policy, or consume source-side random state. `AbilitySignal` depends on this because
+its chance roll is read lazily from `Rand.Value`.
+
+The mark happens after `Decide`. If the catalog drops an event, such as an ability that fails its
+chance roll, the dedup window is not consumed.
+
+A `DiarySignal` is the impure capture+emit half of one source. Pure decision data and game-context
+formatting stay in `Source/Capture/Events/*EventData.cs`, covered by standalone tests where possible.
+Colony-wide sources extend `DiaryFanoutSignal`.
+
+For fan-out events, the dispatcher checks the colony key once. It then runs each per-pawn child
+through the same path and marks the colony key only after at least one entry emits.
+
+Every `DiaryEventType` now routes through this bus.
+
+One-shot Harmony captures submit directly. Scanner and flush sources are still triggered by component
+scans, but they also submit signals. A scan whose episode state depends on whether the entry recorded
+can call `Dispatch` directly and read its `bool` result.
+
+Adding a source means adding the hook or scanner, a signal, the catalog `Spec`, and XML policy.
+Shared guard, dedup, decision, and emission glue stays in `Dispatch`.
+
+The old per-source dedup dictionaries are gone. `recentEvents` stores the source-prefixed key, the
+source's own dedup window, and the recorded tick. `Source/Capture/RecentEventExpiry.cs` owns the pure
+expiry rule.
+
+A short-window source cannot evict a still-live long-window key. A zero or negative window opts out
+of dedup instead of clearing the store. The coverage table below lists each source's signal.
 
 ## 4. Event Sources
 
@@ -181,213 +254,127 @@ with one-time logging and preserve vanilla behavior.
 
 ## 5. XML Policy
 
-Most feature tuning lives in XML so changes do not require recompiling:
+XML owns policy that designers should be able to change without recompiling.
 
-- `DiaryInteractionGroupDefs.xml`: event classification, instructions, tones, color cues, batching,
-  hediff modes, package-aware compatibility routing, and default enablement.
-- `DiaryEventWindowDefs.xml`: generic start/end/timeout windows or one-shot events over incident,
-  quest, spawned thing, letter, proximity-letter, and special story-object signals, including phase
-  diary text and active prompt weighting.
-- `DiaryObservedConditionDefs.xml`: lasting colony states re-derived from live game state each poll
-  (map danger, active game conditions, observable evidence things, pawn hediffs) with start/end
-  debounce, optional diary pages, and active prompt weighting (Plan 12, see §5.1).
-- `DiaryEventPromptDefs.xml`: event prompt text, event enhancement text, and optional forced model.
-- `DiaryPromptTemplateDefs.xml`: which structured fields each prompt shape renders.
-- `DiaryPromptDef.xml`: shared system/final instructions.
-- `DiaryPersonaDefs.xml`: built-in writing styles.
-- `DiaryHediffPersonaOverrideDefs.xml`: active hediffs that temporarily force a writing style.
-- `DiaryPromptEnchantmentDefs.xml` and `DiaryHumorCueDefs.xml`: optional live-context and subtle
-  humor cues.
-- `DiarySignalPolicyDefs.xml` and `DiaryTuningDef.xml`: scan intervals, odds, cooldowns, thresholds,
-  day/quadrum-reflection policy, and shared fallback tuning.
-- `DiaryUiStyleDef.xml` and `DiaryTextDecorationDefs.xml`: Diary UI dimensions/colors and display
-  rich-text decoration.
+| XML file | Owns |
+|---|---|
+| `DiaryInteractionGroupDefs.xml` | event classification, group instructions/tones, batching, hediff modes, colors, default enablement |
+| `DiaryEventWindowDefs.xml` | one-shot or timed story windows from game signals |
+| `DiaryObservedConditionDefs.xml` | live-state conditions such as map danger, game conditions, evidence things, and visible hediffs |
+| `DiaryEventPromptDefs.xml` | event prompt text, enhancements, and optional forced model names |
+| `DiaryPromptTemplateDefs.xml` / `DiaryPromptDef.xml` | prompt field shapes and shared system/final instructions |
+| `DiaryPersonaDefs.xml` / `DiaryHediffPersonaOverrideDefs.xml` | writing styles and temporary hediff-driven style overrides |
+| `DiaryPromptEnchantmentDefs.xml` / `DiaryHumorCueDefs.xml` | weighted live-context and hidden humor cues |
+| `DiarySignalPolicyDefs.xml` / `DiaryTuningDef.xml` | scan intervals, odds, cooldowns, thresholds, reflection policy, fallback tuning |
+| `DiaryUiStyleDef.xml` / `DiaryTextDecorationDefs.xml` | UI dimensions/colors and display-only rich-text decoration |
 
-Interaction groups match by domain, exact `defName`, and a precision-ordered set of token
-matchers, plus an optional source package ID. From most to least precise, the token matchers are:
-`matchPrefixes` (defName starts with the token), `matchSuffixes` (defName ends with the token),
-`matchSegments` (a whole CamelCase/underscore/digit word of the defName equals the token — `"Food"`
-matches `NeedFood`/`AteRawFood` but not `Foodstuff`), and the legacy blunt `matchTokens` (plain
-case-insensitive substring). Prefer the precise matchers and exact `defName` lists for new groups;
-`matchTokens` stays only for compatibility because a substring like `"Good"` also claims the vanilla
-grief thought `PawnWithGoodOpinionDied`. The pure matcher logic lives in
-`Source/Capture/GroupNameMatcher.cs` (no RimWorld types) so it is unit-tested directly. Across
-groups, lower `order` wins ("first match wins"), so a specific group can intercept a defName before
-a broader group's matcher sees it — the `thoughtPositive` group (order 500) claims the positive
-opinion-flipped `PawnWithBadOpinionDied` before `thoughtNegative`'s `Died` suffix (order 510). Event prompt policy resolves from most specific to broadest key: source defName, interaction
-group, classifier key, then domain. Prompt text, enhancement text, and forced-model text resolve
-independently so narrow XML can override one field and inherit the others.
-Mood-impact fallback lists in `DiaryTuningDef.xml` classify GameCondition defNames that are always
-positive or negative when no live thought offset is measurable; Anomaly `GrayPall` and `DeathPall`
-are negative string matches there. `UnnaturalDarkness` is routed through the mixed MoodEvent group
-instead because its Anomaly ThoughtDef can be negative or positive depending on the pawn.
+Interaction groups match by domain, exact `defName`, optional package id, and ordered token matchers.
+Prefer exact names, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy
+substring-style `matchTokens` only when broad matching is truly intended. Lower `order` wins, so put
+specific groups before broad groups. The pure matcher lives in `Source/Capture/GroupNameMatcher.cs`.
 
-For optional DLC or mod content, prefer string matchers in XML. Do not hard-reference DLC defs in C#
-or XML unless they are guarded; absent DLC content should simply never match.
-The Anomaly Hediff group follows this pattern: `RevenantHypnosis`, `CubeInterest`,
-`CubeWithdrawal`, `CubeRage`, `CorpseTorment`, and `Inhumanized` are exact string matches that create
-immediate Hediff diary entries on add and on configured severity-step progression when that DLC
-content is present. The same conditions also have prompt-enchantment cues, so any ordinary
-first-person prompt they win adds an `important context:` line such as `high priority; moderate cube
-withdrawal; compulsive absence, restless need; condition detail: ...`. `descriptionOverrideKey` can
-replace the standard game description per Def; otherwise the localized `HediffDef.description` is
-cleaned and capped before it reaches the model. If a hediff also wins a temporary writing-style
-override, its matching prompt-enchantment candidate is suppressed so the localized condition text
-does not repeat as both style and context; unrelated hediff/status candidates remain eligible.
-`DiaryHediffPersonaOverrideDefs.xml` can also temporarily force the prompt POV pawn's writing style
-from active hediffs; `Inhumanized` currently
-uses this to force the `DiaryPersona_InhumanizedVoid` dark void style while that hediff is active.
-Base-game `Alzheimers`, base-game `Dementia`, and Anomaly `CrumblingMind` stay regular
-memory-decay prompt enchantments rather than writing-style overrides, while Anomaly `CrumbledMind`
-uses the stronger `DiaryPersona_CrumbledMindCollapse` mind-crumbled style. Base-game `Joywire` forces the
-`DiaryPersona_JoywireHaze` bright-fog style, and Anomaly `BlissLobotomy` uses the stronger
-`DiaryPersona_BlissLobotomyHaze` blank-bliss style. Royalty `Mindscrew` forces the
-`DiaryPersona_MindscrewPain` pain-needle style when that optional DLC hediff is present. Base-game
-`TraumaSavant` has the high-priority `DiaryPersona_TraumaSavantSilent` style, which forbids dialogue
-or `[[speech]]` blocks because the pawn cannot speak. Base-game drug highs use the same
-prompt-enchantment override hook for `AlcoholHigh`, `Hangover`,
-`AmbrosiaHigh`, `GoJuiceHigh`, `LuciferiumHigh`, `FlakeHigh`, `PsychiteTeaHigh`, `YayoHigh`, and
-`SmokeleafHigh`, with XML cue keys grounded in the vanilla Hediff and Thought defs.
+Event prompts resolve from narrow to broad: source defName, interaction group, classifier key, then
+domain. Prompt text, enhancement text, and forced-model text resolve independently, so a narrow row can
+override one field and inherit the others.
 
-Event windows are the generic system for ongoing threats, one-shot warnings, or story beats that
-are not hediffs.
-`DiaryEventWindowDef` rows define `startSignals`, `endSignals`, `timeoutTicks`, phase diary text,
-and active prompt policy. Current signal sources are `Incident/executed`, `Quest/accepted`,
-`Quest/completed`, `Quest/failed`, `ThingSpawned/spawned`, `Letter/received`,
-`ProximityLetter/received`, `VoidMonolith/activated`, `PawnAge/birthday`, `Hediff/added`, and
-`PrisonBreak/started`; matchers are exact defName strings or broad tokens. `keepActive=false` makes
-the start signal a one-shot diary event without saving an active window. `recordScope=SubjectPawn`
-records only the pawn carried by the signal, used by vanilla letter triggers such as ancient danger,
-proximity-letter triggers such as void monolith discovery, completed monolith activations, birthdays,
-and target health events. An active window is saved, can write
-start/end/timeout diary entries, and can add a weighted prompt candidate while multiplying ordinary
-prompt enchantments down. Setting
-`normalPromptWeightMultiplier` to `0` makes the window fully override ordinary health/status prompt
-enchantments until it ends or times out. The former `MetalhorrorSuspicion` window was retired in
-favor of the Plan 12 observed condition `AnomalyGrayFleshEvidence` (see §5.1): a fixed `timeoutTicks`
-could never prove the suspicion was still unresolved, and the gray-flesh `ThingSpawned` start signal
-left it effectively always active, so it is now driven by whether gray-flesh evidence is physically
-present on the map. The built-in `AncientDanger` rule
-matches vanilla's `AncientShrineWarning` letter key and records a single entry for the approaching
-pawn only. The built-in `VoidMonolithDiscovery` rule matches the Anomaly `VoidMonolith` proximity
-letter and records a single extreme-dark discovery entry for the nearby pawn only. The built-in
-`VoidMonolithActivation` rule matches completed void monolith activations, uses the reached
-`MonolithLevelDef` as its signal defName for future XML splits, and records one extreme-dark entry
-for the activating pawn. `Birthday` records a target-only uneasy aging entry from the direct
-`BirthdayBiological` hook instead of inferring the moment from age-related hediffs. `HeartAttack`
-records a target-only danger entry from `Hediff/added` with defName `HeartAttack`; vanilla pawn heart
-attacks do not emit their own letter or message, while Anomaly's `MessageHeartAttack` belongs to the
-fleshmass heart and is unrelated. `PrisonBreak` records one danger entry for every eligible colonist
-on the affected map from the shared prison-break utility overload used by both natural and sparked
-breakouts.
+Optional DLC or mod content should normally be handled as string matches. Do not hard-reference DLC
+defs or C# types unless they are guarded as described in `AGENTS.md`. Missing DLC content should
+simply never match.
 
-On hot signal paths (every spawned thing, every added hediff) the recorder first runs a cheap,
-allocation-free pre-filter — `EventWindowPolicy.CouldMatchByDefName` against each def's cached
-trigger rules — and only resolves the signal label when some window could actually match. Optional
-event-window recording is also isolated from the established raid/hediff/quest capture, so a window
-failure can never suppress the diary entry those hooks already write.
+Hediff policy has two separate knobs:
+
+- `DiaryPromptEnchantmentDefs.xml` adds condition/status context to prompts.
+- `DiaryHediffPersonaOverrideDefs.xml` can temporarily force the writing style.
+
+If the same hediff wins a writing-style override, its matching prompt-enchantment cue is suppressed so
+the condition is not repeated in both the style block and the `important context:` line.
+
+Event windows are for one-shot signals and bounded story phases. A `DiaryEventWindowDef` can start,
+end, time out, write phase pages, and add a weighted prompt candidate while it is active.
+`keepActive=false` turns the start signal into a one-shot page. `recordScope=SubjectPawn` records only
+the pawn carried by the signal.
+
+Hot event-window paths use `EventWindowPolicy.CouldMatchByDefName` before resolving labels or doing
+expensive work. Window recording is isolated from normal raid, quest, hediff, and other capture paths;
+a window failure must not suppress the base diary entry.
 
 ### 5.1 Observed conditions (lasting game state, Plan 12)
 
-Event windows react to one-shot *signals* and then guess a duration with `timeoutTicks`. That is
-wrong for *lasting* states (an active raid, toxic fallout, gray-flesh evidence): a fixed timeout
-cannot prove the state is still real, a missed end signal leaves stale context, and a save loaded
-mid-state drifts from reality. Observed conditions fix this by re-deriving truth from **live game
-state** on every poll. `DiaryObservedConditionDef` rows declare one `observerType`, what to match,
-and how to debounce; the rest is generic.
+Observed conditions are for lasting states that should be re-read from live game state instead of
+guessed from a timeout. Examples: map danger, toxic fallout, solar flare, or observable gray-flesh
+evidence.
 
-The flow keeps the usual barrier — live reads at the edge, pure decisions in the middle:
-`DiaryGameComponent.ObservedConditions.cs` scans the due defs (each def's own `pollIntervalTicks`,
-checked on a short global gate), snapshots what it currently sees into plain
-`ObservedConditionObservation` DTOs, and hands them to the pure
-`ObservedConditionPolicy.Plan(...)` (under `Source/Capture/ObservedConditions/`, no Verse, unit-tested
-in `tests/DiaryObservedConditionTests`). The policy diffs observations against the saved active state
-and returns decisions: `StartPending` → `StartRecorded` (after `startDebounceTicks`) → `Refresh` while
-seen → `EndPending` → `EndRecorded` (after `endDebounceTicks`), or `DropStale` when the Def is gone or
-a never-started condition disappears. The impure adapter then persists/forgets the saved rows
-(`ActiveObservedConditionState`, Scribe key `activeObservedConditions`) and optionally records start/end
-diary pages. Ticks gate debounce only; whether a condition is active is always answered by "is it in
-this scan's observations?", so a save loaded mid-state is rediscovered and a missed signal is recovered
-by the next scan. A def not polled this pass is excluded from the diff entirely, so it never looks
-falsely "missing". Page recording is transactional: the adapter tries to write the start/end page
-*before* committing the saved-state change, and if no eligible recipient was available it leaves
-`startRecorded`/`endRecorded` false and retains the row (rather than dropping it), so the next scan
-re-enters the same transition instead of permanently losing the page; the per-phase dedup key is
-consumed only after at least one page is actually written, mirroring the event-window recorder.
+The flow is:
 
-Observer types, all DLC-safe (plain-string / vanilla-API matchers that find nothing when content is
-absent): **MapDanger** (active while a home map's `dangerWatcher.DangerRating` ≥ `minDangerRating`, or
-spawned hostiles ≥ `minHostileCount`), **GameCondition** (active while `gameConditionManager`
-holds a matching condition defName — the game owns start/end truth), **ThingPresent** (active while
-matching spawned things/filth remain, found via the indexed `ListerThings.ThingsOfDef`, never a
-full-map scan; describes observable evidence only), and **PawnHediff** (pawn-scoped, active while a
-matching **visible** hediff is present — hidden hediffs are skipped so nothing secret is revealed).
-`RecentEvidence` is reserved for a future bounded letter/signal fallback and is currently a no-op.
+1. `DiaryGameComponent.ObservedConditions.cs` polls due `DiaryObservedConditionDef` rows.
+2. Live state is copied into plain `ObservedConditionObservation` DTOs.
+3. `ObservedConditionPolicy.Plan(...)` diffs observations against saved active rows.
+4. The component persists `ActiveObservedConditionState` rows and optionally records start/end pages.
 
-Shipped defs: `MapThreatActive` (enabled, prompt-tone only), `ToxicFalloutActive` /
-`SolarFlareActive` (enabled GameConditions, prompt-tone only), `AnomalyGrayFleshEvidence` (enabled,
-records one observable "found gray flesh" page and strongly biases prompts toward unease while the
-evidence is physically present — the Anomaly-gated replacement for the retired `MetalhorrorSuspicion`
-window), and `MetalhorrorEmergence` (PawnHediff, shipped **disabled** with empty matchers until the
-observable post-emergence state is verified — see ARCHITECTURE_IMPROVEMENT_PLAN.md Plan 12 "Open
-questions"; it must never surface hidden mechanics).
+The pure policy lives under `Source/Capture/ObservedConditions/` and is covered by
+`tests/DiaryObservedConditionTests`. Ticks only gate debounce. Truth always comes from the current
+observation set, so loading a save mid-condition or missing an end signal self-corrects on the next
+poll.
 
-`DiaryObservedConditionDef` validates its configuration at load via `ConfigErrors`: `recordScope=
-SubjectPawn` is rejected unless `scope=Pawn`, because every non-Pawn scope clears the subject id when
-building an observation and so could never resolve a page recipient (the mismatch would otherwise fail
-silently with no diary page ever recorded).
+Observer types are DLC-safe:
+
+- `MapDanger`: home-map danger rating or spawned hostile count.
+- `GameCondition`: matching active game condition defName.
+- `ThingPresent`: spawned observable things/filth via `ListerThings.ThingsOfDef`.
+- `PawnHediff`: visible pawn hediffs only; hidden hediffs are skipped.
+- `RecentEvidence`: reserved, currently no-op.
+
+Shipped notable defs:
+
+- `MapThreatActive`, `ToxicFalloutActive`, `SolarFlareActive`: prompt-tone only.
+- `AnomalyGrayFleshEvidence`: records observable gray-flesh evidence and biases prompts while present.
+- `MetalhorrorEmergence`: disabled with empty matchers until the observable state is verified.
+
+Page recording is transactional: start/end state is committed only after a page is actually written.
+`ConfigErrors` rejects `recordScope=SubjectPawn` unless `scope=Pawn`.
 
 ## 6. Prompts And Writing Styles
 
 Prompts are compact `key: value` lines. Empty values and `none`/`n/a`/`unknown` sentinels are dropped.
-Prompt templates cover pair, solo, batched, day-reflection, quadrum-reflection, neutral death,
-neutral arrival, and title requests.
-Quest prompts keep the raw `quest=` defName only in saved context for UI/domain classification; the
-model-facing fields use `quest_label`, `quest_signal`, `quest_faction`, and `quest_rewards`.
-Accepted quests are not generated as diary pages; they are tracked for accepted-state bookkeeping
-and generic event-window policy. Completed and failed outcomes fan out to eligible colonists, so
-the Quest prompt frames the result as the colony's shared effort rather than proof that the POV pawn
-personally performed the quest work. The label path rejects placeholder `QuestName`, humanizes
-PascalCase/underscore fallbacks, removes the standalone word `Quest`, and the Quest event
-enhancement tells the model not to copy the quest name verbatim into the diary line.
+Templates cover solo, pair, batch, day reflection, quadrum reflection, neutral arrival/death, and
+title requests.
 
-System prompts stay short and general. Event-specific guidance comes from `DiaryEventPromptDef` and
-per-group instructions/tones. Groups can define instruction/tone variant pools; instructions roll once
-at capture and are saved, while tones are deterministic by event id.
+Prompt policy layers:
 
-Prompt Studio edits shared system prompts and event prompt/enhancement/forced-model overrides.
-Writing-style presets are saved settings backed by `DiaryPersonaDef`; the code still uses "persona"
-in some field names for save compatibility, but the player-facing feature is writing style.
-Active hediffs can temporarily override the saved style through `DiaryHediffPersonaOverrideDef`
-rules. These overrides are prompt-time only: they do not change the saved style picker value, and a
-missing/off-map pawn falls back to its saved style. Memory-decay hediffs such as `Alzheimers`,
-`Dementia`, and `CrumblingMind` deliberately remain prompt enchantments instead of automatic style
-overrides.
+1. Shared system prompts from `DiaryPromptDef`.
+2. Structured fields from `DiaryPromptTemplateDef`.
+3. Event prompt/enhancement/forced-model rows from `DiaryEventPromptDef`.
+4. Interaction-group instructions and tones.
+5. Writing style from the pawn's saved `DiaryPersonaDef`, unless temporarily overridden by hediff.
+6. Optional prompt enchantments, event windows, observed conditions, and humor cues.
 
-Prompt enchantments add one weighted live-context pressure cue to eligible first-person prompts.
-When a hediff-driven writing-style override is active, the hediff sources that selected that override
-are removed from the normal prompt-enchantment pool to avoid duplicating the same condition in the
-system style block and the `important context:` line.
-Imported game/mod prompt text such as live hediff descriptions, hediff/capacity labels, DLC title or
-role labels, scenario descriptions, and quest descriptions is flattened to one prompt line and capped
-to its first two sentences before being sent to the model. Pawn Diary's own XML/Keyed prompt
-instructions, writing styles, humor cues, and field labels are not sentence-capped by this guard.
-Active event windows and active observed conditions (§5.1) both feed the same prompt-enchantment
-planner as extra XML-weighted candidates, so an unresolved colony threat can shape unrelated diary
-pages until it closes — by the event window's end signal/timeout, or by the observed condition's live
-state ending after its end debounce. Each source can also dampen ordinary health/mood context through
-its own `normalPromptWeightMultiplier`; the two multipliers compose. Dev prompt-suite fixtures opt out of live prompt enchantments, including active
-event-window candidates, so captured test prompts stay isolated from earlier manual event-window
-tests. Humor cues are hidden, XML-weighted, and folded into the writing-style block.
-Direct speech is allowed only in selected first-person interaction prompts with a closed
-`[[speech]]...[[/speech]]` block.
+Prompt Studio can override shared system prompts and per-event prompt/enhancement/forced-model text.
+Saved override keys must stay stable because they are part of mod settings.
 
-Generated Social-log speech injection remains disabled/hidden. The saved setting exists for
-compatibility, but the call site is off. Title generation is enabled by default. Successful main
-entries queue their own title follow-up immediately; the full missing-title sweep runs only after
-load or when settings are saved, not on every generation rescan. Title responses are validated
-before they are saved: markup/control/schema characters such as leaked tag tokens are rejected, and
-the stored title falls back to the first few words of the finished diary entry with `...` appended.
+Quest prompts are deliberately sanitized. The raw quest defName stays in saved context for UI/domain
+classification, but model-facing fields use labels, signals, factions, and rewards. Accepted quests
+do not generate diary pages; completed and failed outcomes fan out as shared colony effort.
+
+Writing styles are backed by `DiaryPersonaDef`. Some code and save fields still say "persona" for
+compatibility, but player-facing text should call them writing styles. Hediff style overrides are
+prompt-time only and never change the saved picker value.
+
+Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
+and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary
+pages until they close. `normalPromptWeightMultiplier` can dampen ordinary health/mood context.
+
+Imported game/mod text is flattened and capped before it reaches the model. This applies to live
+hediff descriptions, labels, titles/roles, scenario text, and quest descriptions. Pawn Diary's own
+XML/Keyed prompt text, field labels, writing styles, and humor cues are not sentence-capped by that
+guard.
+
+Direct speech is allowed only in selected first-person interaction prompts, and only inside a closed
+`[[speech]]...[[/speech]]` block. Generated Social-log speech injection remains disabled/hidden; the
+saved setting exists only for compatibility.
+
+Title generation is enabled by default. Main entries queue their own title request after successful
+generation. The broad missing-title sweep runs after load or settings save, not every generation
+scan. Bad title responses are rejected and fall back to the opening words of the finished entry.
 
 ## 7. Settings And UI
 

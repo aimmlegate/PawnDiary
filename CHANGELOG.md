@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-06-30
 
+- **Maintainer runtime documentation reworked.** `DOCUMENTATION.md` now has a human-readable
+  top-level mod flow with a Mermaid diagram and separate startup, capture, storage, generation,
+  catch-up, UI, and save/load ownership notes.
+- **Event prompt map replaced with current-state Mermaid diagrams.** `EVENT_PROMPT_MAP.md` now maps
+  the event listeners, capture decisions, prompt policy lookup, template selection, prompt
+  enchantments, overrides, and active weights from the current code and XML.
 - **Quest acceptance no longer generates diary pages.** Quest accept hooks now only mark accepted
   quests as seen and feed generic event-window policy; diary entries are generated for completed and
   failed quest outcomes. Quest outcome prompts now frame resolution or loss as colony effort instead
