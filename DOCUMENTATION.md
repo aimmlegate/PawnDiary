@@ -424,6 +424,11 @@ card refreshes build quietly behind the currently visible list. Once a year is v
 and layout refreshes, including completed generation/title updates, scroll, highlight refreshes, and
 collapse/expand, rebuild row offsets in place instead of returning to the loading panel; loaded large
 years seed the clicked card's current blend so the clicked card can still animate open or closed.
+Expanded-card height measurement is isolated in `DiaryEntryCardMeasurer`, which owns the wrapped-text
+height cache and invalidates it on card width, debug display, render token, and pawn-name highlight
+revision. Expanded-card drawing is routed through a renderer request in
+`ITab_Pawn_Diary.EntryCards.cs`, leaving selection, scroll, sliced layout, and expansion state in the
+inspect tab while keeping the Verse/Unity IMGUI measurement and draw paths together.
 Selected-year rebuilds invalidate row layout defensively so virtualized row offset
 arrays cannot be reused against a changed list. An in-progress sliced build (year index, selected-year
 cards, or row layout) is invalidated only by a STRUCTURAL change — a different pawn, a tab filter

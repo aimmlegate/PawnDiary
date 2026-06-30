@@ -61,20 +61,10 @@ namespace PawnDiary
         private float layoutBuildCurY;
         private bool layoutBuildAnimationSettled = true;
 
-        // Cached full (expanded) card heights keyed by entry key, reused across draw frames so the
-        // measure pass does not recompute wrapped-text height for every expanded card ~60x/second.
-        // Cleared wholesale on anything that can alter a card's height: a new render token (entry
-        // text/status changed anywhere, since the version is global), a different card width, the
-        // debug-info toggle flipping, or a new name-highlight set. The highlight set matters because
-        // highlighted names render bold (<b>…</b>), which widens glyphs and can change where the body
-        // text wraps; it is rebuilt off the live colony on its own tick cadence (NameHighlightsFor),
-        // independent of the render token, so it gets its own version guard. Collapsed cards never
-        // enter this cache; they use the constant CollapsedEntryHeight directly.
-        private readonly Dictionary<string, float> entryHeightCache = new Dictionary<string, float>();
-        private float entryHeightCacheWidth = -1f;
-        private bool entryHeightCacheShowDebug;
-        private DiaryRenderToken entryHeightCacheToken;
-        private int entryHeightCacheHighlightVersion = -1;
+        // Cached full (expanded) card heights. The helper owns the measured-height dictionary, while
+        // this tab still decides when rows exist, whether they are expanded, and where they sit in the
+        // virtual scroll layout.
+        private readonly DiaryEntryCardMeasurer entryCardMeasurer = new DiaryEntryCardMeasurer();
 
         // Diary tab presentation values are XML-backed via DiaryUiStyleDef. These accessors keep the
         // drawing code readable while letting modders retune spacing/colors without recompiling.
@@ -487,129 +477,25 @@ namespace PawnDiary
                         continue;
                     }
 
-                    Widgets.DrawMenuSection(localEntryRect);
-                    // Faint warm "page" wash behind the body text, drawn under the hover highlight so
-                    // mouseover still reads. Starts below the title bar and inside the accent strip.
-                    Rect pageRect = new Rect(
-                        localEntryRect.x + EntryAccentWidth + 2f,
-                        localEntryRect.y + EntryTitleHeight,
-                        Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 4f),
-                        Mathf.Max(0f, localEntryRect.height - EntryTitleHeight - 2f));
-                    Widgets.DrawBoxSolid(pageRect, EntryPageTintColor(entry));
-                    Widgets.DrawHighlightIfMouseover(visibleEntryRect);
-
-                    Rect titleRect = new Rect(localEntryRect.x, localEntryRect.y, localEntryRect.width, EntryTitleHeight);
-                    Widgets.DrawTitleBG(titleRect);
-
-                    // Group "spine" down the left edge, with a soft inner highlight for depth, then a warm
-                    // hairline under the header so the body reads as its own page block.
-                    Rect accentRect = new Rect(localEntryRect.x + 1f, localEntryRect.y + 1f, EntryAccentWidth, localEntryRect.height - 2f);
-                    Widgets.DrawBoxSolid(accentRect, accentColor);
-                    Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
-                    Widgets.DrawBoxSolid(
-                        new Rect(
-                            localEntryRect.x + EntryAccentWidth + 8f,
-                            localEntryRect.y + EntryTitleHeight,
-                            Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 20f),
-                            1f),
-                        EntryHeaderRuleColor(entry));
-
-                    Rect groupRect = GroupLabelRect(titleRect, entry.GroupLabel);
-                    if (groupRect.width > 0f)
-                    {
-                        DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
-                    }
-                    float headerRight = groupRect.width > 0f ? groupRect.x - 6f : localEntryRect.xMax - 8f;
-                    DrawEntryHeader(
-                        new Rect(localEntryRect.x + 34f, localEntryRect.y + 5f, Mathf.Max(80f, headerRight - localEntryRect.x - 34f), 22f),
-                        entry,
-                        accentColor);
-                    DrawExpansionIndicator(titleRect, expanded, expansionBlend, accentColor);
-                    if (Widgets.ButtonInvisible(titleRect, false))
+                    if (DiaryEntryCardRenderer.DrawExpanded(
+                        new DiaryEntryCardRenderRequest
+                        {
+                            Entry = entry,
+                            EntryKey = entryKeys[i],
+                            LocalEntryRect = localEntryRect,
+                            VisibleEntryRect = visibleEntryRect,
+                            Pawn = pawn,
+                            Component = component,
+                            AccentColor = accentColor,
+                            DialogueColor = dialogueColor,
+                            Expanded = expanded,
+                            ExpansionBlend = expansionBlend,
+                            ShowLlmDebugInfo = showLlmDebugInfo,
+                            NameHighlights = nameHighlights,
+                        }))
                     {
                         SetEntryExpanded(entry, !expanded, expansionBlend);
                     }
-
-                    TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
-
-                    // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
-                    // recipient (shows the initiator's perspective first). When this pawn is the
-                    // initiator, the linked recipient entry goes AFTER the main text instead.
-                    float textY = localEntryRect.y + EntryTextTop;
-                    LinkedEntryView linked = entry.LinkedEntry;
-                    bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
-                    bool linkedAfter = linked != null && !linkedBefore;
-                    string footerNote = EntryFooterNote(entry);
-                    bool showModelName = !string.IsNullOrWhiteSpace(footerNote);
-                    string bodyText = EntryBodyText(entry, showLlmDebugInfo);
-                    string debugText = showLlmDebugInfo && !IsPromptOnly(entry) ? entry.DebugText : string.Empty;
-                    float innerTextWidth = localEntryRect.width - 20f;
-                    string atmosphereCue = EntryAtmosphereCue(entry);
-                    bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
-                    DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
-                    int roleplaySeed = StableTextSeed(entryKeys[i]);
-                    IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : nameHighlights;
-                    float mainTextHeight = RoleplayTextHeight(
-                        bodyText,
-                        innerTextWidth,
-                        atmosphereCue,
-                        allowDirectSpeechBlocks,
-                        decorationContext,
-                        roleplaySeed,
-                        entryNameHighlights);
-                    float debugTextHeight = DebugTextHeight(debugText, innerTextWidth);
-
-                    if (linkedBefore)
-                    {
-                        Rect linkedRect = new Rect(localEntryRect.x + 10f, textY, localEntryRect.width - 20f, LinkedEntryTotalHeight);
-                        DrawLinkedEntry(linked, linkedRect, pawn);
-                        textY = linkedRect.yMax + LinkedEntryPadding;
-                    }
-
-                    Rect textRect = new Rect(localEntryRect.x + 12f, textY, localEntryRect.width - 20f, mainTextHeight);
-                    if (IsGenerating(entry))
-                    {
-                        DrawWritingPlaceholder(textRect);
-                    }
-                    else
-                    {
-                        DrawRoleplayText(
-                            textRect,
-                            bodyText,
-                            dialogueColor,
-                            EntryTextAlpha(entry) * BodyExpansionAlpha(expansionBlend),
-                            atmosphereCue,
-                            allowDirectSpeechBlocks,
-                            decorationContext,
-                            roleplaySeed,
-                            entryNameHighlights);
-                    }
-                    float afterTextY = textRect.yMax;
-
-                    if (linkedAfter)
-                    {
-                        Rect linkedRect = new Rect(localEntryRect.x + 10f, afterTextY + LinkedEntryPadding, localEntryRect.width - 20f, LinkedEntryTotalHeight);
-                        DrawLinkedEntry(linked, linkedRect, pawn);
-                        afterTextY = linkedRect.yMax;
-                    }
-
-                    if (debugTextHeight > 0f)
-                    {
-                        Rect debugRect = new Rect(localEntryRect.x + 12f, afterTextY + DebugTextTopPadding, localEntryRect.width - 20f, debugTextHeight);
-                        DrawDebugText(debugRect, debugText);
-                    }
-
-                    if (showModelName)
-                    {
-                        // Anchor above the dev-only footer (DevCopyFooter, 0 outside dev mode) so the
-                        // bottom-left copy badge never overlaps or clips the model name.
-                        Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
-                        DrawModelName(modelRect, footerNote);
-                    }
-
-                    // Dev-only footer icons sit in the reserved bottom-left footer, drawn last so they
-                    // float above the page wash/highlight without competing with body text or model name.
-                    DrawDevFooterButtons(localEntryRect, entry, pawn, component);
 
                     GUI.EndGroup();
                     entryGroupOpen = false;
@@ -918,25 +804,10 @@ namespace PawnDiary
             DiaryRenderToken token,
             List<DiaryNameHighlight> nameHighlights)
         {
-            if (width != entryHeightCacheWidth
-                || showLlmDebugInfo != entryHeightCacheShowDebug
-                || nameHighlightsVersion != entryHeightCacheHighlightVersion
-                || !token.Equals(entryHeightCacheToken))
-            {
-                entryHeightCache.Clear();
-                entryHeightCacheWidth = width;
-                entryHeightCacheShowDebug = showLlmDebugInfo;
-                entryHeightCacheHighlightVersion = nameHighlightsVersion;
-                entryHeightCacheToken = token;
-            }
-
-            float height;
-            if (!entryHeightCache.TryGetValue(entryKey, out height))
-            {
-                height = EntryHeight(entry, width, showLlmDebugInfo, nameHighlights);
-                entryHeightCache[entryKey] = height;
-            }
-            return height;
+            return entryCardMeasurer.CachedHeight(
+                EntryMeasureRequest(entry, entryKey, width, showLlmDebugInfo, nameHighlights),
+                token,
+                nameHighlightsVersion);
         }
 
 

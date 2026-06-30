@@ -56,6 +56,165 @@ namespace PawnDiary
         private static float DevCopyFooter => Prefs.DevMode ? DevCopyButtonFooter : 0f;
 
         /// <summary>
+        /// Explicit inputs needed to draw one expanded diary entry card.
+        /// </summary>
+        private struct DiaryEntryCardRenderRequest
+        {
+            public DiaryEntryView Entry;
+            public string EntryKey;
+            public Rect LocalEntryRect;
+            public Rect VisibleEntryRect;
+            public Pawn Pawn;
+            public DiaryGameComponent Component;
+            public Color AccentColor;
+            public Color DialogueColor;
+            public bool Expanded;
+            public float ExpansionBlend;
+            public bool ShowLlmDebugInfo;
+            public IEnumerable<DiaryNameHighlight> NameHighlights;
+        }
+
+        /// <summary>
+        /// Draws expanded diary entry cards. Selection, scroll, and expansion state still live in the
+        /// tab; this helper only paints the card and reports whether the header was clicked.
+        /// </summary>
+        private static class DiaryEntryCardRenderer
+        {
+            public static bool DrawExpanded(DiaryEntryCardRenderRequest request)
+            {
+                DiaryEntryView entry = request.Entry;
+                Rect localEntryRect = request.LocalEntryRect;
+                Rect visibleEntryRect = request.VisibleEntryRect;
+                Color accentColor = request.AccentColor;
+
+                Widgets.DrawMenuSection(localEntryRect);
+                // Faint warm "page" wash behind the body text, drawn under the hover highlight so
+                // mouseover still reads. Starts below the title bar and inside the accent strip.
+                Rect pageRect = new Rect(
+                    localEntryRect.x + EntryAccentWidth + 2f,
+                    localEntryRect.y + EntryTitleHeight,
+                    Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 4f),
+                    Mathf.Max(0f, localEntryRect.height - EntryTitleHeight - 2f));
+                Widgets.DrawBoxSolid(pageRect, EntryPageTintColor(entry));
+                Widgets.DrawHighlightIfMouseover(visibleEntryRect);
+
+                Rect titleRect = new Rect(localEntryRect.x, localEntryRect.y, localEntryRect.width, EntryTitleHeight);
+                Widgets.DrawTitleBG(titleRect);
+
+                // Group "spine" down the left edge, with a soft inner highlight for depth, then a warm
+                // hairline under the header so the body reads as its own page block.
+                Rect accentRect = new Rect(localEntryRect.x + 1f, localEntryRect.y + 1f, EntryAccentWidth, localEntryRect.height - 2f);
+                Widgets.DrawBoxSolid(accentRect, accentColor);
+                Widgets.DrawBoxSolid(new Rect(accentRect.xMax, accentRect.y, 1f, accentRect.height), AccentHighlightColor);
+                Widgets.DrawBoxSolid(
+                    new Rect(
+                        localEntryRect.x + EntryAccentWidth + 8f,
+                        localEntryRect.y + EntryTitleHeight,
+                        Mathf.Max(0f, localEntryRect.width - EntryAccentWidth - 20f),
+                        1f),
+                    EntryHeaderRuleColor(entry));
+
+                Rect groupRect = GroupLabelRect(titleRect, entry?.GroupLabel);
+                if (groupRect.width > 0f)
+                {
+                    DrawGroupLabel(groupRect, entry.GroupLabel, accentColor);
+                }
+
+                float headerRight = groupRect.width > 0f ? groupRect.x - 6f : localEntryRect.xMax - 8f;
+                DrawEntryHeader(
+                    new Rect(localEntryRect.x + 34f, localEntryRect.y + 5f, Mathf.Max(80f, headerRight - localEntryRect.x - 34f), 22f),
+                    entry,
+                    accentColor);
+                DrawExpansionIndicator(titleRect, request.Expanded, request.ExpansionBlend, accentColor);
+                bool toggleExpansion = Widgets.ButtonInvisible(titleRect, false);
+
+                TooltipHandler.TipRegion(titleRect, "PawnDiary.Tab.ExpandCollapseTip".Translate());
+
+                // Linked entry for the OTHER pawn rendered BEFORE main text when this pawn is the
+                // recipient (shows the initiator's perspective first). When this pawn is the
+                // initiator, the linked recipient entry goes AFTER the main text instead.
+                float textY = localEntryRect.y + EntryTextTop;
+                LinkedEntryView linked = entry?.LinkedEntry;
+                bool linkedBefore = linked != null && DiaryEvent.RoleEquals(entry.PovRole, DiaryEvent.RecipientRole);
+                bool linkedAfter = linked != null && !linkedBefore;
+                string footerNote = EntryFooterNote(entry);
+                bool showModelName = !string.IsNullOrWhiteSpace(footerNote);
+                string bodyText = EntryBodyText(entry, request.ShowLlmDebugInfo);
+                string debugText = request.ShowLlmDebugInfo && entry != null && !IsPromptOnly(entry) ? entry.DebugText : string.Empty;
+                float innerTextWidth = localEntryRect.width - 20f;
+                string atmosphereCue = EntryAtmosphereCue(entry);
+                bool allowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry);
+                DiaryTextDecorationContext decorationContext = EntryTextDecorationContext(entry);
+                int roleplaySeed = StableTextSeed(request.EntryKey);
+                IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : request.NameHighlights;
+                float mainTextHeight = RoleplayTextHeight(
+                    bodyText,
+                    innerTextWidth,
+                    atmosphereCue,
+                    allowDirectSpeechBlocks,
+                    decorationContext,
+                    roleplaySeed,
+                    entryNameHighlights);
+                float debugTextHeight = DiaryEntryCardMeasurer.DebugTextHeight(debugText, innerTextWidth);
+
+                if (linkedBefore)
+                {
+                    Rect linkedRect = new Rect(localEntryRect.x + 10f, textY, localEntryRect.width - 20f, LinkedEntryTotalHeight);
+                    DrawLinkedEntry(linked, linkedRect, request.Pawn);
+                    textY = linkedRect.yMax + LinkedEntryPadding;
+                }
+
+                Rect textRect = new Rect(localEntryRect.x + 12f, textY, localEntryRect.width - 20f, mainTextHeight);
+                if (IsGenerating(entry))
+                {
+                    DrawWritingPlaceholder(textRect);
+                }
+                else
+                {
+                    DrawRoleplayText(
+                        textRect,
+                        bodyText,
+                        request.DialogueColor,
+                        EntryTextAlpha(entry) * BodyExpansionAlpha(request.ExpansionBlend),
+                        atmosphereCue,
+                        allowDirectSpeechBlocks,
+                        decorationContext,
+                        roleplaySeed,
+                        entryNameHighlights);
+                }
+
+                float afterTextY = textRect.yMax;
+
+                if (linkedAfter)
+                {
+                    Rect linkedRect = new Rect(localEntryRect.x + 10f, afterTextY + LinkedEntryPadding, localEntryRect.width - 20f, LinkedEntryTotalHeight);
+                    DrawLinkedEntry(linked, linkedRect, request.Pawn);
+                    afterTextY = linkedRect.yMax;
+                }
+
+                if (debugTextHeight > 0f)
+                {
+                    Rect debugRect = new Rect(localEntryRect.x + 12f, afterTextY + DebugTextTopPadding, localEntryRect.width - 20f, debugTextHeight);
+                    DrawDebugText(debugRect, debugText);
+                }
+
+                if (showModelName)
+                {
+                    // Anchor above the dev-only footer (DevCopyFooter, 0 outside dev mode) so the
+                    // bottom-left copy badge never overlaps or clips the model name.
+                    Rect modelRect = new Rect(localEntryRect.x + 12f, localEntryRect.yMax - DevCopyFooter - EntryBottomPadding - ModelNameHeight, localEntryRect.width - 24f, ModelNameHeight);
+                    DrawModelName(modelRect, footerNote);
+                }
+
+                // Dev-only footer icons sit in the reserved bottom-left footer, drawn last so they
+                // float above the page wash/highlight without competing with body text or model name.
+                DrawDevFooterButtons(localEntryRect, entry, request.Pawn, request.Component);
+
+                return toggleExpansion;
+            }
+        }
+
+        /// <summary>
         /// Dev-only: draws small, subtle utility icons anchored to the bottom-left of an expanded
         /// card. Drawn AFTER the body text and model-name line so they live in their own reserved
         /// footer strip (see DevCopyFooter) and never overlap or clip them. Collapsed cards have no
@@ -882,72 +1041,37 @@ namespace PawnDiary
         /// dynamic text wrapping of the generated diary text and the linked-entry card
         /// (if present) positioned before or after the main text.
         /// </summary>
-        private static float EntryHeight(
+        private static DiaryEntryCardMeasureRequest EntryMeasureRequest(
             DiaryEntryView entry,
+            string entryKey,
             float width,
             bool showLlmDebugInfo,
             IEnumerable<DiaryNameHighlight> nameHighlights)
         {
-            // Must match the draw width in FillTab (entryRect.width - 20f) so the measured wrap
-            // height equals what is actually rendered; a wider measure clips long entries at the bottom.
-            float innerWidth = width - 20f;
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Small;
-            IEnumerable<DiaryNameHighlight> entryNameHighlights = IsPromptOnly(entry) ? null : nameHighlights;
-            float textHeight = RoleplayTextHeight(
-                EntryBodyText(entry, showLlmDebugInfo),
-                innerWidth,
-                EntryAtmosphereCue(entry),
-                EntryAllowDirectSpeechBlocks(entry),
-                EntryTextDecorationContext(entry),
-                StableTextSeed(EntryKey(entry)),
-                entryNameHighlights);
-            Text.Font = oldFont;
-
-            float height = EntryTextTop + textHeight + EntryBottomPadding;
-
-            // Add space for the linked-entry card and its surrounding padding
-            if (entry.LinkedEntry != null)
+            return new DiaryEntryCardMeasureRequest
             {
-                height += LinkedEntryTotalHeight + LinkedEntryPadding;
-            }
-
-            if (HasModelName(entry))
-            {
-                height += ModelNameTopPadding + ModelNameHeight;
-            }
-
-            if (showLlmDebugInfo)
-            {
-                float debugHeight = DebugTextHeight(entry?.DebugText, innerWidth);
-                if (debugHeight > 0f)
-                {
-                    height += DebugTextTopPadding + debugHeight;
-                }
-            }
-
-            // Reserve the dev-only footer so the bottom-left copy badge clears the model-name line.
-            // Outside dev mode DevCopyFooter is 0 and production card heights are unchanged.
-            height += DevCopyFooter;
-            return height;
-        }
-
-        /// <summary>
-        /// Measures the tiny diagnostic text block shown only when the dev debug toggle is enabled.
-        /// </summary>
-        private static float DebugTextHeight(string debugText, float width)
-        {
-            if (string.IsNullOrWhiteSpace(debugText))
-            {
-                return 0f;
-            }
-
-            GameFont oldFont = Text.Font;
-            Text.Font = GameFont.Tiny;
-            float height = Text.CalcHeight(debugText, width);
-            Text.Font = oldFont;
-            return height;
+                EntryKey = entryKey,
+                Width = width,
+                ShowLlmDebugInfo = showLlmDebugInfo,
+                BodyText = EntryBodyText(entry, showLlmDebugInfo),
+                DebugText = showLlmDebugInfo && entry != null ? entry.DebugText : string.Empty,
+                AtmosphereCue = EntryAtmosphereCue(entry),
+                AllowDirectSpeechBlocks = EntryAllowDirectSpeechBlocks(entry),
+                DecorationContext = EntryTextDecorationContext(entry),
+                TextSeed = StableTextSeed(entryKey),
+                NameHighlights = IsPromptOnly(entry) ? null : nameHighlights,
+                HasLinkedEntry = entry != null && entry.LinkedEntry != null,
+                HasFooterNote = HasModelName(entry),
+                EntryTextTop = EntryTextTop,
+                EntryBottomPadding = EntryBottomPadding,
+                LinkedEntryPadding = LinkedEntryPadding,
+                LinkedEntryTotalHeight = LinkedEntryTotalHeight,
+                ModelNameTopPadding = ModelNameTopPadding,
+                ModelNameHeight = ModelNameHeight,
+                DebugTextTopPadding = DebugTextTopPadding,
+                DevFooterHeight = DevCopyFooter,
+                RoleplayTextHeight = RoleplayTextHeight,
+            };
         }
     }
 }
