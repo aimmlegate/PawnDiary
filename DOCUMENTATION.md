@@ -126,7 +126,7 @@ Retention keeps recent pages hot and moves old displayable POVs into compact `Ar
 rows owned by `DiaryArchiveRepository`. Archived rows remain visible in the Diary tab, but they no
 longer retry generation, receive title backfill, feed prompt continuity, or count as evidence for
 day/quadrum reflection scans. Yearly arc reflections deliberately sample both hot and archived diary
-pages as memory candidates.
+pages as memory candidates, then de-duplicate by event ID so a shared hot/archive page appears once.
 
 ### 3.4 Generation
 
@@ -251,7 +251,7 @@ it onto the bus.
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
-| Arc reflections | Sleep/rest trigger and major progression trigger | Rare yearly life-arc page per pawn, with an optional second major-event page after the configured gap. It samples existing hot/archive diary pages from the current year and never stores a separate history fact database. |
+| Arc reflections | Sleep/rest trigger and major progression trigger | Rare yearly life-arc page per pawn, with an optional second major-event page after the configured gap. The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, and never stores a separate history fact database. |
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
@@ -284,10 +284,11 @@ domain. Prompt text, enhancement text, and forced-model text resolve independent
 override one field and inherit the others.
 
 Progression policy is split the same way as other sources: `DiaryInteractionGroupDefs.xml` owns the
-`Progression` groups and their importance, `DiaryEventPromptDefs.xml` owns broad progression/arc
-prompt guidance, `DiaryPromptTemplateDefs.xml` exposes progression fields and the
+`Progression` and `Reflection` groups and their importance, `DiaryEventPromptDefs.xml` owns broad
+progression/arc prompt guidance, `DiaryPromptTemplateDefs.xml` exposes progression fields and the
 `SoloArcReflection` template, and `DiaryTuningDef.xml` owns milestones, psylink hediff defName
-matchers, and arc cadence.
+matchers, arc cadence, major-progression severity/list policy, high-stakes arc memory tokens, and
+the memory-shortfall retry backoff.
 
 Optional DLC or mod content should normally be handled as string matches. Do not hard-reference DLC
 defs or C# types unless they are guarded as described in `AGENTS.md`. Missing DLC content should
@@ -538,8 +539,9 @@ day/quadrum evidence scans. Compact archive rows never enter those scans.
 with those fields absent, then normalize to empty baseline-pending state. The progression state stores
 only highest passion-skill milestones and last observed psylink/xenotype/title values. The arc
 schedule stores only cadence bookkeeping (`lastArcEntryTick`, `lastArcEntryYear`,
-`arcEntriesThisYear`, `forcedArcYear`, and recently used memory ids). Neither field is a history
-database; existing diary pages remain the source of truth for reflections.
+`arcEntriesThisYear`, `forcedArcYear`, recently used memory ids, and the last retryable
+memory-shortfall tick/year). Neither field is a history database; existing diary pages remain the
+source of truth for reflections.
 
 Failed/stale pages can be archived as displayable fallbacks. The fallback body/title is resolved
 before compaction because the archive drops raw prompt data. Prompt-only dev capture rows stay hot for

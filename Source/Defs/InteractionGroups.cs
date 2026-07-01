@@ -25,6 +25,7 @@ namespace PawnDiary
     // fans out to three groups; Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
     // Progression groups match synthetic source tokens from the pawn progression scanner.
+    // Reflection groups match synthetic day/quadrum/arc reflection source tokens.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -41,7 +42,8 @@ namespace PawnDiary
         Quest,
         Ritual,
         Ability,
-        Progression
+        Progression,
+        Reflection
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for

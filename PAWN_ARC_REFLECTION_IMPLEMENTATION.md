@@ -46,17 +46,18 @@ flowchart TD
 
     ProgSignal --> Catalog["DiaryEventCatalog.Progression.Decide"]
     Catalog --> NormalPage["AddSoloEvent + QueueSolo"]
-    NormalPage --> Major{"major arc candidate?<br/>sanguophage or psylink 6"}
+    NormalPage --> Major{"major arc candidate?<br/>XML severity/list policy"}
     Major -- Yes --> MajorArc["ConsiderArcReflectionAfterMajorEvent"]
     Major -- No --> Done["Done"]
 
-    Sleep["Sleep/rest day flush"] --> ArcAttempt["TryFlushArcReflectionForPawn"]
+    Sleep["Sleep/rest flush<br/>arc enabled even without day summaries"] --> ArcAttempt["TryFlushArcReflectionForPawn"]
     MajorArc --> ArcAttempt
     ArcAttempt --> Schedule["ArcReflectionSchedulePolicy"]
     Schedule -- blocked --> Done
-    Schedule -- allowed --> Collect["Collect hot DiaryEvent rows<br/>and ArchivedDiaryEntry rows"]
+    Schedule -- allowed --> Collect["Collect pawn hot DiaryEvent refs<br/>and ArchivedDiaryEntry rows<br/>de-dupe event ids"]
     Collect --> Select["ArcReflectionMemorySelector"]
-    Select -- not enough memories --> Done
+    Select -- not enough memories --> Backoff["Record retryable shortfall backoff"]
+    Backoff --> Done
     Select -- enough memories --> ArcSignal["ArcReflectionSignal"]
     ArcSignal --> ArcCatalog["DiaryEventCatalog.ArcReflection.Decide"]
     ArcCatalog --> ArcPage["AddSoloEvent PawnArcReflection<br/>QueueSolo"]
@@ -91,6 +92,7 @@ New policy lives in XML:
   - Event-window importance groups for void monolith, heart attack, birthday, ancient danger, and
     prison break.
   - `Progression` groups for skill, psylink, xenotype, royal title, and catch-all progression.
+  - `Reflection` group for day, quadrum, and arc reflection display classification.
 - `1.6/Defs/DiaryEventPromptDefs.xml`
   - Broad `Progression` and `ArcReflection` prompt rows.
 - `1.6/Defs/DiaryPromptTemplateDefs.xml`
@@ -99,6 +101,8 @@ New policy lives in XML:
 - `1.6/Defs/DiaryTuningDef.xml`
   - Progression scan interval, skill milestones, psylink hediff defName matchers, arc cadence, and
     memory-selection caps.
+  - Arc major-event severity threshold, XML major-xenotype defNames, high-stakes memory defName tokens,
+    and low-memory retry backoff.
 - `1.6/Defs/DiarySignalPolicyDefs.xml`
   - `Progression` scanner policy.
 
@@ -115,19 +119,24 @@ Default behavior:
 | Max entries per year | `1` |
 | Optional second major entry | enabled |
 | Second-entry gap | `30` days |
+| Major severity threshold | `90` |
+| Memory-shortfall retry | `60000` ticks |
 | Recently used memory id cap | `16` |
 | Arc response tokens | `420` |
 
 The forced yearly entry is allowed once the pawn reaches the configured day of year and has enough
-memory candidates. A major progression event may create an arc earlier. A second major-event arc is
-allowed only after the configured gap and never raises the yearly cap above two.
+memory candidates. A forced attempt that has too few memories records a retryable backoff instead of
+rescanning every sleep tick. A major progression event may create an arc earlier when XML severity/list
+policy marks it major. A second major-event arc is allowed only after the configured gap and never
+raises the yearly cap above two.
 
 ## Memory Selection
 
 Arc reflections sample existing diary pages:
 
-- hot `DiaryEvent` rows;
+- hot `DiaryEvent` rows from the pawn's current `PawnDiaryRecord.eventIds`;
 - compact `ArchivedDiaryEntry` rows;
+- duplicate hot/archive `eventId` values are merged before selection;
 - same game year preferred;
 - daily, quadrum, arc reflections, death descriptions, and recently used memory ids are excluded;
 - high-stakes, progression, important, same-quadrum, and generated-text entries receive higher

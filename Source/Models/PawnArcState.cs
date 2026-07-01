@@ -147,6 +147,10 @@ namespace PawnDiary
         public int lastArcEntryYear = int.MinValue;
         public int arcEntriesThisYear;
         public int forcedArcYear = int.MinValue;
+        // Last annual forced attempt that reached memory selection but found too little evidence. This
+        // throttles resting-pawn retries without marking the year's forced arc as permanently done.
+        public int lastArcMemoryShortfallTick = -1;
+        public int lastArcMemoryShortfallYear = int.MinValue;
         public List<string> recentlyUsedEventIds = new List<string>();
 
         public void ExposeData()
@@ -155,6 +159,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref lastArcEntryYear, "lastArcEntryYear", int.MinValue);
             Scribe_Values.Look(ref arcEntriesThisYear, "arcEntriesThisYear", 0);
             Scribe_Values.Look(ref forcedArcYear, "forcedArcYear", int.MinValue);
+            Scribe_Values.Look(ref lastArcMemoryShortfallTick, "lastArcMemoryShortfallTick", -1);
+            Scribe_Values.Look(ref lastArcMemoryShortfallYear, "lastArcMemoryShortfallYear", int.MinValue);
             Scribe_Collections.Look(ref recentlyUsedEventIds, "recentlyUsedEventIds", LookMode.Value);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -166,6 +172,7 @@ namespace PawnDiary
         public void Normalize(int recentMemoryCap)
         {
             lastArcEntryTick = Math.Max(-1, lastArcEntryTick);
+            lastArcMemoryShortfallTick = Math.Max(-1, lastArcMemoryShortfallTick);
             arcEntriesThisYear = Math.Max(0, Math.Min(2, arcEntriesThisYear));
             if (recentlyUsedEventIds == null)
             {
@@ -197,6 +204,45 @@ namespace PawnDiary
             {
                 arcEntriesThisYear = 0;
             }
+
+            if (lastArcMemoryShortfallYear != currentYear)
+            {
+                lastArcMemoryShortfallTick = -1;
+            }
+        }
+
+        /// <summary>
+        /// True when an annual forced arc attempt recently failed because there were too few memories.
+        /// </summary>
+        public bool IsMemoryShortfallBackoffActive(int currentTick, int currentYear, int retryTicks)
+        {
+            if (retryTicks <= 0
+                || lastArcMemoryShortfallTick < 0
+                || lastArcMemoryShortfallYear != currentYear
+                || currentTick < lastArcMemoryShortfallTick)
+            {
+                return false;
+            }
+
+            return currentTick - lastArcMemoryShortfallTick < retryTicks;
+        }
+
+        /// <summary>
+        /// Records a retryable memory shortfall so the sleep scanner backs off before trying again.
+        /// </summary>
+        public void MarkMemoryShortfall(int tick, int year)
+        {
+            lastArcMemoryShortfallTick = Math.Max(-1, tick);
+            lastArcMemoryShortfallYear = year;
+        }
+
+        /// <summary>
+        /// Clears any pending memory-shortfall retry guard after a successful arc entry.
+        /// </summary>
+        public void ClearMemoryShortfall()
+        {
+            lastArcMemoryShortfallTick = -1;
+            lastArcMemoryShortfallYear = int.MinValue;
         }
 
         public void MarkArcEntry(int tick, int year, bool forced, IList<string> usedEventIds, int recentMemoryCap)
@@ -213,6 +259,8 @@ namespace PawnDiary
             {
                 forcedArcYear = year;
             }
+
+            ClearMemoryShortfall();
 
             if (usedEventIds != null)
             {

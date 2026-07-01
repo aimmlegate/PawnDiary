@@ -51,6 +51,7 @@ namespace PawnDiary
             PawnArcScheduleState schedule = diary.EnsureArcSchedule();
             schedule.NormalizeForYear(currentYear, recentCap);
 
+            int nowTick = Find.TickManager.TicksGame;
             ArcReflectionScheduleDecision scheduleDecision = ArcReflectionSchedulePolicy.Evaluate(
                 new ArcReflectionScheduleSnapshot
                 {
@@ -60,7 +61,7 @@ namespace PawnDiary
                     forcedArcYear = schedule.forcedArcYear
                 },
                 ArcScheduleTuning(),
-                Find.TickManager.TicksGame,
+                nowTick,
                 currentYear,
                 dayOfYear,
                 majorEventTrigger);
@@ -69,7 +70,15 @@ namespace PawnDiary
                 return false;
             }
 
-            List<ArcMemoryCandidate> candidates = CollectArcMemoryCandidates(pawnId, currentYear, day);
+            if (!majorEventTrigger && schedule.IsMemoryShortfallBackoffActive(
+                nowTick,
+                currentYear,
+                Math.Max(0, DiaryTuning.Current.arcReflectionMemoryShortfallRetryTicks)))
+            {
+                return false;
+            }
+
+            List<ArcMemoryCandidate> candidates = CollectArcMemoryCandidates(diary, pawnId, currentYear, day);
             ArcMemorySelectionResult selection = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
             {
                 candidates = candidates,
@@ -84,13 +93,18 @@ namespace PawnDiary
             });
             if (!selection.hasEnoughMemories)
             {
+                if (!majorEventTrigger)
+                {
+                    schedule.MarkMemoryShortfall(nowTick, currentYear);
+                }
+
                 return false;
             }
 
             ArcReflectionEventData data = new ArcReflectionEventData
             {
                 PawnId = pawnId,
-                Tick = Find.TickManager.TicksGame,
+                Tick = nowTick,
                 DefName = ArcReflectionEventData.DefNameToken,
                 ArcYear = currentYear,
                 CandidateMemoryCount = selection.candidateCount,
@@ -114,7 +128,7 @@ namespace PawnDiary
             if (Dispatch(new ArcReflectionSignal(data, pawn, label, text, instruction, gameContext)))
             {
                 schedule.MarkArcEntry(
-                    Find.TickManager.TicksGame,
+                    nowTick,
                     currentYear,
                     scheduleDecision.forced,
                     SelectedArcMemoryIds(selection.selected),
@@ -125,33 +139,56 @@ namespace PawnDiary
             return false;
         }
 
-        private List<ArcMemoryCandidate> CollectArcMemoryCandidates(string pawnId, int currentYear, int currentDay)
+        private List<ArcMemoryCandidate> CollectArcMemoryCandidates(PawnDiaryRecord diary, string pawnId,
+            int currentYear, int currentDay)
         {
             List<ArcMemoryCandidate> candidates = new List<ArcMemoryCandidate>();
-            IReadOnlyList<DiaryEvent> hotEvents = events.AllEvents;
-            for (int i = 0; i < hotEvents.Count; i++)
+            HashSet<string> seenEventIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            List<string> hotEventIds = diary?.eventIds;
+            if (hotEventIds != null)
             {
-                DiaryEvent ev = hotEvents[i];
-                string role;
-                if (ev == null || !ev.TryGetDisplayRoleForPawn(pawnId, out role))
+                for (int i = 0; i < hotEventIds.Count; i++)
                 {
-                    continue;
-                }
+                    DiaryEvent ev = events.FindEvent(hotEventIds[i]);
+                    string role;
+                    if (ev == null || !ev.TryGetDisplayRoleForPawn(pawnId, out role))
+                    {
+                        continue;
+                    }
 
-                candidates.Add(ArcCandidateFromEvent(ev, pawnId, role, currentYear, currentDay));
+                    AddArcCandidateIfUnique(
+                        candidates,
+                        seenEventIds,
+                        ArcCandidateFromEvent(ev, pawnId, role, currentYear, currentDay));
+                }
             }
 
             IReadOnlyList<ArchivedDiaryEntry> archived = archive.EntriesForPawn(pawnId);
             for (int i = 0; i < archived.Count; i++)
             {
-                ArcMemoryCandidate candidate = ArcCandidateFromArchive(archived[i], currentYear, currentDay);
-                if (candidate != null)
-                {
-                    candidates.Add(candidate);
-                }
+                AddArcCandidateIfUnique(
+                    candidates,
+                    seenEventIds,
+                    ArcCandidateFromArchive(archived[i], currentYear, currentDay));
             }
 
             return candidates;
+        }
+
+        private static void AddArcCandidateIfUnique(List<ArcMemoryCandidate> candidates,
+            HashSet<string> seenEventIds, ArcMemoryCandidate candidate)
+        {
+            if (candidate == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(candidate.eventId) && !seenEventIds.Add(candidate.eventId))
+            {
+                return;
+            }
+
+            candidates.Add(candidate);
         }
 
         private ArcMemoryCandidate ArcCandidateFromEvent(DiaryEvent ev, string pawnId, string role,
@@ -282,11 +319,27 @@ namespace PawnDiary
                 return true;
             }
 
-            string name = defName ?? string.Empty;
-            return name.IndexOf("Void", StringComparison.OrdinalIgnoreCase) >= 0
-                || name.IndexOf("HeartAttack", StringComparison.OrdinalIgnoreCase) >= 0
-                || name.IndexOf("AncientDanger", StringComparison.OrdinalIgnoreCase) >= 0
-                || name.IndexOf("PrisonBreak", StringComparison.OrdinalIgnoreCase) >= 0;
+            return MatchesAnyToken(DiaryTuning.Current.arcReflectionHighStakesDefNameTokens, defName);
+        }
+
+        private static bool MatchesAnyToken(List<string> tokens, string value)
+        {
+            if (tokens == null || string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                string token = tokens[i];
+                if (!string.IsNullOrWhiteSpace(token)
+                    && value.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int ArcSelectionSeed(string pawnId, int year, int entriesThisYear, bool majorEvent)

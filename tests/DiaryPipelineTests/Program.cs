@@ -1210,6 +1210,7 @@ namespace DiaryPipelineTests
             List<ArcMemoryCandidate> candidates = new List<ArcMemoryCandidate>
             {
                 ArcCandidate("e1", 3000, "Progression", "skill", true, false, false, "reached Construction 12"),
+                ArcCandidate("e1", 3500, "Progression", "skill", true, false, false, "duplicate should be ignored"),
                 ArcCandidate("e2", 1000, "Raid", "raidDropPod", true, false, false, "drop pods hit the workshop"),
                 ArcCandidate("e3", 2000, "Romance", "romanceMilestone", true, false, false, "married under torchlight"),
                 ArcCandidate("e-reflection", 2500, "Interaction", "dayreflection", true, true, false, "reflection"),
@@ -1568,6 +1569,8 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("ability=Stun; ability_label=stun; ability_category=Psycast"));
             AssertEqual("progression marker domain", "Progression",
                 DiaryEventDomainClassifier.DomainForContext("progression=SkillMilestone; progression_kind=skill"));
+            AssertEqual("arc reflection marker domain", "Reflection",
+                DiaryEventDomainClassifier.DomainForContext("arc_reflection=true; arc_year=5504"));
             AssertEqual("ritual classifier includes behavior when present",
                 "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -1618,6 +1621,8 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ability=Stun; ability_label=stun"));
             AssertTrue("progression marker is not interaction prompt",
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("progression=SkillMilestone; progression_kind=skill"));
+            AssertTrue("arc reflection marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("arc_reflection=true; arc_year=5504"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
         }
@@ -1994,7 +1999,7 @@ namespace DiaryPipelineTests
                     ContextField("previous psylink level", "previous_psylink_level"),
                     ContextField("xenotype", "xenotype"),
                     ContextField("previous xenotype", "previous_xenotype"),
-                    ContextField("sanguophage", "sanguophage"),
+                    ContextField("major_xenotype", "major_xenotype"),
                     ContextField("royal title", "title"),
                     ContextField("previous royal title", "previous_title"),
                     ContextField("arc year", "arc_year"),

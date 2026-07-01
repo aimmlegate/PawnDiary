@@ -22,6 +22,7 @@ namespace PawnDiary
         public const string Ritual = "Ritual";
         public const string Ability = "Ability";
         public const string Progression = "Progression";
+        public const string Reflection = "Reflection";
 
         /// <summary>
         /// Returns the domain implied by a saved event's game-context marker. Plain social
@@ -43,6 +44,9 @@ namespace PawnDiary
             if (DiaryContextFields.HasMarker(context, "psychic_ritual=")) return Ritual;
             if (DiaryContextFields.HasMarker(context, "ability=")) return Ability;
             if (DiaryContextFields.HasMarker(context, "progression=")) return Progression;
+            if (DiaryContextFields.HasMarker(context, "arc_reflection=")) return Reflection;
+            if (DiaryContextFields.HasMarker(context, "quadrum_reflection=")) return Reflection;
+            if (DiaryContextFields.HasMarker(context, "day_reflection=")) return Reflection;
             return Interaction;
         }
 

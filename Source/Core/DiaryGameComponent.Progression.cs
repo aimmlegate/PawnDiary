@@ -133,19 +133,20 @@ namespace PawnDiary
 
             string extraContext = "psylink_level=" + decision.levelToEmit
                 + "; previous_psylink_level=" + previousLevel;
+            string psylinkLabel = "PawnDiary.Event.ProgressionPsylinkLabel"
+                .Translate(decision.levelToEmit).Resolve();
             ProgressionEventData data = ProgressionData(
                 pawn,
                 ProgressionEventData.PsylinkLevelDefName,
                 "psylink",
-                "psylink level " + decision.levelToEmit,
+                psylinkLabel,
                 previousLevel.ToString(),
                 decision.levelToEmit.ToString(),
                 extraContext);
-            string label = "PawnDiary.Event.ProgressionPsylinkLabel"
-                .Translate(decision.levelToEmit).Resolve();
+            string label = psylinkLabel;
             string text = "PawnDiary.Event.ProgressionPsylinkText"
                 .Translate(pawn.LabelShortCap, decision.levelToEmit).Resolve();
-            DispatchProgression(pawn, data, label, text, majorArcCandidate: decision.levelToEmit >= 6);
+            DispatchProgression(pawn, data, label, text, majorArcCandidate: IsMajorArcPsylinkLevel(decision.levelToEmit));
         }
 
         private void ScanXenotypeChange(Pawn pawn, PawnProgressionState state, bool baseline)
@@ -177,11 +178,11 @@ namespace PawnDiary
             state.lastObservedXenotypeDefName = currentDef;
             state.lastObservedXenotypeLabel = currentLabel;
 
-            bool sanguophage = string.Equals(currentDef, "Sanguophage", StringComparison.OrdinalIgnoreCase);
+            bool majorArcXenotype = IsMajorArcXenotype(currentDef);
             string extraContext = "previous_xenotype=" + previousLabel
                 + "; xenotype=" + currentLabel
                 + "; xenotype_def=" + currentDef
-                + "; sanguophage=" + (sanguophage ? "true" : "false");
+                + "; major_xenotype=" + (majorArcXenotype ? "true" : "false");
             ProgressionEventData data = ProgressionData(
                 pawn,
                 ProgressionEventData.XenotypeChangedDefName,
@@ -194,7 +195,7 @@ namespace PawnDiary
                 .Translate(currentLabel).Resolve();
             string text = "PawnDiary.Event.ProgressionXenotypeText"
                 .Translate(pawn.LabelShortCap, previousLabel, currentLabel).Resolve();
-            DispatchProgression(pawn, data, label, text, majorArcCandidate: sanguophage);
+            DispatchProgression(pawn, data, label, text, majorArcCandidate: majorArcXenotype);
         }
 
         private void ScanRoyalTitleChange(Pawn pawn, PawnProgressionState state, bool baseline)
@@ -433,6 +434,23 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        private static bool IsMajorArcPsylinkLevel(int level)
+        {
+            int clamped = ClampPsylinkLevel(level);
+            return MeetsArcMajorSeverity((clamped * 100) / 6);
+        }
+
+        private static bool IsMajorArcXenotype(string defName)
+        {
+            return MatchesDefName(DiaryTuning.Current.arcReflectionMajorXenotypeDefNames, defName)
+                && MeetsArcMajorSeverity(100);
+        }
+
+        private static bool MeetsArcMajorSeverity(int severity)
+        {
+            return severity >= Math.Max(0, DiaryTuning.Current.arcReflectionMajorSeverityThreshold);
         }
 
         private static string CleanLabel(string label, string fallback)

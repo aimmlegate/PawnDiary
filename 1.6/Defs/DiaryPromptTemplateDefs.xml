@@ -167,7 +167,7 @@
       <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
-      <li><label>sanguophage</label><source>GameContext</source><contextKey>sanguophage</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
       <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
       <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
@@ -212,7 +212,7 @@
       <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
-      <li><label>sanguophage</label><source>GameContext</source><contextKey>sanguophage</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
       <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
       <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
@@ -252,7 +252,7 @@
       <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
-      <li><label>sanguophage</label><source>GameContext</source><contextKey>sanguophage</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
       <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
       <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
@@ -292,7 +292,7 @@
       <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
-      <li><label>sanguophage</label><source>GameContext</source><contextKey>sanguophage</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
       <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
       <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
@@ -334,7 +334,7 @@
       <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
       <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
       <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
-      <li><label>sanguophage</label><source>GameContext</source><contextKey>sanguophage</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
       <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
       <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>

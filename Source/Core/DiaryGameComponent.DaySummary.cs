@@ -68,7 +68,7 @@ namespace PawnDiary
                 return;
             }
 
-            // Try the rare, longer quadrum reflection first. If it emits, skip the ordinary day
+            // Then try the rare, longer quadrum reflection. If it emits, skip the ordinary day
             // reflection for this sleep/rest moment so the player and model see only one summary.
             if (TryFlushQuadrumReflectionForPawn(pawn, pawnId, day))
             {

@@ -353,12 +353,22 @@
     <arcReflectionSecondEntryMinGapDays>30</arcReflectionSecondEntryMinGapDays>
     <arcReflectionMajorSeverityThreshold>90</arcReflectionMajorSeverityThreshold>
     <arcReflectionForceAfterYearDay>45</arcReflectionForceAfterYearDay>
+    <arcReflectionMemoryShortfallRetryTicks>60000</arcReflectionMemoryShortfallRetryTicks>
     <arcReflectionMinMemoriesPreferred>4</arcReflectionMinMemoriesPreferred>
     <arcReflectionMinMemoriesForced>3</arcReflectionMinMemoriesForced>
     <arcReflectionMaxMemories>8</arcReflectionMaxMemories>
     <arcReflectionRecentlyUsedMemoryCap>16</arcReflectionRecentlyUsedMemoryCap>
     <arcReflectionMemorySnippetMaxChars>220</arcReflectionMemorySnippetMaxChars>
     <arcReflectionMaxTokens>420</arcReflectionMaxTokens>
+    <arcReflectionMajorXenotypeDefNames>
+      <li>Sanguophage</li>
+    </arcReflectionMajorXenotypeDefNames>
+    <arcReflectionHighStakesDefNameTokens>
+      <li>Void</li>
+      <li>HeartAttack</li>
+      <li>AncientDanger</li>
+      <li>PrisonBreak</li>
+    </arcReflectionHighStakesDefNameTokens>
 
     <!-- Humor cues (hidden, always-on). Base probability an eligible first-person entry gets one
          structural humor cue appended to its prompt. No settings UI; this is the single knob. Flavor

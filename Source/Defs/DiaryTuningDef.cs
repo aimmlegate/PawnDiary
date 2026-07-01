@@ -401,14 +401,26 @@ namespace PawnDiary
         public int arcReflectionMaxEntriesPerYear = 1;
         public bool arcReflectionAllowSecondMajorEntry = true;
         public int arcReflectionSecondEntryMinGapDays = 30;
+        // 0..100 threshold used by major progression triggers; default 90 keeps only the biggest moments.
         public int arcReflectionMajorSeverityThreshold = 90;
         public int arcReflectionForceAfterYearDay = 45;
+        // Retry delay after a forced yearly arc finds too few memories; prevents 250-tick rest rescans.
+        public int arcReflectionMemoryShortfallRetryTicks = 60000;
         public int arcReflectionMinMemoriesPreferred = 4;
         public int arcReflectionMinMemoriesForced = 3;
         public int arcReflectionMaxMemories = 8;
         public int arcReflectionRecentlyUsedMemoryCap = 16;
         public int arcReflectionMemorySnippetMaxChars = 220;
         public int arcReflectionMaxTokens = 420;
+        // Plain defName strings/tokens, not Def references, so missing DLC content simply never matches.
+        public List<string> arcReflectionMajorXenotypeDefNames = new List<string> { "Sanguophage" };
+        public List<string> arcReflectionHighStakesDefNameTokens = new List<string>
+        {
+            "Void",
+            "HeartAttack",
+            "AncientDanger",
+            "PrisonBreak",
+        };
 
         // ---- Humor cues (hidden, always-on) ----
         // Base probability (0..1) that an eligible first-person entry gets one structural humor

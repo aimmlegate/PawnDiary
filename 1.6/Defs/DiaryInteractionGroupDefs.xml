@@ -743,7 +743,7 @@
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowAncientDanger</defName>
     <label>Ancient danger</label>
-    <order>139</order>
+    <order>140</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
@@ -762,7 +762,7 @@
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>eventWindowPrisonBreak</defName>
     <label>Prison break</label>
-    <order>139</order>
+    <order>141</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
@@ -782,12 +782,34 @@
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>other</defName>
     <label>A quiet day</label>
-    <order>140</order>
+    <order>150</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a social interaction between the pawns</instruction>
     <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Reflection domain ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>reflection</defName>
+    <label>Reflection</label>
+    <order>160</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a reflective diary page that looks back over recent memories instead of reacting to one ordinary interaction</instruction>
+    <tone>with private reflection and continuity</tone>
+    <tones>
+      <li>reflective and personal, connecting memory to change over time</li>
+      <li>quietly inward, weighing what the remembered moments meant</li>
+    </tones>
+    <matchDefNames>
+      <li>DayReflection</li>
+      <li>QuadrumReflection</li>
+      <li>PawnArcReflection</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- ===== Mental-state domain ===== -->

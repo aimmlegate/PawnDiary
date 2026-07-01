@@ -86,6 +86,8 @@ namespace PawnDiary
                 groupCounts.TryGetValue(key, out currentCount);
                 if (currentCount >= cap)
                 {
+                    // Deliberately discard over-cap memories from the sampled pool: a forced yearly arc
+                    // can skip when one domain monopolizes the year, which is preferable to a monotone prompt.
                     continue;
                 }
 
@@ -123,6 +125,7 @@ namespace PawnDiary
         {
             HashSet<string> recentlyUsed = new HashSet<string>(
                 request.recentlyUsedEventIds ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+            HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             List<ArcMemoryCandidate> result = new List<ArcMemoryCandidate>();
             if (request.candidates == null)
             {
@@ -134,6 +137,7 @@ namespace PawnDiary
                 ArcMemoryCandidate candidate = request.candidates[i];
                 if (candidate == null
                     || string.IsNullOrWhiteSpace(candidate.eventId)
+                    || !seen.Add(candidate.eventId)
                     || recentlyUsed.Contains(candidate.eventId)
                     || candidate.reflection
                     || candidate.deathDescription)

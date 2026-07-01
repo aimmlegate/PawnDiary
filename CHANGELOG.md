@@ -9,7 +9,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 - **Pawn arc reflections implemented.** Added passion-only skill milestones, psylink/xenotype/royal
   progression entries, yearly pawn arc reflections from hot/archive diary memories, XML tuning and
   prompt templates, important event-window grouping for arc/quadrum sampling, dev prompt fixtures,
-  pure tests, and the dedicated `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` flow/prompt map.
+  pure tests, and the dedicated `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` flow/prompt map. Follow-up
+  hardening de-duplicates hot/archive memory candidates, keeps annual arc reflections enabled when
+  day summaries are off, backs off retryable low-memory forced attempts, classifies reflection pages
+  under a Reflection group, and wires major arc severity/high-stakes content policy through XML.
 - **Generated-text sanitizer hardened.** Response cleanup now repairs or strips incomplete speech
   markers, common `speach` marker typos, generic unfinished bracket tags, truncated reasoning tags,
   and model-leaked Unity rich-text angle tags before generated diary text reaches save data or UI.

@@ -131,7 +131,7 @@ namespace PawnDiary
                 "progression=PsylinkLevel; progression_kind=psylink; previous_value=2; new_value=3; psylink_level=3; previous_psylink_level=2",
                 null, "PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text"),
             Solo("ProgressionXenotypeSanguophage", "PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label", ProgressionEventData.XenotypeChangedDefName,
-                "progression=XenotypeChanged; progression_kind=xenotype; previous_value=Baseliner; new_value=Sanguophage; previous_xenotype=Baseliner; xenotype=Sanguophage; xenotype_def=Sanguophage; sanguophage=true",
+                "progression=XenotypeChanged; progression_kind=xenotype; previous_value=Baseliner; new_value=Sanguophage; previous_xenotype=Baseliner; xenotype=Sanguophage; xenotype_def=Sanguophage; major_xenotype=true",
                 null, "PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text"),
             Solo("ProgressionRoyalTitle", "PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label", ProgressionEventData.RoyalTitleChangedDefName,
                 "progression=RoyalTitleChanged; progression_kind=royal_title; previous_value=Yeoman; new_value=Knight; previous_title=Yeoman; title=Knight; title_def=Knight",
