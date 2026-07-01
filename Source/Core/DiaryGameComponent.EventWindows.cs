@@ -414,6 +414,7 @@ namespace PawnDiary
             }
 
             int pawnMapUniqueId = MapUniqueId(pawn.Map);
+            int now = Find.TickManager.TicksGame;
             for (int i = 0; i < activeEventWindows.Count; i++)
             {
                 ActiveEventWindowState active = activeEventWindows[i];
@@ -434,8 +435,11 @@ namespace PawnDiary
                     continue;
                 }
 
-                normalCandidateWeightMultiplier *= SafePromptWeightMultiplier(def.normalPromptWeightMultiplier);
-                PromptEnchantmentCandidate candidate = PromptCandidateForEventWindow(def);
+                float ageFactor = PromptEnchantmentDecayPolicy.AgeFactor(
+                    now, active.startedTick, def.promptDecayTicks, def.promptDecayMinMultiplier);
+                normalCandidateWeightMultiplier *= PromptEnchantmentDecayPolicy.RelaxedNormalMultiplier(
+                    SafePromptWeightMultiplier(def.normalPromptWeightMultiplier), ageFactor);
+                PromptEnchantmentCandidate candidate = PromptCandidateForEventWindow(def, ageFactor);
                 if (candidate != null)
                 {
                     candidates.Add(candidate);
@@ -445,9 +449,9 @@ namespace PawnDiary
             return candidates;
         }
 
-        private PromptEnchantmentCandidate PromptCandidateForEventWindow(DiaryEventWindowDef def)
+        private PromptEnchantmentCandidate PromptCandidateForEventWindow(DiaryEventWindowDef def, float ageFactor)
         {
-            float weight = SafePromptWeight(def.promptWeight);
+            float weight = PromptEnchantmentDecayPolicy.DecayedWeight(SafePromptWeight(def.promptWeight), ageFactor);
             if (weight <= 0f)
             {
                 return null;

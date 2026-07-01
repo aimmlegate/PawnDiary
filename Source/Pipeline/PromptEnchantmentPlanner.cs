@@ -41,6 +41,61 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Pure age-based fade for lasting prompt enhancers. A factor of 1 means "full XML weight"; lower
+    /// factors make the lasting context less likely to be selected and relax normal-context suppression
+    /// back toward 1.0 without needing RimWorld state in the calculation.
+    /// </summary>
+    public static class PromptEnchantmentDecayPolicy
+    {
+        public static float AgeFactor(int nowTick, int startedTick, int decayTicks, float minMultiplier)
+        {
+            if (decayTicks <= 0 || nowTick <= startedTick)
+            {
+                return 1f;
+            }
+
+            float floor = Clamp01(minMultiplier);
+            float progress = Clamp01((float)(nowTick - startedTick) / decayTicks);
+            return 1f + (floor - 1f) * progress;
+        }
+
+        public static float DecayedWeight(float baseWeight, float ageFactor)
+        {
+            if (float.IsNaN(baseWeight) || baseWeight <= 0f)
+            {
+                return 0f;
+            }
+
+            return baseWeight * Clamp01(ageFactor);
+        }
+
+        public static float RelaxedNormalMultiplier(float baseMultiplier, float ageFactor)
+        {
+            if (float.IsNaN(baseMultiplier) || baseMultiplier < 0f)
+            {
+                baseMultiplier = 0f;
+            }
+
+            return 1f + (baseMultiplier - 1f) * Clamp01(ageFactor);
+        }
+
+        private static float Clamp01(float value)
+        {
+            if (float.IsNaN(value) || value < 0f)
+            {
+                return 0f;
+            }
+
+            if (value > 1f)
+            {
+                return 1f;
+            }
+
+            return value;
+        }
+    }
+
+    /// <summary>
     /// One collected prompt-enchantment option. It intentionally stores only primitive/localized text
     /// snapshots, never live <c>Pawn</c>, <c>Hediff</c>, or XML Def objects.
     /// </summary>

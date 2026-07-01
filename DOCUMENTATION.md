@@ -319,7 +319,7 @@ a window failure must not suppress the base diary entry.
 ### 5.1 Observed conditions (lasting game state, Plan 12)
 
 Observed conditions are for lasting states that should be re-read from live game state instead of
-guessed from a timeout. Examples: map danger, toxic fallout, solar flare, or observable gray-flesh
+guessed from a timeout. Examples: map danger, toxic fallout, solar flare, or observable Anomaly
 evidence.
 
 The flow is:
@@ -338,15 +338,29 @@ Observer types are DLC-safe:
 
 - `MapDanger`: home-map danger rating or spawned hostile count.
 - `GameCondition`: matching active game condition defName.
-- `ThingPresent`: spawned observable things/filth via `ListerThings.ThingsOfDef`.
+- `ThingPresent`: spawned observable things/filth via `ListerThings.ThingsOfDef`. A Def can also
+  list `suppressWhenThingDefNames`; if any of those spawned thing defs are present on the same map,
+  that Def reports no observation and the normal end-debounce path resolves its active state.
 - `PawnHediff`: visible pawn hediffs only; hidden hediffs are skipped.
 - `RecentEvidence`: reserved, currently no-op.
+
+Prompt influence from lasting sources is age-aware. `DiaryEventWindowDef` and
+`DiaryObservedConditionDef` both support `promptDecayTicks` and `promptDecayMinMultiplier`: as the
+window/condition ages, its candidate weight fades toward the multiplier floor and any
+`normalPromptWeightMultiplier` override relaxes back toward ordinary prompt-enchantment context.
+Observed conditions also support `maxActiveTicks` and `restartCooldownTicks`, saved per condition
+identity, so a condition can force-stop after a configured age and then avoid immediately restarting
+if its original evidence lingers.
 
 Shipped notable defs:
 
 - `MapThreatActive`, `ToxicFalloutActive`, `SolarFlareActive`: prompt-tone only.
-- `AnomalyGrayFleshEvidence`: records observable gray-flesh evidence and biases prompts while present.
-- `MetalhorrorEmergence`: disabled with empty matchers until the observable state is verified.
+- `AnomalyGrayFleshEvidence`: records the observable Anomaly sample but hides the item label from
+  prompts; the LLM-facing wording frames it as paranoia and fear that something may infect and
+  imitate people. It decays over time, is suppressed once a visible metalhorror or metalhorror debris
+  appears, and force-stops with a restart cooldown if no emergence happens, so lingering evidence
+  cannot keep or immediately reactivate suspicion forever.
+- `MetalhorrorEmergence`: enabled map-scoped observer for the spawned visible `Metalhorror` ThingDef.
 
 Page recording is transactional: start/end state is committed only after a page is actually written.
 `ConfigErrors` rejects `recordScope=SubjectPawn` unless `scope=Pawn`.
@@ -380,6 +394,9 @@ prompt-time only and never change the saved picker value.
 Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
 and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary
 pages until they close. `normalPromptWeightMultiplier` can dampen ordinary health/mood context.
+When an active hediff forces a temporary writing-style override, all hediffs matched by any active
+persona-override rule are suppressed from the prompt-enchantment pool so the same condition does not
+arrive once as style and again as "important context."
 
 Imported game/mod text is flattened and capped before it reaches the model. This applies to live
 hediff descriptions, labels, titles/roles, scenario text, and quest descriptions. Pawn Diary's own
@@ -418,7 +435,8 @@ four shared system prompts plus per-event prompt/enhancement/forced-model overri
 `DiaryEventWindowDef`, `DiaryObservedConditionDef`, `DiaryInteractionGroupDef`, and
 `DiaryHediffPersonaOverrideDef`. That includes template prompt text, final instructions,
 template field lists, include/exclude prompt switches, per-template token caps, prompt cue text,
-prompt weights, event-window/observed-condition prompt biasing, group instructions/tone variants,
+prompt weights, event-window/observed-condition prompt biasing and decay, observed-condition
+force-stop/cooldown/suppression/evidence-label caps, group instructions/tone variants,
 batch/promotion weights, humor cue rules/weights, and hediff-driven writing-style override policy.
 Template prompt text boxes are raw per-template overrides; blank means "inherit" and intentionally
 stays blank so Shared/event prompts remains the only place that displays shared system prompt text.
@@ -479,9 +497,10 @@ partner, active section, per-section scroll, selected trigger Def names, and sel
 saved on `DiaryGameComponent`, so the panel state survives closing/reopening and normal save/load.
 Real trigger buttons cover paths that Pawn Diary patches, such as thoughts, inspirations, mental
 states, tales, hediffs, map conditions, social play-log entries, romance relations, arrivals, deaths,
-raids, quests, abilities, and the scanner-based work/day-summary flows. The Events section also lets
-dev mode choose the Def each relevant button fires: memory thought, inspiration, mental state, tale,
-hediff, game condition, interaction, relation, incident, quest script, and pawn ability. Preview
+raids, quests, abilities, and the scanner-based work/day-summary flows. In the Events section,
+Def-backed rows are direct buttons: left-click fires the shown Def, and right-click opens the Def
+selector for memory thought, inspiration, mental state, tale, hediff, game condition, interaction,
+relation, incident, quest script, and pawn ability. Preview
 buttons open the selected pawn's Diary tab only to display the transient card; they do not save diary
 events. The prompt-only section uses the same synthetic fixture registry as the old Diary tab
 prompt-suite controls, but can create a selected prompt-test batch at once and can clear all
@@ -564,6 +583,7 @@ model-leaked Unity rich-text angle tags, and trims saved text locally.
 | `diaryArchiveEntries` | compact display-only `ArchivedDiaryEntry` rows |
 | `activeEventWindows` | currently active XML event windows |
 | `activeObservedConditions` | currently active live-state observed conditions |
+| `observedConditionCooldownUntilTick` | saved restart cooldowns for ended observed-condition identities |
 
 Hot events and archive rows are separate on purpose. Hot `DiaryEvent` rows keep prompts, retry state,
 raw/generated text, status, LLM metadata, titles, context, source ids, and per-role state. Compact
@@ -736,8 +756,8 @@ node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 
 Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridge/GABS. RimWorld dev
 mode's Debug Actions menu exposes `Pawn Diary > Event test panel...` for common real trigger paths:
-select an eligible colonist, optionally select a partner, open the Events section, choose any needed
-trigger Defs, and press the relevant real-event button. Some buttons deliberately mutate the
+select an eligible colonist, optionally select a partner, open the Events section, left-click a
+Def-backed row to trigger it, or right-click it first to choose a different Def. Some buttons deliberately mutate the
 disposable save, such as spawning a recruit, killing a test colonist, creating a raid, or
 accepting/completing a sample quest. For Diary UI stress checks, use the same panel's Diary section to
 fill mock pages, switch personas, or open transient card previews. For prompt shape checks that do not

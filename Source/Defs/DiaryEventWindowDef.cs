@@ -82,6 +82,10 @@ namespace PawnDiary
         public bool promptEnabled = true;
         public float promptWeight = 1f;
         public float normalPromptWeightMultiplier = 1f;
+        // Optional fade for active windows that keep influencing prompts. 0 ticks means no decay;
+        // otherwise the prompt weight and any normal-context override move toward this minimum.
+        public int promptDecayTicks = 0;
+        public float promptDecayMinMultiplier = 1f;
         public string promptPriorityKey;
         public string promptConditionKey;
         public string promptDescriptionKey;

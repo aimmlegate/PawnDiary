@@ -25,8 +25,10 @@ namespace DiaryPipelineTests
             TestSoloSelection();
             TestSoloBatchSelection();
             TestPromptEnchantmentPlanner();
+            TestPromptEnchantmentDecayPolicy();
             TestHediffPersonaOverridePolicy();
             TestMemoryDecayXmlPolicy();
+            TestObservedConditionDecayXmlPolicy();
             TestPromptTextSanitizer();
             TestEventWindowPolicy();
             TestProgressionMilestonePolicy();
@@ -750,6 +752,38 @@ namespace DiaryPipelineTests
             AssertEqual("prompt enchantment kept non-hediff source", string.Empty, filtered[1].sourceHediffDefName ?? string.Empty);
         }
 
+        private static void TestPromptEnchantmentDecayPolicy()
+        {
+            AssertNear(
+                "prompt decay disabled stays full strength",
+                1f,
+                PromptEnchantmentDecayPolicy.AgeFactor(1000, 0, 0, 0.2f));
+            AssertNear(
+                "prompt decay starts full strength",
+                1f,
+                PromptEnchantmentDecayPolicy.AgeFactor(1000, 1000, 60000, 0.2f));
+            AssertNear(
+                "prompt decay interpolates toward floor",
+                0.6f,
+                PromptEnchantmentDecayPolicy.AgeFactor(30000, 0, 60000, 0.2f));
+            AssertNear(
+                "prompt decay reaches floor",
+                0.2f,
+                PromptEnchantmentDecayPolicy.AgeFactor(90000, 0, 60000, 0.2f));
+            AssertNear(
+                "prompt decay lowers weight",
+                6f,
+                PromptEnchantmentDecayPolicy.DecayedWeight(10f, 0.6f));
+            AssertNear(
+                "prompt decay relaxes normal suppression toward one",
+                0.4f,
+                PromptEnchantmentDecayPolicy.RelaxedNormalMultiplier(0f, 0.6f));
+            AssertNear(
+                "prompt decay relaxes normal amplification toward one",
+                1.6f,
+                PromptEnchantmentDecayPolicy.RelaxedNormalMultiplier(2f, 0.6f));
+        }
+
         private static void TestHediffPersonaOverridePolicy()
         {
             List<HediffPersonaOverrideFact> hediffs = new List<HediffPersonaOverrideFact>
@@ -852,8 +886,9 @@ namespace DiaryPipelineTests
                     hediffs[1]
                 });
             AssertEqual("hediff persona override selection persona", "DiaryPersona_InhumanizedVoid", selectedOverride.personaDefName);
-            AssertEqual("hediff persona override matched source unique count", 1, selectedOverride.matchedHediffDefNames.Count);
-            AssertEqual("hediff persona override matched source", "Inhumanized", selectedOverride.matchedHediffDefNames[0]);
+            AssertEqual("hediff persona override matched source unique count", 2, selectedOverride.matchedHediffDefNames.Count);
+            AssertEqual("hediff persona override suppresses lower-priority matched source", "Flu", selectedOverride.matchedHediffDefNames[0]);
+            AssertEqual("hediff persona override suppresses selected matched source", "Inhumanized", selectedOverride.matchedHediffDefNames[1]);
         }
 
         private static void TestMemoryDecayXmlPolicy()
@@ -885,6 +920,38 @@ namespace DiaryPipelineTests
                     "memory decay prompt enchantment includes " + memoryDecayHediffs[i],
                     HasHediffDefName(memoryDecay, memoryDecayHediffs[i]));
             }
+        }
+
+        private static void TestObservedConditionDecayXmlPolicy()
+        {
+            XDocument observedConditions = XDocument.Load(RepoPath("1.6", "Defs", "DiaryObservedConditionDefs.xml"));
+            XElement grayFlesh = FindDef(
+                observedConditions,
+                "PawnDiary.DiaryObservedConditionDef",
+                "AnomalyGrayFleshEvidence");
+            AssertTrue("gray flesh observed condition exists", grayFlesh != null);
+            if (grayFlesh == null)
+            {
+                return;
+            }
+
+            AssertEqual("gray flesh max-active force stop", "120000", ChildValue(grayFlesh, "maxActiveTicks"));
+            AssertEqual("gray flesh restart cooldown", "120000", ChildValue(grayFlesh, "restartCooldownTicks"));
+            AssertEqual("gray flesh decay duration", "60000", ChildValue(grayFlesh, "promptDecayTicks"));
+            AssertEqual("gray flesh decay floor", "0.15", ChildValue(grayFlesh, "promptDecayMinMultiplier"));
+            AssertEqual("gray flesh evidence label hidden", "0", ChildValue(grayFlesh, "maxEvidenceLabels"));
+            AssertTrue("gray flesh suppresses on metalhorror", HasListValue(grayFlesh, "suppressWhenThingDefNames", "Metalhorror"));
+
+            XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
+            string description = KeyedValue(
+                englishKeyed,
+                "PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description");
+            AssertTrue(
+                "gray flesh prompt avoids item name",
+                description.IndexOf("gray flesh", StringComparison.OrdinalIgnoreCase) < 0);
+            AssertTrue(
+                "gray flesh prompt names imitator fear",
+                description.IndexOf("imitat", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         private static void TestPromptTextSanitizer()
@@ -2272,6 +2339,28 @@ namespace DiaryPipelineTests
             return false;
         }
 
+        private static bool HasListValue(XElement def, string listName, string expectedValue)
+        {
+            if (def == null)
+            {
+                return false;
+            }
+
+            foreach (XElement list in def.Descendants(listName))
+            {
+                foreach (XElement item in list.Elements("li"))
+                {
+                    if (string.Equals((item.Value ?? string.Empty).Trim(), expectedValue,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static string ChildValue(XElement element, string childName)
         {
             if (element == null)
@@ -2281,6 +2370,12 @@ namespace DiaryPipelineTests
 
             XElement child = element.Element(childName);
             return child == null ? string.Empty : (child.Value ?? string.Empty).Trim();
+        }
+
+        private static string KeyedValue(XDocument document, string key)
+        {
+            XElement element = document?.Root?.Element(key);
+            return element == null ? string.Empty : (element.Value ?? string.Empty).Trim();
         }
 
         // B1: SafePrefix caps length without ever splitting a UTF-16 surrogate pair. "\U0001F600" is a
@@ -2386,6 +2481,16 @@ namespace DiaryPipelineTests
         {
             assertions++;
             if (expected != actual)
+            {
+                throw new InvalidOperationException(
+                    name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");
+            }
+        }
+
+        private static void AssertNear(string name, float expected, float actual)
+        {
+            assertions++;
+            if (Math.Abs(expected - actual) > 0.0001f)
             {
                 throw new InvalidOperationException(
                     name + " failed.\nExpected: [" + expected + "]\nActual:   [" + actual + "]");

@@ -6,6 +6,23 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-01
 
+- **Gray-flesh suspicion now hands off to emerged metalhorrors.** Observed conditions gained
+  XML-owned `suppressWhenThingDefNames`; `AnomalyGrayFleshEvidence` now tracks analyzable gray-flesh
+  samples and stops once a visible metalhorror or metalhorror debris exists, while
+  `MetalhorrorEmergence` is enabled as a map-scoped observer for the spawned visible `Metalhorror`
+  ThingDef instead of the hidden implant hediff path. Lasting event-window and observed-condition
+  prompt enhancers now support age-based decay (`promptDecayTicks` / `promptDecayMinMultiplier`) so
+  their selection weight drops and normal-context suppression relaxes over time; observed conditions
+  also gained `maxActiveTicks` and saved restart cooldowns for force-ended identities, with
+  gray-flesh suspicion force-stopping after two days and then using a two-day cooldown. The suspicion
+  prompt now hides the sample's item label and writes the state as paranoia and fear that something
+  may be infecting people and imitating them. Hediffs that match any active temporary writing-style
+  override are now suppressed from prompt enchantments, so long-lived states such as inhumanization,
+  trauma savant, joywire, bliss lobotomy, or mindscrew do not appear twice in the same prompt. Prompt
+  policy settings expose the observed-condition decay, force-stop, cooldown, suppression, and
+  evidence-label caps needed to tune this behavior in-game.
+- **Dev event panel click split.** Def-backed event rows now left-click to fire the shown trigger and
+  right-click to open the Def selector, while ordinary dev-panel text buttons ignore right-clicks.
 - **Resurrected pawns keep writing.** Death pages now remain historical boundary entries without
   permanently ending a pawn's diary if RimWorld brings that same pawn load ID back to life. Capture,
   generation, Diary tab rendering, dev export/mock helpers, and hot/archive retention all ignore the

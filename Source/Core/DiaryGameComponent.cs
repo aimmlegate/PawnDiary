@@ -329,6 +329,9 @@ namespace PawnDiary
             // Plan 12: saved observed-condition runtime state. Additive key; old saves load an empty
             // list. See DiaryGameComponent.ObservedConditions.cs.
             Scribe_Collections.Look(ref activeObservedConditions, "activeObservedConditions", LookMode.Deep);
+            Scribe_Collections.Look(ref observedConditionCooldownUntilTick,
+                "observedConditionCooldownUntilTick", LookMode.Value, LookMode.Value,
+                ref observedConditionCooldownKeys, ref observedConditionCooldownValues);
 
             // Before writing generated-speech PlayLog state, drop rows RimWorld's PlayLog has already
             // pruned so stale LogIDs cannot accumulate or block future injection.
@@ -371,6 +374,11 @@ namespace PawnDiary
                     activeObservedConditions = new List<ActiveObservedConditionState>();
                 }
 
+                if (observedConditionCooldownUntilTick == null)
+                {
+                    observedConditionCooldownUntilTick = new Dictionary<string, int>();
+                }
+
                 // Post-load rebuilds derive transient indexes from loaded data; a throw here must not
                 // abort the whole game load, so degrade to whatever loaded and log once. The null
                 // guards above stay outside the try because the rest of the session depends on them.
@@ -385,6 +393,7 @@ namespace PawnDiary
                     events.RebuildIndex();
                     NormalizeActiveEventWindows();
                     NormalizeActiveObservedConditions();
+                    NormalizeObservedConditionCooldowns();
                     ApplyDiaryEventLimits();
                     RebuildWrittenDayReflectionsFromEvents();
                     PruneDiaryEventRefs();

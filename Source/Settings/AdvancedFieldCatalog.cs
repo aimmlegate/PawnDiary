@@ -1695,6 +1695,8 @@ namespace PawnDiary
                     .Bool("promptEnabled")
                     .Float("promptWeight", 0f, 100f, false)
                     .Float("normalPromptWeightMultiplier", 0f, 10f, false)
+                    .Int("promptDecayTicks", 0, 600000)
+                    .Float("promptDecayMinMultiplier", 0f, 1f, false)
                     .Text("promptPriorityText", () => EffectiveText(def.promptPriorityText, def.promptPriorityKey,
                         "PawnDiary.Prompt.EventWindow.Priority"))
                     .Text("promptConditionText", () => EffectiveText(def.promptConditionText, def.promptConditionKey,
@@ -1720,6 +1722,13 @@ namespace PawnDiary
                     .Bool("promptEnabled")
                     .Float("promptWeight", 0f, 100f, false)
                     .Float("normalPromptWeightMultiplier", 0f, 10f, false)
+                    .Int("promptDecayTicks", 0, 600000)
+                    .Float("promptDecayMinMultiplier", 0f, 1f, false)
+                    .Int("maxActiveTicks", 0, 600000)
+                    .Int("restartCooldownTicks", 0, 600000)
+                    .Int("maxEvidenceLabels", 0, 20)
+                    .Int("maxEvidenceChars", 0, 2000)
+                    .Int("maxEvidenceCount", 0, 9999)
                     .Text("promptPriorityText", () => EffectiveText(def.promptPriorityText, def.promptPriorityKey,
                         "PawnDiary.Prompt.ObservedCondition.Priority"))
                     .Text("promptConditionText", () => EffectiveText(def.promptConditionText, def.promptConditionKey,
@@ -1729,7 +1738,8 @@ namespace PawnDiary
                     .StringList("promptCueTexts", () => EffectiveTextList(def.promptCueTexts, def.promptCueKeys))
                     .StringList("matchDefNames")
                     .StringList("matchDefNameContains")
-                    .StringList("matchLabels");
+                    .StringList("matchLabels")
+                    .StringList("suppressWhenThingDefNames");
             }
         }
 

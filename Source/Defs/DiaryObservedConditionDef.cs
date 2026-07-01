@@ -79,6 +79,10 @@ namespace PawnDiary
         public bool promptEnabled = true;
         public float promptWeight = 1f;
         public float normalPromptWeightMultiplier = 1f;
+        // Optional fade for long-lived conditions. 0 ticks means no decay; otherwise the prompt weight
+        // and any normal-context override move toward this minimum as the condition ages.
+        public int promptDecayTicks = 0;
+        public float promptDecayMinMultiplier = 1f;
         public string promptPriorityKey;
         public string promptConditionKey;
         public string promptDescriptionKey;
@@ -97,6 +101,10 @@ namespace PawnDiary
         public List<string> matchDefNameContains = new List<string>();
         // Label substring fallback. Avoid unless there is genuinely no stable defName.
         public List<string> matchLabels = new List<string>();
+        // ThingPresent-only suppression: if any listed ThingDef is currently spawned on the same map,
+        // the observer reports this condition as absent. This lets XML say "gray-flesh suspicion ends
+        // once a visible metalhorror exists" without hardcoding Anomaly names in C#.
+        public List<string> suppressWhenThingDefNames = new List<string>();
 
         // ---- MapDanger tuning ----
         // Minimum StoryDanger to count as active: "None", "Low", or "High". Parsed by the scanner.
@@ -111,6 +119,12 @@ namespace PawnDiary
         // Defensive cap so a flooded map (lots of filth) never makes counting expensive.
         public int maxEvidenceCount = 999;
         public int recentEvidenceTtlTicks = 60000;
+        // Optional hard cap for an observed condition that should not keep prompt pressure forever
+        // even if its evidence remains. 0 means no cap; positive values force an end after this age.
+        public int maxActiveTicks = 0;
+        // After a condition is ended/dropped, block the same identity from restarting for this long.
+        // Useful when XML suppression force-stops a condition while its original evidence can linger.
+        public int restartCooldownTicks = 0;
 
         /// <summary>Stable key for runtime state; falls back to defName when XML omits it.</summary>
         public string EffectiveConditionKey()
@@ -126,6 +140,16 @@ namespace PawnDiary
         public int EffectiveDedupTicks()
         {
             return dedupTicks < 0 ? 0 : dedupTicks;
+        }
+
+        public int EffectiveRestartCooldownTicks()
+        {
+            return restartCooldownTicks < 0 ? 0 : restartCooldownTicks;
+        }
+
+        public int EffectiveMaxActiveTicks()
+        {
+            return maxActiveTicks < 0 ? 0 : maxActiveTicks;
         }
 
         /// <summary>Projects the timing policy the pure planner needs.</summary>

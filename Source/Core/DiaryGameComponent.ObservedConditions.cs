@@ -35,6 +35,13 @@ namespace PawnDiary
         // dedup window. Reuses the shared RecentEventEntry store shape (see DiaryGameComponent.Lookup.cs).
         private readonly Dictionary<string, RecentEventEntry> recentObservedConditionEvents = new Dictionary<string, RecentEventEntry>();
 
+        // Saved restart cooldowns for observed-condition identities. These are separate from the active
+        // rows so a condition that was force-ended by XML suppression cannot immediately restart just
+        // because its original evidence still exists on the next poll.
+        private Dictionary<string, int> observedConditionCooldownUntilTick = new Dictionary<string, int>();
+        private List<string> observedConditionCooldownKeys;
+        private List<int> observedConditionCooldownValues;
+
         private const string ObservedConditionPhaseStart = "start";
         private const string ObservedConditionPhaseEnd = "end";
 
@@ -56,6 +63,7 @@ namespace PawnDiary
             }
 
             int now = Find.TickManager.TicksGame;
+            PruneObservedConditionCooldowns(now);
             List<DiaryObservedConditionDef> allDefs = DefDatabase<DiaryObservedConditionDef>.AllDefsListForReading;
 
             // Index enabled defs by key, and pick the subset whose poll is due this pass.
@@ -96,6 +104,8 @@ namespace PawnDiary
                     CollectObservations(def, observations);
                 }
             }
+
+            FilterObservedConditionCooldownObservations(observations, dueDefByKey, now);
 
             // Working saved set: rows whose def is due (so they diff against this pass's observations),
             // plus rows whose def is gone/disabled (so the policy drops them with no end page).
@@ -262,6 +272,13 @@ namespace PawnDiary
                     continue;
                 }
 
+                if (AnyThingDefPresentOnMap(map, def.suppressWhenThingDefNames))
+                {
+                    // XML can make one visible thing resolve/supersede another condition. For example,
+                    // an emerged metalhorror should end gray-flesh suspicion even if old samples remain.
+                    continue;
+                }
+
                 int total = 0;
                 string firstDefName = string.Empty;
                 List<string> labels = new List<string>();
@@ -413,10 +430,11 @@ namespace PawnDiary
                 // state retryable (startRecorded/endRecorded left false, row retained) so the next scan
                 // re-enters the same transition instead of permanently losing the page.
                 bool pageSatisfied = true;
+                DiaryObservedConditionDef def = null;
+                dueDefByKey.TryGetValue(decision.state.conditionKey, out def);
                 if (decision.recordPage)
                 {
-                    DiaryObservedConditionDef def;
-                    if (dueDefByKey.TryGetValue(decision.state.conditionKey, out def) && def != null)
+                    if (def != null)
                     {
                         pageSatisfied = RecordObservedConditionPage(decision, def);
                     }
@@ -427,6 +445,7 @@ namespace PawnDiary
                 {
                     if (pageSatisfied)
                     {
+                        MarkObservedConditionRestartCooldown(decision.state, def);
                         if (row != null)
                         {
                             activeObservedConditions.Remove(row);
@@ -570,6 +589,7 @@ namespace PawnDiary
 
             int pawnMapUniqueId = MapUniqueId(pawn.Map);
             string pawnId = pawn.GetUniqueLoadID();
+            int now = Find.TickManager.TicksGame;
             for (int i = 0; i < activeObservedConditions.Count; i++)
             {
                 ActiveObservedConditionState active = activeObservedConditions[i];
@@ -589,8 +609,11 @@ namespace PawnDiary
                     continue;
                 }
 
-                normalCandidateWeightMultiplier *= SafePromptWeightMultiplier(def.normalPromptWeightMultiplier);
-                PromptEnchantmentCandidate candidate = PromptCandidateForObservedCondition(def, active);
+                float ageFactor = PromptEnchantmentDecayPolicy.AgeFactor(
+                    now, active.firstObservedTick, def.promptDecayTicks, def.promptDecayMinMultiplier);
+                normalCandidateWeightMultiplier *= PromptEnchantmentDecayPolicy.RelaxedNormalMultiplier(
+                    SafePromptWeightMultiplier(def.normalPromptWeightMultiplier), ageFactor);
+                PromptEnchantmentCandidate candidate = PromptCandidateForObservedCondition(def, active, ageFactor);
                 if (candidate != null)
                 {
                     candidates.Add(candidate);
@@ -615,9 +638,9 @@ namespace PawnDiary
         }
 
         private PromptEnchantmentCandidate PromptCandidateForObservedCondition(DiaryObservedConditionDef def,
-            ActiveObservedConditionState active)
+            ActiveObservedConditionState active, float ageFactor)
         {
-            float weight = SafePromptWeight(def.promptWeight);
+            float weight = PromptEnchantmentDecayPolicy.DecayedWeight(SafePromptWeight(def.promptWeight), ageFactor);
             if (weight <= 0f)
             {
                 return null;
@@ -803,6 +826,121 @@ namespace PawnDiary
         // Small shared helpers
         // ---------------------------------------------------------------------------------------------
 
+        private void FilterObservedConditionCooldownObservations(List<ObservedConditionObservation> observations,
+            Dictionary<string, DiaryObservedConditionDef> dueDefByKey, int now)
+        {
+            if (observations == null || observations.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = observations.Count - 1; i >= 0; i--)
+            {
+                ObservedConditionObservation observation = observations[i];
+                if (observation == null)
+                {
+                    continue;
+                }
+
+                string identity = ObservedConditionStateSnapshot.Identity(
+                    observation.conditionKey, observation.scope, observation.mapUniqueId,
+                    observation.subjectPawnId);
+                int cooldownUntil;
+                if (observedConditionCooldownUntilTick != null
+                    && observedConditionCooldownUntilTick.TryGetValue(identity, out cooldownUntil))
+                {
+                    if (now < cooldownUntil)
+                    {
+                        observations.RemoveAt(i);
+                        continue;
+                    }
+
+                    observedConditionCooldownUntilTick.Remove(identity);
+                }
+
+                DiaryObservedConditionDef def;
+                if (dueDefByKey != null
+                    && dueDefByKey.TryGetValue(observation.conditionKey, out def)
+                    && ObservationExceededMaxActiveTicks(identity, def, now))
+                {
+                    observations.RemoveAt(i);
+                }
+            }
+        }
+
+        private bool ObservationExceededMaxActiveTicks(string identity, DiaryObservedConditionDef def, int now)
+        {
+            int maxActiveTicks = def == null ? 0 : def.EffectiveMaxActiveTicks();
+            if (maxActiveTicks <= 0)
+            {
+                return false;
+            }
+
+            ActiveObservedConditionState active = FindObservedConditionRowByIdentity(identity);
+            return active != null && now - active.firstObservedTick >= maxActiveTicks;
+        }
+
+        private void MarkObservedConditionRestartCooldown(ObservedConditionStateSnapshot state,
+            DiaryObservedConditionDef def)
+        {
+            int cooldownTicks = def == null ? 0 : def.EffectiveRestartCooldownTicks();
+            if (state == null || cooldownTicks <= 0)
+            {
+                return;
+            }
+
+            if (observedConditionCooldownUntilTick == null)
+            {
+                observedConditionCooldownUntilTick = new Dictionary<string, int>();
+            }
+
+            observedConditionCooldownUntilTick[state.IdentityKey()] =
+                Find.TickManager.TicksGame + cooldownTicks;
+        }
+
+        private void NormalizeObservedConditionCooldowns()
+        {
+            if (observedConditionCooldownUntilTick == null)
+            {
+                observedConditionCooldownUntilTick = new Dictionary<string, int>();
+                return;
+            }
+
+            PruneObservedConditionCooldowns(Find.TickManager.TicksGame);
+        }
+
+        private void PruneObservedConditionCooldowns(int now)
+        {
+            if (observedConditionCooldownUntilTick == null || observedConditionCooldownUntilTick.Count == 0)
+            {
+                return;
+            }
+
+            List<string> expiredKeys = null;
+            foreach (KeyValuePair<string, int> entry in observedConditionCooldownUntilTick)
+            {
+                if (string.IsNullOrWhiteSpace(entry.Key) || now >= entry.Value)
+                {
+                    if (expiredKeys == null)
+                    {
+                        expiredKeys = new List<string>();
+                    }
+
+                    expiredKeys.Add(entry.Key);
+                }
+            }
+
+            if (expiredKeys == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < expiredKeys.Count; i++)
+            {
+                observedConditionCooldownUntilTick.Remove(expiredKeys[i]);
+            }
+        }
+
         private static ObservedConditionObservation NewObservation(DiaryObservedConditionDef def,
             int mapUniqueId, string subjectPawnId, string evidenceDefName, string evidenceLabel, int evidenceCount)
         {
@@ -927,6 +1065,39 @@ namespace PawnDiary
             return false;
         }
 
+        private static bool AnyThingDefPresentOnMap(Map map, List<string> defNames)
+        {
+            if (map == null || map.listerThings == null || defNames == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < defNames.Count; i++)
+            {
+                string defName = defNames[i];
+                if (string.IsNullOrWhiteSpace(defName))
+                {
+                    continue;
+                }
+
+                // GetNamedSilentFail keeps this DLC-safe. Without Anomaly, "Metalhorror" simply
+                // resolves to null and cannot suppress anything.
+                ThingDef thingDef = DefDatabase<ThingDef>.GetNamedSilentFail(defName.Trim());
+                if (thingDef == null)
+                {
+                    continue;
+                }
+
+                List<Thing> things = map.listerThings.ThingsOfDef(thingDef);
+                if (things != null && things.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool ContainsSubstring(List<string> tokens, string haystack)
         {
             if (tokens == null || string.IsNullOrWhiteSpace(haystack))
@@ -965,7 +1136,16 @@ namespace PawnDiary
                 return null;
             }
 
-            string identity = snapshot.IdentityKey();
+            return FindObservedConditionRowByIdentity(snapshot.IdentityKey());
+        }
+
+        private ActiveObservedConditionState FindObservedConditionRowByIdentity(string identity)
+        {
+            if (activeObservedConditions == null || string.IsNullOrEmpty(identity))
+            {
+                return null;
+            }
+
             for (int i = 0; i < activeObservedConditions.Count; i++)
             {
                 ActiveObservedConditionState row = activeObservedConditions[i];

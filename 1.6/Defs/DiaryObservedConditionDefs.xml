@@ -47,6 +47,8 @@
     <promptEnabled>true</promptEnabled>
     <promptWeight>6</promptWeight>
     <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>60000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.5</promptDecayMinMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.MapThreatActive.Description</promptDescriptionKey>
@@ -79,6 +81,8 @@
     <promptEnabled>true</promptEnabled>
     <promptWeight>4</promptWeight>
     <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>120000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.ToxicFalloutActive.Description</promptDescriptionKey>
@@ -109,6 +113,8 @@
     <promptEnabled>true</promptEnabled>
     <promptWeight>4</promptWeight>
     <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>30000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description</promptDescriptionKey>
@@ -117,14 +123,15 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
-  <!-- Pass 6: replaces the disabled MetalhorrorSuspicion event window. While observable gray-flesh
-       evidence remains on a map, suspicion colors prompts; once colonists clean it up (it disappears
-       from live state), the condition ends naturally — no stuck "always active" window, no timeout.
-       Describes OBSERVABLE EVIDENCE only; it never names hidden anomaly mechanics. matchDefNames are
-       Anomaly content, so this whole def stays inert without the Anomaly DLC. -->
+  <!-- Pass 6: replaces the disabled MetalhorrorSuspicion event window. While an analyzable sample
+       remains on a map, suspicion colors prompts as fear of an unknown thing that infects and imitates
+       people. Once a visible metalhorror has emerged, suppressWhenThingDefNames makes this observer
+       report the sample as absent so the suspicion condition ends and the revealed-threat condition
+       takes over. matchDefNames are Anomaly content, so this whole def stays inert without the Anomaly
+       DLC. -->
   <PawnDiary.DiaryObservedConditionDef>
     <defName>AnomalyGrayFleshEvidence</defName>
-    <label>gray flesh evidence</label>
+    <label>imitator infection evidence</label>
     <conditionKey>AnomalyGrayFleshEvidence</conditionKey>
     <enabled>true</enabled>
     <scope>Map</scope>
@@ -132,28 +139,38 @@
     <!-- Thing scans are more expensive than reading a danger rating; poll conservatively. -->
     <pollIntervalTicks>2500</pollIntervalTicks>
     <startDebounceTicks>0</startDebounceTicks>
-    <endDebounceTicks>5000</endDebounceTicks>
+    <endDebounceTicks>0</endDebounceTicks>
+    <!-- If no metalhorror emerges, stop pushing this suspicion forever; then cool down before restart. -->
+    <maxActiveTicks>120000</maxActiveTicks>
+    <restartCooldownTicks>120000</restartCooldownTicks>
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
-    <maxEvidenceLabels>3</maxEvidenceLabels>
+    <!-- Do not feed the ThingDef label into the prompt; the writing cue should be the paranoia, not the item name. -->
+    <maxEvidenceLabels>0</maxEvidenceLabels>
     <maxEvidenceChars>160</maxEvidenceChars>
     <matchDefNames>
       <li>GrayFleshSample</li>
-      <li>Filth_GrayFleshNoticeable</li>
     </matchDefNames>
+    <suppressWhenThingDefNames>
+      <li>Metalhorror</li>
+      <li>Filth_MetalhorrorDebris</li>
+    </suppressWhenThingDefNames>
 
-    <!-- One observable "found gray flesh" page when it first appears; no end page (absence of evidence
-         is not proof the threat is resolved). colorCue keeps the entry visibly ominous. -->
+    <!-- One observable suspicion page when it first appears; no end page (absence of evidence
+         or the revealed metalhorror taking over is not a quiet diary moment). colorCue keeps the entry
+         visibly ominous. -->
     <recordStartEvent>true</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
     <recordScope>MapColonists</recordScope>
     <colorCue>extremeDark</colorCue>
-    <instruction>write this as unresolved colony unease grounded only in the gray flesh the pawn can actually see; carry quiet suspicion into ordinary details and never name hidden game mechanics beyond the supplied evidence</instruction>
+    <instruction>write this as paranoia and fear that some unknown thing may be infecting people and imitating them; keep it grounded in what the pawn could suspect, make ordinary faces and voices feel untrustworthy, and never explain hidden game mechanics or identify a host</instruction>
     <startTextKey>PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start</startTextKey>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>40</promptWeight>
     <!-- Strongly bias away from ordinary health/mood context while suspicion is live. -->
     <normalPromptWeightMultiplier>0</normalPromptWeightMultiplier>
+    <promptDecayTicks>60000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.15</promptDecayMinMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description</promptDescriptionKey>
@@ -163,35 +180,33 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
-  <!-- Pass 7: confirmed metalhorror emergence as a PAWN-scoped hediff observer. Shipped DISABLED on
-       purpose: the observable post-emergence state has NOT been verified against the Anomaly assembly
-       yet (see ARCHITECTURE_IMPROVEMENT_PLAN.md Plan 12 "Open questions"). Do NOT enable until the
-       matchDefNames below are confirmed to be a hediff the game has already revealed to the player —
-       this must never surface hidden mechanics. matchDefNames is intentionally empty so that, even if
-       enabled by accident, it matches nothing. -->
+  <!-- Pass 7: confirmed metalhorror emergence as a MAP-scoped ThingPresent observer. This matches the
+       spawned visible Metalhorror ThingDef, not the hidden MetalhorrorImplant hediff on a host, so it
+       does not reveal the infection before the game has shown the threat. -->
   <PawnDiary.DiaryObservedConditionDef>
     <defName>MetalhorrorEmergence</defName>
     <label>metalhorror emergence</label>
     <conditionKey>MetalhorrorEmergence</conditionKey>
-    <enabled>false</enabled>
-    <scope>Pawn</scope>
-    <observerType>PawnHediff</observerType>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>ThingPresent</observerType>
     <pollIntervalTicks>2500</pollIntervalTicks>
     <startDebounceTicks>0</startDebounceTicks>
     <endDebounceTicks>5000</endDebounceTicks>
-    <!-- TODO(verify): add the confirmed, player-visible emerged-metalhorror hediff defName here, e.g.
-         <li>SomeRevealedMetalhorrorHediff</li> — only after checking the live Anomaly state. -->
     <matchDefNames>
+      <li>Metalhorror</li>
     </matchDefNames>
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>
-    <recordScope>SubjectPawn</recordScope>
+    <recordScope>MapColonists</recordScope>
     <colorCue>extremeDark</colorCue>
 
     <promptEnabled>true</promptEnabled>
     <promptWeight>60</promptWeight>
     <normalPromptWeightMultiplier>0</normalPromptWeightMultiplier>
+    <promptDecayTicks>60000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.35</promptDecayMinMultiplier>
     <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority</promptPriorityKey>
     <promptConditionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition</promptConditionKey>
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description</promptDescriptionKey>

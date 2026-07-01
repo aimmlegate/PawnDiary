@@ -88,7 +88,7 @@ namespace PawnDiary
             {
                 personaDefName = selectedRule.personaDefName.Trim()
             };
-            AddMatchedHediffDefNames(selection.matchedHediffDefNames, selectedRule, hediffs);
+            AddMatchedHediffDefNamesForAllRules(selection.matchedHediffDefNames, rules, hediffs);
             return selection;
         }
 
@@ -141,6 +141,26 @@ namespace PawnDiary
                 {
                     AddUnique(names, hediff.defName);
                 }
+            }
+        }
+
+        private static void AddMatchedHediffDefNamesForAllRules(List<string> names,
+            IList<HediffPersonaOverrideRule> rules, IList<HediffPersonaOverrideFact> hediffs)
+        {
+            if (names == null || rules == null || hediffs == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                HediffPersonaOverrideRule rule = rules[i];
+                if (rule == null || string.IsNullOrWhiteSpace(rule.personaDefName))
+                {
+                    continue;
+                }
+
+                AddMatchedHediffDefNames(names, rule, hediffs);
             }
         }
 

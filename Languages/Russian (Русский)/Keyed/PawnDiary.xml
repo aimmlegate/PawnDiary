@@ -542,7 +542,7 @@
   <PawnDiary.Event.ObservedCondition.Generic.start>{0} заметил {1}.</PawnDiary.Event.ObservedCondition.Generic.start>
   <PawnDiary.Event.ObservedCondition.Generic.end>{0} увидел, как {1} проходит.</PawnDiary.Event.ObservedCondition.Generic.end>
   <PawnDiary.Event.ObservedCondition.Generic.Instruction>напиши это как продолжающееся наблюдаемое условие о {0}; используй только переданные наблюдаемые факты и ясно держи неопределённость поселенца</PawnDiary.Event.ObservedCondition.Generic.Instruction>
-  <PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>{0} нашёл серую плоть в поселении: {1}.</PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>
+  <PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>{0} нашёл улику, что в поселении нечто может заражать людей и подражать им.</PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>
 
   <!-- Заметки об ошибках (записаны в основном потоке; показаны в отладочном блоке записи) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Пропущено: страницу инициатора написать не удалось.</PawnDiary.Error.SkippedInitiatorFailed>
@@ -671,11 +671,11 @@
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>солнечная вспышка вырубила энергию</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>солнечная вспышка отключила электричество; всё электронное мертво, пока она не пройдёт, и поселение откатывается к самому простому</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>нет энергии</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>перекрой обычный контекст нерешённой тревогой из-за серой плоти</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>серая плоть всё ещё в поселении</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>серая плоть, которую поселенец действительно видит, всё ещё присутствует в поселении, и никто не знает, что это значит; обычные моменты тихо омрачены этой тревогой, без упоминания скрытых механик</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>видимая серая плоть</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>тихий ужас</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>перекрой обычный контекст паранойей из-за неизвестного заражения-подражания</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>нечто может заражать людей и подражать им</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>поселенец боится, что неизвестная тварь может скрываться внутри кого-то, копируя знакомые лица и голоса; обычные моменты должны ощущаться напряжённо, подозрительно и небезопасно, без названий скрытых механик и без раскрытия заражённого</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>знакомые лица вызывают подозрение</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>паранойя и страх</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>перекрой обычный контекст раскрытой угрозой металлической жути</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>металлическая жуть, которая себя раскрыла</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>скрытая тварь наконец показала себя, и опасность теперь открыта и непосредственна; пиши только то, что поселенец видит у раскрытой угрозы</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>

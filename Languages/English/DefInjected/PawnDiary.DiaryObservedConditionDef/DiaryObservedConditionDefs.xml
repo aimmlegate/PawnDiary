@@ -10,8 +10,8 @@
 
   <SolarFlareActive.label>solar flare</SolarFlareActive.label>
 
-  <AnomalyGrayFleshEvidence.label>gray flesh evidence</AnomalyGrayFleshEvidence.label>
-  <AnomalyGrayFleshEvidence.instruction>write this as unresolved colony unease grounded only in the gray flesh the pawn can actually see; carry quiet suspicion into ordinary details and never name hidden game mechanics beyond the supplied evidence</AnomalyGrayFleshEvidence.instruction>
+  <AnomalyGrayFleshEvidence.label>imitator infection evidence</AnomalyGrayFleshEvidence.label>
+  <AnomalyGrayFleshEvidence.instruction>write this as paranoia and fear that some unknown thing may be infecting people and imitating them; keep it grounded in what the pawn could suspect, make ordinary faces and voices feel untrustworthy, and never explain hidden game mechanics or identify a host</AnomalyGrayFleshEvidence.instruction>
 
   <MetalhorrorEmergence.label>metalhorror emergence</MetalhorrorEmergence.label>
 

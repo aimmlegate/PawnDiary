@@ -116,9 +116,10 @@
   <PawnDiary.Dev.EventPanel.SectionDiary>Diary</PawnDiary.Dev.EventPanel.SectionDiary>
   <PawnDiary.Dev.EventPanel.SectionFixtures>Fixtures</PawnDiary.Dev.EventPanel.SectionFixtures>
   <PawnDiary.Dev.EventPanel.RealEvents>Real game event triggers</PawnDiary.Dev.EventPanel.RealEvents>
-  <PawnDiary.Dev.EventPanel.TriggerChoices>Triggered defs</PawnDiary.Dev.EventPanel.TriggerChoices>
-  <PawnDiary.Dev.EventPanel.TriggerButtons>Trigger buttons</PawnDiary.Dev.EventPanel.TriggerButtons>
+  <PawnDiary.Dev.EventPanel.TriggerChoices>Def-backed trigger buttons</PawnDiary.Dev.EventPanel.TriggerChoices>
+  <PawnDiary.Dev.EventPanel.TriggerButtons>Other trigger buttons</PawnDiary.Dev.EventPanel.TriggerButtons>
   <PawnDiary.Dev.EventPanel.DefChoice>{0}: {1}</PawnDiary.Dev.EventPanel.DefChoice>
+  <PawnDiary.Dev.EventPanel.TriggerDefButtonTip>Left-click to trigger this event with the shown Def. Right-click to choose a different Def.</PawnDiary.Dev.EventPanel.TriggerDefButtonTip>
   <PawnDiary.Dev.EventPanel.FirstPawnAbility>First pawn ability</PawnDiary.Dev.EventPanel.FirstPawnAbility>
   <PawnDiary.Dev.EventPanel.MissingDef>Missing: {0}</PawnDiary.Dev.EventPanel.MissingDef>
   <PawnDiary.Dev.EventPanel.ResetTriggerChoices>Reset triggered defs</PawnDiary.Dev.EventPanel.ResetTriggerChoices>
@@ -415,6 +416,17 @@
   <PawnDiary.Settings.Adv.Field.startText>Start diary text</PawnDiary.Settings.Adv.Field.startText>
   <PawnDiary.Settings.Adv.Field.endText>End diary text</PawnDiary.Settings.Adv.Field.endText>
   <PawnDiary.Settings.Adv.Field.timeoutText>Timeout diary text</PawnDiary.Settings.Adv.Field.timeoutText>
+  <PawnDiary.Settings.Adv.Field.promptEnabled>Prompt bias enabled</PawnDiary.Settings.Adv.Field.promptEnabled>
+  <PawnDiary.Settings.Adv.Field.promptWeight>Prompt weight</PawnDiary.Settings.Adv.Field.promptWeight>
+  <PawnDiary.Settings.Adv.Field.normalPromptWeightMultiplier>Normal context multiplier</PawnDiary.Settings.Adv.Field.normalPromptWeightMultiplier>
+  <PawnDiary.Settings.Adv.Field.promptDecayTicks>Prompt decay ticks</PawnDiary.Settings.Adv.Field.promptDecayTicks>
+  <PawnDiary.Settings.Adv.Field.promptDecayMinMultiplier>Prompt decay floor</PawnDiary.Settings.Adv.Field.promptDecayMinMultiplier>
+  <PawnDiary.Settings.Adv.Field.maxActiveTicks>Max active ticks</PawnDiary.Settings.Adv.Field.maxActiveTicks>
+  <PawnDiary.Settings.Adv.Field.restartCooldownTicks>Restart cooldown ticks</PawnDiary.Settings.Adv.Field.restartCooldownTicks>
+  <PawnDiary.Settings.Adv.Field.maxEvidenceLabels>Evidence labels shown</PawnDiary.Settings.Adv.Field.maxEvidenceLabels>
+  <PawnDiary.Settings.Adv.Field.maxEvidenceChars>Evidence text max chars</PawnDiary.Settings.Adv.Field.maxEvidenceChars>
+  <PawnDiary.Settings.Adv.Field.maxEvidenceCount>Evidence count cap</PawnDiary.Settings.Adv.Field.maxEvidenceCount>
+  <PawnDiary.Settings.Adv.Field.suppressWhenThingDefNames>Suppress when ThingDefs present</PawnDiary.Settings.Adv.Field.suppressWhenThingDefNames>
   <PawnDiary.Settings.Adv.Field.promptPriorityText>Prompt priority text</PawnDiary.Settings.Adv.Field.promptPriorityText>
   <PawnDiary.Settings.Adv.Field.promptConditionText>Prompt condition text</PawnDiary.Settings.Adv.Field.promptConditionText>
   <PawnDiary.Settings.Adv.Field.promptDescriptionText>Prompt detail text</PawnDiary.Settings.Adv.Field.promptDescriptionText>
@@ -435,6 +447,17 @@
   <PawnDiary.Settings.Adv.Help.startText>Plain diary event text for the start phase. Use {0}=pawn and {1}=signal or condition label.</PawnDiary.Settings.Adv.Help.startText>
   <PawnDiary.Settings.Adv.Help.endText>Plain diary event text for the end phase. Use {0}=pawn and {1}=signal or condition label.</PawnDiary.Settings.Adv.Help.endText>
   <PawnDiary.Settings.Adv.Help.timeoutText>Plain diary event text for a timeout phase. Use {0}=pawn and {1}=signal or window label.</PawnDiary.Settings.Adv.Help.timeoutText>
+  <PawnDiary.Settings.Adv.Help.promptEnabled>Whether this Def can add active context to first-person prompts.</PawnDiary.Settings.Adv.Help.promptEnabled>
+  <PawnDiary.Settings.Adv.Help.promptWeight>Relative chance that this active prompt bias wins when several prompt enchantments are available.</PawnDiary.Settings.Adv.Help.promptWeight>
+  <PawnDiary.Settings.Adv.Help.normalPromptWeightMultiplier>Multiplier applied to ordinary health/mood prompt enchantments while this active bias is present. 0 suppresses them; 1 leaves them unchanged.</PawnDiary.Settings.Adv.Help.normalPromptWeightMultiplier>
+  <PawnDiary.Settings.Adv.Help.promptDecayTicks>Ticks over which this active prompt bias fades toward its decay floor. 0 disables decay.</PawnDiary.Settings.Adv.Help.promptDecayTicks>
+  <PawnDiary.Settings.Adv.Help.promptDecayMinMultiplier>Lowest multiplier after decay. It lowers this bias's weight and relaxes normal-context suppression back toward 1.</PawnDiary.Settings.Adv.Help.promptDecayMinMultiplier>
+  <PawnDiary.Settings.Adv.Help.maxActiveTicks>Observed conditions only: force-end after this many ticks even if live evidence remains. 0 disables the hard cap.</PawnDiary.Settings.Adv.Help.maxActiveTicks>
+  <PawnDiary.Settings.Adv.Help.restartCooldownTicks>Observed conditions only: after ending or force-stopping, block the same condition identity from restarting for this many ticks.</PawnDiary.Settings.Adv.Help.restartCooldownTicks>
+  <PawnDiary.Settings.Adv.Help.maxEvidenceLabels>Observed conditions only: most live evidence labels included in event/prompt context. 0 hides item labels.</PawnDiary.Settings.Adv.Help.maxEvidenceLabels>
+  <PawnDiary.Settings.Adv.Help.maxEvidenceChars>Observed conditions only: character cap for the combined live evidence label text.</PawnDiary.Settings.Adv.Help.maxEvidenceChars>
+  <PawnDiary.Settings.Adv.Help.maxEvidenceCount>Observed conditions only: cap matching evidence counted on one map before stopping the scan.</PawnDiary.Settings.Adv.Help.maxEvidenceCount>
+  <PawnDiary.Settings.Adv.Help.suppressWhenThingDefNames>Observed conditions only: one ThingDef defName per line. If any is spawned on the same map, this condition reports absent.</PawnDiary.Settings.Adv.Help.suppressWhenThingDefNames>
   <PawnDiary.Settings.Adv.Help.promptPriorityText>Plain priority phrase for this active prompt bias. Blank uses the XML translation default.</PawnDiary.Settings.Adv.Help.promptPriorityText>
   <PawnDiary.Settings.Adv.Help.promptConditionText>Plain condition phrase for this active prompt bias. Blank uses the XML translation default.</PawnDiary.Settings.Adv.Help.promptConditionText>
   <PawnDiary.Settings.Adv.Help.promptDescriptionText>Plain detail phrase folded into the active prompt bias. Blank uses XML.</PawnDiary.Settings.Adv.Help.promptDescriptionText>
@@ -806,7 +829,7 @@
   <PawnDiary.Event.ObservedCondition.Generic.start>{0} noticed {1}.</PawnDiary.Event.ObservedCondition.Generic.start>
   <PawnDiary.Event.ObservedCondition.Generic.end>{0} saw {1} pass.</PawnDiary.Event.ObservedCondition.Generic.end>
   <PawnDiary.Event.ObservedCondition.Generic.Instruction>write this as an ongoing observed condition about {0}; use only the supplied observable facts and keep the pawn's uncertainty clear</PawnDiary.Event.ObservedCondition.Generic.Instruction>
-  <PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>{0} found gray flesh in the colony: {1}.</PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>
+  <PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>{0} found evidence that something in the colony may be infecting and imitating people.</PawnDiary.Event.ObservedCondition.AnomalyGrayFleshEvidence.Start>
 
   <!-- Failure notes (recorded on the main thread; shown in the entry's debug block) -->
   <PawnDiary.Error.SkippedInitiatorFailed>Skipped because the initiator diary page failed to write.</PawnDiary.Error.SkippedInitiatorFailed>
@@ -935,11 +958,11 @@
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>a solar flare knocking out power</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Condition>
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>a solar flare has cut electrical power; everything electronic is dead until it passes, forcing the colony back to the basics</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Description>
   <PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>no power</PawnDiary.Prompt.ObservedCondition.SolarFlareActive.Cue.NoPower>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>override normal context with unresolved unease about the gray flesh</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>gray flesh still in the colony</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>gray flesh the pawn can actually see is still present in the colony and no one knows what it means; ordinary moments are quietly shadowed by that unease, without naming any hidden mechanic</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>visible gray flesh</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>
-  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>quiet dread</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>override normal context with paranoia about an unknown imitator infection</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>something may be infecting people and imitating them</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>the pawn fears that an unknown thing could be inside someone, infecting people and imitating familiar faces and voices; ordinary moments should feel tense, suspicious, and unsafe, without naming hidden mechanics or revealing who is infected</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Description>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>familiar faces feel suspect</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.GrayFlesh>
+  <PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>paranoia and fear</PawnDiary.Prompt.ObservedCondition.AnomalyGrayFleshEvidence.Cue.Unease>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>override normal context with the revealed metalhorror threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Priority>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>a metalhorror that has revealed itself</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>the hidden thing has finally shown itself and the danger is now open and immediate; write only what the pawn can see of the revealed threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>
