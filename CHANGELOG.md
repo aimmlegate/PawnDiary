@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-01
 
+- **Prompt settings menu labels shortened.** The Shared/event prompts picker now uses compact system
+  prompt names and hides internal event keys from event-prompt menu titles.
+- **Archived-page purge is now a direct debug action.** RimWorld's Debug Actions menu now exposes
+  `Pawn Diary > Purge archived entries for pawn...`, opening a pawn picker that clears only the
+  selected pawn's compact archive rows while leaving active hot diary events untouched.
+- **Diary tab pagination loading no longer flickers over quiet refreshes.** The tab now treats a
+  year-index build as a full blocking load only when no cached year index exists, so loading a
+  different year cannot make a same-pawn background refresh hide the pager or visible list.
 - **Diary arcs now start with arrival and continue from the prior ending.** Starting-colonist
   arrivals are flushed before any non-arrival capture on new games, and arrival refs are inserted at
   the front of a pawn's diary index if another startup entry already exists. First-person prompt

@@ -308,10 +308,10 @@
   <PawnDiary.Settings.RestoreEventPromptDefault>Вернуть запрос из XML</PawnDiary.Settings.RestoreEventPromptDefault>
   <PawnDiary.Settings.RestoreEventEnhancementDefault>Вернуть подсказку из XML</PawnDiary.Settings.RestoreEventEnhancementDefault>
   <PawnDiary.Settings.RestoreEventForcedModelDefault>Вернуть модель из XML</PawnDiary.Settings.RestoreEventForcedModelDefault>
-  <PawnDiary.Settings.SystemPromptDiary>Инструкция для дневниковых записей</PawnDiary.Settings.SystemPromptDiary>
-  <PawnDiary.Settings.SystemPromptReflection>Инструкция для итога дня</PawnDiary.Settings.SystemPromptReflection>
-  <PawnDiary.Settings.SystemPromptNeutral>Инструкция для нейтральной хроники</PawnDiary.Settings.SystemPromptNeutral>
-  <PawnDiary.Settings.SystemPromptTitle>Инструкция для заголовков</PawnDiary.Settings.SystemPromptTitle>
+  <PawnDiary.Settings.SystemPromptDiary>Дневниковые записи</PawnDiary.Settings.SystemPromptDiary>
+  <PawnDiary.Settings.SystemPromptReflection>Итог дня</PawnDiary.Settings.SystemPromptReflection>
+  <PawnDiary.Settings.SystemPromptNeutral>Нейтральная хроника</PawnDiary.Settings.SystemPromptNeutral>
+  <PawnDiary.Settings.SystemPromptTitle>Заголовки</PawnDiary.Settings.SystemPromptTitle>
   <PawnDiary.Settings.SystemPromptField>системная инструкция</PawnDiary.Settings.SystemPromptField>
   <PawnDiary.Settings.RestorePromptDefault>Вернуть из XML</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Изменено вручную</PawnDiary.Settings.PromptStatusCustomized>

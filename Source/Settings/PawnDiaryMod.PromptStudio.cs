@@ -343,11 +343,7 @@ namespace PawnDiary
 
         private static string EventPromptOptionLabel(DiaryEventPromptDef def)
         {
-            string label = EventPromptLabelForUi(def);
-            string key = EventPromptKeyForSettings(def);
-            return string.Equals(label, key, StringComparison.OrdinalIgnoreCase)
-                ? label
-                : label + " (" + key + ")";
+            return EventPromptLabelForUi(def);
         }
 
         private static string EventPromptLabelForUi(DiaryEventPromptDef def)

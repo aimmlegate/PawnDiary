@@ -439,7 +439,8 @@ The export writes every saved pawn diary page plus the backing event records to 
 under RimWorld's save-data folder, and copies the generated file path to the clipboard.
 
 Prompts is the single home for prompt text editing. Its **Shared/event prompts** subpage edits the
-four shared system prompts plus per-event prompt/enhancement/forced-model overrides. Its
+four shared system prompts plus per-event prompt/enhancement/forced-model overrides. Its prompt-type
+picker uses compact labels and keeps internal event keys out of the visible menu. Its
 **Prompt policy and weights** subpage exposes prompt-related XML from `DiaryPromptDef`,
 `DiaryPromptTemplateDef`, `DiaryPromptEnchantmentDef`, `DiaryHumorCueDef`,
 `DiaryEventWindowDef`, `DiaryObservedConditionDef`, `DiaryInteractionGroupDef`, and
@@ -499,10 +500,11 @@ the model/provenance footer, so players can regenerate that page with the curren
 pairwise pages rewrite both POVs when both are still eligible. Dev mode also shows pending/failure
 rows, raw prompt/status data, and copy buttons. Bulk dev actions live under RimWorld's Debug Actions
 menu as `Pawn Diary > Event test panel...`, which opens a sectioned dev panel for selecting a test
-pawn and partner. The panel has separate Events, Diary, and Fixtures sections and owns the former
-Diary tab action strip: a mock-page filler, per-pawn archive purge, the per-pawn persona picker,
-transient formatting preview buttons, real vanilla gameplay triggers, and prompt-only fixture
-batch/clear tools. The selected pawn,
+pawn and partner. The same debug category also exposes
+`Pawn Diary > Purge archived entries for pawn...` for direct per-pawn cleanup. The panel has separate
+Events, Diary, and Fixtures sections and owns the former Diary tab action strip: a mock-page filler,
+per-pawn archive purge, the per-pawn persona picker, transient formatting preview buttons, real
+vanilla gameplay triggers, and prompt-only fixture batch/clear tools. The selected pawn,
 partner, active section, per-section scroll, selected trigger Def names, and selected fixture IDs are
 saved on `DiaryGameComponent`, so the panel state survives closing/reopening and normal save/load.
 Real trigger buttons cover paths that Pawn Diary patches, such as thoughts, inspirations, mental
@@ -529,7 +531,9 @@ pages shows a loading panel instead of freezing the game. The loading panel repo
 phase only when no usable cached list exists yet: first open, uncached pawn switch, or opening a year
 with no cached cards. The tab keeps a small LRU of loaded pawn views so returning to a recent pawn
 restores its visible list instead of rebuilding from zero. Same-pawn index refreshes and selected-year
-card refreshes build quietly behind the currently visible list. Once a year is visible, same-year data
+card refreshes build quietly behind the currently visible list; the full-tab index loading gate is
+based on the absence of a cached year index, not on the selected-year card-loading flag, so pagination
+cannot make a quiet refresh flash the blocking loading panel. Once a year is visible, same-year data
 and layout refreshes, including completed generation/title updates, scroll, highlight refreshes, and
 collapse/expand, rebuild row offsets in place instead of returning to the loading panel; loaded large
 years seed the clicked card's current blend so the clicked card can still animate open or closed.
@@ -767,10 +771,12 @@ node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 ```
 
 Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridge/GABS. RimWorld dev
-mode's Debug Actions menu exposes `Pawn Diary > Event test panel...` for common real trigger paths:
-select an eligible colonist, optionally select a partner, open the Events section, left-click a
-Def-backed row to trigger it, or right-click it first to choose a different Def; the row title updates
-to the selected menu label. Some buttons deliberately mutate the disposable save, such as spawning a
+mode's Debug Actions menu exposes `Pawn Diary > Event test panel...` for common real trigger paths
+and `Pawn Diary > Purge archived entries for pawn...` for a direct pawn picker that clears only that
+pawn's compact archived pages. In the event panel, select an eligible colonist, optionally select a
+partner, open the Events section, left-click a Def-backed row to trigger it, or right-click it first
+to choose a different Def; the row title updates to the selected menu label. Some buttons
+deliberately mutate the disposable save, such as spawning a
 recruit, killing a test colonist, creating a raid, or
 accepting/completing a sample quest. For Diary UI stress checks, use the same panel's Diary section to
 fill mock pages, switch personas, or open transient card previews. For prompt shape checks that do not

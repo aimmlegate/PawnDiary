@@ -108,7 +108,14 @@ namespace PawnDiary
 
             public bool IsIndexLoading
             {
-                get { return cachedIndexBuild != null && loading; }
+                get
+                {
+                    // A year-index build blocks the whole tab only when there is no previous index to
+                    // draw from. Same-pawn refreshes keep the old index visible while the new one is
+                    // sliced in the background, so selected-year pagination cannot accidentally turn a
+                    // quiet refresh into a full loading-panel flicker.
+                    return cachedIndexBuild != null && cachedIndex == null;
+                }
             }
 
             public int LoadingProcessed

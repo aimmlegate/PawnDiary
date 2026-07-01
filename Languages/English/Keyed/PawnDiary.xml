@@ -315,10 +315,10 @@
   <PawnDiary.Settings.RestoreEventPromptDefault>Restore prompt</PawnDiary.Settings.RestoreEventPromptDefault>
   <PawnDiary.Settings.RestoreEventEnhancementDefault>Restore enhancement</PawnDiary.Settings.RestoreEventEnhancementDefault>
   <PawnDiary.Settings.RestoreEventForcedModelDefault>Restore model</PawnDiary.Settings.RestoreEventForcedModelDefault>
-  <PawnDiary.Settings.SystemPromptDiary>Diary entries system prompt</PawnDiary.Settings.SystemPromptDiary>
-  <PawnDiary.Settings.SystemPromptReflection>Day reflection system prompt</PawnDiary.Settings.SystemPromptReflection>
-  <PawnDiary.Settings.SystemPromptNeutral>Neutral chronicle system prompt</PawnDiary.Settings.SystemPromptNeutral>
-  <PawnDiary.Settings.SystemPromptTitle>Title generation system prompt</PawnDiary.Settings.SystemPromptTitle>
+  <PawnDiary.Settings.SystemPromptDiary>Diary entries</PawnDiary.Settings.SystemPromptDiary>
+  <PawnDiary.Settings.SystemPromptReflection>Day reflection</PawnDiary.Settings.SystemPromptReflection>
+  <PawnDiary.Settings.SystemPromptNeutral>Neutral chronicle</PawnDiary.Settings.SystemPromptNeutral>
+  <PawnDiary.Settings.SystemPromptTitle>Titles</PawnDiary.Settings.SystemPromptTitle>
   <PawnDiary.Settings.SystemPromptField>system prompt</PawnDiary.Settings.SystemPromptField>
   <PawnDiary.Settings.RestorePromptDefault>Restore XML default</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Customized from the XML default</PawnDiary.Settings.PromptStatusCustomized>
