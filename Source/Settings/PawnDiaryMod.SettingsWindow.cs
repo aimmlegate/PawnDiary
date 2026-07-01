@@ -1,5 +1,6 @@
 // Top-level settings-window layout for Pawn Diary. Detail renderers live in the sibling partial
-// files so the RimWorld Mod entry point is not also one monolithic IMGUI class.
+// files so the RimWorld Mod entry point is not also one monolithic IMGUI class. The window has four
+// top-level pages: Main, Prompts, Styles, and Tuning.
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -15,9 +16,15 @@ namespace PawnDiary
         private string maxArchivedDiaryEventsBuffer;
         private int maxArchivedDiaryEventsBufferValue = -1;
 
+        // Height of our settings tab button row above the page content. This is intentionally NOT
+        // RimWorld's TabDrawer: TabDrawer tabs overhang their rect and can collide with the dialog
+        // title in this settings window. A plain button row gives exact layout control.
+        private const float SettingsTabHeight = 32f;
+
         /// <summary>
-        /// Draws the full settings window: API lanes, generation controls, the prompt-text studio,
-        /// and the writing-style preset editor.
+        /// Draws the settings window behind a compact tab button row.
+        /// Main holds connection/generation basics, Prompts holds all prompt editing, Styles holds
+        /// writing-style editing, and Tuning holds low-level XML parameters.
         /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
@@ -25,6 +32,76 @@ namespace PawnDiary
             Settings.personaPresets.EnsureList();
             // Apply any completed async API-tool results on the main thread before drawing rows.
             apiConnectionController.ApplyPendingResults();
+
+            Rect pageRect = DrawSettingsTabButtons(inRect);
+            switch (settingsTab)
+            {
+                case PawnDiarySettingsTab.Prompts:
+                    DrawPromptSettingsTab(pageRect);
+                    return;
+                case PawnDiarySettingsTab.Styles:
+                    DrawStyleSettingsTab(pageRect);
+                    return;
+                case PawnDiarySettingsTab.Tuning:
+                    DrawAdvancedTab(pageRect, AdvancedFieldCategory.Tuning);
+                    return;
+                default:
+                    DrawMainTab(pageRect);
+                    return;
+            }
+        }
+
+        /// <summary>Draws top-level settings tabs as plain RimWorld list buttons.</summary>
+        private Rect DrawSettingsTabButtons(Rect inRect)
+        {
+            float x = inRect.x;
+            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Main, "PawnDiary.Settings.Tab.Main");
+            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Prompts, "PawnDiary.Settings.Tab.Prompts");
+            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Styles, "PawnDiary.Settings.Tab.Styles");
+            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Tuning, "PawnDiary.Settings.Tab.Tuning");
+
+            return new Rect(
+                inRect.x,
+                inRect.y + SettingsTabHeight + 4f,
+                inRect.width,
+                inRect.height - SettingsTabHeight - 4f);
+        }
+
+        private void DrawSettingsTabButton(ref float x, float y, PawnDiarySettingsTab tab, string labelKey)
+        {
+            string label = labelKey.Translate().ToString();
+            float width = Mathf.Max(110f, Text.CalcSize(label).x + 28f);
+            Rect rect = new Rect(x, y, width, SettingsTabHeight);
+            if (settingsTab == tab)
+            {
+                Widgets.DrawHighlightSelected(rect);
+            }
+            else
+            {
+                Widgets.DrawHighlightIfMouseover(rect);
+            }
+
+            TextAnchor previousAnchor = Text.Anchor;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(rect, label);
+            Text.Anchor = previousAnchor;
+
+            if (Widgets.ButtonInvisible(rect))
+            {
+                settingsTab = tab;
+                advancedFilter = string.Empty;
+            }
+
+            x += width + 4f;
+        }
+
+        /// <summary>
+        /// Main settings page: API lanes and generation basics only. Prompt text and writing-style
+        /// editing live on their own tabs so the user does not see overlapping editor surfaces.
+        /// </summary>
+        private void DrawMainTab(Rect inRect)
+        {
+            Settings.EnsureEndpointsList();
 
             Rect outRect = inRect;
             // Self-measuring scroll height: render the content, then remember how tall it actually
@@ -85,8 +162,6 @@ namespace PawnDiary
                 DrawMaxActiveDiaryEventsField(listing);
                 DrawMaxArchivedDiaryEventsField(listing);
 
-                DrawPromptStudio(listing);
-                DrawPersonaStudio(listing);
             }
             finally
             {
@@ -98,6 +173,118 @@ namespace PawnDiary
             lastSettingsContentHeight = Mathf.Max(listing.CurHeight + 24f, inRect.height);
             settingsScrollPosition.y = Mathf.Clamp(settingsScrollPosition.y, 0f, Mathf.Max(0f, lastSettingsContentHeight - outRect.height));
             Settings.ClampValues();
+        }
+
+        /// <summary>
+        /// Prompts settings page. Shared/event prompt overrides and low-level template prompt text are
+        /// adjacent subpages, which keeps all prompt editing in one top-level destination.
+        /// </summary>
+        private void DrawPromptSettingsTab(Rect inRect)
+        {
+            Rect contentRect = DrawPromptSettingsPageButtons(inRect);
+            if (promptSettingsPage == PawnDiaryPromptSettingsPage.Templates)
+            {
+                DrawAdvancedTab(contentRect, AdvancedFieldCategory.Prompts);
+                return;
+            }
+
+            DrawSharedPromptSettingsPage(contentRect);
+        }
+
+        private Rect DrawPromptSettingsPageButtons(Rect inRect)
+        {
+            float x = inRect.x;
+            DrawPromptSettingsPageButton(ref x, inRect.y, PawnDiaryPromptSettingsPage.SharedAndEvents, "PawnDiary.Settings.PromptTab.SharedEvents");
+            DrawPromptSettingsPageButton(ref x, inRect.y, PawnDiaryPromptSettingsPage.Templates, "PawnDiary.Settings.PromptTab.Templates");
+
+            return new Rect(
+                inRect.x,
+                inRect.y + SettingsTabHeight + 4f,
+                inRect.width,
+                inRect.height - SettingsTabHeight - 4f);
+        }
+
+        private void DrawPromptSettingsPageButton(ref float x, float y, PawnDiaryPromptSettingsPage page, string labelKey)
+        {
+            string label = labelKey.Translate().ToString();
+            float width = Mathf.Max(150f, Text.CalcSize(label).x + 28f);
+            Rect rect = new Rect(x, y, width, SettingsTabHeight);
+            if (promptSettingsPage == page)
+            {
+                Widgets.DrawHighlightSelected(rect);
+            }
+            else
+            {
+                Widgets.DrawHighlightIfMouseover(rect);
+            }
+
+            TextAnchor previousAnchor = Text.Anchor;
+            Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(rect, label);
+            Text.Anchor = previousAnchor;
+
+            if (Widgets.ButtonInvisible(rect))
+            {
+                promptSettingsPage = page;
+                advancedFilter = string.Empty;
+            }
+
+            x += width + 4f;
+        }
+
+        private void DrawSharedPromptSettingsPage(Rect inRect)
+        {
+            Rect outRect = inRect;
+            float viewHeight = Mathf.Max(lastPromptSettingsContentHeight, inRect.height);
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight);
+            Listing_Standard listing = new Listing_Standard();
+            Widgets.BeginScrollView(outRect, ref promptSettingsScrollPosition, viewRect);
+            listing.Begin(viewRect);
+            try
+            {
+                listing.Gap(4f);
+                DrawPromptStudio(listing, false);
+            }
+            finally
+            {
+                listing.End();
+                Widgets.EndScrollView();
+            }
+
+            lastPromptSettingsContentHeight = Mathf.Max(listing.CurHeight + 24f, inRect.height);
+            promptSettingsScrollPosition.y = Mathf.Clamp(
+                promptSettingsScrollPosition.y,
+                0f,
+                Mathf.Max(0f, lastPromptSettingsContentHeight - outRect.height));
+        }
+
+        /// <summary>Writing-style settings page, separated from prompt text editing.</summary>
+        private void DrawStyleSettingsTab(Rect inRect)
+        {
+            Settings.personaPresets.EnsureList();
+
+            Rect outRect = inRect;
+            float viewHeight = Mathf.Max(lastStyleSettingsContentHeight, inRect.height);
+            Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, viewHeight);
+            Listing_Standard listing = new Listing_Standard();
+            Widgets.BeginScrollView(outRect, ref styleSettingsScrollPosition, viewRect);
+            listing.Begin(viewRect);
+            try
+            {
+                listing.Gap(4f);
+                DrawPersonaStudio(listing);
+            }
+            finally
+            {
+                listing.End();
+                Widgets.EndScrollView();
+            }
+
+            lastStyleSettingsContentHeight = Mathf.Max(listing.CurHeight + 24f, inRect.height);
+            styleSettingsScrollPosition.y = Mathf.Clamp(
+                styleSettingsScrollPosition.y,
+                0f,
+                Mathf.Max(0f, lastStyleSettingsContentHeight - outRect.height));
         }
 
         /// <summary>
@@ -226,15 +413,12 @@ namespace PawnDiary
                 height += 34f; // compact summary
             }
 
-            // Generation controls, compact prompt studio, and writing-style preset studio.
+            // Generation controls only. Prompt and style editors live on dedicated tabs.
             height += 343f;
             if (Prefs.DevMode)
             {
                 height += 62f;
             }
-
-            height += Settings.showPromptStudio ? 492f : 44f;
-            height += 460f + PersonaTagPickerHeight();
 
             return height + 120f; // breathing room for translated labels and RimWorld skin variance
         }

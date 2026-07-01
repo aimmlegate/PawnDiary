@@ -42,7 +42,7 @@ Workshop payload omits source code and other development-only folders.
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
-| `Source/Settings/` | Saved settings, API lane UI/controller, Prompt Studio, Writing Style Studio. |
+| `Source/Settings/` | Saved settings, API lane UI/controller, prompt/style editors, XML tuning/template override tabs. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
@@ -400,12 +400,47 @@ scan. Bad title responses are rejected and fall back to the opening words of the
 
 ## 7. Settings And UI
 
-Main settings cover API lanes, routing mode, request tuning, title generation, atmospheric
-formatting, prompt enchantments, one shared random-generation weight for optional chance-gated pages,
-the active diary-event cap, event filters, prompt overrides, and writing style presets. Dev mode
-exposes prompt-test mode, a full diary export button, and extra diagnostics. The export writes every
-saved pawn diary page plus the backing event records to `PawnDiaryExports/` under RimWorld's
-save-data folder, and copies the generated file path to the clipboard.
+The settings window is split into **Main**, **Prompts**, **Styles**, and **Tuning** tabs. Main covers
+API lanes, routing mode, request tuning, title generation, atmospheric formatting, prompt
+enchantments, one shared random-generation weight for optional chance-gated pages, and diary-event
+retention caps. Dev mode exposes prompt-test mode, a full diary export button, and extra diagnostics.
+The export writes every saved pawn diary page plus the backing event records to `PawnDiaryExports/`
+under RimWorld's save-data folder, and copies the generated file path to the clipboard.
+
+Prompts is the single home for prompt text editing. Its **Shared/event prompts** subpage edits the
+four shared system prompts plus per-event prompt/enhancement/forced-model overrides. Its
+**Prompt policy and weights** subpage exposes prompt-related XML from `DiaryPromptDef`,
+`DiaryPromptTemplateDef`, `DiaryPromptEnchantmentDef`, `DiaryHumorCueDef`,
+`DiaryEventWindowDef`, `DiaryObservedConditionDef`, `DiaryInteractionGroupDef`, and
+`DiaryHediffPersonaOverrideDef`. That includes template prompt text, final instructions,
+template field lists, include/exclude prompt switches, per-template token caps, prompt cue keys,
+prompt weights, event-window/observed-condition prompt biasing, group instructions/tone variants,
+batch/promotion weights, humor cue rules/weights, and hediff-driven writing-style override policy.
+Blank template prompt fields display their effective shared prompt text instead of an empty editor.
+Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
+
+Tuning is the low-level XML parameter editor. Tuning and the Prompt tab's policy/weights subpage share
+a compact two-pane editor: a left rail of groups and a right body that draws one widget per field type
+-- checkbox, slider, numeric text, single-line text, or multi-line text/list/table area -- with
+per-field and per-group reset, accent coloring for customized values, a name filter that flattens the
+rail into a search view, and rich tooltips that combine authored help with the live value, XML default,
+range, and customized status. Tuning contains XML-owned parameters (dedup windows, ability sampling,
+surroundings, weather chances, ritual quality labels, mood-condition families, health/enchantment
+thresholds, mood/pain/opinion buckets, thought token lists, thought progression rules, scanner
+intervals, work sampling, day/quadrum/arc reflection weights, signal policies, context reactions).
+Field labels span the full row width so long names never clip. The catalog (`AdvancedFieldCatalog`)
+is declarative and drives both the UI and the runtime override seam.
+
+Overrides persist per player in `TuningOverrideStore` (a typed twin of `PromptOverrideDictionary`) and
+take effect immediately by writing straight into the live Def instance fields via cached reflection or
+small custom accessors for nested policy objects. Every existing `DiaryTuning.Current.field` /
+`def.field` reader picks the new value up with no call-site changes; pristine XML defaults are
+snapshotted once before the first override so Reset can restore them (signal/context `-1` "inherit
+tuning" sentinels and `<null>` list inheritance markers are preserved). Simple lists use one item per
+line. Compact tables use these line formats: `WeatherDef=chance`, `maxExclusive=ritualQualityLabel`,
+`enabled|label|source|contextKey` for prompt fields, `level|chance|frequency|weight|severity` for
+prompt-enchantment severity tiers, and `category|ThoughtDef|stageIndex:severity,...` for thought
+progression rules. Structural non-prompt UI and text-decoration XML remains XML-only.
 
 The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
 appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can

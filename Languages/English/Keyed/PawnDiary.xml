@@ -214,7 +214,7 @@
   <PawnDiary.Settings.Category>Pawn Diary</PawnDiary.Settings.Category>
   <PawnDiary.Settings.Connection>Connection</PawnDiary.Settings.Connection>
   <PawnDiary.Settings.GenerationHeader>Diary writing</PawnDiary.Settings.GenerationHeader>
-  <PawnDiary.Settings.ApisHeader>APIs — enabled rows run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
+  <PawnDiary.Settings.ApisHeader>APIs - enabled rows run in parallel (one model each; add more rows for more models)</PawnDiary.Settings.ApisHeader>
   <PawnDiary.Settings.ShowModelSettings>Show models</PawnDiary.Settings.ShowModelSettings>
   <PawnDiary.Settings.HideModelSettings>Hide models</PawnDiary.Settings.HideModelSettings>
   <PawnDiary.Settings.ApisSummary>{0} enabled of {1} configured model rows</PawnDiary.Settings.ApisSummary>
@@ -223,7 +223,7 @@
   <PawnDiary.Settings.MoveApiUp>Up</PawnDiary.Settings.MoveApiUp>
   <PawnDiary.Settings.MoveApiDown>Down</PawnDiary.Settings.MoveApiDown>
   <PawnDiary.Settings.AddApi>+ Add API</PawnDiary.Settings.AddApi>
-  <PawnDiary.Settings.RemoveApi>− Remove</PawnDiary.Settings.RemoveApi>
+  <PawnDiary.Settings.RemoveApi>- Remove</PawnDiary.Settings.RemoveApi>
   <PawnDiary.Settings.Endpoint>Endpoint</PawnDiary.Settings.Endpoint>
   <PawnDiary.Settings.ApiKey>API key</PawnDiary.Settings.ApiKey>
   <PawnDiary.Settings.RevealApiKey>Show</PawnDiary.Settings.RevealApiKey>
@@ -297,10 +297,10 @@
   <PawnDiary.Settings.MaxConcurrent>Max concurrent requests per API: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>How many requests may be in flight at once on each API; the rest wait in that API's queue. Different APIs always run in parallel, so adding more APIs above speeds up bursts. Use 1 for a single local model that handles one request at a time; raise it only if an endpoint serves requests in parallel.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Reset connection</PawnDiary.Settings.ResetConnection>
-  <PawnDiary.Settings.PromptStudioTitle>Prompt Studio</PawnDiary.Settings.PromptStudioTitle>
+  <PawnDiary.Settings.PromptStudioTitle>Shared and event prompts</PawnDiary.Settings.PromptStudioTitle>
   <PawnDiary.Settings.ShowPromptStudio>Show prompts</PawnDiary.Settings.ShowPromptStudio>
   <PawnDiary.Settings.HidePromptStudio>Hide prompts</PawnDiary.Settings.HidePromptStudio>
-  <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts, per-event prompt guidance, and optional event model routing. Prompt templates, final instructions, and event filters stay in XML defs.</PawnDiary.Settings.PromptStudioHelp>
+  <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts, per-event prompt guidance, and optional event model routing. Use Prompt policy and weights for templates, field lists, prompt cues, and prompt-weight tuning.</PawnDiary.Settings.PromptStudioHelp>
   <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates and {1} event prompt types loaded; {2} event types customized in settings</PawnDiary.Settings.PromptStudioSummary>
   <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and writing-style catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
   <PawnDiary.Settings.ResetEventPromptOverrides>Restore event defaults</PawnDiary.Settings.ResetEventPromptOverrides>
@@ -350,6 +350,238 @@
   <PawnDiary.Settings.PersonaTag.void>void</PawnDiary.Settings.PersonaTag.void>
   <PawnDiary.Settings.PickModel>Pick</PawnDiary.Settings.PickModel>
   <PawnDiary.Settings.NoModelsYet>No models fetched yet</PawnDiary.Settings.NoModelsYet>
+
+  <!-- ===== Advanced settings tab (XML Def tuning overrides) ===== -->
+  <PawnDiary.Settings.Tab.Main>Main</PawnDiary.Settings.Tab.Main>
+  <PawnDiary.Settings.Tab.Advanced>Advanced</PawnDiary.Settings.Tab.Advanced>
+  <PawnDiary.Settings.Tab.Tuning>Tuning</PawnDiary.Settings.Tab.Tuning>
+  <PawnDiary.Settings.Tab.Prompts>Prompts</PawnDiary.Settings.Tab.Prompts>
+  <PawnDiary.Settings.Tab.Styles>Styles</PawnDiary.Settings.Tab.Styles>
+  <PawnDiary.Settings.PromptTab.SharedEvents>Shared/event prompts</PawnDiary.Settings.PromptTab.SharedEvents>
+  <PawnDiary.Settings.PromptTab.Templates>Prompt policy and weights</PawnDiary.Settings.PromptTab.Templates>
+  <PawnDiary.Settings.Adv.Summary>{0} value(s) customized from XML defaults.</PawnDiary.Settings.Adv.Summary>
+  <PawnDiary.Settings.Adv.Filter>Filter</PawnDiary.Settings.Adv.Filter>
+  <PawnDiary.Settings.Adv.ResetAll>Reset all</PawnDiary.Settings.Adv.ResetAll>
+  <PawnDiary.Settings.Adv.ResetShort>Reset</PawnDiary.Settings.Adv.ResetShort>
+  <PawnDiary.Settings.Adv.ResetGroup>Reset group</PawnDiary.Settings.Adv.ResetGroup>
+  <PawnDiary.Settings.Adv.ResetFieldTip>Restore this field's XML default.</PawnDiary.Settings.Adv.ResetFieldTip>
+  <PawnDiary.Settings.Adv.FilterResults>{0} matching field(s)</PawnDiary.Settings.Adv.FilterResults>
+  <PawnDiary.Settings.Adv.Group.Dedup>Deduplication windows</PawnDiary.Settings.Adv.Group.Dedup>
+  <PawnDiary.Settings.Adv.Group.Ability>Ability sampling</PawnDiary.Settings.Adv.Group.Ability>
+  <PawnDiary.Settings.Adv.Group.RitualQuality>Ritual quality labels</PawnDiary.Settings.Adv.Group.RitualQuality>
+  <PawnDiary.Settings.Adv.Group.Surroundings>Surroundings scan</PawnDiary.Settings.Adv.Group.Surroundings>
+  <PawnDiary.Settings.Adv.Group.Weather>Weather mention fallbacks</PawnDiary.Settings.Adv.Group.Weather>
+  <PawnDiary.Settings.Adv.Group.Health>Health thresholds</PawnDiary.Settings.Adv.Group.Health>
+  <PawnDiary.Settings.Adv.Group.Enchantment>Prompt enchantment tuning</PawnDiary.Settings.Adv.Group.Enchantment>
+  <PawnDiary.Settings.Adv.Group.Consciousness>Consciousness gates</PawnDiary.Settings.Adv.Group.Consciousness>
+  <PawnDiary.Settings.Adv.Group.Buckets>Beauty / mood / pain / opinion</PawnDiary.Settings.Adv.Group.Buckets>
+  <PawnDiary.Settings.Adv.Group.Thought>Thought thresholds</PawnDiary.Settings.Adv.Group.Thought>
+  <PawnDiary.Settings.Adv.Group.Scanners>Scanner intervals</PawnDiary.Settings.Adv.Group.Scanners>
+  <PawnDiary.Settings.Adv.Group.Work>Work sampling</PawnDiary.Settings.Adv.Group.Work>
+  <PawnDiary.Settings.Adv.Group.DayReflection>Day reflection</PawnDiary.Settings.Adv.Group.DayReflection>
+  <PawnDiary.Settings.Adv.Group.Quadrum>Quadrum reflection</PawnDiary.Settings.Adv.Group.Quadrum>
+  <PawnDiary.Settings.Adv.Group.Arc>Arc reflection</PawnDiary.Settings.Adv.Group.Arc>
+  <PawnDiary.Settings.Adv.Group.Misc>Misc tuning</PawnDiary.Settings.Adv.Group.Misc>
+  <PawnDiary.Settings.Adv.Group.SignalThought>Signal: Thought</PawnDiary.Settings.Adv.Group.SignalThought>
+  <PawnDiary.Settings.Adv.Group.SignalAmbient>Signal: Ambient thought</PawnDiary.Settings.Adv.Group.SignalAmbient>
+  <PawnDiary.Settings.Adv.Group.SignalProgression>Signal: Thought progression</PawnDiary.Settings.Adv.Group.SignalProgression>
+  <PawnDiary.Settings.Adv.Group.SignalWork>Signal: Work</PawnDiary.Settings.Adv.Group.SignalWork>
+  <PawnDiary.Settings.Adv.Group.SignalPawn>Signal: Pawn progression</PawnDiary.Settings.Adv.Group.SignalPawn>
+  <PawnDiary.Settings.Adv.Group.CtxConditions>Context: Active map conditions</PawnDiary.Settings.Adv.Group.CtxConditions>
+  <PawnDiary.Settings.Adv.Group.CtxThreat>Context: Recent threat letter</PawnDiary.Settings.Adv.Group.CtxThreat>
+  <PawnDiary.Settings.Adv.Group.PromptDefaults>Shared prompt instructions</PawnDiary.Settings.Adv.Group.PromptDefaults>
+  <PawnDiary.Settings.Adv.Group.TmplPairDefault>Template: Pair (default)</PawnDiary.Settings.Adv.Group.TmplPairDefault>
+  <PawnDiary.Settings.Adv.Group.TmplPairImportant>Template: Pair (important)</PawnDiary.Settings.Adv.Group.TmplPairImportant>
+  <PawnDiary.Settings.Adv.Group.TmplPairCombat>Template: Pair (combat)</PawnDiary.Settings.Adv.Group.TmplPairCombat>
+  <PawnDiary.Settings.Adv.Group.TmplPairBatched>Template: Pair (batched)</PawnDiary.Settings.Adv.Group.TmplPairBatched>
+  <PawnDiary.Settings.Adv.Group.TmplSoloDefault>Template: Solo (default)</PawnDiary.Settings.Adv.Group.TmplSoloDefault>
+  <PawnDiary.Settings.Adv.Group.TmplSoloImportant>Template: Solo (important)</PawnDiary.Settings.Adv.Group.TmplSoloImportant>
+  <PawnDiary.Settings.Adv.Group.TmplSoloInternal>Template: Solo (internal state)</PawnDiary.Settings.Adv.Group.TmplSoloInternal>
+  <PawnDiary.Settings.Adv.Group.TmplSoloBatched>Template: Solo (batched)</PawnDiary.Settings.Adv.Group.TmplSoloBatched>
+  <PawnDiary.Settings.Adv.Group.TmplDayReflection>Template: Day reflection</PawnDiary.Settings.Adv.Group.TmplDayReflection>
+  <PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>Template: Quadrum reflection</PawnDiary.Settings.Adv.Group.TmplQuadrumReflection>
+  <PawnDiary.Settings.Adv.Group.TmplArcReflection>Template: Arc reflection</PawnDiary.Settings.Adv.Group.TmplArcReflection>
+  <PawnDiary.Settings.Adv.Group.TmplDeath>Template: Death description</PawnDiary.Settings.Adv.Group.TmplDeath>
+  <PawnDiary.Settings.Adv.Group.TmplArrival>Template: Arrival description</PawnDiary.Settings.Adv.Group.TmplArrival>
+  <PawnDiary.Settings.Adv.Group.TmplTitle>Template: Title</PawnDiary.Settings.Adv.Group.TmplTitle>
+
+  <!-- Advanced tooltip helpers (current value / XML default / range / status) -->
+  <PawnDiary.Settings.Adv.TipCurrent>Current: {0}</PawnDiary.Settings.Adv.TipCurrent>
+  <PawnDiary.Settings.Adv.TipDefault>XML default: {0}</PawnDiary.Settings.Adv.TipDefault>
+  <PawnDiary.Settings.Adv.TipRange>Range: {0} to {1}</PawnDiary.Settings.Adv.TipRange>
+  <PawnDiary.Settings.Adv.TipCustomized>Customized (overrides XML)</PawnDiary.Settings.Adv.TipCustomized>
+  <PawnDiary.Settings.Adv.TipXmlDefault>Using the XML default</PawnDiary.Settings.Adv.TipXmlDefault>
+
+  <!-- Advanced group help (rail + body header tooltips) -->
+  <PawnDiary.Settings.Adv.GroupHelp.Dedup>How long before the same event source can record again. 60 ticks is about 1 second; 2500 is about 1 in-game hour.</PawnDiary.Settings.Adv.GroupHelp.Dedup>
+  <PawnDiary.Settings.Adv.GroupHelp.Ability>How ability activations are sampled for diary entries, scaling by cooldown.</PawnDiary.Settings.Adv.GroupHelp.Ability>
+  <PawnDiary.Settings.Adv.GroupHelp.RitualQuality>Maps ritual progress values to compact prompt labels. One row per band: maxExclusive=label.</PawnDiary.Settings.Adv.GroupHelp.RitualQuality>
+  <PawnDiary.Settings.Adv.GroupHelp.Surroundings>How the pawn's immediate area (temperature, notable things) is scanned.</PawnDiary.Settings.Adv.GroupHelp.Surroundings>
+  <PawnDiary.Settings.Adv.GroupHelp.Weather>Fallback weather-mention chances for weather not listed explicitly in XML.</PawnDiary.Settings.Adv.GroupHelp.Weather>
+  <PawnDiary.Settings.Adv.GroupHelp.Health>Thresholds that gate which pain, bleeding, and capacity states are worth recording.</PawnDiary.Settings.Adv.GroupHelp.Health>
+  <PawnDiary.Settings.Adv.GroupHelp.Enchantment>Severity bands and cue cap for the optional 'important context' prompt line.</PawnDiary.Settings.Adv.GroupHelp.Enchantment>
+  <PawnDiary.Settings.Adv.GroupHelp.Consciousness>The first-person authorship gate and the handwriting-distortion intensity bands.</PawnDiary.Settings.Adv.GroupHelp.Consciousness>
+  <PawnDiary.Settings.Adv.GroupHelp.Buckets>Thresholds that bucket beauty, mood, pain, and opinion into wording.</PawnDiary.Settings.Adv.GroupHelp.Buckets>
+  <PawnDiary.Settings.Adv.GroupHelp.Thought>Magnitude and ambient-collection thresholds for temporary thoughts.</PawnDiary.Settings.Adv.GroupHelp.Thought>
+  <PawnDiary.Settings.Adv.GroupHelp.Scanners>How often the periodic background scanners run.</PawnDiary.Settings.Adv.GroupHelp.Scanners>
+  <PawnDiary.Settings.Adv.GroupHelp.Work>Sampling chances and cooldowns for work (which has no one-shot event hook).</PawnDiary.Settings.Adv.GroupHelp.Work>
+  <PawnDiary.Settings.Adv.GroupHelp.DayReflection>End-of-day summary master toggle, highlight cap, weights, and gates.</PawnDiary.Settings.Adv.GroupHelp.DayReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.Quadrum>Rare long reflection near the end of each quadrum, staggered across colonists.</PawnDiary.Settings.Adv.GroupHelp.Quadrum>
+  <PawnDiary.Settings.Adv.GroupHelp.Arc>Rare yearly arc reflections sampled from past diary memories.</PawnDiary.Settings.Adv.GroupHelp.Arc>
+  <PawnDiary.Settings.Adv.GroupHelp.Misc>Miscellaneous display, UI budget, and age gates.</PawnDiary.Settings.Adv.GroupHelp.Misc>
+  <PawnDiary.Settings.Adv.GroupHelp.SignalThought>Signal policy for temporary ThoughtDef recording. A value of -1 inherits the DiaryTuning default.</PawnDiary.Settings.Adv.GroupHelp.SignalThought>
+  <PawnDiary.Settings.Adv.GroupHelp.SignalAmbient>Signal policy for batching low-stakes ambient thoughts into one day note.</PawnDiary.Settings.Adv.GroupHelp.SignalAmbient>
+  <PawnDiary.Settings.Adv.GroupHelp.SignalProgression>Signal policy for the situational-need scanner (food/rest/outdoors/chemical).</PawnDiary.Settings.Adv.GroupHelp.SignalProgression>
+  <PawnDiary.Settings.Adv.GroupHelp.SignalWork>Signal policy for work sampling.</PawnDiary.Settings.Adv.GroupHelp.SignalWork>
+  <PawnDiary.Settings.Adv.GroupHelp.SignalPawn>Signal policy for the slow pawn-progression scanner.</PawnDiary.Settings.Adv.GroupHelp.SignalPawn>
+  <PawnDiary.Settings.Adv.GroupHelp.CtxConditions>How active map conditions become prompt and UI context.</PawnDiary.Settings.Adv.GroupHelp.CtxConditions>
+  <PawnDiary.Settings.Adv.GroupHelp.CtxThreat>How the freshest threat letter becomes prompt context.</PawnDiary.Settings.Adv.GroupHelp.CtxThreat>
+  <PawnDiary.Settings.Adv.GroupHelp.PromptDefaults>Final user instructions and the default writing-style defName. Shared system prompts stay on Shared/event prompts.</PawnDiary.Settings.Adv.GroupHelp.PromptDefaults>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplPairDefault>Prompt template for an ordinary two-pawn interaction. Blank text falls back to the shared defaults.</PawnDiary.Settings.Adv.GroupHelp.TmplPairDefault>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplPairImportant>Prompt template for an important two-pawn moment.</PawnDiary.Settings.Adv.GroupHelp.TmplPairImportant>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplPairCombat>Prompt template for two-pawn combat.</PawnDiary.Settings.Adv.GroupHelp.TmplPairCombat>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplPairBatched>Prompt template for several two-pawn moments folded into one entry.</PawnDiary.Settings.Adv.GroupHelp.TmplPairBatched>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplSoloDefault>Prompt template for an ordinary first-person solo entry.</PawnDiary.Settings.Adv.GroupHelp.TmplSoloDefault>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplSoloImportant>Prompt template for an important first-person solo entry.</PawnDiary.Settings.Adv.GroupHelp.TmplSoloImportant>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplSoloInternal>Prompt template for a solo entry about internal state (no external event).</PawnDiary.Settings.Adv.GroupHelp.TmplSoloInternal>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplSoloBatched>Prompt template for several solo moments folded into one entry.</PawnDiary.Settings.Adv.GroupHelp.TmplSoloBatched>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>Prompt template for the end-of-day reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplDayReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>Prompt template for the end-of-quadrum reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplQuadrumReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>Prompt template for the yearly arc reflection.</PawnDiary.Settings.Adv.GroupHelp.TmplArcReflection>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplDeath>Prompt template for the neutral death description.</PawnDiary.Settings.Adv.GroupHelp.TmplDeath>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplArrival>Prompt template for the neutral arrival description.</PawnDiary.Settings.Adv.GroupHelp.TmplArrival>
+  <PawnDiary.Settings.Adv.GroupHelp.TmplTitle>Prompt template for generating a short page title.</PawnDiary.Settings.Adv.GroupHelp.TmplTitle>
+
+  <!-- Advanced per-field help. Missing keys fall back to the dynamic value/default/range tooltip. -->
+  <PawnDiary.Settings.Adv.Help.socialFightDedupTicks>Within this window the mirrored social-fight record for the other participant is collapsed.</PawnDiary.Settings.Adv.Help.socialFightDedupTicks>
+  <PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>Same pawn + break is recorded once per this window.</PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>
+  <PawnDiary.Settings.Adv.Help.taleDedupTicks>Same TaleDef + pawn is recorded once per this window.</PawnDiary.Settings.Adv.Help.taleDedupTicks>
+  <PawnDiary.Settings.Adv.Help.moodEventDedupTicks>Same mood-event GameConditionDef is recorded once per colony per this window.</PawnDiary.Settings.Adv.Help.moodEventDedupTicks>
+  <PawnDiary.Settings.Adv.Help.thoughtDedupTicks>Same pawn + thought is recorded once per this window.</PawnDiary.Settings.Adv.Help.thoughtDedupTicks>
+  <PawnDiary.Settings.Adv.Help.romanceDedupTicks>Same romance relation change for a pawn pair is recorded once per this window.</PawnDiary.Settings.Adv.Help.romanceDedupTicks>
+  <PawnDiary.Settings.Adv.Help.raidDedupTicks>Same raid incident key is recorded once per this window.</PawnDiary.Settings.Adv.Help.raidDedupTicks>
+  <PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>Ordinary raids wait this many ticks before the LLM request so text can lean into the approach. Drop-pod raids and infestations bypass it.</PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>
+  <PawnDiary.Settings.Adv.Help.questDedupTicks>Same quest lifecycle signal is recorded once per this window.</PawnDiary.Settings.Adv.Help.questDedupTicks>
+  <PawnDiary.Settings.Adv.Help.ritualDedupTicks>Same ritual outcome is recorded once per this window.</PawnDiary.Settings.Adv.Help.ritualDedupTicks>
+  <PawnDiary.Settings.Adv.Help.abilityDedupTicks>Same ability activation is recorded once per this window.</PawnDiary.Settings.Adv.Help.abilityDedupTicks>
+  <PawnDiary.Settings.Adv.Help.abilityUseMinChance>Sampling chance for a no/short-cooldown ability.</PawnDiary.Settings.Adv.Help.abilityUseMinChance>
+  <PawnDiary.Settings.Adv.Help.abilityUseMaxChance>Sampling chance a long-cooldown ability approaches.</PawnDiary.Settings.Adv.Help.abilityUseMaxChance>
+  <PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>Cooldown at which the chance curve is roughly halfway between min and max.</PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>
+  <PawnDiary.Settings.Adv.Help.nearbyRadius>Cells searched around the pawn for notable nearby things.</PawnDiary.Settings.Adv.Help.nearbyRadius>
+  <PawnDiary.Settings.Adv.Help.maxNearbyThings>Cap on nearby candidates considered before the weighted pick.</PawnDiary.Settings.Adv.Help.maxNearbyThings>
+  <PawnDiary.Settings.Adv.Help.coldBelowC>Report 'cold' at or below this temperature (C).</PawnDiary.Settings.Adv.Help.coldBelowC>
+  <PawnDiary.Settings.Adv.Help.hotAboveC>Report 'hot' at or above this temperature (C).</PawnDiary.Settings.Adv.Help.hotAboveC>
+  <PawnDiary.Settings.Adv.Help.weatherChanceVeryBad>Fallback mention chance for very-bad-favorability weather not listed in XML.</PawnDiary.Settings.Adv.Help.weatherChanceVeryBad>
+  <PawnDiary.Settings.Adv.Help.weatherChanceBad>Fallback mention chance for bad-favorability weather.</PawnDiary.Settings.Adv.Help.weatherChanceBad>
+  <PawnDiary.Settings.Adv.Help.weatherChanceNeutral>Fallback mention chance for neutral-favorability weather.</PawnDiary.Settings.Adv.Help.weatherChanceNeutral>
+  <PawnDiary.Settings.Adv.Help.weatherChanceDefault>Fallback mention chance for any other weather.</PawnDiary.Settings.Adv.Help.weatherChanceDefault>
+  <PawnDiary.Settings.Adv.Help.painVisibleAbove>Report pain only above this fraction.</PawnDiary.Settings.Adv.Help.painVisibleAbove>
+  <PawnDiary.Settings.Adv.Help.bleedVisibleAbove>Report bleeding only above this rate.</PawnDiary.Settings.Adv.Help.bleedVisibleAbove>
+  <PawnDiary.Settings.Adv.Help.lowCapacityThreshold>Report a capacity only when below this level.</PawnDiary.Settings.Adv.Help.lowCapacityThreshold>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentMinorHediffSeverity>Hediff severity at/above which an enchantment reads as 'minor'.</PawnDiary.Settings.Adv.Help.promptEnchantmentMinorHediffSeverity>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentModerateHediffSeverity>Severity for 'moderate'.</PawnDiary.Settings.Adv.Help.promptEnchantmentModerateHediffSeverity>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentMajorHediffSeverity>Severity for 'major'.</PawnDiary.Settings.Adv.Help.promptEnchantmentMajorHediffSeverity>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentCriticalHediffSeverity>Severity for 'critical'.</PawnDiary.Settings.Adv.Help.promptEnchantmentCriticalHediffSeverity>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentCloudedConsciousnessBelow>Consciousness below this reads as 'clouded'.</PawnDiary.Settings.Adv.Help.promptEnchantmentCloudedConsciousnessBelow>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentFadingConsciousnessBelow>Consciousness below this reads as 'fading'.</PawnDiary.Settings.Adv.Help.promptEnchantmentFadingConsciousnessBelow>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentBarelyConsciousBelow>Consciousness below this reads as 'barely conscious'.</PawnDiary.Settings.Adv.Help.promptEnchantmentBarelyConsciousBelow>
+  <PawnDiary.Settings.Adv.Help.promptEnchantmentMaxImpactCues>Most impact-cue fragments kept in one prompt.</PawnDiary.Settings.Adv.Help.promptEnchantmentMaxImpactCues>
+  <PawnDiary.Settings.Adv.Help.minimumConsciousnessForFirstPersonGeneration>Pawns below this Consciousness do not write first-person entries (events still record).</PawnDiary.Settings.Adv.Help.minimumConsciousnessForFirstPersonGeneration>
+  <PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity4Below>Consciousness below this gives at least intensity-4 handwriting distortion.</PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity4Below>
+  <PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity3Below>Consciousness below this gives at least intensity-3 distortion.</PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity3Below>
+  <PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity2Below>Consciousness below this gives at least intensity-2 distortion.</PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity2Below>
+  <PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity1Below>Consciousness below this gives at least intensity-1 distortion.</PawnDiary.Settings.Adv.Help.staggeredConsciousnessIntensity1Below>
+  <PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity4At>Intoxicating-hediff severity at/above this gives intensity-4 distortion.</PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity4At>
+  <PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity3At>Severity for intensity-3 distortion.</PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity3At>
+  <PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity2At>Severity for intensity-2 distortion.</PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity2At>
+  <PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity1At>Severity for intensity-1 distortion.</PawnDiary.Settings.Adv.Help.intoxicationSeverityIntensity1At>
+  <PawnDiary.Settings.Adv.Help.beautyBeautiful>Beauty at/above this reads as 'beautiful'.</PawnDiary.Settings.Adv.Help.beautyBeautiful>
+  <PawnDiary.Settings.Adv.Help.beautyPleasant>Plus/minus threshold for the 'notable' beauty gate.</PawnDiary.Settings.Adv.Help.beautyPleasant>
+  <PawnDiary.Settings.Adv.Help.beautyUgly>Beauty at/below this reads as 'ugly'.</PawnDiary.Settings.Adv.Help.beautyUgly>
+  <PawnDiary.Settings.Adv.Help.moodHappy>Mood % at/above this reads as 'happy'.</PawnDiary.Settings.Adv.Help.moodHappy>
+  <PawnDiary.Settings.Adv.Help.moodStable>Mood % at/above this reads as 'stable'.</PawnDiary.Settings.Adv.Help.moodStable>
+  <PawnDiary.Settings.Adv.Help.moodStressed>Mood % at/above this reads as 'stressed' (below is worse).</PawnDiary.Settings.Adv.Help.moodStressed>
+  <PawnDiary.Settings.Adv.Help.painSevere>Pain fraction at/above this reads as 'severe'.</PawnDiary.Settings.Adv.Help.painSevere>
+  <PawnDiary.Settings.Adv.Help.painModerate>Pain fraction at/above this reads as 'moderate'.</PawnDiary.Settings.Adv.Help.painModerate>
+  <PawnDiary.Settings.Adv.Help.opinionDevoted>Opinion at/above this reads as 'devoted'.</PawnDiary.Settings.Adv.Help.opinionDevoted>
+  <PawnDiary.Settings.Adv.Help.opinionFriendly>Opinion at/above this reads as 'friendly'.</PawnDiary.Settings.Adv.Help.opinionFriendly>
+  <PawnDiary.Settings.Adv.Help.opinionNeutralAbove>Opinion above this reads as 'neutral' (else worse).</PawnDiary.Settings.Adv.Help.opinionNeutralAbove>
+  <PawnDiary.Settings.Adv.Help.opinionStrainedAbove>Opinion above this reads as 'strained' (else 'hostile').</PawnDiary.Settings.Adv.Help.opinionStrainedAbove>
+  <PawnDiary.Settings.Adv.Help.thoughtMinMoodOffset>Minimum |mood offset| for a general thought to be recorded.</PawnDiary.Settings.Adv.Help.thoughtMinMoodOffset>
+  <PawnDiary.Settings.Adv.Help.thoughtEatingMinMoodOffset>Minimum |mood offset| for an eating-related thought.</PawnDiary.Settings.Adv.Help.thoughtEatingMinMoodOffset>
+  <PawnDiary.Settings.Adv.Help.thoughtAmbientWindowTicks>Ambient temporary thoughts collect until the day changes or this quiet window passes.</PawnDiary.Settings.Adv.Help.thoughtAmbientWindowTicks>
+  <PawnDiary.Settings.Adv.Help.thoughtAmbientMinEventsToWrite>Drop ambient notes unless at least this many thoughts accumulated.</PawnDiary.Settings.Adv.Help.thoughtAmbientMinEventsToWrite>
+  <PawnDiary.Settings.Adv.Help.thoughtAmbientMaxSampleLines>Most ambient-thought evidence lines kept in one prompt.</PawnDiary.Settings.Adv.Help.thoughtAmbientMaxSampleLines>
+  <PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>How often the situational-need thought scanner runs.</PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>Same progression signal recorded once per this window.</PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>
+  <PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>How often the hediff severity-step scanner runs.</PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>How often the slow pawn-progression scanner runs.</PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.workScanIntervalTicks>How often the work-sampling scanner runs.</PawnDiary.Settings.Adv.Help.workScanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.workBaseChance>Base probability per scan that a working pawn writes about that work.</PawnDiary.Settings.Adv.Help.workBaseChance>
+  <PawnDiary.Settings.Adv.Help.workSameTypeCooldownTicks>After a work entry for one WorkTypeDef, suppress that type for this long.</PawnDiary.Settings.Adv.Help.workSameTypeCooldownTicks>
+  <PawnDiary.Settings.Adv.Help.workRecentDifferentTypeMultiplier>Chance multiplier when the pawn had any other work entry inside the cooldown.</PawnDiary.Settings.Adv.Help.workRecentDifferentTypeMultiplier>
+  <PawnDiary.Settings.Adv.Help.workPassionChanceMultiplier>Chance multiplier when the pawn has passion for the work.</PawnDiary.Settings.Adv.Help.workPassionChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.workNegativeChanceMultiplier>Chance multiplier for frustrating or negative work.</PawnDiary.Settings.Adv.Help.workNegativeChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.workDarkStudyChanceMultiplier>Chance multiplier for studying in the dark.</PawnDiary.Settings.Adv.Help.workDarkStudyChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.workLowSkillThreshold>Best relevant skill below this reads as uncertain or frustrating.</PawnDiary.Settings.Adv.Help.workLowSkillThreshold>
+  <PawnDiary.Settings.Adv.Help.daySummaryEnabled>Master toggle for end-of-day summaries (off = old per-source ambient notes).</PawnDiary.Settings.Adv.Help.daySummaryEnabled>
+  <PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>Most highlights woven into one day reflection.</PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>
+  <PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>Opinion swing (vs day-start) that becomes a social-dynamic signal.</PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>
+  <PawnDiary.Settings.Adv.Help.daySummaryWeightCriticalEvent>Relative selection weight for combat / mental-state day events.</PawnDiary.Settings.Adv.Help.daySummaryWeightCriticalEvent>
+  <PawnDiary.Settings.Adv.Help.daySummaryWeightMajorEvent>Relative selection weight for other important day events.</PawnDiary.Settings.Adv.Help.daySummaryWeightMajorEvent>
+  <PawnDiary.Settings.Adv.Help.daySummaryWeightHediff>Relative selection weight for a hediff signal.</PawnDiary.Settings.Adv.Help.daySummaryWeightHediff>
+  <PawnDiary.Settings.Adv.Help.daySummaryWeightOpinionShift>Relative selection weight for an opinion swing (scaled by magnitude).</PawnDiary.Settings.Adv.Help.daySummaryWeightOpinionShift>
+  <PawnDiary.Settings.Adv.Help.daySummaryWeightFiller>Relative selection weight for background small talk.</PawnDiary.Settings.Adv.Help.daySummaryWeightFiller>
+  <PawnDiary.Settings.Adv.Help.quadrumReflectionEnabled>Master toggle for the rare end-of-quadrum reflection.</PawnDiary.Settings.Adv.Help.quadrumReflectionEnabled>
+  <PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>Final days of a quadrum that can host long reflections (staggers colonists).</PawnDiary.Settings.Adv.Help.quadrumReflectionTimingWindowDays>
+  <PawnDiary.Settings.Adv.Help.quadrumReflectionMinImportantEntries>Minimum important entries before the quadrum reflection may write.</PawnDiary.Settings.Adv.Help.quadrumReflectionMinImportantEntries>
+  <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>Prompt evidence cap for the quadrum reflection.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>
+  <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>Per-request output cap for the quadrum reflection.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>
+  <PawnDiary.Settings.Adv.Help.arcReflectionEnabled>Master toggle for rare yearly arc reflections.</PawnDiary.Settings.Adv.Help.arcReflectionEnabled>
+  <PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>Allow a second arc entry in a year after a major moment.</PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>Most arc reflections one pawn writes per year.</PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>
+  <PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>Minimum gap (days) between two arc entries in the same year.</PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>0..100 severity a progression trigger must reach to count as major.</PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>
+  <PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>Force a yearly arc on/after this year-day if one hasn't happened.</PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMemoryShortfallRetryTicks>Retry delay after a forced arc found too few memories.</PawnDiary.Settings.Adv.Help.arcReflectionMemoryShortfallRetryTicks>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesPreferred>Preferred minimum memories before writing (it waits if short).</PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesPreferred>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesForced>Hard minimum memories for a forced arc.</PawnDiary.Settings.Adv.Help.arcReflectionMinMemoriesForced>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMaxMemories>Most memories sampled for one arc.</PawnDiary.Settings.Adv.Help.arcReflectionMaxMemories>
+  <PawnDiary.Settings.Adv.Help.arcReflectionRecentlyUsedMemoryCap>Memories remembered as recently used, to avoid repeats.</PawnDiary.Settings.Adv.Help.arcReflectionRecentlyUsedMemoryCap>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMemorySnippetMaxChars>Max length of each memory snippet in the prompt.</PawnDiary.Settings.Adv.Help.arcReflectionMemorySnippetMaxChars>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMaxTokens>Per-request output cap for arc reflections.</PawnDiary.Settings.Adv.Help.arcReflectionMaxTokens>
+  <PawnDiary.Settings.Adv.Help.diaryLineMaxChars>Truncate the 'last wrote' continuity line to this many characters.</PawnDiary.Settings.Adv.Help.diaryLineMaxChars>
+  <PawnDiary.Settings.Adv.Help.activeScanEventWindow>Newest colony-wide diary events kept 'hot' for background scans and prompt continuity.</PawnDiary.Settings.Adv.Help.activeScanEventWindow>
+  <PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>Word count of the date-line fallback title for never-generated archived entries.</PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>
+  <PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>Max length of the prompt-fact fallback body for archived entries.</PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>
+  <PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>Max events the Diary UI may index in one frame.</PawnDiary.Settings.Adv.Help.uiHistoryScanMaxEventsPerFrame>
+  <PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>Wall-clock budget per frame for sliced Diary UI history indexing.</PawnDiary.Settings.Adv.Help.uiHistoryScanFrameBudgetSeconds>
+  <PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>Minimum biological age for first-person diary ownership.</PawnDiary.Settings.Adv.Help.minimumFirstPersonAgeYears>
+  <PawnDiary.Settings.Adv.Help.humorChance>Base probability an eligible entry gets one structural humor cue.</PawnDiary.Settings.Adv.Help.humorChance>
+  <PawnDiary.Settings.Adv.Help.enabled>Master toggle for this source.</PawnDiary.Settings.Adv.Help.enabled>
+  <PawnDiary.Settings.Adv.Help.dedupTicks>Same signal for this source is recorded once per this window. Use -1 to inherit the DiaryTuning default.</PawnDiary.Settings.Adv.Help.dedupTicks>
+  <PawnDiary.Settings.Adv.Help.minMoodOffset>Minimum |mood offset| for a general thought to record here. Use -1 to inherit.</PawnDiary.Settings.Adv.Help.minMoodOffset>
+  <PawnDiary.Settings.Adv.Help.eatingMinMoodOffset>Minimum |mood offset| for an eating thought. Use -1 to inherit.</PawnDiary.Settings.Adv.Help.eatingMinMoodOffset>
+  <PawnDiary.Settings.Adv.Help.ambientWindowTicks>Ambient thoughts collect until this quiet window passes.</PawnDiary.Settings.Adv.Help.ambientWindowTicks>
+  <PawnDiary.Settings.Adv.Help.ambientMinEventsToWrite>Drop ambient notes unless at least this many accumulated.</PawnDiary.Settings.Adv.Help.ambientMinEventsToWrite>
+  <PawnDiary.Settings.Adv.Help.ambientMaxSampleLines>Most ambient evidence lines kept.</PawnDiary.Settings.Adv.Help.ambientMaxSampleLines>
+  <PawnDiary.Settings.Adv.Help.scanIntervalTicks>How often this scanner runs. Use -1 to inherit.</PawnDiary.Settings.Adv.Help.scanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.baseChance>Base probability per scan that a working pawn writes. Use -1 to inherit.</PawnDiary.Settings.Adv.Help.baseChance>
+  <PawnDiary.Settings.Adv.Help.sameTypeCooldownTicks>Suppress the same work type for this long after one entry.</PawnDiary.Settings.Adv.Help.sameTypeCooldownTicks>
+  <PawnDiary.Settings.Adv.Help.recentDifferentTypeMultiplier>Chance multiplier for a different work type inside the cooldown.</PawnDiary.Settings.Adv.Help.recentDifferentTypeMultiplier>
+  <PawnDiary.Settings.Adv.Help.passionChanceMultiplier>Chance multiplier when the pawn has passion for the work.</PawnDiary.Settings.Adv.Help.passionChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.negativeChanceMultiplier>Chance multiplier for frustrating or negative work.</PawnDiary.Settings.Adv.Help.negativeChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.darkStudyChanceMultiplier>Chance multiplier for studying in the dark.</PawnDiary.Settings.Adv.Help.darkStudyChanceMultiplier>
+  <PawnDiary.Settings.Adv.Help.lowSkillThreshold>Best relevant skill below this reads as uncertain.</PawnDiary.Settings.Adv.Help.lowSkillThreshold>
+  <PawnDiary.Settings.Adv.Help.maxItems>Most items this context reaction contributes to the prompt.</PawnDiary.Settings.Adv.Help.maxItems>
+  <PawnDiary.Settings.Adv.Help.displayOnUiOnly>Show this context on the Diary UI only, without adding it to prompts.</PawnDiary.Settings.Adv.Help.displayOnUiOnly>
+  <PawnDiary.Settings.Adv.Help.scanBack>How many recent letters/entries to scan back.</PawnDiary.Settings.Adv.Help.scanBack>
+  <PawnDiary.Settings.Adv.Help.timeoutTicks>After this many ticks the tracked signal is considered stale.</PawnDiary.Settings.Adv.Help.timeoutTicks>
+  <PawnDiary.Settings.Adv.Help.requireHomeMap>Only track this signal on the player's home map.</PawnDiary.Settings.Adv.Help.requireHomeMap>
+  <PawnDiary.Settings.Adv.Help.requireDanger>Only track this signal while a danger threat is active.</PawnDiary.Settings.Adv.Help.requireDanger>
+  <PawnDiary.Settings.Adv.Help.systemPrompt>System prompt for this prompt shape. Leave blank to fall back to the shared system prompt.</PawnDiary.Settings.Adv.Help.systemPrompt>
+  <PawnDiary.Settings.Adv.Help.finalInstruction>Final user-message instruction for this shape. Leave blank to use the shared default.</PawnDiary.Settings.Adv.Help.finalInstruction>
+  <PawnDiary.Settings.Adv.Help.recipientFinalInstruction>Follow-up instruction for the recipient's reply in pair shapes. Leave blank for the shared default.</PawnDiary.Settings.Adv.Help.recipientFinalInstruction>
 
   <!-- ===== Raw event text (shown in the diary AND fed to the model as "what happened") ===== -->
   <PawnDiary.Event.Interaction>{0} had a {1} interaction with {2}.</PawnDiary.Event.Interaction>

@@ -1,10 +1,27 @@
 // RimWorld mod entry point for Pawn Diary. The detailed settings UI is split into sibling
 // partial-class files, and settings-window API network state lives in ApiConnectionController.
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
 namespace PawnDiary
 {
+    /// <summary>Top-level page selection in the Pawn Diary settings window.</summary>
+    public enum PawnDiarySettingsTab
+    {
+        Main,
+        Prompts,
+        Styles,
+        Tuning
+    }
+
+    /// <summary>Subpage selection inside the prompt-editing settings page.</summary>
+    public enum PawnDiaryPromptSettingsPage
+    {
+        SharedAndEvents,
+        Templates
+    }
+
     /// <summary>
     /// RimWorld mod entry point. Owns the shared settings instance and delegates settings-window
     /// rendering to focused partial classes.
@@ -23,12 +40,32 @@ namespace PawnDiary
         private string selectedPersonaKey;
         // Scroll position for the settings window scroll view.
         private Vector2 settingsScrollPosition;
+        // Separate scroll positions keep each page from inheriting a surprising offset from another page.
+        private Vector2 promptSettingsScrollPosition;
+        private Vector2 styleSettingsScrollPosition;
+        // Which top-level settings page is open.
+        private PawnDiarySettingsTab settingsTab = PawnDiarySettingsTab.Main;
+        // Which prompt editor is open inside the Prompts tab.
+        private PawnDiaryPromptSettingsPage promptSettingsPage = PawnDiaryPromptSettingsPage.SharedAndEvents;
+        // Which Advanced group is selected in the Advanced-tab left rail, and the live name filter.
+        private string selectedAdvancedGroupKey;
+        private string advancedFilter;
+        // Per-field text-entry buffers for Advanced int/float/string fields, keyed by descriptor key.
+        // IMGUI redraws every frame, so without buffers each keystroke fights the live Def value.
+        // advancedTextSynced stores the invariant value a buffer was last built from, so a buffer is
+        // only rebuilt when the Def value changes from outside (e.g. Reset/group reset/filter clear).
+        private readonly Dictionary<string, string> advancedTextBuffers = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> advancedTextSynced = new Dictionary<string, string>();
+        private Vector2 advancedRailScroll;
+        private Vector2 advancedBodyScroll;
 
         // Measured pixel height of the settings content from the previous frame, used to size the
         // scroll view's inner rect. Starts generous so nothing clips before the first measurement;
         // afterwards it tracks the real content height so every control stays scrollable and
         // clickable as settings sections expand or collapse.
         private float lastSettingsContentHeight = 5000f;
+        private float lastPromptSettingsContentHeight = 1200f;
+        private float lastStyleSettingsContentHeight = 1000f;
 
         // Muted colors for secondary text and sub-headers, so the window reads as a hierarchy
         // instead of a flat wall of same-weight labels.

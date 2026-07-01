@@ -6,6 +6,24 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-01
 
+- **Tuning and prompt settings tabs for XML overrides.** The mod-settings window now has
+  **Main**, **Prompts**, **Styles**, and **Tuning** tabs so prompt text, writing styles, and low-level
+  XML parameters no longer compete on the same page. Prompts contains **Shared/event prompts** for
+  the existing shared system prompt and event-prompt overrides, plus **Prompt policy and weights** for
+  template prompts, final instructions, template field lists, prompt switches/token caps,
+  prompt-enchantment weights/cues, humor cues, event-window and observed-condition prompt weights,
+  interaction-group instructions/tone variants/batch-promotion weights, and hediff-driven writing-style
+  override policy. Styles contains writing-style label/rule/tag editing. Tuning exposes scalar and
+  line-based list/table knobs from `DiaryTuningDef`, `DiarySignalPolicyDef`, and
+  `DiaryContextReactionDef` (dedup windows, weather chance rows, ritual quality labels,
+  mood-condition families, thought token/progression policy, ability/work sampling,
+  weather/health/enchantment thresholds, mood/pain/opinion buckets, day/quadrum/arc reflection,
+  scanner intervals, signal policies, context reactions). Tuning and Prompt policy use a compact
+  two-pane editor with per-field checkbox/slider/numeric/text/list/table widgets, per-field and
+  per-group reset, accent coloring for customized values, filtering, and rich tooltips. Overrides
+  persist per player (`TuningOverrideStore`) and take effect immediately by writing into live Def
+  fields or nested policy objects; pristine XML defaults, sentinel values, and `<null>` inherited-list
+  markers are snapshotted for Reset.
 - **Pawn arc reflections implemented.** Added passion skill, psylink, xenotype, and royal-title
   progression pages plus rare yearly arc reflections from de-duplicated hot/archive memories. XML now
   owns templates, cadence, major-arc/high-stakes policy, and reflection grouping; fixtures, pure

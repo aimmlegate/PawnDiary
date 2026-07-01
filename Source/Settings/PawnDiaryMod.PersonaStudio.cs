@@ -14,6 +14,8 @@ namespace PawnDiary
         private void DrawPersonaStudio(Listing_Standard listing)
         {
             SectionTitle(listing, "PawnDiary.Settings.PersonaStudioTitle".Translate());
+            listing.Label("PawnDiary.Settings.PersonaStudioHelp".Translate());
+            listing.Gap(6f);
             DrawPersonaStudioBlock(listing);
         }
 

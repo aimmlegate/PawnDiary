@@ -1,8 +1,8 @@
 // Connection + generation mod settings, the system-prompt overrides, and value clamping/save-load.
 // Writing-style (persona) catalog edits live in PersonaPresetStore and the reusable event-prompt
 // override dictionaries live in PromptOverrideDictionary; PawnDiarySettings owns one of each and
-// delegates save/load to them. Prompt templates, signal policies, and per-group instructions are
-// XML Defs, not save settings.
+// delegates save/load to them. AdvancedFieldCatalog can also persist player overrides for selected
+// XML Def prompt-policy and tuning fields.
 using System;
 using System.Collections.Generic;
 using RimWorld;
@@ -160,6 +160,10 @@ namespace PawnDiary
         // Writing-style preset edits made in settings: XML override rows plus user-created custom
         // styles. Owned by PersonaPresetStore, which holds the CRUD and normalization logic.
         public PersonaPresetStore personaPresets = new PersonaPresetStore();
+        // Player overrides for Advanced-tab Def tuning/prompt-policy fields. Owned here for save/load;
+        // AdvancedFieldCatalog applies them to the live Def instances so existing readers see the new
+        // values with no call-site changes.
+        public TuningOverrideStore advancedOverrides = new TuningOverrideStore("advancedTuningOverrides");
 
         // Parallel lists used by Scribe_Collections for serializing the group-enabled dictionary
         // (Unity's serialization cannot handle Dictionary directly). The event-override maps keep
@@ -219,12 +223,17 @@ namespace PawnDiary
             Scribe_Values.Look(ref maxArchivedDiaryEvents, "maxArchivedDiaryEvents", DefaultMaxArchivedDiaryEvents);
             Scribe_Collections.Look(ref groupEnabled, "interactionGroupEnabled", LookMode.Value, LookMode.Value, ref groupEnabledKeys, ref groupEnabledValues);
             personaPresets.ExposeData();
+            advancedOverrides.ExposeData();
 
             ClampValues();
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 NormalizeEndpointUrls();
                 DiaryPersonas.InvalidateCache();
+                // Snapshot pristine XML defaults, then push saved Advanced overrides into the live
+                // Def fields so they take effect for this session. Safe to call before Defs bind
+                // (resolvers return fallbacks) and idempotent across later UI re-applies.
+                AdvancedFieldCatalog.EnsureApplied(advancedOverrides);
             }
         }
 

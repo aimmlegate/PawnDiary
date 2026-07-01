@@ -16,26 +16,47 @@ namespace PawnDiary
         /// </summary>
         private void DrawPromptStudio(Listing_Standard listing)
         {
+            DrawPromptStudio(listing, true);
+        }
+
+        /// <summary>
+        /// Draws the compact prompt editor. The legacy Main-tab form can be collapsed; the dedicated
+        /// Prompts tab is always expanded so prompt editing is visible immediately.
+        /// </summary>
+        private void DrawPromptStudio(Listing_Standard listing, bool allowCollapse)
+        {
             List<DiaryEventPromptDef> eventPromptDefs = EventPromptDefsForSettings();
             int customizedEventTypes = Settings.CustomizedEventPromptCount();
             List<PromptStudioOption> options = PromptStudioOptions(eventPromptDefs);
 
             Text.Font = GameFont.Medium;
             Rect titleRect = listing.GetRect(Text.LineHeight);
-            Rect labelRect = new Rect(titleRect.x, titleRect.y, titleRect.width - 126f, titleRect.height);
+            Rect labelRect = allowCollapse
+                ? new Rect(titleRect.x, titleRect.y, titleRect.width - 126f, titleRect.height)
+                : titleRect;
             Widgets.Label(labelRect, "PawnDiary.Settings.PromptStudioTitle".Translate());
             Text.Font = GameFont.Small;
-            Rect toggleRect = new Rect(titleRect.xMax - 118f, titleRect.y, 118f, Mathf.Min(titleRect.height, 30f));
-            string toggleKey = Settings.showPromptStudio ? "PawnDiary.Settings.HidePromptStudio" : "PawnDiary.Settings.ShowPromptStudio";
-            if (Widgets.ButtonText(toggleRect, toggleKey.Translate()))
+            if (allowCollapse)
             {
-                Settings.showPromptStudio = !Settings.showPromptStudio;
-                lastSettingsContentHeight = EstimateSettingsContentHeight();
-                settingsScrollPosition.y = 0f;
+                Rect toggleRect = new Rect(titleRect.xMax - 118f, titleRect.y, 118f, Mathf.Min(titleRect.height, 30f));
+                string toggleKey = Settings.showPromptStudio ? "PawnDiary.Settings.HidePromptStudio" : "PawnDiary.Settings.ShowPromptStudio";
+                if (Widgets.ButtonText(toggleRect, toggleKey.Translate()))
+                {
+                    Settings.showPromptStudio = !Settings.showPromptStudio;
+                    lastSettingsContentHeight = EstimateSettingsContentHeight();
+                    settingsScrollPosition.y = 0f;
+                }
             }
+
             listing.GapLine(6f);
 
-            if (!Settings.showPromptStudio)
+            if (!allowCollapse)
+            {
+                listing.Label("PawnDiary.Settings.PromptStudioHelp".Translate());
+                listing.Gap(6f);
+            }
+
+            if (allowCollapse && !Settings.showPromptStudio)
             {
                 listing.Label("PawnDiary.Settings.PromptStudioSummary".Translate(
                     DiaryPromptTemplates.LoadedTemplateCount,
