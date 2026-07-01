@@ -276,7 +276,17 @@ namespace PawnDiary
 
             if (!diary.eventIds.Contains(eventId))
             {
-                diary.eventIds.Add(eventId);
+                // Arrival is the diary's boundary and first page. If a startup hook recorded another
+                // event before the bootstrap scan ran, keep the arrival at the front of this pawn's
+                // index so UI/order-sensitive scans still treat it as the beginning of the arc.
+                if (diaryEvent != null && diaryEvent.IsArrivalDescriptionFor(pawnId))
+                {
+                    diary.eventIds.Insert(0, eventId);
+                }
+                else
+                {
+                    diary.eventIds.Add(eventId);
+                }
             }
         }
 

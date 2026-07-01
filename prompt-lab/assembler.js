@@ -65,6 +65,7 @@ function resolveSource(field, v) {
   if (eq(source, 'Tone')) return v.tone;
   if (eq(source, 'Relationship')) return v.relationship;
   if (eq(source, 'LastOpener')) return v.lastOpener;
+  if (eq(source, 'PreviousEntryEnding')) return v.previousEntryEnding;
   if (eq(source, 'Weapon')) return v.weapon;
   if (eq(source, 'HiddenInitiatorEntry')) return v.initiatorEntry;
   if (eq(source, 'DeathVictim')) return v.deathVictim;

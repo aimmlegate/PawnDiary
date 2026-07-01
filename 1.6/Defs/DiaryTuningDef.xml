@@ -153,6 +153,10 @@
 
     <!-- Misc -->
     <diaryLineMaxChars>160</diaryLineMaxChars>
+    <!-- Previous-entry ending context added to the next first-person prompt so the model can
+         continue from the last page without seeing the full diary history. -->
+    <previousEntryEndingSentenceCount>2</previousEntryEndingSentenceCount>
+    <previousEntryEndingMaxChars>280</previousEntryEndingMaxChars>
     <!-- Newest diary events (colony-wide) kept "hot" for background catch-up/title/orphan scans and
          prompt continuity. Older entries remain saved and visible as archive history. This is a
          global count across all pawns; the per-pawn retention cap lives in mod settings. -->

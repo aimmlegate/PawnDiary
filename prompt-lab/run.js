@@ -806,6 +806,7 @@ function fallbackTemplateFields(key) {
     ['important health', 'PromptEnchantment'],
     ['setting', 'Setting'],
     ['my last opener (not repeat)', 'LastOpener'],
+    ['previous diary ending (continue from this)', 'PreviousEntryEnding'],
   ];
 }
 
@@ -898,6 +899,7 @@ function toAssemblerValues(values) {
     tone: v.tone,
     relationship: v.relationship,
     lastOpener: v.lastOpener,
+    previousEntryEnding: v.previousEntryEnding,
     weapon: v.weapon,
     initiatorEntry: v.initiatorEntry,
     deathVictim: v.deathVictim,
@@ -1184,6 +1186,7 @@ function buildPairFixture(promptData, group, options) {
     tone: options.tone,
     relationship: options.relationship,
     lastOpener: options.lastOpener,
+    previousEntryEnding: options.previousEntryEnding,
     weapon: options.weapon,
     initiatorEntry: hiddenInitiatorEntry,
   }, append);
@@ -1230,6 +1233,7 @@ function buildSoloFixture(promptData, group, options) {
     tone: options.tone,
     relationship: '',
     lastOpener: options.lastOpener,
+    previousEntryEnding: options.previousEntryEnding,
     weapon: options.weapon,
     initiatorEntry: '',
   }, append);

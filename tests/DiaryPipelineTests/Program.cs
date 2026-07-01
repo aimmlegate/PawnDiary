@@ -55,6 +55,7 @@ namespace DiaryPipelineTests
             TestArchiveFallbackFact();
             TestArchiveOverflowSelection();
             TestLifeBoundaryPolicy();
+            TestDiarySentenceExcerpt();
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
 
@@ -398,6 +399,8 @@ namespace DiaryPipelineTests
             AssertContains("solo event prompt", plan.userPrompt, "event prompt: Write this event type.");
             AssertContains("solo event enhancement", plan.userPrompt, "event enhancement: Keep the event focused.");
             AssertContains("solo context", plan.userPrompt, "important context: Her hands shake.");
+            AssertContains("solo previous ending", plan.userPrompt,
+                "previous diary ending (continue from this): I stopped before the door. The rain was still coming down.");
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
             AssertEqual("solo forced model carried", "story-model", plan.forcedModelName);
             AssertTrue("solo forced model not prompt text", !plan.userPrompt.Contains("story-model"));
@@ -2036,7 +2039,8 @@ namespace DiaryPipelineTests
                     rawText = text,
                     pawnSummary = "Alice is brave.",
                     surroundings = "workshop",
-                    lastOpener = "The workshop was quiet."
+                    lastOpener = "The workshop was quiet.",
+                    previousEntryEnding = "I stopped before the door. The rain was still coming down."
                 },
                 display = new DiaryDisplayPayload { important = true }
             };
@@ -2173,6 +2177,7 @@ namespace DiaryPipelineTests
                     ContextField("selected memories", "selected_memories"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
+                    Field("previous diary ending (continue from this)", "PreviousEntryEnding"),
                     Field("initiator entry", "HiddenInitiatorEntry"),
                     Field("entry", "EntryText"));
             }
@@ -2380,6 +2385,21 @@ namespace DiaryPipelineTests
 
         // B1: SafePrefix caps length without ever splitting a UTF-16 surrogate pair. "\U0001F600" is a
         // grinning-face emoji = one high + one low surrogate (two chars).
+        private static void TestDiarySentenceExcerpt()
+        {
+            AssertEqual("last two sentences selected",
+                "Second sentence! Third sentence?",
+                DiarySentenceExcerpt.LastSentences("First sentence. Second sentence! Third sentence?", 2, 200));
+
+            AssertEqual("rich text and newlines cleaned",
+                "After the alarm. I kept walking.",
+                DiarySentenceExcerpt.LastSentences("<b>Before</b>.\nAfter the alarm. I kept walking.", 2, 200));
+
+            AssertEqual("long excerpt keeps the ending",
+                "...kept walking toward the light.",
+                DiarySentenceExcerpt.LastSentences("I waited. Then I kept walking toward the light.", 2, 33));
+        }
+
         private static void TestSurrogateSafeTruncation()
         {
             string emoji = "\U0001F600"; // 2 UTF-16 chars
@@ -2398,6 +2418,11 @@ namespace DiaryPipelineTests
 
             // A cap landing exactly after the pair keeps the whole emoji.
             AssertEqual("cap after the pair keeps the emoji", withEmoji, TextTruncation.SafePrefix(withEmoji, 4));
+
+            string suffixCapped = TextTruncation.SafeSuffix(emoji + "ab", 3);
+            AssertEqual("suffix cut between surrogates starts after pair", "ab", suffixCapped);
+            AssertTrue("suffix result never starts on a lone low surrogate",
+                suffixCapped.Length == 0 || !char.IsLowSurrogate(suffixCapped[0]));
         }
 
         // S1: RedactSecrets masks key=/token= query parameters and Bearer tokens in arbitrary text.

@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-01
 
+- **Diary arcs now start with arrival and continue from the prior ending.** Starting-colonist
+  arrivals are flushed before any non-arrival capture on new games, and arrival refs are inserted at
+  the front of a pawn's diary index if another startup entry already exists. First-person prompt
+  templates now include an XML-owned `PreviousEntryEnding` field fed from the previous page's final
+  sentence excerpt, with `DiaryTuningDef` knobs for sentence count and max length; the pure planner,
+  prompt-lab mirror, and pipeline tests cover the new source token.
 - **Gray-flesh suspicion now hands off to emerged metalhorrors.** Observed conditions gained
   XML-owned `suppressWhenThingDefNames`; `AnomalyGrayFleshEvidence` now tracks analyzable gray-flesh
   samples and stops once a visible metalhorror or metalhorror debris exists, while

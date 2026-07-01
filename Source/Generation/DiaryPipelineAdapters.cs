@@ -194,6 +194,7 @@ namespace PawnDiary
                 surroundings = diaryEvent.SurroundingsForRole(role),
                 continuity = diaryEvent.ContinuityForRole(role),
                 lastOpener = diaryEvent.LastOpenerForRole(role),
+                previousEntryEnding = diaryEvent.PreviousEntryEndingForRole(role),
                 weapon = recipient ? diaryEvent.recipientWeapon : diaryEvent.initiatorWeapon,
                 generationAllowed = !diaryEvent.IsSkipped(role),
                 skipReason = string.Empty

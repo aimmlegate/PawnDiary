@@ -34,6 +34,7 @@
     <Compile Include="..\..\Source\Pipeline\ArcReflectionMemorySelector.cs" Link="ArcReflectionMemorySelector.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneIdentity.cs" Link="ApiLaneIdentity.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiarySentenceExcerpt.cs" Link="DiarySentenceExcerpt.cs" />
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />

@@ -22,10 +22,12 @@ visitors, non-colonists, and underage colonists do not own pages. If only one pa
 the event becomes a solo entry. If two eligible colonists are involved, the initiator entry is
 generated first and the recipient entry gets hidden continuity from it.
 
-Arrivals and deaths are neutral boundary pages. Arrival pages introduce a pawn's diary; death pages
-end it and hide later same-tick events for that pawn. If RimWorld resurrects the same saved pawn, the
-death page stays in history but stops acting as a terminal boundary, so later diary pages can attach,
-generate, render, and compact normally until another death occurs.
+Arrivals and deaths are neutral boundary pages. Arrival pages introduce a pawn's diary and are forced
+to the front of that pawn's saved event list; on a new game, non-arrival capture waits until founding
+colonist arrivals have been recorded. Death pages end the diary and hide later same-tick events for
+that pawn. If RimWorld resurrects the same saved pawn, the death page stays in history but stops
+acting as a terminal boundary, so later diary pages can attach, generate, render, and compact normally
+until another death occurs.
 
 ## 2. Repository Map
 
@@ -172,6 +174,7 @@ the universal path:
 | Step | What happens |
 |---|---|
 | Guard | `CanRecordGameplayEventNow` rejects events when the game is not in normal play. |
+| Starting-arrival flush | On new games, any non-arrival signal first tries to record founding-colonist arrivals, so the arrival page remains the first diary page even if a Harmony source fires early. |
 | Dedup check | `recentEvents` rejects duplicate source keys before payload/context work runs. |
 | Decide | `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` applies pure XML-backed policy. |
 | Dedup mark | The source key is marked only after the catalog keeps the event. |
@@ -398,6 +401,13 @@ When an active hediff forces a temporary writing-style override, all hediffs mat
 persona-override rule are suppressed from the prompt-enchantment pool so the same condition does not
 arrive once as style and again as "important context."
 
+First-person prompts also receive two compact continuity hints from the pawn's previous page when one
+exists. `LastOpener` is the first sentence and is labeled as an opening to avoid repeating;
+`PreviousEntryEnding` is the XML-tuned final sentence excerpt (`previousEntryEndingSentenceCount`,
+`previousEntryEndingMaxChars`) and is labeled for continuation. Both are captured as plain strings on
+the new `DiaryEvent`; arrival/death boundary pages use their neutral display role when they are the
+previous page.
+
 Imported game/mod text is flattened and capped before it reaches the model. This applies to live
 hediff descriptions, labels, titles/roles, scenario text, and quest descriptions. Pawn Diary's own
 XML/Keyed prompt text, field labels, writing styles, and humor cues are not sentence-capped by that
@@ -602,7 +612,8 @@ History retention is per pawn:
 
 `DiaryTuningDef.activeScanEventWindow` is a separate XML-only global hot-event window. It controls
 retry, title catch-up, orphan recovery, work cooldowns, prompt continuity, opener history, and
-day/quadrum evidence scans. Compact archive rows never enter those scans.
+previous-ending history, and day/quadrum evidence scans. Compact archive rows never enter those
+scans.
 
 `PawnDiaryRecord` also owns nullable per-pawn progression state and arc schedule state. Old saves load
 with those fields absent, then normalize to empty baseline-pending state. The progression state stores

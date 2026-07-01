@@ -55,8 +55,8 @@ namespace PawnDiary
         /// Holds the per-point-of-view state for ONE role (initiator, recipient, or neutral). All
         /// three roles share the generation-pipeline fields (prompt, generated text, raw response,
         /// status/error, LLM lane, title + title status/error, raw text). The pawn-specific fields
-        /// (pawn id/name/summary/surroundings/continuity/last-opener/weapon/staggered intensity/
-        /// text-decoration facts) are only ever populated for the initiator and recipient slots; the
+        /// (pawn id/name/summary/surroundings/continuity/last-opener/previous ending/weapon/staggered
+        /// intensity/text-decoration facts) are only ever populated for the initiator and recipient slots; the
         /// neutral slot leaves them empty and they are never read through a pawn path. This is a
         /// value type so the three slots live inline on <see cref="DiaryEvent"/> and Scribe can take
         /// refs to their fields directly (a class would need an extra allocation and indirection).
@@ -82,6 +82,7 @@ namespace PawnDiary
             public string surroundings;
             public string continuity;
             public string lastOpener;
+            public string previousEntryEnding;
             public string weapon;
             public int staggeredIntensity;
             public string textDecorationFacts;
@@ -153,6 +154,8 @@ namespace PawnDiary
         public string recipientContinuity { get => recipientSlot.continuity; set => recipientSlot.continuity = value; }
         public string initiatorLastOpener { get => initiatorSlot.lastOpener; set => initiatorSlot.lastOpener = value; }
         public string recipientLastOpener { get => recipientSlot.lastOpener; set => recipientSlot.lastOpener = value; }
+        public string initiatorPreviousEntryEnding { get => initiatorSlot.previousEntryEnding; set => initiatorSlot.previousEntryEnding = value; }
+        public string recipientPreviousEntryEnding { get => recipientSlot.previousEntryEnding; set => recipientSlot.previousEntryEnding = value; }
         public string initiatorWeapon { get => initiatorSlot.weapon; set => initiatorSlot.weapon = value; }
         public string recipientWeapon { get => recipientSlot.weapon; set => recipientSlot.weapon = value; }
 
@@ -326,6 +329,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref slot.surroundings, prefix + "Surroundings");
             Scribe_Values.Look(ref slot.continuity, prefix + "Continuity");
             Scribe_Values.Look(ref slot.lastOpener, prefix + "LastOpener");
+            Scribe_Values.Look(ref slot.previousEntryEnding, prefix + "PreviousEntryEnding");
             Scribe_Values.Look(ref slot.weapon, prefix + "Weapon");
             Scribe_Values.Look(ref slot.prompt, prefix + "Prompt");
             Scribe_Values.Look(ref slot.generatedText, prefix + "GeneratedText");
@@ -390,6 +394,7 @@ namespace PawnDiary
             slot.pawnSummary = DiarySaveNormalization.NormalizeWhitespaceOrDefault(slot.pawnSummary, DiarySaveNormalization.DefaultPawnSummary);
             slot.continuity = DiarySaveNormalization.NormalizeWhitespaceOrDefault(slot.continuity, DiarySaveNormalization.DefaultContinuity);
             slot.lastOpener = DiarySaveNormalization.NormalizeString(slot.lastOpener);
+            slot.previousEntryEnding = DiarySaveNormalization.NormalizeString(slot.previousEntryEnding);
             slot.weapon = DiarySaveNormalization.NormalizeString(slot.weapon);
             slot.staggeredIntensity = DiarySaveNormalization.ClampStaggeredIntensity(slot.staggeredIntensity);
             slot.textDecorationFacts = DiarySaveNormalization.NormalizeString(slot.textDecorationFacts);
@@ -1546,6 +1551,25 @@ namespace PawnDiary
             if (RoleEquals(povRole, RecipientRole))
             {
                 return recipientSlot.lastOpener;
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the ending excerpt from the pawn's previous diary entry for the given role, or an
+        /// empty string for neutral. Used as hidden continuity context for the next prompt.
+        /// </summary>
+        public string PreviousEntryEndingForRole(string povRole)
+        {
+            if (RoleEquals(povRole, InitiatorRole))
+            {
+                return initiatorSlot.previousEntryEnding;
+            }
+
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientSlot.previousEntryEnding;
             }
 
             return string.Empty;

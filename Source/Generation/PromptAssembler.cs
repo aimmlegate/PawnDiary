@@ -59,6 +59,7 @@ namespace PawnDiary
         public string tone;
         public string relationship;
         public string lastOpener;
+        public string previousEntryEnding;
         public string weapon;
         public string initiatorEntry;
         public string deathVictim;
@@ -191,6 +192,7 @@ namespace PawnDiary
             if (Eq(source, "Tone")) return v.tone;
             if (Eq(source, "Relationship")) return v.relationship;
             if (Eq(source, "LastOpener")) return v.lastOpener;
+            if (Eq(source, "PreviousEntryEnding")) return v.previousEntryEnding;
             if (Eq(source, "Weapon")) return v.weapon;
             if (Eq(source, "HiddenInitiatorEntry")) return v.initiatorEntry;
             if (Eq(source, "DeathVictim")) return v.deathVictim;

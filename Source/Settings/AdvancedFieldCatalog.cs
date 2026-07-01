@@ -1486,6 +1486,8 @@ namespace PawnDiary
 
             b.Tuning("Misc tuning", "PawnDiary.Settings.Adv.Group.Misc")
                 .Int("diaryLineMaxChars", 0, 1000)
+                .Int("previousEntryEndingSentenceCount", 1, 6)
+                .Int("previousEntryEndingMaxChars", 40, 2000)
                 .Int("activeScanEventWindow", 1, 100000)
                 .Int("archivedFallbackTitleWords", 1, 50)
                 .Int("archivedFallbackTextMaxChars", 1, 2000)

@@ -38,5 +38,33 @@ namespace PawnDiary
 
             return value.Substring(0, cut);
         }
+
+        /// <summary>
+        /// Returns the last <paramref name="maxChars"/> characters of <paramref name="value"/> without
+        /// slicing through a surrogate pair. Returns the whole string when it already fits, and an empty
+        /// string for null/empty input or a non-positive cap. Callers add their own leading ellipsis.
+        /// </summary>
+        public static string SafeSuffix(string value, int maxChars)
+        {
+            if (string.IsNullOrEmpty(value) || maxChars <= 0)
+            {
+                return string.Empty;
+            }
+
+            if (value.Length <= maxChars)
+            {
+                return value;
+            }
+
+            int start = value.Length - maxChars;
+            // If the first kept char is a low surrogate, its high surrogate sits just before the cut
+            // and would be orphaned by the slice. Move forward one char so the suffix starts cleanly.
+            if (char.IsLowSurrogate(value[start]))
+            {
+                start++;
+            }
+
+            return value.Substring(start);
+        }
     }
 }

@@ -200,6 +200,50 @@ namespace PawnDiary
             return string.Empty;
         }
 
+        // Extracts the ending of the pawn's most recent diary entry. This is separate from
+        // LatestDiaryOpener: the opener helps avoid repetitive starts, while the ending gives the next
+        // model call a short bridge it can continue from.
+        public static string LatestDiaryEnding(string pawnId, IReadOnlyList<DiaryEvent> events)
+        {
+            if (string.IsNullOrWhiteSpace(pawnId) || events == null)
+            {
+                return string.Empty;
+            }
+
+            for (int i = events.Count - 1; i >= 0; i--)
+            {
+                DiaryEvent diaryEvent = events[i];
+                if (diaryEvent == null)
+                {
+                    continue;
+                }
+
+                string role;
+                if (!diaryEvent.TryGetDisplayRoleForPawn(pawnId, out role))
+                {
+                    continue;
+                }
+
+                string text = diaryEvent.DisplayTextForRole(role);
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    continue;
+                }
+
+                DiaryTuningDef tuning = DiaryTuning.Current;
+                string ending = DiarySentenceExcerpt.LastSentences(
+                    text,
+                    Math.Max(1, tuning.previousEntryEndingSentenceCount),
+                    Math.Max(40, tuning.previousEntryEndingMaxChars));
+                if (!string.IsNullOrWhiteSpace(ending))
+                {
+                    return ending;
+                }
+            }
+
+            return string.Empty;
+        }
+
         // Extracts the first sentence from a text block.
         // Used by LatestDiaryOpener so the prompt can ask the model not to repeat the same
         // opening line style too often.

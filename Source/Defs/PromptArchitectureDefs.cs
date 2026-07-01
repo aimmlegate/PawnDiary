@@ -375,7 +375,8 @@ namespace PawnDiary
                     ContextField("quadrum dates", "quadrum_dates"),
                     ContextField("important entry count", "important_entries"),
                     Field("setting", "Setting"),
-                    Field("my last opener (not repeat)", "LastOpener"));
+                    Field("my last opener (not repeat)", "LastOpener"),
+                    Field("previous diary ending (continue from this)", "PreviousEntryEnding"));
             }
 
             if (string.Equals(templateKey, SoloArcReflection, StringComparison.OrdinalIgnoreCase))
@@ -389,6 +390,7 @@ namespace PawnDiary
                     Field("you", "PawnSummary"),
                     Field("setting", "Setting"),
                     Field("my last opener (not repeat)", "LastOpener"),
+                    Field("previous diary ending (continue from this)", "PreviousEntryEnding"),
                     Field("event prompt", "EventPrompt"),
                     Field("event enhancement", "EventEnhancement"));
             }
@@ -416,7 +418,8 @@ namespace PawnDiary
                 Field("instruction", "Instruction"),
                 Field("important context", "PromptEnchantment"),
                 Field("setting", "Setting"),
-                Field("my last opener (not repeat)", "LastOpener"));
+                Field("my last opener (not repeat)", "LastOpener"),
+                Field("previous diary ending (continue from this)", "PreviousEntryEnding"));
         }
 
         private static List<DiaryPromptFieldDef> Fields(params DiaryPromptFieldDef[] fields)

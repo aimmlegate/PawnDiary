@@ -20,7 +20,8 @@
       { "label": "tone", "source": "Tone" },
       { "label": "relationship", "source": "Relationship" },
       { "label": "my last opener (not repeat)", "source": "LastOpener" },
-      { "label": "initiator diary (hidden context)", "source": "HiddenInitiatorEntry" }
+      { "label": "initiator diary (hidden context)", "source": "HiddenInitiatorEntry" },
+      { "label": "previous diary ending (continue from this)", "source": "PreviousEntryEnding" }
     ],
     "values": {
       "eventNoun": "insulted",
@@ -37,7 +38,8 @@
       "tone": "with sharp, stinging heat",
       "relationship": "opinion strained; because insulted",
       "lastOpener": "The quiet had lasted too long.",
-      "initiatorEntry": "I pushed the point."
+      "initiatorEntry": "I pushed the point.",
+      "previousEntryEnding": "I closed the door before the rain came through."
     }
   },
   {

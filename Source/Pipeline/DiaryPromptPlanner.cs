@@ -190,6 +190,7 @@ namespace PawnDiary
                 tone = request.policy?.group?.tone,
                 relationship = pov?.continuity,
                 lastOpener = pov?.lastOpener,
+                previousEntryEnding = pov?.previousEntryEnding,
                 weapon = pov?.weapon,
                 initiatorEntry = request.priorInitiatorEntry,
                 deathVictim = string.IsNullOrWhiteSpace(victimName) ? NameForContextRole(payload, victimRole) : victimName,

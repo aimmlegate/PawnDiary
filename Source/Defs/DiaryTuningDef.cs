@@ -202,6 +202,10 @@ namespace PawnDiary
 
         // ---- Misc ----
         public int diaryLineMaxChars = 160;   // truncate the "last wrote" continuity line to this
+        // Previous-entry ending context shown to the next first-person prompt so entries can continue
+        // from the prior page without sending a long history. XML-tunable; code clamps defensively.
+        public int previousEntryEndingSentenceCount = 2;
+        public int previousEntryEndingMaxChars = 280;
         // Newest diary events (colony-wide) treated as "hot" for background maintenance scans and
         // prompt-history context. Older entries remain saved and visible, but are archive history that
         // is not retried or backfilled by catch-up scanners. This is a global count across all pawns;

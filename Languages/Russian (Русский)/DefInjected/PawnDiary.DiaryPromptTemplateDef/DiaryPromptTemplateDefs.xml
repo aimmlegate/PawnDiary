@@ -260,4 +260,15 @@
   <DiaryPromptTemplate_ArrivalDescription.fields.3.label>поселенец</DiaryPromptTemplate_ArrivalDescription.fields.3.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.7.label>обстановка</DiaryPromptTemplate_ArrivalDescription.fields.7.label>
   <DiaryPromptTemplate_Title.fields.0.label>запись</DiaryPromptTemplate_Title.fields.0.label>
+  <DiaryPromptTemplate_PairDefault.fields.24.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairDefault.fields.24.label>
+  <DiaryPromptTemplate_PairImportant.fields.25.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairImportant.fields.25.label>
+  <DiaryPromptTemplate_PairCombat.fields.27.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairCombat.fields.27.label>
+  <DiaryPromptTemplate_PairBatched.fields.23.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairBatched.fields.23.label>
+  <DiaryPromptTemplate_SoloDefault.fields.37.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloDefault.fields.37.label>
+  <DiaryPromptTemplate_SoloImportant.fields.38.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloImportant.fields.38.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.33.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloInternalState.fields.33.label>
+  <DiaryPromptTemplate_SoloBatched.fields.33.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloBatched.fields.33.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.34.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloDayReflection.fields.34.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.14.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloArcReflection.fields.14.label>
 </LanguageData>

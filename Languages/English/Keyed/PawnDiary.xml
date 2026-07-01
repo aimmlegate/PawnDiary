@@ -616,6 +616,8 @@
   <PawnDiary.Settings.Adv.Help.arcReflectionMemorySnippetMaxChars>Max length of each memory snippet in the prompt.</PawnDiary.Settings.Adv.Help.arcReflectionMemorySnippetMaxChars>
   <PawnDiary.Settings.Adv.Help.arcReflectionMaxTokens>Per-request output cap for arc reflections.</PawnDiary.Settings.Adv.Help.arcReflectionMaxTokens>
   <PawnDiary.Settings.Adv.Help.diaryLineMaxChars>Truncate the 'last wrote' continuity line to this many characters.</PawnDiary.Settings.Adv.Help.diaryLineMaxChars>
+  <PawnDiary.Settings.Adv.Help.previousEntryEndingSentenceCount>How many final sentences from the previous diary page are sent to the next first-person prompt.</PawnDiary.Settings.Adv.Help.previousEntryEndingSentenceCount>
+  <PawnDiary.Settings.Adv.Help.previousEntryEndingMaxChars>Maximum length of the previous-page ending sent to the next first-person prompt.</PawnDiary.Settings.Adv.Help.previousEntryEndingMaxChars>
   <PawnDiary.Settings.Adv.Help.activeScanEventWindow>Newest colony-wide diary events kept 'hot' for background scans and prompt continuity.</PawnDiary.Settings.Adv.Help.activeScanEventWindow>
   <PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>Word count of the date-line fallback title for never-generated archived entries.</PawnDiary.Settings.Adv.Help.archivedFallbackTitleWords>
   <PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>Max length of the prompt-fact fallback body for archived entries.</PawnDiary.Settings.Adv.Help.archivedFallbackTextMaxChars>

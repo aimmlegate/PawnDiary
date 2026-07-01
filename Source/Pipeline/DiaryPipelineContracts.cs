@@ -54,6 +54,7 @@ namespace PawnDiary
         public string surroundings;
         public string continuity;
         public string lastOpener;
+        public string previousEntryEnding;
         public string weapon;
         public bool generationAllowed = true;
         public string skipReason;
@@ -117,6 +118,7 @@ namespace PawnDiary
                     surroundings = initiator?.surroundings,
                     continuity = "none",
                     lastOpener = string.Empty,
+                    previousEntryEnding = string.Empty,
                     weapon = initiator?.weapon,
                     generationAllowed = true
                 };

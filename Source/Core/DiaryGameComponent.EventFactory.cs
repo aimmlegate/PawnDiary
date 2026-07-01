@@ -1,6 +1,7 @@
 // The DiaryEvent factory: the two constructors every Record* hook funnels through.
 // AddPairwiseEvent/AddSoloEvent stamp a new DiaryEvent with an id, date, the fallback game text, and
-// the per-POV context summaries used by prompt policies (pawn, surroundings, continuity, weapon),
+// the per-POV context summaries used by prompt policies (pawn, surroundings, continuity, previous
+// page ending, weapon),
 // register it in the event store, and cross-reference the involved pawns' records. The per-event text and
 // context builders that feed these (tale helpers, mental-break text, …) live in each event's own
 // file — DiaryGameComponent.Tales.cs, .MentalStates.cs, etc.
@@ -52,6 +53,8 @@ namespace PawnDiary
                 recipientContinuity = DiaryContextBuilder.BuildContinuitySummary(recipient, initiator, activeEvents),
                 initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(initiator.GetUniqueLoadID(), activeEvents),
                 recipientLastOpener = DiaryContextBuilder.LatestDiaryOpener(recipient.GetUniqueLoadID(), activeEvents),
+                initiatorPreviousEntryEnding = DiaryContextBuilder.LatestDiaryEnding(initiator.GetUniqueLoadID(), activeEvents),
+                recipientPreviousEntryEnding = DiaryContextBuilder.LatestDiaryEnding(recipient.GetUniqueLoadID(), activeEvents),
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(initiator),
                 recipientWeapon = DiaryContextBuilder.EquippedWeapon(recipient),
                 initiatorStatus = DiaryEvent.NotGeneratedStatus,
@@ -107,6 +110,8 @@ namespace PawnDiary
                 recipientContinuity = "none",
                 initiatorLastOpener = DiaryContextBuilder.LatestDiaryOpener(pawn.GetUniqueLoadID(), activeEvents),
                 recipientLastOpener = string.Empty,
+                initiatorPreviousEntryEnding = DiaryContextBuilder.LatestDiaryEnding(pawn.GetUniqueLoadID(), activeEvents),
+                recipientPreviousEntryEnding = string.Empty,
                 initiatorWeapon = DiaryContextBuilder.EquippedWeapon(pawn),
                 recipientWeapon = string.Empty,
                 solo = true,

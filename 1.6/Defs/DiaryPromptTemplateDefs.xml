@@ -45,6 +45,7 @@
       <li><label>tone</label><source>Tone</source></li>
       <li><label>relationship</label><source>Relationship</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -77,6 +78,7 @@
       <li><label>relationship</label><source>Relationship</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
       <li><label>initiator diary (hidden context)</label><source>HiddenInitiatorEntry</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -111,6 +113,7 @@
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
       <li><label>weapon</label><source>Weapon</source></li>
       <li><label>initiator diary (hidden context)</label><source>HiddenInitiatorEntry</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -141,6 +144,7 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -185,6 +189,7 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -230,6 +235,7 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -270,6 +276,7 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -310,6 +317,7 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -352,6 +360,7 @@
       <li><label>setting</label><source>Setting</source></li>
       <li><label>tone</label><source>Tone</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -377,6 +386,7 @@ Do not write a bullet list. Output only diary text. End with normal sentence pun
       <li><label>important entry count</label><source>GameContext</source><contextKey>important_entries</contextKey></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 
@@ -405,6 +415,7 @@ Do not write a report, biography, bullet list, or mechanical summary. Output onl
       <li><label>forced yearly arc</label><source>GameContext</source><contextKey>forced</contextKey></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+      <li><label>previous diary ending (continue from this)</label><source>PreviousEntryEnding</source></li>
     </fields>
   </PawnDiary.DiaryPromptTemplateDef>
 

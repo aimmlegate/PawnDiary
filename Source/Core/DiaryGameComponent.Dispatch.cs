@@ -58,6 +58,11 @@ namespace PawnDiary
                 return false;
             }
 
+            if (!EnsureStartingArrivalsBefore(signal))
+            {
+                return false;
+            }
+
             // Dedup CHECK first, before any impure payload work. Two reasons:
             //   1. It restores the pre-refactor ordering for sources whose old RecordXxx checked
             //      dedup before drawing impure state — notably Ability, which used to check dedup
@@ -117,6 +122,11 @@ namespace PawnDiary
                 return;
             }
 
+            if (!EnsureStartingArrivalsBefore(signal))
+            {
+                return;
+            }
+
             string colonyKey = signal.ColonyDedupKey;
             int colonyTicks = signal.ColonyDedupTicks;
             if (!string.IsNullOrEmpty(colonyKey)
@@ -162,6 +172,47 @@ namespace PawnDiary
             {
                 MarkRecentlyRecorded(recentEvents, colonyKey, colonyTicks);
             }
+        }
+
+        /// <summary>
+        /// New-game Harmony signals can arrive before this component's first tick has recorded the
+        /// founding-colonist arrival pages. Before accepting any non-arrival source, flush those
+        /// arrivals so the pawn diary starts at "how I joined" rather than at the first incidental event.
+        /// </summary>
+        private bool EnsureStartingArrivalsBefore(DiarySignal signal)
+        {
+            if (!initialArrivalScanPending || signal is ArrivalSignal)
+            {
+                return true;
+            }
+
+            if (TryRecordStartingColonistArrivals())
+            {
+                initialArrivalScanPending = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Fan-out signals are never arrival bootstrap signals, so they wait for the same new-game
+        /// arrival flush before recording their per-pawn children.
+        /// </summary>
+        private bool EnsureStartingArrivalsBefore(DiaryFanoutSignal signal)
+        {
+            if (!initialArrivalScanPending)
+            {
+                return true;
+            }
+
+            if (TryRecordStartingColonistArrivals())
+            {
+                initialArrivalScanPending = false;
+                return true;
+            }
+
+            return false;
         }
 
         // ── Emit surface for DiarySignal.Emit ──

@@ -2,7 +2,7 @@
   {
     "id": "pair-basic",
     "systemPrompt": "SYS\n\nPERSONA-BLOCK",
-    "userPrompt": "event: insulted\npov: Mara\nrole: recipient\nwith: Lio\nwhat you saw: Lio insulted Mara.\nevent prompt: Write a social interaction.\nevent enhancement: Keep this sharp and personal.\ninstruction: the sting of contempt\nimportant health: high priority; feverish body; weakens body\nsetting: bedroom, indoors\ntone: with sharp, stinging heat\nrelationship: opinion strained; because insulted\nmy last opener (not repeat): The quiet had lasted too long.\ninitiator diary (hidden context): I pushed the point.\n\nINSTR"
+    "userPrompt": "event: insulted\npov: Mara\nrole: recipient\nwith: Lio\nwhat you saw: Lio insulted Mara.\nevent prompt: Write a social interaction.\nevent enhancement: Keep this sharp and personal.\ninstruction: the sting of contempt\nimportant health: high priority; feverish body; weakens body\nsetting: bedroom, indoors\ntone: with sharp, stinging heat\nrelationship: opinion strained; because insulted\nmy last opener (not repeat): The quiet had lasted too long.\ninitiator diary (hidden context): I pushed the point.\nprevious diary ending (continue from this): I closed the door before the rain came through.\n\nINSTR"
   },
   {
     "id": "solo-skip-sentinels",

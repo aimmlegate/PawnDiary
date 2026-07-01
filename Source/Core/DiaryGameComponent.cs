@@ -448,6 +448,18 @@ namespace PawnDiary
 
         private void GameComponentTickInner()
         {
+            int now = Find.TickManager.TicksGame;
+            if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
+            {
+                initialArrivalScanPending = false;
+            }
+
+            if (initialArrivalScanPending)
+            {
+                DrainCompletedLlmWork();
+                return;
+            }
+
             FlushReadyInteractionBatches();
             FlushReadyTaleBatches();
             FlushReadyAmbientThoughtNotes();
@@ -459,16 +471,10 @@ namespace PawnDiary
                 SnapshotDayStartOpinions();
             }
 
-            int now = Find.TickManager.TicksGame;
             if (now >= nextAmbientSleepFlushScanTick)
             {
                 nextAmbientSleepFlushScanTick = now + AmbientSleepFlushScanIntervalTicks;
                 FlushAmbientNotesForSleepingPawns();
-            }
-
-            if (initialArrivalScanPending && TryRecordStartingColonistArrivals())
-            {
-                initialArrivalScanPending = false;
             }
 
             if (!initialArrivalScanPending && now >= nextWorkScanTick)
