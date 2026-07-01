@@ -336,6 +336,14 @@ namespace PawnDiary
         // without a per-mod Harmony patch.
         public int hediffProgressionScanIntervalTicks = 2500;
 
+        // ---- Pawn progression scanner ----
+        // Watches slow-changing pawn state that is not reliably covered by one-shot hooks: passion
+        // skill milestones, psylink levels, xenotype changes, and royal-title changes.
+        public int progressionScanIntervalTicks = 2500;
+        public List<int> progressionSkillMilestones = new List<int> { 8, 12, 16, 20 };
+        // Plain string matchers, not Def references, so Royalty-less games simply never see a match.
+        public List<string> psylinkHediffDefNames = new List<string> { "PsychicAmplifier" };
+
         // ---- Work recording ----
         // Periodic scanner interval for colonists' current work jobs. Work has no clean one-shot
         // RimWorld event for "this was a diary-worthy work moment", so the scanner samples rarely
@@ -387,6 +395,20 @@ namespace PawnDiary
         public int quadrumReflectionMinImportantEntries = 6;
         public int quadrumReflectionMaxPromptEvents = 8;
         public int quadrumReflectionMaxTokens = 350;
+
+        // ---- Arc reflections ----
+        public bool arcReflectionEnabled = true;
+        public int arcReflectionMaxEntriesPerYear = 1;
+        public bool arcReflectionAllowSecondMajorEntry = true;
+        public int arcReflectionSecondEntryMinGapDays = 30;
+        public int arcReflectionMajorSeverityThreshold = 90;
+        public int arcReflectionForceAfterYearDay = 45;
+        public int arcReflectionMinMemoriesPreferred = 4;
+        public int arcReflectionMinMemoriesForced = 3;
+        public int arcReflectionMaxMemories = 8;
+        public int arcReflectionRecentlyUsedMemoryCap = 16;
+        public int arcReflectionMemorySnippetMaxChars = 220;
+        public int arcReflectionMaxTokens = 420;
 
         // ---- Humor cues (hidden, always-on) ----
         // Base probability (0..1) that an eligible first-person entry gets one structural humor

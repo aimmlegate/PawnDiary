@@ -90,6 +90,22 @@
   <PawnDiary.Dev.PromptSuite.Ability.Text>{0} used a synthetic psycast ability for the diary test.</PawnDiary.Dev.PromptSuite.Ability.Text>
   <PawnDiary.Dev.PromptSuite.DayReflection.Label>End of day</PawnDiary.Dev.PromptSuite.DayReflection.Label>
   <PawnDiary.Dev.PromptSuite.DayReflection.Text>Today brought focused research, a stinging insult, and a creeping fever.</PawnDiary.Dev.PromptSuite.DayReflection.Text>
+  <PawnDiary.Dev.PromptSuite.QuadrumReflection.Label>Quadrum reflection</PawnDiary.Dev.PromptSuite.QuadrumReflection.Label>
+  <PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>1st of Aprimay: {0} survived a raid. 6th of Aprimay: fever kept returning. 11th of Aprimay: the colony finished a hard project. 15th of Aprimay: {0} reached a passion milestone.</PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Label>Passion skill milestone</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>{0} reached Construction 12, one of their major passion skills.</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>Psylink level gained</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>{0} felt the psylink settle deeper, rising to level 3.</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>Sanguophage xenotype</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>{0}'s body changed from baseliner to sanguophage.</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>Royal title changed</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>{0}'s title changed from Yeoman to Knight.</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Forced yearly arc</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>{0}'s memories from year 5504:&#10;- 4 Aprimay: survived a raid that left the workshop burned.&#10;- 8 Aprimay: reached Construction 12.&#10;- 2 Jugust: gained psylink level 3.&#10;- 9 Decembary: became a sanguophage.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>Major-event arc</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>{0}'s memories from year 5504:&#10;- 3 Aprimay: married under torchlight.&#10;- 10 Aprimay: lost a friend in a raid.&#10;- 4 Jugust: gained psylink level 6.&#10;- 7 Decembary: took a new royal title.</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Label>Arc cooldown diagnostic</PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Label>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Text>{0}'s memories from year 5504:&#10;- 1 Aprimay: wrote an earlier arc entry.&#10;- 6 Aprimay: another major event happened too soon.&#10;- 8 Aprimay: the schedule would normally block a second arc.</PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Text>
   <PawnDiary.Dev.EventPanel.Title>Pawn Diary event tests</PawnDiary.Dev.EventPanel.Title>
   <PawnDiary.Dev.EventPanel.NoGame>Load a map and enable dev mode before opening Pawn Diary event tests.</PawnDiary.Dev.EventPanel.NoGame>
   <PawnDiary.Dev.EventPanel.NoPawn>No eligible colonist is available for diary event tests.</PawnDiary.Dev.EventPanel.NoPawn>
@@ -654,6 +670,22 @@
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>a metalhorror that has revealed itself</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>the hidden thing has finally shown itself and the danger is now open and immediate; write only what the pawn can see of the revealed threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>open threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>
+
+  <!-- Pawn progression and rare yearly arc reflections -->
+  <PawnDiary.Event.ProgressionPassionMajor>major passion</PawnDiary.Event.ProgressionPassionMajor>
+  <PawnDiary.Event.ProgressionPassionMinor>minor passion</PawnDiary.Event.ProgressionPassionMinor>
+  <PawnDiary.Event.ProgressionSkillLabel>{0} {1}</PawnDiary.Event.ProgressionSkillLabel>
+  <PawnDiary.Event.ProgressionSkillText>{0} reached {1} {2}, one of their {3} skills.</PawnDiary.Event.ProgressionSkillText>
+  <PawnDiary.Event.ProgressionPsylinkLabel>Psylink level {0}</PawnDiary.Event.ProgressionPsylinkLabel>
+  <PawnDiary.Event.ProgressionPsylinkText>{0} gained psylink level {1}.</PawnDiary.Event.ProgressionPsylinkText>
+  <PawnDiary.Event.ProgressionXenotypeLabel>Xenotype: {0}</PawnDiary.Event.ProgressionXenotypeLabel>
+  <PawnDiary.Event.ProgressionXenotypeText>{0}'s xenotype changed from {1} to {2}.</PawnDiary.Event.ProgressionXenotypeText>
+  <PawnDiary.Event.ProgressionRoyalTitleLabel>Royal title: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
+  <PawnDiary.Event.ProgressionRoyalTitleText>{0}'s royal title changed from {1} to {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
+  <PawnDiary.Event.ArcReflectionLabel>Year {0} reflection</PawnDiary.Event.ArcReflectionLabel>
+  <PawnDiary.Event.ArcReflectionHeader>{0}'s memories from year {1}:</PawnDiary.Event.ArcReflectionHeader>
+  <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>
+  <PawnDiary.Event.ArcReflectionInstruction>a rare private life-arc reflection for {0} in year {1}; connect selected memories into who they are becoming</PawnDiary.Event.ArcReflectionInstruction>
 
   <PawnDiary.Ctx.Opinion>opinion {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>because {0}</PawnDiary.Ctx.Because>

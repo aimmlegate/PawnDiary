@@ -17,6 +17,7 @@ namespace DiaryPipelineTests
             TestSoloPromptPlan();
             TestOwnedPromptTextIsNotSentenceCapped();
             TestQuestPromptPlanFields();
+            TestProgressionPromptPlanFields();
             TestDualPovPromptPlans();
             TestRecipientFollowupPlan();
             TestNeutralGenerationPlans();
@@ -28,6 +29,10 @@ namespace DiaryPipelineTests
             TestMemoryDecayXmlPolicy();
             TestPromptTextSanitizer();
             TestEventWindowPolicy();
+            TestProgressionMilestonePolicy();
+            TestPsylinkProgressionLevelPolicy();
+            TestArcReflectionSchedulePolicy();
+            TestArcReflectionMemorySelector();
             TestEventPromptKeyCandidates();
             TestDomainClassifier();
             TestContextFields();
@@ -345,6 +350,30 @@ namespace DiaryPipelineTests
             AssertTrue("quest raw defName is not rendered", !plan.userPrompt.Contains("OpportunityQuest_Friendlies"));
         }
 
+        private static void TestProgressionPromptPlanFields()
+        {
+            DiaryEventPayload payload = SoloPayload(
+                "e-progression",
+                "skill milestone",
+                "Alice reached Construction 12, one of her passion skills.");
+            payload.gameContext = "progression=SkillMilestone; progression_kind=skill; skill=Construction; skill_level=12; previous_skill_milestone=8; passion=major";
+
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = payload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = "Write like Alice.",
+                maxTokens = 30
+            });
+
+            AssertEqual("progression uses important solo template", DiaryPipelineTemplates.SoloImportant, plan.templateKey);
+            AssertContains("progression kind prompt field", plan.userPrompt, "progression kind: skill");
+            AssertContains("progression skill prompt field", plan.userPrompt, "skill: Construction");
+            AssertContains("progression level prompt field", plan.userPrompt, "skill level: 12");
+            AssertContains("progression passion prompt field", plan.userPrompt, "passion: major");
+        }
+
         private static void TestDualPovPromptPlans()
         {
             DiaryEventPayload payload = PairPayload("e-dual", "argument", "Alice accused Bob of stealing medicine.", "Bob denied it.");
@@ -499,6 +528,16 @@ namespace DiaryPipelineTests
             });
             AssertEqual("quadrum reflection wins over day reflection", DiaryPipelineTemplates.SoloQuadrumReflection, quadrumPlan.templateKey);
             AssertEqual("quadrum reflection template token cap", 350, quadrumPlan.responseRules.maxTokens);
+
+            thoughtPayload.arcReflection = true;
+            DiaryPromptPlan arcPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = thoughtPayload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("arc reflection wins over quadrum reflection", DiaryPipelineTemplates.SoloArcReflection, arcPlan.templateKey);
+            AssertEqual("arc reflection template token cap", 420, arcPlan.responseRules.maxTokens);
         }
 
         private static void TestSoloBatchSelection()
@@ -1030,6 +1069,227 @@ namespace DiaryPipelineTests
                 !EventWindowPolicy.CouldMatchByDefName(new List<EventWindowTriggerRule>(), "ThingSpawned", "Bullet"));
         }
 
+        private static void TestProgressionMilestonePolicy()
+        {
+            List<int> milestones = new List<int> { 20, 8, 12, 12, -1, 16 };
+
+            ProgressionMilestoneDecision noList =
+                ProgressionMilestonePolicy.EvaluateSkillMilestone(12, true, null, 0, false);
+            AssertTrue("progression skill null milestones do not emit", !noList.shouldEmit);
+
+            ProgressionMilestoneDecision noPassion =
+                ProgressionMilestonePolicy.EvaluateSkillMilestone(12, false, milestones, 0, false);
+            AssertTrue("progression skill no passion does not emit", !noPassion.shouldEmit);
+
+            ProgressionMilestoneDecision below =
+                ProgressionMilestonePolicy.EvaluateSkillMilestone(7, true, milestones, 0, false);
+            AssertTrue("progression skill below milestone does not emit", !below.shouldEmit);
+
+            ProgressionMilestoneDecision first =
+                ProgressionMilestonePolicy.EvaluateSkillMilestone(8, true, milestones, 0, false);
+            AssertTrue("progression skill crossing emits", first.shouldEmit);
+            AssertEqual("progression skill crossing emits reached milestone", 8, first.milestoneToEmit);
+
+            ProgressionMilestoneDecision jumped =
+                ProgressionMilestonePolicy.EvaluateSkillMilestone(12, true, milestones, 7, false);
+            AssertTrue("progression skill jump emits one highest milestone", jumped.shouldEmit);
+            AssertEqual("progression skill jump emits 12", 12, jumped.milestoneToEmit);
+
+            ProgressionMilestoneDecision repeated =
+                ProgressionMilestonePolicy.EvaluateSkillMilestone(12, true, milestones, 12, false);
+            AssertTrue("progression skill already recorded does not repeat", !repeated.shouldEmit);
+
+            ProgressionMilestoneDecision baseline =
+                ProgressionMilestonePolicy.EvaluateSkillMilestone(16, true, milestones, 0, true);
+            AssertTrue("progression skill baseline suppresses emit", !baseline.shouldEmit);
+            AssertEqual("progression skill baseline records highest reached", 16, baseline.newHighestMilestone);
+        }
+
+        private static void TestPsylinkProgressionLevelPolicy()
+        {
+            ProgressionLevelDecision baseline =
+                ProgressionMilestonePolicy.EvaluateLevelIncrease(3, 0, true, 1, 6);
+            AssertTrue("progression level baseline suppresses emit", !baseline.shouldEmit);
+            AssertEqual("progression level baseline records observed", 3, baseline.newHighestLevel);
+
+            ProgressionLevelDecision increased =
+                ProgressionMilestonePolicy.EvaluateLevelIncrease(4, 3, false, 1, 6);
+            AssertTrue("progression level increase emits", increased.shouldEmit);
+            AssertEqual("progression level emits current level", 4, increased.levelToEmit);
+
+            ProgressionLevelDecision same =
+                ProgressionMilestonePolicy.EvaluateLevelIncrease(4, 4, false, 1, 6);
+            AssertTrue("progression level same value does not emit", !same.shouldEmit);
+
+            ProgressionLevelDecision lower =
+                ProgressionMilestonePolicy.EvaluateLevelIncrease(3, 4, false, 1, 6);
+            AssertTrue("progression level lower value does not emit", !lower.shouldEmit);
+            AssertEqual("progression level lower keeps highest", 4, lower.newHighestLevel);
+
+            ProgressionLevelDecision clamped =
+                ProgressionMilestonePolicy.EvaluateLevelIncrease(9, 5, false, 1, 6);
+            AssertTrue("progression level high value clamps and emits", clamped.shouldEmit);
+            AssertEqual("progression level clamps to max", 6, clamped.levelToEmit);
+        }
+
+        private static void TestArcReflectionSchedulePolicy()
+        {
+            ArcReflectionScheduleTuning tuning = new ArcReflectionScheduleTuning
+            {
+                enabled = true,
+                maxEntriesPerYear = 1,
+                allowSecondMajorEntry = true,
+                secondEntryMinGapDays = 30,
+                forceAfterYearDay = 45,
+                ticksPerDay = 60000,
+            };
+
+            ArcReflectionScheduleDecision beforeForce = ArcReflectionSchedulePolicy.Evaluate(
+                new ArcReflectionScheduleSnapshot(), tuning, currentTick: 44 * 60000,
+                currentYear: 5504, dayOfYear: 44, majorEventTrigger: false);
+            AssertTrue("arc schedule blocks forced entry before force day", !beforeForce.allowed);
+            AssertEqual("arc schedule before force reason", "not_due", beforeForce.blockReason);
+
+            ArcReflectionScheduleDecision forced = ArcReflectionSchedulePolicy.Evaluate(
+                new ArcReflectionScheduleSnapshot(), tuning, currentTick: 45 * 60000,
+                currentYear: 5504, dayOfYear: 45, majorEventTrigger: false);
+            AssertTrue("arc schedule allows yearly forced entry", forced.allowed);
+            AssertTrue("arc schedule marks forced entry", forced.forced);
+
+            ArcReflectionScheduleSnapshot oneEntry = new ArcReflectionScheduleSnapshot
+            {
+                lastArcEntryTick = 10 * 60000,
+                lastArcEntryYear = 5504,
+                arcEntriesThisYear = 1,
+            };
+            ArcReflectionScheduleDecision ordinary = ArcReflectionSchedulePolicy.Evaluate(
+                oneEntry, tuning, currentTick: 50 * 60000,
+                currentYear: 5504, dayOfYear: 50, majorEventTrigger: false);
+            AssertTrue("arc schedule blocks ordinary trigger after one entry", !ordinary.allowed);
+            AssertEqual("arc schedule ordinary block reason", "not_due", ordinary.blockReason);
+
+            ArcReflectionScheduleDecision secondTooSoon = ArcReflectionSchedulePolicy.Evaluate(
+                oneEntry, tuning, currentTick: 39 * 60000,
+                currentYear: 5504, dayOfYear: 39, majorEventTrigger: true);
+            AssertTrue("arc schedule blocks second major before gap", !secondTooSoon.allowed);
+            AssertEqual("arc schedule gap block reason", "gap", secondTooSoon.blockReason);
+
+            ArcReflectionScheduleDecision secondAllowed = ArcReflectionSchedulePolicy.Evaluate(
+                oneEntry, tuning, currentTick: 41 * 60000,
+                currentYear: 5504, dayOfYear: 41, majorEventTrigger: true);
+            AssertTrue("arc schedule allows second major after gap", secondAllowed.allowed);
+            AssertTrue("arc schedule second major is not forced", !secondAllowed.forced);
+
+            ArcReflectionScheduleDecision capped = ArcReflectionSchedulePolicy.Evaluate(
+                new ArcReflectionScheduleSnapshot
+                {
+                    lastArcEntryTick = 50 * 60000,
+                    lastArcEntryYear = 5504,
+                    arcEntriesThisYear = 2,
+                },
+                tuning, currentTick: 59 * 60000, currentYear: 5504,
+                dayOfYear: 59, majorEventTrigger: true);
+            AssertTrue("arc schedule blocks third entry", !capped.allowed);
+            AssertEqual("arc schedule cap reason", "year_cap", capped.blockReason);
+
+            ArcReflectionScheduleDecision newYear = ArcReflectionSchedulePolicy.Evaluate(
+                new ArcReflectionScheduleSnapshot
+                {
+                    lastArcEntryTick = 50 * 60000,
+                    lastArcEntryYear = 5503,
+                    arcEntriesThisYear = 2,
+                },
+                tuning, currentTick: 65 * 60000, currentYear: 5504,
+                dayOfYear: 5, majorEventTrigger: true);
+            AssertTrue("arc schedule resets count in new year", newYear.allowed);
+            AssertEqual("arc schedule new year normalized count", 0, newYear.normalizedEntriesThisYear);
+        }
+
+        private static void TestArcReflectionMemorySelector()
+        {
+            List<ArcMemoryCandidate> candidates = new List<ArcMemoryCandidate>
+            {
+                ArcCandidate("e1", 3000, "Progression", "skill", true, false, false, "reached Construction 12"),
+                ArcCandidate("e2", 1000, "Raid", "raidDropPod", true, false, false, "drop pods hit the workshop"),
+                ArcCandidate("e3", 2000, "Romance", "romanceMilestone", true, false, false, "married under torchlight"),
+                ArcCandidate("e-reflection", 2500, "Interaction", "dayreflection", true, true, false, "reflection"),
+                ArcCandidate("e-death", 2600, "Tale", "death", true, false, true, "death"),
+                ArcCandidate("e-recent", 2700, "Quest", "questCompleted", true, false, false, "quest done"),
+                ArcCandidate("e-old", 2800, "Work", "workPassion", true, false, false, "old work", 5503),
+            };
+
+            ArcMemorySelectionResult selected = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = candidates,
+                recentlyUsedEventIds = new List<string> { "e-recent" },
+                currentYear = 5504,
+                maxMemories = 8,
+                minMemories = 3,
+                seed = 42,
+            });
+            AssertEqual("arc selector filters and sorts selected ids", "e2,e3,e1",
+                JoinCandidateIds(selected.selected));
+            AssertEqual("arc selector candidate count after filters", 3, selected.candidateCount);
+            AssertTrue("arc selector has enough selected memories", selected.hasEnoughMemories);
+
+            List<ArcMemoryCandidate> sameGroup = new List<ArcMemoryCandidate>
+            {
+                ArcCandidate("g1", 1000, "Progression", "skill", true, false, false, "one"),
+                ArcCandidate("g2", 2000, "Progression", "skill", true, false, false, "two"),
+                ArcCandidate("g3", 3000, "Progression", "skill", true, false, false, "three"),
+                ArcCandidate("g4", 4000, "Progression", "skill", true, false, false, "four"),
+            };
+            ArcMemorySelectionResult capped = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = sameGroup,
+                currentYear = 5504,
+                maxMemories = 4,
+                minMemories = 1,
+                seed = 7,
+            });
+            AssertEqual("arc selector caps repeated domain/group", 2, capped.selected.Count);
+
+            List<ArcMemoryCandidate> deterministic = new List<ArcMemoryCandidate>
+            {
+                ArcCandidate("d1", 1000, "Progression", "skill", true, false, false, "one"),
+                ArcCandidate("d2", 2000, "Raid", "raid", true, false, false, "two"),
+                ArcCandidate("d3", 3000, "Romance", "romance", true, false, false, "three"),
+                ArcCandidate("d4", 4000, "Quest", "quest", true, false, false, "four"),
+            };
+            ArcMemorySelectionResult deterministicA = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = deterministic,
+                currentYear = 5504,
+                maxMemories = 3,
+                minMemories = 1,
+                seed = 99,
+            });
+            ArcMemorySelectionResult deterministicB = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = deterministic,
+                currentYear = 5504,
+                maxMemories = 3,
+                minMemories = 1,
+                seed = 99,
+            });
+            AssertEqual("arc selector deterministic for fixed seed",
+                JoinCandidateIds(deterministicA.selected),
+                JoinCandidateIds(deterministicB.selected));
+
+            ArcMemorySelectionResult empty = ArcReflectionMemorySelector.Select(new ArcMemorySelectionRequest
+            {
+                candidates = new List<ArcMemoryCandidate>(),
+                currentYear = 5504,
+                maxMemories = 8,
+                minMemories = 3,
+            });
+            AssertTrue("arc selector empty candidates are insufficient", !empty.hasEnoughMemories);
+
+            string longText = "01234567890123456789";
+            AssertEqual("arc selector memory text truncates", "0123456789...",
+                ArcReflectionMemorySelector.MemoryText(ArcCandidate("clip", 1, "Work", "work", false, false, false, longText), 10));
+        }
+
         private static void TestPromptCaptureFormatting()
         {
             string captured = DiaryPromptCapture.Format("System text.", "event: test\npov: Alice");
@@ -1306,6 +1566,8 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
             AssertEqual("ability marker domain", "Ability",
                 DiaryEventDomainClassifier.DomainForContext("ability=Stun; ability_label=stun; ability_category=Psycast"));
+            AssertEqual("progression marker domain", "Progression",
+                DiaryEventDomainClassifier.DomainForContext("progression=SkillMilestone; progression_kind=skill"));
             AssertEqual("ritual classifier includes behavior when present",
                 "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -1330,6 +1592,12 @@ namespace DiaryPipelineTests
                     "Ability",
                     "ability=Stun; ability_label=stun; ability_category=Psycast",
                     "Stun"));
+            AssertEqual("progression classifier keeps synthetic defName",
+                "SkillMilestone",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Progression",
+                    "progression=SkillMilestone; progression_kind=skill",
+                    "SkillMilestone"));
             AssertEqual("raid classifier keeps incident defName",
                 "RaidEnemy",
                 DiaryEventDomainClassifier.GroupClassifierKey(
@@ -1348,6 +1616,8 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("psychic_ritual=VoidProvocation; psychic_ritual_perspective=invoker"));
             AssertTrue("ability marker is not interaction prompt",
                 DiaryEventDomainClassifier.HasNonInteractionSourceMarker("ability=Stun; ability_label=stun"));
+            AssertTrue("progression marker is not interaction prompt",
+                DiaryEventDomainClassifier.HasNonInteractionSourceMarker("progression=SkillMilestone; progression_kind=skill"));
             AssertTrue("plain interaction stays interaction prompt",
                 !DiaryEventDomainClassifier.HasNonInteractionSourceMarker("def=Chat; label=chat"));
         }
@@ -1666,6 +1936,7 @@ namespace DiaryPipelineTests
             AddTemplate(policy, DiaryPipelineTemplates.SoloBatched, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloDayReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.SoloQuadrumReflection, includePersona: true);
+            AddTemplate(policy, DiaryPipelineTemplates.SoloArcReflection, includePersona: true);
             AddTemplate(policy, DiaryPipelineTemplates.DeathDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.ArrivalDescription, includePersona: false);
             AddTemplate(policy, DiaryPipelineTemplates.Title, includePersona: false);
@@ -1715,6 +1986,19 @@ namespace DiaryPipelineTests
                     ContextField("quest lifecycle", "quest_signal"),
                     ContextField("quest faction", "quest_faction"),
                     ContextField("quest rewards", "quest_rewards"),
+                    ContextField("progression kind", "progression_kind"),
+                    ContextField("skill", "skill"),
+                    ContextField("skill level", "skill_level"),
+                    ContextField("passion", "passion"),
+                    ContextField("psylink level", "psylink_level"),
+                    ContextField("previous psylink level", "previous_psylink_level"),
+                    ContextField("xenotype", "xenotype"),
+                    ContextField("previous xenotype", "previous_xenotype"),
+                    ContextField("sanguophage", "sanguophage"),
+                    ContextField("royal title", "title"),
+                    ContextField("previous royal title", "previous_title"),
+                    ContextField("arc year", "arc_year"),
+                    ContextField("selected memories", "selected_memories"),
                     Field("weapon", "Weapon"),
                     Field("important context", "PromptEnchantment"),
                     Field("initiator entry", "HiddenInitiatorEntry"),
@@ -1729,8 +2013,10 @@ namespace DiaryPipelineTests
                 recipientFinalInstruction = "Recipient followup.",
                 includePersona = includePersona,
                 includePromptEnchantment = key != DiaryPipelineTemplates.Title,
-                appendDirectSpeechInstruction = key != DiaryPipelineTemplates.Title,
-                maxTokens = key == DiaryPipelineTemplates.SoloQuadrumReflection ? 350 : 0,
+                appendDirectSpeechInstruction = key != DiaryPipelineTemplates.Title
+                    && key != DiaryPipelineTemplates.SoloArcReflection,
+                maxTokens = key == DiaryPipelineTemplates.SoloQuadrumReflection ? 350
+                    : key == DiaryPipelineTemplates.SoloArcReflection ? 420 : 0,
                 fields = fields
             };
             policy.templates.Add(template);
@@ -1755,6 +2041,48 @@ namespace DiaryPipelineTests
                 contextKey = contextKey,
                 enabled = true
             };
+        }
+
+        private static ArcMemoryCandidate ArcCandidate(string eventId, int tick, string domain,
+            string groupKey, bool important, bool reflection, bool deathDescription, string text,
+            int year = 5504)
+        {
+            return new ArcMemoryCandidate
+            {
+                eventId = eventId,
+                pawnId = "P1",
+                povRole = DiaryPipelineRoles.Initiator,
+                tick = tick,
+                year = year,
+                date = tick.ToString(),
+                defName = groupKey,
+                domain = domain,
+                groupKey = groupKey,
+                label = text,
+                text = text,
+                generatedText = text,
+                title = string.Empty,
+                important = important,
+                reflection = reflection,
+                deathDescription = deathDescription,
+                sameQuadrum = false,
+                progression = string.Equals(domain, "Progression", StringComparison.OrdinalIgnoreCase),
+                highStakes = string.Equals(domain, "Raid", StringComparison.OrdinalIgnoreCase),
+            };
+        }
+
+        private static string JoinCandidateIds(List<ArcMemoryCandidate> values)
+        {
+            List<string> ids = new List<string>();
+            if (values != null)
+            {
+                for (int i = 0; i < values.Count; i++)
+                {
+                    ids.Add(values[i]?.eventId ?? string.Empty);
+                }
+            }
+
+            return string.Join(",", ids.ToArray());
         }
 
         private static List<bool> Ready(params bool[] values)

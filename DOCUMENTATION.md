@@ -99,8 +99,8 @@ Harmony hooks submit one-shot events, such as social interactions, mental breaks
 deaths, arrivals, rituals, abilities, and thoughts.
 
 `DiaryGameComponent` tick scans submit slower state-based events, such as work sampling, thought
-progression, hediff progression, quest state recovery, day reflections, event windows, and observed
-conditions.
+progression, hediff progression, pawn progression, quest state recovery, day reflections, yearly arc
+reflections, event windows, and observed conditions.
 
 Both paths submit a `DiarySignal` through `DiaryEvents.Submit`. From there, every event uses the same
 dispatcher path:
@@ -125,7 +125,8 @@ pawn's diary.
 Retention keeps recent pages hot and moves old displayable POVs into compact `ArchivedDiaryEntry`
 rows owned by `DiaryArchiveRepository`. Archived rows remain visible in the Diary tab, but they no
 longer retry generation, receive title backfill, feed prompt continuity, or count as evidence for
-day/quadrum reflection scans.
+day/quadrum reflection scans. Yearly arc reflections deliberately sample both hot and archived diary
+pages as memory candidates.
 
 ### 3.4 Generation
 
@@ -220,7 +221,9 @@ it onto the bus.
 | Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
 | Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |
+| Progression | Periodic scan | `ProgressionSignal` (via scan) | solo |
 | DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo day/quadrum reflection |
+| ArcReflection | Sleep/rest flush + major progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
 | Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
@@ -237,6 +240,7 @@ it onto the bus.
 | Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
+| Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, and royal-title changes. The first scan baselines existing saves to avoid retroactive spam. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
@@ -247,6 +251,7 @@ it onto the bus.
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
+| Arc reflections | Sleep/rest trigger and major progression trigger | Rare yearly life-arc page per pawn, with an optional second major-event page after the configured gap. It samples existing hot/archive diary pages from the current year and never stores a separate history fact database. |
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
@@ -277,6 +282,12 @@ specific groups before broad groups. The pure matcher lives in `Source/Capture/G
 Event prompts resolve from narrow to broad: source defName, interaction group, classifier key, then
 domain. Prompt text, enhancement text, and forced-model text resolve independently, so a narrow row can
 override one field and inherit the others.
+
+Progression policy is split the same way as other sources: `DiaryInteractionGroupDefs.xml` owns the
+`Progression` groups and their importance, `DiaryEventPromptDefs.xml` owns broad progression/arc
+prompt guidance, `DiaryPromptTemplateDefs.xml` exposes progression fields and the
+`SoloArcReflection` template, and `DiaryTuningDef.xml` owns milestones, psylink hediff defName
+matchers, and arc cadence.
 
 Optional DLC or mod content should normally be handled as string matches. Do not hard-reference DLC
 defs or C# types unless they are guarded as described in `AGENTS.md`. Missing DLC content should
@@ -485,8 +496,8 @@ query parameter. Logs strip secrets and query strings.
 Routing modes are Balanced, Prefer top rows, and Failover only. A `DiaryEventPromptDef.forcedModel`
 can try a matching active model first; blank, unknown, disabled, or failed forced lanes fall back to
 normal routing. Recipient follow-ups and title requests try to pin to the previous successful lane.
-The shipped `QuadrumReflection` prompt row can use the same forced-model field for rare long
-reflections.
+The shipped `QuadrumReflection` and `ArcReflection` prompt rows can use the same forced-model field
+for rare long reflections.
 
 `LlmClient` handles concurrency, per-lane cooldowns, transient retries, timeout/permanent failures,
 session cancellation on new game/load, and result handoff to the main thread. `LlmResponseParser`
@@ -522,6 +533,13 @@ History retention is per pawn:
 `DiaryTuningDef.activeScanEventWindow` is a separate XML-only global hot-event window. It controls
 retry, title catch-up, orphan recovery, work cooldowns, prompt continuity, opener history, and
 day/quadrum evidence scans. Compact archive rows never enter those scans.
+
+`PawnDiaryRecord` also owns nullable per-pawn progression state and arc schedule state. Old saves load
+with those fields absent, then normalize to empty baseline-pending state. The progression state stores
+only highest passion-skill milestones and last observed psylink/xenotype/title values. The arc
+schedule stores only cadence bookkeeping (`lastArcEntryTick`, `lastArcEntryYear`,
+`arcEntriesThisYear`, `forcedArcYear`, and recently used memory ids). Neither field is a history
+database; existing diary pages remain the source of truth for reflections.
 
 Failed/stale pages can be archived as displayable fallbacks. The fallback body/title is resolved
 before compaction because the archive drops raw prompt data. Prompt-only dev capture rows stay hot for

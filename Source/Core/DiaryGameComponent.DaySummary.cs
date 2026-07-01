@@ -61,6 +61,13 @@ namespace PawnDiary
 
             int day = CurrentDayIndex;
             string pawnId = pawn.GetUniqueLoadID();
+            // Try the rare yearly life-arc reflection first. If it emits, skip the shorter seasonal
+            // and daily reflections for this rest moment so the pawn writes only one reflective page.
+            if (TryFlushArcReflectionForPawn(pawn, pawnId, day, majorEventTrigger: false))
+            {
+                return;
+            }
+
             // Try the rare, longer quadrum reflection first. If it emits, skip the ordinary day
             // reflection for this sleep/rest moment so the player and model see only one summary.
             if (TryFlushQuadrumReflectionForPawn(pawn, pawnId, day))
@@ -702,7 +709,8 @@ namespace PawnDiary
         private static bool IsReflectionDefName(string defName)
         {
             return string.Equals(defName, DayReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(defName, DayReflectionEventData.QuadrumDefNameToken, StringComparison.OrdinalIgnoreCase);
+                || string.Equals(defName, DayReflectionEventData.QuadrumDefNameToken, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(defName, ArcReflectionEventData.DefNameToken, StringComparison.OrdinalIgnoreCase);
         }
 
         private static int QuadrumIndexForDay(int day)

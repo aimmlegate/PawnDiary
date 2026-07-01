@@ -990,6 +990,14 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns true when this event is a rare life-arc reflection over sampled diary memories.
+        /// </summary>
+        public bool IsArcReflection()
+        {
+            return DiaryContextFields.IsTrue(gameContext, "arc_reflection");
+        }
+
+        /// <summary>
         /// The emotional-register cue for this event's group (e.g. "with creeping dread"), or empty
         /// when the group sets no tone. Event-driven and appended to the user prompt as a "tone:"
         /// field for first-person entries.

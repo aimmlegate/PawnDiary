@@ -34,6 +34,7 @@ namespace PawnDiary
         public const string SoloBatched = "SoloBatched";
         public const string SoloDayReflection = "SoloDayReflection";
         public const string SoloQuadrumReflection = "SoloQuadrumReflection";
+        public const string SoloArcReflection = "SoloArcReflection";
         public const string DeathDescription = "DeathDescription";
         public const string ArrivalDescription = "ArrivalDescription";
         public const string Title = "Title";
@@ -91,6 +92,7 @@ namespace PawnDiary
         public bool hasArrivalDescription;
         public bool dayReflection;
         public bool quadrumReflection;
+        public bool arcReflection;
         public bool supportsDirectSpeechInstruction;
         public DiaryPovPayload initiator = new DiaryPovPayload { role = DiaryPipelineRoles.Initiator };
         public DiaryPovPayload recipient = new DiaryPovPayload { role = DiaryPipelineRoles.Recipient };

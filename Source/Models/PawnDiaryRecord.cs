@@ -37,6 +37,14 @@ namespace PawnDiary
         // Ordered list of DiaryEvent IDs this pawn appears in.
         public List<string> eventIds = new List<string>();
 
+        // Scanner bookkeeping for pawn progression pages. Additive save key; old saves create a
+        // baseline-pending state so they do not emit catch-up milestone pages on first load.
+        public PawnProgressionState progressionState;
+
+        // Rare life-arc reflection cadence and memory repetition control. This is scheduling state,
+        // not a separate pawn-history store; existing diary pages remain the history layer.
+        public PawnArcScheduleState arcSchedule;
+
         /// <summary>
         /// Serialises/deserialises this record into the RimWorld save file.
         /// PostLoadInit keeps list fields non-null and recovers gracefully if a style Def was
@@ -51,6 +59,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref acknowledgedGeneratedEntryCount, "acknowledgedGeneratedEntryCount", -1);
             Scribe_Values.Look(ref hasUnreadGeneratedEntry, "hasUnreadGeneratedEntry", false);
             Scribe_Collections.Look(ref eventIds, "eventIds", LookMode.Value);
+            Scribe_Deep.Look(ref progressionState, "progressionState");
+            Scribe_Deep.Look(ref arcSchedule, "arcSchedule");
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
@@ -67,7 +77,32 @@ namespace PawnDiary
                 {
                     eventIds = new List<string>();
                 }
+
+                EnsureProgressionState();
+                EnsureArcSchedule();
             }
+        }
+
+        public PawnProgressionState EnsureProgressionState()
+        {
+            if (progressionState == null)
+            {
+                progressionState = new PawnProgressionState();
+            }
+
+            progressionState.Normalize();
+            return progressionState;
+        }
+
+        public PawnArcScheduleState EnsureArcSchedule()
+        {
+            if (arcSchedule == null)
+            {
+                arcSchedule = new PawnArcScheduleState();
+            }
+
+            arcSchedule.Normalize(PawnArcScheduleState.DefaultRecentMemoryCap);
+            return arcSchedule;
         }
     }
 }

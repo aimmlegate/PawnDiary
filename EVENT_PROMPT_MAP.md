@@ -29,6 +29,7 @@ flowchart TD
         I["PlayLog.Add<br/>InteractionSignal<br/>pair, solo, interaction batch, ambient note"]
         T["MemoryThoughtHandler.TryGainMemory<br/>ThoughtSignal<br/>solo or ambient thought"]
         TP["Periodic thought-stage scan<br/>ThoughtProgressionSignal<br/>solo"]
+        PR["Periodic pawn progression scan<br/>ProgressionSignal<br/>solo"]
         IN["InspirationHandler.TryStartInspiration<br/>InspirationSignal<br/>solo"]
         AB["Ability.Activate overloads<br/>AbilitySignal<br/>cooldown-sampled solo"]
         RO["Pawn_RelationsTracker.AddDirectRelation<br/>RomanceSignal<br/>pair"]
@@ -44,6 +45,7 @@ flowchart TD
         RI["Ideology and psychic ritual completion hooks<br/>RitualFanoutSignal or PsychicRitualFanoutSignal<br/>role fan-out solo pages"]
         AR["Starting-colonist scan and Pawn.SetFaction<br/>ArrivalSignal<br/>neutral arrival page"]
         DR["Sleep/rest day flush<br/>DayReflectionSignal<br/>ordinary day reflection or rare quadrum reflection"]
+        ARC["Sleep/rest day flush or major progression<br/>ArcReflectionSignal<br/>rare yearly life-arc reflection"]
     end
 
     subgraph Generic["Generic page and prompt side channels"]
@@ -54,6 +56,7 @@ flowchart TD
     I --> Submit
     T --> Submit
     TP --> Submit
+    PR --> Submit
     IN --> Submit
     AB --> Submit
     RO --> Submit
@@ -69,6 +72,7 @@ flowchart TD
     RI --> Submit
     AR --> Submit
     DR --> Submit
+    ARC --> Submit
 
     Submit["DiaryEvents.Submit(signal)"] --> Dispatch["DiaryGameComponent.Dispatch"]
     Dispatch --> Guard["CanRecordGameplayEventNow guard"]
@@ -144,7 +148,7 @@ Important boundaries in the diagram:
 flowchart TD
     Event["Saved DiaryEvent"] --> Payload["DiaryPipelineAdapters.ToPayload"]
     Payload --> Domain["DiaryEventDomainClassifier.DomainForContext"]
-    Domain --> Markers["Markers:<br/>tale, mood_event, thought, inspiration, romance,<br/>work, hediff, mental_state, raid, quest,<br/>ritual, psychic_ritual, ability<br/>else Interaction"]
+    Domain --> Markers["Markers:<br/>tale, mood_event, thought, inspiration, romance,<br/>work, hediff, mental_state, raid, quest,<br/>ritual, psychic_ritual, ability, progression<br/>else Interaction"]
     Markers --> Classifier["GroupClassifierKey"]
     Classifier --> QuestKey["Quest uses signal=accepted/completed/failed"]
     Classifier --> RitualKey["Ritual uses defName plus ritual_behavior<br/>or PsychicRitual plus defName"]
@@ -159,7 +163,7 @@ flowchart TD
     CandidateKeys --> K1["1. saved source defName"]
     CandidateKeys --> K2["2. matched DiaryInteractionGroupDef.defName"]
     CandidateKeys --> K3["3. classifier key"]
-    CandidateKeys --> K4["4. fallback key:<br/>Death, Arrival, QuadrumReflection,<br/>DayReflection, or domain"]
+    CandidateKeys --> K4["4. fallback key:<br/>Death, Arrival, ArcReflection,<br/>QuadrumReflection, DayReflection, or domain"]
 
     K1 --> Resolve["Resolve prompt, enhancement, forcedModel independently"]
     K2 --> Resolve
@@ -179,6 +183,7 @@ flowchart TD
     Template -- pair and batch= --> PairBatched["PairBatched"]
     Template -- pair and important or missing group --> PairImportant["PairImportant"]
     Template -- pair and non-important --> PairDefault["PairDefault"]
+    Template -- arc_reflection=true --> SoloArcReflection["SoloArcReflection"]
     Template -- quadrum_reflection=true --> SoloQuadrumReflection["SoloQuadrumReflection"]
     Template -- day_reflection=true --> SoloDayReflection["SoloDayReflection"]
     Template -- solo internal marker --> SoloInternalState["SoloInternalState<br/>mood_event, thought, inspiration, work, hediff"]
@@ -207,6 +212,8 @@ Current shipped event-prompt rows in `DiaryEventPromptDefs.xml`:
 | `DiaryEventPrompt_Ability` | `Ability` | yes | yes | blank |
 | `DiaryEventPrompt_DayReflection` | `DayReflection` | yes | yes | blank |
 | `DiaryEventPrompt_QuadrumReflection` | `QuadrumReflection` | yes | yes | blank |
+| `DiaryEventPrompt_Progression` | `Progression` | yes | yes | blank |
+| `DiaryEventPrompt_ArcReflection` | `ArcReflection` | yes | yes | blank |
 | `DiaryEventPrompt_Arrival` | `Arrival` | yes | yes | blank |
 | `DiaryEventPrompt_Death` | `Death` | yes | yes | blank |
 
@@ -264,6 +271,7 @@ Template side effects:
 | Normal pair and solo templates | yes | yes | eligible | only when the saved event is a normal social Interaction prompt or interaction batch and template allows it |
 | `SoloDayReflection` | yes | yes | eligible | no |
 | `SoloQuadrumReflection` | yes | yes, but no `important context` field is present in current XML | eligible | no |
+| `SoloArcReflection` | yes | yes, but no `important context` field is present in current XML | eligible | no |
 | `DeathDescription` | no | no | no | no |
 | `ArrivalDescription` | no | no | no | no |
 | `Title` | no | no | no | no |
@@ -301,6 +309,14 @@ flowchart LR
         R3["raidInfestation<br/>important immediate SoloImportant"]
         R4["raid catch-all<br/>important SoloImportant<br/>ordinary raids delay generation 2500 ticks"]
     end
+
+    subgraph ProgressionGroups["Progression groups"]
+        P1["progressionSkillPassion<br/>important SoloImportant<br/>passion skill milestones only"]
+        P2["progressionPsylink<br/>important SoloImportant"]
+        P3["progressionXenotype<br/>important SoloImportant"]
+        P4["progressionRoyalTitle<br/>important SoloImportant"]
+        P5["progressionOther<br/>non-important catch-all"]
+    end
 ```
 
 Group matching is domain-specific and first-match-wins by ascending `order`. Within a group, exact
@@ -332,10 +348,12 @@ Source recording weights:
 | Strange chat promotion | `base 0.04 + bonuses`, capped `0.6`, then multiplied by shared generation chance. Bonuses: strong opinion `+0.25`; opinion asymmetry `+0.2`; low need `+0.2`; low mood `+0.2`; same thresholds as above. |
 | Small talk promotion | Same as strange chat: `base 0.04`, cap `0.6`, bonuses `+0.25/+0.2/+0.2/+0.2`, then shared generation chance. |
 | Work sampling | Scan every `2500` ticks. Chance starts at `0.08`; passion multiplier `1.4`; negative chore/low skill multiplier `1.2`; dark study multiplier `1.5`; recent different work multiplier `0.5`; same work cooldown `180000` ticks; then shared generation chance and clamp. Social/violent work types are ignored. |
+| Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. |
 | Ability sampling | `min 0.03`, `max 0.75`, reference cooldown `60000` ticks. `CooldownWeightedChance = min + (max - min) * cooldown / (cooldown + reference)`, then shared generation chance and clamp. Dedup `300` ticks. |
 | Ordinary raid generation delay | `2500` ticks. Drop-pod raids and infestations bypass the delay. |
 | Day reflection highlights | Max `3`. Important event weight is `1` for combat and `0.7` for other important events. Hediff day signal default `0.8`. Opinion shift weight is `0.6 * min(2, abs(delta)/15)`. Filler weight is `0.15`, only when at least two filler moments exist. Weighted selection is without replacement with floor `0.0001`; if selected highlights contain no important signal, the strongest important candidate replaces the lightest selected highlight. |
 | Quadrum reflection | Enabled. Due date is deterministic per pawn/quadrum inside final `3` days. Requires `6` important entries. Sends at most `8` weighted highlights. Max response tokens `350`. Highlight weights reuse combat `1` and other important `0.7`. |
+| Arc reflection | Enabled. One forced yearly entry after day `45` when enough memories exist; optional second major-event entry after `30` days. Samples up to `8` hot/archive diary memories, prefers same-year entries, excludes reflections/death descriptions/recently used ids, and caps repeated domain/group memories. Max response tokens `420`. |
 | Humor cues | Base gate `0.10`. High-stakes events use gallows cues; other events use light cues. All current humor cue XML rows have weight `1`. |
 
 Prompt-enchantment selection formula:
@@ -455,9 +473,9 @@ flowchart TD
     Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opener"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
-    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid, royal title, ideoligion role"]
+    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression, royal title, ideoligion role"]
     Fields --> Boundary["Neutral arrival/death:<br/>event prompt, enhancement, neutral facts,<br/>pawn summary, setting; no persona/enchantment"]
-    Fields --> Reflection["Day reflection:<br/>selected highlights, pawn summary, event prompt/enhancement<br/>Quadrum adds date range and important entry count"]
+    Fields --> Reflection["Reflections:<br/>day selected highlights and pawn summary<br/>quadrum date range and important count<br/>arc selected year memories and cadence fields"]
     Fields --> Title["Title:<br/>entry text only"]
 ```
 
@@ -475,6 +493,7 @@ Current template keys:
 | `SoloBatched` | Solo with `batch=`, non-combat | Batched evidence; style/enchantment allowed. |
 | `SoloDayReflection` | `day_reflection=true` | Direct speech disabled; style/enchantment allowed. |
 | `SoloQuadrumReflection` | `quadrum_reflection=true` | Direct speech disabled; `maxTokens=350`; current fields omit `important context`. |
+| `SoloArcReflection` | `arc_reflection=true` | Direct speech disabled; `maxTokens=420`; selected memory evidence and arc cadence fields. |
 | `DeathDescription` | `death_description=true` | Neutral, style-free, enchantment-free. |
 | `ArrivalDescription` | `arrival_description=true` | Neutral, style-free, enchantment-free. |
 | `Title` | title follow-up | Style-free, enchantment-free, `TitleMaxTokens=40`. |

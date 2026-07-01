@@ -56,6 +56,7 @@ namespace PawnDiary
         public const string AmbientThought = "AmbientThought";
         public const string ThoughtProgression = "ThoughtProgression";
         public const string Work = "Work";
+        public const string Progression = "Progression";
 
         public static bool Enabled(string signalKey)
         {
@@ -169,6 +170,11 @@ namespace PawnDiary
         public static int WorkLowSkillThreshold
         {
             get { return IntOrFallback(ForKey(Work).lowSkillThreshold, DiaryTuning.Current.workLowSkillThreshold); }
+        }
+
+        public static int ProgressionScanIntervalTicks
+        {
+            get { return IntOrFallback(ForKey(Progression).scanIntervalTicks, DiaryTuning.Current.progressionScanIntervalTicks); }
         }
 
         // Fallback policies are cached per key so a missing/renamed Def does not allocate a new

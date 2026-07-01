@@ -76,6 +76,7 @@ namespace PawnDiary
                 hasArrivalDescription = diaryEvent.HasArrivalDescription(),
                 dayReflection = diaryEvent.IsDayReflection(),
                 quadrumReflection = diaryEvent.IsQuadrumReflection(),
+                arcReflection = diaryEvent.IsArcReflection(),
                 supportsDirectSpeechInstruction = IsInteractionPrompt(diaryEvent),
                 initiator = PovFor(diaryEvent, DiaryPipelineRoles.Initiator),
                 recipient = PovFor(diaryEvent, DiaryPipelineRoles.Recipient),
@@ -134,6 +135,7 @@ namespace PawnDiary
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloBatched);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloDayReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.SoloQuadrumReflection);
+            AddTemplate(snapshot, DiaryPipelineTemplates.SoloArcReflection);
             AddTemplate(snapshot, DiaryPipelineTemplates.DeathDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.ArrivalDescription);
             AddTemplate(snapshot, DiaryPipelineTemplates.Title);
@@ -205,6 +207,10 @@ namespace PawnDiary
             if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase))
             {
                 maxTokens = DiaryTuning.QuadrumReflectionMaxTokens;
+            }
+            else if (maxTokens <= 0 && string.Equals(templateKey, DiaryPipelineTemplates.SoloArcReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                maxTokens = Math.Max(1, DiaryTuning.Current.arcReflectionMaxTokens);
             }
 
             snapshot.templates.Add(new DiaryTemplatePolicy
@@ -380,6 +386,11 @@ namespace PawnDiary
                 return "QuadrumReflection";
             }
 
+            if (payload.arcReflection)
+            {
+                return "ArcReflection";
+            }
+
             if (payload.dayReflection)
             {
                 return "DayReflection";
@@ -435,6 +446,7 @@ namespace PawnDiary
                 || HasContext(diaryEvent, "arrival_description=")
                 || HasContext(diaryEvent, "death_description=")
                 || HasContext(diaryEvent, "dev_mock=")
+                || HasContext(diaryEvent, "arc_reflection=")
                 || HasContext(diaryEvent, "day_reflection="))
             {
                 return false;

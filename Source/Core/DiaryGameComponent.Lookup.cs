@@ -932,6 +932,9 @@ namespace PawnDiary
             {
                 diary.personaDefName = DiaryPersonas.Default.defName;
             }
+
+            diary.EnsureProgressionState();
+            diary.EnsureArcSchedule();
         }
 
     }
