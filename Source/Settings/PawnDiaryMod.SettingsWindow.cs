@@ -144,14 +144,6 @@ namespace PawnDiary
                         "PawnDiary.Settings.PromptTestMode".Translate(),
                         ref Settings.promptTestMode,
                         "PawnDiary.Settings.PromptTestModeTip".Translate());
-
-                    Rect exportRect = listing.GetRect(28f);
-                    if (ButtonTextFit(exportRect, "PawnDiary.Settings.ExportAllDiaries".Translate()))
-                    {
-                        HandleExportAllDiaries();
-                    }
-
-                    TooltipHandler.TipRegion(exportRect, "PawnDiary.Settings.ExportAllDiariesTip".Translate());
                 }
 
                 listing.Label("PawnDiary.Settings.GenerationChanceWeight".Translate(Settings.generationChanceWeight.ToString("0.##")));
@@ -417,44 +409,10 @@ namespace PawnDiary
             height += 343f;
             if (Prefs.DevMode)
             {
-                height += 62f;
+                height += 34f;
             }
 
             return height + 120f; // breathing room for translated labels and RimWorld skin variance
-        }
-
-        /// <summary>
-        /// Dev-only settings action: writes the current game's complete saved diary state to disk and
-        /// copies the path to the OS clipboard for quick inspection.
-        /// </summary>
-        private static void HandleExportAllDiaries()
-        {
-            DiaryGameComponent component = DiaryGameComponent.Current;
-            if (component == null)
-            {
-                Messages.Message(
-                    "PawnDiary.Settings.ExportAllDiariesNoGame".Translate(),
-                    MessageTypeDefOf.RejectInput,
-                    false);
-                return;
-            }
-
-            string filePath;
-            string error;
-            if (component.TryExportAllDiariesForDev(out filePath, out error))
-            {
-                GUIUtility.systemCopyBuffer = filePath;
-                Messages.Message(
-                    "PawnDiary.Settings.ExportAllDiariesDone".Translate(filePath),
-                    MessageTypeDefOf.PositiveEvent,
-                    false);
-                return;
-            }
-
-            Messages.Message(
-                "PawnDiary.Settings.ExportAllDiariesFailed".Translate(error),
-                MessageTypeDefOf.RejectInput,
-                false);
         }
     }
 }

@@ -4,6 +4,15 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-07-02
+
+- **Diary export moved to Debug Actions and covers archived-only rows.** `Pawn Diary > Export all
+  diary pages...` now writes hot pages, compact archived pages, archive rows without a live pawn diary
+  record, and backing event records; the old settings-page export button was removed.
+- **Destructive dev buttons are tinted red.** The event test panel now draws save-mutating and
+  irreversible actions with the XML-owned `devDangerButtonColor`, including real event triggers,
+  mock-page fill, archive purge, and prompt-suite clear.
+
 ## 2026-07-01
 
 - **Prompt settings menu labels shortened.** The Shared/event prompts picker now uses compact system

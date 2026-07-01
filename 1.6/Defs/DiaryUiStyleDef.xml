@@ -114,6 +114,7 @@
     <modelNameColor><r>0.45</r><g>0.48</g><b>0.50</b><a>0.62</a></modelNameColor>
     <regenerateEntryButtonColor><r>0.48</r><g>0.51</g><b>0.53</b><a>0.46</a></regenerateEntryButtonColor>
     <debugTextColor><r>0.54</r><g>0.58</g><b>0.60</b><a>0.90</a></debugTextColor>
+    <devDangerButtonColor><r>0.95</r><g>0.22</g><b>0.18</b><a>0.92</a></devDangerButtonColor>
     <linkedEntryLabelColor><r>0.80</r><g>0.85</g><b>0.92</b><a>1</a></linkedEntryLabelColor>
     <linkedEntryBgColor><r>0.15</r><g>0.17</g><b>0.20</b><a>0.85</a></linkedEntryBgColor>
     <linkedEntryBorderColor><r>0.35</r><g>0.45</g><b>0.55</b><a>1</a></linkedEntryBorderColor>

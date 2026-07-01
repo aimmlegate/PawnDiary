@@ -28,6 +28,92 @@ namespace PawnDiary
 
             Find.WindowStack.Add(new Dialog_PawnDiaryEventTestPanel());
         }
+
+        /// <summary>
+        /// Writes every saved hot and archived diary page to disk from RimWorld's Debug Actions menu.
+        /// </summary>
+        [DebugAction("Pawn Diary", "Export all diary pages...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
+        public static void ExportAllDiaries()
+        {
+            if (!Prefs.DevMode)
+            {
+                return;
+            }
+
+            HandleExportAllDiariesForDev();
+        }
+
+        /// <summary>
+        /// Opens a pawn picker that removes compact archived pages for one pawn.
+        /// </summary>
+        [DebugAction("Pawn Diary", "Purge archived entries for pawn...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
+        public static void PurgeArchivedEntriesForPawn()
+        {
+            DiaryGameComponent component = DiaryGameComponent.Current;
+            if (!Prefs.DevMode || component == null)
+            {
+                return;
+            }
+
+            List<Pawn> pawns = Dialog_PawnDiaryEventTestPanel.EligiblePawns();
+            if (pawns.Count == 0)
+            {
+                Messages.Message("PawnDiary.Dev.EventPanel.NoPawn".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                return;
+            }
+
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+            for (int i = 0; i < pawns.Count; i++)
+            {
+                Pawn optionPawn = pawns[i];
+                if (optionPawn == null)
+                {
+                    continue;
+                }
+
+                Pawn capturedPawn = optionPawn;
+                options.Add(new FloatMenuOption(capturedPawn.LabelShortCap, delegate
+                {
+                    int removed = component.PurgeArchivedEntriesForPawnForDev(capturedPawn);
+                    Messages.Message(
+                        "PawnDiary.Tab.ArchivedEntriesPurged".Translate(removed, capturedPawn.LabelShortCap),
+                        removed > 0 ? MessageTypeDefOf.PositiveEvent : MessageTypeDefOf.NeutralEvent,
+                        false);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private static void HandleExportAllDiariesForDev()
+        {
+            DiaryGameComponent component = DiaryGameComponent.Current;
+            if (component == null)
+            {
+                Messages.Message(
+                    "PawnDiary.Settings.ExportAllDiariesNoGame".Translate(),
+                    MessageTypeDefOf.RejectInput,
+                    false);
+                return;
+            }
+
+            string filePath;
+            string error;
+            if (component.TryExportAllDiariesForDev(out filePath, out error))
+            {
+                GUIUtility.systemCopyBuffer = filePath;
+                Messages.Message(
+                    "PawnDiary.Settings.ExportAllDiariesDone".Translate(filePath),
+                    MessageTypeDefOf.PositiveEvent,
+                    false);
+                return;
+            }
+
+            Messages.Message(
+                "PawnDiary.Settings.ExportAllDiariesFailed".Translate(error),
+                MessageTypeDefOf.RejectInput,
+                false);
+        }
     }
 
     /// <summary>
@@ -352,15 +438,15 @@ namespace PawnDiary
             y += 28f;
 
             int column = 0;
-            DrawGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerArrival", () => TriggerArrival(pawn));
-            DrawGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerDeath", () => TriggerDeath(pawn));
-            DrawGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerWorkScan", delegate
+            DrawDangerGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerArrival", () => TriggerArrival(pawn));
+            DrawDangerGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerDeath", () => TriggerDeath(pawn));
+            DrawDangerGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerWorkScan", delegate
             {
                 bool recorded = component.TriggerWorkSignalForDev(pawn);
                 Message(recorded, "PawnDiary.Dev.EventPanel.TriggerWorkScan".Translate().Resolve());
             });
-            DrawGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerThoughtProgression", () => TriggerThoughtProgression(component, pawn));
-            DrawGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerDayReflection", delegate
+            DrawDangerGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerThoughtProgression", () => TriggerThoughtProgression(component, pawn));
+            DrawDangerGridButton(rect, ref y, ref column, 2, "PawnDiary.Dev.EventPanel.TriggerDayReflection", delegate
             {
                 component.FlushDaySummaryForDev(pawn);
                 ScannerMessage("PawnDiary.Dev.EventPanel.TriggerDayReflection".Translate().Resolve());
@@ -381,7 +467,8 @@ namespace PawnDiary
                 component.DevPanelThoughtDefNameForDev,
                 component.SetDevPanelThoughtDefNameForDev,
                 () => TriggerThought(pawn, component.DevPanelThoughtDefNameForDev),
-                IsMemoryThoughtDef);
+                IsMemoryThoughtDef,
+                true);
             DrawDefBackedTriggerButton<InspirationDef>(
                 rect,
                 ref y,
@@ -389,7 +476,9 @@ namespace PawnDiary
                 "PawnDiary.Dev.EventPanel.TriggerInspiration",
                 component.DevPanelInspirationDefNameForDev,
                 component.SetDevPanelInspirationDefNameForDev,
-                () => TriggerInspiration(pawn, component.DevPanelInspirationDefNameForDev));
+                () => TriggerInspiration(pawn, component.DevPanelInspirationDefNameForDev),
+                null,
+                true);
             DrawDefBackedTriggerButton<MentalStateDef>(
                 rect,
                 ref y,
@@ -401,7 +490,9 @@ namespace PawnDiary
                     pawn,
                     component.DevPanelMentalStateDefNameForDev,
                     null,
-                    "PawnDiary.Dev.EventPanel.TriggerMentalState".Translate().Resolve()));
+                    "PawnDiary.Dev.EventPanel.TriggerMentalState".Translate().Resolve()),
+                null,
+                true);
             DrawDefBackedTriggerButton<MentalStateDef>(
                 rect,
                 ref y,
@@ -413,7 +504,9 @@ namespace PawnDiary
                     pawn,
                     component.DevPanelPairedMentalStateDefNameForDev,
                     partner,
-                    "PawnDiary.Dev.EventPanel.TriggerSocialFight".Translate().Resolve()));
+                    "PawnDiary.Dev.EventPanel.TriggerSocialFight".Translate().Resolve()),
+                null,
+                true);
             DrawDefBackedTriggerButton<TaleDef>(
                 rect,
                 ref y,
@@ -422,7 +515,8 @@ namespace PawnDiary
                 component.DevPanelTaleDefNameForDev,
                 component.SetDevPanelTaleDefNameForDev,
                 () => TriggerTale(pawn, component.DevPanelTaleDefNameForDev),
-                IsSinglePawnTaleDef);
+                IsSinglePawnTaleDef,
+                true);
             DrawDefBackedTriggerButton<HediffDef>(
                 rect,
                 ref y,
@@ -430,7 +524,9 @@ namespace PawnDiary
                 "PawnDiary.Dev.EventPanel.TriggerHediff",
                 component.DevPanelHediffDefNameForDev,
                 component.SetDevPanelHediffDefNameForDev,
-                () => TriggerHediff(pawn, component.DevPanelHediffDefNameForDev));
+                () => TriggerHediff(pawn, component.DevPanelHediffDefNameForDev),
+                null,
+                true);
             DrawDefBackedTriggerButton<GameConditionDef>(
                 rect,
                 ref y,
@@ -438,7 +534,9 @@ namespace PawnDiary
                 "PawnDiary.Dev.EventPanel.TriggerMoodEvent",
                 component.DevPanelGameConditionDefNameForDev,
                 component.SetDevPanelGameConditionDefNameForDev,
-                () => TriggerMoodEvent(pawn, component.DevPanelGameConditionDefNameForDev));
+                () => TriggerMoodEvent(pawn, component.DevPanelGameConditionDefNameForDev),
+                null,
+                true);
             DrawDefBackedTriggerButton<InteractionDef>(
                 rect,
                 ref y,
@@ -446,7 +544,9 @@ namespace PawnDiary
                 "PawnDiary.Dev.EventPanel.TriggerInteraction",
                 component.DevPanelInteractionDefNameForDev,
                 component.SetDevPanelInteractionDefNameForDev,
-                () => TriggerInteraction(pawn, partner, component.DevPanelInteractionDefNameForDev));
+                () => TriggerInteraction(pawn, partner, component.DevPanelInteractionDefNameForDev),
+                null,
+                true);
             DrawDefBackedTriggerButton<PawnRelationDef>(
                 rect,
                 ref y,
@@ -454,7 +554,9 @@ namespace PawnDiary
                 "PawnDiary.Dev.EventPanel.TriggerRomance",
                 component.DevPanelRelationDefNameForDev,
                 component.SetDevPanelRelationDefNameForDev,
-                () => TriggerRomance(pawn, partner, component.DevPanelRelationDefNameForDev));
+                () => TriggerRomance(pawn, partner, component.DevPanelRelationDefNameForDev),
+                null,
+                true);
             DrawDefBackedTriggerButton<IncidentDef>(
                 rect,
                 ref y,
@@ -463,7 +565,8 @@ namespace PawnDiary
                 component.DevPanelIncidentDefNameForDev,
                 component.SetDevPanelIncidentDefNameForDev,
                 () => TriggerRaid(pawn, component.DevPanelIncidentDefNameForDev),
-                def => def?.Worker != null);
+                def => def?.Worker != null,
+                true);
             DrawDefBackedTriggerButton<QuestScriptDef>(
                 rect,
                 ref y,
@@ -471,7 +574,9 @@ namespace PawnDiary
                 "PawnDiary.Dev.EventPanel.TriggerQuest",
                 component.DevPanelQuestScriptDefNameForDev,
                 component.SetDevPanelQuestScriptDefNameForDev,
-                () => TriggerQuest(pawn, component.DevPanelQuestScriptDefNameForDev));
+                () => TriggerQuest(pawn, component.DevPanelQuestScriptDefNameForDev),
+                null,
+                true);
             DrawAbilityTriggerButton(rect, ref y, ref column, component, pawn);
             FinishGridRow(ref y, ref column);
 
@@ -485,7 +590,7 @@ namespace PawnDiary
         {
             float y = DrawSectionTitle(rect, "PawnDiary.Dev.EventPanel.DiaryTools");
             Rect mockButtonRect = new Rect(rect.x, y, rect.width, ActionRowHeight);
-            if (ButtonTextLeft(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
+            if (ButtonTextLeftDanger(mockButtonRect, "PawnDiary.Tab.FillMockEntries".Translate(DevMockDiaryTargetCount)))
             {
                 int added = component.FillMockDiaryEntriesForDev(
                     pawn,
@@ -516,7 +621,7 @@ namespace PawnDiary
             y += ActionRowHeight + ActionGap;
 
             Rect purgeArchiveButtonRect = new Rect(rect.x, y, rect.width, ActionRowHeight);
-            if (ButtonTextLeft(purgeArchiveButtonRect, "PawnDiary.Tab.PurgeArchivedEntries".Translate()))
+            if (ButtonTextLeftDanger(purgeArchiveButtonRect, "PawnDiary.Tab.PurgeArchivedEntries".Translate()))
             {
                 int removed = component.PurgeArchivedEntriesForPawnForDev(pawn);
                 Messages.Message(
@@ -579,7 +684,7 @@ namespace PawnDiary
                 int shown = component.ShowPromptSuiteEntriesForDev(pawn, component.DevPanelSelectedFixturesForDev(entries));
                 Messages.Message("PawnDiary.Dev.EventPanel.Generated".Translate(shown), MessageTypeDefOf.PositiveEvent, false);
             });
-            DrawGridButton(rect, ref y, ref column, 3, "PawnDiary.Dev.EventPanel.Clear", delegate
+            DrawDangerGridButton(rect, ref y, ref column, 3, "PawnDiary.Dev.EventPanel.Clear", delegate
             {
                 int removed = component.ClearPromptSuiteForDev();
                 Messages.Message("PawnDiary.Tab.PromptSuiteCleared".Translate(removed), MessageTypeDefOf.NeutralEvent, false);
@@ -672,7 +777,17 @@ namespace PawnDiary
             return ButtonTextClickedButton(rect, label) == 0;
         }
 
+        private static bool ButtonTextLeftDanger(Rect rect, string label)
+        {
+            return ButtonTextClickedButton(rect, label, true) == 0;
+        }
+
         private static int ButtonTextClickedButton(Rect rect, string label)
+        {
+            return ButtonTextClickedButton(rect, label, false);
+        }
+
+        private static int ButtonTextClickedButton(Rect rect, string label, bool danger)
         {
             Event ev = Event.current;
             bool mouseOver = Mouse.IsOver(rect);
@@ -710,7 +825,14 @@ namespace PawnDiary
                 }
             }
 
+            Color previousColor = GUI.color;
+            if (danger)
+            {
+                GUI.color = DiaryUiStyles.Current.DevDangerButtonColor;
+            }
+
             Widgets.ButtonText(rect, label);
+            GUI.color = previousColor;
             return clickedButton;
         }
 
@@ -739,6 +861,17 @@ namespace PawnDiary
             DrawGridButtonText(gridRect, ref y, ref column, columns, labelKey.Translate().Resolve(), action);
         }
 
+        private static void DrawDangerGridButton(
+            Rect gridRect,
+            ref float y,
+            ref int column,
+            int columns,
+            string labelKey,
+            Action action)
+        {
+            DrawGridButtonText(gridRect, ref y, ref column, columns, labelKey.Translate().Resolve(), action, true);
+        }
+
         private static void DrawGridButtonText(
             Rect gridRect,
             ref float y,
@@ -756,9 +889,35 @@ namespace PawnDiary
             ref int column,
             int columns,
             string label,
+            Action action,
+            bool danger)
+        {
+            DrawGridButtonText(gridRect, ref y, ref column, columns, label, action, null, null, danger);
+        }
+
+        private static void DrawGridButtonText(
+            Rect gridRect,
+            ref float y,
+            ref int column,
+            int columns,
+            string label,
             Action leftClickAction,
             Action rightClickAction,
             string tooltip)
+        {
+            DrawGridButtonText(gridRect, ref y, ref column, columns, label, leftClickAction, rightClickAction, tooltip, false);
+        }
+
+        private static void DrawGridButtonText(
+            Rect gridRect,
+            ref float y,
+            ref int column,
+            int columns,
+            string label,
+            Action leftClickAction,
+            Action rightClickAction,
+            string tooltip,
+            bool danger)
         {
             float width = (gridRect.width - ActionGap * (columns - 1)) / columns;
             Rect buttonRect = new Rect(
@@ -766,7 +925,7 @@ namespace PawnDiary
                 y,
                 width,
                 ActionRowHeight);
-            int clickedButton = ButtonTextClickedButton(buttonRect, label);
+            int clickedButton = ButtonTextClickedButton(buttonRect, label, danger);
             if (clickedButton == 0)
             {
                 leftClickAction();
@@ -797,7 +956,8 @@ namespace PawnDiary
             string defName,
             Action<string> setter,
             Action trigger,
-            Predicate<T> predicate = null) where T : Def
+            Predicate<T> predicate = null,
+            bool danger = false) where T : Def
         {
             string label = "PawnDiary.Dev.EventPanel.DefChoice".Translate(
                 labelKey.Translate(),
@@ -810,7 +970,8 @@ namespace PawnDiary
                 label,
                 trigger,
                 () => OpenDefMenu(setter, predicate),
-                "PawnDiary.Dev.EventPanel.TriggerDefButtonTip".Translate().Resolve());
+                "PawnDiary.Dev.EventPanel.TriggerDefButtonTip".Translate().Resolve(),
+                danger);
         }
 
         private void DrawAbilityTriggerButton(Rect gridRect, ref float y, ref int column, DiaryGameComponent component, Pawn pawn)
@@ -838,10 +999,11 @@ namespace PawnDiary
                             component.SetDevPanelAbilityDefNameForDev(null);
                         })
                     };
-                    AddDefMenuOptions(options, component.SetDevPanelAbilityDefNameForDev, null as Predicate<AbilityDef>);
-                    Find.WindowStack.Add(new FloatMenu(options));
-                },
-                "PawnDiary.Dev.EventPanel.TriggerDefButtonTip".Translate().Resolve());
+                AddDefMenuOptions(options, component.SetDevPanelAbilityDefNameForDev, null as Predicate<AbilityDef>);
+                Find.WindowStack.Add(new FloatMenu(options));
+            },
+                "PawnDiary.Dev.EventPanel.TriggerDefButtonTip".Translate().Resolve(),
+                true);
         }
 
         private void OpenDefMenu<T>(Action<string> setter, Predicate<T> predicate = null) where T : Def
@@ -1404,7 +1566,7 @@ namespace PawnDiary
             return null;
         }
 
-        private static List<Pawn> EligiblePawns()
+        internal static List<Pawn> EligiblePawns()
         {
             List<Pawn> result = new List<Pawn>();
             if (Find.Maps == null)

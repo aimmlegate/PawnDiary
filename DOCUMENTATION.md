@@ -434,9 +434,10 @@ scan. Bad title responses are rejected and fall back to the opening words of the
 The settings window is split into **Main**, **Prompts**, **Styles**, and **Tuning** tabs. Main covers
 API lanes, routing mode, request tuning, title generation, atmospheric formatting, prompt
 enchantments, one shared random-generation weight for optional chance-gated pages, and diary-event
-retention caps. Dev mode exposes prompt-test mode, a full diary export button, and extra diagnostics.
-The export writes every saved pawn diary page plus the backing event records to `PawnDiaryExports/`
-under RimWorld's save-data folder, and copies the generated file path to the clipboard.
+retention caps. Dev mode exposes prompt-test mode and extra diagnostics in settings; bulk export
+lives in RimWorld's Debug Actions menu. The export writes every saved hot page, compact archived
+page, archive-only orphan row, and backing event record to `PawnDiaryExports/` under RimWorld's
+save-data folder, and copies the generated file path to the clipboard.
 
 Prompts is the single home for prompt text editing. Its **Shared/event prompts** subpage edits the
 four shared system prompts plus per-event prompt/enhancement/forced-model overrides. Its prompt-type
@@ -501,10 +502,12 @@ pairwise pages rewrite both POVs when both are still eligible. Dev mode also sho
 rows, raw prompt/status data, and copy buttons. Bulk dev actions live under RimWorld's Debug Actions
 menu as `Pawn Diary > Event test panel...`, which opens a sectioned dev panel for selecting a test
 pawn and partner. The same debug category also exposes
+`Pawn Diary > Export all diary pages...` for full hot/archive text export and
 `Pawn Diary > Purge archived entries for pawn...` for direct per-pawn cleanup. The panel has separate
 Events, Diary, and Fixtures sections and owns the former Diary tab action strip: a mock-page filler,
 per-pawn archive purge, the per-pawn persona picker, transient formatting preview buttons, real
-vanilla gameplay triggers, and prompt-only fixture batch/clear tools. The selected pawn,
+vanilla gameplay triggers, and prompt-only fixture batch/clear tools. Buttons that mutate or delete
+save data use the XML-owned danger tint. The selected pawn,
 partner, active section, per-section scroll, selected trigger Def names, and selected fixture IDs are
 saved on `DiaryGameComponent`, so the panel state survives closing/reopening and normal save/load.
 Real trigger buttons cover paths that Pawn Diary patches, such as thoughts, inspirations, mental
@@ -772,11 +775,12 @@ node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 
 Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridge/GABS. RimWorld dev
 mode's Debug Actions menu exposes `Pawn Diary > Event test panel...` for common real trigger paths
-and `Pawn Diary > Purge archived entries for pawn...` for a direct pawn picker that clears only that
+`Pawn Diary > Export all diary pages...` for UTF-8 export, and
+`Pawn Diary > Purge archived entries for pawn...` for a direct pawn picker that clears only that
 pawn's compact archived pages. In the event panel, select an eligible colonist, optionally select a
 partner, open the Events section, left-click a Def-backed row to trigger it, or right-click it first
-to choose a different Def; the row title updates to the selected menu label. Some buttons
-deliberately mutate the disposable save, such as spawning a
+to choose a different Def; the row title updates to the selected menu label. Red buttons deliberately
+mutate the disposable save, such as spawning a
 recruit, killing a test colonist, creating a raid, or
 accepting/completing a sample quest. For Diary UI stress checks, use the same panel's Diary section to
 fill mock pages, switch personas, or open transient card previews. For prompt shape checks that do not
