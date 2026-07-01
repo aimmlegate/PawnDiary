@@ -159,7 +159,7 @@ progression_kind=xenotype;
 previous_xenotype=Baseliner;
 xenotype=Sanguophage;
 xenotype_def=Sanguophage;
-sanguophage=true
+major_xenotype=true
 ```
 
 ```text
@@ -197,7 +197,7 @@ Add progression context fields to the solo prompt templates in
 - `previous_psylink_level`
 - `xenotype`
 - `previous_xenotype`
-- `sanguophage`
+- `major_xenotype`
 - `title`
 - `previous_title`
 
@@ -402,10 +402,11 @@ Context should include:
 xenotype=<label>
 xenotype_def=<defName>
 previous_xenotype=<label>
-sanguophage=true/false
+major_xenotype=true/false
 ```
 
-Set `sanguophage=true` when the xenotype defName matches `Sanguophage` case-insensitively.
+Set `major_xenotype=true` when XML `arcReflectionMajorXenotypeDefNames` contains the xenotype defName
+and the configured arc major-severity threshold allows it.
 
 Do not track individual gene lists for MVP.
 
@@ -505,10 +506,13 @@ arcReflectionAllowSecondMajorEntry = true
 arcReflectionSecondEntryMinGapDays = 30
 arcReflectionMajorSeverityThreshold = 90
 arcReflectionForceAfterYearDay = 45
+arcReflectionMemoryShortfallRetryTicks = 60000
 arcReflectionMinMemoriesPreferred = 4
 arcReflectionMinMemoriesForced = 3
 arcReflectionMaxMemories = 8
 arcReflectionRecentlyUsedMemoryCap = 16
+arcReflectionMajorXenotypeDefNames = [Sanguophage]
+arcReflectionHighStakesDefNameTokens = [Void, HeartAttack, AncientDanger, PrisonBreak]
 ```
 
 Behavior:
@@ -567,10 +571,11 @@ Normalize on load:
 
 ### Annual Forced Trigger
 
-Run from the same sleep/rest/day-summary path:
+Run from the sleep/rest flush path. The annual arc check stays enabled when `arcReflectionEnabled` is
+true, even if day summaries are disabled:
 
 ```text
-FlushDaySummaryForPawn
+FlushAmbientNotesForSleepingPawns / FlushDaySummaryForPawn
     TryFlushArcReflectionForPawn
     TryFlushQuadrumReflectionForPawn
     normal day reflection
@@ -586,10 +591,10 @@ After a major regular event is recorded, call a lightweight:
 ConsiderArcReflectionAfterEvent(DiaryEvent event, Pawn pawn)
 ```
 
-MVP major events:
+MVP major events, controlled by XML severity/list policy:
 
-- xenotype changed to sanguophage
-- psylink level 6
+- xenotype changed to an XML-listed major xenotype such as `Sanguophage`
+- psylink level whose `level / 6 * 100` score meets `arcReflectionMajorSeverityThreshold`
 - major royal title increase, if severity policy marks it high
 - possibly severe event-window entries like void activation
 

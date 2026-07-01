@@ -683,14 +683,133 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowVoidMonolith</defName>
+    <label>Void monolith</label>
+    <order>137</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>an ominous colony-wide anomaly event that should feel rare, strange, and consequential without inventing hidden mechanics</instruction>
+    <tone>with restrained dread and long consequence</tone>
+    <tones>
+      <li>quietly unnerved, as if the colony has crossed a threshold</li>
+      <li>watchful and uneasy, treating the moment as bigger than one ordinary day</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>VoidMonolithDiscovery</li>
+      <li>VoidMonolithActivation</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowHeartAttack</defName>
+    <label>Heart attack</label>
+    <order>138</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a sudden medical emergency; write the fear, body, and immediate urgency without inventing treatment results</instruction>
+    <tone>with sharp bodily fear and urgency</tone>
+    <tones>
+      <li>frightened and physical, focused on breath, pain, and helplessness</li>
+      <li>stark and urgent, with the colony suddenly feeling fragile</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>HeartAttack</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowBirthday</defName>
+    <label>Birthday</label>
+    <order>139</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a birthday or age milestone; write it as a small life-marker rather than a celebration unless the facts say so</instruction>
+    <tone>with quiet awareness of time passing</tone>
+    <tones>
+      <li>reflective and personal, noticing what age changes</li>
+      <li>softly wry, aware that time keeps moving even on the rim</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>Birthday</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowAncientDanger</defName>
+    <label>Ancient danger</label>
+    <order>140</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a discovered ancient danger; write foreboding and risk, not an invented fight or loot outcome</instruction>
+    <tone>with wary pressure and old danger</tone>
+    <tones>
+      <li>tense and careful, aware that a wall may be hiding disaster</li>
+      <li>hushed and ominous, treating the discovery as a warning</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>AncientDanger</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowPrisonBreak</defName>
+    <label>Prison break</label>
+    <order>141</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <combat>true</combat>
+    <instruction>a prison break or uprising; write the alarm, split-second danger, and human tension without inventing the final outcome</instruction>
+    <tone>with alarm and close-quarters danger</tone>
+    <tones>
+      <li>fast and tense, with trust suddenly gone</li>
+      <li>chaotic and immediate, focused on the first dangerous moments</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>PrisonBreak</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>other</defName>
     <label>A quiet day</label>
-    <order>140</order>
+    <order>150</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a social interaction between the pawns</instruction>
     <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Reflection domain ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>reflection</defName>
+    <label>Reflection</label>
+    <order>160</order>
+    <domain>Reflection</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a reflective diary page that looks back over recent memories instead of reacting to one ordinary interaction</instruction>
+    <tone>with private reflection and continuity</tone>
+    <tones>
+      <li>reflective and personal, connecting memory to change over time</li>
+      <li>quietly inward, weighing what the remembered moments meant</li>
+    </tones>
+    <matchDefNames>
+      <li>DayReflection</li>
+      <li>QuadrumReflection</li>
+      <li>PawnArcReflection</li>
+    </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
   <!-- ===== Mental-state domain ===== -->
@@ -2083,6 +2202,95 @@
       <li>focused and concrete, about the moment of use rather than a broad summary</li>
       <li>practical and sensory, grounded in the named ability, target, and cooldown rarity</li>
     </tones>
+    <catchAll>true</catchAll>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <!-- ===== Progression domain: synthetic pawn-development signals ===== -->
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionSkillPassion</defName>
+    <label>Passion skill milestone</label>
+    <order>805</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a passion skill milestone; write pride, effort, frustration, or identity through the named skill and level only</instruction>
+    <tone>with earned self-awareness</tone>
+    <tones>
+      <li>proud but grounded, aware of the labor behind the milestone</li>
+      <li>quietly intense, treating skill as part of who the pawn is becoming</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>SkillMilestone</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionPsylink</defName>
+    <label>Psylink gained</label>
+    <order>810</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a psylink level gain; write the psychic change as lived sensation, responsibility, or unease, without inventing new powers</instruction>
+    <tone>with strange inner pressure</tone>
+    <tones>
+      <li>awed and uneasy, aware of power settling into the mind</li>
+      <li>focused and intimate, describing the change from inside the body</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PsylinkLevel</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionXenotype</defName>
+    <label>Xenotype changed</label>
+    <order>815</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a xenotype change; write the bodily and identity shift from the pawn's perspective using only the supplied old and new labels</instruction>
+    <tone>with intimate bodily consequence</tone>
+    <tones>
+      <li>changed and watchful, noticing the self becoming unfamiliar</li>
+      <li>visceral and private, focused on what the new body means tonight</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>XenotypeChanged</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionRoyalTitle</defName>
+    <label>Royal title changed</label>
+    <order>820</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a royal title change; write status, burden, pride, or distance through the new title without explaining faction mechanics</instruction>
+    <tone>with formal weight and personal cost</tone>
+    <tones>
+      <li>measured and self-conscious, aware that a title changes how others look</li>
+      <li>quietly burdened, treating rank as both honor and obligation</li>
+    </tones>
+    <colorCue>white</colorCue>
+    <matchDefNames>
+      <li>RoyalTitleChanged</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>progressionOther</defName>
+    <label>Progression</label>
+    <order>899</order>
+    <domain>Progression</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a pawn changed in a notable way; write the supplied before-and-after fact plainly and personally</instruction>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 

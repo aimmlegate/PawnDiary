@@ -292,6 +292,19 @@
          matched active hediffs for XML-configured severity-step increases. -->
     <hediffProgressionScanIntervalTicks>2500</hediffProgressionScanIntervalTicks>
 
+    <!-- Pawn progression scanner. First scan baselines existing saves, then passion skills emit only
+         at configured milestones. Psylink detection matches hediff defNames by string for DLC safety. -->
+    <progressionScanIntervalTicks>2500</progressionScanIntervalTicks>
+    <progressionSkillMilestones>
+      <li>8</li>
+      <li>12</li>
+      <li>16</li>
+      <li>20</li>
+    </progressionSkillMilestones>
+    <psylinkHediffDefNames>
+      <li>PsychicAmplifier</li>
+    </psylinkHediffDefNames>
+
     <!-- Work diary sampling. Work has no one-shot event hook, so the mod periodically samples
          current colonist jobs, then applies chance and cooldown gates. -->
     <workScanIntervalTicks>2500</workScanIntervalTicks>
@@ -331,6 +344,31 @@
     <quadrumReflectionMinImportantEntries>6</quadrumReflectionMinImportantEntries>
     <quadrumReflectionMaxPromptEvents>8</quadrumReflectionMaxPromptEvents>
     <quadrumReflectionMaxTokens>350</quadrumReflectionMaxTokens>
+
+    <!-- Rare yearly pawn arc reflections. Existing diary pages are sampled as memories; this state
+         only controls cadence and repetition, not a separate history database. -->
+    <arcReflectionEnabled>true</arcReflectionEnabled>
+    <arcReflectionMaxEntriesPerYear>1</arcReflectionMaxEntriesPerYear>
+    <arcReflectionAllowSecondMajorEntry>true</arcReflectionAllowSecondMajorEntry>
+    <arcReflectionSecondEntryMinGapDays>30</arcReflectionSecondEntryMinGapDays>
+    <arcReflectionMajorSeverityThreshold>90</arcReflectionMajorSeverityThreshold>
+    <arcReflectionForceAfterYearDay>45</arcReflectionForceAfterYearDay>
+    <arcReflectionMemoryShortfallRetryTicks>60000</arcReflectionMemoryShortfallRetryTicks>
+    <arcReflectionMinMemoriesPreferred>4</arcReflectionMinMemoriesPreferred>
+    <arcReflectionMinMemoriesForced>3</arcReflectionMinMemoriesForced>
+    <arcReflectionMaxMemories>8</arcReflectionMaxMemories>
+    <arcReflectionRecentlyUsedMemoryCap>16</arcReflectionRecentlyUsedMemoryCap>
+    <arcReflectionMemorySnippetMaxChars>220</arcReflectionMemorySnippetMaxChars>
+    <arcReflectionMaxTokens>420</arcReflectionMaxTokens>
+    <arcReflectionMajorXenotypeDefNames>
+      <li>Sanguophage</li>
+    </arcReflectionMajorXenotypeDefNames>
+    <arcReflectionHighStakesDefNameTokens>
+      <li>Void</li>
+      <li>HeartAttack</li>
+      <li>AncientDanger</li>
+      <li>PrisonBreak</li>
+    </arcReflectionHighStakesDefNameTokens>
 
     <!-- Humor cues (hidden, always-on). Base probability an eligible first-person entry gets one
          structural humor cue appended to its prompt. No settings UI; this is the single knob. Flavor

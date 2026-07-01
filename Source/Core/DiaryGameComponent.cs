@@ -168,6 +168,9 @@ namespace PawnDiary
         // long time and there is no single "meaningful work moment happened" callback. The scanner
         // interval itself is XML-tunable; this field only stores the next allowed scan tick.
         private int nextWorkScanTick;
+        // Pawn progression entries are sampled: skills, psylink, titles, and xenotypes are slow-moving
+        // state where baseline suppression is more important than catching every internal setter.
+        private int nextProgressionScanTick;
 
         // Current absolute in-game day. Uses TicksAbs so day-note batching follows the world calendar.
         private static int CurrentDayIndex
@@ -247,6 +250,7 @@ namespace PawnDiary
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
+            nextProgressionScanTick = 0;
             baselineQuestAcceptancesOnNextScan = false;
             initialArrivalScanPending = true;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
@@ -285,6 +289,7 @@ namespace PawnDiary
             nextAmbientSleepFlushScanTick = 0;
             nextWorkScanTick = 0;
             nextHediffProgressionScanTick = 0;
+            nextProgressionScanTick = 0;
             baselineQuestAcceptancesOnNextScan = !BaselineAcceptedQuests();
             initialArrivalScanPending = false;
             // Day-summary state is transient; clear it and let the first tick re-snapshot opinions.
@@ -495,6 +500,12 @@ namespace PawnDiary
                 baselineHediffProgressionsOnNextScan = false;
             }
 
+            if (!initialArrivalScanPending && now >= nextProgressionScanTick)
+            {
+                nextProgressionScanTick = now + Math.Max(250, DiarySignalPolicies.ProgressionScanIntervalTicks);
+                ScanPawnProgressionsForDiaryEvents();
+            }
+
             if (now >= nextOrphanRecoveryScanTick)
             {
                 nextOrphanRecoveryScanTick = now + OrphanRecoveryScanIntervalTicks;
@@ -546,11 +557,14 @@ namespace PawnDiary
         private void FlushAmbientNotesForSleepingPawns()
         {
             bool daySummary = DiaryTuning.Current.daySummaryEnabled;
+            bool arcReflection = DiaryTuning.Current.arcReflectionEnabled;
 
-            // When the reflection is off we only have work if filler notes are pending. When it is on,
-            // a reflection can also be driven by major events / opinion shifts / new afflictions even
-            // with no pending filler, so we always scan resting pawns (each is cheap and idempotent).
-            if (!daySummary && pendingAmbientInteractionNotes.Count == 0 && pendingAmbientThoughtNotes.Count == 0)
+            // When both reflection paths are off we only have work if filler notes are pending. When a
+            // reflection is on, it can be due with no pending filler, so scan resting pawns idempotently.
+            if (!daySummary
+                && !arcReflection
+                && pendingAmbientInteractionNotes.Count == 0
+                && pendingAmbientThoughtNotes.Count == 0)
             {
                 return;
             }
@@ -571,6 +585,12 @@ namespace PawnDiary
                 }
                 else
                 {
+                    if (arcReflection && TryFlushArcReflectionForPawn(
+                        pawn, pawn.GetUniqueLoadID(), CurrentDayIndex, majorEventTrigger: false))
+                    {
+                        continue;
+                    }
+
                     FlushAmbientInteractionNotesForPawn(pawn);
                     FlushAmbientThoughtNotesForPawn(pawn);
                 }

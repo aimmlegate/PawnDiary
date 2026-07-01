@@ -24,6 +24,8 @@ namespace PawnDiary
     // match the quest lifecycle signal ("accepted"/"completed"/"failed") so one DiaryEventType.Quest
     // fans out to three groups; Ritual groups match Precept_Ritual defNames from finished Ideology rituals.
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
+    // Progression groups match synthetic source tokens from the pawn progression scanner.
+    // Reflection groups match synthetic day/quadrum/arc reflection source tokens.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -39,7 +41,9 @@ namespace PawnDiary
         Raid,
         Quest,
         Ritual,
-        Ability
+        Ability,
+        Progression,
+        Reflection
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -580,6 +584,13 @@ namespace PawnDiary
             return ClassifyIn(GroupDomain.Ability, abilityClassifierKey);
         }
 
+        // First Progression-domain group that matches the synthetic progression source token, else the
+        // Progression catch-all. The scanner emits tokens like SkillMilestone and XenotypeChanged.
+        public static DiaryInteractionGroupDef ClassifyProgression(string progressionDefName)
+        {
+            return ClassifyIn(GroupDomain.Progression, progressionDefName);
+        }
+
         // Same classifier, but for saved events where we only have the stored defName string.
         // The Diary tab and save migration helpers use this to recover labels, importance, and
         // semantic color cues for older entries.
@@ -792,6 +803,13 @@ namespace PawnDiary
         // Work-domain instruction. The scanner picks the group first (passion, strain, routine,
         // dark study) because those groups depend on pawn state as well as the WorkTypeDef.
         public static string InstructionForWork(DiaryInteractionGroupDef group)
+        {
+            return InstructionForGroup(group);
+        }
+
+        // Progression-domain instruction. The scanner has already picked the group from the synthetic
+        // progression source token, so this mirrors work-domain instruction resolution.
+        public static string InstructionForProgression(DiaryInteractionGroupDef group)
         {
             return InstructionForGroup(group);
         }

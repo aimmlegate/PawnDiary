@@ -106,6 +106,11 @@ namespace PawnDiary
                 return important ? DiaryPipelineTemplates.PairImportant : DiaryPipelineTemplates.PairDefault;
             }
 
+            if (payload.arcReflection)
+            {
+                return DiaryPipelineTemplates.SoloArcReflection;
+            }
+
             if (payload.quadrumReflection)
             {
                 return DiaryPipelineTemplates.SoloQuadrumReflection;

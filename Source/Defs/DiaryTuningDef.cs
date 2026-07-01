@@ -336,6 +336,14 @@ namespace PawnDiary
         // without a per-mod Harmony patch.
         public int hediffProgressionScanIntervalTicks = 2500;
 
+        // ---- Pawn progression scanner ----
+        // Watches slow-changing pawn state that is not reliably covered by one-shot hooks: passion
+        // skill milestones, psylink levels, xenotype changes, and royal-title changes.
+        public int progressionScanIntervalTicks = 2500;
+        public List<int> progressionSkillMilestones = new List<int> { 8, 12, 16, 20 };
+        // Plain string matchers, not Def references, so Royalty-less games simply never see a match.
+        public List<string> psylinkHediffDefNames = new List<string> { "PsychicAmplifier" };
+
         // ---- Work recording ----
         // Periodic scanner interval for colonists' current work jobs. Work has no clean one-shot
         // RimWorld event for "this was a diary-worthy work moment", so the scanner samples rarely
@@ -387,6 +395,32 @@ namespace PawnDiary
         public int quadrumReflectionMinImportantEntries = 6;
         public int quadrumReflectionMaxPromptEvents = 8;
         public int quadrumReflectionMaxTokens = 350;
+
+        // ---- Arc reflections ----
+        public bool arcReflectionEnabled = true;
+        public int arcReflectionMaxEntriesPerYear = 1;
+        public bool arcReflectionAllowSecondMajorEntry = true;
+        public int arcReflectionSecondEntryMinGapDays = 30;
+        // 0..100 threshold used by major progression triggers; default 90 keeps only the biggest moments.
+        public int arcReflectionMajorSeverityThreshold = 90;
+        public int arcReflectionForceAfterYearDay = 45;
+        // Retry delay after a forced yearly arc finds too few memories; prevents 250-tick rest rescans.
+        public int arcReflectionMemoryShortfallRetryTicks = 60000;
+        public int arcReflectionMinMemoriesPreferred = 4;
+        public int arcReflectionMinMemoriesForced = 3;
+        public int arcReflectionMaxMemories = 8;
+        public int arcReflectionRecentlyUsedMemoryCap = 16;
+        public int arcReflectionMemorySnippetMaxChars = 220;
+        public int arcReflectionMaxTokens = 420;
+        // Plain defName strings/tokens, not Def references, so missing DLC content simply never matches.
+        public List<string> arcReflectionMajorXenotypeDefNames = new List<string> { "Sanguophage" };
+        public List<string> arcReflectionHighStakesDefNameTokens = new List<string>
+        {
+            "Void",
+            "HeartAttack",
+            "AncientDanger",
+            "PrisonBreak",
+        };
 
         // ---- Humor cues (hidden, always-on) ----
         // Base probability (0..1) that an eligible first-person entry gets one structural humor

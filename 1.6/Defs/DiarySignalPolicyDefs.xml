@@ -111,6 +111,13 @@
   </PawnDiary.DiarySignalPolicyDef>
 
   <PawnDiary.DiarySignalPolicyDef>
+    <defName>DiarySignalPolicy_Progression</defName>
+    <signalKey>Progression</signalKey>
+    <enabled>true</enabled>
+    <scanIntervalTicks>2500</scanIntervalTicks>
+  </PawnDiary.DiarySignalPolicyDef>
+
+  <PawnDiary.DiarySignalPolicyDef>
     <defName>DiarySignalPolicy_Work</defName>
     <signalKey>Work</signalKey>
     <enabled>true</enabled>

@@ -175,6 +175,7 @@ namespace PawnDiary
         public const string SoloBatched = "SoloBatched";
         public const string SoloDayReflection = "SoloDayReflection";
         public const string SoloQuadrumReflection = "SoloQuadrumReflection";
+        public const string SoloArcReflection = "SoloArcReflection";
         public const string DeathDescription = "DeathDescription";
         public const string ArrivalDescription = "ArrivalDescription";
         public const string Title = "Title";
@@ -251,7 +252,8 @@ namespace PawnDiary
             }
 
             if (string.Equals(templateKey, SoloDayReflection, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(templateKey, SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase))
+                || string.Equals(templateKey, SoloQuadrumReflection, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(templateKey, SoloArcReflection, StringComparison.OrdinalIgnoreCase))
             {
                 return PawnDiaryMod.Settings == null
                     ? DiaryPrompts.Current.systemPromptReflection
@@ -374,6 +376,21 @@ namespace PawnDiary
                     ContextField("important entry count", "important_entries"),
                     Field("setting", "Setting"),
                     Field("my last opener (not repeat)", "LastOpener"));
+            }
+
+            if (string.Equals(templateKey, SoloArcReflection, StringComparison.OrdinalIgnoreCase))
+            {
+                return Fields(
+                    Field("event", "EventNoun"),
+                    Field("pov", "PovName"),
+                    ContextField("arc year", "arc_year"),
+                    Field("selected memories", "PovText"),
+                    Field("instruction", "Instruction"),
+                    Field("you", "PawnSummary"),
+                    Field("setting", "Setting"),
+                    Field("my last opener (not repeat)", "LastOpener"),
+                    Field("event prompt", "EventPrompt"),
+                    Field("event enhancement", "EventEnhancement"));
             }
 
             // Persona is intentionally absent: it is injected into the system prompt

@@ -60,11 +60,15 @@ namespace DiaryCapturePolicyTests
             TestWorkBuildGameContextFormat();
             TestThoughtProgressionDecide();
             TestThoughtProgressionBuildGameContextFormat();
+            TestProgressionDecide();
+            TestProgressionBuildGameContextFormat();
             TestDayReflectionDecide();
             TestDayReflectionImportantSignalKindPolicy();
             TestDayReflectionBuildGameContextFormat();
             TestQuadrumReflectionPolicy();
             TestQuadrumReflectionBuildGameContextFormat();
+            TestArcReflectionDecide();
+            TestArcReflectionBuildGameContextFormat();
             TestCatalogDispatch();
             TestCatalogContract();
             TestMigrationSentinel();
@@ -1091,6 +1095,54 @@ namespace DiaryCapturePolicyTests
                     "NeedOutdoors", "need_outdoors", "stuck indoors", "2", "0.75", MoodNegative, "-8.0"));
         }
 
+        // -- Pawn progression --
+
+        private static void TestProgressionDecide()
+        {
+            AssertEqual("progression null data drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(null, Ctx()));
+            AssertEqual("progression null ctx drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(), null));
+            AssertEqual("progression empty pawn drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(pawnId: ""), Ctx()));
+            AssertEqual("progression empty defName drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(defName: ""), Ctx()));
+            AssertEqual("progression empty kind drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(kind: ""), Ctx()));
+            AssertEqual("progression ineligible drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(), Ctx(eligible: false)));
+            AssertEqual("progression user disabled drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(), Ctx(user: false)));
+            AssertEqual("progression signal disabled drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(), Ctx(signal: false)));
+            AssertEqual("progression already recorded drops", CaptureDecision.Drop,
+                ProgressionEventData.Decide(Progression(alreadyRecorded: true), Ctx()));
+            AssertEqual("progression valid signal records", CaptureDecision.GenerateSolo,
+                ProgressionEventData.Decide(Progression(), Ctx()));
+        }
+
+        private static void TestProgressionBuildGameContextFormat()
+        {
+            AssertEqual("progression context with extra facts",
+                "progression=SkillMilestone; progression_kind=skill; label=Construction 12; previous_value=8; new_value=12; skill=Construction; skill_level=12; passion=major",
+                ProgressionEventData.BuildGameContext(
+                    ProgressionEventData.SkillMilestoneDefName,
+                    "skill",
+                    "Construction 12",
+                    "8",
+                    "12",
+                    "skill=Construction; skill_level=12; passion=major"));
+            AssertEqual("progression context omits blanks",
+                "progression=PsylinkLevel; progression_kind=psylink; new_value=4",
+                ProgressionEventData.BuildGameContext(
+                    ProgressionEventData.PsylinkLevelDefName,
+                    "psylink",
+                    "",
+                    null,
+                    "4",
+                    null));
+        }
+
         // ── Day reflection ──
 
         private static void TestDayReflectionDecide()
@@ -1185,6 +1237,39 @@ namespace DiaryCapturePolicyTests
                     6,
                     10,
                     "event:raid, event:death"));
+        }
+
+        private static void TestArcReflectionDecide()
+        {
+            AssertEqual("arc reflection null data drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(null, Ctx()));
+            AssertEqual("arc reflection null ctx drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(), null));
+            AssertEqual("arc reflection empty pawn drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(pawnId: ""), Ctx()));
+            AssertEqual("arc reflection empty defName drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(defName: ""), Ctx()));
+            AssertEqual("arc reflection ineligible drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(), Ctx(eligible: false)));
+            AssertEqual("arc reflection user disabled drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(), Ctx(user: false)));
+            AssertEqual("arc reflection signal disabled drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(), Ctx(signal: false)));
+            AssertEqual("arc reflection already written drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(alreadyWritten: true), Ctx()));
+            AssertEqual("arc reflection no candidates drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(candidates: 0), Ctx()));
+            AssertEqual("arc reflection no selected memories drops", CaptureDecision.Drop,
+                ArcReflectionEventData.Decide(ArcReflection(selected: 0), Ctx()));
+            AssertEqual("arc reflection valid signal records", CaptureDecision.GenerateSolo,
+                ArcReflectionEventData.Decide(ArcReflection(), Ctx()));
+        }
+
+        private static void TestArcReflectionBuildGameContextFormat()
+        {
+            AssertEqual("arc reflection context",
+                "arc_reflection=true; arc_year=5504; forced=true; selected_memories=6; candidate_memories=18; entries_this_year=0",
+                ArcReflectionEventData.BuildGameContext(5504, true, 6, 18, 0));
         }
 
         // ── Catalog dispatch ──
@@ -1289,11 +1374,23 @@ namespace DiaryCapturePolicyTests
                 CaptureDecision.GenerateSolo,
                 thoughtProgressionSpec.Decide(ThoughtProgression(), Ctx()));
 
+            DiaryEventSpec progressionSpec = DiaryEventCatalog.Get(DiaryEventType.Progression);
+            AssertTrue("catalog has Progression spec", progressionSpec is ProgressionEventSpec);
+            AssertEqual("catalog dispatches Progression decision",
+                CaptureDecision.GenerateSolo,
+                progressionSpec.Decide(Progression(), Ctx()));
+
             DiaryEventSpec dayReflectionSpec = DiaryEventCatalog.Get(DiaryEventType.DayReflection);
             AssertTrue("catalog has DayReflection spec", dayReflectionSpec is DayReflectionEventSpec);
             AssertEqual("catalog dispatches DayReflection decision",
                 CaptureDecision.GenerateSolo,
                 dayReflectionSpec.Decide(DayReflection(), Ctx()));
+
+            DiaryEventSpec arcReflectionSpec = DiaryEventCatalog.Get(DiaryEventType.ArcReflection);
+            AssertTrue("catalog has ArcReflection spec", arcReflectionSpec is ArcReflectionEventSpec);
+            AssertEqual("catalog dispatches ArcReflection decision",
+                CaptureDecision.GenerateSolo,
+                arcReflectionSpec.Decide(ArcReflection(), Ctx()));
 
             // Unregistered spec returns null — callers must treat as Drop.
             // (We can't construct a DiaryEventType that isn't registered because all values are
@@ -1940,6 +2037,26 @@ namespace DiaryCapturePolicyTests
             };
         }
 
+        private static ProgressionEventData Progression(
+            string pawnId = "P1",
+            string defName = ProgressionEventData.SkillMilestoneDefName,
+            string kind = "skill",
+            bool alreadyRecorded = false)
+        {
+            return new ProgressionEventData
+            {
+                PawnId = pawnId,
+                Tick = 0,
+                DefName = defName,
+                Kind = kind,
+                Label = "Construction 12",
+                PreviousValue = "8",
+                NewValue = "12",
+                Context = "skill=Construction; skill_level=12; passion=major",
+                AlreadyRecorded = alreadyRecorded,
+            };
+        }
+
         private static DayReflectionEventData DayReflection(
             string defName = DayReflectionEventData.DefNameToken,
             int candidates = 3,
@@ -1961,6 +2078,28 @@ namespace DiaryCapturePolicyTests
                 AlreadyWritten = alreadyWritten,
             };
         }
+
+        private static ArcReflectionEventData ArcReflection(
+            string pawnId = "P1",
+            string defName = ArcReflectionEventData.DefNameToken,
+            int candidates = 6,
+            int selected = 4,
+            bool alreadyWritten = false)
+        {
+            return new ArcReflectionEventData
+            {
+                PawnId = pawnId,
+                Tick = 0,
+                DefName = defName,
+                ArcYear = 5504,
+                CandidateMemoryCount = candidates,
+                SelectedMemoryCount = selected,
+                EntriesThisYear = 0,
+                Forced = true,
+                AlreadyWritten = alreadyWritten,
+            };
+        }
+
 
         /// <summary>
         /// Default test policy mirrors the shipped DiarySignalPolicyDef defaults: ±5 general, ±15

@@ -42,6 +42,33 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Biotech: the current xenotype label, including ordinary Baseliner when Biotech is present.
+        /// Used by progression bookkeeping where a later change from Baseliner is meaningful.
+        /// </summary>
+        public static string XenotypeLabel(Pawn pawn)
+        {
+            if (!ModsConfig.BiotechActive || pawn?.genes == null)
+            {
+                return string.Empty;
+            }
+
+            return PromptTextSanitizer.LocalizedPromptText(pawn.genes.XenotypeLabelCap);
+        }
+
+        /// <summary>
+        /// Biotech: stable xenotype defName for progression dedup. Empty without Biotech or tracker.
+        /// </summary>
+        public static string XenotypeDefName(Pawn pawn)
+        {
+            if (!ModsConfig.BiotechActive || pawn?.genes?.Xenotype == null)
+            {
+                return string.Empty;
+            }
+
+            return pawn.genes.Xenotype.defName ?? string.Empty;
+        }
+
+        /// <summary>
         /// Royalty: the pawn's highest royal title, gender-specific (e.g. "Knight", "Countess").
         /// Empty without Royalty or for a titleless pawn.
         /// </summary>
@@ -60,6 +87,29 @@ namespace PawnDiary
             }
 
             return PromptTextSanitizer.LocalizedPromptText(titleDef.GetLabelCapFor(pawn));
+        }
+
+        /// <summary>
+        /// Royalty: the pawn's highest royal title label. Kept separate from RoyalTitle for callers
+        /// that need the matching defName too.
+        /// </summary>
+        public static string RoyalTitleLabel(Pawn pawn)
+        {
+            return RoyalTitle(pawn);
+        }
+
+        /// <summary>
+        /// Royalty: stable defName for the pawn's highest royal title. Empty without title/Royalty.
+        /// </summary>
+        public static string RoyalTitleDefName(Pawn pawn)
+        {
+            if (!ModsConfig.RoyaltyActive || pawn?.royalty == null)
+            {
+                return string.Empty;
+            }
+
+            RoyalTitleDef titleDef = pawn.royalty.MostSeniorTitle?.def;
+            return titleDef?.defName ?? string.Empty;
         }
 
         /// <summary>

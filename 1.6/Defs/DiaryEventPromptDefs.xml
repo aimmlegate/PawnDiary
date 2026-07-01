@@ -138,6 +138,24 @@
   </PawnDiary.DiaryEventPromptDef>
 
   <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_Progression</defName>
+    <label>progression</label>
+    <eventType>Progression</eventType>
+    <prompt>Write a pawn progression moment as a concrete private diary entry about change, effort, status, or identity.</prompt>
+    <enhancement>Use the supplied before-and-after fields exactly. Do not explain game mechanics, invent training scenes, or add powers, titles, body changes, or achievements that were not supplied.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_ArcReflection</defName>
+    <label>arc reflection</label>
+    <eventType>ArcReflection</eventType>
+    <prompt>Write a rare life-arc diary entry about who the pawn is becoming across the selected memories.</prompt>
+    <enhancement>Use the selected memories as anchors, not as a checklist. Connect only a few memories into a private sense of change, regret, pride, fear, or resolve. Do not mention every memory.</enhancement>
+    <!-- Optional: set this to the model id of one configured API endpoint to force these longer entries there. -->
+    <forcedModel></forcedModel>
+  </PawnDiary.DiaryEventPromptDef>
+
+  <PawnDiary.DiaryEventPromptDef>
     <defName>DiaryEventPrompt_Arrival</defName>
     <label>arrival</label>
     <eventType>Arrival</eventType>

@@ -158,6 +158,18 @@
       <li><label>quest lifecycle</label><source>GameContext</source><contextKey>quest_signal</contextKey></li>
       <li><label>quest faction</label><source>GameContext</source><contextKey>quest_faction</contextKey></li>
       <li><label>quest rewards</label><source>GameContext</source><contextKey>quest_rewards</contextKey></li>
+      <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
+      <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
+      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
+      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
+      <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
+      <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
+      <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -191,6 +203,18 @@
       <li><label>quest lifecycle</label><source>GameContext</source><contextKey>quest_signal</contextKey></li>
       <li><label>quest faction</label><source>GameContext</source><contextKey>quest_faction</contextKey></li>
       <li><label>quest rewards</label><source>GameContext</source><contextKey>quest_rewards</contextKey></li>
+      <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
+      <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
+      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
+      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
+      <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
+      <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
+      <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -219,6 +243,18 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
+      <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
+      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
+      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
+      <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
+      <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
+      <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -247,6 +283,18 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
+      <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
+      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
+      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
+      <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
+      <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
+      <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -277,6 +325,18 @@
       <li><label>you</label><source>PawnSummary</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
+      <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
+      <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
+      <li><label>previous skill milestone</label><source>GameContext</source><contextKey>previous_skill_milestone</contextKey></li>
+      <li><label>passion</label><source>GameContext</source><contextKey>passion</contextKey></li>
+      <li><label>psylink level</label><source>GameContext</source><contextKey>psylink_level</contextKey></li>
+      <li><label>previous psylink level</label><source>GameContext</source><contextKey>previous_psylink_level</contextKey></li>
+      <li><label>xenotype</label><source>GameContext</source><contextKey>xenotype</contextKey></li>
+      <li><label>previous xenotype</label><source>GameContext</source><contextKey>previous_xenotype</contextKey></li>
+      <li><label>major_xenotype</label><source>GameContext</source><contextKey>major_xenotype</contextKey></li>
+      <li><label>title</label><source>GameContext</source><contextKey>title</contextKey></li>
+      <li><label>previous title</label><source>GameContext</source><contextKey>previous_title</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -315,6 +375,34 @@ Do not write a bullet list. Output only diary text. End with normal sentence pun
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
       <li><label>important entry count</label><source>GameContext</source><contextKey>important_entries</contextKey></li>
+      <li><label>setting</label><source>Setting</source></li>
+      <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
+    </fields>
+  </PawnDiary.DiaryPromptTemplateDef>
+
+  <PawnDiary.DiaryPromptTemplateDef>
+    <defName>DiaryPromptTemplate_SoloArcReflection</defName>
+    <templateKey>SoloArcReflection</templateKey>
+    <maxTokens>420</maxTokens>
+    <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
+    <systemPrompt>Write 5-8 first-person diary sentences as a rare private life-arc reflection.
+Use the pawn's writing style and current self-understanding. The supplied memories are evidence, not a checklist.
+Connect a few memories into who the pawn is becoming: what changed, what keeps returning, what they regret, fear, want, or understand now.
+Do not write a report, biography, bullet list, or mechanical summary. Output only diary text. End with normal sentence punctuation.</systemPrompt>
+    <finalInstruction>Write this like a real private diary entry, not a report, log, biography, or summary. Use the selected memories as anchors, but do not mention every memory. Make the links natural and personal, only using facts supplied here.</finalInstruction>
+    <fields>
+      <li><label>event</label><source>EventNoun</source></li>
+      <li><label>pov</label><source>PovName</source></li>
+      <li><label>arc year</label><source>GameContext</source><contextKey>arc_year</contextKey></li>
+      <li><label>selected memories</label><source>PovText</source></li>
+      <li><label>instruction</label><source>Instruction</source></li>
+      <li><label>you</label><source>PawnSummary</source></li>
+      <li><label>event prompt</label><source>EventPrompt</source></li>
+      <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>selected memory count</label><source>GameContext</source><contextKey>selected_memories</contextKey></li>
+      <li><label>candidate memory count</label><source>GameContext</source><contextKey>candidate_memories</contextKey></li>
+      <li><label>entries this year</label><source>GameContext</source><contextKey>entries_this_year</contextKey></li>
+      <li><label>forced yearly arc</label><source>GameContext</source><contextKey>forced</contextKey></li>
       <li><label>setting</label><source>Setting</source></li>
       <li><label>my last opener (not repeat)</label><source>LastOpener</source></li>
     </fields>
