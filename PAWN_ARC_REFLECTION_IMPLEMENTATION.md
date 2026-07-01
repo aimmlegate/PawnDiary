@@ -126,9 +126,9 @@ Default behavior:
 
 The forced yearly entry is allowed once the pawn reaches the configured day of year and has enough
 memory candidates. A forced attempt that has too few memories records a retryable backoff instead of
-rescanning every sleep tick. A major progression event may create an arc earlier when XML severity/list
-policy marks it major. A second major-event arc is allowed only after the configured gap and never
-raises the yearly cap above two.
+rescanning every sleep tick. A major psylink gain or configured xenotype change may create an arc
+earlier when XML severity/list policy marks it major. A second major-event arc is allowed only after
+the configured gap and never raises the yearly cap above two.
 
 ## Memory Selection
 
@@ -137,7 +137,7 @@ Arc reflections sample existing diary pages:
 - hot `DiaryEvent` rows from the pawn's current `PawnDiaryRecord.eventIds`;
 - compact `ArchivedDiaryEntry` rows;
 - duplicate hot/archive `eventId` values are merged before selection;
-- same game year preferred;
+- same game year required when the candidate year is known;
 - daily, quadrum, arc reflections, death descriptions, and recently used memory ids are excluded;
 - high-stakes, progression, important, same-quadrum, and generated-text entries receive higher
   weights;

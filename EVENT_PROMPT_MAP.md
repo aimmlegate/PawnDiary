@@ -8,9 +8,11 @@ Authoritative sources:
 - `Source/Ingestion/`: event signals and fan-out signals.
 - `Source/Capture/Events/`: pure capture decisions and game-context formats.
 - `Source/Core/DiaryGameComponent.*.cs`: dispatch, event creation, prompt queuing, scans, event
-  windows, observed conditions, and day/quadrum reflections.
+  windows, observed conditions, progression, and day/quadrum/arc reflections.
 - `Source/Generation/DiaryPipelineAdapters.cs`: runtime/XML/localization adapter into prompt DTOs.
 - `Source/Pipeline/DiaryPromptPlanner.cs`: pure template selection and prompt planning.
+- `Source/Pipeline/ProgressionMilestonePolicy.cs`, `ArcReflectionSchedulePolicy.cs`, and
+  `ArcReflectionMemorySelector.cs`: pure progression, cadence, and memory-sampling policy.
 - `Source/Generation/PromptEnchantments.cs` and `Source/Pipeline/PromptEnchantmentPlanner.cs`:
   prompt-enchantment collection, weighting, suppression, and final selection.
 - `1.6/Defs/DiaryInteractionGroupDefs.xml`: event groups, importance, combat, instructions, tones,
@@ -45,7 +47,7 @@ flowchart TD
         RI["Ideology and psychic ritual completion hooks<br/>RitualFanoutSignal or PsychicRitualFanoutSignal<br/>role fan-out solo pages"]
         AR["Starting-colonist scan and Pawn.SetFaction<br/>ArrivalSignal<br/>neutral arrival page"]
         DR["Sleep/rest day flush<br/>DayReflectionSignal<br/>ordinary day reflection or rare quadrum reflection"]
-        ARC["Sleep/rest day flush or major progression<br/>ArcReflectionSignal<br/>rare yearly life-arc reflection"]
+        ARC["Sleep/rest day flush or major psylink/xenotype progression<br/>ArcReflectionSignal<br/>rare yearly life-arc reflection"]
     end
 
     subgraph Generic["Generic page and prompt side channels"]
@@ -348,12 +350,12 @@ Source recording weights:
 | Strange chat promotion | `base 0.04 + bonuses`, capped `0.6`, then multiplied by shared generation chance. Bonuses: strong opinion `+0.25`; opinion asymmetry `+0.2`; low need `+0.2`; low mood `+0.2`; same thresholds as above. |
 | Small talk promotion | Same as strange chat: `base 0.04`, cap `0.6`, bonuses `+0.25/+0.2/+0.2/+0.2`, then shared generation chance. |
 | Work sampling | Scan every `2500` ticks. Chance starts at `0.08`; passion multiplier `1.4`; negative chore/low skill multiplier `1.2`; dark study multiplier `1.5`; recent different work multiplier `0.5`; same work cooldown `180000` ticks; then shared generation chance and clamp. Social/violent work types are ignored. |
-| Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. Major arc triggers use XML severity/list policy: default threshold `90`, psylink severity `level / 6 * 100`, and `Sanguophage` as the default major xenotype defName. |
+| Pawn progression | Scan every `2500` ticks. Passion skills emit only when reaching configured milestones `8/12/16/20`; first scan baselines. Psylink hediff defNames are XML string matchers; xenotype and royal-title reads go through DLC-safe `DlcContext`. Only psylink level gains and configured major xenotype defNames can currently request a major arc follow-up: default threshold `90`, psylink severity `level / 6 * 100`, and `Sanguophage` as the default major xenotype defName. |
 | Ability sampling | `min 0.03`, `max 0.75`, reference cooldown `60000` ticks. `CooldownWeightedChance = min + (max - min) * cooldown / (cooldown + reference)`, then shared generation chance and clamp. Dedup `300` ticks. |
 | Ordinary raid generation delay | `2500` ticks. Drop-pod raids and infestations bypass the delay. |
 | Day reflection highlights | Max `3`. Important event weight is `1` for combat and `0.7` for other important events. Hediff day signal default `0.8`. Opinion shift weight is `0.6 * min(2, abs(delta)/15)`. Filler weight is `0.15`, only when at least two filler moments exist. Weighted selection is without replacement with floor `0.0001`; if selected highlights contain no important signal, the strongest important candidate replaces the lightest selected highlight. |
 | Quadrum reflection | Enabled. Due date is deterministic per pawn/quadrum inside final `3` days. Requires `6` important entries. Sends at most `8` weighted highlights. Max response tokens `350`. Highlight weights reuse combat `1` and other important `0.7`. |
-| Arc reflection | Enabled. One forced yearly entry after day `45` when enough memories exist; optional second major-event entry after `30` days. A forced attempt that has too few memories backs off for `60000` ticks before rescanning. Samples up to `8` hot/archive diary memories, de-duplicates by event id, prefers same-year entries, excludes reflections/death descriptions/recently used ids, weights XML high-stakes defName tokens, and caps repeated domain/group memories. Max response tokens `420`. |
+| Arc reflection | Enabled. One forced yearly entry after day `45` when enough memories exist; optional second major-event entry after `30` days. A forced attempt that has too few memories backs off for `60000` ticks before rescanning. Samples up to `8` hot/archive diary memories, de-duplicates by event id, filters to current-year memories when the year is known, excludes reflections/death descriptions/recently used ids, and caps repeated domain/group memories. Memory weights are base `10`, important `+20`, same-quadrum `+10`, generated text `+5`, progression `+20`, and high-stakes `+15`; high-stakes is inherent for romance, hediff, progression, and death markers, plus XML defName token matches. Max response tokens `420`. |
 | Humor cues | Base gate `0.10`. High-stakes events use gallows cues; other events use light cues. All current humor cue XML rows have weight `1`. |
 
 Prompt-enchantment selection formula:
@@ -473,7 +475,7 @@ flowchart TD
     Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opener"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
-    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression, royal title, ideoligion role"]
+    Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title,<br/>royal title, ideoligion role"]
     Fields --> Boundary["Neutral arrival/death:<br/>event prompt, enhancement, neutral facts,<br/>pawn summary, setting; no persona/enchantment"]
     Fields --> Reflection["Reflections:<br/>day selected highlights and pawn summary<br/>quadrum date range and important count<br/>arc selected year memories and cadence fields"]
     Fields --> Title["Title:<br/>entry text only"]
@@ -492,8 +494,8 @@ Current template keys:
 | `SoloInternalState` | Solo with `mood_event=`, `thought=`, `inspiration=`, `work=`, or `hediff=` | Internal-state facts; style/enchantment allowed. |
 | `SoloBatched` | Solo with `batch=`, non-combat | Batched evidence; style/enchantment allowed. |
 | `SoloDayReflection` | `day_reflection=true` | Direct speech disabled; style/enchantment allowed. |
-| `SoloQuadrumReflection` | `quadrum_reflection=true` | Direct speech disabled; `maxTokens=350`; current fields omit `important context`. |
-| `SoloArcReflection` | `arc_reflection=true` | Direct speech disabled; `maxTokens=420`; selected memory evidence and arc cadence fields. |
+| `SoloQuadrumReflection` | `quadrum_reflection=true` | Direct speech disabled; `maxTokens=350`; style/humor eligible; current fields omit `important context`. |
+| `SoloArcReflection` | `arc_reflection=true` | Direct speech disabled; `maxTokens=420`; style/humor eligible; selected memory evidence and arc cadence fields; current fields omit `important context`. |
 | `DeathDescription` | `death_description=true` | Neutral, style-free, enchantment-free. |
 | `ArrivalDescription` | `arrival_description=true` | Neutral, style-free, enchantment-free. |
 | `Title` | title follow-up | Style-free, enchantment-free, `TitleMaxTokens=40`. |

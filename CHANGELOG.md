@@ -6,16 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-01
 
-- **Pawn arc reflections implemented.** Added passion-only skill milestones, psylink/xenotype/royal
-  progression entries, yearly pawn arc reflections from hot/archive diary memories, XML tuning and
-  prompt templates, important event-window grouping for arc/quadrum sampling, dev prompt fixtures,
-  pure tests, and the dedicated `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` flow/prompt map. Follow-up
-  hardening de-duplicates hot/archive memory candidates, keeps annual arc reflections enabled when
-  day summaries are off, backs off retryable low-memory forced attempts, classifies reflection pages
-  under a Reflection group, and wires major arc severity/high-stakes content policy through XML.
-- **Generated-text sanitizer hardened.** Response cleanup now repairs or strips incomplete speech
-  markers, common `speach` marker typos, generic unfinished bracket tags, truncated reasoning tags,
-  and model-leaked Unity rich-text angle tags before generated diary text reaches save data or UI.
+- **Pawn arc reflections implemented.** Added passion skill, psylink, xenotype, and royal-title
+  progression pages plus rare yearly arc reflections from de-duplicated hot/archive memories. XML now
+  owns templates, cadence, major-arc/high-stakes policy, and reflection grouping; fixtures, pure
+  tests, and `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` cover the flow. Follow-up hardening keeps annual
+  arcs independent of day summaries and backs off low-memory forced retries.
+- **Generated-text sanitizer hardened.** Cleanup now handles incomplete speech markers, common
+  `speach` typos, unfinished bracket/reasoning tags, and leaked Unity rich-text tags before save/UI
+  display.
 
 ## 2026-06-30
 

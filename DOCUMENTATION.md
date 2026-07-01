@@ -1,12 +1,13 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-06-30
+Last updated: 2026-07-01
 
 Related files:
 
 - `AGENTS.md`: detailed rules for code agents and deep architecture constraints.
 - `EVENT_PROMPT_MAP.md`: event-to-prompt coverage map.
 - `ARCHIVE_COMPACTION_DESIGN.md`: reviewed-before-code design for real cold archive compaction.
+- `PAWN_ARC_REFLECTION_IMPLEMENTATION.md`: current progression and yearly life-arc reflection flow.
 - `CHANGELOG.md`: milestone history.
 
 ## 1. Purpose
@@ -39,7 +40,7 @@ Workshop payload omits source code and other development-only folders.
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
-| `Source/Pipeline/` | Pure prompt planning, archive eligibility, request JSON, response cleanup, text decoration, API policy. |
+| `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy. |
 | `Source/Patches/` | Harmony startup, domain hooks, inspect-tab/command patches. |
 | `Source/Settings/` | Saved settings, API lane UI/controller, Prompt Studio, Writing Style Studio. |
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
@@ -223,7 +224,7 @@ it onto the bus.
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |
 | Progression | Periodic scan | `ProgressionSignal` (via scan) | solo |
 | DayReflection | Sleep/rest flush | `DayReflectionSignal` (aggregation flush) | solo day/quadrum reflection |
-| ArcReflection | Sleep/rest flush + major progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
+| ArcReflection | Sleep/rest flush + major psylink/xenotype progression trigger | `ArcReflectionSignal` (memory aggregation flush) | solo yearly arc reflection |
 | Quest | `Quest.Accept`/`End` + state scan | `QuestFanoutSignal` | fan-out |
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
@@ -240,7 +241,7 @@ it onto the bus.
 | Mood events | `GameConditionManager.RegisterCondition` | One entry per eligible colonist on affected maps. |
 | Thoughts | `MemoryThoughtHandler.TryGainMemory` | XML-filtered memory entries; ambient thoughts can batch. |
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
-| Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, and royal-title changes. The first scan baselines existing saves to avoid retroactive spam. |
+| Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, and royal-title changes. The first scan baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
 | Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
@@ -251,7 +252,7 @@ it onto the bus.
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
-| Arc reflections | Sleep/rest trigger and major progression trigger | Rare yearly life-arc page per pawn, with an optional second major-event page after the configured gap. The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, and never stores a separate history fact database. |
+| Arc reflections | Sleep/rest trigger and major psylink/xenotype progression trigger | Rare yearly life-arc page per pawn, with an optional second major-event page after the configured gap. The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, excludes prior reflections/death descriptions/recently used memories, and never stores a separate history fact database. |
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
@@ -287,8 +288,8 @@ Progression policy is split the same way as other sources: `DiaryInteractionGrou
 `Progression` and `Reflection` groups and their importance, `DiaryEventPromptDefs.xml` owns broad
 progression/arc prompt guidance, `DiaryPromptTemplateDefs.xml` exposes progression fields and the
 `SoloArcReflection` template, and `DiaryTuningDef.xml` owns milestones, psylink hediff defName
-matchers, arc cadence, major-progression severity/list policy, high-stakes arc memory tokens, and
-the memory-shortfall retry backoff.
+matchers, arc cadence, major-progression policy for psylink severity and configured xenotype
+defNames, high-stakes arc memory tokens, and the memory-shortfall retry backoff.
 
 Optional DLC or mod content should normally be handled as string matches. Do not hard-reference DLC
 defs or C# types unless they are guarded as described in `AGENTS.md`. Missing DLC content should
@@ -537,7 +538,7 @@ day/quadrum evidence scans. Compact archive rows never enter those scans.
 
 `PawnDiaryRecord` also owns nullable per-pawn progression state and arc schedule state. Old saves load
 with those fields absent, then normalize to empty baseline-pending state. The progression state stores
-only highest passion-skill milestones and last observed psylink/xenotype/title values. The arc
+only highest passion-skill milestones and last observed psylink/xenotype/royal-title values. The arc
 schedule stores only cadence bookkeeping (`lastArcEntryTick`, `lastArcEntryYear`,
 `arcEntriesThisYear`, `forcedArcYear`, recently used memory ids, and the last retryable
 memory-shortfall tick/year). Neither field is a history database; existing diary pages remain the
