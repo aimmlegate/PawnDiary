@@ -224,6 +224,35 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.9.label>ability</DiaryPromptTemplate_SoloDayReflection.fields.9.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.19.label>setting</DiaryPromptTemplate_SoloDayReflection.fields.19.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.20.label>tone</DiaryPromptTemplate_SoloDayReflection.fields.20.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>Write 4-7 first-person diary sentences as a rare, longer reflection over a quadrum of the colonist's life. Use the colonist's writing style. Mention at least two supplied dates naturally, not as a ledger. Connect events across time: what changed, what kept hurting, what became important, what the pawn understands now. Do not write a bullet list. Output only diary text. End with normal sentence punctuation.</DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>Write one longer first-person diary entry as this pawn looking back over the quadrum. Use only the supplied dated highlights and pawn context. Mention dates naturally, reflect on life across the span, and avoid listing every event mechanically.</DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.0.label>event</DiaryPromptTemplate_SoloQuadrumReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.1.label>pov</DiaryPromptTemplate_SoloQuadrumReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.2.label>quadrum dates</DiaryPromptTemplate_SoloQuadrumReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.3.label>what happened</DiaryPromptTemplate_SoloQuadrumReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.4.label>instruction</DiaryPromptTemplate_SoloQuadrumReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.5.label>you</DiaryPromptTemplate_SoloQuadrumReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.6.label>event prompt</DiaryPromptTemplate_SoloQuadrumReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.7.label>event enhancement</DiaryPromptTemplate_SoloQuadrumReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>important entry count</DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>setting</DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>my last opener (not repeat)</DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloArcReflection.systemPrompt>Write 5-8 first-person diary sentences as a rare private life-arc reflection. Use the pawn's writing style and current self-understanding. The supplied memories are evidence, not a checklist. Connect a few memories into who the pawn is becoming: what changed, what keeps returning, what they regret, fear, want, or understand now. Do not write a report, biography, bullet list, or mechanical summary. Output only diary text. End with normal sentence punctuation.</DiaryPromptTemplate_SoloArcReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloArcReflection.finalInstruction>Write this like a real private diary entry, not a report, log, biography, or summary. Use the selected memories as anchors, but do not mention every memory. Make the links natural and personal, only using facts supplied here.</DiaryPromptTemplate_SoloArcReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloArcReflection.fields.0.label>event</DiaryPromptTemplate_SoloArcReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.1.label>pov</DiaryPromptTemplate_SoloArcReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.2.label>arc year</DiaryPromptTemplate_SoloArcReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.3.label>selected memories</DiaryPromptTemplate_SoloArcReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.4.label>instruction</DiaryPromptTemplate_SoloArcReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.5.label>you</DiaryPromptTemplate_SoloArcReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.6.label>event prompt</DiaryPromptTemplate_SoloArcReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.7.label>event enhancement</DiaryPromptTemplate_SoloArcReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.8.label>selected memory count</DiaryPromptTemplate_SoloArcReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.9.label>candidate memory count</DiaryPromptTemplate_SoloArcReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.10.label>entries this year</DiaryPromptTemplate_SoloArcReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.11.label>forced yearly arc</DiaryPromptTemplate_SoloArcReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.12.label>setting</DiaryPromptTemplate_SoloArcReflection.fields.12.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.13.label>my last opener (not repeat)</DiaryPromptTemplate_SoloArcReflection.fields.13.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>event</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.3.label>deceased</DiaryPromptTemplate_DeathDescription.fields.3.label>
   <DiaryPromptTemplate_DeathDescription.fields.7.label>setting</DiaryPromptTemplate_DeathDescription.fields.7.label>

@@ -11,6 +11,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   owns templates, cadence, major-arc/high-stakes policy, and reflection grouping; fixtures, pure
   tests, and `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` cover the flow. Follow-up hardening keeps annual
   arcs independent of day summaries and backs off low-memory forced retries.
+- **Russian localization caught up for reflections.** Added missing Russian Keyed and DefInjected
+  coverage for quadrum reflection, progression, and yearly arc prompts, with Russian prompt prose
+  rewritten idiomatically instead of translated line by line.
 - **Generated-text sanitizer hardened.** Cleanup now handles incomplete speech markers, common
   `speach` typos, unfinished bracket/reasoning tags, and leaked Unity rich-text tags before save/UI
   display.

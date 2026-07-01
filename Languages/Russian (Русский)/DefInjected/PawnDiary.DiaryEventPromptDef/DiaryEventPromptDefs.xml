@@ -42,6 +42,15 @@
   <DiaryEventPrompt_DayReflection.label>итог дня</DiaryEventPrompt_DayReflection.label>
   <DiaryEventPrompt_DayReflection.prompt>Напиши вечернее размышление о дне целиком.</DiaryEventPrompt_DayReflection.prompt>
   <DiaryEventPrompt_DayReflection.enhancement>Выбери моменты, которые к вечеру всё ещё саднят, греют или давят. Не перечисляй каждое событие.</DiaryEventPrompt_DayReflection.enhancement>
+  <DiaryEventPrompt_QuadrumReflection.label>размышление о квадруме</DiaryEventPrompt_QuadrumReflection.label>
+  <DiaryEventPrompt_QuadrumReflection.prompt>Напиши редкую длинную дневниковую запись о целом квадруме в жизни поселенца.</DiaryEventPrompt_QuadrumReflection.prompt>
+  <DiaryEventPrompt_QuadrumReflection.enhancement>Датированные моменты нужны как опорные точки времени, а не список для пересказа. Вплети даты естественно и свяжи несколько событий в одно личное понимание прожитого отрезка.</DiaryEventPrompt_QuadrumReflection.enhancement>
+  <DiaryEventPrompt_Progression.label>развитие</DiaryEventPrompt_Progression.label>
+  <DiaryEventPrompt_Progression.prompt>Напиши личную запись о перемене поселенца: навыке, усилии, положении, теле или самоощущении.</DiaryEventPrompt_Progression.prompt>
+  <DiaryEventPrompt_Progression.enhancement>До и после бери только из переданных полей. Не объясняй игровые системы, не добавляй тренировку, новые силы, титулы, телесные изменения или достижения, которых нет в фактах.</DiaryEventPrompt_Progression.enhancement>
+  <DiaryEventPrompt_ArcReflection.label>годовое размышление</DiaryEventPrompt_ArcReflection.label>
+  <DiaryEventPrompt_ArcReflection.prompt>Напиши редкую личную запись о том, каким становится поселенец через выбранные воспоминания.</DiaryEventPrompt_ArcReflection.prompt>
+  <DiaryEventPrompt_ArcReflection.enhancement>Воспоминания — якоря, а не чеклист. Свяжи несколько из них в чувство перемены, сожаления, гордости, страха или решимости; не пытайся упомянуть каждое.</DiaryEventPrompt_ArcReflection.enhancement>
   <DiaryEventPrompt_Arrival.label>появление</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Напиши фактическую заметку о том, как поселенец оказался в поселении.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Пусть появление ощущается как порог: пыль, потрясение, тишина, облегчение, подозрение или первый вид убежища. Используй только факты сценария и прихода.</DiaryEventPrompt_Arrival.enhancement>

@@ -330,4 +330,26 @@
   <workRoutine.tones.1>тихо практично, внимание на инструментах и последовательности</workRoutine.tones.1>
   <workStrain.tones.0>устало и резко, досада в руках</workStrain.tones.0>
   <workStrain.tones.1>грязно и обречённо, раздражение удержано под долгом</workStrain.tones.1>
+  <progressionSkillPassion.label>Веха любимого навыка</progressionSkillPassion.label>
+  <progressionSkillPassion.instruction>веха в навыке, который важен поселенцу; пиши гордость, усилие, раздражение или самоощущение только через названный навык и уровень</progressionSkillPassion.instruction>
+  <progressionSkillPassion.tone>с честным осознанием заработанного роста</progressionSkillPassion.tone>
+  <progressionSkillPassion.tones.0>гордо, но приземлённо, с памятью о труде за этой отметкой</progressionSkillPassion.tones.0>
+  <progressionSkillPassion.tones.1>тихо напряжённо, будто навык становится частью самого поселенца</progressionSkillPassion.tones.1>
+  <progressionPsylink.label>Рост пси-связи</progressionPsylink.label>
+  <progressionPsylink.instruction>пси-связь стала сильнее; пиши это как прожитое ощущение, ответственность или тревогу, не придумывая новых способностей</progressionPsylink.instruction>
+  <progressionPsylink.tone>со странным внутренним давлением</progressionPsylink.tone>
+  <progressionPsylink.tones.0>заворожённо и тревожно, сила оседает прямо в сознании</progressionPsylink.tones.0>
+  <progressionPsylink.tones.1>сосредоточенно и близко к телу, перемена описана изнутри</progressionPsylink.tones.1>
+  <progressionXenotype.label>Смена ксенотипа</progressionXenotype.label>
+  <progressionXenotype.instruction>ксенотип изменился; пиши телесный и личный сдвиг от лица поселенца, используя только переданные старое и новое названия</progressionXenotype.instruction>
+  <progressionXenotype.tone>с интимным телесным последствием</progressionXenotype.tone>
+  <progressionXenotype.tones.0>настороженно и изменённо, прежнее «я» становится незнакомым</progressionXenotype.tones.0>
+  <progressionXenotype.tones.1>телесно и наедине с собой, с упором на то, что новое тело значит сегодня ночью</progressionXenotype.tones.1>
+  <progressionRoyalTitle.label>Смена королевского титула</progressionRoyalTitle.label>
+  <progressionRoyalTitle.instruction>королевский титул изменился; пиши статус, груз, гордость или расстояние через новый титул, не объясняя механики фракций</progressionRoyalTitle.instruction>
+  <progressionRoyalTitle.tone>с официальной тяжестью и личной ценой</progressionRoyalTitle.tone>
+  <progressionRoyalTitle.tones.0>размеренно и неловко, с пониманием, что титул меняет чужие взгляды</progressionRoyalTitle.tones.0>
+  <progressionRoyalTitle.tones.1>тихо обременённо, ранг ощущается и честью, и обязанностью</progressionRoyalTitle.tones.1>
+  <progressionOther.label>Развитие</progressionOther.label>
+  <progressionOther.instruction>поселенец заметно изменился; переданный факт «до и после» подай просто, лично и без лишних объяснений</progressionOther.instruction>
 </LanguageData>

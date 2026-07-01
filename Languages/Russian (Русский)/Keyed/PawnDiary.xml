@@ -33,6 +33,9 @@
   <PawnDiary.Tab.FillMockEntriesTip>Только для разработки: добавляет {0} готовых тестовых страниц за {1} игровых лет, около {2} в год, чтобы проверить длинную историю, выбор года и сворачивание страниц без обращения к модели.</PawnDiary.Tab.FillMockEntriesTip>
   <PawnDiary.Tab.MockEntriesAdded>Добавлено {0} тестовых страниц для {1}.</PawnDiary.Tab.MockEntriesAdded>
   <PawnDiary.Tab.MockEntriesAlreadyFilled>В дневнике {1} уже есть {0} тестовых страниц.</PawnDiary.Tab.MockEntriesAlreadyFilled>
+  <PawnDiary.Tab.PurgeArchivedEntries>Удалить архивные страницы поселенца</PawnDiary.Tab.PurgeArchivedEntries>
+  <PawnDiary.Tab.PurgeArchivedEntriesTip>Только для разработки: удаляет сжатые архивные страницы этого поселенца, не трогая активные свежие страницы дневника.</PawnDiary.Tab.PurgeArchivedEntriesTip>
+  <PawnDiary.Tab.ArchivedEntriesPurged>Удалено архивных страниц для {1}: {0}.</PawnDiary.Tab.ArchivedEntriesPurged>
   <PawnDiary.Tab.GeneratePromptSuite>Проверка запросов</PawnDiary.Tab.GeneratePromptSuite>
   <PawnDiary.Tab.GeneratePromptSuiteTip>Только для разработки: включает проверку запросов и список категорий событий. Выбор категории создаёт одну страницу с самим запросом; новый выбор заменяет старую. Для парных категорий нужен второй поселенец.</PawnDiary.Tab.GeneratePromptSuiteTip>
   <PawnDiary.Tab.ClearPromptSuite>Очистить проверочные запросы</PawnDiary.Tab.ClearPromptSuite>
@@ -81,6 +84,22 @@
   <PawnDiary.Dev.PromptSuite.Ability.Text>{0} применил синтетическую пси-способность для теста дневника.</PawnDiary.Dev.PromptSuite.Ability.Text>
   <PawnDiary.Dev.PromptSuite.DayReflection.Label>Конец дня</PawnDiary.Dev.PromptSuite.DayReflection.Label>
   <PawnDiary.Dev.PromptSuite.DayReflection.Text>День принёс сосредоточенное исследование, жгучее оскорбление и подступающую жару.</PawnDiary.Dev.PromptSuite.DayReflection.Text>
+  <PawnDiary.Dev.PromptSuite.QuadrumReflection.Label>Размышление о квадруме</PawnDiary.Dev.PromptSuite.QuadrumReflection.Label>
+  <PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>1-е апримая: {0} пережил налёт. 6-е апримая: лихорадка не отпускала. 11-е апримая: поселение завершило трудный проект. 15-е апримая: {0} достиг важной вехи в любимом навыке.</PawnDiary.Dev.PromptSuite.QuadrumReflection.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Label>Веха любимого навыка</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>{0} поднял строительство до 12, и этот навык давно был для него больше простого труда.</PawnDiary.Dev.PromptSuite.ProgressionSkillPassion.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>Уровень пси-связи вырос</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>{0} почувствовал, как пси-связь укоренилась глубже и стала третьего уровня.</PawnDiary.Dev.PromptSuite.ProgressionPsylink.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>Ксенотип сангофага</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>Тело {0} перестало быть базовым и стало телом сангофага.</PawnDiary.Dev.PromptSuite.ProgressionXenotypeSanguophage.Text>
+  <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>Королевский титул изменился</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Label>
+  <PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>Титул {0} сменился с йомена на рыцаря.</PawnDiary.Dev.PromptSuite.ProgressionRoyalTitle.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>Обязательный годовой итог</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Label>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>Воспоминания {0} за 5504 год:&#10;- 4-е апримая: пережил налёт, после которого мастерская выгорела.&#10;- 8-е апримая: поднял строительство до 12.&#10;- 2-е джугуста: получил третий уровень пси-связи.&#10;- 9-е децембария: стал сангофагом.</PawnDiary.Dev.PromptSuite.ArcReflectionForced.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>Итог после важного события</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Label>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>Воспоминания {0} за 5504 год:&#10;- 3-е апримая: вступил в брак при свете факелов.&#10;- 10-е апримая: потерял друга во время налёта.&#10;- 4-е джугуста: получил шестой уровень пси-связи.&#10;- 7-е децембария: принял новый королевский титул.</PawnDiary.Dev.PromptSuite.ArcReflectionMajorEvent.Text>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Label>Диагностика задержки годового итога</PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Label>
+  <PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Text>Воспоминания {0} за 5504 год:&#10;- 1-е апримая: уже написал ранний годовой итог.&#10;- 6-е апримая: ещё одно важное событие случилось слишком скоро.&#10;- 8-е апримая: расписание обычно не дало бы написать второй итог.</PawnDiary.Dev.PromptSuite.ArcReflectionCooldownBlocked.Text>
   <PawnDiary.Dev.EventPanel.Title>Тесты событий Pawn Diary</PawnDiary.Dev.EventPanel.Title>
   <PawnDiary.Dev.EventPanel.NoGame>Загрузите карту и включите режим разработчика, прежде чем открывать тесты событий Pawn Diary.</PawnDiary.Dev.EventPanel.NoGame>
   <PawnDiary.Dev.EventPanel.NoPawn>Нет подходящего поселенца для тестов событий дневника.</PawnDiary.Dev.EventPanel.NoPawn>
@@ -267,7 +286,8 @@
   <PawnDiary.Settings.MaxTokensHelp>Максимальная длина ответа до очистки текста. Большее значение даёт более длинные страницы, но они пишутся медленнее и чаще теряют лаконичность.</PawnDiary.Settings.MaxTokensHelp>
   <PawnDiary.Settings.GenerationChanceWeight>Вес случайной генерации: {0}x</PawnDiary.Settings.GenerationChanceWeight>
   <PawnDiary.Settings.GenerationChanceWeightHelp>Множитель шанса для необязательных случайных страниц дневника: выборки работы, продвижения общения и использования способностей. 1x — значения XML; 0x — отключает такие страницы.</PawnDiary.Settings.GenerationChanceWeightHelp>
-  <PawnDiary.Settings.MaxActiveDiaryEvents>Страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
+  <PawnDiary.Settings.MaxActiveDiaryEvents>Активных страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxActiveDiaryEvents>
+  <PawnDiary.Settings.MaxArchivedDiaryEvents>Архивных страниц на поселенца ({0}-{1})</PawnDiary.Settings.MaxArchivedDiaryEvents>
   <PawnDiary.Settings.MaxConcurrent>Одновременных запросов на подключение: {0}</PawnDiary.Settings.MaxConcurrent>
   <PawnDiary.Settings.MaxConcurrentHelp>Сколько запросов одновременно выполняет каждое подключение; остальные ждут в его очереди. Разные подключения работают параллельно. Для локальной модели оставьте 1; повышайте только если сервер умеет обрабатывать несколько запросов сразу.</PawnDiary.Settings.MaxConcurrentHelp>
   <PawnDiary.Settings.ResetConnection>Сбросить подключения</PawnDiary.Settings.ResetConnection>
@@ -427,6 +447,27 @@
   <PawnDiary.Event.PsychicRitualInstruction.Target>пиши с позиции цели псионического ритуала после завершения; событие пугает, оскверняет или мрачно цепенит, но оккультный механизм не объясняй</PawnDiary.Event.PsychicRitualInstruction.Target>
   <PawnDiary.Event.PsychicRitualInstruction.Participant>пиши с позиции причастного к псионическому ритуалу после завершения; атмосфера тревожная, пугающая и не до конца понятная</PawnDiary.Event.PsychicRitualInstruction.Participant>
   <PawnDiary.Event.PsychicRitualInstruction.Spectator>пиши с позиции наблюдателя завершённого псионического ритуала; в центре ужас, неправильность, страх, тишина, странный звук или облегчение на краю события</PawnDiary.Event.PsychicRitualInstruction.Spectator>
+
+  <!-- Итоги дня, квадрума и редкие годовые размышления о пути поселенца -->
+  <PawnDiary.Event.QuadrumReflectionLabel>Оглядываясь на квадрум</PawnDiary.Event.QuadrumReflectionLabel>
+  <PawnDiary.Event.QuadrumReflectionHeader>За {1} эти моменты сильнее всего изменили {0}:</PawnDiary.Event.QuadrumReflectionHeader>
+  <PawnDiary.Event.QuadrumReflectionDateRange>{0} - {1}</PawnDiary.Event.QuadrumReflectionDateRange>
+  <PawnDiary.Event.QuadrumReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.QuadrumReflectionEvidenceLine>
+  <PawnDiary.Event.QuadrumReflectionInstruction>напиши более длинную запись от лица {0}, который оглядывается на {1}; даты вплетай естественно из переданных моментов; связывай события в смысл этого отрезка жизни, а не перечисляй их; используй только переданные факты и манеру письма поселенца</PawnDiary.Event.QuadrumReflectionInstruction>
+  <PawnDiary.Event.ProgressionPassionMajor>главная страсть</PawnDiary.Event.ProgressionPassionMajor>
+  <PawnDiary.Event.ProgressionPassionMinor>малая страсть</PawnDiary.Event.ProgressionPassionMinor>
+  <PawnDiary.Event.ProgressionSkillLabel>{0} {1}</PawnDiary.Event.ProgressionSkillLabel>
+  <PawnDiary.Event.ProgressionSkillText>{0} достиг уровня {2} в навыке {1}; это одна из его страстей: {3}.</PawnDiary.Event.ProgressionSkillText>
+  <PawnDiary.Event.ProgressionPsylinkLabel>Пси-связь, уровень {0}</PawnDiary.Event.ProgressionPsylinkLabel>
+  <PawnDiary.Event.ProgressionPsylinkText>{0} получил уровень пси-связи {1}.</PawnDiary.Event.ProgressionPsylinkText>
+  <PawnDiary.Event.ProgressionXenotypeLabel>Ксенотип: {0}</PawnDiary.Event.ProgressionXenotypeLabel>
+  <PawnDiary.Event.ProgressionXenotypeText>Ксенотип {0} изменился: {1} -> {2}.</PawnDiary.Event.ProgressionXenotypeText>
+  <PawnDiary.Event.ProgressionRoyalTitleLabel>Королевский титул: {0}</PawnDiary.Event.ProgressionRoyalTitleLabel>
+  <PawnDiary.Event.ProgressionRoyalTitleText>Королевский титул {0} изменился: {1} -> {2}.</PawnDiary.Event.ProgressionRoyalTitleText>
+  <PawnDiary.Event.ArcReflectionLabel>Размышление о {0} годе</PawnDiary.Event.ArcReflectionLabel>
+  <PawnDiary.Event.ArcReflectionHeader>Воспоминания {0} за {1} год:</PawnDiary.Event.ArcReflectionHeader>
+  <PawnDiary.Event.ArcReflectionEvidenceLine>{0}: {1}</PawnDiary.Event.ArcReflectionEvidenceLine>
+  <PawnDiary.Event.ArcReflectionInstruction>редкая личная запись о жизненном пути {0} в {1} году; свяжи выбранные воспоминания с тем, каким он становится</PawnDiary.Event.ArcReflectionInstruction>
 
   <!-- Тестовые записи режима разработки: только для кнопки нагрузочного теста вкладки «Дневник». -->
   <PawnDiary.Dev.MockLabel>Тест интерфейса дневника</PawnDiary.Dev.MockLabel>

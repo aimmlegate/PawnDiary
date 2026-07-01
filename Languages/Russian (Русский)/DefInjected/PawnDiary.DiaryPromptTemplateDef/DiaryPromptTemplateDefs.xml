@@ -224,6 +224,35 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.9.label>способность</DiaryPromptTemplate_SoloDayReflection.fields.9.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.19.label>обстановка</DiaryPromptTemplate_SoloDayReflection.fields.19.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.20.label>тон</DiaryPromptTemplate_SoloDayReflection.fields.20.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>Напиши 4-7 предложений от первого лица: редкое, более длинное размышление за квадрум жизни поселенца. Сохрани его манеру письма. Упомяни как минимум две переданные даты естественно, не как ведомость. Свяжи события во времени: что изменилось, что продолжало болеть, что стало важным, что теперь понял поселенец. Не делай список. Выведи только текст дневника и закончи обычной пунктуацией.</DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>Напиши одну более длинную запись от первого лица, будто поселенец оглядывается на прожитый квадрум. Опирайся только на датированные моменты и контекст поселенца. Даты вплетай в прозу, размышляй о жизни за этот отрезок и не пересказывай все события по пунктам.</DiaryPromptTemplate_SoloQuadrumReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.0.label>событие</DiaryPromptTemplate_SoloQuadrumReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.1.label>точка зрения</DiaryPromptTemplate_SoloQuadrumReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.2.label>даты квадрума</DiaryPromptTemplate_SoloQuadrumReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.3.label>что произошло</DiaryPromptTemplate_SoloQuadrumReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.4.label>инструкция</DiaryPromptTemplate_SoloQuadrumReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.5.label>ты</DiaryPromptTemplate_SoloQuadrumReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.6.label>подсказка события</DiaryPromptTemplate_SoloQuadrumReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.7.label>усиление события</DiaryPromptTemplate_SoloQuadrumReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>число важных записей</DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>обстановка</DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloArcReflection.systemPrompt>Напиши 5-8 предложений от первого лица: редкое личное размышление о жизненном пути. Сохрани манеру письма поселенца и его нынешнее понимание себя. Переданные воспоминания — материал для вывода, а не список обязательных пунктов. Свяжи несколько воспоминаний с тем, каким становится поселенец: что изменилось, что возвращается, о чём он жалеет, чего боится, чего хочет или что теперь понимает. Не пиши отчёт, биографию, список или механический пересказ. Выведи только текст дневника и закончи обычной пунктуацией.</DiaryPromptTemplate_SoloArcReflection.systemPrompt>
+  <DiaryPromptTemplate_SoloArcReflection.finalInstruction>Пиши как настоящую личную запись дневника, а не отчёт, хронику, биографию или сводку. Выбранные воспоминания используй как опоры, но не упоминай каждое. Связи между ними должны звучать естественно и лично; опирайся только на переданные факты.</DiaryPromptTemplate_SoloArcReflection.finalInstruction>
+  <DiaryPromptTemplate_SoloArcReflection.fields.0.label>событие</DiaryPromptTemplate_SoloArcReflection.fields.0.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.1.label>точка зрения</DiaryPromptTemplate_SoloArcReflection.fields.1.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.2.label>год</DiaryPromptTemplate_SoloArcReflection.fields.2.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.3.label>выбранные воспоминания</DiaryPromptTemplate_SoloArcReflection.fields.3.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.4.label>инструкция</DiaryPromptTemplate_SoloArcReflection.fields.4.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.5.label>ты</DiaryPromptTemplate_SoloArcReflection.fields.5.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.6.label>подсказка события</DiaryPromptTemplate_SoloArcReflection.fields.6.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.7.label>усиление события</DiaryPromptTemplate_SoloArcReflection.fields.7.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.8.label>число выбранных воспоминаний</DiaryPromptTemplate_SoloArcReflection.fields.8.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.9.label>число возможных воспоминаний</DiaryPromptTemplate_SoloArcReflection.fields.9.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.10.label>записей за этот год</DiaryPromptTemplate_SoloArcReflection.fields.10.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.11.label>обязательный годовой итог</DiaryPromptTemplate_SoloArcReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.12.label>обстановка</DiaryPromptTemplate_SoloArcReflection.fields.12.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.13.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloArcReflection.fields.13.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>событие</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.3.label>погибший</DiaryPromptTemplate_DeathDescription.fields.3.label>
   <DiaryPromptTemplate_DeathDescription.fields.7.label>обстановка</DiaryPromptTemplate_DeathDescription.fields.7.label>

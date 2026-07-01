@@ -644,6 +644,10 @@ dynamic pawn/target/work value the subject of gendered or numbered past-tense gr
 guarantees agreement. Writing styles and humor cues should be culturally rebuilt in Russian rather
 than line-by-line translations.
 
+Reflection/progression changes usually touch more than `Keyed/PawnDiary.xml`: keep the matching
+`DiaryEventPromptDef`, `DiaryPromptTemplateDef`, and `DiaryInteractionGroupDef` DefInjected files in
+English and Russian aligned so long LLM prompt text never falls back to English in Russian games.
+
 ## 12. Build, Tests, Prompt Lab
 
 Build:

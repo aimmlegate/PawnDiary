@@ -42,6 +42,15 @@
   <DiaryEventPrompt_DayReflection.label>day reflection</DiaryEventPrompt_DayReflection.label>
   <DiaryEventPrompt_DayReflection.prompt>Write an end-of-day reflection that weighs the day as a whole.</DiaryEventPrompt_DayReflection.prompt>
   <DiaryEventPrompt_DayReflection.enhancement>Choose the supplied moments that still sting, glow, or weigh on the pawn tonight instead of listing every event.</DiaryEventPrompt_DayReflection.enhancement>
+  <DiaryEventPrompt_QuadrumReflection.label>quadrum reflection</DiaryEventPrompt_QuadrumReflection.label>
+  <DiaryEventPrompt_QuadrumReflection.prompt>Write a rare long reflection over a whole quadrum of the pawn's life.</DiaryEventPrompt_QuadrumReflection.prompt>
+  <DiaryEventPrompt_QuadrumReflection.enhancement>Use the dated highlights as anchors across time. Mention dates naturally, connect several events into a broader life reflection, and do not list every highlight mechanically.</DiaryEventPrompt_QuadrumReflection.enhancement>
+  <DiaryEventPrompt_Progression.label>progression</DiaryEventPrompt_Progression.label>
+  <DiaryEventPrompt_Progression.prompt>Write a pawn progression moment as a concrete private diary entry about change, effort, status, or identity.</DiaryEventPrompt_Progression.prompt>
+  <DiaryEventPrompt_Progression.enhancement>Use the supplied before-and-after fields exactly. Do not explain game mechanics, invent training scenes, or add powers, titles, body changes, or achievements that were not supplied.</DiaryEventPrompt_Progression.enhancement>
+  <DiaryEventPrompt_ArcReflection.label>arc reflection</DiaryEventPrompt_ArcReflection.label>
+  <DiaryEventPrompt_ArcReflection.prompt>Write a rare life-arc diary entry about who the pawn is becoming across the selected memories.</DiaryEventPrompt_ArcReflection.prompt>
+  <DiaryEventPrompt_ArcReflection.enhancement>Use the selected memories as anchors, not as a checklist. Connect only a few memories into a private sense of change, regret, pride, fear, or resolve. Do not mention every memory.</DiaryEventPrompt_ArcReflection.enhancement>
   <DiaryEventPrompt_Arrival.label>arrival</DiaryEventPrompt_Arrival.label>
   <DiaryEventPrompt_Arrival.prompt>Write a factual colony-arrival note about how this pawn joined or began here.</DiaryEventPrompt_Arrival.prompt>
   <DiaryEventPrompt_Arrival.enhancement>Make the arrival feel like a threshold: dust, shock, silence, relief, suspicion, or first sight of shelter. Use only scenario and arrival facts.</DiaryEventPrompt_Arrival.enhancement>

@@ -330,4 +330,26 @@
   <workRoutine.tones.1>quietly practical, attention on tools and sequence</workRoutine.tones.1>
   <workStrain.tones.0>weary and blunt, frustration in the hands</workStrain.tones.0>
   <workStrain.tones.1>grimy and resigned, irritation kept under duty</workStrain.tones.1>
+  <progressionSkillPassion.label>Passion skill milestone</progressionSkillPassion.label>
+  <progressionSkillPassion.instruction>a passion skill milestone; write pride, effort, frustration, or identity through the named skill and level only</progressionSkillPassion.instruction>
+  <progressionSkillPassion.tone>with earned self-awareness</progressionSkillPassion.tone>
+  <progressionSkillPassion.tones.0>proud but grounded, aware of the labor behind the milestone</progressionSkillPassion.tones.0>
+  <progressionSkillPassion.tones.1>quietly intense, treating skill as part of who the pawn is becoming</progressionSkillPassion.tones.1>
+  <progressionPsylink.label>Psylink gained</progressionPsylink.label>
+  <progressionPsylink.instruction>a psylink level gain; write the psychic change as lived sensation, responsibility, or unease, without inventing new powers</progressionPsylink.instruction>
+  <progressionPsylink.tone>with strange inner pressure</progressionPsylink.tone>
+  <progressionPsylink.tones.0>awed and uneasy, aware of power settling into the mind</progressionPsylink.tones.0>
+  <progressionPsylink.tones.1>focused and intimate, describing the change from inside the body</progressionPsylink.tones.1>
+  <progressionXenotype.label>Xenotype changed</progressionXenotype.label>
+  <progressionXenotype.instruction>a xenotype change; write the bodily and identity shift from the pawn's perspective using only the supplied old and new labels</progressionXenotype.instruction>
+  <progressionXenotype.tone>with intimate bodily consequence</progressionXenotype.tone>
+  <progressionXenotype.tones.0>changed and watchful, noticing the self becoming unfamiliar</progressionXenotype.tones.0>
+  <progressionXenotype.tones.1>visceral and private, focused on what the new body means tonight</progressionXenotype.tones.1>
+  <progressionRoyalTitle.label>Royal title changed</progressionRoyalTitle.label>
+  <progressionRoyalTitle.instruction>a royal title change; write status, burden, pride, or distance through the new title without explaining faction mechanics</progressionRoyalTitle.instruction>
+  <progressionRoyalTitle.tone>with formal weight and personal cost</progressionRoyalTitle.tone>
+  <progressionRoyalTitle.tones.0>measured and self-conscious, aware that a title changes how others look</progressionRoyalTitle.tones.0>
+  <progressionRoyalTitle.tones.1>quietly burdened, treating rank as both honor and obligation</progressionRoyalTitle.tones.1>
+  <progressionOther.label>Progression</progressionOther.label>
+  <progressionOther.instruction>a pawn changed in a notable way; write the supplied before-and-after fact plainly and personally</progressionOther.instruction>
 </LanguageData>
