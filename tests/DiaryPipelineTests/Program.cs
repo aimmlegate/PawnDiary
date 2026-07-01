@@ -52,6 +52,7 @@ namespace DiaryPipelineTests
             TestArchiveEligibility();
             TestArchiveFallbackFact();
             TestArchiveOverflowSelection();
+            TestLifeBoundaryPolicy();
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
 
@@ -220,6 +221,19 @@ namespace DiaryPipelineTests
         private static string JoinInts(List<int> values)
         {
             return values == null ? string.Empty : string.Join(",", values);
+        }
+
+        private static void TestLifeBoundaryPolicy()
+        {
+            AssertTrue(
+                "no death means no final boundary",
+                !DiaryLifeBoundaryPolicy.FinalDeathBoundaryApplies(false, false));
+            AssertTrue(
+                "death remains terminal while pawn is not alive",
+                DiaryLifeBoundaryPolicy.FinalDeathBoundaryApplies(true, false));
+            AssertTrue(
+                "resurrected live pawn ignores old final death boundary",
+                !DiaryLifeBoundaryPolicy.FinalDeathBoundaryApplies(true, true));
         }
 
         private static void TestArchiveEligibility()

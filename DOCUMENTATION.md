@@ -23,7 +23,9 @@ the event becomes a solo entry. If two eligible colonists are involved, the init
 generated first and the recipient entry gets hidden continuity from it.
 
 Arrivals and deaths are neutral boundary pages. Arrival pages introduce a pawn's diary; death pages
-end it and hide later same-tick events for that pawn.
+end it and hide later same-tick events for that pawn. If RimWorld resurrects the same saved pawn, the
+death page stays in history but stops acting as a terminal boundary, so later diary pages can attach,
+generate, render, and compact normally until another death occurs.
 
 ## 2. Repository Map
 
@@ -158,6 +160,8 @@ can be requeued.
 
 First-person generation is skipped for pawns below the XML Consciousness floor. Neutral arrival and
 death pages bypass that guard because they are boundary chronicle pages, not first-person writing.
+Resurrected pawns reuse their existing `PawnDiaryRecord`; generation checks ignore an older death
+boundary while the same pawn load ID is alive again.
 
 ### 3.6 Ingestion Bus (`DiaryEvents.Submit`)
 
@@ -573,6 +577,8 @@ History retention is per pawn:
   compact pages once they fall out of the hot set.
 - Shared pair events remain hot until every linked pawn has either kept or archived its POV.
 - Pending/not-generated hot refs are not destroyed just because the pawn is over the active cap.
+- A death boundary is terminal for retention only while the same pawn load ID is not alive. After
+  resurrection, post-death refs are retained/archived like ordinary in-bounds pages.
 
 `DiaryTuningDef.activeScanEventWindow` is a separate XML-only global hot-event window. It controls
 retry, title catch-up, orphan recovery, work cooldowns, prompt continuity, opener history, and

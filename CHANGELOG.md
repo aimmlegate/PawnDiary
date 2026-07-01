@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-01
 
+- **Resurrected pawns keep writing.** Death pages now remain historical boundary entries without
+  permanently ending a pawn's diary if RimWorld brings that same pawn load ID back to life. Capture,
+  generation, Diary tab rendering, dev export/mock helpers, and hot/archive retention all ignore the
+  old final-death cutoff while the pawn is alive again; a later death becomes terminal again.
 - **Tuning and prompt settings tabs for XML overrides.** The mod-settings window now has
   **Main**, **Prompts**, **Styles**, and **Tuning** tabs so prompt text, writing styles, and low-level
   XML parameters no longer compete on the same page. Prompts contains **Shared/event prompts** for

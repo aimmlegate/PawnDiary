@@ -43,7 +43,12 @@ namespace PawnDiary
             }
 
             int startTicksAbs = Find.TickManager.TicksAbs;
-            int visibleTickBase = MockVisibleTickBase(pawnId, diary, Find.TickManager.TicksGame, targetCount);
+            int visibleTickBase = MockVisibleTickBase(
+                pawnId,
+                diary,
+                Find.TickManager.TicksGame,
+                targetCount,
+                PawnAliveForDiaryBounds(pawn));
             for (int i = 0; i < entriesToAdd; i++)
             {
                 int mockIndex = existingMockCount + i;
@@ -196,11 +201,12 @@ namespace PawnDiary
             return ClampToIntTick(historyStartTick + offsetTicks);
         }
 
-        private int MockVisibleTickBase(string pawnId, PawnDiaryRecord diary, int startTicksGame, int targetCount)
+        private int MockVisibleTickBase(string pawnId, PawnDiaryRecord diary, int startTicksGame, int targetCount,
+            bool pawnAliveNow)
         {
             int firstAllowedTick = FirstArrivalTickFor(pawnId, diary) ?? 0;
             int? finalDeathTick = FinalDeathTickFor(pawnId, diary);
-            if (finalDeathTick.HasValue)
+            if (DiaryLifeBoundaryPolicy.FinalDeathBoundaryApplies(finalDeathTick.HasValue, pawnAliveNow))
             {
                 long deadPawnBase = Math.Max((long)firstAllowedTick, (long)finalDeathTick.Value - targetCount - 1L);
                 return ClampToIntTick(deadPawnBase);

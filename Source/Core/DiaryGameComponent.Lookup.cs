@@ -263,7 +263,7 @@ namespace PawnDiary
 
             string pawnId = pawn.GetUniqueLoadID();
             DiaryEvent diaryEvent = events.FindEvent(eventId);
-            if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
+            if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary, PawnAliveForDiaryBounds(pawn)))
             {
                 return;
             }
@@ -299,7 +299,7 @@ namespace PawnDiary
 
             string pawnId = pawn.GetUniqueLoadID();
             DiaryEvent diaryEvent = events.FindEvent(eventId);
-            if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary))
+            if (EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary, PawnAliveForDiaryBounds(pawn)))
             {
                 return;
             }
@@ -317,8 +317,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Returns the tick of the latest neutral death-description event for a pawn. That event is
-        /// terminal: anything later is suppressed from display and generation for that pawn.
+        /// Returns the tick of the latest neutral death-description event for a pawn. Callers that need
+        /// the active diary boundary must also consider whether the pawn has since been resurrected.
         /// </summary>
         private int? FinalDeathTickFor(string pawnId, PawnDiaryRecord diary)
         {
@@ -420,21 +420,23 @@ namespace PawnDiary
             }
 
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
-            return EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary);
+            return EventFallsOutsideDiaryBounds(diaryEvent, pawnId, diary, PawnAliveForDiaryBounds(pawnId, null));
         }
 
         /// <summary>
         /// True when an event would sit outside this pawn's diary lifespan. Arrival and death entries
-        /// themselves are kept; entries before the arrival or after the death are hidden and skipped.
+        /// themselves are kept; entries before the arrival are hidden, and entries after death are
+        /// hidden only while the pawn has not been resurrected.
         /// </summary>
-        private bool EventFallsOutsideDiaryBounds(DiaryEvent diaryEvent, string pawnId, PawnDiaryRecord diary)
+        private bool EventFallsOutsideDiaryBounds(DiaryEvent diaryEvent, string pawnId, PawnDiaryRecord diary,
+            bool pawnAliveNow)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
             {
                 return false;
             }
 
-            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary, pawnAliveNow);
             int eventIndex = EventIndexInDiary(diary, diaryEvent.eventId);
             return EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, bounds);
         }
@@ -466,7 +468,7 @@ namespace PawnDiary
         /// FirstArrivalIndexFor / FinalDeathIndexFor / FirstArrivalTickFor / FinalDeathTickFor
         /// (first arrival in list order, last death in list order; min arrival tick, max death tick).
         /// </summary>
-        private DiaryBounds ComputeDiaryBounds(string pawnId, PawnDiaryRecord diary)
+        private DiaryBounds ComputeDiaryBounds(string pawnId, PawnDiaryRecord diary, bool pawnAliveNow)
         {
             DiaryBounds bounds = new DiaryBounds { firstArrivalIndex = -1, finalDeathIndex = -1 };
             if (string.IsNullOrWhiteSpace(pawnId))
@@ -537,7 +539,24 @@ namespace PawnDiary
                 bounds.finalDeathTick = archivedDeathTick;
             }
 
+            SuppressFinalDeathBoundaryIfResurrected(ref bounds, pawnAliveNow);
             return bounds;
+        }
+
+        /// <summary>
+        /// Clears the terminal death boundary while the same saved pawn is alive again. The death page
+        /// remains in the diary; it just no longer cuts off later resurrected-life entries.
+        /// </summary>
+        private static void SuppressFinalDeathBoundaryIfResurrected(ref DiaryBounds bounds, bool pawnAliveNow)
+        {
+            bool hasFinalDeathBoundary = bounds.finalDeathTick.HasValue || bounds.finalDeathIndex >= 0;
+            if (DiaryLifeBoundaryPolicy.FinalDeathBoundaryApplies(hasFinalDeathBoundary, pawnAliveNow))
+            {
+                return;
+            }
+
+            bounds.finalDeathIndex = -1;
+            bounds.finalDeathTick = null;
         }
 
         /// <summary>
@@ -590,43 +609,54 @@ namespace PawnDiary
         }
 
         private bool EventFallsOutsideDiaryBoundsForPawn(DiaryEvent diaryEvent, string pawnId,
-            Dictionary<string, DiaryBoundsCacheEntry> boundsCache)
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache, Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(pawnId))
             {
                 return false;
             }
 
-            DiaryBoundsCacheEntry cacheEntry = DiaryBoundsForPawn(pawnId, boundsCache);
+            DiaryBoundsCacheEntry cacheEntry = DiaryBoundsForPawn(pawnId, boundsCache, livePawnsById);
             int eventIndex = EventIndexInDiary(cacheEntry, diaryEvent.eventId);
             return EventFallsOutsideDiaryBounds(diaryEvent, eventIndex, cacheEntry.bounds);
         }
 
         private DiaryBoundsCacheEntry DiaryBoundsForPawn(string pawnId,
-            Dictionary<string, DiaryBoundsCacheEntry> boundsCache)
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache, Dictionary<string, Pawn> livePawnsById = null)
         {
             if (boundsCache == null)
             {
-                return BuildDiaryBoundsCacheEntry(pawnId, FindDiaryByPawnId(pawnId));
+                return BuildDiaryBoundsCacheEntry(pawnId, FindDiaryByPawnId(pawnId), livePawnsById);
             }
 
             DiaryBoundsCacheEntry cacheEntry;
             if (!boundsCache.TryGetValue(pawnId, out cacheEntry))
             {
-                cacheEntry = BuildDiaryBoundsCacheEntry(pawnId, FindDiaryByPawnId(pawnId));
+                cacheEntry = BuildDiaryBoundsCacheEntry(pawnId, FindDiaryByPawnId(pawnId), livePawnsById);
                 boundsCache[pawnId] = cacheEntry;
             }
 
             return cacheEntry;
         }
 
-        private DiaryBoundsCacheEntry BuildDiaryBoundsCacheEntry(string pawnId, PawnDiaryRecord diary)
+        private DiaryBoundsCacheEntry BuildDiaryBoundsCacheEntry(string pawnId, PawnDiaryRecord diary,
+            Dictionary<string, Pawn> livePawnsById)
         {
             return new DiaryBoundsCacheEntry
             {
-                bounds = ComputeDiaryBounds(pawnId, diary),
+                bounds = ComputeDiaryBounds(pawnId, diary, PawnAliveForDiaryBounds(pawnId, livePawnsById)),
                 eventIndexesById = EventIndexesById(diary)
             };
+        }
+
+        private static bool PawnAliveForDiaryBounds(Pawn pawn)
+        {
+            return pawn != null && !pawn.Dead;
+        }
+
+        private static bool PawnAliveForDiaryBounds(string pawnId, Dictionary<string, Pawn> livePawnsById)
+        {
+            return FindLivePawnByLoadId(pawnId, livePawnsById) != null;
         }
 
         private static Dictionary<string, int> EventIndexesById(PawnDiaryRecord diary)

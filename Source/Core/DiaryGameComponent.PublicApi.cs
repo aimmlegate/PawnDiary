@@ -230,6 +230,7 @@ namespace PawnDiary
             private readonly bool showLlmDebugInfo;
             private readonly bool showGeneratingEntries;
             private readonly bool showPromptOnlyEntries;
+            private readonly bool pawnAliveForBounds;
             private readonly HashSet<string> activeEventIds;
             private readonly IReadOnlyList<ArchivedDiaryEntry> archivedEntries;
             private readonly HashSet<string> hotDisplayKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -255,6 +256,7 @@ namespace PawnDiary
                 this.showLlmDebugInfo = showLlmDebugInfo;
                 this.showGeneratingEntries = showGeneratingEntries;
                 this.showPromptOnlyEntries = showPromptOnlyEntries;
+                pawnAliveForBounds = PawnAliveForDiaryBounds(pawn);
 
                 pawnId = pawn?.GetUniqueLoadID();
                 diary = pawn == null ? null : owner.FindDiary(pawn, false);
@@ -291,7 +293,8 @@ namespace PawnDiary
                         bounds.firstArrivalTick = entry.tick;
                     }
 
-                    if (entry.IsDeathDescriptionFor(pawnId)
+                    if (DiaryLifeBoundaryPolicy.FinalDeathBoundaryApplies(true, pawnAliveForBounds)
+                        && entry.IsDeathDescriptionFor(pawnId)
                         && (!bounds.finalDeathTick.HasValue || entry.tick > bounds.finalDeathTick.Value))
                     {
                         bounds.finalDeathTick = entry.tick;
@@ -525,7 +528,8 @@ namespace PawnDiary
                     }
                 }
 
-                if (diaryEvent.IsDeathDescriptionFor(pawnId))
+                if (DiaryLifeBoundaryPolicy.FinalDeathBoundaryApplies(true, pawnAliveForBounds)
+                    && diaryEvent.IsDeathDescriptionFor(pawnId))
                 {
                     bounds.finalDeathIndex = eventIndex;
                     if (!bounds.finalDeathTick.HasValue || diaryEvent.tick > bounds.finalDeathTick.Value)
@@ -831,8 +835,8 @@ namespace PawnDiary
                 return false;
             }
 
-            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole, boundsCache);
-            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole, boundsCache);
+            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole, boundsCache, livePawnsById);
+            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
             if (!initiatorEnabled && !recipientEnabled)
             {
                 return false;
@@ -863,7 +867,7 @@ namespace PawnDiary
             if (diaryEvent == null
                 || string.IsNullOrWhiteSpace(povRole)
                 || (pending && !allowArchivedPendingReset)
-                || !DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
+                || !DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
                 return false;
             }
@@ -892,7 +896,7 @@ namespace PawnDiary
             // Compute the arrival/death boundary once and reuse the index-based check. The per-event
             // (pawnId, diary) overload re-derives the boundary on every call, which made this loop
             // grow with the square of the pawn's entry count.
-            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary, PawnAliveForDiaryBounds(pawn));
             if (diary?.eventIds != null)
             {
                 for (int i = 0; i < diary.eventIds.Count; i++)

@@ -119,6 +119,7 @@ namespace PawnDiary
             }
 
             HashSet<string> activeEventIds = ActiveScanEventIds();
+            Dictionary<string, Pawn> livePawnsById = SnapshotLivePawnsByLoadId();
             bool changed = false;
             for (int i = 0; i < diaries.Count; i++)
             {
@@ -129,7 +130,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (ArchiveAndRemoveOverflowRefs(diary, perPawnLimit, activeEventIds))
+                if (ArchiveAndRemoveOverflowRefs(diary, perPawnLimit, activeEventIds, livePawnsById))
                 {
                     changed = true;
                 }
@@ -147,7 +148,8 @@ namespace PawnDiary
             return true;
         }
 
-        private bool ArchiveAndRemoveOverflowRefs(PawnDiaryRecord diary, int perPawnLimit, HashSet<string> activeEventIds)
+        private bool ArchiveAndRemoveOverflowRefs(PawnDiaryRecord diary, int perPawnLimit, HashSet<string> activeEventIds,
+            Dictionary<string, Pawn> livePawnsById)
         {
             if (diary == null || diary.eventIds == null || diary.eventIds.Count <= perPawnLimit)
             {
@@ -156,7 +158,7 @@ namespace PawnDiary
 
             int overflow = diary.eventIds.Count - perPawnLimit;
             string pawnId = diary.pawnId;
-            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary);
+            DiaryBounds bounds = ComputeDiaryBounds(pawnId, diary, PawnAliveForDiaryBounds(pawnId, livePawnsById));
 
             // Phase 1 (impure, oldest-first): mark which old refs can leave the hot list and stage the
             // archive row each archiveable drop needs. The scan stops as soon as it has found `overflow`

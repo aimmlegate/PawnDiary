@@ -31,14 +31,15 @@ namespace PawnDiary
         /// endpoint metadata, marks the event queued, and enqueues the request to <see cref="LlmClient"/>.
         /// </summary>
         private void QueuePrompt(DiaryEvent diaryEvent, string povRole, DiaryPromptPlan promptPlan,
-            ApiEndpointConfig primaryOverride = null, Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null)
+            ApiEndpointConfig primaryOverride = null, Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
+            Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlan == null)
             {
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
                 return;
             }
@@ -302,7 +303,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
                 return;
             }

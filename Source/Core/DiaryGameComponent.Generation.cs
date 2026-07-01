@@ -35,7 +35,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
                 return;
             }
@@ -98,14 +98,14 @@ namespace PawnDiary
                 }
 
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.InitiatorRole)
-                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.initiatorPawnId, boundsCache))
+                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.initiatorPawnId, boundsCache, livePawnsById))
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.InitiatorRole, boundsCache, livePawnsById);
                 }
 
                 if (!diaryEvent.solo
                     && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole)
-                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.recipientPawnId, boundsCache))
+                    && !EventFallsOutsideDiaryBoundsForPawn(diaryEvent, diaryEvent.recipientPawnId, boundsCache, livePawnsById))
                 {
                     EnsureGenerationQueued(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
                 }
@@ -264,7 +264,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId, boundsCache))
+                if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId, boundsCache, livePawnsById))
                 {
                     continue;
                 }
@@ -319,7 +319,7 @@ namespace PawnDiary
                 return;
             }
 
-            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache))
+            if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
                 return;
             }
@@ -339,7 +339,7 @@ namespace PawnDiary
                 PromptEnchantmentRuleFor(diaryEvent, povRole, livePawnsById),
                 0,
                 HumorCueFor(diaryEvent));
-            QueuePrompt(diaryEvent, povRole, promptPlan, null, boundsCache);
+            QueuePrompt(diaryEvent, povRole, promptPlan, null, boundsCache, livePawnsById);
         }
 
         /// <summary>
@@ -435,8 +435,8 @@ namespace PawnDiary
             TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById);
             TryMarkIncapacitatedPovSkipped(diaryEvent, DiaryEvent.RecipientRole, livePawnsById);
 
-            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole, boundsCache);
-            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole, boundsCache);
+            bool initiatorEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.InitiatorRole, boundsCache, livePawnsById);
+            bool recipientEnabled = DiaryGenerationEnabledFor(diaryEvent, DiaryEvent.RecipientRole, boundsCache, livePawnsById);
             bool initiatorSkipped = diaryEvent.IsSkipped(DiaryEvent.InitiatorRole);
             bool initiatorContextExpected = initiatorEnabled && !initiatorSkipped;
 
@@ -451,7 +451,7 @@ namespace PawnDiary
                     PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.InitiatorRole, livePawnsById),
                     0,
                     HumorCueFor(diaryEvent));
-                QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, promptPlan, null, boundsCache);
+                QueuePrompt(diaryEvent, DiaryEvent.InitiatorRole, promptPlan, null, boundsCache, livePawnsById);
                 return;
             }
 
@@ -499,7 +499,7 @@ namespace PawnDiary
                         PromptEnchantmentRuleFor(diaryEvent, DiaryEvent.RecipientRole, livePawnsById),
                         0,
                         HumorCueFor(diaryEvent));
-                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, promptPlan, recipientPrimaryOverride, boundsCache);
+                QueuePrompt(diaryEvent, DiaryEvent.RecipientRole, promptPlan, recipientPrimaryOverride, boundsCache, livePawnsById);
             }
         }
     }

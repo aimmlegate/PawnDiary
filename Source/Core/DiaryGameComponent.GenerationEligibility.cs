@@ -25,7 +25,7 @@ namespace PawnDiary
         /// resolving the pawn via its saved diary record.
         /// </summary>
         private bool DiaryGenerationEnabledFor(DiaryEvent diaryEvent, string povRole,
-            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null)
+            Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null, Dictionary<string, Pawn> livePawnsById = null)
         {
             // DiaryEvents store pawn IDs, not Pawn instances, so queue-time checks resolve through
             // the saved diary record for that POV.
@@ -40,7 +40,7 @@ namespace PawnDiary
                 return false;
             }
 
-            if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId, boundsCache))
+            if (EventFallsOutsideDiaryBoundsForPawn(diaryEvent, pawnId, boundsCache, livePawnsById))
             {
                 return false;
             }
@@ -221,7 +221,7 @@ namespace PawnDiary
 
         private static void AddLivePawnToSnapshot(Dictionary<string, Pawn> pawnsById, Pawn pawn)
         {
-            if (pawnsById == null || pawn == null)
+            if (pawnsById == null || pawn == null || pawn.Dead)
             {
                 return;
             }
@@ -272,7 +272,7 @@ namespace PawnDiary
 
                     foreach (Pawn pawn in map.mapPawns.AllPawns)
                     {
-                        if (pawn != null && pawn.GetUniqueLoadID() == pawnId)
+                        if (pawn != null && !pawn.Dead && pawn.GetUniqueLoadID() == pawnId)
                         {
                             return pawn;
                         }
