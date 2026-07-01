@@ -29,6 +29,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   evidence-label caps needed to tune this behavior in-game.
 - **Dev event panel click split.** Def-backed event rows now left-click to fire the shown trigger and
   right-click to open the Def selector, while ordinary dev-panel text buttons ignore right-clicks.
+  Selector choices now store the chosen Def id directly, and button titles mirror the selected
+  menu label so right-click selection feedback matches the committed trigger.
 - **Resurrected pawns keep writing.** Death pages now remain historical boundary entries without
   permanently ending a pawn's diary if RimWorld brings that same pawn load ID back to life. Capture,
   generation, Diary tab rendering, dev export/mock helpers, and hot/archive retention all ignore the

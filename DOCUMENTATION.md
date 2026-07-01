@@ -510,7 +510,8 @@ states, tales, hediffs, map conditions, social play-log entries, romance relatio
 raids, quests, abilities, and the scanner-based work/day-summary flows. In the Events section,
 Def-backed rows are direct buttons: left-click fires the shown Def, and right-click opens the Def
 selector for memory thought, inspiration, mental state, tale, hediff, game condition, interaction,
-relation, incident, quest script, and pawn ability. Preview
+relation, incident, quest script, and pawn ability; the row title mirrors the selected menu label
+after a selector choice is committed. Preview
 buttons open the selected pawn's Diary tab only to display the transient card; they do not save diary
 events. The prompt-only section uses the same synthetic fixture registry as the old Diary tab
 prompt-suite controls, but can create a selected prompt-test batch at once and can clear all
@@ -768,8 +769,9 @@ node run.js --all-variants --passes 2 --save --no-title --model <model-name>
 Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridge/GABS. RimWorld dev
 mode's Debug Actions menu exposes `Pawn Diary > Event test panel...` for common real trigger paths:
 select an eligible colonist, optionally select a partner, open the Events section, left-click a
-Def-backed row to trigger it, or right-click it first to choose a different Def. Some buttons deliberately mutate the
-disposable save, such as spawning a recruit, killing a test colonist, creating a raid, or
+Def-backed row to trigger it, or right-click it first to choose a different Def; the row title updates
+to the selected menu label. Some buttons deliberately mutate the disposable save, such as spawning a
+recruit, killing a test colonist, creating a raid, or
 accepting/completing a sample quest. For Diary UI stress checks, use the same panel's Diary section to
 fill mock pages, switch personas, or open transient card previews. For prompt shape checks that do not
 need a real gameplay trigger, use the Fixtures section and generate all or selected fixtures for an
