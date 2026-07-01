@@ -209,8 +209,7 @@ namespace PawnDiary
         internal void RecordImmediateHediffEvent(Pawn pawn, Hediff hediff, DiaryInteractionGroupDef group,
             HediffSignalPolicy policy, HediffSignalSource source, HediffEventData data)
         {
-            string textKey = ImmediateHediffTextKey(policy, source);
-            string text = textKey.Translate(pawn.LabelShortCap, data.Label).Resolve();
+            string text = ImmediateHediffText(policy, source, pawn.LabelShortCap, data.Label);
             string instruction = InteractionGroups.InstructionForGroup(group);
             string gameContext = HediffEventData.BuildGameContext(
                 data.DefName, data.Label, data.SourceToken, data.GroupKey, data.ModeToken,
@@ -220,19 +219,29 @@ namespace PawnDiary
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
         }
 
-        private static string ImmediateHediffTextKey(HediffSignalPolicy policy, HediffSignalSource source)
+        private static string ImmediateHediffText(HediffSignalPolicy policy, HediffSignalSource source,
+            string pawnLabel, string hediffLabel)
         {
+            string configuredText = source == HediffSignalSource.Progressed
+                ? policy?.progressedText
+                : policy?.appearedText;
+            if (!string.IsNullOrWhiteSpace(configuredText))
+            {
+                return PromptTextTemplate.Format(configuredText, pawnLabel, hediffLabel);
+            }
+
             string configured = source == HediffSignalSource.Progressed
                 ? policy?.progressedTextKey
                 : policy?.appearedTextKey;
             if (!string.IsNullOrWhiteSpace(configured))
             {
-                return configured;
+                return configured.Translate(pawnLabel, hediffLabel).Resolve();
             }
 
-            return source == HediffSignalSource.Progressed
+            string fallbackKey = source == HediffSignalSource.Progressed
                 ? "PawnDiary.Event.HediffProgressed"
                 : "PawnDiary.Event.HediffAppeared";
+            return fallbackKey.Translate(pawnLabel, hediffLabel).Resolve();
         }
 
         internal void RecordDayReflectionHediffSignal(Pawn pawn, Hediff hediff, HediffSignalPolicy policy,

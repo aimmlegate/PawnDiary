@@ -413,10 +413,13 @@ four shared system prompts plus per-event prompt/enhancement/forced-model overri
 `DiaryPromptTemplateDef`, `DiaryPromptEnchantmentDef`, `DiaryHumorCueDef`,
 `DiaryEventWindowDef`, `DiaryObservedConditionDef`, `DiaryInteractionGroupDef`, and
 `DiaryHediffPersonaOverrideDef`. That includes template prompt text, final instructions,
-template field lists, include/exclude prompt switches, per-template token caps, prompt cue keys,
+template field lists, include/exclude prompt switches, per-template token caps, prompt cue text,
 prompt weights, event-window/observed-condition prompt biasing, group instructions/tone variants,
 batch/promotion weights, humor cue rules/weights, and hediff-driven writing-style override policy.
-Blank template prompt fields display their effective shared prompt text instead of an empty editor.
+Template prompt text boxes are raw per-template overrides; blank means "inherit" and intentionally
+stays blank so Shared/event prompts remains the only place that displays shared system prompt text.
+Prompt-policy fields that are backed by translation keys display the resolved text and write literal
+override fields (`*Text`, `conditionLabel`, cue lists) instead of asking players to edit raw key names.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
 Tuning is the low-level XML parameter editor. Tuning and the Prompt tab's policy/weights subpage share
@@ -429,18 +432,22 @@ surroundings, weather chances, ritual quality labels, mood-condition families, h
 thresholds, mood/pain/opinion buckets, thought token lists, thought progression rules, scanner
 intervals, work sampling, day/quadrum/arc reflection weights, signal policies, context reactions).
 Field labels span the full row width so long names never clip. The catalog (`AdvancedFieldCatalog`)
-is declarative and drives both the UI and the runtime override seam.
+is declarative and drives both the UI and the runtime override seam. Static tuning fields build during
+settings load; Def-backed prompt-policy groups are appended lazily after `DefDatabase` has loaded, so
+dynamic groups such as humor cues cannot be cached empty by early settings deserialization.
 
 Overrides persist per player in `TuningOverrideStore` (a typed twin of `PromptOverrideDictionary`) and
 take effect immediately by writing straight into the live Def instance fields via cached reflection or
 small custom accessors for nested policy objects. Every existing `DiaryTuning.Current.field` /
 `def.field` reader picks the new value up with no call-site changes; pristine XML defaults are
 snapshotted once before the first override so Reset can restore them (signal/context `-1` "inherit
-tuning" sentinels and `<null>` list inheritance markers are preserved). Simple lists use one item per
-line. Compact tables use these line formats: `WeatherDef=chance`, `maxExclusive=ritualQualityLabel`,
-`enabled|label|source|contextKey` for prompt fields, `level|chance|frequency|weight|severity` for
-prompt-enchantment severity tiers, and `category|ThoughtDef|stageIndex:severity,...` for thought
-progression rules. Structural non-prompt UI and text-decoration XML remains XML-only.
+tuning" sentinels and `<null>` list inheritance markers are preserved). Prompt text overrides use the
+same `{0}`, `{1}` placeholder convention as Keyed strings; cue lists use one item per line and accept
+`<null>` to suppress configured cue rows. Compact tables use these line formats: `WeatherDef=chance`,
+`maxExclusive=ritualQualityLabel`, `enabled|label|source|contextKey` for prompt fields,
+`level|chance|frequency|weight|severity` for prompt-enchantment severity tiers, and
+`category|ThoughtDef|stageIndex:severity,...` for thought progression rules. Structural non-prompt UI
+and text-decoration XML remains XML-only.
 
 The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
 appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can
@@ -667,6 +674,10 @@ When editing XML Def text:
 - Keep indexed variant pools aligned; avoid blank list entries that shift keys such as
   `<group.instructions.0>`.
 - Add or update the matching Russian key/file at the same time.
+
+The in-game Prompt policy editor shows resolved text for key-backed fields and stores literal
+per-player overrides in `*Text`/cue fields. Those overrides are for player settings only; XML/Keyed and
+DefInjected entries remain the source that translators must keep aligned.
 
 Russian lives in `Languages/Russian (Русский)/` and mirrors the English Keyed + DefInjected layout.
 Use `Languages/Russian (Русский)/GLOSSARY.md` for game terms. Russian UI should stay compact for

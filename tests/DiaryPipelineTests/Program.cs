@@ -44,6 +44,9 @@ namespace DiaryPipelineTests
             TestApiLaneIdentityAndLabels();
             TestApiEndpointPolicy();
             TestApiRequestAuth();
+            TestPromptSettingsMenuPolicy();
+            TestTuningOverrideMigration();
+            TestPromptTextTemplate();
             TestLlmRequestJsonBuilder();
             TestArchivedPendingReloadFallbackStatus();
             TestArchiveEligibility();
@@ -54,6 +57,89 @@ namespace DiaryPipelineTests
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
+        }
+
+        private static void TestPromptSettingsMenuPolicy()
+        {
+            AssertTrue(
+                "template system prompt is a raw override field",
+                PromptSettingsMenuPolicy.IsTemplateTextOverrideField("systemPrompt"));
+            AssertTrue(
+                "template final instruction is a raw override field",
+                PromptSettingsMenuPolicy.IsTemplateTextOverrideField("finalInstruction"));
+            AssertTrue(
+                "template recipient instruction is a raw override field",
+                PromptSettingsMenuPolicy.IsTemplateTextOverrideField("recipientFinalInstruction"));
+            AssertTrue(
+                "template field list is not prompt text",
+                !PromptSettingsMenuPolicy.IsTemplateTextOverrideField("fields"));
+
+            AssertTrue(
+                "prompt policy does not mirror inherited shared system prompts",
+                !PromptSettingsMenuPolicy.TemplateFieldShouldShowInheritedFallback("systemPrompt"));
+            AssertTrue(
+                "prompt policy does not mirror inherited final instructions",
+                !PromptSettingsMenuPolicy.TemplateFieldShouldShowInheritedFallback("finalInstruction"));
+            AssertTrue(
+                "prompt policy does not mirror inherited recipient instructions",
+                !PromptSettingsMenuPolicy.TemplateFieldShouldShowInheritedFallback("recipientFinalInstruction"));
+        }
+
+        private static void TestTuningOverrideMigration()
+        {
+            // Overrides saved under the removed translation-key editors are dropped; live literal-text and
+            // unrelated scalar overrides are kept. Keys are "defName.fieldName" (nested policy fields keep
+            // their batch./hediff. prefix).
+            Dictionary<string, string> overrides = new Dictionary<string, string>
+            {
+                { "Diary_SomeEnchantment.intensityKey", "PawnDiary.Prompt.Intensity.High" },
+                { "Diary_SomeEnchantment.intensityText", "acutely" },
+                { "Diary_SomeWindow.startTextKey", "PawnDiary.Event.Foo.start" },
+                { "Diary_SomeGroup.batch.labelKey", "PawnDiary.Event.BatchLabel" },
+                { "Diary_SomeGroup.batch.labelText", "The colonists chatted" },
+                { "Diary_SomeGroup.hediff.appearedTextKey", "PawnDiary.Event.HediffAppeared" },
+                { "Diary_Ctx.textKey", "PawnDiary.Ctx.ActiveConditions" },
+                { "Diary_Tuning.socialFightDedupTicks", "1250" },
+            };
+
+            int removed = TuningOverrideMigration.PruneRemovedFieldKeys(overrides);
+
+            AssertTrue("prunes exactly the five orphaned translation-key overrides", removed == 5);
+            AssertTrue("keeps literal intensity text override",
+                overrides.ContainsKey("Diary_SomeEnchantment.intensityText"));
+            AssertTrue("keeps literal batch label override",
+                overrides.ContainsKey("Diary_SomeGroup.batch.labelText"));
+            AssertTrue("keeps unrelated scalar override",
+                overrides.ContainsKey("Diary_Tuning.socialFightDedupTicks"));
+            AssertTrue("drops orphaned enchantment intensityKey",
+                !overrides.ContainsKey("Diary_SomeEnchantment.intensityKey"));
+            AssertTrue("drops orphaned nested batch.labelKey",
+                !overrides.ContainsKey("Diary_SomeGroup.batch.labelKey"));
+
+            // The retained *Text field names must never be mistaken for removed *Key fields.
+            AssertTrue("promptPriorityText is not treated as a removed field",
+                !TuningOverrideMigration.IsRemovedFieldKey("Diary_SomeWindow.promptPriorityText"));
+            AssertTrue("batch.labelText is not treated as a removed field",
+                !TuningOverrideMigration.IsRemovedFieldKey("Diary_SomeGroup.batch.labelText"));
+
+            AssertTrue("second pass is a no-op",
+                TuningOverrideMigration.PruneRemovedFieldKeys(overrides) == 0);
+        }
+
+        private static void TestPromptTextTemplate()
+        {
+            AssertEqual(
+                "literal settings text formats placeholders",
+                "Alice noticed smoke.",
+                PromptTextTemplate.Format("{0} noticed {1}.", "Alice", "smoke"));
+            AssertEqual(
+                "literal settings text tolerates malformed braces",
+                "{0 noticed smoke.",
+                PromptTextTemplate.Format("{0 noticed smoke.", "Alice"));
+            AssertEqual(
+                "blank literal settings text stays blank",
+                string.Empty,
+                PromptTextTemplate.Format("   ", "Alice"));
         }
 
         // Pins the shared fallback-fact picker that keeps a stale/failed page's body and title identical

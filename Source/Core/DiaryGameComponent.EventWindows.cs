@@ -454,40 +454,21 @@ namespace PawnDiary
             }
 
             List<string> cues = new List<string>();
-            if (!string.IsNullOrWhiteSpace(def.promptDescriptionKey))
+            string description = EventWindowPromptText(def.promptDescriptionText, def.promptDescriptionKey, null);
+            if (!string.IsNullOrWhiteSpace(description))
             {
-                string description = def.promptDescriptionKey.Translate().Resolve();
-                if (!string.IsNullOrWhiteSpace(description))
-                {
-                    cues.Add("PawnDiary.Prompt.EventWindow.Detail".Translate(description).Resolve());
-                }
+                cues.Add("PawnDiary.Prompt.EventWindow.Detail".Translate(description).Resolve());
             }
 
-            if (def.promptCueKeys != null)
-            {
-                for (int i = 0; i < def.promptCueKeys.Count; i++)
-                {
-                    string cueKey = def.promptCueKeys[i];
-                    if (string.IsNullOrWhiteSpace(cueKey))
-                    {
-                        continue;
-                    }
-
-                    string cue = cueKey.Translate().Resolve();
-                    if (!string.IsNullOrWhiteSpace(cue))
-                    {
-                        cues.Add(cue);
-                    }
-                }
-            }
+            AddPromptCueTexts(cues, def.promptCueTexts, def.promptCueKeys);
 
             string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
             return new PromptEnchantmentCandidate
             {
                 weight = weight,
-                priorityText = EventWindowPromptText(def.promptPriorityKey,
+                priorityText = EventWindowPromptText(def.promptPriorityText, def.promptPriorityKey,
                     "PawnDiary.Prompt.EventWindow.Priority"),
-                conditionText = EventWindowPromptText(def.promptConditionKey,
+                conditionText = EventWindowPromptText(def.promptConditionText, def.promptConditionKey,
                     "PawnDiary.Prompt.EventWindow.ConditionFallback", label),
                 configuredCues = cues
             };
@@ -504,7 +485,6 @@ namespace PawnDiary
 
             string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
             string instruction = EventWindowInstruction(def, label);
-            string textKey = EventWindowTextKey(def, phase);
             string signalLabel = EventWindowSignalLabel(def, active, facts);
             string gameContext = BuildEventWindowGameContext(def, active, phase, facts);
 
@@ -516,7 +496,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                string text = textKey.Translate(pawn.LabelShortCap, signalLabel).Resolve();
+                string text = EventWindowPhaseText(def, phase, pawn.LabelShortCap, signalLabel);
                 DiaryEvent diaryEvent = AddSoloEvent(pawn, null, def.defName, label, text, instruction, gameContext);
                 if (diaryEvent == null)
                 {
@@ -678,18 +658,113 @@ namespace PawnDiary
             return "PawnDiary.Event.EventWindow.Generic." + phase;
         }
 
-        private static string EventWindowPromptText(string preferredKey, string fallbackKey)
+        private static string EventWindowPhaseText(DiaryEventWindowDef def, string phase,
+            string pawnLabel, string signalLabel)
         {
-            return !string.IsNullOrWhiteSpace(preferredKey)
-                ? preferredKey.Translate().Resolve()
-                : fallbackKey.Translate().Resolve();
+            string literal = EventWindowLiteralText(def, phase);
+            if (!string.IsNullOrWhiteSpace(literal))
+            {
+                return PromptTextTemplate.Format(literal, pawnLabel, signalLabel);
+            }
+
+            return EventWindowTextKey(def, phase).Translate(pawnLabel, signalLabel).Resolve();
         }
 
-        private static string EventWindowPromptText(string preferredKey, string fallbackKey, string fallbackArg)
+        private static string EventWindowLiteralText(DiaryEventWindowDef def, string phase)
         {
-            return !string.IsNullOrWhiteSpace(preferredKey)
-                ? preferredKey.Translate().Resolve()
-                : fallbackKey.Translate(fallbackArg).Resolve();
+            if (string.Equals(phase, EventWindowPhaseStart, StringComparison.OrdinalIgnoreCase))
+            {
+                return def.startText;
+            }
+
+            if (string.Equals(phase, EventWindowPhaseEnd, StringComparison.OrdinalIgnoreCase))
+            {
+                return def.endText;
+            }
+
+            if (string.Equals(phase, EventWindowPhaseTimeout, StringComparison.OrdinalIgnoreCase))
+            {
+                return def.timeoutText;
+            }
+
+            return string.Empty;
+        }
+
+        private static string EventWindowPromptText(string preferredText, string preferredKey, string fallbackKey)
+        {
+            if (!string.IsNullOrWhiteSpace(preferredText))
+            {
+                return preferredText;
+            }
+
+            if (!string.IsNullOrWhiteSpace(preferredKey))
+            {
+                return preferredKey.Translate().Resolve();
+            }
+
+            return string.IsNullOrWhiteSpace(fallbackKey) ? string.Empty : fallbackKey.Translate().Resolve();
+        }
+
+        private static string EventWindowPromptText(string preferredText, string preferredKey,
+            string fallbackKey, string fallbackArg)
+        {
+            if (!string.IsNullOrWhiteSpace(preferredText))
+            {
+                return preferredText;
+            }
+
+            if (!string.IsNullOrWhiteSpace(preferredKey))
+            {
+                return preferredKey.Translate().Resolve();
+            }
+
+            return fallbackKey.Translate(fallbackArg).Resolve();
+        }
+
+        private static void AddPromptCueTexts(List<string> cues, List<string> literalTexts, List<string> keyedTexts)
+        {
+            if (cues == null)
+            {
+                return;
+            }
+
+            if (literalTexts == null)
+            {
+                return; // Explicit settings/XML null suppresses configured cues.
+            }
+
+            if (literalTexts.Count > 0)
+            {
+                for (int i = 0; i < literalTexts.Count; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(literalTexts[i]))
+                    {
+                        cues.Add(literalTexts[i]);
+                    }
+                }
+
+                return;
+            }
+
+            if (keyedTexts == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < keyedTexts.Count; i++)
+            {
+                string cueKey = keyedTexts[i];
+                if (string.IsNullOrWhiteSpace(cueKey))
+                {
+                    continue;
+                }
+
+                string cue = cueKey.Translate().Resolve();
+                if (!string.IsNullOrWhiteSpace(cue))
+                {
+                    cues.Add(cue);
+                }
+            }
         }
 
         private static string EventWindowSignalLabel(DiaryEventWindowDef def, ActiveEventWindowState active,

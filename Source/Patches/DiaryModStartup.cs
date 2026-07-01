@@ -1,7 +1,7 @@
 // Mod entry point. [StaticConstructorOnStartup] makes RimWorld run this class's static
-// constructor once at game load (there is no main()). We use it to apply our Harmony patches and
-// register the hidden Diary inspector tab after the vanilla Needs tab on every humanlike pawn
-// and on those pawns' corpse defs.
+// constructor once at game load (there is no main()). We use it to apply our Harmony patches,
+// apply any saved XML-Def settings overrides after DefDatabase is populated, and register the hidden
+// Diary inspector tab after the vanilla Needs tab on every humanlike pawn and on those pawns' corpse defs.
 // See AGENTS.md ("[StaticConstructorOnStartup]").
 using System;
 using System.Collections.Generic;
@@ -50,6 +50,15 @@ namespace PawnDiary
             catch (Exception e)
             {
                 Log.Error("[Pawn Diary] Diary tab injection failed: " + e);
+            }
+
+            try
+            {
+                AdvancedFieldCatalog.EnsureApplied(PawnDiaryMod.Settings?.advancedOverrides);
+            }
+            catch (Exception e)
+            {
+                Log.Error("[Pawn Diary] Advanced settings override application failed: " + e);
             }
 
             Log.Message("[Pawn Diary] Loaded.");

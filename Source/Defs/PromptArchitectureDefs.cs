@@ -444,6 +444,9 @@ namespace PawnDiary
         public string reactionKey;
         public bool enabled = true;
         public string textKey;
+        // Literal settings override for the formatted context line. Blank means use textKey/fallback.
+        // Placeholder {0} is the tracked context value.
+        public string text;
         public int maxItems = -1;
         public int scanBack = -1;
         public int timeoutTicks = -1;
@@ -499,6 +502,11 @@ namespace PawnDiary
             }
 
             DiaryContextReactionDef policy = ForKey(reactionKey);
+            if (!string.IsNullOrWhiteSpace(policy.text))
+            {
+                return PromptTextTemplate.Format(policy.text, value);
+            }
+
             string key = policy.textKey;
             if (string.IsNullOrWhiteSpace(key))
             {

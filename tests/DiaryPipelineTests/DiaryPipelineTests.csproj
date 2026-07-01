@@ -38,9 +38,12 @@
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />
     <Compile Include="..\..\Source\Settings\ApiRequestAuth.cs" Link="ApiRequestAuth.cs" />
     <Compile Include="..\..\Source\Settings\EndpointUtility.cs" Link="EndpointUtility.cs" />
+    <Compile Include="..\..\Source\Settings\PromptSettingsMenuPolicy.cs" Link="PromptSettingsMenuPolicy.cs" />
+    <Compile Include="..\..\Source\Settings\TuningOverrideMigration.cs" Link="TuningOverrideMigration.cs" />
     <Compile Include="..\..\Source\Generation\PromptAssembler.cs" Link="PromptAssembler.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
     <Compile Include="..\..\Source\Generation\LlmResponseParser.cs" Link="LlmResponseParser.cs" />
     <Compile Include="..\..\Source\Util\MiniJson.cs" Link="MiniJson.cs" />
+    <Compile Include="..\..\Source\Util\PromptTextTemplate.cs" Link="PromptTextTemplate.cs" />
   </ItemGroup>
 </Project>

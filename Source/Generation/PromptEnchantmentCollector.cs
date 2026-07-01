@@ -206,6 +206,11 @@ namespace PawnDiary
 
         private static string PriorityText(DiaryPromptEnchantmentDef def)
         {
+            if (!string.IsNullOrWhiteSpace(def?.priorityText))
+            {
+                return def.priorityText;
+            }
+
             return !string.IsNullOrWhiteSpace(def?.priorityKey)
                 ? PromptText(def.priorityKey)
                 : PromptText("PawnDiary.Prompt.Health.HighPriority");
@@ -244,6 +249,11 @@ namespace PawnDiary
         private static string CapacityIntensity(DiaryPromptEnchantmentDef def, float level,
             PromptEnchantmentTuning tuning)
         {
+            if (!string.IsNullOrWhiteSpace(def?.intensityText))
+            {
+                return def.intensityText;
+            }
+
             if (!string.IsNullOrWhiteSpace(def?.intensityKey))
             {
                 return PromptText(def.intensityKey);
@@ -271,7 +281,26 @@ namespace PawnDiary
             PromptEnchantmentTuning tuning)
         {
             List<string> cues = new List<string>();
-            if (def?.cueKeys == null || def.cueKeys.Count == 0)
+            if (def?.cueTexts == null)
+            {
+                return cues; // Explicit settings/XML null suppresses configured cues.
+            }
+
+            if (def.cueTexts.Count > 0)
+            {
+                int maxLiteralCues = tuning.EffectiveMaxImpactCues();
+                for (int i = 0; i < def.cueTexts.Count && cues.Count < maxLiteralCues; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(def.cueTexts[i]))
+                    {
+                        cues.Add(def.cueTexts[i]);
+                    }
+                }
+
+                return cues;
+            }
+
+            if (def.cueKeys == null || def.cueKeys.Count == 0)
             {
                 return cues;
             }
@@ -382,14 +411,14 @@ namespace PawnDiary
 
         private static string HediffDescription(DiaryPromptEnchantmentDef def, Hediff hediff)
         {
-            if (!string.IsNullOrWhiteSpace(def?.descriptionOverrideKey))
-            {
-                return DiaryLineCleaner.CleanLine(PromptText(def.descriptionOverrideKey));
-            }
-
             if (!string.IsNullOrWhiteSpace(def?.descriptionOverrideText))
             {
                 return DiaryLineCleaner.CleanLine(def.descriptionOverrideText);
+            }
+
+            if (!string.IsNullOrWhiteSpace(def?.descriptionOverrideKey))
+            {
+                return DiaryLineCleaner.CleanLine(PromptText(def.descriptionOverrideKey));
             }
 
             return PromptTextSanitizer.LocalizedPromptText(hediff.def.description);
@@ -577,6 +606,11 @@ namespace PawnDiary
         private static string HediffIntensity(DiaryPromptEnchantmentDef def, Hediff hediff,
             PromptEnchantmentTuning tuning)
         {
+            if (!string.IsNullOrWhiteSpace(def?.intensityText))
+            {
+                return def.intensityText;
+            }
+
             if (!string.IsNullOrWhiteSpace(def?.intensityKey))
             {
                 return PromptText(def.intensityKey);

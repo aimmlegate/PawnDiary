@@ -53,17 +53,21 @@ namespace PawnDiary
         public float minCapacity = -1f;
         public float maxCapacity = -1f;
 
-        // Optional model-facing text controls. Keys are Keyed translations; empty values use the
-        // same generic health wording as hediff enchantments. descriptionOverrideKey lets XML
-        // replace RimWorld's live HediffDef.description when the game text is too mechanical or vague
-        // for diary prose; descriptionOverrideText is a last-resort raw string for external defs.
+        // Optional model-facing text controls. Keys are Keyed translations; the matching *Text / label
+        // fields are literal settings overrides that the in-game editor can write. Empty values use the
+        // same generic health wording as hediff enchantments. descriptionOverrideKey lets XML replace
+        // RimWorld's live HediffDef.description when the game text is too mechanical or vague for diary
+        // prose; descriptionOverrideText lets settings override that with plain text.
         public string conditionKey;
         public string conditionLabel;
         public string intensityKey;
+        public string intensityText;
         public string priorityKey;
+        public string priorityText;
         public string descriptionOverrideKey;
         public string descriptionOverrideText;
         public List<string> cueKeys = new List<string>();
+        public List<string> cueTexts = new List<string>();
     }
 
     /// <summary>

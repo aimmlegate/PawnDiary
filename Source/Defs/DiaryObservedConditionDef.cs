@@ -68,6 +68,10 @@ namespace PawnDiary
         public ObservedConditionRecordScope recordScope = ObservedConditionRecordScope.MapColonists;
         public string startTextKey;
         public string endTextKey;
+        // Literal settings overrides for optional start/end diary text. Placeholders mirror the Keyed
+        // strings: {0}=pawn label, {1}=condition/evidence label.
+        public string startText;
+        public string endText;
         public string instruction;
         public string colorCue;
 
@@ -79,6 +83,12 @@ namespace PawnDiary
         public string promptConditionKey;
         public string promptDescriptionKey;
         public List<string> promptCueKeys = new List<string>();
+        // Literal prompt-bias overrides. Blank/empty means use the Keyed XML defaults above; null cue
+        // lists intentionally suppress configured cues.
+        public string promptPriorityText;
+        public string promptConditionText;
+        public string promptDescriptionText;
+        public List<string> promptCueTexts = new List<string>();
 
         // ---- Matchers (plain strings: DLC/mod safe) ----
         // Exact defName matches (game conditions / things / hediffs). Preferred.

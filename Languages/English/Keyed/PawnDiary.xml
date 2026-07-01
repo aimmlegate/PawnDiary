@@ -405,6 +405,48 @@
   <PawnDiary.Settings.Adv.Group.TmplArrival>Template: Arrival description</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Template: Title</PawnDiary.Settings.Adv.Group.TmplTitle>
 
+  <!-- Advanced field labels for prompt text overrides. Missing labels still humanize the C# field name. -->
+  <PawnDiary.Settings.Adv.Field.text>Context text</PawnDiary.Settings.Adv.Field.text>
+  <PawnDiary.Settings.Adv.Field.conditionLabel>Condition label</PawnDiary.Settings.Adv.Field.conditionLabel>
+  <PawnDiary.Settings.Adv.Field.intensityText>Intensity text</PawnDiary.Settings.Adv.Field.intensityText>
+  <PawnDiary.Settings.Adv.Field.priorityText>Priority text</PawnDiary.Settings.Adv.Field.priorityText>
+  <PawnDiary.Settings.Adv.Field.descriptionOverrideText>Description text</PawnDiary.Settings.Adv.Field.descriptionOverrideText>
+  <PawnDiary.Settings.Adv.Field.cueTexts>Cue text lines</PawnDiary.Settings.Adv.Field.cueTexts>
+  <PawnDiary.Settings.Adv.Field.startText>Start diary text</PawnDiary.Settings.Adv.Field.startText>
+  <PawnDiary.Settings.Adv.Field.endText>End diary text</PawnDiary.Settings.Adv.Field.endText>
+  <PawnDiary.Settings.Adv.Field.timeoutText>Timeout diary text</PawnDiary.Settings.Adv.Field.timeoutText>
+  <PawnDiary.Settings.Adv.Field.promptPriorityText>Prompt priority text</PawnDiary.Settings.Adv.Field.promptPriorityText>
+  <PawnDiary.Settings.Adv.Field.promptConditionText>Prompt condition text</PawnDiary.Settings.Adv.Field.promptConditionText>
+  <PawnDiary.Settings.Adv.Field.promptDescriptionText>Prompt detail text</PawnDiary.Settings.Adv.Field.promptDescriptionText>
+  <PawnDiary.Settings.Adv.Field.promptCueTexts>Prompt cue lines</PawnDiary.Settings.Adv.Field.promptCueTexts>
+  <PawnDiary.Settings.Adv.Field.batch.labelText>Batch label text</PawnDiary.Settings.Adv.Field.batch.labelText>
+  <PawnDiary.Settings.Adv.Field.batch.briefText>Batch brief text</PawnDiary.Settings.Adv.Field.batch.briefText>
+  <PawnDiary.Settings.Adv.Field.batch.headerText>Batch header text</PawnDiary.Settings.Adv.Field.batch.headerText>
+  <PawnDiary.Settings.Adv.Field.batch.fallbackText>Batch fallback text</PawnDiary.Settings.Adv.Field.batch.fallbackText>
+  <PawnDiary.Settings.Adv.Field.batch.instructionText>Batch instruction text</PawnDiary.Settings.Adv.Field.batch.instructionText>
+  <PawnDiary.Settings.Adv.Field.hediff.appearedText>Health appeared text</PawnDiary.Settings.Adv.Field.hediff.appearedText>
+  <PawnDiary.Settings.Adv.Field.hediff.progressedText>Health progressed text</PawnDiary.Settings.Adv.Field.hediff.progressedText>
+  <PawnDiary.Settings.Adv.Help.text>Plain text format for this context line. Use {0} for the tracked value.</PawnDiary.Settings.Adv.Help.text>
+  <PawnDiary.Settings.Adv.Help.conditionLabel>Plain condition name sent to the model. Blank uses the XML translation key or live game label.</PawnDiary.Settings.Adv.Help.conditionLabel>
+  <PawnDiary.Settings.Adv.Help.intensityText>Plain severity/intensity word sent to the model. Blank lets XML or live severity choose it.</PawnDiary.Settings.Adv.Help.intensityText>
+  <PawnDiary.Settings.Adv.Help.priorityText>Plain priority phrase sent to the model. Blank uses the XML translation default.</PawnDiary.Settings.Adv.Help.priorityText>
+  <PawnDiary.Settings.Adv.Help.descriptionOverrideText>Plain condition detail sent to the model. Blank uses XML or RimWorld's hediff description.</PawnDiary.Settings.Adv.Help.descriptionOverrideText>
+  <PawnDiary.Settings.Adv.Help.cueTexts>One cue per line. Blank uses XML cue keys; enter &lt;null&gt; to suppress configured cue lines.</PawnDiary.Settings.Adv.Help.cueTexts>
+  <PawnDiary.Settings.Adv.Help.startText>Plain diary event text for the start phase. Use {0}=pawn and {1}=signal or condition label.</PawnDiary.Settings.Adv.Help.startText>
+  <PawnDiary.Settings.Adv.Help.endText>Plain diary event text for the end phase. Use {0}=pawn and {1}=signal or condition label.</PawnDiary.Settings.Adv.Help.endText>
+  <PawnDiary.Settings.Adv.Help.timeoutText>Plain diary event text for a timeout phase. Use {0}=pawn and {1}=signal or window label.</PawnDiary.Settings.Adv.Help.timeoutText>
+  <PawnDiary.Settings.Adv.Help.promptPriorityText>Plain priority phrase for this active prompt bias. Blank uses the XML translation default.</PawnDiary.Settings.Adv.Help.promptPriorityText>
+  <PawnDiary.Settings.Adv.Help.promptConditionText>Plain condition phrase for this active prompt bias. Blank uses the XML translation default.</PawnDiary.Settings.Adv.Help.promptConditionText>
+  <PawnDiary.Settings.Adv.Help.promptDescriptionText>Plain detail phrase folded into the active prompt bias. Blank uses XML.</PawnDiary.Settings.Adv.Help.promptDescriptionText>
+  <PawnDiary.Settings.Adv.Help.promptCueTexts>One prompt cue per line. Blank uses XML cue keys; enter &lt;null&gt; to suppress configured cues.</PawnDiary.Settings.Adv.Help.promptCueTexts>
+  <PawnDiary.Settings.Adv.Help.batch.labelText>Plain label for the combined batch event. Use {0}=group label.</PawnDiary.Settings.Adv.Help.batch.labelText>
+  <PawnDiary.Settings.Adv.Help.batch.briefText>Plain fallback/brief text for a combined batch with no sample lines. Use {0}=group label.</PawnDiary.Settings.Adv.Help.batch.briefText>
+  <PawnDiary.Settings.Adv.Help.batch.headerText>Plain header before the sampled batch lines. Use {0}=group label.</PawnDiary.Settings.Adv.Help.batch.headerText>
+  <PawnDiary.Settings.Adv.Help.batch.fallbackText>Plain fallback when no usable batch text exists. Pair batches use {0}=pawn, {1}=other pawn, {2}=group; ambient/tale batches use {0}=pawn, {1}=group.</PawnDiary.Settings.Adv.Help.batch.fallbackText>
+  <PawnDiary.Settings.Adv.Help.batch.instructionText>Plain extra instruction appended to the batch prompt. Use {0}=group label.</PawnDiary.Settings.Adv.Help.batch.instructionText>
+  <PawnDiary.Settings.Adv.Help.hediff.appearedText>Plain diary text for a new immediate health event. Use {0}=pawn and {1}=health condition.</PawnDiary.Settings.Adv.Help.hediff.appearedText>
+  <PawnDiary.Settings.Adv.Help.hediff.progressedText>Plain diary text for a worsened immediate health event. Use {0}=pawn and {1}=health condition.</PawnDiary.Settings.Adv.Help.hediff.progressedText>
+
   <!-- Advanced tooltip helpers (current value / XML default / range / status) -->
   <PawnDiary.Settings.Adv.TipCurrent>Current: {0}</PawnDiary.Settings.Adv.TipCurrent>
   <PawnDiary.Settings.Adv.TipDefault>XML default: {0}</PawnDiary.Settings.Adv.TipDefault>
@@ -579,9 +621,9 @@
   <PawnDiary.Settings.Adv.Help.timeoutTicks>After this many ticks the tracked signal is considered stale.</PawnDiary.Settings.Adv.Help.timeoutTicks>
   <PawnDiary.Settings.Adv.Help.requireHomeMap>Only track this signal on the player's home map.</PawnDiary.Settings.Adv.Help.requireHomeMap>
   <PawnDiary.Settings.Adv.Help.requireDanger>Only track this signal while a danger threat is active.</PawnDiary.Settings.Adv.Help.requireDanger>
-  <PawnDiary.Settings.Adv.Help.systemPrompt>System prompt for this prompt shape. Leave blank to fall back to the shared system prompt.</PawnDiary.Settings.Adv.Help.systemPrompt>
-  <PawnDiary.Settings.Adv.Help.finalInstruction>Final user-message instruction for this shape. Leave blank to use the shared default.</PawnDiary.Settings.Adv.Help.finalInstruction>
-  <PawnDiary.Settings.Adv.Help.recipientFinalInstruction>Follow-up instruction for the recipient's reply in pair shapes. Leave blank for the shared default.</PawnDiary.Settings.Adv.Help.recipientFinalInstruction>
+  <PawnDiary.Settings.Adv.Help.systemPrompt>Raw per-template system prompt override. Leave blank to inherit the shared system prompt edited on Shared/event prompts.</PawnDiary.Settings.Adv.Help.systemPrompt>
+  <PawnDiary.Settings.Adv.Help.finalInstruction>Raw per-template final user-message instruction. Leave blank to use the shared default instruction.</PawnDiary.Settings.Adv.Help.finalInstruction>
+  <PawnDiary.Settings.Adv.Help.recipientFinalInstruction>Raw per-template follow-up instruction for recipient replies in pair shapes. Leave blank for the shared recipient default.</PawnDiary.Settings.Adv.Help.recipientFinalInstruction>
 
   <!-- ===== Raw event text (shown in the diary AND fed to the model as "what happened") ===== -->
   <PawnDiary.Event.Interaction>{0} had a {1} interaction with {2}.</PawnDiary.Event.Interaction>

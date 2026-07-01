@@ -86,6 +86,13 @@ namespace PawnDiary
         public string headerKey;
         public string fallbackKey;
         public string instructionKey;
+        // Literal settings overrides for the same combined label/text/instruction. Blank means use the
+        // Keyed XML value above. Placeholder arguments follow the matching Keyed fallback at runtime.
+        public string labelText;
+        public string briefText;
+        public string headerText;
+        public string fallbackText;
+        public string instructionText;
         // When true, each line is "Interaction label: original log text"; false keeps only log text.
         public bool includeInteractionLabel = true;
         // AmbientDayNote only: drop the note if fewer than this many moments happened.
@@ -178,6 +185,10 @@ namespace PawnDiary
         // as {0} and {1}; blank falls back to the generic health-condition text.
         public string appearedTextKey;
         public string progressedTextKey;
+        // Literal settings overrides for Immediate mode. Placeholders mirror the keys above:
+        // {0}=pawn label, {1}=hediff label.
+        public string appearedText;
+        public string progressedText;
     }
 
     // A themed bucket of events, loaded from XML as a RimWorld Def. Each group is one row in

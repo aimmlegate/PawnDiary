@@ -526,7 +526,8 @@ namespace PawnDiary
         {
             if (lines == null || lines.Count == 0)
             {
-                return TranslateBatchKey(batch, batch.policy?.briefKey, "PawnDiary.Event.BatchBrief");
+                return TranslateBatchText(batch, batch.policy?.briefText, batch.policy?.briefKey,
+                    "PawnDiary.Event.BatchBrief");
             }
 
             if (lines.Count == 1)
@@ -535,7 +536,8 @@ namespace PawnDiary
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(TranslateBatchKey(batch, batch.policy?.headerKey, "PawnDiary.Event.BatchHeader"));
+            builder.Append(TranslateBatchText(batch, batch.policy?.headerText, batch.policy?.headerKey,
+                "PawnDiary.Event.BatchHeader"));
             for (int i = 0; i < lines.Count; i++)
             {
                 builder.Append("\n").Append("- ").Append(lines[i]);
@@ -555,7 +557,7 @@ namespace PawnDiary
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(TranslateAmbientKey(note, note.policy?.headerKey,
+            builder.Append(TranslateAmbientText(note, note.policy?.headerText, note.policy?.headerKey,
                 "PawnDiary.Event.AmbientDayHeader"));
             for (int i = 0; i < note.sampleLines.Count; i++)
             {
@@ -592,7 +594,8 @@ namespace PawnDiary
         private static string BatchInstruction(PendingInteractionBatch batch)
         {
             string instruction = DiaryLineCleaner.CleanLine(batch.instruction);
-            string batchingInstruction = TranslateBatchKey(batch, batch.policy?.instructionKey,
+            string batchingInstruction = TranslateBatchText(batch, batch.policy?.instructionText,
+                batch.policy?.instructionKey,
                 "PawnDiary.Event.BatchInstruction");
             if (string.IsNullOrWhiteSpace(instruction))
             {
@@ -607,7 +610,8 @@ namespace PawnDiary
         /// </summary>
         private static string BatchLabel(PendingInteractionBatch batch)
         {
-            return TranslateBatchKey(batch, batch.policy?.labelKey, "PawnDiary.Event.BatchLabel");
+            return TranslateBatchText(batch, batch.policy?.labelText, batch.policy?.labelKey,
+                "PawnDiary.Event.BatchLabel");
         }
 
         /// <summary>
@@ -615,7 +619,8 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientLabel(PendingAmbientInteractionNote note)
         {
-            return TranslateAmbientKey(note, note.policy?.labelKey, "PawnDiary.Event.AmbientDayLabel");
+            return TranslateAmbientText(note, note.policy?.labelText, note.policy?.labelKey,
+                "PawnDiary.Event.AmbientDayLabel");
         }
 
         /// <summary>
@@ -623,6 +628,12 @@ namespace PawnDiary
         /// </summary>
         private static string AmbientFallback(PendingAmbientInteractionNote note)
         {
+            if (!string.IsNullOrWhiteSpace(note.policy?.fallbackText))
+            {
+                return PromptTextTemplate.Format(note.policy.fallbackText,
+                    note.pawn.LabelShortCap, AmbientGroupLabel(note));
+            }
+
             string key = string.IsNullOrWhiteSpace(note.policy?.fallbackKey)
                 ? "PawnDiary.Event.AmbientDayFallback"
                 : note.policy.fallbackKey;
@@ -634,6 +645,12 @@ namespace PawnDiary
         /// </summary>
         private static string BatchFallback(PendingInteractionBatch batch, Pawn eligiblePawn, Pawn otherPawn)
         {
+            if (!string.IsNullOrWhiteSpace(batch.policy?.fallbackText))
+            {
+                return PromptTextTemplate.Format(batch.policy.fallbackText,
+                    eligiblePawn.LabelShortCap, otherPawn.LabelShortCap, BatchGroupLabel(batch));
+            }
+
             string key = string.IsNullOrWhiteSpace(batch.policy?.fallbackKey)
                 ? "PawnDiary.Event.BatchFallback"
                 : batch.policy.fallbackKey;
@@ -672,7 +689,8 @@ namespace PawnDiary
         private static string AmbientInstruction(PendingAmbientInteractionNote note)
         {
             string instruction = DiaryLineCleaner.CleanLine(note.instruction);
-            string ambientInstruction = TranslateAmbientKey(note, note.policy?.instructionKey,
+            string ambientInstruction = TranslateAmbientText(note, note.policy?.instructionText,
+                note.policy?.instructionKey,
                 "PawnDiary.Event.AmbientDayInstruction");
             if (string.IsNullOrWhiteSpace(instruction))
             {
@@ -685,8 +703,14 @@ namespace PawnDiary
         /// <summary>
         /// Shared translator for policy-specific keys. Generic fallback keys receive the group label as {0}.
         /// </summary>
-        private static string TranslateBatchKey(PendingInteractionBatch batch, string policyKey, string fallbackKey)
+        private static string TranslateBatchText(PendingInteractionBatch batch, string policyText,
+            string policyKey, string fallbackKey)
         {
+            if (!string.IsNullOrWhiteSpace(policyText))
+            {
+                return PromptTextTemplate.Format(policyText, BatchGroupLabel(batch));
+            }
+
             string key = string.IsNullOrWhiteSpace(policyKey) ? fallbackKey : policyKey;
             return key.Translate(BatchGroupLabel(batch)).Resolve();
         }
@@ -694,8 +718,14 @@ namespace PawnDiary
         /// <summary>
         /// Shared translator for ambient policy keys. Generic fallback keys receive the group label as {0}.
         /// </summary>
-        private static string TranslateAmbientKey(PendingAmbientInteractionNote note, string policyKey, string fallbackKey)
+        private static string TranslateAmbientText(PendingAmbientInteractionNote note, string policyText,
+            string policyKey, string fallbackKey)
         {
+            if (!string.IsNullOrWhiteSpace(policyText))
+            {
+                return PromptTextTemplate.Format(policyText, AmbientGroupLabel(note));
+            }
+
             string key = string.IsNullOrWhiteSpace(policyKey) ? fallbackKey : policyKey;
             return key.Translate(AmbientGroupLabel(note)).Resolve();
         }

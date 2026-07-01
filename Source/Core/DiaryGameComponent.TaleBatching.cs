@@ -219,7 +219,7 @@ namespace PawnDiary
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(TranslateTaleBatchKey(batch, batch.policy?.headerKey,
+            builder.Append(TranslateTaleBatchText(batch, batch.policy?.headerText, batch.policy?.headerKey,
                 "PawnDiary.Event.TaleBatchHeader"));
             for (int i = 0; i < batch.sampleLines.Count; i++)
             {
@@ -244,7 +244,8 @@ namespace PawnDiary
         private static string TaleBatchInstruction(PendingTaleBatch batch)
         {
             string instruction = DiaryLineCleaner.CleanLine(batch.instruction);
-            string batchingInstruction = TranslateTaleBatchKey(batch, batch.policy?.instructionKey,
+            string batchingInstruction = TranslateTaleBatchText(batch, batch.policy?.instructionText,
+                batch.policy?.instructionKey,
                 "PawnDiary.Event.TaleBatchInstruction");
             if (string.IsNullOrWhiteSpace(instruction))
             {
@@ -259,7 +260,8 @@ namespace PawnDiary
         /// </summary>
         private static string TaleBatchLabel(PendingTaleBatch batch)
         {
-            return TranslateTaleBatchKey(batch, batch.policy?.labelKey, "PawnDiary.Event.TaleBatchLabel");
+            return TranslateTaleBatchText(batch, batch.policy?.labelText, batch.policy?.labelKey,
+                "PawnDiary.Event.TaleBatchLabel");
         }
 
         /// <summary>
@@ -267,6 +269,12 @@ namespace PawnDiary
         /// </summary>
         private static string TaleBatchFallback(PendingTaleBatch batch)
         {
+            if (!string.IsNullOrWhiteSpace(batch.policy?.fallbackText))
+            {
+                return PromptTextTemplate.Format(batch.policy.fallbackText,
+                    batch.pawn.LabelShortCap, TaleBatchGroupLabel(batch));
+            }
+
             string key = string.IsNullOrWhiteSpace(batch.policy?.fallbackKey)
                 ? "PawnDiary.Event.TaleBatchFallback"
                 : batch.policy.fallbackKey;
@@ -289,8 +297,14 @@ namespace PawnDiary
         /// <summary>
         /// Shared translator for Tale batch policy keys. Generic fallback keys receive the group label.
         /// </summary>
-        private static string TranslateTaleBatchKey(PendingTaleBatch batch, string policyKey, string fallbackKey)
+        private static string TranslateTaleBatchText(PendingTaleBatch batch, string policyText,
+            string policyKey, string fallbackKey)
         {
+            if (!string.IsNullOrWhiteSpace(policyText))
+            {
+                return PromptTextTemplate.Format(policyText, TaleBatchGroupLabel(batch));
+            }
+
             string key = string.IsNullOrWhiteSpace(policyKey) ? fallbackKey : policyKey;
             return key.Translate(TaleBatchGroupLabel(batch)).Resolve();
         }

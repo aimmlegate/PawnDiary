@@ -71,6 +71,11 @@ namespace PawnDiary
         public string startTextKey;
         public string endTextKey;
         public string timeoutTextKey;
+        // Literal settings overrides for the same phase text. Blank means use the Keyed XML value.
+        // Placeholders mirror the Keyed strings: {0}=pawn label, {1}=signal/window label.
+        public string startText;
+        public string endText;
+        public string timeoutText;
         public string instruction;
         public string colorCue;
 
@@ -81,6 +86,12 @@ namespace PawnDiary
         public string promptConditionKey;
         public string promptDescriptionKey;
         public List<string> promptCueKeys = new List<string>();
+        // Literal prompt-bias overrides. Blank/empty means use the Keyed XML defaults above; null cue
+        // lists intentionally suppress configured cues.
+        public string promptPriorityText;
+        public string promptConditionText;
+        public string promptDescriptionText;
+        public List<string> promptCueTexts = new List<string>();
 
         /// <summary>
         /// Stable active-window key. XML can override it to share state across renamed defs.

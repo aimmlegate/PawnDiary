@@ -23,7 +23,16 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   per-group reset, accent coloring for customized values, filtering, and rich tooltips. Overrides
   persist per player (`TuningOverrideStore`) and take effect immediately by writing into live Def
   fields or nested policy objects; pristine XML defaults, sentinel values, and `<null>` inherited-list
-  markers are snapshotted for Reset.
+  markers are snapshotted for Reset. Follow-up hardening makes Def-backed prompt-policy groups register
+  lazily after `DefDatabase` is populated (so humor cues are visible) and replaces visible translation
+  key editors with resolved literal text override fields for event-window, observed-condition,
+  prompt-enchantment, context, batch, and hediff prompt text. Prompt policy template prompt boxes now
+  show only raw per-template overrides, not inherited shared prompt text, so the Shared/event prompts
+  subpage remains the only place that displays and edits shared prompts; pure tests pin that menu split.
+  Literal overrides win over their Keyed counterparts at generation time (for example a hediff
+  enchantment's `descriptionOverrideText` now takes precedence over `descriptionOverrideKey`), and any
+  override saved under a now-removed translation-key field name is pruned from settings on load, since a
+  lookup key cannot be carried over into a literal-text field.
 - **Pawn arc reflections implemented.** Added passion skill, psylink, xenotype, and royal-title
   progression pages plus rare yearly arc reflections from de-duplicated hot/archive memories. XML now
   owns templates, cadence, major-arc/high-stakes policy, and reflection grouping; fixtures, pure

@@ -111,6 +111,14 @@ namespace PawnDiary
         {
             Ensure();
             Scribe_Collections.Look(ref overrides, scribeKey, LookMode.Value, LookMode.Value, ref keys, ref values);
+
+            // On load, drop overrides saved under field editors that were removed when prompt overrides
+            // switched from translation keys to literal text. Their values are lookup keys, not prose, so
+            // they can't map onto the new *Text fields — pruning stops them lingering as dead settings.
+            if (Scribe.mode == LoadSaveMode.LoadingVars)
+            {
+                TuningOverrideMigration.PruneRemovedFieldKeys(overrides);
+            }
         }
 
         private void Ensure()

@@ -509,7 +509,6 @@ namespace PawnDiary
 
             string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
             string instruction = ObservedConditionInstruction(def, label);
-            string textKey = ObservedConditionTextKey(def, phase);
             string signalLabel = ObservedConditionSignalLabel(def, decision.state, label);
             string gameContext = BuildObservedConditionGameContext(def, decision.state, phase);
 
@@ -522,7 +521,7 @@ namespace PawnDiary
                     continue;
                 }
 
-                string text = textKey.Translate(pawn.LabelShortCap, signalLabel).Resolve();
+                string text = ObservedConditionPhaseText(def, phase, pawn.LabelShortCap, signalLabel);
                 DiaryEvent diaryEvent = AddSoloEvent(pawn, null, def.defName, label, text, instruction, gameContext);
                 if (diaryEvent == null)
                 {
@@ -625,13 +624,10 @@ namespace PawnDiary
             }
 
             List<string> cues = new List<string>();
-            if (!string.IsNullOrWhiteSpace(def.promptDescriptionKey))
+            string description = EventWindowPromptText(def.promptDescriptionText, def.promptDescriptionKey, null);
+            if (!string.IsNullOrWhiteSpace(description))
             {
-                string description = def.promptDescriptionKey.Translate().Resolve();
-                if (!string.IsNullOrWhiteSpace(description))
-                {
-                    cues.Add("PawnDiary.Prompt.ObservedCondition.Detail".Translate(description).Resolve());
-                }
+                cues.Add("PawnDiary.Prompt.ObservedCondition.Detail".Translate(description).Resolve());
             }
 
             // Fold in the live observable evidence (e.g. "gray flesh sample x2") so the prompt reflects
@@ -642,32 +638,16 @@ namespace PawnDiary
                 cues.Add("PawnDiary.Prompt.ObservedCondition.Detail".Translate(evidence).Resolve());
             }
 
-            if (def.promptCueKeys != null)
-            {
-                for (int i = 0; i < def.promptCueKeys.Count; i++)
-                {
-                    string cueKey = def.promptCueKeys[i];
-                    if (string.IsNullOrWhiteSpace(cueKey))
-                    {
-                        continue;
-                    }
-
-                    string cue = cueKey.Translate().Resolve();
-                    if (!string.IsNullOrWhiteSpace(cue))
-                    {
-                        cues.Add(cue);
-                    }
-                }
-            }
+            AddPromptCueTexts(cues, def.promptCueTexts, def.promptCueKeys);
 
             string label = DiaryLineCleaner.CleanLine(def.LabelCap.Resolve());
             return new PromptEnchantmentCandidate
             {
                 weight = weight,
                 // EventWindowPromptText is the shared "preferred key or fallback key" translator.
-                priorityText = EventWindowPromptText(def.promptPriorityKey,
+                priorityText = EventWindowPromptText(def.promptPriorityText, def.promptPriorityKey,
                     "PawnDiary.Prompt.ObservedCondition.Priority"),
-                conditionText = EventWindowPromptText(def.promptConditionKey,
+                conditionText = EventWindowPromptText(def.promptConditionText, def.promptConditionKey,
                     "PawnDiary.Prompt.ObservedCondition.ConditionFallback", label),
                 configuredCues = cues
             };
@@ -754,6 +734,33 @@ namespace PawnDiary
             }
 
             return "PawnDiary.Event.ObservedCondition.Generic." + phase;
+        }
+
+        private static string ObservedConditionPhaseText(DiaryObservedConditionDef def, string phase,
+            string pawnLabel, string signalLabel)
+        {
+            string literal = ObservedConditionLiteralText(def, phase);
+            if (!string.IsNullOrWhiteSpace(literal))
+            {
+                return PromptTextTemplate.Format(literal, pawnLabel, signalLabel);
+            }
+
+            return ObservedConditionTextKey(def, phase).Translate(pawnLabel, signalLabel).Resolve();
+        }
+
+        private static string ObservedConditionLiteralText(DiaryObservedConditionDef def, string phase)
+        {
+            if (string.Equals(phase, ObservedConditionPhaseStart, StringComparison.OrdinalIgnoreCase))
+            {
+                return def.startText;
+            }
+
+            if (string.Equals(phase, ObservedConditionPhaseEnd, StringComparison.OrdinalIgnoreCase))
+            {
+                return def.endText;
+            }
+
+            return string.Empty;
         }
 
         private static string ObservedConditionSignalLabel(DiaryObservedConditionDef def,
