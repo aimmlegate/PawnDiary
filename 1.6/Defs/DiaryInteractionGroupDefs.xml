@@ -137,9 +137,9 @@
     <defaultEnabled>true</defaultEnabled>
     <instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</instruction>
     <instructions>
-      <li>romance — use body cues already implied by the supplied text: distance, breath, hesitation, or touch if stated</li>
-      <li>romance — use the unsaid pressure: what the POV notices, holds back, or fears without adding a new confession</li>
-      <li>romance — write the moment after: the pause, the read of the other face, and the changed tension</li>
+      <li>romance — use body cues already supplied or clearly implied: distance, breath, hesitation, or touch if stated</li>
+      <li>romance — use the unsaid pressure: what the POV notices, holds back, or fears; do not add a new confession or private scene</li>
+      <li>romance — write the moment after: the pause, the read of the other face, and the changed tension, only from supplied consequences</li>
     </instructions>
     <tone>with tender, fluttering warmth</tone>
     <tones>
@@ -397,7 +397,7 @@
     <instructions>
       <li>an insult or slight — use the supplied social text as the sting; do not invent exact wording</li>
       <li>an insult or slight — write the body's reaction: heat, jaw, breath, posture</li>
-      <li>an insult or slight — write the aftermath in the room: silence, tension, or what the POV does next</li>
+      <li>an insult or slight — write the aftermath in the room: supplied silence, tension, or what the POV does next; do not invent exact words</li>
     </instructions>
     <tone>with sharp, stinging heat</tone>
     <tones>
@@ -883,9 +883,9 @@
     <colorCue>combat</colorCue>
     <instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</instruction>
     <instructions>
-      <li>combat, injury, or rescue — open on a supplied sound cue if present; otherwise open on immediate danger</li>
-      <li>combat, injury, or rescue — open on body impact: pain, heat, breath, or the injury already supplied</li>
-      <li>combat, injury, or rescue — use the other pawn only if supplied; otherwise stay with the POV surviving the moment</li>
+      <li>combat, injury, or rescue — open on a supplied sound cue if present; otherwise open on immediate danger without inventing a battle outcome</li>
+      <li>combat, injury, or rescue — open on body impact only when supported: pain, heat, breath, or the injury already supplied</li>
+      <li>combat, injury, or rescue — use another pawn only if supplied; otherwise stay with the POV surviving the moment</li>
     </instructions>
     <tone>with fear and visceral danger</tone>
     <tones>
@@ -1978,7 +1978,7 @@
     <instructions>
       <li>a raid approaching the colony — open on warning, distance, cover, weather, or the pawn checking a weapon; keep it before or at first contact</li>
       <li>the colony bracing for attackers — write the waiting, orders, doors, sandbags, breath, and fear before the fight fully starts</li>
-      <li>a raid that may not have reached the defenders yet — use aftermath only if supplied; otherwise keep it to preparation, dread, and first sight of danger</li>
+      <li>a raid that may not have reached the defenders yet — use smoke, blood, injuries, or aftermath only if supplied; otherwise keep it to preparation, dread, and first sight of danger</li>
     </instructions>
     <tone>with tense, fight-anticipated urgency</tone>
     <tones>

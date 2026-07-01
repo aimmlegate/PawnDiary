@@ -8,9 +8,9 @@
   <speakup_chitchat.tone>with light, everyday social texture</speakup_chitchat.tone>
   <romance.label>Romance &amp; dating</romance.label>
   <romance.instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</romance.instruction>
-  <romance.instructions.0>romance — write it through the body: the gap closing, a touch that hesitates, a hand pulled away</romance.instructions.0>
-  <romance.instructions.1>romance — write it through the thought behind the eyes: what they wanted to say, what they almost admitted</romance.instructions.1>
-  <romance.instructions.2>romance — write the half-second after: the held breath, the read of the other face, what now sits between them</romance.instructions.2>
+  <romance.instructions.0>romance — use body cues already supplied or clearly implied: distance, breath, hesitation, or touch if stated</romance.instructions.0>
+  <romance.instructions.1>romance — use the unsaid pressure: what the POV notices, holds back, or fears; do not add a new confession or private scene</romance.instructions.1>
+  <romance.instructions.2>romance — write the moment after: the pause, the read of the other face, and the changed tension, only from supplied consequences</romance.instructions.2>
   <romance.tone>with tender, fluttering warmth</romance.tone>
   <romance_relation.label>Romance milestones</romance_relation.label>
   <romance_relation.instruction>a relationship becoming official, formalized, or broken; center the change between the two people without treating it like a chat log</romance_relation.instruction>
@@ -35,9 +35,9 @@
   <anomaly.tone>with crawling, skin-prickling wrongness; never explain it</anomaly.tone>
   <insults.label>Insults &amp; fights</insults.label>
   <insults.instruction>the sting of contempt—an insult, a slight, or fists about to fly</insults.instruction>
-  <insults.instructions.0>an insult or slight — write the words landing: what was said, the tone, the flinch it drew</insults.instructions.0>
-  <insults.instructions.1>an insult or slight — write it through the body: the flush, the clenched jaw, the half-step forward</insults.instructions.1>
-  <insults.instructions.2>an insult or slight — write the room: who heard it, who looked away, the silence that came after</insults.instructions.2>
+  <insults.instructions.0>an insult or slight — use the supplied social text as the sting; do not invent exact wording</insults.instructions.0>
+  <insults.instructions.1>an insult or slight — write the body&apos;s reaction: heat, jaw, breath, posture</insults.instructions.1>
+  <insults.instructions.2>an insult or slight — write the aftermath in the room: supplied silence, tension, or what the POV does next; do not invent exact words</insults.instructions.2>
   <insults.tone>with sharp, stinging heat</insults.tone>
   <ritual.label>Rituals &amp; speeches</ritual.label>
   <ritual.instruction>a solemn public moment—ritual, ceremony, or address. The colony watches</ritual.instruction>
@@ -77,9 +77,9 @@
   <mentalbreak.tone>with frayed, overwhelmed intensity</mentalbreak.tone>
   <talecombat.label>Combat, injuries &amp; death</talecombat.label>
   <talecombat.instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</talecombat.instruction>
-  <talecombat.instructions.0>combat, injury, or rescue — open on sound: the alarm, the crack, the screaming, the silence after</talecombat.instructions.0>
-  <talecombat.instructions.1>combat, injury, or rescue — open on the body&apos;s impact: the blow, the heat, the wet, the limb that won&apos;t answer</talecombat.instructions.1>
-  <talecombat.instructions.2>combat, injury, or rescue — open on the other: the face across the gap, the hand that pulled you clear, the body that fell</talecombat.instructions.2>
+  <talecombat.instructions.0>combat, injury, or rescue — open on a supplied sound cue if present; otherwise open on immediate danger without inventing a battle outcome</talecombat.instructions.0>
+  <talecombat.instructions.1>combat, injury, or rescue — open on body impact only when supported: pain, heat, breath, or the injury already supplied</talecombat.instructions.1>
+  <talecombat.instructions.2>combat, injury, or rescue — use another pawn only if supplied; otherwise stay with the POV surviving the moment</talecombat.instructions.2>
   <talecombat.tone>with fear and visceral danger</talecombat.tone>
   <talehealth.label>Health &amp; medicine</talehealth.label>
   <talehealth.instruction>the body&apos;s fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</talehealth.instruction>
@@ -161,11 +161,11 @@
   <hediffMajorHealth.instruction>a new or worsening health condition that stayed with the pawn through the day</hediffMajorHealth.instruction>
   <hediffMajorHealth.tone>with bodily unease and vulnerability</hediffMajorHealth.tone>
   <raid.label>Raids</raid.label>
-  <raid.instruction>the colony under attack—violence, fear, and the desperate scramble to survive. Write what it felt like to live through it</raid.instruction>
-  <raid.instructions.0>the colony under attack — open on the space: the door, the cover, the gap they&apos;ll come through</raid.instructions.0>
-  <raid.instructions.1>the colony under attack — open on the body: the sprint, the breath, the fumble for the weapon</raid.instructions.1>
-  <raid.instructions.2>the colony under attack — open on the aftermath: the smoke, the blood on the floor, who isn&apos;t answering</raid.instructions.2>
-  <raid.tone>with shaken, crisis-pitched tension</raid.tone>
+  <raid.instruction>the colony facing a raid that has spawned but may still be approaching—warning, weapons grabbed, positions taken, and the held breath before contact. Write anticipation of the fight unless supplied facts show combat already hit</raid.instruction>
+  <raid.instructions.0>a raid approaching the colony — open on warning, distance, cover, weather, or the pawn checking a weapon; keep it before or at first contact</raid.instructions.0>
+  <raid.instructions.1>the colony bracing for attackers — write the waiting, orders, doors, sandbags, breath, and fear before the fight fully starts</raid.instructions.1>
+  <raid.instructions.2>a raid that may not have reached the defenders yet — use smoke, blood, injuries, or aftermath only if supplied; otherwise keep it to preparation, dread, and first sight of danger</raid.instructions.2>
+  <raid.tone>with tense, fight-anticipated urgency</raid.tone>
   <ritualRoyal.label>Royal rituals</ritualRoyal.label>
   <ritualRoyal.instruction>a Royalty ritual completed—make the ceremony courtly, title-conscious, psychic, or anima-rooted as the ritual title suggests</ritualRoyal.instruction>
   <ritualRoyal.tone>with formal rank and ritual authority</ritualRoyal.tone>

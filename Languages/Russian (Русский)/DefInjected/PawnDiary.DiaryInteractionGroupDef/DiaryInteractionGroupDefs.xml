@@ -8,9 +8,9 @@
   <speakup_chitchat.tone>с лёгкой, повседневной социальной фактурой</speakup_chitchat.tone>
   <romance.label>Романтика и свидания</romance.label>
   <romance.instruction>искра между двумя людьми: шаг навстречу, украдкой брошенный взгляд, шёпот обещания или разбитое сердце</romance.instruction>
-  <romance.instructions.0>романтика: пиши через тело, через сокращающееся расстояние, задержанное прикосновение, отдёрнутую руку</romance.instructions.0>
-  <romance.instructions.1>романтика: пиши через мысль за глазами, через то, что хотели сказать или почти признали</romance.instructions.1>
-  <romance.instructions.2>романтика: пиши короткий миг после, задержанное дыхание, чтение чужого лица, новое напряжение между ними</romance.instructions.2>
+  <romance.instructions.0>романтика: используй только уже переданные или явно подразумеваемые телесные признаки — расстояние, дыхание, заминку или прикосновение, если оно названо</romance.instructions.0>
+  <romance.instructions.1>романтика: пиши несказанное напряжение — что поселенец заметил, удержал в себе или испугался; не добавляй новое признание и сцену наедине</romance.instructions.1>
+  <romance.instructions.2>романтика: пиши миг после — паузу, чтение чужого лица и изменившееся напряжение, только из переданных последствий</romance.instructions.2>
   <romance.tone>с нежным, трепетным теплом</romance.tone>
   <romance_relation.label>Романтические вехи</romance_relation.label>
   <romance_relation.instruction>отношения становятся официальными, оформляются или рвутся; в центре перемена между двумя людьми, не переписка и не отчёт</romance_relation.instruction>
@@ -35,9 +35,9 @@
   <anomaly.tone>с ползущей жутью и чувством неправильности; не объясняй её</anomaly.tone>
   <insults.label>Оскорбления и драки</insults.label>
   <insults.instruction>жало презрения: оскорбление, обида или кулаки, которые вот-вот полетят</insults.instruction>
-  <insults.instructions.0>оскорбление или обида: покажи, как слова попали в цель, что сказали, каким тоном и что это вызвало</insults.instructions.0>
-  <insults.instructions.1>оскорбление или обида: пиши через тело, через румянец, сжатую челюсть, полшага вперёд</insults.instructions.1>
-  <insults.instructions.2>оскорбление или обида: покажи комнату, кто услышал, кто отвёл глаза, какая тишина осталась после</insults.instructions.2>
+  <insults.instructions.0>оскорбление или обида: используй переданный текст общения как жало; не выдумывай точную формулировку</insults.instructions.0>
+  <insults.instructions.1>оскорбление или обида: пиши телесную реакцию — жар, челюсть, дыхание, позу</insults.instructions.1>
+  <insults.instructions.2>оскорбление или обида: пиши последствия в комнате — переданную тишину, напряжение или следующий жест поселенца; не выдумывай точных слов</insults.instructions.2>
   <insults.tone>с резким, жгучим жаром</insults.tone>
   <ritual.label>Ритуалы и речи</ritual.label>
   <ritual.instruction>торжественный публичный момент: ритуал, церемония или обращение. Поселение смотрит</ritual.instruction>
@@ -77,9 +77,9 @@
   <mentalbreak.tone>с издёрганной, захлёстывающей силой</mentalbreak.tone>
   <talecombat.label>Бой, ранения и смерть</talecombat.label>
   <talecombat.instruction>кровь и опасность: бой, ранение, смерть или спасение. Пиши, каково было это пережить</talecombat.instruction>
-  <talecombat.instructions.0>бой, ранение или спасение: начни со звука, тревоги, треска, крика или тишины после</talecombat.instructions.0>
-  <talecombat.instructions.1>бой, ранение или спасение: начни с удара по телу, толчка, жара, влаги, конечности, которая не отзывается</talecombat.instructions.1>
-  <talecombat.instructions.2>бой, ранение или спасение: начни с другого человека, лица напротив, руки, которая выдернула, тела, которое упало</talecombat.instructions.2>
+  <talecombat.instructions.0>бой, ранение или спасение: начни с переданного звука, если он есть; иначе начни с непосредственной опасности, не выдумывая исход боя</talecombat.instructions.0>
+  <talecombat.instructions.1>бой, ранение или спасение: начинай с телесного удара только когда это поддержано фактами — боль, жар, дыхание или уже переданная рана</talecombat.instructions.1>
+  <talecombat.instructions.2>бой, ранение или спасение: используй другого поселенца только если он передан; иначе оставайся с тем, как автор пережил момент</talecombat.instructions.2>
   <talecombat.tone>со страхом и нутряной опасностью</talecombat.tone>
   <talehealth.label>Здоровье и медицина</talehealth.label>
   <talehealth.instruction>хрупкость тела: операция, болезнь, переохлаждение или выздоровление. Пиши страх, облегчение или доверие</talehealth.instruction>
@@ -161,11 +161,11 @@
   <hediffMajorHealth.instruction>новое или ухудшающееся состояние здоровья, которое держалось весь день</hediffMajorHealth.instruction>
   <hediffMajorHealth.tone>с телесной тревогой и уязвимостью</hediffMajorHealth.tone>
   <raid.label>Налёты</raid.label>
-  <raid.instruction>поселение под ударом: насилие, страх и отчаянное выживание. Пиши, каково было это пережить</raid.instruction>
-  <raid.instructions.0>поселение под ударом: начни с пространства, двери, укрытия или проёма, через который они придут</raid.instructions.0>
-  <raid.instructions.1>поселение под ударом: начни с тела, рывка, дыхания, заминки при хватке за оружие</raid.instructions.1>
-  <raid.instructions.2>поселение под ударом: начни с последствий, дыма, крови на полу, того, кто не отзывается</raid.instructions.2>
-  <raid.tone>с потрясённым, кризисным напряжением</raid.tone>
+  <raid.instruction>поселение ждёт налёт, который уже начался, но может ещё приближаться: тревога, оружие, позиции и задержанное дыхание до столкновения. Пиши ожидание боя, если факты не показывают, что бой уже дошёл до поселенцев</raid.instruction>
+  <raid.instructions.0>налёт приближается к поселению: начни с тревоги, расстояния, укрытия, погоды или проверки оружия; держи запись до или на первом контакте</raid.instructions.0>
+  <raid.instructions.1>поселение готовится к нападению: пиши ожидание, приказы, двери, мешки с песком, дыхание и страх до того, как бой полностью начался</raid.instructions.1>
+  <raid.instructions.2>налёт мог ещё не дойти до защитников: дым, кровь, раны и последствия используй только если они переданы; иначе держись подготовки, страха и первого вида опасности</raid.instructions.2>
+  <raid.tone>с напряжённым ожиданием боя</raid.tone>
   <ritualRoyal.label>Имперские ритуалы</ritualRoyal.label>
   <ritualRoyal.instruction>завершён ритуал Royalty; пусть церемония ощущается придворной, титульной, псионической или связанной с древом души, если так подсказывает название</ritualRoyal.instruction>
   <ritualRoyal.tone>с формальным рангом и ритуальной властью</ritualRoyal.tone>
