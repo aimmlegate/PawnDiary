@@ -609,7 +609,19 @@ namespace PawnDiary
                     options = apiConnectionController.FetchedModels
                         .Distinct()
                         .OrderBy(model => model)
-                        .Select(model => new FloatMenuOption(model, delegate { endpoint.model = model; }))
+                        .Select(model => new FloatMenuOption(model, delegate
+                        {
+                            endpoint.model = model;
+                            // If this model's reasoning capability is not yet cached for this row's
+                            // endpoint (e.g. the player Picks before a Fetch finished, or the Fetch
+                            // returned no capability), fetch now so the effort clamp protects the
+                            // outgoing request. Single-flight: skipped if any fetch is already running.
+                            if (ModelCapabilityCache.Get(endpoint.url, model) == null
+                                && !apiConnectionController.IsFetchingModels)
+                            {
+                                apiConnectionController.FetchModels(index);
+                            }
+                        }))
                         .ToList();
                 }
                 else

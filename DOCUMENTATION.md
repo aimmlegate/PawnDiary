@@ -683,12 +683,17 @@ a tooltip; when unknown the full ladder is offered as before.
 
 **Per-lane reasoning tag.** A **Reasoning tag** dropdown (default *Auto*) controls how
 `LlmResponseParser.StripReasoningTextBlocks` removes private thinking leaked into message content.
-*Auto* uses the built-in broad tag/fence/heading guess-list (`think`/`thinking`/`reasoning`/
-`analysis`). Picking a specific tag (`think`/`thinking`/`reasoning`/`analysis`/`thought`/
-`reflection`/`scratchpad`) **adds** that wrapper on top of the base list, so exotic wrappers a model
-emits (e.g. `<reflection>`, `<scratchpad>` on RP-tuned models) no longer leak into saved diary text,
-while the common tags keep working as a safety net. The tag is normalized by
+*Auto* uses the built-in broad tag/fence/heading list (`think`/`thinking`/`reasoning`/`analysis`/
+`thought`/`reflection`/`scratchpad`), which is wide enough that most players never need to pick a tag
+manually — the dropdown is an escape hatch, not a required step. Picking a specific tag **prepends**
+it so it is tried first, useful only for an exotic wrapper not yet in Auto's list; common tags keep
+working regardless. False-positive risk is negligible because the strippers only act on wrapper form
+(`<tag>…</tag>`), fenced ```` ```tag ```` blocks, and `Tag:` headings — never the bare word in prose,
+so a pawn writing "my reflections on the raid" is safe. The tag is normalized by
 `ApiEndpointPolicy.NormalizeReasoningTag` and threaded through `LlmGenerationRequest.reasoningTag`.
+**Capability auto-fetches at Pick:** when a model is chosen from the picker and its reasoning
+capability is not yet cached for that endpoint, the row fetches it automatically (reusing the
+single-flight Fetch path) so the effort clamp protects the request without any player action.
 
 The settings-window **Test connection** button runs independently per row: starting a test on one
 lane does not block or cancel a test on another, and each row shows its own "Testing…"/success/

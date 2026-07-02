@@ -211,9 +211,10 @@ namespace LlmResponseParserTests
                 LlmResponseParser.StripReasoningTextBlocks("<think>plan</think>Held the gate.<reasoning>why</reasoning> Bob smiled."));
         }
 
-        // The per-lane reasoning-tag override: a pinned tag is stripped IN ADDITION to the base
-        // guess-list, so exotic wrappers like <reflection> are removed while common ones (<think>)
-        // are still caught. "auto" leaves exotic wrappers in place (built-in detection only).
+        // The reasoning-tag system. Auto now covers a broad built-in list (think/thinking/reasoning/
+        // analysis/thought/reflection/scratchpad), so exotic wrappers are stripped even without
+        // pinning. A pinned tag adds PRIORITY (tried first) and coverage for any wrapper not yet in
+        // the base list, but never weakens detection of the common ones.
         private static void TestReasoningTagOverride()
         {
             // Pinned reflection tag: the wrapper is removed.
@@ -222,11 +223,22 @@ namespace LlmResponseParserTests
                 "Visible entry.",
                 LlmResponseParser.StripReasoningTextBlocks("<reflection>private musings</reflection>Visible entry.", "reflection"));
 
-            // Same text under Auto: the exotic wrapper survives because it is not in the base list.
+            // Auto now ALSO strips reflection (and scratchpad/thought), since the built-in list was
+            // widened so most players never need to pin a tag manually.
             AssertEqual(
-                "reflection tag kept under auto",
-                "<reflection>private musings</reflection>Visible entry.",
+                "auto strips reflection too",
+                "Visible entry.",
                 LlmResponseParser.StripReasoningTextBlocks("<reflection>private musings</reflection>Visible entry.", "auto"));
+
+            AssertEqual(
+                "auto strips scratchpad",
+                "Answer.",
+                LlmResponseParser.StripReasoningTextBlocks("<scratchpad>draft notes</scratchpad>Answer.", "auto"));
+
+            AssertEqual(
+                "auto strips thought",
+                "Result.",
+                LlmResponseParser.StripReasoningTextBlocks("<thought>musing</thought>Result.", "auto"));
 
             // Union: a pinned reflection tag does NOT weaken stripping of the common <think> tag.
             AssertEqual(
@@ -246,16 +258,23 @@ namespace LlmResponseParserTests
                 "Answer.",
                 LlmResponseParser.StripReasoningTextBlocks("```reflection\nsecret\n```\nAnswer.", "reflection"));
 
+            // Auto also strips fenced blocks whose label is one of the built-in tags.
+            AssertEqual(
+                "auto strips reflection fenced block",
+                "Answer.",
+                LlmResponseParser.StripReasoningTextBlocks("```reflection\nsecret\n```\nAnswer.", "auto"));
+
             // Pinned tag as a heading prefix is cut up to the final-answer marker.
             AssertEqual(
                 "pinned tag heading cut to final marker",
                 "Visible.",
                 LlmResponseParser.StripReasoningTextBlocks("Reflection:\nsecret\nAnswer: Visible.", "reflection"));
 
-            // An unrecognized tag string normalizes back to Auto (built-in detection).
+            // An unrecognized tag string normalizes back to Auto (built-in detection), so reflection
+            // is still stripped via the widened base list.
             AssertEqual(
-                "unknown tag normalizes to auto",
-                "<reflection>private</reflection>Visible.",
+                "unknown tag normalizes to auto and still strips known wrappers",
+                "Visible.",
                 LlmResponseParser.StripReasoningTextBlocks("<reflection>private</reflection>Visible.", "totally-not-a-real-tag"));
         }
 

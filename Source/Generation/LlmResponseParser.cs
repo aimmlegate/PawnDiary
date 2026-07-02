@@ -117,16 +117,19 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// The tag names the strippers look for: the base guess-list (think/thinking/reasoning/
-        /// analysis) plus, when the lane pins a specific non-auto tag, that tag prepended so it is
-        /// tried first. The base list is NEVER removed -- a pinned tag adds coverage for exotic
-        /// wrappers (e.g. &lt;reflection&gt;, &lt;scratchpad&gt;) without weakening detection of
-        /// the common ones. "auto" yields the base list unchanged.
+        /// The tag names the strippers look for: the built-in Auto list (think/thinking/reasoning/
+        /// analysis/thought/reflection/scratchpad) plus, when the lane pins a specific non-auto tag,
+        /// that tag prepended so it is tried first. The base list is NEVER removed -- a pinned tag
+        /// only adds priority for a tag already covered by Auto, or adds an exotic one not in the
+        /// list. "auto" yields the base list unchanged, which is broad enough that most players never
+        /// need to pick a tag manually. False-positive risk is negligible: the strippers only act on
+        /// the wrapper form (&lt;tag&gt;...&lt;/tag&gt;), fenced ```tag blocks, and "Tag:" headings --
+        /// never on the bare word in prose, so a pawn writing "my reflections on the raid" is safe.
         /// </summary>
         private static string[] ReasoningTagsToStrip(string reasoningTag)
         {
             string normalized = ApiEndpointPolicy.NormalizeReasoningTag(reasoningTag);
-            string[] baseTags = { "think", "thinking", "reasoning", "analysis" };
+            string[] baseTags = { "think", "thinking", "reasoning", "analysis", "thought", "reflection", "scratchpad" };
             if (string.Equals(normalized, ApiEndpointPolicy.DefaultReasoningTag, StringComparison.Ordinal))
             {
                 return baseTags;

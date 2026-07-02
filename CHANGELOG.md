@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Reasoning config now mostly auto.** Two follow-ups make the per-lane reasoning controls need
+  almost no manual work. (1) **Auto detects a wider tag set.** The built-in Auto reasoning-tag list
+  now strips `think`/`thinking`/`reasoning`/`analysis`/`thought`/`reflection`/`scratchpad` instead of
+  the original four, so exotic wrappers from RP-tuned models no longer leak into diary text even when
+  the player never picks a tag. The tag dropdown remains as an escape hatch, not a required step.
+  False-positive risk is negligible: strippers only act on wrapper form (`<tag>…</tag>`), fenced
+  ```` ```tag ```` blocks, and `Tag:` headings — never the bare word in prose. (2) **Capability
+  auto-fetches at Pick.** When a model is picked from the list and its reasoning capability is not
+  yet cached for that endpoint (Fetch returned none, or Pick before Fetch finished), the row now
+  fetches it automatically so the reasoning-effort clamp protects the request without the player
+  doing anything extra. (DOCUMENTATION §8.)
+
+## 2026-07-02
+
 - **Per-lane reasoning-tag picker and capability-aware reasoning effort.** Reasoning models wrap
   their private thinking in many different wrappers (`<think>`, `<thinking>`, `<reasoning>`,
   `<analysis>`, and exotic ones like `<reflection>`/`<scratchpad>` for RP-tuned models), and there is
