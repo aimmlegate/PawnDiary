@@ -260,7 +260,7 @@
   <PawnDiary.Settings.ReasoningSupportedTip>This model supports reasoning. Effort levels offered: {0}.</PawnDiary.Settings.ReasoningSupportedTip>
   <PawnDiary.Settings.ReasoningSupportedGenericTip>This model supports reasoning.</PawnDiary.Settings.ReasoningSupportedGenericTip>
   <PawnDiary.Settings.ReasoningUnsupportedTip>This model does not support reasoning. Any effort level you pick is omitted from the request, so the model stops rejecting it.</PawnDiary.Settings.ReasoningUnsupportedTip>
-  <PawnDiary.Settings.ReasoningTag>Reasoning tag</PawnDiary.Settings.ReasoningTag>
+  <PawnDiary.Settings.ReasoningTag>Tag</PawnDiary.Settings.ReasoningTag>
   <PawnDiary.Settings.ReasoningTag.Auto>Auto</PawnDiary.Settings.ReasoningTag.Auto>
   <PawnDiary.Settings.ReasoningTag.Think>think</PawnDiary.Settings.ReasoningTag.Think>
   <PawnDiary.Settings.ReasoningTag.Thinking>thinking</PawnDiary.Settings.ReasoningTag.Thinking>

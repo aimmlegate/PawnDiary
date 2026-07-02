@@ -314,12 +314,8 @@ namespace PawnDiary
             if (HasApiAdvancedRow(endpoint))
             {
                 y += lineHeight + gap;
-                Rect advancedRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-                DrawApiAdvancedRow(advancedRect, index, endpoint, 94f);
-
-                y += lineHeight + gap;
-                Rect tagRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-                DrawReasoningTagRow(tagRect, endpoint, 94f);
+                Rect reasoningRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+                DrawReasoningSelectorsRow(reasoningRect, index, endpoint);
             }
 
             // Show statuses inside the framed lane so they cannot push later controls sideways.
@@ -395,7 +391,7 @@ namespace PawnDiary
         /// </summary>
         private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, int statusLineCount)
         {
-            float height = HasApiAdvancedRow(endpoint) ? 280f : 214f;
+            float height = HasApiAdvancedRow(endpoint) ? 247f : 214f;
             return height + (Mathf.Max(0, statusLineCount) * 26f);
         }
 
@@ -513,22 +509,30 @@ namespace PawnDiary
         /// describing what the model supports; the outgoing request is clamped separately in
         /// LlmClient.BuildRequestJson, so the dropdown never needs to gate.
         /// </summary>
-        private void DrawApiAdvancedRow(Rect rect, int index, ApiEndpointConfig endpoint, float labelWidth)
+        private void DrawReasoningSelectorsRow(Rect rect, int index, ApiEndpointConfig endpoint)
         {
-            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
-            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+            // Two compact selectors side by side: [Effort ...] [Tag ...]. Each gets a short label and
+            // a button sharing the row width, replacing the two full-width rows they used to be so a
+            // lane is one line shorter. Labels are kept narrow (52px) to give the buttons room.
+            const float labelWidth = 52f;
+            const float gap = 8f;
+            float halfWidth = (rect.width - gap) / 2f;
 
-            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ReasoningEffort".Translate());
+            // --- Left half: reasoning effort ---
+            Rect effortRect = new Rect(rect.x, rect.y, halfWidth, rect.height);
+            Rect effortLabelRect = new Rect(effortRect.x, effortRect.y, labelWidth, effortRect.height);
+            Rect effortButtonRect = new Rect(effortLabelRect.xMax + 4f, effortRect.y, Mathf.Max(0f, effortRect.xMax - effortLabelRect.xMax - 4f), effortRect.height);
+            Widgets.LabelFit(effortLabelRect, "PawnDiary.Settings.ReasoningEffort".Translate());
 
             // Capability may be null (provider does not advertise reasoning) -- that is the normal
             // case for OpenAI-direct and local GGUF servers, and means "behave exactly as before".
             ModelReasoningCapability capability = apiConnectionController.ModelCapabilityForRow(index);
             if (capability != null)
             {
-                TooltipHandler.TipRegion(rect, ReasoningCapabilityTooltip(capability));
+                TooltipHandler.TipRegion(effortRect, ReasoningCapabilityTooltip(capability));
             }
 
-            if (Widgets.ButtonText(buttonRect, ReasoningEffortLabel(endpoint.reasoningEffort).Translate()))
+            if (Widgets.ButtonText(effortButtonRect, ReasoningEffortLabel(endpoint.reasoningEffort).Translate()))
             {
                 List<FloatMenuOption> options = new List<FloatMenuOption>();
                 AddReasoningOption(options, endpoint, PawnDiarySettings.DefaultReasoningEffort);
@@ -538,6 +542,26 @@ namespace PawnDiary
                 AddReasoningOption(options, endpoint, "medium");
                 AddReasoningOption(options, endpoint, "high");
                 AddReasoningOption(options, endpoint, "xhigh");
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+
+            // --- Right half: reasoning tag ---
+            Rect tagRect = new Rect(effortRect.xMax + gap, rect.y, halfWidth, rect.height);
+            Rect tagLabelRect = new Rect(tagRect.x, tagRect.y, labelWidth, tagRect.height);
+            Rect tagButtonRect = new Rect(tagLabelRect.xMax + 4f, tagRect.y, Mathf.Max(0f, tagRect.xMax - tagLabelRect.xMax - 4f), tagRect.height);
+            Widgets.LabelFit(tagLabelRect, "PawnDiary.Settings.ReasoningTag".Translate());
+            TooltipHandler.TipRegion(tagLabelRect, "PawnDiary.Settings.ReasoningTagTip".Translate());
+            if (Widgets.ButtonText(tagButtonRect, ReasoningTagLabel(endpoint.reasoningTag).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>();
+                AddReasoningTagOption(options, endpoint, PawnDiarySettings.DefaultReasoningTag);
+                AddReasoningTagOption(options, endpoint, "think");
+                AddReasoningTagOption(options, endpoint, "thinking");
+                AddReasoningTagOption(options, endpoint, "reasoning");
+                AddReasoningTagOption(options, endpoint, "analysis");
+                AddReasoningTagOption(options, endpoint, "thought");
+                AddReasoningTagOption(options, endpoint, "reflection");
+                AddReasoningTagOption(options, endpoint, "scratchpad");
                 Find.WindowStack.Add(new FloatMenu(options));
             }
         }
@@ -590,33 +614,6 @@ namespace PawnDiary
                     return "PawnDiary.Settings.ReasoningEffort.XHigh";
                 default:
                     return "PawnDiary.Settings.ReasoningEffort.Default";
-            }
-        }
-
-        /// <summary>
-        /// Draws the per-row reasoning-tag picker. "Auto" keeps the built-in broad reasoning-tag
-        /// detection; picking a specific tag additionally strips that wrapper if a model leaks its
-        /// private thinking into the diary text. Mirrors the reasoning-effort row layout.
-        /// </summary>
-        private static void DrawReasoningTagRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
-        {
-            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
-            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
-
-            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ReasoningTag".Translate());
-            TooltipHandler.TipRegion(labelRect, "PawnDiary.Settings.ReasoningTagTip".Translate());
-            if (Widgets.ButtonText(buttonRect, ReasoningTagLabel(endpoint.reasoningTag).Translate()))
-            {
-                List<FloatMenuOption> options = new List<FloatMenuOption>();
-                AddReasoningTagOption(options, endpoint, PawnDiarySettings.DefaultReasoningTag);
-                AddReasoningTagOption(options, endpoint, "think");
-                AddReasoningTagOption(options, endpoint, "thinking");
-                AddReasoningTagOption(options, endpoint, "reasoning");
-                AddReasoningTagOption(options, endpoint, "analysis");
-                AddReasoningTagOption(options, endpoint, "thought");
-                AddReasoningTagOption(options, endpoint, "reflection");
-                AddReasoningTagOption(options, endpoint, "scratchpad");
-                Find.WindowStack.Add(new FloatMenu(options));
             }
         }
 
