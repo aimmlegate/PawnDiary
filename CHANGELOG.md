@@ -4,6 +4,57 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-07-03
+
+- **Reasoning capability auto-refreshes across the settings window.** A row's reasoning capability
+  (and model list) now fetches itself on four triggers, so a player almost never has to click
+  **Fetch models** manually: when the settings window opens (one-shot, for any row whose capability
+  is not yet cached), when a row's URL/key/auth changes (background refresh, once per change), when
+  **Test connection** runs (in parallel with the test), and on the manual **Fetch** click (existing).
+  Auto-pick-first-if-blank still applies to the full Fetch path. To keep the picker UX stable under
+  multiple triggers, a new lightweight **capability-only refresh** (`ApiConnectionController.RefreshCapability`)
+  updates just the thread-safe `ModelCapabilityCache` without touching the single-flight picker
+  state, so several rows can refresh concurrently. The previous "auto-fetch at Pick" code was
+  removed — it was redundant for OpenRouter (Fetch already cached every model) and a wasteful no-op
+  loop for providers that return no capability (OpenAI-direct, GGUF, LM Studio). Providers that do
+  not advertise capability still degrade gracefully (unknown → effort passes through unclamped).
+  (DOCUMENTATION §8.)
+
+## 2026-07-02
+
+- **Reasoning config now mostly auto.** Two follow-ups make the per-lane reasoning controls need
+  almost no manual work. (1) **Auto detects a wider tag set.** The built-in Auto reasoning-tag list
+  now strips `think`/`thinking`/`reasoning`/`analysis`/`thought`/`reflection`/`scratchpad` instead of
+  the original four, so exotic wrappers from RP-tuned models no longer leak into diary text even when
+  the player never picks a tag. The tag dropdown remains as an escape hatch, not a required step.
+  False-positive risk is negligible: strippers only act on wrapper form (`<tag>…</tag>`), fenced
+  ```` ```tag ```` blocks, and `Tag:` headings — never the bare word in prose. (2) **Capability
+  auto-fetches at Pick.** When a model is picked from the list and its reasoning capability is not
+  yet cached for that endpoint (Fetch returned none, or Pick before Fetch finished), the row now
+  fetches it automatically so the reasoning-effort clamp protects the request without the player
+  doing anything extra. (DOCUMENTATION §8.)
+
+## 2026-07-02
+
+- **Per-lane reasoning-tag picker and capability-aware reasoning effort.** Reasoning models wrap
+  their private thinking in many different wrappers (`<think>`, `<thinking>`, `<reasoning>`,
+  `<analysis>`, and exotic ones like `<reflection>`/`<scratchpad>` for RP-tuned models), and there is
+  no single "reasoning" wire format across providers. Two new per-lane controls address both
+  symptoms. (1) A **"Reasoning tag" dropdown** (default *Auto*) lets a player pin the exact tag a
+  model emits; the chosen tag is stripped *in addition to* the built-in broad guess-list, so exotic
+  wrappers no longer leak into saved diary text, while common tags keep working as a safety net.
+  (2) When an endpoint advertises per-model **reasoning capability** in its `/models` response
+  (OpenRouter and some gateways — `reasoning.supported_efforts`/`default_enabled`), the effort
+  dropdown now only offers levels the model accepts, the row shows a tooltip of what the model
+  supports, and the outgoing request **clamps** `reasoning_effort` so it never carries a value the
+  model rejects (the direct fix for "400 Thinking budget is not supported for this model" on
+  non-reasoning models like Gemma). Providers that do not advertise capability (OpenAI-direct, local
+  GGUF servers) degrade gracefully to today's unconditional behavior. New pure
+  `ModelReasoningCapability` (parse + clamp policy), `ModelCapabilityCache` (process-wide
+  endpoint+model keyed cache), and `ApiEndpointPolicy.NormalizeReasoningTag`; `StripReasoningTextBlocks`
+  gained a tag-parameterized overload. `LlmResponseParserTests` and `DiaryPipelineTests` cover the
+  new tag stripping and the capability clamping. (DOCUMENTATION §6.)
+
 ## 2026-07-02
 
 - **Single-item interaction batch flushes now become standalone entries.** If an XML `PairEvent`

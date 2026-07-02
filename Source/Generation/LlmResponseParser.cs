@@ -86,20 +86,68 @@ namespace PawnDiary
         /// <summary>
         /// Removes reasoning/transcript blocks that some "compatible" APIs place inside normal
         /// message content. This keeps private thinking text out of saved diary pages and debug UI.
+        /// Uses the built-in broad tag detection ("auto").
         /// </summary>
         public static string StripReasoningTextBlocks(string text)
+        {
+            return StripReasoningTextBlocks(text, ApiEndpointPolicy.DefaultReasoningTag);
+        }
+
+        /// <summary>
+        /// Removes reasoning/transcript blocks that some "compatible" APIs place inside normal
+        /// message content, additionally recognizing a lane-pinned tag name. "auto" keeps the
+        /// built-in broad guess-list; any other known tag (think/thinking/reasoning/analysis/
+        /// thought/reflection/scratchpad) is added ON TOP of the base list so broad coverage
+        /// survives as a safety net. This keeps private thinking text out of saved diary pages.
+        /// </summary>
+        public static string StripReasoningTextBlocks(string text, string reasoningTag)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 return text;
             }
 
-            string cleaned = StripTaggedReasoningBlocks(text);
-            cleaned = StripOrphanClosingReasoningTags(cleaned);
-            cleaned = StripReasoningFencedBlocks(cleaned);
-            cleaned = StripReasoningHeadingPrefix(cleaned);
+            string[] tags = ReasoningTagsToStrip(reasoningTag);
+            string cleaned = StripTaggedReasoningBlocks(text, tags);
+            cleaned = StripOrphanClosingReasoningTags(cleaned, tags);
+            cleaned = StripReasoningFencedBlocks(cleaned, tags);
+            cleaned = StripReasoningHeadingPrefix(cleaned, tags);
             cleaned = StripInstructionReflectionTranscript(cleaned);
             return CompactReasoningCleanupWhitespace(cleaned).Trim();
+        }
+
+        /// <summary>
+        /// The tag names the strippers look for: the built-in Auto list (think/thinking/reasoning/
+        /// analysis/thought/reflection/scratchpad) plus, when the lane pins a specific non-auto tag,
+        /// that tag prepended so it is tried first. The base list is NEVER removed -- a pinned tag
+        /// only adds priority for a tag already covered by Auto, or adds an exotic one not in the
+        /// list. "auto" yields the base list unchanged, which is broad enough that most players never
+        /// need to pick a tag manually. False-positive risk is negligible: the strippers only act on
+        /// the wrapper form (&lt;tag&gt;...&lt;/tag&gt;), fenced ```tag blocks, and "Tag:" headings --
+        /// never on the bare word in prose, so a pawn writing "my reflections on the raid" is safe.
+        /// </summary>
+        private static string[] ReasoningTagsToStrip(string reasoningTag)
+        {
+            string normalized = ApiEndpointPolicy.NormalizeReasoningTag(reasoningTag);
+            string[] baseTags = { "think", "thinking", "reasoning", "analysis", "thought", "reflection", "scratchpad" };
+            if (string.Equals(normalized, ApiEndpointPolicy.DefaultReasoningTag, StringComparison.Ordinal))
+            {
+                return baseTags;
+            }
+
+            // Prepend the pinned tag unless it is already one of the base tags (case-insensitive).
+            for (int i = 0; i < baseTags.Length; i++)
+            {
+                if (string.Equals(baseTags[i], normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    return baseTags;
+                }
+            }
+
+            string[] combined = new string[baseTags.Length + 1];
+            combined[0] = normalized;
+            Array.Copy(baseTags, 0, combined, 1, baseTags.Length);
+            return combined;
         }
 
         /// <summary>
@@ -382,9 +430,8 @@ namespace PawnDiary
                 || type == "analysis";
         }
 
-        private static string StripTaggedReasoningBlocks(string text)
+        private static string StripTaggedReasoningBlocks(string text, string[] tags)
         {
-            string[] tags = { "think", "thinking", "reasoning", "analysis" };
             for (int i = 0; i < tags.Length; i++)
             {
                 string tag = tags[i];
@@ -438,14 +485,13 @@ namespace PawnDiary
         /// Handles reasoning models whose chat template emits the opening think tag as part of the
         /// prompt, so the completion begins inside the reasoning block and only returns a closing tag.
         /// </summary>
-        private static string StripOrphanClosingReasoningTags(string text)
+        private static string StripOrphanClosingReasoningTags(string text, string[] tags)
         {
             if (string.IsNullOrEmpty(text))
             {
                 return text;
             }
 
-            string[] tags = { "think", "thinking", "reasoning", "analysis" };
             for (int i = 0; i < tags.Length; i++)
             {
                 string closeNeedle = "</" + tags[i] + ">";
@@ -523,8 +569,9 @@ namespace PawnDiary
             return -1;
         }
 
-        private static string StripReasoningFencedBlocks(string text)
+        private static string StripReasoningFencedBlocks(string text, string[] tags)
         {
+            string[] fenceLabels = ReasoningFenceLabels(tags);
             string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n');
             string[] lines = normalized.Split('\n');
             StringBuilder builder = new StringBuilder(text.Length);
@@ -544,7 +591,7 @@ namespace PawnDiary
                         continue;
                     }
 
-                    if (IsReasoningFenceLine(trimmed))
+                    if (IsReasoningFenceLine(trimmed, fenceLabels))
                     {
                         skipping = true;
                         changed = true;
@@ -575,7 +622,7 @@ namespace PawnDiary
                 || trimmedLine.StartsWith("~~~", StringComparison.Ordinal);
         }
 
-        private static bool IsReasoningFenceLine(string trimmedLine)
+        private static bool IsReasoningFenceLine(string trimmedLine, string[] fenceLabels)
         {
             if (!IsFenceLine(trimmedLine) || trimmedLine.Length <= 3)
             {
@@ -583,13 +630,14 @@ namespace PawnDiary
             }
 
             string info = trimmedLine.Substring(3).Trim().ToLowerInvariant();
-            return StartsWithAny(info, ReasoningFenceLabels());
+            return StartsWithAny(info, fenceLabels);
         }
 
-        private static string StripReasoningHeadingPrefix(string text)
+        private static string StripReasoningHeadingPrefix(string text, string[] tags)
         {
+            string[] headingLabels = ReasoningHeadingLabels(tags);
             string trimmedStart = text.TrimStart();
-            if (!StartsWithAny(trimmedStart.ToLowerInvariant(), ReasoningHeadingLabels()))
+            if (!StartsWithAny(trimmedStart.ToLowerInvariant(), headingLabels))
             {
                 return text;
             }
@@ -851,14 +899,51 @@ namespace PawnDiary
             return index > 0 && value[index - 1] == expected;
         }
 
-        private static string[] ReasoningFenceLabels()
+        private static string[] ReasoningFenceLabels(string[] tags)
         {
-            return new[] { "think", "thinking", "reasoning", "analysis", "chain-of-thought", "chain of thought", "cot" };
+            // Base fence info-strings (the word after ```). Includes the longer forms that some
+            // chat templates emit, which are not single tag names.
+            List<string> labels = new List<string> { "think", "thinking", "reasoning", "analysis", "chain-of-thought", "chain of thought", "cot" };
+            // A pinned lane tag (e.g. reflection/scratchpad) is also recognized as a fence label.
+            for (int i = 0; i < tags.Length; i++)
+            {
+                if (!ContainsOrdinalIgnoreCase(labels, tags[i]))
+                {
+                    labels.Add(tags[i]);
+                }
+            }
+
+            return labels.ToArray();
         }
 
-        private static string[] ReasoningHeadingLabels()
+        private static string[] ReasoningHeadingLabels(string[] tags)
         {
-            return new[] { "thinking:", "reasoning:", "analysis:", "chain-of-thought:", "chain of thought:" };
+            List<string> labels = new List<string> { "thinking:", "reasoning:", "analysis:", "chain-of-thought:", "chain of thought:" };
+            for (int i = 0; i < tags.Length; i++)
+            {
+                string heading = tags[i] + ":";
+                if (!ContainsOrdinalIgnoreCase(labels, heading))
+                {
+                    labels.Add(heading);
+                }
+            }
+
+            return labels.ToArray();
+        }
+
+        /// <summary>Case-insensitive membership test for a string list, avoiding the LINQ/IEqualityComparer
+        /// overloads that are not present on RimWorld's Mono runtime.</summary>
+        private static bool ContainsOrdinalIgnoreCase(List<string> list, string value)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (string.Equals(list[i], value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string[] FinalAnswerLabels()

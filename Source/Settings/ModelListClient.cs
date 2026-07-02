@@ -26,9 +26,10 @@ namespace PawnDiary
 
         /// <summary>
         /// Sends a GET request to the OpenAI-style model-list endpoint, authenticates with the given
-        /// API key when present, and returns a sorted, deduplicated list of model IDs.
+        /// API key when present, and returns a sorted, deduplicated list of model IDs plus any
+        /// per-model reasoning capability the provider advertised (OpenRouter and some gateways).
         /// </summary>
-        public static async Task<List<string>> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode, string customAuthHeaderName, ApiCompatibilityMode mode, int timeoutSeconds)
+        public static async Task<ModelListResult> FetchModels(string endpoint, string apiKey, ApiAuthMode authMode, string customAuthHeaderName, ApiCompatibilityMode mode, int timeoutSeconds)
         {
             using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
             using (HttpRequestMessage request = new HttpRequestMessage(
@@ -45,7 +46,7 @@ namespace PawnDiary
                         throw new InvalidOperationException($"HTTP {(int)response.StatusCode}: {TrimForStatus(json)}");
                     }
 
-                    return ParseOpenAIModelIds(json);
+                    return ParseModels(json);
                 }
             }
         }
@@ -88,22 +89,24 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Extracts the "id" strings from the "data" array of an OpenAI-style /models JSON response,
-        /// returning distinct, sorted model IDs.
+        /// Extracts the "id" strings and any per-model reasoning capability from the "data" array of
+        /// an OpenAI-style /models JSON response. IDs are distinct and sorted; capabilities are keyed
+        /// by model id and only include entries that actually advertised a reasoning object.
         /// </summary>
-        private static List<string> ParseOpenAIModelIds(string json)
+        private static ModelListResult ParseModels(string json)
         {
             List<string> models = new List<string>();
+            Dictionary<string, ModelReasoningCapability> capabilities = new Dictionary<string, ModelReasoningCapability>();
             Dictionary<string, object> root = MiniJson.Deserialize(json ?? string.Empty) as Dictionary<string, object>;
             if (root == null || !root.TryGetValue("data", out object dataObject))
             {
-                return models;
+                return new ModelListResult(models, capabilities);
             }
 
             object[] data = dataObject as object[];
             if (data == null)
             {
-                return models;
+                return new ModelListResult(models, capabilities);
             }
 
             for (int i = 0; i < data.Length; i++)
@@ -118,10 +121,19 @@ namespace PawnDiary
                 if (!string.IsNullOrWhiteSpace(id))
                 {
                     models.Add(id);
+
+                    // Optional: providers like OpenRouter attach a "reasoning" object describing what
+                    // the model supports. When present we capture it so the UI can guide effort choice
+                    // and the request can be clamped. Absent reasoning object -> null -> degrade.
+                    ModelReasoningCapability capability = ModelReasoningCapability.FromModelEntry(model);
+                    if (capability != null)
+                    {
+                        capabilities[id] = capability;
+                    }
                 }
             }
 
-            return models.Distinct().OrderBy(model => model).ToList();
+            return new ModelListResult(models.Distinct().OrderBy(model => model).ToList(), capabilities);
         }
 
         /// <summary>Truncates a string to 120 chars for display in error status messages.</summary>
@@ -134,6 +146,27 @@ namespace PawnDiary
 
             value = value.Trim();
             return value.Length <= 120 ? value : value.Substring(0, 120) + "...";
+        }
+    }
+
+    /// <summary>
+    /// Outcome of one <c>/models</c> fetch: the sorted model-id list plus any per-model reasoning
+    /// capability the provider advertised. The capability map only contains entries that included a
+    /// reasoning object; models without one are simply absent and treated as "unknown" by callers.
+    /// </summary>
+    public sealed class ModelListResult
+    {
+        /// <summary>Distinct, sorted model IDs returned by the endpoint.</summary>
+        public readonly List<string> Models;
+
+        /// <summary>Per-model reasoning capability, keyed by model id. Only models that advertised a
+        /// reasoning object appear here; absence means "capability unknown".</summary>
+        public readonly Dictionary<string, ModelReasoningCapability> Capabilities;
+
+        public ModelListResult(List<string> models, Dictionary<string, ModelReasoningCapability> capabilities)
+        {
+            Models = models ?? new List<string>();
+            Capabilities = capabilities ?? new Dictionary<string, ModelReasoningCapability>();
         }
     }
 }

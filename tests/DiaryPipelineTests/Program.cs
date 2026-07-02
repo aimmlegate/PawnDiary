@@ -50,6 +50,7 @@ namespace DiaryPipelineTests
             TestTuningOverrideMigration();
             TestPromptTextTemplate();
             TestLlmRequestJsonBuilder();
+            TestModelReasoningCapability();
             TestArchivedPendingReloadFallbackStatus();
             TestArchiveEligibility();
             TestArchiveFallbackFact();
@@ -1824,6 +1825,76 @@ namespace DiaryPipelineTests
                 "responses request none reasoning",
                 "{\"model\":\"o3\",\"input\":\"\",\"temperature\":0,\"max_output_tokens\":64,\"reasoning\":{\"effort\":\"none\"}}",
                 responsesNone);
+        }
+
+        // ModelReasoningCapability: parse the OpenRouter-shape "reasoning" object from a /models
+        // entry, and the effort-clamping policy that keeps the outgoing request from carrying an
+        // effort the model rejects (the root cause of "400 Thinking budget not supported").
+        private static void TestModelReasoningCapability()
+        {
+            // OpenRouter-style entry with an enumerated effort list.
+            Dictionary<string, object> supported = MiniJson.Deserialize(
+                "{\"id\":\"o3-mini\",\"reasoning\":{\"default_enabled\":true,\"default_effort\":\"medium\",\"supported_efforts\":[\"low\",\"medium\",\"high\"],\"supports_max_tokens\":true}}")
+                as Dictionary<string, object>;
+            ModelReasoningCapability cap = ModelReasoningCapability.FromModelEntry(supported);
+            AssertTrue("supported model parsed", cap != null);
+            AssertTrue("supported flag true", cap.Supported);
+            AssertTrue("supports max tokens", cap.SupportsMaxTokens);
+            AssertTrue("three efforts listed", cap.SupportedEfforts.Count == 3);
+            AssertEqual("default effort medium", "medium", cap.DefaultEffort);
+
+            // Entry without a reasoning object -> null (provider does not advertise capability).
+            Dictionary<string, object> plain = MiniJson.Deserialize(
+                "{\"id\":\"gpt-4o\"}") as Dictionary<string, object>;
+            AssertTrue("plain model yields null capability", ModelReasoningCapability.FromModelEntry(plain) == null);
+
+            // Non-reasoning model explicitly marked unsupported.
+            Dictionary<string, object> unsupported = MiniJson.Deserialize(
+                "{\"id\":\"gemma-3\",\"reasoning\":{\"default_enabled\":false}}") as Dictionary<string, object>;
+            ModelReasoningCapability unsup = ModelReasoningCapability.FromModelEntry(unsupported);
+            AssertTrue("unsupported flag false", unsup != null && !unsup.Supported);
+
+            // Effort implied by presence of a supported_efforts list even when default_enabled omitted.
+            Dictionary<string, object> implied = MiniJson.Deserialize(
+                "{\"id\":\"deepseek-r1\",\"reasoning\":{\"supported_efforts\":[\"high\"]}}") as Dictionary<string, object>;
+            ModelReasoningCapability impliedCap = ModelReasoningCapability.FromModelEntry(implied);
+            AssertTrue("effort list implies supported", impliedCap != null && impliedCap.Supported);
+
+            // ---- EffectiveReasoningEffort clamping policy ----
+
+            // Unknown capability (null): chosen effort passes through unchanged (graceful degrade).
+            AssertEqual("null capability passthrough", "high",
+                ModelReasoningCapability.EffectiveReasoningEffort("high", null));
+
+            // "default" (no override) stays default regardless of capability.
+            AssertEqual("default stays default with capability", "default",
+                ModelReasoningCapability.EffectiveReasoningEffort("default", cap));
+
+            // Unsupported model forces "none" -- the direct fix for the Gemma 400 error.
+            AssertEqual("unsupported forces none", "none",
+                ModelReasoningCapability.EffectiveReasoningEffort("high", unsup));
+
+            // Explicit effort the model lists as supported is kept.
+            AssertEqual("supported explicit kept", "low",
+                ModelReasoningCapability.EffectiveReasoningEffort("low", cap));
+
+            // Explicit effort the model does NOT list clamps to the provider default.
+            AssertEqual("unsupported explicit clamps to default", "medium",
+                ModelReasoningCapability.EffectiveReasoningEffort("xhigh", cap));
+
+            // No default effort and no list but supported -> default (omit reasoning object).
+            Dictionary<string, object> bareSupported = MiniJson.Deserialize(
+                "{\"id\":\"r1\",\"reasoning\":{\"default_enabled\":true}}") as Dictionary<string, object>;
+            ModelReasoningCapability bare = ModelReasoningCapability.FromModelEntry(bareSupported);
+            AssertEqual("bare supported explicit clamps to default", "default",
+                ModelReasoningCapability.EffectiveReasoningEffort("high", bare));
+
+            // List with no default: clamp to the highest supported effort (player asked for reasoning).
+            Dictionary<string, object> noDefault = MiniJson.Deserialize(
+                "{\"id\":\"q\",\"reasoning\":{\"supported_efforts\":[\"low\",\"medium\"]}}") as Dictionary<string, object>;
+            ModelReasoningCapability nd = ModelReasoningCapability.FromModelEntry(noDefault);
+            AssertEqual("no default clamps to highest", "medium",
+                ModelReasoningCapability.EffectiveReasoningEffort("xhigh", nd));
         }
 
         private static void TestDomainClassifier()

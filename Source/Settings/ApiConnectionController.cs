@@ -29,6 +29,12 @@ namespace PawnDiary
         // thread, so the continuation must not call .Translate() or edit shared UI collections.
         private volatile ModelFetchResult pendingFetchResult;
 
+        // Row indices with a background capability-only refresh in flight. RefreshCapability is
+        // fire-and-forget and many rows can refresh at once (it only touches the thread-safe
+        // ModelCapabilityCache, never the single-flight picker state). This set stops the same row
+        // from being refreshed repeatedly while one is already running (e.g. while typing a URL).
+        private readonly HashSet<int> capabilityRefreshInFlight = new HashSet<int>();
+
         // Connection-test state is per-row so each API row's Test button runs independently: a
         // request on one row no longer blocks the others. The async HTTP continuation hands a
         // result back here and the settings window applies UI text and RimWorld log lines on the
@@ -68,6 +74,28 @@ namespace PawnDiary
         public string ModelFetchStatusForRow(int index)
         {
             return fetchTargetIndex == index ? fetchStatus : null;
+        }
+
+        /// <summary>
+        /// Returns the cached reasoning capability for one row's currently-selected model, or null
+        /// when capability is unknown (provider did not advertise it). Reads the process-wide cache
+        /// against the row's live endpoint+model so edits after a fetch are reflected immediately.
+        /// </summary>
+        public ModelReasoningCapability ModelCapabilityForRow(int index)
+        {
+            PawnDiarySettings settings = CurrentSettings();
+            if (settings?.apiEndpoints == null || index < 0 || index >= settings.apiEndpoints.Count)
+            {
+                return null;
+            }
+
+            ApiEndpointConfig endpoint = settings.apiEndpoints[index];
+            if (endpoint == null || string.IsNullOrWhiteSpace(endpoint.model))
+            {
+                return null;
+            }
+
+            return ModelCapabilityCache.Get(endpoint.url, endpoint.model);
         }
 
         /// <summary>True while a connection test for <paramref name="index"/> is in flight.</summary>
@@ -117,6 +145,10 @@ namespace PawnDiary
         {
             CancelModelFetchUiState();
             CancelConnectionTestUiState();
+            // Drop tracked in-flight capability refreshes too: a removed/moved/reset row no longer
+            // maps to a valid index, so any result that lands afterwards is harmless (it writes only
+            // the thread-safe cache) but we don't want the in-flight set to hold stale indices.
+            capabilityRefreshInFlight.Clear();
         }
 
         /// <summary>
@@ -178,6 +210,11 @@ namespace PawnDiary
                         + ": " + validationError);
                     return;
                 }
+
+                // Best-effort: also refresh this row's reasoning capability in the background. Runs in
+                // parallel with the test request and only updates the thread-safe cache, so a player
+                // who tests but never clicks Fetch still gets reasoning-effort clamping.
+                RefreshCapability(index);
 
                 string sampleText = await LlmClient.TestConnection(new ApiEndpointConfig(url, apiKey, model)
                 {
@@ -274,13 +311,14 @@ namespace PawnDiary
                 apiMode = endpoint.apiMode;
                 int timeoutSeconds = settings.timeoutSeconds;
 
-                List<string> models = await ModelListClient.FetchModels(url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
+                ModelListResult fetchResult = await ModelListClient.FetchModels(url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
                 pendingFetchResult = new ModelFetchResult
                 {
                     generation = generation,
                     targetIndex = index,
                     success = true,
-                    models = models,
+                    models = fetchResult.Models,
+                    capabilities = fetchResult.Capabilities,
                     endpointUrl = url,
                     apiKey = apiKey,
                     customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
@@ -302,6 +340,104 @@ namespace PawnDiary
                     authMode = authMode,
                     apiMode = apiMode
                 };
+            }
+        }
+
+        /// <summary>
+        /// Background, non-blocking capability-only refresh for one row. Calls the same /models
+        /// endpoint as <see cref="FetchModels"/> but updates ONLY the process-wide
+        /// <see cref="ModelCapabilityCache"/> -- it never touches the single-flight picker state,
+        /// status string, or auto-pick logic, so many rows can refresh at once without disturbing
+        /// the UI. Used by the settings-open, URL/key-change, and Test-connection triggers so a
+        /// player never has to click Fetch manually just to get reasoning-effort clamping.
+        /// Providers that return no reasoning object (OpenAI-direct, GGUF) cache nothing and degrade
+        /// gracefully. Fire-and-forget; the per-frame <see cref="ModelCapabilityForRow"/> read picks
+        /// up new entries next frame.
+        /// </summary>
+        public async void RefreshCapability(int index)
+        {
+            // Snapshot inputs on the main thread. After await, do not read game state or call
+            // .Translate(); only write immutable entries into the thread-safe cache.
+            PawnDiarySettings settings = CurrentSettings();
+            if (settings?.apiEndpoints == null || index < 0 || index >= settings.apiEndpoints.Count)
+            {
+                return;
+            }
+
+            ApiEndpointConfig endpoint = settings.apiEndpoints[index];
+            if (endpoint == null || string.IsNullOrWhiteSpace(endpoint.url) || string.IsNullOrWhiteSpace(endpoint.model))
+            {
+                return;
+            }
+
+            // Skip if a refresh for this row is already running (e.g. mid-keystroke on the URL).
+            if (!capabilityRefreshInFlight.Add(index))
+            {
+                return;
+            }
+
+            string url = endpoint.url;
+            string apiKey = endpoint.apiKey;
+            string customAuthHeaderName = endpoint.customAuthHeaderName;
+            ApiAuthMode authMode = PawnDiarySettings.NormalizeAuthMode(endpoint.authMode);
+            ApiCompatibilityMode apiMode = endpoint.apiMode;
+            int timeoutSeconds = settings.timeoutSeconds;
+
+            try
+            {
+                ModelListResult fetchResult = await ModelListClient.FetchModels(
+                    url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
+
+                // Cache only the capabilities the provider actually advertised; models without a
+                // reasoning object stay absent (treated as "unknown" by readers -> graceful degrade).
+                if (fetchResult?.Capabilities != null)
+                {
+                    foreach (KeyValuePair<string, ModelReasoningCapability> entry in fetchResult.Capabilities)
+                    {
+                        ModelCapabilityCache.Update(url, entry.Key, entry.Value);
+                    }
+                }
+            }
+            catch
+            {
+                // Capability refresh is best-effort: a failed/empty /models request must never break
+                // the settings UI or spam logs. The row simply stays "capability unknown" and the
+                // request passes through unclamped, exactly as before this feature existed.
+            }
+            finally
+            {
+                capabilityRefreshInFlight.Remove(index);
+            }
+        }
+
+        /// <summary>
+        /// Refreshes capability for every row whose (endpoint, model) capability is not yet cached.
+        /// Called once when the settings window opens so a returning player's already-configured
+        /// lanes get clamping without a manual Fetch. Rows with no model are skipped (they cannot be
+        /// targeted); they are covered by the URL-change or full-Fetch triggers once a model is set.
+        /// </summary>
+        public void RefreshCapabilityForUncachedRows()
+        {
+            PawnDiarySettings settings = CurrentSettings();
+            if (settings?.apiEndpoints == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < settings.apiEndpoints.Count; i++)
+            {
+                ApiEndpointConfig endpoint = settings.apiEndpoints[i];
+                if (endpoint == null
+                    || string.IsNullOrWhiteSpace(endpoint.url)
+                    || string.IsNullOrWhiteSpace(endpoint.model))
+                {
+                    continue;
+                }
+
+                if (ModelCapabilityCache.Get(endpoint.url, endpoint.model) == null)
+                {
+                    RefreshCapability(i);
+                }
             }
         }
 
@@ -389,6 +525,17 @@ namespace PawnDiary
             if (result.models != null)
             {
                 fetchedModels.AddRange(result.models);
+            }
+
+            // Feed the process-wide capability cache so the settings UI can guide the effort
+            // dropdown and the generation path can clamp the outgoing reasoning_effort. Done on the
+            // main thread (here); reads on the background thread are safe against immutable entries.
+            if (result.capabilities != null && result.capabilities.Count > 0)
+            {
+                foreach (KeyValuePair<string, ModelReasoningCapability> entry in result.capabilities)
+                {
+                    ModelCapabilityCache.Update(result.endpointUrl, entry.Key, entry.Value);
+                }
             }
 
             if (fetchedModels.Count == 0)
@@ -521,6 +668,9 @@ namespace PawnDiary
             public int targetIndex;
             public bool success;
             public List<string> models;   // immutable snapshot returned by ModelListClient
+            // Per-model reasoning capability advertised by the endpoint (OpenRouter, some gateways).
+            // Null/empty when the provider does not report capability; absent models stay "unknown".
+            public Dictionary<string, ModelReasoningCapability> capabilities;
             public string errorDetail;    // raw, untranslated exception message
             public string endpointUrl;    // row URL snapshot used to reject stale row edits
             public string apiKey;         // row key snapshot; never logged or shown

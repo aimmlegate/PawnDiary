@@ -669,6 +669,35 @@ OpenAI-compatible gateways try to apply a thinking budget, which non-reasoning m
 Google's endpoint returns HTTP 400 "Thinking budget is not supported for this model." for Gemma).
 `default` omits the field in both modes.
 
+**Capability-aware effort (clamping).** Some `/models` responses (OpenRouter, some gateways) attach
+a per-model `reasoning` object (`default_enabled`, `supported_efforts[]`, `default_effort`,
+`mandatory`, `supports_max_tokens`). When present, `ModelReasoningCapability` parses it and
+`ModelCapabilityCache` stores it (keyed by endpoint+model, deliberately excluding the API key).
+`LlmClient.BuildRequestJson` then runs the chosen effort through
+`ModelReasoningCapability.EffectiveReasoningEffort`: a non-reasoning model forces `none` (the direct
+fix for the Gemma 400 above); an unsupported effort clamps to the provider default or the highest
+supported level; an unknown capability (OpenAI-direct, local GGUF — no `reasoning` object) passes
+the effort through unchanged, preserving today's unconditional behavior. The settings effort
+dropdown also consults the cache: when capability is known it only offers supported levels and shows
+a tooltip; when unknown the full ladder is offered as before. **Capability auto-refreshes** on four
+triggers so a player rarely clicks Fetch manually: when the settings window opens (one-shot, for any
+row whose capability is not yet cached), when a row's URL/key/auth changes (background refresh, once
+per change), when Test connection runs (in parallel), and on the manual Fetch click. A lightweight
+capability-only refresh path (`ApiConnectionController.RefreshCapability`) updates just the
+thread-safe cache without disturbing the single-flight picker, so several rows can refresh at once.
+Providers that return no `reasoning` object cache nothing and degrade gracefully.
+
+**Per-lane reasoning tag.** A **Reasoning tag** dropdown (default *Auto*) controls how
+`LlmResponseParser.StripReasoningTextBlocks` removes private thinking leaked into message content.
+*Auto* uses the built-in broad tag/fence/heading list (`think`/`thinking`/`reasoning`/`analysis`/
+`thought`/`reflection`/`scratchpad`), which is wide enough that most players never need to pick a tag
+manually — the dropdown is an escape hatch, not a required step. Picking a specific tag **prepends**
+it so it is tried first, useful only for an exotic wrapper not yet in Auto's list; common tags keep
+working regardless. False-positive risk is negligible because the strippers only act on wrapper form
+(`<tag>…</tag>`), fenced ```` ```tag ```` blocks, and `Tag:` headings — never the bare word in prose,
+so a pawn writing "my reflections on the raid" is safe. The tag is normalized by
+`ApiEndpointPolicy.NormalizeReasoningTag` and threaded through `LlmGenerationRequest.reasoningTag`.
+
 The settings-window **Test connection** button runs independently per row: starting a test on one
 lane does not block or cancel a test on another, and each row shows its own "Testing…"/success/
 failure status. `ApiConnectionController` keeps per-row state (a generation counter for stale-result

@@ -1,5 +1,6 @@
 // API-lane settings UI for Pawn Diary. This partial class owns the immediate-mode controls for
 // endpoint rows, while ApiConnectionController owns the async fetch/test state behind the buttons.
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -14,6 +15,12 @@ namespace PawnDiary
         // ApiEndpointConfig instance so the choice survives row reordering, and defaulting to absent
         // means every key starts masked. Session-only UI state; never saved.
         private static readonly HashSet<ApiEndpointConfig> revealedApiKeys = new HashSet<ApiEndpointConfig>();
+
+        // Last-seen connection signature per row (url|apiKey|authMode|customAuthHeaderName), keyed by
+        // the ApiEndpointConfig instance so it survives reordering. Compared each frame to detect
+        // when a player edits the URL/key/auth of a configured row, so a background capability
+        // refresh fires once per change rather than per keystroke. Session-only UI state; never saved.
+        private static readonly Dictionary<ApiEndpointConfig, string> lastSeenRowSignature = new Dictionary<ApiEndpointConfig, string>();
 
         /// <summary>
         /// Draws the list of API lanes in a compact, collapsible block. Each row stores one
@@ -59,14 +66,29 @@ namespace PawnDiary
                     continue;
                 }
 
+                // Detect a change to this row's URL/key/auth since the previous frame and fire a
+                // background capability refresh once per change. First sight of a row just records
+                // its signature without firing (the settings-open trigger already covers uncached
+                // rows on first draw, so this avoids a redundant burst).
+                MaybeRefreshCapabilityOnRowChange(i, endpoint);
+
                 DrawCompactApiEndpointRow(listing, i, endpoint, ref removeIndex, ref moveIndex, ref moveDelta);
             }
 
             if (removeIndex >= 0)
             {
+                ApiEndpointConfig removed = removeIndex < Settings.apiEndpoints.Count
+                    ? Settings.apiEndpoints[removeIndex]
+                    : null;
                 Settings.apiEndpoints.RemoveAt(removeIndex);
                 // A removed row shifts indices, so any pending fetch/test result no longer maps cleanly.
                 apiConnectionController.CancelUiState();
+                // Drop the removed row's change-detection snapshot so it is not retained.
+                if (removed != null)
+                {
+                    lastSeenRowSignature.Remove(removed);
+                    revealedApiKeys.Remove(removed);
+                }
             }
             else if (moveIndex >= 0 && moveDelta != 0)
             {
@@ -98,6 +120,47 @@ namespace PawnDiary
 
             listing.Gap(6f);
             DrawRequestTuningBlock(listing);
+        }
+
+        /// <summary>
+        /// Fires a background capability refresh once when a row's URL/key/auth signature changes,
+        /// so editing a configured row re-fetches its reasoning capability without a manual Fetch
+        /// click. First sight of a row records the signature without firing (the settings-open
+        /// trigger already refreshes uncached rows, avoiding a redundant burst on first draw).
+        /// </summary>
+        private void MaybeRefreshCapabilityOnRowChange(int index, ApiEndpointConfig endpoint)
+        {
+            string signature = RowConnectionSignature(endpoint);
+            lastSeenRowSignature.TryGetValue(endpoint, out string previous);
+
+            if (previous == null)
+            {
+                // First frame for this row: just record, don't fire.
+                lastSeenRowSignature[endpoint] = signature;
+                return;
+            }
+
+            if (string.Equals(previous, signature, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            // Signature changed: record the new one and fire one background refresh. Requires a
+            // non-blank URL; a row still being typed into is skipped until it has a real endpoint.
+            lastSeenRowSignature[endpoint] = signature;
+            if (!string.IsNullOrWhiteSpace(endpoint.url))
+            {
+                apiConnectionController.RefreshCapability(index);
+            }
+        }
+
+        /// <summary>The connection-identity fields whose change should re-fetch capability.</summary>
+        private static string RowConnectionSignature(ApiEndpointConfig endpoint)
+        {
+            return (endpoint.url ?? string.Empty)
+                + "|" + (endpoint.apiKey ?? string.Empty)
+                + "|" + endpoint.authMode
+                + "|" + (endpoint.customAuthHeaderName ?? string.Empty);
         }
 
         /// <summary>
@@ -252,7 +315,11 @@ namespace PawnDiary
             {
                 y += lineHeight + gap;
                 Rect advancedRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-                DrawApiAdvancedRow(advancedRect, endpoint, 94f);
+                DrawApiAdvancedRow(advancedRect, index, endpoint, 94f);
+
+                y += lineHeight + gap;
+                Rect tagRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+                DrawReasoningTagRow(tagRect, endpoint, 94f);
             }
 
             // Show statuses inside the framed lane so they cannot push later controls sideways.
@@ -328,7 +395,7 @@ namespace PawnDiary
         /// </summary>
         private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, int statusLineCount)
         {
-            float height = HasApiAdvancedRow(endpoint) ? 247f : 214f;
+            float height = HasApiAdvancedRow(endpoint) ? 280f : 214f;
             return height + (Mathf.Max(0, statusLineCount) * 26f);
         }
 
@@ -438,13 +505,29 @@ namespace PawnDiary
             }
         }
 
-        /// <summary>Draws the small mode-specific option row for OpenAI-compatible reasoning effort.</summary>
-        private static void DrawApiAdvancedRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        /// <summary>
+        /// Draws the small mode-specific option row for OpenAI-compatible reasoning effort. The
+        /// full effort ladder is ALWAYS offered so that a misparsed capability object (or a provider
+        /// returning a partial/odd reasoning shape) can never hide the options a player expects --
+        /// graceful degradation to today's behavior. Capability only contributes an ADVISORY tooltip
+        /// describing what the model supports; the outgoing request is clamped separately in
+        /// LlmClient.BuildRequestJson, so the dropdown never needs to gate.
+        /// </summary>
+        private void DrawApiAdvancedRow(Rect rect, int index, ApiEndpointConfig endpoint, float labelWidth)
         {
             Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
             Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
 
             Widgets.LabelFit(labelRect, "PawnDiary.Settings.ReasoningEffort".Translate());
+
+            // Capability may be null (provider does not advertise reasoning) -- that is the normal
+            // case for OpenAI-direct and local GGUF servers, and means "behave exactly as before".
+            ModelReasoningCapability capability = apiConnectionController.ModelCapabilityForRow(index);
+            if (capability != null)
+            {
+                TooltipHandler.TipRegion(rect, ReasoningCapabilityTooltip(capability));
+            }
+
             if (Widgets.ButtonText(buttonRect, ReasoningEffortLabel(endpoint.reasoningEffort).Translate()))
             {
                 List<FloatMenuOption> options = new List<FloatMenuOption>();
@@ -457,6 +540,28 @@ namespace PawnDiary
                 AddReasoningOption(options, endpoint, "xhigh");
                 Find.WindowStack.Add(new FloatMenu(options));
             }
+        }
+
+        /// <summary>Returns the localized tooltip text describing one model's reasoning capability,
+        /// or null when no tooltip should be shown.</summary>
+        private static string ReasoningCapabilityTooltip(ModelReasoningCapability capability)
+        {
+            if (capability == null)
+            {
+                return null;
+            }
+
+            if (!capability.Supported)
+            {
+                return "PawnDiary.Settings.ReasoningUnsupportedTip".Translate();
+            }
+
+            if (capability.SupportedEfforts == null || capability.SupportedEfforts.Count == 0)
+            {
+                return "PawnDiary.Settings.ReasoningSupportedGenericTip".Translate();
+            }
+
+            return "PawnDiary.Settings.ReasoningSupportedTip".Translate(string.Join(", ", capability.SupportedEfforts.ToArray()));
         }
 
         private static void AddReasoningOption(List<FloatMenuOption> options, ApiEndpointConfig endpoint, string effort)
@@ -485,6 +590,64 @@ namespace PawnDiary
                     return "PawnDiary.Settings.ReasoningEffort.XHigh";
                 default:
                     return "PawnDiary.Settings.ReasoningEffort.Default";
+            }
+        }
+
+        /// <summary>
+        /// Draws the per-row reasoning-tag picker. "Auto" keeps the built-in broad reasoning-tag
+        /// detection; picking a specific tag additionally strips that wrapper if a model leaks its
+        /// private thinking into the diary text. Mirrors the reasoning-effort row layout.
+        /// </summary>
+        private static void DrawReasoningTagRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ReasoningTag".Translate());
+            TooltipHandler.TipRegion(labelRect, "PawnDiary.Settings.ReasoningTagTip".Translate());
+            if (Widgets.ButtonText(buttonRect, ReasoningTagLabel(endpoint.reasoningTag).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>();
+                AddReasoningTagOption(options, endpoint, PawnDiarySettings.DefaultReasoningTag);
+                AddReasoningTagOption(options, endpoint, "think");
+                AddReasoningTagOption(options, endpoint, "thinking");
+                AddReasoningTagOption(options, endpoint, "reasoning");
+                AddReasoningTagOption(options, endpoint, "analysis");
+                AddReasoningTagOption(options, endpoint, "thought");
+                AddReasoningTagOption(options, endpoint, "reflection");
+                AddReasoningTagOption(options, endpoint, "scratchpad");
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private static void AddReasoningTagOption(List<FloatMenuOption> options, ApiEndpointConfig endpoint, string tag)
+        {
+            options.Add(new FloatMenuOption(ReasoningTagLabel(tag).Translate(), delegate
+            {
+                endpoint.reasoningTag = PawnDiarySettings.NormalizeReasoningTag(tag);
+            }));
+        }
+
+        private static string ReasoningTagLabel(string tag)
+        {
+            switch (PawnDiarySettings.NormalizeReasoningTag(tag))
+            {
+                case "think":
+                    return "PawnDiary.Settings.ReasoningTag.Think";
+                case "thinking":
+                    return "PawnDiary.Settings.ReasoningTag.Thinking";
+                case "reasoning":
+                    return "PawnDiary.Settings.ReasoningTag.Reasoning";
+                case "analysis":
+                    return "PawnDiary.Settings.ReasoningTag.Analysis";
+                case "thought":
+                    return "PawnDiary.Settings.ReasoningTag.Thought";
+                case "reflection":
+                    return "PawnDiary.Settings.ReasoningTag.Reflection";
+                case "scratchpad":
+                    return "PawnDiary.Settings.ReasoningTag.Scratchpad";
+                default:
+                    return "PawnDiary.Settings.ReasoningTag.Auto";
             }
         }
 

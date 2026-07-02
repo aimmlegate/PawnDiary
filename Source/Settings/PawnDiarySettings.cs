@@ -36,6 +36,10 @@ namespace PawnDiary
         public ApiCompatibilityMode apiMode = ApiCompatibilityMode.OpenAIChatCompletions;
         // OpenAI Responses reasoning effort. "default" means omit the reasoning object entirely.
         public string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
+        // Reasoning-tag override for the response stripper. "auto" = built-in broad tag detection;
+        // any other known tag (think/thinking/reasoning/analysis/thought/reflection/scratchpad) is
+        // ALSO stripped so exotic wrappers a model emits do not leak into saved diary text.
+        public string reasoningTag = PawnDiarySettings.DefaultReasoningTag;
 
         public ApiEndpointConfig()
         {
@@ -60,7 +64,8 @@ namespace PawnDiary
                 authMode = authMode,
                 customAuthHeaderName = customAuthHeaderName,
                 apiMode = apiMode,
-                reasoningEffort = reasoningEffort
+                reasoningEffort = reasoningEffort,
+                reasoningTag = reasoningTag
             };
         }
 
@@ -75,6 +80,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref enabled, "enabled", true);
             Scribe_Values.Look(ref apiMode, "apiMode", ApiCompatibilityMode.OpenAIChatCompletions);
             Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
+            Scribe_Values.Look(ref reasoningTag, "reasoningTag", PawnDiarySettings.DefaultReasoningTag);
         }
     }
 
@@ -177,6 +183,9 @@ namespace PawnDiary
         public const string DefaultModelName = "local-model";
         // Sentinel value stored in settings to mean "do not send a reasoning override".
         public const string DefaultReasoningEffort = ApiEndpointPolicy.DefaultReasoningEffort;
+        // Sentinel value stored in settings to mean "use built-in reasoning-tag detection". Any
+        // other known tag adds that wrapper to the stripper's tag list (see ApiEndpointPolicy).
+        public const string DefaultReasoningTag = ApiEndpointPolicy.DefaultReasoningTag;
         // Per-pawn hot diary-history retention cap. Hot rows keep full generation/retry state, so keep
         // this deliberately small and let older displayable pages compact into the archive.
         public const int DefaultMaxActiveDiaryEvents = 100;
@@ -443,6 +452,7 @@ namespace PawnDiary
                 endpoint.authMode = NormalizeAuthMode(endpoint.authMode);
                 endpoint.apiMode = NormalizeApiMode(endpoint.apiMode);
                 endpoint.reasoningEffort = NormalizeReasoningEffort(endpoint.reasoningEffort);
+                endpoint.reasoningTag = NormalizeReasoningTag(endpoint.reasoningTag);
             }
         }
 
@@ -492,6 +502,15 @@ namespace PawnDiary
         public static string NormalizeReasoningEffort(string effort)
         {
             return ApiEndpointPolicy.NormalizeReasoningEffort(effort);
+        }
+
+        /// <summary>
+        /// Keeps the saved reasoning-tag value to the known set, falling back to "auto" (built-in
+        /// broad detection) when the saved value is blank or unrecognized.
+        /// </summary>
+        public static string NormalizeReasoningTag(string tag)
+        {
+            return ApiEndpointPolicy.NormalizeReasoningTag(tag);
         }
 
         /// <summary>Normalizes invalid routing enum values loaded from hand-edited settings.</summary>

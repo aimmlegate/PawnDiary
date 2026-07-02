@@ -21,6 +21,12 @@ namespace PawnDiary
         // title in this settings window. A plain button row gives exact layout control.
         private const float SettingsTabHeight = 32f;
 
+        // One-shot gate: refreshes reasoning capability for uncached rows the first time the settings
+        // window draws, so a returning player's lanes get effort clamping without a manual Fetch.
+        // The settings window instance lives for the open session, so a single bool is enough; a
+        // freshly opened window re-runs the refresh.
+        private bool capabilityRefreshedOnOpen;
+
         /// <summary>
         /// Draws the settings window behind a compact tab button row.
         /// Main holds connection/generation basics, Prompts holds all prompt editing, Styles holds
@@ -32,6 +38,15 @@ namespace PawnDiary
             Settings.personaPresets.EnsureList();
             // Apply any completed async API-tool results on the main thread before drawing rows.
             apiConnectionController.ApplyPendingResults();
+
+            // One-shot on open: refresh reasoning capability for any configured row whose (endpoint,
+            // model) capability is not yet cached. Best-effort background refresh; providers that do
+            // not advertise capability cache nothing and degrade gracefully.
+            if (!capabilityRefreshedOnOpen)
+            {
+                capabilityRefreshedOnOpen = true;
+                apiConnectionController.RefreshCapabilityForUncachedRows();
+            }
 
             Rect pageRect = DrawSettingsTabButtons(inRect);
             switch (settingsTab)
