@@ -23,6 +23,43 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   `integrations/PawnDiary.ExampleAdapter/` (own About.xml/csproj/GameComponent/group XML), with
   `scripts/deploy-integrations.ps1` to copy adapters to the RimWorld `Mods/` root during
   development.
+- **The revealed-metalhorror prompt override now lasts the whole threat and no longer.** The
+  `MetalhorrorEmergence` observed condition biases diary prompts away from ordinary health/mood context
+  while a visible metalhorror is on the map. Its end trigger is the live `Metalhorror` ThingDef leaving
+  `ListerThings`, which is reliable: when a metalhorror dies it becomes a `Corpse_Entity` (a different
+  def), so `ThingsOfDef(Metalhorror)` stops matching and the override releases shortly after the kill.
+  The earlier fix gave this condition a 2-day `maxActiveTicks` cap as a blunt band-aid against lingering
+  remnants — but that cap also cut the override off mid-rampage for any metalhorror situation lasting more
+  than two in-game days, which was the opposite of what was wanted. The cap is removed; the natural
+  death-trigger is now the only end path, so a multi-day rampage keeps the override live until the
+  metalhorror actually dies.
+- **Added a hidden-infection "insurance" tone for the post-kill metalhorror situation.** Killing the one
+  emerged metalhorror often does not end the threat: metalhorror infects multiple colonists and emerges
+  from a single host at roughly half-colony infection, so others can still be carrying the implant
+  silently. A new `MetalhorrorInfection` observed condition, backed by a new `MapHiddenHediff` observer
+  type, senses "is any home-map colonist infected?" as a map-level boolean and keeps a softer dread-tone
+  override alive until the colony is genuinely clean. The observer is tone-only by contract — it emits an
+  empty evidence label and the prompt prose never names a hediff or a host — so the hidden mechanic stays
+  hidden. This is the first observer that intentionally senses hidden pawn state; the existing `PawnHediff`
+  observer still skips hidden hediffs and is unchanged. DLC-safe: matched by plain defName string, inert
+  without Anomaly. (New observer covered by `TestObservedConditionDecayXmlPolicy`; DOCUMENTATION §5.1.)
+- **The Test connection button stopped freezing every other API row while one test ran.** Each row's
+  Test button now runs independently: clicking Test on row B while row A is still testing starts B
+  immediately, and each row shows its own "Testing…"/success/failure status line. Previously a single
+  global in-flight flag blocked every row's button until the one running test finished — a
+  pre-existing limit that became visible once the Gemma `none`-effort fix (below) made tests actually
+  succeed and hold that flag for the full request duration. `ApiConnectionController` now keeps
+  per-row state with a per-row generation counter for stale-result rejection and a thread-safe
+  `ConcurrentQueue` result handoff drained each UI frame. The Fetch-models button on the same screen
+  is still single-flight global and unchanged. (DOCUMENTATION §8.)
+- **Gemma (and other non-reasoning models) stopped failing Chat Completions lanes set to
+  Reasoning → None.** The Chat Completions request body now omits `reasoning_effort` when the saved
+  effort is `none`, matching how `default` already behaves. Previously the serializer sent
+  `reasoning_effort:"none"`, which OpenAI-compatible gateways translate into a thinking-budget
+  request that non-reasoning models reject — e.g. Google's endpoint returned HTTP 400 "Thinking
+  budget is not supported for this model." for `models/gemma-4-*`. OpenAI Responses mode is
+  unchanged, since `none` is a real, server-honored wire value there. (Pure test in
+  `DiaryPipelineTests`; DOCUMENTATION §8 documents the per-mode serialization rule.)
 - **Pre-release performance pass removed two hitch/garbage sources.** The open Diary tab no longer
   re-measures every expanded card on each periodic pawn-name-highlight refresh: the highlight
   version (which invalidates the card-height cache and row layout) now advances only when the

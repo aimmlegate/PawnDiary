@@ -523,9 +523,11 @@ namespace PawnDiary
 
         private void DrawConnectionTestButton(Rect rect, int index)
         {
-            bool testingThis = apiConnectionController.IsTestingConnection && apiConnectionController.ConnectionTestTargetIndex == index;
+            // Per-row gate: only this row's own test blocks its own button, so testing one row never
+            // freezes the others. Each row tracks its own in-flight state in the controller.
+            bool testingThis = apiConnectionController.IsTestingConnection(index);
             string label = testingThis ? "PawnDiary.Settings.TestingConnection" : "PawnDiary.Settings.TestConnection";
-            if (ButtonTextFit(rect, label.Translate()) && !apiConnectionController.IsTestingConnection)
+            if (ButtonTextFit(rect, label.Translate()) && !testingThis)
             {
                 apiConnectionController.TestApiConnection(index);
             }

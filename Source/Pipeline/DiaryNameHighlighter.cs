@@ -61,6 +61,14 @@ namespace PawnDiary
         /// false, which is the safe direction: a wrong "changed" only costs one redundant re-measure,
         /// while a wrong "same" would leave stale highlight markup on screen.
         /// </summary>
+        /// <remarks>
+        /// The duplicate-name case is deliberately one-sided: a duplicate in the LEFT list short-
+        /// circuits to false even when the right list is identical, because building a name->color
+        /// index over a duplicate name is itself ambiguous. This only matters transiently (two pawns
+        /// share a name mid-rename): until the duplicate clears, the periodic refresh keeps forcing a
+        /// re-measure rather than risk matching the wrong pawn's color. Do not "tighten" this into a
+        /// true match — that would be the wrong-direction change described above.
+        /// </remarks>
         public static bool SameHighlights(List<DiaryNameHighlight> left, List<DiaryNameHighlight> right)
         {
             if (ReferenceEquals(left, right))

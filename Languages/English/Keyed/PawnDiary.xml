@@ -973,6 +973,11 @@
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>a metalhorror that has revealed itself</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>the hidden thing has finally shown itself and the danger is now open and immediate; write only what the pawn can see of the revealed threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>open threat</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>color normal context with a low dread that the colony is not yet safe</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition>a sense that the threat may not be over</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description>the visible threat is gone but something still feels unresolved; write ordinary life with a quiet background unease and distrust, never naming a hidden mechanic, who might be affected, or a diagnosis</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>quiet dread</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>faces still feel off</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>
 
   <!-- Pawn progression and rare yearly arc reflections -->
   <PawnDiary.Event.ProgressionPassionMajor>major passion</PawnDiary.Event.ProgressionPassionMajor>

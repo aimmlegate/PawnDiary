@@ -24,6 +24,12 @@ namespace PawnDiary
         ThingPresent,
         // Active while a matching visible hediff is present on a colonist (pawn-scoped).
         PawnHediff,
+        // Active while ANY home-map colonist carries a matching hediff INCLUDING hidden ones, sensed as a
+        // single map-level boolean. Tone-only by contract: the collector never feeds the hediff/host into
+        // evidence, so a Def can read hidden state (e.g. an undiscovered infection) to color prompts
+        // WITHOUT revealing the hidden mechanic. Use only with matchDefNames; treat the result as "the
+        // colony is/isn't in this state", not "who has it".
+        MapHiddenHediff,
         // Bounded fallback: a recent signal/letter, given a TTL and labelled "recent evidence".
         // Defined for completeness; no live scanner feeds it yet (see DOCUMENTATION.md §5.1).
         RecentEvidence

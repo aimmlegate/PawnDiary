@@ -973,6 +973,11 @@
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>металлоужас раскрылся</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Condition>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>скрытая тварь наконец показала себя, и опасность теперь открыта и непосредственна; пиши только то, что поселенец видит у раскрытой угрозы</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>открытая угроза</PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>окрась обычный контекст тихим предчувствием, что колонии ещё не безопасно</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition>ощущение, что угроза, возможно, ещё не закончилась</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description>видимая угроза исчезла, но что-то всё ещё кажется незавершённым; пиши обычную жизнь с тихой фоновой тревогой и недоверием, не называя скрытую механику, кого именно это может касаться, или диагноз</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>тихая тревога</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>
+  <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>лица всё ещё кажутся чужими</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>
 
   <PawnDiary.Ctx.Opinion>отношение {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>потому что {0}</PawnDiary.Ctx.Because>
