@@ -162,6 +162,9 @@ namespace PawnDiary
                 case ObservedConditionObserverType.PawnHediff:
                     CollectPawnHediffObservations(def, observations);
                     break;
+                case ObservedConditionObserverType.MapHiddenHediff:
+                    CollectMapHiddenHediffObservations(def, observations);
+                    break;
                 case ObservedConditionObserverType.RecentEvidence:
                     // No live feed yet (see DOCUMENTATION.md §5.1). Intentionally a no-op.
                     break;
@@ -395,6 +398,85 @@ namespace PawnDiary
                             hediff.def.defName, label, 1));
                         break; // one observation per pawn.
                     }
+                }
+            }
+        }
+
+        // Map-scoped hidden-hediff reader. Unlike PawnHediff above, this observer intentionally senses
+        // HIDDEN hediffs too (it does not check hediff.Visible). It collapses the whole map to a single
+        // boolean — "does at least one home-map colonist carry a matching hediff?" — and emits ONE
+        // observation per qualifying map with an EMPTY evidence label and count 0. That empty label is the
+        // whole point: the observer is tone-only, used to color prompts with "the colony is in this state"
+        // dread WITHOUT ever revealing which pawn has a hidden hediff or naming the hediff (see
+        // MetalhorrorInfection). Matches by defName via the shared matcher helper so it stays DLC-safe:
+        // matchDefNames entries that resolve to nothing under GetNamedSilentFail simply never match.
+        private void CollectMapHiddenHediffObservations(DiaryObservedConditionDef def,
+            List<ObservedConditionObservation> observations)
+        {
+            if (IsMatcherListEmpty(def.matchDefNames)
+                && IsMatcherListEmpty(def.matchDefNameContains)
+                && IsMatcherListEmpty(def.matchLabels))
+            {
+                return;
+            }
+
+            List<Map> maps = Find.Maps;
+            for (int i = 0; i < maps.Count; i++)
+            {
+                Map map = maps[i];
+                if (!MapEligible(def, map) || map.mapPawns == null)
+                {
+                    continue;
+                }
+
+                List<Pawn> colonists = map.mapPawns.FreeColonists;
+                if (colonists == null)
+                {
+                    continue;
+                }
+
+                bool anyInfected = false;
+                for (int p = 0; p < colonists.Count; p++)
+                {
+                    Pawn pawn = colonists[p];
+                    if (!IsHumanlike(pawn) || pawn.health == null || pawn.health.hediffSet == null)
+                    {
+                        continue;
+                    }
+
+                    List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+                    if (hediffs == null)
+                    {
+                        continue;
+                    }
+
+                    for (int h = 0; h < hediffs.Count; h++)
+                    {
+                        Hediff hediff = hediffs[h];
+                        if (hediff == null || hediff.def == null)
+                        {
+                            continue;
+                        }
+
+                        // NOTE: deliberately no hediff.Visible gate — this observer's contract is to sense
+                        // hidden state. Reveal-protection lives at the evidence-label level (empty here).
+                        if (MatchesObservedConditionDef(def, hediff.def.defName, hediff.LabelCap))
+                        {
+                            anyInfected = true;
+                            break;
+                        }
+                    }
+
+                    if (anyInfected)
+                    {
+                        break; // one match is enough — this is a map-level boolean, not a per-pawn count.
+                    }
+                }
+
+                if (anyInfected)
+                {
+                    // Empty firstDefName + empty evidenceLabel + count 0: presence is the only signal.
+                    observations.Add(NewObservation(def, map.uniqueID, null, string.Empty, string.Empty, 0));
                 }
             }
         }

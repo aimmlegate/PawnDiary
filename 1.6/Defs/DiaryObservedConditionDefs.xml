@@ -193,6 +193,14 @@
     <pollIntervalTicks>2500</pollIntervalTicks>
     <startDebounceTicks>0</startDebounceTicks>
     <endDebounceTicks>5000</endDebounceTicks>
+    <!-- No maxActiveTicks/restartCooldownTicks here, on purpose. This observer's end trigger is the live
+         Metalhorror ThingDef leaving map.listerThings, and that trigger is reliable: when a metalhorror
+         dies it becomes a Corpse_Entity (a different def), so ThingsOfDef(Metalhorror) stops matching and
+         the end-debounce releases the override shortly after the kill. That lets a multi-day rampage keep
+         the override live as long as any metalhorror is actually on the map. The separate cap-and-cooldown
+         safety net IS still needed on AnomalyGrayFleshEvidence, because gray-flesh samples can linger as
+         plain items after the situation resolves; see MetalhorrorInfection below for the post-emergence
+         "still infected colonists" case. -->
     <matchDefNames>
       <li>Metalhorror</li>
     </matchDefNames>
@@ -212,6 +220,55 @@
     <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Description</promptDescriptionKey>
     <promptCueKeys>
       <li>PawnDiary.Prompt.ObservedCondition.MetalhorrorEmergence.Cue.Threat</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryObservedConditionDef>
+
+  <!-- Pass 8: hidden-infection "insurance" tone. MetalhorrorInfection (the hidden host hediff) is
+       intentionally NOT revealed by PawnHediff (that observer skips hidden hediffs on purpose), but the
+       metalhorror situation is not over just because the visible entity was killed: one metalhorror
+       emerged from ONE host at roughly 50% colony infection, so other colonists can still be carrying the
+       implant silently. This MapHiddenHediff observer senses that state as a single map-level boolean
+       (is ANY home-map colonist infected?) WITHOUT ever naming a host or surfacing the hediff to the
+       player or the LLM — it is a tone-only dread that the colony is not yet safe. It keeps the override
+       alive after a kill while infection lingers, and releases cleanly when the colony is genuinely clean
+       (a cured-or-dead host's hediffSet is really empty, so no cap is needed here). matchDefName is
+       Anomaly content, so this whole def is inert without the Anomaly DLC. -->
+  <PawnDiary.DiaryObservedConditionDef>
+    <defName>MetalhorrorInfection</defName>
+    <label>hidden imitator infection</label>
+    <conditionKey>MetalhorrorInfection</conditionKey>
+    <enabled>true</enabled>
+    <scope>Map</scope>
+    <observerType>MapHiddenHediff</observerType>
+    <pollIntervalTicks>2500</pollIntervalTicks>
+    <startDebounceTicks>0</startDebounceTicks>
+    <endDebounceTicks>10000</endDebounceTicks>
+    <includeHomeMapsOnly>true</includeHomeMapsOnly>
+    <!-- Tone-only: never feed the hediff label into the prompt. The dread is the cue, not the diagnosis. -->
+    <maxEvidenceLabels>0</maxEvidenceLabels>
+    <matchDefNames>
+      <li>MetalhorrorImplant</li>
+    </matchDefNames>
+
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordScope>MapColonists</recordScope>
+    <colorCue>extremeDark</colorCue>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>40</promptWeight>
+    <!-- Suppress ordinary context while the colony is not yet clean, but softer than the open-threat
+         override (which has weight 60). The two can overlap: while a metalhorror rampages AND colonists
+         are infected, both fire and the stronger (Emergence) candidate wins the weighted pick. -->
+    <normalPromptWeightMultiplier>0.3</normalPromptWeightMultiplier>
+    <promptDecayTicks>60000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.5</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread</li>
+      <li>PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust</li>
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 

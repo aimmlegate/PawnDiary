@@ -956,6 +956,42 @@ namespace DiaryPipelineTests
             AssertEqual("gray flesh evidence label hidden", "0", ChildValue(grayFlesh, "maxEvidenceLabels"));
             AssertTrue("gray flesh suppresses on metalhorror", HasListValue(grayFlesh, "suppressWhenThingDefNames", "Metalhorror"));
 
+            // The revealed-threat handoff. MetalhorrorEmergence intentionally has NO maxActiveTicks /
+            // restartCooldownTicks: its end trigger (the live Metalhorror ThingDef leaving listerThings) is
+            // reliable, because a dead metalhorror becomes a Corpse_Entity (a different def) and stops
+            // matching. That lets a multi-day rampage keep the override live until the metalhorror actually
+            // dies. The cap-and-cooldown safety net stays on gray-flesh only, where samples can linger as
+            // plain items. Regression guard for the "override cut off mid-rampage" regression.
+            XElement metalhorror = FindDef(
+                observedConditions,
+                "PawnDiary.DiaryObservedConditionDef",
+                "MetalhorrorEmergence");
+            AssertTrue("metalhorror emergence observed condition exists", metalhorror != null);
+            if (metalhorror != null)
+            {
+                AssertEqual("metalhorror emergence has NO artificial cap", string.Empty, ChildValue(metalhorror, "maxActiveTicks"));
+                AssertEqual("metalhorror emergence has NO restart cooldown", string.Empty, ChildValue(metalhorror, "restartCooldownTicks"));
+                AssertEqual("metalhorror emergence matches the live entity", "Metalhorror", ChildValue(metalhorror, "matchDefNames"));
+            }
+
+            // Post-emergence insurance: while any colonist still carries the hidden MetalhorrorImplant
+            // hediff, a tone-only dread keeps coloring prompts even after the visible metalhorror is dead.
+            // This is a MapHiddenHediff observer (senses hidden state as a map-level boolean) and, like the
+            // emergence override, has NO cap — a cured-or-dead host's hediffSet is genuinely empty, so the
+            // natural end trigger is reliable and the override must not be artificially cut off.
+            XElement infection = FindDef(
+                observedConditions,
+                "PawnDiary.DiaryObservedConditionDef",
+                "MetalhorrorInfection");
+            AssertTrue("metalhorror infection observed condition exists", infection != null);
+            if (infection != null)
+            {
+                AssertEqual("metalhorror infection uses the hidden-hediff observer", "MapHiddenHediff", ChildValue(infection, "observerType"));
+                AssertEqual("metalhorror infection matches the implant hediff", "MetalhorrorImplant", ChildValue(infection, "matchDefNames"));
+                AssertEqual("metalhorror infection is tone-only (no evidence label)", "0", ChildValue(infection, "maxEvidenceLabels"));
+                AssertEqual("metalhorror infection has NO artificial cap", string.Empty, ChildValue(infection, "maxActiveTicks"));
+            }
+
             XDocument englishKeyed = XDocument.Load(RepoPath("Languages", "English", "Keyed", "PawnDiary.xml"));
             string description = KeyedValue(
                 englishKeyed,
@@ -966,6 +1002,29 @@ namespace DiaryPipelineTests
             AssertTrue(
                 "gray flesh prompt names imitator fear",
                 description.IndexOf("imitat", StringComparison.OrdinalIgnoreCase) >= 0);
+
+            // The infection tone must never name the hediff/host (reveal-protection lives in the prompt
+            // text, not just the empty evidence label), in BOTH shipped languages. The contract is
+            // language-independent: whichever localization the LLM sees, it must not be told the mechanic.
+            string infectionDescription = KeyedValue(
+                englishKeyed,
+                "PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description");
+            AssertTrue(
+                "infection prompt (EN) avoids naming the implant/host",
+                infectionDescription.IndexOf("implant", StringComparison.OrdinalIgnoreCase) < 0
+                    && infectionDescription.IndexOf("host", StringComparison.OrdinalIgnoreCase) < 0);
+            XDocument russianKeyed = XDocument.Load(RepoPath(
+                "Languages", "Russian (Русский)", "Keyed", "PawnDiary.xml"));
+            string infectionDescriptionRu = KeyedValue(
+                russianKeyed,
+                "PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Description");
+            AssertTrue(
+                "infection prompt has Russian mirror",
+                !string.IsNullOrWhiteSpace(infectionDescriptionRu));
+            AssertTrue(
+                "infection prompt (RU) avoids naming the implant/host",
+                infectionDescriptionRu.IndexOf("имплант", StringComparison.OrdinalIgnoreCase) < 0
+                    && infectionDescriptionRu.IndexOf("носител", StringComparison.OrdinalIgnoreCase) < 0);
         }
 
         private static void TestPromptTextSanitizer()

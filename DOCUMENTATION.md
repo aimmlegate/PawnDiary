@@ -345,6 +345,11 @@ Observer types are DLC-safe:
   list `suppressWhenThingDefNames`; if any of those spawned thing defs are present on the same map,
   that Def reports no observation and the normal end-debounce path resolves its active state.
 - `PawnHediff`: visible pawn hediffs only; hidden hediffs are skipped.
+- `MapHiddenHediff`: senses whether ANY home-map colonist carries a matching hediff **including hidden
+  ones**, collapsed to a single map-level boolean. Tone-only by contract — the collector emits an empty
+  evidence label and never names the hediff or a host, so a Def can color prompts with "the colony is in
+  this hidden state" dread without revealing the hidden mechanic. This is how `MetalhorrorInfection`
+  senses an undiscovered infection.
 - `RecentEvidence`: reserved, currently no-op.
 
 Prompt influence from lasting sources is age-aware. `DiaryEventWindowDef` and
@@ -363,7 +368,22 @@ Shipped notable defs:
   imitate people. It decays over time, is suppressed once a visible metalhorror or metalhorror debris
   appears, and force-stops with a restart cooldown if no emergence happens, so lingering evidence
   cannot keep or immediately reactivate suspicion forever.
-- `MetalhorrorEmergence`: enabled map-scoped observer for the spawned visible `Metalhorror` ThingDef.
+- `MetalhorrorEmergence`: enabled map-scoped observer for the spawned visible `Metalhorror` ThingDef. It
+  has **no** `maxActiveTicks` cap — its natural end trigger is reliable: when a metalhorror dies it
+  becomes a `Corpse_Entity` (a different def), so `ThingsOfDef(Metalhorror)` stops matching and the end
+  debounce releases the `normalPromptWeightMultiplier=0` override shortly after the kill. That lets a
+  multi-day rampage keep the override live as long as the metalhorror is actually on the map. The cap and
+  cooldown that `AnomalyGrayFleshEvidence` carries are intentionally absent here, because the lingering
+  plain-item problem those guard against does not apply to a dead entity.
+- `MetalhorrorInfection`: enabled map-scoped `MapHiddenHediff` observer for the hidden `MetalhorrorImplant`
+  hediff. The metalhorror situation often is not over once the visible entity is killed — one metalhorror
+  emerges from one host at roughly half-colony infection, so other colonists can still be carrying the
+  implant silently. This condition senses "is any home-map colonist infected?" as a map-level boolean and
+  keeps a softer dread-tone override alive until the colony is genuinely clean. It is tone-only by
+  contract: the collector emits an empty evidence label and the prompt prose never names a hediff or a
+  host, so the hidden mechanic is never revealed. Like emergence it carries no cap, because a cured-or-dead
+  host's `hediffSet` is genuinely empty. While a metalhorror rampages and colonists are also infected,
+  both conditions fire and the stronger (Emergence) candidate wins the weighted pick.
 
 Page recording is transactional: start/end state is committed only after a page is actually written.
 `ConfigErrors` rejects `recordScope=SubjectPawn` unless `scope=Pawn`.

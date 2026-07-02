@@ -6,6 +6,26 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **The revealed-metalhorror prompt override now lasts the whole threat and no longer.** The
+  `MetalhorrorEmergence` observed condition biases diary prompts away from ordinary health/mood context
+  while a visible metalhorror is on the map. Its end trigger is the live `Metalhorror` ThingDef leaving
+  `ListerThings`, which is reliable: when a metalhorror dies it becomes a `Corpse_Entity` (a different
+  def), so `ThingsOfDef(Metalhorror)` stops matching and the override releases shortly after the kill.
+  The earlier fix gave this condition a 2-day `maxActiveTicks` cap as a blunt band-aid against lingering
+  remnants — but that cap also cut the override off mid-rampage for any metalhorror situation lasting more
+  than two in-game days, which was the opposite of what was wanted. The cap is removed; the natural
+  death-trigger is now the only end path, so a multi-day rampage keeps the override live until the
+  metalhorror actually dies.
+- **Added a hidden-infection "insurance" tone for the post-kill metalhorror situation.** Killing the one
+  emerged metalhorror often does not end the threat: metalhorror infects multiple colonists and emerges
+  from a single host at roughly half-colony infection, so others can still be carrying the implant
+  silently. A new `MetalhorrorInfection` observed condition, backed by a new `MapHiddenHediff` observer
+  type, senses "is any home-map colonist infected?" as a map-level boolean and keeps a softer dread-tone
+  override alive until the colony is genuinely clean. The observer is tone-only by contract — it emits an
+  empty evidence label and the prompt prose never names a hediff or a host — so the hidden mechanic stays
+  hidden. This is the first observer that intentionally senses hidden pawn state; the existing `PawnHediff`
+  observer still skips hidden hediffs and is unchanged. DLC-safe: matched by plain defName string, inert
+  without Anomaly. (New observer covered by `TestObservedConditionDecayXmlPolicy`; DOCUMENTATION §5.1.)
 - **The Test connection button stopped freezing every other API row while one test ran.** Each row's
   Test button now runs independently: clicking Test on row B while row A is still testing starts B
   immediately, and each row shows its own "Testing…"/success/failure status line. Previously a single
