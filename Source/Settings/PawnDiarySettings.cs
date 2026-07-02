@@ -670,12 +670,17 @@ namespace PawnDiary
 
         /// <summary>
         /// Checks whether an interaction group is enabled. Event filters are XML-only now, so saved
-        /// groupEnabled values from older settings files are ignored.
+        /// groupEnabled values from older settings files are ignored. Both package gates apply here:
+        /// a group goes quiet when a replacement mod is loaded (disableWhenPackageIdsLoaded) or when
+        /// it is a compatibility pack whose target mod is absent (enableWhenPackageIdsLoaded).
         /// </summary>
         public bool IsGroupEnabled(string groupKey)
         {
             DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
-            return group != null && group.defaultEnabled && !group.DisabledByLoadedPackage();
+            return group != null
+                && group.defaultEnabled
+                && !group.DisabledByLoadedPackage()
+                && !group.MissingRequiredPackage();
         }
 
         /// <summary>

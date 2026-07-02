@@ -48,6 +48,11 @@ namespace PawnDiary.Capture
         // Ability: successful pawn Ability.Activate calls. Short-cooldown abilities are sampled
         // less often than long-cooldown abilities to avoid spam.
         Ability,
+        // External: events pushed by OTHER MODS through the public integration API
+        // (PawnDiary.Integration.PawnDiaryApi.SubmitEvent). We never hook the other mod ourselves;
+        // an adapter mod calls the API with a stable eventKey string, and External-domain
+        // DiaryInteractionGroupDefs (usually shipped by the adapter) own the prompt policy.
+        External,
 
         // ── Planned future sources (placeholders only — NOT implemented yet) ──
         // No known live RecordX source remains to migrate; batch/ambient flushers are route sinks.
