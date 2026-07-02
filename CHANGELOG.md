@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Gemma (and other non-reasoning models) stopped failing Chat Completions lanes set to
+  Reasoning → None.** The Chat Completions request body now omits `reasoning_effort` when the saved
+  effort is `none`, matching how `default` already behaves. Previously the serializer sent
+  `reasoning_effort:"none"`, which OpenAI-compatible gateways translate into a thinking-budget
+  request that non-reasoning models reject — e.g. Google's endpoint returned HTTP 400 "Thinking
+  budget is not supported for this model." for `models/gemma-4-*`. OpenAI Responses mode is
+  unchanged, since `none` is a real, server-honored wire value there. (Pure test in
+  `DiaryPipelineTests`; DOCUMENTATION §8 documents the per-mode serialization rule.)
 - **Pre-release performance pass removed two hitch/garbage sources.** The open Diary tab no longer
   re-measures every expanded card on each periodic pawn-name-highlight refresh: the highlight
   version (which invalidates the card-height cache and row layout) now advances only when the

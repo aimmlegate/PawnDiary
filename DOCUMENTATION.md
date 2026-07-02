@@ -597,6 +597,14 @@ supports Chat and Responses output shapes, strips reasoning/transcript leaks, no
 malformed speech markers (including common `speach` typos and incomplete bracket tags), removes
 model-leaked Unity rich-text angle tags, and trims saved text locally.
 
+Reasoning-effort serialization differs by mode. In OpenAI Responses, every explicit effort
+(`none`/`minimal`/`low`/`medium`/`high`/`xhigh`) is sent as `reasoning.effort`, since the server
+honors `none`. In Chat Completions there is no "off" wire value, so a `none` effort is expressed by
+**omitting** `reasoning_effort` entirely — sending `reasoning_effort:"none"` makes
+OpenAI-compatible gateways try to apply a thinking budget, which non-reasoning models reject (e.g.
+Google's endpoint returns HTTP 400 "Thinking budget is not supported for this model." for Gemma).
+`default` omits the field in both modes.
+
 ## 9. Save Data And Compatibility
 
 `DiaryGameComponent.ExposeData` owns the top-level save shape.

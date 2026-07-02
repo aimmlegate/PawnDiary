@@ -1687,6 +1687,25 @@ namespace DiaryPipelineTests
                 "{\"model\":\"chat\",\"messages\":[{\"role\":\"user\",\"content\":\"Only user\"}],\"temperature\":0.25,\"max_tokens\":8}",
                 chatDefault);
 
+            // "none" means reasoning OFF for Chat Completions. It must be expressed by omitting
+            // the field, not by sending reasoning_effort:"none" -- OpenAI-compatible gateways
+            // (notably Google's, for Gemma) reject that with HTTP 400 "Thinking budget is not
+            // supported for this model." since they try to apply a thinking budget to a
+            // non-reasoning model.
+            string chatNone = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            {
+                apiMode = ApiCompatibilityMode.OpenAIChatCompletions,
+                modelName = "models/gemma-4-26b-a4b-it",
+                rawText = "ping",
+                temperature = 0.5f,
+                maxTokens = 16,
+                reasoningEffort = "none"
+            });
+            AssertEqual(
+                "chat request none reasoning omits field",
+                "{\"model\":\"models/gemma-4-26b-a4b-it\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"temperature\":0.5,\"max_tokens\":16}",
+                chatNone);
+
             string responses = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
             {
                 apiMode = ApiCompatibilityMode.OpenAIResponses,

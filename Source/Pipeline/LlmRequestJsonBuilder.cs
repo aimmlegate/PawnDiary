@@ -57,7 +57,7 @@ namespace PawnDiary
                 + "\"max_tokens\":" + input.maxTokens;
 
             string reasoningEffort = ApiEndpointPolicy.NormalizeReasoningEffort(input.reasoningEffort);
-            if (HasExplicitReasoningEffort(reasoningEffort))
+            if (ShouldEmitChatReasoningEffort(reasoningEffort))
             {
                 json += ",\"reasoning_effort\":\"" + JsonEscape(reasoningEffort) + "\"";
             }
@@ -110,6 +110,26 @@ namespace PawnDiary
         private static bool HasExplicitReasoningEffort(string effort)
         {
             return !string.Equals(ApiEndpointPolicy.NormalizeReasoningEffort(effort), ApiEndpointPolicy.DefaultReasoningEffort, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Whether to emit a <c>reasoning_effort</c> field on a Chat Completions request body.
+        /// Unlike OpenAI Responses (where "none" is a real wire value the server honors),
+        /// Chat Completions has no "off" token: sending <c>reasoning_effort:"none"</c> makes
+        /// OpenAI-compatible gateways try to apply a thinking budget, which non-reasoning models
+        /// reject -- e.g. Google's endpoint returns HTTP 400 "Thinking budget is not supported
+        /// for this model." for Gemma. "None" here means "reasoning off", expressed by omitting
+        /// the field, the same as "default". Other explicit efforts (minimal/low/medium/high/...)
+        /// are still sent so reasoning-capable models on the same lane keep working.
+        /// </summary>
+        private static bool ShouldEmitChatReasoningEffort(string normalizedEffort)
+        {
+            if (!HasExplicitReasoningEffort(normalizedEffort))
+            {
+                return false;
+            }
+
+            return !string.Equals(normalizedEffort, "none", StringComparison.Ordinal);
         }
 
         private static int MaxOutputTokensForRequest(LlmRequestJsonInput input)
