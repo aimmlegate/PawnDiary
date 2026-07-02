@@ -443,10 +443,12 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the small mode-specific option row for OpenAI-compatible reasoning effort. When the
-        /// fetched capability for this row's model is known, the dropdown only offers supported
-        /// efforts and a tooltip explains the model's reasoning support; when unknown (most
-        /// providers), the full effort list is offered exactly as before -- graceful degradation.
+        /// Draws the small mode-specific option row for OpenAI-compatible reasoning effort. The
+        /// full effort ladder is ALWAYS offered so that a misparsed capability object (or a provider
+        /// returning a partial/odd reasoning shape) can never hide the options a player expects --
+        /// graceful degradation to today's behavior. Capability only contributes an ADVISORY tooltip
+        /// describing what the model supports; the outgoing request is clamped separately in
+        /// LlmClient.BuildRequestJson, so the dropdown never needs to gate.
         /// </summary>
         private void DrawApiAdvancedRow(Rect rect, int index, ApiEndpointConfig endpoint, float labelWidth)
         {
@@ -467,49 +469,13 @@ namespace PawnDiary
             {
                 List<FloatMenuOption> options = new List<FloatMenuOption>();
                 AddReasoningOption(options, endpoint, PawnDiarySettings.DefaultReasoningEffort);
-                // "None" (explicitly off) is only meaningful when the model allows reasoning to be
-                // disabled. Mandatory-reasoning models hide it; the request still works either way.
-                if (capability == null || !capability.Mandatory)
-                {
-                    AddReasoningOption(options, endpoint, "none");
-                }
-
-                if (capability == null || capability.Supported)
-                {
-                    // No advertised effort list: offer the full ladder as before.
-                    if (capability == null || capability.SupportedEfforts == null || capability.SupportedEfforts.Count == 0)
-                    {
-                        AddReasoningOption(options, endpoint, "minimal");
-                        AddReasoningOption(options, endpoint, "low");
-                        AddReasoningOption(options, endpoint, "medium");
-                        AddReasoningOption(options, endpoint, "high");
-                        AddReasoningOption(options, endpoint, "xhigh");
-                    }
-                    else
-                    {
-                        // Advertised list: offer only the levels the model actually accepts.
-                        AddCapabilityReasoningOptions(options, endpoint, capability.SupportedEfforts);
-                    }
-                }
-
+                AddReasoningOption(options, endpoint, "none");
+                AddReasoningOption(options, endpoint, "minimal");
+                AddReasoningOption(options, endpoint, "low");
+                AddReasoningOption(options, endpoint, "medium");
+                AddReasoningOption(options, endpoint, "high");
+                AddReasoningOption(options, endpoint, "xhigh");
                 Find.WindowStack.Add(new FloatMenu(options));
-            }
-        }
-
-        /// <summary>Adds a FloatMenuOption per supported effort, preserving the provider's order.</summary>
-        private static void AddCapabilityReasoningOptions(List<FloatMenuOption> options, ApiEndpointConfig endpoint, List<string> supportedEfforts)
-        {
-            for (int i = 0; i < supportedEfforts.Count; i++)
-            {
-                string effort = supportedEfforts[i];
-                // Skip efforts outside the recognized set; they would normalize to "default" anyway.
-                string normalized = ApiEndpointPolicy.NormalizeReasoningEffort(effort);
-                if (string.Equals(normalized, ApiEndpointPolicy.DefaultReasoningEffort, System.StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                AddReasoningOption(options, endpoint, normalized);
             }
         }
 

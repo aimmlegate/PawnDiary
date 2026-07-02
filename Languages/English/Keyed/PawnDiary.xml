@@ -262,14 +262,14 @@
   <PawnDiary.Settings.ReasoningUnsupportedTip>This model does not support reasoning. Any effort level you pick is omitted from the request, so the model stops rejecting it.</PawnDiary.Settings.ReasoningUnsupportedTip>
   <PawnDiary.Settings.ReasoningTag>Reasoning tag</PawnDiary.Settings.ReasoningTag>
   <PawnDiary.Settings.ReasoningTag.Auto>Auto</PawnDiary.Settings.ReasoningTag.Auto>
-  <PawnDiary.Settings.ReasoningTag.Think>&lt;think&gt;</PawnDiary.Settings.ReasoningTag.Think>
-  <PawnDiary.Settings.ReasoningTag.Thinking>&lt;thinking&gt;</PawnDiary.Settings.ReasoningTag.Thinking>
-  <PawnDiary.Settings.ReasoningTag.Reasoning>&lt;reasoning&gt;</PawnDiary.Settings.ReasoningTag.Reasoning>
-  <PawnDiary.Settings.ReasoningTag.Analysis>&lt;analysis&gt;</PawnDiary.Settings.ReasoningTag.Analysis>
-  <PawnDiary.Settings.ReasoningTag.Thought>&lt;thought&gt;</PawnDiary.Settings.ReasoningTag.Thought>
-  <PawnDiary.Settings.ReasoningTag.Reflection>&lt;reflection&gt;</PawnDiary.Settings.ReasoningTag.Reflection>
-  <PawnDiary.Settings.ReasoningTag.Scratchpad>&lt;scratchpad&gt;</PawnDiary.Settings.ReasoningTag.Scratchpad>
-  <PawnDiary.Settings.ReasoningTagTip>Controls how private model thinking is removed from diary text. Auto uses built-in detection and is right for almost every model. Pick the tag a model wraps its thinking in (such as &lt;reflection&gt; or &lt;scratchpad&gt;) only if diary entries contain visible reasoning.</PawnDiary.Settings.ReasoningTagTip>
+  <PawnDiary.Settings.ReasoningTag.Think>think</PawnDiary.Settings.ReasoningTag.Think>
+  <PawnDiary.Settings.ReasoningTag.Thinking>thinking</PawnDiary.Settings.ReasoningTag.Thinking>
+  <PawnDiary.Settings.ReasoningTag.Reasoning>reasoning</PawnDiary.Settings.ReasoningTag.Reasoning>
+  <PawnDiary.Settings.ReasoningTag.Analysis>analysis</PawnDiary.Settings.ReasoningTag.Analysis>
+  <PawnDiary.Settings.ReasoningTag.Thought>thought</PawnDiary.Settings.ReasoningTag.Thought>
+  <PawnDiary.Settings.ReasoningTag.Reflection>reflection</PawnDiary.Settings.ReasoningTag.Reflection>
+  <PawnDiary.Settings.ReasoningTag.Scratchpad>scratchpad</PawnDiary.Settings.ReasoningTag.Scratchpad>
+  <PawnDiary.Settings.ReasoningTagTip>Controls how private model thinking is removed from diary text. Auto uses built-in detection and is right for almost every model. Pick the tag a model wraps its thinking in (such as reflection or scratchpad) only if diary entries contain visible reasoning.</PawnDiary.Settings.ReasoningTagTip>
   <PawnDiary.Settings.ToggleOn>On</PawnDiary.Settings.ToggleOn>
   <PawnDiary.Settings.ToggleOff>Off</PawnDiary.Settings.ToggleOff>
   <PawnDiary.Settings.FetchModels>Fetch</PawnDiary.Settings.FetchModels>
