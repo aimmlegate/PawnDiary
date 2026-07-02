@@ -50,6 +50,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// True when a catalog field name is one of the removed raw translation-key fields. Nested
+        /// policy names such as <c>batch.labelKey</c> use the same dotted shape as override keys.
+        /// </summary>
+        public static bool IsRemovedFieldName(string fieldName)
+        {
+            return !string.IsNullOrEmpty(fieldName)
+                && IsRemovedFieldKey("." + fieldName);
+        }
+
+        /// <summary>
         /// Removes every orphaned override key from <paramref name="overrides"/> in place and returns how
         /// many were dropped. Idempotent: a second pass finds nothing. Null/empty input is a no-op.
         /// </summary>

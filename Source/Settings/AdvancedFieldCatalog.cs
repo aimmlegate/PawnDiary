@@ -67,8 +67,9 @@ namespace PawnDiary
         // prompt field rows, severity tiers) plug in a tiny line-based parser/formatter here.
         public Func<object, string> customFormatter;
         public Func<string, object> customParser;
-        // Prompt-template rows display the effective prompt text (raw template value, or shared
-        // fallback when blank) while still writing overrides into the raw Def field.
+        // Optional display-only value for the rare row that intentionally mirrors inherited text.
+        // Keyed XML prompt text does not use this hook: those rows show only the literal override
+        // field, keeping translation keys and their resolved defaults out of node settings.
         public Func<string> effectiveReader;
         private const string NullListSentinel = "<null>";
 
@@ -173,8 +174,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Value shown in the UI. Usually this is the raw Def field, but prompt-template text uses
-        /// the resolved effective prompt so blank XML fallback rows are not shown as empty editors.
+        /// Value shown in the UI. Usually this is the raw Def field; a descriptor can opt into a
+        /// display-only inherited value without changing where edits are written.
         /// </summary>
         public string ReadDisplayValueString()
         {
@@ -1160,181 +1161,6 @@ namespace PawnDiary
             return float.Parse(parts[index].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture);
         }
 
-        private static string EffectiveText(string literalText, string key)
-        {
-            if (!string.IsNullOrWhiteSpace(literalText))
-            {
-                return literalText;
-            }
-
-            return TranslateKeyOrEmpty(key);
-        }
-
-        private static string EffectiveText(string literalText, string key, string fallbackKey)
-        {
-            string text = EffectiveText(literalText, key);
-            return !string.IsNullOrWhiteSpace(text) ? text : TranslateKeyOrEmpty(fallbackKey);
-        }
-
-        private static string EffectiveText(string literalText, string key, string fallbackKey, string arg0)
-        {
-            if (!string.IsNullOrWhiteSpace(literalText))
-            {
-                return literalText;
-            }
-
-            string text = TranslateKeyOrEmpty(key);
-            return !string.IsNullOrWhiteSpace(text) ? text : TranslateKeyOrEmpty(fallbackKey, arg0);
-        }
-
-        private static string EffectiveText(string literalText, string key, string fallbackKey, string arg0, string arg1)
-        {
-            if (!string.IsNullOrWhiteSpace(literalText))
-            {
-                return literalText;
-            }
-
-            string text = TranslateKeyOrEmpty(key);
-            return !string.IsNullOrWhiteSpace(text) ? text : TranslateKeyOrEmpty(fallbackKey, arg0, arg1);
-        }
-
-        private static string EffectiveText(string literalText, string key, string fallbackKey,
-            string arg0, string arg1, string arg2)
-        {
-            if (!string.IsNullOrWhiteSpace(literalText))
-            {
-                return literalText;
-            }
-
-            string text = TranslateKeyOrEmpty(key);
-            return !string.IsNullOrWhiteSpace(text) ? text : TranslateKeyOrEmpty(fallbackKey, arg0, arg1, arg2);
-        }
-
-        private static string EffectiveTextList(List<string> literalTexts, List<string> keys)
-        {
-            if (literalTexts == null)
-            {
-                // Explicitly-suppressed (null) cue list. NullTableSentinel is "<null>", the same string
-                // AdvancedFieldDescriptor.IsNullListSentinel recognizes, so this round-trips as null.
-                return NullTableSentinel;
-            }
-
-            if (literalTexts.Count > 0)
-            {
-                return string.Join("\n", literalTexts.Where(value => value != null).ToArray());
-            }
-
-            if (keys == null || keys.Count == 0)
-            {
-                return "\n";
-            }
-
-            List<string> translated = new List<string>();
-            for (int i = 0; i < keys.Count; i++)
-            {
-                string text = TranslateKeyOrEmpty(keys[i]);
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    translated.Add(text);
-                }
-            }
-
-            return translated.Count == 0 ? "\n" : string.Join("\n", translated.ToArray());
-        }
-
-        private static string TranslateKeyOrEmpty(string key)
-        {
-            if (string.IsNullOrWhiteSpace(key) || !key.CanTranslate())
-            {
-                return string.Empty;
-            }
-
-            return key.Translate().Resolve();
-        }
-
-        private static string TranslateKeyOrEmpty(string key, string arg0)
-        {
-            if (string.IsNullOrWhiteSpace(key) || !key.CanTranslate())
-            {
-                return string.Empty;
-            }
-
-            return key.Translate(arg0).Resolve();
-        }
-
-        private static string TranslateKeyOrEmpty(string key, string arg0, string arg1)
-        {
-            if (string.IsNullOrWhiteSpace(key) || !key.CanTranslate())
-            {
-                return string.Empty;
-            }
-
-            return key.Translate(arg0, arg1).Resolve();
-        }
-
-        private static string TranslateKeyOrEmpty(string key, string arg0, string arg1, string arg2)
-        {
-            if (string.IsNullOrWhiteSpace(key) || !key.CanTranslate())
-            {
-                return string.Empty;
-            }
-
-            return key.Translate(arg0, arg1, arg2).Resolve();
-        }
-
-        private static string DefLabel(Def def)
-        {
-            string label = def == null ? string.Empty : def.LabelCap.Resolve();
-            return string.IsNullOrWhiteSpace(label) || (def != null && string.Equals(label, def.defName, StringComparison.Ordinal))
-                ? def?.defName ?? string.Empty
-                : label;
-        }
-
-        private static string EffectiveBatchSingleArgText(DiaryInteractionGroupDef def,
-            InteractionBatchPolicy batch, string literalText, string key, string pairFallback,
-            string ambientFallback, string taleFallback)
-        {
-            string fallbackKey = BatchFallbackKey(def, batch, pairFallback, ambientFallback, taleFallback);
-            return EffectiveText(literalText, key, fallbackKey, DefLabel(def));
-        }
-
-        private static string EffectiveBatchFallbackText(DiaryInteractionGroupDef def,
-            InteractionBatchPolicy batch)
-        {
-            string fallbackKey = BatchFallbackKey(def, batch,
-                "PawnDiary.Event.BatchFallback",
-                "PawnDiary.Event.AmbientDayFallback",
-                "PawnDiary.Event.TaleBatchFallback");
-            if (def != null && def.domain == GroupDomain.Tale)
-            {
-                return EffectiveText(batch.fallbackText, batch.fallbackKey, fallbackKey, "{0}", DefLabel(def));
-            }
-
-            if (batch != null && batch.mode == InteractionBatchMode.AmbientDayNote)
-            {
-                return EffectiveText(batch.fallbackText, batch.fallbackKey, fallbackKey, "{0}", DefLabel(def));
-            }
-
-            return EffectiveText(batch?.fallbackText, batch?.fallbackKey, fallbackKey,
-                "{0}", "{1}", DefLabel(def));
-        }
-
-        private static string BatchFallbackKey(DiaryInteractionGroupDef def, InteractionBatchPolicy batch,
-            string pairFallback, string ambientFallback, string taleFallback)
-        {
-            if (def != null && def.domain == GroupDomain.Tale)
-            {
-                return taleFallback;
-            }
-
-            if (batch != null && batch.mode == InteractionBatchMode.AmbientDayNote)
-            {
-                return ambientFallback;
-            }
-
-            return pairFallback;
-        }
-
         // ---- Catalog authoring ----
         // One fluent builder, one group at a time. OnTuning targets DiaryTuningDef (the single
         // Diary_Tuning instance); OnSignal/OnContext target the named defName via the existing
@@ -1542,9 +1368,7 @@ namespace PawnDiary
                 .Bool("enabled")
                 .Int("maxItems", 0, 20)
                 .Bool("displayOnUiOnly")
-                .LongText("text", () => EffectiveText(DiaryContextReactions.ForKey(DiaryContextReactions.ActiveMapConditions).text,
-                    DiaryContextReactions.ForKey(DiaryContextReactions.ActiveMapConditions).textKey,
-                    "PawnDiary.Ctx.ActiveConditions", "{value}"));
+                .LongText("text");
 
             b.Context("DiaryContextReaction_RecentThreatLetter", "RecentThreatLetter", "PawnDiary.Settings.Adv.Group.CtxThreat")
                 .Bool("enabled")
@@ -1552,9 +1376,7 @@ namespace PawnDiary
                 .Int("timeoutTicks", 0, 600000)
                 .Bool("requireHomeMap")
                 .Bool("requireDanger")
-                .LongText("text", () => EffectiveText(DiaryContextReactions.ForKey(DiaryContextReactions.RecentThreatLetter).text,
-                    DiaryContextReactions.ForKey(DiaryContextReactions.RecentThreatLetter).textKey,
-                    "PawnDiary.Ctx.RecentThreat", "{value}"))
+                .LongText("text")
                 .StringList("letterDefNames");
 
             // ---- Shared prompt default instructions (DiaryPromptDef). Prompt Studio already edits the
@@ -1659,13 +1481,11 @@ namespace PawnDiary
                     .Float("maxCapacity", -1f, 1f, false)
                     .StringList("hediffDefNames")
                     .CustomLongText("hediffSeverityTiers", FormatSeverityTiers, ParseSeverityTiers)
-                    .Text("conditionLabel", () => EffectiveText(def.conditionLabel, def.conditionKey))
-                    .Text("intensityText", () => EffectiveText(def.intensityText, def.intensityKey))
-                    .Text("priorityText", () => EffectiveText(def.priorityText, def.priorityKey,
-                        "PawnDiary.Prompt.Health.HighPriority"))
-                    .LongText("descriptionOverrideText", () => EffectiveText(def.descriptionOverrideText,
-                        def.descriptionOverrideKey))
-                    .StringList("cueTexts", () => EffectiveTextList(def.cueTexts, def.cueKeys));
+                    .Text("conditionLabel")
+                    .Text("intensityText")
+                    .Text("priorityText")
+                    .LongText("descriptionOverrideText")
+                    .StringList("cueTexts");
             }
         }
 
@@ -1687,25 +1507,19 @@ namespace PawnDiary
                 b.Def(def, DefDisplay(def, "Event window prompt"), DynamicGroupKey("EventWindow", def), AdvancedFieldCategory.Prompts)
                     .Bool("enabled")
                     .LongText("instruction")
-                    .LongText("startText", () => EffectiveText(def.startText, def.startTextKey,
-                        "PawnDiary.Event.EventWindow.Generic.start", "{0}", DefLabel(def)))
-                    .LongText("endText", () => EffectiveText(def.endText, def.endTextKey,
-                        "PawnDiary.Event.EventWindow.Generic.end", "{0}", DefLabel(def)))
-                    .LongText("timeoutText", () => EffectiveText(def.timeoutText, def.timeoutTextKey,
-                        "PawnDiary.Event.EventWindow.Generic.timeout", "{0}", DefLabel(def)))
+                    .LongText("startText")
+                    .LongText("endText")
+                    .LongText("timeoutText")
                     .Text("colorCue")
                     .Bool("promptEnabled")
                     .Float("promptWeight", 0f, 100f, false)
                     .Float("normalPromptWeightMultiplier", 0f, 10f, false)
                     .Int("promptDecayTicks", 0, 600000)
                     .Float("promptDecayMinMultiplier", 0f, 1f, false)
-                    .Text("promptPriorityText", () => EffectiveText(def.promptPriorityText, def.promptPriorityKey,
-                        "PawnDiary.Prompt.EventWindow.Priority"))
-                    .Text("promptConditionText", () => EffectiveText(def.promptConditionText, def.promptConditionKey,
-                        "PawnDiary.Prompt.EventWindow.ConditionFallback", DefLabel(def)))
-                    .LongText("promptDescriptionText", () => EffectiveText(def.promptDescriptionText,
-                        def.promptDescriptionKey))
-                    .StringList("promptCueTexts", () => EffectiveTextList(def.promptCueTexts, def.promptCueKeys));
+                    .Text("promptPriorityText")
+                    .Text("promptConditionText")
+                    .LongText("promptDescriptionText")
+                    .StringList("promptCueTexts");
             }
         }
 
@@ -1716,10 +1530,8 @@ namespace PawnDiary
                 b.Def(def, DefDisplay(def, "Observed condition prompt"), DynamicGroupKey("ObservedCondition", def), AdvancedFieldCategory.Prompts)
                     .Bool("enabled")
                     .LongText("instruction")
-                    .LongText("startText", () => EffectiveText(def.startText, def.startTextKey,
-                        "PawnDiary.Event.ObservedCondition.Generic.start", "{0}", DefLabel(def)))
-                    .LongText("endText", () => EffectiveText(def.endText, def.endTextKey,
-                        "PawnDiary.Event.ObservedCondition.Generic.end", "{0}", DefLabel(def)))
+                    .LongText("startText")
+                    .LongText("endText")
                     .Text("colorCue")
                     .Bool("promptEnabled")
                     .Float("promptWeight", 0f, 100f, false)
@@ -1731,13 +1543,10 @@ namespace PawnDiary
                     .Int("maxEvidenceLabels", 0, 20)
                     .Int("maxEvidenceChars", 0, 2000)
                     .Int("maxEvidenceCount", 0, 9999)
-                    .Text("promptPriorityText", () => EffectiveText(def.promptPriorityText, def.promptPriorityKey,
-                        "PawnDiary.Prompt.ObservedCondition.Priority"))
-                    .Text("promptConditionText", () => EffectiveText(def.promptConditionText, def.promptConditionKey,
-                        "PawnDiary.Prompt.ObservedCondition.ConditionFallback", DefLabel(def)))
-                    .LongText("promptDescriptionText", () => EffectiveText(def.promptDescriptionText,
-                        def.promptDescriptionKey))
-                    .StringList("promptCueTexts", () => EffectiveTextList(def.promptCueTexts, def.promptCueKeys))
+                    .Text("promptPriorityText")
+                    .Text("promptConditionText")
+                    .LongText("promptDescriptionText")
+                    .StringList("promptCueTexts")
                     .StringList("matchDefNames")
                     .StringList("matchDefNameContains")
                     .StringList("matchLabels")
@@ -1789,20 +1598,11 @@ namespace PawnDiary
                 .CustomInt("batch.maxEvents", () => batch.maxEvents, value => batch.maxEvents = (int)value, 1, 100)
                 .CustomText("batch.scope", () => batch.scope.ToString(), value => batch.scope = ParseEnum((string)value, batch.scope))
                 .CustomText("batch.syntheticDefName", () => batch.syntheticDefName, value => batch.syntheticDefName = (string)value)
-                .CustomText("batch.labelText", () => batch.labelText, value => batch.labelText = (string)value,
-                    () => EffectiveBatchSingleArgText(def, batch, batch.labelText, batch.labelKey,
-                        "PawnDiary.Event.BatchLabel", "PawnDiary.Event.AmbientDayLabel", "PawnDiary.Event.TaleBatchLabel"))
-                .CustomLongText("batch.briefText", () => batch.briefText, value => batch.briefText = (string)value,
-                    () => EffectiveBatchSingleArgText(def, batch, batch.briefText, batch.briefKey,
-                        "PawnDiary.Event.BatchBrief", "PawnDiary.Event.BatchBrief", "PawnDiary.Event.TaleBatchFallback"))
-                .CustomLongText("batch.headerText", () => batch.headerText, value => batch.headerText = (string)value,
-                    () => EffectiveBatchSingleArgText(def, batch, batch.headerText, batch.headerKey,
-                        "PawnDiary.Event.BatchHeader", "PawnDiary.Event.AmbientDayHeader", "PawnDiary.Event.TaleBatchHeader"))
-                .CustomLongText("batch.fallbackText", () => batch.fallbackText, value => batch.fallbackText = (string)value,
-                    () => EffectiveBatchFallbackText(def, batch))
-                .CustomLongText("batch.instructionText", () => batch.instructionText, value => batch.instructionText = (string)value,
-                    () => EffectiveBatchSingleArgText(def, batch, batch.instructionText, batch.instructionKey,
-                        "PawnDiary.Event.BatchInstruction", "PawnDiary.Event.AmbientDayInstruction", "PawnDiary.Event.TaleBatchInstruction"))
+                .CustomText("batch.labelText", () => batch.labelText, value => batch.labelText = (string)value)
+                .CustomLongText("batch.briefText", () => batch.briefText, value => batch.briefText = (string)value)
+                .CustomLongText("batch.headerText", () => batch.headerText, value => batch.headerText = (string)value)
+                .CustomLongText("batch.fallbackText", () => batch.fallbackText, value => batch.fallbackText = (string)value)
+                .CustomLongText("batch.instructionText", () => batch.instructionText, value => batch.instructionText = (string)value)
                 .CustomBool("batch.includeInteractionLabel", () => batch.includeInteractionLabel, value => batch.includeInteractionLabel = (bool)value)
                 .CustomInt("batch.minEventsToWrite", () => batch.minEventsToWrite, value => batch.minEventsToWrite = (int)value, 0, 100)
                 .CustomInt("batch.maxSampleLines", () => batch.maxSampleLines, value => batch.maxSampleLines = (int)value, 0, 100);
@@ -1852,12 +1652,8 @@ namespace PawnDiary
                 .CustomFloat("hediff.severityStep", () => hediff.severityStep, value => hediff.severityStep = (float)value, 0f, 100f, false)
                 .CustomInt("hediff.dedupTicks", () => hediff.dedupTicks, value => hediff.dedupTicks = (int)value, 0, 600000)
                 .CustomFloat("hediff.dayReflectionWeight", () => hediff.dayReflectionWeight, value => hediff.dayReflectionWeight = (float)value, 0f, 100f, false)
-                .CustomLongText("hediff.appearedText", () => hediff.appearedText, value => hediff.appearedText = (string)value,
-                    () => EffectiveText(hediff.appearedText, hediff.appearedTextKey,
-                        "PawnDiary.Event.HediffAppeared", "{0}", "{1}"))
-                .CustomLongText("hediff.progressedText", () => hediff.progressedText, value => hediff.progressedText = (string)value,
-                    () => EffectiveText(hediff.progressedText, hediff.progressedTextKey,
-                        "PawnDiary.Event.HediffProgressed", "{0}", "{1}"));
+                .CustomLongText("hediff.appearedText", () => hediff.appearedText, value => hediff.appearedText = (string)value)
+                .CustomLongText("hediff.progressedText", () => hediff.progressedText, value => hediff.progressedText = (string)value);
         }
 
         private static void RegisterHediffPersonaOverrides(Builder b)
@@ -2114,6 +1910,13 @@ namespace PawnDiary
                 Func<object> customReader = null,
                 Action<object> customWriter = null)
             {
+                if (TuningOverrideMigration.IsRemovedFieldName(fieldName))
+                {
+                    // Keep raw XML translation lookup fields out of node settings. Players can edit
+                    // the paired literal override fields instead (for example startText, not startTextKey).
+                    return this;
+                }
+
                 AdvancedFieldDescriptor descriptor = new AdvancedFieldDescriptor(targetDefType, targetResolve, targetDefName, fieldName)
                 {
                     fieldType = type,

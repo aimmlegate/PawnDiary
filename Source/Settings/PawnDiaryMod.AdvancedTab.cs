@@ -302,8 +302,8 @@ namespace PawnDiary
 
         private void DrawAdvancedLongTextControl(Rect rect, AdvancedFieldDescriptor descriptor)
         {
-            // Prompt templates often leave their raw XML field blank to inherit a shared prompt.
-            // Show the resolved effective prompt here so the editor is not an empty black box.
+            // Most prompt-policy text rows are raw override fields: blank means the XML/Keyed default
+            // still applies at generation time, and we keep that fallback out of the editable box.
             string currentInvariant = descriptor.ReadDisplayValueString();
             string buffer;
             string synced;

@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Prompt policy node settings stopped mirroring XML translation defaults.** Literal override boxes
+  for key-backed prompt policy (`*Text`, `conditionLabel`, cue lists, batch/hediff text) now stay
+  blank when XML owns the Keyed default, so node settings no longer expose raw translation keys or
+  copy their resolved text into saved overrides.
 - **Pawn Diary no longer bundles Harmony.** The mod now ships only `PawnDiary.dll` under
   `1.6/Assemblies/`; the Harmony runtime comes from the declared `brrainz.harmony` dependency at
   game-time. `1.6/Assemblies/0Harmony.dll` was removed, `scripts/publish.ps1` no longer copies it,

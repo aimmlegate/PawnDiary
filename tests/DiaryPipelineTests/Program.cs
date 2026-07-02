@@ -125,6 +125,12 @@ namespace DiaryPipelineTests
                 !TuningOverrideMigration.IsRemovedFieldKey("Diary_SomeWindow.promptPriorityText"));
             AssertTrue("batch.labelText is not treated as a removed field",
                 !TuningOverrideMigration.IsRemovedFieldKey("Diary_SomeGroup.batch.labelText"));
+            AssertTrue("raw translation-key field names are hidden from node settings",
+                TuningOverrideMigration.IsRemovedFieldName("startTextKey"));
+            AssertTrue("nested raw translation-key field names are hidden from node settings",
+                TuningOverrideMigration.IsRemovedFieldName("batch.labelKey"));
+            AssertTrue("literal text field names remain editable in node settings",
+                !TuningOverrideMigration.IsRemovedFieldName("batch.labelText"));
 
             AssertTrue("second pass is a no-op",
                 TuningOverrideMigration.PruneRemovedFieldKeys(overrides) == 0);

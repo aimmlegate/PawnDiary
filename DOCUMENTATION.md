@@ -452,8 +452,9 @@ force-stop/cooldown/suppression/evidence-label caps, group instructions/tone var
 batch/promotion weights, humor cue rules/weights, and hediff-driven writing-style override policy.
 Template prompt text boxes are raw per-template overrides; blank means "inherit" and intentionally
 stays blank so Shared/event prompts remains the only place that displays shared system prompt text.
-Prompt-policy fields that are backed by translation keys display the resolved text and write literal
-override fields (`*Text`, `conditionLabel`, cue lists) instead of asking players to edit raw key names.
+Prompt-policy fields backed by XML translation keys are also literal override boxes only: blank means
+the XML/Keyed default is still used at generation time, while node settings never expose the raw key
+fields or copy their resolved text into editable overrides.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
 Tuning is the low-level XML parameter editor. Tuning and the Prompt tab's policy/weights subpage share
@@ -722,8 +723,8 @@ When editing XML Def text:
   `<group.instructions.0>`.
 - Add or update the matching Russian key/file at the same time.
 
-The in-game Prompt policy editor shows resolved text for key-backed fields and stores literal
-per-player overrides in `*Text`/cue fields. Those overrides are for player settings only; XML/Keyed and
+The in-game Prompt policy editor keeps key-backed fields as blank literal override boxes until the
+player types a replacement. Those per-player overrides live in `*Text`/cue fields only; XML/Keyed and
 DefInjected entries remain the source that translators must keep aligned.
 
 Russian lives in `Languages/Russian (Русский)/` and mirrors the English Keyed + DefInjected layout.
