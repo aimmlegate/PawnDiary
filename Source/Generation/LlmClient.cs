@@ -58,6 +58,13 @@ namespace PawnDiary
         public string reasoningEffort;
 
         /// <summary>
+        /// Lane-specific reasoning-tag override that tells the response stripper which wrapper this
+        /// model emits its thinking in (e.g. "reflection", "scratchpad"). "auto" means use the
+        /// built-in broad tag/fence/heading detection. See ApiEndpointPolicy.NormalizeReasoningTag.
+        /// </summary>
+        public string reasoningTag;
+
+        /// <summary>
         /// True when XML/settings event-prompt policy asked for this primary model explicitly. Forced
         /// primaries are attempted even if their lane is cooling; normal failover still runs on error.
         /// </summary>
@@ -369,6 +376,7 @@ namespace PawnDiary
                     customAuthHeaderName = endpoint.customAuthHeaderName,
                     apiMode = endpoint.apiMode,
                     reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(endpoint.reasoningEffort),
+                    reasoningTag = PawnDiarySettings.NormalizeReasoningTag(endpoint.reasoningTag),
                     timeoutSeconds = timeoutSeconds,
                     maxTokens = 32,
                     temperature = temperature,
@@ -721,6 +729,7 @@ namespace PawnDiary
                     request.modelName = target.model;
                     request.apiMode = target.apiMode;
                     request.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(target.reasoningEffort);
+                    request.reasoningTag = PawnDiarySettings.NormalizeReasoningTag(target.reasoningTag);
                     string laneLabel = LaneLabel(request);
 
                     // Reuse the gate captured at enqueue for the first lane; create per-lane gates
@@ -925,7 +934,8 @@ namespace PawnDiary
                     authMode = PawnDiarySettings.NormalizeAuthMode(request.authMode),
                     customAuthHeaderName = request.customAuthHeaderName,
                     apiMode = request.apiMode,
-                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort)
+                    reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(request.reasoningEffort),
+                    reasoningTag = PawnDiarySettings.NormalizeReasoningTag(request.reasoningTag)
                 }
             };
 
@@ -1002,7 +1012,7 @@ namespace PawnDiary
                         throw new LlmPermanentException(providerError);
                     }
 
-                    string visibleText = LlmResponseParser.StripReasoningTextBlocks(generatedText);
+                    string visibleText = LlmResponseParser.StripReasoningTextBlocks(generatedText, request.reasoningTag);
                     if (string.IsNullOrWhiteSpace(visibleText))
                     {
                         providerError = LlmResponseParser.ExtractProviderError(responseRoot, responseMode, false);
@@ -1094,16 +1104,24 @@ namespace PawnDiary
 
         /// <summary>
         /// Adapts the transport request into the pure request serializer's primitive snapshot.
+        /// Applies capability-aware reasoning-effort clamping: if the fetched capability says the
+        /// model cannot reason (or rejects the chosen effort), the effort is clamped so the request
+        /// never carries a value the model 400s on. When capability is unknown (most providers),
+        /// the effort passes through unchanged -- today's unconditional behavior.
         /// </summary>
         private static string BuildRequestJson(LlmGenerationRequest request)
         {
+            string resolvedEffort = ModelReasoningCapability.EffectiveReasoningEffort(
+                request.reasoningEffort,
+                ModelCapabilityCache.Get(request.endpointUrl, request.modelName));
+
             return LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
             {
                 apiMode = request.apiMode,
                 modelName = request.modelName,
                 systemPrompt = request.systemPrompt,
                 rawText = request.rawText,
-                reasoningEffort = request.reasoningEffort,
+                reasoningEffort = resolvedEffort,
                 maxTokens = request.maxTokens,
                 temperature = request.temperature
             });

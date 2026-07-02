@@ -6,6 +6,27 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Per-lane reasoning-tag picker and capability-aware reasoning effort.** Reasoning models wrap
+  their private thinking in many different wrappers (`<think>`, `<thinking>`, `<reasoning>`,
+  `<analysis>`, and exotic ones like `<reflection>`/`<scratchpad>` for RP-tuned models), and there is
+  no single "reasoning" wire format across providers. Two new per-lane controls address both
+  symptoms. (1) A **"Reasoning tag" dropdown** (default *Auto*) lets a player pin the exact tag a
+  model emits; the chosen tag is stripped *in addition to* the built-in broad guess-list, so exotic
+  wrappers no longer leak into saved diary text, while common tags keep working as a safety net.
+  (2) When an endpoint advertises per-model **reasoning capability** in its `/models` response
+  (OpenRouter and some gateways — `reasoning.supported_efforts`/`default_enabled`), the effort
+  dropdown now only offers levels the model accepts, the row shows a tooltip of what the model
+  supports, and the outgoing request **clamps** `reasoning_effort` so it never carries a value the
+  model rejects (the direct fix for "400 Thinking budget is not supported for this model" on
+  non-reasoning models like Gemma). Providers that do not advertise capability (OpenAI-direct, local
+  GGUF servers) degrade gracefully to today's unconditional behavior. New pure
+  `ModelReasoningCapability` (parse + clamp policy), `ModelCapabilityCache` (process-wide
+  endpoint+model keyed cache), and `ApiEndpointPolicy.NormalizeReasoningTag`; `StripReasoningTextBlocks`
+  gained a tag-parameterized overload. `LlmResponseParserTests` and `DiaryPipelineTests` cover the
+  new tag stripping and the capability clamping. (DOCUMENTATION §6.)
+
+## 2026-07-02
+
 - **Single-item interaction batch flushes now become standalone entries.** If an XML `PairEvent`
   interaction batch, such as insults, opens but only collects one social-log moment before the quiet
   window expires or the game saves, the flush now emits a normal standalone interaction entry: original

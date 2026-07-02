@@ -70,6 +70,28 @@ namespace PawnDiary
             return fetchTargetIndex == index ? fetchStatus : null;
         }
 
+        /// <summary>
+        /// Returns the cached reasoning capability for one row's currently-selected model, or null
+        /// when capability is unknown (provider did not advertise it). Reads the process-wide cache
+        /// against the row's live endpoint+model so edits after a fetch are reflected immediately.
+        /// </summary>
+        public ModelReasoningCapability ModelCapabilityForRow(int index)
+        {
+            PawnDiarySettings settings = CurrentSettings();
+            if (settings?.apiEndpoints == null || index < 0 || index >= settings.apiEndpoints.Count)
+            {
+                return null;
+            }
+
+            ApiEndpointConfig endpoint = settings.apiEndpoints[index];
+            if (endpoint == null || string.IsNullOrWhiteSpace(endpoint.model))
+            {
+                return null;
+            }
+
+            return ModelCapabilityCache.Get(endpoint.url, endpoint.model);
+        }
+
         /// <summary>True while a connection test for <paramref name="index"/> is in flight.</summary>
         public bool IsTestingConnection(int index)
         {
@@ -274,13 +296,14 @@ namespace PawnDiary
                 apiMode = endpoint.apiMode;
                 int timeoutSeconds = settings.timeoutSeconds;
 
-                List<string> models = await ModelListClient.FetchModels(url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
+                ModelListResult fetchResult = await ModelListClient.FetchModels(url, apiKey, authMode, customAuthHeaderName, apiMode, timeoutSeconds);
                 pendingFetchResult = new ModelFetchResult
                 {
                     generation = generation,
                     targetIndex = index,
                     success = true,
-                    models = models,
+                    models = fetchResult.Models,
+                    capabilities = fetchResult.Capabilities,
                     endpointUrl = url,
                     apiKey = apiKey,
                     customAuthHeaderName = ApiEndpointPolicy.EffectiveAuthHeaderName(authMode, customAuthHeaderName),
@@ -389,6 +412,17 @@ namespace PawnDiary
             if (result.models != null)
             {
                 fetchedModels.AddRange(result.models);
+            }
+
+            // Feed the process-wide capability cache so the settings UI can guide the effort
+            // dropdown and the generation path can clamp the outgoing reasoning_effort. Done on the
+            // main thread (here); reads on the background thread are safe against immutable entries.
+            if (result.capabilities != null && result.capabilities.Count > 0)
+            {
+                foreach (KeyValuePair<string, ModelReasoningCapability> entry in result.capabilities)
+                {
+                    ModelCapabilityCache.Update(result.endpointUrl, entry.Key, entry.Value);
+                }
             }
 
             if (fetchedModels.Count == 0)
@@ -521,6 +555,9 @@ namespace PawnDiary
             public int targetIndex;
             public bool success;
             public List<string> models;   // immutable snapshot returned by ModelListClient
+            // Per-model reasoning capability advertised by the endpoint (OpenRouter, some gateways).
+            // Null/empty when the provider does not report capability; absent models stay "unknown".
+            public Dictionary<string, ModelReasoningCapability> capabilities;
             public string errorDetail;    // raw, untranslated exception message
             public string endpointUrl;    // row URL snapshot used to reject stale row edits
             public string apiKey;         // row key snapshot; never logged or shown

@@ -33,6 +33,7 @@
     <Compile Include="..\..\Source\Pipeline\ArcReflectionSchedulePolicy.cs" Link="ArcReflectionSchedulePolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\ArcReflectionMemorySelector.cs" Link="ArcReflectionMemorySelector.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiEndpointPolicy.cs" Link="ApiEndpointPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\ModelReasoningCapability.cs" Link="ModelReasoningCapability.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneIdentity.cs" Link="ApiLaneIdentity.cs" />
     <Compile Include="..\..\Source\Pipeline\DiarySentenceExcerpt.cs" Link="DiarySentenceExcerpt.cs" />
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />

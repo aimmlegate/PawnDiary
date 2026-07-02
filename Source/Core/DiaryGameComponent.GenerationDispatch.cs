@@ -125,6 +125,7 @@ namespace PawnDiary
                 customAuthHeaderName = target.customAuthHeaderName,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
+                reasoningTag = target.reasoningTag,
                 forcePrimaryLane = forcePrimaryLane,
                 // The other configured lanes, tried in order if this one errors ("use next model").
                 failoverTargets = failoverTargets,
@@ -384,6 +385,7 @@ namespace PawnDiary
                 customAuthHeaderName = target.customAuthHeaderName,
                 apiMode = target.apiMode,
                 reasoningEffort = target.reasoningEffort,
+                reasoningTag = target.reasoningTag,
                 failoverTargets = BuildFailoverTargets(targets, target),
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = TitleMaxTokens,

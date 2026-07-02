@@ -44,6 +44,11 @@ namespace PawnDiary
         public const string LegacyApiKeyHeaderName = "api-key";
         public const string LegacyXApiKeyHeaderName = "x-api-key";
 
+        // Sentinel meaning "use the built-in broad reasoning-tag detection" rather than one named
+        // tag. This is the safe default: most endpoints already strip cleanly via the default
+        // guess-list, so a lane does not need a specific tag unless it leaks private thinking.
+        public const string DefaultReasoningTag = "auto";
+
         private static readonly HashSet<string> ValidReasoningEfforts = new HashSet<string>
         {
             DefaultReasoningEffort,
@@ -53,6 +58,23 @@ namespace PawnDiary
             "medium",
             "high",
             "xhigh"
+        };
+
+        // The tag names a player may pin a lane to. "auto" is listed so the dropdown can offer the
+        // built-in detection; the rest are the common wrappers reasoning models emit (DeepSeek/Qwen
+        // <think>, Anthropic-style <thinking>, generic <reasoning>/<analysis>, plus exotic ones like
+        // <reflection> / <scratchpad> for RP-tuned models). The parser treats any non-auto choice as
+        // an ADDITIONAL tag on top of the base guess-list, never a replacement.
+        private static readonly HashSet<string> KnownReasoningTags = new HashSet<string>
+        {
+            DefaultReasoningTag,
+            "think",
+            "thinking",
+            "reasoning",
+            "analysis",
+            "thought",
+            "reflection",
+            "scratchpad"
         };
 
         /// <summary>Normalizes invalid compatibility enum values loaded from hand-edited settings.</summary>
@@ -129,6 +151,17 @@ namespace PawnDiary
         {
             string normalized = (effort ?? DefaultReasoningEffort).Trim().ToLowerInvariant();
             return ValidReasoningEfforts.Contains(normalized) ? normalized : DefaultReasoningEffort;
+        }
+
+        /// <summary>
+        /// Keeps the saved reasoning-tag value to the known set, falling back to "auto" (built-in
+        /// broad detection) when the saved value is blank or unrecognized. Hand-edited settings
+        /// cannot therefore break parsing by inventing a tag the UI never offered.
+        /// </summary>
+        public static string NormalizeReasoningTag(string tag)
+        {
+            string normalized = (tag ?? DefaultReasoningTag).Trim().ToLowerInvariant();
+            return KnownReasoningTags.Contains(normalized) ? normalized : DefaultReasoningTag;
         }
 
         private static bool IsValidHeaderName(string headerName)

@@ -16,6 +16,7 @@ namespace LlmResponseParserTests
             TestProviderErrors();
             TestReasoningScrub();
             TestReasoningScrubNoCloseTag();
+            TestReasoningTagOverride();
             TestGeneratedTextCleanup();
             TestGeneratedTagSanitizer();
             TestTitleFallback();
@@ -208,6 +209,54 @@ namespace LlmResponseParserTests
                 "multiple paired tags",
                 "Held the gate. Bob smiled.",
                 LlmResponseParser.StripReasoningTextBlocks("<think>plan</think>Held the gate.<reasoning>why</reasoning> Bob smiled."));
+        }
+
+        // The per-lane reasoning-tag override: a pinned tag is stripped IN ADDITION to the base
+        // guess-list, so exotic wrappers like <reflection> are removed while common ones (<think>)
+        // are still caught. "auto" leaves exotic wrappers in place (built-in detection only).
+        private static void TestReasoningTagOverride()
+        {
+            // Pinned reflection tag: the wrapper is removed.
+            AssertEqual(
+                "pinned reflection tag stripped",
+                "Visible entry.",
+                LlmResponseParser.StripReasoningTextBlocks("<reflection>private musings</reflection>Visible entry.", "reflection"));
+
+            // Same text under Auto: the exotic wrapper survives because it is not in the base list.
+            AssertEqual(
+                "reflection tag kept under auto",
+                "<reflection>private musings</reflection>Visible entry.",
+                LlmResponseParser.StripReasoningTextBlocks("<reflection>private musings</reflection>Visible entry.", "auto"));
+
+            // Union: a pinned reflection tag does NOT weaken stripping of the common <think> tag.
+            AssertEqual(
+                "pinned tag still strips common think leaks",
+                "Visible.",
+                LlmResponseParser.StripReasoningTextBlocks("<think>hidden</think>Visible.", "reflection"));
+
+            // Pinned tag with no close tag: a "final answer" marker still cuts the block.
+            AssertEqual(
+                "pinned tag no close final-answer marker",
+                "final answer: Held.",
+                LlmResponseParser.StripReasoningTextBlocks("<reflection>\ndeliberating\nfinal answer: Held.", "reflection"));
+
+            // Pinned tag as a fenced block label is also stripped.
+            AssertEqual(
+                "pinned tag fenced block stripped",
+                "Answer.",
+                LlmResponseParser.StripReasoningTextBlocks("```reflection\nsecret\n```\nAnswer.", "reflection"));
+
+            // Pinned tag as a heading prefix is cut up to the final-answer marker.
+            AssertEqual(
+                "pinned tag heading cut to final marker",
+                "Visible.",
+                LlmResponseParser.StripReasoningTextBlocks("Reflection:\nsecret\nAnswer: Visible.", "reflection"));
+
+            // An unrecognized tag string normalizes back to Auto (built-in detection).
+            AssertEqual(
+                "unknown tag normalizes to auto",
+                "<reflection>private</reflection>Visible.",
+                LlmResponseParser.StripReasoningTextBlocks("<reflection>private</reflection>Visible.", "totally-not-a-real-tag"));
         }
 
         private static void TestGeneratedTextCleanup()
