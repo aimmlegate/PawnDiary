@@ -1,5 +1,6 @@
 // API-lane settings UI for Pawn Diary. This partial class owns the immediate-mode controls for
 // endpoint rows, while ApiConnectionController owns the async fetch/test state behind the buttons.
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -14,6 +15,12 @@ namespace PawnDiary
         // ApiEndpointConfig instance so the choice survives row reordering, and defaulting to absent
         // means every key starts masked. Session-only UI state; never saved.
         private static readonly HashSet<ApiEndpointConfig> revealedApiKeys = new HashSet<ApiEndpointConfig>();
+
+        // Last-seen connection signature per row (url|apiKey|authMode|customAuthHeaderName), keyed by
+        // the ApiEndpointConfig instance so it survives reordering. Compared each frame to detect
+        // when a player edits the URL/key/auth of a configured row, so a background capability
+        // refresh fires once per change rather than per keystroke. Session-only UI state; never saved.
+        private static readonly Dictionary<ApiEndpointConfig, string> lastSeenRowSignature = new Dictionary<ApiEndpointConfig, string>();
 
         /// <summary>
         /// Draws the list of API lanes in a compact, collapsible block. Each row stores one
@@ -59,14 +66,29 @@ namespace PawnDiary
                     continue;
                 }
 
+                // Detect a change to this row's URL/key/auth since the previous frame and fire a
+                // background capability refresh once per change. First sight of a row just records
+                // its signature without firing (the settings-open trigger already covers uncached
+                // rows on first draw, so this avoids a redundant burst).
+                MaybeRefreshCapabilityOnRowChange(i, endpoint);
+
                 DrawCompactApiEndpointRow(listing, i, endpoint, ref removeIndex, ref moveIndex, ref moveDelta);
             }
 
             if (removeIndex >= 0)
             {
+                ApiEndpointConfig removed = removeIndex < Settings.apiEndpoints.Count
+                    ? Settings.apiEndpoints[removeIndex]
+                    : null;
                 Settings.apiEndpoints.RemoveAt(removeIndex);
                 // A removed row shifts indices, so any pending fetch/test result no longer maps cleanly.
                 apiConnectionController.CancelUiState();
+                // Drop the removed row's change-detection snapshot so it is not retained.
+                if (removed != null)
+                {
+                    lastSeenRowSignature.Remove(removed);
+                    revealedApiKeys.Remove(removed);
+                }
             }
             else if (moveIndex >= 0 && moveDelta != 0)
             {
@@ -98,6 +120,47 @@ namespace PawnDiary
 
             listing.Gap(6f);
             DrawRequestTuningBlock(listing);
+        }
+
+        /// <summary>
+        /// Fires a background capability refresh once when a row's URL/key/auth signature changes,
+        /// so editing a configured row re-fetches its reasoning capability without a manual Fetch
+        /// click. First sight of a row records the signature without firing (the settings-open
+        /// trigger already refreshes uncached rows, avoiding a redundant burst on first draw).
+        /// </summary>
+        private void MaybeRefreshCapabilityOnRowChange(int index, ApiEndpointConfig endpoint)
+        {
+            string signature = RowConnectionSignature(endpoint);
+            lastSeenRowSignature.TryGetValue(endpoint, out string previous);
+
+            if (previous == null)
+            {
+                // First frame for this row: just record, don't fire.
+                lastSeenRowSignature[endpoint] = signature;
+                return;
+            }
+
+            if (string.Equals(previous, signature, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            // Signature changed: record the new one and fire one background refresh. Requires a
+            // non-blank URL; a row still being typed into is skipped until it has a real endpoint.
+            lastSeenRowSignature[endpoint] = signature;
+            if (!string.IsNullOrWhiteSpace(endpoint.url))
+            {
+                apiConnectionController.RefreshCapability(index);
+            }
+        }
+
+        /// <summary>The connection-identity fields whose change should re-fetch capability.</summary>
+        private static string RowConnectionSignature(ApiEndpointConfig endpoint)
+        {
+            return (endpoint.url ?? string.Empty)
+                + "|" + (endpoint.apiKey ?? string.Empty)
+                + "|" + endpoint.authMode
+                + "|" + (endpoint.customAuthHeaderName ?? string.Empty);
         }
 
         /// <summary>
@@ -609,19 +672,7 @@ namespace PawnDiary
                     options = apiConnectionController.FetchedModels
                         .Distinct()
                         .OrderBy(model => model)
-                        .Select(model => new FloatMenuOption(model, delegate
-                        {
-                            endpoint.model = model;
-                            // If this model's reasoning capability is not yet cached for this row's
-                            // endpoint (e.g. the player Picks before a Fetch finished, or the Fetch
-                            // returned no capability), fetch now so the effort clamp protects the
-                            // outgoing request. Single-flight: skipped if any fetch is already running.
-                            if (ModelCapabilityCache.Get(endpoint.url, model) == null
-                                && !apiConnectionController.IsFetchingModels)
-                            {
-                                apiConnectionController.FetchModels(index);
-                            }
-                        }))
+                        .Select(model => new FloatMenuOption(model, delegate { endpoint.model = model; }))
                         .ToList();
                 }
                 else

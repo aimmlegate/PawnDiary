@@ -679,7 +679,13 @@ fix for the Gemma 400 above); an unsupported effort clamps to the provider defau
 supported level; an unknown capability (OpenAI-direct, local GGUF — no `reasoning` object) passes
 the effort through unchanged, preserving today's unconditional behavior. The settings effort
 dropdown also consults the cache: when capability is known it only offers supported levels and shows
-a tooltip; when unknown the full ladder is offered as before.
+a tooltip; when unknown the full ladder is offered as before. **Capability auto-refreshes** on four
+triggers so a player rarely clicks Fetch manually: when the settings window opens (one-shot, for any
+row whose capability is not yet cached), when a row's URL/key/auth changes (background refresh, once
+per change), when Test connection runs (in parallel), and on the manual Fetch click. A lightweight
+capability-only refresh path (`ApiConnectionController.RefreshCapability`) updates just the
+thread-safe cache without disturbing the single-flight picker, so several rows can refresh at once.
+Providers that return no `reasoning` object cache nothing and degrade gracefully.
 
 **Per-lane reasoning tag.** A **Reasoning tag** dropdown (default *Auto*) controls how
 `LlmResponseParser.StripReasoningTextBlocks` removes private thinking leaked into message content.
@@ -691,9 +697,6 @@ working regardless. False-positive risk is negligible because the strippers only
 (`<tag>…</tag>`), fenced ```` ```tag ```` blocks, and `Tag:` headings — never the bare word in prose,
 so a pawn writing "my reflections on the raid" is safe. The tag is normalized by
 `ApiEndpointPolicy.NormalizeReasoningTag` and threaded through `LlmGenerationRequest.reasoningTag`.
-**Capability auto-fetches at Pick:** when a model is chosen from the picker and its reasoning
-capability is not yet cached for that endpoint, the row fetches it automatically (reusing the
-single-flight Fetch path) so the effort clamp protects the request without any player action.
 
 The settings-window **Test connection** button runs independently per row: starting a test on one
 lane does not block or cancel a test on another, and each row shows its own "Testing…"/success/
