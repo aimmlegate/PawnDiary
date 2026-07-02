@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The adapter's half of the Pawn Diary contract: an External-domain group that CLAIMS the eventKey
+  this adapter submits. Without this def the submission records nothing (Pawn Diary logs one
+  warning naming the adapter). label/instruction/tone are DefInjected-localizable inside the
+  adapter mod, exactly like Pawn Diary's own groups. See INTEGRATIONS.md in the Pawn Diary repo.
+-->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>exampleAdapterQuietMoment</defName>
+    <label>quiet moment</label>
+    <order>1000</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a small quiet moment in the day; write one unhurried observation, nothing dramatic</instruction>
+    <tone>calm and low-key</tone>
+    <matchDefNames>
+      <li>exampleadapter_quiet_moment</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

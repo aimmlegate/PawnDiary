@@ -171,4 +171,15 @@
     <enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</enhancement>
   </PawnDiary.DiaryEventPromptDef>
 
+  <!-- Broad-domain fallback for integration-API events (see INTEGRATIONS.md). Adapter mods can
+       ship a narrower DiaryEventPromptDef keyed by their eventKey or group defName; this row only
+       catches External events with no more specific policy loaded. -->
+  <PawnDiary.DiaryEventPromptDef>
+    <defName>DiaryEventPrompt_External</defName>
+    <label>external mod event</label>
+    <eventType>External</eventType>
+    <prompt>Write a moment reported by another mod as something the pawn just lived through.</prompt>
+    <enhancement>Stay strictly inside the supplied event line and context facts; do not invent mechanics, systems, or unstated participants.</enhancement>
+  </PawnDiary.DiaryEventPromptDef>
+
 </Defs>

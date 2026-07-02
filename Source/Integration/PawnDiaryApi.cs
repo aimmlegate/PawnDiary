@@ -14,6 +14,7 @@
 //
 // New to C#/RimWorld? See AGENTS.md.
 using System;
+using PawnDiary.Ingestion;
 using Verse;
 
 namespace PawnDiary.Integration
@@ -103,7 +104,7 @@ namespace PawnDiary.Integration
                     return false;
                 }
 
-                DiaryEvents.Submit(new Ingestion.ExternalEventSignal(request));
+                DiaryEvents.Submit(new ExternalEventSignal(request));
                 return true;
             }
             catch (Exception e)

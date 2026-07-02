@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapter-owned strings. Pawn Diary receives already-localized text in the request; it never
+     translates another mod's content. -->
+<LanguageData>
+  <PawnDiaryExampleAdapter.QuietMomentSummary>{0} found a rare quiet moment with nothing urgent to do.</PawnDiaryExampleAdapter.QuietMomentSummary>
+  <PawnDiaryExampleAdapter.QuietMomentLabel>quiet moment</PawnDiaryExampleAdapter.QuietMomentLabel>
+</LanguageData>

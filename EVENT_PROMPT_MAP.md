@@ -6,6 +6,7 @@ items. This file describes the shipped code and XML only.
 Authoritative sources:
 
 - `Source/Ingestion/`: event signals and fan-out signals.
+- `Source/Integration/`: the public API other mods use to submit external events (`INTEGRATIONS.md`).
 - `Source/Capture/Events/`: pure capture decisions and game-context formats.
 - `Source/Core/DiaryGameComponent.*.cs`: dispatch, event creation, prompt queuing, scans, event
   windows, observed conditions, progression, and day/quadrum/arc reflections.
@@ -48,6 +49,7 @@ flowchart TD
         AR["Starting-colonist scan and Pawn.SetFaction<br/>ArrivalSignal<br/>neutral arrival page"]
         DR["Sleep/rest day flush<br/>DayReflectionSignal<br/>ordinary day reflection or rare quadrum reflection"]
         ARC["Sleep/rest day flush or major psylink/xenotype progression<br/>ArcReflectionSignal<br/>rare yearly life-arc reflection"]
+        EX["PawnDiaryApi.SubmitEvent from other mods<br/>ExternalEventSignal<br/>solo or pair external page"]
     end
 
     subgraph Generic["Generic page and prompt side channels"]
@@ -75,6 +77,7 @@ flowchart TD
     AR --> Submit
     DR --> Submit
     ARC --> Submit
+    EX --> Submit
 
     Submit["DiaryEvents.Submit(signal)"] --> Dispatch["DiaryGameComponent.Dispatch"]
     Dispatch --> Guard["CanRecordGameplayEventNow guard"]

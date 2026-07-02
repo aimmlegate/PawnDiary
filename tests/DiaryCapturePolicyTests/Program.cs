@@ -51,6 +51,9 @@ namespace DiaryCapturePolicyTests
             TestAbilityDecide();
             TestAbilityCooldownWeightedChance();
             TestAbilityBuildGameContextFormat();
+            TestExternalDecide();
+            TestExternalDedupKey();
+            TestExternalBuildGameContextFormat();
             TestArrivalDecide();
             TestArrivalBuildGameContextFormat();
             TestDeathDecide();
@@ -2116,6 +2119,86 @@ namespace DiaryCapturePolicyTests
                 MinMoodOffset = 5f,
                 EatingMinMoodOffset = 15f,
             };
+        }
+
+        // ── External (integration API) ──
+
+        private static ExternalEventData External(
+            string key = "mod_test_event",
+            string subject = "P1",
+            string partner = "",
+            bool subjectEligible = true,
+            bool partnerEligible = false,
+            bool hasGroup = true)
+        {
+            return new ExternalEventData
+            {
+                PawnId = subject,
+                EventKey = key,
+                SourceId = "author.adapter",
+                SubjectPawnId = subject,
+                PartnerPawnId = partner,
+                SubjectEligible = subjectEligible,
+                PartnerEligible = partnerEligible,
+                HasGroup = hasGroup,
+            };
+        }
+
+        private static void TestExternalDecide()
+        {
+            AssertEqual("external null data drops", CaptureDecision.Drop,
+                ExternalEventData.Decide(null, Ctx()));
+            AssertEqual("external null ctx drops", CaptureDecision.Drop,
+                ExternalEventData.Decide(External(), null));
+            AssertEqual("external empty key drops", CaptureDecision.Drop,
+                ExternalEventData.Decide(External(key: ""), Ctx()));
+            AssertEqual("external unclaimed key drops", CaptureDecision.Drop,
+                ExternalEventData.Decide(External(hasGroup: false), Ctx()));
+            AssertEqual("external user-disabled group drops", CaptureDecision.Drop,
+                ExternalEventData.Decide(External(), Ctx(user: false)));
+            AssertEqual("external signal-disabled drops", CaptureDecision.Drop,
+                ExternalEventData.Decide(External(), Ctx(signal: false)));
+            AssertEqual("external ineligible subject drops", CaptureDecision.Drop,
+                ExternalEventData.Decide(External(subjectEligible: false), Ctx()));
+            AssertEqual("external solo without partner", CaptureDecision.GenerateSolo,
+                ExternalEventData.Decide(External(), Ctx()));
+            AssertEqual("external ineligible partner downgrades to solo", CaptureDecision.GenerateSolo,
+                ExternalEventData.Decide(External(partner: "P2", partnerEligible: false), Ctx()));
+            AssertEqual("external self-partner stays solo", CaptureDecision.GenerateSolo,
+                ExternalEventData.Decide(External(partner: "P1", partnerEligible: true), Ctx()));
+            AssertEqual("external eligible partner makes pair", CaptureDecision.GeneratePair,
+                ExternalEventData.Decide(External(partner: "P2", partnerEligible: true), Ctx()));
+
+            // Catalog dispatch: the registered spec routes to the same pure decision.
+            AssertEqual("catalog dispatches External decision", CaptureDecision.GenerateSolo,
+                DiaryEventCatalog.Get(DiaryEventType.External).Decide(External(), Ctx()));
+        }
+
+        private static void TestExternalDedupKey()
+        {
+            // Solo events key per subject; pair events use the canonical order-independent pair
+            // key so an adapter that mirrors the call for both pawns collapses to one window.
+            AssertEqual("external solo dedup key",
+                "external|rimtalk_chat|P1",
+                External(key: "rimtalk_chat").DedupKey());
+            AssertEqual("external pair dedup key (forward order)",
+                "external|rimtalk_chat|A|B",
+                External(key: "rimtalk_chat", subject: "A", partner: "B").DedupKey());
+            AssertEqual("external pair dedup key is order-independent",
+                "external|rimtalk_chat|A|B",
+                External(key: "rimtalk_chat", subject: "B", partner: "A").DedupKey());
+        }
+
+        private static void TestExternalBuildGameContextFormat()
+        {
+            // The leading "external=" marker is load-bearing: DiaryEventDomainClassifier maps it
+            // back to the External domain for prompt policy and display styling.
+            AssertEqual("external game context format",
+                "external=mod_key; source=author.adapter",
+                ExternalEventData.BuildGameContext("mod_key", "author.adapter", ""));
+            AssertEqual("external game context with extra lines",
+                "external=mod_key; source=author.adapter; place=hot spring; mood=tense",
+                ExternalEventData.BuildGameContext("mod_key", "author.adapter", "place=hot spring; mood=tense"));
         }
 
         private static CaptureContext Ctx(

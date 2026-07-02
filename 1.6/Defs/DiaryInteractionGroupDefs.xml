@@ -2294,4 +2294,25 @@
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- ===== External domain (integration API) =====
+       External-domain groups claim the eventKey strings OTHER MODS submit through the public API
+       (PawnDiary.Integration.PawnDiaryApi.SubmitEvent — see INTEGRATIONS.md). Classification is
+       required-match: an eventKey no group claims records nothing, so adapter mods ship their own
+       External groups (typically gated with <enableWhenPackageIdsLoaded> when they live in this
+       core file). This built-in group claims only the dev-mode test key so the whole API path can
+       be exercised from Debug Actions ("Submit test external event...") without any adapter. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>externalDevTest</defName>
+    <label>External test event</label>
+    <order>950</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a test event submitted through the mod integration API; write a short grounded note about an odd but harmless moment</instruction>
+    <tone>matter-of-fact and mildly puzzled</tone>
+    <matchDefNames>
+      <li>pawndiary_dev_test</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
 </Defs>

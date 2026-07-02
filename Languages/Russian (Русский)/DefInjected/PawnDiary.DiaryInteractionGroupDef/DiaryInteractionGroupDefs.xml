@@ -352,4 +352,7 @@
   <progressionRoyalTitle.tones.1>тихо обременённо, ранг ощущается и честью, и обязанностью</progressionRoyalTitle.tones.1>
   <progressionOther.label>Развитие</progressionOther.label>
   <progressionOther.instruction>поселенец заметно изменился; переданный факт «до и после» подай просто, лично и без лишних объяснений</progressionOther.instruction>
+  <externalDevTest.label>Внешнее тестовое событие</externalDevTest.label>
+  <externalDevTest.instruction>тестовое событие из API интеграций; напиши короткую приземлённую заметку о странном, но безобидном моменте</externalDevTest.instruction>
+  <externalDevTest.tone>деловито и слегка озадаченно</externalDevTest.tone>
 </LanguageData>

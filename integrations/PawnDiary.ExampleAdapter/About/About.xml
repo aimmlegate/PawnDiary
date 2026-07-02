@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Pawn Diary — Example Adapter (template)</name>
+  <author>aimmlegate</author>
+  <packageId>aimmlegate.pawndiary.adapter.example</packageId>
+  <modVersion IgnoreIfNoMatchingField="True">0.1.0</modVersion>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <!-- An adapter hard-depends on the Pawn Diary core: it compiles against PawnDiary.dll and its
+       group XML is meaningless without it. NOTE: this packageId is the DEVELOPMENT id of the core
+       mod — update it when the core ships to the Workshop under its release id. -->
+  <modDependencies>
+    <li>
+      <packageId>aimmlegate.pawndiary.development</packageId>
+      <displayName>Pawn Diary</displayName>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>aimmlegate.pawndiary.development</li>
+  </loadAfter>
+  <description>Developer template for Pawn Diary integration adapters. Submits one harmless example diary event per in-game day through the public PawnDiaryApi, demonstrating the full contract: request building, adapter-owned localization, and the External-domain group XML that claims the eventKey. Not intended for normal play — copy this folder to start a real adapter (see INTEGRATIONS.md in the Pawn Diary repo).</description>
+</ModMetaData>

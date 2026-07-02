@@ -6,6 +6,23 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Public mod-integration API v1 (inbound events).** Other mods can now push moments into a pawn's
+  diary through the stable `PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)`
+  facade — validated, crash-isolated, main-thread-guarded, and routed through the normal
+  `DiaryEvents.Submit` bus as the new `External` event source (enum value + pure
+  `ExternalEventData.Decide` + `ExternalEventSpec` + `ExternalEventSignal`). Prompt policy stays in
+  XML: an External-domain `DiaryInteractionGroupDef` must claim the submitted `eventKey`
+  (required-match; unclaimed keys warn once and record nothing), with a broad
+  `DiaryEventPrompt_External` fallback row and a new `externalEventDedupTicks` tuning knob (adapters
+  can override dedup per request). Groups also gained `enableWhenPackageIdsLoaded` — the inverse of
+  `disableWhenPackageIdsLoaded` — so future in-core compatibility packs stay inert without their
+  target mod. A Debug Actions entry ("Submit test external event...") exercises the whole path via
+  the built-in `externalDevTest` group; EN/RU strings added, and `DiaryCapturePolicyTests` covers
+  the External decision, dedup-key, and game-context formats. Public contract: `INTEGRATIONS.md`;
+  architecture: `DOCUMENTATION.md` §3.7. A complete buildable adapter template ships in
+  `integrations/PawnDiary.ExampleAdapter/` (own About.xml/csproj/GameComponent/group XML), with
+  `scripts/deploy-integrations.ps1` to copy adapters to the RimWorld `Mods/` root during
+  development.
 - **Pre-release performance pass removed two hitch/garbage sources.** The open Diary tab no longer
   re-measures every expanded card on each periodic pawn-name-highlight refresh: the highlight
   version (which invalidates the card-height cache and row layout) now advances only when the
