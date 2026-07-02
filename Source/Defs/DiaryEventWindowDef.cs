@@ -148,5 +148,68 @@ namespace PawnDiary
 
             return rules;
         }
+
+        /// <summary>
+        /// Load-time validation for active windows. A persistent window must have some way to close, or
+        /// its prompt context can survive forever after save/load.
+        /// </summary>
+        public override IEnumerable<string> ConfigErrors()
+        {
+            foreach (string error in base.ConfigErrors())
+            {
+                yield return error;
+            }
+
+            if (keepActive && timeoutTicks <= 0 && !HasAnyTrigger(endSignals))
+            {
+                yield return "keepActive=true requires timeoutTicks > 0 or at least one usable endSignals trigger; "
+                    + "otherwise prompt context can stay active forever.";
+            }
+        }
+
+        private static bool HasAnyTrigger(List<DiaryEventWindowTriggerDef> triggers)
+        {
+            if (triggers == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < triggers.Count; i++)
+            {
+                DiaryEventWindowTriggerDef trigger = triggers[i];
+                if (trigger == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(trigger.source)
+                    || !string.IsNullOrWhiteSpace(trigger.signal)
+                    || HasAnyText(trigger.matchDefNames)
+                    || HasAnyText(trigger.matchTokens))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasAnyText(List<string> values)
+        {
+            if (values == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(values[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

@@ -686,6 +686,14 @@ namespace PawnDiary
                     continue;
                 }
 
+                // A missing condition can remain saved after its end debounce if an optional end page is
+                // retrying for lack of an eligible pawn. That retry state must not keep overriding prompts.
+                if (!ObservedConditionPromptActivity.IsPromptActive(active.startRecorded, active.endRecorded,
+                    active.firstMissingTick, now, def.endDebounceTicks))
+                {
+                    continue;
+                }
+
                 if (!ObservedConditionAppliesToPawn(def, active, pawnMapUniqueId, pawnId))
                 {
                     continue;

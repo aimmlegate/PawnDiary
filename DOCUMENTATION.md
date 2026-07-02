@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-01
+Last updated: 2026-07-02
 
 Related files:
 
@@ -319,6 +319,11 @@ replacement mod is loaded, and `enableWhenPackageIdsLoaded` keeps a compatibilit
 one of its target mods is present. External-domain groups classify the integration-API `eventKey`
 strings other mods submit (see §3.7).
 
+Interaction `PairEvent` batches only use the combined batch prompt when two or more moments collect in
+the quiet window. If the window flushes with a single moment, the entry is emitted as a normal
+standalone interaction with the original defName, label, first POV texts, and group instruction. That
+keeps low-frequency insults/slights from being written as artificial "batch" summaries.
+
 Event prompts resolve from narrow to broad: source defName, interaction group, classifier key, then
 domain. Prompt text, enhancement text, and forced-model text resolve independently, so a narrow row can
 override one field and inherit the others.
@@ -345,7 +350,9 @@ the condition is not repeated in both the style block and the `important context
 Event windows are for one-shot signals and bounded story phases. A `DiaryEventWindowDef` can start,
 end, time out, write phase pages, and add a weighted prompt candidate while it is active.
 `keepActive=false` turns the start signal into a one-shot page. `recordScope=SubjectPawn` records only
-the pawn carried by the signal.
+the pawn carried by the signal. Load-time `ConfigErrors` reject a persistent window with
+`keepActive=true`, no positive `timeoutTicks`, and no usable `endSignals` trigger, because that shape
+has no guaranteed close path and could leave prompt context active forever.
 
 Hot event-window paths use `EventWindowPolicy.CouldMatchByDefName` before resolving labels or doing
 expensive work. Window recording is isolated from normal raid, quest, hediff, and other capture paths;
@@ -391,6 +398,11 @@ window/condition ages, its candidate weight fades toward the multiplier floor an
 Observed conditions also support `maxActiveTicks` and `restartCooldownTicks`, saved per condition
 identity, so a condition can force-stop after a configured age and then avoid immediately restarting
 if its original evidence lingers.
+
+Prompt bias follows the same missing/end debounce as the lifecycle policy. A condition that is missing
+but still inside its `endDebounceTicks` can continue to color prompts, which smooths short lulls during
+combat or similar states. Once the debounce boundary is reached, prompt bias stops even if the saved row
+is retained to retry an optional end page because no eligible pawn was available.
 
 Shipped notable defs:
 

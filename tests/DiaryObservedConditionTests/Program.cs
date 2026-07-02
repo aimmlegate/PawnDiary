@@ -29,6 +29,8 @@ namespace DiaryObservedConditionTests
             TestZeroStartDebounceRecordsImmediately();
             TestDuplicateObservationsSameScanIgnored();
             TestObservationForUnknownDefIgnored();
+            TestPromptActivityStopsAfterMissingDebounce();
+            TestPromptActivitySkipsUnstartedAndEndedRows();
 
             Console.WriteLine("DiaryObservedConditionTests passed " + assertions + " assertions.");
             return 0;
@@ -274,6 +276,75 @@ namespace DiaryObservedConditionTests
             ObservedConditionPlan plan = ObservedConditionPolicy.Plan(
                 10, States(), Observations(Obs("unknown")), defs);
             AssertEqual("unknown-Def observation ignored", 0, plan.decisions.Count);
+        }
+
+        // Prompt bias may stay during the missing debounce, but must stop at the same boundary where
+        // the lifecycle policy considers the condition ended. This protects optional end-page retries:
+        // a saved row can remain retryable without keeping the LLM in the resolved event's tone forever.
+        private static void TestPromptActivityStopsAfterMissingDebounce()
+        {
+            AssertEqual(
+                "still observed condition biases prompts",
+                true,
+                ObservedConditionPromptActivity.IsPromptActive(
+                    startRecorded: true,
+                    endRecorded: false,
+                    firstMissingTick: -1,
+                    now: 1000,
+                    endDebounceTicks: 500));
+
+            AssertEqual(
+                "missing inside debounce still biases prompts",
+                true,
+                ObservedConditionPromptActivity.IsPromptActive(
+                    startRecorded: true,
+                    endRecorded: false,
+                    firstMissingTick: 1000,
+                    now: 1499,
+                    endDebounceTicks: 500));
+
+            AssertEqual(
+                "missing at debounce boundary no longer biases prompts",
+                false,
+                ObservedConditionPromptActivity.IsPromptActive(
+                    startRecorded: true,
+                    endRecorded: false,
+                    firstMissingTick: 1000,
+                    now: 1500,
+                    endDebounceTicks: 500));
+
+            AssertEqual(
+                "zero end debounce stops prompt bias immediately",
+                false,
+                ObservedConditionPromptActivity.IsPromptActive(
+                    startRecorded: true,
+                    endRecorded: false,
+                    firstMissingTick: 1000,
+                    now: 1000,
+                    endDebounceTicks: 0));
+        }
+
+        private static void TestPromptActivitySkipsUnstartedAndEndedRows()
+        {
+            AssertEqual(
+                "pending start does not bias prompts",
+                false,
+                ObservedConditionPromptActivity.IsPromptActive(
+                    startRecorded: false,
+                    endRecorded: false,
+                    firstMissingTick: -1,
+                    now: 1000,
+                    endDebounceTicks: 500));
+
+            AssertEqual(
+                "ended row does not bias prompts",
+                false,
+                ObservedConditionPromptActivity.IsPromptActive(
+                    startRecorded: true,
+                    endRecorded: true,
+                    firstMissingTick: 1000,
+                    now: 1100,
+                    endDebounceTicks: 500));
         }
 
         // ----- builders / helpers -----

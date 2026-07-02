@@ -161,6 +161,11 @@ namespace PawnDiary
                 pendingInteractionBatches[key] = batch;
             }
 
+            if (batch.Count == 0)
+            {
+                CaptureFirstBatchTexts(batch, initiator, initiatorText, recipientText);
+            }
+
             AppendInteractionBatchLine(batch, initiator, interactionLabel, initiatorText, recipientText);
             AddPlayLogEntryId(batch.playLogEntryIds, playLogEntryId);
             batch.lastTick = Find.TickManager.TicksGame;
@@ -443,6 +448,12 @@ namespace PawnDiary
                 return;
             }
 
+            if (batch.Count == 1)
+            {
+                FlushStandaloneInteractionBatch(batch, initiatorEligible, recipientEligible);
+                return;
+            }
+
             bool combined = batch.Count > 1;
             string label = combined ? BatchLabel(batch) : batch.firstLabel;
             string defName = combined ? BatchDefName(batch) : batch.firstDefName;
@@ -479,6 +490,101 @@ namespace PawnDiary
             diaryEvent.playLogInteractionDefName = batch.firstDefName;
             AddPlayLogEntryIds(diaryEvent, batch.playLogEntryIds);
             QueuePairwiseGeneration(diaryEvent);
+        }
+
+        /// <summary>
+        /// A delayed batch that collected only one interaction is not really a batch. Emit it like the
+        /// normal interaction path so the prompt does not receive combined-entry instructions.
+        /// </summary>
+        private void FlushStandaloneInteractionBatch(PendingInteractionBatch batch, bool initiatorEligible,
+            bool recipientEligible)
+        {
+            string label = batch.firstLabel;
+            string defName = batch.firstDefName;
+            string instruction = DiaryLineCleaner.CleanLine(batch.instruction);
+            string initiatorText = FirstStandaloneInteractionText(batch, true);
+            string recipientText = FirstStandaloneInteractionText(batch, false);
+            string gameContext = StandaloneInteractionBatchContext(batch);
+
+            if (!initiatorEligible || !recipientEligible)
+            {
+                Pawn eligiblePawn = initiatorEligible ? batch.initiator : batch.recipient;
+                Pawn otherPawn = initiatorEligible ? batch.recipient : batch.initiator;
+                string eligibleText = initiatorEligible ? initiatorText : recipientText;
+                if (string.IsNullOrWhiteSpace(eligibleText))
+                {
+                    eligibleText = "PawnDiary.Event.Interaction"
+                        .Translate(eligiblePawn.LabelShortCap, label, otherPawn.LabelShortCap);
+                }
+
+                DiaryEvent soloEvent = AddSoloEvent(eligiblePawn, otherPawn, defName, label,
+                    eligibleText, instruction, gameContext);
+                AddPlayLogEntryIds(soloEvent, batch.playLogEntryIds);
+                QueueLlmRewrite(soloEvent, DiaryEvent.InitiatorRole);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(initiatorText))
+            {
+                initiatorText = "PawnDiary.Event.Interaction"
+                    .Translate(batch.initiator.LabelShortCap, label, batch.recipient.LabelShortCap);
+            }
+
+            if (string.IsNullOrWhiteSpace(recipientText))
+            {
+                recipientText = initiatorText;
+            }
+
+            DiaryEvent diaryEvent = AddPairwiseEvent(batch.initiator, batch.recipient, defName, label,
+                initiatorText, recipientText, instruction, gameContext);
+            diaryEvent.playLogInteractionDefName = defName;
+            AddPlayLogEntryIds(diaryEvent, batch.playLogEntryIds);
+            QueuePairwiseGeneration(diaryEvent);
+        }
+
+        /// <summary>
+        /// Remembers the first raw POV texts before the batch formatter turns them into accumulated lines.
+        /// </summary>
+        private static void CaptureFirstBatchTexts(PendingInteractionBatch batch, Pawn initiator,
+            string initiatorText, string recipientText)
+        {
+            if (batch == null || initiator == null)
+            {
+                return;
+            }
+
+            if (initiator.GetUniqueLoadID() == batch.initiatorPawnId)
+            {
+                batch.firstInitiatorText = DiaryLineCleaner.CleanLine(initiatorText);
+                batch.firstRecipientText = DiaryLineCleaner.CleanLine(recipientText);
+            }
+            else
+            {
+                batch.firstInitiatorText = DiaryLineCleaner.CleanLine(recipientText);
+                batch.firstRecipientText = DiaryLineCleaner.CleanLine(initiatorText);
+            }
+        }
+
+        private static string FirstStandaloneInteractionText(PendingInteractionBatch batch, bool initiatorPov)
+        {
+            string text = initiatorPov ? batch.firstInitiatorText : batch.firstRecipientText;
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            List<string> fallbackLines = initiatorPov ? batch.initiatorLines : batch.recipientLines;
+            return BuildInteractionBatchText(batch, fallbackLines);
+        }
+
+        private static string StandaloneInteractionBatchContext(PendingInteractionBatch batch)
+        {
+            return "def=" + DiaryLineCleaner.CleanLine(batch.firstDefName)
+                + "; label=" + DiaryLineCleaner.CleanLine(batch.firstLabel)
+                + "; group=" + batch.GroupKey
+                + "; events=1"
+                + "; first_tick=" + batch.firstTick
+                + "; last_tick=" + batch.lastTick;
         }
 
         /// <summary>
@@ -917,6 +1023,10 @@ namespace PawnDiary
             public string firstLabel;
             // The LLM instruction carried over from the first interaction in the batch.
             public string instruction;
+            // Raw first-event POV text. Used if the batch flushes with one item, where it should become
+            // an ordinary standalone interaction entry rather than a combined batch entry.
+            public string firstInitiatorText;
+            public string firstRecipientText;
             // Per-POV line accumulators — each moment appends one line per POV.
             public readonly List<string> initiatorLines = new List<string>();
             public readonly List<string> recipientLines = new List<string>();

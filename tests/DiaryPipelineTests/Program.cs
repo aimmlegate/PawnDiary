@@ -679,6 +679,18 @@ namespace DiaryPipelineTests
                 povRole = DiaryPipelineRoles.Initiator
             });
             AssertEqual("solo combat batch selection", DiaryPipelineTemplates.SoloImportant, combatBatchPlan.templateKey);
+
+            DiaryEventPayload singleFlushedInteraction = PairPayload("e-single-flush", "social exchange",
+                "Alice snapped at Bob.", "Bob went quiet.");
+            singleFlushedInteraction.gameContext = "group=insults; events=1; first_tick=100; last_tick=100";
+            DiaryPromptPlan singleFlushPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = singleFlushedInteraction,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator
+            });
+            AssertEqual("single flushed interaction stays standalone",
+                DiaryPipelineTemplates.PairImportant, singleFlushPlan.templateKey);
         }
 
         private static void TestPromptEnchantmentPlanner()
@@ -1307,6 +1319,24 @@ namespace DiaryPipelineTests
             AssertTrue(
                 "could-match empty rules do not match",
                 !EventWindowPolicy.CouldMatchByDefName(new List<EventWindowTriggerRule>(), "ThingSpawned", "Bullet"));
+
+            XDocument eventWindows = XDocument.Load(RepoPath("1.6", "Defs", "DiaryEventWindowDefs.xml"));
+            foreach (XElement def in eventWindows.Descendants("PawnDiary.DiaryEventWindowDef"))
+            {
+                string defName = ChildValue(def, "defName");
+                string keepActiveText = ChildValue(def, "keepActive");
+                bool keepActive = string.IsNullOrWhiteSpace(keepActiveText)
+                    || string.Equals(keepActiveText, "true", StringComparison.OrdinalIgnoreCase);
+                int timeoutTicks;
+                if (!int.TryParse(ChildValue(def, "timeoutTicks"), out timeoutTicks))
+                {
+                    timeoutTicks = -1;
+                }
+
+                AssertTrue(
+                    "active event window has a close path: " + defName,
+                    !keepActive || timeoutTicks > 0 || HasUsableEventWindowTrigger(def.Element("endSignals")));
+            }
         }
 
         private static void TestProgressionMilestonePolicy()
@@ -2444,11 +2474,39 @@ namespace DiaryPipelineTests
             {
                 foreach (XElement item in list.Elements("li"))
                 {
-                    if (string.Equals((item.Value ?? string.Empty).Trim(), expectedValue,
-                        StringComparison.OrdinalIgnoreCase))
+                    string value = (item.Value ?? string.Empty).Trim();
+                    if (expectedValue == null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            return true;
+                        }
+                    }
+                    else if (string.Equals(value, expectedValue, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasUsableEventWindowTrigger(XElement triggerList)
+        {
+            if (triggerList == null)
+            {
+                return false;
+            }
+
+            foreach (XElement trigger in triggerList.Elements("li"))
+            {
+                if (!string.IsNullOrWhiteSpace(ChildValue(trigger, "source"))
+                    || !string.IsNullOrWhiteSpace(ChildValue(trigger, "signal"))
+                    || HasListValue(trigger, "matchDefNames", null)
+                    || HasListValue(trigger, "matchTokens", null))
+                {
+                    return true;
                 }
             }
 

@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Single-item interaction batch flushes now become standalone entries.** If an XML `PairEvent`
+  interaction batch, such as insults, opens but only collects one social-log moment before the quiet
+  window expires or the game saves, the flush now emits a normal standalone interaction entry: original
+  defName/label, first POV texts, normal group instruction, and no `batch=interaction` prompt marker.
+  Multi-item batches still use the combined synthetic defName/label and batch instruction. A
+  `DiaryPipelineTests` regression pins that `events=1` without a batch marker selects the standalone
+  prompt template. (DOCUMENTATION §5.)
+- **Lasting prompt overrides gained an extra stale-state guard.** Observed-condition prompt bias now
+  stops once the condition has been missing past its end debounce, even if the saved row is retained to
+  retry an optional end diary page because no eligible pawn is available. That prevents a resolved
+  condition from keeping the LLM in its override tone through retry bookkeeping. Persistent
+  `DiaryEventWindowDef` rows also now validate that they have either a positive timeout or a usable end
+  signal, and the pure tests cover the prompt-activity boundary plus shipped event-window XML close
+  paths. (DOCUMENTATION §5/§5.1.)
 - **Public mod-integration API v1 (inbound events).** Other mods can now push moments into a pawn's
   diary through the stable `PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)`
   facade — validated, crash-isolated, main-thread-guarded, and routed through the normal
