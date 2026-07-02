@@ -605,6 +605,13 @@ OpenAI-compatible gateways try to apply a thinking budget, which non-reasoning m
 Google's endpoint returns HTTP 400 "Thinking budget is not supported for this model." for Gemma).
 `default` omits the field in both modes.
 
+The settings-window **Test connection** button runs independently per row: starting a test on one
+lane does not block or cancel a test on another, and each row shows its own "Testing…"/success/
+failure status. `ApiConnectionController` keeps per-row state (a generation counter for stale-result
+rejection plus a busy flag and status string) and a thread-safe `ConcurrentQueue` for the
+background-to-main-thread result handoff, drained each UI frame. (The **Fetch models** button on the
+same screen is still single-flight global — only one fetch at a time across all rows.)
+
 ## 9. Save Data And Compatibility
 
 `DiaryGameComponent.ExposeData` owns the top-level save shape.

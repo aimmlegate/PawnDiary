@@ -6,6 +6,15 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **The Test connection button stopped freezing every other API row while one test ran.** Each row's
+  Test button now runs independently: clicking Test on row B while row A is still testing starts B
+  immediately, and each row shows its own "Testing…"/success/failure status line. Previously a single
+  global in-flight flag blocked every row's button until the one running test finished — a
+  pre-existing limit that became visible once the Gemma `none`-effort fix (below) made tests actually
+  succeed and hold that flag for the full request duration. `ApiConnectionController` now keeps
+  per-row state with a per-row generation counter for stale-result rejection and a thread-safe
+  `ConcurrentQueue` result handoff drained each UI frame. The Fetch-models button on the same screen
+  is still single-flight global and unchanged. (DOCUMENTATION §8.)
 - **Gemma (and other non-reasoning models) stopped failing Chat Completions lanes set to
   Reasoning → None.** The Chat Completions request body now omits `reasoning_effort` when the saved
   effort is `none`, matching how `default` already behaves. Previously the serializer sent

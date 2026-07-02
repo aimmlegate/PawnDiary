@@ -1,6 +1,7 @@
 // Async controller for the settings-window API tools. It keeps network request state out of
 // PawnDiaryMod's immediate-mode UI code while preserving the main-thread handoff rules.
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Verse;
 
@@ -28,13 +29,16 @@ namespace PawnDiary
         // thread, so the continuation must not call .Translate() or edit shared UI collections.
         private volatile ModelFetchResult pendingFetchResult;
 
-        // Connection-test state mirrors model fetching: the async HTTP continuation hands a result
-        // back here and the settings window applies UI text and RimWorld log lines on the main thread.
-        private int connectionTestGeneration;
-        private bool isTestingConnection;
-        private int connectionTestTargetIndex = -1;
-        private string connectionTestStatus;
-        private volatile ConnectionTestResult pendingConnectionTestResult;
+        // Connection-test state is per-row so each API row's Test button runs independently: a
+        // request on one row no longer blocks the others. The async HTTP continuation hands a
+        // result back here and the settings window applies UI text and RimWorld log lines on the
+        // main thread. This dictionary is main-thread-only (written before the await in
+        // TestApiConnection, in ApplyPendingConnectionTestResult, and in the Cancel* methods).
+        private readonly Dictionary<int, ConnectionTestRowState> connectionTestRows = new Dictionary<int, ConnectionTestRowState>();
+        // Thread-safe handoff from N background continuations to the single main-thread drain.
+        // Tests finish in arbitrary order, so this is a queue rather than a single slot (mirrors
+        // LlmClient.Completed / PendingLogs ConcurrentQueue pattern). Drained each UI frame.
+        private readonly ConcurrentQueue<ConnectionTestResult> pendingConnectionTestResults = new ConcurrentQueue<ConnectionTestResult>();
 
         /// <summary>Creates a controller that reads the live settings object only on UI/main-thread paths.</summary>
         public ApiConnectionController(Func<PawnDiarySettings> settingsProvider)
@@ -60,28 +64,28 @@ namespace PawnDiary
             get { return fetchedModels; }
         }
 
-        /// <summary>True while a connection test is in flight.</summary>
-        public bool IsTestingConnection
-        {
-            get { return isTestingConnection; }
-        }
-
-        /// <summary>The API row whose connection test owns the current status line.</summary>
-        public int ConnectionTestTargetIndex
-        {
-            get { return connectionTestTargetIndex; }
-        }
-
         /// <summary>Returns the model-fetch status for the requested row, or null if another row owns it.</summary>
         public string ModelFetchStatusForRow(int index)
         {
             return fetchTargetIndex == index ? fetchStatus : null;
         }
 
-        /// <summary>Returns the connection-test status for the requested row, or null if another row owns it.</summary>
+        /// <summary>True while a connection test for <paramref name="index"/> is in flight.</summary>
+        public bool IsTestingConnection(int index)
+        {
+            return TryGetConnectionTestRow(index, out ConnectionTestRowState row) && row.isTesting;
+        }
+
+        /// <summary>Returns the connection-test status for the requested row, or null if it has none.</summary>
         public string ConnectionTestStatusForRow(int index)
         {
-            return connectionTestTargetIndex == index ? connectionTestStatus : null;
+            return TryGetConnectionTestRow(index, out ConnectionTestRowState row) ? row.status : null;
+        }
+
+        /// <summary>Looks up the per-row connection-test state. Main-thread-only.</summary>
+        private bool TryGetConnectionTestRow(int index, out ConnectionTestRowState row)
+        {
+            return connectionTestRows.TryGetValue(index, out row);
         }
 
         /// <summary>Counts the visible status lines for one API row.</summary>
@@ -117,12 +121,18 @@ namespace PawnDiary
 
         /// <summary>
         /// Sends a tiny real generation request through one API row to verify endpoint, key, model,
-        /// and compatibility mode. All UI/log work stays on the main thread; the await continuation
-        /// only writes a result object for ApplyPendingConnectionTestResult to consume.
+        /// and compatibility mode. Each row runs independently: starting a test on row B while row A
+        /// is still testing does not block or cancel A. All UI/log work stays on the main thread; the
+        /// await continuation only enqueues a result object for ApplyPendingConnectionTestResult to
+        /// consume. After the await, do not call .Translate(), read game state, or touch shared UI
+        /// collections — only enqueue the immutable result snapshot.
         /// </summary>
         public async void TestApiConnection(int index)
         {
-            int generation = ++connectionTestGeneration;
+            // Get-or-create this row's state and bump its per-row generation so a stale in-flight
+            // result from an earlier start (or before a cancel) is rejected on drain.
+            ConnectionTestRowState row = GetOrCreateConnectionTestRow(index);
+            int generation = ++row.generation;
             string url = string.Empty;
             string apiKey = string.Empty;
             string customAuthHeaderName = ApiEndpointPolicy.DefaultCustomHeaderName;
@@ -132,15 +142,14 @@ namespace PawnDiary
             string reasoningEffort = PawnDiarySettings.DefaultReasoningEffort;
             try
             {
-                isTestingConnection = true;
-                connectionTestTargetIndex = index;
-                connectionTestStatus = "PawnDiary.Settings.TestingConnection".Translate();
+                row.isTesting = true;
+                row.status = "PawnDiary.Settings.TestingConnection".Translate();
 
                 PawnDiarySettings settings = CurrentSettings();
                 if (settings?.apiEndpoints == null || index < 0 || index >= settings.apiEndpoints.Count)
                 {
-                    isTestingConnection = false;
-                    connectionTestStatus = null;
+                    row.isTesting = false;
+                    row.status = null;
                     return;
                 }
 
@@ -163,8 +172,8 @@ namespace PawnDiary
                 string validationError = ConnectionTestValidationError(url, model);
                 if (!string.IsNullOrWhiteSpace(validationError))
                 {
-                    isTestingConnection = false;
-                    connectionTestStatus = "PawnDiary.Settings.ConnectionTestFailed".Translate(validationError);
+                    row.isTesting = false;
+                    row.status = "PawnDiary.Settings.ConnectionTestFailed".Translate(validationError);
                     Log.Warning("[PawnDiary debug] API connection check failed for " + ConnectionTestLaneLabel(url, model, apiMode)
                         + ": " + validationError);
                     return;
@@ -178,7 +187,7 @@ namespace PawnDiary
                     reasoningEffort = reasoningEffort
                 }, prompt, timeoutSeconds, temperature);
 
-                pendingConnectionTestResult = new ConnectionTestResult
+                pendingConnectionTestResults.Enqueue(new ConnectionTestResult
                 {
                     generation = generation,
                     targetIndex = index,
@@ -191,11 +200,11 @@ namespace PawnDiary
                     authMode = authMode,
                     apiMode = apiMode,
                     reasoningEffort = reasoningEffort
-                };
+                });
             }
             catch (Exception ex)
             {
-                pendingConnectionTestResult = new ConnectionTestResult
+                pendingConnectionTestResults.Enqueue(new ConnectionTestResult
                 {
                     generation = generation,
                     targetIndex = index,
@@ -208,8 +217,20 @@ namespace PawnDiary
                     authMode = authMode,
                     apiMode = apiMode,
                     reasoningEffort = reasoningEffort
-                };
+                });
             }
+        }
+
+        /// <summary>Gets the per-row state object for <paramref name="index"/>, creating it if absent.</summary>
+        private ConnectionTestRowState GetOrCreateConnectionTestRow(int index)
+        {
+            if (!connectionTestRows.TryGetValue(index, out ConnectionTestRowState row))
+            {
+                row = new ConnectionTestRowState();
+                connectionTestRows[index] = row;
+            }
+
+            return row;
         }
 
         /// <summary>
@@ -295,14 +316,19 @@ namespace PawnDiary
             fetchStatus = null;
         }
 
-        /// <summary>Invalidates any in-flight connection test and clears its row status.</summary>
+        /// <summary>
+        /// Invalidates every in-flight connection test and clears all per-row test state. Called on
+        /// row remove/move and "Reset connection". Any continuation that lands afterwards finds no
+        /// matching row entry on drain, so its result is discarded.
+        /// </summary>
         public void CancelConnectionTestUiState()
         {
-            connectionTestGeneration++;
-            isTestingConnection = false;
-            connectionTestTargetIndex = -1;
-            pendingConnectionTestResult = null;
-            connectionTestStatus = null;
+            connectionTestRows.Clear();
+            ConnectionTestResult stale;
+            while (pendingConnectionTestResults.TryDequeue(out stale))
+            {
+                // Drain: drop anything already queued so it is never applied to a fresh state.
+            }
         }
 
         private PawnDiarySettings CurrentSettings()
@@ -386,42 +412,42 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Applies a completed API connection test on the main thread: updates the row status and
-        /// writes a concise RimWorld log line with no API key.
+        /// Applies completed API connection tests on the main thread: drains the result queue and
+        /// updates each result's row status, writing a concise RimWorld log line with no API key.
+        /// Multiple rows' tests can complete between frames, so all queued results are drained.
         /// </summary>
         private void ApplyPendingConnectionTestResult()
         {
-            ConnectionTestResult result = pendingConnectionTestResult;
-            if (result == null)
+            while (pendingConnectionTestResults.TryDequeue(out ConnectionTestResult result))
             {
-                return;
-            }
+                // Stale if the row no longer exists (removed/cancelled) or was restarted with a
+                // newer generation. Drop silently — its UI state was already replaced or cleared.
+                if (!connectionTestRows.TryGetValue(result.targetIndex, out ConnectionTestRowState row)
+                    || result.generation != row.generation)
+                {
+                    continue;
+                }
 
-            pendingConnectionTestResult = null;
-            if (result.generation != connectionTestGeneration)
-            {
-                return;
-            }
+                if (!ConnectionTestTargetStillMatches(result, CurrentSettings()))
+                {
+                    // The row was edited/moved since the test started; clear its entry entirely.
+                    connectionTestRows.Remove(result.targetIndex);
+                    continue;
+                }
 
-            isTestingConnection = false;
-            if (!ConnectionTestTargetStillMatches(result, CurrentSettings()))
-            {
-                connectionTestTargetIndex = -1;
-                connectionTestStatus = null;
-                return;
-            }
-
-            if (result.success)
-            {
-                connectionTestStatus = "PawnDiary.Settings.ConnectionTestSucceeded".Translate(TrimForStatus(result.sampleText));
-                Log.Message("[PawnDiary debug] API connection check succeeded for " + ConnectionTestLaneLabel(result)
-                    + " sample=\"" + TrimForLog(result.sampleText) + "\"");
-            }
-            else
-            {
-                connectionTestStatus = "PawnDiary.Settings.ConnectionTestFailed".Translate(TrimForStatus(result.errorDetail));
-                Log.Warning("[PawnDiary debug] API connection check failed for " + ConnectionTestLaneLabel(result)
-                    + ": " + TrimForLog(result.errorDetail));
+                row.isTesting = false;
+                if (result.success)
+                {
+                    row.status = "PawnDiary.Settings.ConnectionTestSucceeded".Translate(TrimForStatus(result.sampleText));
+                    Log.Message("[PawnDiary debug] API connection check succeeded for " + ConnectionTestLaneLabel(result)
+                        + " sample=\"" + TrimForLog(result.sampleText) + "\"");
+                }
+                else
+                {
+                    row.status = "PawnDiary.Settings.ConnectionTestFailed".Translate(TrimForStatus(result.errorDetail));
+                    Log.Warning("[PawnDiary debug] API connection check failed for " + ConnectionTestLaneLabel(result)
+                        + ": " + TrimForLog(result.errorDetail));
+                }
             }
         }
 
@@ -501,6 +527,16 @@ namespace PawnDiary
             public string customAuthHeaderName; // effective custom-header name; never logged or shown
             public ApiAuthMode authMode;  // auth style snapshot; changing it changes request shape
             public ApiCompatibilityMode apiMode; // row mode snapshot; changing modes changes model-list shape
+        }
+
+        // Per-row, main-thread-only state for one API connection test. A row owns its own
+        // generation counter so a stale in-flight result (from before a cancel or restart) is
+        // rejected on drain without affecting other rows.
+        private sealed class ConnectionTestRowState
+        {
+            public int generation;
+            public bool isTesting;
+            public string status;
         }
 
         // Result of one connection test, handed from the await continuation to the main-thread draw.
