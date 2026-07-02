@@ -988,7 +988,7 @@ namespace PawnDiary
                 return 0;
             }
 
-            Faction player = Faction.OfPlayer;
+            Faction player = Faction.OfPlayerSilentFail;
             int count = 0;
             for (int i = 0; i < pawns.Count; i++)
             {

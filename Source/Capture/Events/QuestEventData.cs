@@ -115,6 +115,22 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>
+        /// Returns true when a resolved quest description is malformed and must never reach a diary
+        /// prompt. RimWorld's <c>QuestManager.QuestsListForReading</c> can expose generated/placeholder
+        /// quests whose description resolves to text beginning with <c>ERR:</c>; blank is also rejected.
+        /// Pure so it can be unit-tested without the game.
+        /// </summary>
+        public static bool IsMalformedResolvedQuestDescription(string description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                return true;
+            }
+
+            return description.StartsWith("ERR:", StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Pure assembly of the quest game-context marker. The leading "quest=" marker is
         /// load-bearing: the UI parses it to classify the event into the Quest domain. The signal
         /// field routes prompt group selection (accepted/completed/failed). The duplicated

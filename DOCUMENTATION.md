@@ -685,10 +685,12 @@ Never rename a key "for cleanliness" alone.
 ## 10. Runtime And DLC Constraints
 
 - Runtime is RimWorld's Unity Mono. Use only assemblies available in `RimWorldWin64_Data/Managed`
-  plus the bundled/declared Harmony dependency.
+  plus the declared Harmony dependency.
 - JSON uses `Source/Util/MiniJson.cs`. Do not add `System.Web.Extensions` or external JSON libraries.
-- Harmony is declared in `About/About.xml`; runtime and build copies of `0Harmony.dll` are kept in
-  `1.6/Assemblies/` and `Source/Libs/`.
+- Harmony is declared as a dependency on `brrainz.harmony` in `About/About.xml`; the Harmony runtime
+  comes from that active mod at game-time. Pawn Diary compiles against `Source/Libs/0Harmony.dll`
+  (`Private=False`, so it is never copied to the output) and ships **only** `PawnDiary.dll` — it
+  must never bundle `0Harmony.dll` in `1.6/Assemblies/`.
 - No paid DLC is required. Optional DLC data must no-op cleanly when absent.
 - DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks.
 - Avoid `DefDatabase<T>.GetNamed("DlcDef")` for optional content; use string matching or

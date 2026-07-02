@@ -74,8 +74,14 @@ namespace PawnDiary
                 || QuestWindowField == null
                 || SelectedQuestField == null)
             {
-                Log.Warning("[Pawn Diary] Could not find MainTabWindow_Quests quest-accept UI action; "
-                    + "quest accepted bookkeeping will rely on Quest.Accept only.");
+                // The compiler-generated closure name is version-specific and commonly fails to
+                // resolve; that is expected, not a fault — the canonical Quest.Accept patch above is
+                // the real hook. Stay quiet on a clean boot and only surface the miss under dev mode.
+                if (Prefs.DevMode)
+                {
+                    Log.Message("[Pawn Diary] MainTabWindow_Quests quest-accept UI action not found; "
+                        + "quest accepted bookkeeping will rely on Quest.Accept only.");
+                }
                 return;
             }
 

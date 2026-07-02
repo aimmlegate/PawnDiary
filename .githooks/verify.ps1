@@ -96,21 +96,21 @@ $msbuild = Find-MSBuild
 Invoke-Native $msbuild @("Source\PawnDiary.csproj", "/t:Build", "/p:Configuration=Debug")
 
 Write-Step "Committed DLL freshness check"
+# Pawn Diary must not ship Harmony — its runtime comes from the active brrainz.harmony mod. The
+# build-time reference copy (Source/Libs/0Harmony.dll) stays for compilation only and must never
+# appear in the shipped 1.6/Assemblies/ output.
 $sourceHarmony = Join-Path $repoRoot "Source\Libs\0Harmony.dll"
 $runtimeHarmony = Join-Path $repoRoot "1.6\Assemblies\0Harmony.dll"
-if (-not (Test-Path -LiteralPath $runtimeHarmony)) {
-    throw "Missing committed runtime dependency: 1.6/Assemblies/0Harmony.dll"
-}
 if (-not (Test-Path -LiteralPath $sourceHarmony)) {
     throw "Missing build reference dependency: Source/Libs/0Harmony.dll"
 }
-if ((Get-FileHash -LiteralPath $sourceHarmony).Hash -ne (Get-FileHash -LiteralPath $runtimeHarmony).Hash) {
-    throw "Source/Libs/0Harmony.dll differs from 1.6/Assemblies/0Harmony.dll. Update and stage the runtime copy."
+if (Test-Path -LiteralPath $runtimeHarmony) {
+    throw "Pawn Diary must not bundle Harmony: 1.6/Assemblies/0Harmony.dll exists. The runtime comes from brrainz.harmony."
 }
 
-& git diff --quiet -- "1.6/Assemblies/PawnDiary.dll" "1.6/Assemblies/0Harmony.dll"
+& git diff --quiet -- "1.6/Assemblies/PawnDiary.dll"
 if ($LASTEXITCODE -ne 0) {
-    throw "Build changed committed runtime DLLs. Stage the rebuilt DLL(s) and retry."
+    throw "Build changed committed runtime DLL. Stage the rebuilt PawnDiary.dll and retry."
 }
 
 Write-Host ""

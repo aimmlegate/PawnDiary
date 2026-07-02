@@ -76,7 +76,16 @@ namespace PawnDiary.Ingestion
 
             FactionDefName = BuildQuestFactionDefName(quest);
             Rewards = BuildQuestRewardsSummary(quest);
+
+            // Resolve the description once and reject malformed quests (blank or RimWorld's generated
+            // "ERR:" placeholder text) so they never produce a diary page. The event-window signal
+            // above still fired, but no per-pawn diary entries are generated for these quests.
             Description = BuildQuestDescription(quest);
+            if (string.IsNullOrEmpty(Description))
+            {
+                return;
+            }
+
             Instruction = InteractionGroups.InstructionForQuest(signal);
             colonyDedupKey = "quest|" + quest.id + "|" + signal;
             valid = true;
@@ -231,7 +240,10 @@ namespace PawnDiary.Ingestion
             try
             {
                 string description = quest.description.Resolve();
-                if (string.IsNullOrWhiteSpace(description))
+                // Reject blank and RimWorld's generated/placeholder "ERR:" descriptions before they
+                // reach a diary prompt. The QuestFanoutSignal constructor drops quests whose
+                // description resolves to empty here.
+                if (QuestEventData.IsMalformedResolvedQuestDescription(description))
                 {
                     return string.Empty;
                 }

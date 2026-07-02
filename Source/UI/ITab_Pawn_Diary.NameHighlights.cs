@@ -160,7 +160,8 @@ namespace PawnDiary
                 return ColorHex(favoriteColor);
             }
 
-            if (pawn.Faction != null && Faction.OfPlayer != null && pawn.Faction.HostileTo(Faction.OfPlayer))
+            Faction player = Faction.OfPlayerSilentFail;
+            if (pawn.Faction != null && player != null && pawn.Faction.HostileTo(player))
             {
                 return ColorHex(UiStyle.PawnNameEnemyColor);
             }

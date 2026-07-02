@@ -39,8 +39,15 @@ namespace PawnDiary
                 // Scenario setup flips starting pawns to the player faction during generation, before the
                 // game is playing; skip those so we don't record arrivals (and read TicksAbs) too early.
                 // Founding colonists are recorded by the first-playing-tick scan instead.
-                if (__instance == null || newFaction != Faction.OfPlayer || !__instance.IsColonist
-                    || !DiaryGameComponent.GamePlaying)
+                // GamePlaying is checked before reading the player faction so Faction.OfPlayerSilentFail
+                // (null-safe, no log spam) is used instead of the logging Faction.OfPlayer getter.
+                if (__instance == null || !DiaryGameComponent.GamePlaying)
+                {
+                    return;
+                }
+
+                Faction player = Faction.OfPlayerSilentFail;
+                if (player == null || newFaction != player || !__instance.IsColonist)
                 {
                     return;
                 }

@@ -13,6 +13,11 @@
     <LangVersion>7.3</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <!-- Managed DLL folder for RimWorld. Overridable via /p:RimWorldManaged=... or the
+         RIMWORLD_MANAGED env var so the project builds from any checkout location, not only
+         from inside RimWorld's Mods/ folder. -->
+    <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
+    <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -34,37 +39,42 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(RimWorldManaged)\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <!-- Harmony is a BUILD-TIME-ONLY reference (Private=False, so it is never copied to the output
+         folder and never shipped). The Harmony runtime at game-time comes from the active
+         brrainz.harmony mod, declared as a dependency in About/About.xml. Pawn Diary ships only its
+         own PawnDiary.dll. (PackageReference/Lib.Harmony would be the modern idiom, but the legacy
+         non-SDK csproj cannot be restored by the current .NET 10 / MSBuild 18 toolchain.) -->
     <Reference Include="0Harmony">
       <HintPath>Libs\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\..\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(RimWorldManaged)\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\..\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(RimWorldManaged)\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>..\..\..\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <HintPath>$(RimWorldManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    
+
     <Reference Include="System.Core"/>
     <Reference Include="System.Xml.Linq"/>
     <Reference Include="System.Data.DataSetExtensions"/>
-    
-    
+
+
     <Reference Include="Microsoft.CSharp"/>
-    
+
     <Reference Include="System.Data"/>
-    
+
     <Reference Include="System.Net.Http"/>
-    
+
     <Reference Include="System.Xml"/>
   </ItemGroup>
   <ItemGroup>
@@ -74,4 +84,4 @@
     <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
- </Project>
+</Project>

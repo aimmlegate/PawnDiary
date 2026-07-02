@@ -8,10 +8,10 @@
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
-  <!-- Pawn Diary uses HarmonyLib to patch base-game choke points (see Source/Patches/). RimWorld
-       1.6 no longer ships 0Harmony.dll in its Managed folder, so we both bundle a copy in
-       1.6/Assemblies/ (keeps the mod runnable from a bare clone) and declare the standalone
-       Harmony mod as a dependency here so load-ordering tools place it first. -->
+  <!-- Pawn Diary uses HarmonyLib to patch base-game choke points (see Source/Patches/). The
+       Harmony runtime comes from the standalone brrainz.harmony mod, declared below as a
+       dependency so load-ordering tools place it before Pawn Diary. Pawn Diary does NOT bundle
+       0Harmony.dll — it compiles against the Lib.Harmony NuGet package but ships only its own DLL. -->
   <modDependencies>
     <li>
       <packageId>brrainz.harmony</packageId>

@@ -578,16 +578,16 @@ if (-not [string]::IsNullOrWhiteSpace($Author)) {
 
 [System.IO.File]::WriteAllText($aboutDest, $aboutText, (New-Object System.Text.UTF8Encoding($false)))
 
-# Assemblies for Workshop release.
+# Assemblies for Workshop release. Only the mod's own DLL ships here — the Harmony runtime comes
+# from the active brrainz.harmony mod (declared in About/About.xml), never bundled with Pawn Diary.
 $asmDir = Join-Path $OutDir "1.6\Assemblies"
 New-Item -ItemType Directory -Force -Path $asmDir | Out-Null
 $payloadDll = Join-Path $asmDir "PawnDiary.dll"
 Copy-Item -LiteralPath $builtDll -Destination $payloadDll -Force
-$harmony = Join-Path $buildOut "0Harmony.dll"
-if (Test-Path -LiteralPath $harmony) {
-    Copy-Item -LiteralPath $harmony -Destination $asmDir -Force
-} else {
-    Copy-Payload "1.6\Assemblies\0Harmony.dll" -Required | Out-Null
+$bundledHarmony = Join-Path $asmDir "0Harmony.dll"
+if (Test-Path -LiteralPath $bundledHarmony) {
+    Remove-Item -LiteralPath $bundledHarmony -Force
+    Write-Host "  assemblies: removed stray 0Harmony.dll from payload"
 }
 
 # Ship reference docs with the Workshop payload, but keep development source/tests out of releases.

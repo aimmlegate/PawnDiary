@@ -38,12 +38,21 @@ namespace PawnDiary
         /// </summary>
         public static void Capture(Pawn pawn, Faction newFaction, Pawn recruiter)
         {
-            if (pawn == null || newFaction != Faction.OfPlayer || !IsHumanlike(pawn))
+            // Guard GamePlaying first: Faction.OfPlayer logs "Could not find player faction" if read
+            // before the player faction exists (early worldgen / scenario setup). OfPlayerSilentFail
+            // returns null instead of logging, so founding-colonist scenario flips are skipped quietly.
+            if (pawn == null || !DiaryGameComponent.GamePlaying || !IsHumanlike(pawn))
             {
                 return;
             }
 
-            if (pawn.Faction == Faction.OfPlayer || pawn.IsColonist)
+            Faction player = Faction.OfPlayerSilentFail;
+            if (player == null || newFaction != player)
+            {
+                return;
+            }
+
+            if (pawn.Faction == player || pawn.IsColonist)
             {
                 return;
             }

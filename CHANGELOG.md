@@ -6,6 +6,40 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Pawn Diary no longer bundles Harmony.** The mod now ships only `PawnDiary.dll` under
+  `1.6/Assemblies/`; the Harmony runtime comes from the declared `brrainz.harmony` dependency at
+  game-time. `1.6/Assemblies/0Harmony.dll` was removed, `scripts/publish.ps1` no longer copies it,
+  and `.githooks/verify.ps1` now fails the build if a bundled `0Harmony.dll` appears in the shipped
+  output. `0Harmony.dll` remains in `Source/Libs/` as a build-time-only compile reference
+  (`Private=False`, never copied to output). (The plan's `PackageReference`/`Lib.Harmony` idiom is
+  documented in the csproj but is not used: the legacy non-SDK csproj cannot be restored by the
+  current .NET 10 / MSBuild 18 toolchain, so the proven compile-time-reference approach is kept.)
+- **Project builds from any checkout location.** RimWorld/Unity assembly hint paths now resolve
+  through a configurable `RimWorldManaged` MSBuild property (overridable via `/p:RimWorldManaged=...`
+  or the `RIMWORLD_MANAGED` env var) instead of a hard-coded `..\..\..\RimWorldWin64_Data` relative
+  path that only worked inside RimWorld's `Mods/` folder.
+- **Arrival capture no longer risks an early-worldgen "Could not find player faction" log.**
+  `ArrivalContextCache.Capture` and `PawnSetFactionPatch.Postfix` now check `GamePlaying` first and
+  use `Faction.OfPlayerSilentFail` instead of the logging `Faction.OfPlayer` getter; the
+  observed-conditions hostile counter and pawn name-highlight color picker use the same null-safe
+  read.
+- **Malformed quests are filtered from diary prompts.** `QuestManager.QuestsListForReading` can
+  expose generated quests whose description resolves to `ERR:` placeholder text; a new pure helper
+  `QuestEventData.IsMalformedResolvedQuestDescription` rejects those (and blank descriptions) so
+  they never reach a diary page, while still allowing the generic event-window signal.
+- **Harmony patching is now per-class.** `DiaryModStartup` replaced the single `harmony.PatchAll()`
+  call with a `PatchAllSafely` sweep that patches each `[HarmonyPatch]` class independently, so one
+  fragile target can no longer prevent later patches from registering.
+- **Quest UI accept fallback is silent on a clean boot.** The version-specific generated-closure
+  fallback in `QuestUiAcceptPatch` no longer logs a warning when it cannot resolve (the canonical
+  `Quest.Accept` patch is the real hook); it surfaces only under dev mode.
+- **Minor UI text-clipping hardening.** The diary card group-label chip is now 20px tall (inner
+  label 18px after padding), and the Advanced settings group title measures its Medium-font line
+  height instead of hard-coding 24px, reducing clipping under non-default UI scale / text-size
+  accessibility settings.
+
+## 2026-07-02
+
 - **Diary export moved to Debug Actions and covers archived-only rows.** `Pawn Diary > Export all
   diary pages...` now writes hot pages, compact archived pages, archive rows without a live pawn diary
   record, and backing event records; the old settings-page export button was removed.

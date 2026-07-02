@@ -638,7 +638,7 @@ namespace PawnDiary
             float width = Mathf.Min(EntryLabelMaxWidth, Text.CalcSize(groupLabel).x + 18f);
             Text.Font = oldFont;
 
-            return new Rect(titleRect.xMax - width - 8f, titleRect.y + 5f, width, 18f);
+            return new Rect(titleRect.xMax - width - 8f, titleRect.y + 4f, width, 20f);
         }
 
         /// <summary>

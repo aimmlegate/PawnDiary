@@ -5,6 +5,7 @@
 // See AGENTS.md ("[StaticConstructorOnStartup]").
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using RimWorld;
 using Verse;
@@ -18,17 +19,11 @@ namespace PawnDiary
 
         static DiaryModStartup()
         {
-            // Apply all attribute-tagged ([HarmonyPatch]) patches. Wrapped so one failing patch
-            // can't abort this static constructor (which would also skip the tab registration below).
+            // Apply all attribute-tagged ([HarmonyPatch]) patches. Each class is patched independently
+            // so one bad target (often a fragile RimWorld-version-specific method) cannot abort the
+            // whole sweep and leave the rest of the mod's hooks unregistered.
             Harmony harmony = new Harmony("aimml.pawndiary");
-            try
-            {
-                harmony.PatchAll();
-            }
-            catch (Exception e)
-            {
-                Log.Error("[Pawn Diary] PatchAll failed: " + e);
-            }
+            PatchAllSafely(harmony);
 
             // Registered manually (not via PatchAll) because these reflection/generated-name targets
             // may change between RimWorld versions. The registrar keeps that fragility in one place.
@@ -85,6 +80,61 @@ namespace PawnDiary
             {
                 Log.Error("[Pawn Diary] Diary tab reinjection failed: " + e);
             }
+        }
+
+        /// <summary>
+        /// Patches each [HarmonyPatch]-annotated class independently so one failing target cannot
+        /// prevent later patches from registering. A single <c>harmony.PatchAll()</c> call would abort
+        /// on the first bad attribute patch and leave the rest of the mod's hooks unregistered.
+        /// </summary>
+        private static void PatchAllSafely(Harmony harmony)
+        {
+            foreach (Type type in typeof(DiaryModStartup).Assembly.GetTypes())
+            {
+                if (!HasHarmonyPatch(type))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    harmony.CreateClassProcessor(type).Patch();
+                }
+                catch (Exception e)
+                {
+                    Log.Error("[Pawn Diary] Harmony patch class failed (" + type.FullName + "): " + e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns true when a type carries a class-level [HarmonyPatch] attribute or any method-level
+        /// [HarmonyPatch] attribute, matching what <c>harmony.PatchAll()</c> would discover.
+        /// </summary>
+        private static bool HasHarmonyPatch(Type type)
+        {
+            if (type == null || !type.IsClass)
+            {
+                return false;
+            }
+
+            if (type.GetCustomAttributes(typeof(HarmonyPatch), false).Length > 0)
+            {
+                return true;
+            }
+
+            // Method-level [HarmonyPatch] attributes also drive PatchAll discovery for otherwise-unmarked
+            // classes (e.g. a plain static class whose methods each name their own target).
+            MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i].GetCustomAttributes(typeof(HarmonyPatch), false).Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

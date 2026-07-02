@@ -159,7 +159,10 @@ namespace PawnDiary
 
             GameFont previousFont = Text.Font;
             Text.Font = GameFont.Medium;
-            Rect titleRect = new Rect(0f, 0f, viewRect.width, 24f);
+            // Measure the Medium-font line height instead of hardcoding 24px so the title does not
+            // clip when the accessibility "Use tiny text" setting or UI scale changes line height.
+            float titleHeight = Mathf.Ceil(Text.LineHeight) + 2f;
+            Rect titleRect = new Rect(0f, 0f, viewRect.width, titleHeight);
             Widgets.LabelFit(titleRect, title);
             Text.Font = previousFont;
             float y = titleRect.height + 2f;
@@ -492,7 +495,14 @@ namespace PawnDiary
 
         private float AdvancedBodyHeight(IReadOnlyList<AdvancedFieldDescriptor> fields, AdvancedFieldCategory category)
         {
-            float height = 24f + 2f; // group title
+            // Measure the Medium title height so it matches what DrawAdvancedBodyHeader actually
+            // renders (line height varies with UI scale / text-size accessibility settings).
+            GameFont previousFont = Text.Font;
+            Text.Font = GameFont.Medium;
+            float titleHeight = Mathf.Ceil(Text.LineHeight) + 2f;
+            Text.Font = previousFont;
+
+            float height = titleHeight + 2f; // group title
             AdvancedFieldGroup group = SelectedAdvancedGroup(category);
             if (!AdvancedFilterActive() && group != null && GroupHasOverride(group))
             {

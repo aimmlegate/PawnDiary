@@ -113,6 +113,12 @@ MSBuild Source\PawnDiary.csproj /t:Build /p:Configuration=Debug
 from a clone — rebuild and stage it whenever you change C#. If `MSBuild` isn't on `PATH`, find it
 with `vswhere -latest -find MSBuild\**\Bin\MSBuild.exe`, or build from a VS "Developer PowerShell."
 
+RimWorld/Unity assembly hint paths come from the `RimWorldManaged` MSBuild property (defaulting to
+`D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed`); override it with
+`/p:RimWorldManaged=...` or the `RIMWORLD_MANAGED` env var to build from another checkout location.
+The Harmony runtime is **not** bundled — it comes from the active `brrainz.harmony` mod, so a clone
+needs that mod enabled to run. `Source/Libs/0Harmony.dll` is a build-time-only compile reference.
+
 ## Git hooks
 Tracked hooks live in `.githooks/`. Enable them in a clone with:
 ```
