@@ -1055,10 +1055,17 @@ namespace PawnDiary
                 return false;
             }
 
-            bool hasLetterOrDigit = false;
-            for (int i = 0; i < title.Length; i++)
+            string trimmed = title.Trim();
+            if (LooksLikeTitleInstructionLeak(trimmed)
+                || EndsWithForbiddenTitlePunctuation(trimmed))
             {
-                char c = title[i];
+                return false;
+            }
+
+            bool hasLetterOrDigit = false;
+            for (int i = 0; i < trimmed.Length; i++)
+            {
+                char c = trimmed[i];
                 if (IsUnexpectedTitleCharacter(c))
                 {
                     return false;
@@ -1070,7 +1077,69 @@ namespace PawnDiary
                 }
             }
 
-            return hasLetterOrDigit;
+            int wordCount = CountTitleWords(trimmed);
+            return hasLetterOrDigit
+                && wordCount >= GeneratedTitleMinWords
+                && wordCount <= GeneratedTitleMaxWords;
+        }
+
+        /// <summary>
+        /// Catches one-line reasoning or instruction echoes that look like ordinary prose after tag
+        /// stripping. Title callers should fall back instead of saving these as page headers.
+        /// </summary>
+        private static bool LooksLikeTitleInstructionLeak(string title)
+        {
+            string comparable = CollapseTitleWhitespace(title).ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(comparable))
+            {
+                return true;
+            }
+
+            return comparable.StartsWith("title:", StringComparison.Ordinal)
+                || StartsWithAny(comparable, FinalAnswerLabels())
+                || IsInstructionReflectionLine(comparable)
+                || comparable.Contains("only the title")
+                || comparable.Contains("title only")
+                || comparable.Contains("no quotes")
+                || comparable.Contains("no period")
+                || comparable.Contains("no labels")
+                || comparable.Contains("no commentary")
+                || comparable.Contains("no markdown")
+                || comparable.Contains("3-8 word")
+                || comparable.Contains("three to eight word");
+        }
+
+        private static int CountTitleWords(string title)
+        {
+            int words = 0;
+            bool inWord = false;
+            for (int i = 0; i < title.Length; i++)
+            {
+                if (char.IsWhiteSpace(title[i]))
+                {
+                    inWord = false;
+                    continue;
+                }
+
+                if (!inWord)
+                {
+                    words++;
+                    inWord = true;
+                }
+            }
+
+            return words;
+        }
+
+        private static bool EndsWithForbiddenTitlePunctuation(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return false;
+            }
+
+            char last = title[title.Length - 1];
+            return last == '.' || last == ':' || last == ';';
         }
 
         private static string GenericTitleFromText(string entryText, int maxWords)
@@ -1803,6 +1872,8 @@ namespace PawnDiary
         private const string SpeechOpenMarker = "[[speech]]";
         private const string SpeechCloseMarker = "[[/speech]]";
         private const int GenericTitleFallbackWords = 6;
+        private const int GeneratedTitleMinWords = 3;
+        private const int GeneratedTitleMaxWords = 8;
 
         /// <summary>
         /// Returns the index just past the last closed direct-speech block, or 0 when none is present.

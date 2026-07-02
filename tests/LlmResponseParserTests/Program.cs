@@ -394,6 +394,34 @@ namespace LlmResponseParserTests
                     "Alice pulled Bob out of the smoke and into cold rain."));
 
             AssertEqual(
+                "labeled title falls back",
+                "Alice pulled Bob out of the...",
+                LlmResponseParser.TitleOrFallback(
+                    "Title: Smoke in Cold Rain",
+                    "Alice pulled Bob out of the smoke and into cold rain."));
+
+            AssertEqual(
+                "reasoning title line falls back",
+                "Alice pulled Bob out of the...",
+                LlmResponseParser.TitleOrFallback(
+                    "We need answer with only the title, no commentary",
+                    "Alice pulled Bob out of the smoke and into cold rain."));
+
+            AssertEqual(
+                "overlong title falls back",
+                "Alice pulled Bob out of the...",
+                LlmResponseParser.TitleOrFallback(
+                    "Smoke and Cold Rain Around the Hospital Doorway Tonight",
+                    "Alice pulled Bob out of the smoke and into cold rain."));
+
+            AssertEqual(
+                "period-ended title falls back",
+                "Alice pulled Bob out of the...",
+                LlmResponseParser.TitleOrFallback(
+                    "Smoke in Cold Rain.",
+                    "Alice pulled Bob out of the smoke and into cold rain."));
+
+            AssertEqual(
                 "angle tag title falls back",
                 "Alice pulled Bob out of the...",
                 LlmResponseParser.TitleOrFallback(

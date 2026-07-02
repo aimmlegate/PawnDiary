@@ -6,6 +6,11 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Title fallback guard tightened.** Title follow-up responses now reject one-line answer labels,
+  instruction echoes, reasoning-style lines, terminal periods, and generated titles outside the
+  3-8 word contract. Invalid title output uses the existing fallback title built from the finished
+  diary entry instead of being saved as a page header. (DOCUMENTATION §6.)
+
 - **Reasoning capability auto-refreshes across the settings window.** A row's reasoning capability
   (and model list) now fetches itself on four triggers, so a player almost never has to click
   **Fetch models** manually: when the settings window opens (one-shot, for any row whose capability

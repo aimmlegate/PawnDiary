@@ -491,7 +491,9 @@ saved setting exists only for compatibility.
 
 Title generation is enabled by default. Main entries queue their own title request after successful
 generation. The broad missing-title sweep runs after load or settings save, not every generation
-scan. Bad title responses are rejected and fall back to the opening words of the finished entry.
+scan. Bad title responses are rejected and fall back to the opening words of the finished entry:
+titles must stay within the short one-line title contract, and answer labels, instruction echoes,
+reasoning-style lines, or terminal periods are treated as unusable model output.
 
 ## 7. Settings And UI
 
