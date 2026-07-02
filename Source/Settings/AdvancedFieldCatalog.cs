@@ -1472,7 +1472,6 @@ namespace PawnDiary
                     .Text("source")
                     .Text("capacityDefName")
                     .Float("chance", 0f, 1f, true)
-                    .Float("frequency", -1f, 1f, false)
                     .Float("weight", 0f, 100f, false)
                     .Float("severity", 0f, 100f, false)
                     .Bool("visibleOnly")

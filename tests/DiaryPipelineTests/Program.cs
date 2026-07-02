@@ -98,6 +98,7 @@ namespace DiaryPipelineTests
             {
                 { "Diary_SomeEnchantment.intensityKey", "PawnDiary.Prompt.Intensity.High" },
                 { "Diary_SomeEnchantment.intensityText", "acutely" },
+                { "Diary_SomeEnchantment.frequency", "0.25" },
                 { "Diary_SomeWindow.startTextKey", "PawnDiary.Event.Foo.start" },
                 { "Diary_SomeGroup.batch.labelKey", "PawnDiary.Event.BatchLabel" },
                 { "Diary_SomeGroup.batch.labelText", "The colonists chatted" },
@@ -108,7 +109,7 @@ namespace DiaryPipelineTests
 
             int removed = TuningOverrideMigration.PruneRemovedFieldKeys(overrides);
 
-            AssertTrue("prunes exactly the five orphaned translation-key overrides", removed == 5);
+            AssertTrue("prunes exactly the six orphaned removed-editor overrides", removed == 6);
             AssertTrue("keeps literal intensity text override",
                 overrides.ContainsKey("Diary_SomeEnchantment.intensityText"));
             AssertTrue("keeps literal batch label override",
@@ -117,6 +118,8 @@ namespace DiaryPipelineTests
                 overrides.ContainsKey("Diary_Tuning.socialFightDedupTicks"));
             AssertTrue("drops orphaned enchantment intensityKey",
                 !overrides.ContainsKey("Diary_SomeEnchantment.intensityKey"));
+            AssertTrue("drops orphaned prompt-enchantment frequency alias",
+                !overrides.ContainsKey("Diary_SomeEnchantment.frequency"));
             AssertTrue("drops orphaned nested batch.labelKey",
                 !overrides.ContainsKey("Diary_SomeGroup.batch.labelKey"));
 
@@ -129,6 +132,8 @@ namespace DiaryPipelineTests
                 TuningOverrideMigration.IsRemovedFieldName("startTextKey"));
             AssertTrue("nested raw translation-key field names are hidden from node settings",
                 TuningOverrideMigration.IsRemovedFieldName("batch.labelKey"));
+            AssertTrue("prompt-enchantment frequency alias is hidden from node settings",
+                TuningOverrideMigration.IsRemovedFieldName("frequency"));
             AssertTrue("literal text field names remain editable in node settings",
                 !TuningOverrideMigration.IsRemovedFieldName("batch.labelText"));
 

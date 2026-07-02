@@ -478,7 +478,9 @@ small custom accessors for nested policy objects. Every existing `DiaryTuning.Cu
 snapshotted once before the first override so Reset can restore them (signal/context `-1` "inherit
 tuning" sentinels and `<null>` list inheritance markers are preserved). Prompt text overrides use the
 same `{0}`, `{1}` placeholder convention as Keyed strings; cue lists use one item per line and accept
-`<null>` to suppress configured cue rows. Compact tables use these line formats: `WeatherDef=chance`,
+`<null>` to suppress configured cue rows. Prompt-enchantment appearance odds expose the canonical
+`chance` field only; the legacy `<frequency>` XML alias is still accepted for compatibility but is not
+a separate settings override. Compact tables use these line formats: `WeatherDef=chance`,
 `maxExclusive=ritualQualityLabel`, `enabled|label|source|contextKey` for prompt fields,
 `level|chance|frequency|weight|severity` for prompt-enchantment severity tiers, and
 `category|ThoughtDef|stageIndex:severity,...` for thought progression rules. Structural non-prompt UI

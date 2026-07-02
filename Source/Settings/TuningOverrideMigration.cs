@@ -10,10 +10,11 @@ namespace PawnDiary
     /// One-time cleanup for override keys whose editors were removed. When prompt overrides moved from
     /// Keyed translation keys (<c>*Key</c>/<c>cueKeys</c>) to literal text (<c>*Text</c>/<c>cueTexts</c>),
     /// the two stopped being interchangeable: a saved key value is a lookup token, not prose, so it
-    /// cannot be carried into a literal-text field without printing the raw key. Rather than mis-migrate
-    /// the value, we drop the orphaned entries so they stop lingering in the settings file and shadowing
-    /// nothing. Harmless when absent (players who never ran the interim build that briefly exposed the
-    /// key editors).
+    /// cannot be carried into a literal-text field without printing the raw key. The prompt-enchantment
+    /// <c>frequency</c> XML alias was also removed from Advanced settings because <c>chance</c> is the
+    /// canonical editable control. Rather than mis-migrate these values, we drop the orphaned entries so
+    /// they stop lingering in the settings file and shadowing nothing. Harmless when absent (players who
+    /// never ran an interim build that exposed the removed editors).
     /// </summary>
     internal static class TuningOverrideMigration
     {
@@ -23,6 +24,7 @@ namespace PawnDiary
         private static readonly string[] RemovedFieldKeySuffixes =
         {
             ".conditionKey", ".intensityKey", ".priorityKey", ".descriptionOverrideKey", ".cueKeys",
+            ".frequency",
             ".startTextKey", ".endTextKey", ".timeoutTextKey",
             ".promptPriorityKey", ".promptConditionKey", ".promptDescriptionKey", ".promptCueKeys",
             ".textKey",
@@ -30,7 +32,7 @@ namespace PawnDiary
             ".hediff.appearedTextKey", ".hediff.progressedTextKey",
         };
 
-        /// <summary>True when the override key targets a field whose editor was removed in the literal-text switch.</summary>
+        /// <summary>True when the override key targets a field whose Advanced editor was removed.</summary>
         public static bool IsRemovedFieldKey(string key)
         {
             if (string.IsNullOrEmpty(key))

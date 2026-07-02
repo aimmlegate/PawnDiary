@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Advanced prompt-enchantment settings stopped exposing the frequency alias.** The Prompt policy
+  editor now exposes `chance` as the single top-level appearance-odds control for prompt
+  enchantments; legacy `frequency` XML remains accepted but saved `*.frequency` Advanced overrides
+  are pruned as removed-editor entries.
 - **Russian localization review filled the prompt tuning UI gaps.** Added the missing Russian Keyed
   strings for advanced prompt settings and Prompt Studio, synchronized prompt-template and
   interaction DefInjected text with the current XML source, fixed a malformed persona speech marker,
