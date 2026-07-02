@@ -53,9 +53,9 @@
   <teaching.tone>with patient, quiet fondness</teaching.tone>
   <smalltalk.label>Small talk</smalltalk.label>
   <smalltalk.instruction>idle chatter—low-stakes small talk that fills the silence</smalltalk.instruction>
-  <smalltalk.instructions.0>small talk — write it through the trivial thing itself: the weather, the food, the half-formed opinion</smalltalk.instructions.0>
-  <smalltalk.instructions.1>small talk — write the thing underneath it: the ease, the awkwardness, the feeling never named out loud</smalltalk.instructions.1>
-  <smalltalk.instructions.2>small talk — write it as rhythm: the back-and-forth, the pauses, the nothing that passes the time</smalltalk.instructions.2>
+  <smalltalk.instructions.0>small talk — use the supplied topic if present; otherwise let the ordinary rhythm carry the entry</smalltalk.instructions.0>
+  <smalltalk.instructions.1>small talk — write the feeling under it: ease, awkwardness, duty, or distance</smalltalk.instructions.1>
+  <smalltalk.instructions.2>small talk — write the pauses and back-and-forth without inventing a new topic</smalltalk.instructions.2>
   <smalltalk.tone>with light, easy familiarity</smalltalk.tone>
   <dayreflection.label>Day&apos;s reflection</dayreflection.label>
   <dayreflection.instruction>a quiet end-of-day reflection looking back on the whole day</dayreflection.instruction>
@@ -71,9 +71,9 @@
   <insultspree.tone>with sour, needling anger</insultspree.tone>
   <mentalbreak.label>Mental breaks</mentalbreak.label>
   <mentalbreak.instruction>the mind breaking—write the pawn&apos;s inner storm and what they did</mentalbreak.instruction>
-  <mentalbreak.instructions.0>a mental break — write the spiral: the thought that wouldn&apos;t stop, the logic that bent, the pressure that won</mentalbreak.instructions.0>
-  <mentalbreak.instructions.1>a mental break — write it through the body: the hands, the wandering feet, the thing done without deciding</mentalbreak.instructions.1>
-  <mentalbreak.instructions.2>a mental break — write the senses going wrong: noise too loud, edges too sharp, the world at a wrong angle</mentalbreak.instructions.2>
+  <mentalbreak.instructions.0>a mental break — write the pressure loop: the repeated thought or urge behind the named state</mentalbreak.instructions.0>
+  <mentalbreak.instructions.1>a mental break — write it through body and motion: hands, feet, breath, and the supplied action</mentalbreak.instructions.1>
+  <mentalbreak.instructions.2>a mental break — write the world narrowing: one simple sensation, then the state taking over</mentalbreak.instructions.2>
   <mentalbreak.tone>with frayed, overwhelmed intensity</mentalbreak.tone>
   <talecombat.label>Combat, injuries &amp; death</talecombat.label>
   <talecombat.instruction>blood and danger—combat, injury, death, or rescue. Write what it felt like to live through it</talecombat.instruction>
@@ -120,15 +120,15 @@
   <thoughtPregnancyFamily.tone>with intimate, restrained weight</thoughtPregnancyFamily.tone>
   <thoughtPositive.label>Positive thoughts</thoughtPositive.label>
   <thoughtPositive.instruction>a fleeting lift in spirits—a positive thought that brightened the day. Match the intensity to the mood effect: minor joys get a quiet note, strong ones get warmth and detail</thoughtPositive.instruction>
-  <thoughtPositive.instructions.0>a positive thought — write what sparked it: the small thing seen, heard, or remembered. Scale it to the mood lift</thoughtPositive.instructions.0>
-  <thoughtPositive.instructions.1>a positive thought — write the body easing: shoulders, breath, the half-smile nobody saw. Scale it to the mood lift</thoughtPositive.instructions.1>
-  <thoughtPositive.instructions.2>a positive thought — write the want it stirs: the pull to keep this, do it again, tell someone. Scale it to the mood lift</thoughtPositive.instructions.2>
+  <thoughtPositive.instructions.0>a positive thought — use the supplied trigger if present; otherwise write the mood lift itself. Scale it to the effect</thoughtPositive.instructions.0>
+  <thoughtPositive.instructions.1>a positive thought — write the body easing: shoulders, breath, a small private smile. Scale it to the mood lift</thoughtPositive.instructions.1>
+  <thoughtPositive.instructions.2>a positive thought — write the pull it creates: wanting the feeling to last or the day to turn. Scale it to the mood lift</thoughtPositive.instructions.2>
   <thoughtPositive.tone>with a small, brightening lift</thoughtPositive.tone>
   <thoughtNegative.label>Negative thoughts</thoughtNegative.label>
   <thoughtNegative.instruction>a weight on the mind—a negative thought that lingered. Match the intensity to the mood effect: minor irritations get a passing mention, severe ones get raw emotion and weight</thoughtNegative.instruction>
-  <thoughtNegative.instructions.0>a negative thought — write what sparked it: the small sting, the line that repeated. Scale it to the mood hit</thoughtNegative.instructions.0>
-  <thoughtNegative.instructions.1>a negative thought — write the body tightening: jaw, gut, the restless hands. Scale it to the mood hit</thoughtNegative.instructions.1>
-  <thoughtNegative.instructions.2>a negative thought — write the loop it makes: coming back, growing, the angle it won&apos;t drop. Scale it to the mood hit</thoughtNegative.instructions.2>
+  <thoughtNegative.instructions.0>a negative thought — use the supplied trigger if present; otherwise write the sting repeating. Scale it to the mood hit</thoughtNegative.instructions.0>
+  <thoughtNegative.instructions.1>a negative thought — write the body tightening: jaw, gut, restless hands. Scale it to the mood hit</thoughtNegative.instructions.1>
+  <thoughtNegative.instructions.2>a negative thought — write the loop it makes: returning, growing, hard to drop. Scale it to the mood hit</thoughtNegative.instructions.2>
   <thoughtNegative.tone>with a low, nagging weight</thoughtNegative.tone>
   <thoughtOther.label>Passing thoughts</thoughtOther.label>
   <thoughtOther.instruction>a temporary thought that crossed the pawn&apos;s mind. Match the intensity to the mood effect</thoughtOther.instruction>

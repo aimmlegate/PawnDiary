@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Russian localization review filled the prompt tuning UI gaps.** Added the missing Russian Keyed
+  strings for advanced prompt settings and Prompt Studio, synchronized prompt-template and
+  interaction DefInjected text with the current XML source, fixed a malformed persona speech marker,
+  and replaced awkward test-fixture wording such as "синтетическое задание" with natural Russian UI
+  equivalents. A follow-up wording pass also replaced code-flavored Russian UI phrases like
+  "пачка", "активный уклон", "сырая инструкция", and visible "пешка" labels with shorter
+  localization-friendly wording.
 - **Prompt policy node settings stopped mirroring XML translation defaults.** Literal override boxes
   for key-backed prompt policy (`*Text`, `conditionLabel`, cue lists, batch/hediff text) now stay
   blank when XML owns the Keyed default, so node settings no longer expose raw translation keys or

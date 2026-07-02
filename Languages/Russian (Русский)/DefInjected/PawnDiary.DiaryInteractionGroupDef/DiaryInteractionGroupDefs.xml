@@ -53,9 +53,9 @@
   <teaching.tone>с терпеливой, тихой нежностью</teaching.tone>
   <smalltalk.label>Обычная болтовня</smalltalk.label>
   <smalltalk.instruction>праздная болтовня: мелкий разговор, который заполняет тишину</smalltalk.instruction>
-  <smalltalk.instructions.0>болтовня: пиши через пустяк, через погоду, еду или недодуманное мнение</smalltalk.instructions.0>
-  <smalltalk.instructions.1>болтовня: пиши то, что под ней, лёгкость, неловкость или чувство, не названное вслух</smalltalk.instructions.1>
-  <smalltalk.instructions.2>болтовня: пиши ритм реплик, паузы и то «ничего», которым коротают время</smalltalk.instructions.2>
+  <smalltalk.instructions.0>болтовня: используй заданную тему, если она есть; иначе пусть запись держится на обычном ритме</smalltalk.instructions.0>
+  <smalltalk.instructions.1>болтовня: пиши чувство под разговором — лёгкость, неловкость, долг или дистанцию</smalltalk.instructions.1>
+  <smalltalk.instructions.2>болтовня: пиши паузы и обмен репликами, не выдумывая новую тему</smalltalk.instructions.2>
   <smalltalk.tone>с лёгкой, непринуждённой близостью</smalltalk.tone>
   <dayreflection.label>Итог дня</dayreflection.label>
   <dayreflection.instruction>тихое вечернее размышление, оглядывающееся на весь день</dayreflection.instruction>
@@ -71,9 +71,9 @@
   <insultspree.tone>с кислой, занозистой злостью</insultspree.tone>
   <mentalbreak.label>Нервные срывы</mentalbreak.label>
   <mentalbreak.instruction>разум ломается: пиши внутреннюю бурю поселенца и то, что он сделал</mentalbreak.instruction>
-  <mentalbreak.instructions.0>нервный срыв: пиши спираль, мысль не унимается, логика сгибается, давление берёт верх</mentalbreak.instructions.0>
-  <mentalbreak.instructions.1>нервный срыв: пиши через тело, руки, блуждающие ноги, действие без решения</mentalbreak.instructions.1>
-  <mentalbreak.instructions.2>нервный срыв: пиши сбитые чувства, слишком громкий шум, слишком резкие края, мир под неверным углом</mentalbreak.instructions.2>
+  <mentalbreak.instructions.0>нервный срыв: пиши петлю давления — повторяющуюся мысль или порыв за названным состоянием</mentalbreak.instructions.0>
+  <mentalbreak.instructions.1>нервный срыв: пиши через тело и движение — руки, ноги, дыхание и указанное действие</mentalbreak.instructions.1>
+  <mentalbreak.instructions.2>нервный срыв: мир сужается — одно простое ощущение, затем состояние берёт верх</mentalbreak.instructions.2>
   <mentalbreak.tone>с издёрганной, захлёстывающей силой</mentalbreak.tone>
   <talecombat.label>Бой, ранения и смерть</talecombat.label>
   <talecombat.instruction>кровь и опасность: бой, ранение, смерть или спасение. Пиши, каково было это пережить</talecombat.instruction>
@@ -120,15 +120,15 @@
   <thoughtPregnancyFamily.tone>с сокровенным, сдержанным весом</thoughtPregnancyFamily.tone>
   <thoughtPositive.label>Положительные мысли</thoughtPositive.label>
   <thoughtPositive.instruction>мимолётный подъём: положительная мысль скрасила день. Соизмеряй силу с эффектом на настроение: мелкие радости тихие, сильные дают тепло и детали</thoughtPositive.instruction>
-  <thoughtPositive.instructions.0>положительная мысль: покажи, что её вызвало, маленькое увиденное, услышанное или вспомненное. Соизмеряй с подъёмом настроения</thoughtPositive.instructions.0>
-  <thoughtPositive.instructions.1>положительная мысль: покажи, как тело отпускает, плечи, дыхание, полуулыбка, которой никто не видел. Соизмеряй с подъёмом настроения</thoughtPositive.instructions.1>
-  <thoughtPositive.instructions.2>положительная мысль: покажи желание удержать это, повторить или рассказать кому-то. Соизмеряй с подъёмом настроения</thoughtPositive.instructions.2>
+  <thoughtPositive.instructions.0>положительная мысль: используй указанный повод, если он есть; иначе пиши сам подъём настроения. Держи масштаб по силе эффекта</thoughtPositive.instructions.0>
+  <thoughtPositive.instructions.1>положительная мысль: тело отпускает — плечи, дыхание, маленькая улыбка наедине. Держи масштаб по силе подъёма</thoughtPositive.instructions.1>
+  <thoughtPositive.instructions.2>положительная мысль: пиши желание удержать это чувство или повернуть день к лучшему. Держи масштаб по силе подъёма</thoughtPositive.instructions.2>
   <thoughtPositive.tone>с маленьким, светлеющим подъёмом</thoughtPositive.tone>
   <thoughtNegative.label>Отрицательные мысли</thoughtNegative.label>
   <thoughtNegative.instruction>груз на уме: отрицательная мысль задержалась. Соизмеряй силу с эффектом на настроение: мелкие досады беглые, тяжёлые дают сырой вес</thoughtNegative.instruction>
-  <thoughtNegative.instructions.0>отрицательная мысль: покажи, что зацепило, мелкий укол или фразу, которая повторяется. Соизмеряй с ударом по настроению</thoughtNegative.instructions.0>
-  <thoughtNegative.instructions.1>отрицательная мысль: покажи, как тело сжимается, челюсть, нутро, беспокойные руки. Соизмеряй с ударом по настроению</thoughtNegative.instructions.1>
-  <thoughtNegative.instructions.2>отрицательная мысль: покажи петлю, возвращение и угол, под которым она не отпускает. Соизмеряй с ударом по настроению</thoughtNegative.instructions.2>
+  <thoughtNegative.instructions.0>отрицательная мысль: используй указанный повод, если он есть; иначе пиши повторяющийся укол. Держи масштаб по силе удара</thoughtNegative.instructions.0>
+  <thoughtNegative.instructions.1>отрицательная мысль: тело сжимается — челюсть, нутро, беспокойные руки. Держи масштаб по силе удара</thoughtNegative.instructions.1>
+  <thoughtNegative.instructions.2>отрицательная мысль: пиши петлю — возвращается, растёт, не отпускает. Держи масштаб по силе удара</thoughtNegative.instructions.2>
   <thoughtNegative.tone>с низким, ноющим грузом</thoughtNegative.tone>
   <thoughtOther.label>Мимолётные мысли</thoughtOther.label>
   <thoughtOther.instruction>временная мысль мелькнула в уме поселенца. Соизмеряй силу с эффектом на настроение</thoughtOther.instruction>
