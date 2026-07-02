@@ -22,9 +22,10 @@ namespace PawnDiary
         private Pawn cachedNameHighlightsPawn;
         private int cachedNameHighlightsTick = -1;
         private List<DiaryNameHighlight> cachedNameHighlights = new List<DiaryNameHighlight>();
-        // Monotonic version of the highlight set above. Bumped every time a fresh set is built so the
-        // entry-height cache (CachedEntryHeight) can tell when the highlights — which render bold and
-        // can change text wrapping — were rebuilt off the live colony without a render-token change.
+        // Monotonic version of the highlight set above. Bumped only when a rebuilt set actually
+        // differs from the cached one, so the entry-height cache (CachedEntryHeight) and the row
+        // layout can tell when the highlights — which render bold and can change text wrapping —
+        // really changed off the live colony without a render-token change.
         private int nameHighlightsVersion;
 
         private List<DiaryNameHighlight> NameHighlightsFor(Pawn selectedPawn)
@@ -39,11 +40,22 @@ namespace PawnDiary
                 return cachedNameHighlights;
             }
 
+            // Only a REAL change may bump the version: bumping invalidates the card-height cache and
+            // the virtualized row layout, which re-measures every expanded card's wrapped text in one
+            // frame. The rebuilt set is almost always identical (names/colors only change on recruit,
+            // capture, rename, or a hostility flip), so bumping unconditionally on every cache expiry
+            // made the open tab hitch every NameHighlightCacheTicks on large colonies. When the set is
+            // unchanged we also keep the OLD list object, in case anything downstream compares by
+            // reference, and let the rebuilt copy be collected.
+            List<DiaryNameHighlight> rebuilt = BuildPawnNameHighlights(selectedPawn);
+            if (!DiaryNameHighlighter.SameHighlights(cachedNameHighlights, rebuilt))
+            {
+                cachedNameHighlights = rebuilt;
+                nameHighlightsVersion++;
+            }
+
             cachedNameHighlightsPawn = selectedPawn;
             cachedNameHighlightsTick = tick;
-            cachedNameHighlights = BuildPawnNameHighlights(selectedPawn);
-            // A new set may carry renamed/recolored names; bump so the height cache re-measures once.
-            nameHighlightsVersion++;
             return cachedNameHighlights;
         }
 

@@ -132,7 +132,9 @@ namespace PawnDiary
             }
 
             int now = Find.TickManager.TicksGame;
-            List<string> keysToFlush = new List<string>();
+            // Allocated lazily: this runs every tick while ANY batch is pending, and most of those
+            // ticks nothing is ready yet — the flush helper below treats null as "nothing to flush".
+            List<string> keysToFlush = null;
             foreach (KeyValuePair<string, PendingTaleBatch> pair in pendingTaleBatches)
             {
                 PendingTaleBatch batch = pair.Value;
@@ -140,6 +142,11 @@ namespace PawnDiary
                     || batch.eventCount >= BatchMaxEvents(batch.policy)
                     || now - batch.lastTick >= BatchWindowTicks(batch.policy))
                 {
+                    if (keysToFlush == null)
+                    {
+                        keysToFlush = new List<string>();
+                    }
+
                     keysToFlush.Add(pair.Key);
                 }
             }

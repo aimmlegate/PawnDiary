@@ -27,9 +27,12 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Hediff hediff)
         {
-            DiaryPatchSafety.Run("HealthTrackerAddHediffPatch", () =>
+            // Hot hook: AddHediff fires for every wound on every pawn in combat. Both Run calls use
+            // the state-passing overload so neither lambda captures a local — a capturing lambda here
+            // would allocate a closure per hediff even on the common non-colonist early-out.
+            DiaryPatchSafety.Run("HealthTrackerAddHediffPatch", hediff, h =>
             {
-                Pawn pawn = hediff?.pawn;
+                Pawn pawn = h?.pawn;
                 // RimWorld rolls old-age injuries onto starting pawns during generation, before the game
                 // is playing; skip those so RecordHediffAppeared does not read TicksAbs (via CurrentDayIndex)
                 // before the world clock exists. Starting hediffs are baselined by the first scan instead.
@@ -46,9 +49,9 @@ namespace PawnDiary
 
                 // Isolate the optional event-window signal so a failure there cannot skip the mature
                 // hediff capture below (both ran in this one DiaryPatchSafety.Run lambda before).
-                DiaryPatchSafety.Run("HealthTrackerAddHediffPatch.EventWindow",
-                    () => component.RecordEventWindowHediffAdded(pawn, hediff));
-                DiaryEvents.Submit(new HediffSignal(pawn, hediff, HediffSignalSource.Appeared));
+                DiaryPatchSafety.Run("HealthTrackerAddHediffPatch.EventWindow", (component, pawn, hediff: h),
+                    s => s.component.RecordEventWindowHediffAdded(s.pawn, s.hediff));
+                DiaryEvents.Submit(new HediffSignal(pawn, h, HediffSignalSource.Appeared));
             });
         }
     }

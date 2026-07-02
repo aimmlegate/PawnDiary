@@ -20,6 +20,7 @@ namespace DiaryTextDecorationTests
             TestPsychicRitualInvokerUsesFormatterWithDarkCue();
             TestNameHighlighterColorsAndBoldsKnownPawns();
             TestNameHighlighterRespectsBoundariesAndLongestName();
+            TestNameHighlighterSetComparison();
             TestPawnFactSerializationRoundTrip();
             TestEventTagsFromContext();
             TestIntoxicationHediffReusesStaggeredRules();
@@ -272,6 +273,61 @@ namespace DiaryTextDecorationTests
             AssertContains("longest name wins", highlighted, "<color=#445566><b>Anna</b></color>");
             AssertContains("shorter name still matches", highlighted, "<color=#112233><b>Ann</b></color>");
             AssertTrue("does not match inside annex", highlighted.IndexOf("<b>ann</b>ex", StringComparison.OrdinalIgnoreCase) < 0);
+        }
+
+        // Locks the change-detection contract the Diary tab relies on: the highlight version (which
+        // invalidates the expensive card-height cache) may only advance when the rebuilt set REALLY
+        // differs, and every ambiguous input must read as "changed" (the safe direction).
+        private static void TestNameHighlighterSetComparison()
+        {
+            List<DiaryNameHighlight> baseline = new List<DiaryNameHighlight>
+            {
+                new DiaryNameHighlight { name = "Alice", colorHex = "AABBCC" },
+                new DiaryNameHighlight { name = "Bob", colorHex = string.Empty }
+            };
+
+            List<DiaryNameHighlight> reorderedDifferentCase = new List<DiaryNameHighlight>
+            {
+                new DiaryNameHighlight { name = "bob", colorHex = string.Empty },
+                new DiaryNameHighlight { name = "ALICE", colorHex = "aabbcc" }
+            };
+
+            AssertTrue("same reference is same",
+                DiaryNameHighlighter.SameHighlights(baseline, baseline));
+            AssertTrue("reordered case-insensitive set is same",
+                DiaryNameHighlighter.SameHighlights(baseline, reorderedDifferentCase));
+            AssertTrue("null color equals empty color",
+                DiaryNameHighlighter.SameHighlights(
+                    new List<DiaryNameHighlight> { new DiaryNameHighlight { name = "Bob", colorHex = null } },
+                    new List<DiaryNameHighlight> { new DiaryNameHighlight { name = "Bob", colorHex = string.Empty } }));
+
+            AssertTrue("recolored name is changed",
+                !DiaryNameHighlighter.SameHighlights(baseline, new List<DiaryNameHighlight>
+                {
+                    new DiaryNameHighlight { name = "Alice", colorHex = "112233" },
+                    new DiaryNameHighlight { name = "Bob", colorHex = string.Empty }
+                }));
+            AssertTrue("added name is changed",
+                !DiaryNameHighlighter.SameHighlights(baseline, new List<DiaryNameHighlight>
+                {
+                    new DiaryNameHighlight { name = "Alice", colorHex = "AABBCC" },
+                    new DiaryNameHighlight { name = "Bob", colorHex = string.Empty },
+                    new DiaryNameHighlight { name = "Cara", colorHex = string.Empty }
+                }));
+            AssertTrue("null list is changed",
+                !DiaryNameHighlighter.SameHighlights(baseline, null));
+            AssertTrue("ambiguous duplicate names are treated as changed",
+                !DiaryNameHighlighter.SameHighlights(
+                    new List<DiaryNameHighlight>
+                    {
+                        new DiaryNameHighlight { name = "Alice", colorHex = "AABBCC" },
+                        new DiaryNameHighlight { name = "alice", colorHex = "AABBCC" }
+                    },
+                    new List<DiaryNameHighlight>
+                    {
+                        new DiaryNameHighlight { name = "Alice", colorHex = "AABBCC" },
+                        new DiaryNameHighlight { name = "alice", colorHex = "AABBCC" }
+                    }));
         }
 
         private static void TestPawnFactSerializationRoundTrip()

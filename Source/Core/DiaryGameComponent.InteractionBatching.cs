@@ -182,7 +182,9 @@ namespace PawnDiary
             }
 
             int now = Find.TickManager.TicksGame;
-            List<string> keysToFlush = new List<string>();
+            // Allocated lazily: this runs every tick while ANY batch is pending, and most of those
+            // ticks nothing is ready yet — the flush helper below treats null as "nothing to flush".
+            List<string> keysToFlush = null;
 
             foreach (KeyValuePair<string, PendingInteractionBatch> pair in pendingInteractionBatches)
             {
@@ -191,6 +193,11 @@ namespace PawnDiary
                     || batch.Count >= BatchMaxEvents(batch.policy)
                     || now - batch.lastTick >= BatchWindowTicks(batch.policy))
                 {
+                    if (keysToFlush == null)
+                    {
+                        keysToFlush = new List<string>();
+                    }
+
                     keysToFlush.Add(pair.Key);
                 }
             }
@@ -291,7 +298,9 @@ namespace PawnDiary
             }
 
             int currentDay = CurrentDayIndex;
-            List<string> keysToFlush = new List<string>();
+            // Allocated lazily: this runs every tick while ANY note is pending, and most of those
+            // ticks nothing is ready yet — the flush helper below treats null as "nothing to flush".
+            List<string> keysToFlush = null;
             foreach (KeyValuePair<string, PendingAmbientInteractionNote> pair in pendingAmbientInteractionNotes)
             {
                 PendingAmbientInteractionNote note = pair.Value;
@@ -300,6 +309,11 @@ namespace PawnDiary
                     || note.eventCount >= BatchMaxEvents(note.policy)
                     || now - note.lastTick >= BatchWindowTicks(note.policy))
                 {
+                    if (keysToFlush == null)
+                    {
+                        keysToFlush = new List<string>();
+                    }
+
                     keysToFlush.Add(pair.Key);
                 }
             }

@@ -6,6 +6,19 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-02
 
+- **Pre-release performance pass removed two hitch/garbage sources.** The open Diary tab no longer
+  re-measures every expanded card on each periodic pawn-name-highlight refresh: the highlight
+  version (which invalidates the card-height cache and row layout) now advances only when the
+  rebuilt name/color set really changed, via the new pure `DiaryNameHighlighter.SameHighlights`
+  (covered by `DiaryTextDecorationTests`). The three hottest Harmony hooks — `Thing.SpawnSetup`,
+  `Pawn_HealthTracker.AddHediff`, and `MemoryThoughtHandler.TryGainMemory` — now run through a new
+  state-passing `DiaryPatchSafety.Run` overload so their patch bodies allocate no per-call closure,
+  and the per-tick batch-flush scanners allocate their key lists lazily instead of every tick while
+  a batch is pending. No behavior change; also refreshed the stale partial-class file map in the
+  `DiaryGameComponent.cs` header.
+- **Diary inspect tabs no longer show unread markers.** The pawn inspect-tab Diary button now stays
+  visually quiet when new pages are waiting; the bottom command overlay still signals unread/writing
+  status when command mode is enabled, and obsolete XML style knobs for the tab marker were removed.
 - **Advanced prompt-enchantment settings stopped exposing the frequency alias.** The Prompt policy
   editor now exposes `chance` as the single top-level appearance-odds control for prompt
   enchantments; legacy `frequency` XML remains accepted but saved `*.frequency` Advanced overrides

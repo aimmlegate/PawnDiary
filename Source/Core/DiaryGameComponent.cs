@@ -12,13 +12,12 @@
 // as if they were one file. The split is purely organizational (no behavior change). Map:
 //   DiaryGameComponent.cs                — this file: state, lifecycle hooks (tick/save/load)
 //   DiaryGameComponent.PublicApi.cs      — read/write entry points the UI calls
-//   ── one file per event we listen for (Record* hook + that event's text/context helpers) ──
+//   ── event capture ──
+//   Most hook-driven events (mental states, tales, mood conditions, thoughts, inspirations,
+//   rituals, abilities, romance, ...) enter through DiaryEvents.Submit as XxxSignal objects
+//   (Source/Ingestion/Sources) and land in DiaryGameComponent.Dispatch.cs; the pure per-event
+//   decisions live under Source/Capture. The scan-driven and batching sources keep partials here:
 //   DiaryGameComponent.Interactions.cs   — social interactions (PlayLog.Add)
-//   DiaryGameComponent.MentalStates.cs   — social fights + mental breaks (TryStartMentalState)
-//   DiaryGameComponent.Tales.cs          — notable-history tales (TaleRecorder.RecordTale)
-//   DiaryGameComponent.MoodEvents.cs     — mood-affecting game conditions (RegisterCondition)
-//   DiaryGameComponent.Thoughts.cs       — temporary memory thoughts (TryGainMemory)
-//   DiaryGameComponent.Inspirations.cs   — pawn inspirations (TryStartInspiration)
 //   DiaryGameComponent.ThoughtProgression.cs — staged situational need thoughts (hunger, rest, etc.)
 //   DiaryGameComponent.Hediffs.cs        — XML-driven health-condition signals (AddHediff + severity scan)
 //   DiaryGameComponent.Work.cs           — occasional solo notes about current pawn work

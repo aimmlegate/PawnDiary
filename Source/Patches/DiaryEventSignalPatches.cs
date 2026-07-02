@@ -214,14 +214,23 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(Thing __instance, Map map, bool respawningAfterLoad)
         {
-            DiaryPatchSafety.Run("ThingSpawnedEventWindowPatch", () =>
+            // Hottest hook in the mod: SpawnSetup fires for every projectile, filth, item, and plant.
+            // The bool check cannot throw, so it stays outside the safety wrapper; everything else
+            // goes through the state-passing Run overload so this postfix allocates nothing per call
+            // (a capturing lambda here would allocate a closure for every spawned Thing).
+            if (respawningAfterLoad)
             {
-                if (respawningAfterLoad || __instance == null || __instance.def == null)
+                return;
+            }
+
+            DiaryPatchSafety.Run("ThingSpawnedEventWindowPatch", (thing: __instance, map: map), s =>
+            {
+                if (s.thing == null || s.thing.def == null)
                 {
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordEventWindowThingSpawned(__instance, map);
+                DiaryGameComponent.Current?.RecordEventWindowThingSpawned(s.thing, s.map);
             });
         }
     }

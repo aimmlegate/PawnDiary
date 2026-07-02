@@ -496,8 +496,9 @@ covering load orders where RimWorld finalizes resolved tab lists after static co
 command helper is marked with RimWorld's `StaticConstructorOnStartup` because it owns the static Unity
 texture cache for the button icon; the icon itself still loads lazily from the main-thread gizmo path
 and falls back to the vanilla book icon if the mod texture is missing.
-When a selected pawn has unread generated pages, inspect-tab mode draws the XML-tuned unread marker at
-the top middle of the Diary tab; its configured width is clamped to remain inside the vanilla tab.
+Inspect-tab mode intentionally does not draw unread-page badges on the tab button. When the tab is
+hidden and the bottom command button is active instead, that command still shows its unread/writing
+status overlay.
 
 Production UI shows completed pages. Each expanded non-archived page has a muted rewrite icon beside
 the model/provenance footer, so players can regenerate that page with the current model routing;
@@ -545,7 +546,10 @@ collapse/expand, rebuild row offsets in place instead of returning to the loadin
 years seed the clicked card's current blend so the clicked card can still animate open or closed.
 Expanded-card height measurement is isolated in `DiaryEntryCardMeasurer`, which owns the wrapped-text
 height cache and invalidates it on card width, debug display, render token, and pawn-name highlight
-revision. Expanded-card drawing is routed through a renderer request in
+revision. The highlight revision itself only advances when the periodically rebuilt name/color set
+actually differs from the cached one (compared order-insensitively by the pure
+`DiaryNameHighlighter.SameHighlights`), so the routine refresh of an unchanged colony no longer
+re-measures every expanded card. Expanded-card drawing is routed through a renderer request in
 `ITab_Pawn_Diary.EntryCards.cs`, leaving selection, scroll, sliced layout, and expansion state in the
 inspect tab while keeping the Verse/Unity IMGUI measurement and draw paths together.
 Selected-year rebuilds invalidate row layout defensively so virtualized row offset

@@ -32,6 +32,27 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Zero-allocation variant of <see cref="Run(string,Action)"/> for patch bodies on HOT vanilla
+        /// paths (every Thing spawn, every hediff, every gained memory). A lambda that captures locals
+        /// allocates a closure object on every call; passing the inputs through <paramref name="state"/>
+        /// instead lets the body be a non-capturing lambda, which the C# compiler caches in a static
+        /// field — so the patch adds no per-call GC pressure. Bundle several inputs as a value tuple.
+        /// The body must read inputs ONLY from its state parameter: touching an enclosing local or
+        /// method parameter reintroduces the very capture this overload exists to avoid.
+        /// </summary>
+        public static void Run<TState>(string context, TState state, Action<TState> body)
+        {
+            try
+            {
+                body(state);
+            }
+            catch (Exception e)
+            {
+                LogFailure(context, e);
+            }
+        }
+
+        /// <summary>
         /// Runs a bool-returning prefix body (the return decides whether vanilla runs). On failure it
         /// logs once and returns <paramref name="fallback"/> — pass the value that lets vanilla proceed
         /// normally, so a broken diary hook never suppresses the original behavior.

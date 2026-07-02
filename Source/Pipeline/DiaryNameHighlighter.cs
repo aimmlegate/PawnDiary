@@ -53,6 +53,60 @@ namespace PawnDiary
             return result.ToString();
         }
 
+        /// <summary>
+        /// True when two highlight sets would render identically: same count and, for every entry,
+        /// the same name (case-insensitive) mapped to the same color. Order-insensitive because the
+        /// UI rebuilds the set from live pawn lists whose iteration order can shift without any
+        /// visible difference. Ambiguous input (null lists/entries, blank/duplicate names) returns
+        /// false, which is the safe direction: a wrong "changed" only costs one redundant re-measure,
+        /// while a wrong "same" would leave stale highlight markup on screen.
+        /// </summary>
+        public static bool SameHighlights(List<DiaryNameHighlight> left, List<DiaryNameHighlight> right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left == null || right == null || left.Count != right.Count)
+            {
+                return false;
+            }
+
+            // Index one side by name so the comparison stays O(n) even for large colonies.
+            Dictionary<string, string> colorsByName =
+                new Dictionary<string, string>(left.Count, StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < left.Count; i++)
+            {
+                DiaryNameHighlight highlight = left[i];
+                if (highlight == null || string.IsNullOrEmpty(highlight.name)
+                    || colorsByName.ContainsKey(highlight.name))
+                {
+                    return false;
+                }
+
+                colorsByName[highlight.name] = highlight.colorHex ?? string.Empty;
+            }
+
+            for (int i = 0; i < right.Count; i++)
+            {
+                DiaryNameHighlight highlight = right[i];
+                string leftColor;
+                if (highlight == null || string.IsNullOrEmpty(highlight.name)
+                    || !colorsByName.TryGetValue(highlight.name, out leftColor))
+                {
+                    return false;
+                }
+
+                if (!string.Equals(leftColor, highlight.colorHex ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private static List<DiaryNameHighlight> Normalize(IEnumerable<DiaryNameHighlight> highlights)
         {
             List<DiaryNameHighlight> result = new List<DiaryNameHighlight>();

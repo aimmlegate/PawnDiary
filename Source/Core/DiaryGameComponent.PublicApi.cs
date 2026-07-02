@@ -641,7 +641,7 @@ namespace PawnDiary
         /// checks an in-memory per-pawn status cache, never saved diary records or event history.
         /// </summary>
         /// <remarks>
-        /// Per-frame caller: the inspect tab marker and command overlay call this from GUI draw. A
+        /// Per-frame caller: the optional command overlay calls this from GUI draw. A
         /// cache miss returns an empty status rather than touching saved diary state during selection.
         /// </remarks>
         public DiaryCommandStatus CommandStatusFor(Pawn pawn)

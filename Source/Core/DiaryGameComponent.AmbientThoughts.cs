@@ -70,7 +70,9 @@ namespace PawnDiary
 
             int now = Find.TickManager.TicksGame;
             int currentDay = CurrentDayIndex;
-            List<string> keysToFlush = new List<string>();
+            // Allocated lazily: this runs every tick while ANY note is pending, and most of those
+            // ticks nothing is ready yet — the flush helper below treats null as "nothing to flush".
+            List<string> keysToFlush = null;
             foreach (KeyValuePair<string, PendingAmbientThoughtNote> pair in pendingAmbientThoughtNotes)
             {
                 PendingAmbientThoughtNote note = pair.Value;
@@ -78,6 +80,11 @@ namespace PawnDiary
                     || note.dayIndex != currentDay
                     || now - note.lastTick >= AmbientThoughtWindowTicks)
                 {
+                    if (keysToFlush == null)
+                    {
+                        keysToFlush = new List<string>();
+                    }
+
                     keysToFlush.Add(pair.Key);
                 }
             }
