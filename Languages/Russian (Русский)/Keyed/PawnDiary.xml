@@ -103,6 +103,9 @@
   <PawnDiary.Dev.EventPanel.Title>Тесты событий Pawn Diary</PawnDiary.Dev.EventPanel.Title>
   <PawnDiary.Dev.EventPanel.NoGame>Загрузите карту и включите режим разработчика, прежде чем открывать тесты событий Pawn Diary.</PawnDiary.Dev.EventPanel.NoGame>
   <PawnDiary.Dev.EventPanel.NoPawn>Нет подходящего поселенца для тестов событий дневника.</PawnDiary.Dev.EventPanel.NoPawn>
+  <PawnDiary.Dev.ExternalTestSummary>{0} замечает странное — тестовый сигнал пришёл через API интеграций.</PawnDiary.Dev.ExternalTestSummary>
+  <PawnDiary.Dev.ExternalTestSubmitted>Тестовое внешнее событие отправлено для {0}.</PawnDiary.Dev.ExternalTestSubmitted>
+  <PawnDiary.Dev.ExternalTestRejected>Тестовое внешнее событие не принято — проверьте лог разработчика.</PawnDiary.Dev.ExternalTestRejected>
   <PawnDiary.Dev.EventPanel.Pawn>Поселенец</PawnDiary.Dev.EventPanel.Pawn>
   <PawnDiary.Dev.EventPanel.Partner>Партнёр</PawnDiary.Dev.EventPanel.Partner>
   <PawnDiary.Dev.EventPanel.NoPartner>Для парных событий нужен второй подходящий поселенец.</PawnDiary.Dev.EventPanel.NoPartner>
@@ -640,6 +643,7 @@
   <PawnDiary.Event.MentalBreak>Нервный срыв у {0}: {1}</PawnDiary.Event.MentalBreak>
   <PawnDiary.Event.Inspiration>Вдохновение у {0}: {1}</PawnDiary.Event.Inspiration>
   <PawnDiary.Event.Romance>{0} и {2} теперь {1}.</PawnDiary.Event.Romance>
+  <PawnDiary.Event.External>С {0} что-то произошло: {1}.</PawnDiary.Event.External>
   <PawnDiary.Event.Raid>Рейд задел {0}.</PawnDiary.Event.Raid>
   <PawnDiary.Event.QuestAccepted>Поселение приняло задание: {1}. {2}</PawnDiary.Event.QuestAccepted>
   <PawnDiary.Event.QuestCompleted>Поселение выполнило задание: {1}. {2}</PawnDiary.Event.QuestCompleted>

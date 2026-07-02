@@ -109,6 +109,9 @@
   <PawnDiary.Dev.EventPanel.Title>Pawn Diary event tests</PawnDiary.Dev.EventPanel.Title>
   <PawnDiary.Dev.EventPanel.NoGame>Load a map and enable dev mode before opening Pawn Diary event tests.</PawnDiary.Dev.EventPanel.NoGame>
   <PawnDiary.Dev.EventPanel.NoPawn>No eligible colonist is available for diary event tests.</PawnDiary.Dev.EventPanel.NoPawn>
+  <PawnDiary.Dev.ExternalTestSummary>{0} noticed something odd — a test signal arrived through the mod integration API.</PawnDiary.Dev.ExternalTestSummary>
+  <PawnDiary.Dev.ExternalTestSubmitted>Submitted a test external event for {0}.</PawnDiary.Dev.ExternalTestSubmitted>
+  <PawnDiary.Dev.ExternalTestRejected>The test external event was not accepted — check the dev log.</PawnDiary.Dev.ExternalTestRejected>
   <PawnDiary.Dev.EventPanel.Pawn>Pawn</PawnDiary.Dev.EventPanel.Pawn>
   <PawnDiary.Dev.EventPanel.Partner>Partner</PawnDiary.Dev.EventPanel.Partner>
   <PawnDiary.Dev.EventPanel.NoPartner>Need a second eligible colonist for pair events.</PawnDiary.Dev.EventPanel.NoPartner>
@@ -656,6 +659,7 @@
   <PawnDiary.Event.MentalBreak>{0} had a mental break ({1})</PawnDiary.Event.MentalBreak>
   <PawnDiary.Event.Inspiration>{0} became inspired: {1}</PawnDiary.Event.Inspiration>
   <PawnDiary.Event.Romance>{0} and {2} are now {1}.</PawnDiary.Event.Romance>
+  <PawnDiary.Event.External>Something happened to {0}: {1}.</PawnDiary.Event.External>
   <PawnDiary.Event.Raid>{0} lived through a raid.</PawnDiary.Event.Raid>
   <PawnDiary.Event.QuestAccepted>The colony accepted a quest: {1}. {2}</PawnDiary.Event.QuestAccepted>
   <PawnDiary.Event.QuestCompleted>The colony completed the quest: {1}. {2}</PawnDiary.Event.QuestCompleted>

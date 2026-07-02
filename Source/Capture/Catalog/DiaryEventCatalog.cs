@@ -80,6 +80,7 @@ namespace PawnDiary.Capture
             Register(new QuestEventSpec());
             Register(new RitualEventSpec());
             Register(new AbilityEventSpec());
+            Register(new ExternalEventSpec());
         }
     }
 }

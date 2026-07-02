@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using LudeonTK;
+using PawnDiary.Integration;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -41,6 +42,62 @@ namespace PawnDiary
             }
 
             HandleExportAllDiariesForDev();
+        }
+
+        /// <summary>
+        /// Exercises the public integration API end-to-end (PawnDiaryApi.SubmitEvent → External
+        /// signal → group XML → diary entry) with no adapter mod installed. The built-in
+        /// externalDevTest group claims the "pawndiary_dev_test" key this action submits.
+        /// </summary>
+        [DebugAction("Pawn Diary", "Submit test external event...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
+        public static void SubmitTestExternalEvent()
+        {
+            if (!Prefs.DevMode || DiaryGameComponent.Current == null)
+            {
+                return;
+            }
+
+            List<Pawn> pawns = Dialog_PawnDiaryEventTestPanel.EligiblePawns();
+            if (pawns.Count == 0)
+            {
+                Messages.Message("PawnDiary.Dev.EventPanel.NoPawn".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                return;
+            }
+
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+            for (int i = 0; i < pawns.Count; i++)
+            {
+                Pawn optionPawn = pawns[i];
+                if (optionPawn == null)
+                {
+                    continue;
+                }
+
+                Pawn capturedPawn = optionPawn;
+                options.Add(new FloatMenuOption(capturedPawn.LabelShortCap, delegate
+                {
+                    // Built exactly like an adapter mod would build it, so this path is a live
+                    // sample of the documented contract (see INTEGRATIONS.md).
+                    ExternalEventRequest request = new ExternalEventRequest
+                    {
+                        sourceId = "PawnDiary.DevTest",
+                        eventKey = "pawndiary_dev_test",
+                        subject = capturedPawn,
+                        summaryText = "PawnDiary.Dev.ExternalTestSummary".Translate(capturedPawn.LabelShortCap).Resolve(),
+                        extraContext = new List<string> { "origin=debug_action" }
+                    };
+
+                    bool accepted = PawnDiaryApi.SubmitEvent(request);
+                    Messages.Message(
+                        accepted
+                            ? "PawnDiary.Dev.ExternalTestSubmitted".Translate(capturedPawn.LabelShortCap)
+                            : "PawnDiary.Dev.ExternalTestRejected".Translate(),
+                        accepted ? MessageTypeDefOf.PositiveEvent : MessageTypeDefOf.RejectInput,
+                        false);
+                }));
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
         }
 
         /// <summary>

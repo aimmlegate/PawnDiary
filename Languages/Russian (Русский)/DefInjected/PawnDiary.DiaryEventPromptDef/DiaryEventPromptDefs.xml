@@ -57,4 +57,7 @@
   <DiaryEventPrompt_Death.label>смерть</DiaryEventPrompt_Death.label>
   <DiaryEventPrompt_Death.prompt>Напиши фактическую заметку об обстоятельствах смерти поселенца.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Смерть опиши резко и точно, с одной конкретной деталью причины или места. Используй только факты о причине, части тела, оружии, состоянии и обстановке. Кратко.</DiaryEventPrompt_Death.enhancement>
+  <DiaryEventPrompt_External.label>событие другого мода</DiaryEventPrompt_External.label>
+  <DiaryEventPrompt_External.prompt>Опиши момент, переданный другим модом, как то, что поселенец только что пережил.</DiaryEventPrompt_External.prompt>
+  <DiaryEventPrompt_External.enhancement>Держись строго переданной строки события и фактов контекста; не выдумывай механики, системы или неупомянутых участников.</DiaryEventPrompt_External.enhancement>
 </LanguageData>

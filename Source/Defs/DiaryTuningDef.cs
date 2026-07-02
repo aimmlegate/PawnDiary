@@ -77,6 +77,9 @@ namespace PawnDiary
         // The same ability activation is only recorded once within this window. The key also includes
         // the current tick, so this is mostly a defensive guard against paired Activate overloads.
         public int abilityDedupTicks = 300;
+        // The same integration-API event (same eventKey + pawn/pair) is only recorded once within
+        // this window (~1 in-game hour), unless the submitting adapter overrides dedup per request.
+        public int externalEventDedupTicks = 2500;
 
         // ---- Ability-use sampling ----
         // Successful ability activations are sampled by cooldown. A no/short-cooldown ability uses

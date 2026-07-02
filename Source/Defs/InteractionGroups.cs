@@ -26,6 +26,8 @@ namespace PawnDiary
     // Ability groups match AbilityDef defNames/category tokens from successful Ability.Activate.
     // Progression groups match synthetic source tokens from the pawn progression scanner.
     // Reflection groups match synthetic day/quadrum/arc reflection source tokens.
+    // External groups match the eventKey strings other mods submit through the public
+    // integration API (PawnDiary.Integration.PawnDiaryApi); adapter mods usually ship them.
     // RimWorld parses this enum straight from XML text (e.g. <domain>MentalState</domain>).
     public enum GroupDomain
     {
@@ -43,7 +45,8 @@ namespace PawnDiary
         Ritual,
         Ability,
         Progression,
-        Reflection
+        Reflection,
+        External
     }
 
     // How an XML batch is keyed. Pair means "one group-level batch" (per pawn pair for
@@ -223,6 +226,13 @@ namespace PawnDiary
         // compatibility where another mod supplies a richer replacement for a built-in low-value
         // group, while keeping the original group active in ordinary mod lists.
         public List<string> disableWhenPackageIdsLoaded;
+
+        // The inverse gate: when this list is non-empty, the group is active ONLY while at least
+        // one listed mod is loaded. This lets compatibility groups for other mods ship inside the
+        // core mod (like our DLC string-matchers) and sit fully inert — never recording — for
+        // players who don't run the target mod. Empty/absent means "always active" (the default
+        // for every ordinary group).
+        public List<string> enableWhenPackageIdsLoaded;
 
         // Optional batching policy. Interaction groups can merge or ambient-batch social log rows;
         // selected Tale groups can delay and merge bursts into one solo event per pawn.
@@ -445,6 +455,16 @@ namespace PawnDiary
             return InteractionGroups.AnyPackageLoaded(disableWhenPackageIdsLoaded);
         }
 
+        // True when XML says this group needs one of the enableWhenPackageIdsLoaded mods and none
+        // of them is in the current mod list — the group is a compatibility pack whose target mod
+        // is absent, so it must record nothing. An empty/absent list never blocks the group.
+        public bool MissingRequiredPackage()
+        {
+            return enableWhenPackageIdsLoaded != null
+                && enableWhenPackageIdsLoaded.Count > 0
+                && !InteractionGroups.AnyPackageLoaded(enableWhenPackageIdsLoaded);
+        }
+
         // Returns which Tale pawn slot contains the death victim, or empty for non-death tales.
         public string DeathVictimRoleFor(string defName)
         {
@@ -600,6 +620,15 @@ namespace PawnDiary
         public static DiaryInteractionGroupDef ClassifyProgression(string progressionDefName)
         {
             return ClassifyIn(GroupDomain.Progression, progressionDefName);
+        }
+
+        // First External-domain group that explicitly matches an integration-API eventKey. Like
+        // Romance, live capture must NOT fall back to a catch-all here: only eventKeys some XML
+        // group claims may create diary entries, so an unclaimed submission from another mod is
+        // silently inert. Adapter mods ship their own External groups to claim their keys.
+        public static DiaryInteractionGroupDef ClassifyExternal(string eventKey)
+        {
+            return ClassifyRequiredMatch(GroupDomain.External, eventKey);
         }
 
         // Same classifier, but for saved events where we only have the stored defName string.

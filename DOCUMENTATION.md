@@ -42,6 +42,7 @@ Workshop payload omits source code and other development-only folders.
 | `Languages/` | Keyed and DefInjected English text plus optional translation sources. |
 | `Source/Capture/` | Pure Event Catalog payloads and decisions. |
 | `Source/Ingestion/` | `DiaryEvents.Submit` bus + one `DiarySignal` capture/emit class per source (impure edge). |
+| `Source/Integration/` | Public API surface for other mods (`PawnDiaryApi`, request DTOs). Contract: `INTEGRATIONS.md`. |
 | `Source/Core/` | `DiaryGameComponent` partials: dispatch pipeline, save/load, scans, generation queue. |
 | `Source/Generation/` | Runtime context builders, prompt adapters, LLM client, DLC-safe live reads. |
 | `Source/Pipeline/` | Pure prompt planning, archive eligibility, progression/arc selection policy, request JSON, response cleanup, text decoration, API policy. |
@@ -50,7 +51,9 @@ Workshop payload omits source code and other development-only folders.
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
+| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`). Not loaded in-game until deployed. |
 | `scripts/publish.ps1` | Local Workshop payload prep. |
+| `scripts/deploy-integrations.ps1` | Copies `integrations/` adapters to the RimWorld `Mods/` root as sibling mods. |
 
 ## 3. Runtime Flow
 
@@ -210,6 +213,29 @@ expiry rule.
 A short-window source cannot evict a still-live long-window key. A zero or negative window opts out
 of dedup instead of clearing the store. The coverage table below lists each source's signal.
 
+### 3.7 External integrations (`PawnDiaryApi`)
+
+Other mods push events INTO the diary through one public facade:
+`PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)` (`Source/Integration/`).
+The call is validated, wrapped so an adapter bug can never break the game loop, main-thread
+guarded, and then submitted through the normal `DiaryEvents.Submit` bus as an
+`ExternalEventSignal` — so external events get the standard treatment: pure
+`ExternalEventData.Decide`, the shared dedup store (`externalEventDedupTicks`, with a per-request
+override), group enablement, and the LLM queue. A supplied eligible partner makes the event
+pairwise; otherwise it is a solo entry for the subject pawn.
+
+Policy stays in XML: the request's `eventKey` string plays the defName role, and an
+External-domain `DiaryInteractionGroupDef` must claim it (required-match, like Romance — an
+unclaimed key records nothing and logs one warning naming the submitting mod). Adapter mods ship
+their own External groups plus optional narrower `DiaryEventPromptDef` rows; the core ships only
+the `externalDevTest` group so the Debug Actions entry "Submit test external event..." can
+exercise the whole path with no adapter installed. The full public contract — versioning,
+threading, eventKey conventions, packaging — lives in `INTEGRATIONS.md`.
+
+Compatibility groups shipped inside this repo for other mods use the group gate
+`enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only
+while one of the listed target mods is in the mod list, so it sits fully inert otherwise.
+
 ## 4. Event Sources
 
 The catalog of every event the diary reacts to (`DiaryEventType`), with the `DiarySignal` that carries
@@ -236,6 +262,7 @@ it onto the bus.
 | Ritual | Ideology/psychic ritual completion | `RitualFanoutSignal` / `PsychicRitualFanoutSignal` | fan-out |
 | Death | `Pawn.Kill` + death TaleDefs | `DeathFallbackSignal` (+ Tale death routes) | neutral description |
 | Arrival | Starting scan + `Pawn.SetFaction` | `ArrivalSignal` | neutral description |
+| External | `PawnDiaryApi.SubmitEvent` (other mods) | `ExternalEventSignal` | solo / pair |
 
 | Source | How it is observed | Result |
 |---|---|---|
@@ -260,6 +287,7 @@ it onto the bus.
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
 | Arc reflections | Sleep/rest trigger and major psylink/xenotype progression trigger | Rare yearly life-arc page per pawn, with an optional second major-event page after the configured gap. The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, excludes prior reflections/death descriptions/recently used memories, and never stores a separate history fact database. |
+| External mod events | `PawnDiaryApi.SubmitEvent` called by adapter mods (§3.7, `INTEGRATIONS.md`) | Solo or pairwise page whose prompt policy comes from the External-domain group XML that claims the submitted `eventKey`; unclaimed keys record nothing. |
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
 `DiaryPatchRegistrar` so missing methods warn and no-op instead of breaking startup. Capture hooks,
@@ -286,6 +314,10 @@ Interaction groups match by domain, exact `defName`, optional package id, and or
 Prefer exact names, `matchPrefixes`, `matchSuffixes`, and `matchSegments`; use legacy
 substring-style `matchTokens` only when broad matching is truly intended. Lower `order` wins, so put
 specific groups before broad groups. The pure matcher lives in `Source/Capture/GroupNameMatcher.cs`.
+Two package gates control availability: `disableWhenPackageIdsLoaded` silences a group while a
+replacement mod is loaded, and `enableWhenPackageIdsLoaded` keeps a compatibility group inert unless
+one of its target mods is present. External-domain groups classify the integration-API `eventKey`
+strings other mods submit (see §3.7).
 
 Event prompts resolve from narrow to broad: source defName, interaction group, classifier key, then
 domain. Prompt text, enhancement text, and forced-model text resolve independently, so a narrow row can
