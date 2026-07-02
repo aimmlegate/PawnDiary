@@ -21,7 +21,7 @@
   <slavery.label>Рабство</slavery.label>
   <slavery.instruction>тяжесть цепей — подавление надсмотрщиком или первая искра неповиновения</slavery.instruction>
   <slavery.tone>с мрачной, гнетущей тревогой</slavery.tone>
-  <conversion.label>Идеолигия и обращение</conversion.label>
+  <conversion.label>Идеология и обращение</conversion.label>
   <conversion.instruction>битва убеждений: обращение, наставление, проповедь или давление веры на веру</conversion.instruction>
   <conversion.tone>с пылкой, напористой убеждённостью</conversion.tone>
   <trial.label>Суды и обвинения</trial.label>
@@ -65,7 +65,7 @@
   <other.instruction>социальное взаимодействие между поселенцами</other.instruction>
   <socialfight.label>Потасовки</socialfight.label>
   <socialfight.instruction>сорвавшиеся нервы: двое сошлись врукопашную. Пиши это как жар и удар</socialfight.instruction>
-  <socialfight.tone>с сырой, адреналиновой яростью</socialfight.tone>
+  <socialfight.tone>с резкой адреналиновой яростью</socialfight.tone>
   <insultspree.label>Поток оскорблений</insultspree.label>
   <insultspree.instruction>поселенец срывается в повторяющуюся словесную жестокость; предпочитай настоящие записи об оскорблениях из журнала, когда они есть</insultspree.instruction>
   <insultspree.tone>с кислой, занозистой злостью</insultspree.tone>
@@ -96,8 +96,8 @@
   <taleanomaly.label>Ужас аномалии</taleanomaly.label>
   <taleanomaly.instruction>страх и неизвестное: аномалия, мутация, контакт с пустотой. Пиши тревогу, не объясняя её</taleanomaly.instruction>
   <taleanomaly.tone>со страхом и жутью; оставь это без объяснений</taleanomaly.tone>
-  <taleincident.label>Налёты, бедствия и события поселения</taleincident.label>
-  <taleincident.instruction>поселение потрясено: налёт, бедствие или кризис. Пиши, каково было это пережить</taleincident.instruction>
+  <taleincident.label>Рейды, бедствия и события поселения</taleincident.label>
+  <taleincident.instruction>поселение потрясено: рейд, бедствие или кризис. Пиши, каково было это пережить</taleincident.instruction>
   <taleincident.tone>с шатким, оглушённым напряжением бедствия</taleincident.tone>
   <talequiet.label>Тихие личные моменты</talequiet.label>
   <talequiet.instruction>тихая заметка: отдых, молитва или мелкое смущение. Кратко и лично</talequiet.instruction>
@@ -125,7 +125,7 @@
   <thoughtPositive.instructions.2>положительная мысль: пиши желание удержать это чувство или повернуть день к лучшему. Держи масштаб по силе подъёма</thoughtPositive.instructions.2>
   <thoughtPositive.tone>с маленьким, светлеющим подъёмом</thoughtPositive.tone>
   <thoughtNegative.label>Отрицательные мысли</thoughtNegative.label>
-  <thoughtNegative.instruction>груз на уме: отрицательная мысль задержалась. Соизмеряй силу с эффектом на настроение: мелкие досады беглые, тяжёлые дают сырой вес</thoughtNegative.instruction>
+  <thoughtNegative.instruction>груз на уме: отрицательная мысль задержалась. Соизмеряй силу с эффектом на настроение: мелкие досады беглые, тяжёлые давят сильнее</thoughtNegative.instruction>
   <thoughtNegative.instructions.0>отрицательная мысль: используй указанный повод, если он есть; иначе пиши повторяющийся укол. Держи масштаб по силе удара</thoughtNegative.instructions.0>
   <thoughtNegative.instructions.1>отрицательная мысль: тело сжимается — челюсть, нутро, беспокойные руки. Держи масштаб по силе удара</thoughtNegative.instructions.1>
   <thoughtNegative.instructions.2>отрицательная мысль: пиши петлю — возвращается, растёт, не отпускает. Держи масштаб по силе удара</thoughtNegative.instructions.2>
@@ -133,8 +133,8 @@
   <thoughtOther.label>Мимолётные мысли</thoughtOther.label>
   <thoughtOther.instruction>временная мысль мелькнула в уме поселенца. Соизмеряй силу с эффектом на настроение</thoughtOther.instruction>
   <thoughtOther.tone>с мимолётным, полуощутимым сдвигом</thoughtOther.tone>
-  <inspiration.label>Воодушевление</inspiration.label>
-  <inspiration.instruction>внезапная полезная ясность: ум поселенца загорается целью. Опирайся на вид воодушевления и причину, если игра её дала</inspiration.instruction>
+  <inspiration.label>Вдохновение</inspiration.label>
+  <inspiration.instruction>внезапная полезная ясность: ум поселенца загорается целью. Опирайся на вид вдохновения и причину, если игра её дала</inspiration.instruction>
   <inspiration.tone>с ярким, сосредоточенным порывом</inspiration.tone>
   <workDarkStudy.label>Тёмные исследования</workDarkStudy.label>
   <workDarkStudy.instruction>тёмные изыскания должны тревожить каждый раз; пиши работу как личный контакт с чем-то неправильным, жутким и неразрешённым</workDarkStudy.instruction>
@@ -160,17 +160,17 @@
   <hediffMajorHealth.label>Серьёзные перемены здоровья</hediffMajorHealth.label>
   <hediffMajorHealth.instruction>новое или ухудшающееся состояние здоровья, которое держалось весь день</hediffMajorHealth.instruction>
   <hediffMajorHealth.tone>с телесной тревогой и уязвимостью</hediffMajorHealth.tone>
-  <raid.label>Налёты</raid.label>
-  <raid.instruction>поселение ждёт налёт, который уже начался, но может ещё приближаться: тревога, оружие, позиции и задержанное дыхание до столкновения. Пиши ожидание боя, если факты не показывают, что бой уже дошёл до поселенцев</raid.instruction>
-  <raid.instructions.0>налёт приближается к поселению: начни с тревоги, расстояния, укрытия, погоды или проверки оружия; держи запись до или на первом контакте</raid.instructions.0>
+  <raid.label>Рейды</raid.label>
+  <raid.instruction>поселение ждёт рейд, который уже начался, но может ещё приближаться: тревога, оружие, позиции и задержанное дыхание до столкновения. Пиши ожидание боя, если факты не показывают, что бой уже дошёл до поселенцев</raid.instruction>
+  <raid.instructions.0>рейд приближается к поселению: начни с тревоги, расстояния, укрытия, погоды или проверки оружия; держи запись до или на первом контакте</raid.instructions.0>
   <raid.instructions.1>поселение готовится к нападению: пиши ожидание, приказы, двери, мешки с песком, дыхание и страх до того, как бой полностью начался</raid.instructions.1>
-  <raid.instructions.2>налёт мог ещё не дойти до защитников: дым, кровь, раны и последствия используй только если они переданы; иначе держись подготовки, страха и первого вида опасности</raid.instructions.2>
+  <raid.instructions.2>рейд мог ещё не дойти до защитников: дым, кровь, раны и последствия используй только если они переданы; иначе держись подготовки, страха и первого вида опасности</raid.instructions.2>
   <raid.tone>с напряжённым ожиданием боя</raid.tone>
   <ritualRoyal.label>Имперские ритуалы</ritualRoyal.label>
   <ritualRoyal.instruction>завершён ритуал Royalty; пусть церемония ощущается придворной, титульной, псионической или связанной с древом души, если так подсказывает название</ritualRoyal.instruction>
   <ritualRoyal.tone>с формальным рангом и ритуальной властью</ritualRoyal.tone>
   <ritualRoyal.tones.0>придворно и заряжено рангом, титулом, свидетелями и публичной властью</ritualRoyal.tones.0>
-  <ritualRoyal.tones.1>приглушённо пси-фокусом и связано традицией, церемония больше тела одного поселенца</ritualRoyal.tones.1>
+  <ritualRoyal.tones.1>тихо, с пси-фокусом и опорой на традицию; церемония больше тела одного поселенца</ritualRoyal.tones.1>
   <ritualChildbirth.label>Ритуал рождения</ritualChildbirth.label>
   <ritualChildbirth.instruction>завершён ритуал рождения; запись медицински и эмоционально уместная: боль, забота, риск, изнеможение, облегчение или страх важнее мистики</ritualChildbirth.instruction>
   <ritualChildbirth.tone>с клинической нежностью и телесной срочностью</ritualChildbirth.tone>
@@ -255,21 +255,21 @@
   <questFailed.tones.1>тихо и горестно, последствия больше ощущаются, чем объясняются</questFailed.tones.1>
   <raid.tones.0>напряжённо и тактически, в ожидании, когда бой прорвётся</raid.tones.0>
   <raid.tones.1>срочно, но с предчувствием, страх сгущается перед столкновением</raid.tones.1>
-  <raidDropPod.label>Налёты из транспортных капсул</raidDropPod.label>
-  <raidDropPod.instruction>налётчики врываются прямо в поселение через транспортные капсулы: внезапный удар, без долгого предупреждения, опасность уже внутри периметра</raidDropPod.instruction>
-  <raidDropPod.instructions.0>налёт из транспортных капсул внутри или у поселения: начни с удара, тревог и суматохи, пока никто не успел подготовиться</raidDropPod.instructions.0>
-  <raidDropPod.instructions.1>налёт из транспортных капсул без медленного приближения: первые оглушённые секунды, затем мгновенный выбор поселенца, укрытие, оружие или бегство</raidDropPod.instructions.1>
-  <raidDropPod.instructions.2>налётчики падают сверху; держи это внезапным и близким, без долгой осады или подхода, если факты не говорят обратного</raidDropPod.instructions.2>
+  <raidDropPod.label>Рейды из транспортных капсул</raidDropPod.label>
+  <raidDropPod.instruction>рейдеры врываются прямо в поселение через транспортные капсулы: внезапный удар, без долгого предупреждения, опасность уже внутри периметра</raidDropPod.instruction>
+  <raidDropPod.instructions.0>рейд из транспортных капсул внутри или у поселения: начни с удара, тревог и суматохи, пока никто не успел подготовиться</raidDropPod.instructions.0>
+  <raidDropPod.instructions.1>рейд из транспортных капсул без медленного приближения: первые оглушённые секунды, затем мгновенный выбор поселенца, укрытие, оружие или бегство</raidDropPod.instructions.1>
+  <raidDropPod.instructions.2>рейдеры падают сверху; держи это внезапным и близким, без долгой осады или подхода, если факты не говорят обратного</raidDropPod.instructions.2>
   <raidDropPod.tone>с потрясением мгновенного удара</raidDropPod.tone>
   <raidDropPod.tones.0>стремительно как удар и дезориентированно, опасность уже внутри стен</raidDropPod.tones.0>
   <raidDropPod.tones.1>потрясённо и в упор, каждое предложение откликается на внезапное столкновение</raidDropPod.tones.1>
-  <raidFriendly.label>Дружественные прибытия и налёты</raidFriendly.label>
+  <raidFriendly.label>Дружественные прибытия и рейды</raidFriendly.label>
   <raidFriendly.instruction>дружественный отряд прибывает в поселение: подкрепление, союзники или мирная высадка. Пиши облегчение или тревогу, которую они приносят</raidFriendly.instruction>
   <raidFriendly.tone>с осторожным облегчением или тревожной благодарностью</raidFriendly.tone>
   <raidFriendly.tones.0>осторожно облегчённо, доверие приходит медленно</raidFriendly.tones.0>
   <raidFriendly.tones.1>тревожно и благодарно, помощь всё ещё ощущается как риск</raidFriendly.tones.1>
   <raidInfestation.label>Нашествия насекомых</raidInfestation.label>
-  <raidInfestation.instruction>насекомые прорываются из-под земли поселения: хитин, тоннели, тесная паника и опасность среди комнат. Это внезапный внутренний ужас, не обычный налёт</raidInfestation.instruction>
+  <raidInfestation.instruction>насекомые прорываются из-под земли поселения: хитин, тоннели, тесная паника и опасность среди комнат. Это внезапный внутренний ужас, не обычный рейд</raidInfestation.instruction>
   <raidInfestation.instructions.0>нашествие внутри поселения: начни со звука, пыли, когтей, темноты или комнаты, которая из безопасной стала враждебной</raidInfestation.instructions.0>
   <raidInfestation.instructions.1>насекомые прорываются изнутри базы; пиши тесный страх и мгновенное выживание, не приближение далёкого врага</raidInfestation.instructions.1>
   <raidInfestation.instructions.2>подземная угроза входит в обжитое пространство; держи это близким, чувственным и практичным, не выдумывай итог боя</raidInfestation.instructions.2>

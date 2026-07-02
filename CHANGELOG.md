@@ -16,7 +16,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   and replaced awkward test-fixture wording such as "синтетическое задание" with natural Russian UI
   equivalents. A follow-up wording pass also replaced code-flavored Russian UI phrases like
   "пачка", "активный уклон", "сырая инструкция", and visible "пешка" labels with shorter
-  localization-friendly wording.
+  localization-friendly wording; a RimWorld-terminology pass now uses "рейд"/"рейдеры" and
+  "вдохновение" consistently, fixes the "идеолигия" typo, and removes remaining visible
+  code-flavored wording from Russian prompt and UI text.
 - **Prompt policy node settings stopped mirroring XML translation defaults.** Literal override boxes
   for key-backed prompt policy (`*Text`, `conditionLabel`, cue lists, batch/hediff text) now stay
   blank when XML owns the Keyed default, so node settings no longer expose raw translation keys or

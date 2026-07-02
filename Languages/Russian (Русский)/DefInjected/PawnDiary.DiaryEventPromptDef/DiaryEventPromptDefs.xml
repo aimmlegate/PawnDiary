@@ -15,8 +15,8 @@
   <DiaryEventPrompt_Thought.label>мысль</DiaryEventPrompt_Thought.label>
   <DiaryEventPrompt_Thought.prompt>Опиши временную мысль как внутреннее давление, облегчение или раздражение.</DiaryEventPrompt_Thought.prompt>
   <DiaryEventPrompt_Thought.enhancement>Пусть мысль кусает, греет, зудит или застревает в голове. Это внутренний контекст, а не новое внешнее событие, если факты не говорят обратного.</DiaryEventPrompt_Thought.enhancement>
-  <DiaryEventPrompt_Inspiration.label>воодушевление</DiaryEventPrompt_Inspiration.label>
-  <DiaryEventPrompt_Inspiration.prompt>Опиши воодушевление как внезапную ясность в голове поселенца.</DiaryEventPrompt_Inspiration.prompt>
+  <DiaryEventPrompt_Inspiration.label>вдохновение</DiaryEventPrompt_Inspiration.label>
+  <DiaryEventPrompt_Inspiration.prompt>Опиши вдохновение как внезапную ясность в голове поселенца.</DiaryEventPrompt_Inspiration.prompt>
   <DiaryEventPrompt_Inspiration.enhancement>Пусть ясность толкает к делу: замысел, порыв или уверенность. Сосредоточься на том, что поселенец хочет сделать дальше; успех не выдумывай.</DiaryEventPrompt_Inspiration.enhancement>
   <DiaryEventPrompt_Romance.label>романтика</DiaryEventPrompt_Romance.label>
   <DiaryEventPrompt_Romance.prompt>Опиши веху отношений как личную перемену между двумя людьми.</DiaryEventPrompt_Romance.prompt>
@@ -27,14 +27,14 @@
   <DiaryEventPrompt_Hediff.label>состояние здоровья</DiaryEventPrompt_Hediff.label>
   <DiaryEventPrompt_Hediff.prompt>Опиши событие здоровья через тело и настроение поселенца.</DiaryEventPrompt_Hediff.prompt>
   <DiaryEventPrompt_Hediff.enhancement>Тело должно мешать думать: боль, слабость, дыхание, жар, голод, равновесие или страх. Не выдумывай лечение, диагноз и выздоровление.</DiaryEventPrompt_Hediff.enhancement>
-  <DiaryEventPrompt_Raid.label>налёт</DiaryEventPrompt_Raid.label>
-  <DiaryEventPrompt_Raid.prompt>Опиши налёт, удар из транспортных капсул или появление насекомых через прямое чувство опасности.</DiaryEventPrompt_Raid.prompt>
-  <DiaryEventPrompt_Raid.enhancement>Используй поля налёта, особенно способ прибытия и стратегию. Обычный налёт: тревога, подготовка, первый взгляд, предчувствие боя. Транспортные капсулы и насекомые: внезапная опасность уже внутри или под поселением. Детали приземлённые; исход боя не выдумывай.</DiaryEventPrompt_Raid.enhancement>
+  <DiaryEventPrompt_Raid.label>рейд</DiaryEventPrompt_Raid.label>
+  <DiaryEventPrompt_Raid.prompt>Опиши рейд, удар из транспортных капсул или появление насекомых через прямое чувство опасности.</DiaryEventPrompt_Raid.prompt>
+  <DiaryEventPrompt_Raid.enhancement>Используй поля рейда, особенно способ прибытия и стратегию. Обычный рейд: тревога, подготовка, первый взгляд, предчувствие боя. Транспортные капсулы и насекомые: внезапная опасность уже внутри или под поселением. Детали приземлённые; исход боя не выдумывай.</DiaryEventPrompt_Raid.enhancement>
   <DiaryEventPrompt_Quest.label>задание</DiaryEventPrompt_Quest.label>
   <DiaryEventPrompt_Quest.prompt>Опиши этап задания как обещание, развязку или потерю.</DiaryEventPrompt_Quest.prompt>
   <DiaryEventPrompt_Quest.enhancement>Сделай задание личным: риск, долг, надежда, сомнение, цена, облегчение или сожаление. Используй этап и факты задания; не копируй название задания в запись и не выдумывай награды, вину или последствия.</DiaryEventPrompt_Quest.enhancement>
   <DiaryEventPrompt_Ritual.label>ритуал</DiaryEventPrompt_Ritual.label>
-  <DiaryEventPrompt_Ritual.prompt>Опиши завершённый ритуал идеолигии с места, которое занимал в нём поселенец.</DiaryEventPrompt_Ritual.prompt>
+  <DiaryEventPrompt_Ritual.prompt>Опиши завершённый ритуал идеологии с места, которое занимал в нём поселенец.</DiaryEventPrompt_Ritual.prompt>
   <DiaryEventPrompt_Ritual.enhancement>Используй роль, название ритуала, поведение, качество и состояние поселенца. Качество может задавать уверенность, последствия и вес, но не называй его ярлык напрямую. Пиши ощущение завершения из этой роли; эффектов сверх исхода не выдумывай.</DiaryEventPrompt_Ritual.enhancement>
   <DiaryEventPrompt_Ability.label>способность</DiaryEventPrompt_Ability.label>
   <DiaryEventPrompt_Ability.prompt>Опиши успешное применение способности как момент сосредоточенности, риска или усилия.</DiaryEventPrompt_Ability.prompt>

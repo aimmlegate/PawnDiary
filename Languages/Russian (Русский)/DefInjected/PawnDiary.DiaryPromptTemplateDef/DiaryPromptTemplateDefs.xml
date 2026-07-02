@@ -14,11 +14,11 @@
   <DiaryPromptTemplate_PairDefault.fields.11.label>тип способности</DiaryPromptTemplate_PairDefault.fields.11.label>
   <DiaryPromptTemplate_PairDefault.fields.12.label>цель способности</DiaryPromptTemplate_PairDefault.fields.12.label>
   <DiaryPromptTemplate_PairDefault.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairDefault.fields.13.label>
-  <DiaryPromptTemplate_PairDefault.fields.14.label>приближение налёта</DiaryPromptTemplate_PairDefault.fields.14.label>
-  <DiaryPromptTemplate_PairDefault.fields.15.label>тактика налёта</DiaryPromptTemplate_PairDefault.fields.15.label>
-  <DiaryPromptTemplate_PairDefault.fields.16.label>сила налёта</DiaryPromptTemplate_PairDefault.fields.16.label>
+  <DiaryPromptTemplate_PairDefault.fields.14.label>приближение рейда</DiaryPromptTemplate_PairDefault.fields.14.label>
+  <DiaryPromptTemplate_PairDefault.fields.15.label>тактика рейда</DiaryPromptTemplate_PairDefault.fields.15.label>
+  <DiaryPromptTemplate_PairDefault.fields.16.label>сила рейда</DiaryPromptTemplate_PairDefault.fields.16.label>
   <DiaryPromptTemplate_PairDefault.fields.17.label>титул</DiaryPromptTemplate_PairDefault.fields.17.label>
-  <DiaryPromptTemplate_PairDefault.fields.18.label>роль в идеолигии</DiaryPromptTemplate_PairDefault.fields.18.label>
+  <DiaryPromptTemplate_PairDefault.fields.18.label>роль в идеологии</DiaryPromptTemplate_PairDefault.fields.18.label>
   <DiaryPromptTemplate_PairDefault.fields.19.label>важный контекст</DiaryPromptTemplate_PairDefault.fields.19.label>
   <DiaryPromptTemplate_PairDefault.fields.20.label>обстановка</DiaryPromptTemplate_PairDefault.fields.20.label>
   <DiaryPromptTemplate_PairDefault.fields.21.label>тон</DiaryPromptTemplate_PairDefault.fields.21.label>
@@ -39,11 +39,11 @@
   <DiaryPromptTemplate_PairImportant.fields.11.label>тип способности</DiaryPromptTemplate_PairImportant.fields.11.label>
   <DiaryPromptTemplate_PairImportant.fields.12.label>цель способности</DiaryPromptTemplate_PairImportant.fields.12.label>
   <DiaryPromptTemplate_PairImportant.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairImportant.fields.13.label>
-  <DiaryPromptTemplate_PairImportant.fields.14.label>приближение налёта</DiaryPromptTemplate_PairImportant.fields.14.label>
-  <DiaryPromptTemplate_PairImportant.fields.15.label>тактика налёта</DiaryPromptTemplate_PairImportant.fields.15.label>
-  <DiaryPromptTemplate_PairImportant.fields.16.label>сила налёта</DiaryPromptTemplate_PairImportant.fields.16.label>
+  <DiaryPromptTemplate_PairImportant.fields.14.label>приближение рейда</DiaryPromptTemplate_PairImportant.fields.14.label>
+  <DiaryPromptTemplate_PairImportant.fields.15.label>тактика рейда</DiaryPromptTemplate_PairImportant.fields.15.label>
+  <DiaryPromptTemplate_PairImportant.fields.16.label>сила рейда</DiaryPromptTemplate_PairImportant.fields.16.label>
   <DiaryPromptTemplate_PairImportant.fields.17.label>титул</DiaryPromptTemplate_PairImportant.fields.17.label>
-  <DiaryPromptTemplate_PairImportant.fields.18.label>роль в идеолигии</DiaryPromptTemplate_PairImportant.fields.18.label>
+  <DiaryPromptTemplate_PairImportant.fields.18.label>роль в идеологии</DiaryPromptTemplate_PairImportant.fields.18.label>
   <DiaryPromptTemplate_PairImportant.fields.19.label>важный контекст</DiaryPromptTemplate_PairImportant.fields.19.label>
   <DiaryPromptTemplate_PairImportant.fields.20.label>обстановка</DiaryPromptTemplate_PairImportant.fields.20.label>
   <DiaryPromptTemplate_PairImportant.fields.21.label>тон</DiaryPromptTemplate_PairImportant.fields.21.label>
@@ -65,11 +65,11 @@
   <DiaryPromptTemplate_PairCombat.fields.11.label>тип способности</DiaryPromptTemplate_PairCombat.fields.11.label>
   <DiaryPromptTemplate_PairCombat.fields.12.label>цель способности</DiaryPromptTemplate_PairCombat.fields.12.label>
   <DiaryPromptTemplate_PairCombat.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairCombat.fields.13.label>
-  <DiaryPromptTemplate_PairCombat.fields.14.label>приближение налёта</DiaryPromptTemplate_PairCombat.fields.14.label>
-  <DiaryPromptTemplate_PairCombat.fields.15.label>тактика налёта</DiaryPromptTemplate_PairCombat.fields.15.label>
-  <DiaryPromptTemplate_PairCombat.fields.16.label>сила налёта</DiaryPromptTemplate_PairCombat.fields.16.label>
+  <DiaryPromptTemplate_PairCombat.fields.14.label>приближение рейда</DiaryPromptTemplate_PairCombat.fields.14.label>
+  <DiaryPromptTemplate_PairCombat.fields.15.label>тактика рейда</DiaryPromptTemplate_PairCombat.fields.15.label>
+  <DiaryPromptTemplate_PairCombat.fields.16.label>сила рейда</DiaryPromptTemplate_PairCombat.fields.16.label>
   <DiaryPromptTemplate_PairCombat.fields.17.label>титул</DiaryPromptTemplate_PairCombat.fields.17.label>
-  <DiaryPromptTemplate_PairCombat.fields.18.label>роль в идеолигии</DiaryPromptTemplate_PairCombat.fields.18.label>
+  <DiaryPromptTemplate_PairCombat.fields.18.label>роль в идеологии</DiaryPromptTemplate_PairCombat.fields.18.label>
   <DiaryPromptTemplate_PairCombat.fields.19.label>ты</DiaryPromptTemplate_PairCombat.fields.19.label>
   <DiaryPromptTemplate_PairCombat.fields.20.label>важный контекст</DiaryPromptTemplate_PairCombat.fields.20.label>
   <DiaryPromptTemplate_PairCombat.fields.21.label>обстановка</DiaryPromptTemplate_PairCombat.fields.21.label>
@@ -93,11 +93,11 @@
   <DiaryPromptTemplate_PairBatched.fields.11.label>тип способности</DiaryPromptTemplate_PairBatched.fields.11.label>
   <DiaryPromptTemplate_PairBatched.fields.12.label>цель способности</DiaryPromptTemplate_PairBatched.fields.12.label>
   <DiaryPromptTemplate_PairBatched.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairBatched.fields.13.label>
-  <DiaryPromptTemplate_PairBatched.fields.14.label>приближение налёта</DiaryPromptTemplate_PairBatched.fields.14.label>
-  <DiaryPromptTemplate_PairBatched.fields.15.label>тактика налёта</DiaryPromptTemplate_PairBatched.fields.15.label>
-  <DiaryPromptTemplate_PairBatched.fields.16.label>сила налёта</DiaryPromptTemplate_PairBatched.fields.16.label>
+  <DiaryPromptTemplate_PairBatched.fields.14.label>приближение рейда</DiaryPromptTemplate_PairBatched.fields.14.label>
+  <DiaryPromptTemplate_PairBatched.fields.15.label>тактика рейда</DiaryPromptTemplate_PairBatched.fields.15.label>
+  <DiaryPromptTemplate_PairBatched.fields.16.label>сила рейда</DiaryPromptTemplate_PairBatched.fields.16.label>
   <DiaryPromptTemplate_PairBatched.fields.17.label>титул</DiaryPromptTemplate_PairBatched.fields.17.label>
-  <DiaryPromptTemplate_PairBatched.fields.18.label>роль в идеолигии</DiaryPromptTemplate_PairBatched.fields.18.label>
+  <DiaryPromptTemplate_PairBatched.fields.18.label>роль в идеологии</DiaryPromptTemplate_PairBatched.fields.18.label>
   <DiaryPromptTemplate_PairBatched.fields.19.label>важный контекст</DiaryPromptTemplate_PairBatched.fields.19.label>
   <DiaryPromptTemplate_PairBatched.fields.20.label>обстановка</DiaryPromptTemplate_PairBatched.fields.20.label>
   <DiaryPromptTemplate_PairBatched.fields.21.label>тон</DiaryPromptTemplate_PairBatched.fields.21.label>
@@ -131,11 +131,11 @@
   <DiaryPromptTemplate_SoloDefault.fields.25.label>тип способности</DiaryPromptTemplate_SoloDefault.fields.25.label>
   <DiaryPromptTemplate_SoloDefault.fields.26.label>цель способности</DiaryPromptTemplate_SoloDefault.fields.26.label>
   <DiaryPromptTemplate_SoloDefault.fields.27.label>перезарядка способности</DiaryPromptTemplate_SoloDefault.fields.27.label>
-  <DiaryPromptTemplate_SoloDefault.fields.28.label>приближение налёта</DiaryPromptTemplate_SoloDefault.fields.28.label>
-  <DiaryPromptTemplate_SoloDefault.fields.29.label>тактика налёта</DiaryPromptTemplate_SoloDefault.fields.29.label>
-  <DiaryPromptTemplate_SoloDefault.fields.30.label>сила налёта</DiaryPromptTemplate_SoloDefault.fields.30.label>
+  <DiaryPromptTemplate_SoloDefault.fields.28.label>приближение рейда</DiaryPromptTemplate_SoloDefault.fields.28.label>
+  <DiaryPromptTemplate_SoloDefault.fields.29.label>тактика рейда</DiaryPromptTemplate_SoloDefault.fields.29.label>
+  <DiaryPromptTemplate_SoloDefault.fields.30.label>сила рейда</DiaryPromptTemplate_SoloDefault.fields.30.label>
   <DiaryPromptTemplate_SoloDefault.fields.31.label>титул</DiaryPromptTemplate_SoloDefault.fields.31.label>
-  <DiaryPromptTemplate_SoloDefault.fields.32.label>роль в идеолигии</DiaryPromptTemplate_SoloDefault.fields.32.label>
+  <DiaryPromptTemplate_SoloDefault.fields.32.label>роль в идеологии</DiaryPromptTemplate_SoloDefault.fields.32.label>
   <DiaryPromptTemplate_SoloDefault.fields.33.label>важный контекст</DiaryPromptTemplate_SoloDefault.fields.33.label>
   <DiaryPromptTemplate_SoloDefault.fields.34.label>обстановка</DiaryPromptTemplate_SoloDefault.fields.34.label>
   <DiaryPromptTemplate_SoloDefault.fields.35.label>тон</DiaryPromptTemplate_SoloDefault.fields.35.label>
@@ -170,11 +170,11 @@
   <DiaryPromptTemplate_SoloImportant.fields.26.label>тип способности</DiaryPromptTemplate_SoloImportant.fields.26.label>
   <DiaryPromptTemplate_SoloImportant.fields.27.label>цель способности</DiaryPromptTemplate_SoloImportant.fields.27.label>
   <DiaryPromptTemplate_SoloImportant.fields.28.label>перезарядка способности</DiaryPromptTemplate_SoloImportant.fields.28.label>
-  <DiaryPromptTemplate_SoloImportant.fields.29.label>приближение налёта</DiaryPromptTemplate_SoloImportant.fields.29.label>
-  <DiaryPromptTemplate_SoloImportant.fields.30.label>тактика налёта</DiaryPromptTemplate_SoloImportant.fields.30.label>
-  <DiaryPromptTemplate_SoloImportant.fields.31.label>сила налёта</DiaryPromptTemplate_SoloImportant.fields.31.label>
+  <DiaryPromptTemplate_SoloImportant.fields.29.label>приближение рейда</DiaryPromptTemplate_SoloImportant.fields.29.label>
+  <DiaryPromptTemplate_SoloImportant.fields.30.label>тактика рейда</DiaryPromptTemplate_SoloImportant.fields.30.label>
+  <DiaryPromptTemplate_SoloImportant.fields.31.label>сила рейда</DiaryPromptTemplate_SoloImportant.fields.31.label>
   <DiaryPromptTemplate_SoloImportant.fields.32.label>титул</DiaryPromptTemplate_SoloImportant.fields.32.label>
-  <DiaryPromptTemplate_SoloImportant.fields.33.label>роль в идеолигии</DiaryPromptTemplate_SoloImportant.fields.33.label>
+  <DiaryPromptTemplate_SoloImportant.fields.33.label>роль в идеологии</DiaryPromptTemplate_SoloImportant.fields.33.label>
   <DiaryPromptTemplate_SoloImportant.fields.34.label>важный контекст</DiaryPromptTemplate_SoloImportant.fields.34.label>
   <DiaryPromptTemplate_SoloImportant.fields.35.label>обстановка</DiaryPromptTemplate_SoloImportant.fields.35.label>
   <DiaryPromptTemplate_SoloImportant.fields.36.label>тон</DiaryPromptTemplate_SoloImportant.fields.36.label>
@@ -204,11 +204,11 @@
   <DiaryPromptTemplate_SoloInternalState.fields.21.label>тип способности</DiaryPromptTemplate_SoloInternalState.fields.21.label>
   <DiaryPromptTemplate_SoloInternalState.fields.22.label>цель способности</DiaryPromptTemplate_SoloInternalState.fields.22.label>
   <DiaryPromptTemplate_SoloInternalState.fields.23.label>перезарядка способности</DiaryPromptTemplate_SoloInternalState.fields.23.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.24.label>приближение налёта</DiaryPromptTemplate_SoloInternalState.fields.24.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.25.label>тактика налёта</DiaryPromptTemplate_SoloInternalState.fields.25.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.26.label>сила налёта</DiaryPromptTemplate_SoloInternalState.fields.26.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.24.label>приближение рейда</DiaryPromptTemplate_SoloInternalState.fields.24.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.25.label>тактика рейда</DiaryPromptTemplate_SoloInternalState.fields.25.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.26.label>сила рейда</DiaryPromptTemplate_SoloInternalState.fields.26.label>
   <DiaryPromptTemplate_SoloInternalState.fields.27.label>титул</DiaryPromptTemplate_SoloInternalState.fields.27.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.28.label>роль в идеолигии</DiaryPromptTemplate_SoloInternalState.fields.28.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.28.label>роль в идеологии</DiaryPromptTemplate_SoloInternalState.fields.28.label>
   <DiaryPromptTemplate_SoloInternalState.fields.29.label>важный контекст</DiaryPromptTemplate_SoloInternalState.fields.29.label>
   <DiaryPromptTemplate_SoloInternalState.fields.30.label>обстановка</DiaryPromptTemplate_SoloInternalState.fields.30.label>
   <DiaryPromptTemplate_SoloInternalState.fields.31.label>тон</DiaryPromptTemplate_SoloInternalState.fields.31.label>
@@ -238,11 +238,11 @@
   <DiaryPromptTemplate_SoloBatched.fields.21.label>тип способности</DiaryPromptTemplate_SoloBatched.fields.21.label>
   <DiaryPromptTemplate_SoloBatched.fields.22.label>цель способности</DiaryPromptTemplate_SoloBatched.fields.22.label>
   <DiaryPromptTemplate_SoloBatched.fields.23.label>перезарядка способности</DiaryPromptTemplate_SoloBatched.fields.23.label>
-  <DiaryPromptTemplate_SoloBatched.fields.24.label>приближение налёта</DiaryPromptTemplate_SoloBatched.fields.24.label>
-  <DiaryPromptTemplate_SoloBatched.fields.25.label>тактика налёта</DiaryPromptTemplate_SoloBatched.fields.25.label>
-  <DiaryPromptTemplate_SoloBatched.fields.26.label>сила налёта</DiaryPromptTemplate_SoloBatched.fields.26.label>
+  <DiaryPromptTemplate_SoloBatched.fields.24.label>приближение рейда</DiaryPromptTemplate_SoloBatched.fields.24.label>
+  <DiaryPromptTemplate_SoloBatched.fields.25.label>тактика рейда</DiaryPromptTemplate_SoloBatched.fields.25.label>
+  <DiaryPromptTemplate_SoloBatched.fields.26.label>сила рейда</DiaryPromptTemplate_SoloBatched.fields.26.label>
   <DiaryPromptTemplate_SoloBatched.fields.27.label>титул</DiaryPromptTemplate_SoloBatched.fields.27.label>
-  <DiaryPromptTemplate_SoloBatched.fields.28.label>роль в идеолигии</DiaryPromptTemplate_SoloBatched.fields.28.label>
+  <DiaryPromptTemplate_SoloBatched.fields.28.label>роль в идеологии</DiaryPromptTemplate_SoloBatched.fields.28.label>
   <DiaryPromptTemplate_SoloBatched.fields.29.label>важный контекст</DiaryPromptTemplate_SoloBatched.fields.29.label>
   <DiaryPromptTemplate_SoloBatched.fields.30.label>обстановка</DiaryPromptTemplate_SoloBatched.fields.30.label>
   <DiaryPromptTemplate_SoloBatched.fields.31.label>тон</DiaryPromptTemplate_SoloBatched.fields.31.label>
@@ -273,11 +273,11 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.22.label>тип способности</DiaryPromptTemplate_SoloDayReflection.fields.22.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.23.label>цель способности</DiaryPromptTemplate_SoloDayReflection.fields.23.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.24.label>перезарядка способности</DiaryPromptTemplate_SoloDayReflection.fields.24.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.25.label>приближение налёта</DiaryPromptTemplate_SoloDayReflection.fields.25.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.26.label>тактика налёта</DiaryPromptTemplate_SoloDayReflection.fields.26.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.27.label>сила налёта</DiaryPromptTemplate_SoloDayReflection.fields.27.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.25.label>приближение рейда</DiaryPromptTemplate_SoloDayReflection.fields.25.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.26.label>тактика рейда</DiaryPromptTemplate_SoloDayReflection.fields.26.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.27.label>сила рейда</DiaryPromptTemplate_SoloDayReflection.fields.27.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.28.label>титул</DiaryPromptTemplate_SoloDayReflection.fields.28.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.29.label>роль в идеолигии</DiaryPromptTemplate_SoloDayReflection.fields.29.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.29.label>роль в идеологии</DiaryPromptTemplate_SoloDayReflection.fields.29.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.30.label>важный контекст</DiaryPromptTemplate_SoloDayReflection.fields.30.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.31.label>обстановка</DiaryPromptTemplate_SoloDayReflection.fields.31.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.32.label>тон</DiaryPromptTemplate_SoloDayReflection.fields.32.label>
