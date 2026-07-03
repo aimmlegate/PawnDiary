@@ -421,6 +421,12 @@
   <PawnDiary.Settings.Adv.Group.TmplDeath>Template: Death description</PawnDiary.Settings.Adv.Group.TmplDeath>
   <PawnDiary.Settings.Adv.Group.TmplArrival>Template: Arrival description</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Template: Title</PawnDiary.Settings.Adv.Group.TmplTitle>
+  <PawnDiary.Settings.Adv.DynamicPrefix.PromptEnchantment>Prompt enchantment</PawnDiary.Settings.Adv.DynamicPrefix.PromptEnchantment>
+  <PawnDiary.Settings.Adv.DynamicPrefix.HumorCue>Humor cue</PawnDiary.Settings.Adv.DynamicPrefix.HumorCue>
+  <PawnDiary.Settings.Adv.DynamicPrefix.EventWindow>Event window prompt</PawnDiary.Settings.Adv.DynamicPrefix.EventWindow>
+  <PawnDiary.Settings.Adv.DynamicPrefix.ObservedCondition>Observed condition prompt</PawnDiary.Settings.Adv.DynamicPrefix.ObservedCondition>
+  <PawnDiary.Settings.Adv.DynamicPrefix.InteractionGroup>Event group prompt</PawnDiary.Settings.Adv.DynamicPrefix.InteractionGroup>
+  <PawnDiary.Settings.Adv.DynamicPrefix.HediffPersona>Hediff style override</PawnDiary.Settings.Adv.DynamicPrefix.HediffPersona>
 
   <!-- Advanced field labels for prompt text overrides. Missing labels still humanize the C# field name. -->
   <PawnDiary.Settings.Adv.Field.text>Context text</PawnDiary.Settings.Adv.Field.text>
@@ -619,8 +625,8 @@
   <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>Prompt evidence cap for the quadrum reflection.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>Per-request output cap for the quadrum reflection.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>
   <PawnDiary.Settings.Adv.Help.arcReflectionEnabled>Master toggle for rare yearly arc reflections.</PawnDiary.Settings.Adv.Help.arcReflectionEnabled>
-  <PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>Allow a second arc entry in a year after a major moment.</PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>
-  <PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>Most arc reflections one pawn writes per year.</PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>
+  <PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>Allow extra major-event arc entries after the first yearly arc, subject to the gap and yearly cap.</PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>Upper cap on arc reflections one pawn writes per year (1-10). Extra entries still require major-event triggers.</PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>
   <PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>Minimum gap (days) between two arc entries in the same year.</PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>
   <PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>0..100 severity a progression trigger must reach to count as major.</PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>
   <PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>Force a yearly arc on/after this year-day if one hasn't happened.</PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>

@@ -10,7 +10,7 @@ namespace PawnDiary
     public class ArcReflectionScheduleTuning
     {
         public bool enabled = true;
-        public int maxEntriesPerYear = 1;
+        public int maxEntriesPerYear = 2;
         public bool allowSecondMajorEntry = true;
         public int secondEntryMinGapDays = 30;
         public int forceAfterYearDay = 45;
@@ -103,12 +103,6 @@ namespace PawnDiary
                 return result;
             }
 
-            if (normalizedEntries >= 2)
-            {
-                result.blockReason = "year_cap";
-                return result;
-            }
-
             int gapTicks = Math.Max(0, tuning.secondEntryMinGapDays)
                 * Math.Max(1, tuning.ticksPerDay);
             if (state.lastArcEntryTick >= 0 && currentTick - state.lastArcEntryTick < gapTicks)
@@ -123,9 +117,8 @@ namespace PawnDiary
 
         private static int MaxAllowedThisYear(ArcReflectionScheduleTuning tuning)
         {
-            int baseMax = Math.Max(1, tuning.maxEntriesPerYear);
-            int allowed = tuning.allowSecondMajorEntry ? Math.Max(baseMax, 2) : baseMax;
-            return Math.Min(2, allowed);
+            int configuredMax = Math.Max(1, tuning.maxEntriesPerYear);
+            return tuning.allowSecondMajorEntry ? configuredMax : Math.Min(1, configuredMax);
         }
     }
 }

@@ -399,6 +399,12 @@
   <PawnDiary.Settings.Adv.Group.TmplDeath>Шаблон: смерть</PawnDiary.Settings.Adv.Group.TmplDeath>
   <PawnDiary.Settings.Adv.Group.TmplArrival>Шаблон: прибытие</PawnDiary.Settings.Adv.Group.TmplArrival>
   <PawnDiary.Settings.Adv.Group.TmplTitle>Шаблон: заголовок</PawnDiary.Settings.Adv.Group.TmplTitle>
+  <PawnDiary.Settings.Adv.DynamicPrefix.PromptEnchantment>Украшение запроса</PawnDiary.Settings.Adv.DynamicPrefix.PromptEnchantment>
+  <PawnDiary.Settings.Adv.DynamicPrefix.HumorCue>Юморная подсказка</PawnDiary.Settings.Adv.DynamicPrefix.HumorCue>
+  <PawnDiary.Settings.Adv.DynamicPrefix.EventWindow>Запрос окна события</PawnDiary.Settings.Adv.DynamicPrefix.EventWindow>
+  <PawnDiary.Settings.Adv.DynamicPrefix.ObservedCondition>Запрос наблюдаемого условия</PawnDiary.Settings.Adv.DynamicPrefix.ObservedCondition>
+  <PawnDiary.Settings.Adv.DynamicPrefix.InteractionGroup>Запрос группы событий</PawnDiary.Settings.Adv.DynamicPrefix.InteractionGroup>
+  <PawnDiary.Settings.Adv.DynamicPrefix.HediffPersona>Стиль состояния здоровья</PawnDiary.Settings.Adv.DynamicPrefix.HediffPersona>
   <PawnDiary.Settings.Adv.Field.text>Текст контекста</PawnDiary.Settings.Adv.Field.text>
   <PawnDiary.Settings.Adv.Field.conditionLabel>Название состояния</PawnDiary.Settings.Adv.Field.conditionLabel>
   <PawnDiary.Settings.Adv.Field.intensityText>Сила состояния</PawnDiary.Settings.Adv.Field.intensityText>
@@ -590,8 +596,8 @@
   <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>Лимит событий-доказательств в запросе итога квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxPromptEvents>
   <PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>Лимит ответа для запроса итога квадрума.</PawnDiary.Settings.Adv.Help.quadrumReflectionMaxTokens>
   <PawnDiary.Settings.Adv.Help.arcReflectionEnabled>Главный переключатель редких годовых арок.</PawnDiary.Settings.Adv.Help.arcReflectionEnabled>
-  <PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>Разрешить вторую арку за год после важного момента.</PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>
-  <PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>Сколько годовых итогов максимум приходится на одного поселенца за год.</PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>
+  <PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>Разрешить дополнительные арки после первой годовой арки, если был важный повод, выдержана пауза и не достигнут годовой предел.</PawnDiary.Settings.Adv.Help.arcReflectionAllowSecondMajorEntry>
+  <PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>Верхний предел годовых арок на одного поселенца за год (1-10). Дополнительным аркам всё равно нужен важный повод.</PawnDiary.Settings.Adv.Help.arcReflectionMaxEntriesPerYear>
   <PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>Минимальный разрыв в днях между двумя арками одного года.</PawnDiary.Settings.Adv.Help.arcReflectionSecondEntryMinGapDays>
   <PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>Тяжесть 0..100, с которой триггер развития считается важным.</PawnDiary.Settings.Adv.Help.arcReflectionMajorSeverityThreshold>
   <PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>Писать обязательный годовой итог в этот день года или позже, если его ещё не было.</PawnDiary.Settings.Adv.Help.arcReflectionForceAfterYearDay>

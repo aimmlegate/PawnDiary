@@ -775,15 +775,22 @@ namespace PawnDiary
             return defs == null ? new List<TDef>() : defs.Where(def => def != null).OrderBy(def => def.defName).ToList();
         }
 
-        private static string DefDisplay(Def def, string prefix)
+        private static string DefDisplay(Def def, string prefixKey)
         {
+            string prefix = string.Empty;
+            if (!string.IsNullOrEmpty(prefixKey) && prefixKey.CanTranslate())
+            {
+                TaggedString tagged = prefixKey.Translate();
+                prefix = tagged == null ? string.Empty : ((string)tagged).StripTags();
+            }
+
             string name = def == null ? string.Empty : def.LabelCap.ToString();
             if (string.IsNullOrWhiteSpace(name) || (def != null && string.Equals(name, def.defName, StringComparison.Ordinal)))
             {
                 name = def?.defName ?? string.Empty;
             }
 
-            return prefix + ": " + name;
+            return string.IsNullOrWhiteSpace(prefix) ? name : prefix + ": " + name;
         }
 
         private static string DynamicGroupKey(string prefix, Def def)
@@ -1296,7 +1303,7 @@ namespace PawnDiary
             b.Tuning("Arc reflection", "PawnDiary.Settings.Adv.Group.Arc")
                 .Bool("arcReflectionEnabled")
                 .Bool("arcReflectionAllowSecondMajorEntry")
-                .Int("arcReflectionMaxEntriesPerYear", 0, 10)
+                .Int("arcReflectionMaxEntriesPerYear", 1, 10)
                 .Int("arcReflectionSecondEntryMinGapDays", 0, 120)
                 .Int("arcReflectionMajorSeverityThreshold", 0, 100)
                 .Int("arcReflectionForceAfterYearDay", 0, 100)
@@ -1468,7 +1475,7 @@ namespace PawnDiary
         {
             foreach (DiaryPromptEnchantmentDef def in LoadedDefs<DiaryPromptEnchantmentDef>())
             {
-                b.Def(def, DefDisplay(def, "Prompt enchantment"), DynamicGroupKey("PromptEnchantment", def), AdvancedFieldCategory.Prompts)
+                b.Def(def, DefDisplay(def, "PawnDiary.Settings.Adv.DynamicPrefix.PromptEnchantment"), DynamicGroupKey("PromptEnchantment", def), AdvancedFieldCategory.Prompts)
                     .Text("source")
                     .Text("capacityDefName")
                     .Float("chance", 0f, 1f, true)
@@ -1492,7 +1499,7 @@ namespace PawnDiary
         {
             foreach (DiaryHumorCueDef def in LoadedDefs<DiaryHumorCueDef>())
             {
-                b.Def(def, DefDisplay(def, "Humor cue"), DynamicGroupKey("HumorCue", def), AdvancedFieldCategory.Prompts)
+                b.Def(def, DefDisplay(def, "PawnDiary.Settings.Adv.DynamicPrefix.HumorCue"), DynamicGroupKey("HumorCue", def), AdvancedFieldCategory.Prompts)
                     .LongText("rule")
                     .Text("tier")
                     .Float("weight", 0f, 100f, false);
@@ -1503,7 +1510,7 @@ namespace PawnDiary
         {
             foreach (DiaryEventWindowDef def in LoadedDefs<DiaryEventWindowDef>())
             {
-                b.Def(def, DefDisplay(def, "Event window prompt"), DynamicGroupKey("EventWindow", def), AdvancedFieldCategory.Prompts)
+                b.Def(def, DefDisplay(def, "PawnDiary.Settings.Adv.DynamicPrefix.EventWindow"), DynamicGroupKey("EventWindow", def), AdvancedFieldCategory.Prompts)
                     .Bool("enabled")
                     .LongText("instruction")
                     .LongText("startText")
@@ -1526,7 +1533,7 @@ namespace PawnDiary
         {
             foreach (DiaryObservedConditionDef def in LoadedDefs<DiaryObservedConditionDef>())
             {
-                b.Def(def, DefDisplay(def, "Observed condition prompt"), DynamicGroupKey("ObservedCondition", def), AdvancedFieldCategory.Prompts)
+                b.Def(def, DefDisplay(def, "PawnDiary.Settings.Adv.DynamicPrefix.ObservedCondition"), DynamicGroupKey("ObservedCondition", def), AdvancedFieldCategory.Prompts)
                     .Bool("enabled")
                     .LongText("instruction")
                     .LongText("startText")
@@ -1557,7 +1564,7 @@ namespace PawnDiary
         {
             foreach (DiaryInteractionGroupDef def in LoadedDefs<DiaryInteractionGroupDef>())
             {
-                b.Def(def, DefDisplay(def, "Event group prompt"), DynamicGroupKey("InteractionGroup", def), AdvancedFieldCategory.Prompts)
+                b.Def(def, DefDisplay(def, "PawnDiary.Settings.Adv.DynamicPrefix.InteractionGroup"), DynamicGroupKey("InteractionGroup", def), AdvancedFieldCategory.Prompts)
                     .Bool("defaultEnabled")
                     .Bool("important")
                     .Bool("combat")
@@ -1659,7 +1666,7 @@ namespace PawnDiary
         {
             foreach (DiaryHediffPersonaOverrideDef def in LoadedDefs<DiaryHediffPersonaOverrideDef>())
             {
-                b.Def(def, DefDisplay(def, "Hediff style override"), DynamicGroupKey("HediffPersona", def), AdvancedFieldCategory.Prompts)
+                b.Def(def, DefDisplay(def, "PawnDiary.Settings.Adv.DynamicPrefix.HediffPersona"), DynamicGroupKey("HediffPersona", def), AdvancedFieldCategory.Prompts)
                     .Int("priority", 0, 100000)
                     .Text("personaDefName")
                     .Bool("visibleOnly")

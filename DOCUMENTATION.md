@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-02
+Last updated: 2026-07-03
 
 Related files:
 
@@ -286,7 +286,7 @@ it onto the bus.
 | Rituals | Ideology and psychic ritual completion hooks | Fan-out by role/perspective when DLC content is active. |
 | Abilities | `Ability.Activate` overloads | Cooldown-weighted caster entry, scaled by the shared random-generation setting. |
 | Day reflections | Sleep/rest trigger | One reflective page per pawn/day when important signals exist. Near the end of a quadrum, a pawn with enough important entries may write one longer quadrum reflection instead; that skips the ordinary daily reflection for that night. |
-| Arc reflections | Sleep/rest trigger and major psylink/xenotype progression trigger | Rare yearly life-arc page per pawn, with an optional second major-event page after the configured gap. The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, excludes prior reflections/death descriptions/recently used memories, and never stores a separate history fact database. |
+| Arc reflections | Sleep/rest trigger and major psylink/xenotype progression trigger | Rare yearly life-arc page per pawn, with optional extra major-event pages after the configured gap up to `arcReflectionMaxEntriesPerYear` (default 2). The sleep/rest annual check is gated by `arcReflectionEnabled`, not by day summaries. It samples existing hot/archive diary pages from the current year, de-duplicates by event ID, excludes prior reflections/death descriptions/recently used memories, and never stores a separate history fact database. |
 | External mod events | `PawnDiaryApi.SubmitEvent` called by adapter mods (§3.7, `INTEGRATIONS.md`) | Solo or pairwise page whose prompt policy comes from the External-domain group XML that claims the submitted `eventKey`; unclaimed keys record nothing. |
 
 Hooks are grouped by domain under `Source/Patches/`. Fragile reflection targets register through
@@ -536,6 +536,8 @@ Field labels span the full row width so long names never clip. The catalog (`Adv
 is declarative and drives both the UI and the runtime override seam. Static tuning fields build during
 settings load; Def-backed prompt-policy groups are appended lazily after `DefDatabase` has loaded, so
 dynamic groups such as humor cues cannot be cached empty by early settings deserialization.
+Dynamic Def-backed group prefixes are Keyed UI strings, while each Def's label still comes from its
+DefInjected label or defName fallback.
 
 Overrides persist per player in `TuningOverrideStore` (a typed twin of `PromptOverrideDictionary`) and
 take effect immediately by writing straight into the live Def instance fields via cached reflection or
@@ -686,7 +688,9 @@ triggers so a player rarely clicks Fetch manually: when the settings window open
 row whose capability is not yet cached), when a row's URL/key/auth changes (background refresh, once
 per change), when Test connection runs (in parallel), and on the manual Fetch click. A lightweight
 capability-only refresh path (`ApiConnectionController.RefreshCapability`) updates just the
-thread-safe cache without disturbing the single-flight picker, so several rows can refresh at once.
+thread-safe cache without disturbing the single-flight picker, so several rows can refresh at once;
+its per-row in-flight guard is lock-protected because cancellation happens on the UI thread while
+async continuations may finish on a worker thread.
 Providers that return no `reasoning` object cache nothing and degrade gracefully.
 
 **Per-lane reasoning tag.** A **Reasoning tag** dropdown (default *Auto*) controls how
@@ -704,8 +708,10 @@ The settings-window **Test connection** button runs independently per row: start
 lane does not block or cancel a test on another, and each row shows its own "Testing…"/success/
 failure status. `ApiConnectionController` keeps per-row state (a generation counter for stale-result
 rejection plus a busy flag and status string) and a thread-safe `ConcurrentQueue` for the
-background-to-main-thread result handoff, drained each UI frame. (The **Fetch models** button on the
-same screen is still single-flight global — only one fetch at a time across all rows.)
+background-to-main-thread result handoff, drained each UI frame. The test prompt is translated on the
+main thread before calling `LlmClient`, which does not own prompt-prose fallbacks because its transport
+code can run off-thread. (The **Fetch models** button on the same screen is still single-flight global
+— only one fetch at a time across all rows.)
 
 ## 9. Save Data And Compatibility
 

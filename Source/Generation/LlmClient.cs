@@ -361,6 +361,11 @@ namespace PawnDiary
                 throw new InvalidOperationException("The API model name is blank.");
             }
 
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                throw new InvalidOperationException("No connection test prompt was provided.");
+            }
+
             using (CancellationTokenSource cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(Math.Max(5, timeoutSeconds))))
             {
                 SendResponse response = await SendOnce(new LlmGenerationRequest
@@ -368,7 +373,7 @@ namespace PawnDiary
                     eventId = "connection-test",
                     povRole = "test",
                     systemPrompt = string.Empty,
-                    rawText = string.IsNullOrWhiteSpace(prompt) ? "Reply with a short confirmation sentence." : prompt,
+                    rawText = prompt,
                     endpointUrl = endpoint.url,
                     modelName = endpoint.model,
                     apiKey = endpoint.apiKey,

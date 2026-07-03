@@ -354,7 +354,7 @@
     <!-- Rare yearly pawn arc reflections. Existing diary pages are sampled as memories; this state
          only controls cadence and repetition, not a separate history database. -->
     <arcReflectionEnabled>true</arcReflectionEnabled>
-    <arcReflectionMaxEntriesPerYear>1</arcReflectionMaxEntriesPerYear>
+    <arcReflectionMaxEntriesPerYear>2</arcReflectionMaxEntriesPerYear>
     <arcReflectionAllowSecondMajorEntry>true</arcReflectionAllowSecondMajorEntry>
     <arcReflectionSecondEntryMinGapDays>30</arcReflectionSecondEntryMinGapDays>
     <arcReflectionMajorSeverityThreshold>90</arcReflectionMajorSeverityThreshold>

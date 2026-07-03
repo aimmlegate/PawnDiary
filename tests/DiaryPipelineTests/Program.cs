@@ -1408,7 +1408,7 @@ namespace DiaryPipelineTests
             ArcReflectionScheduleTuning tuning = new ArcReflectionScheduleTuning
             {
                 enabled = true,
-                maxEntriesPerYear = 1,
+                maxEntriesPerYear = 2,
                 allowSecondMajorEntry = true,
                 secondEntryMinGapDays = 30,
                 forceAfterYearDay = 45,
@@ -1462,6 +1462,54 @@ namespace DiaryPipelineTests
                 dayOfYear: 59, majorEventTrigger: true);
             AssertTrue("arc schedule blocks third entry", !capped.allowed);
             AssertEqual("arc schedule cap reason", "year_cap", capped.blockReason);
+
+            ArcReflectionScheduleTuning onePerYear = new ArcReflectionScheduleTuning
+            {
+                enabled = true,
+                maxEntriesPerYear = 1,
+                allowSecondMajorEntry = true,
+                secondEntryMinGapDays = 30,
+                forceAfterYearDay = 45,
+                ticksPerDay = 60000,
+            };
+            ArcReflectionScheduleDecision secondBlockedByMax = ArcReflectionSchedulePolicy.Evaluate(
+                oneEntry, onePerYear, currentTick: 41 * 60000,
+                currentYear: 5504, dayOfYear: 41, majorEventTrigger: true);
+            AssertTrue("arc schedule honors one-entry yearly cap", !secondBlockedByMax.allowed);
+            AssertEqual("arc schedule one-entry cap reason", "year_cap", secondBlockedByMax.blockReason);
+
+            ArcReflectionScheduleTuning fourPerYear = new ArcReflectionScheduleTuning
+            {
+                enabled = true,
+                maxEntriesPerYear = 4,
+                allowSecondMajorEntry = true,
+                secondEntryMinGapDays = 30,
+                forceAfterYearDay = 45,
+                ticksPerDay = 60000,
+            };
+            ArcReflectionScheduleDecision thirdAllowed = ArcReflectionSchedulePolicy.Evaluate(
+                new ArcReflectionScheduleSnapshot
+                {
+                    lastArcEntryTick = 41 * 60000,
+                    lastArcEntryYear = 5504,
+                    arcEntriesThisYear = 2,
+                },
+                fourPerYear, currentTick: 72 * 60000, currentYear: 5504,
+                dayOfYear: 72, majorEventTrigger: true);
+            AssertTrue("arc schedule allows configured third major entry", thirdAllowed.allowed);
+            AssertEqual("arc schedule reports configured yearly cap", 4, thirdAllowed.maxAllowedThisYear);
+
+            ArcReflectionScheduleDecision highCapReached = ArcReflectionSchedulePolicy.Evaluate(
+                new ArcReflectionScheduleSnapshot
+                {
+                    lastArcEntryTick = 100 * 60000,
+                    lastArcEntryYear = 5504,
+                    arcEntriesThisYear = 4,
+                },
+                fourPerYear, currentTick: 131 * 60000, currentYear: 5504,
+                dayOfYear: 131, majorEventTrigger: true);
+            AssertTrue("arc schedule blocks entries at configured high cap", !highCapReached.allowed);
+            AssertEqual("arc schedule high cap reason", "year_cap", highCapReached.blockReason);
 
             ArcReflectionScheduleDecision newYear = ArcReflectionSchedulePolicy.Evaluate(
                 new ArcReflectionScheduleSnapshot

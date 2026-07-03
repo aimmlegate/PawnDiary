@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Review fixes for API settings, arc cadence, and localization.** Background reasoning-capability
+  refreshes now lock their per-row in-flight guard so UI cancellation cannot race async continuations.
+  Arc reflections now honor the Advanced `arcReflectionMaxEntriesPerYear` cap across the full 1-10 UI
+  range (default 2 keeps the shipped annual-plus-major cadence), with pure regression tests for one-entry
+  and higher caps. Dynamic Advanced prompt-policy group prefixes moved to Keyed EN/RU strings, and
+  `LlmClient.TestConnection` no longer contains an English prompt fallback; the settings UI passes the
+  already-localized prompt from the main thread. (DOCUMENTATION §4/§8/§11.)
+
 - **Title fallback guard tightened.** Title follow-up responses now reject one-line answer labels,
   instruction echoes, reasoning-style lines, terminal periods, and generated titles outside the
   3-8 word contract. Invalid title output uses the existing fallback title built from the finished

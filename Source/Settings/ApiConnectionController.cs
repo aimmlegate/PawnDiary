@@ -31,8 +31,9 @@ namespace PawnDiary
 
         // Row indices with a background capability-only refresh in flight. RefreshCapability is
         // fire-and-forget and many rows can refresh at once (it only touches the thread-safe
-        // ModelCapabilityCache, never the single-flight picker state). This set stops the same row
-        // from being refreshed repeatedly while one is already running (e.g. while typing a URL).
+        // ModelCapabilityCache, never the single-flight picker state). The HashSet itself is guarded
+        // because await continuations may resume on a worker thread while the UI thread cancels state.
+        private readonly object capabilityRefreshLock = new object();
         private readonly HashSet<int> capabilityRefreshInFlight = new HashSet<int>();
 
         // Connection-test state is per-row so each API row's Test button runs independently: a
@@ -148,7 +149,10 @@ namespace PawnDiary
             // Drop tracked in-flight capability refreshes too: a removed/moved/reset row no longer
             // maps to a valid index, so any result that lands afterwards is harmless (it writes only
             // the thread-safe cache) but we don't want the in-flight set to hold stale indices.
-            capabilityRefreshInFlight.Clear();
+            lock (capabilityRefreshLock)
+            {
+                capabilityRefreshInFlight.Clear();
+            }
         }
 
         /// <summary>
@@ -371,9 +375,12 @@ namespace PawnDiary
             }
 
             // Skip if a refresh for this row is already running (e.g. mid-keystroke on the URL).
-            if (!capabilityRefreshInFlight.Add(index))
+            lock (capabilityRefreshLock)
             {
-                return;
+                if (!capabilityRefreshInFlight.Add(index))
+                {
+                    return;
+                }
             }
 
             string url = endpoint.url;
@@ -406,7 +413,10 @@ namespace PawnDiary
             }
             finally
             {
-                capabilityRefreshInFlight.Remove(index);
+                lock (capabilityRefreshLock)
+                {
+                    capabilityRefreshInFlight.Remove(index);
+                }
             }
         }
 

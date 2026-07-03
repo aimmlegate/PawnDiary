@@ -173,7 +173,7 @@ namespace PawnDiary
         {
             lastArcEntryTick = Math.Max(-1, lastArcEntryTick);
             lastArcMemoryShortfallTick = Math.Max(-1, lastArcMemoryShortfallTick);
-            arcEntriesThisYear = Math.Max(0, Math.Min(2, arcEntriesThisYear));
+            arcEntriesThisYear = Math.Max(0, arcEntriesThisYear);
             if (recentlyUsedEventIds == null)
             {
                 recentlyUsedEventIds = new List<string>();
@@ -254,7 +254,7 @@ namespace PawnDiary
 
             lastArcEntryTick = tick;
             lastArcEntryYear = year;
-            arcEntriesThisYear = Math.Min(2, Math.Max(0, arcEntriesThisYear) + 1);
+            arcEntriesThisYear = Math.Max(0, arcEntriesThisYear) + 1;
             if (forced)
             {
                 forcedArcYear = year;
