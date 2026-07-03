@@ -122,6 +122,32 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Anomaly: whether an unnatural corpse is currently haunting/imitating this pawn (i.e. the
+        /// corpse is this pawn's "double"). False without Anomaly or when no corpse targets the pawn,
+        /// so callers never touch the DLC's <see cref="GameComponent_Anomaly"/> directly.
+        ///
+        /// Why read it this way: an unnatural corpse's ThingDef (UnnaturalCorpse_Human) is generated
+        /// per race and tells you nothing about WHO it imitates. The DLC tracks that link on
+        /// <see cref="GameComponent_Anomaly"/> via <c>PawnHasUnnaturalCorpse</c>. Crucially, vanilla
+        /// removes that link when the corpse is destroyed/dissolves, so this is also the reliable
+        /// "is it really still present?" truth — the same metalhorror-style end trigger we rely on for
+        /// the UnnaturalCorpsePresence observed condition (the observation stops when the corpse is
+        /// gone, so the pure policy ends the state via its normal missing/end-debounce path).
+        /// </summary>
+        public static bool IsHauntedByUnnaturalCorpse(Pawn pawn)
+        {
+            if (!ModsConfig.AnomalyActive || pawn == null)
+            {
+                return false;
+            }
+
+            // GameComponent_Anomaly is registered by the Anomaly DLC, so it is null in a no-Anomaly
+            // game even though ModsConfig already gates above — double-guarding is the contract here.
+            GameComponent_Anomaly anomaly = Current.Game?.GetComponent<GameComponent_Anomaly>();
+            return anomaly != null && anomaly.PawnHasUnnaturalCorpse(pawn);
+        }
+
+        /// <summary>
         /// Ideology: the pawn's ideoligion name plus their role if they have one (e.g.
         /// "Hidden Truth (Acolyte)"). Empty without Ideology or for a pawn with no ideo.
         /// </summary>

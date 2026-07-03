@@ -180,15 +180,20 @@ the universal path:
 | Starting-arrival flush | On new games, any non-arrival signal first tries to record founding-colonist arrivals, so the arrival page remains the first diary page even if a Harmony source fires early. |
 | Dedup check | `recentEvents` rejects duplicate source keys before payload/context work runs. |
 | Decide | `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` applies pure XML-backed policy. |
-| Dedup mark | The source key is marked only after the catalog keeps the event. |
+| Generic dedup | A short XML-tuned event-type safety key (`genericEventTypeDedupTicks`) rejects repeat type+subject emissions after the decision. Death descriptions share one key across Tale and fallback sources. |
+| Dedup mark | Source and generic keys are marked only after the catalog keeps the event. |
 | Emit | `signal.Emit(sink, decision)` creates the selected diary event shape and queues follow-up work. |
 
 The dedup order is intentional. The check happens before `Decide`, so a duplicate does not build
 context, run pure policy, or consume source-side random state. `AbilitySignal` depends on this because
 its chance roll is read lazily from `Rand.Value`.
 
-The mark happens after `Decide`. If the catalog drops an event, such as an ability that fails its
-chance roll, the dedup window is not consumed.
+The generic event-type check happens after `Decide` because it needs the payload event type and final
+decision shape. It is a short safety net for sources with no detailed key and for cross-source shapes
+that should collapse together, currently neutral death-description pages.
+
+The mark happens after `Decide` and both dedup checks. If the catalog drops an event, such as an
+ability that fails its chance roll, the dedup window is not consumed.
 
 A `DiarySignal` is the impure capture+emit half of one source. Pure decision data and game-context
 formatting stay in `Source/Capture/Events/*EventData.cs`, covered by standalone tests where possible.
@@ -206,9 +211,10 @@ can call `Dispatch` directly and read its `bool` result.
 Adding a source means adding the hook or scanner, a signal, the catalog `Spec`, and XML policy.
 Shared guard, dedup, decision, and emission glue stays in `Dispatch`.
 
-The old per-source dedup dictionaries are gone. `recentEvents` stores the source-prefixed key, the
-source's own dedup window, and the recorded tick. `Source/Capture/RecentEventExpiry.cs` owns the pure
-expiry rule.
+The old per-source dedup dictionaries are gone. `recentEvents` stores the source-prefixed or generic
+event-type key, that key's own dedup window, and the recorded tick.
+`Source/Capture/RecentEventExpiry.cs` owns the pure expiry rule, and
+`Source/Capture/GenericEventTypeDedup.cs` owns the generic key format.
 
 A short-window source cannot evict a still-live long-window key. A zero or negative window opts out
 of dedup instead of clearing the store. The coverage table below lists each source's signal.
@@ -251,7 +257,7 @@ it onto the bus.
 | MoodEvent | `GameConditionManager.RegisterCondition` | `MoodEventFanoutSignal` | fan-out |
 | MentalState | `MentalStateHandler.TryStartMentalState` | `MentalStateSignal` | pair + solo |
 | Tale | `TaleRecorder.RecordTale` | `TaleSignal` | solo / batch / death |
-| Hediff | `Pawn_HealthTracker.AddHediff` + scan | `HediffSignal` | solo / day-reflection |
+| Hediff | `Pawn_HealthTracker.AddHediff` + scan | `HediffSignal` | solo body/health page or day-reflection |
 | Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
 | Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |
@@ -277,7 +283,7 @@ it onto the bus.
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, and royal-title changes. The first scan baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
-| Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
+| Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions, artificial/anomalous body-part gains, and living-pawn natural body-part losses. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted quests are bookkeeping/event-window signals only. Completed and failed quest outcomes create shared-effort entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
@@ -318,6 +324,13 @@ Two package gates control availability: `disableWhenPackageIdsLoaded` silences a
 replacement mod is loaded, and `enableWhenPackageIdsLoaded` keeps a compatibility group inert unless
 one of its target mods is present. External-domain groups classify the integration-API `eventKey`
 strings other mods submit (see §3.7).
+
+Hediff body-part events use the same XML classifier, but classify by a synthetic key when the live
+HediffDef is a body-part change: `BionicArm_addedpart`, `Tentacle_addedpart_organicpart`, or
+`MissingBodyPart_missingpart`. The saved `gameContext` carries `part_kind=`, `part_tier=`,
+`body_attitude=`, and optional `part_cause=` markers so saved pages recover the same group after
+load. `DiaryTuningDef.xml` owns body-part tier overrides, body-mod trait/precept/inhumanized lists,
+and efficiency thresholds; the C# fallback values keep missing XML safe.
 
 Interaction `PairEvent` batches only use the combined batch prompt when two or more moments collect in
 the quiet window. If the window flushes with a single moment, the entry is emitted as a normal
@@ -391,6 +404,13 @@ Observer types are DLC-safe:
   list `suppressWhenThingDefNames`; if any of those spawned thing defs are present on the same map,
   that Def reports no observation and the normal end-debounce path resolves its active state.
 - `PawnHediff`: visible pawn hediffs only; hidden hediffs are skipped.
+- `PawnUnnaturalCorpse`: Anomaly, pawn-scoped. No defName list — the matcher is the DLC's own
+  tracker (`GameComponent_Anomaly.PawnHasUnnaturalCorpse` via the guarded `DlcContext` accessor).
+  Emits one Pawn-scoped observation per colonist who is currently being imitated by an unnatural
+  corpse, so the prompt bias lands only on the haunted pawn (not the whole map). When the corpse is
+  destroyed/dissolves vanilla clears the tracker link, the observation stops, and the pure policy
+  ends the state via its normal missing/end-debounce path — the same end-on-disappearance mechanism
+  `MetalhorrorEmergence` relies on. No-ops cleanly without the Anomaly DLC.
 - `MapHiddenHediff`: senses whether ANY home-map colonist carries a matching hediff **including hidden
   ones**, collapsed to a single map-level boolean. Tone-only by contract — the collector emits an empty
   evidence label and never names the hediff or a host, so a Def can color prompts with "the colony is in
@@ -438,9 +458,11 @@ Shipped notable defs:
 - Event-coverage pass (see `EVENT_PROMPT_MAP.md` §5 for the full weight table): `ColdSnapActive`,
   `HeatWaveActive`, `VolcanicWinterActive` (base-game climate), `BloodRainActive`, `DeathPallActive`,
   `UnnaturalDarknessActive` (Anomaly game conditions), and `ObeliskPresence` (the three
-  `WarpedObelisk_*` ThingDefs), `HarbingerTreePresence`, `NociospherePresence`,
-  `UnnaturalCorpsePresence` (the generated `UnnaturalCorpse_Human` ThingDef) are all prompt-tone
-  only. `PitGatePresence` and `FleshmassHeartPresence` additionally record one start page per map
+  `WarpedObelisk_*` ThingDefs), `HarbingerTreePresence`, `NociospherePresence`, and
+  `UnnaturalCorpsePresence` are all prompt-tone only. `UnnaturalCorpsePresence` is the lone
+  `PawnUnnaturalCorpse` observer: it keys on the haunted pawn via the Anomaly tracker so only the
+  colonist being imitated gets the dread, and it ends automatically when the corpse is destroyed.
+  `PitGatePresence` and `FleshmassHeartPresence` additionally record one start page per map
   colonist and have companion display groups (`observedPitGate`, `observedFleshmassHeart`).
   `ThrumboVisit`, `AlphabeaversActive`, `CropBlightActive`, and `AmbrosiaSprouted` are light
   weighted-random flavor with `maxActiveTicks` caps and `restartCooldownTicks` so long-lived
@@ -522,6 +544,9 @@ retention caps. Dev mode exposes prompt-test mode and extra diagnostics in setti
 lives in RimWorld's Debug Actions menu. The export writes every saved hot page, compact archived
 page, archive-only orphan row, and backing event record to `PawnDiaryExports/` under RimWorld's
 save-data folder, and copies the generated file path to the clipboard.
+Connection rows use a fixed label column and shared right-side action-button columns so endpoint,
+model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned across localized UI
+text.
 
 Prompts is the single home for prompt text editing. Its **Shared/event prompts** subpage edits the
 four shared system prompts plus per-event prompt/enhancement/forced-model overrides. Its prompt-type
@@ -548,8 +573,9 @@ per-field and per-group reset, accent coloring for customized values, a name fil
 rail into a search view, and rich tooltips that combine authored help with the live value, XML default,
 range, and customized status. Tuning contains XML-owned parameters (dedup windows, ability sampling,
 surroundings, weather chances, ritual quality labels, mood-condition families, health/enchantment
-thresholds, mood/pain/opinion buckets, thought token lists, thought progression rules, scanner
-intervals, work sampling, day/quadrum/arc reflection weights, signal policies, context reactions).
+thresholds, body-part event tier/attitude policy, mood/pain/opinion buckets, thought token lists,
+thought progression rules, scanner intervals, work sampling, day/quadrum/arc reflection weights,
+signal policies, context reactions).
 Field labels span the full row width so long names never clip. The catalog (`AdvancedFieldCatalog`)
 is declarative and drives both the UI and the runtime override seam. Static tuning fields build during
 settings load; Def-backed prompt-policy groups are appended lazily after `DefDatabase` has loaded, so
@@ -665,6 +691,20 @@ hidden because compact archive rows intentionally discard prompt/raw-response/re
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
+
+**Per-entry accent color (color cues).** Each saved `DiaryEvent` carries a stable `colorCue` string
+chosen at record time from the matching interaction-group / event-window / observed-condition Def.
+At render time `DiaryUiStyleDef.ColorForCue` maps that cue to the card's accent color, which drives
+the left spine strip and the group-label chip (and, for the three distress cues `combat`,
+`socialFight`, `mentalBreak`, also a matching page tint and header rule). The full palette lives in
+`DiaryUiStyleDef.xml` (`<cueColors>`); the cue vocabulary is documented in the
+`DiaryInteractionGroupDefs.xml` header comment. Current themed cues beyond the distress/generic
+ones: `psychic` (bright violet — psylink gains, psycast abilities), `royalty` (gold — royal-title
+gains, royal rituals), `strangeChat` (green), `white` (warm white — heartfelt moments, birthdays,
+skill passions, day reflections), and `quadrumReflection` (light blue). `extremeDark` (dark
+blood-red) is reserved for Anomaly/dread content (void monolith, metalhorror, anomaly tales) and is
+deliberately not used for psylink, which is bright-psychic rather than horror. `colorCue` is saved
+per-event, so historical entries keep whatever cue they were recorded with.
 
 **Render-time paragraph reflow (default atmosphere).** Because prompts only ever ask for sentence
 counts (1-3, 2-4, 4-7, 5-8) and never for explicit paragraph breaks, a multi-sentence entry arrives

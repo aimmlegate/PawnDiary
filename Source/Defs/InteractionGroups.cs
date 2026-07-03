@@ -577,9 +577,31 @@ namespace PawnDiary
         }
 
         // First Hediff-domain group that matches a health condition, else the Hediff catch-all.
+        // Body-part hediffs use a synthetic key (defName plus addedpart/missingpart tokens) so
+        // prosthetic installs and missing parts can be XML-routed without adding new C# hooks.
         public static DiaryInteractionGroupDef ClassifyHediff(HediffDef hediffDef)
         {
-            return ClassifyIn(GroupDomain.Hediff, hediffDef?.defName);
+            if (hediffDef == null)
+            {
+                return ClassifyHediff((string)null);
+            }
+
+            bool isAddedPart = hediffDef.hediffClass != null
+                && typeof(Hediff_AddedPart).IsAssignableFrom(hediffDef.hediffClass);
+            bool isMissingPart = hediffDef.hediffClass != null
+                && typeof(Hediff_MissingPart).IsAssignableFrom(hediffDef.hediffClass);
+            string classifierKey = BodyPartEventPolicy.BuildHediffClassifierKey(
+                hediffDef.defName,
+                isAddedPart,
+                isMissingPart,
+                isAddedPart && hediffDef.organicAddedBodypart);
+            return ClassifyHediff(classifierKey);
+        }
+
+        // First Hediff-domain group that matches an already-built health classifier key.
+        public static DiaryInteractionGroupDef ClassifyHediff(string hediffClassifierKey)
+        {
+            return ClassifyIn(GroupDomain.Hediff, hediffClassifierKey);
         }
 
         // First Raid-domain group that matches the raid classifier string (incident defName plus

@@ -70,19 +70,6 @@
     </hediffDefNames>
   </PawnDiary.DiaryHediffPersonaOverrideDef>
 
-  <!-- Memory-decay conditions force the slipping-thread style. Sits below the anomaly/implant
-       overrides so a stronger story state still wins. -->
-  <PawnDiary.DiaryHediffPersonaOverrideDef>
-    <defName>HediffPersonaOverride_MemoryDecay</defName>
-    <label>Fading memory writing style</label>
-    <priority>30</priority>
-    <personaDefName>DiaryPersona_FadingMemory</personaDefName>
-    <hediffDefNames>
-      <li>Dementia</li>
-      <li>Alzheimers</li>
-    </hediffDefNames>
-  </PawnDiary.DiaryHediffPersonaOverrideDef>
-
   <!-- Proper drunkenness (not a light buzz) loosens the writing. AlcoholHigh stages start at:
        warm 0, tipsy 0.25, drunk 0.4, hammered 0.7, blackout 0.9 — the 0.4 floor starts the voice
        change at "drunk", so a single beer never triggers it. Lowest current priority: any

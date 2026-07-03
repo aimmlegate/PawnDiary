@@ -96,8 +96,9 @@ namespace PawnDiary.Ingestion
                 ambientSignalEnabled: true);
         }
 
-        // Interaction has no dedup (DedupKey empty → dispatcher skips the dedup gate), matching the old
-        // RecordInteraction.
+        // Interaction has no detailed source-specific dedup, matching the old RecordInteraction. The
+        // dispatcher still applies the short generic event-type safety window after Decide, so a fluke
+        // duplicate PlayLog signal for the same pawn/type/shape does not emit twice.
 
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {

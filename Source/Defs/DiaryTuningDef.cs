@@ -80,6 +80,10 @@ namespace PawnDiary
         // The same integration-API event (same eventKey + pawn/pair) is only recorded once within
         // this window (~1 in-game hour), unless the submitting adapter overrides dedup per request.
         public int externalEventDedupTicks = 2500;
+        // Short safety net for sources without a detailed source-specific key, plus cross-source
+        // shapes that intentionally share a type key (currently neutral death-description pages).
+        // This is only meant to catch duplicate hook emissions in the same moment, not long cooldowns.
+        public int genericEventTypeDedupTicks = 60;
 
         // ---- Ability-use sampling ----
         // Successful ability activations are sampled by cooldown. A no/short-cooldown ability uses
@@ -342,6 +346,33 @@ namespace PawnDiary
         // XML-configured severity-step increases, so modded conditions can worsen into diary signals
         // without a per-mod Harmony patch.
         public int hediffProgressionScanIntervalTicks = 2500;
+
+        // ---- Body-part event policy ----
+        // Plain defName strings only: DLC/modded entries that are absent from a player's install
+        // simply never appear. These tune body-part diary events without hard-referencing content.
+        public List<string> bodyPartTierOverrideAnomalous = new List<string>
+        {
+            "AdrenalHeart",
+            "CorrosiveHeart",
+            "MetalbloodHeart",
+            "RevenantVertebrae"
+        };
+        public List<string> bodyPartTierOverrideCrude = new List<string>();
+        public List<string> bodyPartTierOverrideProsthetic = new List<string>();
+        public List<string> bodyPartTierOverrideBionic = new List<string>();
+        public List<string> bodyPartTierOverrideArchotech = new List<string>();
+        public List<string> bodyPartCravesTraitDefNames = new List<string> { "Transhumanist" };
+        public List<string> bodyPartDespisesTraitDefNames = new List<string> { "BodyPurist" };
+        public List<string> bodyPartApprovePreceptDefNames = new List<string> { "BodyMod_Approved" };
+        public List<string> bodyPartDespisePreceptDefNames = new List<string>
+        {
+            "BodyMod_Disapproved",
+            "BodyMod_Abhorrent"
+        };
+        public List<string> bodyPartInhumanizedHediffDefNames = new List<string> { "Inhumanized" };
+        public float bodyPartCrudeEfficiencyBelow = BodyPartEventPolicy.DefaultCrudeEfficiencyBelow;
+        public float bodyPartProstheticEfficiencyMax = BodyPartEventPolicy.DefaultProstheticEfficiencyMax;
+        public float bodyPartBionicEfficiencyMax = BodyPartEventPolicy.DefaultBionicEfficiencyMax;
 
         // ---- Pawn progression scanner ----
         // Watches slow-changing pawn state that is not reliably covered by one-shot hooks: passion

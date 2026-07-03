@@ -1,6 +1,8 @@
 // Pure domain recovery for saved diary events. Runtime adapters store compact marker strings such as
 // "tale=" or "romance=" in DiaryEvent.gameContext; this helper maps those markers back to the
 // XML group domain used by prompt policy, display styling, and text decoration tests.
+using PawnDiary.Capture;
+
 namespace PawnDiary
 {
     /// <summary>
@@ -88,6 +90,19 @@ namespace PawnDiary
                 if (!string.IsNullOrWhiteSpace(category))
                 {
                     return savedDefName + ";" + category;
+                }
+            }
+
+            if (string.Equals(domain, Hediff, System.StringComparison.OrdinalIgnoreCase))
+            {
+                string partKind = DiaryContextFields.Value(context, "part_kind");
+                if (!string.IsNullOrWhiteSpace(partKind))
+                {
+                    return BodyPartEventPolicy.BuildHediffClassifierKey(
+                        savedDefName,
+                        BodyPartEventPolicy.KindHasToken(partKind, BodyPartEventPolicy.KindAddedPart),
+                        BodyPartEventPolicy.KindHasToken(partKind, BodyPartEventPolicy.KindMissingPart),
+                        BodyPartEventPolicy.KindHasToken(partKind, BodyPartEventPolicy.KindOrganicPart));
                 }
             }
 

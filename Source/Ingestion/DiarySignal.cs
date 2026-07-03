@@ -61,6 +61,24 @@ namespace PawnDiary.Ingestion
         public virtual int DedupWindowTicks => 0;
 
         /// <summary>
+        /// Optional generic event-type dedup key, checked after the catalog decision. Most sources
+        /// return empty here and either use their detailed <see cref="DedupKey"/> or, if that is also
+        /// empty, let Dispatch apply the default short type+subject fallback. Cross-source shapes can
+        /// override this to share one key; death descriptions do this so Tale deaths and the fallback
+        /// collapse to one final page.
+        /// </summary>
+        public virtual string EventTypeDedupKey(DiaryEventData payload, CaptureDecision decision)
+        {
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// How long the generic event-type key blocks a repeat. Impure XML read; ignored when the
+        /// chosen generic key is empty.
+        /// </summary>
+        public virtual int EventTypeDedupWindowTicks => DiaryTuning.Current.genericEventTypeDedupTicks;
+
+        /// <summary>
         /// Performs the impure side effect the decision asks for: build the localized event text and
         /// game-context, create the DiaryEvent via the sink's factory, and queue LLM generation (or
         /// route to the ambient/batch sinks). Called only after the event passed Decide + dedup.
