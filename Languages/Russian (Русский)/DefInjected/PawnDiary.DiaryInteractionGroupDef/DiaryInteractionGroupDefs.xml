@@ -410,4 +410,22 @@
   <mentalbreakIndulgent.tone>с виноватым, голодным разгоном</mentalbreakIndulgent.tone>
   <mentalbreakIndulgent.tones.0>голодно и с самооправданием: облегчение побеждает здравый смысл</mentalbreakIndulgent.tones.0>
   <mentalbreakIndulgent.tones.1>кисло и навязчиво: тяга громче стыда</mentalbreakIndulgent.tones.1>
+
+  <eventWindowMechCluster.label>Кластер механоидов</eventWindowMechCluster.label>
+  <eventWindowMechCluster.instruction>рядом собрались спящие боевые машины; пиши ожидание, наблюдение и подготовку — холодную механическую угрозу, которая ещё не сдвинулась с места, и никогда не выдумывай бой</eventWindowMechCluster.instruction>
+  <eventWindowMechCluster.tone>с холодной, терпеливой тревогой</eventWindowMechCluster.tone>
+  <eventWindowMechCluster.tones.0>напряжённо и настороженно: опасность сидит на горизонте</eventWindowMechCluster.tones.0>
+  <eventWindowMechCluster.tones.1>сдержанно и мрачно: пересчитывая оборону против того, что ждёт</eventWindowMechCluster.tones.1>
+
+  <observedPitGate.label>Провал</observedPitGate.label>
+  <observedPitGate.instruction>в земле поселения разверзся провал; пиши то, что видно и слышно у его края, и никогда не объясняй, что там на дне</observedPitGate.instruction>
+  <observedPitGate.tone>со страхом перед тем, что выбирается наружу</observedPitGate.tone>
+  <observedPitGate.tones.0>приглушённо и настороженно: самой земле больше нет доверия</observedPitGate.tones.0>
+  <observedPitGate.tones.1>сжато и начеку: каждый звук снизу на счету</observedPitGate.tones.1>
+
+  <observedFleshmassHeart.label>Сердце плоти</observedFleshmassHeart.label>
+  <observedFleshmassHeart.instruction>сердце живой плоти растёт в сторону поселения; пиши отвращение и срочность, не объясняя его устройство и не выдумывая завершённый бой</observedFleshmassHeart.instruction>
+  <observedFleshmassHeart.tone>с отвращением и срочностью</observedFleshmassHeart.tone>
+  <observedFleshmassHeart.tones.0>с тошнотой и по-деловому: вырезая то, что продолжает расти</observedFleshmassHeart.tones.0>
+  <observedFleshmassHeart.tones.1>не по себе и телесно: этот звук трудно развидеть слухом</observedFleshmassHeart.tones.1>
 </LanguageData>

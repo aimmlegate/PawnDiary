@@ -407,4 +407,22 @@
   <mentalbreakIndulgent.tone>with guilty, hungry momentum</mentalbreakIndulgent.tone>
   <mentalbreakIndulgent.tones.0>hungry and rationalizing, relief winning over sense</mentalbreakIndulgent.tones.0>
   <mentalbreakIndulgent.tones.1>sour and compulsive, the urge louder than the shame</mentalbreakIndulgent.tones.1>
+
+  <eventWindowMechCluster.label>Mech cluster</eventWindowMechCluster.label>
+  <eventWindowMechCluster.instruction>dormant war machines assembled nearby; write the waiting, the watching, and the planning &#8212; cold mechanical danger that has not moved yet, never an invented battle</eventWindowMechCluster.instruction>
+  <eventWindowMechCluster.tone>with cold, patient dread</eventWindowMechCluster.tone>
+  <eventWindowMechCluster.tones.0>tense and watchful, danger sitting on the horizon</eventWindowMechCluster.tones.0>
+  <eventWindowMechCluster.tones.1>measured and grim, counting defenses against what waits</eventWindowMechCluster.tones.1>
+
+  <observedPitGate.label>Pit gate</observedPitGate.label>
+  <observedPitGate.instruction>a pit gate torn open in the colony's ground; write what can be seen and heard at its edge, and never explain what is at the bottom</observedPitGate.instruction>
+  <observedPitGate.tone>with dread of what climbs out</observedPitGate.tone>
+  <observedPitGate.tones.0>hushed and wary, the ground itself no longer trusted</observedPitGate.tones.0>
+  <observedPitGate.tones.1>tight and alert, every sound from below counted</observedPitGate.tones.1>
+
+  <observedFleshmassHeart.label>Fleshmass heart</observedFleshmassHeart.label>
+  <observedFleshmassHeart.instruction>a heart of living flesh growing toward the colony; write revulsion and urgency without explaining its biology or inventing a resolved fight</observedFleshmassHeart.instruction>
+  <observedFleshmassHeart.tone>with revulsion and urgency</observedFleshmassHeart.tone>
+  <observedFleshmassHeart.tones.0>sickened and practical, cutting back what keeps growing</observedFleshmassHeart.tones.0>
+  <observedFleshmassHeart.tones.1>unnerved and bodily, the sound of it hard to unhear</observedFleshmassHeart.tones.1>
 </LanguageData>

@@ -83,9 +83,10 @@
     </hediffDefNames>
   </PawnDiary.DiaryHediffPersonaOverrideDef>
 
-  <!-- Proper drunkenness (not a light buzz) loosens the writing. AlcoholHigh stages: warm ~0.25,
-       tipsy ~0.4, drunk ~0.6, hammered ~0.9 — the 0.4 floor keeps a single beer from changing the
-       voice. Lowest current priority: any story/condition override outranks being drunk. -->
+  <!-- Proper drunkenness (not a light buzz) loosens the writing. AlcoholHigh stages start at:
+       warm 0, tipsy 0.25, drunk 0.4, hammered 0.7, blackout 0.9 — the 0.4 floor starts the voice
+       change at "drunk", so a single beer never triggers it. Lowest current priority: any
+       story/condition override outranks being drunk. -->
   <PawnDiary.DiaryHediffPersonaOverrideDef>
     <defName>HediffPersonaOverride_Drunk</defName>
     <label>Drunk rambling writing style</label>

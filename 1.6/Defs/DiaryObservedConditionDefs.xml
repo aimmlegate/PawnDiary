@@ -554,8 +554,9 @@
     </promptCueKeys>
   </PawnDiary.DiaryObservedConditionDef>
 
-  <!-- Obelisk defNames vary by kind; all plausible spellings are listed and unmatched strings are
-       inert, so this is safe. Verify against dev-mode ThingDefs when convenient. -->
+  <!-- All three Anomaly obelisk ThingDefs share the WarpedObelisk_ defName prefix; the in-game
+       labels ("warped/corrupted/twisted obelisk") do NOT match their defNames. ThingPresent
+       matches exact defNames only, so these must be the real ThingDef names. -->
   <PawnDiary.DiaryObservedConditionDef>
     <defName>ObeliskPresence</defName>
     <label>obelisk on the map</label>
@@ -569,12 +570,9 @@
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
     <maxEvidenceLabels>1</maxEvidenceLabels>
     <matchDefNames>
-      <li>WarpedObelisk</li>
-      <li>TwistedObelisk</li>
-      <li>CorruptedObelisk</li>
-      <li>AbductorObelisk</li>
-      <li>MutatorObelisk</li>
-      <li>DuplicatorObelisk</li>
+      <li>WarpedObelisk_Abductor</li>
+      <li>WarpedObelisk_Duplicator</li>
+      <li>WarpedObelisk_Mutator</li>
     </matchDefNames>
 
     <recordStartEvent>false</recordStartEvent>
@@ -608,7 +606,6 @@
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
     <maxEvidenceLabels>1</maxEvidenceLabels>
     <matchDefNames>
-      <li>HarbingerTree</li>
       <li>Plant_TreeHarbinger</li>
     </matchDefNames>
 
@@ -675,9 +672,10 @@
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
     <!-- The dread is the cue, not the item name. -->
     <maxEvidenceLabels>0</maxEvidenceLabels>
+    <!-- The unnatural corpse ThingDef is generated per race as UnnaturalCorpse_<race>; vanilla
+         only ever creates it for a colonist's double, so the human variant is the whole set. -->
     <matchDefNames>
-      <li>UnnaturalCorpse</li>
-      <li>Corpse_UnnaturalCorpse</li>
+      <li>UnnaturalCorpse_Human</li>
     </matchDefNames>
 
     <recordStartEvent>false</recordStartEvent>

@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Event-coverage review fixes (XML + docs only).** Corrected two silently dead `ThingPresent`
+  observers whose guessed defNames matched nothing (the observer resolves exact `matchDefNames`
+  only): `ObeliskPresence` now matches the real Anomaly ThingDefs `WarpedObelisk_Abductor` /
+  `WarpedObelisk_Duplicator` / `WarpedObelisk_Mutator` (the in-game obelisk labels do not match
+  their defNames), and `UnnaturalCorpsePresence` now matches the generated `UnnaturalCorpse_Human`;
+  `HarbingerTreePresence` dropped the dead `HarbingerTree` spelling (verified: `Plant_TreeHarbinger`).
+  Added companion Interaction-domain display groups for the three new page-recording defs
+  (`eventWindowMechCluster`, `observedPitGate`, `observedFleshmassHeart`, orders 142–144, EN+RU
+  DefInjected) so their saved pages classify to a proper label/importance in the Diary tab instead
+  of the "A quiet day" catch-all, matching the existing `eventWindow*` precedent. Fixed the
+  `HediffPersonaOverride_Drunk` comment's `AlcoholHigh` stage thresholds (drunk starts at 0.4).
+  Documented the event-coverage defs in `DOCUMENTATION.md` §5/§5.1, which the original pass missed.
+  Still to verify in dev mode: whether Anomaly entity assaults route through the raid hook
+  (`raidAnomalyEntities` depends on it) and the Odyssey `Flooding`/`VolcanicAsh`/vacuum defNames.
 - **Event-coverage pass: XML-only groups, enchantments, personas, observed conditions, and tone
   windows (no C# changes).** Implements Tiers 1–2 of `EVENT_COVERAGE_PLAN.md` with Anomaly as the
   main focus. Retone groups (page volume unchanged): `raidAnomalyEntities` gives Anomaly entity

@@ -779,6 +779,67 @@
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
+  <!-- Display groups for the event-coverage pass pages. Like the eventWindow* groups above, these
+       exist so the recorded start pages classify to a proper label/importance in the Diary tab
+       instead of falling to the "A quiet day" catch-all; the live capture instruction comes from
+       the window/condition Def itself. -->
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>eventWindowMechCluster</defName>
+    <label>Mech cluster</label>
+    <order>142</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>dormant war machines assembled nearby; write the waiting, the watching, and the planning — cold mechanical danger that has not moved yet, never an invented battle</instruction>
+    <tone>with cold, patient dread</tone>
+    <tones>
+      <li>tense and watchful, danger sitting on the horizon</li>
+      <li>measured and grim, counting defenses against what waits</li>
+    </tones>
+    <colorCue>danger</colorCue>
+    <matchDefNames>
+      <li>MechClusterLanded</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>observedPitGate</defName>
+    <label>Pit gate</label>
+    <order>143</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a pit gate torn open in the colony's ground; write what can be seen and heard at its edge, and never explain what is at the bottom</instruction>
+    <tone>with dread of what climbs out</tone>
+    <tones>
+      <li>hushed and wary, the ground itself no longer trusted</li>
+      <li>tight and alert, every sound from below counted</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>PitGatePresence</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>observedFleshmassHeart</defName>
+    <label>Fleshmass heart</label>
+    <order>144</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a heart of living flesh growing toward the colony; write revulsion and urgency without explaining its biology or inventing a resolved fight</instruction>
+    <tone>with revulsion and urgency</tone>
+    <tones>
+      <li>sickened and practical, cutting back what keeps growing</li>
+      <li>unnerved and bodily, the sound of it hard to unhear</li>
+    </tones>
+    <colorCue>extremeDark</colorCue>
+    <matchDefNames>
+      <li>FleshmassHeartPresence</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
   <PawnDiary.DiaryInteractionGroupDef>
     <defName>other</defName>
     <label>A quiet day</label>

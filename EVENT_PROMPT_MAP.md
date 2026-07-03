@@ -485,10 +485,10 @@ Current observed-condition prompt candidates:
 | `UnnaturalDarknessActive` | yes | `GameCondition` | Map | `25` | `0.3` | no |
 | `PitGatePresence` | yes | `ThingPresent` | Map | `30` | `0.3` | start page to map colonists, `extremeDark` cue |
 | `FleshmassHeartPresence` | yes | `ThingPresent` | Map | `30` | `0.3` | start page to map colonists, `extremeDark` cue |
-| `ObeliskPresence` | yes | `ThingPresent` | Map | `15` | `0.7` | no; lists all candidate obelisk defName spellings |
+| `ObeliskPresence` | yes | `ThingPresent` | Map | `15` | `0.7` | no; matches the three real `WarpedObelisk_*` ThingDefs |
 | `HarbingerTreePresence` | yes | `ThingPresent` | Map | `8` | `1` | no |
 | `NociospherePresence` | yes | `ThingPresent` | Map | `25` | `0.5` | no |
-| `UnnaturalCorpsePresence` | yes | `ThingPresent` | Map | `20` | `0.7` | no |
+| `UnnaturalCorpsePresence` | yes | `ThingPresent` | Map | `20` | `0.7` | no; matches the generated `UnnaturalCorpse_Human` ThingDef |
 | `ThrumboVisit` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 2 days active, 5-day restart cooldown |
 | `AlphabeaversActive` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 2 days active, 2-day restart cooldown |
 | `CropBlightActive` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 3 days active, 1-day restart cooldown |
@@ -503,6 +503,12 @@ sometimes flavors a page. The six original event windows (`VoidMonolithDiscovery
 `VoidMonolithActivation`, `Birthday`, `HeartAttack`, `PrisonBreak`, `AncientDanger`) still set
 `keepActive=false`, `promptEnabled=false`, and `promptWeight=0`; they record one-shot pages but do
 not bias later prompts while active.
+
+The three page-recording defs from the event-coverage pass (`MechClusterLanded`,
+`PitGatePresence`, `FleshmassHeartPresence`) have companion Interaction-domain display groups
+(`eventWindowMechCluster`, `observedPitGate`, `observedFleshmassHeart`, orders 142–144) so their
+saved pages classify to a proper label and importance in the Diary tab instead of the "A quiet
+day" catch-all, mirroring the existing `eventWindow*` groups.
 
 ## 6. Rendered Prompt Contents
 
