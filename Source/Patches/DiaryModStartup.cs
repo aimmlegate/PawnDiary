@@ -89,7 +89,23 @@ namespace PawnDiary
         /// </summary>
         private static void PatchAllSafely(Harmony harmony)
         {
-            foreach (Type type in typeof(DiaryModStartup).Assembly.GetTypes())
+            Type[] types;
+            try
+            {
+                types = typeof(DiaryModStartup).Assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                types = e.Types;
+                Log.Warning("[Pawn Diary] Harmony patch type scan was partial; attempting available types. " + e);
+            }
+            catch (Exception e)
+            {
+                Log.Error("[Pawn Diary] Harmony patch type scan failed: " + e);
+                return;
+            }
+
+            foreach (Type type in types)
             {
                 if (!HasHarmonyPatch(type))
                 {

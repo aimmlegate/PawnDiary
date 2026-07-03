@@ -44,6 +44,7 @@ namespace DiaryParagraphReflowTests
             TestEmptyAndWhitespaceLines();
             TestDateYearInThenSpaceBreak();
             TestMultipleSplitsAcrossLongLine();
+            TestInvalidLengthsReturnWholeLine();
 
             if (failures > 0)
             {
@@ -199,6 +200,14 @@ namespace DiaryParagraphReflowTests
             string line = "Spring arrived early. We planted the south field. The traders came with steel. A child was born. The wall held through summer.";
             List<string> r = DiaryParagraphReflow.ReflowLine(line, Options(25, 200));
             True(r.Count >= 3, "long multi-sentence line produces >=3 chunks");
+        }
+
+        private static void TestInvalidLengthsReturnWholeLine()
+        {
+            string line = "one two three four five six seven eight nine ten eleven twelve";
+            List<string> r = DiaryParagraphReflow.ReflowLine(line, Options(0, 0));
+            Equal(1, r.Count, "zero lengths return one chunk");
+            Equal(line, r[0]);
         }
 
         // ---- Assert helpers ----

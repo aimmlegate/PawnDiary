@@ -105,7 +105,8 @@ namespace PawnDiary
 
             // "default" (no override) and "none" survive as-is: they mean "let the API decide" and
             // "explicitly off" respectively, and the request builder already maps both correctly.
-            if (string.Equals(chosen, ApiEndpointPolicy.DefaultReasoningEffort, StringComparison.Ordinal))
+            if (string.Equals(chosen, ApiEndpointPolicy.DefaultReasoningEffort, StringComparison.Ordinal)
+                || string.Equals(chosen, "none", StringComparison.Ordinal))
             {
                 return chosen;
             }

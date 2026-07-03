@@ -77,7 +77,9 @@ namespace PawnDiary
         public static List<string> ReflowLine(string line, DiaryParagraphReflowOptions options)
         {
             List<string> result = new List<string>();
-            if (string.IsNullOrEmpty(line) || !options.enabled || line.Length <= options.targetChars)
+            if (string.IsNullOrEmpty(line) || !options.enabled
+                || options.targetChars <= 0 || options.maxChars <= 0
+                || line.Length <= options.targetChars)
             {
                 result.Add(line ?? string.Empty);
                 return result;

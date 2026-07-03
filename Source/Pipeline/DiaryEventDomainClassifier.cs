@@ -33,6 +33,7 @@ namespace PawnDiary
         /// </summary>
         public static string DomainForContext(string context)
         {
+            if (DiaryContextFields.HasMarker(context, "external=")) return External;
             if (DiaryContextFields.HasMarker(context, "tale=")) return Tale;
             if (DiaryContextFields.HasMarker(context, "mood_event=")) return MoodEvent;
             if (DiaryContextFields.HasMarker(context, "thought=")) return Thought;
@@ -50,7 +51,6 @@ namespace PawnDiary
             if (DiaryContextFields.HasMarker(context, "arc_reflection=")) return Reflection;
             if (DiaryContextFields.HasMarker(context, "quadrum_reflection=")) return Reflection;
             if (DiaryContextFields.HasMarker(context, "day_reflection=")) return Reflection;
-            if (DiaryContextFields.HasMarker(context, "external=")) return External;
             return Interaction;
         }
 

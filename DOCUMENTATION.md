@@ -98,6 +98,8 @@ Startup does three jobs:
 
 The Diary tab is hidden from the normal tab strip, but it must still be registered. The inspect
 command, diary links, selected pawns, and selected corpses all open that same registered tab.
+`PatchAllSafely` also catches partial assembly type-load failures before per-class Harmony patching,
+then patches whatever types were available so one reflection problem cannot abort startup.
 
 ### 3.2 Capture And Dispatch
 
@@ -237,6 +239,9 @@ their own External groups plus optional narrower `DiaryEventPromptDef` rows; the
 the `externalDevTest` group so the Debug Actions entry "Submit test external event..." can
 exercise the whole path with no adapter installed. The full public contract — versioning,
 threading, eventKey conventions, packaging — lives in `INTEGRATIONS.md`.
+Saved external `gameContext` always starts with `external=...`; the domain classifier gives that
+marker precedence so adapter-supplied `extraContext` keys cannot make an external page display as a
+native Thought, Work, Hediff, or other built-in event domain.
 
 Compatibility groups shipped inside this repo for other mods use the group gate
 `enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only
@@ -739,8 +744,10 @@ hard length cap that falls back to a space boundary (words are never split mid-t
 helper, so wrapped heights stay in sync. Tuning is in `DiaryUiStyleDef.xml`
 (`paragraphReflowEnabled`, `paragraphReflowTargetChars`/`MaxChars`, the four `…SplitOn…` cue
 toggles, and `paragraphReflowMinBreakSpacing`); set `paragraphReflowEnabled=false` to render the
-model's own line breaks verbatim. `[[speech]]` blocks and the three special atmospheres are not
-reflowed; they already own their line/sentence styling.
+model's own line breaks verbatim. The style accessor clamps target/max lengths to at least 1 and
+`max >= target`; if invalid options still reach the pure helper, it returns the line whole instead of
+attempting a split. `[[speech]]` blocks and the three special atmospheres are not reflowed; they
+already own their line/sentence styling.
 
 ## 8. API And Reliability
 
@@ -774,9 +781,10 @@ a per-model `reasoning` object (`default_enabled`, `supported_efforts[]`, `defau
 `ModelCapabilityCache` stores it (keyed by endpoint+model, deliberately excluding the API key).
 `LlmClient.BuildRequestJson` then runs the chosen effort through
 `ModelReasoningCapability.EffectiveReasoningEffort`: a non-reasoning model forces `none` (the direct
-fix for the Gemma 400 above); an unsupported effort clamps to the provider default or the highest
-supported level; an unknown capability (OpenAI-direct, local GGUF — no `reasoning` object) passes
-the effort through unchanged, preserving today's unconditional behavior. The settings effort
+fix for the Gemma 400 above); an explicit `none` stays `none` even when the provider does not list it
+as a supported effort; an unsupported enabled effort clamps to the provider default or the highest
+supported level; an unknown capability (OpenAI-direct, local GGUF — no `reasoning` object) passes the
+effort through unchanged, preserving today's unconditional behavior. The settings effort
 dropdown also consults the cache: when capability is known it only offers supported levels and shows
 a tooltip; when unknown the full ladder is offered as before. **Capability auto-refreshes** on four
 triggers so a player rarely clicks Fetch manually: when the settings window opens (one-shot, for any

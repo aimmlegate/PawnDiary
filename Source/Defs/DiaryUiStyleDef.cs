@@ -392,14 +392,24 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Builds the pure reflow options from the current UI style, clamping maxChars to be at least
-        /// targetChars so a misconfigured XML cannot make ReflowLine loop forever.
+        /// Builds the pure reflow options from the current UI style, clamping lengths to a positive
+        /// range so a misconfigured XML cannot make ReflowLine loop forever.
         /// </summary>
         public static DiaryParagraphReflowOptions BuildParagraphReflowOptions()
         {
             DiaryUiStyleDef style = Current;
             int target = style.paragraphReflowTargetChars;
             int max = style.paragraphReflowMaxChars;
+            if (target < 1)
+            {
+                target = 1;
+            }
+
+            if (max < 1)
+            {
+                max = 1;
+            }
+
             if (max < target)
             {
                 max = target;

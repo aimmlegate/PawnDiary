@@ -1953,6 +1953,10 @@ namespace DiaryPipelineTests
             AssertEqual("default stays default with capability", "default",
                 ModelReasoningCapability.EffectiveReasoningEffort("default", cap));
 
+            // "none" means explicitly off and must not be clamped back to provider reasoning.
+            AssertEqual("none stays none with capability", "none",
+                ModelReasoningCapability.EffectiveReasoningEffort("none", cap));
+
             // Unsupported model forces "none" -- the direct fix for the Gemma 400 error.
             AssertEqual("unsupported forces none", "none",
                 ModelReasoningCapability.EffectiveReasoningEffort("high", unsup));
@@ -2014,6 +2018,8 @@ namespace DiaryPipelineTests
                 DiaryEventDomainClassifier.DomainForContext("progression=SkillMilestone; progression_kind=skill"));
             AssertEqual("arc reflection marker domain", "Reflection",
                 DiaryEventDomainClassifier.DomainForContext("arc_reflection=true; arc_year=5504"));
+            AssertEqual("external marker wins over adapter context markers", "External",
+                DiaryEventDomainClassifier.DomainForContext("external=mod_key; source=author.adapter; thought=Inspired; work=Mining"));
             AssertEqual("ritual classifier includes behavior when present",
                 "Ritual_Speech;RitualBehaviorWorker_ThroneSpeech",
                 DiaryEventDomainClassifier.GroupClassifierKey(
