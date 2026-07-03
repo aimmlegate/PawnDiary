@@ -162,6 +162,9 @@ namespace PawnDiary
                 case ObservedConditionObserverType.PawnHediff:
                     CollectPawnHediffObservations(def, observations);
                     break;
+                case ObservedConditionObserverType.PawnUnnaturalCorpse:
+                    CollectPawnUnnaturalCorpseObservations(def, observations);
+                    break;
                 case ObservedConditionObserverType.MapHiddenHediff:
                     CollectMapHiddenHediffObservations(def, observations);
                     break;
@@ -398,6 +401,56 @@ namespace PawnDiary
                             hediff.def.defName, label, 1));
                         break; // one observation per pawn.
                     }
+                }
+            }
+        }
+
+        // Pass 7b: pawn-scoped unnatural-corpse haunting (Anomaly). Unlike the hediff/things observers
+        // above, the matcher here is NOT a defName list — it is the DLC's own tracker. We ask
+        // GameComponent_Anomaly (via the guarded DlcContext accessor) whether each home-map colonist is
+        // the one being imitated by an unnatural corpse. This is how the UnnaturalCorpsePresence def
+        // scopes its dread to ONLY the haunted pawn instead of the whole map. DLC-safe: the accessor
+        // returns false without Anomaly, so this loop simply emits nothing and never touches the DLC.
+        //
+        // Robust end-on-disappearance mirrors the MetalhorrorEmergence observer: when the corpse is
+        // destroyed/dissolves, vanilla clears the tracker link, PawnHasUnnaturalCorpse returns false,
+        // we stop emitting the observation, and the pure policy's EndMissing flow ends the state after
+        // the def's endDebounceTicks. No destroy hook or maxActiveTicks is needed.
+        private void CollectPawnUnnaturalCorpseObservations(DiaryObservedConditionDef def,
+            List<ObservedConditionObservation> observations)
+        {
+            List<Map> maps = Find.Maps;
+            for (int i = 0; i < maps.Count; i++)
+            {
+                Map map = maps[i];
+                if (!MapEligible(def, map) || map.mapPawns == null)
+                {
+                    continue;
+                }
+
+                List<Pawn> colonists = map.mapPawns.FreeColonists;
+                if (colonists == null)
+                {
+                    continue;
+                }
+
+                for (int p = 0; p < colonists.Count; p++)
+                {
+                    Pawn pawn = colonists[p];
+                    if (!IsHumanlike(pawn))
+                    {
+                        continue;
+                    }
+
+                    if (!DlcContext.IsHauntedByUnnaturalCorpse(pawn))
+                    {
+                        continue;
+                    }
+
+                    // Pawn-scoped: -1 map id is ignored for scope=Pawn (see NewObservation), subject is
+                    // the haunted pawn. No evidence label: the dread is the cue, not the corpse's name.
+                    observations.Add(NewObservation(def, -1, pawn.GetUniqueLoadID(),
+                        string.Empty, string.Empty, 1));
                 }
             }
         }

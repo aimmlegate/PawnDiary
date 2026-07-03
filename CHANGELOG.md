@@ -6,6 +6,18 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Generic short-window event-type dedup.** Added an XML-tuned `genericEventTypeDedupTicks` safety
+  key for sources without detailed dedup keys, plus a shared death-description key so Tale deaths and
+  the Pawn.Kill fallback cannot emit duplicate final death pages in the same moment.
+- **Unnatural corpse now haunts only the imitated pawn.** `UnnaturalCorpsePresence` was map-scoped
+  and colored every colonist's diary when any unnatural corpse was present. It is now a Pawn-scoped
+  `PawnUnnaturalCorpse` observer that asks the Anomaly DLC's own tracker
+  (`GameComponent_Anomaly.PawnHasUnnaturalCorpse`, via the guarded `DlcContext` accessor) which
+  colonist the corpse imitates, so the dread lands only on that pawn. End-on-disappearance now works
+  like `MetalhorrorEmergence`: when the corpse is destroyed or dissolves, vanilla clears the tracker
+  link, the observation stops, and the pure policy ends the state after the def's `endDebounceTicks`.
+  New DLC-gated observer type `PawnUnnaturalCorpse` (no matchers; DLC-safe no-op without Anomaly);
+  the corpse's keyed prompt strings (EN + RU) reworded to the haunted pawn's personal point of view.
 - **Settings connection row alignment and localization.** Main-tab API rows now share the same label
   column for reasoning controls and the same action-button columns for model/API-key rows, removing
   the clipped "Reasoning" label and staggered right-side buttons. Russian settings localization now

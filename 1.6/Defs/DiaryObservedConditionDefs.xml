@@ -664,19 +664,21 @@
     <label>unnatural corpse</label>
     <conditionKey>UnnaturalCorpsePresence</conditionKey>
     <enabled>true</enabled>
-    <scope>Map</scope>
-    <observerType>ThingPresent</observerType>
+    <!-- Pawn-scoped: the dread is personal to the colonist being imitated, not the whole map, so the
+         observer keys the condition on the haunted pawn and the prompt bias lands only on them. -->
+    <scope>Pawn</scope>
+    <!-- The matcher is the Anomaly DLC's own tracker (GameComponent_Anomaly.PawnHasUnnaturalCorpse),
+         not a defName list — see CollectPawnUnnaturalCorpseObservations. No matchDefNames needed, and
+         this whole def no-ops cleanly without the Anomaly DLC. -->
+    <observerType>PawnUnnaturalCorpse</observerType>
     <pollIntervalTicks>2500</pollIntervalTicks>
     <startDebounceTicks>0</startDebounceTicks>
+    <!-- Small debounce like MetalhorrorEmergence: the tracker flips off when the corpse is
+         destroyed/dissolves, and the state ends shortly after via the normal missing/end path. -->
     <endDebounceTicks>5000</endDebounceTicks>
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
     <!-- The dread is the cue, not the item name. -->
     <maxEvidenceLabels>0</maxEvidenceLabels>
-    <!-- The unnatural corpse ThingDef is generated per race as UnnaturalCorpse_<race>; vanilla
-         only ever creates it for a colonist's double, so the human variant is the whole set. -->
-    <matchDefNames>
-      <li>UnnaturalCorpse_Human</li>
-    </matchDefNames>
 
     <recordStartEvent>false</recordStartEvent>
     <recordEndEvent>false</recordEndEvent>

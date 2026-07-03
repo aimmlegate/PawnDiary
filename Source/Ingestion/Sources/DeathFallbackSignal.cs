@@ -63,6 +63,11 @@ namespace PawnDiary.Ingestion
                 ambientSignalEnabled: true);
         }
 
+        public override string EventTypeDedupKey(DiaryEventData payload, CaptureDecision decision)
+        {
+            return GenericEventTypeDedup.DeathDescriptionKey(payload?.PawnId);
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             if (decision != CaptureDecision.GenerateSoloDeathDescription)

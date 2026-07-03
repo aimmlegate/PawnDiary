@@ -1187,7 +1187,8 @@ namespace PawnDiary
                 .Int("raidGenerationDelayTicks", 0, 100000)
                 .Int("questDedupTicks", 0, 100000)
                 .Int("ritualDedupTicks", 0, 100000)
-                .Int("abilityDedupTicks", 0, 100000);
+                .Int("abilityDedupTicks", 0, 100000)
+                .Int("genericEventTypeDedupTicks", 0, 100000);
 
             b.Tuning("Ability sampling", "PawnDiary.Settings.Adv.Group.Ability")
                 .Float("abilityUseMinChance", 0f, 1f, true)

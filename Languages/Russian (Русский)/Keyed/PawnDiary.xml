@@ -441,6 +441,7 @@
   <PawnDiary.Settings.Adv.Field.batch.instructionText>Инструкция серии</PawnDiary.Settings.Adv.Field.batch.instructionText>
   <PawnDiary.Settings.Adv.Field.hediff.appearedText>Появление состояния</PawnDiary.Settings.Adv.Field.hediff.appearedText>
   <PawnDiary.Settings.Adv.Field.hediff.progressedText>Ухудшение состояния</PawnDiary.Settings.Adv.Field.hediff.progressedText>
+  <PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>Тики общего дедупа событий</PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.text>Текст для строки контекста. {0} — отслеживаемое значение.</PawnDiary.Settings.Adv.Help.text>
   <PawnDiary.Settings.Adv.Help.conditionLabel>Название состояния для модели. Пусто — взять XML-ключ или текущее игровое название.</PawnDiary.Settings.Adv.Help.conditionLabel>
   <PawnDiary.Settings.Adv.Help.intensityText>Слово силы/тяжести для модели. Пусто — выбрать по XML или текущей тяжести.</PawnDiary.Settings.Adv.Help.intensityText>
@@ -527,6 +528,7 @@
   <PawnDiary.Settings.Adv.Help.questDedupTicks>Тот же сигнал задания записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.questDedupTicks>
   <PawnDiary.Settings.Adv.Help.ritualDedupTicks>Тот же итог ритуала записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.ritualDedupTicks>
   <PawnDiary.Settings.Adv.Help.abilityDedupTicks>То же применение способности записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.abilityDedupTicks>
+  <PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>Короткое защитное окно для источников без точного дедупа и для общих описаний смерти из разных источников.</PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.abilityUseMinChance>Шанс записи способности без перезарядки или с короткой перезарядкой.</PawnDiary.Settings.Adv.Help.abilityUseMinChance>
   <PawnDiary.Settings.Adv.Help.abilityUseMaxChance>Шанс, к которому стремится способность с долгой перезарядкой.</PawnDiary.Settings.Adv.Help.abilityUseMaxChance>
   <PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>Перезарядка, где кривая шанса примерно посередине между минимумом и максимумом.</PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>
@@ -1043,11 +1045,11 @@
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>парящая сфера сдержанной боли</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>тёмная гранёная сфера висит над картой, как задержанный вдох; все понимают, что тихой она не останется; пиши ожидание и то, как её обходят стороной, не объясняя, что это</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>задержанный вдох, отсчёт</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>подкрась обычный контекст трупом, который ведёт себя неправильно</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>труп, с которым что-то не так</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>в поселении лежит тело, которое не ведёт себя как тело: то будто ближе, чем было, то повернуто иначе; пиши нежелание смотреть на него и уверенность, что оно ещё не закончило, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>оно так и лежало?</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>взгляд из-под закрытых век</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>подкрась обычный контекст неправильностью тела, носящего лицо этого поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>труп, который словно и есть этот поселенец</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>рядом лежит мёртвая вещь, похожая на этого поселенца; она не ведёт себя как труп и словно что-то знает; пиши ужас поселенца и отказ признать её собою, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>оно лежало ближе, чем прежде</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>узнано чем-то с закрытыми глазами</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>пусть прошедший трумбо добавит дню немного благоговения</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>трумбо бродит неподалёку</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>где-то там ходит трумбо — огромный, неторопливый, будто легенда решила пройти мимо забора; сначала благоговение, а потом осторожное уважение к тому, что он может сделать, если его тронуть</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>

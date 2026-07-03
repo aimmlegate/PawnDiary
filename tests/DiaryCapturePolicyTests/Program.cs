@@ -76,6 +76,7 @@ namespace DiaryCapturePolicyTests
             TestCatalogContract();
             TestMigrationSentinel();
             TestDedupKeys();
+            TestGenericEventTypeDedupKeys();
             TestEmitPlans();
             TestRecentEventExpiry();
             TestGroupNameMatcher();
@@ -1504,6 +1505,33 @@ namespace DiaryCapturePolicyTests
             AssertEqual("thought progression dedup key",
                 "thoughtprogression|P1|need_outdoors|NeedOutdoors|2",
                 new ThoughtProgressionEventData { PawnId = "P1", CategoryKey = "need_outdoors", DefName = "NeedOutdoors", StageIndex = "2" }.DedupKey());
+        }
+
+        private static void TestGenericEventTypeDedupKeys()
+        {
+            AssertEqual("generic key includes event type, decision, and subject",
+                "event-type|Work|GenerateSolo|PawnA",
+                GenericEventTypeDedup.KeyFor(DiaryEventType.Work, CaptureDecision.GenerateSolo, "PawnA"));
+            AssertEqual("generic key trims subject ids",
+                "event-type|Inspiration|GenerateSolo|PawnB",
+                GenericEventTypeDedup.KeyFor(DiaryEventType.Inspiration, CaptureDecision.GenerateSolo, " PawnB "));
+            AssertEqual("generic key normalizes empty subject",
+                "event-type|MoodEvent|GenerateSolo|none",
+                GenericEventTypeDedup.KeyFor(DiaryEventType.MoodEvent, CaptureDecision.GenerateSolo, string.Empty));
+            AssertEqual("generic payload key uses base payload fields",
+                "event-type|Death|GenerateSoloDeathDescription|PawnC",
+                GenericEventTypeDedup.KeyFor(
+                    new DeathEventData { PawnId = "PawnC" },
+                    CaptureDecision.GenerateSoloDeathDescription));
+            AssertEqual("generic null payload key is empty",
+                string.Empty,
+                GenericEventTypeDedup.KeyFor(null, CaptureDecision.GenerateSolo));
+            AssertEqual("death description key is shared across sources",
+                "event-type|DeathDescription|PawnD",
+                GenericEventTypeDedup.DeathDescriptionKey("PawnD"));
+            AssertEqual("death description key normalizes missing pawn",
+                "event-type|DeathDescription|none",
+                GenericEventTypeDedup.DeathDescriptionKey(null));
         }
 
         // ── Emit routing plans ──

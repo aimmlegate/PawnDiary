@@ -80,6 +80,10 @@ namespace PawnDiary
         // The same integration-API event (same eventKey + pawn/pair) is only recorded once within
         // this window (~1 in-game hour), unless the submitting adapter overrides dedup per request.
         public int externalEventDedupTicks = 2500;
+        // Short safety net for sources without a detailed source-specific key, plus cross-source
+        // shapes that intentionally share a type key (currently neutral death-description pages).
+        // This is only meant to catch duplicate hook emissions in the same moment, not long cooldowns.
+        public int genericEventTypeDedupTicks = 60;
 
         // ---- Ability-use sampling ----
         // Successful ability activations are sampled by cooldown. A no/short-cooldown ability uses

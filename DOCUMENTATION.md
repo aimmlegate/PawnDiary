@@ -180,15 +180,20 @@ the universal path:
 | Starting-arrival flush | On new games, any non-arrival signal first tries to record founding-colonist arrivals, so the arrival page remains the first diary page even if a Harmony source fires early. |
 | Dedup check | `recentEvents` rejects duplicate source keys before payload/context work runs. |
 | Decide | `DiaryEventCatalog.Get(payload.EventType).Decide(payload, ctx)` applies pure XML-backed policy. |
-| Dedup mark | The source key is marked only after the catalog keeps the event. |
+| Generic dedup | A short XML-tuned event-type safety key (`genericEventTypeDedupTicks`) rejects repeat type+subject emissions after the decision. Death descriptions share one key across Tale and fallback sources. |
+| Dedup mark | Source and generic keys are marked only after the catalog keeps the event. |
 | Emit | `signal.Emit(sink, decision)` creates the selected diary event shape and queues follow-up work. |
 
 The dedup order is intentional. The check happens before `Decide`, so a duplicate does not build
 context, run pure policy, or consume source-side random state. `AbilitySignal` depends on this because
 its chance roll is read lazily from `Rand.Value`.
 
-The mark happens after `Decide`. If the catalog drops an event, such as an ability that fails its
-chance roll, the dedup window is not consumed.
+The generic event-type check happens after `Decide` because it needs the payload event type and final
+decision shape. It is a short safety net for sources with no detailed key and for cross-source shapes
+that should collapse together, currently neutral death-description pages.
+
+The mark happens after `Decide` and both dedup checks. If the catalog drops an event, such as an
+ability that fails its chance roll, the dedup window is not consumed.
 
 A `DiarySignal` is the impure capture+emit half of one source. Pure decision data and game-context
 formatting stay in `Source/Capture/Events/*EventData.cs`, covered by standalone tests where possible.
@@ -206,9 +211,10 @@ can call `Dispatch` directly and read its `bool` result.
 Adding a source means adding the hook or scanner, a signal, the catalog `Spec`, and XML policy.
 Shared guard, dedup, decision, and emission glue stays in `Dispatch`.
 
-The old per-source dedup dictionaries are gone. `recentEvents` stores the source-prefixed key, the
-source's own dedup window, and the recorded tick. `Source/Capture/RecentEventExpiry.cs` owns the pure
-expiry rule.
+The old per-source dedup dictionaries are gone. `recentEvents` stores the source-prefixed or generic
+event-type key, that key's own dedup window, and the recorded tick.
+`Source/Capture/RecentEventExpiry.cs` owns the pure expiry rule, and
+`Source/Capture/GenericEventTypeDedup.cs` owns the generic key format.
 
 A short-window source cannot evict a still-live long-window key. A zero or negative window opts out
 of dedup instead of clearing the store. The coverage table below lists each source's signal.
@@ -391,6 +397,13 @@ Observer types are DLC-safe:
   list `suppressWhenThingDefNames`; if any of those spawned thing defs are present on the same map,
   that Def reports no observation and the normal end-debounce path resolves its active state.
 - `PawnHediff`: visible pawn hediffs only; hidden hediffs are skipped.
+- `PawnUnnaturalCorpse`: Anomaly, pawn-scoped. No defName list — the matcher is the DLC's own
+  tracker (`GameComponent_Anomaly.PawnHasUnnaturalCorpse` via the guarded `DlcContext` accessor).
+  Emits one Pawn-scoped observation per colonist who is currently being imitated by an unnatural
+  corpse, so the prompt bias lands only on the haunted pawn (not the whole map). When the corpse is
+  destroyed/dissolves vanilla clears the tracker link, the observation stops, and the pure policy
+  ends the state via its normal missing/end-debounce path — the same end-on-disappearance mechanism
+  `MetalhorrorEmergence` relies on. No-ops cleanly without the Anomaly DLC.
 - `MapHiddenHediff`: senses whether ANY home-map colonist carries a matching hediff **including hidden
   ones**, collapsed to a single map-level boolean. Tone-only by contract — the collector emits an empty
   evidence label and never names the hediff or a host, so a Def can color prompts with "the colony is in
@@ -438,9 +451,11 @@ Shipped notable defs:
 - Event-coverage pass (see `EVENT_PROMPT_MAP.md` §5 for the full weight table): `ColdSnapActive`,
   `HeatWaveActive`, `VolcanicWinterActive` (base-game climate), `BloodRainActive`, `DeathPallActive`,
   `UnnaturalDarknessActive` (Anomaly game conditions), and `ObeliskPresence` (the three
-  `WarpedObelisk_*` ThingDefs), `HarbingerTreePresence`, `NociospherePresence`,
-  `UnnaturalCorpsePresence` (the generated `UnnaturalCorpse_Human` ThingDef) are all prompt-tone
-  only. `PitGatePresence` and `FleshmassHeartPresence` additionally record one start page per map
+  `WarpedObelisk_*` ThingDefs), `HarbingerTreePresence`, `NociospherePresence`, and
+  `UnnaturalCorpsePresence` are all prompt-tone only. `UnnaturalCorpsePresence` is the lone
+  `PawnUnnaturalCorpse` observer: it keys on the haunted pawn via the Anomaly tracker so only the
+  colonist being imitated gets the dread, and it ends automatically when the corpse is destroyed.
+  `PitGatePresence` and `FleshmassHeartPresence` additionally record one start page per map
   colonist and have companion display groups (`observedPitGate`, `observedFleshmassHeart`).
   `ThrumboVisit`, `AlphabeaversActive`, `CropBlightActive`, and `AmbrosiaSprouted` are light
   weighted-random flavor with `maxActiveTicks` caps and `restartCooldownTicks` so long-lived

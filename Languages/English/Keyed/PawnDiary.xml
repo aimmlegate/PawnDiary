@@ -460,6 +460,7 @@
   <PawnDiary.Settings.Adv.Field.batch.instructionText>Batch instruction text</PawnDiary.Settings.Adv.Field.batch.instructionText>
   <PawnDiary.Settings.Adv.Field.hediff.appearedText>Health appeared text</PawnDiary.Settings.Adv.Field.hediff.appearedText>
   <PawnDiary.Settings.Adv.Field.hediff.progressedText>Health progressed text</PawnDiary.Settings.Adv.Field.hediff.progressedText>
+  <PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>Generic event dedup ticks</PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.text>Plain text format for this context line. Use {0} for the tracked value.</PawnDiary.Settings.Adv.Help.text>
   <PawnDiary.Settings.Adv.Help.conditionLabel>Plain condition name sent to the model. Blank uses the XML translation key or live game label.</PawnDiary.Settings.Adv.Help.conditionLabel>
   <PawnDiary.Settings.Adv.Help.intensityText>Plain severity/intensity word sent to the model. Blank lets XML or live severity choose it.</PawnDiary.Settings.Adv.Help.intensityText>
@@ -551,6 +552,7 @@
   <PawnDiary.Settings.Adv.Help.questDedupTicks>Same quest lifecycle signal is recorded once per this window.</PawnDiary.Settings.Adv.Help.questDedupTicks>
   <PawnDiary.Settings.Adv.Help.ritualDedupTicks>Same ritual outcome is recorded once per this window.</PawnDiary.Settings.Adv.Help.ritualDedupTicks>
   <PawnDiary.Settings.Adv.Help.abilityDedupTicks>Same ability activation is recorded once per this window.</PawnDiary.Settings.Adv.Help.abilityDedupTicks>
+  <PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>Short safety window for sources without detailed dedup keys, and for shared death-description pages from different sources.</PawnDiary.Settings.Adv.Help.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.abilityUseMinChance>Sampling chance for a no/short-cooldown ability.</PawnDiary.Settings.Adv.Help.abilityUseMinChance>
   <PawnDiary.Settings.Adv.Help.abilityUseMaxChance>Sampling chance a long-cooldown ability approaches.</PawnDiary.Settings.Adv.Help.abilityUseMaxChance>
   <PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>Cooldown at which the chance curve is roughly halfway between min and max.</PawnDiary.Settings.Adv.Help.abilityUseReferenceCooldownTicks>
@@ -1051,11 +1053,11 @@
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>a hovering sphere of contained pain</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>a dark geometric sphere hangs on the map like a held breath; everyone knows it will not stay quiet forever; write the waiting and the wide berth people give it, without explaining what it is</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>a held breath, a countdown</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>color normal context with the corpse that does not behave</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>a corpse that is somehow wrong</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>there is a body in the colony that does not behave like a body; it seems closer than it was, or turned differently; write the reluctance to look at it and the certainty that it is not finished, without explaining anything</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>was it lying like that before</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>watched by something closed-eyed</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>color ordinary context with the wrongness of a body that wears this pawn's own face</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>a corpse that is somehow this pawn</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>there is a dead thing nearby that looks like this pawn; it does not behave like a corpse and it seems to know things; write the pawn's horror and refusal to accept it as themselves, without explaining anything</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>it was lying closer than before</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>recognized by something with closed eyes</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>let the thrumbo's passing lend the day a little awe</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>a thrumbo moving through the area</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>a thrumbo is out there, huge and unhurried, like a legend that decided to walk past the fence; awe first, and a careful respect for what it could do if bothered</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>

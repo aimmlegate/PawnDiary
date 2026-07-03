@@ -1,6 +1,6 @@
 // The single ingestion pipeline. Every DiarySignal funnels through Dispatch here, which runs the
 // universal steps that used to be copy-pasted into each RecordXxx method:
-//   guard → dedup-check → build context → catalog Decide → dedup-mark → Emit.
+//   guard → source dedup-check → build context → catalog Decide → generic/source dedup-mark → Emit.
 // The source-specific work (capturing live state into a payload, building text/context, queuing the
 // LLM) stays in the per-source DiarySignal subclass. This file is the "one method, data-controlled"
 // half the design asked for: the catalog Spec (XML-backed) decides, and Dispatch performs only the
@@ -41,9 +41,9 @@ namespace PawnDiary
         /// <summary>
         /// Runs one captured event through the shared pipeline. Called by
         /// <see cref="DiaryEvents.Submit(DiarySignal)"/>. The solo path checks dedup before reading
-        /// the payload, runs the pure catalog decision, then marks dedup immediately before the impure
-        /// Emit (so a dropped event never consumes a window, and a deduped event never builds text or
-        /// mutates the save).
+        /// the payload, runs the pure catalog decision, checks the short generic event-type safety key,
+        /// then marks dedup immediately before the impure Emit (so a dropped event never consumes a
+        /// window, and a deduped event never builds text or mutates the save).
         /// </summary>
         /// <returns>
         /// True if the signal passed the guard, decision, and dedup and its <c>Emit</c> ran. Most
@@ -97,11 +97,24 @@ namespace PawnDiary
                 return false;
             }
 
-            // Dedup MARK after Decide, before the impure Emit — so a dropped event never consumes the
-            // window, and a recorded one is marked exactly once on the path it actually emits on.
+            string eventTypeKey = EventTypeDedupKeyFor(signal, payload, decision, key);
+            int eventTypeWindowTicks = signal.EventTypeDedupWindowTicks;
+            if (!string.IsNullOrEmpty(eventTypeKey)
+                && IsRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks))
+            {
+                return false;
+            }
+
+            // Dedup MARK after Decide and both dedup checks, before the impure Emit — so a dropped
+            // event never consumes the window, and a recorded one is marked exactly once on the path
+            // it actually emits on.
             if (!string.IsNullOrEmpty(key))
             {
                 MarkRecentlyRecorded(recentEvents, key, windowTicks);
+            }
+            if (!string.IsNullOrEmpty(eventTypeKey))
+            {
+                MarkRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks);
             }
 
             signal.Emit(this, decision);
@@ -156,12 +169,30 @@ namespace PawnDiary
                 }
 
                 // Most fan-outs dedup only at the colony level (child.DedupKey empty); a child may add
-                // its own per-pawn window if it needs one.
+                // its own per-pawn window if it needs one. The short generic type key is checked after
+                // Decide, matching the solo path, because it needs the payload's event type.
                 string childKey = child.DedupKey;
                 if (!string.IsNullOrEmpty(childKey)
-                    && RecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks))
+                    && IsRecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks))
                 {
                     continue;
+                }
+
+                string childEventTypeKey = EventTypeDedupKeyFor(child, childPayload, decision, childKey);
+                int childEventTypeWindowTicks = child.EventTypeDedupWindowTicks;
+                if (!string.IsNullOrEmpty(childEventTypeKey)
+                    && IsRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks))
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(childKey))
+                {
+                    MarkRecentlyRecorded(recentEvents, childKey, child.DedupWindowTicks);
+                }
+                if (!string.IsNullOrEmpty(childEventTypeKey))
+                {
+                    MarkRecentlyRecorded(recentEvents, childEventTypeKey, childEventTypeWindowTicks);
                 }
 
                 child.Emit(this, decision);
@@ -213,6 +244,27 @@ namespace PawnDiary
             }
 
             return false;
+        }
+
+        private static string EventTypeDedupKeyFor(
+            DiarySignal signal, DiaryEventData payload, CaptureDecision decision, string sourceDedupKey)
+        {
+            if (signal == null || payload == null)
+            {
+                return string.Empty;
+            }
+
+            string key = signal.EventTypeDedupKey(payload, decision);
+            if (!string.IsNullOrEmpty(key))
+            {
+                return key;
+            }
+
+            // Sources with a detailed key already collapse the exact event identity. Sources without
+            // one get a short generic type+subject safety key so fluke double hooks do not emit twice.
+            return string.IsNullOrEmpty(sourceDedupKey)
+                ? GenericEventTypeDedup.KeyFor(payload, decision)
+                : string.Empty;
         }
 
         // ── Emit surface for DiarySignal.Emit ──

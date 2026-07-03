@@ -83,6 +83,13 @@ namespace PawnDiary.Ingestion
 
         public override int DedupWindowTicks => DiaryTuning.Current.taleDedupTicks;
 
+        public override string EventTypeDedupKey(DiaryEventData payload, CaptureDecision decision)
+        {
+            return deathDescription
+                ? GenericEventTypeDedup.DeathDescriptionKey(deathVictim?.GetUniqueLoadID())
+                : string.Empty;
+        }
+
         public override void Emit(DiaryGameComponent sink, CaptureDecision decision)
         {
             // Pure routing (unit-tested in DiaryCapturePolicyTests); this method only renders the live

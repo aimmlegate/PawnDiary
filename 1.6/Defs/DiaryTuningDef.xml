@@ -25,6 +25,8 @@
     <abilityDedupTicks>300</abilityDedupTicks>
     <!-- Integration-API events (same eventKey + pawn/pair), unless the adapter overrides per request. -->
     <externalEventDedupTicks>2500</externalEventDedupTicks>
+    <!-- Short generic safety net for same event type + pawn, and shared cross-source shapes like death pages. -->
+    <genericEventTypeDedupTicks>60</genericEventTypeDedupTicks>
 
     <!-- Ability-use sampling. A no/short-cooldown ability uses abilityUseMinChance; longer
          cooldowns approach abilityUseMaxChance. The reference cooldown is the midpoint of the
