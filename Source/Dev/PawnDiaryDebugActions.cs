@@ -399,17 +399,6 @@ namespace PawnDiary
 
             Rect bodyInner = bodyRect.ContractedBy(PanelPadding);
             string section = component.DevPanelSectionForDev;
-            if (section == DiaryGameComponent.DevPanelSectionDiary)
-            {
-                DrawScrollableSection(
-                    bodyInner,
-                    component,
-                    section,
-                    DiaryToolsViewHeight(),
-                    viewRect => DrawDiaryToolsSection(viewRect, component, pawn));
-                return;
-            }
-
             if (section == DiaryGameComponent.DevPanelSectionFixtures)
             {
                 DrawScrollableSection(
@@ -421,24 +410,23 @@ namespace PawnDiary
                 return;
             }
 
+            // The Events section (DrawRealEventsSection) is hidden because its event trigger
+            // buttons are currently non-functional; everything else falls back to Diary tools.
+            // The partner selector row stays visible because DrawRealEventsSection is expected
+            // to return once the triggers are fixed.
             DrawScrollableSection(
                 bodyInner,
                 component,
-                DiaryGameComponent.DevPanelSectionEvents,
-                RealEventsViewHeight(),
-                viewRect => DrawRealEventsSection(viewRect, component, pawn, partner));
+                DiaryGameComponent.DevPanelSectionDiary,
+                DiaryToolsViewHeight(),
+                viewRect => DrawDiaryToolsSection(viewRect, component, pawn));
         }
 
         private void DrawSectionRail(Rect rect, DiaryGameComponent component)
         {
+            // The Events section button is intentionally not drawn: its event trigger buttons are
+            // currently non-functional, so the section is hidden until they work again.
             float y = rect.y;
-            DrawSectionButton(
-                new Rect(rect.x, y, rect.width, ActionRowHeight),
-                component,
-                DiaryGameComponent.DevPanelSectionEvents,
-                "PawnDiary.Dev.EventPanel.SectionEvents");
-            y += ActionRowHeight + ActionGap;
-
             DrawSectionButton(
                 new Rect(rect.x, y, rect.width, ActionRowHeight),
                 component,
@@ -486,6 +474,10 @@ namespace PawnDiary
             component.SetDevPanelScrollYForDev(sectionId, scroll.y);
         }
 
+        // HIDDEN: this section's event trigger buttons are currently non-functional, so nothing
+        // calls this drawer (the Events rail button is not drawn and saved "events" selections
+        // normalize to Diary). The section and its Trigger* helpers are kept intact so the panel
+        // can be re-enabled from DrawSectionRail/DrawSectionedControls once the triggers are fixed.
         private void DrawRealEventsSection(Rect rect, DiaryGameComponent component, Pawn pawn, Pawn partner)
         {
             float y = DrawSectionTitle(rect, "PawnDiary.Dev.EventPanel.RealEvents");

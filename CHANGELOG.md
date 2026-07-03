@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Dev event panel: hid the non-functional Events section.** The event trigger buttons in the
+  debug `Event test panel` (Def-backed trigger rows plus the arrival/death/work-scan/thought-
+  progression/day-reflection buttons) do not currently work, so the Events section is hidden:
+  its rail button is no longer drawn, saved `events` section selections normalize to Diary, and
+  Diary is now the panel's default section. `DrawRealEventsSection` and the `Trigger*` helpers
+  remain in `Dialog_PawnDiaryEventTestPanel` unchanged so the section can be re-enabled once the
+  triggers are fixed. Diary and Fixtures sections are unaffected.
 - **Event-coverage review fixes (XML + docs only).** Corrected two silently dead `ThingPresent`
   observers whose guessed defNames matched nothing (the observer resolves exact `matchDefNames`
   only): `ObeliskPresence` now matches the real Anomaly ThingDefs `WarpedObelisk_Abductor` /

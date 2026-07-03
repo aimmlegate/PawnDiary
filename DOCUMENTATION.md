@@ -593,20 +593,21 @@ rows, raw prompt/status data, and copy buttons. Bulk dev actions live under RimW
 menu as `Pawn Diary > Event test panel...`, which opens a sectioned dev panel for selecting a test
 pawn and partner. The same debug category also exposes
 `Pawn Diary > Export all diary pages...` for full hot/archive text export and
-`Pawn Diary > Purge archived entries for pawn...` for direct per-pawn cleanup. The panel has separate
-Events, Diary, and Fixtures sections and owns the former Diary tab action strip: a mock-page filler,
-per-pawn archive purge, the per-pawn persona picker, transient formatting preview buttons, real
-vanilla gameplay triggers, and prompt-only fixture batch/clear tools. Buttons that mutate or delete
+`Pawn Diary > Purge archived entries for pawn...` for direct per-pawn cleanup. The panel currently
+shows two sections, Diary and Fixtures, and owns the former Diary tab action strip: a mock-page
+filler, per-pawn archive purge, the per-pawn persona picker, transient formatting preview buttons,
+and prompt-only fixture batch/clear tools. Buttons that mutate or delete
 save data use the XML-owned danger tint. The selected pawn,
 partner, active section, per-section scroll, selected trigger Def names, and selected fixture IDs are
 saved on `DiaryGameComponent`, so the panel state survives closing/reopening and normal save/load.
-Real trigger buttons cover paths that Pawn Diary patches, such as thoughts, inspirations, mental
-states, tales, hediffs, map conditions, social play-log entries, romance relations, arrivals, deaths,
-raids, quests, abilities, and the scanner-based work/day-summary flows. In the Events section,
-Def-backed rows are direct buttons: left-click fires the shown Def, and right-click opens the Def
-selector for memory thought, inspiration, mental state, tale, hediff, game condition, interaction,
-relation, incident, quest script, and pawn ability; the row title mirrors the selected menu label
-after a selector choice is committed. Preview
+A third Events section (real vanilla gameplay triggers for thoughts, inspirations, mental states,
+tales, hediffs, map conditions, social play-log entries, romance relations, arrivals, deaths, raids,
+quests, abilities, and the scanner-based work/day-summary flows) is **hidden** because its trigger
+buttons are currently non-functional: its rail button is not drawn, saved `events` section selections
+normalize to Diary, and Diary is the saved-state default. The section's drawing and trigger code is
+kept intact in `Dialog_PawnDiaryEventTestPanel` (`DrawRealEventsSection` and the `Trigger*` helpers)
+so it can be re-enabled from `DrawSectionRail`/`DrawSectionedControls` once the triggers work again.
+Preview
 buttons open the selected pawn's Diary tab only to display the transient card; they do not save diary
 events. The prompt-only section uses the same synthetic fixture registry as the old Diary tab
 prompt-suite controls, but can create a selected prompt-test batch at once and can clear all
@@ -935,12 +936,10 @@ Live hook checks use a disposable save, dev mode, prompt-test mode, and RimBridg
 mode's Debug Actions menu exposes `Pawn Diary > Event test panel...` for common real trigger paths
 `Pawn Diary > Export all diary pages...` for UTF-8 export, and
 `Pawn Diary > Purge archived entries for pawn...` for a direct pawn picker that clears only that
-pawn's compact archived pages. In the event panel, select an eligible colonist, optionally select a
-partner, open the Events section, left-click a Def-backed row to trigger it, or right-click it first
-to choose a different Def; the row title updates to the selected menu label. Red buttons deliberately
-mutate the disposable save, such as spawning a
-recruit, killing a test colonist, creating a raid, or
-accepting/completing a sample quest. For Diary UI stress checks, use the same panel's Diary section to
+pawn's compact archived pages. In the event panel, select an eligible colonist and optionally select
+a partner. The Events section (Def-backed trigger rows and the red destructive trigger buttons) is
+currently hidden because those trigger buttons are non-functional; until it returns, exercise real
+trigger paths by playing them out in-game instead. For Diary UI stress checks, use the panel's Diary section to
 fill mock pages, switch personas, or open transient card previews. For prompt shape checks that do not
 need a real gameplay trigger, use the Fixtures section and generate all or selected fixtures for an
 eligible colonist. Prompt-test mode intercepts only after an event reaches

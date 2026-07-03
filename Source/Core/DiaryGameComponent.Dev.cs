@@ -30,7 +30,9 @@ namespace PawnDiary
         // without coupling the game state to RimWorld UI instances.
         private string devPanelSelectedPawnId;
         private string devPanelSelectedPartnerId;
-        private string devPanelSectionId = DevPanelSectionEvents;
+        // Diary is the default section while the Events section is hidden (its trigger buttons are
+        // currently non-functional; see Dialog_PawnDiaryEventTestPanel).
+        private string devPanelSectionId = DevPanelSectionDiary;
         private float devPanelEventsScrollY;
         private float devPanelDiaryScrollY;
         private float devPanelFixturesScrollY;
@@ -100,7 +102,7 @@ namespace PawnDiary
         {
             Scribe_Values.Look(ref devPanelSelectedPawnId, "devPanelSelectedPawnId");
             Scribe_Values.Look(ref devPanelSelectedPartnerId, "devPanelSelectedPartnerId");
-            Scribe_Values.Look(ref devPanelSectionId, "devPanelSectionId", DevPanelSectionEvents);
+            Scribe_Values.Look(ref devPanelSectionId, "devPanelSectionId", DevPanelSectionDiary);
             Scribe_Values.Look(ref devPanelEventsScrollY, "devPanelEventsScrollY", 0f);
             Scribe_Values.Look(ref devPanelDiaryScrollY, "devPanelDiaryScrollY", 0f);
             Scribe_Values.Look(ref devPanelFixturesScrollY, "devPanelFixturesScrollY", 0f);
@@ -509,17 +511,14 @@ namespace PawnDiary
 
         private static string NormalizeDevPanelSectionId(string sectionId)
         {
-            if (string.Equals(sectionId, DevPanelSectionDiary, StringComparison.Ordinal))
-            {
-                return DevPanelSectionDiary;
-            }
-
             if (string.Equals(sectionId, DevPanelSectionFixtures, StringComparison.Ordinal))
             {
                 return DevPanelSectionFixtures;
             }
 
-            return DevPanelSectionEvents;
+            // Anything else — including a saved "events" selection — falls back to Diary while the
+            // Events section is hidden (its trigger buttons are currently non-functional).
+            return DevPanelSectionDiary;
         }
 
         private static string CleanDevPanelId(string id)
