@@ -490,6 +490,10 @@
     <pollIntervalTicks>2500</pollIntervalTicks>
     <startDebounceTicks>0</startDebounceTicks>
     <endDebounceTicks>5000</endDebounceTicks>
+    <!-- Defense-in-depth backstop in case the gate leaves a same-defName remnant (the corpse-bug
+         shape): force-stop the strong weight-30 override after 3 days, then cool down 2 days. -->
+    <maxActiveTicks>180000</maxActiveTicks>
+    <restartCooldownTicks>120000</restartCooldownTicks>
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
     <maxEvidenceLabels>1</maxEvidenceLabels>
     <matchDefNames>
@@ -527,6 +531,10 @@
     <pollIntervalTicks>2500</pollIntervalTicks>
     <startDebounceTicks>0</startDebounceTicks>
     <endDebounceTicks>5000</endDebounceTicks>
+    <!-- Defense-in-depth backstop: force-stop the strong weight-30 override after 3 days, then cool
+         down 2 days, in case the heart leaves a same-defName remnant on resolution. -->
+    <maxActiveTicks>180000</maxActiveTicks>
+    <restartCooldownTicks>120000</restartCooldownTicks>
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
     <maxEvidenceLabels>1</maxEvidenceLabels>
     <matchDefNames>
@@ -603,6 +611,10 @@
     <pollIntervalTicks>2500</pollIntervalTicks>
     <startDebounceTicks>0</startDebounceTicks>
     <endDebounceTicks>5000</endDebounceTicks>
+    <!-- Harbinger trees can sit uncut for a long time; mirror AmbrosiaSprouted's cap so the mild
+         weight-8 bias does not push forever, then go quiet for ten days. -->
+    <maxActiveTicks>120000</maxActiveTicks>
+    <restartCooldownTicks>600000</restartCooldownTicks>
     <includeHomeMapsOnly>true</includeHomeMapsOnly>
     <maxEvidenceLabels>1</maxEvidenceLabels>
     <matchDefNames>

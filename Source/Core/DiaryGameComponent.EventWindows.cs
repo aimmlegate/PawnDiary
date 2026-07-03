@@ -378,6 +378,22 @@ namespace PawnDiary
                     continue;
                 }
 
+                // Still-present probe: an optional XML-declared check that closes the window EARLY when
+                // its spawning threat is no longer on the window's map (see stillPresentThingDefNames /
+                // stillPresentFactionDefNames). This keeps a timeout-bounded dread window (e.g.
+                // MechClusterLanded) from coloring prompts for days after the cluster is destroyed. The
+                // close is silent (no end page) — mirrors the def-disabled removal just above; a def that
+                // wants a resolution page should declare endSignals instead.
+                if (EventWindowHasProbe(def))
+                {
+                    Map probeMap = MapForUniqueId(active.mapUniqueId);
+                    if (!EventWindowProbeSatisfied(def, probeMap))
+                    {
+                        activeEventWindows.RemoveAt(i);
+                        continue;
+                    }
+                }
+
                 if (active.expiresTick < 0 || now < active.expiresTick)
                 {
                     continue;
@@ -401,6 +417,83 @@ namespace PawnDiary
                 RecordEventWindowPhase(def, active, EventWindowPhaseTimeout, facts,
                     MapForUniqueId(active.mapUniqueId), null);
             }
+        }
+
+        // True if the def declares any still-present probe (thing-def or faction list). Used to skip the
+        // probe work entirely for the common case of a window with no probe configured.
+        private static bool EventWindowHasProbe(DiaryEventWindowDef def)
+        {
+            return def != null
+                && ((def.stillPresentThingDefNames != null && def.stillPresentThingDefNames.Count > 0)
+                    || (def.stillPresentFactionDefNames != null && def.stillPresentFactionDefNames.Count > 0));
+        }
+
+        // Returns true if the window's spawning threat is still present on the map (so the window may
+        // stay active); false when the threat is gone (so the timeout scan closes it early). A null map
+        // (map gone, or a map-agnostic window with mapUniqueId<0) cannot confirm presence → not
+        // satisfied. Empty/unconfigured probes are gated out by EventWindowHasProbe before this is
+        // called, so reaching here means at least one matcher is configured.
+        private static bool EventWindowProbeSatisfied(DiaryEventWindowDef def, Map map)
+        {
+            if (def == null || map == null)
+            {
+                return false;
+            }
+
+            // OR semantics: the threat is "still present" if ANY matcher fires. The thing-def arm reuses
+            // the observed-conditions leaf helper (DLC-safe via GetNamedSilentFail).
+            if (AnyThingDefPresentOnMap(map, def.stillPresentThingDefNames))
+            {
+                return true;
+            }
+
+            return AnyFactionPawnPresentOnMap(map, def.stillPresentFactionDefNames);
+        }
+
+        // True if any spawned pawn of a listed faction defName is on the map. Cheap (a pawn-count walk,
+        // not a thing scan) and DLC-safe: faction is matched by plain string, so a listed faction that
+        // does not exist in the player's mod set simply never matches. Used by the mech-cluster probe
+        // ("Mechanoid"), which is stable across all DLCs because every mechanoid belongs to that one
+        // base-game FactionDef.
+        private static bool AnyFactionPawnPresentOnMap(Map map, List<string> factionDefNames)
+        {
+            if (map == null || map.mapPawns == null || factionDefNames == null || factionDefNames.Count == 0)
+            {
+                return false;
+            }
+
+            IReadOnlyList<Pawn> pawns = map.mapPawns.AllPawnsSpawned;
+            if (pawns == null || pawns.Count == 0)
+            {
+                return false;
+            }
+
+            // Two-pointer scan: pawns are typically few-to-tens, faction list is one or two entries, so a
+            // nested linear compare is cheaper than building a HashSet.
+            for (int p = 0; p < pawns.Count; p++)
+            {
+                Pawn pawn = pawns[p];
+                if (pawn == null)
+                {
+                    continue;
+                }
+
+                string pawnFactionDef = pawn.Faction?.def?.defName;
+                if (string.IsNullOrEmpty(pawnFactionDef))
+                {
+                    continue;
+                }
+
+                for (int f = 0; f < factionDefNames.Count; f++)
+                {
+                    if (string.Equals(pawnFactionDef, factionDefNames[f], System.StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private List<PromptEnchantmentCandidate> ActiveEventWindowPromptCandidates(Pawn pawn,

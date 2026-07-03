@@ -96,6 +96,47 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Dev-only snapshot of currently active event windows, for the "Force-close active event
+        /// window" debug action. Returns an empty list when dev mode is off or there are none, so the
+        /// caller can iterate unguarded. The list is a shallow copy so the picker is not aliasing the
+        /// live list that the timeout scan mutates.
+        /// </summary>
+        internal List<ActiveEventWindowState> ActiveEventWindowsForDev
+        {
+            get
+            {
+                if (!Prefs.DevMode || activeEventWindows == null)
+                {
+                    return new List<ActiveEventWindowState>();
+                }
+
+                return new List<ActiveEventWindowState>(activeEventWindows);
+            }
+        }
+
+        /// <summary>
+        /// Dev-only: force-removes one active event window (the escape hatch for a window stuck open
+        /// after its threat dissolved but before its timeout, or after a bad save). This is a brute
+        /// remove — no end/timeout page is recorded — mirroring how the timeout scan retires a window
+        /// when its def is disabled. Returns true if the window was present and removed.
+        /// </summary>
+        internal bool ForceCloseEventWindowForDev(ActiveEventWindowState state)
+        {
+            if (!Prefs.DevMode || state == null)
+            {
+                return false;
+            }
+
+            bool removed = activeEventWindows != null && activeEventWindows.Remove(state);
+            if (removed)
+            {
+                DiaryStateVersion.Bump();
+            }
+
+            return removed;
+        }
+
+        /// <summary>
         /// Saves and restores the debug event panel's remembered UI state with the current game.
         /// </summary>
         internal void ExposeDevPanelStateForDev()

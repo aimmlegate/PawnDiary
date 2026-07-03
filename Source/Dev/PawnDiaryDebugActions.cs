@@ -142,6 +142,59 @@ namespace PawnDiary
             Find.WindowStack.Add(new FloatMenu(options));
         }
 
+        /// <summary>
+        /// Opens a picker of currently active event windows and force-closes the selected one. This is
+        /// the escape hatch for a window stuck open after its threat dissolved but before its timeout
+        /// (or recovered from a bad save). Brute-remove: no end/timeout page is recorded.
+        /// </summary>
+        [DebugAction("Pawn Diary", "Force-close active event window...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
+        public static void ForceCloseActiveEventWindow()
+        {
+            DiaryGameComponent component = DiaryGameComponent.Current;
+            if (!Prefs.DevMode || component == null)
+            {
+                return;
+            }
+
+            List<ActiveEventWindowState> windows = component.ActiveEventWindowsForDev;
+            if (windows.Count == 0)
+            {
+                Messages.Message("PawnDiary.Dev.NoActiveEventWindows".Translate(), MessageTypeDefOf.NeutralEvent, false);
+                return;
+            }
+
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+            for (int i = 0; i < windows.Count; i++)
+            {
+                ActiveEventWindowState captured = windows[i];
+                if (captured == null)
+                {
+                    continue;
+                }
+
+                // Resolve the def for a readable label; fall back to the stored defName if the def is
+                // gone/disabled (the window would be retired on the next scan anyway).
+                DiaryEventWindowDef def = string.IsNullOrEmpty(captured.windowDefName)
+                    ? null
+                    : DefDatabase<DiaryEventWindowDef>.GetNamedSilentFail(captured.windowDefName);
+                string label = def != null ? def.LabelCap.ToString() : captured.windowDefName;
+                string tool = "PawnDiary.Dev.ForceCloseEventWindow.Tooltip".Translate(
+                    captured.windowDefName ?? string.Empty,
+                    captured.startLabel ?? string.Empty);
+                options.Add(new FloatMenuOption(label, delegate
+                {
+                    bool removed = component.ForceCloseEventWindowForDev(captured);
+                    Messages.Message(
+                        "PawnDiary.Dev.EventWindowForceClosed".Translate(label),
+                        removed ? MessageTypeDefOf.PositiveEvent : MessageTypeDefOf.NeutralEvent,
+                        false);
+                })
+                { tooltip = tool });
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
         private static void HandleExportAllDiariesForDev()
         {
             DiaryGameComponent component = DiaryGameComponent.Current;

@@ -109,6 +109,9 @@
   <PawnDiary.Dev.EventPanel.Title>Pawn Diary event tests</PawnDiary.Dev.EventPanel.Title>
   <PawnDiary.Dev.EventPanel.NoGame>Load a map and enable dev mode before opening Pawn Diary event tests.</PawnDiary.Dev.EventPanel.NoGame>
   <PawnDiary.Dev.EventPanel.NoPawn>No eligible colonist is available for diary event tests.</PawnDiary.Dev.EventPanel.NoPawn>
+  <PawnDiary.Dev.NoActiveEventWindows>No active event windows to close.</PawnDiary.Dev.NoActiveEventWindows>
+  <PawnDiary.Dev.EventWindowForceClosed>Force-closed "{0}".</PawnDiary.Dev.EventWindowForceClosed>
+  <PawnDiary.Dev.ForceCloseEventWindow.Tooltip>defName: {0}\nstart: {1}</PawnDiary.Dev.ForceCloseEventWindow.Tooltip>
   <PawnDiary.Dev.ExternalTestSummary>{0} noticed something odd — a test signal arrived through the mod integration API.</PawnDiary.Dev.ExternalTestSummary>
   <PawnDiary.Dev.ExternalTestSubmitted>Submitted a test external event for {0}.</PawnDiary.Dev.ExternalTestSubmitted>
   <PawnDiary.Dev.ExternalTestRejected>The test external event was not accepted — check the dev log.</PawnDiary.Dev.ExternalTestRejected>
