@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Event-coverage gap analysis & XML-only extension plan (docs only).** New root document
+  `EVENT_COVERAGE_PLAN.md`: inventories every RimWorld moment the mod reacts to today, maps the
+  base-game and DLC (Royalty/Ideology/Biotech/Anomaly/Odyssey) events we skip or only catch via
+  generic catch-alls, and proposes a tiered, XML-only set of additions (retoned interaction
+  groups, missing prompt enchantments, two persona overrides, observed conditions, and a few
+  one-shot event windows) with volume guardrails. No behavior changed.
 - **Render-time paragraph reflow for diary prose.** Long single-line entries are now split into
   readable paragraphs at render time. Because prompts only ever ask for sentence counts and never
   for explicit paragraph breaks, a multi-sentence entry previously wrapped as one dense block. The
