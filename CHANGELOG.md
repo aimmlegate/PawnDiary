@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Render-time paragraph reflow for diary prose.** Long single-line entries are now split into
+  readable paragraphs at render time. Because prompts only ever ask for sentence counts and never
+  for explicit paragraph breaks, a multi-sentence entry previously wrapped as one dense block. The
+  default (non-Fractured / -Unsettled / -Memorial) atmosphere now runs each prose line through a
+  pure reflow helper (`DiaryParagraphReflow.ReflowLine`) and breaks it, in priority order, at
+  sentence ends, RimWorld year mentions (`55xx`), semicolons, and em-dashes, with a hard length
+  cap that falls back to a space boundary (words are never split mid-token). Saved `GeneratedText`
+  is never mutated; both the measure and draw passes use the same helper so wrapped heights stay in
+  sync. `[[speech]]` blocks and the three special atmospheres are unchanged. Tuning lives in
+  `DiaryUiStyleDef.xml`: `paragraphReflowEnabled` (master toggle), `paragraphReflowTargetChars`/
+  `MaxChars`, the four `…SplitOn…` cue toggles, and `paragraphReflowMinBreakSpacing`. New pure test
+  project `tests/DiaryParagraphReflowTests` covers short-line pass-through, each cue, the hard
+  break, stub merging, the disable toggle, and non-year-number safety. (DOCUMENTATION §7.)
+
 - **Review fixes for API settings, arc cadence, and localization.** Background reasoning-capability
   refreshes now lock their per-row in-flight guard so UI cancellation cannot race async continuations.
   Arc reflections now honor the Advanced `arcReflectionMaxEntriesPerYear` cap across the full 1-10 UI

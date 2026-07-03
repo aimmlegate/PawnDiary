@@ -149,6 +149,18 @@ namespace PawnDiary
         // ---- Roleplay text and direct-speech blocks ----
         public float roleplayLineGap = 5f;
         public float roleplayParagraphGap = 8f;
+        // ---- Render-time paragraph reflow (default atmosphere only) ----
+        // Long single-line prose is split into readable paragraphs at punctuation cues and a length
+        // cap. Saved GeneratedText is never mutated; this is display-only and runs through the same
+        // measure/draw path so wrapped heights stay in sync. See DiaryParagraphReflow.
+        public bool paragraphReflowEnabled = true;
+        public int paragraphReflowTargetChars = 140;
+        public int paragraphReflowMaxChars = 200;
+        public bool paragraphReflowSplitOnSentenceEnd = true;
+        public bool paragraphReflowSplitOnDateYear = true;
+        public bool paragraphReflowSplitOnSemicolon = true;
+        public bool paragraphReflowSplitOnEmDash = true;
+        public int paragraphReflowMinBreakSpacing = 40;
         public float speechBlockLeftInset = 24f;
         public float speechBlockVerticalPadding = 3f;
         public string speechBlockOpenMarker = "[[speech]]";
@@ -365,6 +377,33 @@ namespace PawnDiary
 
                 return cached ?? Fallback;
             }
+        }
+
+        /// <summary>
+        /// Builds the pure reflow options from the current UI style, clamping maxChars to be at least
+        /// targetChars so a misconfigured XML cannot make ReflowLine loop forever.
+        /// </summary>
+        public static DiaryParagraphReflowOptions BuildParagraphReflowOptions()
+        {
+            DiaryUiStyleDef style = Current;
+            int target = style.paragraphReflowTargetChars;
+            int max = style.paragraphReflowMaxChars;
+            if (max < target)
+            {
+                max = target;
+            }
+
+            return new DiaryParagraphReflowOptions
+            {
+                enabled = style.paragraphReflowEnabled,
+                targetChars = target,
+                maxChars = max,
+                splitOnSentenceEnd = style.paragraphReflowSplitOnSentenceEnd,
+                splitOnDateYear = style.paragraphReflowSplitOnDateYear,
+                splitOnSemicolon = style.paragraphReflowSplitOnSemicolon,
+                splitOnEmDash = style.paragraphReflowSplitOnEmDash,
+                minBreakSpacing = style.paragraphReflowMinBreakSpacing
+            };
         }
     }
 }

@@ -647,6 +647,21 @@ hidden because compact archive rows intentionally discard prompt/raw-response/re
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
 
+**Render-time paragraph reflow (default atmosphere).** Because prompts only ever ask for sentence
+counts (1-3, 2-4, 4-7, 5-8) and never for explicit paragraph breaks, a multi-sentence entry arrives
+as a single line that would otherwise wrap as one dense block. For the ordinary (non-Fractured /
+-Unsettled /-Memorial) atmosphere, `NormalRoleplayBlocks` runs each prose line through the pure
+`DiaryParagraphReflow.ReflowLine` helper and turns the returned chunks into separate paragraph
+blocks separated by a blank-line gap. Breaks land, in priority order, at sentence ends (`.!?`),
+RimWorld year mentions (`55xx` followed by a clause boundary), semicolons, and em-dashes, with a
+hard length cap that falls back to a space boundary (words are never split mid-token). Saved
+`GeneratedText` is never mutated — both the height-measure pass and the draw pass use the same
+helper, so wrapped heights stay in sync. Tuning is in `DiaryUiStyleDef.xml`
+(`paragraphReflowEnabled`, `paragraphReflowTargetChars`/`MaxChars`, the four `…SplitOn…` cue
+toggles, and `paragraphReflowMinBreakSpacing`); set `paragraphReflowEnabled=false` to render the
+model's own line breaks verbatim. `[[speech]]` blocks and the three special atmospheres are not
+reflowed; they already own their line/sentence styling.
+
 ## 8. API And Reliability
 
 Each enabled endpoint/model/mode/auth row is an API lane. Supported request modes are OpenAI-compatible

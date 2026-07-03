@@ -225,11 +225,34 @@ namespace PawnDiary
         private static IEnumerable<RoleplayLineBlock> NormalRoleplayBlocks(string text, bool allowDirectSpeechBlocks)
         {
             int index = 0;
+            DiaryParagraphReflowOptions reflow = DiaryUiStyles.BuildParagraphReflowOptions();
             foreach (DiaryDirectSpeechLine line in RoleplayLines(text, allowDirectSpeechBlocks))
             {
-                yield return line.directSpeech
-                    ? MakeSpeechRoleplayBlock(line.line, index++)
-                    : MakeRoleplayBlock(line.line, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                // Speech blocks and explicit blank lines are never reflowed — only ordinary prose.
+                if (line.directSpeech)
+                {
+                    yield return MakeSpeechRoleplayBlock(line.line, index++);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(line.line))
+                {
+                    yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                    continue;
+                }
+
+                // Display-only paragraph reflow: split one long prose line into readable chunks. Each
+                // chunk becomes its own block, with a blank-line gap between chunks so the split reads
+                // as a real paragraph break (the render loop turns empty blocks into paragraph gaps).
+                List<string> chunks = DiaryParagraphReflow.ReflowLine(line.line, reflow);
+                for (int i = 0; i < chunks.Count; i++)
+                {
+                    yield return MakeRoleplayBlock(chunks[i], 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                    if (i < chunks.Count - 1)
+                    {
+                        yield return MakeRoleplayBlock(string.Empty, 0f, 0f, 0f, 0f, FontStyle.Normal, TextAnchor.UpperLeft, index++);
+                    }
+                }
             }
         }
 
