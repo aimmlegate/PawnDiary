@@ -148,6 +148,12 @@
   <workRoutine.label>Рутинная работа</workRoutine.label>
   <workRoutine.instruction>обычная работа в поселении без сильного увлечения и без провала: нейтрально, практично, кратко, с фактурой задачи</workRoutine.instruction>
   <workRoutine.tone>с ровной, будничной рутиной</workRoutine.tone>
+  <hediffPartGainedAnomalous.label>Аномальные изменения тела</hediffPartGainedAnomalous.label>
+  <hediffPartGainedAnomalous.instruction>тело поселенца вырастило или получило живую, неправильную часть; пиши физическую реальность - движение, тепло, звук - через подсказку отношения и не объясняй биологию</hediffPartGainedAnomalous.instruction>
+  <hediffPartGainedArtificial.label>Искусственные части тела</hediffPartGainedArtificial.label>
+  <hediffPartGainedArtificial.instruction>сделанная вещь стала частью тела поселенца; пиши вес, посадку, пользу, странность или стыд новой части через подсказки отношения и уровня</hediffPartGainedArtificial.instruction>
+  <hediffPartLostNatural.label>Утраченные части тела</hediffPartLostNatural.label>
+  <hediffPartLostNatural.instruction>поселенец утратил естественную часть себя; пиши шок, отсутствие, боль, фантомное ощущение или холодный расчёт через подсказки отношения и причины</hediffPartLostNatural.instruction>
   <hediffPregnancy.label>Беременность</hediffPregnancy.label>
   <hediffPregnancy.instruction>беременность как начало, меняющее жизнь; поселенец замечает тело, будущее, страх, надежду или неопределённость, радость не предполагается</hediffPregnancy.instruction>
   <hediffPregnancy.tone>с сокровенной неопределённостью и тихим весом</hediffPregnancy.tone>
@@ -222,6 +228,12 @@
   <hediffLabor.tones.1>на пороге напряжения, с упором на страх, заботу и ожидание</hediffLabor.tones.1>
   <hediffMajorHealth.tones.0>уязвимо и телесно, симптомы определяют каждую мысль</hediffMajorHealth.tones.0>
   <hediffMajorHealth.tones.1>тихо испуганно, слабость меняет масштаб дня</hediffMajorHealth.tones.1>
+  <hediffPartGainedAnomalous.tones.0>нутряно и близко, тело уже не вполне своё</hediffPartGainedAnomalous.tones.0>
+  <hediffPartGainedAnomalous.tones.1>тихой жутью, привязанной к телесному ощущению</hediffPartGainedAnomalous.tones.1>
+  <hediffPartGainedArtificial.tones.0>близко и практично, тело учится новому инструменту</hediffPartGainedArtificial.tones.0>
+  <hediffPartGainedArtificial.tones.1>телесно и тихо, механизм и плоть делят одно место</hediffPartGainedArtificial.tones.1>
+  <hediffPartLostNatural.tones.0>телесно и ошеломлённо, отсутствие громче боли</hediffPartLostNatural.tones.0>
+  <hediffPartLostNatural.tones.1>сыро и практично, утрата становится новым немедленным фактом</hediffPartLostNatural.tones.1>
   <hediffPregnancy.tones.0>телесно и сокровенно, неопределённость держат близко</hediffPregnancy.tones.0>
   <hediffPregnancy.tones.1>обращено в будущее и тихо, надежда и страх в равновесии</hediffPregnancy.tones.1>
   <inspiration.tones.0>ярко и решительно, мысль обращается в замысел</inspiration.tones.0>

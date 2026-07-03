@@ -11,7 +11,8 @@
 //
 // This locks down the load-bearing parts: the source appears in the registry, the drop-gate is
 // testable, and the hediff gameContext format (`hediff=<defName>; label=…; source=…;
-// group=…; mode=…; severity=…; stage=…` with optional stage_label/body_part) is locked by tests.
+// group=…; mode=…; severity=…; stage=…` with optional stage_label/body_part/body-part tokens)
+// is locked by tests.
 using System;
 using System.Globalization;
 
@@ -53,6 +54,18 @@ namespace PawnDiary.Capture
 
         /// <summary>Optional cleaned body-part label, empty when whole-body.</summary>
         public string CleanedBodyPartLabel;
+
+        /// <summary>Optional body-part kind token: addedpart, addedpart_organicpart, or missingpart.</summary>
+        public string PartKindToken;
+
+        /// <summary>Optional added-part tier token: crude, prosthetic, bionic, archotech, anomalous.</summary>
+        public string PartTierToken;
+
+        /// <summary>Optional pawn perception token for this body change.</summary>
+        public string AttitudeToken;
+
+        /// <summary>Optional missing-part cause token: surgery, violence, or unknown.</summary>
+        public string CauseToken;
 
         /// <summary>True when the hediff passes the per-source basic policy (visibleOnly /
         /// badOnly / excludeInjuries) AND the should-record gate (severity ≥ min, OR one of the
@@ -106,7 +119,9 @@ namespace PawnDiary.Capture
         public static string BuildGameContext(
             string defName, string cleanedLabel, string sourceToken, string groupKey,
             string modeToken, string severityF2, string stageString,
-            string cleanedStageLabel, string cleanedBodyPartLabel)
+            string cleanedStageLabel, string cleanedBodyPartLabel,
+            string partKindToken = null, string partTierToken = null,
+            string attitudeToken = null, string causeToken = null)
         {
             string context = "hediff=" + defName
                 + "; label=" + cleanedLabel
@@ -122,6 +137,22 @@ namespace PawnDiary.Capture
             if (!string.IsNullOrWhiteSpace(cleanedBodyPartLabel))
             {
                 context += "; body_part=" + cleanedBodyPartLabel;
+            }
+            if (!string.IsNullOrWhiteSpace(partKindToken))
+            {
+                context += "; part_kind=" + partKindToken;
+            }
+            if (!string.IsNullOrWhiteSpace(partTierToken))
+            {
+                context += "; part_tier=" + partTierToken;
+            }
+            if (!string.IsNullOrWhiteSpace(attitudeToken))
+            {
+                context += "; body_attitude=" + attitudeToken;
+            }
+            if (!string.IsNullOrWhiteSpace(causeToken))
+            {
+                context += "; part_cause=" + causeToken;
             }
             return context;
         }

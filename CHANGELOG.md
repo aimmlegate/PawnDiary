@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Body-part diary events implemented.** Added immediate Hediff-domain entries for artificial part
+  installs, anomalous organic body changes, and living-pawn natural body-part losses. Body changes now
+  classify through synthetic `addedpart`/`organicpart`/`missingpart` keys, persist tier/attitude/cause
+  prompt tokens, use XML-owned tier/stance tuning, and include EN/RU fallback/cue/localized group
+  strings. Pure policy and saved-event classifier tests cover key format, tier resolution, attitude
+  precedence, cue keys, and `gameContext` ordering.
 - **Generic short-window event-type dedup.** Added an XML-tuned `genericEventTypeDedupTicks` safety
   key for sources without detailed dedup keys, plus a shared death-description key so Tale deaths and
   the Pawn.Kill fallback cannot emit duplicate final death pages in the same moment.

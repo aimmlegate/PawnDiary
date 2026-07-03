@@ -39,7 +39,7 @@ flowchart TD
         MS["MentalStateHandler.TryStartMentalState<br/>MentalStateSignal<br/>pair social fight or solo break"]
         TA["TaleRecorder.RecordTale<br/>TaleSignal<br/>solo, pair, tale batch, or death description"]
         DF["Pawn.Kill fallback<br/>DeathFallbackSignal<br/>neutral death page when no death Tale exists"]
-        HE["Pawn_HealthTracker.AddHediff<br/>HediffSignal<br/>immediate page or day-reflection signal"]
+        HE["Pawn_HealthTracker.AddHediff<br/>HediffSignal<br/>immediate health/body-part page or day-reflection signal"]
         HS["Periodic hediff severity scan<br/>HediffSignal<br/>progression page or day-reflection signal"]
         WO["Periodic current-job scan<br/>WorkSignal<br/>chance-gated solo work page"]
         RA["IncidentWorker.TryExecute<br/>RaidFanoutSignal<br/>one solo page per eligible map colonist"]
@@ -158,11 +158,13 @@ flowchart TD
     Classifier --> QuestKey["Quest uses signal=accepted/completed/failed"]
     Classifier --> RitualKey["Ritual uses defName plus ritual_behavior<br/>or PsychicRitual plus defName"]
     Classifier --> AbilityKey["Ability uses defName plus ability_category"]
+    Classifier --> HediffKey["Hediff body-part pages use defName plus part_kind<br/>addedpart, organicpart, or missingpart"]
     Classifier --> DefaultKey["All other domains use saved defName"]
 
     QuestKey --> Group["InteractionGroups.ClassifyDefName(domain, classifierKey)"]
     RitualKey --> Group
     AbilityKey --> Group
+    HediffKey --> Group
     DefaultKey --> Group
     Group --> CandidateKeys["DiaryEventPromptKeys.CandidateKeys"]
     CandidateKeys --> K1["1. saved source defName"]

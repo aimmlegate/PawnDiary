@@ -300,6 +300,38 @@
          matched active hediffs for XML-configured severity-step increases. -->
     <hediffProgressionScanIntervalTicks>2500</hediffProgressionScanIntervalTicks>
 
+    <!-- Body-part event policy. All entries are plain defName strings, never Def references, so
+         DLC/modded content that is absent from a player's install simply never matches. -->
+    <bodyPartTierOverrideAnomalous>
+      <li>AdrenalHeart</li>        <!-- Anomaly -->
+      <li>CorrosiveHeart</li>      <!-- Anomaly -->
+      <li>MetalbloodHeart</li>     <!-- Anomaly -->
+      <li>RevenantVertebrae</li>   <!-- Anomaly -->
+    </bodyPartTierOverrideAnomalous>
+    <bodyPartTierOverrideCrude />
+    <bodyPartTierOverrideProsthetic />
+    <bodyPartTierOverrideBionic />
+    <bodyPartTierOverrideArchotech />
+    <bodyPartCravesTraitDefNames>
+      <li>Transhumanist</li>
+    </bodyPartCravesTraitDefNames>
+    <bodyPartDespisesTraitDefNames>
+      <li>BodyPurist</li>
+    </bodyPartDespisesTraitDefNames>
+    <bodyPartApprovePreceptDefNames>
+      <li>BodyMod_Approved</li>    <!-- Ideology -->
+    </bodyPartApprovePreceptDefNames>
+    <bodyPartDespisePreceptDefNames>
+      <li>BodyMod_Disapproved</li> <!-- Ideology -->
+      <li>BodyMod_Abhorrent</li>   <!-- Ideology -->
+    </bodyPartDespisePreceptDefNames>
+    <bodyPartInhumanizedHediffDefNames>
+      <li>Inhumanized</li>         <!-- Anomaly -->
+    </bodyPartInhumanizedHediffDefNames>
+    <bodyPartCrudeEfficiencyBelow>0.9</bodyPartCrudeEfficiencyBelow>
+    <bodyPartProstheticEfficiencyMax>1.0</bodyPartProstheticEfficiencyMax>
+    <bodyPartBionicEfficiencyMax>1.3</bodyPartBionicEfficiencyMax>
+
     <!-- Pawn progression scanner. First scan baselines existing saves, then passion skills emit only
          at configured milestones. Psylink detection matches hediff defNames by string for DLC safety. -->
     <progressionScanIntervalTicks>2500</progressionScanIntervalTicks>

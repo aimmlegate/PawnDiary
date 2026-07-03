@@ -377,6 +377,7 @@
   <PawnDiary.Settings.Adv.Group.Buckets>Среда / настроение / боль</PawnDiary.Settings.Adv.Group.Buckets>
   <PawnDiary.Settings.Adv.Group.Thought>Мысли</PawnDiary.Settings.Adv.Group.Thought>
   <PawnDiary.Settings.Adv.Group.Scanners>Проверки</PawnDiary.Settings.Adv.Group.Scanners>
+  <PawnDiary.Settings.Adv.Group.BodyParts>События частей тела</PawnDiary.Settings.Adv.Group.BodyParts>
   <PawnDiary.Settings.Adv.Group.Work>Работа</PawnDiary.Settings.Adv.Group.Work>
   <PawnDiary.Settings.Adv.Group.DayReflection>Итог дня</PawnDiary.Settings.Adv.Group.DayReflection>
   <PawnDiary.Settings.Adv.Group.Quadrum>Итог квадрума</PawnDiary.Settings.Adv.Group.Quadrum>
@@ -441,6 +442,19 @@
   <PawnDiary.Settings.Adv.Field.batch.instructionText>Инструкция серии</PawnDiary.Settings.Adv.Field.batch.instructionText>
   <PawnDiary.Settings.Adv.Field.hediff.appearedText>Появление состояния</PawnDiary.Settings.Adv.Field.hediff.appearedText>
   <PawnDiary.Settings.Adv.Field.hediff.progressedText>Ухудшение состояния</PawnDiary.Settings.Adv.Field.hediff.progressedText>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideAnomalous>Аномальные части: исключения</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideAnomalous>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideCrude>Грубые части: исключения</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideCrude>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideProsthetic>Протезы: исключения</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideProsthetic>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideBionic>Бионика: исключения</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideBionic>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>Архотек: исключения</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>
+  <PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>Черты тяги к аугментации</PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>Черты отвращения к аугментации</PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>Предписания одобрения аугментации</PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>Предписания отвращения к аугментации</PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>Состояния телесной отстранённости</PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>Грубая часть ниже эффективности</PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>
+  <PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>Макс. эффективность протеза</PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>
+  <PawnDiary.Settings.Adv.Field.bodyPartBionicEfficiencyMax>Макс. эффективность бионики</PawnDiary.Settings.Adv.Field.bodyPartBionicEfficiencyMax>
   <PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>Тики общего дедупа событий</PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.text>Текст для строки контекста. {0} — отслеживаемое значение.</PawnDiary.Settings.Adv.Help.text>
   <PawnDiary.Settings.Adv.Help.conditionLabel>Название состояния для модели. Пусто — взять XML-ключ или текущее игровое название.</PawnDiary.Settings.Adv.Help.conditionLabel>
@@ -489,6 +503,7 @@
   <PawnDiary.Settings.Adv.GroupHelp.Buckets>Пороги словесных оценок красоты, настроения, боли и отношений.</PawnDiary.Settings.Adv.GroupHelp.Buckets>
   <PawnDiary.Settings.Adv.GroupHelp.Thought>Пороги силы мыслей и сбор фоновых временных мыслей.</PawnDiary.Settings.Adv.GroupHelp.Thought>
   <PawnDiary.Settings.Adv.GroupHelp.Scanners>Как часто запускаются фоновые проверки.</PawnDiary.Settings.Adv.GroupHelp.Scanners>
+  <PawnDiary.Settings.Adv.GroupHelp.BodyParts>Как классифицируются установленные части тела, аномальные телесные изменения и утраты естественных частей.</PawnDiary.Settings.Adv.GroupHelp.BodyParts>
   <PawnDiary.Settings.Adv.GroupHelp.Work>Шансы и паузы для работы, у которой нет отдельного игрового события.</PawnDiary.Settings.Adv.GroupHelp.Work>
   <PawnDiary.Settings.Adv.GroupHelp.DayReflection>Главный переключатель итогов дня, лимит моментов, веса и условия.</PawnDiary.Settings.Adv.GroupHelp.DayReflection>
   <PawnDiary.Settings.Adv.GroupHelp.Quadrum>Редкое длинное размышление в конце квадрума, распределённое между поселенцами.</PawnDiary.Settings.Adv.GroupHelp.Quadrum>
@@ -580,6 +595,19 @@
   <PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>Как часто проверяются текущие нужды.</PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>Тот же сигнал развития записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>
   <PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>Как часто сканируется переход состояния здоровья на новую ступень тяжести.</PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>HediffDef defName, которые всегда считаются аномальными частями; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>HediffDef defName, которые всегда считаются грубыми частями; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideProsthetic>HediffDef defName, которые всегда считаются протезами; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideProsthetic>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideBionic>HediffDef defName, которые всегда считаются бионикой; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideBionic>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>HediffDef defName, которые всегда считаются архотеком; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>
+  <PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>TraitDef defName черт, из-за которых поселенец желает аугментации.</PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>TraitDef defName черт, из-за которых поселенец отвергает аугментацию.</PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>PreceptDef defName идеологии, одобряющие аугментацию.</PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>PreceptDef defName идеологии, не одобряющие или отвергающие аугментацию.</PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>HediffDef defName состояний, при которых обычный телесный ужас становится отстранённым.</PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>Если нет более сильного сигнала, установленные части ниже этой эффективности считаются грубыми.</PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>
+  <PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>Если нет более сильного сигнала, установленные части до этой эффективности считаются протезами.</PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>
+  <PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>Установленные части до этой эффективности считаются бионикой; выше - архотеком.</PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>
   <PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>Как часто проверяется медленное развитие поселенца.</PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.workScanIntervalTicks>Как часто проверяется текущая работа.</PawnDiary.Settings.Adv.Help.workScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.workBaseChance>Базовая вероятность за проверку: поселенец на работе напишет об этой работе.</PawnDiary.Settings.Adv.Help.workBaseChance>
@@ -724,6 +752,26 @@
   <PawnDiary.Event.HediffProgressed>У {0} ухудшилось состояние: {1}.</PawnDiary.Event.HediffProgressed>
   <PawnDiary.Event.AnomalyHediffAppeared>Аномальное состояние у {0}: {1}.</PawnDiary.Event.AnomalyHediffAppeared>
   <PawnDiary.Event.AnomalyHediffProgressed>У {0} усилилось аномальное состояние: {1}.</PawnDiary.Event.AnomalyHediffProgressed>
+  <PawnDiary.Event.BodyPartGained>{0}: получена часть тела: {1}.</PawnDiary.Event.BodyPartGained>
+  <PawnDiary.Event.BodyPartGainedAnomalous>{0}: тело изменилось, появилась аномальная часть: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
+  <PawnDiary.Event.BodyPartLost>{0}: утрачена часть тела: {1}.</PawnDiary.Event.BodyPartLost>
+  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Считай это желанной переменой: аугментация ощущается как развитие, а не увечье.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Считай перемену приемлемой или значимой для поселенца, но телесное привыкание всё ещё есть.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Считай это тревожным принятием: полезно, странно и не до конца удобно.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
+  <PawnDiary.Prompt.BodyPart.Attitude.Despises>Считай перемену осквернением тела, а не улучшением.</PawnDiary.Prompt.BodyPart.Attitude.Despises>
+  <PawnDiary.Prompt.BodyPart.Attitude.Detached>Пиши отстранённость от обычного телесного ужаса: перемена скорее факт, чем чувство.</PawnDiary.Prompt.BodyPart.Attitude.Detached>
+  <PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>Живая перемена едва терпима: любопытство и тревога, не радость.</PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>
+  <PawnDiary.Prompt.BodyPart.Attitude.Horrified>Живая перемена ужасает и слишком близка; тело ощущается уже не вполне своим.</PawnDiary.Prompt.BodyPart.Attitude.Horrified>
+  <PawnDiary.Prompt.BodyPart.Attitude.Opportunity>В утрате смешаны горе и мысль, что теперь наконец возможна замена лучше плоти.</PawnDiary.Prompt.BodyPart.Attitude.Opportunity>
+  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Утрата - это настоящее горе, отсутствие, боль и привыкание.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
+  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Утрата разрушительна и угрожает ощущению цельности тела.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
+  <PawnDiary.Prompt.BodyPart.Tier.Crude>Часть грубая: неуклюжая, унизительная, но лучше пустоты.</PawnDiary.Prompt.BodyPart.Tier.Crude>
+  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>Это практический протез: рабочий, механический, достаточно обычный для жизни.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
+  <PawnDiary.Prompt.BodyPart.Tier.Bionic>Это бионика: сильнее плоти, точная и чуть чужая внутри тела.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
+  <PawnDiary.Prompt.BodyPart.Tier.Archotech>Это архотек: чудесный, изящный и не до конца постижимый.</PawnDiary.Prompt.BodyPart.Tier.Archotech>
+  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>Это аномальная плоть: тёплая, отзывчивая, неправильная; не объясняй её.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
+  <PawnDiary.Prompt.BodyPart.Cause.Surgery>Утрата произошла через операцию; сохраняй ощущение контролируемого разреза или необходимости, если она подразумевается.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
+  <PawnDiary.Prompt.BodyPart.Cause.Violence>Утрата произошла через насилие или несчастный случай; сохраняй внезапность и шок.</PawnDiary.Prompt.BodyPart.Cause.Violence>
   <PawnDiary.Event.PregnancyAppeared>Беременность у {0}.</PawnDiary.Event.PregnancyAppeared>
   <PawnDiary.Event.PregnancyProgressed>Беременность {0}: новый срок.</PawnDiary.Event.PregnancyProgressed>
   <PawnDiary.Event.LaborAppeared>У {0} начались роды: {1}.</PawnDiary.Event.LaborAppeared>
