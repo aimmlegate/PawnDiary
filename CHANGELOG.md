@@ -6,6 +6,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Release localization audit fixes.** EN/RU Keyed and DefInjected coverage now align, and
+  arrival/dev mock prompt labels use localized strings instead of hardcoded C#.
 - **Release hardening for reasoning, external events, reflow, and startup.** Explicit reasoning
   `none` now stays off even when a provider advertises efforts without listing `none`; external API
   pages keep the External display/prompt domain even if adapter `extraContext` includes native-looking

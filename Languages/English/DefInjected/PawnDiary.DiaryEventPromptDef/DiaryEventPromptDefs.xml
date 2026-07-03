@@ -57,4 +57,7 @@
   <DiaryEventPrompt_Death.label>death</DiaryEventPrompt_Death.label>
   <DiaryEventPrompt_Death.prompt>Write a factual death note about how the colonist died.</DiaryEventPrompt_Death.prompt>
   <DiaryEventPrompt_Death.enhancement>Make the death note stark and specific, with one concrete cause or setting detail. Use only supplied cause, body-part, weapon, condition, and setting facts; keep it brief.</DiaryEventPrompt_Death.enhancement>
+  <DiaryEventPrompt_External.label>external mod event</DiaryEventPrompt_External.label>
+  <DiaryEventPrompt_External.prompt>Write a moment reported by another mod as something the pawn just lived through.</DiaryEventPrompt_External.prompt>
+  <DiaryEventPrompt_External.enhancement>Stay strictly inside the supplied event line and context facts; do not invent mechanics, systems, or unstated participants.</DiaryEventPrompt_External.enhancement>
 </LanguageData>

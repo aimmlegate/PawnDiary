@@ -364,6 +364,9 @@
   <progressionRoyalTitle.tones.1>quietly burdened, treating rank as both honor and obligation</progressionRoyalTitle.tones.1>
   <progressionOther.label>Progression</progressionOther.label>
   <progressionOther.instruction>a pawn changed in a notable way; write the supplied before-and-after fact plainly and personally</progressionOther.instruction>
+  <externalDevTest.label>External test event</externalDevTest.label>
+  <externalDevTest.instruction>a test event submitted through the mod integration API; write a short grounded note about an odd but harmless moment</externalDevTest.instruction>
+  <externalDevTest.tone>matter-of-fact and mildly puzzled</externalDevTest.tone>
 
   <!-- Event-coverage pass groups (see EVENT_COVERAGE_PLAN.md) -->
   <raidAnomalyEntities.label>Entity attacks</raidAnomalyEntities.label>

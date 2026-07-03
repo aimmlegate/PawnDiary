@@ -816,6 +816,13 @@
   <PawnDiary.Event.ArrivalLabel>Arrival</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0} was one of the colony's founding colonists.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0} joined the colony.</PawnDiary.Event.JoinedArrival>
+  <PawnDiary.Event.Arrival.Backstory.SkillBonuses>skill bonuses</PawnDiary.Event.Arrival.Backstory.SkillBonuses>
+  <PawnDiary.Event.Arrival.Backstory.DisabledWork>disabled work</PawnDiary.Event.Arrival.Backstory.DisabledWork>
+  <PawnDiary.Event.Arrival.Backstory.DisabledTasks>disabled tasks</PawnDiary.Event.Arrival.Backstory.DisabledTasks>
+  <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>disabled work tags</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>
+  <PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>required work tags</PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>
+  <PawnDiary.Event.Arrival.Backstory.ForcedTraits>forced traits</PawnDiary.Event.Arrival.Backstory.ForcedTraits>
+  <PawnDiary.Event.Arrival.Backstory.DisallowedTraits>disallowed traits</PawnDiary.Event.Arrival.Backstory.DisallowedTraits>
   <PawnDiary.Event.RitualFinished>{0} finished the ritual {1} as {2}; ritual role: {3}.</PawnDiary.Event.RitualFinished>
   <PawnDiary.Ritual.Role.Author>author</PawnDiary.Ritual.Role.Author>
   <PawnDiary.Ritual.Role.Target>target</PawnDiary.Ritual.Role.Target>
@@ -839,6 +846,9 @@
   <PawnDiary.Dev.MockTitle>Mock page {0}</PawnDiary.Dev.MockTitle>
   <PawnDiary.Dev.MockRawText>{0} received mock diary event {1}.</PawnDiary.Dev.MockRawText>
   <PawnDiary.Dev.MockBody>Mock diary page {0}. {1} carried this deliberately artificial memory through the day so the diary can be tested with a long, multi-year history.</PawnDiary.Dev.MockBody>
+  <PawnDiary.Dev.MockInstruction>dev mock entry</PawnDiary.Dev.MockInstruction>
+  <PawnDiary.Dev.MockPawnSummary>dev mock pawn</PawnDiary.Dev.MockPawnSummary>
+  <PawnDiary.Dev.MockSurroundings>dev mock surroundings</PawnDiary.Dev.MockSurroundings>
   <PawnDiary.Dev.PreviewPawnFallback>this colonist</PawnDiary.Dev.PreviewPawnFallback>
   <PawnDiary.Dev.PreviewLabel>Formatting preview</PawnDiary.Dev.PreviewLabel>
   <PawnDiary.Dev.PreviewRawText>{0} rendered the {1} diary formatting preview.</PawnDiary.Dev.PreviewRawText>

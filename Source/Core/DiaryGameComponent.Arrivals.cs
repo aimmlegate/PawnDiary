@@ -143,12 +143,12 @@ namespace PawnDiary
             List<string> parts = new List<string>();
 
             AddSkillGains(parts, backstory?.skillGains);
-            AddWorkTypes(parts, "disabled work", backstory?.DisabledWorkTypes);
-            AddWorkGivers(parts, "disabled tasks", backstory?.DisabledWorkGivers);
-            AddWorkTags(parts, "disabled work tags", backstory?.workDisables ?? WorkTags.None);
-            AddWorkTags(parts, "required work tags", backstory?.requiredWorkTags ?? WorkTags.None);
-            AddTraits(parts, "forced traits", backstory?.forcedTraits, pawn);
-            AddTraits(parts, "disallowed traits", backstory?.disallowedTraits, pawn);
+            AddWorkTypes(parts, ArrivalBackstoryLabel("DisabledWork"), backstory?.DisabledWorkTypes);
+            AddWorkGivers(parts, ArrivalBackstoryLabel("DisabledTasks"), backstory?.DisabledWorkGivers);
+            AddWorkTags(parts, ArrivalBackstoryLabel("DisabledWorkTags"), backstory?.workDisables ?? WorkTags.None);
+            AddWorkTags(parts, ArrivalBackstoryLabel("RequiredWorkTags"), backstory?.requiredWorkTags ?? WorkTags.None);
+            AddTraits(parts, ArrivalBackstoryLabel("ForcedTraits"), backstory?.forcedTraits, pawn);
+            AddTraits(parts, ArrivalBackstoryLabel("DisallowedTraits"), backstory?.disallowedTraits, pawn);
 
             return string.Join(" | ", parts.ToArray());
         }
@@ -173,8 +173,13 @@ namespace PawnDiary
 
             if (labels.Count > 0)
             {
-                parts.Add("skill bonuses: " + string.Join(", ", labels.ToArray()));
+                parts.Add(ArrivalBackstoryLabel("SkillBonuses") + ": " + string.Join(", ", labels.ToArray()));
             }
+        }
+
+        private static string ArrivalBackstoryLabel(string suffix)
+        {
+            return ("PawnDiary.Event.Arrival.Backstory." + suffix).Translate().Resolve();
         }
 
         private static void AddWorkTypes(List<string> parts, string label, List<WorkTypeDef> workTypes)

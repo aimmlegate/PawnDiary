@@ -257,6 +257,14 @@
   <PawnDiary.Settings.ReasoningSupportedGenericTip>Эта модель поддерживает рассуждение.</PawnDiary.Settings.ReasoningSupportedGenericTip>
   <PawnDiary.Settings.ReasoningUnsupportedTip>Эта модель не поддерживает рассуждение. Выбранный уровень не отправляется в запросе, поэтому модель перестаёт его отклонять.</PawnDiary.Settings.ReasoningUnsupportedTip>
   <PawnDiary.Settings.ReasoningTag>Тег</PawnDiary.Settings.ReasoningTag>
+  <PawnDiary.Settings.ReasoningTag.Auto>Авто</PawnDiary.Settings.ReasoningTag.Auto>
+  <PawnDiary.Settings.ReasoningTag.Think>think</PawnDiary.Settings.ReasoningTag.Think>
+  <PawnDiary.Settings.ReasoningTag.Thinking>thinking</PawnDiary.Settings.ReasoningTag.Thinking>
+  <PawnDiary.Settings.ReasoningTag.Reasoning>reasoning</PawnDiary.Settings.ReasoningTag.Reasoning>
+  <PawnDiary.Settings.ReasoningTag.Analysis>analysis</PawnDiary.Settings.ReasoningTag.Analysis>
+  <PawnDiary.Settings.ReasoningTag.Thought>thought</PawnDiary.Settings.ReasoningTag.Thought>
+  <PawnDiary.Settings.ReasoningTag.Reflection>reflection</PawnDiary.Settings.ReasoningTag.Reflection>
+  <PawnDiary.Settings.ReasoningTag.Scratchpad>scratchpad</PawnDiary.Settings.ReasoningTag.Scratchpad>
   <PawnDiary.Settings.ReasoningTagTip>Управляет удалением приватных рассуждений модели из текста дневника. Авто использует встроенное распознавание и подходит почти для всех моделей. Выбирайте тег, в который модель оборачивает свои рассуждения (например, reflection или scratchpad), только если рассуждения видны в записях дневника.</PawnDiary.Settings.ReasoningTagTip>
   <PawnDiary.Settings.ToggleOn>Вкл</PawnDiary.Settings.ToggleOn>
   <PawnDiary.Settings.ToggleOff>Выкл</PawnDiary.Settings.ToggleOff>
@@ -787,6 +795,13 @@
   <PawnDiary.Event.ArrivalLabel>Появление</PawnDiary.Event.ArrivalLabel>
   <PawnDiary.Event.StartingArrival>{0}: один из основателей поселения.</PawnDiary.Event.StartingArrival>
   <PawnDiary.Event.JoinedArrival>{0}: присоединение к поселению.</PawnDiary.Event.JoinedArrival>
+  <PawnDiary.Event.Arrival.Backstory.SkillBonuses>бонусы навыков</PawnDiary.Event.Arrival.Backstory.SkillBonuses>
+  <PawnDiary.Event.Arrival.Backstory.DisabledWork>недоступные работы</PawnDiary.Event.Arrival.Backstory.DisabledWork>
+  <PawnDiary.Event.Arrival.Backstory.DisabledTasks>недоступные задачи</PawnDiary.Event.Arrival.Backstory.DisabledTasks>
+  <PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>недоступные теги работы</PawnDiary.Event.Arrival.Backstory.DisabledWorkTags>
+  <PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>обязательные теги работы</PawnDiary.Event.Arrival.Backstory.RequiredWorkTags>
+  <PawnDiary.Event.Arrival.Backstory.ForcedTraits>обязательные черты</PawnDiary.Event.Arrival.Backstory.ForcedTraits>
+  <PawnDiary.Event.Arrival.Backstory.DisallowedTraits>запрещённые черты</PawnDiary.Event.Arrival.Backstory.DisallowedTraits>
   <PawnDiary.Event.RitualFinished>Ритуал {1} завершён для {0} как {2}; роль в ритуале: {3}.</PawnDiary.Event.RitualFinished>
   <PawnDiary.Ritual.Role.Author>устроитель</PawnDiary.Ritual.Role.Author>
   <PawnDiary.Ritual.Role.Target>цель</PawnDiary.Ritual.Role.Target>
@@ -831,6 +846,9 @@
   <PawnDiary.Dev.MockTitle>Тестовая страница {0}</PawnDiary.Dev.MockTitle>
   <PawnDiary.Dev.MockRawText>{0}: тестовое событие дневника {1}.</PawnDiary.Dev.MockRawText>
   <PawnDiary.Dev.MockBody>Тестовая страница дневника {0}. Тестовое воспоминание {1} проходит через день, чтобы дневник можно было проверить на длинной многолетней истории.</PawnDiary.Dev.MockBody>
+  <PawnDiary.Dev.MockInstruction>тестовая запись разработки</PawnDiary.Dev.MockInstruction>
+  <PawnDiary.Dev.MockPawnSummary>тестовый поселенец</PawnDiary.Dev.MockPawnSummary>
+  <PawnDiary.Dev.MockSurroundings>тестовое окружение</PawnDiary.Dev.MockSurroundings>
   <PawnDiary.Dev.PreviewPawnFallback>этот поселенец</PawnDiary.Dev.PreviewPawnFallback>
   <PawnDiary.Dev.PreviewLabel>Предпросмотр оформления</PawnDiary.Dev.PreviewLabel>
   <PawnDiary.Dev.PreviewRawText>Предпросмотр оформления дневника «{1}» для {0}.</PawnDiary.Dev.PreviewRawText>

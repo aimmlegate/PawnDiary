@@ -152,10 +152,10 @@ namespace PawnDiary
                 gameContext = "dev_mock=true; mock_index=" + displayNumber
                     + "; mock_target_count=" + targetCount
                     + "; mock_years=" + targetYears,
-                instruction = "dev mock entry",
-                initiatorPawnSummary = "dev mock pawn",
+                instruction = "PawnDiary.Dev.MockInstruction".Translate().Resolve(),
+                initiatorPawnSummary = "PawnDiary.Dev.MockPawnSummary".Translate().Resolve(),
                 recipientPawnSummary = "n/a",
-                initiatorSurroundings = "dev mock surroundings",
+                initiatorSurroundings = "PawnDiary.Dev.MockSurroundings".Translate().Resolve(),
                 recipientSurroundings = "n/a",
                 initiatorContinuity = "none",
                 recipientContinuity = "none",
