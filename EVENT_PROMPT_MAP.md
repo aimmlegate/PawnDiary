@@ -242,7 +242,7 @@ flowchart TD
     TemplateFlag -- Yes --> Collect["PromptEnchantmentRuleFor"]
 
     Collect --> WindowCandidates["ActiveEventWindowPromptCandidates<br/>code-supported"]
-    WindowCandidates --> WindowCurrent["Current XML: none active<br/>all shipped event windows keepActive=false and promptEnabled=false"]
+    WindowCandidates --> WindowCurrent["Current XML: MechClusterLanded,<br/>ShortCircuitAftermath, SelfTameJoined<br/>keepActive tone windows"]
     Collect --> ObservedCandidates["ActiveObservedConditionPromptCandidates<br/>active saved state only"]
     ObservedCandidates --> ObservedWeights["Extra candidates:<br/>MapThreat 6, ToxicFallout 4, SolarFlare 4,<br/>GrayFlesh 40 and normal multiplier 0"]
     Collect --> NormalCandidates["PromptEnchantmentCollector.Collect<br/>live hediff, capacity, RoyalTitle, IdeologyRole"]
@@ -402,7 +402,7 @@ Current prompt-enchantment defs:
 | `DiaryEnchant_ConsciousnessClouded` | `Capacity:Consciousness` | `1` | `2.2` | `1.2` | `0.35 <= level < 0.55` |
 | `DiaryEnchant_ConsciousnessFading` | `Capacity:Consciousness` | `1` | `3.2` | `1.5` | `0.20 <= level < 0.35` |
 | `DiaryEnchant_ConsciousnessBarelyAwake` | `Capacity:Consciousness` | `1` | `5` | `2` | `level < 0.20` |
-| `DiaryEnchant_FeverishBody` | `Flu, Malaria, Plague, GutWorms, MuscleParasites, FoodPoisoning, ToxicBuildup, WoundInfection` | `0.65` | `1.2` | `1.2` | min severity `0.05`; severity tiers |
+| `DiaryEnchant_FeverishBody` | `Flu, Malaria, Plague, GutWorms, MuscleParasites, FoodPoisoning, ToxicBuildup, WoundInfection, SleepingSickness` | `0.65` | `1.2` | `1.2` | min severity `0.05`; severity tiers |
 | `DiaryEnchant_BloodLossUrgency` | `BloodLoss` | `0.75` | `1.4` | `1.6` | min severity `0.05`; severity tiers |
 | `DiaryEnchant_AlcoholHigh` | `AlcoholHigh` | `0.55` | `0.9` | `1` | severity tiers |
 | `DiaryEnchant_Hangover` | `Hangover` | `0.6` | `0.9` | `1.1` | severity tiers |
@@ -435,11 +435,24 @@ Current prompt-enchantment defs:
 | `DiaryEnchant_CorpseTorment` | `CorpseTorment` | `0.85` | `1.4` | `1.5` |  |
 | `DiaryEnchant_Inhumanized` | `Inhumanized` | `1` | `2.2` | `2` | `visibleOnly=false` |
 | `DiaryEnchant_FleshMutation` | `Tentacle, FleshTentacle, FleshWhip` | `0.7` | `1.1` | `1.2` |  |
+| `DiaryEnchant_Malnutrition` | `Malnutrition` | `0.75` | `1.3` | `1.4` | min severity `0.05`; severity tiers |
+| `DiaryEnchant_TemperatureInjury` | `Heatstroke, Hypothermia` | `0.75` | `1.3` | `1.4` | min severity `0.05`; severity tiers |
+| `DiaryEnchant_AnestheticHaze` | `Anesthetic` | `0.6` | `1` | `1.1` |  |
+| `DiaryEnchant_PsychicShock` | `PsychicShock` | `0.7` | `1.1` | `1.2` |  |
+| `DiaryEnchant_Carcinoma` | `Carcinoma` | `0.7` | `1.2` | `1.3` |  |
+| `DiaryEnchant_Mechanites` | `FibrousMechanites, SensoryMechanites` | `0.65` | `1.1` | `1.2` |  |
+| `DiaryEnchant_WakeUpHigh` | `WakeUpHigh` | `0.55` | `0.9` | `1` |  |
+| `DiaryEnchant_CryptosleepSickness` | `CryptosleepSickness` | `0.6` | `1` | `1.1` |  |
+| `DiaryEnchant_AgingBody` | `Frail, BadBack, Cataract, HearingLoss` | `0.15` | `0.5` | `0.8` | low chance on purpose: permanent conditions |
+| `DiaryEnchant_Deathrest` | `Deathrest, DeathrestExhaustion` | `0.6` | `1` | `1.1` |  |
+| `DiaryEnchant_LungRot` | `LungRot, LungRotExposure` | `0.7` | `1.1` | `1.2` | min severity `0.05` |
+| `DiaryEnchant_BloodRage` | `BloodRage` | `0.85` | `1.4` | `1.5` |  |
+| `DiaryEnchant_VacuumExposure` | `VacuumExposure, VacuumBurn` | `0.8` | `1.3` | `1.4` |  |
 
 Severity-tier overrides currently exist for `FeverishBody`, `BloodLossUrgency`, `AlcoholHigh`,
 `Hangover`, `LuciferiumDependency`, `ChemicalCraving`, `PsychicHangover`,
-`ResurrectionPsychosis`, `HemogenCraving`, and `CubeWithdrawal`. Blank tier fields inherit the Def
-value.
+`ResurrectionPsychosis`, `HemogenCraving`, `CubeWithdrawal`, `Malnutrition`, and
+`TemperatureInjury`. Blank tier fields inherit the Def value.
 
 Current hediff writing-style overrides:
 
@@ -451,6 +464,8 @@ Current hediff writing-style overrides:
 | `HediffPersonaOverride_BlissLobotomy` | `DiaryPersona_BlissLobotomyHaze` | `35` | `BlissLobotomy` | Visible hediff required by default. |
 | `HediffPersonaOverride_Mindscrew` | `DiaryPersona_MindscrewPain` | `25` | `Mindscrew` | Visible hediff required by default. |
 | `HediffPersonaOverride_Joywire` | `DiaryPersona_JoywireHaze` | `20` | `Joywire` | Visible hediff required by default. |
+| `HediffPersonaOverride_MemoryDecay` | `DiaryPersona_FadingMemory` | `30` | `Dementia, Alzheimers` | Visible hediff required by default. |
+| `HediffPersonaOverride_Drunk` | `DiaryPersona_DrunkRambling` | `15` | `AlcoholHigh` | `minSeverity=0.4` — proper drunkenness only, not a light buzz. |
 
 Current observed-condition prompt candidates:
 
@@ -460,12 +475,40 @@ Current observed-condition prompt candidates:
 | `ToxicFalloutActive` | yes | `GameCondition` | Map | `4` | `1` | no |
 | `SolarFlareActive` | yes | `GameCondition` | Map | `4` | `1` | no |
 | `AnomalyGrayFleshEvidence` | yes | `ThingPresent` | Map | `40` | `0` | start page to map colonists, `extremeDark` cue |
-| `MetalhorrorEmergence` | no | `PawnHediff` | Pawn | `60` | `0` | no; disabled and empty matchers |
+| `MetalhorrorEmergence` | yes | `ThingPresent` | Map | `60` | `0` | no |
+| `MetalhorrorInfection` | yes | `MapHiddenHediff` | Map | `40` | `0.3` | no |
+| `ColdSnapActive` | yes | `GameCondition` | Map | `4` | `1` | no |
+| `HeatWaveActive` | yes | `GameCondition` | Map | `4` | `1` | no |
+| `VolcanicWinterActive` | yes | `GameCondition` | Map | `3` | `1` | no; also matches Odyssey `VolcanicAsh` |
+| `BloodRainActive` | yes | `GameCondition` | Map | `20` | `0.5` | no |
+| `DeathPallActive` | yes | `GameCondition` | Map | `20` | `0.5` | no |
+| `UnnaturalDarknessActive` | yes | `GameCondition` | Map | `25` | `0.3` | no |
+| `PitGatePresence` | yes | `ThingPresent` | Map | `30` | `0.3` | start page to map colonists, `extremeDark` cue |
+| `FleshmassHeartPresence` | yes | `ThingPresent` | Map | `30` | `0.3` | start page to map colonists, `extremeDark` cue |
+| `ObeliskPresence` | yes | `ThingPresent` | Map | `15` | `0.7` | no; matches the three real `WarpedObelisk_*` ThingDefs |
+| `HarbingerTreePresence` | yes | `ThingPresent` | Map | `8` | `1` | no |
+| `NociospherePresence` | yes | `ThingPresent` | Map | `25` | `0.5` | no |
+| `UnnaturalCorpsePresence` | yes | `ThingPresent` | Map | `20` | `0.7` | no; matches the generated `UnnaturalCorpse_Human` ThingDef |
+| `ThrumboVisit` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 2 days active, 5-day restart cooldown |
+| `AlphabeaversActive` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 2 days active, 2-day restart cooldown |
+| `CropBlightActive` | yes | `ThingPresent` | Map | `5` | `1` | no; capped 3 days active, 1-day restart cooldown |
+| `AmbrosiaSprouted` | yes | `ThingPresent` | Map | `3` | `1` | no; capped 2 days active, 10-day restart cooldown |
 
-Current event-window prompt candidates: none in shipped XML. The six current event windows
-(`VoidMonolithDiscovery`, `VoidMonolithActivation`, `Birthday`, `HeartAttack`, `PrisonBreak`,
-`AncientDanger`) all set `keepActive=false`, `promptEnabled=false`, and `promptWeight=0`; they can
-record one-shot pages but do not bias later prompts while active.
+Current event-window prompt candidates: three windows keep a decaying prompt bias while active.
+`MechClusterLanded` (incident `MechCluster`) records a start page for map colonists and then biases
+prompts (weight `12`, normal multiplier `0.7`) for up to three days. `ShortCircuitAftermath`
+(incident `ShortCircuit`, weight `3`, six hours) and `SelfTameJoined` (incident `SelfTame`, weight
+`3`, half a day) record no pages at all — they only enter the weighted candidate pool so the moment
+sometimes flavors a page. The six original event windows (`VoidMonolithDiscovery`,
+`VoidMonolithActivation`, `Birthday`, `HeartAttack`, `PrisonBreak`, `AncientDanger`) still set
+`keepActive=false`, `promptEnabled=false`, and `promptWeight=0`; they record one-shot pages but do
+not bias later prompts while active.
+
+The three page-recording defs from the event-coverage pass (`MechClusterLanded`,
+`PitGatePresence`, `FleshmassHeartPresence`) have companion Interaction-domain display groups
+(`eventWindowMechCluster`, `observedPitGate`, `observedFleshmassHeart`, orders 142–144) so their
+saved pages classify to a proper label and importance in the Diary tab instead of the "A quiet
+day" catch-all, mirroring the existing `eventWindow*` groups.
 
 ## 6. Rendered Prompt Contents
 

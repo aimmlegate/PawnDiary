@@ -119,6 +119,7 @@
       <li>FoodPoisoning</li>
       <li>ToxicBuildup</li>
       <li>WoundInfection</li>
+      <li>SleepingSickness</li>
     </hediffDefNames>
     <minHediffSeverity>0.05</minHediffSeverity>
     <hediffSeverityTiers>
@@ -812,6 +813,221 @@
       <li>Tentacle</li>
       <li>FleshTentacle</li>
       <li>FleshWhip</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- ===== Event-coverage pass: previously missing common states (see EVENT_COVERAGE_PLAN.md).
+       Rows without keys use the live hediff label/body-part/urgency text automatically, like
+       DiaryEnchant_FeverishBody. All matchers are plain strings; DLC content stays inert when
+       the DLC is absent. -->
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Malnutrition</defName>
+    <label>malnutrition</label>
+    <chance>0.75</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>Malnutrition</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <weight>0.9</weight>
+        <severity>1</severity>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.7</chance>
+        <weight>1.3</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.6</weight>
+        <severity>1.6</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>1.9</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_TemperatureInjury</defName>
+    <label>heatstroke or hypothermia</label>
+    <chance>0.75</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>Heatstroke</li>
+      <li>Hypothermia</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+    <hediffSeverityTiers>
+      <li>
+        <level>minor</level>
+        <chance>0.35</chance>
+        <weight>0.9</weight>
+        <severity>1</severity>
+      </li>
+      <li>
+        <level>moderate</level>
+        <chance>0.7</chance>
+        <weight>1.3</weight>
+      </li>
+      <li>
+        <level>major</level>
+        <chance>0.9</chance>
+        <weight>1.6</weight>
+        <severity>1.6</severity>
+      </li>
+      <li>
+        <level>critical</level>
+        <chance>1</chance>
+        <weight>2</weight>
+        <severity>1.9</severity>
+      </li>
+    </hediffSeverityTiers>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AnestheticHaze</defName>
+    <label>anesthetic haze</label>
+    <chance>0.6</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>Anesthetic</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_PsychicShock</defName>
+    <label>psychic shock</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>PsychicShock</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Carcinoma</defName>
+    <label>carcinoma</label>
+    <chance>0.7</chance>
+    <weight>1.2</weight>
+    <severity>1.3</severity>
+    <hediffDefNames>
+      <li>Carcinoma</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Mechanites</defName>
+    <label>mechanites</label>
+    <chance>0.65</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>FibrousMechanites</li>
+      <li>SensoryMechanites</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_WakeUpHigh</defName>
+    <label>wake-up high</label>
+    <chance>0.55</chance>
+    <weight>0.9</weight>
+    <severity>1</severity>
+    <hediffDefNames>
+      <li>WakeUpHigh</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_CryptosleepSickness</defName>
+    <label>cryptosleep sickness</label>
+    <chance>0.6</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>CryptosleepSickness</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Low-chance elder texture: chronic aging conditions surface occasionally, never dominate.
+       Frail/BadBack/Cataract/HearingLoss are permanent, so a high chance here would put the same
+       context line on most pages an old pawn writes. -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_AgingBody</defName>
+    <label>aging body</label>
+    <chance>0.15</chance>
+    <weight>0.5</weight>
+    <severity>0.8</severity>
+    <hediffDefNames>
+      <li>Frail</li>
+      <li>BadBack</li>
+      <li>Cataract</li>
+      <li>HearingLoss</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Biotech -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_Deathrest</defName>
+    <label>deathrest</label>
+    <chance>0.6</chance>
+    <weight>1</weight>
+    <severity>1.1</severity>
+    <hediffDefNames>
+      <li>Deathrest</li>
+      <li>DeathrestExhaustion</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_LungRot</defName>
+    <label>lung rot</label>
+    <chance>0.7</chance>
+    <weight>1.1</weight>
+    <severity>1.2</severity>
+    <hediffDefNames>
+      <li>LungRot</li>
+      <li>LungRotExposure</li>
+    </hediffDefNames>
+    <minHediffSeverity>0.05</minHediffSeverity>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Anomaly: blood-rain fury (pairs with the moodeventStormDanger group). -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_BloodRage</defName>
+    <label>blood rage</label>
+    <chance>0.85</chance>
+    <weight>1.4</weight>
+    <severity>1.5</severity>
+    <hediffDefNames>
+      <li>BloodRage</li>
+    </hediffDefNames>
+  </PawnDiary.DiaryPromptEnchantmentDef>
+
+  <!-- Odyssey: vacuum injuries. Both plausible defName spellings listed; absent ones never match. -->
+  <PawnDiary.DiaryPromptEnchantmentDef>
+    <defName>DiaryEnchant_VacuumExposure</defName>
+    <label>vacuum exposure</label>
+    <chance>0.8</chance>
+    <weight>1.3</weight>
+    <severity>1.4</severity>
+    <hediffDefNames>
+      <li>VacuumExposure</li>
+      <li>VacuumBurn</li>
     </hediffDefNames>
   </PawnDiary.DiaryPromptEnchantmentDef>
 

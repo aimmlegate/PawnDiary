@@ -410,4 +410,27 @@
     </themes>
   </PawnDiary.DiaryPersonaDef>
 
+  <!-- Hediff-override styles (event-coverage pass): reached via DiaryHediffPersonaOverrideDefs
+       while the matching condition is active, like the Joywire/BlissLobotomy styles above. -->
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_DrunkRambling</defName>
+    <label>loose-tangent</label>
+    <rule>This pawn tends to write like someone properly drunk: sentences run a little long, one thought slides into a sideways remark, and warmth or grievance is overstated before the entry snaps back to the event. Keep the supplied facts intact; only the delivery wobbles. For example: "Fixed the fence, mostly, and the fence and I understand each other now, which is more than I can say for some people. Anyway. Fence fixed."</rule>
+    <themes>
+      <li>whimsical</li>
+      <li>social</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_FadingMemory</defName>
+    <label>slipping-thread</label>
+    <rule>This pawn tends to write as if the day keeps slipping: start the event plainly, lose one detail midway (a name, a place, a reason) and admit it, then hold on to one small concrete thing that stayed. Never invent replacements for what was lost. For example: "Someone helped me carry the crates. I want to say it was... it will come back. The crates were heavy, that part I know."</rule>
+    <themes>
+      <li>anxious</li>
+      <li>grim</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
 </Defs>

@@ -358,6 +358,13 @@ Hot event-window paths use `EventWindowPolicy.CouldMatchByDefName` before resolv
 expensive work. Window recording is isolated from normal raid, quest, hediff, and other capture paths;
 a window failure must not suppress the base diary entry.
 
+The event-coverage pass added three incident-driven tone windows: `MechClusterLanded` (records one
+start page per map colonist, then keeps a decaying dread candidate active for up to three days),
+plus `ShortCircuitAftermath` and `SelfTameJoined` (tone-only, never pages). Every def that records
+a page has a companion Interaction-domain display group (`eventWindow*`, `observedPitGate`,
+`observedFleshmassHeart`) so the saved page classifies to a proper label/importance in the Diary
+tab instead of the catch-all.
+
 ### 5.1 Observed conditions (lasting game state, Plan 12)
 
 Observed conditions are for lasting states that should be re-read from live game state instead of
@@ -428,6 +435,17 @@ Shipped notable defs:
   host, so the hidden mechanic is never revealed. Like emergence it carries no cap, because a cured-or-dead
   host's `hediffSet` is genuinely empty. While a metalhorror rampages and colonists are also infected,
   both conditions fire and the stronger (Emergence) candidate wins the weighted pick.
+- Event-coverage pass (see `EVENT_PROMPT_MAP.md` §5 for the full weight table): `ColdSnapActive`,
+  `HeatWaveActive`, `VolcanicWinterActive` (base-game climate), `BloodRainActive`, `DeathPallActive`,
+  `UnnaturalDarknessActive` (Anomaly game conditions), and `ObeliskPresence` (the three
+  `WarpedObelisk_*` ThingDefs), `HarbingerTreePresence`, `NociospherePresence`,
+  `UnnaturalCorpsePresence` (the generated `UnnaturalCorpse_Human` ThingDef) are all prompt-tone
+  only. `PitGatePresence` and `FleshmassHeartPresence` additionally record one start page per map
+  colonist and have companion display groups (`observedPitGate`, `observedFleshmassHeart`).
+  `ThrumboVisit`, `AlphabeaversActive`, `CropBlightActive`, and `AmbrosiaSprouted` are light
+  weighted-random flavor with `maxActiveTicks` caps and `restartCooldownTicks` so long-lived
+  evidence cannot push prompts forever. `ThingPresent` matches exact defNames only, so every row
+  above lists verified ThingDef names; a wrong name is silently inert.
 
 Page recording is transactional: start/end state is committed only after a page is actually written.
 `ConfigErrors` rejects `recordScope=SubjectPawn` unless `scope=Pawn`.

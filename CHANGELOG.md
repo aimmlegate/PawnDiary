@@ -6,6 +6,48 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Event-coverage review fixes (XML + docs only).** Corrected two silently dead `ThingPresent`
+  observers whose guessed defNames matched nothing (the observer resolves exact `matchDefNames`
+  only): `ObeliskPresence` now matches the real Anomaly ThingDefs `WarpedObelisk_Abductor` /
+  `WarpedObelisk_Duplicator` / `WarpedObelisk_Mutator` (the in-game obelisk labels do not match
+  their defNames), and `UnnaturalCorpsePresence` now matches the generated `UnnaturalCorpse_Human`;
+  `HarbingerTreePresence` dropped the dead `HarbingerTree` spelling (verified: `Plant_TreeHarbinger`).
+  Added companion Interaction-domain display groups for the three new page-recording defs
+  (`eventWindowMechCluster`, `observedPitGate`, `observedFleshmassHeart`, orders 142–144, EN+RU
+  DefInjected) so their saved pages classify to a proper label/importance in the Diary tab instead
+  of the "A quiet day" catch-all, matching the existing `eventWindow*` precedent. Fixed the
+  `HediffPersonaOverride_Drunk` comment's `AlcoholHigh` stage thresholds (drunk starts at 0.4).
+  Documented the event-coverage defs in `DOCUMENTATION.md` §5/§5.1, which the original pass missed.
+  Still to verify in dev mode: whether Anomaly entity assaults route through the raid hook
+  (`raidAnomalyEntities` depends on it) and the Odyssey `Flooding`/`VolcanicAsh`/vacuum defNames.
+- **Event-coverage pass: XML-only groups, enchantments, personas, observed conditions, and tone
+  windows (no C# changes).** Implements Tiers 1–2 of `EVENT_COVERAGE_PLAN.md` with Anomaly as the
+  main focus. Retone groups (page volume unchanged): `raidAnomalyEntities` gives Anomaly entity
+  assaults a horror register instead of the human-raid tone; `moodeventWeatherHardship` /
+  `moodeventStormDanger` replace the generic catch-all wording for ColdSnap/HeatWave/
+  VolcanicWinter/Flashstorm (+ Odyssey VolcanicAsh/Flooding, Anomaly BloodRain);
+  `mentalbreakViolent`/`Escape`/`Indulgent` split the mental-break catch-all into three registers.
+  New prompt enchantments: Malnutrition, Heatstroke/Hypothermia, Anesthetic, PsychicShock,
+  Carcinoma, mechanites, WakeUpHigh, CryptosleepSickness, low-chance AgingBody, Biotech
+  Deathrest/LungRot, Anomaly BloodRage, Odyssey VacuumExposure, plus `SleepingSickness` added to
+  the FeverishBody matchers. New writing-style overrides: drunk rambling (`AlcoholHigh` at
+  severity ≥ 0.4) and fading memory (Dementia/Alzheimers), backed by two new personas. New
+  observed conditions (weighted prompt tone, no pages unless noted): ColdSnap/HeatWave/
+  VolcanicWinter; Anomaly BloodRain/DeathPall/UnnaturalDarkness, obelisks, harbinger trees,
+  nociosphere, unnatural corpse, and pit gate + fleshmass heart (these two record a start page per
+  map colonist); weighted-random light flavor for thrumbo visits, alphabeavers, crop blight, and
+  ambrosia groves with active-time caps and restart cooldowns. New event windows: `MechClusterLanded`
+  (start page + three-day decaying dread), `ShortCircuitAftermath` and `SelfTameJoined` (tone-only,
+  never pages). All matchers are plain strings (DLC-safe); every new group/def is settings-toggleable.
+  English Def text plus natively written (not literally translated) Russian Keyed/DefInjected
+  strings; `EVENT_PROMPT_MAP.md` tables refreshed (including correcting the stale
+  MetalhorrorEmergence row to the shipped ThingPresent observer).
+- **Event-coverage gap analysis & XML-only extension plan (docs only).** New root document
+  `EVENT_COVERAGE_PLAN.md`: inventories every RimWorld moment the mod reacts to today, maps the
+  base-game and DLC (Royalty/Ideology/Biotech/Anomaly/Odyssey) events we skip or only catch via
+  generic catch-alls, and proposes a tiered, XML-only set of additions (retoned interaction
+  groups, missing prompt enchantments, two persona overrides, observed conditions, and a few
+  one-shot event windows) with volume guardrails. No behavior changed.
 - **Render-time paragraph reflow for diary prose.** Long single-line entries are now split into
   readable paragraphs at render time. Because prompts only ever ask for sentence counts and never
   for explicit paragraph breaks, a multi-sentence entry previously wrapped as one dense block. The

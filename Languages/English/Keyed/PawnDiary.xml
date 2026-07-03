@@ -998,6 +998,98 @@
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>quiet dread</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>faces still feel off</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>
 
+  <!-- Event-coverage pass: observed-condition prompt bias (see EVENT_COVERAGE_PLAN.md) -->
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Priority>let the cold snap press on daily life</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Condition>a lasting cold snap outside</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Description>an unnatural cold has settled over the region; heaters strain, crops die in the fields, and every trip outside costs something</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Cold>cold in the fingers</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Cold>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Crops>crops at risk</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Crops>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Priority>let the heat wave press on daily life</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Condition>a lasting heat wave outside</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Description>brutal heat has settled over the region; coolers strain, work slows, tempers shorten, and shade becomes something people compete for</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Heat>heat pressing down</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Heat>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Tempers>tempers running short</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Tempers>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>keep the dimmed sky as a quiet background weight</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>ash dimming the sun</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>ash high in the atmosphere has dimmed the sun for a long stretch; days are gray and cold, plants grow slowly, and the light itself feels rationed</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>gray, rationed daylight</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>override normal context with the wrongness of the blood rain</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>red rain that should not exist</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>a red rain is falling and it changes those it soaks: anger rises too easily in people and animals alike; write the wrongness of the weather and the fear of what it does to tempers, without explaining it</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.RedRain>rain the wrong color</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.RedRain>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.Fury>anger too close to the skin</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.Fury>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>override normal context with the pall that wakes the dead</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Condition>a gray pall under which the dead do not stay down</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Description>a gray weather hangs over the colony and unburied corpses rise under it; write the watchfulness around graves and bodies and the fear of familiar dead standing up, without explaining the mechanism</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Dead>the dead not staying down</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Dead>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Graves>eyes on the graves</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Graves>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>override normal context with the darkness that is not night</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Condition>a darkness that daylight cannot break</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Description>an unnatural dark has swallowed the sky and something in it hates the unlit; write life shrunk to circles of lamplight, the fear of stepping past them, and the sense of being watched from the black</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Light>clinging to the light</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Light>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Outside>the dark is not empty</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Outside>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>override normal context with the open pit in the colony's ground</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Condition>a pit gate open in the ground</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Description>a hole has torn open in the ground and it goes down farther than it should; things climb out of it, and everyone lives with one ear turned toward the pit; never explain what is at the bottom</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Below>something below</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Below>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Watch>one ear toward the pit</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Watch>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>override normal context with the growing flesh</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Condition>a heart of living flesh spreading toward the colony</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Description>a mass of living flesh is growing across the map with a heart beating somewhere inside it; write the sound, the smell, the ground lost to it, and the knowledge that it must be cut back or it will reach the walls</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Growth>ground being eaten</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Growth>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Sound>a heartbeat that is not yours</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Sound>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>keep the obelisk's silent presence at the edge of thought</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Condition>a silent obelisk standing on the map</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Description>a monolithic structure stands out there, doing nothing, which is somehow worse; write the way eyes keep returning to it and thoughts bend around it, without explaining what it wants</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Stillness>too still, too patient</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Stillness>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Pull>thoughts bending toward it</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Pull>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>let the flesh-fed trees add a quiet wrongness</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Condition>trees that feed on the dead</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>gnarled trees with flesh under their bark have taken root nearby and they eat what is left close to them; a quiet, patient wrongness at the edge of ordinary days</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Cue.Fed>the trees are fed</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Cue.Fed>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>override normal context with the sphere's contained menace</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>a hovering sphere of contained pain</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>a dark geometric sphere hangs on the map like a held breath; everyone knows it will not stay quiet forever; write the waiting and the wide berth people give it, without explaining what it is</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>a held breath, a countdown</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>color normal context with the corpse that does not behave</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>a corpse that is somehow wrong</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>there is a body in the colony that does not behave like a body; it seems closer than it was, or turned differently; write the reluctance to look at it and the certainty that it is not finished, without explaining anything</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>was it lying like that before</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>watched by something closed-eyed</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>let the thrumbo's passing lend the day a little awe</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>a thrumbo moving through the area</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>a thrumbo is out there, huge and unhurried, like a legend that decided to walk past the fence; awe first, and a careful respect for what it could do if bothered</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Cue.Awe>a legend near the fence</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Cue.Awe>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Priority>let the tree-eaters add an absurd, real worry</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Condition>alphabeavers eating the treeline</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>a pack of alphabeavers is chewing through the trees; it looks ridiculous and costs real wood; light humor is allowed as long as the worry about the treeline stays true</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Cue.Trees>the treeline shrinking</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Cue.Trees>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>let the blight put winter into the back of every thought</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Condition>blight spreading in the fields</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Description>a blight is moving through the crops and every ruined plant is a meal the colony will not have; quiet dread about food and winter, and the grim arithmetic of cutting losses</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Cue.Winter>counting meals against winter</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Cue.Winter>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Priority>let the ambrosia grove tempt at the edge of the day</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Condition>wild ambrosia growing nearby</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>a grove of ambrosia has sprouted nearby: sweet, pleasurable, slightly addictive fruit that everyone pretends not to think about; small temptation with a wink, not a crisis</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Cue.Temptation>pretending not to think about the fruit</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Cue.Temptation>
+
+  <!-- Event-coverage pass: event-window prompt bias and start pages -->
+  <PawnDiary.Event.ObservedCondition.PitGatePresence.Start>{0} saw the pit gate torn open in the colony's ground.</PawnDiary.Event.ObservedCondition.PitGatePresence.Start>
+  <PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>{0} saw the fleshmass heart erupt and begin to spread.</PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>
+  <PawnDiary.Event.EventWindow.MechClusterLanded.Start>{0} watched dormant war machines assemble on the horizon: {1}.</PawnDiary.Event.EventWindow.MechClusterLanded.Start>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>keep the dormant mech cluster as a cold background threat</PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>a dormant mech cluster on the horizon</PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>war machines sit assembled within sight of the colony, patient and unmoving; every plan now bends around when and how they wake; write the waiting, not an invented battle</PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant>machines waiting to wake</PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>let this morning's short circuit leave a smell of burnt wiring on the day</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Condition>a short circuit earlier today</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Condition>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Description>somewhere in the base the wiring let go with a bang earlier today; burnt smell, lost charge, and a small new distrust of the conduits</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Description>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Cue.Burnt>the smell of burnt wiring</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Cue.Burnt>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Priority>let the self-tamed animal lend the day a small grace</PawnDiary.Prompt.EventWindow.SelfTameJoined.Priority>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Condition>an animal chose the colony today</PawnDiary.Prompt.EventWindow.SelfTameJoined.Condition>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Description>a wild animal walked in and decided, on its own, that it belongs here; a small unearned grace on an ordinary day</PawnDiary.Prompt.EventWindow.SelfTameJoined.Description>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Cue.Chosen>something chose us</PawnDiary.Prompt.EventWindow.SelfTameJoined.Cue.Chosen>
+
   <!-- Pawn progression and rare yearly arc reflections -->
   <PawnDiary.Event.ProgressionPassionMajor>major passion</PawnDiary.Event.ProgressionPassionMajor>
   <PawnDiary.Event.ProgressionPassionMinor>minor passion</PawnDiary.Event.ProgressionPassionMinor>

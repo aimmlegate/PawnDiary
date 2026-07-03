@@ -38,4 +38,17 @@
   <DiaryEnchant_CorpseTorment.label>месть мертвеца</DiaryEnchant_CorpseTorment.label>
   <DiaryEnchant_Inhumanized.label>обесчеловечивание</DiaryEnchant_Inhumanized.label>
   <DiaryEnchant_FleshMutation.label>плотяное щупальце или кнут</DiaryEnchant_FleshMutation.label>
+  <DiaryEnchant_Malnutrition.label>истощение</DiaryEnchant_Malnutrition.label>
+  <DiaryEnchant_TemperatureInjury.label>тепловой удар или переохлаждение</DiaryEnchant_TemperatureInjury.label>
+  <DiaryEnchant_AnestheticHaze.label>наркозная пелена</DiaryEnchant_AnestheticHaze.label>
+  <DiaryEnchant_PsychicShock.label>пси-шок</DiaryEnchant_PsychicShock.label>
+  <DiaryEnchant_Carcinoma.label>карцинома</DiaryEnchant_Carcinoma.label>
+  <DiaryEnchant_Mechanites.label>механиты</DiaryEnchant_Mechanites.label>
+  <DiaryEnchant_WakeUpHigh.label>действие вейк-апа</DiaryEnchant_WakeUpHigh.label>
+  <DiaryEnchant_CryptosleepSickness.label>криптосонная болезнь</DiaryEnchant_CryptosleepSickness.label>
+  <DiaryEnchant_AgingBody.label>стареющее тело</DiaryEnchant_AgingBody.label>
+  <DiaryEnchant_Deathrest.label>смертный сон</DiaryEnchant_Deathrest.label>
+  <DiaryEnchant_LungRot.label>гниль лёгких</DiaryEnchant_LungRot.label>
+  <DiaryEnchant_BloodRage.label>кровавое бешенство</DiaryEnchant_BloodRage.label>
+  <DiaryEnchant_VacuumExposure.label>вакуумное поражение</DiaryEnchant_VacuumExposure.label>
 </LanguageData>

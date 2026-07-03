@@ -19,4 +19,12 @@
   <PrisonBreak.label>prison break</PrisonBreak.label>
   <PrisonBreak.instruction>write the colony's reaction to a prison break as sudden danger and alarm; focus on the pawn's position in the colony response, not the prisoners' inner thoughts</PrisonBreak.instruction>
 
+
+  <MechClusterLanded.label>mech cluster</MechClusterLanded.label>
+  <MechClusterLanded.instruction>write the pawn seeing dormant war machines assembled on the colony's horizon; cold, patient, and mechanical danger that has not moved yet — write the waiting and the planning, never an invented battle</MechClusterLanded.instruction>
+
+  <ShortCircuitAftermath.label>short circuit</ShortCircuitAftermath.label>
+
+  <SelfTameJoined.label>animal self-tamed</SelfTameJoined.label>
+
 </LanguageData>
