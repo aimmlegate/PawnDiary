@@ -367,6 +367,17 @@ the pawn carried by the signal. Load-time `ConfigErrors` reject a persistent win
 `keepActive=true`, no positive `timeoutTicks`, and no usable `endSignals` trigger, because that shape
 has no guaranteed close path and could leave prompt context active forever.
 
+A persistent window can also declare a **still-present probe** so it closes early once its spawning
+threat is gone, instead of waiting out its full `timeoutTicks`. Two optional plain-string lists drive
+it (empty/absent = no probe = timeout-only behavior, as before): `stillPresentThingDefNames` (the
+window stays active while any listed ThingDef is spawned on its map, DLC-safe via `GetNamedSilentFail`)
+and `stillPresentFactionDefNames` (stays active while any spawned pawn of a listed faction defName is
+on the map). The timeout scan probes these every scan; when neither matcher is satisfied the window is
+silently removed (no end page — use `endSignals` for a resolution page). This is the event-window
+analog of how an observed condition ends when its observation stops. `MechClusterLanded` uses it: a
+`Mechanoid`-faction probe ends the up-to-three-day dread window as soon as no mechanoids remain, so a
+destroyed cluster stops coloring prompts promptly.
+
 Hot event-window paths use `EventWindowPolicy.CouldMatchByDefName` before resolving labels or doing
 expensive work. Window recording is isolated from normal raid, quest, hediff, and other capture paths;
 a window failure must not suppress the base diary entry.
@@ -464,6 +475,9 @@ Shipped notable defs:
   colonist being imitated gets the dread, and it ends automatically when the corpse is destroyed.
   `PitGatePresence` and `FleshmassHeartPresence` additionally record one start page per map
   colonist and have companion display groups (`observedPitGate`, `observedFleshmassHeart`).
+  `HarbingerTreePresence`, `PitGatePresence`, and `FleshmassHeartPresence` carry
+  `maxActiveTicks`/`restartCooldownTicks` backstops (mirroring `AmbrosiaSprouted`) so their prompt
+  bias cannot run unbounded in the rare case a resolved threat leaves a same-defName remnant.
   `ThrumboVisit`, `AlphabeaversActive`, `CropBlightActive`, and `AmbrosiaSprouted` are light
   weighted-random flavor with `maxActiveTicks` caps and `restartCooldownTicks` so long-lived
   evidence cannot push prompts forever. `ThingPresent` matches exact defNames only, so every row

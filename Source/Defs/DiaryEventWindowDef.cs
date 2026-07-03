@@ -68,6 +68,22 @@ namespace PawnDiary
         public bool keepActive = true;
         public EventWindowRecordScope recordScope = EventWindowRecordScope.Map;
 
+        // ---- Still-present probe (early cancel) ----
+        // Optional: an active window with a probe configured is closed EARLY by the timeout scan once
+        // its spawning threat is no longer present on the window's map, instead of waiting out its
+        // full timeoutTicks. This is the event-window analog of how an observed condition ends when its
+        // observation stops (e.g. MechClusterLanded ending once no Mechanoid-faction pawns remain, so a
+        // 3-day dread window does not keep coloring prompts for days after the cluster is destroyed).
+        // Both lists are plain strings for DLC/mod safety. Empty/absent = no probe = current behavior.
+        // The window stays active while ANY listed matcher is satisfied (OR semantics across the two
+        // lists). The close is silent (no end page); a def wanting a resolution page should use
+        // endSignals.
+        public List<string> stillPresentThingDefNames = new List<string>();
+        // Window stays active while ANY spawned pawn of a listed faction defName is on the map. Used by
+        // MechClusterLanded ("Mechanoid"): every mechanoid, Core + Biotech + future DLCs, belongs to the
+        // base-game Mechanoid FactionDef, so one entry covers all of them without an fragile race list.
+        public List<string> stillPresentFactionDefNames = new List<string>();
+
         public string startTextKey;
         public string endTextKey;
         public string timeoutTextKey;
@@ -164,6 +180,15 @@ namespace PawnDiary
             {
                 yield return "keepActive=true requires timeoutTicks > 0 or at least one usable endSignals trigger; "
                     + "otherwise prompt context can stay active forever.";
+            }
+
+            // A still-present probe only does anything for a persistent window (a one-shot
+            // keepActive=false window never enters activeEventWindows, so there is nothing to early-cancel).
+            bool hasProbe = HasAnyText(stillPresentThingDefNames) || HasAnyText(stillPresentFactionDefNames);
+            if (hasProbe && !keepActive)
+            {
+                yield return "stillPresentThingDefNames/stillPresentFactionDefNames require keepActive=true; "
+                    + "a one-shot window never persists, so the probe could never fire.";
             }
         }
 

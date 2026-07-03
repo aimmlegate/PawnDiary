@@ -6,6 +6,20 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Event windows can early-cancel when their threat dissolves.** Added an XML-declarable still-present
+  probe (`stillPresentThingDefNames` / `stillPresentFactionDefNames`) to `DiaryEventWindowDef`; the
+  timeout scan now closes a persistent window early when neither matcher is satisfied on its map, so a
+  `keepActive` dread window no longer colors prompts for its full `timeoutTicks` after the threat is
+  gone. `MechClusterLanded` is the first consumer: a `Mechanoid`-faction probe ends the up-to-3-day
+  window as soon as no mechanoids remain. Closes are silent (no end page); ConfigErrors requires
+  `keepActive=true` for a probe.
+- **Defense-in-depth caps for three Anomaly observed conditions.** `HarbingerTreePresence`,
+  `PitGatePresence`, and `FleshmassHeartPresence` now carry `maxActiveTicks`/`restartCooldownTicks`
+  (mirroring `AmbrosiaSprouted`/`AnomalyGrayFleshEvidence`) so their prompt bias cannot run unbounded
+  if a resolved threat ever leaves a same-defName remnant — the corpse-bug shape.
+- **Dev "Force-close active event window" action.** New Pawn Diary debug action lists currently active
+  event windows in a picker and force-removes the selected one (brute remove, no end page) — the escape
+  hatch for a window stuck open before its timeout. EN/RU strings added.
 - **Mod-compatibility target survey & patch plan (docs only).** New root document
   `MOD_COMPAT_PLAN.md`: continues the API-v1 integration milestone by picking concrete target
   mods. Surveys popular social-interaction mods (2026-07) and tiers them by mechanism — Tier A

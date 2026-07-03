@@ -267,6 +267,14 @@
       </li>
     </startSignals>
 
+    <!-- Early-cancel: once no Mechanoid-faction pawns remain on the map, the dread window ends
+         instead of running the full 3-day timeout. Faction match is DLC-stable — every mechanoid
+         (Core + Biotech + future DLCs) belongs to the base-game Mechanoid FactionDef — so one entry
+         covers all of them without a fragile per-race list. -->
+    <stillPresentFactionDefNames>
+      <li>Mechanoid</li>
+    </stillPresentFactionDefNames>
+
     <promptEnabled>true</promptEnabled>
     <promptWeight>12</promptWeight>
     <normalPromptWeightMultiplier>0.7</normalPromptWeightMultiplier>
