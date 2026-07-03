@@ -6,6 +6,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Translation report cleanup.** Removed stale EN/RU DefInjected labels and prompt-map references
+  for the removed `HediffPersonaOverride_MemoryDecay` def; memory decay remains covered by the
+  `DiaryEnchant_MemoryDecay` prompt enchantment only.
+
 - **Event windows can early-cancel when their threat dissolves.** Added an XML-declarable still-present
   probe (`stillPresentThingDefNames` / `stillPresentFactionDefNames`) to `DiaryEventWindowDef`; the
   timeout scan now closes a persistent window early when neither matcher is satisfied on its map, so a

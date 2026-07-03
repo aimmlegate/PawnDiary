@@ -466,7 +466,6 @@ Current hediff writing-style overrides:
 | `HediffPersonaOverride_BlissLobotomy` | `DiaryPersona_BlissLobotomyHaze` | `35` | `BlissLobotomy` | Visible hediff required by default. |
 | `HediffPersonaOverride_Mindscrew` | `DiaryPersona_MindscrewPain` | `25` | `Mindscrew` | Visible hediff required by default. |
 | `HediffPersonaOverride_Joywire` | `DiaryPersona_JoywireHaze` | `20` | `Joywire` | Visible hediff required by default. |
-| `HediffPersonaOverride_MemoryDecay` | `DiaryPersona_FadingMemory` | `30` | `Dementia, Alzheimers` | Visible hediff required by default. |
 | `HediffPersonaOverride_Drunk` | `DiaryPersona_DrunkRambling` | `15` | `AlcoholHigh` | `minSeverity=0.4` — proper drunkenness only, not a light buzz. |
 
 Current observed-condition prompt candidates:

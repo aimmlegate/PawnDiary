@@ -261,15 +261,15 @@ These decorate existing pages only. Suggested rows, following the existing weigh
 | `DiaryEnchant_BloodRage` (Anomaly) | `BloodRage` | 0.85 | 1.4 | 1.5 | blood-rain hediff; pairs with 1b |
 | `DiaryEnchant_VacuumExposure` (Odyssey) | `VacuumExposure, VacuumBurn` | 0.8 | 1.3 | 1.4 | verify exact defNames |
 
-**1e. Two persona overrides (fun, bounded).**
+**1e. One persona override (fun, bounded).**
 
 - `HediffPersonaOverride_Drunk` → new `DiaryPersona_DrunkRambling`, match `AlcoholHigh`,
   priority ~15 (below all current overrides). Loose, meandering, overly sincere entries while
   drunk. The severity tiers already on `DiaryEnchant_AlcoholHigh` keep light buzzes from
   triggering it if we gate via a higher `minSeverity` on the override.
-- `HediffPersonaOverride_MemoryDecay` → `DiaryPersona_FadingMemory`, match
-  `Dementia, Alzheimers`, priority ~30. Entries that repeat themselves, lose the thread, reach
-  for names. The enchantment exists; the persona completes it.
+- Memory decay stays prompt-enchantment-only (`DiaryEnchant_MemoryDecay`). The pipeline test
+  intentionally rejects `Dementia`, `Alzheimers`, and `CrumblingMind` as hediff persona overrides
+  so those conditions add texture without forcibly replacing the pawn's writing style.
 
 ### Tier 2 — lasting dread/tone via observed conditions (tone-only, no pages)
 
