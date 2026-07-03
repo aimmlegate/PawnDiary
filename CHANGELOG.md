@@ -6,6 +6,22 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Mod-compatibility target survey & patch plan (docs only).** New root document
+  `MOD_COMPAT_PLAN.md`: continues the API-v1 integration milestone by picking concrete target
+  mods. Surveys popular social-interaction mods (2026-07) and tiers them by mechanism — Tier A
+  XML-only compat groups shipped in core behind `enableWhenPackageIdsLoaded` (Vanilla Social
+  Interactions Expanded, Hospitality (Continued), SpeakUp, Way Better Romance, Positive
+  Connections, Romance On The Rim), Tier B personality mods motivating API v2 context providers
+  (RimPsyche, Psychology), Tier C LLM chat mods motivating API v3 outbound context (RimTalk) —
+  with per-PR todos, volume/absence audit guardrails, and a verification checklist requiring
+  in-game packageId/defName confirmation. Follow-up research pass read each open-source target's
+  repo directly and recorded verified packageIds and defNames per mod (VSIE `VSIE_` prefix,
+  Positive Connections `DIL_` prefix, Hospitality/Way Better Romance unprefixed exact names,
+  RimTalk's vanilla `RimTalkInteraction` log entry) plus concrete per-tier requirements: §4.1
+  per-mod Tier A group specs, §4.2 the v2 provider contract designed against RimPsyche's
+  documented `PsycheDataUtil`/`InteractionHook` surface, §4.3 the v3 snapshot DTO and a RimTalk
+  bridge via its `ContextHookRegistry` (no upstream changes needed). `INTEGRATIONS.md` roadmap
+  now points at the plan. No behavior changed.
 - **Body-part diary events implemented.** Added immediate Hediff-domain entries for artificial part
   installs, anomalous organic body changes, and living-pawn natural body-part losses. Body changes now
   classify through synthetic `addedpart`/`organicpart`/`missingpart` keys, persist tier/attitude/cause
@@ -33,43 +49,95 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   Anomaly dread red (`extremeDark`) and titles shared the generic warm-white cue. Anomaly dread
   groups stay on `extremeDark`. Palette in `DiaryUiStyleDef.xml` with C# fallbacks; `colorCue` is
   saved per-event, so existing entries keep their old color.
-- **Dev event panel: hid the non-functional Events section.** Its rail button is no longer drawn,
-  saved `events` selections normalize to Diary, and Diary is the default section. `DrawRealEventsSection`
-  and the `Trigger*` helpers are retained so the section can be re-enabled once triggers are fixed.
-- **Event-coverage review fixes (XML + docs only).** Corrected dead `ThingPresent` observer
-  defNames (`ObeliskPresence` → real `WarpedObelisk_*`, `UnnaturalCorpsePresence` →
-  `UnnaturalCorpse_Human`, `HarbingerTreePresence` → `Plant_TreeHarbinger`) and added display
-  groups for the new page-recording defs so they classify properly instead of hitting the catch-all.
-  Documented the event-coverage defs in §5/§5.1.
-- **Event-coverage pass: XML-only groups, enchantments, personas, observed conditions, tone windows.**
-  Implements Tiers 1-2 of `EVENT_COVERAGE_PLAN.md`, Anomaly focus, no C# changes. Retone groups:
-  Anomaly entity raids, weather hardship (ColdSnap/HeatWave/VolcanicWinter/Flashstorm + DLC), and a
-  three-way mental-break split. New prompt enchantments (malnutrition, heatstroke/hypothermia,
-  anesthetic, psychic shock, carcinoma, mechanites, drugs, deathrest/lungrot, bloodrage, vacuum,
-  etc., including memory decay). New drunk writing-style override. New observed
-  conditions (weather, Anomaly states, obelisks/pit gate/fleshmass heart, weighted light flavor for
-  thrumbo/blight/ambrosia). New event windows (`MechClusterLanded`, `ShortCircuitAftermath`,
-  `SelfTameJoined`). All plain-string matchers (DLC-safe); EN + natively-written RU strings;
-  `EVENT_PROMPT_MAP.md` refreshed.
-- **Event-coverage gap analysis & plan (docs only).** New `EVENT_COVERAGE_PLAN.md`: inventories
-  current reactions and proposes a tiered XML-only extension plan. No behavior change.
-- **Render-time paragraph reflow for diary prose.** Long single-line entries split into readable
-  paragraphs at sentence ends, RimWorld year mentions, semicolons, and em-dashes, with a hard length
-  cap. Default atmosphere only; `GeneratedText` is never mutated and both measure/draw passes share
-  the helper. Tuning in `DiaryUiStyleDef.xml`; new pure `tests/DiaryParagraphReflowTests`.
-- **Review fixes: API settings, arc cadence, localization.** Locked the per-row in-flight guard so
-  UI cancellation can't race reasoning-capability refreshes; arc reflections honor
-  `arcReflectionMaxEntriesPerYear` across the full UI range (pure tests added); moved dynamic
-  Advanced prompt-policy prefixes to Keyed EN/RU; `LlmClient.TestConnection` no longer holds an
-  English prompt fallback.
-- **Title fallback guard tightened.** Title follow-ups now reject one-line labels, instruction
-  echoes, reasoning-style lines, terminal periods, and out-of-contract lengths, falling back to a
-  title built from the finished entry.
-- **Reasoning capability auto-refreshes across the settings window.** A row's
-  capability/model list now fetches on settings-open (uncached rows), URL/key/auth change
-  (background), and Test connection (parallel), plus the manual Fetch. A new capability-only
-  refresh updates the thread-safe cache without touching single-flight picker state; removed the
-  redundant auto-fetch-at-Pick code.
+- **Dev event panel: hid the non-functional Events section.** The event trigger buttons in the
+  debug `Event test panel` (Def-backed trigger rows plus the arrival/death/work-scan/thought-
+  progression/day-reflection buttons) do not currently work, so the Events section is hidden:
+  its rail button is no longer drawn, saved `events` section selections normalize to Diary, and
+  Diary is now the panel's default section. `DrawRealEventsSection` and the `Trigger*` helpers
+  remain in `Dialog_PawnDiaryEventTestPanel` unchanged so the section can be re-enabled once the
+  triggers are fixed. Diary and Fixtures sections are unaffected.
+- **Event-coverage review fixes (XML + docs only).** Corrected two silently dead `ThingPresent`
+  observers whose guessed defNames matched nothing (the observer resolves exact `matchDefNames`
+  only): `ObeliskPresence` now matches the real Anomaly ThingDefs `WarpedObelisk_Abductor` /
+  `WarpedObelisk_Duplicator` / `WarpedObelisk_Mutator` (the in-game obelisk labels do not match
+  their defNames), and `UnnaturalCorpsePresence` now matches the generated `UnnaturalCorpse_Human`;
+  `HarbingerTreePresence` dropped the dead `HarbingerTree` spelling (verified: `Plant_TreeHarbinger`).
+  Added companion Interaction-domain display groups for the three new page-recording defs
+  (`eventWindowMechCluster`, `observedPitGate`, `observedFleshmassHeart`, orders 142–144, EN+RU
+  DefInjected) so their saved pages classify to a proper label/importance in the Diary tab instead
+  of the "A quiet day" catch-all, matching the existing `eventWindow*` precedent. Fixed the
+  `HediffPersonaOverride_Drunk` comment's `AlcoholHigh` stage thresholds (drunk starts at 0.4).
+  Documented the event-coverage defs in `DOCUMENTATION.md` §5/§5.1, which the original pass missed.
+  Still to verify in dev mode: whether Anomaly entity assaults route through the raid hook
+  (`raidAnomalyEntities` depends on it) and the Odyssey `Flooding`/`VolcanicAsh`/vacuum defNames.
+- **Event-coverage pass: XML-only groups, enchantments, personas, observed conditions, and tone
+  windows (no C# changes).** Implements Tiers 1–2 of `EVENT_COVERAGE_PLAN.md` with Anomaly as the
+  main focus. Retone groups (page volume unchanged): `raidAnomalyEntities` gives Anomaly entity
+  assaults a horror register instead of the human-raid tone; `moodeventWeatherHardship` /
+  `moodeventStormDanger` replace the generic catch-all wording for ColdSnap/HeatWave/
+  VolcanicWinter/Flashstorm (+ Odyssey VolcanicAsh/Flooding, Anomaly BloodRain);
+  `mentalbreakViolent`/`Escape`/`Indulgent` split the mental-break catch-all into three registers.
+  New prompt enchantments: Malnutrition, Heatstroke/Hypothermia, Anesthetic, PsychicShock,
+  Carcinoma, mechanites, WakeUpHigh, CryptosleepSickness, low-chance AgingBody, Biotech
+  Deathrest/LungRot, Anomaly BloodRage, Odyssey VacuumExposure, plus `SleepingSickness` added to
+  the FeverishBody matchers. New writing-style overrides: drunk rambling (`AlcoholHigh` at
+  severity ≥ 0.4) and fading memory (Dementia/Alzheimers), backed by two new personas. New
+  observed conditions (weighted prompt tone, no pages unless noted): ColdSnap/HeatWave/
+  VolcanicWinter; Anomaly BloodRain/DeathPall/UnnaturalDarkness, obelisks, harbinger trees,
+  nociosphere, unnatural corpse, and pit gate + fleshmass heart (these two record a start page per
+  map colonist); weighted-random light flavor for thrumbo visits, alphabeavers, crop blight, and
+  ambrosia groves with active-time caps and restart cooldowns. New event windows: `MechClusterLanded`
+  (start page + three-day decaying dread), `ShortCircuitAftermath` and `SelfTameJoined` (tone-only,
+  never pages). All matchers are plain strings (DLC-safe); every new group/def is settings-toggleable.
+  English Def text plus natively written (not literally translated) Russian Keyed/DefInjected
+  strings; `EVENT_PROMPT_MAP.md` tables refreshed (including correcting the stale
+  MetalhorrorEmergence row to the shipped ThingPresent observer).
+- **Event-coverage gap analysis & XML-only extension plan (docs only).** New root document
+  `EVENT_COVERAGE_PLAN.md`: inventories every RimWorld moment the mod reacts to today, maps the
+  base-game and DLC (Royalty/Ideology/Biotech/Anomaly/Odyssey) events we skip or only catch via
+  generic catch-alls, and proposes a tiered, XML-only set of additions (retoned interaction
+  groups, missing prompt enchantments, two persona overrides, observed conditions, and a few
+  one-shot event windows) with volume guardrails. No behavior changed.
+- **Render-time paragraph reflow for diary prose.** Long single-line entries are now split into
+  readable paragraphs at render time. Because prompts only ever ask for sentence counts and never
+  for explicit paragraph breaks, a multi-sentence entry previously wrapped as one dense block. The
+  default (non-Fractured / -Unsettled / -Memorial) atmosphere now runs each prose line through a
+  pure reflow helper (`DiaryParagraphReflow.ReflowLine`) and breaks it, in priority order, at
+  sentence ends, RimWorld year mentions (`55xx`), semicolons, and em-dashes, with a hard length
+  cap that falls back to a space boundary (words are never split mid-token). Saved `GeneratedText`
+  is never mutated; both the measure and draw passes use the same helper so wrapped heights stay in
+  sync. `[[speech]]` blocks and the three special atmospheres are unchanged. Tuning lives in
+  `DiaryUiStyleDef.xml`: `paragraphReflowEnabled` (master toggle), `paragraphReflowTargetChars`/
+  `MaxChars`, the four `…SplitOn…` cue toggles, and `paragraphReflowMinBreakSpacing`. New pure test
+  project `tests/DiaryParagraphReflowTests` covers short-line pass-through, each cue, the hard
+  break, stub merging, the disable toggle, and non-year-number safety. (DOCUMENTATION §7.)
+
+- **Review fixes for API settings, arc cadence, and localization.** Background reasoning-capability
+  refreshes now lock their per-row in-flight guard so UI cancellation cannot race async continuations.
+  Arc reflections now honor the Advanced `arcReflectionMaxEntriesPerYear` cap across the full 1-10 UI
+  range (default 2 keeps the shipped annual-plus-major cadence), with pure regression tests for one-entry
+  and higher caps. Dynamic Advanced prompt-policy group prefixes moved to Keyed EN/RU strings, and
+  `LlmClient.TestConnection` no longer contains an English prompt fallback; the settings UI passes the
+  already-localized prompt from the main thread. (DOCUMENTATION §4/§8/§11.)
+
+- **Title fallback guard tightened.** Title follow-up responses now reject one-line answer labels,
+  instruction echoes, reasoning-style lines, terminal periods, and generated titles outside the
+  3-8 word contract. Invalid title output uses the existing fallback title built from the finished
+  diary entry instead of being saved as a page header. (DOCUMENTATION §6.)
+
+- **Reasoning capability auto-refreshes across the settings window.** A row's reasoning capability
+  (and model list) now fetches itself on four triggers, so a player almost never has to click
+  **Fetch models** manually: when the settings window opens (one-shot, for any row whose capability
+  is not yet cached), when a row's URL/key/auth changes (background refresh, once per change), when
+  **Test connection** runs (in parallel with the test), and on the manual **Fetch** click (existing).
+  Auto-pick-first-if-blank still applies to the full Fetch path. To keep the picker UX stable under
+  multiple triggers, a new lightweight **capability-only refresh** (`ApiConnectionController.RefreshCapability`)
+  updates just the thread-safe `ModelCapabilityCache` without touching the single-flight picker
+  state, so several rows can refresh concurrently. The previous "auto-fetch at Pick" code was
+  removed — it was redundant for OpenRouter (Fetch already cached every model) and a wasteful no-op
+  loop for providers that return no capability (OpenAI-direct, GGUF, LM Studio). Providers that do
+  not advertise capability still degrade gracefully (unknown → effort passes through unclamped).
+  (DOCUMENTATION §8.)
 
 ## 2026-07-02
 

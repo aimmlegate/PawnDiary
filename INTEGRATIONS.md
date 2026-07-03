@@ -136,6 +136,9 @@ conversation-framework mods that schedule follow-up dialogue during grammar rend
 
 ## Roadmap (planned, not yet available)
 
+> Target selection, per-mod patch plans, and sequencing for everything below live in
+> `MOD_COMPAT_PLAN.md`.
+
 - **v2 — pawn-context providers**: `RegisterPawnContextProvider(id, Func<Pawn, string>)`, letting
   personality mods (Psychology, RimPsyche, 1-2-3 Personalities, ...) add lines to the pawn summary
   of every prompt.
