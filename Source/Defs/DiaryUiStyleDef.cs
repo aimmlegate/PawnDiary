@@ -154,8 +154,8 @@ namespace PawnDiary
         // cap. Saved GeneratedText is never mutated; this is display-only and runs through the same
         // measure/draw path so wrapped heights stay in sync. See DiaryParagraphReflow.
         public bool paragraphReflowEnabled = true;
-        public int paragraphReflowTargetChars = 140;
-        public int paragraphReflowMaxChars = 200;
+        public int paragraphReflowTargetChars = 420;
+        public int paragraphReflowMaxChars = 600;
         public bool paragraphReflowSplitOnSentenceEnd = true;
         public bool paragraphReflowSplitOnDateYear = true;
         public bool paragraphReflowSplitOnSemicolon = true;

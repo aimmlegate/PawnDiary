@@ -65,8 +65,8 @@
          with a hard length cap. Saved text is never mutated; this is display-only. Disable with
          paragraphReflowEnabled=false to render the model's own line breaks verbatim. -->
     <paragraphReflowEnabled>true</paragraphReflowEnabled>
-    <paragraphReflowTargetChars>140</paragraphReflowTargetChars>
-    <paragraphReflowMaxChars>200</paragraphReflowMaxChars>
+    <paragraphReflowTargetChars>420</paragraphReflowTargetChars>
+    <paragraphReflowMaxChars>600</paragraphReflowMaxChars>
     <paragraphReflowSplitOnSentenceEnd>true</paragraphReflowSplitOnSentenceEnd>
     <paragraphReflowSplitOnDateYear>true</paragraphReflowSplitOnDateYear>
     <paragraphReflowSplitOnSemicolon>true</paragraphReflowSplitOnSemicolon>
