@@ -784,26 +784,26 @@
   <PawnDiary.Event.HediffProgressed>{0}'s {1} worsened.</PawnDiary.Event.HediffProgressed>
   <PawnDiary.Event.AnomalyHediffAppeared>{0} was gripped by {1}.</PawnDiary.Event.AnomalyHediffAppeared>
   <PawnDiary.Event.AnomalyHediffProgressed>{0}'s {1} deepened.</PawnDiary.Event.AnomalyHediffProgressed>
-  <PawnDiary.Event.BodyPartGained>{0} received {1}.</PawnDiary.Event.BodyPartGained>
-  <PawnDiary.Event.BodyPartGainedAnomalous>{0}'s body changed: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
-  <PawnDiary.Event.BodyPartLost>{0} lost {1}.</PawnDiary.Event.BodyPartLost>
-  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Treat the change as something the pawn wants: augmentation feels like progress, not damage.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
-  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Treat the change as acceptable or meaningful to the pawn, with some bodily adjustment still present.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
-  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Treat the change as uneasy acceptance: useful, strange, and not fully comfortable.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
+  <PawnDiary.Event.BodyPartGained>{0} received a new body part: {1}.</PawnDiary.Event.BodyPartGained>
+  <PawnDiary.Event.BodyPartGainedAnomalous>{0}'s body accepted something wrong: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
+  <PawnDiary.Event.BodyPartLost>{0} lost a body part: {1}.</PawnDiary.Event.BodyPartLost>
+  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Treat the change as something the pawn wants: augmentation feels like progress, not damage; still keep the bodily weight of the new part.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Treat the change as acceptable or meaningful to the pawn, but still present in weight, skin, and movement.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Treat the change as uneasy acceptance: useful, strange, and noticeable every time it fits, moves, or aches.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
   <PawnDiary.Prompt.BodyPart.Attitude.Despises>Treat the change as a violation of the pawn's body, not an upgrade.</PawnDiary.Prompt.BodyPart.Attitude.Despises>
-  <PawnDiary.Prompt.BodyPart.Attitude.Detached>Treat the pawn as detached from ordinary body horror; the change registers more as fact than feeling.</PawnDiary.Prompt.BodyPart.Attitude.Detached>
-  <PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>Treat the living change as barely tolerable: fascination and unease, not joy.</PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>
-  <PawnDiary.Prompt.BodyPart.Attitude.Horrified>Treat the living change as horrifying and intimate; the body feels less like the pawn's own.</PawnDiary.Prompt.BodyPart.Attitude.Horrified>
+  <PawnDiary.Prompt.BodyPart.Attitude.Detached>Treat the pawn as detached from ordinary body horror; the change registers more as inventory than wound, though the bodily detail can still be strange.</PawnDiary.Prompt.BodyPart.Attitude.Detached>
+  <PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>Treat the living change as barely tolerable: curiosity drawn to warmth and movement, unease stronger than joy.</PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>
+  <PawnDiary.Prompt.BodyPart.Attitude.Horrified>Treat the living change as horrifying and intimate; the body feels inhabited or less like the pawn's own.</PawnDiary.Prompt.BodyPart.Attitude.Horrified>
   <PawnDiary.Prompt.BodyPart.Attitude.Opportunity>Treat the loss as grief mixed with the thought that an upgrade may finally be possible.</PawnDiary.Prompt.BodyPart.Attitude.Opportunity>
-  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Treat the loss as real grief, absence, pain, and adjustment.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
-  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Treat the loss as devastating and threatening to the pawn's sense of bodily wholeness.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
-  <PawnDiary.Prompt.BodyPart.Tier.Crude>The part is crude: clumsy, humbling, better than nothing.</PawnDiary.Prompt.BodyPart.Tier.Crude>
-  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>The part is practical prosthetic machinery: functional, mechanical, and ordinary enough to use.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
-  <PawnDiary.Prompt.BodyPart.Tier.Bionic>The part is bionic: stronger than flesh, precise, and faintly alien in the body.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
-  <PawnDiary.Prompt.BodyPart.Tier.Archotech>The part is archotech: miraculous, elegant, and beyond the pawn's full understanding.</PawnDiary.Prompt.BodyPart.Tier.Archotech>
-  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>The part is anomalous flesh: warm, responsive, wrong, and not to be explained.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
-  <PawnDiary.Prompt.BodyPart.Cause.Surgery>The loss came through surgery; keep the sense of controlled cutting or consent/necessity if implied.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
-  <PawnDiary.Prompt.BodyPart.Cause.Violence>The loss came through violence or accident; keep the suddenness and shock present.</PawnDiary.Prompt.BodyPart.Cause.Violence>
+  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Treat the loss as real grief, absence, pain, phantom habit, and the daily work of adjustment.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
+  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Treat the loss as devastating and threatening to the pawn's sense of bodily wholeness; the missing place should feel exposed.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
+  <PawnDiary.Prompt.BodyPart.Tier.Crude>The part is crude: clumsy, heavy, humbling, better than nothing.</PawnDiary.Prompt.BodyPart.Tier.Crude>
+  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>The part is practical prosthetic machinery: straps, sockets, weight, function, and ordinary use.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
+  <PawnDiary.Prompt.BodyPart.Tier.Bionic>The part is bionic: stronger than flesh, precise, too smooth, and faintly alien in the body.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
+  <PawnDiary.Prompt.BodyPart.Tier.Archotech>The part is archotech: miraculous, elegant, uncanny, and beyond the pawn's full understanding.</PawnDiary.Prompt.BodyPart.Tier.Archotech>
+  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>The part is anomalous flesh: warm, responsive, wrong, perhaps pulsing or moving with a will of its own; do not explain it.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
+  <PawnDiary.Prompt.BodyPart.Cause.Surgery>The loss came through surgery; keep the sense of controlled cutting, bandage weight, or consent/necessity if implied.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
+  <PawnDiary.Prompt.BodyPart.Cause.Violence>The loss came through violence or accident; keep the suddenness, shock, and first bodily absence present.</PawnDiary.Prompt.BodyPart.Cause.Violence>
   <PawnDiary.Event.PregnancyAppeared>{0} became pregnant.</PawnDiary.Event.PregnancyAppeared>
   <PawnDiary.Event.PregnancyProgressed>{0}'s pregnancy advanced.</PawnDiary.Event.PregnancyProgressed>
   <PawnDiary.Event.LaborAppeared>{0} went into {1}.</PawnDiary.Event.LaborAppeared>
@@ -1104,11 +1104,11 @@
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>a hovering sphere of contained pain</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>a dark geometric sphere hangs on the map like a held breath; everyone knows it will not stay quiet forever; write the waiting and the wide berth people give it, without explaining what it is</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>a held breath, a countdown</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>color ordinary context with the wrongness of a body that wears this pawn's own face</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>a corpse that is somehow this pawn</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>there is a dead thing nearby that looks like this pawn; it does not behave like a corpse and it seems to know things; write the pawn's horror and refusal to accept it as themselves, without explaining anything</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>it was lying closer than before</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>recognized by something with closed eyes</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>let ordinary context be haunted by a body wearing this pawn's face</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>a corpse wearing this pawn's face</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>a dead thing nearby has this pawn's face: the same features without the right life in them; it does not stay safely corpse-like and seems to know too much; write intimate horror, nausea, denial, and the fear of being copied or replaced, without explaining anything</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>the corpse was closer than memory allows</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>recognized by their own closed eyes</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>let the thrumbo's passing lend the day a little awe</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>a thrumbo moving through the area</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>a thrumbo is out there, huge and unhurried, like a legend that decided to walk past the fence; awe first, and a careful respect for what it could do if bothered</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>

@@ -755,26 +755,26 @@
   <PawnDiary.Event.HediffProgressed>У {0} ухудшилось состояние: {1}.</PawnDiary.Event.HediffProgressed>
   <PawnDiary.Event.AnomalyHediffAppeared>Аномальное состояние у {0}: {1}.</PawnDiary.Event.AnomalyHediffAppeared>
   <PawnDiary.Event.AnomalyHediffProgressed>У {0} усилилось аномальное состояние: {1}.</PawnDiary.Event.AnomalyHediffProgressed>
-  <PawnDiary.Event.BodyPartGained>{0}: получена часть тела: {1}.</PawnDiary.Event.BodyPartGained>
-  <PawnDiary.Event.BodyPartGainedAnomalous>{0}: тело изменилось, появилась аномальная часть: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
-  <PawnDiary.Event.BodyPartLost>{0}: утрачена часть тела: {1}.</PawnDiary.Event.BodyPartLost>
-  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Считай это желанной переменой: аугментация ощущается как развитие, а не увечье.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
-  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Считай перемену приемлемой или значимой для поселенца, но телесное привыкание всё ещё есть.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
-  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Считай это тревожным принятием: полезно, странно и не до конца удобно.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
+  <PawnDiary.Event.BodyPartGained>У {0} появилась новая часть тела: {1}.</PawnDiary.Event.BodyPartGained>
+  <PawnDiary.Event.BodyPartGainedAnomalous>У {0} тело приняло что-то неправильное: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
+  <PawnDiary.Event.BodyPartLost>У {0} больше нет части тела: {1}.</PawnDiary.Event.BodyPartLost>
+  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Считай это желанной переменой: аугментация ощущается как развитие, а не увечье; всё равно держи телесный вес новой части.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Считай перемену приемлемой или значимой для поселенца, но она всё равно ощущается весом, кожей и новым движением.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Считай это тревожным принятием: полезно, странно, заметно при каждой посадке, движении или боли.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
   <PawnDiary.Prompt.BodyPart.Attitude.Despises>Считай перемену осквернением тела, а не улучшением.</PawnDiary.Prompt.BodyPart.Attitude.Despises>
-  <PawnDiary.Prompt.BodyPart.Attitude.Detached>Пиши отстранённость от обычного телесного ужаса: перемена скорее факт, чем чувство.</PawnDiary.Prompt.BodyPart.Attitude.Detached>
-  <PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>Живая перемена едва терпима: любопытство и тревога, не радость.</PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>
-  <PawnDiary.Prompt.BodyPart.Attitude.Horrified>Живая перемена ужасает и слишком близка; тело ощущается уже не вполне своим.</PawnDiary.Prompt.BodyPart.Attitude.Horrified>
+  <PawnDiary.Prompt.BodyPart.Attitude.Detached>Пиши отстранённость от обычного телесного ужаса: перемена скорее учётный факт, чем рана, но телесная деталь всё ещё может быть странной.</PawnDiary.Prompt.BodyPart.Attitude.Detached>
+  <PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>Живая перемена едва терпима: любопытство тянется к теплу и движению, тревога сильнее радости.</PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>
+  <PawnDiary.Prompt.BodyPart.Attitude.Horrified>Живая перемена ужасает и слишком близка; тело кажется обитаемым или уже не вполне своим.</PawnDiary.Prompt.BodyPart.Attitude.Horrified>
   <PawnDiary.Prompt.BodyPart.Attitude.Opportunity>В утрате смешаны горе и мысль, что теперь наконец возможна замена лучше плоти.</PawnDiary.Prompt.BodyPart.Attitude.Opportunity>
-  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Утрата - это настоящее горе, отсутствие, боль и привыкание.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
-  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Утрата разрушительна и угрожает ощущению цельности тела.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
-  <PawnDiary.Prompt.BodyPart.Tier.Crude>Часть грубая: неуклюжая, унизительная, но лучше пустоты.</PawnDiary.Prompt.BodyPart.Tier.Crude>
-  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>Это практический протез: рабочий, механический, достаточно обычный для жизни.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
-  <PawnDiary.Prompt.BodyPart.Tier.Bionic>Это бионика: сильнее плоти, точная и чуть чужая внутри тела.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
-  <PawnDiary.Prompt.BodyPart.Tier.Archotech>Это архотек: чудесный, изящный и не до конца постижимый.</PawnDiary.Prompt.BodyPart.Tier.Archotech>
-  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>Это аномальная плоть: тёплая, отзывчивая, неправильная; не объясняй её.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
-  <PawnDiary.Prompt.BodyPart.Cause.Surgery>Утрата произошла через операцию; сохраняй ощущение контролируемого разреза или необходимости, если она подразумевается.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
-  <PawnDiary.Prompt.BodyPart.Cause.Violence>Утрата произошла через насилие или несчастный случай; сохраняй внезапность и шок.</PawnDiary.Prompt.BodyPart.Cause.Violence>
+  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Утрата - это настоящее горе, отсутствие, боль, фантомная привычка и ежедневное привыкание.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
+  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Утрата разрушительна и угрожает ощущению цельности тела; отсутствующее место должно казаться открытым.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
+  <PawnDiary.Prompt.BodyPart.Tier.Crude>Часть грубая: неуклюжая, тяжёлая, унизительная, но лучше пустоты.</PawnDiary.Prompt.BodyPart.Tier.Crude>
+  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>Это практический протез: ремни, гнездо, вес, функция и обычное пользование.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
+  <PawnDiary.Prompt.BodyPart.Tier.Bionic>Это бионика: сильнее плоти, точная, слишком гладкая и чуть чужая внутри тела.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
+  <PawnDiary.Prompt.BodyPart.Tier.Archotech>Это архотек: чудесный, изящный, жутковатый и не до конца постижимый.</PawnDiary.Prompt.BodyPart.Tier.Archotech>
+  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>Это аномальная плоть: тёплая, отзывчивая, неправильная, может пульсировать или двигаться как по собственной воле; не объясняй её.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
+  <PawnDiary.Prompt.BodyPart.Cause.Surgery>Утрата произошла через операцию; сохраняй ощущение контролируемого разреза, веса повязки или необходимости, если она подразумевается.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
+  <PawnDiary.Prompt.BodyPart.Cause.Violence>Утрата произошла через насилие или несчастный случай; сохраняй внезапность, шок и первое телесное отсутствие.</PawnDiary.Prompt.BodyPart.Cause.Violence>
   <PawnDiary.Event.PregnancyAppeared>Беременность у {0}.</PawnDiary.Event.PregnancyAppeared>
   <PawnDiary.Event.PregnancyProgressed>Беременность {0}: новый срок.</PawnDiary.Event.PregnancyProgressed>
   <PawnDiary.Event.LaborAppeared>У {0} начались роды: {1}.</PawnDiary.Event.LaborAppeared>
@@ -1096,11 +1096,11 @@
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>парящая сфера сдержанной боли</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>тёмная гранёная сфера висит над картой, как задержанный вдох; все понимают, что тихой она не останется; пиши ожидание и то, как её обходят стороной, не объясняя, что это</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>
   <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>задержанный вдох, отсчёт</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>подкрась обычный контекст неправильностью тела, носящего лицо этого поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>труп, который словно и есть этот поселенец</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>рядом лежит мёртвая вещь, похожая на этого поселенца; она не ведёт себя как труп и словно что-то знает; пиши ужас поселенца и отказ признать её собою, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>оно лежало ближе, чем прежде</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
-  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>узнано чем-то с закрытыми глазами</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>пусть обычный контекст будет заражён присутствием тела с лицом этого поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>труп с лицом этого поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>рядом мёртвая вещь с лицом этого поселенца: те же черты без правильной жизни внутри; она не остаётся безопасно трупом и словно знает лишнее; пиши близкий ужас, тошноту, отрицание и страх быть скопированным или заменённым, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>труп оказался ближе, чем допускает память</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>собственное мёртвое лицо будто узнало поселенца</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>пусть прошедший трумбо добавит дню немного благоговения</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>трумбо бродит неподалёку</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>
   <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>где-то там ходит трумбо — огромный, неторопливый, будто легенда решила пройти мимо забора; сначала благоговение, а потом осторожное уважение к тому, что он может сделать, если его тронуть</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>

@@ -31,8 +31,8 @@
   <strangechat.instruction>что-то неправильное в обычном разговоре: странная беседа оставляет тревогу в воздухе. Не объясняй её</strangechat.instruction>
   <strangechat.tone>с ползущим ужасом; неправильность не разрешай</strangechat.tone>
   <anomaly.label>Аномалия и тьма</anomaly.label>
-  <anomaly.instruction>что-то неправильное: тревожный обмен оставляет беспокойство. Не объясняй его</anomaly.instruction>
-  <anomaly.tone>с ползущей жутью и чувством неправильности; не объясняй её</anomaly.tone>
+  <anomaly.instruction>что-то неправильное в обычном обмене: голос, фраза, взгляд или тишина оставляют тревогу. Держи это близко к ощущениям поселенца и не объясняй</anomaly.instruction>
+  <anomaly.tone>с ползущей жутью под кожей; обычные детали становятся небезопасными</anomaly.tone>
   <insults.label>Оскорбления и драки</insults.label>
   <insults.instruction>жало презрения: оскорбление, обида или кулаки, которые вот-вот полетят</insults.instruction>
   <insults.instructions.0>оскорбление или обида: используй переданный текст общения как жало; не выдумывай точную формулировку</insults.instructions.0>
@@ -94,8 +94,8 @@
   <talework.instruction>удовлетворение от труда: ремесло, изучение, добыча или выросший навык. Гордость должна быть приземлённой</talework.instruction>
   <talework.tone>с ровной, приземлённой гордостью</talework.tone>
   <taleanomaly.label>Ужас аномалии</taleanomaly.label>
-  <taleanomaly.instruction>страх и неизвестное: аномалия, мутация, контакт с пустотой. Пиши тревогу, не объясняя её</taleanomaly.instruction>
-  <taleanomaly.tone>со страхом и жутью; оставь это без объяснений</taleanomaly.tone>
+  <taleanomaly.instruction>аномалия, мутация, контакт с пустотой или неестественное последствие; пиши страх как увиденное вблизи - запах, свет, кожа, память - и никогда не объясняй источник</taleanomaly.instruction>
+  <taleanomaly.tone>со страхом и жутью, достаточно близкой, чтобы заразить страницу</taleanomaly.tone>
   <taleincident.label>Рейды, бедствия и события поселения</taleincident.label>
   <taleincident.instruction>поселение потрясено: рейд, бедствие или кризис. Пиши, каково было это пережить</taleincident.instruction>
   <taleincident.tone>с шатким, оглушённым напряжением бедствия</taleincident.tone>
@@ -149,11 +149,11 @@
   <workRoutine.instruction>обычная работа в поселении без сильного увлечения и без провала: нейтрально, практично, кратко, с фактурой задачи</workRoutine.instruction>
   <workRoutine.tone>с ровной, будничной рутиной</workRoutine.tone>
   <hediffPartGainedAnomalous.label>Аномальные изменения тела</hediffPartGainedAnomalous.label>
-  <hediffPartGainedAnomalous.instruction>тело поселенца вырастило или получило живую, неправильную часть; пиши физическую реальность - движение, тепло, звук - через подсказку отношения и не объясняй биологию</hediffPartGainedAnomalous.instruction>
+  <hediffPartGainedAnomalous.instruction>тело поселенца вырастило или получило живую аномальную плоть; сделай перемену близкой и тревожной - тепло под кожей, движение там, где должна быть неподвижность, пульс или чужая фактура - через подсказку отношения и не объясняй биологию</hediffPartGainedAnomalous.instruction>
   <hediffPartGainedArtificial.label>Искусственные части тела</hediffPartGainedArtificial.label>
-  <hediffPartGainedArtificial.instruction>сделанная вещь стала частью тела поселенца; пиши вес, посадку, пользу, странность или стыд новой части через подсказки отношения и уровня</hediffPartGainedArtificial.instruction>
+  <hediffPartGainedArtificial.instruction>сделанная вещь стала частью тела поселенца; пиши вес, посадку, полезную точность, чужой ритм, стыд или облегчение новой части через подсказки отношения и уровня</hediffPartGainedArtificial.instruction>
   <hediffPartLostNatural.label>Утраченные части тела</hediffPartLostNatural.label>
-  <hediffPartLostNatural.instruction>поселенец утратил естественную часть себя; пиши шок, отсутствие, боль, фантомное ощущение или холодный расчёт через подсказки отношения и причины</hediffPartLostNatural.instruction>
+  <hediffPartLostNatural.instruction>поселенец утратил естественную часть себя; пиши первый странный провал - шок, отсутствие, боль, фантомное ощущение, вес повязки или холодный расчёт - через подсказки отношения и причины</hediffPartLostNatural.instruction>
   <hediffPregnancy.label>Беременность</hediffPregnancy.label>
   <hediffPregnancy.instruction>беременность как начало, меняющее жизнь; поселенец замечает тело, будущее, страх, надежду или неопределённость, радость не предполагается</hediffPregnancy.instruction>
   <hediffPregnancy.tone>с сокровенной неопределённостью и тихим весом</hediffPregnancy.tone>
@@ -161,8 +161,8 @@
   <hediffLabor.instruction>приближаются схватки и роды; пиши срочность, боль, страх, заботу и порог рождения, не забегая к младенцу, если он не передан</hediffLabor.instruction>
   <hediffLabor.tone>со срочным телесным напряжением</hediffLabor.tone>
   <hediffAnomalyCompulsion.label>Принуждения аномалии</hediffAnomalyCompulsion.label>
-  <hediffAnomalyCompulsion.instruction>аномалия давит на мысли поселенца; пиши одержимость, транс, ломку, ярость, муку или неправильность согласно названному состоянию, не объясняя сущность и не выдумывая лечение</hediffAnomalyCompulsion.instruction>
-  <hediffAnomalyCompulsion.tone>с навязчивым, неестественным душевным давлением</hediffAnomalyCompulsion.tone>
+  <hediffAnomalyCompulsion.instruction>аномалия давит на мысли или тело поселенца; пиши одержимость, транс, ломку, ярость, месть мертвеца или обесчеловеченную отстранённость согласно названному состоянию, не объясняя сущность и не выдумывая лечение</hediffAnomalyCompulsion.instruction>
+  <hediffAnomalyCompulsion.tone>с навязчивым, неестественным давлением на мысль и плоть</hediffAnomalyCompulsion.tone>
   <hediffMajorHealth.label>Серьёзные перемены здоровья</hediffMajorHealth.label>
   <hediffMajorHealth.instruction>новое или ухудшающееся состояние здоровья, которое держалось весь день</hediffMajorHealth.instruction>
   <hediffMajorHealth.tone>с телесной тревогой и уязвимостью</hediffMajorHealth.tone>
@@ -188,10 +188,10 @@
   <ritualGravship.tones.0>технично и процедурно, с упором на системы, тягу, полёт и касание земли</ritualGravship.tones.0>
   <ritualGravship.tones.1>напряжённо и по-экипажному, с предстартовыми проверками, жёсткой вибрацией и последствиями посадки</ritualGravship.tones.1>
   <ritualAnomalyPsychic.label>Псионические ритуалы</ritualAnomalyPsychic.label>
-  <ritualAnomalyPsychic.instruction>завершён псионический ритуал Anomaly; пиши тревожную тьму, страх, неправильность, давление пустоты и последствия, которые не надо объяснять до конца</ritualAnomalyPsychic.instruction>
-  <ritualAnomalyPsychic.tone>с оккультным ужасом и непостижимым давлением</ritualAnomalyPsychic.tone>
+  <ritualAnomalyPsychic.instruction>завершён псионический ритуал Anomaly; пиши последствия как тёмную атмосферу, страх, неправильность, давление пустоты, телесное ощущение и то, что не надо объяснять до конца</ritualAnomalyPsychic.instruction>
+  <ritualAnomalyPsychic.tone>с оккультным ужасом и непостижимым давлением на тело</ritualAnomalyPsychic.tone>
   <ritualAnomalyPsychic.tones.0>тревожно и темно, со страхом, неправильностью, давлением пустоты и чувственным ужасом</ritualAnomalyPsychic.tones.0>
-  <ritualAnomalyPsychic.tones.1>пугающе, обрывочно и наполовину непостижимо, будто язык отказывает вокруг ритуала</ritualAnomalyPsychic.tones.1>
+  <ritualAnomalyPsychic.tones.1>обрывочно и наполовину непостижимо, будто язык отказывает вокруг ритуала</ritualAnomalyPsychic.tones.1>
   <ritualFinished.label>Ритуалы</ritualFinished.label>
   <ritualFinished.instruction>завершён ритуал; пиши церемонию как социальный, духовный или политический момент с места, которое занял в ней поселенец</ritualFinished.instruction>
   <ritualFinished.tone>с церемониальным весом и личными последствиями</ritualFinished.tone>
@@ -214,26 +214,26 @@
   <abilityUsed.tones.1>практично и чувственно, с опорой на названную способность, цель и редкость перезарядки</abilityUsed.tones.1>
   <animal.tones.0>мягко и терпеливо, с упором на доверие через действие</animal.tones.0>
   <animal.tones.1>практично и тепло, нежность без сентиментальности</animal.tones.1>
-  <anomaly.tones.0>с мурашками и чувственно, без объяснений</anomaly.tones.0>
-  <anomaly.tones.1>холодно и чуждо, с упором на то, что ощущается неправильным</anomaly.tones.1>
+  <anomaly.tones.0>на коже и в ощущениях, одна обычная деталь стала неправильной</anomaly.tones.0>
+  <anomaly.tones.1>холодно и чуждо, с упором на то, что поселенец не может совместить с миром</anomaly.tones.1>
   <conversion.tones.0>пылко и утвердительно, как вера под давлением</conversion.tones.0>
   <conversion.tones.1>внутренне и с сомнением, с упором на трескающуюся убеждённость</conversion.tones.1>
   <dayreflection.tones.0>устало и вдумчиво, взвешивая, что ещё важно</dayreflection.tones.0>
   <dayreflection.tones.1>мягко завершаясь, будто день наконец затихает</dayreflection.tones.1>
   <heartfelt.tones.0>мягко и открыто, позволяя теплу проявиться прямо</heartfelt.tones.0>
   <heartfelt.tones.1>тихо сдержанно, тепло показано через малую сдержанность</heartfelt.tones.1>
-  <hediffAnomalyCompulsion.tones.0>навязчиво и неправильно, мысль цепляется за что-то вне себя</hediffAnomalyCompulsion.tones.0>
-  <hediffAnomalyCompulsion.tones.1>тревожно и принудительно, ум тянет туда, куда не следует</hediffAnomalyCompulsion.tones.1>
+  <hediffAnomalyCompulsion.tones.0>навязчиво и неправильно, мысль или нерв цепляется за что-то вне себя</hediffAnomalyCompulsion.tones.0>
+  <hediffAnomalyCompulsion.tones.1>тревожно и принудительно, ум и тело тянутся туда, куда не следует</hediffAnomalyCompulsion.tones.1>
   <hediffLabor.tones.0>срочно и телесно, дыхание и боль задают темп</hediffLabor.tones.0>
   <hediffLabor.tones.1>на пороге напряжения, с упором на страх, заботу и ожидание</hediffLabor.tones.1>
   <hediffMajorHealth.tones.0>уязвимо и телесно, симптомы определяют каждую мысль</hediffMajorHealth.tones.0>
   <hediffMajorHealth.tones.1>тихо испуганно, слабость меняет масштаб дня</hediffMajorHealth.tones.1>
-  <hediffPartGainedAnomalous.tones.0>нутряно и близко, тело уже не вполне своё</hediffPartGainedAnomalous.tones.0>
-  <hediffPartGainedAnomalous.tones.1>тихой жутью, привязанной к телесному ощущению</hediffPartGainedAnomalous.tones.1>
-  <hediffPartGainedArtificial.tones.0>близко и практично, тело учится новому инструменту</hediffPartGainedArtificial.tones.0>
-  <hediffPartGainedArtificial.tones.1>телесно и тихо, механизм и плоть делят одно место</hediffPartGainedArtificial.tones.1>
+  <hediffPartGainedAnomalous.tones.0>нутряно и близко, плоть отзывается раньше воли поселенца</hediffPartGainedAnomalous.tones.0>
+  <hediffPartGainedAnomalous.tones.1>тихая жуть, привязанная к теплу, пульсу и телесной неправильности</hediffPartGainedAnomalous.tones.1>
+  <hediffPartGainedArtificial.tones.0>близко и практично, тело учится ритму нового инструмента</hediffPartGainedArtificial.tones.0>
+  <hediffPartGainedArtificial.tones.1>телесно и тихо, механизм и плоть делят один распорядок</hediffPartGainedArtificial.tones.1>
   <hediffPartLostNatural.tones.0>телесно и ошеломлённо, отсутствие громче боли</hediffPartLostNatural.tones.0>
-  <hediffPartLostNatural.tones.1>сыро и практично, утрата становится новым немедленным фактом</hediffPartLostNatural.tones.1>
+  <hediffPartLostNatural.tones.1>сыро и практично, утрата становится новой картой тела</hediffPartLostNatural.tones.1>
   <hediffPregnancy.tones.0>телесно и сокровенно, неопределённость держат близко</hediffPregnancy.tones.0>
   <hediffPregnancy.tones.1>обращено в будущее и тихо, надежда и страх в равновесии</hediffPregnancy.tones.1>
   <inspiration.tones.0>ярко и решительно, мысль обращается в замысел</inspiration.tones.0>
@@ -306,8 +306,8 @@
   <socialfight.tones.1>потрясённо и тяжело, злость остывает в последствиях</socialfight.tones.1>
   <strangechat.tones.0>обычно на поверхности, неправильно под ней</strangechat.tones.0>
   <strangechat.tones.1>тихо жутко, обрываясь прежде, чем неправильность разрешится</strangechat.tones.1>
-  <taleanomaly.tones.0>жутко и настороженно, отказываясь от объяснений</taleanomaly.tones.0>
-  <taleanomaly.tones.1>лично и заражённо, будто неправильность подобралась близко</taleanomaly.tones.1>
+  <taleanomaly.tones.0>жутко и настороженно, каждая обычная деталь под подозрением</taleanomaly.tones.0>
+  <taleanomaly.tones.1>лично и заражённо, будто неправильность пошла за поселенцем домой</taleanomaly.tones.1>
   <talecombat.tones.0>нутряно и мгновенно, сперва тело, потом мысль</talecombat.tones.0>
   <talecombat.tones.1>оглушённо и с отголосками, опасность отзывается после</talecombat.tones.1>
   <talehealth.tones.0>хрупко и клинично, с упором на тело и риск</talehealth.tones.0>
@@ -370,9 +370,9 @@
 
   <!-- Группы из расширения охвата событий (см. EVENT_COVERAGE_PLAN.md) -->
   <raidAnomalyEntities.label>Атаки тварей</raidAnomalyEntities.label>
-  <raidAnomalyEntities.instruction>на поселение нападает нечто нечеловеческое — пиши жуть, неправильность и выживание, а не обычный бой; никогда не объясняй, что это за твари</raidAnomalyEntities.instruction>
-  <raidAnomalyEntities.instructions.0>нечеловеческие нападающие — начни с первой неправильной детали: силуэт, походка, звук или тишина там, где должен быть звук; не называй их точнее, чем в данных</raidAnomalyEntities.instructions.0>
-  <raidAnomalyEntities.instructions.1>нечеловеческие нападающие — пиши, как тело отказывается признавать их людьми: отвращение, волосы дыбом, желание отвести взгляд, даже целясь</raidAnomalyEntities.instructions.1>
+  <raidAnomalyEntities.instruction>на поселение нападает нечто нечеловеческое - пиши выживание под страхом, как тела отказываются верить увиденному, а не обычный бой; никогда не объясняй, что это за твари</raidAnomalyEntities.instruction>
+  <raidAnomalyEntities.instructions.0>нечеловеческие нападающие - начни с первой неправильной детали: силуэт, походка, мокрый звук, невозможная тишина или знакомое место, ставшее небезопасным; не называй их точнее, чем в данных</raidAnomalyEntities.instructions.0>
+  <raidAnomalyEntities.instructions.1>нечеловеческие нападающие - пиши, как тело отказывается признавать их живыми людьми: тошнота, волосы дыбом, дрожащий прицел, желание отвести взгляд</raidAnomalyEntities.instructions.1>
   <raidAnomalyEntities.instructions.2>нечеловеческие нападающие — держи текст вплотную к выживанию и ощущениям; раны и исходы бери только из данных и не разрешай ужас до конца</raidAnomalyEntities.instructions.2>
   <raidAnomalyEntities.tone>ужас, проступающий сквозь горячку боя</raidAnomalyEntities.tone>
   <raidAnomalyEntities.tones.0>в ужасе и на ощущениях: нападающие не считываются как люди</raidAnomalyEntities.tones.0>

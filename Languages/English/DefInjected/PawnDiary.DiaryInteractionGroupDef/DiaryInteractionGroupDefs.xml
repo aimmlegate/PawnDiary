@@ -31,8 +31,8 @@
   <strangechat.instruction>something wrong in ordinary conversation--a strange chat that leaves unease lingering. Don&apos;t explain it away</strangechat.instruction>
   <strangechat.tone>with creeping dread; never resolve the wrongness</strangechat.tone>
   <anomaly.label>Anomaly &amp; dark</anomaly.label>
-  <anomaly.instruction>something wrong—an unsettling exchange that leaves unease lingering. Don&apos;t explain it away</anomaly.instruction>
-  <anomaly.tone>with crawling, skin-prickling wrongness; never explain it</anomaly.tone>
+  <anomaly.instruction>something wrong in an ordinary exchange: a voice, phrase, look, or silence leaves unease lingering. Keep it close to the pawn&apos;s senses and don&apos;t explain it away</anomaly.instruction>
+  <anomaly.tone>with crawling, skin-prickling wrongness; ordinary details feel unsafe</anomaly.tone>
   <insults.label>Insults &amp; fights</insults.label>
   <insults.instruction>the sting of contempt—an insult, a slight, or fists about to fly</insults.instruction>
   <insults.instructions.0>an insult or slight — use the supplied social text as the sting; do not invent exact wording</insults.instructions.0>
@@ -94,8 +94,8 @@
   <talework.instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</talework.instruction>
   <talework.tone>with steady, grounded pride</talework.tone>
   <taleanomaly.label>Anomaly horror</taleanomaly.label>
-  <taleanomaly.instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</taleanomaly.instruction>
-  <taleanomaly.tone>with dread and the uncanny; leave it unexplained</taleanomaly.tone>
+  <taleanomaly.instruction>anomaly, mutation, void contact, or unnatural aftermath; write dread as something witnessed up close - smell, light, skin, memory - and never explain the source</taleanomaly.instruction>
+  <taleanomaly.tone>with dread and the uncanny, close enough to contaminate the page</taleanomaly.tone>
   <taleincident.label>Raids, disasters &amp; colony events</taleincident.label>
   <taleincident.instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</taleincident.instruction>
   <taleincident.tone>with reeling, disaster-shocked tension</taleincident.tone>
@@ -149,11 +149,11 @@
   <workRoutine.instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</workRoutine.instruction>
   <workRoutine.tone>with steady, matter-of-fact routine</workRoutine.tone>
   <hediffPartGainedAnomalous.label>Anomalous body changes</hediffPartGainedAnomalous.label>
-  <hediffPartGainedAnomalous.instruction>the pawn&apos;s body has grown or received a living, wrong-feeling flesh part; write the physical reality of it - movement, warmth, sound - filtered through the attitude cue, and never explain its biology</hediffPartGainedAnomalous.instruction>
+  <hediffPartGainedAnomalous.instruction>the pawn&apos;s body has grown or received living anomalous flesh; make it intimate and unsettling - warmth under skin, movement where there should be stillness, a pulse or texture that feels borrowed - filtered through the attitude cue, and never explain its biology</hediffPartGainedAnomalous.instruction>
   <hediffPartGainedArtificial.label>Artificial body parts</hediffPartGainedArtificial.label>
-  <hediffPartGainedArtificial.instruction>a made thing has joined the pawn&apos;s body; write the weight, fit, usefulness, strangeness, or shame of the new part through the attitude and tier cues</hediffPartGainedArtificial.instruction>
+  <hediffPartGainedArtificial.instruction>a made thing has joined the pawn&apos;s body; write the weight, fit, useful precision, foreign rhythm, shame, or relief of the new part through the attitude and tier cues</hediffPartGainedArtificial.instruction>
   <hediffPartLostNatural.label>Lost body parts</hediffPartLostNatural.label>
-  <hediffPartLostNatural.instruction>the pawn has lost a natural part of themself; write the shock, absence, pain, phantom feeling, or cold practical calculation through the attitude and cause cues</hediffPartLostNatural.instruction>
+  <hediffPartLostNatural.instruction>the pawn has lost a natural part of themself; write the first strange gap - shock, absence, pain, phantom feeling, bandage weight, or cold practical calculation - through the attitude and cause cues</hediffPartLostNatural.instruction>
   <hediffPregnancy.label>Pregnancy</hediffPregnancy.label>
   <hediffPregnancy.instruction>pregnancy as a life-changing beginning; write the pawn noticing the body, future, fear, hope, or uncertainty without assuming joy</hediffPregnancy.instruction>
   <hediffPregnancy.tone>with intimate uncertainty and quiet weight</hediffPregnancy.tone>
@@ -161,8 +161,8 @@
   <hediffLabor.instruction>labor and birth approaching; write urgency, pain, fear, care, and the threshold before birth without skipping ahead to the baby unless supplied</hediffLabor.instruction>
   <hediffLabor.tone>with urgent bodily strain</hediffLabor.tone>
   <hediffAnomalyCompulsion.label>Anomaly compulsions</hediffAnomalyCompulsion.label>
-  <hediffAnomalyCompulsion.instruction>an Anomaly-driven mental affliction pressing into the pawn&apos;s thoughts; write obsession, trance, withdrawal, rage, torment, or wrongness as the named condition supports, without explaining the entity or inventing treatment</hediffAnomalyCompulsion.instruction>
-  <hediffAnomalyCompulsion.tone>with intrusive, unnatural mental pressure</hediffAnomalyCompulsion.tone>
+  <hediffAnomalyCompulsion.instruction>an Anomaly-driven affliction pressing into the pawn&apos;s thoughts or body; write obsession, trance, withdrawal, rage, corpse torment, or inhuman detachment as the named condition supports, without explaining the entity or inventing treatment</hediffAnomalyCompulsion.instruction>
+  <hediffAnomalyCompulsion.tone>with intrusive, unnatural pressure on thought and flesh</hediffAnomalyCompulsion.tone>
   <hediffMajorHealth.label>Major health changes</hediffMajorHealth.label>
   <hediffMajorHealth.instruction>a new or worsening health condition that stayed with the pawn through the day</hediffMajorHealth.instruction>
   <hediffMajorHealth.tone>with bodily unease and vulnerability</hediffMajorHealth.tone>
@@ -188,10 +188,10 @@
   <ritualGravship.tones.0>technical and procedural, centered on systems, thrust, flight, and touchdown</ritualGravship.tones.0>
   <ritualGravship.tones.1>tense and crew-minded, with launch checks, hard vibration, and landing consequence</ritualGravship.tones.1>
   <ritualAnomalyPsychic.label>Psychic rituals</ritualAnomalyPsychic.label>
-  <ritualAnomalyPsychic.instruction>an Anomaly psychic ritual completed—write it with unsettling dark atmosphere, fear, wrongness, void pressure, and consequences that should not be fully explained</ritualAnomalyPsychic.instruction>
-  <ritualAnomalyPsychic.tone>with occult dread and incomprehensible pressure</ritualAnomalyPsychic.tone>
+  <ritualAnomalyPsychic.instruction>an Anomaly psychic ritual completed - write the aftermath as dark atmosphere, fear, wrongness, void pressure, body sensation, and consequences that should not be fully explained</ritualAnomalyPsychic.instruction>
+  <ritualAnomalyPsychic.tone>with occult dread and incomprehensible pressure against the body</ritualAnomalyPsychic.tone>
   <ritualAnomalyPsychic.tones.0>unsettling and dark, with fear, wrongness, void pressure, and sensory dread</ritualAnomalyPsychic.tones.0>
-  <ritualAnomalyPsychic.tones.1>scary, fragmentary, and half-incomprehensible, as if language is failing around the ritual</ritualAnomalyPsychic.tones.1>
+  <ritualAnomalyPsychic.tones.1>fragmentary and half-incomprehensible, as if language is failing around the ritual</ritualAnomalyPsychic.tones.1>
   <ritualFinished.label>Rituals</ritualFinished.label>
   <ritualFinished.instruction>a ritual completed—write the ceremony as a social, spiritual, or political moment from the pawn&apos;s assigned place in it</ritualFinished.instruction>
   <ritualFinished.tone>with ceremonial weight and personal consequence</ritualFinished.tone>
@@ -214,26 +214,26 @@
   <abilityUsed.tones.1>practical and sensory, grounded in the named ability, target, and cooldown rarity</abilityUsed.tones.1>
   <animal.tones.0>soft and patient, focused on trust through action</animal.tones.0>
   <animal.tones.1>practical and warm, fondness shown without sentimentality</animal.tones.1>
-  <anomaly.tones.0>skin-prickling and sensory, with no explanation</anomaly.tones.0>
-  <anomaly.tones.1>cold and alien, focused on what feels off</anomaly.tones.1>
+  <anomaly.tones.0>skin-prickling and sensory, one ordinary detail made wrong</anomaly.tones.0>
+  <anomaly.tones.1>cold and alien, focused on what the pawn cannot make fit</anomaly.tones.1>
   <conversion.tones.0>fervent and declarative, like belief under pressure</conversion.tones.0>
   <conversion.tones.1>inward and doubtful, focused on conviction cracking</conversion.tones.1>
   <dayreflection.tones.0>tired and reflective, weighing what still matters</dayreflection.tones.0>
   <dayreflection.tones.1>softly closing, like the day finally going quiet</dayreflection.tones.1>
   <heartfelt.tones.0>gentle and open, letting warmth show plainly</heartfelt.tones.0>
   <heartfelt.tones.1>quietly held, warmth shown through small restraint</heartfelt.tones.1>
-  <hediffAnomalyCompulsion.tones.0>intrusive and wrong, thought snagging on something outside itself</hediffAnomalyCompulsion.tones.0>
-  <hediffAnomalyCompulsion.tones.1>unsettling and compulsive, the mind pulled where it should not go</hediffAnomalyCompulsion.tones.1>
+  <hediffAnomalyCompulsion.tones.0>intrusive and wrong, thought or nerve snagging on something outside itself</hediffAnomalyCompulsion.tones.0>
+  <hediffAnomalyCompulsion.tones.1>unsettling and compulsive, the mind and body pulled where they should not go</hediffAnomalyCompulsion.tones.1>
   <hediffLabor.tones.0>urgent and bodily, breath and pain setting the pace</hediffLabor.tones.0>
   <hediffLabor.tones.1>threshold-tense, focused on fear, care, and waiting</hediffLabor.tones.1>
   <hediffMajorHealth.tones.0>vulnerable and bodily, symptoms shaping every thought</hediffMajorHealth.tones.0>
   <hediffMajorHealth.tones.1>quietly frightened, weakness changing the day&apos;s scale</hediffMajorHealth.tones.1>
-  <hediffPartGainedAnomalous.tones.0>visceral and intimate, the body no longer fully one&apos;s own</hediffPartGainedAnomalous.tones.0>
-  <hediffPartGainedAnomalous.tones.1>quiet dread anchored in physical sensation</hediffPartGainedAnomalous.tones.1>
-  <hediffPartGainedArtificial.tones.0>intimate and practical, the body learning a new tool</hediffPartGainedArtificial.tones.0>
-  <hediffPartGainedArtificial.tones.1>quietly body-aware, machinery and flesh sharing space</hediffPartGainedArtificial.tones.1>
+  <hediffPartGainedAnomalous.tones.0>visceral and intimate, flesh answering before the pawn does</hediffPartGainedAnomalous.tones.0>
+  <hediffPartGainedAnomalous.tones.1>quiet dread anchored in warmth, pulse, and bodily wrongness</hediffPartGainedAnomalous.tones.1>
+  <hediffPartGainedArtificial.tones.0>intimate and practical, the body learning the timing of a new tool</hediffPartGainedArtificial.tones.0>
+  <hediffPartGainedArtificial.tones.1>quietly body-aware, machinery and flesh sharing one routine</hediffPartGainedArtificial.tones.1>
   <hediffPartLostNatural.tones.0>bodily and stunned, absence louder than pain</hediffPartLostNatural.tones.0>
-  <hediffPartLostNatural.tones.1>raw and practical, loss becoming an immediate new fact</hediffPartLostNatural.tones.1>
+  <hediffPartLostNatural.tones.1>raw and practical, loss becoming the body&apos;s new map</hediffPartLostNatural.tones.1>
   <hediffPregnancy.tones.0>body-aware and intimate, uncertainty held close</hediffPregnancy.tones.0>
   <hediffPregnancy.tones.1>future-facing and quiet, hope and fear in balance</hediffPregnancy.tones.1>
   <inspiration.tones.0>bright and decisive, thought turning into a plan</inspiration.tones.0>
@@ -306,8 +306,8 @@
   <socialfight.tones.1>shocked and aftermath-heavy, anger cooling into consequence</socialfight.tones.1>
   <strangechat.tones.0>ordinary on the surface, wrong underneath</strangechat.tones.0>
   <strangechat.tones.1>quietly uncanny, ending before the wrongness resolves</strangechat.tones.1>
-  <taleanomaly.tones.0>uncanny and watchful, refusing explanation</taleanomaly.tones.0>
-  <taleanomaly.tones.1>intimate and contaminated, as if the wrongness got close</taleanomaly.tones.1>
+  <taleanomaly.tones.0>uncanny and watchful, every ordinary detail suspect</taleanomaly.tones.0>
+  <taleanomaly.tones.1>intimate and contaminated, as if the wrongness followed the pawn home</taleanomaly.tones.1>
   <talecombat.tones.0>visceral and immediate, body first and thought second</talecombat.tones.0>
   <talecombat.tones.1>stunned and aftershock-heavy, danger echoing afterward</talecombat.tones.1>
   <talehealth.tones.0>fragile and clinical, focused on body and risk</talehealth.tones.0>
@@ -367,9 +367,9 @@
 
   <!-- Event-coverage pass groups (see EVENT_COVERAGE_PLAN.md) -->
   <raidAnomalyEntities.label>Entity attacks</raidAnomalyEntities.label>
-  <raidAnomalyEntities.instruction>inhuman things attacking the colony&#8212;write dread, wrongness, and survival, not a normal battle; never explain what the creatures are</raidAnomalyEntities.instruction>
-  <raidAnomalyEntities.instructions.0>inhuman attackers &#8212; open on the first wrong detail: shape, gait, sound, or silence where sound should be; do not name what they are beyond the supplied label</raidAnomalyEntities.instructions.0>
-  <raidAnomalyEntities.instructions.1>inhuman attackers &#8212; write the body refusing to accept them as people: revulsion, hair rising, the urge to look away while aiming</raidAnomalyEntities.instructions.1>
+  <raidAnomalyEntities.instruction>inhuman things attacking the colony - write survival under dread, bodies refusing what they see, not a normal battle; never explain what the creatures are</raidAnomalyEntities.instruction>
+  <raidAnomalyEntities.instructions.0>inhuman attackers - open on the first wrong detail: shape, gait, wet sound, impossible silence, or a familiar space made unsafe; do not name what they are beyond the supplied label</raidAnomalyEntities.instructions.0>
+  <raidAnomalyEntities.instructions.1>inhuman attackers - write the body refusing to accept them as living people: nausea, hair rising, aim shaking, the urge to look away</raidAnomalyEntities.instructions.1>
   <raidAnomalyEntities.instructions.2>inhuman attackers &#8212; keep it survival-close and sensory; use injuries or outcomes only if supplied, and never resolve the horror</raidAnomalyEntities.instructions.2>
   <raidAnomalyEntities.tone>with horror pressing through combat urgency</raidAnomalyEntities.tone>
   <raidAnomalyEntities.tones.0>horrified and sensory, the attackers not registering as people</raidAnomalyEntities.tones.0>

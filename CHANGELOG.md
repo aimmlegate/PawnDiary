@@ -10,6 +10,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   `bodyPartAnomalous`, `bodyPartArtificial`, and `bodyPartLost`; anomalous body changes keep the
   unsettled page atmosphere while no longer sharing the generic `extremeDark` cue. XML-policy tests
   now pin the body-part, psylink/psycast, and royal title/ritual cue wiring.
+- **Anomaly/body-part prompt atmosphere pass.** EN/RU prompt prose for Anomaly interactions, tales,
+  hediffs, entity raids, psychic rituals, anomalous body changes, artificial parts, lost parts, and
+  the unnatural corpse context now leans harder on sensory dread and body horror while still refusing
+  hidden-mechanic explanations.
 - **Translation report cleanup.** Removed stale EN/RU DefInjected labels and prompt-map references
   for the removed `HediffPersonaOverride_MemoryDecay` def; memory decay remains covered by the
   `DiaryEnchant_MemoryDecay` prompt enchantment only.

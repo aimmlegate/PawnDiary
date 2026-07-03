@@ -347,11 +347,11 @@
     <order>70</order>
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
-    <instruction>something wrong—an unsettling exchange that leaves unease lingering. Don't explain it away</instruction>
-    <tone>with crawling, skin-prickling wrongness; never explain it</tone>
+    <instruction>something wrong in an ordinary exchange: a voice, phrase, look, or silence leaves unease lingering. Keep it close to the pawn's senses and don't explain it away</instruction>
+    <tone>with crawling, skin-prickling wrongness; ordinary details feel unsafe</tone>
     <tones>
-      <li>skin-prickling and sensory, with no explanation</li>
-      <li>cold and alien, focused on what feels off</li>
+      <li>skin-prickling and sensory, one ordinary detail made wrong</li>
+      <li>cold and alien, focused on what the pawn cannot make fit</li>
     </tones>
     <colorCue>extremeDark</colorCue>
     <matchDefNames>
@@ -1200,11 +1200,11 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <colorCue>extremeDark</colorCue>
-    <instruction>dread and the unknown—anomaly, mutation, void contact. Write unease without explaining it</instruction>
-    <tone>with dread and the uncanny; leave it unexplained</tone>
+    <instruction>anomaly, mutation, void contact, or unnatural aftermath; write dread as something witnessed up close - smell, light, skin, memory - and never explain the source</instruction>
+    <tone>with dread and the uncanny, close enough to contaminate the page</tone>
     <tones>
-      <li>uncanny and watchful, refusing explanation</li>
-      <li>intimate and contaminated, as if the wrongness got close</li>
+      <li>uncanny and watchful, every ordinary detail suspect</li>
+      <li>intimate and contaminated, as if the wrongness followed the pawn home</li>
     </tones>
     <matchDefNames>
       <li>StudiedEntity</li>
@@ -1979,10 +1979,10 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <colorCue>bodyPartAnomalous</colorCue>
-    <instruction>the pawn's body has grown or received a living, wrong-feeling flesh part; write the physical reality of it - movement, warmth, sound - filtered through the attitude cue, and never explain its biology</instruction>
+    <instruction>the pawn's body has grown or received living anomalous flesh; make it intimate and unsettling - warmth under skin, movement where there should be stillness, a pulse or texture that feels borrowed - filtered through the attitude cue, and never explain its biology</instruction>
     <tones>
-      <li>visceral and intimate, the body no longer fully one's own</li>
-      <li>quiet dread anchored in physical sensation</li>
+      <li>visceral and intimate, flesh answering before the pawn does</li>
+      <li>quiet dread anchored in warmth, pulse, and bodily wrongness</li>
     </tones>
     <hediff>
       <mode>Immediate</mode>
@@ -2014,10 +2014,10 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <colorCue>bodyPartArtificial</colorCue>
-    <instruction>a made thing has joined the pawn's body; write the weight, fit, usefulness, strangeness, or shame of the new part through the attitude and tier cues</instruction>
+    <instruction>a made thing has joined the pawn's body; write the weight, fit, useful precision, foreign rhythm, shame, or relief of the new part through the attitude and tier cues</instruction>
     <tones>
-      <li>intimate and practical, the body learning a new tool</li>
-      <li>quietly body-aware, machinery and flesh sharing space</li>
+      <li>intimate and practical, the body learning the timing of a new tool</li>
+      <li>quietly body-aware, machinery and flesh sharing one routine</li>
     </tones>
     <hediff>
       <mode>Immediate</mode>
@@ -2043,10 +2043,10 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <colorCue>bodyPartLost</colorCue>
-    <instruction>the pawn has lost a natural part of themself; write the shock, absence, pain, phantom feeling, or cold practical calculation through the attitude and cause cues</instruction>
+    <instruction>the pawn has lost a natural part of themself; write the first strange gap - shock, absence, pain, phantom feeling, bandage weight, or cold practical calculation - through the attitude and cause cues</instruction>
     <tones>
       <li>bodily and stunned, absence louder than pain</li>
-      <li>raw and practical, loss becoming an immediate new fact</li>
+      <li>raw and practical, loss becoming the body's new map</li>
     </tones>
     <hediff>
       <mode>Immediate</mode>
@@ -2134,11 +2134,11 @@
     <domain>Hediff</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>an Anomaly-driven mental affliction pressing into the pawn's thoughts; write obsession, trance, withdrawal, rage, torment, or wrongness as the named condition supports, without explaining the entity or inventing treatment</instruction>
-    <tone>with intrusive, unnatural mental pressure</tone>
+    <instruction>an Anomaly-driven affliction pressing into the pawn's thoughts or body; write obsession, trance, withdrawal, rage, corpse torment, or inhuman detachment as the named condition supports, without explaining the entity or inventing treatment</instruction>
+    <tone>with intrusive, unnatural pressure on thought and flesh</tone>
     <tones>
-      <li>intrusive and wrong, thought snagging on something outside itself</li>
-      <li>unsettling and compulsive, the mind pulled where it should not go</li>
+      <li>intrusive and wrong, thought or nerve snagging on something outside itself</li>
+      <li>unsettling and compulsive, the mind and body pulled where they should not go</li>
     </tones>
     <hediff>
       <mode>Immediate</mode>
@@ -2283,10 +2283,10 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <colorCue>extremeDark</colorCue>
-    <instruction>inhuman things attacking the colony—write dread, wrongness, and survival, not a normal battle; never explain what the creatures are</instruction>
+    <instruction>inhuman things attacking the colony - write survival under dread, bodies refusing what they see, not a normal battle; never explain what the creatures are</instruction>
     <instructions>
-      <li>inhuman attackers — open on the first wrong detail: shape, gait, sound, or silence where sound should be; do not name what they are beyond the supplied label</li>
-      <li>inhuman attackers — write the body refusing to accept them as people: revulsion, hair rising, the urge to look away while aiming</li>
+      <li>inhuman attackers - open on the first wrong detail: shape, gait, wet sound, impossible silence, or a familiar space made unsafe; do not name what they are beyond the supplied label</li>
+      <li>inhuman attackers - write the body refusing to accept them as living people: nausea, hair rising, aim shaking, the urge to look away</li>
       <li>inhuman attackers — keep it survival-close and sensory; use injuries or outcomes only if supplied, and never resolve the horror</li>
     </instructions>
     <tone>with horror pressing through combat urgency</tone>
@@ -2467,11 +2467,11 @@
     <domain>Ritual</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <instruction>an Anomaly psychic ritual completed—write it with unsettling dark atmosphere, fear, wrongness, void pressure, and consequences that should not be fully explained</instruction>
-    <tone>with occult dread and incomprehensible pressure</tone>
+    <instruction>an Anomaly psychic ritual completed - write the aftermath as dark atmosphere, fear, wrongness, void pressure, body sensation, and consequences that should not be fully explained</instruction>
+    <tone>with occult dread and incomprehensible pressure against the body</tone>
     <tones>
       <li>unsettling and dark, with fear, wrongness, void pressure, and sensory dread</li>
-      <li>scary, fragmentary, and half-incomprehensible, as if language is failing around the ritual</li>
+      <li>fragmentary and half-incomprehensible, as if language is failing around the ritual</li>
     </tones>
     <colorCue>extremeDark</colorCue>
     <matchTokens>

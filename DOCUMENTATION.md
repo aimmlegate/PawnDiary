@@ -330,7 +330,10 @@ HediffDef is a body-part change: `BionicArm_addedpart`, `Tentacle_addedpart_orga
 `MissingBodyPart_missingpart`. The saved `gameContext` carries `part_kind=`, `part_tier=`,
 `body_attitude=`, and optional `part_cause=` markers so saved pages recover the same group after
 load. `DiaryTuningDef.xml` owns body-part tier overrides, body-mod trait/precept/inhumanized lists,
-and efficiency thresholds; the C# fallback values keep missing XML safe.
+and efficiency thresholds; the C# fallback values keep missing XML safe. The localized prompt prose
+for these groups deliberately carries the atmosphere in XML: anomalous flesh leans sensory and
+unexplained, artificial parts stay embodied and practical, and lost natural parts emphasize absence,
+phantom feeling, and adjustment.
 
 Interaction `PairEvent` batches only use the combined batch prompt when two or more moments collect in
 the quiet window. If the window flushes with a single moment, the entry is emitted as a normal
@@ -472,7 +475,9 @@ Shipped notable defs:
   `WarpedObelisk_*` ThingDefs), `HarbingerTreePresence`, `NociospherePresence`, and
   `UnnaturalCorpsePresence` are all prompt-tone only. `UnnaturalCorpsePresence` is the lone
   `PawnUnnaturalCorpse` observer: it keys on the haunted pawn via the Anomaly tracker so only the
-  colonist being imitated gets the dread, and it ends automatically when the corpse is destroyed.
+  colonist being imitated gets the dread, and it ends automatically when the corpse is destroyed. Its
+  localized prompt text frames the condition as a personal haunting by a corpse wearing that pawn's
+  face, without explaining the Anomaly mechanics.
   `PitGatePresence` and `FleshmassHeartPresence` additionally record one start page per map
   colonist and have companion display groups (`observedPitGate`, `observedFleshmassHeart`).
   `HarbingerTreePresence`, `PitGatePresence`, and `FleshmassHeartPresence` carry
