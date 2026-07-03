@@ -152,6 +152,12 @@
       <li><cue>extremeDark</cue><color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color></li>
       <li><cue>strangeChat</cue><color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color></li>
       <li><cue>white</cue><color><r>0.92</r><g>0.92</g><b>0.86</b><a>1</a></color></li>
+      <!-- Psychic events (psylink gains, psycast abilities): bright violet, distinct from the dark
+           blood-red extremeDark cue used by Anomaly dread content. -->
+      <li><cue>psychic</cue><color><r>0.78</r><g>0.42</g><b>1</b><a>1</a></color></li>
+      <!-- Royal-title gains and royal rituals: gold, distinct from the warm-white cue shared by
+           heartfelt moments, birthdays, and skill passions. -->
+      <li><cue>royalty</cue><color><r>0.96</r><g>0.80</g><b>0.32</b><a>1</a></color></li>
       <li><cue>quadrumReflection</cue><color><r>0.66</r><g>0.86</g><b>0.95</b><a>1</a></color></li>
       <li><cue>quiet</cue><color><r>0.74</r><g>0.74</g><b>0.70</b><a>1</a></color></li>
     </cueColors>

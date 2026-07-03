@@ -238,6 +238,12 @@ namespace PawnDiary
             Cue(DiaryEvent.ExtremeDarkColorCue, Color(0.58f, 0.05f, 0.08f, 1f)),
             Cue(DiaryEvent.StrangeChatColorCue, Color(0.42f, 0.96f, 0.50f, 1f)),
             Cue(DiaryEvent.WhiteColorCue, Color(0.92f, 0.92f, 0.86f, 1f)),
+            // Psychic events (psylink gains, psycast abilities) get a bright violet, distinct from the
+            // dark blood-red extremeDark cue used by Anomaly dread content.
+            Cue(DiaryEvent.PsychicColorCue, Color(0.78f, 0.42f, 1f, 1f)),
+            // Royal-title gains and royal rituals get a gold, distinct from the warm-white cue shared
+            // by heartfelt moments, birthdays, and skill passions.
+            Cue(DiaryEvent.RoyaltyColorCue, Color(0.96f, 0.80f, 0.32f, 1f)),
             Cue(DiaryEvent.QuietColorCue, Color(0.74f, 0.74f, 0.70f, 1f))
         };
 

@@ -6,349 +6,162 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
-- **Dev event panel: hid the non-functional Events section.** The event trigger buttons in the
-  debug `Event test panel` (Def-backed trigger rows plus the arrival/death/work-scan/thought-
-  progression/day-reflection buttons) do not currently work, so the Events section is hidden:
-  its rail button is no longer drawn, saved `events` section selections normalize to Diary, and
-  Diary is now the panel's default section. `DrawRealEventsSection` and the `Trigger*` helpers
-  remain in `Dialog_PawnDiaryEventTestPanel` unchanged so the section can be re-enabled once the
-  triggers are fixed. Diary and Fixtures sections are unaffected.
-- **Event-coverage review fixes (XML + docs only).** Corrected two silently dead `ThingPresent`
-  observers whose guessed defNames matched nothing (the observer resolves exact `matchDefNames`
-  only): `ObeliskPresence` now matches the real Anomaly ThingDefs `WarpedObelisk_Abductor` /
-  `WarpedObelisk_Duplicator` / `WarpedObelisk_Mutator` (the in-game obelisk labels do not match
-  their defNames), and `UnnaturalCorpsePresence` now matches the generated `UnnaturalCorpse_Human`;
-  `HarbingerTreePresence` dropped the dead `HarbingerTree` spelling (verified: `Plant_TreeHarbinger`).
-  Added companion Interaction-domain display groups for the three new page-recording defs
-  (`eventWindowMechCluster`, `observedPitGate`, `observedFleshmassHeart`, orders 142–144, EN+RU
-  DefInjected) so their saved pages classify to a proper label/importance in the Diary tab instead
-  of the "A quiet day" catch-all, matching the existing `eventWindow*` precedent. Fixed the
-  `HediffPersonaOverride_Drunk` comment's `AlcoholHigh` stage thresholds (drunk starts at 0.4).
-  Documented the event-coverage defs in `DOCUMENTATION.md` §5/§5.1, which the original pass missed.
-  Still to verify in dev mode: whether Anomaly entity assaults route through the raid hook
-  (`raidAnomalyEntities` depends on it) and the Odyssey `Flooding`/`VolcanicAsh`/vacuum defNames.
-- **Event-coverage pass: XML-only groups, enchantments, personas, observed conditions, and tone
-  windows (no C# changes).** Implements Tiers 1–2 of `EVENT_COVERAGE_PLAN.md` with Anomaly as the
-  main focus. Retone groups (page volume unchanged): `raidAnomalyEntities` gives Anomaly entity
-  assaults a horror register instead of the human-raid tone; `moodeventWeatherHardship` /
-  `moodeventStormDanger` replace the generic catch-all wording for ColdSnap/HeatWave/
-  VolcanicWinter/Flashstorm (+ Odyssey VolcanicAsh/Flooding, Anomaly BloodRain);
-  `mentalbreakViolent`/`Escape`/`Indulgent` split the mental-break catch-all into three registers.
-  New prompt enchantments: Malnutrition, Heatstroke/Hypothermia, Anesthetic, PsychicShock,
-  Carcinoma, mechanites, WakeUpHigh, CryptosleepSickness, low-chance AgingBody, Biotech
-  Deathrest/LungRot, Anomaly BloodRage, Odyssey VacuumExposure, plus `SleepingSickness` added to
-  the FeverishBody matchers. New writing-style overrides: drunk rambling (`AlcoholHigh` at
-  severity ≥ 0.4) and fading memory (Dementia/Alzheimers), backed by two new personas. New
-  observed conditions (weighted prompt tone, no pages unless noted): ColdSnap/HeatWave/
-  VolcanicWinter; Anomaly BloodRain/DeathPall/UnnaturalDarkness, obelisks, harbinger trees,
-  nociosphere, unnatural corpse, and pit gate + fleshmass heart (these two record a start page per
-  map colonist); weighted-random light flavor for thrumbo visits, alphabeavers, crop blight, and
-  ambrosia groves with active-time caps and restart cooldowns. New event windows: `MechClusterLanded`
-  (start page + three-day decaying dread), `ShortCircuitAftermath` and `SelfTameJoined` (tone-only,
-  never pages). All matchers are plain strings (DLC-safe); every new group/def is settings-toggleable.
-  English Def text plus natively written (not literally translated) Russian Keyed/DefInjected
-  strings; `EVENT_PROMPT_MAP.md` tables refreshed (including correcting the stale
-  MetalhorrorEmergence row to the shipped ThingPresent observer).
-- **Event-coverage gap analysis & XML-only extension plan (docs only).** New root document
-  `EVENT_COVERAGE_PLAN.md`: inventories every RimWorld moment the mod reacts to today, maps the
-  base-game and DLC (Royalty/Ideology/Biotech/Anomaly/Odyssey) events we skip or only catch via
-  generic catch-alls, and proposes a tiered, XML-only set of additions (retoned interaction
-  groups, missing prompt enchantments, two persona overrides, observed conditions, and a few
-  one-shot event windows) with volume guardrails. No behavior changed.
-- **Render-time paragraph reflow for diary prose.** Long single-line entries are now split into
-  readable paragraphs at render time. Because prompts only ever ask for sentence counts and never
-  for explicit paragraph breaks, a multi-sentence entry previously wrapped as one dense block. The
-  default (non-Fractured / -Unsettled / -Memorial) atmosphere now runs each prose line through a
-  pure reflow helper (`DiaryParagraphReflow.ReflowLine`) and breaks it, in priority order, at
-  sentence ends, RimWorld year mentions (`55xx`), semicolons, and em-dashes, with a hard length
-  cap that falls back to a space boundary (words are never split mid-token). Saved `GeneratedText`
-  is never mutated; both the measure and draw passes use the same helper so wrapped heights stay in
-  sync. `[[speech]]` blocks and the three special atmospheres are unchanged. Tuning lives in
-  `DiaryUiStyleDef.xml`: `paragraphReflowEnabled` (master toggle), `paragraphReflowTargetChars`/
-  `MaxChars`, the four `…SplitOn…` cue toggles, and `paragraphReflowMinBreakSpacing`. New pure test
-  project `tests/DiaryParagraphReflowTests` covers short-line pass-through, each cue, the hard
-  break, stub merging, the disable toggle, and non-year-number safety. (DOCUMENTATION §7.)
-
-- **Review fixes for API settings, arc cadence, and localization.** Background reasoning-capability
-  refreshes now lock their per-row in-flight guard so UI cancellation cannot race async continuations.
-  Arc reflections now honor the Advanced `arcReflectionMaxEntriesPerYear` cap across the full 1-10 UI
-  range (default 2 keeps the shipped annual-plus-major cadence), with pure regression tests for one-entry
-  and higher caps. Dynamic Advanced prompt-policy group prefixes moved to Keyed EN/RU strings, and
-  `LlmClient.TestConnection` no longer contains an English prompt fallback; the settings UI passes the
-  already-localized prompt from the main thread. (DOCUMENTATION §4/§8/§11.)
-
-- **Title fallback guard tightened.** Title follow-up responses now reject one-line answer labels,
-  instruction echoes, reasoning-style lines, terminal periods, and generated titles outside the
-  3-8 word contract. Invalid title output uses the existing fallback title built from the finished
-  diary entry instead of being saved as a page header. (DOCUMENTATION §6.)
-
-- **Reasoning capability auto-refreshes across the settings window.** A row's reasoning capability
-  (and model list) now fetches itself on four triggers, so a player almost never has to click
-  **Fetch models** manually: when the settings window opens (one-shot, for any row whose capability
-  is not yet cached), when a row's URL/key/auth changes (background refresh, once per change), when
-  **Test connection** runs (in parallel with the test), and on the manual **Fetch** click (existing).
-  Auto-pick-first-if-blank still applies to the full Fetch path. To keep the picker UX stable under
-  multiple triggers, a new lightweight **capability-only refresh** (`ApiConnectionController.RefreshCapability`)
-  updates just the thread-safe `ModelCapabilityCache` without touching the single-flight picker
-  state, so several rows can refresh concurrently. The previous "auto-fetch at Pick" code was
-  removed — it was redundant for OpenRouter (Fetch already cached every model) and a wasteful no-op
-  loop for providers that return no capability (OpenAI-direct, GGUF, LM Studio). Providers that do
-  not advertise capability still degrade gracefully (unknown → effort passes through unclamped).
-  (DOCUMENTATION §8.)
+- **Settings connection row alignment and localization.** Main-tab API rows now share the same label
+  column for reasoning controls and the same action-button columns for model/API-key rows, removing
+  the clipped "Reasoning" label and staggered right-side buttons. Russian settings localization now
+  includes the missing reasoning capability/tag strings and shorter compact labels.
+- **New color cues for psychic and royal events.** `psychic` (bright violet) for psylink gains and
+  psycasts, `royalty` (gold) for title gains and royal rituals — previously psylink shared the
+  Anomaly dread red (`extremeDark`) and titles shared the generic warm-white cue. Anomaly dread
+  groups stay on `extremeDark`. Palette in `DiaryUiStyleDef.xml` with C# fallbacks; `colorCue` is
+  saved per-event, so existing entries keep their old color.
+- **Dev event panel: hid the non-functional Events section.** Its rail button is no longer drawn,
+  saved `events` selections normalize to Diary, and Diary is the default section. `DrawRealEventsSection`
+  and the `Trigger*` helpers are retained so the section can be re-enabled once triggers are fixed.
+- **Event-coverage review fixes (XML + docs only).** Corrected dead `ThingPresent` observer
+  defNames (`ObeliskPresence` → real `WarpedObelisk_*`, `UnnaturalCorpsePresence` →
+  `UnnaturalCorpse_Human`, `HarbingerTreePresence` → `Plant_TreeHarbinger`) and added display
+  groups for the new page-recording defs so they classify properly instead of hitting the catch-all.
+  Documented the event-coverage defs in §5/§5.1.
+- **Event-coverage pass: XML-only groups, enchantments, personas, observed conditions, tone windows.**
+  Implements Tiers 1-2 of `EVENT_COVERAGE_PLAN.md`, Anomaly focus, no C# changes. Retone groups:
+  Anomaly entity raids, weather hardship (ColdSnap/HeatWave/VolcanicWinter/Flashstorm + DLC), and a
+  three-way mental-break split. New prompt enchantments (malnutrition, heatstroke/hypothermia,
+  anesthetic, psychic shock, carcinoma, mechanites, drugs, deathrest/lungrot, bloodrage, vacuum,
+  etc., including memory decay). New drunk writing-style override. New observed
+  conditions (weather, Anomaly states, obelisks/pit gate/fleshmass heart, weighted light flavor for
+  thrumbo/blight/ambrosia). New event windows (`MechClusterLanded`, `ShortCircuitAftermath`,
+  `SelfTameJoined`). All plain-string matchers (DLC-safe); EN + natively-written RU strings;
+  `EVENT_PROMPT_MAP.md` refreshed.
+- **Event-coverage gap analysis & plan (docs only).** New `EVENT_COVERAGE_PLAN.md`: inventories
+  current reactions and proposes a tiered XML-only extension plan. No behavior change.
+- **Render-time paragraph reflow for diary prose.** Long single-line entries split into readable
+  paragraphs at sentence ends, RimWorld year mentions, semicolons, and em-dashes, with a hard length
+  cap. Default atmosphere only; `GeneratedText` is never mutated and both measure/draw passes share
+  the helper. Tuning in `DiaryUiStyleDef.xml`; new pure `tests/DiaryParagraphReflowTests`.
+- **Review fixes: API settings, arc cadence, localization.** Locked the per-row in-flight guard so
+  UI cancellation can't race reasoning-capability refreshes; arc reflections honor
+  `arcReflectionMaxEntriesPerYear` across the full UI range (pure tests added); moved dynamic
+  Advanced prompt-policy prefixes to Keyed EN/RU; `LlmClient.TestConnection` no longer holds an
+  English prompt fallback.
+- **Title fallback guard tightened.** Title follow-ups now reject one-line labels, instruction
+  echoes, reasoning-style lines, terminal periods, and out-of-contract lengths, falling back to a
+  title built from the finished entry.
+- **Reasoning capability auto-refreshes across the settings window.** A row's
+  capability/model list now fetches on settings-open (uncached rows), URL/key/auth change
+  (background), and Test connection (parallel), plus the manual Fetch. A new capability-only
+  refresh updates the thread-safe cache without touching single-flight picker state; removed the
+  redundant auto-fetch-at-Pick code.
 
 ## 2026-07-02
 
-- **Reasoning config now mostly auto.** Two follow-ups make the per-lane reasoning controls need
-  almost no manual work. (1) **Auto detects a wider tag set.** The built-in Auto reasoning-tag list
-  now strips `think`/`thinking`/`reasoning`/`analysis`/`thought`/`reflection`/`scratchpad` instead of
-  the original four, so exotic wrappers from RP-tuned models no longer leak into diary text even when
-  the player never picks a tag. The tag dropdown remains as an escape hatch, not a required step.
-  False-positive risk is negligible: strippers only act on wrapper form (`<tag>…</tag>`), fenced
-  ```` ```tag ```` blocks, and `Tag:` headings — never the bare word in prose. (2) **Capability
-  auto-fetches at Pick.** When a model is picked from the list and its reasoning capability is not
-  yet cached for that endpoint (Fetch returned none, or Pick before Fetch finished), the row now
-  fetches it automatically so the reasoning-effort clamp protects the request without the player
-  doing anything extra. (DOCUMENTATION §8.)
-
-## 2026-07-02
-
-- **Per-lane reasoning-tag picker and capability-aware reasoning effort.** Reasoning models wrap
-  their private thinking in many different wrappers (`<think>`, `<thinking>`, `<reasoning>`,
-  `<analysis>`, and exotic ones like `<reflection>`/`<scratchpad>` for RP-tuned models), and there is
-  no single "reasoning" wire format across providers. Two new per-lane controls address both
-  symptoms. (1) A **"Reasoning tag" dropdown** (default *Auto*) lets a player pin the exact tag a
-  model emits; the chosen tag is stripped *in addition to* the built-in broad guess-list, so exotic
-  wrappers no longer leak into saved diary text, while common tags keep working as a safety net.
-  (2) When an endpoint advertises per-model **reasoning capability** in its `/models` response
-  (OpenRouter and some gateways — `reasoning.supported_efforts`/`default_enabled`), the effort
-  dropdown now only offers levels the model accepts, the row shows a tooltip of what the model
-  supports, and the outgoing request **clamps** `reasoning_effort` so it never carries a value the
-  model rejects (the direct fix for "400 Thinking budget is not supported for this model" on
-  non-reasoning models like Gemma). Providers that do not advertise capability (OpenAI-direct, local
-  GGUF servers) degrade gracefully to today's unconditional behavior. New pure
-  `ModelReasoningCapability` (parse + clamp policy), `ModelCapabilityCache` (process-wide
-  endpoint+model keyed cache), and `ApiEndpointPolicy.NormalizeReasoningTag`; `StripReasoningTextBlocks`
-  gained a tag-parameterized overload. `LlmResponseParserTests` and `DiaryPipelineTests` cover the
-  new tag stripping and the capability clamping. (DOCUMENTATION §6.)
-
-## 2026-07-02
-
-- **Single-item interaction batch flushes now become standalone entries.** If an XML `PairEvent`
-  interaction batch, such as insults, opens but only collects one social-log moment before the quiet
-  window expires or the game saves, the flush now emits a normal standalone interaction entry: original
-  defName/label, first POV texts, normal group instruction, and no `batch=interaction` prompt marker.
-  Multi-item batches still use the combined synthetic defName/label and batch instruction. A
-  `DiaryPipelineTests` regression pins that `events=1` without a batch marker selects the standalone
-  prompt template. (DOCUMENTATION §5.)
-- **Lasting prompt overrides gained an extra stale-state guard.** Observed-condition prompt bias now
-  stops once the condition has been missing past its end debounce, even if the saved row is retained to
-  retry an optional end diary page because no eligible pawn is available. That prevents a resolved
-  condition from keeping the LLM in its override tone through retry bookkeeping. Persistent
-  `DiaryEventWindowDef` rows also now validate that they have either a positive timeout or a usable end
-  signal, and the pure tests cover the prompt-activity boundary plus shipped event-window XML close
-  paths. (DOCUMENTATION §5/§5.1.)
-- **Public mod-integration API v1 (inbound events).** Other mods can now push moments into a pawn's
-  diary through the stable `PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)`
-  facade — validated, crash-isolated, main-thread-guarded, and routed through the normal
-  `DiaryEvents.Submit` bus as the new `External` event source (enum value + pure
-  `ExternalEventData.Decide` + `ExternalEventSpec` + `ExternalEventSignal`). Prompt policy stays in
-  XML: an External-domain `DiaryInteractionGroupDef` must claim the submitted `eventKey`
-  (required-match; unclaimed keys warn once and record nothing), with a broad
-  `DiaryEventPrompt_External` fallback row and a new `externalEventDedupTicks` tuning knob (adapters
-  can override dedup per request). Groups also gained `enableWhenPackageIdsLoaded` — the inverse of
-  `disableWhenPackageIdsLoaded` — so future in-core compatibility packs stay inert without their
-  target mod. A Debug Actions entry ("Submit test external event...") exercises the whole path via
-  the built-in `externalDevTest` group; EN/RU strings added, and `DiaryCapturePolicyTests` covers
-  the External decision, dedup-key, and game-context formats. Public contract: `INTEGRATIONS.md`;
-  architecture: `DOCUMENTATION.md` §3.7. A complete buildable adapter template ships in
-  `integrations/PawnDiary.ExampleAdapter/` (own About.xml/csproj/GameComponent/group XML), with
-  `scripts/deploy-integrations.ps1` to copy adapters to the RimWorld `Mods/` root during
-  development.
-- **The revealed-metalhorror prompt override now lasts the whole threat and no longer.** The
-  `MetalhorrorEmergence` observed condition biases diary prompts away from ordinary health/mood context
-  while a visible metalhorror is on the map. Its end trigger is the live `Metalhorror` ThingDef leaving
-  `ListerThings`, which is reliable: when a metalhorror dies it becomes a `Corpse_Entity` (a different
-  def), so `ThingsOfDef(Metalhorror)` stops matching and the override releases shortly after the kill.
-  The earlier fix gave this condition a 2-day `maxActiveTicks` cap as a blunt band-aid against lingering
-  remnants — but that cap also cut the override off mid-rampage for any metalhorror situation lasting more
-  than two in-game days, which was the opposite of what was wanted. The cap is removed; the natural
-  death-trigger is now the only end path, so a multi-day rampage keeps the override live until the
-  metalhorror actually dies.
-- **Added a hidden-infection "insurance" tone for the post-kill metalhorror situation.** Killing the one
-  emerged metalhorror often does not end the threat: metalhorror infects multiple colonists and emerges
-  from a single host at roughly half-colony infection, so others can still be carrying the implant
-  silently. A new `MetalhorrorInfection` observed condition, backed by a new `MapHiddenHediff` observer
-  type, senses "is any home-map colonist infected?" as a map-level boolean and keeps a softer dread-tone
-  override alive until the colony is genuinely clean. The observer is tone-only by contract — it emits an
-  empty evidence label and the prompt prose never names a hediff or a host — so the hidden mechanic stays
-  hidden. This is the first observer that intentionally senses hidden pawn state; the existing `PawnHediff`
-  observer still skips hidden hediffs and is unchanged. DLC-safe: matched by plain defName string, inert
-  without Anomaly. (New observer covered by `TestObservedConditionDecayXmlPolicy`; DOCUMENTATION §5.1.)
-- **The Test connection button stopped freezing every other API row while one test ran.** Each row's
-  Test button now runs independently: clicking Test on row B while row A is still testing starts B
-  immediately, and each row shows its own "Testing…"/success/failure status line. Previously a single
-  global in-flight flag blocked every row's button until the one running test finished — a
-  pre-existing limit that became visible once the Gemma `none`-effort fix (below) made tests actually
-  succeed and hold that flag for the full request duration. `ApiConnectionController` now keeps
-  per-row state with a per-row generation counter for stale-result rejection and a thread-safe
-  `ConcurrentQueue` result handoff drained each UI frame. The Fetch-models button on the same screen
-  is still single-flight global and unchanged. (DOCUMENTATION §8.)
-- **Gemma (and other non-reasoning models) stopped failing Chat Completions lanes set to
-  Reasoning → None.** The Chat Completions request body now omits `reasoning_effort` when the saved
-  effort is `none`, matching how `default` already behaves. Previously the serializer sent
-  `reasoning_effort:"none"`, which OpenAI-compatible gateways translate into a thinking-budget
-  request that non-reasoning models reject — e.g. Google's endpoint returned HTTP 400 "Thinking
-  budget is not supported for this model." for `models/gemma-4-*`. OpenAI Responses mode is
-  unchanged, since `none` is a real, server-honored wire value there. (Pure test in
-  `DiaryPipelineTests`; DOCUMENTATION §8 documents the per-mode serialization rule.)
-- **Pre-release performance pass removed two hitch/garbage sources.** The open Diary tab no longer
-  re-measures every expanded card on each periodic pawn-name-highlight refresh: the highlight
-  version (which invalidates the card-height cache and row layout) now advances only when the
-  rebuilt name/color set really changed, via the new pure `DiaryNameHighlighter.SameHighlights`
-  (covered by `DiaryTextDecorationTests`). The three hottest Harmony hooks — `Thing.SpawnSetup`,
-  `Pawn_HealthTracker.AddHediff`, and `MemoryThoughtHandler.TryGainMemory` — now run through a new
-  state-passing `DiaryPatchSafety.Run` overload so their patch bodies allocate no per-call closure,
-  and the per-tick batch-flush scanners allocate their key lists lazily instead of every tick while
-  a batch is pending. No behavior change; also refreshed the stale partial-class file map in the
-  `DiaryGameComponent.cs` header.
-- **Diary inspect tabs no longer show unread markers.** The pawn inspect-tab Diary button now stays
-  visually quiet when new pages are waiting; the bottom command overlay still signals unread/writing
-  status when command mode is enabled, and obsolete XML style knobs for the tab marker were removed.
-- **Advanced prompt-enchantment settings stopped exposing the frequency alias.** The Prompt policy
-  editor now exposes `chance` as the single top-level appearance-odds control for prompt
-  enchantments; legacy `frequency` XML remains accepted but saved `*.frequency` Advanced overrides
-  are pruned as removed-editor entries.
-- **Russian localization review filled the prompt tuning UI gaps.** Added the missing Russian Keyed
-  strings for advanced prompt settings and Prompt Studio, synchronized prompt-template and
-  interaction DefInjected text with the current XML source, fixed a malformed persona speech marker,
-  and replaced awkward test-fixture wording such as "синтетическое задание" with natural Russian UI
-  equivalents. A follow-up wording pass also replaced code-flavored Russian UI phrases like
-  "пачка", "активный уклон", "сырая инструкция", and visible "пешка" labels with shorter
-  localization-friendly wording; a RimWorld-terminology pass now uses "рейд"/"рейдеры" and
-  "вдохновение" consistently, fixes the "идеолигия" typo, and removes remaining visible
-  code-flavored wording from Russian prompt and UI text.
-- **Prompt policy node settings stopped mirroring XML translation defaults.** Literal override boxes
-  for key-backed prompt policy (`*Text`, `conditionLabel`, cue lists, batch/hediff text) now stay
-  blank when XML owns the Keyed default, so node settings no longer expose raw translation keys or
-  copy their resolved text into saved overrides.
-- **Pawn Diary no longer bundles Harmony.** The mod now ships only `PawnDiary.dll` under
-  `1.6/Assemblies/`; the Harmony runtime comes from the declared `brrainz.harmony` dependency at
-  game-time. `1.6/Assemblies/0Harmony.dll` was removed, `scripts/publish.ps1` no longer copies it,
-  and `.githooks/verify.ps1` now fails the build if a bundled `0Harmony.dll` appears in the shipped
-  output. `0Harmony.dll` remains in `Source/Libs/` as a build-time-only compile reference
-  (`Private=False`, never copied to output). (The plan's `PackageReference`/`Lib.Harmony` idiom is
-  documented in the csproj but is not used: the legacy non-SDK csproj cannot be restored by the
-  current .NET 10 / MSBuild 18 toolchain, so the proven compile-time-reference approach is kept.)
-- **Project builds from any checkout location.** RimWorld/Unity assembly hint paths now resolve
-  through a configurable `RimWorldManaged` MSBuild property (overridable via `/p:RimWorldManaged=...`
-  or the `RIMWORLD_MANAGED` env var) instead of a hard-coded `..\..\..\RimWorldWin64_Data` relative
-  path that only worked inside RimWorld's `Mods/` folder.
-- **Arrival capture no longer risks an early-worldgen "Could not find player faction" log.**
-  `ArrivalContextCache.Capture` and `PawnSetFactionPatch.Postfix` now check `GamePlaying` first and
-  use `Faction.OfPlayerSilentFail` instead of the logging `Faction.OfPlayer` getter; the
-  observed-conditions hostile counter and pawn name-highlight color picker use the same null-safe
-  read.
-- **Malformed quests are filtered from diary prompts.** `QuestManager.QuestsListForReading` can
-  expose generated quests whose description resolves to `ERR:` placeholder text; a new pure helper
-  `QuestEventData.IsMalformedResolvedQuestDescription` rejects those (and blank descriptions) so
-  they never reach a diary page, while still allowing the generic event-window signal.
-- **Harmony patching is now per-class.** `DiaryModStartup` replaced the single `harmony.PatchAll()`
-  call with a `PatchAllSafely` sweep that patches each `[HarmonyPatch]` class independently, so one
-  fragile target can no longer prevent later patches from registering.
-- **Quest UI accept fallback is silent on a clean boot.** The version-specific generated-closure
-  fallback in `QuestUiAcceptPatch` no longer logs a warning when it cannot resolve (the canonical
-  `Quest.Accept` patch is the real hook); it surfaces only under dev mode.
-- **Minor UI text-clipping hardening.** The diary card group-label chip is now 20px tall (inner
-  label 18px after padding), and the Advanced settings group title measures its Medium-font line
-  height instead of hard-coding 24px, reducing clipping under non-default UI scale / text-size
-  accessibility settings.
-
-## 2026-07-02
-
-- **Diary export moved to Debug Actions and covers archived-only rows.** `Pawn Diary > Export all
-  diary pages...` now writes hot pages, compact archived pages, archive rows without a live pawn diary
-  record, and backing event records; the old settings-page export button was removed.
-- **Destructive dev buttons are tinted red.** The event test panel now draws save-mutating and
-  irreversible actions with the XML-owned `devDangerButtonColor`, including real event triggers,
-  mock-page fill, archive purge, and prompt-suite clear.
+- **Per-lane reasoning-tag picker and capability-aware reasoning effort.** A "Reasoning tag"
+  dropdown (default Auto) pins the exact wrapper tag a model emits, stripped alongside the built-in
+  broad guess-list. Endpoints advertising `reasoning.supported_efforts`/`default_enabled` now
+  constrain the effort dropdown and clamp outgoing `reasoning_effort` (fixes 400s on non-reasoning
+  models like Gemma); providers without capability degrade gracefully. New `ModelReasoningCapability`,
+  `ModelCapabilityCache`, `ApiEndpointPolicy.NormalizeReasoningTag`, and a tag-parameterized stripper;
+  pure tests added.
+- **Reasoning config now mostly auto.** The built-in Auto reasoning-tag stripper now covers
+  `think`/`thinking`/`reasoning`/`analysis`/`thought`/`reflection`/`scratchpad` (was four tags);
+  reasoning capability auto-fetches at model pick when not yet cached.
+- **Public mod-integration API v1 (inbound events).** Other mods push moments via the stable
+  `PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)` facade — validated,
+  crash-isolated, main-thread-guarded, routed through the normal bus as a new `External` source.
+  Prompt policy stays in XML (an External-domain group claims the `eventKey`); new
+  `externalEventDedupTicks` knob and `enableWhenPackageIdsLoaded` group flag. Debug Action test entry,
+  EN/RU strings, `INTEGRATIONS.md` contract, and a buildable adapter template in
+  `integrations/PawnDiary.ExampleAdapter/` with a deploy script.
+- **Hidden-infection "insurance" tone for post-kill metalhorror.** New `MetalhorrorInfection`
+  observed condition (backed by a new `MapHiddenHediff` observer) keeps a softer dread-tone alive
+  while any home-map colonist is infected — tone-only, never names the hediff or host. DLC-safe
+  (plain defName string).
+- **Revealed-metalhorror override lasts the whole threat.** `MetalhorrorEmergence` now ends on the
+  live `Metalhorror` ThingDef leaving `ListerThings` (death → `Corpse_Entity`), removing the blunt
+  2-day `maxActiveTicks` cap that cut the override off mid-rampage.
+- **Per-row Test connection.** Clicking Test on row B while row A runs starts B immediately, each
+  with its own status/generation counter and a thread-safe result queue. Fetch-models stays
+  single-flight global.
+- **Non-reasoning models stopped failing Chat Completions on Reasoning → None.** The request body
+  omits `reasoning_effort` when saved effort is `none` (matching `default`), fixing 400 "Thinking
+  budget not supported" errors on models like Gemma. Responses mode unchanged.
+- **Pre-release performance pass.** Diary tab name-highlight refresh no longer re-measures cards
+  unless highlights really changed (new pure `DiaryNameHighlighter.SameHighlights`); the hottest
+  Harmony hooks (`Thing.SpawnSetup`, `AddHediff`, `TryGainMemory`) use a closure-free state-passing
+  `DiaryPatchSafety.Run` overload; batch scanners allocate keys lazily.
+- **No longer bundles Harmony.** Ships only `PawnDiary.dll`; runtime Harmony comes from the
+  `brrainz.harmony` dependency. Removed shipped `0Harmony.dll`, publish script no longer copies it,
+  and the verify hook fails on a bundled copy. `Source/Libs/0Harmony.dll` stays as a compile-time
+  reference only.
+- **Project builds from any checkout location.** RimWorld/Unity assembly hint paths resolve via a
+  configurable `RimWorldManaged` MSBuild property (`/p:RimWorldManaged=...` or `RIMWORLD_MANAGED`
+  env var), replacing the hard-coded relative path.
+- **Diary export moved to Debug Actions.** `Pawn Diary > Export all diary pages...` writes hot
+  pages, compact archived pages, archive rows without a live record, and backing event records; the
+  old settings export button was removed.
+- **Single-item interaction batches become standalone entries.** A `PairEvent` batch that collects
+  only one moment now emits a normal standalone entry (original defName/label, no batch marker);
+  multi-item batches unchanged. Pure test pins `events=1` template selection.
+- **Lasting prompt overrides gained a stale-state guard.** Observed-condition prompt bias stops once
+  a condition is missing past its end debounce, even if its row is retained for retry; event-window
+  rows validate they have a positive timeout or usable end signal. Pure tests cover the boundary.
+- **Inspect-tab Diary button no longer shows unread markers.** The bottom command overlay still
+  signals unread/writing status; removed obsolete marker style knobs.
+- **Prompt-enchantment editor exposes `chance`, not the `frequency` alias.** Legacy `frequency` XML
+  is accepted but pruned from saved overrides.
+- **Russian localization review.** Filled missing prompt-tuning/Prompt Studio Keyed strings, synced
+  DefInjected, fixed a persona speech marker, and replaced code-flavored UI phrases with natural
+  RimWorld terminology.
+- **Prompt-policy override boxes no longer mirror XML translation defaults.** Key-backed boxes
+  (`*Text`, `conditionLabel`, cue/batch/hediff text) stay blank when XML owns the Keyed default.
+- **Arrival capture no longer risks an early-worldgen "Could not find player faction" log.** Checks
+  `GamePlaying` first and uses `Faction.OfPlayerSilentFail`.
+- **Malformed quests filtered from prompts.** New pure `QuestEventData.IsMalformedResolvedQuestDescription`
+  rejects quests whose description resolves to `ERR:` placeholder or blank text.
+- **Harmony patching is now per-class.** Startup replaced `harmony.PatchAll()` with a per-class
+  `PatchAllSafely` sweep so one fragile target can't block later patches.
+- **Quest UI accept fallback silent on clean boot.** `QuestUiAcceptPatch` generated-closure fallback
+  no longer warns (canonical `Quest.Accept` is the real hook); dev-mode only.
+- **UI text-clipping hardening.** Group-label chip is 20px tall; Advanced group title measures
+  Medium-font line height instead of a hard-coded 24px.
+- **Destructive dev buttons tinted red** with the XML-owned `devDangerButtonColor`.
 
 ## 2026-07-01
 
-- **Prompt settings menu labels shortened.** The Shared/event prompts picker now uses compact system
-  prompt names and hides internal event keys from event-prompt menu titles.
-- **Archived-page purge is now a direct debug action.** RimWorld's Debug Actions menu now exposes
-  `Pawn Diary > Purge archived entries for pawn...`, opening a pawn picker that clears only the
-  selected pawn's compact archive rows while leaving active hot diary events untouched.
-- **Diary tab pagination loading no longer flickers over quiet refreshes.** The tab now treats a
-  year-index build as a full blocking load only when no cached year index exists, so loading a
-  different year cannot make a same-pawn background refresh hide the pager or visible list.
-- **Diary arcs now start with arrival and continue from the prior ending.** Starting-colonist
-  arrivals are flushed before any non-arrival capture on new games, and arrival refs are inserted at
-  the front of a pawn's diary index if another startup entry already exists. First-person prompt
-  templates now include an XML-owned `PreviousEntryEnding` field fed from the previous page's final
-  sentence excerpt, with `DiaryTuningDef` knobs for sentence count and max length; the pure planner,
-  prompt-lab mirror, and pipeline tests cover the new source token.
-- **Gray-flesh suspicion now hands off to emerged metalhorrors.** Observed conditions gained
-  XML-owned `suppressWhenThingDefNames`; `AnomalyGrayFleshEvidence` now tracks analyzable gray-flesh
-  samples and stops once a visible metalhorror or metalhorror debris exists, while
-  `MetalhorrorEmergence` is enabled as a map-scoped observer for the spawned visible `Metalhorror`
-  ThingDef instead of the hidden implant hediff path. Lasting event-window and observed-condition
-  prompt enhancers now support age-based decay (`promptDecayTicks` / `promptDecayMinMultiplier`) so
-  their selection weight drops and normal-context suppression relaxes over time; observed conditions
-  also gained `maxActiveTicks` and saved restart cooldowns for force-ended identities, with
-  gray-flesh suspicion force-stopping after two days and then using a two-day cooldown. The suspicion
-  prompt now hides the sample's item label and writes the state as paranoia and fear that something
-  may be infecting people and imitating them. Hediffs that match any active temporary writing-style
-  override are now suppressed from prompt enchantments, so long-lived states such as inhumanization,
-  trauma savant, joywire, bliss lobotomy, or mindscrew do not appear twice in the same prompt. Prompt
-  policy settings expose the observed-condition decay, force-stop, cooldown, suppression, and
-  evidence-label caps needed to tune this behavior in-game.
-- **Dev event panel click split.** Def-backed event rows now left-click to fire the shown trigger and
-  right-click to open the Def selector, while ordinary dev-panel text buttons ignore right-clicks.
-  Selector choices now store the chosen Def id directly, and button titles mirror the selected
-  menu label so right-click selection feedback matches the committed trigger.
-- **Resurrected pawns keep writing.** Death pages now remain historical boundary entries without
-  permanently ending a pawn's diary if RimWorld brings that same pawn load ID back to life. Capture,
-  generation, Diary tab rendering, dev export/mock helpers, and hot/archive retention all ignore the
-  old final-death cutoff while the pawn is alive again; a later death becomes terminal again.
-- **Tuning and prompt settings tabs for XML overrides.** The mod-settings window now has
-  **Main**, **Prompts**, **Styles**, and **Tuning** tabs so prompt text, writing styles, and low-level
-  XML parameters no longer compete on the same page. Prompts contains **Shared/event prompts** for
-  the existing shared system prompt and event-prompt overrides, plus **Prompt policy and weights** for
-  template prompts, final instructions, template field lists, prompt switches/token caps,
-  prompt-enchantment weights/cues, humor cues, event-window and observed-condition prompt weights,
-  interaction-group instructions/tone variants/batch-promotion weights, and hediff-driven writing-style
-  override policy. Styles contains writing-style label/rule/tag editing. Tuning exposes scalar and
-  line-based list/table knobs from `DiaryTuningDef`, `DiarySignalPolicyDef`, and
-  `DiaryContextReactionDef` (dedup windows, weather chance rows, ritual quality labels,
-  mood-condition families, thought token/progression policy, ability/work sampling,
-  weather/health/enchantment thresholds, mood/pain/opinion buckets, day/quadrum/arc reflection,
-  scanner intervals, signal policies, context reactions). Tuning and Prompt policy use a compact
-  two-pane editor with per-field checkbox/slider/numeric/text/list/table widgets, per-field and
-  per-group reset, accent coloring for customized values, filtering, and rich tooltips. Overrides
-  persist per player (`TuningOverrideStore`) and take effect immediately by writing into live Def
-  fields or nested policy objects; pristine XML defaults, sentinel values, and `<null>` inherited-list
-  markers are snapshotted for Reset. Follow-up hardening makes Def-backed prompt-policy groups register
-  lazily after `DefDatabase` is populated (so humor cues are visible) and replaces visible translation
-  key editors with resolved literal text override fields for event-window, observed-condition,
-  prompt-enchantment, context, batch, and hediff prompt text. Prompt policy template prompt boxes now
-  show only raw per-template overrides, not inherited shared prompt text, so the Shared/event prompts
-  subpage remains the only place that displays and edits shared prompts; pure tests pin that menu split.
-  Literal overrides win over their Keyed counterparts at generation time (for example a hediff
-  enchantment's `descriptionOverrideText` now takes precedence over `descriptionOverrideKey`), and any
-  override saved under a now-removed translation-key field name is pruned from settings on load, since a
-  lookup key cannot be carried over into a literal-text field.
-- **Pawn arc reflections implemented.** Added passion skill, psylink, xenotype, and royal-title
-  progression pages plus rare yearly arc reflections from de-duplicated hot/archive memories. XML now
-  owns templates, cadence, major-arc/high-stakes policy, and reflection grouping; fixtures, pure
-  tests, and `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` cover the flow. Follow-up hardening keeps annual
-  arcs independent of day summaries and backs off low-memory forced retries.
-- **Russian localization caught up for reflections.** Added missing Russian Keyed and DefInjected
-  coverage for quadrum reflection, progression, and yearly arc prompts, with Russian prompt prose
-  rewritten idiomatically instead of translated line by line.
-- **Generated-text sanitizer hardened.** Cleanup now handles incomplete speech markers, common
-  `speach` typos, unfinished bracket/reasoning tags, and leaked Unity rich-text tags before save/UI
-  display.
+- **Tuning and prompt settings tabs for XML overrides.** Mod settings reorganized into
+  Main/Prompts/Styles/Tuning tabs. Prompts holds shared/event prompts plus a full prompt-policy and
+  weights editor; Styles edits writing-style rules/tags; Tuning exposes scalar/list/table knobs from
+  `DiaryTuningDef`, `DiarySignalPolicyDef`, and `DiaryContextReactionDef`. Tuning and Prompt policy
+  use a two-pane editor with per-field widgets, reset, accent coloring, filtering, and tooltips.
+  Overrides persist per player (`TuningOverrideStore`) and apply immediately to live Def fields;
+  follow-ups register Def-backed groups lazily, replace translation-key editors with literal-text
+  override fields, and make literal overrides win over Keyed at generation time.
+- **Pawn arc reflections.** Passion/psylink/xenotype/title progression pages plus rare yearly arc
+  reflections from de-duplicated hot/archive memories. XML owns templates/cadence/policy; fixtures,
+  pure tests, and `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` cover the flow.
+- **Gray-flesh suspicion hands off to emerged metalhorrors.** Observed conditions gained
+  `suppressWhenThingDefNames`, age-based decay (`promptDecayTicks`/`promptDecayMinMultiplier`),
+  `maxActiveTicks`, and restart cooldowns. `AnomalyGrayFleshEvidence` tracks gray-flesh samples and
+  stops once a visible metalhorror exists; `MetalhorrorEmergence` now observes the spawned ThingDef.
+  Long-lived style-override hediffs (inhumanization, joywire, etc.) are suppressed from prompt
+  enchantments; settings expose the decay/cooldown/suppression knobs.
+- **Diary arcs start with arrival and continue from the prior ending.** Starting-colonist arrivals
+  flush first on new games, arrival refs insert at the front of the index, and prompts gain an
+  XML-owned `PreviousEntryEnding` field. Pure tests cover the new source token.
+- **Resurrected pawns keep writing.** A death page stays a historical boundary but no longer ends
+  the diary if RimWorld revives the same load ID; capture, generation, rendering, export, and
+  retention all ignore the old cutoff while alive.
+- **Archived-page purge moved to a direct Debug Action** (`Pawn Diary > Purge archived entries for
+  pawn...`): a pawn picker clears only that pawn's compact archive rows, leaving active hot events
+  untouched.
+- **Diary tab pagination no longer flickers over quiet refreshes.** A year-index build is full
+  blocking only when no cached index exists.
+- **Dev event panel click split.** Def-backed rows left-click to fire, right-click to open the Def
+  selector; button titles mirror the selected menu label.
+- **Generated-text sanitizer hardened.** Handles incomplete speech markers, `speach` typos,
+  unfinished bracket/reasoning tags, and leaked Unity rich-text tags before save/UI.
+- **Prompt settings menu labels shortened:** compact system-prompt names, internal event keys hidden.
+- **Russian localization caught up for reflections**, rewritten idiomatically.
 
 ## 2026-06-30
 

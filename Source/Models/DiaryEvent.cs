@@ -37,6 +37,12 @@ namespace PawnDiary
         public const string ExtremeDarkColorCue = "extremeDark";
         public const string StrangeChatColorCue = "strangeChat";
         public const string WhiteColorCue = "white";
+        // Psychic events (psylink gains, psycast abilities): a bright violet, distinct from the dark
+        // blood-red extremeDark cue used by Anomaly dread content (void monolith, metalhorror, etc.).
+        public const string PsychicColorCue = "psychic";
+        // Royal-title gains and royal rituals: a gold, distinct from the generic warm-white cue that
+        // heartfelt moments, birthdays, and skill passions share.
+        public const string RoyaltyColorCue = "royalty";
         public const string QuietColorCue = "quiet";
         private const int MaxPersistedRawResponseChars = 4000;
 

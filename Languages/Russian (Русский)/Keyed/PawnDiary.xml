@@ -242,7 +242,7 @@
   <PawnDiary.Settings.ApiRouting.Balanced>Равномерно</PawnDiary.Settings.ApiRouting.Balanced>
   <PawnDiary.Settings.ApiRouting.PreferTopRows>Сначала верхние</PawnDiary.Settings.ApiRouting.PreferTopRows>
   <PawnDiary.Settings.ApiRouting.FailoverOnly>Только запасные</PawnDiary.Settings.ApiRouting.FailoverOnly>
-  <PawnDiary.Settings.ReasoningEffort>Глубина рассуждения</PawnDiary.Settings.ReasoningEffort>
+  <PawnDiary.Settings.ReasoningEffort>Рассуждение</PawnDiary.Settings.ReasoningEffort>
   <PawnDiary.Settings.ReasoningEffort.Default>Как задаёт API</PawnDiary.Settings.ReasoningEffort.Default>
   <PawnDiary.Settings.ReasoningEffort.None>Выключено</PawnDiary.Settings.ReasoningEffort.None>
   <PawnDiary.Settings.ReasoningEffort.Minimal>Минимальная</PawnDiary.Settings.ReasoningEffort.Minimal>
@@ -250,6 +250,11 @@
   <PawnDiary.Settings.ReasoningEffort.Medium>Средняя</PawnDiary.Settings.ReasoningEffort.Medium>
   <PawnDiary.Settings.ReasoningEffort.High>Высокая</PawnDiary.Settings.ReasoningEffort.High>
   <PawnDiary.Settings.ReasoningEffort.XHigh>Очень высокая</PawnDiary.Settings.ReasoningEffort.XHigh>
+  <PawnDiary.Settings.ReasoningSupportedTip>Эта модель поддерживает рассуждение. Доступные уровни: {0}.</PawnDiary.Settings.ReasoningSupportedTip>
+  <PawnDiary.Settings.ReasoningSupportedGenericTip>Эта модель поддерживает рассуждение.</PawnDiary.Settings.ReasoningSupportedGenericTip>
+  <PawnDiary.Settings.ReasoningUnsupportedTip>Эта модель не поддерживает рассуждение. Выбранный уровень не отправляется в запросе, поэтому модель перестаёт его отклонять.</PawnDiary.Settings.ReasoningUnsupportedTip>
+  <PawnDiary.Settings.ReasoningTag>Тег</PawnDiary.Settings.ReasoningTag>
+  <PawnDiary.Settings.ReasoningTagTip>Управляет удалением приватных рассуждений модели из текста дневника. Авто использует встроенное распознавание и подходит почти для всех моделей. Выбирайте тег, в который модель оборачивает свои рассуждения (например, reflection или scratchpad), только если рассуждения видны в записях дневника.</PawnDiary.Settings.ReasoningTagTip>
   <PawnDiary.Settings.ToggleOn>Вкл</PawnDiary.Settings.ToggleOn>
   <PawnDiary.Settings.ToggleOff>Выкл</PawnDiary.Settings.ToggleOff>
   <PawnDiary.Settings.FetchModels>Обновить</PawnDiary.Settings.FetchModels>
@@ -257,7 +262,7 @@
   <PawnDiary.Settings.NoModelsReturned>API не вернул моделей.</PawnDiary.Settings.NoModelsReturned>
   <PawnDiary.Settings.ModelsFound>Найдено моделей: {0}.</PawnDiary.Settings.ModelsFound>
   <PawnDiary.Settings.FetchFailed>Не удалось загрузить: {0}</PawnDiary.Settings.FetchFailed>
-  <PawnDiary.Settings.TestConnection>Проверить подключение</PawnDiary.Settings.TestConnection>
+  <PawnDiary.Settings.TestConnection>Тест API</PawnDiary.Settings.TestConnection>
   <PawnDiary.Settings.TestingConnection>Проверка...</PawnDiary.Settings.TestingConnection>
   <PawnDiary.Settings.ConnectionTestSucceeded>Подключение работает: {0}</PawnDiary.Settings.ConnectionTestSucceeded>
   <PawnDiary.Settings.ConnectionTestFailed>Подключение не удалось: {0}</PawnDiary.Settings.ConnectionTestFailed>

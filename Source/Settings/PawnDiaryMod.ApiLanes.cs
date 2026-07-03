@@ -291,8 +291,8 @@ namespace PawnDiary
 
             y += lineHeight + gap;
             Rect modelLineRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-            float pickButtonWidth = 84f;
-            float fetchButtonWidth = 144f;
+            const float pickButtonWidth = 84f;
+            const float fetchButtonWidth = 144f;
             Rect pickRect = new Rect(modelLineRect.xMax - pickButtonWidth, modelLineRect.y, pickButtonWidth, modelLineRect.height);
             Rect fetchRect = new Rect(pickRect.x - gap - fetchButtonWidth, modelLineRect.y, fetchButtonWidth, modelLineRect.height);
             Rect modelRect = new Rect(modelLineRect.x, modelLineRect.y, fetchRect.x - modelLineRect.x - gap, modelLineRect.height);
@@ -301,10 +301,10 @@ namespace PawnDiary
 
             y += lineHeight + gap;
             Rect keyRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
-            const float testButtonWidth = 96f;
-            Rect testRect = new Rect(keyRect.xMax - testButtonWidth, keyRect.y, testButtonWidth, keyRect.height);
-            Rect keyFieldRect = new Rect(keyRect.x, keyRect.y, keyRect.width - testButtonWidth - gap, keyRect.height);
-            DrawApiKeyField(keyFieldRect, endpoint, 94f);
+            Rect testRect = new Rect(keyRect.xMax - pickButtonWidth, keyRect.y, pickButtonWidth, keyRect.height);
+            Rect revealRect = new Rect(testRect.x - gap - fetchButtonWidth, keyRect.y, fetchButtonWidth, keyRect.height);
+            Rect keyFieldRect = new Rect(keyRect.x, keyRect.y, revealRect.x - keyRect.x - gap, keyRect.height);
+            DrawApiKeyField(keyFieldRect, revealRect, endpoint, 94f);
             DrawConnectionTestButton(testRect, index);
 
             y += lineHeight + gap;
@@ -335,13 +335,11 @@ namespace PawnDiary
         /// screen (shoulder-surfing, screenshots, streaming). Reveal state is per-endpoint and
         /// session-only (see <see cref="revealedApiKeys"/>).
         /// </summary>
-        private static void DrawApiKeyField(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        private static void DrawApiKeyField(Rect rect, Rect toggleRect, ApiEndpointConfig endpoint, float labelWidth)
         {
             const float gap = 4f;
-            const float toggleWidth = 52f;
             Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
-            Rect toggleRect = new Rect(rect.xMax - toggleWidth, rect.y, toggleWidth, rect.height);
-            Rect fieldRect = new Rect(labelRect.xMax + gap, rect.y, Mathf.Max(0f, toggleRect.x - labelRect.xMax - gap - gap), rect.height);
+            Rect fieldRect = new Rect(labelRect.xMax + gap, rect.y, Mathf.Max(0f, rect.xMax - labelRect.xMax - gap), rect.height);
             Widgets.LabelFit(labelRect, "PawnDiary.Settings.ApiKey".Translate());
 
             bool revealed = revealedApiKeys.Contains(endpoint);
@@ -511,10 +509,9 @@ namespace PawnDiary
         /// </summary>
         private void DrawReasoningSelectorsRow(Rect rect, int index, ApiEndpointConfig endpoint)
         {
-            // Two compact selectors side by side: [Effort ...] [Tag ...]. Each gets a short label and
-            // a button sharing the row width, replacing the two full-width rows they used to be so a
-            // lane is one line shorter. Labels are kept narrow (52px) to give the buttons room.
-            const float labelWidth = 52f;
+            // Two compact selectors side by side: [Effort ...] [Tag ...]. They keep the same label
+            // column as the rows above so labels and buttons line up instead of starting mid-column.
+            const float labelWidth = 94f;
             const float gap = 8f;
             float halfWidth = (rect.width - gap) / 2f;
 

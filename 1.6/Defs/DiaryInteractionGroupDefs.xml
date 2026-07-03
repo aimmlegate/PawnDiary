@@ -25,7 +25,8 @@
                    - optional list of mod package IDs. When any is loaded, this group is treated as
                      disabled even if defaultEnabled is true.
     colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
-                     combat, danger, socialFight, mentalBreak, daze, extremeDark, strangeChat, white, quiet
+                     combat, danger, socialFight, mentalBreak, daze, extremeDark, strangeChat,
+                     white, psychic, royalty, quadrumReflection, quiet
     batch          - optional Interaction/Tale batching policy:
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
@@ -2317,6 +2318,7 @@
       <li>courtly and charged with rank, title, witnesses, and public authority</li>
       <li>psyfocus-hushed and tradition-bound, the ceremony larger than one pawn's body</li>
     </tones>
+    <colorCue>royalty</colorCue>
     <matchTokens>
       <li>ThroneSpeech</li>
       <li>AnimaTreeLinking</li>
@@ -2415,6 +2417,7 @@
       <li>controlled and psychic, focused on effort, pressure, and the ability's visible result</li>
       <li>hushed and forceful, with the mind doing work the body can barely explain</li>
     </tones>
+    <colorCue>psychic</colorCue>
     <matchTokens>
       <li>Psycast</li>
     </matchTokens>
@@ -2489,7 +2492,7 @@
       <li>awed and uneasy, aware of power settling into the mind</li>
       <li>focused and intimate, describing the change from inside the body</li>
     </tones>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>psychic</colorCue>
     <matchDefNames>
       <li>PsylinkLevel</li>
     </matchDefNames>
@@ -2527,7 +2530,7 @@
       <li>measured and self-conscious, aware that a title changes how others look</li>
       <li>quietly burdened, treating rank as both honor and obligation</li>
     </tones>
-    <colorCue>white</colorCue>
+    <colorCue>royalty</colorCue>
     <matchDefNames>
       <li>RoyalTitleChanged</li>
     </matchDefNames>

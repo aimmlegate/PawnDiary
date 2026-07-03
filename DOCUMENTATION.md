@@ -522,6 +522,9 @@ retention caps. Dev mode exposes prompt-test mode and extra diagnostics in setti
 lives in RimWorld's Debug Actions menu. The export writes every saved hot page, compact archived
 page, archive-only orphan row, and backing event record to `PawnDiaryExports/` under RimWorld's
 save-data folder, and copies the generated file path to the clipboard.
+Connection rows use a fixed label column and shared right-side action-button columns so endpoint,
+model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned across localized UI
+text.
 
 Prompts is the single home for prompt text editing. Its **Shared/event prompts** subpage edits the
 four shared system prompts plus per-event prompt/enhancement/forced-model overrides. Its prompt-type
@@ -665,6 +668,20 @@ hidden because compact archive rows intentionally discard prompt/raw-response/re
 
 `DiaryTextFormat` escapes raw model rich text before applying safe formatting. Display-only text
 decorations and pawn-name highlights happen at render time; generated text is not mutated on save.
+
+**Per-entry accent color (color cues).** Each saved `DiaryEvent` carries a stable `colorCue` string
+chosen at record time from the matching interaction-group / event-window / observed-condition Def.
+At render time `DiaryUiStyleDef.ColorForCue` maps that cue to the card's accent color, which drives
+the left spine strip and the group-label chip (and, for the three distress cues `combat`,
+`socialFight`, `mentalBreak`, also a matching page tint and header rule). The full palette lives in
+`DiaryUiStyleDef.xml` (`<cueColors>`); the cue vocabulary is documented in the
+`DiaryInteractionGroupDefs.xml` header comment. Current themed cues beyond the distress/generic
+ones: `psychic` (bright violet — psylink gains, psycast abilities), `royalty` (gold — royal-title
+gains, royal rituals), `strangeChat` (green), `white` (warm white — heartfelt moments, birthdays,
+skill passions, day reflections), and `quadrumReflection` (light blue). `extremeDark` (dark
+blood-red) is reserved for Anomaly/dread content (void monolith, metalhorror, anomaly tales) and is
+deliberately not used for psylink, which is bright-psychic rather than horror. `colorCue` is saved
+per-event, so historical entries keep whatever cue they were recorded with.
 
 **Render-time paragraph reflow (default atmosphere).** Because prompts only ever ask for sentence
 counts (1-3, 2-4, 4-7, 5-8) and never for explicit paragraph breaks, a multi-sentence entry arrives
