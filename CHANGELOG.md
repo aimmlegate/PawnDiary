@@ -14,8 +14,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   Connections, Romance On The Rim), Tier B personality mods motivating API v2 context providers
   (RimPsyche, Psychology), Tier C LLM chat mods motivating API v3 outbound context (RimTalk) —
   with per-PR todos, volume/absence audit guardrails, and a verification checklist requiring
-  in-game packageId/defName confirmation. `INTEGRATIONS.md` roadmap now points at the plan.
-  No behavior changed.
+  in-game packageId/defName confirmation. Follow-up research pass read each open-source target's
+  repo directly and recorded verified packageIds and defNames per mod (VSIE `VSIE_` prefix,
+  Positive Connections `DIL_` prefix, Hospitality/Way Better Romance unprefixed exact names,
+  RimTalk's vanilla `RimTalkInteraction` log entry) plus concrete per-tier requirements: §4.1
+  per-mod Tier A group specs, §4.2 the v2 provider contract designed against RimPsyche's
+  documented `PsycheDataUtil`/`InteractionHook` surface, §4.3 the v3 snapshot DTO and a RimTalk
+  bridge via its `ContextHookRegistry` (no upstream changes needed). `INTEGRATIONS.md` roadmap
+  now points at the plan. No behavior changed.
 - **Dev event panel: hid the non-functional Events section.** The event trigger buttons in the
   debug `Event test panel` (Def-backed trigger rows plus the arrival/death/work-scan/thought-
   progression/day-reflection buttons) do not currently work, so the Events section is hidden:

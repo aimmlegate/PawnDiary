@@ -9,10 +9,12 @@ extend or overhaul **social interaction** are preferred throughout, because they
 the moments a diary is about.
 
 Sources: `INTEGRATIONS.md`, `EVENT_COVERAGE_PLAN.md`, repo XML/C# under `1.6/Defs/` and `Source/`,
-and Steam Workshop / mod repository listings surveyed 2026-07 (see per-mod notes). Workshop pages
-were not reachable from this environment for subscriber counts, so popularity is judged from
-search prominence, curated "best mods" lists, and ecosystem activity — every packageId and
-defName below is **unverified until checked in-game** (see §6).
+Steam Workshop / mod repository listings surveyed 2026-07, and — for every target with public
+source — the mod's own GitHub repo (About.xml and Defs read directly; cited per mod in §4).
+Workshop pages were not reachable from this environment, so packageIds/defNames come from source
+repos and must be **re-confirmed against the shipped Workshop release in-game** before each PR
+(§6) — a repo can drift from what players actually run (SpeakUp's repo About.xml demonstrably
+lags its Workshop release, see §4.1).
 
 ---
 
@@ -53,36 +55,35 @@ A mod earns a first-party patch when it scores on most of these:
 
 ### Tier A — XML-only compatibility groups (ship first; zero C#)
 
-| Mod | What it adds socially | Why it flows through our hooks | Verdict |
+| Mod | packageId (source-verified) | What it adds socially | Verdict |
 |---|---|---|---|
-| **Vanilla Social Interactions Expanded** (Vanilla Expanded / Oskar Potocki; 1.4–1.6) | The de-facto standard social overhaul: opinion-driven interactions, quarrels and reconciliations, mentorship/teaching moments, group activities, aspirations with mood payoffs | New InteractionDefs land in `PlayLog.Add`; aspiration/mood payoffs are ThoughtDefs; both already hooked | **Patch — flagship Tier A target** |
-| **Hospitality (Continued)** (Orion, continued maintenance; 1.5–1.6) | Guests visit, are entertained, recruited; vending; faction-relations play | Colonist↔guest interactions are vanilla PlayLog entries from the colonist's POV; hosting/recruiting outcomes are ThoughtDefs | **Patch** (guest-facing moments are strong diary material: strangers under your roof) |
-| **SpeakUp** (Jptrrs; 1.6) | Conversation framework giving pawns actual dialogue lines; extends interactions into multi-turn exchanges | Explicitly built on vanilla InteractionDefs; this is the mod class `captureRenderedGameText=false` was designed for (schedules follow-up dialogue during grammar rendering) | **Patch** — must set `captureRenderedGameText` to `false` on its groups |
-| **Way Better Romance** (divineDerivative; 1.4–1.6) | Romance overhaul: orientations, dates and hangouts as joy activities, casual hookups | Lover/spouse/ex transitions already arrive mod-agnostically via `Pawn_RelationsTracker.AddDirectRelation`; dates/hangouts are InteractionDefs/JobDefs with ThoughtDef payoffs | **Patch** (date/hangout groups only; relation transitions need nothing) |
-| **Positive Connections** (1.5+) | Eight new positive interactions (compliments, knowledge sharing, …) | Plain InteractionDefs | **Patch — smallest, good template PR** |
-| **Romance On The Rim** (1.3–1.6) | Romance need, automatic romantic interactions (pillow talk in bed, …) | InteractionDefs + ThoughtDefs | **Patch, lower priority than Way Better Romance** (overlapping niche; do second) |
+| **Vanilla Social Interactions Expanded** (Vanilla Expanded; 1.4–1.6) | `VanillaExpanded.VanillaSocialInteractionsExpanded` | Venting, discord/quarrels, per-skill teaching, gatherings, social incidents, aspirations | **Patch — flagship Tier A target** |
+| **Hospitality** (Orion; 1.0–1.6 in repo) + **Hospitality (Continued)** | `Orion.Hospitality` (Continued fork id TBD — gate on both) | Guests visit, are charmed/recruited; diplomacy interactions | **Patch** (strangers under your roof are strong diary material) |
+| **SpeakUp** (Jptrrs) | `JPT.speakup` (repo About lags at 1.2–1.3; Workshop lists 1.6 — verify) | Conversation framework giving pawns dialogue on vanilla InteractionDefs | **Patch** — needs `captureRenderedGameText=false` |
+| **Way Better Romance** (divineDerivative; 1.4–1.6) | `divineDerivative.Romance` | Orientations, hookup/date/hangout interactions | **Patch** (interaction groups only; relation transitions already covered mod-agnostically) |
+| **Positive Connections** (cemacmillan; 1.4–1.6) | `cem.PositiveConnections` | Eight positive interactions (comfort, mediation, compliments, gift, storytelling, …) | **Patch — smallest, good template PR** |
+| **RimTalk (interaction log slice)** (1.5–1.6) | `cj.rimtalk` | Its AI conversations log through a vanilla InteractionDef (`RimTalkInteraction`) | **Patch now** — the deeper v3 work (§3 Tier C) is separate |
+| **Romance On The Rim** (1.3–1.6) | TBD (no public source found in survey) | Romance need, pillow talk, automatic romantic interactions | **Patch, lower priority** (overlaps Way Better Romance; needs in-game def dump first) |
 
 ### Tier B — personality context (motivates API v2)
 
-These don't primarily add *events*; they add *who the pawn is*. The diary prompt's pawn summary
-is where they belong — which is exactly roadmap **v2: `RegisterPawnContextProvider`**.
-
-| Mod | Notes | Verdict |
-|---|---|---|
-| **RimPsyche — Personality Core** (1.6, actively developed) | Modern, performance-focused personality system inspired by Psychology; separate Sexuality module | **Primary v2 design partner** — current-generation, 1.6-native |
-| **Psychology (unofficial)** (1.1–1.6) | The classic total social/psyche overhaul: personalities, expanded conversations, elections, therapy, trait-driven mental breaks | **Two-part**: its conversation/election/therapy *events* are Tier A XML (InteractionDefs + MentalStateDefs we already hook); its *personality readout* waits for v2 |
-| **1-2-3 Personalities Mk.2** | Personality + social modules; **not yet updated to 1.6** (author: in progress) | **Watch list** — revisit when 1.6 lands; named in the v2 roadmap, don't design against a moving target |
+| Mod | packageId | Notes | Verdict |
+|---|---|---|---|
+| **RimPsyche — Personality Core** (1.6, active; Disposition/Sexuality/Relationship modules) | `Maux36.Rimpsyche` | Documented modder surface already exists: `PsycheDataUtil.GetPsycheData(Pawn)` (15 facets, sexuality, memories) and an `InteractionHook` exposing conversation topic/alignment/opinion (§4.2) | **Primary v2 design partner** |
+| **Psychology (unofficial)** (1.1–1.6) | `Community.Psychology.UnofficialUpdate` (from the unofficial-update repo; confirm the 1.6 upload kept it) | Classic total overhaul: psyche personality, expanded conversations, elections, therapy | **Two-part**: event slice is Tier A XML *if* its conversations flow through `PlayLog.Add` (unverified, §4.2); personality readout waits for v2 |
+| **1-2-3 Personalities Mk.2** | — | **Not yet updated to 1.6** (author: in progress) | **Watch list** — revisit when 1.6 lands |
 
 ### Tier C — chat/LLM mods (motivates API v3 + inbound adapters)
 
 | Mod | Notes | Verdict |
 |---|---|---|
-| **RimTalk** (1.5–1.6, active; satellite mods RimTalk Event+ etc.) | LLM-generated pawn dialogue (Gemini/OpenAI/local models), context-aware bubbles | **Primary v3 design partner.** Inbound: its conversations become diary events (their side calls `SubmitEvent` — reach out / provide a PR; `rimtalk_*` eventKey examples already sit in `INTEGRATIONS.md`). Outbound: diary persona + recent entries as chat memory so bubble-dialogue and diary voice agree. |
-| **Social Interactions: Expanded & AI-Powered**, **RimChat**, **RiMind**, **[CAP] Interactive Chat** | Newer/smaller LLM chat mods surfaced in the same survey | **Watch list** — v3, once designed for RimTalk, serves all of them; no bespoke work now |
+| **RimTalk** (`cj.rimtalk`) | Reads pawn mood/traits/relations/thoughts into LLM prompts; **exposes its own extension API** (`ContextHookRegistry.RegisterPawnVariable` / `RegisterPawnHook`, Scriban template variables) — so diary-as-memory can ship as a bridge *without waiting for RimTalk changes* (§4.3) | **Primary v3 design partner** |
+| **Social Interactions: Expanded & AI-Powered**, **RimChat**, **RiMind**, **[CAP] Interactive Chat** | Newer/smaller LLM chat mods surfaced in the same survey | **Watch list** — v3, once designed for RimTalk, serves all of them |
 
 ### Non-targets (surveyed, deliberately skipped)
 
-- **Interaction Bubbles** (Jaxe) — display-only overlay; nothing to integrate.
+- **Interaction Bubbles** (Jaxe) — display-only overlay; nothing to integrate (it's a RimTalk
+  dependency, but that costs us nothing).
 - **Gastronomy / venue mods** — social *venues*, not social *interactions*; their dining moments
   already flow through vanilla thoughts and the existing catch-alls read fine.
 - **Intimacy — A Lovin' Expansion / RJW-adjacent** — adult-content scope; out of scope for
@@ -90,88 +91,216 @@ is where they belong — which is exactly roadmap **v2: `RegisterPawnContextProv
 - **Vanilla Traits Expanded and trait packs** — traits are already read via vanilla trait access
   in the pawn summary; nothing extra to claim.
 
-## 4. What a Tier A patch looks like (pattern)
+## 4. What each tier concretely requires
 
-One Def file per target mod, shipped in core:
+### 4.1 Tier A — per-mod requirements (source-verified detail)
 
-- `1.6/Defs/Compat/DiaryCompat_<ModName>.xml`, every group gated with
-  `<enableWhenPackageIdsLoaded><li>the.target.packageid</li></enableWhenPackageIdsLoaded>`.
-- Prefer **`matchPackageIds`** (claims every InteractionDef the target ships, survives their
-  content updates) for the broad group; add narrow defName/prefix groups only where a specific
-  moment deserves its own instruction/tone (e.g. VSIE quarrel vs. VSIE mentorship).
-- `important=false`, unique-ish `order` inside the domain below all built-in specific groups but
-  above the catch-all; default dedup; `defaultEnabled=true` (each group is player-toggleable in
-  settings like every other group).
-- Conversation-framework mods (SpeakUp) additionally set `captureRenderedGameText=false`.
-- EN + RU localization: `label`/`instruction`/`tone` via DefInjected, any new fallback lines via
-  Keyed — `DOCUMENTATION.md §12` rules, Russian written natively, not literally translated.
-- DLC-safety unchanged: matchers are plain strings; a game without the target mod (or any DLC)
-  must load with zero errors and zero behavior change.
+**Common pattern** for every mod below: one Def file `1.6/Defs/Compat/DiaryCompat_<ModName>.xml`;
+every group gated `<enableWhenPackageIdsLoaded>`; `important=false`; unique `order` below
+built-in specific groups, above the domain catch-all; `defaultEnabled=true` (player-toggleable
+like every group); EN + RU DefInjected for `label`/`instruction`/`tone` (Russian written
+natively); plain-string matchers only (DLC-safe, mod-absent-safe).
+
+**Vanilla Social Interactions Expanded** — [source](https://github.com/Vanilla-Expanded/VanillaSocialInteractionsExpanded).
+Everything it ships is cleanly **`VSIE_`-prefixed**, and its content spans several def types we
+already hook: `InteractionDefs` (`VSIE_Vent`, `VSIE_Discord`, `VSIE_Teaching` + per-skill
+`VSIE_Teaching_*`), `ThoughtDefs` (memory + situational social thoughts, incl. aspiration
+payoffs), plus `GatheringDefs`/`IncidentDefs` (flow through the gathering/incident hooks we
+already listen to). Work:
+- Interaction domain: one `matchPrefixes: VSIE_` safety-net group (warm generic instruction) plus
+  narrow groups for the three distinct moment families — **venting** (unburdening, one-sided
+  relief), **discord** (a quarrel that stung), **teaching** (`matchPrefixes: VSIE_Teaching` —
+  passing a skill on / being taught). ~4 groups.
+- Thought domain: one `matchPrefixes: VSIE_` group biased toward the aspiration-fulfilled beat
+  (verify exact thought defNames from the def dump; split out a narrow group only if the
+  aspiration thoughts are distinguishable by name).
+- Confirm in dev mode that VSIE's gatherings/incidents already read acceptably through the
+  existing catch-alls; only add groups if the wording is actively wrong.
+
+**Positive Connections** — [source](https://github.com/cemacmillan/PositiveConnections).
+Eight vanilla InteractionDefs, all **`DIL_`-prefixed**: `DIL_GiveComfort`, `DIL_Mediation`,
+`DIL_Compliment`, `DIL_SkillShare`, `DIL_DiscussIdeoligion`, `DIL_GiveGift`,
+`DIL_SharedPassion`, `DIL_Storytelling`. Work: one `matchPrefixes: DIL_` group with a warm
+default, plus (optionally) narrow groups for the two most distinct beats (comfort after distress;
+mediation of a conflict). `DIL_DiscussIdeoligion` needs no `MayRequire` — string matchers stay
+inert without Ideology. Smallest patch; do it first as the template.
+
+**Hospitality** — [source](https://github.com/OrionFive/Hospitality) (repo supports 1.6;
+original author in maintenance mode — gate on `Orion.Hospitality` **and** the Continued fork's
+packageId once confirmed). Three vanilla InteractionDefs, **unprefixed**: `GuestDiplomacy`,
+`CharmGuestAttempt`, `ScroungeFoodAttempt` — exact `matchDefNames` only, never prefixes. Two
+findings simplify this patch:
+- Its guest ThoughtDefs (`GuestAngered`, `GuestPleasedRelationship`, …) land on the **guest**,
+  who is not diary-eligible — no Thought-domain groups needed.
+- A successfully recruited guest joins via faction change, which the existing **Arrival** hook
+  (`Pawn.SetFaction`) already turns into a diary page mod-agnostically — recruitment needs no
+  compat group, just a play-test confirming the arrival page reads well for ex-guests.
+So the patch is one Interaction-domain group (colonist hosting/charming a guest — instruction
+should acknowledge the partner may be a stranger/visitor, since the guest side won't write).
+
+**Way Better Romance** — [source](https://github.com/divineDerivative/WayBetterRomance).
+Three vanilla InteractionDefs, **unprefixed**: `TriedHookupWith`, `AskedForDate`,
+`AskedForHangout`; rejection ThoughtDefs also unprefixed (`RebuffedMyDateAttempt*`,
+`FailedDateAttemptOnMe`, …). Lover/spouse/ex transitions ride the existing
+`AddDirectRelation` hook — nothing to do there. Work: one Interaction-domain group per beat
+(hookup attempt / date / hangout — distinct tones), exact `matchDefNames`; one Thought-domain
+group for the rebuffed/rejected family (a sore, private beat that suits a diary). Verify in
+source that date *outcomes* (the date actually happening — it's a JobDef/JoyDef) produce any
+loggable signal; if not, note it as a future inbound-API suggestion to the maintainer rather
+than forcing it.
+
+**SpeakUp** — [source](https://github.com/jptrrs/SpeakUp). packageId `JPT.speakup`; the repo's
+About.xml stops at 1.3 while the Workshop build advertises 1.6 — confirm from the shipped
+About.xml which id/versions players actually run. It extends **vanilla** interactions into
+multi-turn dialogue scheduled during grammar rendering — exactly the class
+`captureRenderedGameText=false` exists for. Work: one Interaction-domain group,
+`matchPackageIds` on its dialogue defs if it ships its own InteractionDefs (verify via def dump)
+or rely on the flag alone if it only decorates vanilla defs; play-test that captured seeds are
+the interaction, not mid-conversation fragments.
+
+**RimTalk (log slice)** — [source](https://github.com/jlibrary/RimTalk). Its conversations post
+a vanilla social-log entry through InteractionDef **`RimTalkInteraction`**. Work: one
+Interaction-domain group on that exact defName. Two things to verify in-game: whether the logged
+text is the AI dialogue or a generic line (decides `captureRenderedGameText`), and volume —
+RimTalk chats constantly, so this group may need conservative odds/dedup in its XML policy (it
+still only *re-words* pages the catch-all would have claimed, but sampling policy should favor
+other groups).
+
+**Romance On The Rim** — no public source located in this survey. Requires the in-game def dump
+first (packageId + InteractionDef names for pillow talk etc.); pattern will mirror Way Better
+Romance. Keep last in Tier A.
+
+### 4.2 Tier B — what API v2 must provide (and to whom)
+
+The deliverable is roadmap **v2: `RegisterPawnContextProvider(id, Func<Pawn, string>)`** plus its
+first real consumers. Source-verified interface facts to design against:
+
+- **RimPsyche** ([wiki, "For Modders"](https://github.com/jagerguy36/Rimpsyche/wiki/For-Modders))
+  already exposes everything a provider needs: `PsycheDataUtil.GetPsycheData(Pawn)` returns a
+  `PsycheData` with **15 personality facets** (−50..50), sexuality data, and memories. A
+  bridge — theirs, ours, or a standalone mod — turns the strongest facets into one compact
+  pawn-summary line (e.g. `personality=blunt, curious, slow to trust`). RimPsyche also offers
+  `InteractionHook` (initiator, recipient, **topic**, alignment, opinion offset), which is a
+  ready-made **inbound v1 bridge** opportunity independent of v2: submit conversations as diary
+  events with `extraContext` (`topic=…`, `alignment=…`) — richer than any XML matcher could get.
+- **Psychology (unofficial)**: personality lives in its psyche comp (per-pawn nodes); no
+  documented modder API found — the v2 bridge would read its comp directly, so it belongs on
+  *their* side or in a standalone bridge, not in our core. Also verify whether its conversation
+  system posts `PlayLog` entries (decides whether the Tier A slice in §5 PR 3 is real).
+
+What v2 itself must therefore specify (design doc before code):
+1. Registration: id + `Func<Pawn, string>`, registered once at startup (main-thread), feature-
+   detectable via `ApiVersion >= 2`.
+2. Safety: per-provider output cap + sanitation identical to `extraContext` rules (single line,
+   `;`→`,`); a throwing provider is disabled and logged **once**, never crashes prompt building.
+3. Placement: provider lines join the pawn summary next to the `DlcContext` fields (trait/faith/
+   title lines), so the LLM sees personality as *who the pawn is*, not as an event.
+4. Player control: per-provider toggle in settings (mirrors per-group toggles).
+5. Purity: providers run in the impure snapshot phase; their strings enter the plain prompt
+   payload — no live objects into pure code (AGENTS.md barrier holds unchanged).
+6. Ship with: `ApiVersion = 2`, example provider in `integrations/PawnDiary.ExampleAdapter`,
+   `INTEGRATIONS.md` v2 section, maintainer outreach to RimPsyche with a concrete snippet.
+
+### 4.3 Tier C — what API v3 must provide (and the RimTalk shortcut)
+
+The deliverable is roadmap **v3: outbound read-only context**. Source-verified facts to design
+against ([RimTalk repo](https://github.com/jlibrary/RimTalk)):
+
+- RimTalk builds its prompts from configurable pawn context (mood, traits, relations, thoughts,
+  backstory, …) via Scriban templates, and **exposes `ContextHookRegistry`**
+  (`RegisterContextVariable`, `RegisterPawnVariable`, `RegisterPawnHook`) so other mods can add
+  template variables.
+- Consequence: once we have a public read-only snapshot, **diary-as-memory ships as a small
+  bridge that registers a `pawndiary` variable in RimTalk** — no RimTalk-side changes required.
+  Bridge home: a third assembly under `integrations/` (like the ExampleAdapter), *not* core —
+  core must never reference RimTalk types.
+
+What v3 itself must specify (design doc before code):
+1. Surface: `PawnDiaryApi.TryGetContextSnapshot(Pawn, out DiaryContextSnapshot)` — plain-string
+   DTO: persona line, N most recent entry summaries (title + first sentence, not full prose),
+   entry count/day-range. No live objects, no mutable references.
+2. Semantics: main-thread, cheap (reads the already-persisted diary model, no LLM calls),
+   `false` when no game/component; N capped and XML-tunable.
+3. Privacy/consistency: outbound text is the *player-visible* diary content only — nothing from
+   in-flight generation.
+4. Inbound counterpart needs **no new API**: RimTalk conversations could be submitted via
+   existing v1 `SubmitEvent` (`rimtalk_*` keys are already the worked example in
+   `INTEGRATIONS.md`) — but the §4.1 log-slice group may make this redundant; decide after the
+   Tier A patch is play-tested (avoid double-writing the same chat).
+5. Ship with: `ApiVersion = 3`, the RimTalk bridge as the reference consumer, maintainer
+   outreach offering it upstream.
 
 ## 5. Todos
 
 ### PR 1 — Tier A wave 1: template + flagship
-- [ ] Verify packageIds from each target's `About.xml` (VSIE expected
-      `VanillaExpanded.VanillaSocialInteractionsExpanded`; Positive Connections TBD) and their
-      InteractionDef/ThoughtDef defNames from the mods' published Defs or dev-mode logs (§6).
-- [ ] **Positive Connections** compat file (smallest surface — establishes the
-      `1.6/Defs/Compat/` pattern, file naming, and review template).
-- [ ] **Vanilla Social Interactions Expanded** compat file: one broad package-matched Interaction
-      group + narrow groups for the distinct moment families (quarrel/reconciliation, mentorship,
-      group activity, aspiration fulfilled — final list from verified defNames), Thought-domain
-      groups only where a payoff thought carries a story (aspiration completed).
-- [ ] EN+RU DefInjected for all new groups; XML-parse touched files; run
-      `DiaryPipelineTests` (group matching is XML-driven policy).
+- [x] PackageIds/defNames researched from source repos (§4.1) — VSIE, Positive Connections,
+      Hospitality, Way Better Romance, SpeakUp, RimTalk, RimPsyche, Psychology.
+- [ ] Re-confirm against shipped Workshop releases in-game (§6.1–6.2) for the two mods in this
+      PR; dump their def lists in dev mode.
+- [ ] **Positive Connections** compat file (`DIL_` prefix group + optional comfort/mediation
+      narrows) — establishes the `1.6/Defs/Compat/` pattern, file naming, and review template.
+- [ ] **Vanilla Social Interactions Expanded** compat file: `VSIE_` prefix safety net + vent /
+      discord / teaching narrow groups; Thought-domain `VSIE_` group (aspiration bias);
+      check gatherings/incidents read fine via existing catch-alls.
+- [ ] EN+RU DefInjected for all new groups; XML-parse touched files; run `DiaryPipelineTests`.
 - [ ] `DOCUMENTATION.md` (compat-file pattern, §5 group inventory) + `CHANGELOG.md` +
-      `INTEGRATIONS.md` (point "XML-only compatibility" section at `1.6/Defs/Compat/` as the
-      canonical examples).
+      `INTEGRATIONS.md` (point "XML-only compatibility" at `1.6/Defs/Compat/` as canonical
+      examples).
 
 ### PR 2 — Tier A wave 2: conversations + guests
-- [ ] **SpeakUp** compat file with `captureRenderedGameText=false`; play-test that captured
-      lines are the interaction seed, not mid-conversation grammar fragments.
-- [ ] **Hospitality (Continued)** compat file: guest-chat Interaction group (colonist POV),
-      Thought-domain groups for hosting/recruit-success moments; confirm both original and
-      continued packageIds and gate on both.
+- [ ] **SpeakUp** compat group with `captureRenderedGameText=false`; confirm shipped packageId
+      (repo lags Workshop); play-test seed quality.
+- [ ] **Hospitality** compat group for `GuestDiplomacy`/`CharmGuestAttempt` (exact names);
+      confirm Continued-fork packageId and gate on both; play-test that guest recruitment
+      already reads well via the Arrival page (expected: yes, no group needed).
+- [ ] **RimTalk log-slice** group on `RimTalkInteraction`; decide `captureRenderedGameText`
+      from what the log entry actually contains; tune odds/dedup for chattiness.
 - [ ] Same localization/test/docs bar as PR 1.
 
 ### PR 3 — Tier A wave 3: romance
-- [ ] **Way Better Romance** compat file: date/hangout groups (warm, specific instructions);
-      verify none of its relation changes bypass `AddDirectRelation` (expected: they don't).
-- [ ] **Romance On The Rim** compat file: pillow-talk and romance-need moments; check overlap
-      rules if both romance mods are loaded (orders must not fight).
-- [ ] **Psychology (unofficial)** Tier A slice: conversation/election/therapy groups —
-      time-boxed; if its conversation system bypasses `PlayLog.Add`, log findings in this file
-      and defer the remainder to v2/v3 work instead of forcing it.
+- [ ] **Way Better Romance** compat file: hookup/date/hangout groups (exact `matchDefNames` —
+      names are unprefixed) + rebuffed/rejected Thought group; check whether completed dates
+      emit any loggable signal (if not: note as inbound suggestion to maintainer).
+- [ ] **Romance On The Rim**: in-game def dump first (no public source); then mirror the WBR
+      pattern; check group-order interplay if both romance mods are loaded.
+- [ ] **Psychology (unofficial)** Tier A slice — *conditional*: verify its conversations post
+      PlayLog entries; if yes, conversation/election groups; if no, log findings here and defer
+      to the v2/bridge track.
 
-### PR 4 — API v2 design (separate plan doc before code)
-- [ ] Draft `RegisterPawnContextProvider(id, Func<Pawn, string>)` contract: registration timing,
-      main-thread rule, per-provider length cap + sanitation (mirror `extraContext` rules),
-      failure isolation (a throwing provider is dropped and logged once, never crashes prompt
-      building), settings toggle per provider id.
-- [ ] Validate the draft against **RimPsyche** (primary) and **Psychology (unofficial)**
-      (secondary) — what would each actually emit? Contact maintainers / open a design issue.
-- [ ] Bump `ApiVersion` to 2 additively; extend `integrations/PawnDiary.ExampleAdapter` with a
-      provider example; update `INTEGRATIONS.md` roadmap → shipped.
+### PR 4 — API v2: pawn-context providers (design doc before code)
+- [ ] Write the v2 design doc per §4.2 (registration, sanitation caps, failure isolation,
+      settings toggle, pawn-summary placement, purity boundary).
+- [ ] Validate the draft against RimPsyche's real surface (`PsycheDataUtil`, 15 facets): write
+      the provider snippet we'd hand their maintainer; open a design issue / contact Maux36.
+- [ ] Decide the Psychology story: standalone bridge vs. their-side provider (we ship neither
+      in core).
+- [ ] Implement: `ApiVersion = 2`, example provider in the ExampleAdapter, `INTEGRATIONS.md`
+      v2 section moves roadmap → shipped, tests for the sanitation/failure-isolation pure parts.
+- [ ] Separately evaluate the **RimPsyche inbound bridge** (their `InteractionHook` →
+      `SubmitEvent` with `topic=`/`alignment=` extraContext) — v1-only, could ship any time.
 
-### PR 5 — API v3 design (separate plan doc before code)
-- [ ] Draft the read-only snapshot DTO (persona line, N recent entry summaries, strictly
-      plain-string, no live objects) + staleness/threading semantics.
-- [ ] Validate against **RimTalk** as the motivating consumer; offer them a `SubmitEvent`
-      bridge PR (inbound) in the same conversation — inbound needs no new API and could even
-      precede v3.
-- [ ] Watch-list check: revisit **1-2-3 Personalities** (1.6 status) and the smaller LLM chat
-      mods before locking the v3 surface.
+### PR 5 — API v3: outbound context (design doc before code)
+- [ ] Write the v3 design doc per §4.3 (snapshot DTO shape, recency cap, main-thread cheap-read
+      semantics, player-visible-content-only rule).
+- [ ] Implement `TryGetContextSnapshot` + `ApiVersion = 3` + `INTEGRATIONS.md` update; pure
+      tests for snapshot summarization.
+- [ ] Build the **RimTalk bridge** under `integrations/` registering a `pawndiary` Scriban
+      variable via `ContextHookRegistry.RegisterPawnVariable`; offer it upstream to jlibrary.
+- [ ] Decide inbound-vs-log-slice for RimTalk chats (no double-writing) based on PR 2 play-test.
+- [ ] Watch-list check before locking the surface: 1-2-3 Personalities 1.6 status; RimChat /
+      RiMind / SIE&AI-Powered adoption.
 
 ## 6. Verification checklist (before each PR)
 
-1. **PackageIds from `About.xml`** of the actual release targeted, never from memory —
-   `INTEGRATIONS.md` itself warns ids change between development and Workshop releases. Gate
-   continued/forked mods on *all* known ids.
-2. **DefNames in-game**: load the target mod, use dev-mode Debug Actions / Def database dumps to
-   list its InteractionDefs/ThoughtDefs; never guess (lesson learned from the dead
+1. **PackageIds from the shipped release's `About.xml`**, not just the source repo —
+   `INTEGRATIONS.md` itself warns ids change between releases, and SpeakUp's repo already lags
+   its Workshop build. Gate continued/forked mods on *all* known ids.
+2. **DefNames in-game**: load the target mod, dump its InteractionDefs/ThoughtDefs via dev-mode
+   Debug Actions; source-read names (§4.1) are strong priors, not proof (lesson: the dead
    `HarbingerTree` matcher, `CHANGELOG.md` 2026-07-03).
 3. **Volume audit**: with the target loaded, one in-game day of play; new groups must not
-   increase page count versus the catch-all baseline (wording-only claim holds).
+   increase page count versus the catch-all baseline (wording-only claim holds). Extra scrutiny
+   for RimTalk (chatty by design).
 4. **Absence audit**: with the target *not* loaded, zero load errors, zero settings-menu noise
    beyond the inert gated groups, zero behavior change.
 5. XML-parse every touched Def file; run `DiaryPipelineTests` (+ `PromptVariantsTests` if prompt
@@ -180,8 +309,11 @@ One Def file per target mod, shipped in core:
 
 ## 7. Order and rationale
 
-Positive Connections first (template), VSIE second (flagship value), then conversations/guests,
-then romance — all XML, each independently shippable. API v2 and v3 come after Tier A because
-each needs its own design doc and an external design partner, and because Tier A patches make
-Pawn Diary visibly mod-friendly, which is the best opening for the v2/v3 maintainer
-conversations (RimPsyche, RimTalk).
+Positive Connections first (template), VSIE second (flagship value), then conversations/guests
+(including the cheap RimTalk log-slice), then romance — all XML, each independently shippable.
+API v2 and v3 follow because each needs its own design doc and an external partner — and the
+research above found both partners already meet us halfway: RimPsyche documents its psyche-data
+and conversation hooks for modders, and RimTalk's `ContextHookRegistry` means diary-as-memory
+needs no upstream buy-in at all, just our v3 snapshot plus a small bridge. Tier A patches make
+Pawn Diary visibly mod-friendly first, which is the best opening for those maintainer
+conversations.
