@@ -17,4 +17,41 @@
 
   <MetalhorrorInfection.label>скрытое заражение-подражание</MetalhorrorInfection.label>
 
+
+  <!-- Расширение охвата событий (см. EVENT_COVERAGE_PLAN.md) -->
+
+  <ColdSnapActive.label>резкое похолодание</ColdSnapActive.label>
+
+  <HeatWaveActive.label>жара</HeatWaveActive.label>
+
+  <VolcanicWinterActive.label>вулканическая зима</VolcanicWinterActive.label>
+
+  <BloodRainActive.label>кровавый дождь</BloodRainActive.label>
+
+  <DeathPallActive.label>пелена смерти</DeathPallActive.label>
+
+  <UnnaturalDarknessActive.label>неестественная тьма</UnnaturalDarknessActive.label>
+
+  <PitGatePresence.label>провал</PitGatePresence.label>
+  <PitGatePresence.instruction>напиши, как поселенец видит разверзшийся в земле провал: дыру, уходящую глубже, чем должна, жар и звук снизу и тварей, которые из неё выбираются; держись того, что можно увидеть и услышать, и никогда не объясняй, что там на дне</PitGatePresence.instruction>
+
+  <FleshmassHeartPresence.label>сердце плоти</FleshmassHeartPresence.label>
+  <FleshmassHeartPresence.instruction>напиши, как поселенец понимает, что рядом прорвалось сердце живой плоти и она ползёт к поселению: её звук, меняющаяся земля, необходимость резать её; пиши отвращение и срочность, не объясняя её устройство и не выдумывая завершённый бой</FleshmassHeartPresence.instruction>
+
+  <ObeliskPresence.label>обелиск на карте</ObeliskPresence.label>
+
+  <HarbingerTreePresence.label>деревья-предвестники</HarbingerTreePresence.label>
+
+  <NociospherePresence.label>ноциосфера</NociospherePresence.label>
+
+  <UnnaturalCorpsePresence.label>неестественный труп</UnnaturalCorpsePresence.label>
+
+  <ThrumboVisit.label>трумбо на карте</ThrumboVisit.label>
+
+  <AlphabeaversActive.label>альфабобры</AlphabeaversActive.label>
+
+  <CropBlightActive.label>гниль посевов</CropBlightActive.label>
+
+  <AmbrosiaSprouted.label>роща амброзии</AmbrosiaSprouted.label>
+
 </LanguageData>

@@ -355,4 +355,59 @@
   <externalDevTest.label>Внешнее тестовое событие</externalDevTest.label>
   <externalDevTest.instruction>тестовое событие из API интеграций; напиши короткую приземлённую заметку о странном, но безобидном моменте</externalDevTest.instruction>
   <externalDevTest.tone>деловито и слегка озадаченно</externalDevTest.tone>
+
+  <!-- Группы из расширения охвата событий (см. EVENT_COVERAGE_PLAN.md) -->
+  <raidAnomalyEntities.label>Атаки тварей</raidAnomalyEntities.label>
+  <raidAnomalyEntities.instruction>на поселение нападает нечто нечеловеческое — пиши жуть, неправильность и выживание, а не обычный бой; никогда не объясняй, что это за твари</raidAnomalyEntities.instruction>
+  <raidAnomalyEntities.instructions.0>нечеловеческие нападающие — начни с первой неправильной детали: силуэт, походка, звук или тишина там, где должен быть звук; не называй их точнее, чем в данных</raidAnomalyEntities.instructions.0>
+  <raidAnomalyEntities.instructions.1>нечеловеческие нападающие — пиши, как тело отказывается признавать их людьми: отвращение, волосы дыбом, желание отвести взгляд, даже целясь</raidAnomalyEntities.instructions.1>
+  <raidAnomalyEntities.instructions.2>нечеловеческие нападающие — держи текст вплотную к выживанию и ощущениям; раны и исходы бери только из данных и не разрешай ужас до конца</raidAnomalyEntities.instructions.2>
+  <raidAnomalyEntities.tone>ужас, проступающий сквозь горячку боя</raidAnomalyEntities.tone>
+  <raidAnomalyEntities.tones.0>в ужасе и на ощущениях: нападающие не считываются как люди</raidAnomalyEntities.tones.0>
+  <raidAnomalyEntities.tones.1>собранно и о выживании, неправильность держится на краю страницы</raidAnomalyEntities.tones.1>
+
+  <moodeventWeatherHardship.label>Суровый климат</moodeventWeatherHardship.label>
+  <moodeventWeatherHardship.instruction>сам климат стал врагом — затяжной холод, жара или потемневшее небо. Пиши, как справляются тело и привычный распорядок, а не один драматичный момент</moodeventWeatherHardship.instruction>
+  <moodeventWeatherHardship.instructions.0>враждебный климат — сначала тело: немеющие пальцы, пот, сбитое дыхание, одежда, которой перестало хватать</moodeventWeatherHardship.instructions.0>
+  <moodeventWeatherHardship.instructions.1>враждебный климат — пиши мелкие поправки быта: пайки, передвинутые лежанки, закрытые двери, тревожный взгляд на посевы</moodeventWeatherHardship.instructions.1>
+  <moodeventWeatherHardship.instructions.2>враждебный климат — пусть погода задаёт масштаб дня; люди и дела гнутся под неё, и злодея здесь нет</moodeventWeatherHardship.instructions.2>
+  <moodeventWeatherHardship.tone>с усталым, привычным терпением против непогоды</moodeventWeatherHardship.tone>
+  <moodeventWeatherHardship.tones.0>по-бытовому стойко: выносливость меряется мелкими делами</moodeventWeatherHardship.tones.0>
+  <moodeventWeatherHardship.tones.1>с тихой тревогой: небо решает, сколько будет стоить завтра</moodeventWeatherHardship.tones.1>
+
+  <moodeventStormDanger.label>Ярость неба</moodeventStormDanger.label>
+  <moodeventStormDanger.instruction>небо стало опасным — сухие молнии, огонь или дождь, которого не должно быть. Пиши внезапную опасность сверху, не выдумывая ущерба, которого нет в данных</moodeventStormDanger.instruction>
+  <moodeventStormDanger.instructions.0>ярость неба — начни со света, звука или запаха: вспышка, раскат, горящий воздух, первые неправильные капли</moodeventStormDanger.instructions.0>
+  <moodeventStormDanger.instructions.1>ярость неба — пиши суету реакции: следить за пожарами, загонять людей под крышу, пересчитывать всё, что стоит под открытым небом</moodeventStormDanger.instructions.1>
+  <moodeventStormDanger.instructions.2>ярость неба — если сам дождь неправильный, оставь его неправильным; сперва тревога, объяснения потом — и никакого выдуманного исхода</moodeventStormDanger.instructions.2>
+  <moodeventStormDanger.tone>с резкой тревогой под открытым небом</moodeventStormDanger.tone>
+  <moodeventStormDanger.tones.0>вздрогнув и настороже: небо вдруг стало врагом</moodeventStormDanger.tones.0>
+  <moodeventStormDanger.tones.1>напряжённо, на рефлексах: опасность приходит быстрее понимания</moodeventStormDanger.tones.1>
+
+  <mentalbreakViolent.label>Вспышки ярости</mentalbreakViolent.label>
+  <mentalbreakViolent.instruction>разум ломается наружу — ярость ищет цель. Пиши жар, исчезающую комнату и момент, когда тело перестаёт спрашивать разрешения</mentalbreakViolent.instruction>
+  <mentalbreakViolent.instructions.0>срыв в ярость — пиши, как лопается давление: последняя мелочь, а потом жар забирает руки</mentalbreakViolent.instructions.0>
+  <mentalbreakViolent.instructions.1>срыв в ярость — пиши телом: челюсть, костяшки, дыхание, мир, сжатый до того, что можно ударить</mentalbreakViolent.instructions.1>
+  <mentalbreakViolent.instructions.2>срыв в ярость — если буря прошла, пиши стыд и разгром, который поселенец видит своими глазами</mentalbreakViolent.instructions.2>
+  <mentalbreakViolent.tone>с красной, кипящей потерей контроля</mentalbreakViolent.tone>
+  <mentalbreakViolent.tones.0>кипяще и немедленно: ярость впереди мысли</mentalbreakViolent.tones.0>
+  <mentalbreakViolent.tones.1>тяжёлое послевкусие: злость остывает в стыд</mentalbreakViolent.tones.1>
+
+  <mentalbreakEscape.label>Срывы-бегства</mentalbreakEscape.label>
+  <mentalbreakEscape.instruction>разум ломается внутрь — бегство, укрытие или опущенные руки. Пиши, как мир стал слишком громким и тянет оказаться где угодно, только не здесь</mentalbreakEscape.instruction>
+  <mentalbreakEscape.instructions.0>срыв внутрь — пиши уход: ноги идут раньше решения, дверь, темнота, тихий угол</mentalbreakEscape.instructions.0>
+  <mentalbreakEscape.instructions.1>срыв внутрь — пиши тяжесть: всё, что требуют от поселенца разом, и момент, когда он всё это кладёт на землю</mentalbreakEscape.instructions.1>
+  <mentalbreakEscape.instructions.2>срыв внутрь — держи грусть простой и телесной; без громких слов, только сам уход</mentalbreakEscape.instructions.2>
+  <mentalbreakEscape.tone>с пустым, выжатым бегством</mentalbreakEscape.tone>
+  <mentalbreakEscape.tones.0>гулко и медленно: мир слишком громкий, чтобы в нём оставаться</mentalbreakEscape.tones.0>
+  <mentalbreakEscape.tones.1>онемело, по течению: шаг за шагом прочь от людей</mentalbreakEscape.tones.1>
+
+  <mentalbreakIndulgent.label>Навязчивые срывы</mentalbreakIndulgent.label>
+  <mentalbreakIndulgent.instruction>разум ломается в навязчивость — запой, загул или одержимость, которая ощущается облегчением, пока что-то рушит. Пиши голод и вину, кружащую рядом</mentalbreakIndulgent.instruction>
+  <mentalbreakIndulgent.instructions.0>навязчивый срыв — пиши тягу: что обещает навязчивость и как хорош её первый глоток</mentalbreakIndulgent.instructions.0>
+  <mentalbreakIndulgent.instructions.1>навязчивый срыв — пиши сужение: правила, обязанности и люди тают позади единственного важного</mentalbreakIndulgent.instructions.1>
+  <mentalbreakIndulgent.instructions.2>навязчивый срыв — пусть вина мерцает по краям, ничего не останавливая</mentalbreakIndulgent.instructions.2>
+  <mentalbreakIndulgent.tone>с виноватым, голодным разгоном</mentalbreakIndulgent.tone>
+  <mentalbreakIndulgent.tones.0>голодно и с самооправданием: облегчение побеждает здравый смысл</mentalbreakIndulgent.tones.0>
+  <mentalbreakIndulgent.tones.1>кисло и навязчиво: тяга громче стыда</mentalbreakIndulgent.tones.1>
 </LanguageData>

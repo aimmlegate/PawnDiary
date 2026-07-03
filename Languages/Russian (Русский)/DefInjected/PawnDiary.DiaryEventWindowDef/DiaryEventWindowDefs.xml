@@ -19,4 +19,12 @@
   <PrisonBreak.label>побег</PrisonBreak.label>
   <PrisonBreak.instruction>опиши реакцию поселения на побег как внезапную тревогу; сосредоточься на действиях поселенца, а не на мыслях пленников</PrisonBreak.instruction>
 
+
+  <MechClusterLanded.label>кластер механоидов</MechClusterLanded.label>
+  <MechClusterLanded.instruction>напиши, как поселенец видит собранные на горизонте спящие боевые машины; холодная, терпеливая, механическая опасность, которая пока не сдвинулась с места — пиши ожидание и планы, но никогда не выдуманный бой</MechClusterLanded.instruction>
+
+  <ShortCircuitAftermath.label>короткое замыкание</ShortCircuitAftermath.label>
+
+  <SelfTameJoined.label>зверь приручился сам</SelfTameJoined.label>
+
 </LanguageData>

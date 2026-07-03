@@ -231,4 +231,132 @@
     <promptWeight>0</promptWeight>
   </PawnDiary.DiaryEventWindowDef>
 
+  <!-- ===== Event-coverage pass (see EVENT_COVERAGE_PLAN.md): incident-driven windows. =====
+       The two light ones (Zzzt, self-tame) record NO pages: they only join the weighted
+       prompt-candidate pool for a while, so the moment sometimes flavors whatever a pawn writes
+       next and is never guaranteed to appear. Mech cluster is rare and colony-shaking, so it
+       records one start page per map colonist (the PrisonBreak precedent) and then keeps a
+       decaying dread active for up to three days. -->
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>MechClusterLanded</defName>
+    <label>mech cluster</label>
+    <windowKey>MechClusterLanded</windowKey>
+    <enabled>true</enabled>
+    <!-- Three days of lingering dread unless something else clears it first. -->
+    <timeoutTicks>180000</timeoutTicks>
+    <dedupTicks>60000</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>true</keepActive>
+    <recordScope>Map</recordScope>
+    <recordStartEvent>true</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <instruction>write the pawn seeing dormant war machines assembled on the colony's horizon; cold, patient, and mechanical danger that has not moved yet — write the waiting and the planning, never an invented battle</instruction>
+    <colorCue>danger</colorCue>
+    <startTextKey>PawnDiary.Event.EventWindow.MechClusterLanded.Start</startTextKey>
+
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>MechCluster</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>12</promptWeight>
+    <normalPromptWeightMultiplier>0.7</normalPromptWeightMultiplier>
+    <promptDecayTicks>60000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.3</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.EventWindow.MechClusterLanded.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>ShortCircuitAftermath</defName>
+    <label>short circuit</label>
+    <windowKey>ShortCircuitAftermath</windowKey>
+    <enabled>true</enabled>
+    <!-- Six in-game hours of "the batteries let go this morning" texture, then silence. -->
+    <timeoutTicks>15000</timeoutTicks>
+    <dedupTicks>30000</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>true</keepActive>
+    <recordScope>Map</recordScope>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+    <colorCue>danger</colorCue>
+
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>ShortCircuit</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>3</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>7500</promptDecayTicks>
+    <promptDecayMinMultiplier>0.3</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Cue.Burnt</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryEventWindowDef>
+
+  <PawnDiary.DiaryEventWindowDef>
+    <defName>SelfTameJoined</defName>
+    <label>animal self-tamed</label>
+    <windowKey>SelfTameJoined</windowKey>
+    <enabled>true</enabled>
+    <!-- Half a day of "something chose us" warmth in the weighted pool. -->
+    <timeoutTicks>30000</timeoutTicks>
+    <dedupTicks>30000</dedupTicks>
+    <restartOnStart>false</restartOnStart>
+    <keepActive>true</keepActive>
+    <recordScope>Map</recordScope>
+    <recordStartEvent>false</recordStartEvent>
+    <recordEndEvent>false</recordEndEvent>
+    <recordEndWithoutActive>false</recordEndWithoutActive>
+    <recordTimeoutEvent>false</recordTimeoutEvent>
+
+    <startSignals>
+      <li>
+        <source>Incident</source>
+        <signal>executed</signal>
+        <matchDefNames>
+          <li>SelfTame</li>
+        </matchDefNames>
+      </li>
+    </startSignals>
+
+    <promptEnabled>true</promptEnabled>
+    <promptWeight>3</promptWeight>
+    <normalPromptWeightMultiplier>1</normalPromptWeightMultiplier>
+    <promptDecayTicks>15000</promptDecayTicks>
+    <promptDecayMinMultiplier>0.4</promptDecayMinMultiplier>
+    <promptPriorityKey>PawnDiary.Prompt.EventWindow.SelfTameJoined.Priority</promptPriorityKey>
+    <promptConditionKey>PawnDiary.Prompt.EventWindow.SelfTameJoined.Condition</promptConditionKey>
+    <promptDescriptionKey>PawnDiary.Prompt.EventWindow.SelfTameJoined.Description</promptDescriptionKey>
+    <promptCueKeys>
+      <li>PawnDiary.Prompt.EventWindow.SelfTameJoined.Cue.Chosen</li>
+    </promptCueKeys>
+  </PawnDiary.DiaryEventWindowDef>
+
 </Defs>

@@ -851,6 +851,104 @@
   </PawnDiary.DiaryInteractionGroupDef>
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreakViolent</defName>
+    <label>Violent breaks</label>
+    <order>206</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <combat>true</combat>
+    <instruction>the mind breaking outward—rage that needs a target. Write the heat, the loss of the room, and the moment the body stops asking permission</instruction>
+    <instructions>
+      <li>a violent break — write the pressure snapping: the last small thing, then heat taking the hands</li>
+      <li>a violent break — write it through the body: jaw, knuckles, breath, the world reduced to what can be hit</li>
+      <li>a violent break — if the storm has passed, write the shame and the wreckage the pawn can actually see</li>
+    </instructions>
+    <tone>with red, boiling loss of control</tone>
+    <tones>
+      <li>boiling and immediate, fury ahead of thought</li>
+      <li>aftermath-heavy, anger cooling into shame</li>
+    </tones>
+    <colorCue>mentalBreak</colorCue>
+    <matchDefNames>
+      <li>Berserk</li>
+      <li>MurderousRage</li>
+      <li>Slaughterer</li>
+      <li>Tantrum</li>
+      <li>TargetedTantrum</li>
+      <li>BerserkMechanoid</li>
+      <li>BerserkTrance</li>
+    </matchDefNames>
+    <matchSegments>
+      <li>Berserk</li>
+      <li>Rage</li>
+      <li>Tantrum</li>
+      <li>Slaughterer</li>
+    </matchSegments>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreakEscape</defName>
+    <label>Withdrawal breaks</label>
+    <order>207</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the mind breaking inward—flight, hiding, or giving up. Write the world becoming too loud and the pull to be anywhere else</instruction>
+    <instructions>
+      <li>an inward break — write the retreat: feet moving before a decision, the door, the dark, the quiet corner</li>
+      <li>an inward break — write the weight: everything asked of the pawn at once, and the moment of putting it all down</li>
+      <li>an inward break — keep the sadness plain and bodily; no dramatic speech, just the leaving</li>
+    </instructions>
+    <tone>with hollow, worn-out flight</tone>
+    <tones>
+      <li>hollow and slow, the world too loud to stay in</li>
+      <li>numb and drifting, one foot after the other away from people</li>
+    </tones>
+    <colorCue>mentalBreak</colorCue>
+    <matchDefNames>
+      <li>Wander_Sad</li>
+      <li>Wander_OwnRoom</li>
+      <li>Wander_Psychotic</li>
+      <li>GiveUpExit</li>
+      <li>RunWild</li>
+      <li>PanicFlee</li>
+    </matchDefNames>
+    <matchPrefixes>
+      <li>Wander</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>mentalbreakIndulgent</defName>
+    <label>Compulsive breaks</label>
+    <order>208</order>
+    <domain>MentalState</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the mind breaking into compulsion—a binge, a spree, an obsession that feels like relief while it ruins something. Write the hunger and the guilt circling it</instruction>
+    <instructions>
+      <li>a compulsive break — write the pull: the promise the compulsion makes, and how good the first taste of it feels</li>
+      <li>a compulsive break — write the narrowing: rules, duties, and other people fading behind the one urgent thing</li>
+      <li>a compulsive break — let guilt flicker at the edges without stopping anything</li>
+    </instructions>
+    <tone>with guilty, hungry momentum</tone>
+    <tones>
+      <li>hungry and rationalizing, relief winning over sense</li>
+      <li>sour and compulsive, the urge louder than the shame</li>
+    </tones>
+    <colorCue>mentalBreak</colorCue>
+    <matchDefNames>
+      <li>Binging_Food</li>
+      <li>Binging_DrugExtreme</li>
+      <li>Binging_DrugMajor</li>
+      <li>FireStartingSpree</li>
+      <li>CorpseObsession</li>
+      <li>Jailbreaker</li>
+    </matchDefNames>
+    <matchPrefixes>
+      <li>Binging</li>
+    </matchPrefixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>mentalbreak</defName>
     <label>Mental breaks</label>
     <order>210</order>
@@ -1164,6 +1262,59 @@
       <li>Aurora</li>
       <li>Party</li>
       <li>PsychicSoothe</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventWeatherHardship</defName>
+    <label>Climate hardship</label>
+    <order>402</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <instruction>the climate itself turned hostile—a lasting cold snap, heat wave, or darkened sky. Write the body and the routines coping, not a single dramatic moment</instruction>
+    <instructions>
+      <li>hostile climate — write the body first: numb fingers, sweat, shallow breath, clothes that stopped being enough</li>
+      <li>hostile climate — write the small adjustments: rationing, moved bedrolls, doors kept shut, crops watched with worry</li>
+      <li>hostile climate — let the weather set the day's scale; people and tasks bend around it without a named villain</li>
+    </instructions>
+    <tone>with worn, enduring patience against the weather</tone>
+    <tones>
+      <li>weathered and practical, endurance measured in small chores</li>
+      <li>quietly worried, the sky deciding what tomorrow costs</li>
+    </tones>
+    <matchDefNames>
+      <li>ColdSnap</li>
+      <li>HeatWave</li>
+      <li>VolcanicWinter</li>
+      <!-- Odyssey sky/water hardships; plain strings sit inert without the DLC. -->
+      <li>VolcanicAsh</li>
+      <li>Flooding</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>moodeventStormDanger</defName>
+    <label>Sky violence</label>
+    <order>403</order>
+    <domain>MoodEvent</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>danger</colorCue>
+    <instruction>the sky turned violent—dry lightning, fire, or rain that should not exist. Write sudden danger from above without inventing damage that was not supplied</instruction>
+    <instructions>
+      <li>sky violence — open on light, sound, or smell: the flash, the crack, the burning air, the first wrong drops</li>
+      <li>sky violence — write the scramble to react: watching for fires, pulling people indoors, counting what stands exposed</li>
+      <li>sky violence — if the rain itself is wrong, keep it wrong; unease before explanation, and no invented outcome</li>
+    </instructions>
+    <tone>with sharp alarm under an open sky</tone>
+    <tones>
+      <li>startled and watchful, the sky suddenly an enemy</li>
+      <li>tense and reactive, danger arriving faster than understanding</li>
+    </tones>
+    <matchDefNames>
+      <li>Flashstorm</li>
+      <!-- Anomaly blood rain; inert without the DLC. -->
+      <li>BloodRain</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1964,6 +2115,44 @@
     </matchDefNames>
     <matchTokens>
       <li>Infestation</li>
+    </matchTokens>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>raidAnomalyEntities</defName>
+    <label>Entity attacks</label>
+    <order>708</order>
+    <domain>Raid</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>extremeDark</colorCue>
+    <instruction>inhuman things attacking the colony—write dread, wrongness, and survival, not a normal battle; never explain what the creatures are</instruction>
+    <instructions>
+      <li>inhuman attackers — open on the first wrong detail: shape, gait, sound, or silence where sound should be; do not name what they are beyond the supplied label</li>
+      <li>inhuman attackers — write the body refusing to accept them as people: revulsion, hair rising, the urge to look away while aiming</li>
+      <li>inhuman attackers — keep it survival-close and sensory; use injuries or outcomes only if supplied, and never resolve the horror</li>
+    </instructions>
+    <tone>with horror pressing through combat urgency</tone>
+    <tones>
+      <li>horrified and sensory, the attackers not registering as people</li>
+      <li>tight and survival-focused, wrongness kept at the edge of the page</li>
+    </tones>
+    <!-- Anomaly entity assaults route through the same raid hook as human raids, but the
+         "grab weapons, man the sandbags" register is wrong for horror. Tokens are chosen to
+         survive exact incident defName differences across Anomaly versions; without the DLC these
+         strings simply never match (see AGENTS.md DLC-safety). -->
+    <matchTokens>
+      <li>Sightstealer</li>
+      <li>Shambler</li>
+      <li>Fleshbeast</li>
+      <li>Gorehulk</li>
+      <li>Devourer</li>
+      <li>Chimera</li>
+      <li>Noctol</li>
+      <li>Metalhorror</li>
+      <li>Revenant</li>
+      <li>FleshmassHeart</li>
+      <li>PitGate</li>
     </matchTokens>
   </PawnDiary.DiaryInteractionGroupDef>
 

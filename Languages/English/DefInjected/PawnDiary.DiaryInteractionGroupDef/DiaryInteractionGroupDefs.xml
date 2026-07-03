@@ -352,4 +352,59 @@
   <progressionRoyalTitle.tones.1>quietly burdened, treating rank as both honor and obligation</progressionRoyalTitle.tones.1>
   <progressionOther.label>Progression</progressionOther.label>
   <progressionOther.instruction>a pawn changed in a notable way; write the supplied before-and-after fact plainly and personally</progressionOther.instruction>
+
+  <!-- Event-coverage pass groups (see EVENT_COVERAGE_PLAN.md) -->
+  <raidAnomalyEntities.label>Entity attacks</raidAnomalyEntities.label>
+  <raidAnomalyEntities.instruction>inhuman things attacking the colony&#8212;write dread, wrongness, and survival, not a normal battle; never explain what the creatures are</raidAnomalyEntities.instruction>
+  <raidAnomalyEntities.instructions.0>inhuman attackers &#8212; open on the first wrong detail: shape, gait, sound, or silence where sound should be; do not name what they are beyond the supplied label</raidAnomalyEntities.instructions.0>
+  <raidAnomalyEntities.instructions.1>inhuman attackers &#8212; write the body refusing to accept them as people: revulsion, hair rising, the urge to look away while aiming</raidAnomalyEntities.instructions.1>
+  <raidAnomalyEntities.instructions.2>inhuman attackers &#8212; keep it survival-close and sensory; use injuries or outcomes only if supplied, and never resolve the horror</raidAnomalyEntities.instructions.2>
+  <raidAnomalyEntities.tone>with horror pressing through combat urgency</raidAnomalyEntities.tone>
+  <raidAnomalyEntities.tones.0>horrified and sensory, the attackers not registering as people</raidAnomalyEntities.tones.0>
+  <raidAnomalyEntities.tones.1>tight and survival-focused, wrongness kept at the edge of the page</raidAnomalyEntities.tones.1>
+
+  <moodeventWeatherHardship.label>Climate hardship</moodeventWeatherHardship.label>
+  <moodeventWeatherHardship.instruction>the climate itself turned hostile&#8212;a lasting cold snap, heat wave, or darkened sky. Write the body and the routines coping, not a single dramatic moment</moodeventWeatherHardship.instruction>
+  <moodeventWeatherHardship.instructions.0>hostile climate &#8212; write the body first: numb fingers, sweat, shallow breath, clothes that stopped being enough</moodeventWeatherHardship.instructions.0>
+  <moodeventWeatherHardship.instructions.1>hostile climate &#8212; write the small adjustments: rationing, moved bedrolls, doors kept shut, crops watched with worry</moodeventWeatherHardship.instructions.1>
+  <moodeventWeatherHardship.instructions.2>hostile climate &#8212; let the weather set the day's scale; people and tasks bend around it without a named villain</moodeventWeatherHardship.instructions.2>
+  <moodeventWeatherHardship.tone>with worn, enduring patience against the weather</moodeventWeatherHardship.tone>
+  <moodeventWeatherHardship.tones.0>weathered and practical, endurance measured in small chores</moodeventWeatherHardship.tones.0>
+  <moodeventWeatherHardship.tones.1>quietly worried, the sky deciding what tomorrow costs</moodeventWeatherHardship.tones.1>
+
+  <moodeventStormDanger.label>Sky violence</moodeventStormDanger.label>
+  <moodeventStormDanger.instruction>the sky turned violent&#8212;dry lightning, fire, or rain that should not exist. Write sudden danger from above without inventing damage that was not supplied</moodeventStormDanger.instruction>
+  <moodeventStormDanger.instructions.0>sky violence &#8212; open on light, sound, or smell: the flash, the crack, the burning air, the first wrong drops</moodeventStormDanger.instructions.0>
+  <moodeventStormDanger.instructions.1>sky violence &#8212; write the scramble to react: watching for fires, pulling people indoors, counting what stands exposed</moodeventStormDanger.instructions.1>
+  <moodeventStormDanger.instructions.2>sky violence &#8212; if the rain itself is wrong, keep it wrong; unease before explanation, and no invented outcome</moodeventStormDanger.instructions.2>
+  <moodeventStormDanger.tone>with sharp alarm under an open sky</moodeventStormDanger.tone>
+  <moodeventStormDanger.tones.0>startled and watchful, the sky suddenly an enemy</moodeventStormDanger.tones.0>
+  <moodeventStormDanger.tones.1>tense and reactive, danger arriving faster than understanding</moodeventStormDanger.tones.1>
+
+  <mentalbreakViolent.label>Violent breaks</mentalbreakViolent.label>
+  <mentalbreakViolent.instruction>the mind breaking outward&#8212;rage that needs a target. Write the heat, the loss of the room, and the moment the body stops asking permission</mentalbreakViolent.instruction>
+  <mentalbreakViolent.instructions.0>a violent break &#8212; write the pressure snapping: the last small thing, then heat taking the hands</mentalbreakViolent.instructions.0>
+  <mentalbreakViolent.instructions.1>a violent break &#8212; write it through the body: jaw, knuckles, breath, the world reduced to what can be hit</mentalbreakViolent.instructions.1>
+  <mentalbreakViolent.instructions.2>a violent break &#8212; if the storm has passed, write the shame and the wreckage the pawn can actually see</mentalbreakViolent.instructions.2>
+  <mentalbreakViolent.tone>with red, boiling loss of control</mentalbreakViolent.tone>
+  <mentalbreakViolent.tones.0>boiling and immediate, fury ahead of thought</mentalbreakViolent.tones.0>
+  <mentalbreakViolent.tones.1>aftermath-heavy, anger cooling into shame</mentalbreakViolent.tones.1>
+
+  <mentalbreakEscape.label>Withdrawal breaks</mentalbreakEscape.label>
+  <mentalbreakEscape.instruction>the mind breaking inward&#8212;flight, hiding, or giving up. Write the world becoming too loud and the pull to be anywhere else</mentalbreakEscape.instruction>
+  <mentalbreakEscape.instructions.0>an inward break &#8212; write the retreat: feet moving before a decision, the door, the dark, the quiet corner</mentalbreakEscape.instructions.0>
+  <mentalbreakEscape.instructions.1>an inward break &#8212; write the weight: everything asked of the pawn at once, and the moment of putting it all down</mentalbreakEscape.instructions.1>
+  <mentalbreakEscape.instructions.2>an inward break &#8212; keep the sadness plain and bodily; no dramatic speech, just the leaving</mentalbreakEscape.instructions.2>
+  <mentalbreakEscape.tone>with hollow, worn-out flight</mentalbreakEscape.tone>
+  <mentalbreakEscape.tones.0>hollow and slow, the world too loud to stay in</mentalbreakEscape.tones.0>
+  <mentalbreakEscape.tones.1>numb and drifting, one foot after the other away from people</mentalbreakEscape.tones.1>
+
+  <mentalbreakIndulgent.label>Compulsive breaks</mentalbreakIndulgent.label>
+  <mentalbreakIndulgent.instruction>the mind breaking into compulsion&#8212;a binge, a spree, an obsession that feels like relief while it ruins something. Write the hunger and the guilt circling it</mentalbreakIndulgent.instruction>
+  <mentalbreakIndulgent.instructions.0>a compulsive break &#8212; write the pull: the promise the compulsion makes, and how good the first taste of it feels</mentalbreakIndulgent.instructions.0>
+  <mentalbreakIndulgent.instructions.1>a compulsive break &#8212; write the narrowing: rules, duties, and other people fading behind the one urgent thing</mentalbreakIndulgent.instructions.1>
+  <mentalbreakIndulgent.instructions.2>a compulsive break &#8212; let guilt flicker at the edges without stopping anything</mentalbreakIndulgent.instructions.2>
+  <mentalbreakIndulgent.tone>with guilty, hungry momentum</mentalbreakIndulgent.tone>
+  <mentalbreakIndulgent.tones.0>hungry and rationalizing, relief winning over sense</mentalbreakIndulgent.tones.0>
+  <mentalbreakIndulgent.tones.1>sour and compulsive, the urge louder than the shame</mentalbreakIndulgent.tones.1>
 </LanguageData>

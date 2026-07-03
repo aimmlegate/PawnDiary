@@ -17,4 +17,41 @@
 
   <MetalhorrorInfection.label>hidden imitator infection</MetalhorrorInfection.label>
 
+
+  <!-- Event-coverage pass (see EVENT_COVERAGE_PLAN.md) -->
+
+  <ColdSnapActive.label>cold snap</ColdSnapActive.label>
+
+  <HeatWaveActive.label>heat wave</HeatWaveActive.label>
+
+  <VolcanicWinterActive.label>volcanic winter</VolcanicWinterActive.label>
+
+  <BloodRainActive.label>blood rain</BloodRainActive.label>
+
+  <DeathPallActive.label>death pall</DeathPallActive.label>
+
+  <UnnaturalDarknessActive.label>unnatural darkness</UnnaturalDarknessActive.label>
+
+  <PitGatePresence.label>pit gate</PitGatePresence.label>
+  <PitGatePresence.instruction>write the pawn seeing the pit gate torn open in the colony's ground: a hole that goes down farther than it should, heat and sound from below, and things that climb out of it; keep it grounded in what can be seen and heard, and never explain what is at the bottom</PitGatePresence.instruction>
+
+  <FleshmassHeartPresence.label>fleshmass heart</FleshmassHeartPresence.label>
+  <FleshmassHeartPresence.instruction>write the pawn realizing a heart of living flesh has erupted nearby and is growing toward the colony: the sound of it, the ground changing, the need to cut it back; write revulsion and urgency without explaining its biology or inventing a resolved fight</FleshmassHeartPresence.instruction>
+
+  <ObeliskPresence.label>obelisk on the map</ObeliskPresence.label>
+
+  <HarbingerTreePresence.label>harbinger trees</HarbingerTreePresence.label>
+
+  <NociospherePresence.label>nociosphere</NociospherePresence.label>
+
+  <UnnaturalCorpsePresence.label>unnatural corpse</UnnaturalCorpsePresence.label>
+
+  <ThrumboVisit.label>thrumbo on the map</ThrumboVisit.label>
+
+  <AlphabeaversActive.label>alphabeavers</AlphabeaversActive.label>
+
+  <CropBlightActive.label>crop blight</CropBlightActive.label>
+
+  <AmbrosiaSprouted.label>ambrosia grove</AmbrosiaSprouted.label>
+
 </LanguageData>

@@ -38,4 +38,17 @@
   <DiaryEnchant_CorpseTorment.label>corpse torment</DiaryEnchant_CorpseTorment.label>
   <DiaryEnchant_Inhumanized.label>inhumanized</DiaryEnchant_Inhumanized.label>
   <DiaryEnchant_FleshMutation.label>flesh tentacle or whip</DiaryEnchant_FleshMutation.label>
+  <DiaryEnchant_Malnutrition.label>malnutrition</DiaryEnchant_Malnutrition.label>
+  <DiaryEnchant_TemperatureInjury.label>heatstroke or hypothermia</DiaryEnchant_TemperatureInjury.label>
+  <DiaryEnchant_AnestheticHaze.label>anesthetic haze</DiaryEnchant_AnestheticHaze.label>
+  <DiaryEnchant_PsychicShock.label>psychic shock</DiaryEnchant_PsychicShock.label>
+  <DiaryEnchant_Carcinoma.label>carcinoma</DiaryEnchant_Carcinoma.label>
+  <DiaryEnchant_Mechanites.label>mechanites</DiaryEnchant_Mechanites.label>
+  <DiaryEnchant_WakeUpHigh.label>wake-up high</DiaryEnchant_WakeUpHigh.label>
+  <DiaryEnchant_CryptosleepSickness.label>cryptosleep sickness</DiaryEnchant_CryptosleepSickness.label>
+  <DiaryEnchant_AgingBody.label>aging body</DiaryEnchant_AgingBody.label>
+  <DiaryEnchant_Deathrest.label>deathrest</DiaryEnchant_Deathrest.label>
+  <DiaryEnchant_LungRot.label>lung rot</DiaryEnchant_LungRot.label>
+  <DiaryEnchant_BloodRage.label>blood rage</DiaryEnchant_BloodRage.label>
+  <DiaryEnchant_VacuumExposure.label>vacuum exposure</DiaryEnchant_VacuumExposure.label>
 </LanguageData>

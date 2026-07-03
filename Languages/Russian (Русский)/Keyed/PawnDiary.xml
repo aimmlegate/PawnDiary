@@ -985,6 +985,98 @@
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>тихая тревога</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Dread>
   <PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>лица всё ещё кажутся чужими</PawnDiary.Prompt.ObservedCondition.MetalhorrorInfection.Cue.Distrust>
 
+  <!-- Расширение охвата событий: тоновые подсказки для наблюдаемых состояний (см. EVENT_COVERAGE_PLAN.md) -->
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Priority>пусть затяжной холод давит на будни</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Condition>затяжные холода снаружи</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Description>на край опустился неестественный холод; обогреватели работают на пределе, посевы гибнут в полях, и каждый выход наружу чего-то стоит</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Cold>холод в пальцах</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Cold>
+  <PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Crops>посевы под угрозой</PawnDiary.Prompt.ObservedCondition.ColdSnapActive.Cue.Crops>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Priority>пусть жара давит на будни</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Condition>затяжная жара снаружи</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Description>на край навалился изнуряющий зной; охладители не справляются, работа вязнет, люди срываются по мелочам, а тень стала тем, за что борются</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Heat>давящий зной</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Heat>
+  <PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Tempers>терпение на исходе</PawnDiary.Prompt.ObservedCondition.HeatWaveActive.Cue.Tempers>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>держи потускневшее небо тихим фоновым грузом</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>пепел застит солнце</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>пепел высоко в небе надолго притушил солнце; дни стоят серые и холодные, всё растёт медленно, и сам свет будто выдают по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>серый свет по норме</PawnDiary.Prompt.ObservedCondition.VolcanicWinterActive.Cue.DimSky>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>перекрой обычный контекст неправильностью кровавого дождя</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>красный дождь, которого не должно быть</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>идёт красный дождь, и он меняет тех, кого промочил: злость поднимается слишком легко и в людях, и в зверях; пиши неправильность самой погоды и страх перед тем, что она делает с характерами, не объясняя её</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.RedRain>дождь не того цвета</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.RedRain>
+  <PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.Fury>злость под самой кожей</PawnDiary.Prompt.ObservedCondition.BloodRainActive.Cue.Fury>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>перекрой обычный контекст пеленой, поднимающей мёртвых</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Condition>серая пелена, под которой мёртвые не лежат</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Description>над поселением висит серая мгла, и непогребённые под ней встают; пиши настороженность возле могил и тел и страх увидеть знакомого мертвеца на ногах, не объясняя, как это устроено</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Dead>мёртвые не лежат</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Dead>
+  <PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Graves>взгляд то и дело на могилы</PawnDiary.Prompt.ObservedCondition.DeathPallActive.Cue.Graves>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>перекрой обычный контекст тьмой, которая не ночь</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Condition>тьма, которую не пробивает день</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Description>неестественная тьма проглотила небо, и что-то в ней ненавидит тех, кто без света; пиши жизнь, сжавшуюся до кругов лампового света, страх шагнуть за их край и чувство, что из черноты смотрят</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Light>держаться за свет</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Light>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Outside>тьма не пуста</PawnDiary.Prompt.ObservedCondition.UnnaturalDarknessActive.Cue.Outside>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>перекрой обычный контекст разверзшейся ямой</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Condition>провал, открывшийся в земле</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Description>в земле разорвалась дыра, и она уходит глубже, чем должна; из неё выбираются твари, и все живут, держа одно ухо в сторону ямы; никогда не объясняй, что там на дне</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Below>что-то внизу</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Below>
+  <PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Watch>одно ухо всегда к яме</PawnDiary.Prompt.ObservedCondition.PitGatePresence.Cue.Watch>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>перекрой обычный контекст растущей плотью</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Condition>сердце живой плоти ползёт к поселению</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Description>по карте расползается живая плоть, и где-то внутри неё бьётся сердце; пиши звук, запах, отнятую землю и знание, что её надо резать, пока она не дошла до стен</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Growth>земля, которую съедают</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Growth>
+  <PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Sound>чужое сердцебиение</PawnDiary.Prompt.ObservedCondition.FleshmassHeartPresence.Cue.Sound>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>держи молчаливый обелиск на краю мыслей</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Condition>безмолвный обелиск на карте</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Description>там стоит монолит и ничего не делает — и от этого только хуже; пиши, как взгляд сам возвращается к нему и мысли гнутся вокруг него, не объясняя, чего он хочет</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Stillness>слишком неподвижный, слишком терпеливый</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Stillness>
+  <PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Pull>мысли тянутся к нему</PawnDiary.Prompt.ObservedCondition.ObeliskPresence.Cue.Pull>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>пусть деревья, кормящиеся плотью, добавляют тихую неправильность</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Condition>деревья, что кормятся мёртвым</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>рядом укоренились корявые деревья с плотью под корой, и они съедают всё, что оставят поблизости; тихая, терпеливая неправильность на краю обычных дней</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Cue.Fed>деревья накормлены</PawnDiary.Prompt.ObservedCondition.HarbingerTreePresence.Cue.Fed>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>перекрой обычный контекст сдержанной угрозой сферы</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>парящая сфера сдержанной боли</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>тёмная гранёная сфера висит над картой, как задержанный вдох; все понимают, что тихой она не останется; пиши ожидание и то, как её обходят стороной, не объясняя, что это</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>задержанный вдох, отсчёт</PawnDiary.Prompt.ObservedCondition.NociospherePresence.Cue.Ticking>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>подкрась обычный контекст трупом, который ведёт себя неправильно</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Priority>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>труп, с которым что-то не так</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Condition>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>в поселении лежит тело, которое не ведёт себя как тело: то будто ближе, чем было, то повернуто иначе; пиши нежелание смотреть на него и уверенность, что оно ещё не закончило, ничего не объясняя</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Description>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>оно так и лежало?</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Position>
+  <PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>взгляд из-под закрытых век</PawnDiary.Prompt.ObservedCondition.UnnaturalCorpsePresence.Cue.Watched>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>пусть прошедший трумбо добавит дню немного благоговения</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Priority>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>трумбо бродит неподалёку</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Condition>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>где-то там ходит трумбо — огромный, неторопливый, будто легенда решила пройти мимо забора; сначала благоговение, а потом осторожное уважение к тому, что он может сделать, если его тронуть</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Description>
+  <PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Cue.Awe>легенда у самого забора</PawnDiary.Prompt.ObservedCondition.ThrumboVisit.Cue.Awe>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Priority>пусть пожиратели деревьев добавят нелепую, но настоящую тревогу</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Condition>альфабобры объедают лес</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>стая альфабобров прогрызает лес; выглядит смешно, а стоит настоящей древесины; лёгкий юмор уместен, пока тревога за лес остаётся правдой</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Cue.Trees>лес редеет на глазах</PawnDiary.Prompt.ObservedCondition.AlphabeaversActive.Cue.Trees>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>пусть гниль держит мысль о зиме на заднем плане</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Priority>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Condition>гниль ползёт по полям</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Condition>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Description>по посевам идёт гниль, и каждое погибшее растение — это обед, которого у поселения не будет; тихий страх за еду и зиму и мрачная арифметика: что вырезать, чтобы спасти остальное</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Description>
+  <PawnDiary.Prompt.ObservedCondition.CropBlightActive.Cue.Winter>считать обеды до зимы</PawnDiary.Prompt.ObservedCondition.CropBlightActive.Cue.Winter>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Priority>пусть роща амброзии искушает с краю дня</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Priority>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Condition>дикая амброзия растёт неподалёку</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Condition>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>рядом взошла роща амброзии: сладкие, приятные, слегка затягивающие плоды, о которых все старательно не думают; маленькое искушение с усмешкой, а не беда</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Description>
+  <PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Cue.Temptation>старательно не думать о плодах</PawnDiary.Prompt.ObservedCondition.AmbrosiaSprouted.Cue.Temptation>
+
+  <!-- Расширение охвата событий: окна событий — тоновые подсказки и стартовые записи -->
+  <PawnDiary.Event.ObservedCondition.PitGatePresence.Start>{0}: в земле поселения разверзся провал.</PawnDiary.Event.ObservedCondition.PitGatePresence.Start>
+  <PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>{0}: сердце плоти прорвалось из-под земли и начало расползаться.</PawnDiary.Event.ObservedCondition.FleshmassHeartPresence.Start>
+  <PawnDiary.Event.EventWindow.MechClusterLanded.Start>{0}: на горизонте собрались спящие боевые машины: {1}.</PawnDiary.Event.EventWindow.MechClusterLanded.Start>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>держи спящий механоидный кластер холодной фоновой угрозой</PawnDiary.Prompt.EventWindow.MechClusterLanded.Priority>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>спящий кластер механоидов на горизонте</PawnDiary.Prompt.EventWindow.MechClusterLanded.Condition>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>в пределах видимости стоят собранные боевые машины — терпеливые и неподвижные; теперь каждый план гнётся вокруг того, когда и как они проснутся; пиши ожидание, а не выдуманный бой</PawnDiary.Prompt.EventWindow.MechClusterLanded.Description>
+  <PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant>машины ждут пробуждения</PawnDiary.Prompt.EventWindow.MechClusterLanded.Cue.Dormant>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>пусть утреннее замыкание оставит на дне запах горелой проводки</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Priority>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Condition>замыкание сегодня утром</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Condition>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Description>где-то в базе проводка сегодня рванула с грохотом; запах горелого, потерянный заряд и новое маленькое недоверие к кабелям</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Description>
+  <PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Cue.Burnt>запах горелой проводки</PawnDiary.Prompt.EventWindow.ShortCircuitAftermath.Cue.Burnt>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Priority>пусть приручившийся зверь подарит дню маленькую милость</PawnDiary.Prompt.EventWindow.SelfTameJoined.Priority>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Condition>сегодня зверь сам выбрал поселение</PawnDiary.Prompt.EventWindow.SelfTameJoined.Condition>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Description>дикий зверь пришёл и сам решил, что ему здесь место; маленькая незаслуженная милость посреди обычного дня</PawnDiary.Prompt.EventWindow.SelfTameJoined.Description>
+  <PawnDiary.Prompt.EventWindow.SelfTameJoined.Cue.Chosen>нас кто-то выбрал</PawnDiary.Prompt.EventWindow.SelfTameJoined.Cue.Chosen>
+
   <PawnDiary.Ctx.Opinion>отношение {0}</PawnDiary.Ctx.Opinion>
   <PawnDiary.Ctx.Because>потому что {0}</PawnDiary.Ctx.Because>
   <PawnDiary.Ctx.LastWrote>последняя запись: «{0}»</PawnDiary.Ctx.LastWrote>

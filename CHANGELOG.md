@@ -6,6 +6,28 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Event-coverage pass: XML-only groups, enchantments, personas, observed conditions, and tone
+  windows (no C# changes).** Implements Tiers 1–2 of `EVENT_COVERAGE_PLAN.md` with Anomaly as the
+  main focus. Retone groups (page volume unchanged): `raidAnomalyEntities` gives Anomaly entity
+  assaults a horror register instead of the human-raid tone; `moodeventWeatherHardship` /
+  `moodeventStormDanger` replace the generic catch-all wording for ColdSnap/HeatWave/
+  VolcanicWinter/Flashstorm (+ Odyssey VolcanicAsh/Flooding, Anomaly BloodRain);
+  `mentalbreakViolent`/`Escape`/`Indulgent` split the mental-break catch-all into three registers.
+  New prompt enchantments: Malnutrition, Heatstroke/Hypothermia, Anesthetic, PsychicShock,
+  Carcinoma, mechanites, WakeUpHigh, CryptosleepSickness, low-chance AgingBody, Biotech
+  Deathrest/LungRot, Anomaly BloodRage, Odyssey VacuumExposure, plus `SleepingSickness` added to
+  the FeverishBody matchers. New writing-style overrides: drunk rambling (`AlcoholHigh` at
+  severity ≥ 0.4) and fading memory (Dementia/Alzheimers), backed by two new personas. New
+  observed conditions (weighted prompt tone, no pages unless noted): ColdSnap/HeatWave/
+  VolcanicWinter; Anomaly BloodRain/DeathPall/UnnaturalDarkness, obelisks, harbinger trees,
+  nociosphere, unnatural corpse, and pit gate + fleshmass heart (these two record a start page per
+  map colonist); weighted-random light flavor for thrumbo visits, alphabeavers, crop blight, and
+  ambrosia groves with active-time caps and restart cooldowns. New event windows: `MechClusterLanded`
+  (start page + three-day decaying dread), `ShortCircuitAftermath` and `SelfTameJoined` (tone-only,
+  never pages). All matchers are plain strings (DLC-safe); every new group/def is settings-toggleable.
+  English Def text plus natively written (not literally translated) Russian Keyed/DefInjected
+  strings; `EVENT_PROMPT_MAP.md` tables refreshed (including correcting the stale
+  MetalhorrorEmergence row to the shipped ThingPresent observer).
 - **Event-coverage gap analysis & XML-only extension plan (docs only).** New root document
   `EVENT_COVERAGE_PLAN.md`: inventories every RimWorld moment the mod reacts to today, maps the
   base-game and DLC (Royalty/Ideology/Biotech/Anomaly/Odyssey) events we skip or only catch via
