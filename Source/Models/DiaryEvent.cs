@@ -31,12 +31,16 @@ namespace PawnDiary
         public const string SkippedStatus = DiaryGenerationStatus.Skipped;
         public const string PromptOnlyStatus = DiaryGenerationStatus.PromptOnly;
         public const string CombatColorCue = "combat";
+        public const string DangerColorCue = "danger";
         public const string SocialFightColorCue = "socialFight";
         public const string MentalBreakColorCue = "mentalBreak";
         public const string DazeColorCue = "daze";
         public const string ExtremeDarkColorCue = "extremeDark";
         public const string StrangeChatColorCue = "strangeChat";
         public const string WhiteColorCue = "white";
+        public const string BodyPartAnomalousColorCue = "bodyPartAnomalous";
+        public const string BodyPartArtificialColorCue = "bodyPartArtificial";
+        public const string BodyPartLostColorCue = "bodyPartLost";
         // Psychic events (psylink gains, psycast abilities): a bright violet, distinct from the dark
         // blood-red extremeDark cue used by Anomaly dread content (void monolith, metalhorror, etc.).
         public const string PsychicColorCue = "psychic";
@@ -1175,7 +1179,8 @@ namespace PawnDiary
 
             string cue = ColorCueForDisplay();
             if (string.Equals(cue, StrangeChatColorCue, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(cue, ExtremeDarkColorCue, StringComparison.OrdinalIgnoreCase))
+                || string.Equals(cue, ExtremeDarkColorCue, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(cue, BodyPartAnomalousColorCue, StringComparison.OrdinalIgnoreCase))
             {
                 return DiaryEntryView.AtmosphereUnsettled;
             }

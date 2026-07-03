@@ -26,7 +26,8 @@
                      disabled even if defaultEnabled is true.
     colorCue       - optional stable Diary tab color cue saved on new entries. Current cue names:
                      combat, danger, socialFight, mentalBreak, daze, extremeDark, strangeChat,
-                     white, psychic, royalty, quadrumReflection, quiet
+                     white, bodyPartAnomalous, bodyPartArtificial, bodyPartLost, psychic,
+                     royalty, quadrumReflection, quiet
     batch          - optional Interaction/Tale batching policy:
                      enabled, mode (PairEvent or AmbientDayNote), windowTicks, maxEvents,
                      scope (Pair or Def), syntheticDefName, labelKey, briefKey, headerKey,
@@ -1977,7 +1978,7 @@
     <domain>Hediff</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
-    <colorCue>extremeDark</colorCue>
+    <colorCue>bodyPartAnomalous</colorCue>
     <instruction>the pawn's body has grown or received a living, wrong-feeling flesh part; write the physical reality of it - movement, warmth, sound - filtered through the attitude cue, and never explain its biology</instruction>
     <tones>
       <li>visceral and intimate, the body no longer fully one's own</li>
@@ -2012,6 +2013,7 @@
     <domain>Hediff</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
+    <colorCue>bodyPartArtificial</colorCue>
     <instruction>a made thing has joined the pawn's body; write the weight, fit, usefulness, strangeness, or shame of the new part through the attitude and tier cues</instruction>
     <tones>
       <li>intimate and practical, the body learning a new tool</li>
@@ -2040,6 +2042,7 @@
     <domain>Hediff</domain>
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
+    <colorCue>bodyPartLost</colorCue>
     <instruction>the pawn has lost a natural part of themself; write the shock, absence, pain, phantom feeling, or cold practical calculation through the attitude and cause cues</instruction>
     <tones>
       <li>bodily and stunned, absence louder than pain</li>

@@ -232,12 +232,18 @@ namespace PawnDiary
         public List<DiaryUiCueColor> cueColors = new List<DiaryUiCueColor>
         {
             Cue(DiaryEvent.CombatColorCue, Preset("hostile")),
+            Cue(DiaryEvent.DangerColorCue, Color(0.94f, 0.28f, 0.12f, 1f)),
             Cue(DiaryEvent.SocialFightColorCue, Color(1f, 0.52f, 0.16f, 1f)),
             Cue(DiaryEvent.MentalBreakColorCue, Color(0.48f, 0.64f, 0.48f, 1f)),
             Cue(DiaryEvent.DazeColorCue, Preset("gene")),
             Cue(DiaryEvent.ExtremeDarkColorCue, Color(0.58f, 0.05f, 0.08f, 1f)),
             Cue(DiaryEvent.StrangeChatColorCue, Color(0.42f, 0.96f, 0.50f, 1f)),
             Cue(DiaryEvent.WhiteColorCue, Color(0.92f, 0.92f, 0.86f, 1f)),
+            // Body-part events get their own accents so prosthetics, living changes, and loss do
+            // not all read as generic important entries.
+            Cue(DiaryEvent.BodyPartAnomalousColorCue, Color(0.80f, 0.22f, 0.45f, 1f)),
+            Cue(DiaryEvent.BodyPartArtificialColorCue, Color(0.36f, 0.78f, 0.84f, 1f)),
+            Cue(DiaryEvent.BodyPartLostColorCue, Color(0.95f, 0.40f, 0.30f, 1f)),
             // Psychic events (psylink gains, psycast abilities) get a bright violet, distinct from the
             // dark blood-red extremeDark cue used by Anomaly dread content.
             Cue(DiaryEvent.PsychicColorCue, Color(0.78f, 0.42f, 1f, 1f)),

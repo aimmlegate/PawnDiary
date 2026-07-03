@@ -152,6 +152,11 @@
       <li><cue>extremeDark</cue><color><r>0.58</r><g>0.05</g><b>0.08</b><a>1</a></color></li>
       <li><cue>strangeChat</cue><color><r>0.42</r><g>0.96</g><b>0.50</b><a>1</a></color></li>
       <li><cue>white</cue><color><r>0.92</r><g>0.92</g><b>0.86</b><a>1</a></color></li>
+      <!-- Body-part events: anomalous living changes, artificial replacements, and natural loss
+           should remain visually distinct from generic important entries. -->
+      <li><cue>bodyPartAnomalous</cue><color><r>0.80</r><g>0.22</g><b>0.45</b><a>1</a></color></li>
+      <li><cue>bodyPartArtificial</cue><color><r>0.36</r><g>0.78</g><b>0.84</b><a>1</a></color></li>
+      <li><cue>bodyPartLost</cue><color><r>0.95</r><g>0.40</g><b>0.30</b><a>1</a></color></li>
       <!-- Psychic events (psylink gains, psycast abilities): bright violet, distinct from the dark
            blood-red extremeDark cue used by Anomaly dread content. -->
       <li><cue>psychic</cue><color><r>0.78</r><g>0.42</g><b>1</b><a>1</a></color></li>

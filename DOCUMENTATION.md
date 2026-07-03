@@ -713,12 +713,14 @@ the left spine strip and the group-label chip (and, for the three distress cues 
 `socialFight`, `mentalBreak`, also a matching page tint and header rule). The full palette lives in
 `DiaryUiStyleDef.xml` (`<cueColors>`); the cue vocabulary is documented in the
 `DiaryInteractionGroupDefs.xml` header comment. Current themed cues beyond the distress/generic
-ones: `psychic` (bright violet — psylink gains, psycast abilities), `royalty` (gold — royal-title
-gains, royal rituals), `strangeChat` (green), `white` (warm white — heartfelt moments, birthdays,
-skill passions, day reflections), and `quadrumReflection` (light blue). `extremeDark` (dark
-blood-red) is reserved for Anomaly/dread content (void monolith, metalhorror, anomaly tales) and is
-deliberately not used for psylink, which is bright-psychic rather than horror. `colorCue` is saved
-per-event, so historical entries keep whatever cue they were recorded with.
+ones: `bodyPartAnomalous` (living/wrong body changes), `bodyPartArtificial` (prosthetic/bionic
+body-part gains), `bodyPartLost` (natural part loss), `psychic` (bright violet — psylink gains,
+psycast abilities), `royalty` (gold — royal-title gains, royal rituals), `strangeChat` (green),
+`white` (warm white — heartfelt moments, birthdays, skill passions, day reflections), and
+`quadrumReflection` (light blue). `extremeDark` (dark blood-red) is reserved for broader
+Anomaly/dread content (void monolith, metalhorror, anomaly tales) and is deliberately not used for
+psylink, which is bright-psychic rather than horror. `colorCue` is saved per-event, so historical
+entries keep whatever cue they were recorded with.
 
 **Render-time paragraph reflow (default atmosphere).** Because prompts only ever ask for sentence
 counts (1-3, 2-4, 4-7, 5-8) and never for explicit paragraph breaks, a multi-sentence entry arrives

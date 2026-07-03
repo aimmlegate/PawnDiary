@@ -29,6 +29,7 @@ namespace DiaryPipelineTests
             TestHediffPersonaOverridePolicy();
             TestMemoryDecayXmlPolicy();
             TestObservedConditionDecayXmlPolicy();
+            TestColorCueXmlPolicy();
             TestPromptTextSanitizer();
             TestEventWindowPolicy();
             TestProgressionMilestonePolicy();
@@ -1038,6 +1039,40 @@ namespace DiaryPipelineTests
                 "infection prompt (RU) avoids naming the implant/host",
                 infectionDescriptionRu.IndexOf("имплант", StringComparison.OrdinalIgnoreCase) < 0
                     && infectionDescriptionRu.IndexOf("носител", StringComparison.OrdinalIgnoreCase) < 0);
+        }
+
+        private static void TestColorCueXmlPolicy()
+        {
+            XDocument groups = XDocument.Load(RepoPath("1.6", "Defs", "DiaryInteractionGroupDefs.xml"));
+            AssertEqual("anomalous body parts use their own cue", "bodyPartAnomalous",
+                GroupColorCue(groups, "hediffPartGainedAnomalous"));
+            AssertEqual("artificial body parts use their own cue", "bodyPartArtificial",
+                GroupColorCue(groups, "hediffPartGainedArtificial"));
+            AssertEqual("lost body parts use their own cue", "bodyPartLost",
+                GroupColorCue(groups, "hediffPartLostNatural"));
+            AssertEqual("psylink progression stays psychic", "psychic",
+                GroupColorCue(groups, "progressionPsylink"));
+            AssertEqual("psycast abilities stay psychic", "psychic",
+                GroupColorCue(groups, "abilityPsycast"));
+            AssertEqual("royal title progression stays royalty", "royalty",
+                GroupColorCue(groups, "progressionRoyalTitle"));
+            AssertEqual("royal rituals stay royalty", "royalty",
+                GroupColorCue(groups, "ritualRoyal"));
+
+            XDocument style = XDocument.Load(RepoPath("1.6", "Defs", "DiaryUiStyleDef.xml"));
+            string[] expectedCues =
+            {
+                "bodyPartAnomalous",
+                "bodyPartArtificial",
+                "bodyPartLost",
+                "psychic",
+                "royalty"
+            };
+            for (int i = 0; i < expectedCues.Length; i++)
+            {
+                AssertTrue("UI style defines color cue " + expectedCues[i],
+                    HasCueColor(style, expectedCues[i]));
+            }
         }
 
         private static void TestPromptTextSanitizer()
@@ -2629,6 +2664,26 @@ namespace DiaryPipelineTests
                     {
                         return true;
                     }
+                }
+            }
+
+            return false;
+        }
+
+        private static string GroupColorCue(XDocument document, string defName)
+        {
+            return ChildValue(
+                FindDef(document, "PawnDiary.DiaryInteractionGroupDef", defName),
+                "colorCue");
+        }
+
+        private static bool HasCueColor(XDocument document, string cue)
+        {
+            foreach (XElement item in document.Descendants("cueColors").Elements("li"))
+            {
+                if (string.Equals(ChildValue(item, "cue"), cue, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
                 }
             }
 
