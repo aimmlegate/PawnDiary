@@ -6,6 +6,16 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-03
 
+- **Mod-compatibility target survey & patch plan (docs only).** New root document
+  `MOD_COMPAT_PLAN.md`: continues the API-v1 integration milestone by picking concrete target
+  mods. Surveys popular social-interaction mods (2026-07) and tiers them by mechanism — Tier A
+  XML-only compat groups shipped in core behind `enableWhenPackageIdsLoaded` (Vanilla Social
+  Interactions Expanded, Hospitality (Continued), SpeakUp, Way Better Romance, Positive
+  Connections, Romance On The Rim), Tier B personality mods motivating API v2 context providers
+  (RimPsyche, Psychology), Tier C LLM chat mods motivating API v3 outbound context (RimTalk) —
+  with per-PR todos, volume/absence audit guardrails, and a verification checklist requiring
+  in-game packageId/defName confirmation. `INTEGRATIONS.md` roadmap now points at the plan.
+  No behavior changed.
 - **Dev event panel: hid the non-functional Events section.** The event trigger buttons in the
   debug `Event test panel` (Def-backed trigger rows plus the arrival/death/work-scan/thought-
   progression/day-reflection buttons) do not currently work, so the Events section is hidden:
