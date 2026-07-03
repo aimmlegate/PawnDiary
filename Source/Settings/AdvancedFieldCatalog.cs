@@ -1273,6 +1273,21 @@ namespace PawnDiary
                 .IntList("progressionSkillMilestones")
                 .StringList("psylinkHediffDefNames");
 
+            b.Tuning("Body-part events", "PawnDiary.Settings.Adv.Group.BodyParts")
+                .StringList("bodyPartTierOverrideAnomalous")
+                .StringList("bodyPartTierOverrideCrude")
+                .StringList("bodyPartTierOverrideProsthetic")
+                .StringList("bodyPartTierOverrideBionic")
+                .StringList("bodyPartTierOverrideArchotech")
+                .StringList("bodyPartCravesTraitDefNames")
+                .StringList("bodyPartDespisesTraitDefNames")
+                .StringList("bodyPartApprovePreceptDefNames")
+                .StringList("bodyPartDespisePreceptDefNames")
+                .StringList("bodyPartInhumanizedHediffDefNames")
+                .Float("bodyPartCrudeEfficiencyBelow", 0f, 2f, true)
+                .Float("bodyPartProstheticEfficiencyMax", 0f, 2f, true)
+                .Float("bodyPartBionicEfficiencyMax", 0f, 2f, true);
+
             b.Tuning("Work sampling", "PawnDiary.Settings.Adv.Group.Work")
                 .Int("workScanIntervalTicks", 0, 600000)
                 .Float("workBaseChance", 0f, 1f, true)

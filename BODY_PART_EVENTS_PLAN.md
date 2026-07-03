@@ -1,6 +1,7 @@
 # Body-Part Change Diary Events — Implementation Plan
 
-Status: **planned, not started**. This document is the hand-off brief for the implementing agent.
+Status: **implemented on 2026-07-03**. This document is the hand-off brief that was used for the
+implementation.
 Follow `skills/pawndiary-engineering/SKILL.md` and `AGENTS.md` (architecture barriers, DLC safety,
 localization, docs-as-done). Every "verify" note below is a real checkpoint, not boilerplate.
 

@@ -148,6 +148,12 @@
   <workRoutine.label>Routine work</workRoutine.label>
   <workRoutine.instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</workRoutine.instruction>
   <workRoutine.tone>with steady, matter-of-fact routine</workRoutine.tone>
+  <hediffPartGainedAnomalous.label>Anomalous body changes</hediffPartGainedAnomalous.label>
+  <hediffPartGainedAnomalous.instruction>the pawn&apos;s body has grown or received a living, wrong-feeling flesh part; write the physical reality of it - movement, warmth, sound - filtered through the attitude cue, and never explain its biology</hediffPartGainedAnomalous.instruction>
+  <hediffPartGainedArtificial.label>Artificial body parts</hediffPartGainedArtificial.label>
+  <hediffPartGainedArtificial.instruction>a made thing has joined the pawn&apos;s body; write the weight, fit, usefulness, strangeness, or shame of the new part through the attitude and tier cues</hediffPartGainedArtificial.instruction>
+  <hediffPartLostNatural.label>Lost body parts</hediffPartLostNatural.label>
+  <hediffPartLostNatural.instruction>the pawn has lost a natural part of themself; write the shock, absence, pain, phantom feeling, or cold practical calculation through the attitude and cause cues</hediffPartLostNatural.instruction>
   <hediffPregnancy.label>Pregnancy</hediffPregnancy.label>
   <hediffPregnancy.instruction>pregnancy as a life-changing beginning; write the pawn noticing the body, future, fear, hope, or uncertainty without assuming joy</hediffPregnancy.instruction>
   <hediffPregnancy.tone>with intimate uncertainty and quiet weight</hediffPregnancy.tone>
@@ -222,6 +228,12 @@
   <hediffLabor.tones.1>threshold-tense, focused on fear, care, and waiting</hediffLabor.tones.1>
   <hediffMajorHealth.tones.0>vulnerable and bodily, symptoms shaping every thought</hediffMajorHealth.tones.0>
   <hediffMajorHealth.tones.1>quietly frightened, weakness changing the day&apos;s scale</hediffMajorHealth.tones.1>
+  <hediffPartGainedAnomalous.tones.0>visceral and intimate, the body no longer fully one&apos;s own</hediffPartGainedAnomalous.tones.0>
+  <hediffPartGainedAnomalous.tones.1>quiet dread anchored in physical sensation</hediffPartGainedAnomalous.tones.1>
+  <hediffPartGainedArtificial.tones.0>intimate and practical, the body learning a new tool</hediffPartGainedArtificial.tones.0>
+  <hediffPartGainedArtificial.tones.1>quietly body-aware, machinery and flesh sharing space</hediffPartGainedArtificial.tones.1>
+  <hediffPartLostNatural.tones.0>bodily and stunned, absence louder than pain</hediffPartLostNatural.tones.0>
+  <hediffPartLostNatural.tones.1>raw and practical, loss becoming an immediate new fact</hediffPartLostNatural.tones.1>
   <hediffPregnancy.tones.0>body-aware and intimate, uncertainty held close</hediffPregnancy.tones.0>
   <hediffPregnancy.tones.1>future-facing and quiet, hope and fear in balance</hediffPregnancy.tones.1>
   <inspiration.tones.0>bright and decisive, thought turning into a plan</inspiration.tones.0>

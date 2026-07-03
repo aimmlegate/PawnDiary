@@ -394,6 +394,7 @@
   <PawnDiary.Settings.Adv.Group.Buckets>Beauty / mood / pain / opinion</PawnDiary.Settings.Adv.Group.Buckets>
   <PawnDiary.Settings.Adv.Group.Thought>Thought thresholds</PawnDiary.Settings.Adv.Group.Thought>
   <PawnDiary.Settings.Adv.Group.Scanners>Scanner intervals</PawnDiary.Settings.Adv.Group.Scanners>
+  <PawnDiary.Settings.Adv.Group.BodyParts>Body-part events</PawnDiary.Settings.Adv.Group.BodyParts>
   <PawnDiary.Settings.Adv.Group.Work>Work sampling</PawnDiary.Settings.Adv.Group.Work>
   <PawnDiary.Settings.Adv.Group.DayReflection>Day reflection</PawnDiary.Settings.Adv.Group.DayReflection>
   <PawnDiary.Settings.Adv.Group.Quadrum>Quadrum reflection</PawnDiary.Settings.Adv.Group.Quadrum>
@@ -460,6 +461,19 @@
   <PawnDiary.Settings.Adv.Field.batch.instructionText>Batch instruction text</PawnDiary.Settings.Adv.Field.batch.instructionText>
   <PawnDiary.Settings.Adv.Field.hediff.appearedText>Health appeared text</PawnDiary.Settings.Adv.Field.hediff.appearedText>
   <PawnDiary.Settings.Adv.Field.hediff.progressedText>Health progressed text</PawnDiary.Settings.Adv.Field.hediff.progressedText>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideAnomalous>Anomalous part overrides</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideAnomalous>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideCrude>Crude part overrides</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideCrude>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideProsthetic>Prosthetic part overrides</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideProsthetic>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideBionic>Bionic part overrides</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideBionic>
+  <PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>Archotech part overrides</PawnDiary.Settings.Adv.Field.bodyPartTierOverrideArchotech>
+  <PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>Body-mod craving traits</PawnDiary.Settings.Adv.Field.bodyPartCravesTraitDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>Body-mod despising traits</PawnDiary.Settings.Adv.Field.bodyPartDespisesTraitDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>Body-mod approving precepts</PawnDiary.Settings.Adv.Field.bodyPartApprovePreceptDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>Body-mod despising precepts</PawnDiary.Settings.Adv.Field.bodyPartDespisePreceptDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>Detached body hediffs</PawnDiary.Settings.Adv.Field.bodyPartInhumanizedHediffDefNames>
+  <PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>Crude efficiency below</PawnDiary.Settings.Adv.Field.bodyPartCrudeEfficiencyBelow>
+  <PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>Prosthetic efficiency max</PawnDiary.Settings.Adv.Field.bodyPartProstheticEfficiencyMax>
+  <PawnDiary.Settings.Adv.Field.bodyPartBionicEfficiencyMax>Bionic efficiency max</PawnDiary.Settings.Adv.Field.bodyPartBionicEfficiencyMax>
   <PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>Generic event dedup ticks</PawnDiary.Settings.Adv.Field.genericEventTypeDedupTicks>
   <PawnDiary.Settings.Adv.Help.text>Plain text format for this context line. Use {0} for the tracked value.</PawnDiary.Settings.Adv.Help.text>
   <PawnDiary.Settings.Adv.Help.conditionLabel>Plain condition name sent to the model. Blank uses the XML translation key or live game label.</PawnDiary.Settings.Adv.Help.conditionLabel>
@@ -512,6 +526,7 @@
   <PawnDiary.Settings.Adv.GroupHelp.Buckets>Thresholds that bucket beauty, mood, pain, and opinion into wording.</PawnDiary.Settings.Adv.GroupHelp.Buckets>
   <PawnDiary.Settings.Adv.GroupHelp.Thought>Magnitude and ambient-collection thresholds for temporary thoughts.</PawnDiary.Settings.Adv.GroupHelp.Thought>
   <PawnDiary.Settings.Adv.GroupHelp.Scanners>How often the periodic background scanners run.</PawnDiary.Settings.Adv.GroupHelp.Scanners>
+  <PawnDiary.Settings.Adv.GroupHelp.BodyParts>How artificial body-part installs, anomalous body changes, and missing natural parts are classified.</PawnDiary.Settings.Adv.GroupHelp.BodyParts>
   <PawnDiary.Settings.Adv.GroupHelp.Work>Sampling chances and cooldowns for work (which has no one-shot event hook).</PawnDiary.Settings.Adv.GroupHelp.Work>
   <PawnDiary.Settings.Adv.GroupHelp.DayReflection>End-of-day summary master toggle, highlight cap, weights, and gates.</PawnDiary.Settings.Adv.GroupHelp.DayReflection>
   <PawnDiary.Settings.Adv.GroupHelp.Quadrum>Rare long reflection near the end of each quadrum, staggered across colonists.</PawnDiary.Settings.Adv.GroupHelp.Quadrum>
@@ -604,6 +619,19 @@
   <PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>How often the situational-need thought scanner runs.</PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>Same progression signal recorded once per this window.</PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>
   <PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>How often the hediff severity-step scanner runs.</PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>HediffDef defNames forced to anomalous tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>HediffDef defNames forced to crude tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideProsthetic>HediffDef defNames forced to prosthetic tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideProsthetic>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideBionic>HediffDef defNames forced to bionic tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideBionic>
+  <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>HediffDef defNames forced to archotech tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideArchotech>
+  <PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>TraitDef defNames that make pawns crave body modification.</PawnDiary.Settings.Adv.Help.bodyPartCravesTraitDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>TraitDef defNames that make pawns despise body modification.</PawnDiary.Settings.Adv.Help.bodyPartDespisesTraitDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>Ideology PreceptDef defNames that approve body modification.</PawnDiary.Settings.Adv.Help.bodyPartApprovePreceptDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>Ideology PreceptDef defNames that disapprove or abhor body modification.</PawnDiary.Settings.Adv.Help.bodyPartDespisePreceptDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>HediffDef defNames that make a pawn detached from ordinary body horror.</PawnDiary.Settings.Adv.Help.bodyPartInhumanizedHediffDefNames>
+  <PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>Added parts below this efficiency are crude when no stronger tier signal exists.</PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>
+  <PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>Added parts at or below this efficiency are prosthetic when no stronger tier signal exists.</PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>
+  <PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>Added parts at or below this efficiency are bionic; higher values become archotech.</PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>
   <PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>How often the slow pawn-progression scanner runs.</PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.workScanIntervalTicks>How often the work-sampling scanner runs.</PawnDiary.Settings.Adv.Help.workScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.workBaseChance>Base probability per scan that a working pawn writes about that work.</PawnDiary.Settings.Adv.Help.workBaseChance>
@@ -753,6 +781,26 @@
   <PawnDiary.Event.HediffProgressed>{0}'s {1} worsened.</PawnDiary.Event.HediffProgressed>
   <PawnDiary.Event.AnomalyHediffAppeared>{0} was gripped by {1}.</PawnDiary.Event.AnomalyHediffAppeared>
   <PawnDiary.Event.AnomalyHediffProgressed>{0}'s {1} deepened.</PawnDiary.Event.AnomalyHediffProgressed>
+  <PawnDiary.Event.BodyPartGained>{0} received {1}.</PawnDiary.Event.BodyPartGained>
+  <PawnDiary.Event.BodyPartGainedAnomalous>{0}'s body changed: {1}.</PawnDiary.Event.BodyPartGainedAnomalous>
+  <PawnDiary.Event.BodyPartLost>{0} lost {1}.</PawnDiary.Event.BodyPartLost>
+  <PawnDiary.Prompt.BodyPart.Attitude.Craves>Treat the change as something the pawn wants: augmentation feels like progress, not damage.</PawnDiary.Prompt.BodyPart.Attitude.Craves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Approves>Treat the change as acceptable or meaningful to the pawn, with some bodily adjustment still present.</PawnDiary.Prompt.BodyPart.Attitude.Approves>
+  <PawnDiary.Prompt.BodyPart.Attitude.Uneasy>Treat the change as uneasy acceptance: useful, strange, and not fully comfortable.</PawnDiary.Prompt.BodyPart.Attitude.Uneasy>
+  <PawnDiary.Prompt.BodyPart.Attitude.Despises>Treat the change as a violation of the pawn's body, not an upgrade.</PawnDiary.Prompt.BodyPart.Attitude.Despises>
+  <PawnDiary.Prompt.BodyPart.Attitude.Detached>Treat the pawn as detached from ordinary body horror; the change registers more as fact than feeling.</PawnDiary.Prompt.BodyPart.Attitude.Detached>
+  <PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>Treat the living change as barely tolerable: fascination and unease, not joy.</PawnDiary.Prompt.BodyPart.Attitude.FascinatedUneasy>
+  <PawnDiary.Prompt.BodyPart.Attitude.Horrified>Treat the living change as horrifying and intimate; the body feels less like the pawn's own.</PawnDiary.Prompt.BodyPart.Attitude.Horrified>
+  <PawnDiary.Prompt.BodyPart.Attitude.Opportunity>Treat the loss as grief mixed with the thought that an upgrade may finally be possible.</PawnDiary.Prompt.BodyPart.Attitude.Opportunity>
+  <PawnDiary.Prompt.BodyPart.Attitude.Grieving>Treat the loss as real grief, absence, pain, and adjustment.</PawnDiary.Prompt.BodyPart.Attitude.Grieving>
+  <PawnDiary.Prompt.BodyPart.Attitude.Violated>Treat the loss as devastating and threatening to the pawn's sense of bodily wholeness.</PawnDiary.Prompt.BodyPart.Attitude.Violated>
+  <PawnDiary.Prompt.BodyPart.Tier.Crude>The part is crude: clumsy, humbling, better than nothing.</PawnDiary.Prompt.BodyPart.Tier.Crude>
+  <PawnDiary.Prompt.BodyPart.Tier.Prosthetic>The part is practical prosthetic machinery: functional, mechanical, and ordinary enough to use.</PawnDiary.Prompt.BodyPart.Tier.Prosthetic>
+  <PawnDiary.Prompt.BodyPart.Tier.Bionic>The part is bionic: stronger than flesh, precise, and faintly alien in the body.</PawnDiary.Prompt.BodyPart.Tier.Bionic>
+  <PawnDiary.Prompt.BodyPart.Tier.Archotech>The part is archotech: miraculous, elegant, and beyond the pawn's full understanding.</PawnDiary.Prompt.BodyPart.Tier.Archotech>
+  <PawnDiary.Prompt.BodyPart.Tier.Anomalous>The part is anomalous flesh: warm, responsive, wrong, and not to be explained.</PawnDiary.Prompt.BodyPart.Tier.Anomalous>
+  <PawnDiary.Prompt.BodyPart.Cause.Surgery>The loss came through surgery; keep the sense of controlled cutting or consent/necessity if implied.</PawnDiary.Prompt.BodyPart.Cause.Surgery>
+  <PawnDiary.Prompt.BodyPart.Cause.Violence>The loss came through violence or accident; keep the suddenness and shock present.</PawnDiary.Prompt.BodyPart.Cause.Violence>
   <PawnDiary.Event.PregnancyAppeared>{0} became pregnant.</PawnDiary.Event.PregnancyAppeared>
   <PawnDiary.Event.PregnancyProgressed>{0}'s pregnancy advanced.</PawnDiary.Event.PregnancyProgressed>
   <PawnDiary.Event.LaborAppeared>{0} went into {1}.</PawnDiary.Event.LaborAppeared>

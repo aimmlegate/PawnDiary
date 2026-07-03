@@ -257,7 +257,7 @@ it onto the bus.
 | MoodEvent | `GameConditionManager.RegisterCondition` | `MoodEventFanoutSignal` | fan-out |
 | MentalState | `MentalStateHandler.TryStartMentalState` | `MentalStateSignal` | pair + solo |
 | Tale | `TaleRecorder.RecordTale` | `TaleSignal` | solo / batch / death |
-| Hediff | `Pawn_HealthTracker.AddHediff` + scan | `HediffSignal` | solo / day-reflection |
+| Hediff | `Pawn_HealthTracker.AddHediff` + scan | `HediffSignal` | solo body/health page or day-reflection |
 | Interaction | `PlayLog.Add` | `InteractionSignal` | pair / solo / batch / ambient |
 | Work | Periodic job sampling | `WorkSignal` (via work scan) | solo |
 | ThoughtProgression | Periodic scan | `ThoughtProgressionSignal` (via scan) | solo |
@@ -283,7 +283,7 @@ it onto the bus.
 | Thought progression | Periodic scan | Hunger, rest, outdoors, chemical, and similar worsening stages. |
 | Pawn progression | Periodic scan | Passion-only skill milestones, psylink level gains, xenotype changes, and royal-title changes. The first scan baselines existing saves to avoid retroactive spam; major psylink/xenotype changes can request a rare arc reflection after the normal page records. |
 | Inspirations | `InspirationHandler.TryStartInspiration` | Solo inspiration entry. |
-| Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions. |
+| Hediffs | `Pawn_HealthTracker.AddHediff` and scan | Immediate or day-reflection health entries by XML policy, including string-matched Anomaly mental afflictions, artificial/anomalous body-part gains, and living-pawn natural body-part losses. |
 | Work | Periodic current-job sampling | Non-social, non-violent work, controlled by XML odds/cooldowns and the shared random-generation setting. |
 | Raids and infestations | `IncidentWorker.TryExecute` | Fan-out to eligible colonists; ordinary raids can delay generation. |
 | Quests | `Quest.Accept`, `Quest.End`, defensive UI/state scan | Accepted quests are bookkeeping/event-window signals only. Completed and failed quest outcomes create shared-effort entries; prompt labels reject placeholder names and humanize code-like quest defNames. |
@@ -324,6 +324,13 @@ Two package gates control availability: `disableWhenPackageIdsLoaded` silences a
 replacement mod is loaded, and `enableWhenPackageIdsLoaded` keeps a compatibility group inert unless
 one of its target mods is present. External-domain groups classify the integration-API `eventKey`
 strings other mods submit (see §3.7).
+
+Hediff body-part events use the same XML classifier, but classify by a synthetic key when the live
+HediffDef is a body-part change: `BionicArm_addedpart`, `Tentacle_addedpart_organicpart`, or
+`MissingBodyPart_missingpart`. The saved `gameContext` carries `part_kind=`, `part_tier=`,
+`body_attitude=`, and optional `part_cause=` markers so saved pages recover the same group after
+load. `DiaryTuningDef.xml` owns body-part tier overrides, body-mod trait/precept/inhumanized lists,
+and efficiency thresholds; the C# fallback values keep missing XML safe.
 
 Interaction `PairEvent` batches only use the combined batch prompt when two or more moments collect in
 the quiet window. If the window flushes with a single moment, the entry is emitted as a normal
@@ -566,8 +573,9 @@ per-field and per-group reset, accent coloring for customized values, a name fil
 rail into a search view, and rich tooltips that combine authored help with the live value, XML default,
 range, and customized status. Tuning contains XML-owned parameters (dedup windows, ability sampling,
 surroundings, weather chances, ritual quality labels, mood-condition families, health/enchantment
-thresholds, mood/pain/opinion buckets, thought token lists, thought progression rules, scanner
-intervals, work sampling, day/quadrum/arc reflection weights, signal policies, context reactions).
+thresholds, body-part event tier/attitude policy, mood/pain/opinion buckets, thought token lists,
+thought progression rules, scanner intervals, work sampling, day/quadrum/arc reflection weights,
+signal policies, context reactions).
 Field labels span the full row width so long names never clip. The catalog (`AdvancedFieldCatalog`)
 is declarative and drives both the UI and the runtime override seam. Static tuning fields build during
 settings load; Def-backed prompt-policy groups are appended lazily after `DefDatabase` has loaded, so

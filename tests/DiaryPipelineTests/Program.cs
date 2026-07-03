@@ -2003,6 +2003,30 @@ namespace DiaryPipelineTests
                     "Ability",
                     "ability=Stun; ability_label=stun; ability_category=Psycast",
                     "Stun"));
+            AssertEqual("hediff classifier includes added-part token",
+                "BionicArm_addedpart",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Hediff",
+                    "hediff=BionicArm; label=bionic arm; part_kind=addedpart; part_tier=bionic",
+                    "BionicArm"));
+            AssertEqual("hediff classifier includes organic added-part token",
+                "Tentacle_addedpart_organicpart",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Hediff",
+                    "hediff=Tentacle; label=tentacle; part_kind=addedpart_organicpart; part_tier=anomalous",
+                    "Tentacle"));
+            AssertEqual("hediff classifier includes missing-part token",
+                "MissingBodyPart_missingpart",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Hediff",
+                    "hediff=MissingBodyPart; label=missing arm; part_kind=missingpart; body_attitude=grieving",
+                    "MissingBodyPart"));
+            AssertEqual("hediff classifier falls back without part kind",
+                "Flu",
+                DiaryEventDomainClassifier.GroupClassifierKey(
+                    "Hediff",
+                    "hediff=Flu; label=flu",
+                    "Flu"));
             AssertEqual("progression classifier keeps synthetic defName",
                 "SkillMilestone",
                 DiaryEventDomainClassifier.GroupClassifierKey(

@@ -39,6 +39,7 @@
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />
+    <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
     <Compile Include="..\..\Source\Settings\ApiRequestAuth.cs" Link="ApiRequestAuth.cs" />
     <Compile Include="..\..\Source\Settings\EndpointUtility.cs" Link="EndpointUtility.cs" />
     <Compile Include="..\..\Source\Settings\PromptSettingsMenuPolicy.cs" Link="PromptSettingsMenuPolicy.cs" />

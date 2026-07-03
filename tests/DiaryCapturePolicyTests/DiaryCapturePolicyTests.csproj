@@ -17,6 +17,7 @@
     <Compile Include="..\..\Source\Capture\GenericEventTypeDedup.cs" Link="Capture\GenericEventTypeDedup.cs" />
     <Compile Include="..\..\Source\Capture\ThoughtCapturePolicy.cs" Link="Capture\ThoughtCapturePolicy.cs" />
     <Compile Include="..\..\Source\Capture\GroupNameMatcher.cs" Link="Capture\GroupNameMatcher.cs" />
+    <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
     <Compile Include="..\..\Source\Capture\Events\ThoughtEventData.cs" Link="Capture\Events\ThoughtEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\InspirationEventData.cs" Link="Capture\Events\InspirationEventData.cs" />
     <Compile Include="..\..\Source\Capture\Events\MoodEventData.cs" Link="Capture\Events\MoodEventData.cs" />

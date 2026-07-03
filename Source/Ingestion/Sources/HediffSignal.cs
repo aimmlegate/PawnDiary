@@ -44,6 +44,13 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
+            // Missing-part hediffs can be created by the same hit that kills the pawn. Death pages own
+            // that narrative, so living pawns get body-loss entries and dead pawns do not race them.
+            if (pawn.Dead && DiaryGameComponent.IsMissingPartHediff(hediff))
+            {
+                return;
+            }
+
             if (!DiaryGameComponent.TryGetHediffPolicy(hediff, out group, out policy))
             {
                 return;

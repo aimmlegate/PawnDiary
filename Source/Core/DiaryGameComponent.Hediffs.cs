@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using PawnDiary.Capture;
 using PawnDiary.Ingestion;
@@ -164,6 +165,28 @@ namespace PawnDiary
         internal static HediffEventData BuildHediffEventData(Pawn pawn, Hediff hediff,
             DiaryInteractionGroupDef group, HediffSignalPolicy policy, HediffSignalSource source)
         {
+            bool isAddedPart = IsAddedPartHediff(hediff);
+            bool isMissingPart = IsMissingPartHediff(hediff);
+            bool isOrganicAddedPart = isAddedPart && hediff.def.organicAddedBodypart;
+            string partKindToken = BodyPartEventPolicy.PartKindToken(isAddedPart, isMissingPart, isOrganicAddedPart);
+            string partTierToken = string.Empty;
+            string attitudeToken = string.Empty;
+            string causeToken = string.Empty;
+            if (!string.IsNullOrEmpty(partKindToken))
+            {
+                if (isAddedPart)
+                {
+                    partTierToken = BodyPartTierToken(hediff, isOrganicAddedPart);
+                }
+
+                BodyModStanceFacts stance = BodyModContext.FactsFor(pawn);
+                attitudeToken = BodyPartEventPolicy.ResolveAttitude(partKindToken, partTierToken, stance);
+                if (isMissingPart)
+                {
+                    causeToken = MissingPartCauseToken(hediff);
+                }
+            }
+
             return new HediffEventData
             {
                 PawnId = pawn.GetUniqueLoadID(),
@@ -177,6 +200,10 @@ namespace PawnDiary
                 StageString = HediffSeverityStage(hediff, policy).ToString(CultureInfo.InvariantCulture),
                 CleanedStageLabel = DiaryLineCleaner.CleanLine(hediff.CurStage?.label),
                 CleanedBodyPartLabel = hediff.Part == null ? null : DiaryLineCleaner.CleanLine(hediff.Part.LabelCap),
+                PartKindToken = partKindToken,
+                PartTierToken = partTierToken,
+                AttitudeToken = attitudeToken,
+                CauseToken = causeToken,
                 PassesPolicy = ShouldRecordHediff(policy, hediff),
                 PolicyRecordsSource = PolicyRecordsSource(policy, source),
                 ModeRecordable = CanRecordHediffMode(policy),
@@ -211,9 +238,14 @@ namespace PawnDiary
         {
             string text = ImmediateHediffText(policy, source, pawn.LabelShortCap, data.Label);
             string instruction = InteractionGroups.InstructionForGroup(group);
+            if (!string.IsNullOrEmpty(data.PartKindToken))
+            {
+                instruction = AppendBodyPartInstructionCues(instruction, data);
+            }
             string gameContext = HediffEventData.BuildGameContext(
                 data.DefName, data.Label, data.SourceToken, data.GroupKey, data.ModeToken,
-                data.SeverityF2, data.StageString, data.CleanedStageLabel, data.CleanedBodyPartLabel);
+                data.SeverityF2, data.StageString, data.CleanedStageLabel, data.CleanedBodyPartLabel,
+                data.PartKindToken, data.PartTierToken, data.AttitudeToken, data.CauseToken);
 
             DiaryEvent diaryEvent = AddSoloEvent(pawn, null, data.DefName, data.Label, text, instruction, gameContext);
             QueueLlmRewrite(diaryEvent, DiaryEvent.InitiatorRole);
@@ -295,7 +327,7 @@ namespace PawnDiary
                 return false;
             }
 
-            group = InteractionGroups.ClassifyHediff(hediff.def);
+            group = InteractionGroups.ClassifyHediff(HediffClassifierKey(hediff));
             if (group == null || !group.HasHediffPolicy || !PawnDiaryMod.Settings.IsGroupEnabled(group.defName))
             {
                 return false;
@@ -303,6 +335,149 @@ namespace PawnDiary
 
             policy = group.hediff;
             return policy != null && policy.enabled;
+        }
+
+        internal static bool IsMissingPartHediff(Hediff hediff)
+        {
+            return hediff is Hediff_MissingPart
+                || (hediff?.def?.hediffClass != null
+                    && typeof(Hediff_MissingPart).IsAssignableFrom(hediff.def.hediffClass));
+        }
+
+        private static bool IsAddedPartHediff(Hediff hediff)
+        {
+            return hediff?.def?.hediffClass != null
+                && typeof(Hediff_AddedPart).IsAssignableFrom(hediff.def.hediffClass);
+        }
+
+        private static string HediffClassifierKey(Hediff hediff)
+        {
+            if (hediff?.def == null)
+            {
+                return string.Empty;
+            }
+
+            bool isAddedPart = IsAddedPartHediff(hediff);
+            bool isMissingPart = IsMissingPartHediff(hediff);
+            return BodyPartEventPolicy.BuildHediffClassifierKey(
+                HediffDefName(hediff),
+                isAddedPart,
+                isMissingPart,
+                isAddedPart && hediff.def.organicAddedBodypart);
+        }
+
+        private static string BodyPartTierToken(Hediff hediff, bool isOrganicAddedPart)
+        {
+            HediffDef def = hediff?.def;
+            if (def == null)
+            {
+                return string.Empty;
+            }
+
+            string techLevel = def.spawnThingOnRemoved == null
+                ? string.Empty
+                : def.spawnThingOnRemoved.techLevel.ToString();
+            float efficiency = def.addedPartProps == null ? 0f : def.addedPartProps.partEfficiency;
+            bool betterThanNatural = def.addedPartProps != null && def.addedPartProps.betterThanNatural;
+            DiaryTuningDef tuning = DiaryTuning.Current;
+            return BodyPartEventPolicy.ResolveTier(
+                def.defName,
+                isOrganicAddedPart,
+                techLevel,
+                efficiency,
+                betterThanNatural,
+                tuning.bodyPartTierOverrideAnomalous,
+                tuning.bodyPartTierOverrideCrude,
+                tuning.bodyPartTierOverrideProsthetic,
+                tuning.bodyPartTierOverrideBionic,
+                tuning.bodyPartTierOverrideArchotech,
+                tuning.bodyPartCrudeEfficiencyBelow,
+                tuning.bodyPartProstheticEfficiencyMax,
+                tuning.bodyPartBionicEfficiencyMax);
+        }
+
+        private static string MissingPartCauseToken(Hediff hediff)
+        {
+            bool isFresh = ReadBoolMember(hediff, "IsFresh");
+            object lastInjury = ReadMember(hediff, "lastInjury");
+            return BodyPartEventPolicy.CauseToken(isFresh, DefNameForMember(lastInjury));
+        }
+
+        private static string AppendBodyPartInstructionCues(string instruction, HediffEventData data)
+        {
+            StringBuilder builder = new StringBuilder(instruction ?? string.Empty);
+            AppendTranslatedCue(builder, BodyPartEventPolicy.AttitudeCueKey(data.AttitudeToken));
+            AppendTranslatedCue(builder, BodyPartEventPolicy.TierCueKey(data.PartTierToken));
+            AppendTranslatedCue(builder, BodyPartEventPolicy.CauseCueKey(data.CauseToken));
+            return builder.ToString();
+        }
+
+        private static void AppendTranslatedCue(StringBuilder builder, string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            string cue = key.Translate().Resolve();
+            if (string.IsNullOrWhiteSpace(cue))
+            {
+                return;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append(' ');
+            }
+            builder.Append(cue);
+        }
+
+        private static bool ReadBoolMember(object target, string memberName)
+        {
+            object value = ReadMember(target, memberName);
+            return value is bool && (bool)value;
+        }
+
+        private static object ReadMember(object target, string memberName)
+        {
+            if (target == null || string.IsNullOrEmpty(memberName))
+            {
+                return null;
+            }
+
+            Type type = target.GetType();
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            PropertyInfo property = type.GetProperty(memberName, flags);
+            if (property != null)
+            {
+                return property.GetValue(target, null);
+            }
+
+            FieldInfo field = type.GetField(memberName, flags);
+            return field != null ? field.GetValue(target) : null;
+        }
+
+        private static string DefNameForMember(object value)
+        {
+            if (value == null)
+            {
+                return string.Empty;
+            }
+
+            Def def = value as Def;
+            if (def != null)
+            {
+                return def.defName ?? string.Empty;
+            }
+
+            object nestedDef = ReadMember(value, "def");
+            Def typedNestedDef = nestedDef as Def;
+            if (typedNestedDef != null)
+            {
+                return typedNestedDef.defName ?? string.Empty;
+            }
+
+            return ReadMember(value, "defName") as string ?? string.Empty;
         }
 
         private static bool PolicyRecordsSource(HediffSignalPolicy policy, HediffSignalSource source)

@@ -1971,6 +1971,98 @@
   <!-- ===== Hediff domain: generic health-condition signals ===== -->
 
   <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPartGainedAnomalous</defName>
+    <label>Anomalous body changes</label>
+    <order>660</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <colorCue>extremeDark</colorCue>
+    <instruction>the pawn's body has grown or received a living, wrong-feeling flesh part; write the physical reality of it - movement, warmth, sound - filtered through the attitude cue, and never explain its biology</instruction>
+    <tones>
+      <li>visceral and intimate, the body no longer fully one's own</li>
+      <li>quiet dread anchored in physical sensation</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.BodyPartGainedAnomalous</appearedTextKey>
+    </hediff>
+    <matchSuffixes>
+      <li>organicpart</li>
+    </matchSuffixes>
+    <matchDefNames>
+      <li>AdrenalHeart_addedpart</li>
+      <li>CorrosiveHeart_addedpart</li>
+      <li>MetalbloodHeart_addedpart</li>
+      <li>RevenantVertebrae_addedpart</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPartGainedArtificial</defName>
+    <label>Artificial body parts</label>
+    <order>665</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>a made thing has joined the pawn's body; write the weight, fit, usefulness, strangeness, or shame of the new part through the attitude and tier cues</instruction>
+    <tones>
+      <li>intimate and practical, the body learning a new tool</li>
+      <li>quietly body-aware, machinery and flesh sharing space</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.BodyPartGained</appearedTextKey>
+    </hediff>
+    <matchSuffixes>
+      <li>addedpart</li>
+    </matchSuffixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>hediffPartLostNatural</defName>
+    <label>Lost body parts</label>
+    <order>670</order>
+    <domain>Hediff</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>true</important>
+    <instruction>the pawn has lost a natural part of themself; write the shock, absence, pain, phantom feeling, or cold practical calculation through the attitude and cause cues</instruction>
+    <tones>
+      <li>bodily and stunned, absence louder than pain</li>
+      <li>raw and practical, loss becoming an immediate new fact</li>
+    </tones>
+    <hediff>
+      <mode>Immediate</mode>
+      <visibleOnly>false</visibleOnly>
+      <badOnly>false</badOnly>
+      <excludeInjuries>true</excludeInjuries>
+      <missingPartAlways>true</missingPartAlways>
+      <minSeverity>0</minSeverity>
+      <recordOnAdd>true</recordOnAdd>
+      <recordOnSeverityIncrease>false</recordOnSeverityIncrease>
+      <dedupTicks>60000</dedupTicks>
+      <appearedTextKey>PawnDiary.Event.BodyPartLost</appearedTextKey>
+    </hediff>
+    <matchSuffixes>
+      <li>missingpart</li>
+    </matchSuffixes>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
     <defName>hediffPregnancy</defName>
     <label>Pregnancy</label>
     <order>680</order>

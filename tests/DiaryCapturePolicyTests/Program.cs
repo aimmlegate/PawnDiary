@@ -34,6 +34,10 @@ namespace DiaryCapturePolicyTests
             TestTaleBuildGameContextFormat();
             TestHediffDecide();
             TestHediffBuildGameContextFormat();
+            TestBodyPartClassifierKey();
+            TestBodyPartTierPolicy();
+            TestBodyPartAttitudePolicy();
+            TestBodyPartCueKeys();
             TestInteractionDecide();
             TestInteractionBuildGameContextFormat();
             TestRomanceDecide();
@@ -550,6 +554,176 @@ namespace DiaryCapturePolicyTests
             AssertEqual("hediff progressed context",
                 "hediff=GutWorms; label=gut worms; source=severity_progression; group=hediff_disease; mode=Immediate; severity=0.75; stage=1",
                 progressed);
+
+            // Body-part tokens are appended after the legacy fields so old parsing remains stable
+            // while prompt policy can recover the richer part context.
+            string bodyPart = HediffEventData.BuildGameContext(
+                "BionicArm", "bionic arm", "add", "hediffPartGainedArtificial", "Immediate",
+                "0.00", "0", "", "left arm",
+                "addedpart", "bionic", "craves", "");
+            AssertEqual("hediff body-part context appends trailing fields",
+                "hediff=BionicArm; label=bionic arm; source=add; group=hediffPartGainedArtificial; mode=Immediate; severity=0.00; stage=0; body_part=left arm; part_kind=addedpart; part_tier=bionic; body_attitude=craves",
+                bodyPart);
+
+            string loss = HediffEventData.BuildGameContext(
+                "MissingBodyPart", "missing left arm", "add", "hediffPartLostNatural", "Immediate",
+                "0.00", "0", "", "left arm",
+                "missingpart", "", "grieving", "violence");
+            AssertEqual("hediff missing-part context appends cause",
+                "hediff=MissingBodyPart; label=missing left arm; source=add; group=hediffPartLostNatural; mode=Immediate; severity=0.00; stage=0; body_part=left arm; part_kind=missingpart; body_attitude=grieving; part_cause=violence",
+                loss);
+        }
+
+        private static void TestBodyPartClassifierKey()
+        {
+            AssertEqual("ordinary hediff classifier unchanged",
+                "PregnantHuman",
+                BodyPartEventPolicy.BuildHediffClassifierKey("PregnantHuman", false, false, false));
+            AssertEqual("added part classifier key",
+                "BionicArm_addedpart",
+                BodyPartEventPolicy.BuildHediffClassifierKey("BionicArm", true, false, false));
+            AssertEqual("organic added part classifier key",
+                "Tentacle_addedpart_organicpart",
+                BodyPartEventPolicy.BuildHediffClassifierKey("Tentacle", true, false, true));
+            AssertEqual("missing part classifier key",
+                "MissingBodyPart_missingpart",
+                BodyPartEventPolicy.BuildHediffClassifierKey("MissingBodyPart", false, true, false));
+            AssertTrue("addedpart suffix matches synthetic key",
+                GroupNameMatcher.MatchesSuffix("BionicArm_addedpart", new List<string> { "addedpart" }));
+            AssertTrue("organicpart suffix matches synthetic key",
+                GroupNameMatcher.MatchesSuffix("Tentacle_addedpart_organicpart", new List<string> { "organicpart" }));
+            AssertTrue("organicpart key has addedpart segment",
+                GroupNameMatcher.MatchesSegment("Tentacle_addedpart_organicpart", new List<string> { "addedpart" }));
+            AssertTrue("addedpart suffix does not claim organicpart key",
+                !GroupNameMatcher.MatchesSuffix("Tentacle_addedpart_organicpart", new List<string> { "addedpart" }));
+            AssertTrue("missingpart suffix matches synthetic key",
+                GroupNameMatcher.MatchesSuffix("MissingBodyPart_missingpart", new List<string> { "missingpart" }));
+        }
+
+        private static void TestBodyPartTierPolicy()
+        {
+            AssertEqual("tier override anomalous wins",
+                "anomalous",
+                Tier("AdrenalHeart", false, "Industrial", 1.0f, false,
+                    anomalous: new List<string> { "AdrenalHeart" }));
+            AssertEqual("tier override crude wins over high tech",
+                "crude",
+                Tier("ModWoodenArm", false, "Spacer", 1.5f, false,
+                    crude: new List<string> { "ModWoodenArm" }));
+            AssertEqual("organic part is anomalous",
+                "anomalous",
+                Tier("Tentacle", true, "", 1.2f, false));
+            AssertEqual("neolithic tech is crude",
+                "crude",
+                Tier("PegLeg", false, "Neolithic", 1.0f, false));
+            AssertEqual("medieval WoodLog quirk is crude",
+                "crude",
+                Tier("WoodenHand", false, "Medieval", 1.0f, false));
+            AssertEqual("industrial tech is prosthetic",
+                "prosthetic",
+                Tier("SimpleProstheticArm", false, "Industrial", 1.0f, false));
+            AssertEqual("spacer tech is bionic",
+                "bionic",
+                Tier("BionicLeg", false, "Spacer", 1.25f, false));
+            AssertEqual("archotech tech is archotech",
+                "archotech",
+                Tier("ArchotechArm", false, "Archotech", 1.5f, false));
+            AssertEqual("denture efficiency fallback is crude",
+                "crude",
+                Tier("Denture", false, "", 0.8f, false));
+            AssertEqual("simple efficiency fallback is prosthetic",
+                "prosthetic",
+                Tier("SimpleProstheticHeart", false, "", 1.0f, false));
+            AssertEqual("bionic efficiency fallback",
+                "bionic",
+                Tier("ModBionic", false, "", 1.25f, false));
+            AssertEqual("archotech efficiency fallback",
+                "archotech",
+                Tier("ModArchotech", false, "", 1.5f, false));
+            AssertEqual("betterThanNatural fallback is archotech",
+                "archotech",
+                Tier("OddArchotech", false, "", 1.0f, true));
+            AssertEqual("missing signals default to prosthetic only when no better data",
+                "prosthetic",
+                Tier("UnknownPart", false, "", 0f, false));
+        }
+
+        private static void TestBodyPartAttitudePolicy()
+        {
+            AssertEqual("inhumanized artificial is detached", "detached",
+                Attitude("addedpart", "bionic", new BodyModStanceFacts { IsInhumanized = true, HasCravesTrait = true }));
+            AssertEqual("ghoul loss is detached", "detached",
+                Attitude("missingpart", "", new BodyModStanceFacts { IsGhoul = true, HasDespisesTrait = true }));
+            AssertEqual("body purist artificial despises", "despises",
+                Attitude("addedpart", "prosthetic", new BodyModStanceFacts { HasDespisesTrait = true }));
+            AssertEqual("transhumanist artificial craves", "craves",
+                Attitude("addedpart", "bionic", new BodyModStanceFacts { HasCravesTrait = true }));
+            AssertEqual("trait beats ideology for artificial", "craves",
+                Attitude("addedpart", "bionic", new BodyModStanceFacts
+                {
+                    HasCravesTrait = true,
+                    IdeologyStance = BodyPartEventPolicy.IdeologyDespises
+                }));
+            AssertEqual("ideology despises artificial", "despises",
+                Attitude("addedpart", "prosthetic", new BodyModStanceFacts { IdeologyStance = BodyPartEventPolicy.IdeologyDespises }));
+            AssertEqual("ideology approves artificial", "approves",
+                Attitude("addedpart", "prosthetic", new BodyModStanceFacts { IdeologyStance = BodyPartEventPolicy.IdeologyApproves }));
+            AssertEqual("default artificial uneasy", "uneasy",
+                Attitude("addedpart", "prosthetic", new BodyModStanceFacts()));
+
+            AssertEqual("body purist anomalous horrified", "horrified",
+                Attitude("addedpart_organicpart", "anomalous", new BodyModStanceFacts { HasDespisesTrait = true }));
+            AssertEqual("transhumanist anomalous fascinated uneasy", "fascinated_uneasy",
+                Attitude("addedpart_organicpart", "anomalous", new BodyModStanceFacts { HasCravesTrait = true }));
+            AssertEqual("ideology approves anomalous fascinated uneasy", "fascinated_uneasy",
+                Attitude("addedpart", "anomalous", new BodyModStanceFacts { IdeologyStance = BodyPartEventPolicy.IdeologyApproves }));
+            AssertEqual("default anomalous horrified", "horrified",
+                Attitude("addedpart_organicpart", "anomalous", new BodyModStanceFacts()));
+
+            AssertEqual("body purist loss violated", "violated",
+                Attitude("missingpart", "", new BodyModStanceFacts { HasDespisesTrait = true }));
+            AssertEqual("transhumanist loss opportunity", "opportunity",
+                Attitude("missingpart", "", new BodyModStanceFacts { HasCravesTrait = true }));
+            AssertEqual("ideology despises loss violated", "violated",
+                Attitude("missingpart", "", new BodyModStanceFacts { IdeologyStance = BodyPartEventPolicy.IdeologyDespises }));
+            AssertEqual("ideology approves loss still grieving", "grieving",
+                Attitude("missingpart", "", new BodyModStanceFacts { IdeologyStance = BodyPartEventPolicy.IdeologyApproves }));
+            AssertEqual("default loss grieving", "grieving",
+                Attitude("missingpart", "", new BodyModStanceFacts()));
+            AssertEqual("fresh surgical loss cause", "surgery",
+                BodyPartEventPolicy.CauseToken(true, "SurgicalCut"));
+            AssertEqual("fresh non-surgical loss cause", "violence",
+                BodyPartEventPolicy.CauseToken(true, "Cut"));
+            AssertEqual("old loss cause unknown", "unknown",
+                BodyPartEventPolicy.CauseToken(false, "Cut"));
+        }
+
+        private static void TestBodyPartCueKeys()
+        {
+            string[] attitudes =
+            {
+                "craves", "approves", "uneasy", "despises", "detached",
+                "fascinated_uneasy", "horrified", "opportunity", "grieving", "violated"
+            };
+            for (int i = 0; i < attitudes.Length; i++)
+            {
+                AssertTrue("attitude cue key exists for " + attitudes[i],
+                    !string.IsNullOrEmpty(BodyPartEventPolicy.AttitudeCueKey(attitudes[i])));
+            }
+
+            string[] tiers = { "crude", "prosthetic", "bionic", "archotech", "anomalous" };
+            for (int i = 0; i < tiers.Length; i++)
+            {
+                AssertTrue("tier cue key exists for " + tiers[i],
+                    !string.IsNullOrEmpty(BodyPartEventPolicy.TierCueKey(tiers[i])));
+            }
+
+            AssertTrue("surgery cause cue key exists",
+                !string.IsNullOrEmpty(BodyPartEventPolicy.CauseCueKey("surgery")));
+            AssertTrue("violence cause cue key exists",
+                !string.IsNullOrEmpty(BodyPartEventPolicy.CauseCueKey("violence")));
+            AssertEqual("unknown cause has no cue", string.Empty,
+                BodyPartEventPolicy.CauseCueKey("unknown"));
         }
 
         // ── Interaction ──
@@ -1764,6 +1938,39 @@ namespace DiaryCapturePolicyTests
         }
 
         // ── Factory helpers ──
+
+        private static string Tier(
+            string defName,
+            bool organic,
+            string tech,
+            float efficiency,
+            bool betterThanNatural,
+            List<string> anomalous = null,
+            List<string> crude = null,
+            List<string> prosthetic = null,
+            List<string> bionic = null,
+            List<string> archotech = null)
+        {
+            return BodyPartEventPolicy.ResolveTier(
+                defName,
+                organic,
+                tech,
+                efficiency,
+                betterThanNatural,
+                anomalous,
+                crude,
+                prosthetic,
+                bionic,
+                archotech,
+                BodyPartEventPolicy.DefaultCrudeEfficiencyBelow,
+                BodyPartEventPolicy.DefaultProstheticEfficiencyMax,
+                BodyPartEventPolicy.DefaultBionicEfficiencyMax);
+        }
+
+        private static string Attitude(string partKind, string tier, BodyModStanceFacts facts)
+        {
+            return BodyPartEventPolicy.ResolveAttitude(partKind, tier, facts);
+        }
 
         private const string MoodPositive = "positive";
         private const string MoodNegative = "negative";
