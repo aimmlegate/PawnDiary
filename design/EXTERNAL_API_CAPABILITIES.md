@@ -94,8 +94,8 @@ Distinct from IN-* (which create entries): these let an external mod feed *our o
 | ID | Capability | Status | Internal hook it maps to | Key decision |
 |---|---|---|---|---|
 | MT-0 | **Readiness probe** | **shipped v1** | `IsReady` | — |
-| MT-1 | **Async completion signal** (submitted entry finished / failed) | proposed | new: callback/event fired when a queued generation resolves | **The biggest single addition.** IN-2/IN-3 produce text asynchronously; a `bool` return can't deliver it. See §3.1 |
-| MT-2 | **Query generation status** of a submitted entry (pending/complete/failed) | proposed | read the POV slot status by handle (IN-6) | Polling companion to MT-1 |
+| MT-1 | **Async completion signal** (submitted entry finished / failed) | proposed | fire from `ApplyLlmResult` (the existing main-thread completion seam) | The biggest *conceptual* addition, but **blast radius is Low** — no new threading; see §3.1 |
+| MT-2 | **Query generation status** of a submitted entry (pending/complete/failed) | proposed | `LlmClient.IsInFlight(eventId, povRole)` already exists | Near-free once IN-6 exposes the handle |
 | MT-3 | **Regenerate an existing entry** | proposed | `RegenerateEntry` exists internally | Exposure only |
 | MT-4 | **Retract / delete an entry a mod created** | proposed | remove the event/archive row by handle + source check | Undo path for the source mod; guard so a mod only deletes its own |
 | MT-5 | **Public `IsDiaryEligible(pawn)`** | proposed | `IsDiaryEligible` exists internally | Saves callers a silent-drop submit |
@@ -114,6 +114,33 @@ callback registered per submission, or a global "entry completed" event, keyed b
 vs. keeping everything fire-and-forget and forcing callers to poll the read API (RD-5) for their
 handle.** Recommendation: a completion event keyed by handle; it also serves chat mods that want to
 react to *any* new entry. This is the prerequisite that unblocks the full/partial-prompt modes.
+
+#### Blast-radius check (traced 2026-07-04) — verdict: **Low, contained**
+The async→main-thread handoff **already exists**, so MT-1 does not introduce concurrency:
+`LlmClient` runs the HTTP call on background workers and pushes results to a completed queue;
+`DiaryGameComponent.DrainCompletedLlmWork()` drains it **on the main thread every tick**
+(`while LlmClient.TryDequeueCompleted(out result) → ApplyLlmResult(result)`). A completion signal
+fires **synchronously inside `ApplyLlmResult`** — no new thread, no marshaling, no `LlmClient` change.
+
+- **Firing site:** one seam — `ApplyLlmResult` (main entry) + optionally `ApplyTitleResult` (title).
+- **Correlation exists:** `eventId` + `povRole` already key everything; `LlmClient.IsInFlight(eventId,
+  povRole)` already answers MT-2, making status-query near-free.
+- **Handle (IN-6) is knowable at return:** the `DiaryEvent` is created **synchronously** inside
+  `signal.Emit(...)` during the `SubmitEvent` call (`eventId = Guid.NewGuid()`), so the id can be
+  stashed on the `ExternalEventSignal` and read back — keep `SubmitEvent`→`bool`, add
+  `SubmitEventTracked`→handle (additive). No change to the shared `Submit`/`Emit`/dispatch signatures
+  is required beyond the one stashed field.
+- **New code is small:** a plain `DiaryEntryCompleted` DTO + a main-thread, per-callback try-wrapped
+  dispatcher in the Integration layer.
+- **Does NOT touch:** `LlmClient` internals, HTTP workers, failover, the request/result DTOs (already
+  carry `eventId`/`povRole`/`success`), native signal sources, or the save format (event model).
+
+**Save/load caveat (verified):** in-flight LLM work is **not** persisted as a queue; stranded-pending
+entries are re-queued by orphan-recovery after load, and their completions fire *post-load*. This
+picks the delivery shape: a **global completion event survives save/load** (no persisted delegates)
+and tolerates post-load firing; **per-handle callbacks orphan** across a save (delegates aren't
+serializable) and need lifetime bookkeeping. → **Recommend the global event**, and document
+completion as **best-effort**: it may fire after a load and may never fire if the event/pawn is gone.
 
 ### 3.2 Bypass vs. consistency (IN-2 full prompt)
 A full external prompt bypasses persona, writing style, localization, and our prompt-safety framing —
@@ -184,7 +211,8 @@ on the override-stack decision. C-CTX-1 (v4) is already in flight and independen
 ## 6. Open questions (consolidated — close these before the matching version's code PR)
 
 1. **Consent granularity (§3.5)** — master vs. per-capability. *Blocks v4 toggle and all injection modes.*
-2. **Async delivery (§3.1)** — completion event vs. poll-only. *Blocks v7.*
+2. **Async delivery (§3.1)** — completion event vs. poll-only. Blast radius traced (Low, §3.1);
+   recommendation is a global completion event with best-effort semantics. *Blocks v7.*
 3. **Style model (§3.4)** — override stack vs. base mutation. *Blocks v8 (and makes ST-3 possible).*
 4. **Full-prompt contract (§3.2)** — wrapped vs. caller-owned. *Shapes v7.*
 5. **Injection gating (§3.3)** — claiming group vs. lighter gate. *Shapes v6/v7.*
