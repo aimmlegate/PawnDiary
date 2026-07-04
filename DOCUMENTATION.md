@@ -6,9 +6,11 @@ Related files:
 
 - `AGENTS.md`: detailed rules for code agents and deep architecture constraints.
 - `EVENT_PROMPT_MAP.md`: event-to-prompt coverage map.
-- `ARCHIVE_COMPACTION_DESIGN.md`: reviewed-before-code design for real cold archive compaction.
-- `PAWN_ARC_REFLECTION_IMPLEMENTATION.md`: current progression and yearly life-arc reflection flow.
+- `INTEGRATIONS.md`: the shipped public integration contract for other mods (adapter reference).
 - `CHANGELOG.md`: milestone history.
+- `design/`: design and planning notes kept out of the root — the reconciled integration design
+  doc (`design/MOD_COMPAT_PLAN.md`), plus historical implementation/gap-analysis plans
+  (`design/EVENT_COVERAGE_PLAN.md`, `design/BODY_PART_EVENTS_PLAN.md`).
 
 ## 1. Purpose
 
