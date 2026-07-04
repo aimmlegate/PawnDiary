@@ -150,12 +150,14 @@ namespace PawnDiary
         {
             CancelModelFetchUiState();
             CancelConnectionTestUiState();
-            // Drop tracked in-flight capability refreshes too: a removed/moved/reset row no longer
-            // maps to a valid index, so any result that lands afterwards is harmless (it writes only
-            // the thread-safe cache) but we don't want the in-flight set to hold stale indices.
+            // Drop tracked in-flight capability refreshes AND any queued reruns: a removed/moved/reset
+            // row no longer maps to a valid index, so a rerun that fired after this cancel would refetch
+            // against a stale index. A landed result stays harmless (it writes only the thread-safe
+            // cache); clearing both sets also stops a post-cancel rerun from firing.
             lock (capabilityRefreshLock)
             {
                 capabilityRefreshInFlight.Clear();
+                capabilityRefreshPending.Clear();
             }
         }
 

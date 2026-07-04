@@ -56,7 +56,7 @@ namespace PawnDiary.Integration
             {
                 if (request == null)
                 {
-                    Log.ErrorOnce("[Pawn Diary] Integration API: SubmitEvent called with a null request.",
+                    ApiLogErrorOnce("[Pawn Diary] Integration API: SubmitEvent called with a null request.",
                         "PawnDiary.Api.NullRequest".GetHashCode());
                     return false;
                 }
@@ -67,7 +67,7 @@ namespace PawnDiary.Integration
 
                 if (string.IsNullOrWhiteSpace(request.eventKey) || request.subject == null)
                 {
-                    Log.ErrorOnce(
+                    ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: SubmitEvent from '" + sourceId
                         + "' is missing a required field (eventKey and subject are mandatory).",
                         ("PawnDiary.Api.Invalid." + sourceId).GetHashCode());
@@ -78,7 +78,7 @@ namespace PawnDiary.Integration
                 // none of which is safe off the main thread. Reject instead of racing.
                 if (!UnityData.IsInMainThread)
                 {
-                    Log.ErrorOnce(
+                    ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: SubmitEvent from '" + sourceId
                         + "' was called off the main thread; the call was ignored. Submit from the "
                         + "main thread (e.g. via LongEventHandler.ExecuteWhenFinished).",
@@ -113,7 +113,7 @@ namespace PawnDiary.Integration
                 string sourceForLog = request != null && !string.IsNullOrWhiteSpace(request.sourceId)
                     ? request.sourceId
                     : "unknown-source";
-                Log.ErrorOnce(
+                ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: SubmitEvent from '" + sourceForLog + "' failed: " + e,
                     ("PawnDiary.Api.Exception." + sourceForLog).GetHashCode());
                 return false;
@@ -133,7 +133,7 @@ namespace PawnDiary.Integration
                 // rule as SubmitEvent. Adapters that listen on a worker thread should marshal first.
                 if (!UnityData.IsInMainThread)
                 {
-                    Log.ErrorOnce(
+                    ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: GetRecentEntryTitles was called off the main thread; the call was ignored.",
                         "PawnDiary.Api.RecentTitles.OffThread".GetHashCode());
                     return new List<DiaryEntryTitleSnapshot>();
@@ -148,7 +148,7 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
-                Log.ErrorOnce(
+                ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: GetRecentEntryTitles failed: " + e,
                     "PawnDiary.Api.RecentTitles.Exception".GetHashCode());
                 return new List<DiaryEntryTitleSnapshot>();
@@ -170,7 +170,7 @@ namespace PawnDiary.Integration
                 // Same main-thread rule as the other readers: it walks saved state and Def text.
                 if (!UnityData.IsInMainThread)
                 {
-                    Log.ErrorOnce(
+                    ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: GetWritingStyle was called off the main thread; the call was ignored.",
                         "PawnDiary.Api.WritingStyle.OffThread".GetHashCode());
                     return null;
@@ -185,7 +185,7 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
-                Log.ErrorOnce(
+                ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: GetWritingStyle failed: " + e,
                     "PawnDiary.Api.WritingStyle.Exception".GetHashCode());
                 return null;
@@ -208,7 +208,7 @@ namespace PawnDiary.Integration
                 // rule as SubmitEvent. Adapters that listen on a worker thread should marshal first.
                 if (!UnityData.IsInMainThread)
                 {
-                    Log.ErrorOnce(
+                    ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: filtered GetRecentEntryTitles was called off the main thread; the call was ignored.",
                         "PawnDiary.Api.RecentTitles.Filtered.OffThread".GetHashCode());
                     return new List<DiaryEntryTitleSnapshot>();
@@ -223,7 +223,7 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
-                Log.ErrorOnce(
+                ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: filtered GetRecentEntryTitles failed: " + e,
                     "PawnDiary.Api.RecentTitles.Filtered.Exception".GetHashCode());
                 return new List<DiaryEntryTitleSnapshot>();
@@ -242,7 +242,7 @@ namespace PawnDiary.Integration
                 string providerId = string.IsNullOrWhiteSpace(id) ? "unknown-provider" : id.Trim();
                 if (string.IsNullOrWhiteSpace(id) || provider == null)
                 {
-                    Log.ErrorOnce(
+                    ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: RegisterPawnContextProvider was called with a missing id or provider.",
                         ("PawnDiary.Api.ContextProvider.Invalid." + providerId).GetHashCode());
                     return;
@@ -253,7 +253,7 @@ namespace PawnDiary.Integration
                 // methods that interact with game state.
                 if (!UnityData.IsInMainThread)
                 {
-                    Log.ErrorOnce(
+                    ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: RegisterPawnContextProvider for '" + providerId
                         + "' was called off the main thread; the provider was ignored.",
                         ("PawnDiary.Api.ContextProvider.OffThread." + providerId).GetHashCode());
@@ -265,7 +265,7 @@ namespace PawnDiary.Integration
             catch (Exception e)
             {
                 string providerForLog = string.IsNullOrWhiteSpace(id) ? "unknown-provider" : id.Trim();
-                Log.ErrorOnce(
+                ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: RegisterPawnContextProvider for '" + providerForLog
                     + "' failed: " + e,
                     ("PawnDiary.Api.ContextProvider.Exception." + providerForLog).GetHashCode());
@@ -278,6 +278,33 @@ namespace PawnDiary.Integration
             {
                 return PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.allowExternalIntegrations;
             }
+        }
+
+        // A misbehaving adapter can call any of these entry points from a worker thread. RimWorld's
+        // Log.* is main-thread only — it mutates the message queue the in-game log window enumerates
+        // during OnGUI, so using it to report the very off-thread call we are rejecting would race that
+        // enumeration ("Collection was modified"), the same reason LlmClient marshals its debug lines.
+        // On the main thread we keep Log.ErrorOnce (in-game log entry + built-in de-dup); off it we
+        // fall back to the thread-safe UnityEngine.Debug and keep our own once-per-key guard.
+        private static readonly HashSet<int> offThreadLoggedKeys = new HashSet<int>();
+
+        private static void ApiLogErrorOnce(string message, int key)
+        {
+            if (UnityData.IsInMainThread)
+            {
+                Log.ErrorOnce(message, key);
+                return;
+            }
+
+            lock (offThreadLoggedKeys)
+            {
+                if (!offThreadLoggedKeys.Add(key))
+                {
+                    return;
+                }
+            }
+
+            UnityEngine.Debug.LogError(message);
         }
     }
 }

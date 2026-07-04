@@ -288,6 +288,8 @@
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, крайние страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Затрагивает срывы, аномалии, тёмные записи, смерть и сильное нарушение состояния. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Игровой контекст в запросах</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку о текущем состоянии поселенца или поселения. XML задаёт, какие подсказки возможны и как часто они выбираются.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.AllowExternalIntegrations>Разрешить интеграции сторонних модов</PawnDiary.Settings.AllowExternalIntegrations>
+  <PawnDiary.Settings.AllowExternalIntegrationsTip>Если включено, другие моды могут через публичный API интеграции отправлять события в дневник, читать открытые сводки дневника и добавлять краткие строки контекста поселенца.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.ShowExperimentalAdvancedOverrides>Показать экспериментальные XML-переопределения</PawnDiary.Settings.ShowExperimentalAdvancedOverrides>
   <PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>Открывает сырые страницы переопределений XML Def для тонкой настройки и политики запросов. Переопределения экспериментальны и меняют поведение до сброса.</PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Добавлять речь в журнал общения</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>

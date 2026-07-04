@@ -4,6 +4,26 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-07-05
+
+- **Integration API + adapter hardening (adversarial-review follow-ups).** No API surface changes;
+  robustness fixes across the external-API work shipped on 2026-07-04:
+  - `PawnDiaryApi` entry points no longer call RimWorld's main-thread-only `Log.*` when rejecting an
+    off-main-thread call — that logging itself raced the in-game log window. Off-thread diagnostics
+    now route through a thread-safe `UnityEngine.Debug` path with a once-per-key guard.
+  - Pawn-context provider registration is capped at 32 distinct ids so a misbehaving adapter cannot
+    grow the registry (or the per-summary walk over it) without bound; provider invocation early-outs
+    off the main thread, and the final context join no longer double-cleans its lines.
+  - Filtered `GetRecentEntryTitles` skips a store (hot/archived) entirely when the query excludes it
+    instead of building and discarding every view.
+  - Capability-refresh cancellation (`ApiConnectionController.CancelUiState`) now also clears the
+    queued-rerun set, so a refresh cannot re-fire against a stale row index after a cancel.
+  - The RimTalk bridge installs its Harmony patch inside a try/catch, so an absent/renamed RimTalk
+    target degrades to "chat logging disabled" instead of throwing out of the mod constructor.
+  - Docs/localization: `INTEGRATIONS.md` marks `sourceId` as recommended, not required (blank
+    defaults to `unknown-source`); added the Russian Keyed strings for the `allowExternalIntegrations`
+    toggle.
+
 ## 2026-07-04
 
 - **Integration API v5 — filtered title reads.** `PawnDiaryApi.ApiVersion` is now `5`, with

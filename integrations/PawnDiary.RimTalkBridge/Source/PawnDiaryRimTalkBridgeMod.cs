@@ -2,6 +2,7 @@
 // It owns the single saved setting and installs the Harmony patch that listens to RimTalk chat.
 //
 // New to C#/RimWorld? See AGENTS.md in the Pawn Diary repo.
+using System;
 using HarmonyLib;
 using UnityEngine;
 using Verse;
@@ -25,7 +26,20 @@ namespace PawnDiaryRimTalkBridge
             Settings = GetSettings<PawnDiaryRimTalkBridgeSettings>();
             lastLoggedEnabled = Settings.enabled;
 
-            new Harmony(HarmonyId).PatchAll();
+            // PatchAll reflects over this assembly's [HarmonyPatch] classes and resolves each target.
+            // Our listener's TargetMethod returns null when RimTalk is absent or has renamed the method
+            // it hooks, and a null target makes PatchAll throw — which would take down the whole mod
+            // ctor and, with it, the settings this mod also owns. Isolate it so a missing/changed RimTalk
+            // degrades to "chat logging disabled" (TargetMethod already warns) instead of a hard error.
+            try
+            {
+                new Harmony(HarmonyId).PatchAll();
+            }
+            catch (Exception e)
+            {
+                Log.Error(LogPrefix + " failed to install Harmony patches; chat logging is disabled: " + e);
+            }
+
             Log.Message(LogPrefix + " initialized.");
         }
 

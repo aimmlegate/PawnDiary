@@ -15,8 +15,13 @@ namespace PawnDiary.Integration
         // tunable policy, so they stay hardcoded per AGENTS.md.
         private const int MaxProviderLines = 8;
         private const int MaxProviderLineChars = 200;
+        // Cap on how many distinct providers may register. Output is already capped to
+        // MaxProviderLines; this bounds the registry itself so a churning-id adapter can neither grow
+        // it without limit nor make every pawn-summary build walk an ever-longer provider list.
+        private const int MaxProviders = 32;
 
-        private static readonly ContextProviderRegistry<Pawn> Registry = new ContextProviderRegistry<Pawn>();
+        private static readonly ContextProviderRegistry<Pawn> Registry =
+            new ContextProviderRegistry<Pawn>(MaxProviders);
 
         public static bool Register(string id, Func<Pawn, string> provider)
         {
@@ -25,7 +30,10 @@ namespace PawnDiary.Integration
 
         public static string BuildContextLines(Pawn pawn)
         {
-            if (pawn == null || !ExternalIntegrationsAllowed)
+            // Providers run inside the impure pawn-summary snapshot, which is main-thread work, and the
+            // registry is deliberately un-synchronized (registration is main-thread-gated in
+            // PawnDiaryApi). Refuse to read it off the main thread rather than race the dictionary.
+            if (pawn == null || !UnityData.IsInMainThread || !ExternalIntegrationsAllowed)
             {
                 return string.Empty;
             }

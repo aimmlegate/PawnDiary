@@ -14,9 +14,22 @@ namespace PawnDiary
         private readonly Dictionary<string, ProviderEntry> providers =
             new Dictionary<string, ProviderEntry>(StringComparer.Ordinal);
         private readonly List<string> order = new List<string>();
+        private readonly int maxProviders;
+
+        /// <summary>
+        /// Creates a registry that accepts at most <paramref name="maxProviders"/> distinct provider
+        /// ids (a non-positive value means unlimited). The cap is a defensive limit: a misbehaving
+        /// adapter that registers under a churning id (per-pawn, per-tick) must not grow this registry
+        /// — nor the per-build walk over it — without bound.
+        /// </summary>
+        public ContextProviderRegistry(int maxProviders)
+        {
+            this.maxProviders = maxProviders;
+        }
 
         /// <summary>
         /// Registers or replaces a provider. Replacing an id keeps its original order and re-enables it.
+        /// Returns false for a blank id, a null provider, or a new id once the cap is reached.
         /// </summary>
         public bool Register(string id, Func<TContext, string> provider)
         {
@@ -28,6 +41,11 @@ namespace PawnDiary
 
             if (!providers.ContainsKey(normalizedId))
             {
+                if (maxProviders > 0 && order.Count >= maxProviders)
+                {
+                    return false;
+                }
+
                 order.Add(normalizedId);
             }
 
@@ -78,7 +96,9 @@ namespace PawnDiary
                 }
             }
 
-            return PromptContextLines.Join(cleanedLines, maxLines, maxLineChars);
+            // Lines are already CleanLine'd, non-blank, and capped to maxLines in the loop above, so
+            // join them directly rather than running the whole clean/skip/cap pass a second time.
+            return string.Join("; ", cleanedLines.ToArray());
         }
 
         private static string NormalizeId(string id)

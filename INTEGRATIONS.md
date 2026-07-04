@@ -103,8 +103,9 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
 | `DiaryWritingStyleSnapshot GetWritingStyle(Pawn)` (v3) | The pawn's **base** saved diary writing style. Publishes the diary's own voice instruction (`rule`) so a chat/context mod can — if its player chooses — align its voice with how the pawn writes; Pawn Diary only exposes the style, it never reads or drives another mod's persona. `null` = null/ineligible pawn, no game, or off-main-thread call. This is a side-effect-free read: it never creates a diary record (a pawn with no record yet resolves to the default style), and it excludes temporary hediff style overrides. |
 | `void RegisterPawnContextProvider(string id, Func<Pawn, string> provider)` (v4) | Registers a process-global provider that contributes one compact `key=value` line to each pawn summary. Re-registering the same id replaces the provider. Invalid/off-thread registration is logged once and ignored; a throwing provider is disabled for the rest of the session and logged once. |
 
-`ExternalEventRequest` fields: `sourceId`*, `eventKey`*, `subject`* (required); `partner`,
-`summaryText`, `eventLabel`, `extraContext`, `dedupKey`, `dedupTicks` (optional). Semantics:
+`ExternalEventRequest` fields: `eventKey`*, `subject`* (required); `sourceId` (recommended, for log
+attribution — defaults to `unknown-source` when blank), `partner`, `summaryText`, `eventLabel`,
+`extraContext`, `dedupKey`, `dedupTicks` (optional). Semantics:
 
 - **subject / partner** — subject must be diary-eligible (humanlike colonist) or the event drops.
   A distinct, eligible partner upgrades the event to pairwise (both POVs, like a native social

@@ -1295,7 +1295,7 @@ namespace DiaryPipelineTests
 
         private static void TestContextProviderRegistry()
         {
-            ContextProviderRegistry<string> registry = new ContextProviderRegistry<string>();
+            ContextProviderRegistry<string> registry = new ContextProviderRegistry<string>(32);
             List<string> failures = new List<string>();
 
             AssertTrue("registry rejects blank id", !registry.Register(" ", context => "bad=1"));
@@ -1342,6 +1342,18 @@ namespace DiaryPipelineTests
                 "registry caps provider contributions",
                 "voice=capped",
                 registry.BuildContextLines("capped", 1, 80, (id, e) => failures.Add(id)));
+
+            // A churning-id adapter must not grow the registry without bound: new ids past the cap are
+            // refused, but replacing an id already registered stays allowed even at the cap.
+            ContextProviderRegistry<string> capped = new ContextProviderRegistry<string>(2);
+            AssertTrue("capped registry accepts first id", capped.Register("a", context => "a=" + context));
+            AssertTrue("capped registry accepts second id", capped.Register("b", context => "b=" + context));
+            AssertTrue("capped registry rejects a new id beyond the cap", !capped.Register("c", context => "c=" + context));
+            AssertTrue("capped registry still replaces an existing id at the cap", capped.Register("a", context => "a2=" + context));
+            AssertEqual(
+                "over-cap provider never contributes a line",
+                "a2=x; b=x",
+                capped.BuildContextLines("x", 8, 80, (id, e) => failures.Add(id)));
         }
 
         private static void TestEventWindowPolicy()

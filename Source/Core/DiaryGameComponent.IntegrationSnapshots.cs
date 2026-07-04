@@ -41,8 +41,18 @@ namespace PawnDiary
             string pawnId = pawn.GetUniqueLoadID();
             HashSet<string> emittedKeys = new HashSet<string>();
 
-            AppendRecentHotTitleSnapshots(pawn, pawnId, limit, query, emittedKeys, snapshots);
-            if (snapshots.Count < limit)
+            // Skip a store entirely when the query excludes it: the per-entry filter would reject every
+            // row anyway, and building each hot DiaryEntryView (linked previews included) only to
+            // discard it is wasted main-thread work.
+            bool includeActive = query == null || query.includeActive;
+            bool includeArchived = query == null || query.includeArchived;
+
+            if (includeActive)
+            {
+                AppendRecentHotTitleSnapshots(pawn, pawnId, limit, query, emittedKeys, snapshots);
+            }
+
+            if (includeArchived && snapshots.Count < limit)
             {
                 AppendRecentArchivedTitleSnapshots(pawnId, limit, query, emittedKeys, snapshots);
             }

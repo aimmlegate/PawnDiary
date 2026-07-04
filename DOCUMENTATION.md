@@ -275,7 +275,10 @@ Registered providers run during `DiaryContextBuilder.BuildPawnSummary`, after DL
 mod can contribute one compact line such as `personality=blunt, curious`. The provider receives the
 live `Pawn` only in this impure snapshot phase; its return value is cleaned by the pure
 `PromptContextLines` helper (`OneLine`, `;`→`,`, count/length caps) before entering the prompt
-payload. A throwing provider is disabled and logged once. The settings master switch
+payload. A throwing provider is disabled and logged once. Registration is capped at 32 distinct ids
+(a churning-id adapter cannot grow the registry without bound) and re-registering an existing id
+replaces it in place; the registry is unsynchronized and is read only on the main thread, mirroring
+the main-thread rule the API enforces on registration. The settings master switch
 `allowExternalIntegrations` gates external submissions, read calls, and provider invocation.
 
 `integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
