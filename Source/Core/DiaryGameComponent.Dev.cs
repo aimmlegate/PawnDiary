@@ -30,8 +30,7 @@ namespace PawnDiary
         // without coupling the game state to RimWorld UI instances.
         private string devPanelSelectedPawnId;
         private string devPanelSelectedPartnerId;
-        // Diary is the default section while the Events section is hidden (its trigger buttons are
-        // currently non-functional; see Dialog_PawnDiaryEventTestPanel).
+        // Diary remains the default section; older saved "events" selections are normalized there.
         private string devPanelSectionId = DevPanelSectionDiary;
         private float devPanelEventsScrollY;
         private float devPanelDiaryScrollY;
@@ -557,8 +556,8 @@ namespace PawnDiary
                 return DevPanelSectionFixtures;
             }
 
-            // Anything else — including a saved "events" selection — falls back to Diary while the
-            // Events section is hidden (its trigger buttons are currently non-functional).
+            // Unknown values and older saved "events" selections fall back to Diary because the
+            // real event trigger buttons are intentionally not exposed in the dev panel.
             return DevPanelSectionDiary;
         }
 

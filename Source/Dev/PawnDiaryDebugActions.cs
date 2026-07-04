@@ -246,7 +246,7 @@ namespace PawnDiary
         public Dialog_PawnDiaryEventTestPanel()
         {
             doCloseX = true;
-            forcePause = true;
+            forcePause = false;
             absorbInputAroundWindow = true;
             closeOnClickedOutside = false;
         }
@@ -463,10 +463,6 @@ namespace PawnDiary
                 return;
             }
 
-            // The Events section (DrawRealEventsSection) is hidden because its event trigger
-            // buttons are currently non-functional; everything else falls back to Diary tools.
-            // The partner selector row stays visible because DrawRealEventsSection is expected
-            // to return once the triggers are fixed.
             DrawScrollableSection(
                 bodyInner,
                 component,
@@ -477,8 +473,6 @@ namespace PawnDiary
 
         private void DrawSectionRail(Rect rect, DiaryGameComponent component)
         {
-            // The Events section button is intentionally not drawn: its event trigger buttons are
-            // currently non-functional, so the section is hidden until they work again.
             float y = rect.y;
             DrawSectionButton(
                 new Rect(rect.x, y, rect.width, ActionRowHeight),
@@ -527,10 +521,8 @@ namespace PawnDiary
             component.SetDevPanelScrollYForDev(sectionId, scroll.y);
         }
 
-        // HIDDEN: this section's event trigger buttons are currently non-functional, so nothing
-        // calls this drawer (the Events rail button is not drawn and saved "events" selections
-        // normalize to Diary). The section and its Trigger* helpers are kept intact so the panel
-        // can be re-enabled from DrawSectionRail/DrawSectionedControls once the triggers are fixed.
+        // Legacy real-trigger drawer. The rail no longer exposes this section, but the helpers stay
+        // here for now so a future live-hook check can reintroduce the surface deliberately.
         private void DrawRealEventsSection(Rect rect, DiaryGameComponent component, Pawn pawn, Pawn partner)
         {
             float y = DrawSectionTitle(rect, "PawnDiary.Dev.EventPanel.RealEvents");
@@ -871,9 +863,6 @@ namespace PawnDiary
             return rect.y + 34f;
         }
 
-        private static int pressedTextButtonIdentity;
-        private static int pressedTextButtonMouseButton = -1;
-
         private static bool ButtonTextLeft(Rect rect, string label)
         {
             return ButtonTextClickedButton(rect, label) == 0;
@@ -892,40 +881,10 @@ namespace PawnDiary
         private static int ButtonTextClickedButton(Rect rect, string label, bool danger)
         {
             Event ev = Event.current;
-            bool mouseOver = Mouse.IsOver(rect);
-            int identity = TextButtonIdentity(rect, label);
-            int clickedButton = -1;
-
-            if (ev != null && (ev.button == 0 || ev.button == 1))
-            {
-                if (ev.type == EventType.MouseDown && mouseOver)
-                {
-                    // New to RimWorld IMGUI? MouseDown and MouseUp are separate passes. Remember
-                    // which drawn text button started the press so releasing over a different button
-                    // cannot trigger that other button by accident.
-                    pressedTextButtonIdentity = identity;
-                    pressedTextButtonMouseButton = ev.button;
-                }
-                else if (ev.type == EventType.MouseUp)
-                {
-                    if (mouseOver
-                        && pressedTextButtonIdentity == identity
-                        && pressedTextButtonMouseButton == ev.button)
-                    {
-                        clickedButton = ev.button;
-                        // Unity's GUI.Button can report right clicks too. The dev panel treats left
-                        // click as "do the thing" and right click as "open a selector", so consume
-                        // the release before Widgets.ButtonText can reinterpret it.
-                        ev.Use();
-                    }
-
-                    if (pressedTextButtonMouseButton == ev.button)
-                    {
-                        pressedTextButtonIdentity = 0;
-                        pressedTextButtonMouseButton = -1;
-                    }
-                }
-            }
+            bool rightClicked = ev != null
+                && ev.type == EventType.MouseDown
+                && ev.button == 1
+                && rect.Contains(ev.mousePosition);
 
             Color previousColor = GUI.color;
             if (danger)
@@ -933,23 +892,15 @@ namespace PawnDiary
                 GUI.color = DiaryUiStyles.Current.DevDangerButtonColor;
             }
 
-            Widgets.ButtonText(rect, label);
+            bool leftClicked = Widgets.ButtonText(rect, label);
             GUI.color = previousColor;
-            return clickedButton;
-        }
-
-        private static int TextButtonIdentity(Rect rect, string label)
-        {
-            unchecked
+            if (rightClicked)
             {
-                int hash = 17;
-                hash = hash * 31 + rect.x.GetHashCode();
-                hash = hash * 31 + rect.y.GetHashCode();
-                hash = hash * 31 + rect.width.GetHashCode();
-                hash = hash * 31 + rect.height.GetHashCode();
-                hash = hash * 31 + (label == null ? 0 : label.GetHashCode());
-                return hash;
+                ev.Use();
+                return 1;
             }
+
+            return leftClicked ? 0 : -1;
         }
 
         private static void DrawGridButton(

@@ -6,6 +6,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **Dev event panel buttons fixed.** `Pawn Diary > Event test panel...` no longer pauses the game,
+  removes the unused real-event trigger button surface, and fixes the remaining custom text buttons
+  by using RimWorld's normal left-click handling.
 - **Humor cue default raised.** Hidden humor cues now default to a 20% chance for eligible
   first-person entries, with XML and defensive fallback defaults aligned.
 - **Advanced reset/copy UX.** Advanced XML override areas now reset changed values by current tab
