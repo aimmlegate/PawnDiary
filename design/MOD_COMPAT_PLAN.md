@@ -354,8 +354,11 @@ Division of responsibility, reconciled with what shipped:
       settings toggle, pawn-summary placement, purity boundary) — see
       [`API_V4_PAWN_CONTEXT_PROVIDERS.md`](API_V4_PAWN_CONTEXT_PROVIDERS.md). It reconciles the
       §4.2 "settings toggle mirrors per-group toggles" note with the current XML-only group model
-      (per-group toggles are now `defaultEnabled` + package gates, not a settings dict) and
-      recommends a master toggle for v4; the toggle model is the one open decision left before code.
+      (per-group toggles are now `defaultEnabled` + package gates, not a settings dict). Design is
+      settled: the toggle model is decided (Option A — a master `allowExternalPawnContextProviders`
+      setting, default on, honored at invocation; per-provider granularity deferred as an additive
+      follow-up), leaving only small in-review knobs (defensive caps, summary placement). Ready for
+      code when the v4 implementation PR is picked up.
 - [ ] Validate the draft against RimPsyche's real surface (`PsycheDataUtil`, 15 facets): write
       the provider snippet we'd hand their maintainer; open a design issue / contact Maux36.
 - [ ] Decide the Psychology story: standalone bridge vs. their-side provider (we ship neither

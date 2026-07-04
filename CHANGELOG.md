@@ -12,10 +12,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   surface + feature-detection, `extraContext`-identical sanitation and once-disable failure
   isolation, the impure-snapshot purity boundary, pawn-summary placement next to the DLC-identity
   lines, and the RimPsyche consumer snippet. It reconciles the plan's stale "settings toggle mirrors
-  per-group toggles" note with today's XML-only group model (`defaultEnabled` + package gates) and
-  recommends a master player toggle for v4, leaving the toggle-granularity choice as the one open
-  decision before code. No runtime change; `ApiVersion` stays 3. Indexed in `design/README.md` and
-  the MOD_COMPAT §5 PR-4 checklist.
+  per-group toggles" note with today's XML-only group model (`defaultEnabled` + package gates). The
+  design is settled: the player-toggle model is decided (Option A — a master
+  `allowExternalPawnContextProviders` setting, default on, honored at invocation; per-provider
+  granularity deferred as an additive follow-up), leaving only small in-review knobs (defensive
+  caps, summary placement). No runtime change; `ApiVersion` stays 3. Indexed in `design/README.md`
+  and the MOD_COMPAT §5 PR-4 checklist.
 - **Docs reorg + integration ideas reconciled.** Moved the scattered design/planning markdown
   (`MOD_COMPAT_PLAN.md`, `EVENT_COVERAGE_PLAN.md`, `BODY_PART_EVENTS_PLAN.md`) into a new `design/`
   folder with a `design/README.md` index, leaving only living top-level docs at the root
