@@ -250,12 +250,24 @@ rows for one pawn. The snapshot is intentionally small (`tick`, `date`, `eventId
 RimWorld objects. It is main-thread only and returns an empty list instead of throwing, matching
 the adapter-safety rule of `SubmitEvent`.
 
+API v3 adds one more read-only accessor: `PawnDiaryApi.GetWritingStyle(Pawn)` returns a small
+`DiaryWritingStyleSnapshot` (`styleDefName`, `label`, `rule`) carrying a pawn's **base** saved
+writing style — the same plain-language voice instruction the diary feeds its own prompts. It only
+*publishes* the style so a chat/context mod can align its voice with how the pawn writes; Pawn Diary
+never reads or drives another mod's persona. Like the title reader it is main-thread only and returns
+`null` instead of throwing. It is deliberately side-effect free: it resolves through `FindDiary(pawn,
+false)` so an external read never creates a diary record (a pawn with no record yet resolves to the
+default style), it excludes temporary hediff-driven style overrides (prompt-time only), and it
+carries no internal theme tags.
+
 `integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
 separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
 Pawn Diary, RimTalk, and Harmony. When its single setting is enabled, it patches RimTalk's accepted
 chat boundary (`TalkService.CreateInteraction(Pawn, TalkResponse)`) and logs the displayed chat
-facts plus recent Pawn Diary title snapshots for the speaker and target. It does not submit diary
-events or feed RimTalk prompts yet; it proves the observation/context path first.
+facts, recent Pawn Diary title snapshots, and the resolved base writing style (`GetWritingStyle`) for
+the speaker and target. It does not submit diary events or feed RimTalk prompts yet; it proves the
+observation/context path first, and the writing-style log is publish-only — the bridge never pushes
+the style back into RimTalk.
 
 Compatibility groups shipped inside this repo for other mods use the group gate
 `enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only

@@ -31,7 +31,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 2;
+        public const int ApiVersion = 3;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -152,6 +152,43 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: GetRecentEntryTitles failed: " + e,
                     "PawnDiary.Api.RecentTitles.Exception".GetHashCode());
                 return new List<DiaryEntryTitleSnapshot>();
+            }
+        }
+
+        /// <summary>
+        /// Returns a pawn's base saved diary writing style as a small read-only snapshot, or null.
+        /// This publishes the diary's own voice instruction (the <c>rule</c> field) so a chat/context
+        /// mod can, if its player chooses, align its own voice with how the pawn writes — Pawn Diary
+        /// only exposes the style, it never reads or drives another mod's persona. Returns null —
+        /// never throws — for a null/ineligible pawn, no game loaded, or an off-thread call. The
+        /// snapshot is the base saved style and does not include temporary hediff style overrides.
+        /// </summary>
+        public static DiaryWritingStyleSnapshot GetWritingStyle(Pawn pawn)
+        {
+            try
+            {
+                // Same main-thread rule as the other readers: it walks saved state and Def text.
+                if (!UnityData.IsInMainThread)
+                {
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Integration API: GetWritingStyle was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.WritingStyle.OffThread".GetHashCode());
+                    return null;
+                }
+
+                if (!IsReady || pawn == null)
+                {
+                    return null;
+                }
+
+                return DiaryGameComponent.Current.WritingStyleSnapshotFor(pawn);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Integration API: GetWritingStyle failed: " + e,
+                    "PawnDiary.Api.WritingStyle.Exception".GetHashCode());
+                return null;
             }
         }
     }
