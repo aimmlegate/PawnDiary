@@ -62,8 +62,8 @@ consent, dedup, main-thread) — they differ only in **who produces the prose**.
 | ID | Capability | Status | Internal hook it maps to | Key decision |
 |---|---|---|---|---|
 | RD-1 | **Recent entry titles** for a pawn | **shipped v2** | `GetRecentEntryTitles` → `DiaryEntryTitleSnapshot` (cap 20) | — |
-| RD-2 | **Last N entries with prose** (title + first sentence / summary) | requested (= roadmap v5) | reads persisted diary model; `TryGetContextSnapshot` shape in MOD_COMPAT §4.3 | Merge the old v5 "prose snapshot" and this into one filtered read |
-| RD-3 | **Filters: type, atmosphere, date, POV, archived** | requested | already stored per entry: `decorationDomain` (=type/domain), `atmosphereCue`, `date`/`tick`, `povRole`, `archived` | Free from existing fields |
+| RD-2 | **Last N entries with prose** (title + first sentence / summary) | requested (= next read API) | reads persisted diary model; `TryGetContextSnapshot` shape in MOD_COMPAT §4.3 | Build on RD-3 filters; expose summaries, not prompts/raw responses |
+| RD-3 | **Filters: type, atmosphere, date, POV, archived** | **shipped v5** | `GetRecentEntryTitles(Pawn,int,DiaryEntryTitleQuery)` filters by `decorationDomain` (=type/domain), `atmosphereCue`, `date`/`tick`, `povRole`, active/archived | Source/eventKey filters stay RD-7 |
 | RD-4 | **Filter: tone** | requested | `tone` is a *group directive* (`group.tone`/`ToneDirective()`), applied at prompt time, **not stored per entry** | Must persist tone on the entry, or derive it from the entry's group — decide before promising it |
 | RD-5 | **Get one entry by id** | proposed | companion to IN-6 handles | — |
 | RD-6 | **Cheap counts / stats** (per pawn, per type, per date range) | proposed | tallies without materializing prose | — |
@@ -325,7 +325,7 @@ train; pick the next single capability to build, ship it, bump `ApiVersion`, mov
 | Order | Capability | ApiVersion on ship | Depends on | Notes |
 |---|---|---|---|---|
 | 1 | **C-CTX-1** pawn-context providers | **shipped v4** | §3.5 decided (master toggle) | Implemented via `RegisterPawnContextProvider`; provider lines join the pawn-summary identity block |
-| 2 | **RD-3** read filters (type/atmosphere/date) | vN | — | Cheapest; fields already stored |
+| 2 | **RD-3** read filters (type/atmosphere/date/POV/archive) | **shipped v5** | — | Additive `DiaryEntryTitleQuery` overload on recent title snapshots |
 | 3 | **RD-2 / RD-5 / RD-6** prose read, by-id, counts | vN | RD-3 | RD-4 tone only if persisted (§6.6) |
 | 3b | **C-CTX-2 / C-CTX-3** export pawn summary + collected enchantments (structured DTOs) | vN | — | Pure reads (§3.8); cheap, no new machinery |
 | 3c | **C-CTX-5** context bundle (+ `integrations/` RimTalk bridge consumer) | vN | C-CTX-2/3, ST-1, RD-2 | Bridge feeds RimTalk; core stays RimTalk-free (§3.8) |
@@ -337,7 +337,7 @@ train; pick the next single capability to build, ship it, bump `ApiVersion`, mov
 | 9 | **ST-2 / ST-3 / ST-4 / ST-6** style write, reset, list, generation toggle | vN | §3.4 decided | Override-over-base seam reuse |
 | later | **MT-3/4/8, ST-7, RD-7, IN-7** lifecycle polish | vN | — | As needed |
 
-`ApiVersion` numbers past v4 are assigned **in actual ship order**, not reserved up front — so this
+`ApiVersion` numbers past v5 are assigned **in actual ship order**, not reserved up front — so this
 list is a build queue, not a version map. Each row is independently shippable and additive.
 
 ## 5. Design invariants (carry-over — do not relitigate per capability)

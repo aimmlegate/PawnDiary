@@ -14,6 +14,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryArchiveCompactionPlanner.cs" Link="DiaryArchiveCompactionPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryLifeBoundaryPolicy.cs" Link="DiaryLifeBoundaryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptPlanner.cs" Link="DiaryPromptPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="DiaryEventDomainClassifier.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryResponsePostprocessor.cs" Link="DiaryResponsePostprocessor.cs" />
@@ -42,6 +43,7 @@
     <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />
     <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
+    <Compile Include="..\..\Source\Integration\DiaryEntryTitleQuery.cs" Link="Integration\DiaryEntryTitleQuery.cs" />
     <Compile Include="..\..\Source\Settings\ApiRequestAuth.cs" Link="ApiRequestAuth.cs" />
     <Compile Include="..\..\Source\Settings\EndpointUtility.cs" Link="EndpointUtility.cs" />
     <Compile Include="..\..\Source\Settings\PromptSettingsMenuPolicy.cs" Link="PromptSettingsMenuPolicy.cs" />

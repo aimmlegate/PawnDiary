@@ -8,6 +8,8 @@ implementation detail that may change without notice.
 - Read side (API v2): an adapter can ask for recent diary entry title snapshots for a pawn.
 - Read side (API v3): an adapter can also ask for a pawn's base diary **writing style** as context.
 - Context feed (API v4): an adapter can add compact pawn-context lines to Pawn Diary prompts.
+- Read side (API v5): an adapter can filter recent title snapshots by domain, atmosphere, date/tick,
+  POV, and archived state.
 - Planned (not yet shipped): a fuller read-only context snapshot (recent generated entry prose). See
   *Roadmap* below.
 
@@ -17,8 +19,8 @@ implementation detail that may change without notice.
   `ExternalEventRequest`, provider registration, and read-only DTOs. Adapters must not call anything
   outside it.
 - Evolution is **additive only**: members are added, never renamed, removed, or repurposed.
-  `PawnDiaryApi.ApiVersion` (currently `4`) increments when members are added, so an adapter can
-  feature-detect: `if (PawnDiaryApi.ApiVersion >= 4) { ... }`.
+  `PawnDiaryApi.ApiVersion` (currently `5`) increments when members are added, so an adapter can
+  feature-detect: `if (PawnDiaryApi.ApiVersion >= 5) { ... }`.
 - `SubmitEvent` **never throws** into the caller and is safe to call at any time (menus included —
   it just returns `false` when no game is loaded).
 - The Pawn Diary settings window has a master **Allow external mod integrations** switch. When it is
@@ -87,7 +89,7 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
    proves the pipeline itself; then trigger your own hook and watch the pawn's Diary tab. If your
    key is unclaimed, Pawn Diary logs one warning naming your `sourceId` and the key.
 
-## API reference (v4)
+## API reference (v5)
 
 `PawnDiary.Integration.PawnDiaryApi`:
 
@@ -97,6 +99,7 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
 | `bool IsReady` | A game is loaded and the diary component is alive. |
 | `bool SubmitEvent(ExternalEventRequest)` | `true` = validated and handed to the pipeline. The pipeline may still decline afterwards exactly like a native event: group disabled in XML, ineligible pawn, or dedup window. `false` = null/incomplete request, no game loaded, off-main-thread call, or unclaimed eventKey (all logged once, attributed to `sourceId`). |
 | `List<DiaryEntryTitleSnapshot> GetRecentEntryTitles(Pawn, int maxCount)` | Newest completed diary pages for one pawn, newest first. Returns at most 20 snapshots, never prompts or raw responses. Empty list = no game, invalid pawn/count, no completed pages, off-main-thread call, or failure. |
+| `List<DiaryEntryTitleSnapshot> GetRecentEntryTitles(Pawn, int maxCount, DiaryEntryTitleQuery query)` (v5) | Same title snapshot shape, filtered by optional query fields. Null or empty query preserves the v2 behavior. |
 | `DiaryWritingStyleSnapshot GetWritingStyle(Pawn)` (v3) | The pawn's **base** saved diary writing style. Publishes the diary's own voice instruction (`rule`) so a chat/context mod can — if its player chooses — align its voice with how the pawn writes; Pawn Diary only exposes the style, it never reads or drives another mod's persona. `null` = null/ineligible pawn, no game, or off-main-thread call. This is a side-effect-free read: it never creates a diary record (a pawn with no record yet resolves to the default style), and it excludes temporary hediff style overrides. |
 | `void RegisterPawnContextProvider(string id, Func<Pawn, string> provider)` (v4) | Registers a process-global provider that contributes one compact `key=value` line to each pawn summary. Re-registering the same id replaces the provider. Invalid/off-thread registration is logged once and ignored; a throwing provider is disabled for the rest of the session and logged once. |
 
@@ -124,6 +127,13 @@ PawnDiaryApi.SubmitEvent(...))`.
 `archived`. `title` is the stored LLM title when one exists; adapters should fall back to
 `groupLabel` or `date` for debug/UI display. The snapshot intentionally excludes generated prose,
 prompts, raw responses, and live RimWorld objects.
+
+`DiaryEntryTitleQuery` fields are optional unless noted:
+`domain` (semantic event domain such as `External`, `Thought`, or `Interaction`), `atmosphereCue`,
+`povRole`, `dateContains`, `minTick`, `maxTick`, `includeActive` (default `true`), and
+`includeArchived` (default `true`). String filters are case-insensitive exact matches except
+`dateContains`, which is a case-insensitive substring match. Tick bounds are inclusive; negative
+bounds mean no bound.
 
 `DiaryWritingStyleSnapshot` fields: `styleDefName`, `label`, `rule`. `rule` is the plain-language
 voice instruction the diary feeds its own prompts (e.g. *"two short concrete sentences: visible
@@ -185,8 +195,9 @@ conversation-framework mods that schedule follow-up dialogue during grammar rend
 > Consult that document for the next planned members and their design; the short list below is just
 > a pointer so adapter authors know what is coming.
 
-- **API v5 — richer outbound context**: recent generated entry prose (not just titles) so chat
+- **Future richer outbound context**: recent generated entry prose (not just titles) so chat
   mods (RimTalk, ...) can use the diary as fuller memory. The writing-style half of this idea
-  already shipped in v3 (`GetWritingStyle`); prose-level entry text is what remains.
+  already shipped in v3 (`GetWritingStyle`), and title filtering shipped in v5; prose-level entry
+  text is what remains.
 
 Check `ApiVersion` before using newer members.

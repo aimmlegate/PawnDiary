@@ -13,10 +13,10 @@
 
 Status: **living design doc.** Shipped so far: API v1 inbound (`SubmitEvent`), API v2 read-side
 title snapshots (`GetRecentEntryTitles`), API v3 read-side base **writing-style** publish
-(`GetWritingStyle`), API v4 pawn-context providers (`RegisterPawnContextProvider`), and the
-diagnostic RimTalk bridge scaffold. The richer outbound entry-prose context work below remains
-planned. See §1 for the mechanism table and the *API version ledger* at the end of §1 for how
-version numbers map to shipped members.
+(`GetWritingStyle`), API v4 pawn-context providers (`RegisterPawnContextProvider`), API v5 filtered
+title reads (`DiaryEntryTitleQuery`), and the diagnostic RimTalk bridge scaffold. The richer
+outbound entry-prose context work below remains planned. See §1 for the mechanism table and the
+*API version ledger* at the end of §1 for how version numbers map to shipped members.
 
 This document began as a continuation of the API-v1 milestone (`../INTEGRATIONS.md`), which built
 the *machinery*; it now also picks the *targets*: which popular mods deserve first-party
@@ -43,9 +43,10 @@ Three integration mechanisms exist or are planned, in increasing order of cost:
 | **XML-only compatibility group** | shipped | If the mod's content flows through vanilla systems we already hook (InteractionDefs via `PlayLog.Add`, ThoughtDefs, MentalStateDefs, HediffDefs, TaleDefs), a `DiaryInteractionGroupDef` with `matchPackageIds`/defName matchers + `enableWhenPackageIdsLoaded` claims that content and owns its prompt policy. No C#, theirs or ours. |
 | **Inbound API v1** (`PawnDiaryApi.SubmitEvent`) | shipped | The mod (or a small bridge mod) pushes moments that *don't* flow through vanilla systems. Requires C# on the adapter side + an External-domain group claiming the `eventKey`. |
 | **Read-only title snapshots** (`PawnDiaryApi.GetRecentEntryTitles`) | shipped API v2 | A bridge can read recent diary title metadata for a pawn without touching prompts, raw responses, or live internals. First consumer: `PawnDiary.RimTalkBridge` diagnostic logging. |
+| **Filtered title snapshots** (`DiaryEntryTitleQuery`) | shipped API v5 | A bridge can ask for the same title DTOs narrowed by domain/type, atmosphere cue, date/tick, POV, and active/archived state. |
 | **Read-only writing-style publish** (`PawnDiaryApi.GetWritingStyle`) | shipped API v3 | A bridge can read a pawn's **base** saved writing style (`styleDefName`, `label`, `rule`) as context. Publish-only: Pawn Diary never reads or drives another mod's persona. Side-effect free, base style only (no hediff overrides, no theme tags). First consumer: the RimTalk bridge logs it beside chat as its proof step. |
 | **Pawn-context providers** (`RegisterPawnContextProvider`) | shipped API v4 | Personality mods (RimPsyche, Psychology, …) add a compact line to *our* pawn summary so the LLM sees personality as who the pawn is. See §4.2. |
-| **Richer outbound snapshot** (recent entry prose) | roadmap (API v5) | Chat mods read recent diary entry summaries (title + first sentence) as fuller memory. The *writing-style* half of the original "outbound context" idea already shipped in v3; only entry-prose remains — see §4.3. |
+| **Richer outbound snapshot** (recent entry prose) | roadmap | Chat mods read recent diary entry summaries (title + first sentence) as fuller memory. The *writing-style* half of the original "outbound context" idea already shipped in v3 and title filtering shipped in v5; only entry-prose remains — see §4.3. |
 
 ### API version ledger
 
@@ -58,20 +59,20 @@ The `ApiVersion` counter is a single monotonic integer that bumps whenever a mem
 | 2 | `GetRecentEntryTitles` (read titles) | shipped |
 | 3 | `GetWritingStyle` (read base writing style) | shipped |
 | 4 | `RegisterPawnContextProvider` (pawn-context providers, §4.2) | shipped |
-| 5 | read: entry prose + filters (§4.3) | planned |
-| 6+ | inbound direct-text / prompt modes, style-write, lifecycle | proposed |
+| 5 | `GetRecentEntryTitles(Pawn,int,DiaryEntryTitleQuery)` (filtered title reads) | shipped |
+| 6+ | read: entry prose / inbound direct-text / prompt modes, style-write, lifecycle | proposed |
 
 > **Numbering note (reconciled).** Earlier drafts of this plan reserved "v3" for pawn-context
 > providers and "v4" for the outbound snapshot. The writing-style publish shipped first and took
-> **v3**, so the providers work is now **v4** and the read snapshot is **v5**. Version numbers are
-> assigned in ship order, not by tier; §4.2/§4.3 below use the reconciled numbers.
+> **v3**, the providers work shipped as **v4**, and filtered title reads shipped as **v5**. Version
+> numbers are assigned in ship order, not by tier; §4.2/§4.3 below use the reconciled numbers.
 >
 > **The ledger no longer captures the whole roadmap.** A later scoping pass added inbound
-> entry-creation modes (full/partial prompt, direct text), richer read filters, and style-write/reset
+> entry-creation modes (full/partial prompt, direct text), richer read slices, and style-write/reset
 > — a dozen-plus members across several versions. The full member list, hook mapping, sequencing
-> (v4→v8), and the cross-cutting decisions live in the
-> [external-API capability catalog](EXTERNAL_API_CAPABILITIES.md); v5 here is its RD-* read cluster,
-> and the former "v5 outbound entry-prose snapshot" is folded into that filtered read (RD-2).
+> (v6+ now that v4/v5 are shipped), and the cross-cutting decisions live in the
+> [external-API capability catalog](EXTERNAL_API_CAPABILITIES.md); the former "v5 outbound
+> entry-prose snapshot" is now the next read API after filtered titles.
 
 Two facts shape everything below:
 
@@ -118,12 +119,12 @@ A mod earns a first-party patch when it scores on most of these:
 | **Psychology (unofficial)** (1.1–1.6) | `Community.Psychology.UnofficialUpdate` (from the unofficial-update repo; confirm the 1.6 upload kept it) | Classic total overhaul: psyche personality, expanded conversations, elections, therapy | **Two-part**: event slice is Tier A XML *if* its conversations flow through `PlayLog.Add` (unverified, §4.2); personality readout waits for v4 |
 | **1-2-3 Personalities Mk.2** | — | **Not yet updated to 1.6** (author: in progress) | **Watch list** — revisit when 1.6 lands |
 
-### Tier C — chat/LLM mods (shipped v3 writing-style; motivates API v5 + bridge adapters)
+### Tier C — chat/LLM mods (shipped v3/v5 reads; motivates prose/context bridge adapters)
 
 | Mod | Notes | Verdict |
 |---|---|---|
-| **RimTalk** (`cj.rimtalk`) | Reads pawn mood/traits/relations/thoughts into LLM prompts; **exposes its own extension API** (`ContextHookRegistry.RegisterPawnVariable` / `RegisterPawnHook`, Scriban template variables) — so diary-as-memory can ship as a bridge *without waiting for RimTalk changes* (§4.3). A diagnostic bridge exists under `integrations/PawnDiary.RimTalkBridge/`; it already reads the shipped v3 writing-style (`GetWritingStyle`) and logs it beside chat. | **Primary v5 design partner** |
-| **Social Interactions: Expanded & AI-Powered**, **RimChat**, **RiMind**, **[CAP] Interactive Chat** | Newer/smaller LLM chat mods surfaced in the same survey | **Watch list** — the v5 outbound snapshot, once designed for RimTalk, serves all of them |
+| **RimTalk** (`cj.rimtalk`) | Reads pawn mood/traits/relations/thoughts into LLM prompts; **exposes its own extension API** (`ContextHookRegistry.RegisterPawnVariable` / `RegisterPawnHook`, Scriban template variables) — so diary-as-memory can ship as a bridge *without waiting for RimTalk changes* (§4.3). A diagnostic bridge exists under `integrations/PawnDiary.RimTalkBridge/`; it already reads the shipped v3 writing-style (`GetWritingStyle`) and logs it beside chat. | **Primary outbound-context design partner** |
+| **Social Interactions: Expanded & AI-Powered**, **RimChat**, **RiMind**, **[CAP] Interactive Chat** | Newer/smaller LLM chat mods surfaced in the same survey | **Watch list** — the future prose/context snapshot, once designed for RimTalk, serves all of them |
 
 ### Non-targets (surveyed, deliberately skipped)
 
@@ -248,7 +249,7 @@ What v4 itself specifies:
    `../INTEGRATIONS.md` v4 section, and tests for the pure sanitation/registry behavior. Maintainer
    outreach to RimPsyche remains a follow-up with a concrete snippet.
 
-### 4.3 Tier C — outbound context: what shipped, and what API v5 must still provide
+### 4.3 Tier C — outbound context: what shipped, and what the next read API must still provide
 
 **Shipped already.** Two read-side pieces of the original "outbound context" idea now exist:
 - **API v2** `GetRecentEntryTitles(Pawn, int)` — recent title metadata, used by
@@ -256,13 +257,14 @@ What v4 itself specifies:
 - **API v3** `GetWritingStyle(Pawn)` — the pawn's base saved writing style (`styleDefName`,
   `label`, `rule`). This is **publish-only by design**: Pawn Diary exposes how the pawn writes and
   nothing more. It does **not** read, register into, or drive RimTalk's persona system. Whether a
-  player syncs the two voices is the player's own choice — the mod only makes the material
-  available. The bridge currently logs the resolved `rule` as its proof step (see §RimTalk voice
-  alignment below); it does not inject it into RimTalk.
+  bridge uses that rule is the bridge/player's decision.
+- **API v5** `GetRecentEntryTitles(Pawn, int, DiaryEntryTitleQuery)` — the same title snapshot DTO,
+  filtered by domain/type, atmosphere, date/tick, POV, and active/archived state. It still excludes
+  generated prose, prompts, and raw responses.
 
-Both are diagnostic/publish probes today, not a full memory surface.
+These are diagnostic/publish probes today, not a full memory surface.
 
-**Still to build — roadmap v5: outbound entry-prose snapshot.** The remaining gap is *entry
+**Still to build — next read API: outbound entry-prose snapshot.** The remaining gap is *entry
 content* as memory (the writing-style half is done). Source-verified facts to design against
 ([RimTalk repo](https://github.com/jlibrary/RimTalk)):
 
@@ -275,7 +277,7 @@ content* as memory (the writing-style half is done). Source-verified facts to de
   Bridge home: a third assembly under `integrations/` (like the ExampleAdapter), *not* core —
   core must never reference RimTalk types.
 
-What v5 itself must specify (design doc before code):
+What the next prose-read API must specify (design doc before code):
 1. Surface: `PawnDiaryApi.TryGetContextSnapshot(Pawn, out DiaryContextSnapshot)` — plain-string
    DTO: N most recent entry summaries (title + first sentence, not full prose) and entry
    count/day-range. The persona/writing-style line is intentionally **out of scope** here — it is
@@ -294,7 +296,7 @@ What v5 itself must specify (design doc before code):
    RimTalk turns around a candidate Pawn Diary generation, reject lines caused by our own signal
    to avoid feedback loops, require a meaningful change/relationship/mood/event cue, and apply
    cooldown + dedup before any `SubmitEvent` call.
-6. Ship with: `ApiVersion = 5`, the RimTalk bridge as the reference consumer, maintainer
+6. Ship with: the next `ApiVersion` bump, the RimTalk bridge as the reference consumer, maintainer
    outreach offering it upstream.
 
 #### RimTalk voice alignment (design rule, partially shipped)
@@ -329,6 +331,9 @@ Division of responsibility, reconciled with what shipped:
       free, base style only. The RimTalk bridge logs the resolved `rule` as its proof step. This
       consumed the version number the plan had reserved for pawn-context providers, so those move
       to v4 (see the API version ledger in §1 and the numbering note there).
+- [x] **API v5 — filtered title reads.** `GetRecentEntryTitles(Pawn, int, DiaryEntryTitleQuery)`;
+      narrows the existing title snapshot DTO by domain/type, atmosphere cue, date/tick, POV role,
+      and active/archived state without exposing prose or prompt internals.
 
 ### PR 1 — Tier A wave 1: template + flagship
 - [x] PackageIds/defNames researched from source repos (§4.1) — VSIE, Positive Connections,
@@ -382,11 +387,11 @@ Division of responsibility, reconciled with what shipped:
 - [ ] Separately evaluate the **RimPsyche inbound bridge** (their `InteractionHook` →
       `SubmitEvent` with `topic=`/`alignment=` extraContext) — v1-only, could ship any time.
 
-### PR 5 — API v5: outbound entry-prose context (design doc before code)
-- [ ] Write the v5 design doc per §4.3 (entry-summary DTO shape, recency cap, main-thread
+### PR 5 — next read API: outbound entry-prose context (design doc before code)
+- [ ] Write the next-read design doc per §4.3 (entry-summary DTO shape, recency cap, main-thread
       cheap-read semantics, player-visible-content-only rule; persona/style is already covered by
       v3, so this DTO omits it).
-- [ ] Implement `TryGetContextSnapshot` + `ApiVersion = 5` + `../INTEGRATIONS.md` update; pure
+- [ ] Implement `TryGetContextSnapshot` + the next `ApiVersion` bump + `../INTEGRATIONS.md` update; pure
       tests for snapshot summarization.
 - [ ] Extend the **RimTalk bridge** under `integrations/` from diagnostic logging to registering a
       `pawndiary` Scriban variable via `ContextHookRegistry.RegisterPawnVariable`; offer it

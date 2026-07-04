@@ -6,6 +6,12 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **Integration API v5 — filtered title reads.** `PawnDiaryApi.ApiVersion` is now `5`, with
+  `GetRecentEntryTitles(Pawn, int, DiaryEntryTitleQuery)` so adapters can narrow recent title
+  snapshots by semantic domain, atmosphere cue, POV role, date fragment, tick range, and
+  active/archived state. The returned `DiaryEntryTitleSnapshot` stays unchanged and still excludes
+  prose, prompts, raw responses, and live game objects. A new pure `DiaryEntryTitleFilter` and
+  focused `DiaryPipelineTests` cases cover the matching behavior.
 - **Integration API v4 — pawn-context providers.** `PawnDiaryApi.ApiVersion` is now `4`, with
   `RegisterPawnContextProvider(id, Func<Pawn,string>)` so adapter/personality mods can add one
   compact `key=value` line to the pawn summary used in prompts. Provider output shares the new pure
@@ -114,7 +120,7 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   `design/MOD_COMPAT_PLAN.md`: it gained an API version ledger, folded in the former
   `INTEGRATIONS.md` roadmap (now a pointer), recorded the shipped v3 writing-style publish, and
   resolved the version-numbering conflict the writing-style publish created (pawn-context providers
-  move to v4, the outbound entry-prose snapshot to v5). Fixed two dead links in `DOCUMENTATION.md`
+  move to v4, the outbound entry-prose snapshot to a later read slot). Fixed two dead links in `DOCUMENTATION.md`
   (`ARCHIVE_COMPACTION_DESIGN.md`, `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` no longer exist).
 - **Integration API v3 — writing style publish.** `PawnDiaryApi.GetWritingStyle(Pawn)` now exposes a
   pawn's base saved writing style as a small read-only `DiaryWritingStyleSnapshot`

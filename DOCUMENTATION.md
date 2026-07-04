@@ -252,6 +252,13 @@ rows for one pawn. The snapshot is intentionally small (`tick`, `date`, `eventId
 RimWorld objects. It is main-thread only and returns an empty list instead of throwing, matching
 the adapter-safety rule of `SubmitEvent`.
 
+API v5 extends that read with an additive overload:
+`PawnDiaryApi.GetRecentEntryTitles(Pawn, int, DiaryEntryTitleQuery)`. The returned DTO stays the
+same, but callers can filter by semantic domain (`TextDecorationContext.domain`), atmosphere cue,
+POV role, human-readable date fragment, inclusive tick bounds, and active/archived state. The
+filter is applied to the same hot + compact-archive view path as the v2 read, so no new save fields
+or prompt data are exposed.
+
 API v3 adds one more read-only accessor: `PawnDiaryApi.GetWritingStyle(Pawn)` returns a small
 `DiaryWritingStyleSnapshot` (`styleDefName`, `label`, `rule`) carrying a pawn's **base** saved
 writing style — the same plain-language voice instruction the diary feeds its own prompts. It only

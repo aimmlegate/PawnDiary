@@ -22,7 +22,7 @@ namespace PawnDiary.Integration
 {
     /// <summary>
     /// Public entry point for other mods. Current surface: readiness, inbound events, read-only
-    /// snapshots, and v4 pawn-context providers for prompt-summary context.
+    /// snapshots and filters, and pawn-context providers for prompt-summary context.
     /// </summary>
     public static class PawnDiaryApi
     {
@@ -31,7 +31,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 4;
+        public const int ApiVersion = 5;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -189,6 +189,44 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: GetWritingStyle failed: " + e,
                     "PawnDiary.Api.WritingStyle.Exception".GetHashCode());
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns newest completed diary-page titles for one pawn, filtered by a plain query. The
+        /// original v2 overload remains unchanged; this v5 overload only narrows which snapshots are
+        /// returned and still never exposes prompts, raw responses, or live game objects.
+        /// </summary>
+        public static List<DiaryEntryTitleSnapshot> GetRecentEntryTitles(
+            Pawn pawn,
+            int maxCount,
+            DiaryEntryTitleQuery query)
+        {
+            try
+            {
+                // The reader walks saved game state and display helpers, so keep the same main-thread
+                // rule as SubmitEvent. Adapters that listen on a worker thread should marshal first.
+                if (!UnityData.IsInMainThread)
+                {
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Integration API: filtered GetRecentEntryTitles was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.RecentTitles.Filtered.OffThread".GetHashCode());
+                    return new List<DiaryEntryTitleSnapshot>();
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null || maxCount <= 0)
+                {
+                    return new List<DiaryEntryTitleSnapshot>();
+                }
+
+                return DiaryGameComponent.Current.RecentEntryTitleSnapshotsFor(pawn, maxCount, query);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Integration API: filtered GetRecentEntryTitles failed: " + e,
+                    "PawnDiary.Api.RecentTitles.Filtered.Exception".GetHashCode());
+                return new List<DiaryEntryTitleSnapshot>();
             }
         }
 

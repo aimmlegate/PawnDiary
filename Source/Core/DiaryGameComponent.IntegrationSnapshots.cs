@@ -18,6 +18,17 @@ namespace PawnDiary
         /// </summary>
         internal List<DiaryEntryTitleSnapshot> RecentEntryTitleSnapshotsFor(Pawn pawn, int maxCount)
         {
+            return RecentEntryTitleSnapshotsFor(pawn, maxCount, null);
+        }
+
+        /// <summary>
+        /// Builds newest-first diary title snapshots for one pawn, filtered by a plain public query.
+        /// </summary>
+        internal List<DiaryEntryTitleSnapshot> RecentEntryTitleSnapshotsFor(
+            Pawn pawn,
+            int maxCount,
+            DiaryEntryTitleQuery query)
+        {
             List<DiaryEntryTitleSnapshot> snapshots = new List<DiaryEntryTitleSnapshot>();
             if (pawn == null || maxCount <= 0)
             {
@@ -30,10 +41,10 @@ namespace PawnDiary
             string pawnId = pawn.GetUniqueLoadID();
             HashSet<string> emittedKeys = new HashSet<string>();
 
-            AppendRecentHotTitleSnapshots(pawn, pawnId, limit, emittedKeys, snapshots);
+            AppendRecentHotTitleSnapshots(pawn, pawnId, limit, query, emittedKeys, snapshots);
             if (snapshots.Count < limit)
             {
-                AppendRecentArchivedTitleSnapshots(pawnId, limit, emittedKeys, snapshots);
+                AppendRecentArchivedTitleSnapshots(pawnId, limit, query, emittedKeys, snapshots);
             }
 
             return snapshots;
@@ -43,6 +54,7 @@ namespace PawnDiary
             Pawn pawn,
             string pawnId,
             int limit,
+            DiaryEntryTitleQuery query,
             HashSet<string> emittedKeys,
             List<DiaryEntryTitleSnapshot> snapshots)
         {
@@ -57,13 +69,14 @@ namespace PawnDiary
             {
                 DiaryEvent diaryEvent = events.FindEvent(diary.eventIds[i]);
                 DiaryEntryView view = diaryEvent?.ToViewFor(pawnId, EventIsArchivedForScans(diaryEvent, activeEventIds));
-                TryAppendTitleSnapshot(view, false, emittedKeys, snapshots);
+                TryAppendTitleSnapshot(view, false, query, emittedKeys, snapshots);
             }
         }
 
         private void AppendRecentArchivedTitleSnapshots(
             string pawnId,
             int limit,
+            DiaryEntryTitleQuery query,
             HashSet<string> emittedKeys,
             List<DiaryEntryTitleSnapshot> snapshots)
         {
@@ -76,17 +89,23 @@ namespace PawnDiary
             for (int i = archivedEntries.Count - 1; i >= 0 && snapshots.Count < limit; i--)
             {
                 ArchivedDiaryEntry archivedEntry = archivedEntries[i];
-                TryAppendTitleSnapshot(archivedEntry?.ToView(), true, emittedKeys, snapshots);
+                TryAppendTitleSnapshot(archivedEntry?.ToView(), true, query, emittedKeys, snapshots);
             }
         }
 
         private static void TryAppendTitleSnapshot(
             DiaryEntryView view,
             bool archived,
+            DiaryEntryTitleQuery query,
             HashSet<string> emittedKeys,
             List<DiaryEntryTitleSnapshot> snapshots)
         {
             if (view == null || snapshots == null || !ViewHasCompletedDiaryPage(view))
+            {
+                return;
+            }
+
+            if (!DiaryEntryTitleFilter.Matches(FilterFactsFor(view, archived), query))
             {
                 return;
             }
@@ -114,6 +133,20 @@ namespace PawnDiary
             return view != null
                 && (!string.IsNullOrWhiteSpace(view.GeneratedText)
                     || !string.IsNullOrWhiteSpace(view.Title));
+        }
+
+        private static DiaryEntryTitleFilterFacts FilterFactsFor(DiaryEntryView view, bool archived)
+        {
+            DiaryTextDecorationContext decoration = view?.TextDecorationContext;
+            return new DiaryEntryTitleFilterFacts
+            {
+                tick = view?.Tick ?? 0,
+                date = view?.Date ?? string.Empty,
+                povRole = view?.PovRole ?? string.Empty,
+                domain = decoration?.domain ?? string.Empty,
+                atmosphereCue = view?.AtmosphereCue ?? string.Empty,
+                archived = archived
+            };
         }
     }
 }

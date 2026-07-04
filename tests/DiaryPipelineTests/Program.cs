@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Xml.Linq;
 using PawnDiary;
+using PawnDiary.Integration;
 
 namespace DiaryPipelineTests
 {
@@ -28,6 +29,7 @@ namespace DiaryPipelineTests
             TestPromptEnchantmentPlanner();
             TestPromptEnchantmentDecayPolicy();
             TestHediffPersonaOverridePolicy();
+            TestDiaryEntryTitleFilter();
             TestMemoryDecayXmlPolicy();
             TestObservedConditionDecayXmlPolicy();
             TestColorCueXmlPolicy();
@@ -1215,6 +1217,52 @@ namespace DiaryPipelineTests
                 "external prompt text handles sentence without terminal punctuation",
                 "One long localized label without punctuation",
                 PromptTextSanitizer.LocalizedPromptText("One long localized label without punctuation"));
+        }
+
+        private static void TestDiaryEntryTitleFilter()
+        {
+            DiaryEntryTitleFilterFacts facts = new DiaryEntryTitleFilterFacts
+            {
+                tick = 1200,
+                date = "3rd of Aprimay, 5501",
+                povRole = "initiator",
+                domain = "External",
+                atmosphereCue = "unsettled",
+                archived = false
+            };
+
+            AssertTrue("title filter null query matches", DiaryEntryTitleFilter.Matches(facts, null));
+            AssertTrue("title filter empty query matches", DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery()));
+            AssertTrue("title filter matches domain case-insensitive",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { domain = "external" }));
+            AssertTrue("title filter rejects wrong domain",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { domain = "Thought" }));
+            AssertTrue("title filter matches atmosphere cue",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { atmosphereCue = "Unsettled" }));
+            AssertTrue("title filter rejects wrong atmosphere cue",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { atmosphereCue = "memorial" }));
+            AssertTrue("title filter matches pov role",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { povRole = "INITIATOR" }));
+            AssertTrue("title filter rejects wrong pov role",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { povRole = "recipient" }));
+            AssertTrue("title filter matches inclusive tick range",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { minTick = 1200, maxTick = 1200 }));
+            AssertTrue("title filter rejects below min tick",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { minTick = 1201 }));
+            AssertTrue("title filter rejects above max tick",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { maxTick = 1199 }));
+            AssertTrue("title filter matches date fragment case-insensitive",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { dateContains = "aprimay" }));
+            AssertTrue("title filter rejects missing date fragment",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { dateContains = "Jugust" }));
+            AssertTrue("title filter excludes active entries when requested",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { includeActive = false }));
+
+            facts.archived = true;
+            AssertTrue("title filter includes archived by default",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery()));
+            AssertTrue("title filter excludes archived when requested",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { includeArchived = false }));
         }
 
         private static void TestPromptContextLines()
