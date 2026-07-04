@@ -1,8 +1,9 @@
 # API v4 — Pawn-Context Providers — Design Brief
 
-Status: **design settled (2026-07-04), ready for code.** All design decisions are closed — the
-player-toggle model is resolved (Option A, master toggle; §7) and only small in-review knobs remain
-(§10). This is the design-doc-before-code deliverable
+Status: **design draft (2026-07-04), one decision still open.** The public surface, sanitation,
+failure isolation, and purity boundary are worked out, but the **player-toggle model is not yet
+decided** — §7 holds an expanded option set (A–G) that needs a rethink before the v4 code PR. This
+is the design-doc-before-code deliverable
 that `design/MOD_COMPAT_PLAN.md` §4.2 / PR 4 requires before `RegisterPawnContextProvider` is
 implemented. When v4 ships, its stable contract detail moves to `../INTEGRATIONS.md` and its status
 flips to *shipped* in the MOD_COMPAT_PLAN ledger (§1); this file then becomes an implemented-plan
@@ -152,7 +153,7 @@ with transient state. Rationale: personality is *who the pawn is* (like xenotype
 keeping it adjacent to those lines reads coherently to the model. Order among multiple providers is
 **registration order**, which is stable within a session.
 
-## 7. Player control — DECIDED: master toggle (Option A)
+## 7. Player control — OPEN (needs rethink)
 
 MOD_COMPAT §4.2 point 4 says "per-provider toggle in settings (mirrors per-group toggles)." That
 sentence predates the current architecture: **per-group enablement is now XML-only** —
@@ -163,29 +164,35 @@ sentence predates the current architecture: **per-group enablement is now XML-on
 Providers are **C#-registered and have no Def**, so they cannot ride the XML `defaultEnabled` path
 that groups now use. Three ways to give the player control:
 
-| Option | What it is | Cost | Notes |
+| Option | What it is | Cost | Trade-off |
 |---|---|---|---|
-| **A. Master toggle — CHOSEN for v4** | One settings bool, e.g. `allowExternalPawnContextProviders`, read in the impure snapshot phase; off ⇒ `RunPawnContextProviders` returns nothing | smallest | Ships v4 with real player control today; per-provider granularity can be added later additively (Option B) without touching the contract |
-| **B. Per-provider settings dict** | `Dictionary<string,bool>` keyed by provider id, surfaced in the Advanced tab as providers register (like the legacy `groupEnabled` shape) | medium | True per-provider control, but a settings-owned toggle for runtime-registered ids — no Def to hang `defaultEnabled` on. Deferred: additive follow-up if players ask for it |
-| **C. Provider-descriptor Def** | Consumer ships a small XML Def (id + `defaultEnabled` + label) that its `RegisterPawnContextProvider` call references, mirroring groups exactly | highest | Most consistent with the XML-owned-policy rule, but adds ceremony to every adapter and couples registration to a Def load. Rejected for v4 — heavier than the feature warrants |
+| **A. Master toggle** | One settings bool, e.g. `allowExternalPawnContextProviders`, read in the snapshot phase; off ⇒ `RunPawnContextProviders` returns nothing | smallest | Real control today, contract stays clean — but all-or-nothing; can't silence one noisy provider while keeping another |
+| **B. Per-provider settings dict** | `Dictionary<string,bool>` keyed by provider id, surfaced in the Advanced tab as providers register (like the legacy `groupEnabled` shape) | medium | True per-provider control — but a settings-owned toggle for runtime-registered ids (no Def to hang `defaultEnabled` on), and the Advanced tab only shows a provider *after* it has registered |
+| **C. Provider-descriptor Def** | Consumer ships a small XML Def (id + `defaultEnabled` + label) that its `RegisterPawnContextProvider` call references, mirroring groups exactly | highest | Most consistent with the XML-owned-policy rule and reuses the whole group toggle/label/localization machinery — but couples registration to a Def load and adds ceremony to every adapter |
+| **D. No toggle — install *is* consent** | No Pawn Diary setting at all; the player enables/disables by adding or removing the provider mod | none | Zero surface, matches "a provider is just another installed mod" — but no in-game off switch, no way to keep the mod yet mute the diary line, and no per-provider control |
+| **E. Fold into an existing setting** | Gate providers under a broader existing control (e.g. an integration / extra-prompt-context master switch, if one exists or is added) rather than a dedicated bool | small | Fewer settings-menu knobs and one coherent "external prompt context" switch — but couples providers to whatever else that switch governs, and the semantics get muddier |
+| **F. Consumer-owned toggle (honored, not owned, by us)** | The registering mod exposes its own on/off in *its* settings and simply returns empty when off; Pawn Diary honors that with no setting of its own | small (ours) | Control lives with the mod that understands the data; no ceremony on our side — but consistency depends on every adapter implementing it, and there is no single Pawn Diary place to see/kill providers |
+| **G. Hybrid: master + per-provider** | Ship A now and layer B on top (master switch plus a per-id dict that defaults on) | medium+ | Best UX (global kill switch *and* fine control) — but the most surface, and B's "no Def for runtime ids" awkwardness still applies |
 
-**Decision (2026-07-04): ship Option A.** A single master toggle honored in the snapshot phase is the
-smallest change that gives the player real, immediate control, and it keeps the public contract free
-of any per-provider machinery — so **B can be layered on later additively** (a per-id dict that
-defaults to on) the day a player asks for finer control, with no change to `RegisterPawnContextProvider`
-or to any shipped consumer. Option C is rejected for v4: coupling runtime registration to a Def load
-is more ceremony than a one-line personality contribution justifies.
+**Status: not decided — needs a rethink.** The earlier lean toward a bare master toggle (A) is
+withdrawn; the option set above is deliberately wider so the choice can be reconsidered from scratch.
+Things to weigh when we revisit:
 
-Concrete shape for the code PR:
-- **Setting:** `bool allowExternalPawnContextProviders` on `PawnDiarySettings`, **default `true`**
-  (providers are opt-in by virtue of a mod being installed; a player who installed RimPsyche + the
-  bridge wants the line). Scribe it like the other bools.
-- **Honored where the providers run:** `RunPawnContextProviders(pawn)` early-returns an empty result
-  when the setting is off, so the snapshot phase simply omits the block and the pure pipeline sees an
-  unchanged summary. Registration is *not* gated by the toggle — providers may register freely; only
-  invocation is suppressed, so toggling on mid-session needs no re-registration.
-- **UI:** one Advanced-tab row with a Keyed label + tooltip (localization-friendly per AGENTS.md
-  rule 4), placed with the other integration/prompt-context settings.
+- **Granularity vs. surface.** Is all-or-nothing (A/D/E) actually enough, or is silencing one
+  chatty/low-quality provider while keeping others (B/C/F/G) a real player need? That hinges on how
+  many providers a typical modlist will register — likely 1–2 near-term (RimPsyche), which argues
+  *against* per-provider machinery for now, but the answer changes if the ecosystem grows.
+- **Where the toggle should *live*** — Pawn Diary settings (A/B/E/G), XML Def like groups (C), or the
+  consumer mod (D/F). The XML-owned-policy rule (AGENTS.md rule 3) pulls toward C, but C is the most
+  ceremony; D/F push control out of our codebase entirely.
+- **Contract impact.** Whatever we pick must stay additive: none of these change the
+  `RegisterPawnContextProvider(id, Func<Pawn,string>)` signature, so the toggle model can be chosen
+  (or upgraded A→G) without breaking a shipped consumer — which means we *can* defer the richer
+  options without painting ourselves into a corner.
+- **Default state.** Regardless of model: providers should almost certainly default **on** when a
+  provider mod is present (installing it is intent), with the toggle there to *mute*, not to opt in.
+
+Pick a direction here before the v4 code PR; this is the one genuinely open design decision left.
 
 ## 8. What ships with v4 (implementation checklist — for the later code PR)
 
@@ -196,10 +203,11 @@ Concrete shape for the code PR:
    length cap + empty-skip + count cap) into a pure helper (plain C#, no Verse) that **both**
    `ExternalEventSignal.JoinExtraContext` and the provider runner call. This is the unit under test
    and removes the current duplication.
-3. **Master toggle (Option A, decided).** New `bool allowExternalPawnContextProviders` on
-   `PawnDiarySettings` (default `true`), honored inside `RunPawnContextProviders` in the snapshot
-   phase; one Advanced-tab row + Keyed label/tooltip (localization-friendly per AGENTS.md rule 4).
-   Registration is never gated — only invocation — so toggling on mid-session needs no re-register.
+3. **Player toggle — model TBD (§7).** Whatever model is chosen, wire it so it gates *invocation*
+   inside `RunPawnContextProviders` (not registration), defaults to on when a provider is present,
+   and — if it adds a settings row — carries a Keyed label/tooltip (localization-friendly per
+   AGENTS.md rule 4). The exact shape (master bool / per-provider dict / Def / consumer-owned / …)
+   is the open decision to close before this item is codeable.
 4. **`ApiVersion = 4`** and the `SubmitEvent`-style never-throw wrapping on the new entry point;
    update the stale `PawnDiaryApi` class summary ("v2 surface" → current) while there.
 5. **Example provider** in `integrations/PawnDiary.ExampleAdapter` — a trivial deterministic provider
@@ -240,19 +248,21 @@ Concrete shape for the code PR:
 
 ## 10. Open questions to close before coding
 
-**Resolved:**
-- **Toggle model** — **decided: Option A, master toggle** (§7), `allowExternalPawnContextProviders`
-  default `true`, honored at invocation. Per-provider granularity (Option B) is a later additive
-  follow-up, not v4.
+**Blocking (needs a real decision):**
+1. **Toggle model — NOT decided, needs a rethink (§7).** Choose among the expanded A–G set (master
+   bool / per-provider dict / provider Def / no-toggle / fold-in / consumer-owned / hybrid). The
+   granularity-vs-surface and where-the-toggle-lives trade-offs in §7 are the crux. Whatever is
+   picked stays additive, so it does not block the *rest* of the design — but it does block the
+   toggle slice of the code PR.
 
-**Remaining (small, pick in the code PR — none block the design):**
-1. **`MaxProviderLineChars` / `MaxProviderLines`** exact values (§4) — pick in review; defensive caps,
+**Small (pick in the code PR — none block the design):**
+2. **`MaxProviderLineChars` / `MaxProviderLines`** exact values (§4) — pick in review; defensive caps,
    proposed 200 / 8.
-2. **Summary placement** — confirm "after `faith=`, before `mood=`" (§6) vs. end-of-summary
+3. **Summary placement** — confirm "after `faith=`, before `mood=`" (§6) vs. end-of-summary
    (recommendation stands: with the identity block).
-3. **`Unregister` member** — omit in v4 (return-empty covers going quiet) unless a partner needs it;
+4. **`Unregister` member** — omit in v4 (return-empty covers going quiet) unless a partner needs it;
    additive, can be added any time.
-4. **RimPsyche member names** — confirm against the shipped build before writing the outreach snippet.
+5. **RimPsyche member names** — confirm against the shipped build before writing the outreach snippet.
 
 ## 11. Verification checklist (for the eventual code PR, per SKILL/MOD_COMPAT §6)
 
