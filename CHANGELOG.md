@@ -6,6 +6,16 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **Docs reorg + integration ideas reconciled.** Moved the scattered design/planning markdown
+  (`MOD_COMPAT_PLAN.md`, `EVENT_COVERAGE_PLAN.md`, `BODY_PART_EVENTS_PLAN.md`) into a new `design/`
+  folder with a `design/README.md` index, leaving only living top-level docs at the root
+  (README, DOCUMENTATION, EVENT_PROMPT_MAP, INTEGRATIONS, CHANGELOG, and the agent files). All
+  external-mod integration ideas are now reconciled into the single design document
+  `design/MOD_COMPAT_PLAN.md`: it gained an API version ledger, folded in the former
+  `INTEGRATIONS.md` roadmap (now a pointer), recorded the shipped v3 writing-style publish, and
+  resolved the version-numbering conflict the writing-style publish created (pawn-context providers
+  move to v4, the outbound entry-prose snapshot to v5). Fixed two dead links in `DOCUMENTATION.md`
+  (`ARCHIVE_COMPACTION_DESIGN.md`, `PAWN_ARC_REFLECTION_IMPLEMENTATION.md` no longer exist).
 - **Integration API v3 — writing style publish.** `PawnDiaryApi.GetWritingStyle(Pawn)` now exposes a
   pawn's base saved writing style as a small read-only `DiaryWritingStyleSnapshot`
   (`styleDefName`, `label`, `rule`), so a chat/context mod can align its own voice with how the pawn

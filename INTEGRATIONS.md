@@ -151,14 +151,16 @@ conversation-framework mods that schedule follow-up dialogue during grammar rend
 
 ## Roadmap (planned, not yet available)
 
-> Target selection, per-mod patch plans, and sequencing for everything below live in
-> `MOD_COMPAT_PLAN.md`.
+> **This file is the shipped contract only.** All integration *ideas, roadmap, version ledger, and
+> per-mod target plans* are reconciled in one place: [`design/MOD_COMPAT_PLAN.md`](design/MOD_COMPAT_PLAN.md).
+> Consult that document for the next planned members and their design; the short list below is just
+> a pointer so adapter authors know what is coming.
 
-- **pawn-context providers**: `RegisterPawnContextProvider(id, Func<Pawn, string>)`, letting
-  personality mods (Psychology, RimPsyche, 1-2-3 Personalities, ...) add lines to the pawn summary
-  of every prompt.
-- **richer outbound context**: recent generated entry prose (not just titles) so chat mods
-  (RimTalk, ...) can use the diary as fuller memory. The writing-style half of this shipped in v3
-  (`GetWritingStyle`); prose-level entry text is still future.
+- **API v4 — pawn-context providers**: `RegisterPawnContextProvider(id, Func<Pawn, string>)`,
+  letting personality mods (Psychology, RimPsyche, ...) add lines to the pawn summary of every
+  prompt.
+- **API v5 — richer outbound context**: recent generated entry prose (not just titles) so chat
+  mods (RimTalk, ...) can use the diary as fuller memory. The writing-style half of this idea
+  already shipped in v3 (`GetWritingStyle`); prose-level entry text is what remains.
 
 Check `ApiVersion` before using newer members.
