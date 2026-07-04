@@ -6,6 +6,19 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **External-API capability catalog added; API-surface planning restructured.** New
+  `design/EXTERNAL_API_CAPABILITIES.md` is now the authority on the *shape* of the public integration
+  surface: it folds in a scoping pass' worth of requested capabilities (inbound entry-creation modes —
+  full prompt, partial prompt, direct text ± title; last-N reads with type/atmosphere/tone/date
+  filters; writing-style get/set/reset) plus proposed complements (async completion signal, entry
+  handles, by-id/count reads, temporary style override stack, per-capability consent, eligibility
+  probe, regenerate/retract, UI attribution). Each capability carries a status (shipped v1–v3 /
+  requested / proposed / designed), the internal hook it maps to, and its open decision; the doc also
+  consolidates the six cross-cutting decisions (async delivery, prompt-bypass vs. consistency,
+  injection gating, style override-stack vs. base mutation, consent granularity, versioning) and a
+  strawman v4→v8 sequencing. `MOD_COMPAT_PLAN.md` is retitled to own the *target-mod survey* only and
+  points its ledger at the catalog; the v4 providers brief is reframed as the deep-dive for catalog
+  capability C-CTX-1; `design/README.md` reindexed. No runtime change; `ApiVersion` stays 3.
 - **API v4 design brief drafted (design-doc-before-code).** Added
   `design/API_V4_PAWN_CONTEXT_PROVIDERS.md`, the required design doc for the planned
   `RegisterPawnContextProvider(id, Func<Pawn,string>)` member (MOD_COMPAT §4.2 / PR 4): public

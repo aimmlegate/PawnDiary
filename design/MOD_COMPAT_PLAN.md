@@ -1,10 +1,15 @@
 # Mod Integration — Design & Target Plan
 
-> **This is the single coherent design document for Pawn Diary's external-mod integration.** It
-> holds the *ideas, roadmap, and target survey*. The shipped, stable **public contract** lives
-> separately in [`../INTEGRATIONS.md`](../INTEGRATIONS.md); that file is reference for adapter
-> authors, this file is where integration direction is reconciled and planned. When an idea here
-> ships, its contract detail moves to `INTEGRATIONS.md` and its status flips to *shipped* below.
+> **This is the design document for *which mods* Pawn Diary integrates with and *how*.** It holds the
+> integration ideas, the mechanism table, and the target-mod survey/patch plan. Two companion docs
+> split off the rest:
+> - The shipped, stable **public contract** lives in [`../INTEGRATIONS.md`](../INTEGRATIONS.md) —
+>   adapter-author reference. When an idea here ships, its contract detail moves there and its status
+>   flips to *shipped* below.
+> - The **member-level API surface & version sequencing** — every requested/proposed capability, the
+>   internal hook it maps to, and the decisions each carries — now lives in the
+>   [external-API capability catalog](EXTERNAL_API_CAPABILITIES.md). The API version ledger below is a
+>   high-level view; the catalog is the detail and the authority on API *shape*.
 
 Status: **living design doc.** Shipped so far: API v1 inbound (`SubmitEvent`), API v2 read-side
 title snapshots (`GetRecentEntryTitles`), API v3 read-side base **writing-style** publish
@@ -52,12 +57,20 @@ The `ApiVersion` counter is a single monotonic integer that bumps whenever a mem
 | 2 | `GetRecentEntryTitles` (read titles) | shipped |
 | 3 | `GetWritingStyle` (read base writing style) | shipped |
 | 4 | `RegisterPawnContextProvider` (pawn-context providers, §4.2) | planned |
-| 5 | outbound entry-prose snapshot (§4.3) | planned |
+| 5 | read: entry prose + filters (§4.3) | planned |
+| 6+ | inbound direct-text / prompt modes, style-write, lifecycle | proposed |
 
 > **Numbering note (reconciled).** Earlier drafts of this plan reserved "v3" for pawn-context
 > providers and "v4" for the outbound snapshot. The writing-style publish shipped first and took
-> **v3**, so the providers work is now **v4** and the entry-prose snapshot is **v5**. Version
-> numbers are assigned in ship order, not by tier; §4.2/§4.3 below use the reconciled numbers.
+> **v3**, so the providers work is now **v4** and the read snapshot is **v5**. Version numbers are
+> assigned in ship order, not by tier; §4.2/§4.3 below use the reconciled numbers.
+>
+> **The ledger no longer captures the whole roadmap.** A later scoping pass added inbound
+> entry-creation modes (full/partial prompt, direct text), richer read filters, and style-write/reset
+> — a dozen-plus members across several versions. The full member list, hook mapping, sequencing
+> (v4→v8), and the cross-cutting decisions live in the
+> [external-API capability catalog](EXTERNAL_API_CAPABILITIES.md); v5 here is its RD-* read cluster,
+> and the former "v5 outbound entry-prose snapshot" is folded into that filtered read (RD-2).
 
 Two facts shape everything below:
 

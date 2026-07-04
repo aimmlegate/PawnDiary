@@ -1,5 +1,10 @@
 # API v4 — Pawn-Context Providers — Design Brief
 
+> **Scope:** this is the deep-dive brief for a single capability — **C-CTX-1 (pawn-context
+> providers)** in the [external-API capability catalog](EXTERNAL_API_CAPABILITIES.md), which is the
+> authority on the overall API surface, sequencing, and the shared consent decision (catalog §3.5)
+> this doc's §7 toggle question feeds into.
+
 Status: **design draft (2026-07-04), one decision still open.** The public surface, sanitation,
 failure isolation, and purity boundary are worked out, but the **player-toggle model is not yet
 decided** — §7 holds an expanded option set (A–G) that needs a rethink before the v4 code PR. This
