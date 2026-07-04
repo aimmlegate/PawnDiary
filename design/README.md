@@ -11,5 +11,6 @@ These are notes, not contracts. The authoritative descriptions of current behavi
 | Document | What it is | Status |
 |---|---|---|
 | `MOD_COMPAT_PLAN.md` | **The single coherent external-mod integration design doc** — ideas, API version ledger/roadmap, and the target-mod survey/patch plan. Reconciles all integration ideas in one place. | living |
+| `API_V4_PAWN_CONTEXT_PROVIDERS.md` | Design-doc-before-code brief for API v4 (`RegisterPawnContextProvider`): surface, sanitation/failure-isolation, purity boundary, player-toggle decision, and the RimPsyche consumer snippet. Elaborates MOD_COMPAT §4.2. | design draft |
 | `EVENT_COVERAGE_PLAN.md` | Gap analysis of which RimWorld moments the diary covers, with XML-only suggestions to extend atmosphere. | proposal / partly implemented |
 | `BODY_PART_EVENTS_PLAN.md` | Hand-off brief for the body-part-change diary events. | implemented 2026-07-03 |
