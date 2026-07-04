@@ -6,6 +6,29 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-05
 
+- **Integration API v6 — machinery-as-a-service reads (C-CTX-2 / C-CTX-3).** `PawnDiaryApi.ApiVersion`
+  is now `6`, with two structured, side-effect-free reads that expose the prompt context Pawn Diary
+  builds internally, so a chat/context mod can mirror our understanding of a pawn without us driving
+  another model:
+  - `GetPawnSummary(Pawn)` returns a `DiaryPawnSummarySnapshot` — sex, life stage, DLC identity
+    (xenotype / royal title / faith), mood, health (broken out into a `DiaryHealthSummarySnapshot`
+    sub-DTO: downed, pain shock, pain, bleeding, conditions), low capacities, top thoughts, and the
+    API v4 external provider lines — as named DTO fields rather than the internal `key=value` blob,
+    so the assembly can keep evolving prompt text without breaking the additive-only contract. Null
+    for an ineligible pawn / no game / off-thread call / master toggle off; never creates a diary
+    record.
+  - `GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)` returns the
+    prompt-enchantment candidate **set** the planner would choose among right now
+    (`List<DiaryPromptEnchantmentCandidateSnapshot>`), never the single rolled winner (which uses
+    `Rand` and varies per call). Each snapshot mirrors the internal candidate (weight, source
+    hediff defName, priority/condition text, impact cues, configured cues) with independent list
+    copies. Empty when prompt enchantments are disabled in settings or no candidates match.
+  - To keep the prompt string bit-identical while sharing the same gathered facts, the composite
+    `BuildHealthSummary` was factored into `CollectHealthFacts` (gather) + `FormatHealthSummary`
+    (prompt string) + DTO fields; both consumers now format from one `PawnSummaryFacts`/`HealthFacts`
+    struct so the prompt path and the exported snapshot can never drift. A new pure
+    `TestPromptEnchantmentCandidateSnapshot` covers the `From` mapping (null input, field copy, list
+    independence, multi-candidate order/weight).
 - **Integration API + adapter hardening (adversarial-review follow-ups).** No API surface changes;
   robustness fixes across the external-API work shipped on 2026-07-04:
   - `PawnDiaryApi` entry points no longer call RimWorld's main-thread-only `Log.*` when rejecting an

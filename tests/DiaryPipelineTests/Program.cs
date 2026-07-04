@@ -27,6 +27,7 @@ namespace DiaryPipelineTests
             TestSoloSelection();
             TestSoloBatchSelection();
             TestPromptEnchantmentPlanner();
+            TestPromptEnchantmentCandidateSnapshot();
             TestPromptEnchantmentDecayPolicy();
             TestHediffPersonaOverridePolicy();
             TestDiaryEntryTitleFilter();
@@ -898,6 +899,83 @@ namespace DiaryPipelineTests
             AssertEqual("prompt enchantment suppressed source count", 2, filtered.Count);
             AssertEqual("prompt enchantment kept unsuppressed source", "Flu", filtered[0].sourceHediffDefName);
             AssertEqual("prompt enchantment kept non-hediff source", string.Empty, filtered[1].sourceHediffDefName ?? string.Empty);
+        }
+
+        // DiaryPromptEnchantmentCandidateSnapshot.From is the one mapping point between the internal
+        // PromptEnchantment machinery and the public integration DTO (API v6, C-CTX-3). Cover it
+        // directly so the contract holds without loading RimWorld: null input, field copy, list
+        // independence (the snapshot must not alias the source's lists), and order/weight preserved
+        // across a multi-candidate mapping.
+        private static void TestPromptEnchantmentCandidateSnapshot()
+        {
+            AssertTrue("snapshot From(null) returns null", DiaryPromptEnchantmentCandidateSnapshot.From(null) == null);
+
+            PromptEnchantmentCandidate source = PromptCandidate(
+                "high-priority context",
+                "in agony (left leg)",
+                3.5f,
+                new[] { "life-threatening", "heavy bleeding" },
+                new[] { "description: a deep wound" },
+                "GunshotWound");
+
+            DiaryPromptEnchantmentCandidateSnapshot snapshot = DiaryPromptEnchantmentCandidateSnapshot.From(source);
+            AssertTrue("snapshot From populates the DTO", snapshot != null);
+            AssertNear("snapshot carries weight", 3.5f, snapshot.weight);
+            AssertEqual("snapshot carries source hediff def name", "GunshotWound", snapshot.sourceHediffDefName);
+            AssertEqual("snapshot carries priority text", "high-priority context", snapshot.priorityText);
+            AssertEqual("snapshot carries condition text", "in agony (left leg)", snapshot.conditionText);
+            AssertEqual("snapshot carries impact cues", 2, snapshot.impactCues.Count);
+            AssertEqual("snapshot impact cue 0", "life-threatening", snapshot.impactCues[0]);
+            AssertEqual("snapshot impact cue 1", "heavy bleeding", snapshot.impactCues[1]);
+            AssertEqual("snapshot carries configured cues", 1, snapshot.configuredCues.Count);
+            AssertEqual("snapshot configured cue 0", "description: a deep wound", snapshot.configuredCues[0]);
+
+            // The snapshot's lists must be independent copies: mutating the source after From() must
+            // not change the snapshot the caller already holds. This is the additive-only stability
+            // promise for the integration surface.
+            source.impactCues.Add("late cue");
+            source.configuredCues.Clear();
+            AssertEqual("snapshot impact cues stay independent after source mutation", 2, snapshot.impactCues.Count);
+            AssertEqual("snapshot configured cues stay independent after source clear", 1, snapshot.configuredCues.Count);
+
+            // A null sourceHediffDefName / null cue list must not throw nor leak nulls into the DTO.
+            PromptEnchantmentCandidate nullish = new PromptEnchantmentCandidate
+            {
+                weight = 1f,
+                sourceHediffDefName = null,
+                priorityText = null,
+                conditionText = null,
+                impactCues = null,
+                configuredCues = null
+            };
+            DiaryPromptEnchantmentCandidateSnapshot nullishSnapshot = DiaryPromptEnchantmentCandidateSnapshot.From(nullish);
+            AssertTrue("snapshot From tolerates null fields", nullishSnapshot != null);
+            AssertEqual("snapshot From nulls become empty strings", string.Empty, nullishSnapshot.sourceHediffDefName);
+            AssertEqual("snapshot From null cue list becomes empty list", 0, nullishSnapshot.impactCues.Count);
+            AssertEqual("snapshot From null configured cue list becomes empty list", 0, nullishSnapshot.configuredCues.Count);
+
+            // Order and weight are preserved across multiple candidates — the export is a 1:1 mirror
+            // of the collected set, not a re-sorted or deduplicated view.
+            List<PromptEnchantmentCandidate> candidates = new List<PromptEnchantmentCandidate>
+            {
+                PromptCandidate("first", "a", 1f, null, null, "HediffA"),
+                PromptCandidate("second", "b", 2f, null, null, "HediffB"),
+                PromptCandidate("third", "c", 0.5f, null, null, "HediffC")
+            };
+            List<DiaryPromptEnchantmentCandidateSnapshot> snapshots = new List<DiaryPromptEnchantmentCandidateSnapshot>();
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                DiaryPromptEnchantmentCandidateSnapshot mapped = DiaryPromptEnchantmentCandidateSnapshot.From(candidates[i]);
+                if (mapped != null)
+                {
+                    snapshots.Add(mapped);
+                }
+            }
+
+            AssertEqual("snapshot list preserves order and count", 3, snapshots.Count);
+            AssertEqual("snapshot list entry 0 source", "HediffA", snapshots[0].sourceHediffDefName);
+            AssertEqual("snapshot list entry 1 source", "HediffB", snapshots[1].sourceHediffDefName);
+            AssertNear("snapshot list entry 2 weight", 0.5f, snapshots[2].weight);
         }
 
         private static void TestPromptEnchantmentDecayPolicy()

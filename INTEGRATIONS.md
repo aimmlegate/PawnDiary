@@ -10,6 +10,9 @@ implementation detail that may change without notice.
 - Context feed (API v4): an adapter can add compact pawn-context lines to Pawn Diary prompts.
 - Read side (API v5): an adapter can filter recent title snapshots by domain, atmosphere, date/tick,
   POV, and archived state.
+- Machinery-as-a-service reads (API v6): an adapter can read the **structured pawn summary** and the
+  **collected prompt-enchantment candidates** Pawn Diary builds for its own prompts, so a chat/context
+  mod can mirror our understanding of the pawn without us driving another model.
 - Planned (not yet shipped): a fuller read-only context snapshot (recent generated entry prose). See
   *Roadmap* below.
 
@@ -19,8 +22,8 @@ implementation detail that may change without notice.
   `ExternalEventRequest`, provider registration, and read-only DTOs. Adapters must not call anything
   outside it.
 - Evolution is **additive only**: members are added, never renamed, removed, or repurposed.
-  `PawnDiaryApi.ApiVersion` (currently `5`) increments when members are added, so an adapter can
-  feature-detect: `if (PawnDiaryApi.ApiVersion >= 5) { ... }`.
+  `PawnDiaryApi.ApiVersion` (currently `6`) increments when members are added, so an adapter can
+  feature-detect: `if (PawnDiaryApi.ApiVersion >= 6) { ... }`.
 - `SubmitEvent` **never throws** into the caller and is safe to call at any time (menus included —
   it just returns `false` when no game is loaded).
 - The Pawn Diary settings window has a master **Allow external mod integrations** switch. When it is
@@ -89,7 +92,7 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
    proves the pipeline itself; then trigger your own hook and watch the pawn's Diary tab. If your
    key is unclaimed, Pawn Diary logs one warning naming your `sourceId` and the key.
 
-## API reference (v5)
+## API reference (v6)
 
 `PawnDiary.Integration.PawnDiaryApi`:
 
@@ -102,6 +105,8 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
 | `List<DiaryEntryTitleSnapshot> GetRecentEntryTitles(Pawn, int maxCount, DiaryEntryTitleQuery query)` (v5) | Same title snapshot shape, filtered by optional query fields. Null or empty query preserves the v2 behavior. |
 | `DiaryWritingStyleSnapshot GetWritingStyle(Pawn)` (v3) | The pawn's **base** saved diary writing style. Publishes the diary's own voice instruction (`rule`) so a chat/context mod can — if its player chooses — align its voice with how the pawn writes; Pawn Diary only exposes the style, it never reads or drives another mod's persona. `null` = null/ineligible pawn, no game, or off-main-thread call. This is a side-effect-free read: it never creates a diary record (a pawn with no record yet resolves to the default style), and it excludes temporary hediff style overrides. |
 | `void RegisterPawnContextProvider(string id, Func<Pawn, string> provider)` (v4) | Registers a process-global provider that contributes one compact `key=value` line to each pawn summary. Re-registering the same id replaces the provider. Invalid/off-thread registration is logged once and ignored; a throwing provider is disabled for the rest of the session and logged once. |
+| `DiaryPawnSummarySnapshot GetPawnSummary(Pawn)` (v6) | The structured pawn-summary context Pawn Diary would feed to one of its own prompts — sex, life stage, DLC identity (xenotype / royal title / faith), mood, health, low capacities, top thoughts, and external provider lines — as named DTO fields rather than the internal `key=value` blob, so the assembly can keep evolving prompt text without breaking the contract. `null` = null/ineligible pawn, no game, off-thread call, or master toggle off. **Side-effect free**: it never creates a diary record, queues generation, or spends tokens. |
+| `List<DiaryPromptEnchantmentCandidateSnapshot> GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)` (v6) | The prompt-enchantment candidate **set** the planner would choose among right now — the deterministic input, never the single rolled winner (which uses `Rand` and varies per call). Pass `includeImportantEventContext: true` to also collect the DLC social-status candidates (royal title / ideology role) that only enter the pool for important events. Empty list = null pawn, no game, off-thread call, master toggle off, prompt-enchantments disabled in settings, or no match. Side-effect free: it does not roll the planner or feed a prompt; the candidate set is chance-gated per Def policy, so two calls can differ, but each call shows exactly what the planner could pick this tick. |
 
 `ExternalEventRequest` fields: `eventKey`*, `subject`* (required); `sourceId` (recommended, for log
 attribution — defaults to `unknown-source` when blank), `partner`, `summaryText`, `eventLabel`,
@@ -164,6 +169,52 @@ if (PawnDiaryApi.ApiVersion >= 4)
 }
 ```
 
+`DiaryPawnSummarySnapshot` fields (v6): `sex` (lowercase: "male"/"female"/"none", never empty);
+`lifeStage` (localized band such as "adult", empty when age data is unavailable); `xenotype`,
+`royalTitle`, `faith` (DLC identity labels — empty without Biotech / Royalty / Ideology respectively,
+exactly as the prompt omits those lines); `mood` (localized bucket label); `health` (sub-DTO — see
+below); `lowCapacities` (`List<string>` of localized keywords such as "limping"); `topThoughts`
+(`List<string>`, up to two — one positive and/or one negative, with effect bucket); `providerLines`
+(`List<string>` — the API v4 context-provider contributions, kept verbatim since each provider owns
+its own `key=`). Every field is empty for state the diary would omit, so the snapshot is always safe
+to enumerate.
+
+`DiaryHealthSummarySnapshot` fields: `downed` (bool), `painShock` (bool), `pain` (localized bucket
+such as "moderate pain", empty when not visible), `bleeding` (localized bucket, empty when not
+visible), `conditions` (`List<string>`, up to two notable visible condition labels). All empty/false
+when the pawn is healthy.
+
+`DiaryPromptEnchantmentCandidateSnapshot` fields: `weight` (resolved selection weight,
+severity/live-state adjusted), `sourceHediffDefName` (defName of the source hediff when applicable,
+empty otherwise), `priorityText` (localized), `conditionText` (localized, e.g. *"in agony (left
+leg)"*), `impactCues` (`List<string>`, e.g. *"life-threatening"*, *"heavy bleeding"*),
+`configuredCues` (`List<string>` — XML-configured cues from the matching Def). List fields are
+independent copies: mutating the underlying state after the call does not change a snapshot the
+caller already holds. A snapshot is the candidate the planner *could* pick, not the rolled winner —
+to get the winner, run your own weighted pick over `weight`.
+
+Example:
+
+```csharp
+if (PawnDiaryApi.ApiVersion >= 6)
+{
+    // Drive a chat mod with our understanding of the pawn, without Pawn Diary running the LLM call.
+    DiaryPawnSummarySnapshot summary = PawnDiaryApi.GetPawnSummary(pawn);
+    if (summary != null)
+    {
+        ChatContext.Set(pawn, summary.sex, summary.lifeStage, summary.mood,
+            summary.health.conditions, summary.topThoughts);
+    }
+
+    // Show the live condition candidates the diary would fold into a prompt right now.
+    foreach (DiaryPromptEnchantmentCandidateSnapshot candidate in
+             PawnDiaryApi.GetPromptEnchantments(pawn, includeImportantEventContext: true))
+    {
+        ChatContext.AddLiveCondition(pawn, candidate.conditionText, candidate.priorityText);
+    }
+}
+```
+
 ## eventKey conventions
 
 - Lowercase, `snake_case`, **prefixed with your mod's short name**: `rimtalk_conversation`,
@@ -197,8 +248,9 @@ conversation-framework mods that schedule follow-up dialogue during grammar rend
 > a pointer so adapter authors know what is coming.
 
 - **Future richer outbound context**: recent generated entry prose (not just titles) so chat
-  mods (RimTalk, ...) can use the diary as fuller memory. The writing-style half of this idea
-  already shipped in v3 (`GetWritingStyle`), and title filtering shipped in v5; prose-level entry
+  mods (RimTalk, ...) can use the diary as fuller memory. The writing-style half shipped in v3
+  (`GetWritingStyle`), the structured pawn-summary + enchantment candidates shipped in v6
+  (`GetPawnSummary` / `GetPromptEnchantments`), and title filtering shipped in v5; prose-level entry
   text is what remains.
 
 Check `ApiVersion` before using newer members.

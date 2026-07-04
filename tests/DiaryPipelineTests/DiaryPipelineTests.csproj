@@ -44,6 +44,9 @@
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />
     <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
     <Compile Include="..\..\Source\Integration\DiaryEntryTitleQuery.cs" Link="Integration\DiaryEntryTitleQuery.cs" />
+    <Compile Include="..\..\Source\Integration\DiaryHealthSummarySnapshot.cs" Link="Integration\DiaryHealthSummarySnapshot.cs" />
+    <Compile Include="..\..\Source\Integration\DiaryPawnSummarySnapshot.cs" Link="Integration\DiaryPawnSummarySnapshot.cs" />
+    <Compile Include="..\..\Source\Integration\DiaryPromptEnchantmentCandidateSnapshot.cs" Link="Integration\DiaryPromptEnchantmentCandidateSnapshot.cs" />
     <Compile Include="..\..\Source\Settings\ApiRequestAuth.cs" Link="ApiRequestAuth.cs" />
     <Compile Include="..\..\Source\Settings\EndpointUtility.cs" Link="EndpointUtility.cs" />
     <Compile Include="..\..\Source\Settings\PromptSettingsMenuPolicy.cs" Link="PromptSettingsMenuPolicy.cs" />
