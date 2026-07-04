@@ -51,8 +51,8 @@ consent, dedup, main-thread) — they differ only in **who produces the prose**.
 | IN-1 | **Submit event** (adapter pushes a moment; we build the whole prompt) | **shipped v1** | `SubmitEvent` → `ExternalEventSignal` → generation pipeline; External-domain group claims `eventKey` | — |
 | IN-2 | **Create from full prompt** — caller supplies the entire system+user prompt, we only run the LLM call | requested | bypasses `PromptAssembler`; hands text straight to `LlmClient` | Bypasses persona/style/localization/safety; spends the player's token budget on arbitrary text → own consent + caps (§3.2, §3.3) |
 | IN-3 | **Create from partial prompt** — caller supplies a fragment, we wrap it with our persona/event-prompt/context | requested | inject into `userPrompt`; reuse the layering `DiaryPromptBuilder`/`PromptAssembler` already do | Cleanest prompt mode; mostly a new "external prompt fragment" request field |
-| IN-4 | **Create from direct text + tag + title** — no LLM at all | requested | set the POV slot (`initiator/recipient/neutralGeneratedText`) + mark status complete; skip generation | Should it honor the per-pawn "generation disabled" toggle? Injecting ≠ generating → define consent (§3.5) |
-| IN-5 | **Create from direct text + tag, no title** — we generate only the title | requested | as IN-4, then queue only the title step | Trivial once IN-4 exists |
+| IN-4 | **Create from direct text + tag + title** — no LLM at all | requested | fork the external path before `QueueSolo`; new `SetInjectedText` slot mutator + existing `MarkTitleComplete` | Blast radius **Very Low** (§3.7). Open: generation-toggle collision + group-claim requirement (both policy, code ≈ 0) |
+| IN-5 | **Create from direct text + tag, no title** — we generate only the title | requested | as IN-4, then queue only the title step (`QueueTitleRequest`) | Trivial once IN-4 exists |
 | IN-6 | **Return a stable entry handle** from every create call | proposed | new: mint + return an id at submit time | Nothing today lets a caller correlate a submission with its result; prerequisite for MT-1/MT-2 |
 | IN-7 | **Idempotency key for direct-text** (IN-4/5) | proposed | reuse the event `dedupKey`/`dedupTicks` mechanism for injected entries | Without it, a repeated call duplicates the page |
 
@@ -168,10 +168,48 @@ Ties directly back into the v4 §7 toggle rethink. **Decision: one master "allow
 integrations" switch, or per-capability consent** — submit (IN-1) / inject-text (IN-4/5) /
 run-prompt (IN-2/3) / write-style (ST-2/3) / context-providers (C-CTX-1) are escalating levels of
 trust and may each deserve their own switch. Resolve this once, here, and both the v4 provider toggle
-and the injection-mode toggles fall out of it.
+and the injection-mode toggles fall out of it. Concrete instance surfaced by the IN-4 trace (§3.7):
+direct-text injection bypasses the per-pawn `DiaryGenerationEnabledFor` gate, so this decision
+determines whether "generation off" also silences injected entries or whether they need their own
+consent.
 
 ### 3.6 Versioning & sequencing
 This is ~15 new members; they land across several `ApiVersion` bumps, not one. Proposed order in §4.
+
+### 3.7 Direct-text injection (IN-4/IN-5) — blast-radius check (traced 2026-07-04) — verdict: **Very Low**
+Direct-text reuses the entire external emit path (`SubmitEvent → ExternalEventSignal →
+dispatch(Decide, dedup) → Emit → AddSoloEvent`) and **forks only at the final step**: instead of
+`QueueSolo` (→ `QueuePrompt` → LLM), it writes the POV slot directly.
+
+- **Free — display:** a slot with `generatedText` + `status=Complete` is exactly the "done" shape the
+  tab (`visible = hasGeneratedText`) and the reads (`ViewHasCompletedDiaryPage`) already look for.
+  Injected pages surface everywhere native ones do; **no UI/read changes**.
+- **Free — styling:** `AddSoloEvent` already stamps `gameContext = "external=…; source=…"`, so the
+  External decoration/color-cue derives automatically.
+- **Free — save/load (safer than generated):** `NormalizeLoadedMainStatus` returns `Complete`
+  whenever `generatedText` is present, so an injected entry reloads Complete with **no orphan-requeue
+  risk** — durable the instant it's written.
+- **Free — upstream gates:** eligibility (`IsDiaryEligible`), dedup, and the group-enabled toggle run
+  in `Decide`/`BuildContext` *before* the fork, so they gate injection with no extra code.
+- **New — one small mutator:** there is no "set complete" primitive today (completion only happens in
+  the private, LLM-shaped `ApplyLlmResultToSlot`). IN-4 needs `DiaryEvent.SetInjectedText(povRole,
+  text)` = set `generatedText` + `status=Complete` + `DiaryStateVersion.Bump()` (mirrors that
+  method's success branch). Title: `MarkTitleComplete` already exists (IN-4), or queue the tiny
+  title-only call (IN-5).
+
+**Two decisions this trace surfaces (code cost ≈ 0; both already open elsewhere):**
+1. **Generation-toggle collision.** `DiaryGenerationEnabledFor` gates *downstream* in `QueuePrompt`,
+   which direct-text skips — so the per-pawn "generation off" toggle does **not** block injection
+   unless re-checked explicitly. Choose: respect it (conservative), inject regardless (it's not
+   AI-generation and spends no tokens), or gate it behind a separate injected-entry consent. Feeds
+   §3.5.
+2. **Group-claim requirement (§3.3).** IN-4 via this path still requires an External group to claim
+   the `eventKey`; for direct text the group is used only for the enabled-toggle and label fallback
+   (prompt policy is dead weight). Keep it (free toggle + consistency) or add a lighter no-group path.
+
+Net: IN-4 is a ~1-method save-model addition plus two policy calls, with **no new seams** in UI,
+reads, archive, or save/load. Lower plumbing cost than MT-1; its real content is the two policy
+decisions above.
 
 ---
 
