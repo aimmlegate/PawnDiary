@@ -133,6 +133,9 @@ namespace PawnDiary
         // Master toggle for live prompt enchantments. When true, first-person diary prompts may get
         // one live health/status hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
+        // Master switch for public integration API behavior. Registration remains harmless while this
+        // is off, but external submissions, reads, and provider invocations no-op.
+        public bool allowExternalIntegrations = true;
         // Disabled compatibility field. Old configs may have this set, but the Social-log injection
         // path is hidden and forced off because RimWorld accepts the row without reliably showing it.
         public bool injectGeneratedSpeechToPlayLog;
@@ -222,6 +225,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
+            Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
             Scribe_Values.Look(ref injectGeneratedSpeechToPlayLog, "injectGeneratedSpeechToPlayLog", false);
             Scribe_Values.Look(ref systemPromptOverride, "systemPromptOverride", string.Empty);
             Scribe_Values.Look(ref systemPromptReflectionOverride, "systemPromptReflectionOverride", string.Empty);

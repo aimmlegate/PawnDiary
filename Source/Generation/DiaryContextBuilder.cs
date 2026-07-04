@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PawnDiary.Integration;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -609,6 +610,15 @@ namespace PawnDiary
             if (!string.IsNullOrWhiteSpace(faith))
             {
                 parts.Add("faith=" + faith);
+            }
+
+            // API v4 lets adapter/personality mods add compact identity context such as
+            // "personality=blunt, curious". Providers run here, in the impure snapshot phase, and
+            // only cleaned strings continue into the prompt pipeline.
+            string externalProviderContext = PawnContextProviders.BuildContextLines(pawn);
+            if (!string.IsNullOrWhiteSpace(externalProviderContext))
+            {
+                parts.Add(externalProviderContext);
             }
 
             string mood = BuildMoodSummary(pawn);

@@ -262,6 +262,15 @@ false)` so an external read never creates a diary record (a pawn with no record 
 default style), it excludes temporary hediff-driven style overrides (prompt-time only), and it
 carries no internal theme tags.
 
+API v4 adds `PawnDiaryApi.RegisterPawnContextProvider(string id, Func<Pawn, string> provider)`.
+Registered providers run during `DiaryContextBuilder.BuildPawnSummary`, after DLC identity lines
+(`xenotype=`, `title=`, `faith=`) and before transient state (`mood=`, `health=`), so a personality
+mod can contribute one compact line such as `personality=blunt, curious`. The provider receives the
+live `Pawn` only in this impure snapshot phase; its return value is cleaned by the pure
+`PromptContextLines` helper (`OneLine`, `;`→`,`, count/length caps) before entering the prompt
+payload. A throwing provider is disabled and logged once. The settings master switch
+`allowExternalIntegrations` gates external submissions, read calls, and provider invocation.
+
 `integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
 separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
 Pawn Diary, RimTalk, and Harmony. When its single setting is enabled, it patches RimTalk's accepted

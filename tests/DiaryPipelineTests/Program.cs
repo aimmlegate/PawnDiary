@@ -32,6 +32,8 @@ namespace DiaryPipelineTests
             TestObservedConditionDecayXmlPolicy();
             TestColorCueXmlPolicy();
             TestPromptTextSanitizer();
+            TestPromptContextLines();
+            TestContextProviderRegistry();
             TestEventWindowPolicy();
             TestProgressionMilestonePolicy();
             TestPsylinkProgressionLevelPolicy();
@@ -1213,6 +1215,85 @@ namespace DiaryPipelineTests
                 "external prompt text handles sentence without terminal punctuation",
                 "One long localized label without punctuation",
                 PromptTextSanitizer.LocalizedPromptText("One long localized label without punctuation"));
+        }
+
+        private static void TestPromptContextLines()
+        {
+            AssertEqual(
+                "context line one-lines rich text and controls",
+                "personality=bold curious",
+                PromptContextLines.CleanLine(" personality=<b>bold</b>\r\ncurious\u0007 ", 80));
+            AssertEqual(
+                "context line flattens semicolon separators",
+                "personality=blunt, curious",
+                PromptContextLines.CleanLine("personality=blunt; curious", 80));
+            AssertEqual(
+                "context line length cap is exact",
+                "abcdef",
+                PromptContextLines.CleanLine("abcdefghi", 6));
+            AssertEqual(
+                "context line non-positive cap drops text",
+                string.Empty,
+                PromptContextLines.CleanLine("abc", 0));
+            AssertEqual(
+                "context line join skips blanks and caps kept lines",
+                "a=1; b=2",
+                PromptContextLines.Join(new List<string> { "", "a=1", "b=2", "c=3" }, 2, 80));
+            AssertEqual(
+                "context line join caps each line",
+                "abcdef; second",
+                PromptContextLines.Join(new List<string> { "abcdefghi", "second" }, 2, 6));
+        }
+
+        private static void TestContextProviderRegistry()
+        {
+            ContextProviderRegistry<string> registry = new ContextProviderRegistry<string>();
+            List<string> failures = new List<string>();
+
+            AssertTrue("registry rejects blank id", !registry.Register(" ", context => "bad=1"));
+            AssertTrue("registry rejects null provider", !registry.Register("mod.null", null));
+            AssertTrue("registry accepts provider", registry.Register("mod.personality", context => "personality=" + context));
+            AssertEqual(
+                "registry builds registered provider line",
+                "personality=guarded",
+                registry.BuildContextLines("guarded", 8, 80, (id, e) => failures.Add(id)));
+
+            AssertTrue("registry replacement succeeds", registry.Register("mod.personality", context => "voice=" + context));
+            AssertEqual(
+                "registry replacement keeps id and changes output",
+                "voice=plain",
+                registry.BuildContextLines("plain", 8, 80, (id, e) => failures.Add(id)));
+
+            AssertTrue("registry accepts empty provider", registry.Register("mod.empty", context => "  "));
+            AssertTrue("registry accepts provider after empty", registry.Register("mod.after_empty", context => "after_empty=kept"));
+            AssertEqual(
+                "empty provider does not consume kept-line cap",
+                "voice=cap; after_empty=kept",
+                registry.BuildContextLines("cap", 2, 80, (id, e) => failures.Add(id)));
+
+            AssertTrue("registry accepts throwing provider", registry.Register("mod.throwing", context =>
+            {
+                throw new InvalidOperationException("boom");
+            }));
+            AssertTrue("registry accepts later provider", registry.Register("mod.later", context => "later=kept"));
+
+            AssertEqual(
+                "throwing provider is skipped while later provider still runs",
+                "voice=first; after_empty=kept; later=kept",
+                registry.BuildContextLines("first", 8, 80, (id, e) => failures.Add(id)));
+            AssertEqual("throwing provider failure logged once", 1, failures.Count);
+            AssertEqual("throwing provider id is reported", "mod.throwing", failures[0]);
+
+            AssertEqual(
+                "disabled provider is not invoked again",
+                "voice=second; after_empty=kept; later=kept",
+                registry.BuildContextLines("second", 8, 80, (id, e) => failures.Add(id)));
+            AssertEqual("disabled provider does not report a second failure", 1, failures.Count);
+
+            AssertEqual(
+                "registry caps provider contributions",
+                "voice=capped",
+                registry.BuildContextLines("capped", 1, 80, (id, e) => failures.Add(id)));
         }
 
         private static void TestEventWindowPolicy()

@@ -197,6 +197,10 @@ namespace PawnDiary
                     "PawnDiary.Settings.EnablePromptEnchantments".Translate(),
                     ref Settings.enablePromptEnchantments,
                     "PawnDiary.Settings.EnablePromptEnchantmentsTip".Translate());
+                listing.CheckboxLabeled(
+                    "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
+                    ref Settings.allowExternalIntegrations,
+                    "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());
                 bool advancedVisibleBefore = Settings.showExperimentalAdvancedOverrides;
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.ShowExperimentalAdvancedOverrides".Translate(),
@@ -475,7 +479,7 @@ namespace PawnDiary
             }
 
             // Generation controls only. Prompt and style editors live on dedicated tabs.
-            height += 377f;
+            height += 411f;
             if (Prefs.DevMode)
             {
                 height += 34f;

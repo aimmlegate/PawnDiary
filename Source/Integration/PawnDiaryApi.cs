@@ -21,8 +21,8 @@ using Verse;
 namespace PawnDiary.Integration
 {
     /// <summary>
-    /// Public entry point for other mods. v2 surface: version/readiness probes, event submission,
-    /// and a small read-only title snapshot for adapters that want diary context.
+    /// Public entry point for other mods. Current surface: readiness, inbound events, read-only
+    /// snapshots, and v4 pawn-context providers for prompt-summary context.
     /// </summary>
     public static class PawnDiaryApi
     {
@@ -31,7 +31,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 3;
+        public const int ApiVersion = 4;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -86,7 +86,7 @@ namespace PawnDiary.Integration
                     return false;
                 }
 
-                if (!IsReady)
+                if (!ExternalIntegrationsAllowed || !IsReady)
                 {
                     return false;
                 }
@@ -139,7 +139,7 @@ namespace PawnDiary.Integration
                     return new List<DiaryEntryTitleSnapshot>();
                 }
 
-                if (!IsReady || pawn == null || maxCount <= 0)
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null || maxCount <= 0)
                 {
                     return new List<DiaryEntryTitleSnapshot>();
                 }
@@ -176,7 +176,7 @@ namespace PawnDiary.Integration
                     return null;
                 }
 
-                if (!IsReady || pawn == null)
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
                 {
                     return null;
                 }
@@ -189,6 +189,56 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: GetWritingStyle failed: " + e,
                     "PawnDiary.Api.WritingStyle.Exception".GetHashCode());
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Registers one external pawn-context provider. The provider is invoked later, on the main
+        /// thread during prompt context collection, and may return one <c>key=value</c> line or null.
+        /// Re-registering the same id replaces the provider. Registration is safe before a game loads.
+        /// </summary>
+        public static void RegisterPawnContextProvider(string id, Func<Pawn, string> provider)
+        {
+            try
+            {
+                string providerId = string.IsNullOrWhiteSpace(id) ? "unknown-provider" : id.Trim();
+                if (string.IsNullOrWhiteSpace(id) || provider == null)
+                {
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Integration API: RegisterPawnContextProvider was called with a missing id or provider.",
+                        ("PawnDiary.Api.ContextProvider.Invalid." + providerId).GetHashCode());
+                    return;
+                }
+
+                // Registration mutates a process-global registry and the provider may later touch
+                // DefDatabase/Translate-backed data, so keep the same main-thread rule as all API
+                // methods that interact with game state.
+                if (!UnityData.IsInMainThread)
+                {
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Integration API: RegisterPawnContextProvider for '" + providerId
+                        + "' was called off the main thread; the provider was ignored.",
+                        ("PawnDiary.Api.ContextProvider.OffThread." + providerId).GetHashCode());
+                    return;
+                }
+
+                PawnContextProviders.Register(providerId, provider);
+            }
+            catch (Exception e)
+            {
+                string providerForLog = string.IsNullOrWhiteSpace(id) ? "unknown-provider" : id.Trim();
+                Log.ErrorOnce(
+                    "[Pawn Diary] Integration API: RegisterPawnContextProvider for '" + providerForLog
+                    + "' failed: " + e,
+                    ("PawnDiary.Api.ContextProvider.Exception." + providerForLog).GetHashCode());
+            }
+        }
+
+        private static bool ExternalIntegrationsAllowed
+        {
+            get
+            {
+                return PawnDiaryMod.Settings == null || PawnDiaryMod.Settings.allowExternalIntegrations;
             }
         }
     }

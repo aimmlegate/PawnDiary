@@ -295,6 +295,8 @@
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>When enabled, only extreme diary pages can use unusual spacing, staggered variable-size words, or dramatic strange-chat speech distortion. Mental breaks, anomaly/dark entries, death descriptions, and pages written while heavily impaired may be affected. Prompts and saved diary text are unchanged.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Use live prompt context hints</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>When enabled, first-person diary prompts may include one important live context cue. XML controls which health conditions and important-event status cues can appear and how often they win the weighted random pick.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.AllowExternalIntegrations>Allow external mod integrations</PawnDiary.Settings.AllowExternalIntegrations>
+  <PawnDiary.Settings.AllowExternalIntegrationsTip>When enabled, other mods can submit diary events, read public diary snapshots, and add compact pawn context lines through the public integration API.</PawnDiary.Settings.AllowExternalIntegrationsTip>
   <PawnDiary.Settings.ShowExperimentalAdvancedOverrides>Show experimental XML override pages</PawnDiary.Settings.ShowExperimentalAdvancedOverrides>
   <PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>Reveals raw XML Def override pages for low-level tuning and prompt policy. Overrides are experimental and can change live behavior until reset.</PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Add generated speech to the Social log</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>

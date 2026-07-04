@@ -25,7 +25,7 @@ ships into `INTEGRATIONS.md`.
 - **shipped (vN)** — live in `INTEGRATIONS.md`, `ApiVersion >= N`.
 - **requested** — the owner asked for it (this session); accepted in principle, needs a brief.
 - **proposed** — surfaced here as a gap/complement; not yet accepted.
-- **designed** — has a written brief but no code (currently only C-CTX-1, the v4 providers brief).
+- **designed** — has a written brief but no code.
 
 **Design invariants every capability inherits** (from the `INTEGRATIONS.md` stability promise, and
 non-negotiable — see §5): additive-only evolution; `PawnDiaryApi` is the one public entry point;
@@ -92,7 +92,7 @@ RimTalk). Same primitives, both faces.
 
 | ID | Capability | Status | Internal hook it maps to | Key decision |
 |---|---|---|---|---|
-| C-CTX-1 | **Pawn-context providers** — a mod adds a `key=value` line to our pawn summary | **designed** (v4 brief) | `RegisterPawnContextProvider` → line in `BuildPawnSummary` next to DLC-identity fields | Gated by master toggle (§3.5); brief ready |
+| C-CTX-1 | **Pawn-context providers** — a mod adds a `key=value` line to our pawn summary | **shipped v4** | `RegisterPawnContextProvider` → line in `BuildPawnSummary` next to DLC-identity fields | Gated by master toggle (§3.5) |
 | C-CTX-6 | **Supply / override enchantments** — a mod adds live context candidates to a submitted event's prompt | proposed | `PromptEnchantments.RuleFor(extraCandidates:)` already accepts extra candidates; accept plain lines and wrap them | Relates to IN-3 (partial prompt); sanitize like `extraContext` |
 
 **Read our machinery as a service (outbound — "pure widget" + drive external LLM):**
@@ -324,7 +324,7 @@ train; pick the next single capability to build, ship it, bump `ApiVersion`, mov
 
 | Order | Capability | ApiVersion on ship | Depends on | Notes |
 |---|---|---|---|---|
-| 1 | **C-CTX-1** pawn-context providers | v4 | §3.5 decided (master toggle) | Brief ready (`API_V4_PAWN_CONTEXT_PROVIDERS.md`); unblocked |
+| 1 | **C-CTX-1** pawn-context providers | **shipped v4** | §3.5 decided (master toggle) | Implemented via `RegisterPawnContextProvider`; provider lines join the pawn-summary identity block |
 | 2 | **RD-3** read filters (type/atmosphere/date) | vN | — | Cheapest; fields already stored |
 | 3 | **RD-2 / RD-5 / RD-6** prose read, by-id, counts | vN | RD-3 | RD-4 tone only if persisted (§6.6) |
 | 3b | **C-CTX-2 / C-CTX-3** export pawn summary + collected enchantments (structured DTOs) | vN | — | Pure reads (§3.8); cheap, no new machinery |

@@ -12,7 +12,9 @@
 //     own Keyed strings; Pawn Diary cannot translate another mod's content.
 //   • SubmitEvent never throws and returns false when declined (no game, off-thread, unclaimed
 //     eventKey) — safe to call without try/catch on the main thread.
+//   • API v4 context providers are process-global and can be registered before a game is loaded.
 using System.Collections.Generic;
+using System.Text;
 using PawnDiary.Integration;
 using RimWorld;
 using Verse;
@@ -33,10 +35,13 @@ namespace PawnDiaryExampleAdapter
 
         // Our packageId, so Pawn Diary's one-time log messages name this adapter.
         private const string SourceId = "aimmlegate.pawndiary.adapter.example";
+        private const string ContextProviderId = SourceId + ".vanilla_traits";
 
         private const int FirstDelayTicks = 2500;   // ~1 in-game hour after load
         private const int RepeatDelayTicks = 60000; // one in-game day
         private const int CheckIntervalTicks = 250; // cheap gate: test the timer 4x/sec
+
+        private static bool contextProviderRegistered;
 
         // Transient on purpose: not saved, so each session starts its own daily rhythm. A real
         // adapter driven by its target mod's events usually needs no timer state at all.
@@ -44,6 +49,7 @@ namespace PawnDiaryExampleAdapter
 
         public ExampleAdapterGameComponent(Game game)
         {
+            RegisterContextProviderOnce();
         }
 
         public override void GameComponentTick()
@@ -99,6 +105,53 @@ namespace PawnDiaryExampleAdapter
                     "origin=example_adapter_daily_timer"
                 }
             });
+        }
+
+        private static void RegisterContextProviderOnce()
+        {
+            if (contextProviderRegistered || PawnDiaryApi.ApiVersion < 4)
+            {
+                return;
+            }
+
+            PawnDiaryApi.RegisterPawnContextProvider(ContextProviderId, VanillaTraitContextLine);
+            contextProviderRegistered = true;
+        }
+
+        private static string VanillaTraitContextLine(Pawn pawn)
+        {
+            List<Trait> traits = pawn?.story?.traits?.allTraits;
+            if (traits == null || traits.Count == 0)
+            {
+                return null;
+            }
+
+            StringBuilder labels = new StringBuilder();
+            int kept = 0;
+            for (int i = 0; i < traits.Count && kept < 2; i++)
+            {
+                Trait trait = traits[i];
+                if (trait == null)
+                {
+                    continue;
+                }
+
+                string label = trait.LabelCap.ToString();
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    continue;
+                }
+
+                if (kept > 0)
+                {
+                    labels.Append(", ");
+                }
+
+                labels.Append(label);
+                kept++;
+            }
+
+            return labels.Length == 0 ? null : "example_traits=" + labels;
         }
     }
 }

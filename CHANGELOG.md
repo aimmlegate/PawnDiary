@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **Integration API v4 — pawn-context providers.** `PawnDiaryApi.ApiVersion` is now `4`, with
+  `RegisterPawnContextProvider(id, Func<Pawn,string>)` so adapter/personality mods can add one
+  compact `key=value` line to the pawn summary used in prompts. Provider output shares the new pure
+  `PromptContextLines` sanitation path with external `extraContext` (`OneLine`, `;`→`,`, line/count
+  caps), providers are replacement-by-id and disabled/logged once on throw, and a new default-on
+  `allowExternalIntegrations` setting gates external submissions, reads, and provider invocation.
+  The ExampleAdapter now registers a vanilla-traits provider, and the public integration docs/roadmap
+  mark v4 shipped.
 - **Publish tooling: auto-bump + Russian Workshop id.** `scripts/publish.ps1` gained an `-AutoBump`
   switch that increments the patch component of the source `About.xml` `<modVersion>` (0.2.2 → 0.2.3)
   and writes it back to the repo, for a one-command "cut a new patch release" flow; it rejects

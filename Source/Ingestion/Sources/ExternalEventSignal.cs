@@ -6,7 +6,6 @@
 // The pure decision + game-context format live in Source/Capture/Events/ExternalEventData.cs.
 // New to C#/RimWorld? See AGENTS.md.
 using System.Collections.Generic;
-using System.Text;
 using PawnDiary.Capture;
 using PawnDiary.Integration;
 using Verse;
@@ -23,6 +22,7 @@ namespace PawnDiary.Ingestion
         // Defensive caps so a misbehaving adapter cannot flood one prompt with context. These are
         // parser-style safety limits, not tunable policy, so they stay hardcoded per AGENTS.md.
         private const int MaxExtraContextLines = 16;
+        private const int MaxExtraContextLineChars = 200;
         private const int MaxSummaryChars = 800;
 
         private readonly Pawn subject;
@@ -165,31 +165,7 @@ namespace PawnDiary.Ingestion
         // so they become commas (same rule as the arrival-context builder).
         private static string JoinExtraContext(List<string> lines)
         {
-            if (lines == null || lines.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            StringBuilder joined = new StringBuilder();
-            int kept = 0;
-            for (int i = 0; i < lines.Count && kept < MaxExtraContextLines; i++)
-            {
-                string line = PromptTextSanitizer.OneLine(lines[i]).Replace(';', ',');
-                if (string.IsNullOrWhiteSpace(line))
-                {
-                    continue;
-                }
-
-                if (kept > 0)
-                {
-                    joined.Append("; ");
-                }
-
-                joined.Append(line);
-                kept++;
-            }
-
-            return joined.ToString();
+            return PromptContextLines.Join(lines, MaxExtraContextLines, MaxExtraContextLineChars);
         }
     }
 }

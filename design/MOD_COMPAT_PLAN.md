@@ -13,9 +13,10 @@
 
 Status: **living design doc.** Shipped so far: API v1 inbound (`SubmitEvent`), API v2 read-side
 title snapshots (`GetRecentEntryTitles`), API v3 read-side base **writing-style** publish
-(`GetWritingStyle`), and the diagnostic RimTalk bridge scaffold. The provider/context work below
-(pawn-context providers, richer outbound entry prose) remains planned. See §1 for the mechanism
-table and the *API version ledger* at the end of §1 for how version numbers map to shipped members.
+(`GetWritingStyle`), API v4 pawn-context providers (`RegisterPawnContextProvider`), and the
+diagnostic RimTalk bridge scaffold. The richer outbound entry-prose context work below remains
+planned. See §1 for the mechanism table and the *API version ledger* at the end of §1 for how
+version numbers map to shipped members.
 
 This document began as a continuation of the API-v1 milestone (`../INTEGRATIONS.md`), which built
 the *machinery*; it now also picks the *targets*: which popular mods deserve first-party
@@ -43,7 +44,7 @@ Three integration mechanisms exist or are planned, in increasing order of cost:
 | **Inbound API v1** (`PawnDiaryApi.SubmitEvent`) | shipped | The mod (or a small bridge mod) pushes moments that *don't* flow through vanilla systems. Requires C# on the adapter side + an External-domain group claiming the `eventKey`. |
 | **Read-only title snapshots** (`PawnDiaryApi.GetRecentEntryTitles`) | shipped API v2 | A bridge can read recent diary title metadata for a pawn without touching prompts, raw responses, or live internals. First consumer: `PawnDiary.RimTalkBridge` diagnostic logging. |
 | **Read-only writing-style publish** (`PawnDiaryApi.GetWritingStyle`) | shipped API v3 | A bridge can read a pawn's **base** saved writing style (`styleDefName`, `label`, `rule`) as context. Publish-only: Pawn Diary never reads or drives another mod's persona. Side-effect free, base style only (no hediff overrides, no theme tags). First consumer: the RimTalk bridge logs it beside chat as its proof step. |
-| **Pawn-context providers** (`RegisterPawnContextProvider`) | roadmap (next: API v4) | Personality mods (RimPsyche, Psychology, …) add a compact line to *our* pawn summary so the LLM sees personality as who the pawn is. Requires C# on our side first — see §4.2. |
+| **Pawn-context providers** (`RegisterPawnContextProvider`) | shipped API v4 | Personality mods (RimPsyche, Psychology, …) add a compact line to *our* pawn summary so the LLM sees personality as who the pawn is. See §4.2. |
 | **Richer outbound snapshot** (recent entry prose) | roadmap (API v5) | Chat mods read recent diary entry summaries (title + first sentence) as fuller memory. The *writing-style* half of the original "outbound context" idea already shipped in v3; only entry-prose remains — see §4.3. |
 
 ### API version ledger
@@ -56,7 +57,7 @@ The `ApiVersion` counter is a single monotonic integer that bumps whenever a mem
 | 1 | `SubmitEvent` (inbound) | shipped |
 | 2 | `GetRecentEntryTitles` (read titles) | shipped |
 | 3 | `GetWritingStyle` (read base writing style) | shipped |
-| 4 | `RegisterPawnContextProvider` (pawn-context providers, §4.2) | planned |
+| 4 | `RegisterPawnContextProvider` (pawn-context providers, §4.2) | shipped |
 | 5 | read: entry prose + filters (§4.3) | planned |
 | 6+ | inbound direct-text / prompt modes, style-write, lifecycle | proposed |
 
@@ -214,10 +215,11 @@ other groups).
 first (packageId + InteractionDef names for pillow talk etc.); pattern will mirror Way Better
 Romance. Keep last in Tier A.
 
-### 4.2 Tier B — what API v4 must provide (and to whom)
+### 4.2 Tier B — what API v4 provides (and to whom)
 
-The deliverable is roadmap **v4: `RegisterPawnContextProvider(id, Func<Pawn, string>)`** plus its
-first real consumers. Source-verified interface facts to design against:
+The shipped v4 deliverable is **`RegisterPawnContextProvider(id, Func<Pawn, string>)`** plus the
+buildable example provider in `integrations/PawnDiary.ExampleAdapter`. Source-verified interface
+facts to design against for real consumers:
 
 - **RimPsyche** ([wiki, "For Modders"](https://github.com/jagerguy36/Rimpsyche/wiki/For-Modders))
   already exposes everything a provider needs: `PsycheDataUtil.GetPsycheData(Pawn)` returns a
@@ -232,18 +234,19 @@ first real consumers. Source-verified interface facts to design against:
   *their* side or in a standalone bridge, not in our core. Also verify whether its conversation
   system posts `PlayLog` entries (decides whether the Tier A slice in §5 PR 3 is real).
 
-What v4 itself must therefore specify (design doc before code):
+What v4 itself specifies:
 1. Registration: id + `Func<Pawn, string>`, registered once at startup (main-thread), feature-
    detectable via `ApiVersion >= 4`.
 2. Safety: per-provider output cap + sanitation identical to `extraContext` rules (single line,
    `;`→`,`); a throwing provider is disabled and logged **once**, never crashes prompt building.
 3. Placement: provider lines join the pawn summary next to the `DlcContext` fields (trait/faith/
    title lines), so the LLM sees personality as *who the pawn is*, not as an event.
-4. Player control: per-provider toggle in settings (mirrors per-group toggles).
+4. Player control: the master `allowExternalIntegrations` setting gates provider invocation.
 5. Purity: providers run in the impure snapshot phase; their strings enter the plain prompt
    payload — no live objects into pure code (AGENTS.md barrier holds unchanged).
-6. Ship with: `ApiVersion = 4`, example provider in `integrations/PawnDiary.ExampleAdapter`,
-   `../INTEGRATIONS.md` v4 section, maintainer outreach to RimPsyche with a concrete snippet.
+6. Shipped with: `ApiVersion = 4`, example provider in `integrations/PawnDiary.ExampleAdapter`,
+   `../INTEGRATIONS.md` v4 section, and tests for the pure sanitation/registry behavior. Maintainer
+   outreach to RimPsyche remains a follow-up with a concrete snippet.
 
 ### 4.3 Tier C — outbound context: what shipped, and what API v5 must still provide
 
@@ -368,16 +371,13 @@ Division of responsibility, reconciled with what shipped:
       [`API_V4_PAWN_CONTEXT_PROVIDERS.md`](API_V4_PAWN_CONTEXT_PROVIDERS.md). It reconciles the
       §4.2 "settings toggle mirrors per-group toggles" note with the current XML-only group model
       (per-group toggles are now `defaultEnabled` + package gates, not a settings dict). Surface,
-      sanitation, failure isolation, and purity boundary are worked out; **one decision is still
-      open** — the player-toggle model, where the doc holds an expanded A–G option set (master bool /
-      per-provider dict / provider Def / no-toggle / fold-in / consumer-owned / hybrid) that needs a
-      rethink before the v4 code PR. The open toggle choice stays additive, so it blocks only the
-      toggle slice, not the rest of the design.
+      sanitation, failure isolation, purity boundary, and the master `allowExternalIntegrations`
+      toggle are worked out.
 - [ ] Validate the draft against RimPsyche's real surface (`PsycheDataUtil`, 15 facets): write
       the provider snippet we'd hand their maintainer; open a design issue / contact Maux36.
 - [ ] Decide the Psychology story: standalone bridge vs. their-side provider (we ship neither
       in core).
-- [ ] Implement: `ApiVersion = 4`, example provider in the ExampleAdapter, `../INTEGRATIONS.md`
+- [x] Implement: `ApiVersion = 4`, example provider in the ExampleAdapter, `../INTEGRATIONS.md`
       v4 section moves roadmap to shipped, tests for the sanitation/failure-isolation pure parts.
 - [ ] Separately evaluate the **RimPsyche inbound bridge** (their `InteractionHook` →
       `SubmitEvent` with `topic=`/`alignment=` extraContext) — v1-only, could ship any time.
