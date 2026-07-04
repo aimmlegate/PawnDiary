@@ -6,6 +6,18 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **API v4 design brief drafted (design-doc-before-code).** Added
+  `design/API_V4_PAWN_CONTEXT_PROVIDERS.md`, the required design doc for the planned
+  `RegisterPawnContextProvider(id, Func<Pawn,string>)` member (MOD_COMPAT §4.2 / PR 4): public
+  surface + feature-detection, `extraContext`-identical sanitation and once-disable failure
+  isolation, the impure-snapshot purity boundary, pawn-summary placement next to the DLC-identity
+  lines, and the RimPsyche consumer snippet. It reconciles the plan's stale "settings toggle mirrors
+  per-group toggles" note with today's XML-only group model (`defaultEnabled` + package gates). One
+  design decision is left open on purpose — the player-toggle model, which now carries an expanded
+  A–G option set (master bool / per-provider dict / provider Def / no-toggle / fold-in /
+  consumer-owned / hybrid) to be reconsidered before the v4 code PR; the choice stays additive so it
+  blocks only the toggle slice, not the rest of the design. No runtime change; `ApiVersion` stays 3.
+  Indexed in `design/README.md` and the MOD_COMPAT §5 PR-4 checklist.
 - **Docs reorg + integration ideas reconciled.** Moved the scattered design/planning markdown
   (`MOD_COMPAT_PLAN.md`, `EVENT_COVERAGE_PLAN.md`, `BODY_PART_EVENTS_PLAN.md`) into a new `design/`
   folder with a `design/README.md` index, leaving only living top-level docs at the root

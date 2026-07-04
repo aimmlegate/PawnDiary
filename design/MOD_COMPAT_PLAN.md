@@ -350,8 +350,16 @@ Division of responsibility, reconciled with what shipped:
       to the v4/bridge track.
 
 ### PR 4 — API v4: pawn-context providers (design doc before code)
-- [ ] Write the v4 design doc per §4.2 (registration, sanitation caps, failure isolation,
-      settings toggle, pawn-summary placement, purity boundary).
+- [x] Write the v4 design doc per §4.2 (registration, sanitation caps, failure isolation,
+      settings toggle, pawn-summary placement, purity boundary) — see
+      [`API_V4_PAWN_CONTEXT_PROVIDERS.md`](API_V4_PAWN_CONTEXT_PROVIDERS.md). It reconciles the
+      §4.2 "settings toggle mirrors per-group toggles" note with the current XML-only group model
+      (per-group toggles are now `defaultEnabled` + package gates, not a settings dict). Surface,
+      sanitation, failure isolation, and purity boundary are worked out; **one decision is still
+      open** — the player-toggle model, where the doc holds an expanded A–G option set (master bool /
+      per-provider dict / provider Def / no-toggle / fold-in / consumer-owned / hybrid) that needs a
+      rethink before the v4 code PR. The open toggle choice stays additive, so it blocks only the
+      toggle slice, not the rest of the design.
 - [ ] Validate the draft against RimPsyche's real surface (`PsycheDataUtil`, 15 facets): write
       the provider snippet we'd hand their maintainer; open a design issue / contact Maux36.
 - [ ] Decide the Psychology story: standalone bridge vs. their-side provider (we ship neither
