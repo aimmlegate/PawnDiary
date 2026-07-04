@@ -4,17 +4,17 @@ How another mod (an "adapter") records moments in a colonist's Pawn Diary. This 
 contract**: everything described here is stable; everything else in the assembly is an internal
 implementation detail that may change without notice.
 
-- Inbound today (API v1): an adapter pushes events **into** Pawn Diary.
-- Planned (not yet shipped): pawn-context providers (your mod enriches diary prompts with its own
-  pawn state) and a read-only context snapshot (Pawn Diary exposes persona + recent entries to
-  your mod). See *Roadmap* below.
+- Inbound (API v1): an adapter pushes events **into** Pawn Diary.
+- Read side (API v2): an adapter can ask for recent diary entry title snapshots for a pawn.
+- Planned (not yet shipped): richer pawn-context providers and a fuller read-only context snapshot
+  (persona + recent entries). See *Roadmap* below.
 
 ## Stability promise
 
-- The public surface is the `PawnDiary.Integration` namespace: `PawnDiaryApi` and
-  `ExternalEventRequest`. Adapters must not call anything outside it.
+- The public surface is the `PawnDiary.Integration` namespace: `PawnDiaryApi`,
+  `ExternalEventRequest`, and read-only DTOs. Adapters must not call anything outside it.
 - Evolution is **additive only**: members are added, never renamed, removed, or repurposed.
-  `PawnDiaryApi.ApiVersion` (currently `1`) increments when members are added, so an adapter can
+  `PawnDiaryApi.ApiVersion` (currently `2`) increments when members are added, so an adapter can
   feature-detect: `if (PawnDiaryApi.ApiVersion >= 2) { ... }`.
 - `SubmitEvent` **never throws** into the caller and is safe to call at any time (menus included —
   it just returns `false` when no game is loaded).
@@ -80,7 +80,7 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
    proves the pipeline itself; then trigger your own hook and watch the pawn's Diary tab. If your
    key is unclaimed, Pawn Diary logs one warning naming your `sourceId` and the key.
 
-## API reference (v1)
+## API reference (v2)
 
 `PawnDiary.Integration.PawnDiaryApi`:
 
@@ -89,6 +89,7 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
 | `const int ApiVersion` | Contract version; bumps only when members are added. |
 | `bool IsReady` | A game is loaded and the diary component is alive. |
 | `bool SubmitEvent(ExternalEventRequest)` | `true` = validated and handed to the pipeline. The pipeline may still decline afterwards exactly like a native event: group disabled in XML, ineligible pawn, or dedup window. `false` = null/incomplete request, no game loaded, off-main-thread call, or unclaimed eventKey (all logged once, attributed to `sourceId`). |
+| `List<DiaryEntryTitleSnapshot> GetRecentEntryTitles(Pawn, int maxCount)` | Newest completed diary pages for one pawn, newest first. Returns at most 20 snapshots, never prompts or raw responses. Empty list = no game, invalid pawn/count, no completed pages, off-main-thread call, or failure. |
 
 `ExternalEventRequest` fields: `sourceId`*, `eventKey`*, `subject`* (required); `partner`,
 `summaryText`, `eventLabel`, `extraContext`, `dedupKey`, `dedupTicks` (optional). Semantics:
@@ -108,6 +109,11 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
 Threading: **main thread only** (the pipeline reads DefDatabase/settings and translates text).
 From a worker thread, marshal first — e.g. `LongEventHandler.ExecuteWhenFinished(() =>
 PawnDiaryApi.SubmitEvent(...))`.
+
+`DiaryEntryTitleSnapshot` fields: `tick`, `date`, `eventId`, `povRole`, `title`, `groupLabel`,
+`archived`. `title` is the stored LLM title when one exists; adapters should fall back to
+`groupLabel` or `date` for debug/UI display. The snapshot intentionally excludes generated prose,
+prompts, raw responses, and live RimWorld objects.
 
 ## eventKey conventions
 
@@ -139,10 +145,10 @@ conversation-framework mods that schedule follow-up dialogue during grammar rend
 > Target selection, per-mod patch plans, and sequencing for everything below live in
 > `MOD_COMPAT_PLAN.md`.
 
-- **v2 — pawn-context providers**: `RegisterPawnContextProvider(id, Func<Pawn, string>)`, letting
+- **v3 — pawn-context providers**: `RegisterPawnContextProvider(id, Func<Pawn, string>)`, letting
   personality mods (Psychology, RimPsyche, 1-2-3 Personalities, ...) add lines to the pawn summary
   of every prompt.
-- **v3 — outbound context**: a read-only snapshot (persona, recent generated entries) so chat mods
-  (RimTalk, ...) can use the diary as memory.
+- **v4 — outbound context**: a richer read-only snapshot (persona, recent generated entries) so
+  chat mods (RimTalk, ...) can use the diary as memory.
 
-Check `ApiVersion` before using members newer than v1.
+Check `ApiVersion` before using newer members.

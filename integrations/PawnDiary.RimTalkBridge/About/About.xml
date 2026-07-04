@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>PawnDiary: RimTalk bridge</name>
+  <author>aimmlegate</author>
+  <packageId>aimmlegate.pawndiary.rimtalkbridge</packageId>
+  <modVersion IgnoreIfNoMatchingField="True">0.1.0</modVersion>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+    </li>
+    <li>
+      <packageId>aimmlegate.pawndiary.development</packageId>
+      <displayName>Pawn Diary</displayName>
+    </li>
+    <li>
+      <packageId>cj.rimtalk</packageId>
+      <displayName>RimTalk</displayName>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+    <li>aimmlegate.pawndiary.development</li>
+    <li>cj.rimtalk</li>
+  </loadAfter>
+  <description>Minimal developer bridge between Pawn Diary and RimTalk. When enabled, it logs displayed RimTalk chat facts and recent Pawn Diary entry titles for the speaking pawn and target pawn. This adapter is deployed as a separate RimWorld mod through scripts/deploy-integrations.ps1.</description>
+</ModMetaData>

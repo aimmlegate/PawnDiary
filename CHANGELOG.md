@@ -15,8 +15,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   experimental drawer.
 - **Advanced settings discovery tightened.** The Advanced tab now stays visible, while raw XML
   override editing is gated behind an experimental opt-in, with All/Changed/Raw text filters and
-  collapsed drawer rows that show the effective source plus a short active-value preview before
-  opening the raw editor.
+  collapsed drawer rows that show the
+  effective source plus a short active-value preview before opening the raw editor.
 - **Advanced raw settings editor feedback.** Compact raw override boxes now validate while typing,
   show a colored parse preview, and leave malformed edits unapplied until the same checked parser
   accepts them. Covered schemas are weather mention chances, ritual quality bands, prompt template
@@ -29,8 +29,22 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 - **Advanced override warning.** The Advanced page now marks XML Def overrides as experimental so the
   surface reads as a testing escape hatch rather than a normal tuning workflow.
 
+- **Minimal RimTalk bridge scaffold.** Added `integrations/PawnDiary.RimTalkBridge/` as a separate
+  mod named `PawnDiary: RimTalk bridge`, with its own metadata, build project, English settings
+  strings, and one Enable/Disable setting. When enabled, it Harmony-patches RimTalk's accepted-chat
+  boundary and logs displayed chat facts plus recent Pawn Diary title snapshots for the speaker and
+  target. The bridge is diagnostic only for now: it does not submit diary entries or inject prompt
+  memory yet.
+- **Integration API v2 title snapshots.** `PawnDiaryApi.ApiVersion` is now `2`, with
+  `GetRecentEntryTitles(Pawn, int)` returning a capped, read-only list of recent
+  `DiaryEntryTitleSnapshot` rows. The DTO exposes only title metadata (`tick`, `date`, `eventId`,
+  `povRole`, `title`, `groupLabel`, `archived`) and omits prompts, raw responses, generated prose,
+  and live objects.
+
 ## 2026-07-03
 
+- **Release 0.2.0 prepared.** Source metadata now declares `modVersion` `0.2.0`; publish prep uses
+  the split Russian localization payload and force-refreshes local RimWorld Mods junctions.
 - **Release localization audit fixes.** EN/RU Keyed and DefInjected coverage now align, and
   arrival/dev mock prompt labels use localized strings instead of hardcoded C#.
 - **Release hardening for reasoning, external events, reflow, and startup.** Explicit reasoning

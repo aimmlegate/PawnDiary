@@ -14,14 +14,15 @@
 //
 // New to C#/RimWorld? See AGENTS.md.
 using System;
+using System.Collections.Generic;
 using PawnDiary.Ingestion;
 using Verse;
 
 namespace PawnDiary.Integration
 {
     /// <summary>
-    /// Public entry point for other mods. v1 surface: version/readiness probes plus
-    /// <see cref="SubmitEvent"/>, which pushes one external event into the diary pipeline.
+    /// Public entry point for other mods. v2 surface: version/readiness probes, event submission,
+    /// and a small read-only title snapshot for adapters that want diary context.
     /// </summary>
     public static class PawnDiaryApi
     {
@@ -30,7 +31,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 1;
+        public const int ApiVersion = 2;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -116,6 +117,41 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: SubmitEvent from '" + sourceForLog + "' failed: " + e,
                     ("PawnDiary.Api.Exception." + sourceForLog).GetHashCode());
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns newest completed diary-page titles for one pawn, newest first. This is intentionally
+        /// a narrow snapshot: no prompts, raw responses, or mutable game objects cross the integration
+        /// boundary. Returns an empty list for invalid input, no game, off-thread calls, or failures.
+        /// </summary>
+        public static List<DiaryEntryTitleSnapshot> GetRecentEntryTitles(Pawn pawn, int maxCount)
+        {
+            try
+            {
+                // The reader walks saved game state and display helpers, so keep the same main-thread
+                // rule as SubmitEvent. Adapters that listen on a worker thread should marshal first.
+                if (!UnityData.IsInMainThread)
+                {
+                    Log.ErrorOnce(
+                        "[Pawn Diary] Integration API: GetRecentEntryTitles was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.RecentTitles.OffThread".GetHashCode());
+                    return new List<DiaryEntryTitleSnapshot>();
+                }
+
+                if (!IsReady || pawn == null || maxCount <= 0)
+                {
+                    return new List<DiaryEntryTitleSnapshot>();
+                }
+
+                return DiaryGameComponent.Current.RecentEntryTitleSnapshotsFor(pawn, maxCount);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce(
+                    "[Pawn Diary] Integration API: GetRecentEntryTitles failed: " + e,
+                    "PawnDiary.Api.RecentTitles.Exception".GetHashCode());
+                return new List<DiaryEntryTitleSnapshot>();
             }
         }
     }

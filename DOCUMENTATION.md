@@ -51,7 +51,7 @@ Workshop payload omits source code and other development-only folders.
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
-| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`). Not loaded in-game until deployed. |
+| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`; current real scaffold: `PawnDiary.RimTalkBridge`). Not loaded in-game until deployed. |
 | `scripts/publish.ps1` | Local Workshop payload prep. |
 | `scripts/deploy-integrations.ps1` | Copies `integrations/` adapters to the RimWorld `Mods/` root as sibling mods. |
 
@@ -242,6 +242,20 @@ threading, eventKey conventions, packaging — lives in `INTEGRATIONS.md`.
 Saved external `gameContext` always starts with `external=...`; the domain classifier gives that
 marker precedence so adapter-supplied `extraContext` keys cannot make an external page display as a
 native Thought, Work, Hediff, or other built-in event domain.
+
+API v2 adds a narrow read side for adapters:
+`PawnDiaryApi.GetRecentEntryTitles(Pawn, int)` returns newest completed `DiaryEntryTitleSnapshot`
+rows for one pawn. The snapshot is intentionally small (`tick`, `date`, `eventId`, `povRole`,
+`title`, `groupLabel`, `archived`) and omits generated prose, prompts, raw responses, and live
+RimWorld objects. It is main-thread only and returns an empty list instead of throwing, matching
+the adapter-safety rule of `SubmitEvent`.
+
+`integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
+separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
+Pawn Diary, RimTalk, and Harmony. When its single setting is enabled, it patches RimTalk's accepted
+chat boundary (`TalkService.CreateInteraction(Pawn, TalkResponse)`) and logs the displayed chat
+facts plus recent Pawn Diary title snapshots for the speaker and target. It does not submit diary
+events or feed RimTalk prompts yet; it proves the observation/context path first.
 
 Compatibility groups shipped inside this repo for other mods use the group gate
 `enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only
@@ -604,7 +618,7 @@ text/list/table area -- with per-field and per-group reset, accent coloring for 
 flattens the rail into a search view, All/Changed/Raw text filters, "Reset changed in this tab",
 and "Copy changed summary". The copy action is intentionally only a plain text review summary
 (key, label, current snippet, XML/default snippet), not a stable import/export format. Rich tooltips
-combine authored help with the live value, XML default, range, and customized status. Advanced contains
+combine authored help with the live value, XML default, range, and customized status. Tuning contains
 XML-owned parameters (dedup windows, ability sampling,
 surroundings, weather chances, ritual quality labels, mood-condition families, health/enchantment
 thresholds, body-part event tier/attitude policy, mood/pain/opinion buckets, thought token lists,
@@ -1046,7 +1060,7 @@ Release payloads are prepared with:
 scripts\publish.ps1
 ```
 
-The source `About/About.xml` carries the mod's `<modVersion>` (`0.1.0` at introduction). The publish
+The source `About/About.xml` carries the mod's `<modVersion>` (`0.2.0` for the current release). The publish
 script stamps that value into the generated main and Russian localization `About.xml` files; pass
 `-Version <value>` to override the release payload version without editing source metadata.
 
