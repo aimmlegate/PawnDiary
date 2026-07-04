@@ -6,6 +6,27 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **External-API consent + gating + delivery decided.** Closed the last cross-cutting forks in the
+  capability catalog: consent is a **single master `allowExternalIntegrations` toggle** (default on —
+  installing an integration mod is the consent; the trust ladder is intentionally flat, and this also
+  settles the API v4 provider toggle); injection gating uses an **optional claiming group** (group's
+  policy/toggle apply when present, else the master switch + eligibility, while IN-1 keeps its
+  required-group rule); and capabilities ship **one at a time as base-mod features**, each with its
+  own `ApiVersion` bump in dependency order rather than bundled version waves. §4 reframed as a build
+  queue, MT-6/§3.3/§3.5 and the v4 brief §7 updated, open questions 1 and 5 closed.
+- **External-API capability catalog added; API-surface planning restructured.** New
+  `design/EXTERNAL_API_CAPABILITIES.md` is now the authority on the *shape* of the public integration
+  surface: it folds in a scoping pass' worth of requested capabilities (inbound entry-creation modes —
+  full prompt, partial prompt, direct text ± title; last-N reads with type/atmosphere/tone/date
+  filters; writing-style get/set/reset) plus proposed complements (async completion signal, entry
+  handles, by-id/count reads, temporary style override stack, per-capability consent, eligibility
+  probe, regenerate/retract, UI attribution). Each capability carries a status (shipped v1–v3 /
+  requested / proposed / designed), the internal hook it maps to, and its open decision; the doc also
+  consolidates the six cross-cutting decisions (async delivery, prompt-bypass vs. consistency,
+  injection gating, style override-stack vs. base mutation, consent granularity, versioning) and a
+  strawman v4→v8 sequencing. `MOD_COMPAT_PLAN.md` is retitled to own the *target-mod survey* only and
+  points its ledger at the catalog; the v4 providers brief is reframed as the deep-dive for catalog
+  capability C-CTX-1; `design/README.md` reindexed. No runtime change; `ApiVersion` stays 3.
 - **API v4 design brief drafted (design-doc-before-code).** Added
   `design/API_V4_PAWN_CONTEXT_PROVIDERS.md`, the required design doc for the planned
   `RegisterPawnContextProvider(id, Func<Pawn,string>)` member (MOD_COMPAT §4.2 / PR 4): public

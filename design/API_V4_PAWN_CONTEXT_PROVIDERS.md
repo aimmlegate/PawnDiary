@@ -1,9 +1,15 @@
 # API v4 — Pawn-Context Providers — Design Brief
 
-Status: **design draft (2026-07-04), one decision still open.** The public surface, sanitation,
-failure isolation, and purity boundary are worked out, but the **player-toggle model is not yet
-decided** — §7 holds an expanded option set (A–G) that needs a rethink before the v4 code PR. This
-is the design-doc-before-code deliverable
+> **Scope:** this is the deep-dive brief for a single capability — **C-CTX-1 (pawn-context
+> providers)** in the [external-API capability catalog](EXTERNAL_API_CAPABILITIES.md), which is the
+> authority on the overall API surface, sequencing, and the shared consent decision (catalog §3.5)
+> this doc's §7 toggle question feeds into.
+
+Status: **design settled (2026-07-04), ready for code.** The public surface, sanitation, failure
+isolation, and purity boundary are worked out, and the previously-open player-toggle model is now
+**decided at the program level**: a single master consent switch governs all external integrations
+(capability catalog §3.5), so the provider toggle is just that master switch — see §7. This is the
+design-doc-before-code deliverable
 that `design/MOD_COMPAT_PLAN.md` §4.2 / PR 4 requires before `RegisterPawnContextProvider` is
 implemented. When v4 ships, its stable contract detail moves to `../INTEGRATIONS.md` and its status
 flips to *shipped* in the MOD_COMPAT_PLAN ledger (§1); this file then becomes an implemented-plan
@@ -153,7 +159,14 @@ with transient state. Rationale: personality is *who the pawn is* (like xenotype
 keeping it adjacent to those lines reads coherently to the model. Order among multiple providers is
 **registration order**, which is stable within a session.
 
-## 7. Player control — OPEN (needs rethink)
+## 7. Player control — DECIDED via the master consent switch (catalog §3.5)
+
+> **Resolved (2026-07-04):** the program-level decision is a **single master `allowExternalIntegrations`
+> toggle, default on** (capability catalog §3.5, option A1 — "installing a mod is consent"). Providers
+> are therefore gated by that one switch: when it is off, `RunPawnContextProviders` returns nothing;
+> there is no provider-specific or per-provider toggle in v4. The option analysis below is kept as the
+> reasoning record; options B–G are not pursued (per-source granularity stays a possible additive
+> follow-up, catalog §3.5).
 
 MOD_COMPAT §4.2 point 4 says "per-provider toggle in settings (mirrors per-group toggles)." That
 sentence predates the current architecture: **per-group enablement is now XML-only** —
