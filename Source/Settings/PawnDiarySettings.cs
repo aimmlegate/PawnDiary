@@ -105,6 +105,8 @@ namespace PawnDiary
         public bool showApiSettings = true;
         // UI preference: when false, the compact Prompt Studio block is collapsed in mod settings.
         public bool showPromptStudio = true;
+        // UI preference: reveals the experimental raw XML Def override pages in settings.
+        public bool showExperimentalAdvancedOverrides = false;
         // UI preference: when true, show Diary in the normal pawn inspect-tab row. This is the
         // default surface; disabling it uses the selected-pawn/corpse bottom command instead.
         // The tab remains registered either way so links can always open it.
@@ -211,6 +213,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref temperature, "temperature", 0.8f);
             Scribe_Values.Look(ref showApiSettings, "showApiSettings", true);
             Scribe_Values.Look(ref showPromptStudio, "showPromptStudio", true);
+            Scribe_Values.Look(ref showExperimentalAdvancedOverrides, "showExperimentalAdvancedOverrides", false);
             Scribe_Values.Look(ref showDiaryInspectTab, "showDiaryInspectTab", true);
             Scribe_Values.Look(ref showPersonaSettings, "showPersonaSettings", false);
             Scribe_Values.Look(ref showLlmDebugInfo, "showLlmDebugInfo", false);

@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-03
+Last updated: 2026-07-04
 
 Related files:
 
@@ -525,6 +525,9 @@ prompt-time only and never change the saved picker value.
 Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
 and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary
 pages until they close. `normalPromptWeightMultiplier` can dampen ordinary health/mood context.
+Eligible first-person prompts can also receive one hidden humor cue; `DiaryTuningDef.humorChance`
+defaults to `0.20` (roughly one in five eligible entries), while cue flavor is selected by event
+stakes.
 When an active hediff forces a temporary writing-style override, all hediffs matched by any active
 persona-override rule are suppressed from the prompt-enchantment pool so the same condition does not
 arrive once as style and again as "important context."
@@ -561,10 +564,11 @@ reasoning-style lines, or terminal periods are treated as unusable model output.
 
 ## 7. Settings And UI
 
-The settings window is split into **Main**, **Prompts**, **Styles**, and **Tuning** tabs. Main covers
-API lanes, routing mode, request tuning, title generation, atmospheric formatting, prompt
-enchantments, one shared random-generation weight for optional chance-gated pages, and diary-event
-retention caps. Dev mode exposes prompt-test mode and extra diagnostics in settings; bulk export
+The settings window is split into **Main**, **Prompts**, **Styles**, and **Advanced** tabs. Main
+covers API lanes, routing mode, request tuning, title generation, atmospheric formatting, prompt
+enchantments, the "Show experimental XML override pages" switch, one shared random-generation weight
+for optional chance-gated pages, and diary-event retention caps. Dev mode
+exposes prompt-test mode and extra diagnostics in settings; bulk export
 lives in RimWorld's Debug Actions menu. The export writes every saved hot page, compact archived
 page, archive-only orphan row, and backing event record to `PawnDiaryExports/` under RimWorld's
 save-data folder, and copies the generated file path to the clipboard.
@@ -572,15 +576,16 @@ Connection rows use a fixed label column and shared right-side action-button col
 model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned across localized UI
 text.
 
-Prompts is the single home for prompt text editing. Its **Shared/event prompts** subpage edits the
-four shared system prompts plus per-event prompt/enhancement/forced-model overrides. Its prompt-type
-picker uses compact labels and keeps internal event keys out of the visible menu. Its
-**Prompt policy and weights** subpage exposes prompt-related XML from `DiaryPromptDef`,
+Prompts is the home for normal prompt text editing: the four shared system prompts plus per-event
+prompt/enhancement/forced-model overrides. Its prompt-type picker uses compact labels and keeps
+internal event keys out of the visible menu. When the Main-tab experimental XML override switch is
+enabled, Prompts also shows a collapsed **Experimental prompt policy overrides** drawer. That drawer,
+not the normal prompt editor, exposes prompt-related XML from `DiaryPromptDef`,
 `DiaryPromptTemplateDef`, `DiaryPromptEnchantmentDef`, `DiaryHumorCueDef`,
 `DiaryEventWindowDef`, `DiaryObservedConditionDef`, `DiaryInteractionGroupDef`, and
-`DiaryHediffPersonaOverrideDef`. That includes template prompt text, final instructions,
-template field lists, include/exclude prompt switches, per-template token caps, prompt cue text,
-prompt weights, event-window/observed-condition prompt biasing and decay, observed-condition
+`DiaryHediffPersonaOverrideDef`. It includes template prompt text, final instructions, template
+field lists, include/exclude prompt switches, per-template token caps, prompt cue text, prompt
+weights, event-window/observed-condition prompt biasing and decay, observed-condition
 force-stop/cooldown/suppression/evidence-label caps, group instructions/tone variants,
 batch/promotion weights, humor cue rules/weights, and hediff-driven writing-style override policy.
 Template prompt text boxes are raw per-template overrides; blank means "inherit" and intentionally
@@ -590,12 +595,17 @@ the XML/Keyed default is still used at generation time, while node settings neve
 fields or copy their resolved text into editable overrides.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
-Tuning is the low-level XML parameter editor. Tuning and the Prompt tab's policy/weights subpage share
-a compact two-pane editor: a left rail of groups and a right body that draws one widget per field type
--- checkbox, slider, numeric text, single-line text, or multi-line text/list/table area -- with
-per-field and per-group reset, accent coloring for customized values, a name filter that flattens the
-rail into a search view, and rich tooltips that combine authored help with the live value, XML default,
-range, and customized status. Tuning contains XML-owned parameters (dedup windows, ability sampling,
+Advanced is the low-level XML parameter editor. The tab stays visible, but its raw XML override
+editor is disabled until the experimental override switch is enabled from Main or from the Advanced
+gate panel; the Prompt tab's experimental prompt-policy drawer uses the same gate. Advanced and that
+prompt drawer share a compact two-pane editor: a left rail of groups and a right body that draws one
+widget per field type -- checkbox, slider, numeric text, single-line text, or multi-line
+text/list/table area -- with per-field and per-group reset, accent coloring for customized values, a name filter that
+flattens the rail into a search view, All/Changed/Raw text filters, "Reset changed in this tab",
+and "Copy changed summary". The copy action is intentionally only a plain text review summary
+(key, label, current snippet, XML/default snippet), not a stable import/export format. Rich tooltips
+combine authored help with the live value, XML default, range, and customized status. Advanced contains
+XML-owned parameters (dedup windows, ability sampling,
 surroundings, weather chances, ritual quality labels, mood-condition families, health/enchantment
 thresholds, body-part event tier/attitude policy, mood/pain/opinion buckets, thought token lists,
 thought progression rules, scanner intervals, work sampling, day/quadrum/arc reflection weights,
@@ -605,7 +615,8 @@ is declarative and drives both the UI and the runtime override seam. Static tuni
 settings load; Def-backed prompt-policy groups are appended lazily after `DefDatabase` has loaded, so
 dynamic groups such as humor cues cannot be cached empty by early settings deserialization.
 Dynamic Def-backed group prefixes are Keyed UI strings, while each Def's label still comes from its
-DefInjected label or defName fallback.
+DefInjected label or defName fallback. The Advanced page labels these overrides experimental because
+they write directly into live XML Def instances and are intended as a testing/escape-hatch surface.
 
 Overrides persist per player in `TuningOverrideStore` (a typed twin of `PromptOverrideDictionary`) and
 take effect immediately by writing straight into the live Def instance fields via cached reflection or
@@ -614,13 +625,24 @@ small custom accessors for nested policy objects. Every existing `DiaryTuning.Cu
 snapshotted once before the first override so Reset can restore them (signal/context `-1` "inherit
 tuning" sentinels and `<null>` list inheritance markers are preserved). Prompt text overrides use the
 same `{0}`, `{1}` placeholder convention as Keyed strings; cue lists use one item per line and accept
-`<null>` to suppress configured cue rows. Prompt-enchantment appearance odds expose the canonical
-`chance` field only; the legacy `<frequency>` XML alias is still accepted for compatibility but is not
-a separate settings override. Compact tables use these line formats: `WeatherDef=chance`,
+`<null>` to suppress configured cue rows. Empty inherited multi-line text/list overrides collapse to a
+single effective-value preview drawer row until the player explicitly opens them, so optional
+prompt-text escape hatches do not dominate the Advanced UI. The preview names the source
+(override/XML default/shared prompt) and shows a short snippet of the active value. Clearing a string
+override back to blank restores the
+snapshotted XML value for the live session because the persisted override store treats blank as "no
+override". Prompt-enchantment appearance odds expose the canonical `chance` field only; the legacy
+`<frequency>` XML alias is still accepted for compatibility but is not a separate settings override.
+Compact tables use these line formats: `WeatherDef=chance`,
 `maxExclusive=ritualQualityLabel`, `enabled|label|source|contextKey` for prompt fields,
 `level|chance|frequency|weight|severity` for prompt-enchantment severity tiers, and
-`category|ThoughtDef|stageIndex:severity,...` for thought progression rules. Structural non-prompt UI
-and text-decoration XML remains XML-only.
+`categoryKey|thoughtDefName|stageIndex:severity,...` for thought progression rules, mirroring the
+XML fields `categoryKey`, `thoughtDefName`, and `stages/li/stageIndex` + `severity`. These compact
+tables, plus one-integer-per-line progression skill milestones, draw a small syntax strip under the
+raw box: parsed columns are color-previewed, the first malformed line is shown immediately, and
+invalid edits stay in the box without being applied to the live Def override until the same checked
+parse succeeds.
+Structural non-prompt UI and text-decoration XML remains XML-only.
 
 The Diary UI is an inspect tab registered for humanlike pawns and their corpse defs. By default it
 appears in the pawn inspect-tab row for eligible colonists and selected colonist corpses. A setting can

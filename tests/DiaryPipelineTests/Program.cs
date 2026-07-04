@@ -16,6 +16,7 @@ namespace DiaryPipelineTests
             TestCombatPromptPlan();
             TestSoloPromptPlan();
             TestOwnedPromptTextIsNotSentenceCapped();
+            TestPromptTemplatePolicyReachesPromptPlan();
             TestQuestPromptPlanFields();
             TestProgressionPromptPlanFields();
             TestDualPovPromptPlans();
@@ -49,6 +50,7 @@ namespace DiaryPipelineTests
             TestApiRequestAuth();
             TestPromptSettingsMenuPolicy();
             TestTuningOverrideMigration();
+            TestAdvancedRawSyntax();
             TestPromptTextTemplate();
             TestLlmRequestJsonBuilder();
             TestModelReasoningCapability();
@@ -141,6 +143,73 @@ namespace DiaryPipelineTests
 
             AssertTrue("second pass is a no-op",
                 TuningOverrideMigration.PruneRemovedFieldKeys(overrides) == 0);
+        }
+
+        private static void TestAdvancedRawSyntax()
+        {
+            AdvancedRawSyntaxCheck valid = AdvancedRawSyntax.CheckThoughtProgressionRules(
+                "food|NeedFood|2:1,3:2,4:3\nrest|NeedRest|1:1");
+            AssertTrue("valid thought progression syntax passes", valid.valid);
+            AssertTrue("valid syntax parsed two rows", valid.lines.Count == 2);
+            AssertTrue("valid syntax parsed three stages on first row", valid.lines[0].stages.Count == 3);
+
+            AdvancedRawSyntaxCheck empty = AdvancedRawSyntax.CheckThoughtProgressionRules(" \n ");
+            AssertTrue("blank thought progression table is allowed", empty.valid && empty.empty);
+
+            AdvancedRawSyntaxCheck nullSentinel = AdvancedRawSyntax.CheckThoughtProgressionRules("<null>");
+            AssertTrue("null sentinel is accepted", nullSentinel.valid && nullSentinel.nullSentinel);
+
+            AdvancedRawSyntaxCheck missingColumn = AdvancedRawSyntax.CheckThoughtProgressionRules("food|NeedFood");
+            AssertTrue("missing stage column fails", !missingColumn.valid);
+            AssertTrue("missing stage column reports column issue",
+                missingColumn.firstError.issue == AdvancedRawSyntaxIssue.ExpectedThoughtProgressionColumns);
+
+            AdvancedRawSyntaxCheck badStage = AdvancedRawSyntax.CheckThoughtProgressionRules("food|NeedFood|x:1");
+            AssertTrue("bad stage index fails", !badStage.valid);
+            AssertTrue("bad stage index reports stage issue",
+                badStage.firstError.issue == AdvancedRawSyntaxIssue.BadStageIndex);
+
+            AdvancedRawSyntaxCheck schemaIntegers = AdvancedRawSyntax.CheckThoughtProgressionRules("food|NeedFood|-1:0,2:-3,2:5");
+            AssertTrue("schema integer fields accept any integer values", schemaIntegers.valid);
+            AssertTrue("schema list entries do not impose uniqueness beyond XML", schemaIntegers.lines[0].stages.Count == 3);
+
+            AdvancedRawSyntaxCheck weather = AdvancedRawSyntax.CheckWeatherMentionRules("Rain=0.35\nFog:0.1");
+            AssertTrue("weather mention chance table accepts equals and colon pairs", weather.valid);
+            AssertTrue("weather mention chance table parses pair columns", weather.lines[0].columns[0] == "Rain");
+            AdvancedRawSyntaxCheck badWeather = AdvancedRawSyntax.CheckWeatherMentionRules("Rain=heavy");
+            AssertTrue("weather mention chance table rejects non-float chance", !badWeather.valid);
+            AssertTrue("weather mention chance table reports float issue",
+                badWeather.firstError.issue == AdvancedRawSyntaxIssue.BadFloat);
+
+            AdvancedRawSyntaxCheck ritual = AdvancedRawSyntax.CheckRitualQualityBands("0.4=quiet\n0.8=stirring");
+            AssertTrue("ritual quality band table accepts numeric thresholds", ritual.valid);
+            AdvancedRawSyntaxCheck badRitual = AdvancedRawSyntax.CheckRitualQualityBands("low=quiet");
+            AssertTrue("ritual quality band table rejects non-float threshold", !badRitual.valid);
+            AssertTrue("ritual quality band table reports float issue",
+                badRitual.firstError.issue == AdvancedRawSyntaxIssue.BadFloat);
+
+            AdvancedRawSyntaxCheck fields = AdvancedRawSyntax.CheckPromptFields(
+                "true|mood|Mood|mood_key\nfalse|entry|EntryText");
+            AssertTrue("prompt field table accepts three or four columns", fields.valid);
+            AssertTrue("prompt field table pads missing context key", fields.lines[1].columns[3] == string.Empty);
+            AdvancedRawSyntaxCheck badFieldBool = AdvancedRawSyntax.CheckPromptFields("maybe|mood|Mood");
+            AssertTrue("prompt field table rejects non-bool enabled value", !badFieldBool.valid);
+            AssertTrue("prompt field table reports bool issue",
+                badFieldBool.firstError.issue == AdvancedRawSyntaxIssue.BadBool);
+
+            AdvancedRawSyntaxCheck severity = AdvancedRawSyntax.CheckSeverityTiers("major|0.5|-1|2|1.2\nminor");
+            AssertTrue("severity tier table accepts optional numeric columns", severity.valid);
+            AdvancedRawSyntaxCheck badSeverity = AdvancedRawSyntax.CheckSeverityTiers("minor|often");
+            AssertTrue("severity tier table rejects non-float numeric columns", !badSeverity.valid);
+            AssertTrue("severity tier table reports float issue",
+                badSeverity.firstError.issue == AdvancedRawSyntaxIssue.BadFloat);
+
+            AdvancedRawSyntaxCheck milestones = AdvancedRawSyntax.CheckIntList("3\n6\n9", "List<int>");
+            AssertTrue("integer milestone list accepts one int per line", milestones.valid);
+            AdvancedRawSyntaxCheck badMilestone = AdvancedRawSyntax.CheckIntList("3\nsix", "List<int>");
+            AssertTrue("integer milestone list rejects non-int rows", !badMilestone.valid);
+            AssertTrue("integer milestone list reports int issue",
+                badMilestone.firstError.issue == AdvancedRawSyntaxIssue.BadInt);
         }
 
         private static void TestPromptTextTemplate()
@@ -440,6 +509,51 @@ namespace DiaryPipelineTests
             AssertContains("owned event enhancement not capped", plan.userPrompt, "Owned enhancement three.");
             AssertContains("owned final instruction not capped", plan.userPrompt, "Owned final three.");
             AssertContains("owned persona block not capped", plan.systemPrompt, "Owned style three.");
+        }
+
+        private static void TestPromptTemplatePolicyReachesPromptPlan()
+        {
+            DiaryPolicySnapshot soloPolicy = Policy(combat: false, important: true);
+            DiaryTemplatePolicy soloTemplate = soloPolicy.Template(DiaryPipelineTemplates.SoloImportant);
+            soloTemplate.systemPrompt = "Override system prompt.";
+            soloTemplate.finalInstruction = "Override final instruction.";
+            soloTemplate.fields = Fields(Field("override pov", "PovName"));
+
+            DiaryPromptPlan soloPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = SoloPayload("e-template-override", "quiet work", "Alice repaired the generator alone."),
+                policy = soloPolicy,
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = "Override voice.",
+                maxTokens = 30
+            });
+
+            AssertEqual("template override system reaches system prompt",
+                "Override system prompt.\n\nOverride voice.",
+                soloPlan.systemPrompt);
+            AssertContains("template override field label reaches user prompt", soloPlan.userPrompt, "override pov: Alice");
+            AssertTrue("template override field list replaces default field list",
+                !soloPlan.userPrompt.Contains("what happened: Alice repaired the generator alone."));
+            AssertContains("template override final instruction reaches user prompt",
+                soloPlan.userPrompt,
+                "Override final instruction.");
+
+            DiaryPolicySnapshot pairPolicy = Policy(combat: false, important: true);
+            DiaryTemplatePolicy pairTemplate = pairPolicy.Template(DiaryPipelineTemplates.PairImportant);
+            pairTemplate.recipientFinalInstruction = "Override recipient follow-up.";
+
+            DiaryPromptPlan recipientPlan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = PairPayload("e-recipient-template-override", "social exchange", "Alice spoke.", "Bob listened."),
+                policy = pairPolicy,
+                povRole = DiaryPipelineRoles.Recipient,
+                priorInitiatorEntry = "Alice already wrote her side.",
+                maxTokens = 30
+            });
+
+            AssertContains("template override recipient instruction reaches recipient prompt",
+                recipientPlan.userPrompt,
+                "Override recipient follow-up.");
         }
 
         private static void TestQuestPromptPlanFields()

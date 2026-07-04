@@ -6,7 +6,7 @@
   punchlines, or comic dialogue.
 
   The feature is HIDDEN and ALWAYS-ON: no settings UI, no player-facing label. The base rate lives in
-  DiaryTuningDef.humorChance (default 0.10 ≈ 1 in 10 eligible entries). At most one cue per entry.
+  DiaryTuningDef.humorChance (default 0.20 ≈ 1 in 5 eligible entries). At most one cue per entry.
 
   Flavor matches event STAKES, chosen by Source/Generation/HumorCues.cs:
     * <tier>Light</tier>   — dry/absurdist, drawn for mundane events.

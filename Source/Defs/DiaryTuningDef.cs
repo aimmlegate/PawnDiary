@@ -465,7 +465,7 @@ namespace PawnDiary
         // cue appended to its prompt. There is no settings field or UI for this; the single knob
         // lives here so it can be retuned in XML. Flavor (Light vs Gallows) is chosen separately by
         // event stakes, so this only controls how often any humor appears at all.
-        public float humorChance = 0.10f;
+        public float humorChance = 0.20f;
     }
 
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default
@@ -490,9 +490,9 @@ namespace PawnDiary
         }
 
         // Fallback base rate used only if the XML def is missing entirely. When the def exists but a
-        // modder leaves humorChance blank, the field initializer (0.10f) already applies. This clamps
+        // modder leaves humorChance blank, the field initializer (0.20f) already applies. This clamps
         // any out-of-range authored value to 0..1 so a typo can never make humor fire >100% or crash.
-        private const float DefaultHumorChance = 0.10f;
+        private const float DefaultHumorChance = 0.20f;
 
         /// <summary>
         /// XML-tuned base probability (0..1) that an eligible first-person entry gets a humor cue.

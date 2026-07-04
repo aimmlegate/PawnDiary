@@ -71,6 +71,10 @@ namespace PawnDiary
         // Keyed XML prompt text does not use this hook: those rows show only the literal override
         // field, keeping translation keys and their resolved defaults out of node settings.
         public Func<string> effectiveReader;
+        // Optional preview-only effective value for collapsed raw override drawers. This can show the
+        // inherited value without putting that inherited text back into the editable override field.
+        public Func<string> effectivePreviewReader;
+        public string effectivePreviewSourceKey;
         private const string NullListSentinel = "<null>";
 
         // Pristine XML value captured before the first override was applied. Used by Reset.
@@ -83,7 +87,13 @@ namespace PawnDiary
             {
                 if (isLongText || fieldType == AdvancedFieldType.StringList || fieldType == AdvancedFieldType.IntList)
                 {
-                    return AdvancedLabelLineHeight + AdvancedLongTextHeight + AdvancedRowGap;
+                    float height = AdvancedLabelLineHeight + AdvancedLongTextHeight + AdvancedRowGap;
+                    if (AdvancedRawSyntax.HasPreview(fieldName))
+                    {
+                        height += AdvancedRowGap + AdvancedSyntaxPreviewHeight;
+                    }
+
+                    return height;
                 }
 
                 if (fieldType == AdvancedFieldType.Bool)
@@ -100,6 +110,7 @@ namespace PawnDiary
         public const float AdvancedLabelLineHeight = 20f;
         public const float AdvancedControlLineHeight = 28f;
         public const float AdvancedLongTextHeight = 140f;
+        public const float AdvancedSyntaxPreviewHeight = 78f;
         public const float AdvancedRowGap = 4f;
 
         public AdvancedFieldDescriptor(Type defType, Func<Def> resolveDef, string defName, string fieldName)
@@ -831,19 +842,21 @@ namespace PawnDiary
                 return null;
             }
 
-            List<WeatherMentionRule> rules = new List<WeatherMentionRule>();
-            foreach (string line in Lines(text))
+            AdvancedRawSyntaxCheck check = AdvancedRawSyntax.CheckWeatherMentionRules(text);
+            if (check == null || !check.valid)
             {
-                string[] parts = SplitPair(line);
-                if (parts == null)
-                {
-                    continue;
-                }
+                throw new FormatException("Invalid weatherMentionChances syntax.");
+            }
+
+            List<WeatherMentionRule> rules = new List<WeatherMentionRule>();
+            for (int i = 0; i < check.lines.Count; i++)
+            {
+                AdvancedRawSyntaxLine line = check.lines[i];
 
                 rules.Add(new WeatherMentionRule
                 {
-                    weather = parts[0],
-                    chance = float.Parse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture)
+                    weather = line.columns[0],
+                    chance = float.Parse(line.columns[1], NumberStyles.Float, CultureInfo.InvariantCulture)
                 });
             }
 
@@ -883,19 +896,21 @@ namespace PawnDiary
                 return null;
             }
 
-            List<PawnDiary.Capture.RitualQualityBand> bands = new List<PawnDiary.Capture.RitualQualityBand>();
-            foreach (string line in Lines(text))
+            AdvancedRawSyntaxCheck check = AdvancedRawSyntax.CheckRitualQualityBands(text);
+            if (check == null || !check.valid)
             {
-                string[] parts = SplitPair(line);
-                if (parts == null)
-                {
-                    continue;
-                }
+                throw new FormatException("Invalid ritualQualityBands syntax.");
+            }
+
+            List<PawnDiary.Capture.RitualQualityBand> bands = new List<PawnDiary.Capture.RitualQualityBand>();
+            for (int i = 0; i < check.lines.Count; i++)
+            {
+                AdvancedRawSyntaxLine line = check.lines[i];
 
                 bands.Add(new PawnDiary.Capture.RitualQualityBand
                 {
-                    maxExclusive = float.Parse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture),
-                    label = parts[1]
+                    maxExclusive = float.Parse(line.columns[0], NumberStyles.Float, CultureInfo.InvariantCulture),
+                    label = line.columns[1]
                 });
             }
 
@@ -938,22 +953,24 @@ namespace PawnDiary
                 return null;
             }
 
-            List<DiaryPromptFieldDef> fields = new List<DiaryPromptFieldDef>();
-            foreach (string line in Lines(text))
+            AdvancedRawSyntaxCheck check = AdvancedRawSyntax.CheckPromptFields(text);
+            if (check == null || !check.valid)
             {
-                string[] parts = line.Split('|');
-                if (parts.Length < 3)
-                {
-                    continue;
-                }
+                throw new FormatException("Invalid prompt field syntax.");
+            }
 
-                bool enabled = !string.Equals(parts[0].Trim(), "false", StringComparison.OrdinalIgnoreCase);
+            List<DiaryPromptFieldDef> fields = new List<DiaryPromptFieldDef>();
+            for (int i = 0; i < check.lines.Count; i++)
+            {
+                AdvancedRawSyntaxLine line = check.lines[i];
+
+                bool enabled = string.Equals(line.columns[0], "true", StringComparison.OrdinalIgnoreCase);
                 fields.Add(new DiaryPromptFieldDef
                 {
                     enabled = enabled,
-                    label = parts[1].Trim(),
-                    source = parts[2].Trim(),
-                    contextKey = parts.Length > 3 ? parts[3].Trim() : string.Empty
+                    label = line.columns[1],
+                    source = line.columns[2],
+                    contextKey = line.columns[3]
                 });
             }
 
@@ -997,22 +1014,24 @@ namespace PawnDiary
                 return null;
             }
 
-            List<PromptEnchantmentSeverityTier> tiers = new List<PromptEnchantmentSeverityTier>();
-            foreach (string line in Lines(text))
+            AdvancedRawSyntaxCheck check = AdvancedRawSyntax.CheckSeverityTiers(text);
+            if (check == null || !check.valid)
             {
-                string[] parts = line.Split('|');
-                if (parts.Length < 1 || string.IsNullOrWhiteSpace(parts[0]))
-                {
-                    continue;
-                }
+                throw new FormatException("Invalid hediffSeverityTiers syntax.");
+            }
+
+            List<PromptEnchantmentSeverityTier> tiers = new List<PromptEnchantmentSeverityTier>();
+            for (int i = 0; i < check.lines.Count; i++)
+            {
+                AdvancedRawSyntaxLine line = check.lines[i];
 
                 tiers.Add(new PromptEnchantmentSeverityTier
                 {
-                    level = parts[0].Trim(),
-                    chance = ParseFloatPart(parts, 1, -1f),
-                    frequency = ParseFloatPart(parts, 2, -1f),
-                    weight = ParseFloatPart(parts, 3, -1f),
-                    severity = ParseFloatPart(parts, 4, -1f)
+                    level = line.columns[0],
+                    chance = ParseFloatColumn(line.columns, 1, -1f),
+                    frequency = ParseFloatColumn(line.columns, 2, -1f),
+                    weight = ParseFloatColumn(line.columns, 3, -1f),
+                    severity = ParseFloatColumn(line.columns, 4, -1f)
                 });
             }
 
@@ -1070,45 +1089,32 @@ namespace PawnDiary
                 return null;
             }
 
-            List<ThoughtProgressionRule> rules = new List<ThoughtProgressionRule>();
-            foreach (string line in Lines(text))
+            AdvancedRawSyntaxCheck check = AdvancedRawSyntax.CheckThoughtProgressionRules(text);
+            if (check == null || !check.valid)
             {
-                string[] parts = line.Split('|');
-                if (parts.Length < 2)
-                {
-                    continue;
-                }
+                throw new FormatException("Invalid thoughtProgressionRules syntax.");
+            }
+
+            List<ThoughtProgressionRule> rules = new List<ThoughtProgressionRule>();
+            for (int ruleIndex = 0; ruleIndex < check.lines.Count; ruleIndex++)
+            {
+                AdvancedRawSyntaxLine line = check.lines[ruleIndex];
 
                 ThoughtProgressionRule rule = new ThoughtProgressionRule
                 {
-                    categoryKey = parts[0].Trim(),
-                    thoughtDefName = parts[1].Trim(),
+                    categoryKey = line.categoryKey,
+                    thoughtDefName = line.thoughtDefName,
                     stages = new List<ThoughtProgressionStage>()
                 };
 
-                if (parts.Length > 2)
+                for (int i = 0; i < line.stages.Count; i++)
                 {
-                    string[] stageParts = parts[2].Split(',');
-                    for (int i = 0; i < stageParts.Length; i++)
+                    AdvancedRawSyntaxStage stage = line.stages[i];
+                    rule.stages.Add(new ThoughtProgressionStage
                     {
-                        string stageText = stageParts[i].Trim();
-                        if (stageText.Length == 0)
-                        {
-                            continue;
-                        }
-
-                        string[] pair = stageText.Split(':');
-                        if (pair.Length != 2)
-                        {
-                            continue;
-                        }
-
-                        rule.stages.Add(new ThoughtProgressionStage
-                        {
-                            stageIndex = int.Parse(pair[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture),
-                            severity = int.Parse(pair[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture)
-                        });
-                    }
+                        stageIndex = int.Parse(stage.stageIndex, NumberStyles.Integer, CultureInfo.InvariantCulture),
+                        severity = int.Parse(stage.severity, NumberStyles.Integer, CultureInfo.InvariantCulture)
+                    });
                 }
 
                 rules.Add(rule);
@@ -1166,6 +1172,16 @@ namespace PawnDiary
             }
 
             return float.Parse(parts[index].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture);
+        }
+
+        private static float ParseFloatColumn(List<string> columns, int index, float fallback)
+        {
+            if (columns == null || index < 0 || index >= columns.Count || string.IsNullOrWhiteSpace(columns[index]))
+            {
+                return fallback;
+            }
+
+            return float.Parse(columns[index], NumberStyles.Float, CultureInfo.InvariantCulture);
         }
 
         // ---- Catalog authoring ----
@@ -1831,6 +1847,8 @@ namespace PawnDiary
             public Builder LongText(string fieldName)
             {
                 Func<string> effectiveReader = null;
+                Func<string> effectivePreviewReader = null;
+                string effectivePreviewSourceKey = null;
 
                 // Template prompt fields (systemPrompt/finalInstruction/recipientFinalInstruction) are
                 // raw per-template overrides. By policy the inherited shared prompt text is shown only on
@@ -1839,25 +1857,49 @@ namespace PawnDiary
                 // testable decision point: only when it opts a field back in do we mirror the inherited
                 // shared text as the greyed effective value.
                 if (!string.IsNullOrEmpty(targetTemplateKey)
-                    && PromptSettingsMenuPolicy.IsTemplateTextOverrideField(fieldName)
-                    && PromptSettingsMenuPolicy.TemplateFieldShouldShowInheritedFallback(fieldName))
+                    && PromptSettingsMenuPolicy.IsTemplateTextOverrideField(fieldName))
                 {
                     string templateKey = targetTemplateKey;
                     if (string.Equals(fieldName, "systemPrompt", StringComparison.Ordinal))
                     {
-                        effectiveReader = () => DiaryPromptTemplates.SystemPromptFor(templateKey);
+                        effectivePreviewReader = () => DiaryPromptTemplates.SystemPromptFor(templateKey);
                     }
                     else if (string.Equals(fieldName, "finalInstruction", StringComparison.Ordinal))
                     {
-                        effectiveReader = () => DiaryPromptTemplates.FinalInstructionFor(templateKey);
+                        effectivePreviewReader = () => DiaryPromptTemplates.FinalInstructionFor(templateKey);
                     }
                     else if (string.Equals(fieldName, "recipientFinalInstruction", StringComparison.Ordinal))
                     {
-                        effectiveReader = () => DiaryPromptTemplates.RecipientFinalInstruction(templateKey);
+                        effectivePreviewReader = () => DiaryPromptTemplates.RecipientFinalInstruction(templateKey);
+                    }
+
+                    if (effectivePreviewReader != null)
+                    {
+                        effectivePreviewSourceKey = "PawnDiary.Settings.Adv.Source.SharedPrompt";
+                    }
+
+                    if (effectivePreviewReader != null
+                        && PromptSettingsMenuPolicy.TemplateFieldShouldShowInheritedFallback(fieldName))
+                    {
+                        effectiveReader = effectivePreviewReader;
                     }
                 }
 
-                return Add(fieldName, AdvancedFieldType.String, 0f, 0f, false, false, true, effectiveReader);
+                return Add(
+                    fieldName,
+                    AdvancedFieldType.String,
+                    0f,
+                    0f,
+                    false,
+                    false,
+                    true,
+                    effectiveReader,
+                    null,
+                    null,
+                    null,
+                    null,
+                    effectivePreviewReader,
+                    effectivePreviewSourceKey);
             }
 
             public Builder LongText(string fieldName, Func<string> effectiveReader)
@@ -1930,7 +1972,9 @@ namespace PawnDiary
                 Func<object, string> customFormatter = null,
                 Func<string, object> customParser = null,
                 Func<object> customReader = null,
-                Action<object> customWriter = null)
+                Action<object> customWriter = null,
+                Func<string> effectivePreviewReader = null,
+                string effectivePreviewSourceKey = null)
             {
                 if (TuningOverrideMigration.IsRemovedFieldName(fieldName))
                 {
@@ -1948,6 +1992,8 @@ namespace PawnDiary
                     useSlider = slider,
                     isLongText = longText,
                     effectiveReader = effectiveReader,
+                    effectivePreviewReader = effectivePreviewReader,
+                    effectivePreviewSourceKey = effectivePreviewSourceKey,
                     customFormatter = customFormatter,
                     customParser = customParser,
                     customReader = customReader,

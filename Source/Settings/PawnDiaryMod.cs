@@ -15,11 +15,12 @@ namespace PawnDiary
         Tuning
     }
 
-    /// <summary>Subpage selection inside the prompt-editing settings page.</summary>
-    public enum PawnDiaryPromptSettingsPage
+    /// <summary>Advanced field-list filter selected by the settings window.</summary>
+    public enum AdvancedFieldFilterMode
     {
-        SharedAndEvents,
-        Templates
+        All,
+        Changed,
+        Raw
     }
 
     /// <summary>
@@ -45,17 +46,19 @@ namespace PawnDiary
         private Vector2 styleSettingsScrollPosition;
         // Which top-level settings page is open.
         private PawnDiarySettingsTab settingsTab = PawnDiarySettingsTab.Main;
-        // Which prompt editor is open inside the Prompts tab.
-        private PawnDiaryPromptSettingsPage promptSettingsPage = PawnDiaryPromptSettingsPage.SharedAndEvents;
+        // Raw prompt-template fields are hidden behind an experimental drawer in the Prompts tab.
+        private bool experimentalPromptOverridesExpanded;
         // Which Advanced group is selected in the Advanced-tab left rail, and the live name filter.
         private string selectedAdvancedGroupKey;
         private string advancedFilter;
+        private AdvancedFieldFilterMode advancedFieldFilterMode = AdvancedFieldFilterMode.All;
         // Per-field text-entry buffers for Advanced int/float/string fields, keyed by descriptor key.
         // IMGUI redraws every frame, so without buffers each keystroke fights the live Def value.
         // advancedTextSynced stores the invariant value a buffer was last built from, so a buffer is
         // only rebuilt when the Def value changes from outside (e.g. Reset/group reset/filter clear).
         private readonly Dictionary<string, string> advancedTextBuffers = new Dictionary<string, string>();
         private readonly Dictionary<string, string> advancedTextSynced = new Dictionary<string, string>();
+        private readonly HashSet<string> advancedExpandedOverrideFields = new HashSet<string>();
         private Vector2 advancedRailScroll;
         private Vector2 advancedBodyScroll;
 
@@ -77,6 +80,7 @@ namespace PawnDiary
         private const float SystemPromptTextAreaHeight = 138f;
         private const float PersonaRuleTextAreaHeight = 96f;
         private const float RequestTuningBlockHeight = 197f;
+        private const float ExperimentalPromptOverridesDrawerHeight = 620f;
         private const string PromptStudioSystemPrefix = "system:";
         private const string PromptStudioEventPrefix = "event:";
         private const string ApiMoveUpSymbol = "↑";

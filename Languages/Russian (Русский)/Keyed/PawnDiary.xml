@@ -288,6 +288,8 @@
   <PawnDiary.Settings.EnableAtmosphericFormattingTip>Если включено, крайние страницы могут получать необычные отступы, скачущие слова или искажённую странную речь. Затрагивает срывы, аномалии, тёмные записи, смерть и сильное нарушение состояния. Запросы и сохранённый текст не меняются.</PawnDiary.Settings.EnableAtmosphericFormattingTip>
   <PawnDiary.Settings.EnablePromptEnchantments>Игровой контекст в запросах</PawnDiary.Settings.EnablePromptEnchantments>
   <PawnDiary.Settings.EnablePromptEnchantmentsTip>Если включено, запрос от первого лица может получить одну важную подсказку о текущем состоянии поселенца или поселения. XML задаёт, какие подсказки возможны и как часто они выбираются.</PawnDiary.Settings.EnablePromptEnchantmentsTip>
+  <PawnDiary.Settings.ShowExperimentalAdvancedOverrides>Показать экспериментальные XML-переопределения</PawnDiary.Settings.ShowExperimentalAdvancedOverrides>
+  <PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>Открывает сырые страницы переопределений XML Def для тонкой настройки и политики запросов. Переопределения экспериментальны и меняют поведение до сброса.</PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>Добавлять речь в журнал общения</PawnDiary.Settings.InjectGeneratedSpeechToPlayLog>
   <PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>Если включено, готовая запись первой стороны с корректным блоком речи добавляет строку в журнал общения. Моды, следящие за журналом, смогут реагировать после ответа модели.</PawnDiary.Settings.InjectGeneratedSpeechToPlayLogTip>
   <PawnDiary.Settings.PromptTestMode>Проверка запросов: не отправлять модели</PawnDiary.Settings.PromptTestMode>
@@ -335,6 +337,10 @@
   <PawnDiary.Settings.RestorePromptDefault>Вернуть из XML</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Изменено вручную</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Из XML</PawnDiary.Settings.PromptStatusDefault>
+  <PawnDiary.Settings.ExperimentalPromptOverridesTitle>Экспериментальные переопределения политики запросов</PawnDiary.Settings.ExperimentalPromptOverridesTitle>
+  <PawnDiary.Settings.ExperimentalPromptOverridesHelp>Сырые XML Def-поля для шаблонов, весов и скрытой политики запросов. Используйте только для тестов; обычные общие и событийные запросы выше остаются стабильным редактором.</PawnDiary.Settings.ExperimentalPromptOverridesHelp>
+  <PawnDiary.Settings.ExperimentalPromptOverridesShow>Открыть</PawnDiary.Settings.ExperimentalPromptOverridesShow>
+  <PawnDiary.Settings.ExperimentalPromptOverridesHide>Закрыть</PawnDiary.Settings.ExperimentalPromptOverridesHide>
   <PawnDiary.Settings.PersonaStudioTitle>Манеры письма</PawnDiary.Settings.PersonaStudioTitle>
   <PawnDiary.Settings.PersonaStudioHelp>Редактируйте названия, правила стиля и метки из DiaryPersonaDefs.xml или добавляйте свои. Метки задают начальный выбор для новых поселенцев.</PawnDiary.Settings.PersonaStudioHelp>
   <PawnDiary.Settings.PersonaStudioSummary>Манер: {0}; своих: {1}; изменено: {2}</PawnDiary.Settings.PersonaStudioSummary>
@@ -365,18 +371,61 @@
   <PawnDiary.Settings.NoModelsYet>Модели ещё не получены</PawnDiary.Settings.NoModelsYet>
   <PawnDiary.Settings.Tab.Main>Основное</PawnDiary.Settings.Tab.Main>
   <PawnDiary.Settings.Tab.Advanced>Дополнительно</PawnDiary.Settings.Tab.Advanced>
-  <PawnDiary.Settings.Tab.Tuning>Тонкая настройка</PawnDiary.Settings.Tab.Tuning>
+  <PawnDiary.Settings.Tab.Tuning>Дополнительно</PawnDiary.Settings.Tab.Tuning>
   <PawnDiary.Settings.Tab.Prompts>Запросы</PawnDiary.Settings.Tab.Prompts>
   <PawnDiary.Settings.Tab.Styles>Стили</PawnDiary.Settings.Tab.Styles>
-  <PawnDiary.Settings.PromptTab.SharedEvents>Общие и события</PawnDiary.Settings.PromptTab.SharedEvents>
-  <PawnDiary.Settings.PromptTab.Templates>Политика запросов</PawnDiary.Settings.PromptTab.Templates>
   <PawnDiary.Settings.Adv.Summary>Изменено значений: {0}.</PawnDiary.Settings.Adv.Summary>
   <PawnDiary.Settings.Adv.Filter>Поиск</PawnDiary.Settings.Adv.Filter>
+  <PawnDiary.Settings.Adv.FilterMode.All>Все</PawnDiary.Settings.Adv.FilterMode.All>
+  <PawnDiary.Settings.Adv.FilterMode.Changed>Изменено</PawnDiary.Settings.Adv.FilterMode.Changed>
+  <PawnDiary.Settings.Adv.FilterMode.Raw>Сырой текст</PawnDiary.Settings.Adv.FilterMode.Raw>
+  <PawnDiary.Settings.Adv.ResetChangedInTab>Сбросить изменённое в этой вкладке</PawnDiary.Settings.Adv.ResetChangedInTab>
+  <PawnDiary.Settings.Adv.ResetChangedInTabTip>Вернуть XML-значения всех изменённых переопределений только в этой области Advanced.</PawnDiary.Settings.Adv.ResetChangedInTabTip>
+  <PawnDiary.Settings.Adv.CopyChangedSummary>Копировать сводку</PawnDiary.Settings.Adv.CopyChangedSummary>
+  <PawnDiary.Settings.Adv.CopyChangedSummaryTip>Скопировать текстовую сводку изменённых настроек в этой области Advanced. Это не формат импорта/экспорта.</PawnDiary.Settings.Adv.CopyChangedSummaryTip>
+  <PawnDiary.Settings.Adv.CopyChangedSummaryDone>Скопировано изменённых настроек: {0}.</PawnDiary.Settings.Adv.CopyChangedSummaryDone>
+  <PawnDiary.Settings.Adv.Category.Tuning>тонкая настройка</PawnDiary.Settings.Adv.Category.Tuning>
+  <PawnDiary.Settings.Adv.Category.Prompts>политика запросов</PawnDiary.Settings.Adv.Category.Prompts>
+  <PawnDiary.Settings.Adv.ChangedSummaryTitle>Pawn Diary: изменённые XML-переопределения - {0}</PawnDiary.Settings.Adv.ChangedSummaryTitle>
+  <PawnDiary.Settings.Adv.ChangedSummaryCount>Изменено значений: {0}</PawnDiary.Settings.Adv.ChangedSummaryCount>
+  <PawnDiary.Settings.Adv.ChangedSummaryLine>- {0} ({1}) = {2} [XML/default: {3}]</PawnDiary.Settings.Adv.ChangedSummaryLine>
+  <PawnDiary.Settings.Adv.ChangedSummaryNone>Pawn Diary: изменённые XML-переопределения - {0}: нет</PawnDiary.Settings.Adv.ChangedSummaryNone>
   <PawnDiary.Settings.Adv.ResetAll>Сбросить всё</PawnDiary.Settings.Adv.ResetAll>
   <PawnDiary.Settings.Adv.ResetShort>Сброс</PawnDiary.Settings.Adv.ResetShort>
   <PawnDiary.Settings.Adv.ResetGroup>Сбросить группу</PawnDiary.Settings.Adv.ResetGroup>
   <PawnDiary.Settings.Adv.ResetFieldTip>Вернуть XML-значение этого поля.</PawnDiary.Settings.Adv.ResetFieldTip>
   <PawnDiary.Settings.Adv.FilterResults>Найдено полей: {0}</PawnDiary.Settings.Adv.FilterResults>
+  <PawnDiary.Settings.Adv.ExperimentalWarning>Экспериментально: Advanced-переопределения пишут в живые XML Defs. Лучше оставлять XML/default, если не тестируете.</PawnDiary.Settings.Adv.ExperimentalWarning>
+  <PawnDiary.Settings.Adv.LockedTitle>Дополнительные XML-переопределения</PawnDiary.Settings.Adv.LockedTitle>
+  <PawnDiary.Settings.Adv.LockedHelp>Здесь находятся экспериментальные XML Def-переопределения для низкоуровневой настройки и политики запросов. Включайте их только для проверки сырых настроек; для обычной игры оставляйте выключенными.</PawnDiary.Settings.Adv.LockedHelp>
+  <PawnDiary.Settings.Adv.OverrideInherited>Используется XML/default; переопределения нет.</PawnDiary.Settings.Adv.OverrideInherited>
+  <PawnDiary.Settings.Adv.EffectivePreview>Итог: {0} - {1}</PawnDiary.Settings.Adv.EffectivePreview>
+  <PawnDiary.Settings.Adv.Source.Override>переопределение</PawnDiary.Settings.Adv.Source.Override>
+  <PawnDiary.Settings.Adv.Source.XmlDefault>XML/default</PawnDiary.Settings.Adv.Source.XmlDefault>
+  <PawnDiary.Settings.Adv.Source.SharedPrompt>общий запрос</PawnDiary.Settings.Adv.Source.SharedPrompt>
+  <PawnDiary.Settings.Adv.Source.Empty>&lt;пусто&gt;</PawnDiary.Settings.Adv.Source.Empty>
+  <PawnDiary.Settings.Adv.EditOverride>Изменить</PawnDiary.Settings.Adv.EditOverride>
+  <PawnDiary.Settings.Adv.EditOverrideTip>Открыть сырое текстовое поле для этого необязательного переопределения.</PawnDiary.Settings.Adv.EditOverrideTip>
+  <PawnDiary.Settings.Adv.Syntax.Valid>Синтаксис верен, строк: {0}.</PawnDiary.Settings.Adv.Syntax.Valid>
+  <PawnDiary.Settings.Adv.Syntax.Empty>Строк нет.</PawnDiary.Settings.Adv.Syntax.Empty>
+  <PawnDiary.Settings.Adv.Syntax.Null>Используется &lt;null&gt;; строки не переопределяют XML.</PawnDiary.Settings.Adv.Syntax.Null>
+  <PawnDiary.Settings.Adv.Syntax.Invalid>Исправьте строку {0}: {1}</PawnDiary.Settings.Adv.Syntax.Invalid>
+  <PawnDiary.Settings.Adv.Syntax.Line>С{0}</PawnDiary.Settings.Adv.Syntax.Line>
+  <PawnDiary.Settings.Adv.Syntax.More>ещё строк: {0}</PawnDiary.Settings.Adv.Syntax.More>
+  <PawnDiary.Settings.Adv.Syntax.ErrThoughtColumns>ожидается categoryKey|thoughtDefName|stageIndex:severity,...</PawnDiary.Settings.Adv.Syntax.ErrThoughtColumns>
+  <PawnDiary.Settings.Adv.Syntax.ErrMissingCategory>нет XML-поля categoryKey</PawnDiary.Settings.Adv.Syntax.ErrMissingCategory>
+  <PawnDiary.Settings.Adv.Syntax.ErrMissingThoughtDef>нет XML-поля thoughtDefName</PawnDiary.Settings.Adv.Syntax.ErrMissingThoughtDef>
+  <PawnDiary.Settings.Adv.Syntax.ErrMissingStages>нет XML-списка stages</PawnDiary.Settings.Adv.Syntax.ErrMissingStages>
+  <PawnDiary.Settings.Adv.Syntax.ErrBadStagePair>запись стадии должна соответствовать stageIndex:severity</PawnDiary.Settings.Adv.Syntax.ErrBadStagePair>
+  <PawnDiary.Settings.Adv.Syntax.ErrBadStageIndex>XML-поле stageIndex должно быть целым числом</PawnDiary.Settings.Adv.Syntax.ErrBadStageIndex>
+  <PawnDiary.Settings.Adv.Syntax.ErrBadSeverity>XML-поле severity должно быть целым числом</PawnDiary.Settings.Adv.Syntax.ErrBadSeverity>
+  <PawnDiary.Settings.Adv.Syntax.ErrExpectedPair>ожидается key=value или key:value</PawnDiary.Settings.Adv.Syntax.ErrExpectedPair>
+  <PawnDiary.Settings.Adv.Syntax.ErrMissingKey>нет ключа перед разделителем</PawnDiary.Settings.Adv.Syntax.ErrMissingKey>
+  <PawnDiary.Settings.Adv.Syntax.ErrBadFloat>{0} должно быть числом</PawnDiary.Settings.Adv.Syntax.ErrBadFloat>
+  <PawnDiary.Settings.Adv.Syntax.ErrPromptFields>ожидается enabled|label|source|contextKey</PawnDiary.Settings.Adv.Syntax.ErrPromptFields>
+  <PawnDiary.Settings.Adv.Syntax.ErrBadBool>enabled должно быть true или false</PawnDiary.Settings.Adv.Syntax.ErrBadBool>
+  <PawnDiary.Settings.Adv.Syntax.ErrSeverityTier>ожидается level|chance|frequency|weight|severity</PawnDiary.Settings.Adv.Syntax.ErrSeverityTier>
+  <PawnDiary.Settings.Adv.Syntax.ErrBadInt>{0} должно быть целым числом</PawnDiary.Settings.Adv.Syntax.ErrBadInt>
   <PawnDiary.Settings.Adv.Group.Dedup>Антидубли</PawnDiary.Settings.Adv.Group.Dedup>
   <PawnDiary.Settings.Adv.Group.Ability>Способности</PawnDiary.Settings.Adv.Group.Ability>
   <PawnDiary.Settings.Adv.Group.RitualQuality>Качество ритуалов</PawnDiary.Settings.Adv.Group.RitualQuality>

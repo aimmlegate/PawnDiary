@@ -44,6 +44,7 @@
     <Compile Include="..\..\Source\Settings\EndpointUtility.cs" Link="EndpointUtility.cs" />
     <Compile Include="..\..\Source\Settings\PromptSettingsMenuPolicy.cs" Link="PromptSettingsMenuPolicy.cs" />
     <Compile Include="..\..\Source\Settings\TuningOverrideMigration.cs" Link="TuningOverrideMigration.cs" />
+    <Compile Include="..\..\Source\Settings\AdvancedRawSyntax.cs" Link="AdvancedRawSyntax.cs" />
     <Compile Include="..\..\Source\Generation\PromptAssembler.cs" Link="PromptAssembler.cs" />
     <Compile Include="..\..\Source\Generation\DiaryContextFields.cs" Link="DiaryContextFields.cs" />
     <Compile Include="..\..\Source\Generation\LlmResponseParser.cs" Link="LlmResponseParser.cs" />

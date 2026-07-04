@@ -4,6 +4,31 @@ Milestone history of Pawn Diary, newest first. Grouped by milestone, not by comm
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
 Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
+## 2026-07-04
+
+- **Humor cue default raised.** Hidden humor cues now default to a 20% chance for eligible
+  first-person entries, with XML and defensive fallback defaults aligned.
+- **Advanced reset/copy UX.** Advanced XML override areas now reset changed values by current tab
+  or drawer instead of only offering a global reset, and can copy a plain text changed-settings
+  summary for review without introducing a stable import/export format. Raw prompt-template and
+  prompt-policy overrides moved out of the normal prompt settings path into a clearly marked
+  experimental drawer.
+- **Advanced settings discovery tightened.** The Advanced tab now stays visible, while raw XML
+  override editing is gated behind an experimental opt-in, with All/Changed/Raw text filters and
+  collapsed drawer rows that show the effective source plus a short active-value preview before
+  opening the raw editor.
+- **Advanced raw settings editor feedback.** Compact raw override boxes now validate while typing,
+  show a colored parse preview, and leave malformed edits unapplied until the same checked parser
+  accepts them. Covered schemas are weather mention chances, ritual quality bands, prompt template
+  fields, prompt-enchantment severity tiers, thought progression rules, and progression skill
+  milestones.
+- **Advanced override drawers.** Empty inherited multi-line text/list overrides now collapse to a
+  compact "using XML/default" row with an explicit edit button, keeping optional override escape
+  hatches out of the main path. Clearing a string override back to blank now restores the XML snapshot
+  in the live Def instead of leaving an unsaved blank value for the current session.
+- **Advanced override warning.** The Advanced page now marks XML Def overrides as experimental so the
+  surface reads as a testing escape hatch rather than a normal tuning workflow.
+
 ## 2026-07-03
 
 - **Release localization audit fixes.** EN/RU Keyed and DefInjected coverage now align, and

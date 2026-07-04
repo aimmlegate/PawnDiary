@@ -23,10 +23,6 @@ namespace PawnDiary
     /// </summary>
     public static class HumorCues
     {
-        // Hardcoded fallback base rate used only if the XML tuning def is missing or holds an
-        // out-of-range value. The live value lives in DiaryTuningDef.humorChance (XML-tunable).
-        private const float DefaultHumorChance = 0.10f;
-
         /// <summary>
         /// Returns the chosen cue's rule text for this event, or <c>string.Empty</c> when no cue is
         /// selected. At most one cue per entry.
@@ -38,8 +34,8 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            // Base rate is XML-tuned (DiaryTuningDef.humorChance) with a safe 0..1 clamp; the
-            // fallback constant only applies when the def is absent/invalid.
+            // Base rate is XML-tuned (DiaryTuningDef.humorChance); DiaryTuning.HumorChance owns the
+            // safe 0..1 clamp and fallback when the def is absent/invalid.
             float chance = DiaryTuning.HumorChance;
             if (!Rand.Chance(chance))
             {
