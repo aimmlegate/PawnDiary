@@ -99,8 +99,8 @@ RimTalk). Same primitives, both faces.
 
 | ID | Capability | Status | Internal hook it maps to | Key decision |
 |---|---|---|---|---|
-| C-CTX-2 | **Get the pawn summary / game context** we'd use | proposed | `DiaryContextBuilder.BuildPawnSummary` (+ `BuildSurroundingsSummary`/`BuildContinuitySummary`, already `public static`) | Export a **structured DTO**, not the raw `key=value` string (§3.8) |
-| C-CTX-3 | **Get all collected prompt enchantments** for a pawn (the candidate *set*, not the one rolled) | proposed | `PromptEnchantmentCollector.Collect(pawn, …)` → flatten `PromptEnchantmentCandidate` to plain lines (+ weight/source) | Export the deterministic Collect set; never the `RuleFor` `Rand` pick (§3.8) |
+| C-CTX-2 | **Get the pawn summary / game context** we'd use | **shipped v6** | `DiaryContextBuilder.BuildPawnSummarySnapshot` → `DiaryPawnSummarySnapshot` (named fields, sharing the same `PawnSummaryFacts` gather as the prompt string) | Export a **structured DTO**, not the raw `key=value` string (§3.8) |
+| C-CTX-3 | **Get all collected prompt enchantments** for a pawn (the candidate *set*, not the one rolled) | **shipped v6** | `PromptEnchantmentCollector.Collect(pawn, …)` → `DiaryPromptEnchantmentCandidateSnapshot.From` per candidate | Export the deterministic Collect set; never the `RuleFor` `Rand` pick (§3.8) |
 | C-CTX-4 | **Get the full assembled prompt** (system+user) for a pawn/event — *preview, no submit, no persist* | proposed | `DiaryPromptBuilder.BuildPromptPlan` | A preview is *a* prompt, not *the* prompt (bakes in the enchantment/humor roll) — document as representative (§3.8) |
 | C-CTX-5 | **Context bundle** — summary + surroundings + continuity + enchantments + writing style + recent entries, in one snapshot | proposed | composes C-CTX-2/3 + ST-1 + RD-2 | The core-side export the RimTalk bridge feeds to `ContextHookRegistry.RegisterPawnVariable`; **core never references RimTalk** (bridge lives in `integrations/`) |
 
@@ -327,7 +327,7 @@ train; pick the next single capability to build, ship it, bump `ApiVersion`, mov
 | 1 | **C-CTX-1** pawn-context providers | **shipped v4** | §3.5 decided (master toggle) | Implemented via `RegisterPawnContextProvider`; provider lines join the pawn-summary identity block |
 | 2 | **RD-3** read filters (type/atmosphere/date/POV/archive) | **shipped v5** | — | Additive `DiaryEntryTitleQuery` overload on recent title snapshots |
 | 3 | **RD-2 / RD-5 / RD-6** prose read, by-id, counts | vN | RD-3 | RD-4 tone only if persisted (§6.6) |
-| 3b | **C-CTX-2 / C-CTX-3** export pawn summary + collected enchantments (structured DTOs) | vN | — | Pure reads (§3.8); cheap, no new machinery |
+| 3b | **C-CTX-2 / C-CTX-3** export pawn summary + collected enchantments (structured DTOs) | **shipped v6** | — | Pure reads (§3.8); cheap, no new machinery |
 | 3c | **C-CTX-5** context bundle (+ `integrations/` RimTalk bridge consumer) | vN | C-CTX-2/3, ST-1, RD-2 | Bridge feeds RimTalk; core stays RimTalk-free (§3.8) |
 | 4 | **IN-6** entry handle | vN | — | Prereq for status/completion |
 | 5 | **IN-4 / IN-5** direct-text inject | vN | IN-6 | Very Low blast radius (§3.7); §3.3 B3, §3.5 gates |

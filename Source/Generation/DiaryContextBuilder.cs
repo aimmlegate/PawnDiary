@@ -574,78 +574,270 @@ namespace PawnDiary
                 return "unknown";
             }
 
+            PawnSummaryFacts facts = CollectPawnSummaryFacts(pawn);
             List<string> parts = new List<string>
             {
-                "sex=" + pawn.gender.ToString().ToLowerInvariant()
+                "sex=" + facts.sex
             };
 
-            // Snapshot the biological age once; the band selection itself lives in DiaryBuckets and
-            // takes a plain int so it has no Pawn dependency. A null ageTracker yields no band, as
-            // before.
-            string age = pawn.ageTracker != null
-                ? DiaryBuckets.AgeBucket(pawn.ageTracker.AgeBiologicalYears)
-                : string.Empty;
-            if (!string.IsNullOrWhiteSpace(age))
+            if (!string.IsNullOrWhiteSpace(facts.lifeStage))
             {
-                parts.Add("life_stage=" + age);
+                parts.Add("life_stage=" + facts.lifeStage);
             }
 
-            // DLC identity (Biotech xenotype / Royalty title / Ideology faith). Each accessor
-            // returns empty without its DLC, so a no-DLC game simply omits these lines — see
-            // DlcContext and AGENTS.md ("DLC-safety"). The labels are structured prompt schema
-            // (like sex=/life_stage=), so they stay English per the localization carve-out.
-            string xenotype = DlcContext.Xenotype(pawn);
-            if (!string.IsNullOrWhiteSpace(xenotype))
+            // DLC identity labels are structured prompt schema (like sex=/life_stage=), so they stay
+            // English per the localization carve-out. Each accessor returns empty without its DLC, so
+            // a no-DLC game simply omits these lines — see DlcContext and AGENTS.md ("DLC-safety").
+            if (!string.IsNullOrWhiteSpace(facts.xenotype))
             {
-                parts.Add("xenotype=" + xenotype);
+                parts.Add("xenotype=" + facts.xenotype);
             }
 
-            string royalTitle = DlcContext.RoyalTitle(pawn);
-            if (!string.IsNullOrWhiteSpace(royalTitle))
+            if (!string.IsNullOrWhiteSpace(facts.royalTitle))
             {
-                parts.Add("title=" + royalTitle);
+                parts.Add("title=" + facts.royalTitle);
             }
 
-            string faith = DlcContext.Ideoligion(pawn);
-            if (!string.IsNullOrWhiteSpace(faith))
+            if (!string.IsNullOrWhiteSpace(facts.faith))
             {
-                parts.Add("faith=" + faith);
+                parts.Add("faith=" + facts.faith);
             }
 
             // API v4 lets adapter/personality mods add compact identity context such as
-            // "personality=blunt, curious". Providers run here, in the impure snapshot phase, and
-            // only cleaned strings continue into the prompt pipeline.
-            string externalProviderContext = PawnContextProviders.BuildContextLines(pawn);
-            if (!string.IsNullOrWhiteSpace(externalProviderContext))
+            // "personality=blunt, curious". Providers run in the impure snapshot phase (inside
+            // CollectPawnSummaryFacts), and only cleaned strings continue into the prompt pipeline.
+            if (facts.providerLines.Count > 0)
             {
-                parts.Add(externalProviderContext);
+                parts.Add(string.Join("; ", facts.providerLines.ToArray()));
             }
 
-            string mood = BuildMoodSummary(pawn);
-            if (!string.IsNullOrWhiteSpace(mood))
+            if (!string.IsNullOrWhiteSpace(facts.mood))
             {
-                parts.Add("mood=" + mood);
+                parts.Add("mood=" + facts.mood);
             }
 
-            string health = BuildHealthSummary(pawn);
+            string health = FormatHealthSummary(facts.health);
             if (!string.IsNullOrWhiteSpace(health))
             {
                 parts.Add("health=" + health);
             }
 
-            string capacities = BuildLowCapacitiesSummary(pawn);
-            if (!string.IsNullOrWhiteSpace(capacities))
+            if (!string.IsNullOrWhiteSpace(facts.lowCapacities))
             {
-                parts.Add("low_capacities=" + capacities);
+                parts.Add("low_capacities=" + facts.lowCapacities);
             }
 
-            string thoughts = BuildTopThoughtsSummary(pawn);
-            if (!string.IsNullOrWhiteSpace(thoughts))
+            if (!string.IsNullOrWhiteSpace(facts.topThoughts))
             {
-                parts.Add("thoughts=" + thoughts);
+                parts.Add("thoughts=" + facts.topThoughts);
             }
 
             return string.Join("; ", parts.ToArray());
+        }
+
+        // Builds the SAME pawn-summary context BuildPawnSummary feeds into a prompt, but as a
+        // structured public DTO instead of a `key=value` blob (API v6, capability C-CTX-2). This is
+        // the "machinery as a service" read: a chat/context mod can read our understanding of the
+        // pawn without us driving another model. Side-effect free — never creates a diary record.
+        //
+        // KEEP IN SYNC with BuildPawnSummary above: both share CollectPawnSummaryFacts so the only
+        // difference is formatting (string join vs DTO fields), never which facts are gathered. A
+        // change to one is a change to the other.
+        public static DiaryPawnSummarySnapshot BuildPawnSummarySnapshot(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return null;
+            }
+
+            PawnSummaryFacts facts = CollectPawnSummaryFacts(pawn);
+            return new DiaryPawnSummarySnapshot
+            {
+                sex = facts.sex,
+                lifeStage = facts.lifeStage,
+                xenotype = facts.xenotype,
+                royalTitle = facts.royalTitle,
+                faith = facts.faith,
+                mood = facts.mood,
+                health = new DiaryHealthSummarySnapshot
+                {
+                    downed = facts.health.downed,
+                    painShock = facts.health.painShock,
+                    pain = facts.health.pain,
+                    bleeding = facts.health.bleeding,
+                    conditions = new List<string>(facts.health.conditions)
+                },
+                lowCapacities = facts.lowCapacitiesList,
+                topThoughts = facts.topThoughtsList,
+                providerLines = facts.providerLines
+            };
+        }
+
+        // The single impure gather point for pawn-summary facts. Both BuildPawnSummary (string for
+        // the prompt) and BuildPawnSummarySnapshot (DTO for the public API) format from this, so the
+        // facts themselves can never drift between the prompt path and the exported snapshot. Any new
+        // field belongs here, with formatters in both consumers.
+        private static PawnSummaryFacts CollectPawnSummaryFacts(Pawn pawn)
+        {
+            PawnSummaryFacts facts = new PawnSummaryFacts
+            {
+                sex = pawn.gender.ToString().ToLowerInvariant()
+            };
+
+            // Snapshot the biological age once; the band selection itself lives in DiaryBuckets and
+            // takes a plain int so it has no Pawn dependency. A null ageTracker yields no band, as
+            // before.
+            facts.lifeStage = pawn.ageTracker != null
+                ? DiaryBuckets.AgeBucket(pawn.ageTracker.AgeBiologicalYears)
+                : string.Empty;
+
+            facts.xenotype = DlcContext.Xenotype(pawn);
+            facts.royalTitle = DlcContext.RoyalTitle(pawn);
+            facts.faith = DlcContext.Ideoligion(pawn);
+
+            // Provider lines are collected once as a list; BuildPawnSummary joins them with "; " for
+            // the prompt blob, BuildPawnSummarySnapshot hands the list straight through so each
+            // provider's contribution is its own DTO entry.
+            facts.providerLines = PawnContextProviders.BuildContextLineList(pawn);
+
+            facts.mood = BuildMoodSummary(pawn);
+            facts.health = CollectHealthFacts(pawn);
+            facts.lowCapacities = BuildLowCapacitiesSummary(pawn);
+            facts.lowCapacitiesList = SplitCommaList(facts.lowCapacities);
+            facts.topThoughts = BuildTopThoughtsSummary(pawn);
+            facts.topThoughtsList = SplitCommaList(facts.topThoughts);
+            return facts;
+        }
+
+        // Splits a "a, b, c" prompt-style list back into entries for the DTO. Empty input yields an
+        // empty list. Used only where a helper already returns a comma-joined string (capacities,
+        // thoughts); the health and provider paths keep their own lists directly.
+        private static List<string> SplitCommaList(string joined)
+        {
+            List<string> values = new List<string>();
+            if (string.IsNullOrWhiteSpace(joined))
+            {
+                return values;
+            }
+
+            string[] parts = joined.Split(',');
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string trimmed = parts[i].Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                {
+                    values.Add(trimmed);
+                }
+            }
+
+            return values;
+        }
+
+        // Intermediate gathered facts for one pawn. Pure data — no RimWorld references — so the two
+        // formatting paths (prompt string, public DTO) format from the same source.
+        private struct PawnSummaryFacts
+        {
+            public string sex;
+            public string lifeStage;
+            public string xenotype;
+            public string royalTitle;
+            public string faith;
+            public string mood;
+            public HealthFacts health;
+            public string lowCapacities;
+            public List<string> lowCapacitiesList;
+            public string topThoughts;
+            public List<string> topThoughtsList;
+            public List<string> providerLines;
+        }
+
+        // Health is the one composite field (downed + pain shock + pain bucket + bleeding bucket +
+        // up to two condition labels). Gather once into this struct so the prompt string and the DTO
+        // stay in lockstep.
+        private struct HealthFacts
+        {
+            public bool downed;
+            public bool painShock;
+            public string pain;
+            public string bleeding;
+            public List<string> conditions;
+        }
+
+        private static HealthFacts CollectHealthFacts(Pawn pawn)
+        {
+            HealthFacts facts = new HealthFacts { conditions = new List<string>() };
+            if (pawn?.health == null)
+            {
+                return facts;
+            }
+
+            facts.downed = pawn.Downed;
+            facts.painShock = pawn.health.InPainShock;
+
+            float pain = pawn.health.hediffSet?.PainTotal ?? 0f;
+            if (pain > DiaryTuning.Current.painVisibleAbove)
+            {
+                facts.pain = DiaryBuckets.PainBucket(pain);
+            }
+
+            float bleedRate = pawn.health.hediffSet?.BleedRateTotal ?? 0f;
+            if (bleedRate > DiaryTuning.Current.bleedVisibleAbove)
+            {
+                facts.bleeding = DiaryBuckets.BleedingBucket(bleedRate);
+            }
+
+            string notableHediffs = BuildNotableHediffsSummary(pawn);
+            if (!string.IsNullOrWhiteSpace(notableHediffs))
+            {
+                // BuildNotableHediffsSummary joins with ", " — split it back so each condition is its
+                // own DTO entry, mirroring how the prompt string carries them.
+                string[] parts = notableHediffs.Split(',');
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    string trimmed = parts[i].Trim();
+                    if (!string.IsNullOrEmpty(trimmed))
+                    {
+                        facts.conditions.Add(trimmed);
+                    }
+                }
+            }
+
+            return facts;
+        }
+
+        // Formats gathered health facts into the same prompt string BuildHealthSummary produced
+        // before this was factored out (downed, pain shock, pain=, bleeding=, conditions=, joined
+        // with ", "). The prompt path uses this; the DTO path reads the struct fields directly.
+        private static string FormatHealthSummary(HealthFacts facts)
+        {
+            List<string> parts = new List<string>();
+            if (facts.downed)
+            {
+                parts.Add("PawnDiary.Ctx.Downed".Translate());
+            }
+
+            if (facts.painShock)
+            {
+                parts.Add("PawnDiary.Ctx.PainShock".Translate());
+            }
+
+            if (!string.IsNullOrWhiteSpace(facts.pain))
+            {
+                parts.Add("pain=" + facts.pain);
+            }
+
+            if (!string.IsNullOrWhiteSpace(facts.bleeding))
+            {
+                parts.Add("bleeding=" + facts.bleeding);
+            }
+
+            if (facts.conditions != null && facts.conditions.Count > 0)
+            {
+                parts.Add("conditions=" + string.Join(", ", facts.conditions.ToArray()));
+            }
+
+            // Empty when healthy, so the prompt omits health entirely.
+            return parts.Count == 0 ? string.Empty : string.Join(", ", parts.ToArray());
         }
 
         // Returns the label of the pawn's currently equipped weapon, or empty if unarmed.
@@ -696,47 +888,6 @@ namespace PawnDiary
 
             int moodPercent = Mathf.RoundToInt(pawn.needs.mood.CurLevelPercentage * 100f);
             return DiaryBuckets.MoodBucket(moodPercent);
-        }
-
-        private static string BuildHealthSummary(Pawn pawn)
-        {
-            if (pawn.health == null)
-            {
-                return string.Empty;
-            }
-
-            List<string> parts = new List<string>();
-
-            if (pawn.Downed)
-            {
-                parts.Add("PawnDiary.Ctx.Downed".Translate());
-            }
-
-            if (pawn.health.InPainShock)
-            {
-                parts.Add("PawnDiary.Ctx.PainShock".Translate());
-            }
-
-            float pain = pawn.health.hediffSet?.PainTotal ?? 0f;
-            if (pain > DiaryTuning.Current.painVisibleAbove)
-            {
-                parts.Add("pain=" + DiaryBuckets.PainBucket(pain));
-            }
-
-            float bleedRate = pawn.health.hediffSet?.BleedRateTotal ?? 0f;
-            if (bleedRate > DiaryTuning.Current.bleedVisibleAbove)
-            {
-                parts.Add("bleeding=" + DiaryBuckets.BleedingBucket(bleedRate));
-            }
-
-            string notableHediffs = BuildNotableHediffsSummary(pawn);
-            if (!string.IsNullOrWhiteSpace(notableHediffs))
-            {
-                parts.Add("conditions=" + notableHediffs);
-            }
-
-            // Empty when healthy, so the prompt omits health entirely.
-            return parts.Count == 0 ? string.Empty : string.Join(", ", parts.ToArray());
         }
 
         private static string BuildNotableHediffsSummary(Pawn pawn)

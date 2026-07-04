@@ -281,6 +281,25 @@ replaces it in place; the registry is unsynchronized and is read only on the mai
 the main-thread rule the API enforces on registration. The settings master switch
 `allowExternalIntegrations` gates external submissions, read calls, and provider invocation.
 
+API v6 adds the "machinery as a service" reads (capability C-CTX-2 / C-CTX-3): two structured,
+side-effect-free exports of the prompt context Pawn Diary builds internally, so a chat/context mod
+can read our understanding of a pawn without us driving another model.
+`PawnDiaryApi.GetPawnSummary(Pawn)` returns a `DiaryPawnSummarySnapshot` — the same facts
+`BuildPawnSummary` would feed a prompt (sex, life stage, DLC identity, mood, health broken out into a
+`DiaryHealthSummarySnapshot` sub-DTO, low capacities, top thoughts, and the API v4 provider lines)
+but as named DTO fields rather than the internal `key=value` blob, so the assembly can keep evolving
+prompt text without breaking the additive-only contract. Both the prompt string and the snapshot
+format from one shared `PawnSummaryFacts` gather, so they cannot drift apart; the composite
+`BuildHealthSummary` was split into `CollectHealthFacts` + `FormatHealthSummary` + DTO fields along
+the way. `PawnDiaryApi.GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)`
+returns the candidate **set** the planner would choose among right now
+(`List<DiaryPromptEnchantmentCandidateSnapshot>`), never the single rolled winner (which uses `Rand`
+and varies per call); each candidate mirrors the internal `PromptEnchantmentCandidate` (weight,
+source hediff defName, priority/condition text, impact/configured cues) with independent list
+copies. Both are main-thread only, gated by `allowExternalIntegrations`, return their safe empty
+value instead of throwing, never create a diary record, and — for `GetPromptEnchantments` — empty
+out when the player has disabled prompt enchantments in settings.
+
 `integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
 separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
 Pawn Diary, RimTalk, and Harmony. When its single setting is enabled, it patches RimTalk's accepted

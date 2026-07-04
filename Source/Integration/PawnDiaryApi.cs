@@ -31,7 +31,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 5;
+        public const int ApiVersion = 6;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -269,6 +269,89 @@ namespace PawnDiary.Integration
                     "[Pawn Diary] Integration API: RegisterPawnContextProvider for '" + providerForLog
                     + "' failed: " + e,
                     ("PawnDiary.Api.ContextProvider.Exception." + providerForLog).GetHashCode());
+            }
+        }
+
+        /// <summary>
+        /// Returns the structured pawn-summary context Pawn Diary would feed to one of its own
+        /// prompts, or null. This is the "machinery as a service" read (capability C-CTX-2): a chat
+        /// or context mod can read our understanding of the pawn — sex, life stage, DLC identity,
+        /// mood, health, low capacities, top thoughts, and external provider lines — as named DTO
+        /// fields rather than the internal <c>key=value</c> blob, so the assembly can keep evolving
+        /// the prompt text without breaking the contract. Returns null — never throws — for a
+        /// null/ineligible pawn, no game loaded, off-thread call, or when the master integration
+        /// toggle is off. Side-effect free: it never creates a diary record, queues generation, or
+        /// spends tokens.
+        /// </summary>
+        public static DiaryPawnSummarySnapshot GetPawnSummary(Pawn pawn)
+        {
+            try
+            {
+                // Same main-thread rule as the other readers: it walks live pawn state and Def text.
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: GetPawnSummary was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.PawnSummary.OffThread".GetHashCode());
+                    return null;
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                {
+                    return null;
+                }
+
+                return DiaryGameComponent.Current.PawnSummarySnapshotFor(pawn);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetPawnSummary failed: " + e,
+                    "PawnDiary.Api.PawnSummary.Exception".GetHashCode());
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns the prompt-enchantment candidates Pawn Diary collected for a pawn right now
+        /// (capability C-CTX-3). This exports the candidate SET the planner chooses among — the
+        /// deterministic input — never the single rolled winner (which uses Rand and varies per
+        /// call). Pass <paramref name="includeImportantEventContext"/> true to also collect the
+        /// DLC social-status candidates (royal title / ideology role) that only enter the pool for
+        /// important events, mirroring the prompt-time collection.
+        /// Returns an empty list — never throws — for a null pawn, no game, off-thread call, when
+        /// the master integration toggle is off, when the player has disabled prompt enchantments
+        /// in settings, or when no candidates match. Side-effect free: it does not roll the planner
+        /// or feed a prompt; the candidate set is chance-gated per Def policy, so two calls can
+        /// differ, but each call shows exactly what the planner could pick this tick.
+        /// </summary>
+        public static List<DiaryPromptEnchantmentCandidateSnapshot> GetPromptEnchantments(
+            Pawn pawn,
+            bool includeImportantEventContext = false)
+        {
+            try
+            {
+                if (!UnityData.IsInMainThread)
+                {
+                    ApiLogErrorOnce(
+                        "[Pawn Diary] Integration API: GetPromptEnchantments was called off the main thread; the call was ignored.",
+                        "PawnDiary.Api.PromptEnchantments.OffThread".GetHashCode());
+                    return new List<DiaryPromptEnchantmentCandidateSnapshot>();
+                }
+
+                if (!ExternalIntegrationsAllowed || !IsReady || pawn == null)
+                {
+                    return new List<DiaryPromptEnchantmentCandidateSnapshot>();
+                }
+
+                return DiaryGameComponent.Current.PromptEnchantmentCandidatesFor(pawn, includeImportantEventContext);
+            }
+            catch (Exception e)
+            {
+                ApiLogErrorOnce(
+                    "[Pawn Diary] Integration API: GetPromptEnchantments failed: " + e,
+                    "PawnDiary.Api.PromptEnchantments.Exception".GetHashCode());
+                return new List<DiaryPromptEnchantmentCandidateSnapshot>();
             }
         }
 

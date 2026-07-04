@@ -63,12 +63,28 @@ namespace PawnDiary
             int maxLineChars,
             Action<string, Exception> onProviderFailed)
         {
+            List<string> cleanedLines = BuildContextLineList(context, maxLines, maxLineChars, onProviderFailed);
+            return cleanedLines.Count == 0 ? string.Empty : string.Join("; ", cleanedLines.ToArray());
+        }
+
+        /// <summary>
+        /// Same collection as <see cref="BuildContextLines"/>, but returns the individual cleaned
+        /// lines instead of joining them. Used by the public pawn-summary snapshot (API v6, C-CTX-2),
+        /// which keeps each provider's contribution as its own list entry rather than collapsing them
+        /// into one string.
+        /// </summary>
+        public List<string> BuildContextLineList(
+            TContext context,
+            int maxLines,
+            int maxLineChars,
+            Action<string, Exception> onProviderFailed)
+        {
+            List<string> cleanedLines = new List<string>();
             if (maxLines <= 0 || maxLineChars <= 0 || order.Count == 0)
             {
-                return string.Empty;
+                return cleanedLines;
             }
 
-            List<string> cleanedLines = new List<string>();
             for (int i = 0; i < order.Count && cleanedLines.Count < maxLines; i++)
             {
                 string id = order[i];
@@ -96,9 +112,8 @@ namespace PawnDiary
                 }
             }
 
-            // Lines are already CleanLine'd, non-blank, and capped to maxLines in the loop above, so
-            // join them directly rather than running the whole clean/skip/cap pass a second time.
-            return string.Join("; ", cleanedLines.ToArray());
+            // Lines are already CleanLine'd, non-blank, and capped to maxLines in the loop above.
+            return cleanedLines;
         }
 
         private static string NormalizeId(string id)

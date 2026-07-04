@@ -2,6 +2,7 @@
 // runner invokes those delegates during the existing impure pawn-summary snapshot and returns only
 // cleaned strings for the prompt pipeline.
 using System;
+using System.Collections.Generic;
 using Verse;
 
 namespace PawnDiary.Integration
@@ -39,6 +40,21 @@ namespace PawnDiary.Integration
             }
 
             return Registry.BuildContextLines(pawn, MaxProviderLines, MaxProviderLineChars, LogProviderFailure);
+        }
+
+        /// <summary>
+        /// Same as <see cref="BuildContextLines"/> but returns the individual cleaned lines instead of
+        /// joining them. Used by the public pawn-summary snapshot (API v6, C-CTX-2), which keeps each
+        /// provider's contribution as its own list entry. Returns an empty list under the same guards.
+        /// </summary>
+        public static List<string> BuildContextLineList(Pawn pawn)
+        {
+            if (pawn == null || !UnityData.IsInMainThread || !ExternalIntegrationsAllowed)
+            {
+                return new List<string>();
+            }
+
+            return Registry.BuildContextLineList(pawn, MaxProviderLines, MaxProviderLineChars, LogProviderFailure);
         }
 
         private static bool ExternalIntegrationsAllowed
