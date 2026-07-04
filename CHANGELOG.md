@@ -14,6 +14,9 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   carries no internal theme tags; it is main-thread only and returns `null` instead of throwing.
   `ApiVersion` bumped 2 → 3. The RimTalk bridge now logs the resolved style for the speaker and
   target as its proof step, without feeding it back into RimTalk.
+- **RimTalk persona-alignment note saved.** `MOD_COMPAT_PLAN.md` now records the creative rule that
+  Pawn Diary writing styles and RimTalk personas should share pawn identity and memory, while staying
+  separate private-writing and spoken-behavior surfaces.
 - **Dev event panel buttons fixed.** `Pawn Diary > Event test panel...` no longer pauses the game,
   removes the unused real-event trigger button surface, and fixes the remaining custom text buttons
   by using RimWorld's normal left-click handling.

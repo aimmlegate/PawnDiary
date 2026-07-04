@@ -238,7 +238,14 @@ What v4 itself must specify (design doc before code):
    RimTalk turns around a candidate Pawn Diary generation, reject lines caused by our own signal
    to avoid feedback loops, require a meaningful change/relationship/mood/event cue, and apply
    cooldown + dedup before any `SubmitEvent` call.
-6. Ship with: `ApiVersion = 4`, the RimTalk bridge as the reference consumer, maintainer
+6. Persona alignment: Pawn Diary writing styles and RimTalk persona prompts should share the same
+   underlying pawn identity, but they must not be the same prompt text. A diary style describes how
+   the pawn writes privately while reflecting; a RimTalk persona describes how the pawn speaks
+   socially in the moment. The bridge should translate diary/style context into compact spoken-voice
+   hints such as emotional posture, directness, guardedness, warmth, memory pressure, and
+   relationship bias. RimTalk should make pawns sound like they have lived through their diaries,
+   not like they are reciting diary prose.
+7. Ship with: `ApiVersion = 4`, the RimTalk bridge as the reference consumer, maintainer
    outreach offering it upstream.
 
 ## 5. Todos
