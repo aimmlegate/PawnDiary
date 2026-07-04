@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **Integration API v3 — writing style publish.** `PawnDiaryApi.GetWritingStyle(Pawn)` now exposes a
+  pawn's base saved writing style as a small read-only `DiaryWritingStyleSnapshot`
+  (`styleDefName`, `label`, `rule`), so a chat/context mod can align its own voice with how the pawn
+  writes. Publish-only: Pawn Diary never reads or drives another mod's persona. The read is
+  side-effect free (never creates a diary record), excludes temporary hediff style overrides, and
+  carries no internal theme tags; it is main-thread only and returns `null` instead of throwing.
+  `ApiVersion` bumped 2 → 3. The RimTalk bridge now logs the resolved style for the speaker and
+  target as its proof step, without feeding it back into RimTalk.
 - **Dev event panel buttons fixed.** `Pawn Diary > Event test panel...` no longer pauses the game,
   removes the unused real-event trigger button surface, and fixes the remaining custom text buttons
   by using RimWorld's normal left-click handling.

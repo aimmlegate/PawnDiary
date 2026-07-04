@@ -45,9 +45,11 @@ namespace PawnDiaryRimTalkBridge
                     + " text=\"" + CleanForLog(SafeText(talk), MaxLoggedChatText) + "\"");
 
                 LogRecentDiaryTitles("speaker", speaker);
+                LogWritingStyle("speaker", speaker);
                 if (!SamePawn(speaker, target))
                 {
                     LogRecentDiaryTitles("target", target);
+                    LogWritingStyle("target", target);
                 }
             }
             catch (Exception e)
@@ -99,6 +101,34 @@ namespace PawnDiaryRimTalkBridge
                 PawnDiaryRimTalkBridgeMod.LogPrefix
                 + " recent Pawn Diary titles for " + role + "=" + PawnLabel(pawn, string.Empty)
                 + ": " + builder);
+        }
+
+        private static void LogWritingStyle(string role, Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            // Publish-only proof step: Pawn Diary exposes the pawn's base writing style; the bridge
+            // just logs it. It never feeds the style back into RimTalk — syncing voices is the
+            // player's own choice.
+            DiaryWritingStyleSnapshot style = PawnDiaryApi.GetWritingStyle(pawn);
+            if (style == null)
+            {
+                Log.Message(
+                    PawnDiaryRimTalkBridgeMod.LogPrefix
+                    + " Pawn Diary writing style for " + role + "=" + PawnLabel(pawn, string.Empty)
+                    + ": none");
+                return;
+            }
+
+            Log.Message(
+                PawnDiaryRimTalkBridgeMod.LogPrefix
+                + " Pawn Diary writing style for " + role + "=" + PawnLabel(pawn, string.Empty)
+                + ": style=" + CleanForLog(style.styleDefName, MaxLoggedTitle)
+                + " label=" + CleanForLog(style.label, MaxLoggedTitle)
+                + " rule=\"" + CleanForLog(style.rule, MaxLoggedChatText) + "\"");
         }
 
         private static string TitleOrGroup(DiaryEntryTitleSnapshot snapshot)

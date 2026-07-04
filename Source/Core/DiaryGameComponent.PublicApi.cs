@@ -982,6 +982,35 @@ namespace PawnDiary
             return DiaryPersonas.Resolve(diary?.personaDefName);
         }
 
+        /// <summary>
+        /// Builds a plain read-only snapshot of a pawn's BASE saved writing style for the public
+        /// integration API. Returns null for an ineligible pawn. Unlike <see cref="PersonaFor"/> this
+        /// never creates a diary record — a pawn with no record yet resolves to the default style — so
+        /// an external read stays side-effect free. Temporary hediff style overrides are prompt-time
+        /// only and are deliberately not reflected here.
+        /// </summary>
+        public Integration.DiaryWritingStyleSnapshot WritingStyleSnapshotFor(Pawn pawn)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return null;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            DiaryPersonaDef persona = DiaryPersonas.Resolve(diary?.personaDefName);
+            if (persona == null)
+            {
+                return null;
+            }
+
+            return new Integration.DiaryWritingStyleSnapshot
+            {
+                styleDefName = persona.defName ?? string.Empty,
+                label = persona.label ?? string.Empty,
+                rule = persona.rule ?? string.Empty
+            };
+        }
+
         public void SetPersona(Pawn pawn, string personaDefName)
         {
             if (!IsDiaryEligible(pawn))
