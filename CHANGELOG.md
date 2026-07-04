@@ -50,6 +50,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   broadened redaction, and the temperature guard. Deferred by design: a structured (localized)
   error-envelope refactor, and the OpenAI-Responses `reasoning.effort:"none"`/temperature compatibility
   questions (left as-is to avoid regressing the currently tested provider behavior).
+- **External-API context-export surface added ("machinery as a service").** Extended the capability
+  catalog with the outbound half of the context machinery: C-CTX-3 (export *all* collected prompt
+  enchantments — the deterministic `PromptEnchantmentCollector.Collect` candidate set, not the single
+  `RuleFor` `Rand` pick), C-CTX-4 (full assembled-prompt preview via `BuildPromptPlan`, no
+  submit/persist), C-CTX-5 (a context bundle — summary + surroundings + continuity + enchantments +
+  style + recent entries — the core-side export a RimTalk bridge feeds via
+  `ContextHookRegistry.RegisterPawnVariable`), and C-CTX-6 (supply/override enchantment candidates
+  inbound). Reframed §2.4 as two directions (feed/override vs. read-as-a-service) and added design
+  note §3.8: export structured DTOs not raw strings, deterministic inputs over rolled outputs,
+  side-effect-free main-thread reads, and RimTalk driven from an `integrations/` bridge so core stays
+  RimTalk-free. Slotted into the §4 build queue near the reads. No runtime change; `ApiVersion` stays 3.
 - **External-API consent + gating + delivery decided.** Closed the last cross-cutting forks in the
   capability catalog: consent is a **single master `allowExternalIntegrations` toggle** (default on —
   installing an integration mod is the consent; the trust ladder is intentionally flat, and this also
