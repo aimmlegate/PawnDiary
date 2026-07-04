@@ -15,6 +15,14 @@
 .PARAMETER Version
   Optional mod version written to About/About.xml in the release payloads. Defaults to the source
   About.xml <modVersion> value, falling back to release-<today> when the source metadata is blank.
+  Ignored when -AutoBump is set.
+
+.PARAMETER AutoBump
+  Increment the patch component of the source About.xml <modVersion> by one (0.2.2 -> 0.2.3),
+  write the new value back to the source About.xml, commit nothing, and use that bumped value as
+  the release version. Fails if the source version is missing or not a major.minor.patch number.
+  Use this instead of -Version for a one-command "cut a new patch release" flow. Has no effect on
+  branches/tags; pair with your own git commit of the bumped About.xml.
 
 .PARAMETER OutDir
   Output folder for the release payload. Defaults to <repo>/dist/<published packageId>.
@@ -70,6 +78,7 @@
 [CmdletBinding()]
 param(
     [string]$Version,
+    [switch]$AutoBump,
     [string]$OutDir,
     [string]$Configuration = "Release",
     [string]$PackageId,
@@ -181,6 +190,38 @@ function Remove-DevelopmentPostfix {
     $clean = $clean -replace '\s*\((?:developement|development)\)\s*$', ''
     $clean = $clean -replace '[._-](?:developement|development)$', ''
     return $clean.Trim()
+}
+
+# Increments the patch component of a major.minor.patch version string (0.2.2 -> 0.2.3) and writes
+# the new value back to the SOURCE About.xml so the bump is permanent in the repo. Returns the
+# bumped version. Used by -AutoBump for the one-command "cut a new patch release" flow.
+function Invoke-AutoBump {
+    param([string]$SourceAboutPath, [string]$CurrentVersion)
+    if ([string]::IsNullOrWhiteSpace($CurrentVersion)) {
+        throw "-AutoBump needs an existing major.minor.patch <modVersion> in About.xml, but none was found."
+    }
+
+    $parts = $CurrentVersion.Trim().Split('.')
+    if ($parts.Length -ne 3) {
+        throw "-AutoBump needs a major.minor.patch version (got '$CurrentVersion'). Bump -Version manually or set <modVersion> in About.xml first."
+    }
+
+    # Only the patch number changes; pre-release suffixes (e.g. 0.2.2-rc1) or leading 'v' prefixes
+    # are not supported on purpose — patch releases go through this script as plain numbers.
+    $major = $parts[0]
+    $minor = $parts[1]
+    $patchPart = $parts[2]
+    if (-not ($major -match '^\d+$') -or -not ($minor -match '^\d+$') -or -not ($patchPart -match '^\d+$')) {
+        throw "-AutoBump needs three numeric version components (got '$CurrentVersion'). Pre-release suffixes and 'v' prefixes are not auto-bumped."
+    }
+    $newPatch = [int]$patchPart + 1
+    $bumped = "$major.$minor.$newPatch"
+
+    $sourceText = [System.IO.File]::ReadAllText($SourceAboutPath)
+    $updated = Set-AboutValue $sourceText "modVersion" $bumped
+    [System.IO.File]::WriteAllText($SourceAboutPath, $updated, (New-Object System.Text.UTF8Encoding($false)))
+    Write-Host "  auto-bump : '$CurrentVersion' -> '$bumped' (written to source About.xml)"
+    return $bumped
 }
 
 function Get-SafeFolderName {
@@ -428,7 +469,15 @@ if ([string]::IsNullOrWhiteSpace($publishedModName)) { $publishedModName = "Pawn
 if ([string]::IsNullOrWhiteSpace($publishedPackageId)) { $publishedPackageId = "aimmlegate.pawndiary" }
 $publishedAuthor = if ([string]::IsNullOrWhiteSpace($Author)) { $devAuthor } else { $Author.Trim() }
 if ([string]::IsNullOrWhiteSpace($publishedAuthor)) { $publishedAuthor = "aimmlegate" }
-$publishedVersion = if ([string]::IsNullOrWhiteSpace($Version)) { $devVersion } else { $Version.Trim() }
+
+if ($AutoBump -and -not [string]::IsNullOrWhiteSpace($Version)) {
+    throw "Use either -AutoBump or -Version, not both."
+}
+if ($AutoBump) {
+    $publishedVersion = Invoke-AutoBump -SourceAboutPath $sourceAboutPath -CurrentVersion $devVersion
+} else {
+    $publishedVersion = if ([string]::IsNullOrWhiteSpace($Version)) { $devVersion } else { $Version.Trim() }
+}
 if ([string]::IsNullOrWhiteSpace($publishedVersion)) { $publishedVersion = "release-$(Get-Date -Format yyyyMMdd)" }
 $buildVersionSlug = Get-SafeFolderName $publishedVersion "release-$(Get-Date -Format yyyyMMdd)"
 
@@ -467,7 +516,7 @@ if (-not $resolvedModsDir) {
 }
 
 Write-Host "$publishedModName publish prep" -ForegroundColor Green
-Write-Host "  version     : $publishedVersion"
+Write-Host "  version     : $publishedVersion$(if ($AutoBump) { ' (auto-bumped)' })"
 Write-Host "  build mode  : $Configuration"
 Write-Host "  mod name    : $publishedModName"
 Write-Host "  packageId   : $publishedPackageId"

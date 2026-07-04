@@ -4,7 +4,7 @@
   <author>aimmlegate</author>
   <modIconPath IgnoreIfNoMatchingField="True">UI/PawnDiaryModIcon</modIconPath>
   <packageId>aimmlegate.pawndiary.development</packageId>
-  <modVersion IgnoreIfNoMatchingField="True">0.2.0</modVersion>
+  <modVersion IgnoreIfNoMatchingField="True">0.2.2</modVersion>
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>

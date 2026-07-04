@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **Publish tooling: auto-bump + Russian Workshop id.** `scripts/publish.ps1` gained an `-AutoBump`
+  switch that increments the patch component of the source `About.xml` `<modVersion>` (0.2.2 → 0.2.3)
+  and writes it back to the repo, for a one-command "cut a new patch release" flow; it rejects
+  non-`major.minor.patch` shapes (pre-release suffixes, `v` prefixes, missing version) and is
+  mutually exclusive with `-Version`. Also added `About/PublishedFileId-Russian.txt` so the split
+  Russian localization payload carries its Workshop id (`3753779334`) instead of shipping as a new
+  item on every upload. Bumped `About.xml` to `0.2.2`.
 - **Writing-style prompt contract pinned by tests.** Added two regression tests in
   `tests/DiaryPipelineTests` that guard the (already-correct) flow that injects a pawn's writing
   style into the LLM **system** prompt (it lives in the system prompt by design, never as a user
