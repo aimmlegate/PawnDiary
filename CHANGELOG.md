@@ -39,6 +39,10 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   consumer-owned / hybrid) to be reconsidered before the v4 code PR; the choice stays additive so it
   blocks only the toggle slice, not the rest of the design. No runtime change; `ApiVersion` stays 3.
   Indexed in `design/README.md` and the MOD_COMPAT §5 PR-4 checklist.
+- **LLM response compatibility tightened.** Hardened the pure response parser for common
+  OpenAI-compatible/local-model quirks: whole-response Markdown fences are unwrapped, leading
+  final-answer labels are stripped after reasoning cleanup, typed content parts can read an
+  `output_text` field, and focused parser tests cover the new behavior.
 - **Docs reorg + integration ideas reconciled.** Moved the scattered design/planning markdown
   (`MOD_COMPAT_PLAN.md`, `EVENT_COVERAGE_PLAN.md`, `BODY_PART_EVENTS_PLAN.md`) into a new `design/`
   folder with a `design/README.md` index, leaving only living top-level docs at the root

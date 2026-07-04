@@ -809,7 +809,8 @@ for rare long reflections.
 session cancellation on new game/load, and result handoff to the main thread. `LlmResponseParser`
 supports Chat and Responses output shapes, strips reasoning/transcript leaks, normalizes or removes
 malformed speech markers (including common `speach` typos and incomplete bracket tags), removes
-model-leaked Unity rich-text angle tags, and trims saved text locally.
+model-leaked Unity rich-text angle tags, unwraps whole-response Markdown fences from compatible
+models, strips leading final-answer labels after reasoning cleanup, and trims saved text locally.
 
 Reasoning-effort serialization differs by mode. In OpenAI Responses, every explicit effort
 (`none`/`minimal`/`low`/`medium`/`high`/`xhigh`) is sent as `reasoning.effort`, since the server

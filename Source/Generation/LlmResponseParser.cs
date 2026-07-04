@@ -113,6 +113,8 @@ namespace PawnDiary
             cleaned = StripReasoningFencedBlocks(cleaned, tags);
             cleaned = StripReasoningHeadingPrefix(cleaned, tags);
             cleaned = StripInstructionReflectionTranscript(cleaned);
+            cleaned = StripWholeResponseCodeFence(cleaned);
+            cleaned = StripLeadingFinalAnswerLabel(cleaned);
             return CompactReasoningCleanupWhitespace(cleaned).Trim();
         }
 
@@ -279,6 +281,10 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(partText))
                 {
                     partText = StringField(part, "content");
+                }
+                if (string.IsNullOrWhiteSpace(partText))
+                {
+                    partText = StringField(part, "output_text");
                 }
 
                 if (string.IsNullOrWhiteSpace(partText))
@@ -633,6 +639,51 @@ namespace PawnDiary
             return StartsWithAny(info, fenceLabels);
         }
 
+        /// <summary>
+        /// Some local gateways wrap the whole final answer in a generic Markdown fence. Unwrap only
+        /// when the entire response is one fenced block; embedded backticks in diary prose survive.
+        /// </summary>
+        private static string StripWholeResponseCodeFence(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            string normalized = text.Replace("\r\n", "\n").Replace('\r', '\n').Trim();
+            string[] lines = normalized.Split('\n');
+            if (lines.Length < 2)
+            {
+                return text;
+            }
+
+            string open = lines[0].Trim();
+            string close = lines[lines.Length - 1].Trim();
+            if (!IsFenceLine(open) || !IsBareFenceLine(close))
+            {
+                return text;
+            }
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i < lines.Length - 1; i++)
+            {
+                if (builder.Length > 0)
+                {
+                    builder.Append('\n');
+                }
+
+                builder.Append(lines[i]);
+            }
+
+            return builder.ToString().Trim();
+        }
+
+        private static bool IsBareFenceLine(string trimmedLine)
+        {
+            return string.Equals(trimmedLine, "```", StringComparison.Ordinal)
+                || string.Equals(trimmedLine, "~~~", StringComparison.Ordinal);
+        }
+
         private static string StripReasoningHeadingPrefix(string text, string[] tags)
         {
             string[] headingLabels = ReasoningHeadingLabels(tags);
@@ -650,6 +701,30 @@ namespace PawnDiary
             }
 
             return trimmedStart.Substring(finalIndex + labelLength).TrimStart();
+        }
+
+        private static string StripLeadingFinalAnswerLabel(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            string trimmed = text.TrimStart();
+            string comparable = trimmed.ToLowerInvariant();
+            string[] labels = FinalAnswerLabels();
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (!comparable.StartsWith(labels[i], StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                string remainder = trimmed.Substring(labels[i].Length).TrimStart();
+                return string.IsNullOrWhiteSpace(remainder) ? text : remainder;
+            }
+
+            return text;
         }
 
         /// <summary>

@@ -86,6 +86,13 @@ namespace LlmResponseParserTests
                     Root("{\"output\":[{\"type\":\"reasoning\",\"content\":[{\"text\":\"secret\"}]},{\"content\":[{\"type\":\"output_text\",\"text\":\"Alpha.\"},{\"type\":\"reasoning_text\",\"text\":\"hidden\"},{\"type\":\"output_text\",\"text\":\"Beta.\"}]}]}"),
                     LlmResponseMode.OpenAIResponses));
 
+            AssertEqual(
+                "chat output_text part field",
+                "Visible from output_text.",
+                LlmResponseParser.ParseGeneratedText(
+                    Root("{\"choices\":[{\"message\":{\"content\":[{\"type\":\"output_text\",\"output_text\":\"Visible from output_text.\"}]}}]}"),
+                    LlmResponseMode.OpenAIChatCompletions));
+
         }
 
         private static void TestProviderErrors()
@@ -111,6 +118,14 @@ namespace LlmResponseParserTests
                 "Chat completion finished with no message content (finish_reason=length).",
                 LlmResponseParser.ExtractProviderError(
                     Root("{\"choices\":[{\"finish_reason\":\"length\",\"message\":{}}]}"),
+                    LlmResponseMode.OpenAIChatCompletions,
+                    false));
+
+            AssertEqual(
+                "api error reason and code",
+                "API error: quota_exceeded, code=rate_limit",
+                LlmResponseParser.ExtractProviderError(
+                    Root("{\"error\":{\"reason\":\"quota_exceeded\",\"code\":\"rate_limit\"}}"),
                     LlmResponseMode.OpenAIChatCompletions,
                     false));
 
@@ -173,6 +188,21 @@ namespace LlmResponseParserTests
                 "in-world wait line survives",
                 "Wait, Townsend paused by the stove.",
                 LlmResponseParser.StripReasoningTextBlocks("Wait, Townsend paused by the stove."));
+
+            AssertEqual(
+                "whole text fence unwrapped",
+                "Visible entry.",
+                LlmResponseParser.StripReasoningTextBlocks("```text\nVisible entry.\n```"));
+
+            AssertEqual(
+                "whole json fence unwrapped",
+                "{\"title\":\"Gate\"}",
+                LlmResponseParser.StripReasoningTextBlocks("```json\n{\"title\":\"Gate\"}\n```"));
+
+            AssertEqual(
+                "inline backticks survive",
+                "I marked `south gate` in the plan.",
+                LlmResponseParser.StripReasoningTextBlocks("I marked `south gate` in the plan."));
         }
 
         // Covers the trickier fallback branches of StripTaggedReasoningBlocks: an opening reasoning
@@ -184,7 +214,7 @@ namespace LlmResponseParserTests
             // marker line itself is kept by design (the cut stops at the start of the marker line).
             AssertEqual(
                 "no-close final-answer marker",
-                "final answer: We held the line.",
+                "We held the line.",
                 LlmResponseParser.StripReasoningTextBlocks("<think>\nweigh options\nfinal answer: We held the line."));
 
             // No close tag and no marker, but a blank line separates reasoning from the answer.
@@ -249,7 +279,7 @@ namespace LlmResponseParserTests
             // Pinned tag with no close tag: a "final answer" marker still cuts the block.
             AssertEqual(
                 "pinned tag no close final-answer marker",
-                "final answer: Held.",
+                "Held.",
                 LlmResponseParser.StripReasoningTextBlocks("<reflection>\ndeliberating\nfinal answer: Held.", "reflection"));
 
             // Pinned tag as a fenced block label is also stripped.
