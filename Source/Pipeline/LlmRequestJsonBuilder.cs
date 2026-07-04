@@ -104,6 +104,15 @@ namespace PawnDiary
 
         private static string JsonNumber(float value)
         {
+            // JSON has no NaN/Infinity literal. A non-finite temperature (corrupt save, a bad
+            // advanced override, or an un-sanitized caller) would otherwise serialize to "NaN" or
+            // "Infinity" and make the WHOLE body invalid JSON, which every endpoint rejects. Fall
+            // back to a neutral, always-valid sampling temperature instead of poisoning the request.
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                value = 1f;
+            }
+
             return value.ToString(CultureInfo.InvariantCulture);
         }
 

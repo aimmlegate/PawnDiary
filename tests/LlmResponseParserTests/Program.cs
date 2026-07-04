@@ -16,6 +16,7 @@ namespace LlmResponseParserTests
             TestProviderErrors();
             TestReasoningScrub();
             TestReasoningScrubNoCloseTag();
+            TestReasoningScrubNeverEmptiesValidProse();
             TestReasoningTagOverride();
             TestGeneratedTextCleanup();
             TestGeneratedTagSanitizer();
@@ -239,6 +240,63 @@ namespace LlmResponseParserTests
                 "multiple paired tags",
                 "Held the gate. Bob smiled.",
                 LlmResponseParser.StripReasoningTextBlocks("<think>plan</think>Held the gate.<reasoning>why</reasoning> Bob smiled."));
+        }
+
+        // Guards against the review's data-loss class: a single malformed reasoning tag, or an
+        // ordinary diary phrase that merely LOOKS like a label/heading, must never silently empty or
+        // truncate a valid entry (SendOnce treats an empty cleaned result as a permanent failure).
+        private static void TestReasoningScrubNeverEmptiesValidProse()
+        {
+            // Mismatched close tag name (opened <thinking>, closed </think>): recover the answer via
+            // any known closer instead of deleting everything after the opener.
+            AssertEqual(
+                "mismatched close tag keeps the answer",
+                "We held the gate at dawn.",
+                LlmResponseParser.StripReasoningTextBlocks("<thinking>hidden reasoning</think>We held the gate at dawn."));
+            AssertEqual(
+                "mismatched close tag (think/reasoning) keeps the answer",
+                "We held the gate at dawn.",
+                LlmResponseParser.StripReasoningTextBlocks("<think>hidden reasoning</reasoning>We held the gate at dawn."));
+
+            // Trailing stray closer with the answer BEFORE it: drop only the closer, keep the answer.
+            AssertEqual(
+                "trailing orphan closer keeps the answer",
+                "We survived the raid, barely.",
+                LlmResponseParser.StripReasoningTextBlocks("We survived the raid, barely.</think>"));
+            AssertEqual(
+                "trailing orphan closer keeps multi-line answer",
+                "The night was long and cold.\nEveryone lived.",
+                LlmResponseParser.StripReasoningTextBlocks("The night was long and cold.\nEveryone lived.</think>"));
+
+            // Ordinary diary openings that happen to begin with a common word + colon must survive.
+            AssertEqual("result: opening survives", "Result: we held the wall today.",
+                LlmResponseParser.StripReasoningTextBlocks("Result: we held the wall today."));
+            AssertEqual("entry: opening survives", "Entry: day 12 was long.",
+                LlmResponseParser.StripReasoningTextBlocks("Entry: day 12 was long."));
+            AssertEqual("diary: opening survives", "Diary: it rained all day.",
+                LlmResponseParser.StripReasoningTextBlocks("Diary: it rained all day."));
+            AssertEqual("answer: opening survives", "Answer: I still don't have one.",
+                LlmResponseParser.StripReasoningTextBlocks("Answer: I still don't have one."));
+
+            // The narrow "final answer:" label is still stripped from the very start.
+            AssertEqual("leading final-answer label still stripped", "we lost three.",
+                LlmResponseParser.StripReasoningTextBlocks("Final answer: we lost three."));
+
+            // A first-person intent line that opens the entry is prose, not an instruction self-audit.
+            AssertEqual("i-should-focus opening survives",
+                "I should focus on the wall before winter.",
+                LlmResponseParser.StripReasoningTextBlocks("I should focus on the wall before winter."));
+
+            // Inline "Analysis:" prose is not a standalone reasoning heading; its first sentence stays.
+            AssertEqual("inline analysis prose is not truncated",
+                "Analysis: the numbers were grim.\nWe lost three.",
+                LlmResponseParser.StripReasoningTextBlocks("Analysis: the numbers were grim.\nWe lost three."));
+
+            // Prose that merely begins and ends with a fence line (with an interior fence) is left
+            // intact -- it is not one wrapped block.
+            AssertEqual("multi-fence prose left intact",
+                "```\nMy day.\n```\ncode\n```",
+                LlmResponseParser.StripReasoningTextBlocks("```\nMy day.\n```\ncode\n```"));
         }
 
         // The reasoning-tag system. Auto now covers a broad built-in list (think/thinking/reasoning/

@@ -38,6 +38,9 @@ namespace PawnDiary
     {
         private const int BaseCooldownSeconds = 10;
         private const int MaxCooldownSeconds = 300;
+        // Ceiling for an honored server Retry-After. Higher than the local backoff max so daily-quota
+        // waits are respected, but bounded so a garbage header cannot pin a lane for hours.
+        private const int MaxRetryAfterSeconds = 3600;
         public const string DefaultEndpointUrl = "http://localhost:1234/v1";
         public const string DefaultReasoningEffort = "default";
         public const string DefaultCustomHeaderName = "x-goog-api-key";
@@ -219,6 +222,25 @@ namespace PawnDiary
             }
 
             return seconds;
+        }
+
+        /// <summary>
+        /// Combines the local exponential backoff with a server-supplied <c>Retry-After</c> (from a
+        /// 429/503): the lane cools for whichever is LONGER, so a rate-limited endpoint is never
+        /// re-hit before the server permits, while a server that under-asks still gets the local
+        /// minimum. A non-positive <paramref name="retryAfterSeconds"/> means no header was sent; the
+        /// honored value is capped so a garbage header cannot pin a lane indefinitely.
+        /// </summary>
+        public static int EffectiveCooldownSeconds(int failureCount, int retryAfterSeconds)
+        {
+            int backoff = CooldownSecondsForFailures(failureCount);
+            if (retryAfterSeconds <= 0)
+            {
+                return backoff;
+            }
+
+            int honored = retryAfterSeconds > MaxRetryAfterSeconds ? MaxRetryAfterSeconds : retryAfterSeconds;
+            return honored > backoff ? honored : backoff;
         }
     }
 }

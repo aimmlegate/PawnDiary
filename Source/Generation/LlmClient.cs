@@ -536,7 +536,7 @@ namespace PawnDiary
             return readiness != null && index >= 0 && index < readiness.Count && readiness[index];
         }
 
-        private static void MarkLaneCooldown(LlmGenerationRequest request, string error)
+        private static void MarkLaneCooldown(LlmGenerationRequest request, string error, int retryAfterSeconds)
         {
             ApiLaneIdentity key = LaneIdentity(request);
             if (key.Empty)
@@ -562,7 +562,8 @@ namespace PawnDiary
 
                 state.failureCount++;
                 failureCount = state.failureCount;
-                cooldownSeconds = ApiEndpointPolicy.CooldownSecondsForFailures(failureCount);
+                // Cool for the longer of the local exponential backoff and any server Retry-After.
+                cooldownSeconds = ApiEndpointPolicy.EffectiveCooldownSeconds(failureCount, retryAfterSeconds);
                 state.cooldownUntilUtc = DateTime.UtcNow.AddSeconds(cooldownSeconds);
             }
 
@@ -674,6 +675,7 @@ namespace PawnDiary
             public string RawText;
             public string Error;
             public bool TransientFailure;
+            public int RetryAfterSeconds; // server-requested wait (429/503 Retry-After), 0 when none
             public bool Cancelled; // session ended mid-flight — abort entirely, no failover
         }
 
@@ -797,7 +799,7 @@ namespace PawnDiary
                         lastError = outcome.Error; // this lane failed — fall through to the next one
                         if (outcome.TransientFailure)
                         {
-                            MarkLaneCooldown(request, outcome.Error);
+                            MarkLaneCooldown(request, outcome.Error, outcome.RetryAfterSeconds);
                         }
 
                         LogDebug("Lane failed event=" + request.eventId + " role=" + request.povRole + " lane=" + laneLabel + " error=" + TrimForLog(outcome.Error));
@@ -870,6 +872,7 @@ namespace PawnDiary
                 deadline.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, request.timeoutSeconds)));
 
                 string lastError = null;
+                int retryAfterSeconds = 0;
                 for (int attempt = 1; attempt <= MaxAttempts; attempt++)
                 {
                     try
@@ -887,6 +890,16 @@ namespace PawnDiary
                         // If the deadline already fired, stop retrying this lane immediately.
                         if (deadline.IsCancellationRequested)
                         {
+                            break;
+                        }
+
+                        // If the server told us how long to back off (429/503 Retry-After), stop the
+                        // fast local retries: honoring the server's wait via the lane cooldown avoids
+                        // hammering a rate-limited endpoint (which can escalate the throttle/ban).
+                        int transientRetryAfter = (ex as LlmTransientException)?.RetryAfterSeconds ?? 0;
+                        if (transientRetryAfter > 0)
+                        {
+                            retryAfterSeconds = transientRetryAfter;
                             break;
                         }
 
@@ -918,6 +931,7 @@ namespace PawnDiary
                 {
                     Success = false,
                     TransientFailure = true,
+                    RetryAfterSeconds = retryAfterSeconds,
                     Error = deadline.IsCancellationRequested
                         ? "Timed out waiting for the model."
                         : (lastError ?? "Unknown network error.")
@@ -1002,7 +1016,9 @@ namespace PawnDiary
                         string error = $"HTTP {(int)response.StatusCode}: {TrimForLog(responseJson)}";
                         if (IsTransientStatusCode((int)response.StatusCode))
                         {
-                            throw new LlmTransientException(error);
+                            // Honor a 429/503 Retry-After so this lane cools for the server-dictated
+                            // time instead of hammering it with fast local retries.
+                            throw new LlmTransientException(error, RetryAfterSecondsFrom(response));
                         }
 
                         throw new LlmPermanentException(error);
@@ -1188,6 +1204,36 @@ namespace PawnDiary
             return statusCode == 429 || statusCode >= 500;
         }
 
+        /// <summary>
+        /// Reads a <c>Retry-After</c> header (either a delta-seconds value or an HTTP date) as a
+        /// non-negative whole-second wait. Returns 0 when the header is absent or already in the past.
+        /// </summary>
+        private static int RetryAfterSecondsFrom(HttpResponseMessage response)
+        {
+            var retryAfter = response.Headers.RetryAfter;
+            if (retryAfter == null)
+            {
+                return 0;
+            }
+
+            double seconds = 0;
+            if (retryAfter.Delta.HasValue)
+            {
+                seconds = retryAfter.Delta.Value.TotalSeconds;
+            }
+            else if (retryAfter.Date.HasValue)
+            {
+                seconds = (retryAfter.Date.Value - DateTimeOffset.UtcNow).TotalSeconds;
+            }
+
+            if (seconds <= 0)
+            {
+                return 0;
+            }
+
+            return (int)Math.Ceiling(seconds);
+        }
+
         /// <summary>Composes a deduplication key from the tuple that uniquely identifies an
         /// in-flight request. The <c>isTitleRequest</c> bit keeps title follow-ups from colliding
         /// with the main entry that produced them — they share event+role, but a session should
@@ -1304,6 +1350,15 @@ namespace PawnDiary
                 : base(message)
             {
             }
+
+            public LlmTransientException(string message, int retryAfterSeconds)
+                : base(message)
+            {
+                RetryAfterSeconds = retryAfterSeconds;
+            }
+
+            /// <summary>Server-requested wait from a <c>Retry-After</c> header; 0 when none was sent.</summary>
+            public int RetryAfterSeconds { get; }
         }
 
         /// <summary>

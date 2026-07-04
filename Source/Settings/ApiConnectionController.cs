@@ -35,6 +35,10 @@ namespace PawnDiary
         // because await continuations may resume on a worker thread while the UI thread cancels state.
         private readonly object capabilityRefreshLock = new object();
         private readonly HashSet<int> capabilityRefreshInFlight = new HashSet<int>();
+        // Rows whose connection details changed WHILE a refresh was already running. A leading-edge
+        // single-flight alone would drop that later change (the player's final URL/key edit), leaving
+        // the capability cache stale; this records "run once more when the in-flight fetch finishes".
+        private readonly HashSet<int> capabilityRefreshPending = new HashSet<int>();
 
         // Connection-test state is per-row so each API row's Test button runs independently: a
         // request on one row no longer blocks the others. The async HTTP continuation hands a
@@ -374,11 +378,14 @@ namespace PawnDiary
                 return;
             }
 
-            // Skip if a refresh for this row is already running (e.g. mid-keystroke on the URL).
+            // Single-flight per row: if a refresh is already running (e.g. mid-keystroke on the URL or
+            // key), don't start a second. Instead remember that the row changed again so the in-flight
+            // fetch re-runs once when it finishes and picks up the player's final edit.
             lock (capabilityRefreshLock)
             {
                 if (!capabilityRefreshInFlight.Add(index))
                 {
+                    capabilityRefreshPending.Add(index);
                     return;
                 }
             }
@@ -413,9 +420,18 @@ namespace PawnDiary
             }
             finally
             {
+                bool rerun;
                 lock (capabilityRefreshLock)
                 {
                     capabilityRefreshInFlight.Remove(index);
+                    // Release the slot first, then re-run once if the row changed during this fetch,
+                    // so the latest URL/key is what actually gets its capability cached.
+                    rerun = capabilityRefreshPending.Remove(index);
+                }
+
+                if (rerun)
+                {
+                    RefreshCapability(index);
                 }
             }
         }
@@ -527,7 +543,9 @@ namespace PawnDiary
 
             if (!result.success)
             {
-                fetchStatus = "PawnDiary.Settings.FetchFailed".Translate(result.errorDetail ?? string.Empty);
+                // TrimForStatus redacts + one-lines + caps length; errorDetail can be a raw exception
+                // message or a provider error body, either of which may echo a key-bearing URL.
+                fetchStatus = "PawnDiary.Settings.FetchFailed".Translate(TrimForStatus(result.errorDetail));
                 return;
             }
 
@@ -661,7 +679,10 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            value = ApiLaneLabels.OneLine(value);
+            // Redact BEFORE collapsing/truncating so a secret can never survive as the kept prefix.
+            // This status string is shown in the settings window (a surface players screenshot when
+            // reporting problems); a query-param key echoed back in an error body must not reach it.
+            value = ApiLaneLabels.OneLine(ApiLaneLabels.RedactSecrets(value));
             return value.Length <= 80 ? value : value.Substring(0, 80) + "...";
         }
 

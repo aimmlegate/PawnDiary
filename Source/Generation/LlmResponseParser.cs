@@ -462,6 +462,20 @@ namespace PawnDiary
                         continue;
                     }
 
+                    // The exact close tag is missing. Before assuming everything to the end of the
+                    // response is reasoning (which deletes a valid answer when the model MISMATCHED
+                    // its tag names -- opened <thinking> but closed </think>, or opened <think> but
+                    // closed </reasoning>), cut through the earliest close tag of ANY known reasoning
+                    // name if one is present. Only fall through to the end-of-text heuristics when no
+                    // recognizable closer exists at all.
+                    int mismatchedCloseLength;
+                    int mismatchedClose = IndexOfAnyClosingTag(text, tags, contentStart, out mismatchedCloseLength);
+                    if (mismatchedClose >= 0)
+                    {
+                        text = text.Remove(open, (mismatchedClose + mismatchedCloseLength) - open);
+                        continue;
+                    }
+
                     int labelLength;
                     string remainder = text.Substring(Math.Min(contentStart, text.Length));
                     int finalRelative = FindLineStartingWithAny(remainder, FinalAnswerLabels(), out labelLength);
@@ -522,6 +536,16 @@ namespace PawnDiary
                         break;
                     }
 
+                    // If nothing but whitespace follows the closer, the answer is BEFORE it (the model
+                    // finished its entry, then leaked a stray close tag). Drop only the closer and keep
+                    // the answer -- discarding everything before it would empty the entry, which
+                    // SendOnce then reports as a permanent "no content" failure.
+                    if (string.IsNullOrWhiteSpace(text.Substring(close + closeNeedle.Length)))
+                    {
+                        text = text.Remove(close, closeNeedle.Length);
+                        break;
+                    }
+
                     text = text.Substring(close + closeNeedle.Length);
                 }
             }
@@ -573,6 +597,31 @@ namespace PawnDiary
             }
 
             return -1;
+        }
+
+        /// <summary>
+        /// Finds the earliest closing tag (<c>&lt;/name&gt;</c>) for ANY of the known reasoning tag
+        /// names at or after <paramref name="startIndex"/>. Lets the tagged-block stripper recover the
+        /// answer when a model mismatches its open/close tag names, instead of deleting everything
+        /// after the opener. Returns -1 (and a zero <paramref name="matchedLength"/>) when none match.
+        /// </summary>
+        private static int IndexOfAnyClosingTag(string text, string[] tags, int startIndex, out int matchedLength)
+        {
+            int best = -1;
+            matchedLength = 0;
+            int from = Math.Min(Math.Max(0, startIndex), text.Length);
+            for (int i = 0; i < tags.Length; i++)
+            {
+                string needle = "</" + tags[i] + ">";
+                int index = IndexOfOrdinalIgnoreCase(text, needle, from);
+                if (index >= 0 && (best < 0 || index < best))
+                {
+                    best = index;
+                    matchedLength = needle.Length;
+                }
+            }
+
+            return best;
         }
 
         private static string StripReasoningFencedBlocks(string text, string[] tags)
@@ -664,6 +713,18 @@ namespace PawnDiary
                 return text;
             }
 
+            // Only unwrap when this is ONE fenced block. If any interior line is also a fence, the
+            // response is prose that merely begins and ends with a fence line (e.g. two code blocks,
+            // or a fenced block followed by narration) -- stripping the outer pair would leave a
+            // dangling interior fence and mangle the text, so leave it untouched.
+            for (int i = 1; i < lines.Length - 1; i++)
+            {
+                if (IsFenceLine(lines[i].Trim()))
+                {
+                    return text;
+                }
+            }
+
             StringBuilder builder = new StringBuilder();
             for (int i = 1; i < lines.Length - 1; i++)
             {
@@ -688,7 +749,15 @@ namespace PawnDiary
         {
             string[] headingLabels = ReasoningHeadingLabels(tags);
             string trimmedStart = text.TrimStart();
-            if (!StartsWithAny(trimmedStart.ToLowerInvariant(), headingLabels))
+
+            // Only a STANDALONE heading line ("Analysis:" alone on its line, with the reasoning on the
+            // lines below) is a reasoning heading. An inline "Analysis: the raid was grim." is ordinary
+            // prose whose first sentence must not be truncated, so require the first line to hold
+            // nothing but the label.
+            int firstLineEnd = trimmedStart.IndexOf('\n');
+            string firstLine = firstLineEnd < 0 ? trimmedStart : trimmedStart.Substring(0, firstLineEnd);
+            int headingLength = MatchedPrefixLength(firstLine.ToLowerInvariant(), headingLabels);
+            if (headingLength < 0 || !string.IsNullOrWhiteSpace(firstLine.Substring(headingLength)))
             {
                 return text;
             }
@@ -703,6 +772,20 @@ namespace PawnDiary
             return trimmedStart.Substring(finalIndex + labelLength).TrimStart();
         }
 
+        /// <summary>Returns the length of the first matching label prefix, or -1 when none match.</summary>
+        private static int MatchedPrefixLength(string value, string[] labels)
+        {
+            for (int i = 0; i < labels.Length; i++)
+            {
+                if (value.StartsWith(labels[i], StringComparison.Ordinal))
+                {
+                    return labels[i].Length;
+                }
+            }
+
+            return -1;
+        }
+
         private static string StripLeadingFinalAnswerLabel(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -712,7 +795,13 @@ namespace PawnDiary
 
             string trimmed = text.TrimStart();
             string comparable = trimmed.ToLowerInvariant();
-            string[] labels = FinalAnswerLabels();
+            // Deliberately NARROWER than FinalAnswerLabels(): only "final"/"final answer"/"final
+            // response" are safe to strip from the very start of a saved entry. The broader set
+            // ("answer:", "result:", "diary:", "entry:", "output:", "response:") are ordinary diary
+            // openings ("Result: we held the wall.", "Entry: day 12"), and stripping them silently
+            // corrupted intentional prose. The broad set is still used INTERNALLY to locate the answer
+            // after a detected reasoning block, where the context already proves it is a label.
+            string[] labels = LeadingFinalAnswerLabels();
             for (int i = 0; i < labels.Length; i++)
             {
                 if (!comparable.StartsWith(labels[i], StringComparison.Ordinal))
@@ -725,6 +814,17 @@ namespace PawnDiary
             }
 
             return text;
+        }
+
+        /// <summary>
+        /// The only label prefixes safe to strip from the START of a whole response. Kept separate
+        /// from <see cref="FinalAnswerLabels"/> (which is broad on purpose for locating the answer that
+        /// follows a reasoning block) so a diary entry that legitimately opens with a common word plus
+        /// a colon is never truncated.
+        /// </summary>
+        private static string[] LeadingFinalAnswerLabels()
+        {
+            return new[] { "final:", "final answer:", "final response:" };
         }
 
         /// <summary>
@@ -755,7 +855,12 @@ namespace PawnDiary
                 return TextFromLineSegment(lines, answerLine, answerColumn);
             }
 
-            return TextBeforeLine(lines, reflectionLine);
+            // Keep the visible draft written before the self-audit. If there is none -- the response
+            // OPENS with a reflection-looking line, which for ordinary first-person diary prose is a
+            // false positive ("I need to focus on the wall before winter.") -- leave the text as-is
+            // rather than emptying the entry.
+            string before = TextBeforeLine(lines, reflectionLine);
+            return string.IsNullOrWhiteSpace(before) ? text : before;
         }
 
         private static int FirstInstructionReflectionLine(string[] lines)
@@ -1028,6 +1133,10 @@ namespace PawnDiary
 
         private static string[] InstructionReflectionPrefixes()
         {
+            // Only phrases that explicitly reference the prompt/instructions/source notes belong here.
+            // Bare first-person intent lines ("I should focus on...", "I need to avoid...") were
+            // removed: they are ordinary diary voice, and matching them truncated legitimate entries
+            // (and, when such a line opened the response, emptied it entirely).
             return new[]
             {
                 "wait, looking at the instructions",
@@ -1039,10 +1148,6 @@ namespace PawnDiary
                 "the notes say",
                 "source notes say",
                 "notes say",
-                "i should focus",
-                "i need to focus",
-                "i should avoid",
-                "i need to avoid",
                 "i should not invent",
                 "i shouldn't invent"
             };

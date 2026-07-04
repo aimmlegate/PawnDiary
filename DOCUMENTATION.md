@@ -797,7 +797,12 @@ already own their line/sentence styling.
 
 Each enabled endpoint/model/mode/auth row is an API lane. Supported request modes are OpenAI-compatible
 Chat Completions and OpenAI Responses. Auth can be bearer, no auth, custom API-key header, or `key=`
-query parameter. Logs strip secrets and query strings.
+query parameter. Logs **and every player-visible status/error string** (settings-window row status,
+model-fetch and connection-test failures, diary-tab errors) pass through the same redaction, so a
+`key=` query parameter echoed back in an error body or a `Bearer` token is masked before it is shown or
+logged; bearer tokens are masked in full regardless of which characters they contain. A non-finite
+temperature is coerced to a valid value when the request body is built, so a corrupt setting can never
+emit `NaN`/`Infinity` and invalidate the JSON.
 
 Routing modes are Balanced, Prefer top rows, and Failover only. A `DiaryEventPromptDef.forcedModel`
 can try a matching active model first; blank, unknown, disabled, or failed forced lanes fall back to
@@ -806,11 +811,22 @@ The shipped `QuadrumReflection` and `ArcReflection` prompt rows can use the same
 for rare long reflections.
 
 `LlmClient` handles concurrency, per-lane cooldowns, transient retries, timeout/permanent failures,
-session cancellation on new game/load, and result handoff to the main thread. `LlmResponseParser`
-supports Chat and Responses output shapes, strips reasoning/transcript leaks, normalizes or removes
-malformed speech markers (including common `speach` typos and incomplete bracket tags), removes
-model-leaked Unity rich-text angle tags, unwraps whole-response Markdown fences from compatible
-models, strips leading final-answer labels after reasoning cleanup, and trims saved text locally.
+session cancellation on new game/load, and result handoff to the main thread. On a 429/503 that
+carries a `Retry-After` header it skips the fast local retries and cools the lane for the longer of
+the server's requested wait (capped at one hour) and the local exponential backoff, so a rate-limited
+endpoint is not re-hit before it allows. `LlmResponseParser` supports Chat and Responses output
+shapes, strips reasoning/transcript leaks, normalizes or removes malformed speech markers (including
+common `speach` typos and incomplete bracket tags), removes model-leaked Unity rich-text angle tags,
+unwraps whole-response Markdown fences from compatible models, strips leading final-answer labels
+after reasoning cleanup, and trims saved text locally. The reasoning-scrub stages are guarded so a
+malformed or mismatched reasoning tag, or an ordinary diary line that merely resembles a label or
+self-audit, can never empty or truncate an otherwise valid entry (which would surface as a spurious
+"no content" failure): mismatched close tags recover the answer, a trailing stray closer drops only
+itself, and only unambiguous `final:`/`final answer:` prefixes are stripped from the very start.
+
+In settings, each row's reasoning-capability probe (`/models`) is single-flight per row but re-runs
+once if the row's endpoint/key changed while a probe was in flight, so the cache reflects the final
+edit rather than a stale intermediate value.
 
 Reasoning-effort serialization differs by mode. In OpenAI Responses, every explicit effort
 (`none`/`minimal`/`low`/`medium`/`high`/`xhigh`) is sent as `reasoning.effort`, since the server

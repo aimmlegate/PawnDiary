@@ -136,7 +136,7 @@ namespace PawnDiary
             return new ModelListResult(models.Distinct().OrderBy(model => model).ToList(), capabilities);
         }
 
-        /// <summary>Truncates a string to 120 chars for display in error status messages.</summary>
+        /// <summary>Redacts secrets, then truncates to 120 chars for display in error status messages.</summary>
         private static string TrimForStatus(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -144,7 +144,9 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            value = value.Trim();
+            // A model-list error body can echo the request URL (query-param key) back to us; this
+            // string ends up in the settings window, so mask any secret before it is displayed.
+            value = ApiLaneLabels.RedactSecrets(value).Trim();
             return value.Length <= 120 ? value : value.Substring(0, 120) + "...";
         }
     }

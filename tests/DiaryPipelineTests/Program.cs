@@ -1846,6 +1846,14 @@ namespace DiaryPipelineTests
             AssertEqual("cooldown fifth failure", 160, ApiEndpointPolicy.CooldownSecondsForFailures(5));
             AssertEqual("cooldown caps", 300, ApiEndpointPolicy.CooldownSecondsForFailures(6));
             AssertEqual("cooldown remains capped", 300, ApiEndpointPolicy.CooldownSecondsForFailures(20));
+
+            // Retry-After combines with the exponential backoff: the longer of the two wins, a
+            // missing/negative header keeps the local backoff, and a garbage value is capped.
+            AssertEqual("no retry-after uses local backoff", 10, ApiEndpointPolicy.EffectiveCooldownSeconds(1, 0));
+            AssertEqual("negative retry-after uses local backoff", 20, ApiEndpointPolicy.EffectiveCooldownSeconds(2, -5));
+            AssertEqual("retry-after shorter than backoff keeps backoff", 10, ApiEndpointPolicy.EffectiveCooldownSeconds(1, 3));
+            AssertEqual("retry-after longer than backoff wins", 60, ApiEndpointPolicy.EffectiveCooldownSeconds(1, 60));
+            AssertEqual("retry-after is capped at one hour", 3600, ApiEndpointPolicy.EffectiveCooldownSeconds(1, 999999));
         }
 
         private static void TestApiLaneIdentityAndLabels()
@@ -2022,6 +2030,33 @@ namespace DiaryPipelineTests
                 "responses request none reasoning",
                 "{\"model\":\"o3\",\"input\":\"\",\"temperature\":0,\"max_output_tokens\":64,\"reasoning\":{\"effort\":\"none\"}}",
                 responsesNone);
+
+            // A non-finite temperature must never serialize to "NaN"/"Infinity": JSON has no such
+            // literal, so it would invalidate the whole body and every endpoint would 400. The
+            // builder substitutes a neutral, valid temperature (1) instead.
+            string nanTemp = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            {
+                apiMode = ApiCompatibilityMode.OpenAIChatCompletions,
+                modelName = "m",
+                rawText = "ping",
+                temperature = float.NaN,
+                maxTokens = 16,
+                reasoningEffort = "default"
+            });
+            AssertTrue("NaN temperature never reaches the request body", !nanTemp.Contains("NaN"));
+            AssertTrue("NaN temperature falls back to a valid value", nanTemp.Contains("\"temperature\":1,"));
+
+            string infTemp = LlmRequestJsonBuilder.Build(new LlmRequestJsonInput
+            {
+                apiMode = ApiCompatibilityMode.OpenAIResponses,
+                modelName = "m",
+                rawText = "ping",
+                temperature = float.PositiveInfinity,
+                maxTokens = 16,
+                reasoningEffort = "default"
+            });
+            AssertTrue("Infinity temperature never reaches the request body", !infTemp.Contains("Infinity"));
+            AssertTrue("Infinity temperature falls back to a valid value", infTemp.Contains("\"temperature\":1,"));
         }
 
         // ModelReasoningCapability: parse the OpenRouter-shape "reasoning" object from a /models
@@ -2902,6 +2937,14 @@ namespace DiaryPipelineTests
             AssertEqual("bearer token is redacted",
                 "Authorization: Bearer <redacted>",
                 ApiLaneLabels.RedactSecrets("Authorization: Bearer sk-LIVE_aB.cD-12"));
+            // A token can carry base64 padding/separators (+ / = ~); the whole token must be masked,
+            // not just the leading allow-listed run (the old [A-Za-z0-9._-]+ pattern leaked the tail).
+            AssertEqual("bearer base64 token is fully redacted",
+                "Authorization: Bearer <redacted>",
+                ApiLaneLabels.RedactSecrets("Authorization: Bearer aB+cd/Ef12=="));
+            AssertEqual("bearer token with mixed separators stops at whitespace",
+                "Bearer <redacted> failed",
+                ApiLaneLabels.RedactSecrets("Bearer eyJhbG.c-iOi_Jz~I1 failed"));
             AssertEqual("text without secrets is unchanged",
                 "HTTP 500: upstream timeout",
                 ApiLaneLabels.RedactSecrets("HTTP 500: upstream timeout"));

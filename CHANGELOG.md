@@ -6,6 +6,34 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **LLM/network adversarial-review fixes.** Addressed the findings from a multi-agent review of the
+  LLM response-handling and network layer:
+  - **Response cleanup no longer drops or corrupts valid entries.** The reasoning-scrub pipeline
+    could silently empty an entry (which `SendOnce` then treats as a permanent "no content" failure)
+    or truncate ordinary prose. Fixed: a reasoning block opened with one tag name and closed with a
+    different known name (`<thinking>…</think>`) now recovers the answer via the mismatched closer
+    instead of deleting everything after the opener; a trailing stray `</think>` after a finished
+    entry drops only the tag, keeping the text; a reflection-looking line that *opens* the entry is
+    treated as prose rather than emptying it; the over-broad "I should focus/avoid…" self-audit
+    prefixes were removed. Over-stripping was narrowed: only `final:`/`final answer:`/`final response:`
+    are stripped from the very start (so "Result:", "Entry:", "Diary:", "Answer:" openings survive),
+    a code fence is only unwrapped when the whole response is one block (no interior fences), and an
+    inline "Analysis: …" first sentence is no longer mistaken for a reasoning heading.
+  - **`Retry-After` is honored.** A 429/503 with a `Retry-After` header now skips the fast local
+    retries and cools the lane for the longer of the server's wait and the local exponential backoff
+    (capped at one hour), instead of re-hitting a rate-limited endpoint.
+  - **Settings capability refresh picks up the final edit.** The per-row `/models` refresh re-runs
+    once when a row's URL/key changed while a previous refresh was in flight, so the capability cache
+    reflects the player's last edit instead of a stale intermediate value.
+  - **Secret redaction + request-body hardening.** The settings-window status/error paths now run
+    through the same redaction as the logs (a `key=` echoed in an error body can no longer surface a
+    live key in the UI); `RedactSecrets` masks a whole `Bearer` token (base64/base64url `+ / = ~`
+    included) instead of an allow-listed run; and `LlmRequestJsonBuilder` coerces a non-finite
+    temperature to a valid value so a corrupt setting can't emit invalid request JSON.
+  New pure tests cover the parser data-loss/over-strip cases, the `Retry-After` cooldown policy, the
+  broadened redaction, and the temperature guard. Deferred by design: a structured (localized)
+  error-envelope refactor, and the OpenAI-Responses `reasoning.effort:"none"`/temperature compatibility
+  questions (left as-is to avoid regressing the currently tested provider behavior).
 - **External-API consent + gating + delivery decided.** Closed the last cross-cutting forks in the
   capability catalog: consent is a **single master `allowExternalIntegrations` toggle** (default on —
   installing an integration mod is the consent; the trust ladder is intentionally flat, and this also

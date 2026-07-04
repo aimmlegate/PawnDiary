@@ -211,8 +211,11 @@ namespace PawnDiary
         private static readonly Regex QueryKeyPattern = new Regex(
             @"([?&](?:key|api[_-]?key|access_token|token|auth)=)[^&\s""']+",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        // Match the whole token after "Bearer " up to the next whitespace or quote. A token can
+        // carry base64/base64url padding and separators (+ / = ~ : .), so an allow-list of characters
+        // would leak the tail of such keys; stop only at a boundary a token never spans.
         private static readonly Regex BearerPattern = new Regex(
-            @"\bBearer\s+[A-Za-z0-9._\-]+",
+            @"\bBearer\s+[^\s""']+",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>
