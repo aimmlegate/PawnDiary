@@ -73,10 +73,10 @@ consent, dedup, main-thread) — they differ only in **who produces the prose**.
 | ID | Capability | Status | Internal hook it maps to | Key decision |
 |---|---|---|---|---|
 | ST-1 | **Get base writing style** | **shipped v3** | `GetWritingStyle` → `DiaryWritingStyleSnapshot` (`styleDefName`,`label`,`rule`) | — |
-| ST-2 | **Set writing style** | requested | `SetPersona`/`diary.personaDefName` exists internally | **Set to an existing style Def, or a free-form custom `rule`?** Free-form = a new per-pawn saved custom-style field |
-| ST-3 | **Reset writing style to pre-override** | requested | — (no saved override chain exists today; the only override is the transient, unsaved hediff one) | **Only coherent if ST-2 is a push/pop override, not a base change** — see §3.4. This is the pivotal style decision |
+| ST-2 | **Set writing style** (free-form rule, highest priority) | requested — **design decided** | new `PawnDiaryRecord.externalStyleOverride {rule, sourceId}` + top-priority branch in the `HediffPersonaOverrides.RuleFor` seam | Free-form rule (not Def-only); overrides even the hediff voice; base untouched. See §3.4 |
+| ST-3 | **Reset writing style** (clear the override) | requested — **design decided** | clear `externalStyleOverride` → seam falls through to hediff/base | Nearly free once ST-2's override exists; no bespoke undo. See §3.4 |
 | ST-4 | **List available writing-style Defs** | proposed | `DiaryPersonas`/`DefDatabase<DiaryPersonaDef>` | Lets a mod show a picker instead of guessing defNames |
-| ST-5 | **Temporary (prompt-time) style override — push/pop** | proposed | mirror the existing hediff prompt-time override mechanism (currently internal, unsaved) | The mechanism that makes ST-3 "reset" meaningful; kept distinct from ST-2 |
+| ST-5 | ~~Temporary (prompt-time) style override — push/pop~~ | **folded into ST-2/§3.4** | — | Superseded: the saved-override-over-base design (§3.4) already gives ST-2/ST-3 their layering; a separate push/pop tier isn't needed |
 | ST-6 | **Get/Set per-pawn generation enabled** | proposed | `DiaryGenerationEnabledFor`/`SetDiaryGenerationEnabled` exist internally | — |
 | ST-7 | **Expose whole persona vs. style-only** | proposed / open | `PersonaFor` exists; v3 deliberately exposed only the style slice | Decide scope: keep style-only, or open the persona |
 
@@ -156,12 +156,53 @@ submission is harmless). **Decision: do IN-2/3/4/5 also require a claiming group
 friction argues against, since a direct-text injection carries its own tag/title and needs no prompt
 policy.
 
-### 3.4 Style set = persistent base change vs. override stack
-ST-3 "reset to before override" only has meaning if ST-2 **pushes an override that remembers the
-prior base**, not if it overwrites the base. **Decision: model external style-setting as a push/pop
-override (ST-5) with provenance (who set it), so reset pops back to the saved base** — vs. a flat
-base mutation with no undo. The push/pop model also keeps external style changes from silently
-becoming the pawn's permanent saved identity.
+### 3.4 Style set/reset — DECIDED: saved override on top, reusing the resolve seam
+**Decision (2026-07-04):** external style-setting is a **saved override layered over the base**, not a
+base mutation — and it reuses the existing persona-override resolution seam rather than inventing a
+new one. Two sub-choices are now settled:
+
+1. **Priority: the external override is HIGHEST.** If a mod takes the style into its own hands, it
+   **owns** the pawn's voice for as long as the override is set — including shadowing the situational
+   hediff override (agony/high/etc.). Pawn Diary does not second-guess it; keeping style coherent is
+   the mod's responsibility. Resolution order:
+
+   ```
+   external override (saved, ST-2/ST-3, free-form rule)   ← top / wins whenever set
+   transient hediff override (computed, unsaved)          ← applies only when no external override
+   base persona (saved, player's choice)                  ← bottom fallback
+   ```
+
+2. **Form: free-form rule.** ST-2 accepts a **free-form rule string**, not only an existing persona
+   Def. The override therefore stores a *rule*, and the seam returns it directly (bypassing the
+   `personaDefName → rule` lookup used for base/hediff).
+
+**How it reuses the seam (traced 2026-07-04).** The one resolution point is
+`HediffPersonaOverrides.RuleFor(pawn, diary?.personaDefName)` (called from `PersonaRuleFor` at prompt
+build); it already does *override-else-base*. The change is to check the saved external override
+**first**:
+
+```
+RuleFor(pawn, baseDefName):
+    if pawn has a saved external override rule  -> return Sanitize(override.rule)   // NEW, top priority
+    else                                        -> existing hediff-else-base logic, unchanged
+```
+
+- **Storage is new** (the hediff override is stateless/computed and has nothing to persist): add
+  `PawnDiaryRecord.externalStyleOverride { rule, sourceId }`, scribed. `diary.personaDefName` (the
+  base) is never touched, so **ST-1 `GetWritingStyle` stays base-only and correct**, and **ST-3 reset
+  = clear the override**, after which the seam falls straight through to hediff/base with no bespoke
+  undo logic.
+- **Sanitation:** a free-form rule is untrusted prompt text → clean it like `extraContext`
+  (`PromptTextSanitizer.OneLine` + length cap) before it enters the prompt. Localization is the
+  caller's (we cannot translate a mod-supplied rule — same rule as `summaryText`).
+- **Small interaction to handle:** while an external override is active, the hediff override is
+  suppressed, so the enchantment-dedup that keys off `SuppressedPromptHediffDefNamesFor` (which
+  exists to avoid repeating a condition already voiced by the *hediff* override) no longer applies —
+  don't suppress those enchantments when the external override is on top.
+
+Net cost: one saved field + one top-priority branch in `RuleFor`; the prompt pipeline below is
+untouched. ST-3 becomes nearly free. Base-mutation is rejected — it saves nothing here and loses the
+reset.
 
 ### 3.5 Consent granularity
 Ties directly back into the v4 §7 toggle rethink. **Decision: one master "allow external
@@ -224,7 +265,7 @@ the strawman to react to.**
 | **v5** | Read: prose + filters + by-id | RD-2, RD-3, RD-5, RD-6 (RD-4 tone only if persisted) | — |
 | **v6** | Inbound direct-text | IN-4, IN-5, IN-6, IN-7, MT-2, MT-5 | IN-6 handles |
 | **v7** | Inbound prompt modes + async | IN-2, IN-3, MT-1, MT-7, C-CTX-2 | MT-1 async (§3.1), v6 handles |
-| **v8** | Style write + generation control | ST-2, ST-3, ST-4, ST-5, ST-6 | override-stack decision (§3.4) |
+| **v8** | Style write + generation control | ST-2, ST-3, ST-4, ST-6 | §3.4 decided — ready |
 | **later** | Lifecycle polish | MT-3, MT-4, MT-8, ST-7, RD-7 | — |
 
 Rationale: reads (v5) and direct-text (v6) are low-risk and need no new async or LLM machinery;
@@ -251,9 +292,12 @@ on the override-stack decision. C-CTX-1 (v4) is already in flight and independen
 1. **Consent granularity (§3.5)** — master vs. per-capability. *Blocks v4 toggle and all injection modes.*
 2. **Async delivery (§3.1)** — completion event vs. poll-only. Blast radius traced (Low, §3.1);
    recommendation is a global completion event with best-effort semantics. *Blocks v7.*
-3. **Style model (§3.4)** — override stack vs. base mutation. *Blocks v8 (and makes ST-3 possible).*
+3. ~~**Style model (§3.4)** — override stack vs. base mutation.~~ **DECIDED (§3.4):** saved override
+   over base, reusing the `RuleFor` seam; external override highest priority; free-form rule; ST-3 =
+   clear the override. Unblocks v8.
 4. **Full-prompt contract (§3.2)** — wrapped vs. caller-owned. *Shapes v7.*
 5. **Injection gating (§3.3)** — claiming group vs. lighter gate. *Shapes v6/v7.*
 6. **Tone filter (RD-4)** — persist per-entry tone, or drop the filter.
-7. **Custom vs. Def-only styles (ST-2)** — does set accept a free-form `rule`.
+7. ~~**Custom vs. Def-only styles (ST-2)**~~ **DECIDED (§3.4):** free-form rule (sanitized like
+   `extraContext`; caller owns localization).
 8. **Small knobs** — read caps/defaults (RD-2), handle format (IN-6), delete authorization (MT-4).
