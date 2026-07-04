@@ -6,6 +6,15 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **Writing-style prompt contract pinned by tests.** Added two regression tests in
+  `tests/DiaryPipelineTests` that guard the (already-correct) flow that injects a pawn's writing
+  style into the LLM **system** prompt (it lives in the system prompt by design, never as a user
+  prompt field): a pure unit test on `PromptAssembler.ComposeSystem` (the single load-bearing join)
+  covering present/blank/null/opt-out/empty-base cases, and a shipped-XML contract test reading
+  `1.6/Defs/DiaryPromptTemplateDefs.xml` that asserts every first-person template keeps
+  `includePersona=true` and every neutral chronicle / title template opts out — so a new first-person
+  shape with the wrong flag, or a future refactor of the system-prompt composition, fails in tests
+  instead of silently dropping the style.
 - **LLM/network adversarial-review fixes.** Addressed the findings from a multi-agent review of the
   LLM response-handling and network layer:
   - **Response cleanup no longer drops or corrupts valid entries.** The reasoning-scrub pipeline

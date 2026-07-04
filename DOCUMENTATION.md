@@ -550,6 +550,15 @@ Writing styles are backed by `DiaryPersonaDef`. Some code and save fields still 
 compatibility, but player-facing text should call them writing styles. Hediff style overrides are
 prompt-time only and never change the saved picker value.
 
+The writing-style rule is appended to the **system prompt** for first-person shapes, never rendered
+as a field in the **user** prompt. The single load-bearing line is
+`PromptAssembler.ComposeSystem(baseSystemPrompt, personaVoiceBlock, includePersona)`; the voice block
+is built by `DiaryPipelineAdapters.PersonaVoiceBlock`. The neutral death/arrival chronicles and the
+title follow-up set `includePersona=false` so they stay style-free. Two regression tests in
+`tests/DiaryPipelineTests` pin this contract: a pure unit test on `ComposeSystem`, and a shipped-XML
+contract test asserting every first-person template keeps `includePersona=true` and every
+neutral/title template opts out.
+
 Prompt enchantments add one weighted live-context cue to eligible first-person prompts. Event windows
 and observed conditions feed the same planner, so active threats can bias otherwise unrelated diary
 pages until they close. `normalPromptWeightMultiplier` can dampen ordinary health/mood context.

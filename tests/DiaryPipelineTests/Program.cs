@@ -62,6 +62,8 @@ namespace DiaryPipelineTests
             TestDiarySentenceExcerpt();
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
+            TestWritingStyleReachesSystemPrompt();
+            TestShippedTemplatesWritingStyleContract();
 
             Console.WriteLine("DiaryPipelineTests passed " + assertions + " assertions.");
             return 0;
@@ -2948,6 +2950,158 @@ namespace DiaryPipelineTests
             AssertEqual("text without secrets is unchanged",
                 "HTTP 500: upstream timeout",
                 ApiLaneLabels.RedactSecrets("HTTP 500: upstream timeout"));
+        }
+
+        // The pawn's writing-style rule must reach the SYSTEM prompt for every first-person entry. It
+        // must never be a field in the USER prompt (deliberate design — see DiaryPromptTemplateDefs.xml
+        // header comment), and it must be dropped only for the three neutral chronicle/title shapes.
+        // These tests pin that contract at the two load-bearing seams:
+        //   1. PromptAssembler.ComposeSystem — the single pure line that joins the voice block to the
+        //      base system prompt (so any future refactor of the join cannot silently drop style).
+        //   2. The shipped template XML — so adding a new first-person shape with the wrong
+        //      includePersona flag is caught here instead of shipping silent style loss.
+
+        private static void TestWritingStyleReachesSystemPrompt()
+        {
+            const string voiceBlock = "How this pawn tends to write: spare-iceberg: short concrete sentences.";
+            const string baseSystem = "Write 1-3 first-person diary sentences.";
+
+            // Happy path: a non-empty voice block on an includePersona=true template is appended as a
+            // trailing paragraph after a blank line. This is the shape every first-person entry must have.
+            AssertEqual("persona appended to base system prompt",
+                baseSystem + "\n\n" + voiceBlock,
+                PromptAssembler.ComposeSystem(baseSystem, voiceBlock, includePersona: true));
+
+            // A blank/whitespace voice block must NOT leave a dangling blank line in the system prompt;
+            // the base prompt is returned unchanged. (Pawn had no style resolved — rare, but must be clean.)
+            AssertEqual("blank voice block leaves base system prompt unchanged",
+                baseSystem,
+                PromptAssembler.ComposeSystem(baseSystem, "  \n ", includePersona: true));
+            AssertEqual("null voice block leaves base system prompt unchanged",
+                baseSystem,
+                PromptAssembler.ComposeSystem(baseSystem, null, includePersona: true));
+
+            // Neutral chronicle/title shapes opt out via includePersona=false; the voice block (even a
+            // real one) must never appear there. This is the death/arrival/title carve-out.
+            AssertEqual("includePersona=false drops the voice block",
+                baseSystem,
+                PromptAssembler.ComposeSystem(baseSystem, voiceBlock, includePersona: false));
+
+            // If a template has no base system prompt text, the voice block stands alone rather than
+            // producing an empty leading line. (Edge case, but it guards the TrimEnd/append algorithm.)
+            AssertEqual("voice block stands alone when base system prompt is empty",
+                voiceBlock,
+                PromptAssembler.ComposeSystem(string.Empty, voiceBlock, includePersona: true));
+
+            // End-to-end through the planner: a normal solo entry's finished system prompt MUST contain
+            // the voice block. This catches a regression anywhere in the request -> planner -> assembler
+            // chain (e.g. personaVoiceBlock no longer being copied onto DiaryPromptRequest).
+            DiaryPromptPlan plan = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = SoloPayload("e-style", "quiet work", "Alice repaired the generator alone."),
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                personaVoiceBlock = voiceBlock,
+                maxTokens = 30
+            });
+            AssertContains("planner folds persona voice block into system prompt",
+                plan.systemPrompt, voiceBlock);
+            AssertTrue("persona never appears as a user-prompt field",
+                !plan.userPrompt.Contains("How this pawn tends to write"));
+            AssertTrue("persona never appears as a user-prompt field by source token",
+                !ContainsUserPromptField(plan.userPrompt, "writing style"));
+        }
+
+        private static void TestShippedTemplatesWritingStyleContract()
+        {
+            // Reads the SHIPPED template defs and pins the writing-style policy for every shape:
+            // first-person templates (the ones the game writes diary entries in) MUST keep persona, and
+            // the neutral chronicle + title templates MUST opt out. The C# default for includePersona is
+            // true, so an absent <includePersona> tag is treated as true (the first-person default) —
+            // matching DiaryPromptTemplateDef.includePersona = true in PromptArchitectureDefs.cs.
+            XDocument doc = XDocument.Load(RepoPath("1.6", "Defs", "DiaryPromptTemplateDefs.xml"));
+
+            // Keys that must NOT carry writing style: the factual death/arrival notes and the title
+            // follow-up call are intentionally style- and enchantment-free (see the file header comment).
+            HashSet<string> styleFreeKeys = new HashSet<string>
+            {
+                DiaryPipelineTemplates.DeathDescription,
+                DiaryPipelineTemplates.ArrivalDescription,
+                DiaryPipelineTemplates.Title
+            };
+
+            // Every other shipped key writes first-person diary text and therefore MUST include the
+            // pawn's writing style. If a new first-person shape is added without the right flag, or an
+            // existing one is flipped, this fails before the silent style loss can ship.
+            List<string> seenKeys = new List<string>();
+            foreach (XElement def in doc.Descendants("PawnDiary.DiaryPromptTemplateDef"))
+            {
+                string key = ChildValue(def, "templateKey");
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                seenKeys.Add(key);
+                bool includePersona = ReadBool(def, "includePersona", defaultValue: true);
+                if (styleFreeKeys.Contains(key))
+                {
+                    AssertTrue("template " + key + " must opt out of writing style (includePersona=false)",
+                        !includePersona);
+                }
+                else
+                {
+                    AssertTrue("template " + key + " must keep writing style (includePersona=true)",
+                        includePersona);
+                }
+            }
+
+            // Guard against a silent rename of the template-key vocabulary: every DiaryPipelineTemplates
+            // constant must be present in the shipped XML, otherwise the planner would fall through to
+            // a default template and the assertions above would not actually cover the real shapes.
+            foreach (string expectedKey in AllPipelineTemplateKeys())
+            {
+                AssertTrue("shipped XML defines template key " + expectedKey, seenKeys.Contains(expectedKey));
+            }
+        }
+
+        private static bool ReadBool(XElement def, string elementName, bool defaultValue)
+        {
+            string value = ChildValue(def, elementName);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return defaultValue;
+            }
+
+            return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "1", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static List<string> AllPipelineTemplateKeys()
+        {
+            return new List<string>
+            {
+                DiaryPipelineTemplates.PairDefault,
+                DiaryPipelineTemplates.PairImportant,
+                DiaryPipelineTemplates.PairCombat,
+                DiaryPipelineTemplates.PairBatched,
+                DiaryPipelineTemplates.SoloDefault,
+                DiaryPipelineTemplates.SoloImportant,
+                DiaryPipelineTemplates.SoloInternalState,
+                DiaryPipelineTemplates.SoloBatched,
+                DiaryPipelineTemplates.SoloDayReflection,
+                DiaryPipelineTemplates.SoloQuadrumReflection,
+                DiaryPipelineTemplates.SoloArcReflection,
+                DiaryPipelineTemplates.DeathDescription,
+                DiaryPipelineTemplates.ArrivalDescription,
+                DiaryPipelineTemplates.Title
+            };
+        }
+
+        private static bool ContainsUserPromptField(string userPrompt, string labelFragment)
+        {
+            return userPrompt != null
+                && userPrompt.IndexOf(labelFragment, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static void AssertHeader(string name, HttpRequestMessage request, string headerName, string expected)
