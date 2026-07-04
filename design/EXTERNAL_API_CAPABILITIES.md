@@ -99,7 +99,7 @@ Distinct from IN-* (which create entries): these let an external mod feed *our o
 | MT-3 | **Regenerate an existing entry** | proposed | `RegenerateEntry` exists internally | Exposure only |
 | MT-4 | **Retract / delete an entry a mod created** | proposed | remove the event/archive row by handle + source check | Undo path for the source mod; guard so a mod only deletes its own |
 | MT-5 | **Public `IsDiaryEligible(pawn)`** | proposed | `IsDiaryEligible` exists internally | Saves callers a silent-drop submit |
-| MT-6 | **Per-capability consent toggles** | proposed / open | new settings; see §3.5 and the v4 §7 rethink | Injection (IN-2/3/4/5) and style-writing (ST-2/3) are more invasive than IN-1 → likely separate switches |
+| MT-6 | **Master consent toggle** | **design decided (A1)** | one `bool allowExternalIntegrations` on `PawnDiarySettings`, honored where each capability runs | Single switch, default on; installing a mod is consent (§3.5). Per-source (A3) deferred, additive |
 | MT-7 | **Cost / rate guardrails** for prompt-bearing calls (IN-2/IN-3) | proposed | caps around the LLM call | They spend real tokens on the player's key |
 | MT-8 | **UI attribution** — mark externally authored/injected entries | proposed | `sourceId` already stored on external events; surface it in the tab | Lets players see what a mod wrote |
 
@@ -149,12 +149,18 @@ persona/style wrapped (then it's really IN-3), or is the contract "caller owns t
 touch it"?** If the latter, C-CTX-2 (hand the caller our context) is how they opt back into
 pawn-consistency voluntarily.
 
-### 3.3 Gating — does a prompt/text mode need a claiming group?
-IN-1 requires an **External-domain group to claim the `eventKey`** (policy lives in XML; a stray
-submission is harmless). **Decision: do IN-2/3/4/5 also require a claiming group, or a lighter gate
-(feature toggle + eligibility + per-pawn generation state only)?** Consistency argues for a group;
-friction argues against, since a direct-text injection carries its own tag/title and needs no prompt
-policy.
+### 3.3 Gating — DECIDED: optional claiming group (B3)
+**Decision (2026-07-04): the claiming group is optional for the new inbound modes (IN-2/3/4/5).**
+- **Group present** → use it exactly as IN-1 does: its per-group toggle, label, and (for IN-3) its
+  prompt policy apply. An adapter that wants XML control ships one.
+- **No group** → the call is gated by the master consent switch (§3.5) + subject eligibility + (for
+  injection) the generation-off rule; the caller's own tag/title/text stand in for the group's label,
+  and no prompt policy is needed (IN-2 owns its prompt, IN-4/5 own their text).
+
+IN-1 keeps its **required-group** rule unchanged (a stray `eventKey` with no group stays harmless).
+Trade-off accepted: the no-group path loses the "unclaimed key is silently dropped" safety valve, so
+a self-contained IN-2/IN-4 call records even on a typo'd tag — acceptable because such a call is
+explicit page-writing, not a fire-and-forget event, and the master switch still gates it.
 
 ### 3.4 Style set/reset — DECIDED: saved override on top, reusing the resolve seam
 **Decision (2026-07-04):** external style-setting is a **saved override layered over the base**, not a
@@ -204,15 +210,23 @@ Net cost: one saved field + one top-priority branch in `RuleFor`; the prompt pip
 untouched. ST-3 becomes nearly free. Base-mutation is rejected — it saves nothing here and loses the
 reset.
 
-### 3.5 Consent granularity
-Ties directly back into the v4 §7 toggle rethink. **Decision: one master "allow external
-integrations" switch, or per-capability consent** — submit (IN-1) / inject-text (IN-4/5) /
-run-prompt (IN-2/3) / write-style (ST-2/3) / context-providers (C-CTX-1) are escalating levels of
-trust and may each deserve their own switch. Resolve this once, here, and both the v4 provider toggle
-and the injection-mode toggles fall out of it. Concrete instance surfaced by the IN-4 trace (§3.7):
-direct-text injection bypasses the per-pawn `DiaryGenerationEnabledFor` gate, so this decision
-determines whether "generation off" also silences injected entries or whether they need their own
-consent.
+### 3.5 Consent granularity — DECIDED: single master toggle (A1)
+**Decision (2026-07-04): one master "allow external integrations" switch, default on.** Rationale:
+installing an integration mod *is* the consent — if a player adds a mod that drives the diary, that is
+their choice to own. The trust ladder (submit / context / inject / run-prompt / write-style) is
+**intentionally flattened**: no per-capability or per-source switches. This also resolves the v4
+provider toggle (`API_V4_PAWN_CONTEXT_PROVIDERS.md` §7) — the master switch is that toggle.
+
+- **Scope:** one `bool allowExternalIntegrations` on `PawnDiarySettings`, honored at the point each
+  capability runs (submission, injection, prompt, style-write, provider invocation). Off ⇒ every
+  external capability is inert; registration/calls simply no-op.
+- **Per-source granularity (A3) stays a possible additive follow-up** if a noisy-mod problem ever
+  appears — it does not change the contract, so deferring it costs nothing.
+- **Generation-off sub-question (from the §3.7 IN-4 trace):** since consent is a single master switch,
+  the per-pawn `DiaryGenerationEnabledFor` toggle keeps its own meaning — it is a *player* choice about
+  that pawn, not a mod-trust question. Default: **respect it for injection too** (generation-off ⇒ no
+  injected pages either), the conservative reading of a player silencing a pawn's diary. (Minor; the
+  one micro-decision left in this area — flip to permissive only if a use-case demands it.)
 
 ### 3.6 Versioning & sequencing
 This is ~15 new members; they land across several `ApiVersion` bumps, not one. Proposed order in §4.
@@ -254,23 +268,30 @@ decisions above.
 
 ---
 
-## 4. Proposed version sequencing
+## 4. Delivery — one capability at a time, in the base mod
 
-Additive, each independently shippable; ordering by dependency and value. **Not committed — this is
-the strawman to react to.**
+**Decision (2026-07-04): no bundled "version packages". Each capability is implemented and shipped
+individually as a feature of the base Pawn Diary mod**, with its own `ApiVersion` bump when it adds a
+public member (the ledger is monotonic-per-member, so this is the natural grain). The API surface
+lives in core (`PawnDiary.Integration.PawnDiaryApi`), not in adapter/bridge mods — those remain only
+as *examples/consumers* under `integrations/`. Ordering below is **dependency order**, not a release
+train; pick the next single capability to build, ship it, bump `ApiVersion`, move on.
 
-| Version | Theme | Capabilities | Depends on |
-|---|---|---|---|
-| **v4** | Pawn-context providers | C-CTX-1 | toggle decision (§3.5) |
-| **v5** | Read: prose + filters + by-id | RD-2, RD-3, RD-5, RD-6 (RD-4 tone only if persisted) | — |
-| **v6** | Inbound direct-text | IN-4, IN-5, IN-6, IN-7, MT-2, MT-5 | IN-6 handles |
-| **v7** | Inbound prompt modes + async | IN-2, IN-3, MT-1, MT-7, C-CTX-2 | MT-1 async (§3.1), v6 handles |
-| **v8** | Style write + generation control | ST-2, ST-3, ST-4, ST-6 | §3.4 decided — ready |
-| **later** | Lifecycle polish | MT-3, MT-4, MT-8, ST-7, RD-7 | — |
+| Order | Capability | ApiVersion on ship | Depends on | Notes |
+|---|---|---|---|---|
+| 1 | **C-CTX-1** pawn-context providers | v4 | §3.5 decided (master toggle) | Brief ready (`API_V4_PAWN_CONTEXT_PROVIDERS.md`); unblocked |
+| 2 | **RD-3** read filters (type/atmosphere/date) | vN | — | Cheapest; fields already stored |
+| 3 | **RD-2 / RD-5 / RD-6** prose read, by-id, counts | vN | RD-3 | RD-4 tone only if persisted (§6.6) |
+| 4 | **IN-6** entry handle | vN | — | Prereq for status/completion |
+| 5 | **IN-4 / IN-5** direct-text inject | vN | IN-6 | Very Low blast radius (§3.7); §3.3 B3, §3.5 gates |
+| 6 | **MT-2 / MT-5** status query, eligibility probe | vN | IN-6 | Near-free (§3.1) |
+| 7 | **MT-1** async completion signal | vN | — (seam exists) | Low blast radius (§3.1); global event, best-effort |
+| 8 | **IN-2 / IN-3** prompt modes | vN | MT-1, IN-6, §3.2 | IN-3 wants §3.2 full-prompt-contract call |
+| 9 | **ST-2 / ST-3 / ST-4 / ST-6** style write, reset, list, generation toggle | vN | §3.4 decided | Override-over-base seam reuse |
+| later | **MT-3/4/8, ST-7, RD-7, IN-7, C-CTX-2** lifecycle polish | vN | — | As needed |
 
-Rationale: reads (v5) and direct-text (v6) are low-risk and need no new async or LLM machinery;
-prompt modes (v7) are gated on the async signal, the single hardest piece; style-writing (v8) waits
-on the override-stack decision. C-CTX-1 (v4) is already in flight and independent.
+`ApiVersion` numbers past v4 are assigned **in actual ship order**, not reserved up front — so this
+list is a build queue, not a version map. Each row is independently shippable and additive.
 
 ## 5. Design invariants (carry-over — do not relitigate per capability)
 
@@ -289,14 +310,16 @@ on the override-stack decision. C-CTX-1 (v4) is already in flight and independen
 
 ## 6. Open questions (consolidated — close these before the matching version's code PR)
 
-1. **Consent granularity (§3.5)** — master vs. per-capability. *Blocks v4 toggle and all injection modes.*
+1. ~~**Consent granularity (§3.5)**~~ **DECIDED (§3.5):** single master toggle (A1), default on —
+   installing a mod is consent. Also settles the v4 toggle.
 2. **Async delivery (§3.1)** — completion event vs. poll-only. Blast radius traced (Low, §3.1);
    recommendation is a global completion event with best-effort semantics. *Blocks v7.*
 3. ~~**Style model (§3.4)** — override stack vs. base mutation.~~ **DECIDED (§3.4):** saved override
    over base, reusing the `RuleFor` seam; external override highest priority; free-form rule; ST-3 =
    clear the override. Unblocks v8.
 4. **Full-prompt contract (§3.2)** — wrapped vs. caller-owned. *Shapes v7.*
-5. **Injection gating (§3.3)** — claiming group vs. lighter gate. *Shapes v6/v7.*
+5. ~~**Injection gating (§3.3)**~~ **DECIDED (§3.3):** optional claiming group (B3) — group if
+   present, else master toggle + eligibility. IN-1 keeps its required-group rule.
 6. **Tone filter (RD-4)** — persist per-entry tone, or drop the filter.
 7. ~~**Custom vs. Def-only styles (ST-2)**~~ **DECIDED (§3.4):** free-form rule (sanitized like
    `extraContext`; caller owns localization).

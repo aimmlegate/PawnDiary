@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-04
 
+- **External-API consent + gating + delivery decided.** Closed the last cross-cutting forks in the
+  capability catalog: consent is a **single master `allowExternalIntegrations` toggle** (default on —
+  installing an integration mod is the consent; the trust ladder is intentionally flat, and this also
+  settles the API v4 provider toggle); injection gating uses an **optional claiming group** (group's
+  policy/toggle apply when present, else the master switch + eligibility, while IN-1 keeps its
+  required-group rule); and capabilities ship **one at a time as base-mod features**, each with its
+  own `ApiVersion` bump in dependency order rather than bundled version waves. §4 reframed as a build
+  queue, MT-6/§3.3/§3.5 and the v4 brief §7 updated, open questions 1 and 5 closed.
 - **External-API capability catalog added; API-surface planning restructured.** New
   `design/EXTERNAL_API_CAPABILITIES.md` is now the authority on the *shape* of the public integration
   surface: it folds in a scoping pass' worth of requested capabilities (inbound entry-creation modes —
