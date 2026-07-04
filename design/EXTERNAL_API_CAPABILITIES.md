@@ -34,7 +34,8 @@ never throw into a caller; main-thread only; plain-string/DTO across the boundar
 never renamed.
 
 **ID scheme** used below (doc-local, not a code name): `IN-*` inbound, `RD-*` read, `ST-*`
-style/persona/generation, `MT-*` meta/lifecycle, `C-CTX-*` context-into-our-prompt.
+style/persona/generation, `MT-*` meta/lifecycle, `C-CTX-*` context ↔ our machinery (both feed/override
+inbound and read-as-a-service outbound — see §2.4/§3.8).
 
 ---
 
@@ -80,14 +81,28 @@ consent, dedup, main-thread) — they differ only in **who produces the prose**.
 | ST-6 | **Get/Set per-pawn generation enabled** | proposed | `DiaryGenerationEnabledFor`/`SetDiaryGenerationEnabled` exist internally | — |
 | ST-7 | **Expose whole persona vs. style-only** | proposed / open | `PersonaFor` exists; v3 deliberately exposed only the style slice | Decide scope: keep style-only, or open the persona |
 
-### 2.4 Context into our prompts (`C-CTX-*`)
+### 2.4 Context ↔ our machinery (`C-CTX-*`) — two directions
 
-Distinct from IN-* (which create entries): these let an external mod feed *our own* generation.
+Our prompt-building machinery is exposed **two ways** (see the design note §3.8): **feed/override** it
+(inbound — a mod supplies a piece we fold into our generation) and **read it as a pure service**
+(outbound — a mod reads the context we assemble to display it or to drive *another* LLM mod like
+RimTalk). Same primitives, both faces.
+
+**Feed / override our machinery (inbound):**
 
 | ID | Capability | Status | Internal hook it maps to | Key decision |
 |---|---|---|---|---|
-| C-CTX-1 | **Pawn-context providers** — a mod adds a `key=value` line to our pawn summary | **designed** (v4 brief) | `RegisterPawnContextProvider` → line in `BuildPawnSummary` next to DLC-identity fields | Player-toggle model still open — see `API_V4_PAWN_CONTEXT_PROVIDERS.md` §7 |
-| C-CTX-2 | **Get the prompt context we'd use** (assembled pawn summary / game context) | proposed | expose the `BuildPawnSummary` output as a snapshot | Bridges IN-2/IN-3: lets a full-prompt caller still reflect the pawn |
+| C-CTX-1 | **Pawn-context providers** — a mod adds a `key=value` line to our pawn summary | **designed** (v4 brief) | `RegisterPawnContextProvider` → line in `BuildPawnSummary` next to DLC-identity fields | Gated by master toggle (§3.5); brief ready |
+| C-CTX-6 | **Supply / override enchantments** — a mod adds live context candidates to a submitted event's prompt | proposed | `PromptEnchantments.RuleFor(extraCandidates:)` already accepts extra candidates; accept plain lines and wrap them | Relates to IN-3 (partial prompt); sanitize like `extraContext` |
+
+**Read our machinery as a service (outbound — "pure widget" + drive external LLM):**
+
+| ID | Capability | Status | Internal hook it maps to | Key decision |
+|---|---|---|---|---|
+| C-CTX-2 | **Get the pawn summary / game context** we'd use | proposed | `DiaryContextBuilder.BuildPawnSummary` (+ `BuildSurroundingsSummary`/`BuildContinuitySummary`, already `public static`) | Export a **structured DTO**, not the raw `key=value` string (§3.8) |
+| C-CTX-3 | **Get all collected prompt enchantments** for a pawn (the candidate *set*, not the one rolled) | proposed | `PromptEnchantmentCollector.Collect(pawn, …)` → flatten `PromptEnchantmentCandidate` to plain lines (+ weight/source) | Export the deterministic Collect set; never the `RuleFor` `Rand` pick (§3.8) |
+| C-CTX-4 | **Get the full assembled prompt** (system+user) for a pawn/event — *preview, no submit, no persist* | proposed | `DiaryPromptBuilder.BuildPromptPlan` | A preview is *a* prompt, not *the* prompt (bakes in the enchantment/humor roll) — document as representative (§3.8) |
+| C-CTX-5 | **Context bundle** — summary + surroundings + continuity + enchantments + writing style + recent entries, in one snapshot | proposed | composes C-CTX-2/3 + ST-1 + RD-2 | The core-side export the RimTalk bridge feeds to `ContextHookRegistry.RegisterPawnVariable`; **core never references RimTalk** (bridge lives in `integrations/`) |
 
 ### 2.5 Meta / safety / lifecycle (`MT-*`)
 
@@ -266,6 +281,36 @@ Net: IN-4 is a ~1-method save-model addition plus two policy calls, with **no ne
 reads, archive, or save/load. Lower plumbing cost than MT-1; its real content is the two policy
 decisions above.
 
+### 3.8 Machinery as a service — override vs. pure-widget (two directions)
+Our context/prompt machinery (`DiaryContextBuilder.Build*Summary`, `PromptEnchantmentCollector.Collect`,
+`DiaryPromptBuilder.BuildPromptPlan`) is reusable in **two directions**, and the API should expose both
+deliberately:
+
+- **Feed / override (inbound):** a mod supplies a piece we fold into *our* generation — a summary line
+  (C-CTX-1), enchantment candidates (C-CTX-6), a prompt fragment (IN-3), a whole prompt (IN-2), a
+  writing style (ST-2). "Take the wheel" on our machinery.
+- **Read as a pure service (outbound):** a mod reads the context we assemble, side-effect free, to
+  **display it** (a UI widget in another mod) or to **drive a different LLM mod** — feeding RimTalk our
+  understanding of the pawn so its conversations reflect the diary (C-CTX-2/3/4/5).
+
+Design rules for the outbound (read) side:
+1. **Structured DTOs, not raw strings.** The pawn summary is an internal `key=value` blob; exporting it
+   verbatim freezes its format under the additive-only promise. Export **named-field DTOs** so the
+   assembly can keep evolving. (Same reason ST-1/RD-* already return DTOs.)
+2. **Deterministic inputs over rolled outputs.** Export the enchantment **candidate set** (`Collect`),
+   never `PromptEnchantments.RuleFor` — the latter uses `Rand`, so it is unstable per call. The full
+   assembled prompt (C-CTX-4) likewise bakes in the roll: it is *a* prompt, not *the* prompt — fine as
+   a preview, not as something a consumer should diff.
+3. **Side-effect free + main-thread.** These are reads: they must not create a diary record, queue
+   generation, or spend tokens (contrast the *generate*-and-return idea, which is IN-2 + MT-1). They
+   read live pawn/Def state → main-thread, like every other reader.
+4. **RimTalk (and any chat mod) is driven from a bridge, not core.** Core exposes C-CTX-5 as a plain
+   bundle; the `integrations/` RimTalk bridge registers it as a Scriban `pawndiary` variable via
+   `ContextHookRegistry.RegisterPawnVariable`. Core never references RimTalk types — the AGENTS.md
+   barrier is unchanged. This is the concrete core-side counterpart to the MOD_COMPAT §4.3 bridge idea.
+5. **Consent:** reads are governed by the master toggle (§3.5) like everything else; they change
+   nothing and spend nothing, so no additional gate.
+
 ---
 
 ## 4. Delivery — one capability at a time, in the base mod
@@ -282,13 +327,15 @@ train; pick the next single capability to build, ship it, bump `ApiVersion`, mov
 | 1 | **C-CTX-1** pawn-context providers | v4 | §3.5 decided (master toggle) | Brief ready (`API_V4_PAWN_CONTEXT_PROVIDERS.md`); unblocked |
 | 2 | **RD-3** read filters (type/atmosphere/date) | vN | — | Cheapest; fields already stored |
 | 3 | **RD-2 / RD-5 / RD-6** prose read, by-id, counts | vN | RD-3 | RD-4 tone only if persisted (§6.6) |
+| 3b | **C-CTX-2 / C-CTX-3** export pawn summary + collected enchantments (structured DTOs) | vN | — | Pure reads (§3.8); cheap, no new machinery |
+| 3c | **C-CTX-5** context bundle (+ `integrations/` RimTalk bridge consumer) | vN | C-CTX-2/3, ST-1, RD-2 | Bridge feeds RimTalk; core stays RimTalk-free (§3.8) |
 | 4 | **IN-6** entry handle | vN | — | Prereq for status/completion |
 | 5 | **IN-4 / IN-5** direct-text inject | vN | IN-6 | Very Low blast radius (§3.7); §3.3 B3, §3.5 gates |
 | 6 | **MT-2 / MT-5** status query, eligibility probe | vN | IN-6 | Near-free (§3.1) |
 | 7 | **MT-1** async completion signal | vN | — (seam exists) | Low blast radius (§3.1); global event, best-effort |
-| 8 | **IN-2 / IN-3** prompt modes | vN | MT-1, IN-6, §3.2 | IN-3 wants §3.2 full-prompt-contract call |
+| 8 | **IN-2 / IN-3 / C-CTX-4 / C-CTX-6** prompt modes, prompt-preview, enchantment override | vN | MT-1, IN-6, §3.2 | C-CTX-4 preview is `BuildPromptPlan`; C-CTX-6 relates to IN-3 |
 | 9 | **ST-2 / ST-3 / ST-4 / ST-6** style write, reset, list, generation toggle | vN | §3.4 decided | Override-over-base seam reuse |
-| later | **MT-3/4/8, ST-7, RD-7, IN-7, C-CTX-2** lifecycle polish | vN | — | As needed |
+| later | **MT-3/4/8, ST-7, RD-7, IN-7** lifecycle polish | vN | — | As needed |
 
 `ApiVersion` numbers past v4 are assigned **in actual ship order**, not reserved up front — so this
 list is a build queue, not a version map. Each row is independently shippable and additive.
