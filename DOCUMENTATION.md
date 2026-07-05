@@ -699,6 +699,15 @@ a page has a companion Interaction-domain display group (`eventWindow*`, `observ
 `observedFleshmassHeart`) so the saved page classifies to a proper label/importance in the Diary
 tab instead of the catch-all.
 
+**In-game API Explorer.** `integrations/PawnDiary.ExampleAdapter/` ships a Dev-mode window that
+drives every public `PawnDiaryApi` method from a three-pane UI (method tree | request form | running
+result log). It exists so adapter authors and the maintainer can probe the contract interactively
+without writing throwaway code. Open it via Dev mode → Debug Actions → *Pawn Diary Example Adapter*
+→ *Open API explorer…*. The same mod also registers the two process-global hooks
+(`RegisterEntryStatusListener`, `RegisterPawnContextProvider`) as live examples and exposes their
+activity in the explorer's Hooks tab. Its pure text-parsing helpers are unit-tested by
+`tests/ExampleAdapterParsingTests/`.
+
 ### 5.1 Observed conditions (lasting game state, Plan 12)
 
 Observed conditions are for lasting states that should be re-read from live game state instead of

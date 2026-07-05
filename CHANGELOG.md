@@ -6,6 +6,24 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-05
 
+- **In-game API Explorer for the integration surface.** Rewrote
+  `integrations/PawnDiary.ExampleAdapter/` from a one-event-per-day timer into a developer tool that
+  drives **every** public `PawnDiaryApi` method from a three-pane Dev-mode window (method tree |
+  request form | append-only result log with copy/clear). It also ships four `[DebugAction]` quick
+  actions under a new *Pawn Diary Example Adapter* category (open explorer, submit example event,
+  preview example prompt, dump context bundle to log), and keeps its role as the canonical
+  integration example: `ExampleAdapterGameComponent` still registers the two process-global hooks
+  (`RegisterEntryStatusListener`, `RegisterPawnContextProvider`), and the explorer's Hooks tab shows
+  their live activity. Two new External-domain groups (`exampleAdapterPromptIdea`,
+  `exampleAdapterDirectNote`) join the existing `exampleAdapterQuietMoment` so all three submit paths
+  (`SubmitEvent`, `SubmitPromptEntry`, `SubmitDirectEntry`) have canonical group XML. The pure
+  text-parsing helpers (`ExplorerParsing.cs`) are unit-tested by a new
+  `tests/ExampleAdapterParsingTests/` console project (41 assertions, no RimWorld refs). DTO
+  formatting glue (`SnapshotFormatter.cs`) is intentionally impure — DTOs live in `PawnDiary.dll`,
+  which references RimWorld, so a pure test project would drag the game in transitively. Updated
+  `integrations/README.md`, `About/About.xml`, `EXTERNAL_API.md`, `INTEGRATIONS.md`, and
+  `DOCUMENTATION.md §3.7` to point at the explorer. No core-mod code or contract change.
+
 - **External API short guide.** Added `EXTERNAL_API.md` as a one-page overview of the
   `PawnDiary.Integration` surface for mod authors: 30-second quickstart, a capability table mapping
   common goals to the right call (v1–v23), the three submission paths side by side, and the hard

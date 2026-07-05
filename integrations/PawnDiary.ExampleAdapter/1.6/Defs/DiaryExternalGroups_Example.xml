@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The adapter's half of the Pawn Diary contract: an External-domain group that CLAIMS the eventKey
-  this adapter submits. Without this def the submission records nothing (Pawn Diary logs one
-  warning naming the adapter). label/instruction/tone are DefInjected-localizable inside the
-  adapter mod, exactly like Pawn Diary's own groups. See INTEGRATIONS.md in the Pawn Diary repo.
+  The adapter's half of the Pawn Diary contract: External-domain groups that CLAIM the eventKeys
+  this adapter submits. Without a claiming group a SubmitEvent records nothing (Pawn Diary logs one
+  warning naming the adapter). label/instruction/tone are DefInjected-localizable inside the adapter
+  mod, exactly like Pawn Diary's own groups. See INTEGRATIONS.md in the Pawn Diary repo.
+
+  Three groups, one per submission path the explorer exercises:
+    • exampleadapter_quiet_moment   — SubmitEvent (the canonical minimal example)
+    • exampleadapter_prompt_idea    — SubmitPromptEntry (Pawn Diary writes from an instruction)
+    • exampleadapter_direct_note    — SubmitDirectEntry (caller owns the final prose)
 -->
 <Defs>
 
@@ -18,6 +23,34 @@
     <tone>calm and low-key</tone>
     <matchDefNames>
       <li>exampleadapter_quiet_moment</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>exampleAdapterPromptIdea</defName>
+    <label>prompt idea</label>
+    <order>1001</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a moment the adapter pointed at with a free-form instruction; follow that instruction inside the normal diary voice</instruction>
+    <tone>flexible</tone>
+    <matchDefNames>
+      <li>exampleadapter_prompt_idea</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>exampleAdapterDirectNote</defName>
+    <label>direct note</label>
+    <order>1002</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>caller-authored prose; display as-is</instruction>
+    <tone>neutral</tone>
+    <matchDefNames>
+      <li>exampleadapter_direct_note</li>
     </matchDefNames>
   </PawnDiary.DiaryInteractionGroupDef>
 

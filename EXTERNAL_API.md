@@ -138,4 +138,6 @@ are independent copies: mutating game state after the call does not change a sna
   (copy it and swap the timer for your trigger); see also [`integrations/README.md`](integrations/README.md)
 - **Architecture / data flow** — [`DOCUMENTATION.md`](DOCUMENTATION.md) §3.7
 - **Planned (not-yet-shipped) capabilities** — [`design/EXTERNAL_API_CAPABILITIES.md`](design/EXTERNAL_API_CAPABILITIES.md)
-- **Test the pipeline in-game** — Dev mode → Debug Actions → *Pawn Diary* → "Submit test external event…"
+- **Test the pipeline in-game** — Dev mode → Debug Actions → **Pawn Diary Example Adapter** →
+  *Open API explorer…* (a full debug window that drives every `PawnDiaryApi` method), or the core
+  mod's own *Pawn Diary* → "Submit test external event…" for the one-shot path.

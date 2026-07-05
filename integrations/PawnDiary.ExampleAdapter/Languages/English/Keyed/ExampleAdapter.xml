@@ -1,7 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Adapter-owned strings. Pawn Diary receives already-localized text in the request; it never
-     translates another mod's content. -->
+     translates another mod's content. Field labels that mirror DTO field names (eventKey, povRole,
+     etc.) stay English on purpose — they are schema labels the developer is matching against the
+     PawnDiaryApi contract, the same carve-out as prompt-schema labels (AGENTS.md §12). -->
 <LanguageData>
+
+  <!-- Original daily-event strings (still used by the "Submit example event" dev action). -->
   <PawnDiaryExampleAdapter.QuietMomentSummary>{0} found a rare quiet moment with nothing urgent to do.</PawnDiaryExampleAdapter.QuietMomentSummary>
   <PawnDiaryExampleAdapter.QuietMomentLabel>quiet moment</PawnDiaryExampleAdapter.QuietMomentLabel>
+
+  <!-- ── API Explorer window chrome ─────────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Header.Subject>Subject</PawnDiaryExampleAdapter.Header.Subject>
+  <PawnDiaryExampleAdapter.Header.Partner>Partner</PawnDiaryExampleAdapter.Header.Partner>
+  <PawnDiaryExampleAdapter.Header.None>(none)</PawnDiaryExampleAdapter.Header.None>
+
+  <PawnDiaryExampleAdapter.Form.PickMethod>Pick a method from the tree.</PawnDiaryExampleAdapter.Form.PickMethod>
+  <PawnDiaryExampleAdapter.Form.Invoke>Invoke</PawnDiaryExampleAdapter.Form.Invoke>
+
+  <PawnDiaryExampleAdapter.SetEnabledToggle>enabled</PawnDiaryExampleAdapter.SetEnabledToggle>
+  <PawnDiaryExampleAdapter.IncludeImportantToggle>include important-event context</PawnDiaryExampleAdapter.IncludeImportantToggle>
+
+  <!-- ── Form field labels (English on purpose: schema labels matching the DTO fields) ──── -->
+  <PawnDiaryExampleAdapter.Field.EventKey>eventKey</PawnDiaryExampleAdapter.Field.EventKey>
+  <PawnDiaryExampleAdapter.Field.Summary>summaryText</PawnDiaryExampleAdapter.Field.Summary>
+  <PawnDiaryExampleAdapter.Field.EventLabel>eventLabel</PawnDiaryExampleAdapter.Field.EventLabel>
+  <PawnDiaryExampleAdapter.Field.ExtraContext>extraContext (one key=value per line; # = comment)</PawnDiaryExampleAdapter.Field.ExtraContext>
+  <PawnDiaryExampleAdapter.Field.PromptFragment>promptFragment</PawnDiaryExampleAdapter.Field.PromptFragment>
+  <PawnDiaryExampleAdapter.Field.EnchantmentCandidates>promptEnchantmentCandidates (one per line)</PawnDiaryExampleAdapter.Field.EnchantmentCandidates>
+  <PawnDiaryExampleAdapter.Field.EnchantmentMode>enchantment mode</PawnDiaryExampleAdapter.Field.EnchantmentMode>
+  <PawnDiaryExampleAdapter.Field.DedupKey>dedupKey</PawnDiaryExampleAdapter.Field.DedupKey>
+  <PawnDiaryExampleAdapter.Field.DedupTicks>dedupTicks (0 = default)</PawnDiaryExampleAdapter.Field.DedupTicks>
+  <PawnDiaryExampleAdapter.Field.PovRole>povRole (blank = default)</PawnDiaryExampleAdapter.Field.PovRole>
+
+  <PawnDiaryExampleAdapter.Field.PromptInstruction>promptInstruction</PawnDiaryExampleAdapter.Field.PromptInstruction>
+  <PawnDiaryExampleAdapter.Field.DirectText>text (subject prose)</PawnDiaryExampleAdapter.Field.DirectText>
+  <PawnDiaryExampleAdapter.Field.DirectPartnerText>partnerText</PawnDiaryExampleAdapter.Field.DirectPartnerText>
+  <PawnDiaryExampleAdapter.Field.DirectTitle>title</PawnDiaryExampleAdapter.Field.DirectTitle>
+  <PawnDiaryExampleAdapter.Field.DirectPartnerTitle>partnerTitle</PawnDiaryExampleAdapter.Field.DirectPartnerTitle>
+  <PawnDiaryExampleAdapter.Field.DirectGenerateTitle>generateTitleIfMissing</PawnDiaryExampleAdapter.Field.DirectGenerateTitle>
+
+  <PawnDiaryExampleAdapter.Field.ManualEventId>eventId (manual)</PawnDiaryExampleAdapter.Field.ManualEventId>
+  <PawnDiaryExampleAdapter.Field.ManualPovRole>povRole (manual)</PawnDiaryExampleAdapter.Field.ManualPovRole>
+
+  <PawnDiaryExampleAdapter.Field.MaxCount>maxCount</PawnDiaryExampleAdapter.Field.MaxCount>
+  <PawnDiaryExampleAdapter.Field.ApplyQuery>apply DiaryEntryTitleQuery</PawnDiaryExampleAdapter.Field.ApplyQuery>
+  <PawnDiaryExampleAdapter.Field.QDomain>domain</PawnDiaryExampleAdapter.Field.QDomain>
+  <PawnDiaryExampleAdapter.Field.QAtmosphereCue>atmosphereCue</PawnDiaryExampleAdapter.Field.QAtmosphereCue>
+  <PawnDiaryExampleAdapter.Field.QPovRole>povRole</PawnDiaryExampleAdapter.Field.QPovRole>
+  <PawnDiaryExampleAdapter.Field.QSourceId>sourceId</PawnDiaryExampleAdapter.Field.QSourceId>
+  <PawnDiaryExampleAdapter.Field.QEventKey>eventKey</PawnDiaryExampleAdapter.Field.QEventKey>
+  <PawnDiaryExampleAdapter.Field.QDateContains>dateContains</PawnDiaryExampleAdapter.Field.QDateContains>
+  <PawnDiaryExampleAdapter.Field.QImportant>important</PawnDiaryExampleAdapter.Field.QImportant>
+  <PawnDiaryExampleAdapter.Field.QHasTitle>hasTitle</PawnDiaryExampleAdapter.Field.QHasTitle>
+  <PawnDiaryExampleAdapter.Field.QHasGeneratedText>hasGeneratedText</PawnDiaryExampleAdapter.Field.QHasGeneratedText>
+  <PawnDiaryExampleAdapter.Field.QIncludeActive>includeActive</PawnDiaryExampleAdapter.Field.QIncludeActive>
+  <PawnDiaryExampleAdapter.Field.QIncludeArchived>includeArchived</PawnDiaryExampleAdapter.Field.QIncludeArchived>
+
+  <PawnDiaryExampleAdapter.Field.BundleUseQuery>use query overload</PawnDiaryExampleAdapter.Field.BundleUseQuery>
+  <PawnDiaryExampleAdapter.Field.BundleUseImportant>use includeImportant overload</PawnDiaryExampleAdapter.Field.BundleUseImportant>
+
+  <PawnDiaryExampleAdapter.Field.StyleSourceId>sourceId</PawnDiaryExampleAdapter.Field.StyleSourceId>
+  <PawnDiaryExampleAdapter.Field.StyleRule>rule</PawnDiaryExampleAdapter.Field.StyleRule>
+
+  <!-- ── Read Entry tab hints ───────────────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.ReadEntry.HandleHint>Pick a remembered handle (from a submit), or type eventId+povRole below.</PawnDiaryExampleAdapter.ReadEntry.HandleHint>
+  <PawnDiaryExampleAdapter.ReadEntry.NoHandles>No remembered handles yet — submit something first.</PawnDiaryExampleAdapter.ReadEntry.NoHandles>
+  <PawnDiaryExampleAdapter.ReadEntry.PickHandle>(pick a remembered handle…)</PawnDiaryExampleAdapter.ReadEntry.PickHandle>
+
+  <!-- ── Hooks tab ──────────────────────────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Hooks.Hint>The example adapter registers a status listener and a trait context provider at game load. Invoke this method to refresh the activity snapshot below.</PawnDiaryExampleAdapter.Hooks.Hint>
+
+  <!-- ── Result log ──────────────────────────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Log.Empty>No invocations yet — pick a method and press Invoke.</PawnDiaryExampleAdapter.Log.Empty>
+  <PawnDiaryExampleAdapter.Log.NoSelection>Select an entry to see its detail.</PawnDiaryExampleAdapter.Log.NoSelection>
+  <PawnDiaryExampleAdapter.Log.Copy>Copy</PawnDiaryExampleAdapter.Log.Copy>
+  <PawnDiaryExampleAdapter.Log.Clear>Clear</PawnDiaryExampleAdapter.Log.Clear>
+
+  <!-- ── Dev-action Messages ─────────────────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Quick.NoPawn>No eligible colonist found.</PawnDiaryExampleAdapter.Quick.NoPawn>
+  <PawnDiaryExampleAdapter.Quick.Submitted>Submitted example event for {0}: {1}.</PawnDiaryExampleAdapter.Quick.Submitted>
+  <PawnDiaryExampleAdapter.Quick.NotSubmitted>Example event for {0} was NOT recorded: {1}.</PawnDiaryExampleAdapter.Quick.NotSubmitted>
+  <PawnDiaryExampleAdapter.Quick.PreviewLogged>Preview written to Player.log.</PawnDiaryExampleAdapter.Quick.PreviewLogged>
+  <PawnDiaryExampleAdapter.Quick.BundleLogged>Context bundle for {0} written to Player.log.</PawnDiaryExampleAdapter.Quick.BundleLogged>
+
 </LanguageData>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pure helpers only. The explorer's IMGUI code lives in the adapter project; this test project
+         must compile without RimWorld/Verse/Unity assemblies (AGENTS.md / SKILL.md rule). -->
+    <Compile Include="..\..\integrations\PawnDiary.ExampleAdapter\Source\ExplorerParsing.cs" Link="ExplorerParsing.cs" />
+  </ItemGroup>
+</Project>

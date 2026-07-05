@@ -47,6 +47,16 @@
       <HintPath>$(RimWorldManaged)\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <!-- IMGUI module: GUIUtility (systemCopyBuffer), GUI, Widgets.TextField / IMGUI text widgets.
+         CoreModule alone is insufficient for the explorer window's text fields. -->
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <!-- The ONLY Pawn Diary reference an adapter needs. Private=False: the game loads the real
          PawnDiary.dll from the core mod; the adapter must never ship its own copy. -->
     <Reference Include="PawnDiary">

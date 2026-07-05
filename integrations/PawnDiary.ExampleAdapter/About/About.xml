@@ -19,5 +19,5 @@
   <loadAfter>
     <li>aimmlegate.pawndiary.development</li>
   </loadAfter>
-  <description>Developer template for Pawn Diary integration adapters. Submits one harmless example diary event per in-game day through the public PawnDiaryApi, demonstrating the full contract: request building, adapter-owned localization, and the External-domain group XML that claims the eventKey. Not intended for normal play — copy this folder to start a real adapter (see INTEGRATIONS.md in the Pawn Diary repo).</description>
+  <description>Developer tool and canonical integration example for the Pawn Diary API. Adds an in-game API Explorer window (Dev mode → Debug Actions → Pawn Diary Example Adapter → Open API explorer…) that exercises every public PawnDiaryApi method from a three-pane UI: a method tree, a request form, and a running result log with copy/clear. Also ships four quick dev actions (submit example event, preview prompt, dump context bundle) and demonstrates the two process-global hooks an integration registers (entry-status listener + pawn-context provider). Not intended for normal play — copy this folder to start a real adapter (see INTEGRATIONS.md in the Pawn Diary repo).</description>
 </ModMetaData>
