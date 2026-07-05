@@ -13,7 +13,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain display instruction for one known pawn name. Empty color means "bold only".
     /// </summary>
-    public class DiaryNameHighlight
+    internal class DiaryNameHighlight
     {
         public string name;
         public string colorHex;

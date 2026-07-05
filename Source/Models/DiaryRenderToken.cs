@@ -19,7 +19,7 @@ namespace PawnDiary
     /// <summary>
     /// Process-wide monotonic counter bumped whenever a rendered DiaryEvent field changes.
     /// </summary>
-    public static class DiaryStateVersion
+    internal static class DiaryStateVersion
     {
         public static int Current { get; private set; }
 

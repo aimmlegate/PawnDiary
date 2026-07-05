@@ -70,7 +70,7 @@ namespace PawnDiary
         /// Creates a compact archive row from the same display view the Diary tab uses today. The caller
         /// decides that this row is safe to archive before calling this method.
         /// </summary>
-        public static ArchivedDiaryEntry FromEvent(DiaryEvent diaryEvent, string pawnId, DiaryEntryView view, bool forceFallback)
+        internal static ArchivedDiaryEntry FromEvent(DiaryEvent diaryEvent, string pawnId, DiaryEntryView view, bool forceFallback)
         {
             if (diaryEvent == null || view == null || string.IsNullOrWhiteSpace(pawnId))
             {
@@ -131,7 +131,7 @@ namespace PawnDiary
         }
 
         /// <summary>Builds the immutable UI view used by the Diary tab.</summary>
-        public DiaryEntryView ToView()
+        internal DiaryEntryView ToView()
         {
             LinkedEntryView link = null;
             if (!string.IsNullOrWhiteSpace(linkedPawnId) || !string.IsNullOrWhiteSpace(linkedPreviewText))

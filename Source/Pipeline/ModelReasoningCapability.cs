@@ -21,7 +21,7 @@ namespace PawnDiary
     /// <c>/models</c> entry. <see cref="Supported"/> is the only strictly required field once
     /// constructed; the effort list and token-budget flag may be empty/false but are never null.
     /// </summary>
-    public sealed class ModelReasoningCapability
+    internal sealed class ModelReasoningCapability
     {
         /// <summary>True when the model can produce reasoning tokens at all (e.g. o-series, R1,
         /// Claude with extended thinking). False for plain chat models (Gemma, Llama instruct).</summary>

@@ -67,7 +67,7 @@ namespace PawnDiary
     // Accessor for the single DiaryPromptDef. Caches the lookup and falls back to a default
     // instance (with the field initializers above) if no Def is loaded, so the code never
     // NullReferences and behaves identically to the pre-Def version when the XML is absent.
-    public static class DiaryPrompts
+    internal static class DiaryPrompts
     {
         private static DiaryPromptDef cached;
         private static readonly DiaryPromptDef Fallback = new DiaryPromptDef();

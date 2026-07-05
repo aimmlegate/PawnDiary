@@ -31,7 +31,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain, saveable fact about one active hediff on the diary POV pawn.
     /// </summary>
-    public class DiaryTextDecorationHediffFact
+    internal class DiaryTextDecorationHediffFact
     {
         public string defName;
         public string label;
@@ -42,7 +42,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain, saveable fact about one trait on the diary POV pawn.
     /// </summary>
-    public class DiaryTextDecorationTraitFact
+    internal class DiaryTextDecorationTraitFact
     {
         public string defName;
         public string label;
@@ -53,7 +53,7 @@ namespace PawnDiary
     /// Plain context used to select XML text-decoration rules. It intentionally carries primitive
     /// values only, so tests and response formatting do not depend on live game objects.
     /// </summary>
-    public class DiaryTextDecorationContext
+    internal class DiaryTextDecorationContext
     {
         public string povRole;
         public string defName;
@@ -106,7 +106,7 @@ namespace PawnDiary
     /// <summary>
     /// Ordered pure decoration plan for one roleplay text scope.
     /// </summary>
-    public class DiaryTextDecorationPlan
+    internal class DiaryTextDecorationPlan
     {
         public List<DiaryTextDecorationRule> rules = new List<DiaryTextDecorationRule>();
 

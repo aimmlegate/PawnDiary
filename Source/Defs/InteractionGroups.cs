@@ -489,7 +489,7 @@ namespace PawnDiary
 
     // Static lookup + classification over the loaded DiaryInteractionGroupDefs. (A static class
     // is a namespace-level singleton — no instances; see AGENTS.md.)
-    public static class InteractionGroups
+    internal static class InteractionGroups
     {
         private static List<DiaryInteractionGroupDef> cachedAll;
 

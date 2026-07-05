@@ -10,7 +10,7 @@ namespace PawnDiary
     /// XML-backed prompt-enchantment tuning after fallback/safety normalization. New to C#/RimWorld?
     /// See AGENTS.md ("Defs") for why game policy lives in XML with code defaults.
     /// </summary>
-    public sealed class PromptEnchantmentTuning
+    internal sealed class PromptEnchantmentTuning
     {
         public const float DefaultMinorHediffSeverity = 0.05f;
         public const float DefaultModerateHediffSeverity = 0.25f;

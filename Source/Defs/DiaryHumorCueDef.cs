@@ -48,7 +48,7 @@ namespace PawnDiary
     /// <c>1.6/Defs/DiaryHumorCueDefs.xml</c>; <see cref="All"/> returns an empty list (not null)
     /// when no defs are loaded, which cleanly disables the feature if the XML is absent.
     /// </summary>
-    public static class DiaryHumorCues
+    internal static class DiaryHumorCues
     {
         // Stable internal tier keywords. Kept in code so tier matching never depends on spelling in
         // a def. These are schema tokens, not localized text.

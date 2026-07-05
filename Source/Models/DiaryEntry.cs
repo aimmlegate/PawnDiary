@@ -11,7 +11,7 @@ namespace PawnDiary
     /// link appears after the initiator's main text, initiator link appears before the
     /// recipient's main text. Clicking navigates to that pawn and scrolls to the same event.
     /// </summary>
-    public class LinkedEntryView
+    internal class LinkedEntryView
     {
         /// <summary>RimWorld unique load ID of the other pawn involved in this event.</summary>
         public readonly string OtherPawnId;
@@ -51,7 +51,7 @@ namespace PawnDiary
     /// Immutable, read-only display model rendered by the diary UI tab.
     /// Represents a single POV snapshot of a diary event.
     /// </summary>
-    public class DiaryEntryView
+    internal class DiaryEntryView
     {
         public const string AtmosphereFractured = "fractured";
         public const string AtmosphereUnsettled = "unsettled";

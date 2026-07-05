@@ -28,7 +28,7 @@ namespace PawnDiary
     /// <summary>
     /// Central lookup/fallback helper for the writing-style catalog.
     /// </summary>
-    public static class DiaryPersonas
+    internal static class DiaryPersonas
     {
         // Fixed vocabulary used by PersonaAffinity and the writing-style settings editor. Players can
         // assign only these tags to custom styles, which keeps weighting behavior predictable.

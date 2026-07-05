@@ -8,7 +8,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain rule describing which active hediffs force a temporary writing style.
     /// </summary>
-    public sealed class HediffPersonaOverrideRule
+    internal sealed class HediffPersonaOverrideRule
     {
         public string key;
         public int priority;

@@ -107,7 +107,7 @@ namespace PawnDiary
     /// Holds the outcome of a single LLM generation attempt. Produced by <see cref="LlmClient"/>
     /// and consumed by <c>DiaryGameComponent.GameComponentTick</c> on the main thread.
     /// </summary>
-    public class LlmGenerationResult
+    internal class LlmGenerationResult
     {
         /// <summary>Mirrors the request's eventId so the consumer can match result back to the originating event.</summary>
         public string eventId;

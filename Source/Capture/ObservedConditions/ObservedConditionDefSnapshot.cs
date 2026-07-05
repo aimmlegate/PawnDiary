@@ -10,7 +10,7 @@ namespace PawnDiary
     /// brief flicker in live state does not write a page. Ticks never decide *truth* — whether the
     /// condition is active is always answered by the latest live observation, not the clock.
     /// </summary>
-    public sealed class ObservedConditionDefSnapshot
+    internal sealed class ObservedConditionDefSnapshot
     {
         public string conditionKey;
 

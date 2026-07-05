@@ -38,7 +38,7 @@ namespace PawnDiary
         /// the remaining fields drive the synthetic event's defName, gameContext markers, and POV texts.
         /// This record is the single source both the UI dropdown and the builder consume.
         /// </summary>
-        public sealed class DevPromptSuiteEntry
+        internal sealed class DevPromptSuiteEntry
         {
             public string id;
             public string labelKey;
@@ -149,7 +149,7 @@ namespace PawnDiary
 
         /// <summary>The full catalog in display order. The debug panel iterates this — never hardcode the
         /// category list in UI code, or the two will drift.</summary>
-        public static IReadOnlyList<DevPromptSuiteEntry> AllSuiteEntries => SuiteEntries;
+        internal static IReadOnlyList<DevPromptSuiteEntry> AllSuiteEntries => SuiteEntries;
 
         private static DevPromptSuiteEntry Pair(string id, string labelKey, string eventDefName,
             string markers, string reasonKey, string initiatorTextKey, string recipientTextKey)
@@ -210,7 +210,7 @@ namespace PawnDiary
         /// Dev-only: the catalog entries buildable for this pawn right now — solo entries always, pair
         /// entries only when a second colonist is available. The debug panel lists exactly this.
         /// </summary>
-        public IReadOnlyList<DevPromptSuiteEntry> AvailableSuiteEntriesForDev(Pawn pawn)
+        internal IReadOnlyList<DevPromptSuiteEntry> AvailableSuiteEntriesForDev(Pawn pawn)
         {
             List<DevPromptSuiteEntry> result = new List<DevPromptSuiteEntry>();
             if (!Prefs.DevMode || pawn == null)
@@ -236,7 +236,7 @@ namespace PawnDiary
         /// the master event list, the O(1) lookup index, and every pawn's diary ref list. Returns the
         /// number removed. Safe to call when there are none.
         /// </summary>
-        public int ClearPromptSuiteForDev()
+        internal int ClearPromptSuiteForDev()
         {
             if (!Prefs.DevMode || events.Count == 0)
             {
@@ -289,7 +289,7 @@ namespace PawnDiary
         /// off, when generation is disabled for the pawn, or when a pair entry has no partner. The UI
         /// handler enables prompt test mode before calling.
         /// </summary>
-        public bool ShowPromptSuiteEntryForDev(Pawn pawn, DevPromptSuiteEntry entry)
+        internal bool ShowPromptSuiteEntryForDev(Pawn pawn, DevPromptSuiteEntry entry)
         {
             if (!CanUsePromptSuiteForDev(pawn) || entry == null)
             {
@@ -306,7 +306,7 @@ namespace PawnDiary
         /// with every requested fixture that is buildable for the selected pawn. The caller supplies
         /// the already-filtered list so the panel can support checkboxes as well as "all".
         /// </summary>
-        public int ShowPromptSuiteEntriesForDev(Pawn pawn, IEnumerable<DevPromptSuiteEntry> entries)
+        internal int ShowPromptSuiteEntriesForDev(Pawn pawn, IEnumerable<DevPromptSuiteEntry> entries)
         {
             if (!CanUsePromptSuiteForDev(pawn) || entries == null)
             {

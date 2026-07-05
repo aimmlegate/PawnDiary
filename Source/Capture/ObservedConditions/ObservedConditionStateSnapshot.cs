@@ -9,7 +9,7 @@ namespace PawnDiary
     /// policy never mutates an input snapshot; it clones one (<see cref="Clone"/>) and edits the copy,
     /// so callers can compare before/after and tests can assert on exact field transitions.
     /// </summary>
-    public sealed class ObservedConditionStateSnapshot
+    internal sealed class ObservedConditionStateSnapshot
     {
         public string conditionDefName;
         public string conditionKey;

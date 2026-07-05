@@ -22,7 +22,7 @@ namespace PawnDiary
     /// Tunable knobs for <see cref="DiaryParagraphReflow.ReflowLine"/>. All primitive so the helper
     /// stays Verse/Unity-free and testable from a plain console harness.
     /// </summary>
-    public struct DiaryParagraphReflowOptions
+    internal struct DiaryParagraphReflowOptions
     {
         /// <summary>Master toggle. When false, ReflowLine always returns the input line whole.</summary>
         public bool enabled;

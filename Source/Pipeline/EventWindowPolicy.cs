@@ -21,7 +21,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain trigger rule copied from XML before matching.
     /// </summary>
-    public sealed class EventWindowTriggerRule
+    internal sealed class EventWindowTriggerRule
     {
         public string source;
         public string signal;

@@ -50,7 +50,7 @@ namespace PawnDiary
     /// Runtime accessor for signal policies. Every helper falls back to DiaryTuningDef so partial XML
     /// patches are safe and older tuning files keep working.
     /// </summary>
-    public static class DiarySignalPolicies
+    internal static class DiarySignalPolicies
     {
         public const string Thought = "Thought";
         public const string AmbientThought = "AmbientThought";
