@@ -240,12 +240,14 @@ caller-authored instruction `SubmitPromptEntry(ExternalPromptEntryRequest)` (`So
 Calls are validated, wrapped so an adapter bug can never break the game loop, main-thread guarded,
 and then submitted as external ingestion signals — so external events get the standard treatment: pure
 `ExternalEventData.Decide`, the shared dedup store (`externalEventDedupTicks`, with a per-request
-override), group enablement when a group applies, and event-store writes. A supplied eligible partner
-makes ordinary external events pairwise; direct entries require nonblank `partnerText` too. Write
-request DTOs can set `forceRecord=true` for adapter-owned triggers that must record a diary event.
-Forced writes skip soft gates (external budget, group/user toggles, source and generic dedup); they
-still require valid fields, main-thread/game readiness, the master integration toggle, the ordinary
-`SubmitEvent` group requirement, and a base diary-eligible subject.
+override), and event-store writes. Player event filters affect only Pawn Diary's automatic game
+listeners; external API submissions are still triggerable when their own validation, master
+integration switch, budget, dedup, and pawn gates pass. A supplied eligible partner makes ordinary
+external events pairwise; direct entries require nonblank `partnerText` too. Write request DTOs can
+set `forceRecord=true` for adapter-owned triggers that must record a diary event. Forced writes skip
+soft gates (external budget, source and generic dedup); they still require valid fields,
+main-thread/game readiness, the master integration toggle, the ordinary `SubmitEvent` group
+requirement, and a base diary-eligible subject.
 
 The master integration toggle is saved in `PawnDiarySettings.allowExternalIntegrations`, appears on
 the main mod settings page as *Allow external mod integrations*, and defaults to enabled. The public
@@ -266,7 +268,7 @@ Wrapped prompt entries are the middle ground between ordinary events and direct 
 adapter supplies `promptInstruction`, Pawn Diary stores it as protected `external_prompt_instruction`
 context, and the normal first-person prompt wrapper still owns persona/style, safety text, live
 context, response parsing, budget, lifecycle, and persistence. Their External group is optional; if
-one claims the submitted key, its label/toggle/styling/prompt metadata still apply.
+one claims the submitted key, its label, styling, and prompt metadata still apply.
 Every `PawnDiaryApi` entry point is main-thread only. Off-main-thread calls return the documented
 safe value, use a thread-safe diagnostic path, and do not ask RimWorld to marshal work. Adapters that
 collect data on worker threads must own their queue and drain it from a main-thread callback such as
@@ -307,16 +309,15 @@ generation cost from the player's `maxTokens`, the queueable POV count, and opti
 tokens; `SubmitPromptEntry` uses that same estimate but does not require an External group; while
 `SubmitDirectEntry` estimates only the title-only requests it can actually queue when
 `generateTitleIfMissing` is true. `forceRecord=true` skips this reservation for valid write
-requests. Prompt-test mode, missing active API lanes, disabled External
-groups when present, per-pawn diary-generation disablement, and incapacitation skips do not consume
-budget because they would not enqueue LLM work. The XML knobs live in `DiaryTuningDef`
+requests. Prompt-test mode, missing active API lanes, per-pawn diary-generation disablement, and
+incapacitation skips do not consume budget because they would not enqueue LLM work. The XML knobs live in `DiaryTuningDef`
 (`integrationPromptBudgetEnabled`, `integrationPromptBudgetWindowTicks`,
 `integrationPromptBudgetMaxRequestsPerSource`, `integrationPromptBudgetMaxRequestsGlobal`,
 `integrationPromptBudgetMaxTokensPerSource`, `integrationPromptBudgetMaxTokensGlobal`); a 0/negative
 `windowTicks` is clamped to the default by the tuning accessor, so it never silently disables the
 gate. Rejections return the existing safe API values (`false` / `recorded=false`) and log once per
 source/reason. A reservation is refunded (`ReleaseExternalApiBudgetReservation`) when the dispatcher
-then drops the event (dedup window, disabled group, pawn state), so a burst of duplicate or invalid
+then drops the event (dedup window or pawn state), so a burst of duplicate or invalid
 submissions cannot exhaust an adapter's window without any tokens actually being queued. `SubmitEvent`
 dispatches the signal directly (rather than fire-and-forget) so it can apply that refund while keeping
 its documented "validated and handed off" return; callers needing the real outcome use
@@ -758,12 +759,16 @@ the XML/Keyed default is still used at generation time, while node settings neve
 fields or copy their resolved text into editable overrides.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
-Advanced is the low-level XML parameter editor. The tab stays visible, but its raw XML override
-editor is disabled until the experimental override switch is enabled from Main or from the Advanced
-gate panel; the Prompt tab's experimental prompt-policy drawer uses the same gate. Advanced and that
-prompt drawer share a compact two-pane editor: a left rail of groups and a right body that draws one
-widget per field type -- checkbox, slider, numeric text, single-line text, or multi-line
-text/list/table area -- with per-field and per-group reset, accent coloring for customized values, a name filter that
+Advanced starts with automatic event filters. Each visible `DiaryInteractionGroupDef` can be
+disabled per player to stop Pawn Diary's own game listeners and scanners from auto-recording that
+event group; all visible groups inherit enabled XML defaults. These filters intentionally do not
+block external mod API submissions, so adapter-owned triggers remain callable through
+`PawnDiaryApi`. The raw XML override editor is disabled until the experimental override switch is
+enabled from Main or from the Advanced gate panel; the Prompt tab's experimental prompt-policy drawer
+uses the same gate. Advanced and that prompt drawer share a compact two-pane editor: a left rail of
+groups and a right body that draws one widget per field type -- checkbox, slider, numeric text,
+single-line text, or multi-line text/list/table area -- with per-field and per-group reset, accent
+coloring for customized values, a name filter that
 flattens the rail into a search view, All/Changed/Raw text filters, "Reset changed in this tab",
 and "Copy changed summary". The copy action is intentionally only a plain text review summary
 (key, label, current snippet, XML/default snippet), not a stable import/export format. Rich tooltips

@@ -49,7 +49,7 @@ namespace PawnDiary.Ingestion
 
         /// <summary>
         /// True only for explicit integration-API requests that ask the dispatcher to bypass soft
-        /// drop gates (dedup, user/group toggles, and source policy drops). Native gameplay signals
+        /// drop gates (dedup and source policy drops). Native gameplay signals
         /// keep the default false value so their existing capture policy is unchanged.
         /// </summary>
         public virtual bool ForceRecord => false;

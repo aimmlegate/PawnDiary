@@ -51,7 +51,7 @@ namespace PawnDiary.Capture
         /// <summary>
         /// True for ordinary external events, where a group is required to prove XML prompt policy
         /// claims the key. Direct-text injection owns its prose already, so it sets this false and may
-        /// use a group only when one exists for label/toggle/styling.
+        /// use a group only when one exists for label/styling.
         /// </summary>
         public bool GroupRequired = true;
 
@@ -90,7 +90,7 @@ namespace PawnDiary.Capture
 
         /// <summary>
         /// Forced integration submissions still need a coherent external payload and a diary-eligible
-        /// subject, but they intentionally skip soft gates such as user/group toggles and dedup.
+        /// subject, but they intentionally skip soft gates such as dedup.
         /// </summary>
         public static CaptureDecision ForceDecision(ExternalEventData data)
         {

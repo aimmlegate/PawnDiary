@@ -8,6 +8,13 @@ pre-release version ladder for project history.
 
 ## 2026-07-05
 
+- **Advanced automatic event filters.** Added an Advanced-tab filter list for
+  `DiaryInteractionGroupDef` automatic capture groups. Visible groups are enabled by default and can
+  be disabled per player to stop Pawn Diary's own game listeners/scanners from auto-recording that
+  event type. External mod API submissions intentionally ignore these filters, so adapter-owned
+  events remain triggerable through `PawnDiaryApi` while still respecting the integration master
+  switch, validation, budget, dedup, and pawn gates.
+
 - **Public surface tightened around `PawnDiary.Integration`.** Internalized non-contract helper
   types and entry points across capture, ingestion, generation, pipeline, UI, settings helpers, and
   `DiaryGameComponent` so adapter authors compile against `PawnDiaryApi` and DTOs, not core

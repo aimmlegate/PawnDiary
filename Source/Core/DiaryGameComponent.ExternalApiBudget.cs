@@ -54,8 +54,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Refunds a reservation whose event the dispatcher ultimately dropped (dedup window, group
-        /// toggle, pawn state) so a burst of duplicate/invalid submissions cannot exhaust an adapter's
+        /// Refunds a reservation whose event the dispatcher ultimately dropped (dedup window, pawn
+        /// state) so a burst of duplicate/invalid submissions cannot exhaust an adapter's
         /// rolling window without any tokens actually being queued. No-op when the request was allowed
         /// without needing a reservation (token was null).
         /// </summary>
@@ -155,11 +155,6 @@ namespace PawnDiary
                 return 0;
             }
 
-            if (group != null && !settings.IsGroupEnabled(group.defName))
-            {
-                return 0;
-            }
-
             if (!ExternalApiPawnMaySpendTokens(request.subject))
             {
                 return 0;
@@ -190,12 +185,6 @@ namespace PawnDiary
                 || !settings.generateTitles
                 || request.subject == null
                 || string.IsNullOrWhiteSpace(request.eventKey))
-            {
-                return 0;
-            }
-
-            DiaryInteractionGroupDef group = InteractionGroups.ClassifyExternal(request.eventKey.Trim());
-            if (group != null && !settings.IsGroupEnabled(group.defName))
             {
                 return 0;
             }

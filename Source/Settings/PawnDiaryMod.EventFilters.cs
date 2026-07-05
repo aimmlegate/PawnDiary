@@ -1,0 +1,206 @@
+// Advanced-tab event filter UI for Pawn Diary. These controls edit saved per-event-group automatic
+// capture toggles; they do not edit XML prompt policy and they do not affect external API requests.
+using System;
+using System.Collections.Generic;
+using RimWorld;
+using UnityEngine;
+using Verse;
+
+namespace PawnDiary
+{
+    public partial class PawnDiaryMod
+    {
+        private const float EventFilterTitleHeight = 28f;
+        private const float EventFilterHelpHeight = 44f;
+        private const float EventFilterButtonWidth = 118f;
+        private const float EventFilterRowHeight = 28f;
+        private const float EventFilterRowGap = 3f;
+        private Vector2 eventFilterScrollPosition;
+
+        /// <summary>
+        /// Draws the saved automatic-capture filter list shown at the top of the Advanced tab.
+        /// </summary>
+        private void DrawEventFilterPanel(Rect rect)
+        {
+            if (rect.width <= 0f || rect.height <= 0f)
+            {
+                return;
+            }
+
+            List<DiaryInteractionGroupDef> groups = EventFilterGroupsForSettings();
+            Widgets.DrawMenuSection(rect);
+            Rect inner = rect.ContractedBy(8f);
+            float y = inner.y;
+
+            Rect titleRect = new Rect(inner.x, y, inner.width - EventFilterButtonWidth - 8f, EventFilterTitleHeight);
+            GameFont previousFont = Text.Font;
+            Text.Font = GameFont.Medium;
+            Widgets.LabelFit(titleRect, "PawnDiary.Settings.EventFilters.Title".Translate());
+            Text.Font = previousFont;
+
+            Rect enableAllRect = new Rect(inner.xMax - EventFilterButtonWidth, y, EventFilterButtonWidth, 28f);
+            if (ButtonTextFit(enableAllRect, "PawnDiary.Settings.EventFilters.EnableAll".Translate()))
+            {
+                EnableVisibleEventFilters(groups);
+            }
+
+            TooltipHandler.TipRegion(enableAllRect, "PawnDiary.Settings.EventFilters.EnableAllTip".Translate());
+            y += EventFilterTitleHeight + 2f;
+
+            Rect summaryRect = new Rect(inner.x, y, inner.width, 22f);
+            DrawMutedLabel(summaryRect, "PawnDiary.Settings.EventFilters.Summary".Translate(
+                DisabledVisibleEventFilterCount(groups),
+                groups.Count).ToString());
+            y += 24f;
+
+            Rect helpRect = new Rect(inner.x, y, inner.width, EventFilterHelpHeight);
+            DrawMutedLabel(helpRect, "PawnDiary.Settings.EventFilters.Help".Translate().ToString());
+            y += EventFilterHelpHeight + 6f;
+
+            Rect listRect = new Rect(inner.x, y, inner.width, Mathf.Max(0f, inner.yMax - y));
+            DrawEventFilterRows(listRect, groups);
+        }
+
+        private void DrawEventFilterRows(Rect rect, List<DiaryInteractionGroupDef> groups)
+        {
+            if (rect.height <= 0f)
+            {
+                return;
+            }
+
+            if (groups.Count == 0)
+            {
+                Widgets.Label(rect, "PawnDiary.Settings.EventFilters.None".Translate());
+                return;
+            }
+
+            float contentHeight = groups.Count * (EventFilterRowHeight + EventFilterRowGap);
+            Rect viewRect = new Rect(0f, 0f, rect.width - 16f, Mathf.Max(rect.height, contentHeight));
+            Widgets.BeginScrollView(rect, ref eventFilterScrollPosition, viewRect);
+            try
+            {
+                float y = 0f;
+                for (int i = 0; i < groups.Count; i++)
+                {
+                    DiaryInteractionGroupDef group = groups[i];
+                    Rect rowRect = new Rect(0f, y, viewRect.width, EventFilterRowHeight);
+                    DrawEventFilterRow(rowRect, group);
+                    y += EventFilterRowHeight + EventFilterRowGap;
+                }
+            }
+            finally
+            {
+                Widgets.EndScrollView();
+            }
+        }
+
+        private void DrawEventFilterRow(Rect rect, DiaryInteractionGroupDef group)
+        {
+            if (group == null)
+            {
+                return;
+            }
+
+            bool enabled = Settings.IsGroupEnabled(group.defName);
+            bool edited = enabled;
+            Rect checkboxRect = Settings.HasGroupEnabledOverride(group.defName)
+                ? new Rect(rect.x, rect.y, Mathf.Max(0f, rect.width - 78f), rect.height)
+                : rect;
+            Widgets.CheckboxLabeled(checkboxRect, EventFilterLabel(group), ref edited);
+            if (edited != enabled)
+            {
+                Settings.SetGroupEnabled(group.defName, edited);
+            }
+
+            if (Settings.HasGroupEnabledOverride(group.defName))
+            {
+                Rect changedRect = new Rect(rect.xMax - 72f, rect.y + 2f, 70f, rect.height - 4f);
+                DrawMutedLabel(changedRect, "PawnDiary.Settings.EventFilters.Changed".Translate().ToString());
+            }
+
+            TooltipHandler.TipRegion(rect, "PawnDiary.Settings.EventFilters.RowTip".Translate(group.defName).ToString());
+        }
+
+        private static List<DiaryInteractionGroupDef> EventFilterGroupsForSettings()
+        {
+            List<DiaryInteractionGroupDef> result = new List<DiaryInteractionGroupDef>();
+            List<DiaryInteractionGroupDef> all = InteractionGroups.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                DiaryInteractionGroupDef group = all[i];
+                if (group == null
+                    || group.domain == GroupDomain.External
+                    || !group.defaultEnabled
+                    || group.DisabledByLoadedPackage()
+                    || group.MissingRequiredPackage())
+                {
+                    continue;
+                }
+
+                result.Add(group);
+            }
+
+            result.Sort(CompareEventFilterGroups);
+            return result;
+        }
+
+        private static int CompareEventFilterGroups(DiaryInteractionGroupDef left, DiaryInteractionGroupDef right)
+        {
+            int domain = left.domain.CompareTo(right.domain);
+            if (domain != 0)
+            {
+                return domain;
+            }
+
+            return string.Compare(EventFilterLabel(left), EventFilterLabel(right), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string EventFilterLabel(DiaryInteractionGroupDef group)
+        {
+            if (group == null)
+            {
+                return string.Empty;
+            }
+
+            string label = group.LabelCap.Resolve();
+            return string.IsNullOrWhiteSpace(label) ? group.defName ?? string.Empty : label;
+        }
+
+        private static int DisabledVisibleEventFilterCount(List<DiaryInteractionGroupDef> groups)
+        {
+            if (groups == null || Settings == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < groups.Count; i++)
+            {
+                DiaryInteractionGroupDef group = groups[i];
+                if (group != null && !Settings.IsGroupEnabled(group.defName))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static void EnableVisibleEventFilters(List<DiaryInteractionGroupDef> groups)
+        {
+            if (groups == null || Settings == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                DiaryInteractionGroupDef group = groups[i];
+                if (group != null)
+                {
+                    Settings.SetGroupEnabled(group.defName, true);
+                }
+            }
+        }
+    }
+}

@@ -123,7 +123,7 @@ Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API
   start getting `DroppedBudget`, back off — the reservation is refunded when the pipeline drops a
   valid event, so drops don't permanently consume your window. For rare adapter-owned triggers that
   must create a diary event, set `forceRecord=true` on write request DTOs; it bypasses budget,
-  group/user toggles, and dedup, but not required fields, main-thread readiness, the master toggle,
+  and dedup, but not required fields, main-thread readiness, the master toggle,
   ordinary `SubmitEvent` group XML, or diary-owner eligibility.
 
 ---

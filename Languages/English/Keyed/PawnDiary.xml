@@ -411,6 +411,14 @@
   <PawnDiary.Settings.Adv.ExperimentalWarning>Experimental: Advanced overrides write into live XML Defs. Prefer XML defaults unless testing.</PawnDiary.Settings.Adv.ExperimentalWarning>
   <PawnDiary.Settings.Adv.LockedTitle>Advanced XML overrides</PawnDiary.Settings.Adv.LockedTitle>
   <PawnDiary.Settings.Adv.LockedHelp>Advanced contains experimental XML Def overrides for low-level tuning and prompt policy. Enable them only when testing raw settings; leave them off for normal play.</PawnDiary.Settings.Adv.LockedHelp>
+  <PawnDiary.Settings.EventFilters.Title>Automatic event filters</PawnDiary.Settings.EventFilters.Title>
+  <PawnDiary.Settings.EventFilters.Summary>{0} of {1} automatic event type(s) disabled.</PawnDiary.Settings.EventFilters.Summary>
+  <PawnDiary.Settings.EventFilters.Help>Disable an event type to stop Pawn Diary's own game listeners from creating entries for it. External mod API submissions can still create their own entries.</PawnDiary.Settings.EventFilters.Help>
+  <PawnDiary.Settings.EventFilters.EnableAll>Enable all</PawnDiary.Settings.EventFilters.EnableAll>
+  <PawnDiary.Settings.EventFilters.EnableAllTip>Enable every event type currently shown in this list.</PawnDiary.Settings.EventFilters.EnableAllTip>
+  <PawnDiary.Settings.EventFilters.Changed>changed</PawnDiary.Settings.EventFilters.Changed>
+  <PawnDiary.Settings.EventFilters.RowTip>Automatic capture group: {0}. Disabled groups do not auto-trigger from RimWorld gameplay, but external API requests are not blocked by this filter.</PawnDiary.Settings.EventFilters.RowTip>
+  <PawnDiary.Settings.EventFilters.None>No automatic event groups are available.</PawnDiary.Settings.EventFilters.None>
   <PawnDiary.Settings.Adv.OverrideInherited>Using XML/default; no override set.</PawnDiary.Settings.Adv.OverrideInherited>
   <PawnDiary.Settings.Adv.EffectivePreview>Effective: {0} - {1}</PawnDiary.Settings.Adv.EffectivePreview>
   <PawnDiary.Settings.Adv.Source.Override>override</PawnDiary.Settings.Adv.Source.Override>

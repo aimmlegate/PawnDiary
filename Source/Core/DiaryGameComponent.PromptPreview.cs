@@ -68,7 +68,9 @@ namespace PawnDiary
                 payload,
                 BuildCaptureContext(
                     eligible: subjectEligible,
-                    userEnabled: group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                    // Prompt previews model the external API path, so saved auto-capture filters do
+                    // not make adapter-owned prompts unavailable.
+                    userEnabled: true,
                     signalEnabled: true,
                     ambientSignalEnabled: true));
             if (decision != CaptureDecision.GenerateSolo && decision != CaptureDecision.GeneratePair)

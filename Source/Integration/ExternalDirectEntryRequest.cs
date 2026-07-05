@@ -58,7 +58,7 @@ namespace PawnDiary.Integration
 
         /// <summary>
         /// When true, this valid direct entry bypasses soft recording gates: the external API budget,
-        /// group/user toggles, dedup windows, and per-pawn generation-enabled/incapacitated checks.
+        /// dedup windows and per-pawn generation-enabled/incapacitated checks.
         /// It does not bypass required fields, main-thread/game readiness, the master integration
         /// toggle, or base diary-owner eligibility for the subject pawn.
         /// </summary>

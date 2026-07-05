@@ -1,9 +1,9 @@
 // External ingestion signal — the impure capture+emit half of the integration-API event source.
 // PawnDiaryApi.SubmitEvent validates a request from another mod, wraps it in this signal, and
 // submits it through the same DiaryEvents front door every native Harmony hook uses, so external
-// events get the full standard treatment: pure Decide, dedup window, group toggles, LLM queue.
+// events get the full standard treatment: pure Decide, dedup window, pawn gates, LLM queue.
 // The forceRecord flag keeps the same capture/emit shape but asks Dispatch to skip the soft
-// budget/dedup/toggle drops for adapter-owned moments that must create a diary event.
+// budget/dedup drops for adapter-owned moments that must create a diary event.
 //
 // The pure decision + game-context format live in Source/Capture/Events/ExternalEventData.cs.
 // New to C#/RimWorld? See AGENTS.md.
@@ -53,7 +53,7 @@ namespace PawnDiary.Ingestion
 
             // Ordinary external events require XML policy to claim the key. Wrapped prompt entries
             // may run without a group because the caller supplies the event instruction, but an
-            // optional group still contributes label/toggle/styling/prompt metadata when present.
+            // optional group still contributes label, styling, and prompt metadata when present.
             group = InteractionGroups.ClassifyExternal(request.eventKey.Trim());
             if (group == null && groupRequired)
             {
@@ -92,7 +92,9 @@ namespace PawnDiary.Ingestion
         {
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: payload.SubjectEligible,
-                userEnabled: ForceRecord || group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                // Player event filters are for automatic game listeners only. External submissions
+                // are governed by the integration master switch, validation, budget, and pawn gates.
+                userEnabled: true,
                 signalEnabled: true,
                 ambientSignalEnabled: true);
         }

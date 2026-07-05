@@ -61,7 +61,7 @@ namespace PawnDiary.Ingestion
             bool forceRecord = request.forceRecord;
 
             // Direct prose can stand alone without XML prompt policy. If an External-domain group does
-            // claim the key, its label/toggle/styling still apply.
+            // claim the key, its label and styling still apply.
             group = InteractionGroups.ClassifyExternal(eventKey);
             payload = new ExternalEventData
             {
@@ -101,7 +101,9 @@ namespace PawnDiary.Ingestion
         {
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: payload.SubjectEligible,
-                userEnabled: ForceRecord || group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                // Player event filters are for automatic game listeners only. External submissions
+                // are governed by the integration master switch, validation, budget, and pawn gates.
+                userEnabled: true,
                 signalEnabled: true,
                 ambientSignalEnabled: true);
         }

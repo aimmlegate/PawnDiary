@@ -224,7 +224,7 @@ namespace PawnDiary.Integration
         /// <summary>
         /// Submits one external event into the diary pipeline. Returns true when the request passed
         /// validation and was handed to the pipeline; the pipeline may still decline it afterwards
-        /// (group disabled in XML, ineligible pawn, dedup window) exactly like a native event.
+        /// (pawn state or dedup window) exactly like a native event.
         /// Returns false — never throws — for: null/incomplete request, no game loaded, off-thread
         /// call, or an eventKey no External-domain DiaryInteractionGroupDef claims.
         /// </summary>
@@ -240,7 +240,7 @@ namespace PawnDiary.Integration
         /// collapsing them into one boolean. Returns true when the event was recorded; otherwise sets
         /// <paramref name="outcome"/> and returns false. Never throws. Requests can set
         /// <see cref="ExternalEventRequest.forceRecord"/> for adapter-controlled moments that should
-        /// bypass soft budget/dedup/user-toggle drops.
+        /// bypass soft budget/dedup drops.
         /// </summary>
         public static bool SubmitEvent(ExternalEventRequest request, out SubmitEventOutcome outcome)
         {
@@ -264,7 +264,7 @@ namespace PawnDiary.Integration
                 // Dispatch directly (not fire-and-forget DiaryEvents.Submit) so a deduped/policy-dropped
                 // event refunds its budget reservation instead of burning the adapter's window. The
                 // outcome distinguishes "dispatched and recorded" from "handed to the pipeline, which
-                // then declined it (group disabled / dedup / pawn state)" — the latter mirrors
+                // then declined it (dedup / pawn state)" — the latter mirrors
                 // SubmitEventWithHandle's recorded=false branch.
                 bool emitted = DiaryGameComponent.Instance.Dispatch(new ExternalEventSignal(request));
                 if (!emitted)

@@ -164,9 +164,9 @@ namespace PawnDiary
         // defaults higher than the hot cap; 0 is allowed for players who want old compact rows purged.
         public int maxArchivedDiaryEvents = DefaultMaxArchivedDiaryEvents;
 
-        // Legacy per-interaction-group settings, keyed by InteractionGroup.defName. Event filtering
-        // is now XML-only (DiaryInteractionGroupDef.defaultEnabled); this dictionary remains only so
-        // old configs load without losing unrelated settings.
+        // Per-event-group automatic capture settings, keyed by DiaryInteractionGroupDef.defName.
+        // A missing key means "use the XML defaultEnabled value"; rows are stored only when the
+        // player changes a group from its XML default.
         public Dictionary<string, bool> groupEnabled = new Dictionary<string, bool>();
         // Writing-style preset edits made in settings: XML override rows plus user-created custom
         // styles. Owned by PersonaPresetStore, which holds the CRUD and normalization logic.
@@ -695,25 +695,53 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Checks whether an interaction group is enabled. Event filters are XML-only now, so saved
-        /// groupEnabled values from older settings files are ignored. Both package gates apply here:
-        /// a group goes quiet when a replacement mod is loaded (disableWhenPackageIdsLoaded) or when
-        /// it is a compatibility pack whose target mod is absent (enableWhenPackageIdsLoaded).
+        /// Checks whether automatic capture is enabled for an interaction group. XML supplies the
+        /// default, package gates can still make compatibility groups inert, and the saved dictionary
+        /// stores only player overrides from that XML default.
         /// </summary>
         public bool IsGroupEnabled(string groupKey)
         {
+            EnsureGroupDictionaries();
             DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
-            return group != null
-                && group.defaultEnabled
-                && !group.DisabledByLoadedPackage()
-                && !group.MissingRequiredPackage();
+            if (group == null || group.DisabledByLoadedPackage() || group.MissingRequiredPackage())
+            {
+                return false;
+            }
+
+            bool saved;
+            return groupEnabled.TryGetValue(group.defName, out saved) ? saved : group.defaultEnabled;
         }
 
         /// <summary>
-        /// Obsolete compatibility shim. Event filters are XML-only.
+        /// Stores a player override for one automatic-capture group. Matching the XML default removes
+        /// the override so future XML edits can still become the inherited value.
         /// </summary>
         public void SetGroupEnabled(string groupKey, bool enabled)
         {
+            EnsureGroupDictionaries();
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            if (group == null)
+            {
+                return;
+            }
+
+            if (enabled == group.defaultEnabled)
+            {
+                groupEnabled.Remove(group.defName);
+                return;
+            }
+
+            groupEnabled[group.defName] = enabled;
+        }
+
+        /// <summary>
+        /// True when the player has changed one group from its XML default.
+        /// </summary>
+        public bool HasGroupEnabledOverride(string groupKey)
+        {
+            EnsureGroupDictionaries();
+            DiaryInteractionGroupDef group = InteractionGroups.ByKey(groupKey);
+            return group != null && groupEnabled.ContainsKey(group.defName);
         }
 
         /// <summary>
@@ -758,7 +786,7 @@ namespace PawnDiary
         /// </summary>
         public void ClampValues()
         {
-            EnsureGroupDictionaries();
+            NormalizeGroupEnabledOverrides();
             eventPromptOverrides.Normalize();
             eventEnhancementOverrides.Normalize();
             eventForcedModelOverrides.Normalize();
@@ -864,9 +892,42 @@ namespace PawnDiary
             {
                 groupEnabled = new Dictionary<string, bool>();
             }
-            else
+        }
+
+        /// <summary>
+        /// Drops stale group override keys and redundant values after loading or writing settings.
+        /// </summary>
+        private void NormalizeGroupEnabledOverrides()
+        {
+            EnsureGroupDictionaries();
+            if (groupEnabled.Count == 0)
             {
-                groupEnabled.Clear();
+                return;
+            }
+
+            List<string> removeKeys = null;
+            foreach (KeyValuePair<string, bool> entry in groupEnabled)
+            {
+                DiaryInteractionGroupDef group = InteractionGroups.ByKey(entry.Key);
+                if (group == null || entry.Value == group.defaultEnabled)
+                {
+                    if (removeKeys == null)
+                    {
+                        removeKeys = new List<string>();
+                    }
+
+                    removeKeys.Add(entry.Key);
+                }
+            }
+
+            if (removeKeys == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < removeKeys.Count; i++)
+            {
+                groupEnabled.Remove(removeKeys[i]);
             }
         }
 

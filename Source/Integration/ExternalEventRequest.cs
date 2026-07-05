@@ -71,9 +71,9 @@ namespace PawnDiary.Integration
 
         /// <summary>
         /// When true, this valid request bypasses soft recording gates: the external API budget,
-        /// group/user toggles, and dedup windows. It does not bypass required fields, main-thread/game
-        /// readiness, the master integration toggle, missing External group XML for ordinary
-        /// SubmitEvent calls, or base diary-owner eligibility for the subject pawn.
+        /// dedup windows, and other source-side soft drops. It does not bypass required fields,
+        /// main-thread/game readiness, the master integration toggle, missing External group XML for
+        /// ordinary SubmitEvent calls, or base diary-owner eligibility for the subject pawn.
         /// </summary>
         public bool forceRecord;
 

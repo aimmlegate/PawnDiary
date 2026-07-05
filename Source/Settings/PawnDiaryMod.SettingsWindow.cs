@@ -96,12 +96,39 @@ namespace PawnDiary
 
         private void DrawAdvancedSettingsTab(Rect inRect)
         {
+            const float gap = 8f;
             if (Settings.showExperimentalAdvancedOverrides)
             {
-                DrawAdvancedTab(inRect, AdvancedFieldCategory.Tuning);
+                float filterHeight = Mathf.Clamp(inRect.height * 0.34f, 220f, 330f);
+                Rect filterRect = new Rect(inRect.x, inRect.y, inRect.width, filterHeight);
+                DrawEventFilterPanel(filterRect);
+                Rect rawRect = new Rect(
+                    inRect.x,
+                    filterRect.yMax + gap,
+                    inRect.width,
+                    Mathf.Max(0f, inRect.yMax - filterRect.yMax - gap));
+                DrawAdvancedTab(rawRect, AdvancedFieldCategory.Tuning);
                 return;
             }
 
+            float lockedHeight = 128f;
+            Rect eventFilterRect = new Rect(
+                inRect.x,
+                inRect.y,
+                inRect.width,
+                Mathf.Max(220f, inRect.height - lockedHeight - gap));
+            DrawEventFilterPanel(eventFilterRect);
+
+            Rect lockedRect = new Rect(
+                inRect.x,
+                eventFilterRect.yMax + gap,
+                inRect.width,
+                Mathf.Min(lockedHeight, Mathf.Max(0f, inRect.yMax - eventFilterRect.yMax - gap)));
+            DrawAdvancedLockedPanel(lockedRect);
+        }
+
+        private void DrawAdvancedLockedPanel(Rect inRect)
+        {
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(inRect);
             try
