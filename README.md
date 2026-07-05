@@ -55,6 +55,16 @@ http://localhost:1234
 Output quality depends heavily on the model and settings. Models that follow instructions well and
 stay close to supplied facts usually produce better diary pages.
 
+## For Other Mods (Integration API)
+
+Other mods can read or write a colonist's diary through a stable public C# surface in the
+`PawnDiary.Integration` namespace — push events, inject your own prose, read diary state back, or
+contribute pawn context to Pawn Diary's prompts.
+
+- **Short guide** — [`EXTERNAL_API.md`](EXTERNAL_API.md) (overview + 30-second quickstart)
+- **Full contract** — [`INTEGRATIONS.md`](INTEGRATIONS.md) (every member, field, and rule)
+- **Buildable template** — [`integrations/PawnDiary.ExampleAdapter/`](integrations/PawnDiary.ExampleAdapter/)
+
 ## Save Safety
 
 Pawn Diary is safe to add to an existing save. It starts recording future events after the mod is

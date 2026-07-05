@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-05
 
+- **External API short guide.** Added `EXTERNAL_API.md` as a one-page overview of the
+  `PawnDiary.Integration` surface for mod authors: 30-second quickstart, a capability table mapping
+  common goals to the right call (v1–v23), the three submission paths side by side, and the hard
+  rules (main-thread, never-throws, master toggle, `eventKey` is save-data, additive-only,
+  prompt-ownership, token budget). It links out to the full `INTEGRATIONS.md` contract, the
+  `integrations/PawnDiary.ExampleAdapter/` template, and `DOCUMENTATION.md §3.7`. The README now has
+  a *For Other Mods* section pointing at all three. No code or contract change — documentation only.
+
 - **Integration API follow-up — read-path, encapsulation, determinism, and outcome surface.** A batch
   of review follow-ups landed across the integration API:
   - **v23 — `SubmitEventOutcome`.** `PawnDiaryApi.ApiVersion` is now `23`. Added
