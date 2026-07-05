@@ -606,7 +606,7 @@ namespace PawnDiary
             // API v4 lets adapter/personality mods add compact identity context such as
             // "personality=blunt, curious". Providers run in the impure snapshot phase (inside
             // CollectPawnSummaryFacts), and only cleaned strings continue into the prompt pipeline.
-            if (facts.providerLines.Count > 0)
+            if (facts.providerLines != null && facts.providerLines.Count > 0)
             {
                 parts.Add(string.Join("; ", facts.providerLines.ToArray()));
             }
@@ -622,14 +622,16 @@ namespace PawnDiary
                 parts.Add("health=" + health);
             }
 
-            if (!string.IsNullOrWhiteSpace(facts.lowCapacities))
+            string lowCapacities = DiaryListText.JoinComma(facts.lowCapacities);
+            if (!string.IsNullOrWhiteSpace(lowCapacities))
             {
-                parts.Add("low_capacities=" + facts.lowCapacities);
+                parts.Add("low_capacities=" + lowCapacities);
             }
 
-            if (!string.IsNullOrWhiteSpace(facts.topThoughts))
+            string topThoughts = DiaryListText.JoinComma(facts.topThoughts);
+            if (!string.IsNullOrWhiteSpace(topThoughts))
             {
-                parts.Add("thoughts=" + facts.topThoughts);
+                parts.Add("thoughts=" + topThoughts);
             }
 
             return string.Join("; ", parts.ToArray());
@@ -665,11 +667,11 @@ namespace PawnDiary
                     painShock = facts.health.painShock,
                     pain = facts.health.pain,
                     bleeding = facts.health.bleeding,
-                    conditions = new List<string>(facts.health.conditions)
+                    conditions = DiaryListText.CopyNonNull(facts.health.conditions)
                 },
-                lowCapacities = facts.lowCapacitiesList,
-                topThoughts = facts.topThoughtsList,
-                providerLines = facts.providerLines
+                lowCapacities = DiaryListText.CopyNonNull(facts.lowCapacities),
+                topThoughts = DiaryListText.CopyNonNull(facts.topThoughts),
+                providerLines = DiaryListText.CopyNonNull(facts.providerLines)
             };
         }
 
@@ -703,34 +705,8 @@ namespace PawnDiary
             facts.mood = BuildMoodSummary(pawn);
             facts.health = CollectHealthFacts(pawn);
             facts.lowCapacities = BuildLowCapacitiesSummary(pawn);
-            facts.lowCapacitiesList = SplitCommaList(facts.lowCapacities);
             facts.topThoughts = BuildTopThoughtsSummary(pawn);
-            facts.topThoughtsList = SplitCommaList(facts.topThoughts);
             return facts;
-        }
-
-        // Splits a "a, b, c" prompt-style list back into entries for the DTO. Empty input yields an
-        // empty list. Used only where a helper already returns a comma-joined string (capacities,
-        // thoughts); the health and provider paths keep their own lists directly.
-        private static List<string> SplitCommaList(string joined)
-        {
-            List<string> values = new List<string>();
-            if (string.IsNullOrWhiteSpace(joined))
-            {
-                return values;
-            }
-
-            string[] parts = joined.Split(',');
-            for (int i = 0; i < parts.Length; i++)
-            {
-                string trimmed = parts[i].Trim();
-                if (!string.IsNullOrEmpty(trimmed))
-                {
-                    values.Add(trimmed);
-                }
-            }
-
-            return values;
         }
 
         // Intermediate gathered facts for one pawn. Pure data — no RimWorld references — so the two
@@ -744,10 +720,8 @@ namespace PawnDiary
             public string faith;
             public string mood;
             public HealthFacts health;
-            public string lowCapacities;
-            public List<string> lowCapacitiesList;
-            public string topThoughts;
-            public List<string> topThoughtsList;
+            public List<string> lowCapacities;
+            public List<string> topThoughts;
             public List<string> providerLines;
         }
 
@@ -786,21 +760,7 @@ namespace PawnDiary
                 facts.bleeding = DiaryBuckets.BleedingBucket(bleedRate);
             }
 
-            string notableHediffs = BuildNotableHediffsSummary(pawn);
-            if (!string.IsNullOrWhiteSpace(notableHediffs))
-            {
-                // BuildNotableHediffsSummary joins with ", " — split it back so each condition is its
-                // own DTO entry, mirroring how the prompt string carries them.
-                string[] parts = notableHediffs.Split(',');
-                for (int i = 0; i < parts.Length; i++)
-                {
-                    string trimmed = parts[i].Trim();
-                    if (!string.IsNullOrEmpty(trimmed))
-                    {
-                        facts.conditions.Add(trimmed);
-                    }
-                }
-            }
+            facts.conditions = BuildNotableHediffsSummary(pawn);
 
             return facts;
         }
@@ -833,7 +793,7 @@ namespace PawnDiary
 
             if (facts.conditions != null && facts.conditions.Count > 0)
             {
-                parts.Add("conditions=" + string.Join(", ", facts.conditions.ToArray()));
+                parts.Add("conditions=" + DiaryListText.JoinComma(facts.conditions));
             }
 
             // Empty when healthy, so the prompt omits health entirely.
@@ -890,27 +850,33 @@ namespace PawnDiary
             return DiaryBuckets.MoodBucket(moodPercent);
         }
 
-        private static string BuildNotableHediffsSummary(Pawn pawn)
+        private static List<string> BuildNotableHediffsSummary(Pawn pawn)
         {
+            List<string> conditions = new List<string>();
             if (pawn.health?.hediffSet?.hediffs == null)
             {
-                return string.Empty;
+                return conditions;
             }
 
-            return string.Join(", ", pawn.health.hediffSet.hediffs
+            foreach (string label in pawn.health.hediffSet.hediffs
                 .Where(hediff => hediff != null && hediff.Visible && (hediff.IsCurrentlyLifeThreatening || hediff.Bleeding || hediff.PainOffset > 0f || hediff.SummaryHealthPercentImpact < -0.05f))
                 .OrderByDescending(hediff => hediff.IsCurrentlyLifeThreatening ? 100f : hediff.BleedRate + hediff.PainOffset - hediff.SummaryHealthPercentImpact)
                 .Select(hediff => ExternalText(hediff.Label))
                 .Where(label => !string.IsNullOrWhiteSpace(label))
-                .Take(2)
-                .ToArray());
+                .Take(2))
+            {
+                conditions.Add(label);
+            }
+
+            return conditions;
         }
 
-        private static string BuildLowCapacitiesSummary(Pawn pawn)
+        private static List<string> BuildLowCapacitiesSummary(Pawn pawn)
         {
+            List<string> parts = new List<string>();
             if (pawn.health?.capacities == null)
             {
-                return string.Empty;
+                return parts;
             }
 
             PawnCapacityDef[] relevantCapacities =
@@ -921,7 +887,6 @@ namespace PawnDiary
                 PawnCapacityDefOf.Hearing
             };
 
-            List<string> parts = new List<string>();
             for (int i = 0; i < relevantCapacities.Length; i++)
             {
                 PawnCapacityDef capacity = relevantCapacities[i];
@@ -941,7 +906,7 @@ namespace PawnDiary
                 }
             }
 
-            return string.Join(", ", parts.ToArray());
+            return parts;
         }
 
         // Converts a capacity level to a localized keyword label.
@@ -970,11 +935,12 @@ namespace PawnDiary
             return string.Empty;
         }
 
-        private static string BuildTopThoughtsSummary(Pawn pawn)
+        private static List<string> BuildTopThoughtsSummary(Pawn pawn)
         {
+            List<string> parts = new List<string>();
             if (pawn.needs?.mood?.thoughts == null)
             {
-                return string.Empty;
+                return parts;
             }
 
             List<Thought> thoughts = new List<Thought>();
@@ -990,7 +956,6 @@ namespace PawnDiary
             string posStr = PickWeightedThought(positive);
             string negStr = PickWeightedThought(negative);
 
-            List<string> parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(posStr))
             {
                 parts.Add(posStr);
@@ -1001,7 +966,7 @@ namespace PawnDiary
                 parts.Add(negStr);
             }
 
-            return string.Join(", ", parts.ToArray());
+            return parts;
         }
 
         // Picks one thought from the list using weighted random: weight = |moodOffset|,

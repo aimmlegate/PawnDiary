@@ -19,16 +19,19 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
     record.
   - `GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)` returns the
     prompt-enchantment candidate **set** the planner would choose among right now
-    (`List<DiaryPromptEnchantmentCandidateSnapshot>`), never the single rolled winner (which uses
-    `Rand` and varies per call). Each snapshot mirrors the internal candidate (weight, source
-    hediff defName, priority/condition text, impact cues, configured cues) with independent list
-    copies. Empty when prompt enchantments are disabled in settings or no candidates match.
+    (`List<DiaryPromptEnchantmentCandidateSnapshot>`), after hediff-style suppression, live
+    event-window / observed-condition candidates, and normal-context weight multipliers, but before
+    the final winner roll. Each snapshot mirrors the internal candidate (weight, source hediff
+    defName, priority/condition text, impact cues, configured cues) with independent list copies.
+    Empty for ineligible pawns, when prompt enchantments are disabled in settings, or no candidates
+    match. The read preserves RimWorld `Rand` state, so polling it does not perturb later rolls.
   - To keep the prompt string bit-identical while sharing the same gathered facts, the composite
     `BuildHealthSummary` was factored into `CollectHealthFacts` (gather) + `FormatHealthSummary`
-    (prompt string) + DTO fields; both consumers now format from one `PawnSummaryFacts`/`HealthFacts`
-    struct so the prompt path and the exported snapshot can never drift. A new pure
-    `TestPromptEnchantmentCandidateSnapshot` covers the `From` mapping (null input, field copy, list
-    independence, multi-candidate order/weight).
+    (prompt string) + DTO fields; comma-bearing labels now stay as single structured list entries
+    until the prompt string is formatted, so the prompt path and exported snapshot cannot drift
+    through split/rejoin parsing. A new pure `TestPromptEnchantmentCandidateSnapshot` covers the
+    internal `From` mapping, and `DiaryPipelineTests` cover the shared list formatter and planner
+    candidate-preparation helper.
 - **Integration API + adapter hardening (adversarial-review follow-ups).** No API surface changes;
   robustness fixes across the external-API work shipped on 2026-07-04:
   - `PawnDiaryApi` entry points no longer call RimWorld's main-thread-only `Log.*` when rejecting an
@@ -108,14 +111,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   error-envelope refactor, and the OpenAI-Responses `reasoning.effort:"none"`/temperature compatibility
   questions (left as-is to avoid regressing the currently tested provider behavior).
 - **External-API context-export surface added ("machinery as a service").** Extended the capability
-  catalog with the outbound half of the context machinery: C-CTX-3 (export *all* collected prompt
-  enchantments — the deterministic `PromptEnchantmentCollector.Collect` candidate set, not the single
-  `RuleFor` `Rand` pick), C-CTX-4 (full assembled-prompt preview via `BuildPromptPlan`, no
-  submit/persist), C-CTX-5 (a context bundle — summary + surroundings + continuity + enchantments +
+  catalog with the outbound half of the context machinery: C-CTX-3 (export the prepared prompt
+  enchantment candidate set before the single `RuleFor` winner pick), C-CTX-4 (full assembled-prompt
+  preview via `BuildPromptPlan`, no submit/persist), C-CTX-5 (a context bundle — summary + surroundings + continuity + enchantments +
   style + recent entries — the core-side export a RimTalk bridge feeds via
   `ContextHookRegistry.RegisterPawnVariable`), and C-CTX-6 (supply/override enchantment candidates
   inbound). Reframed §2.4 as two directions (feed/override vs. read-as-a-service) and added design
-  note §3.8: export structured DTOs not raw strings, deterministic inputs over rolled outputs,
+  note §3.8: export structured DTOs not raw strings, prepared inputs before rolled winners,
   side-effect-free main-thread reads, and RimTalk driven from an `integrations/` bridge so core stays
   RimTalk-free. Slotted into the §4 build queue near the reads. No runtime change; `ApiVersion` stays 3.
 - **External-API consent + gating + delivery decided.** Closed the last cross-cutting forks in the

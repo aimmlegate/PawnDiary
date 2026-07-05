@@ -36,6 +36,7 @@ namespace DiaryPipelineTests
             TestColorCueXmlPolicy();
             TestPromptTextSanitizer();
             TestPromptContextLines();
+            TestDiaryListText();
             TestContextProviderRegistry();
             TestEventWindowPolicy();
             TestProgressionMilestonePolicy();
@@ -899,9 +900,39 @@ namespace DiaryPipelineTests
             AssertEqual("prompt enchantment suppressed source count", 2, filtered.Count);
             AssertEqual("prompt enchantment kept unsuppressed source", "Flu", filtered[0].sourceHediffDefName);
             AssertEqual("prompt enchantment kept non-hediff source", string.Empty, filtered[1].sourceHediffDefName ?? string.Empty);
+
+            List<PromptEnchantmentCandidate> normal = new List<PromptEnchantmentCandidate>
+            {
+                PromptCandidate("covered", "already voiced", 5f, null, null, "Inhumanized"),
+                PromptCandidate("normal", "ordinary pain", 4f, null, null, "Flu")
+            };
+            List<PromptEnchantmentCandidate> extra = new List<PromptEnchantmentCandidate>
+            {
+                PromptCandidate("event-window", "gray flesh found", 7f, null, null),
+                null
+            };
+            List<PromptEnchantmentCandidate> prepared = PromptEnchantmentPlanner.PrepareCandidatesForBuild(
+                normal,
+                extra,
+                0.25f,
+                new List<string> { "inhumanized" });
+            AssertEqual("prepared candidates suppress covered normal candidate", 2, prepared.Count);
+            AssertEqual("prepared candidates keep normal first", "Flu", prepared[0].sourceHediffDefName);
+            AssertNear("prepared candidates multiply normal weight", 1f, prepared[0].weight);
+            AssertEqual("prepared candidates append extra unchanged", "event-window", prepared[1].priorityText);
+            AssertNear("prepared candidates do not multiply extra weight", 7f, prepared[1].weight);
+
+            List<PromptEnchantmentCandidate> zeroMultiplier = PromptEnchantmentPlanner.PrepareCandidatesForBuild(
+                new List<PromptEnchantmentCandidate> { PromptCandidate("normal", "ordinary pain", 4f, null, null, "Flu") },
+                new List<PromptEnchantmentCandidate> { PromptCandidate("extra", "condition", 3f, null, null) },
+                0f,
+                null);
+            AssertEqual("zero multiplier keeps normal candidate in exported pool", 2, zeroMultiplier.Count);
+            AssertNear("zero multiplier makes normal candidate unpickable", 0f, zeroMultiplier[0].weight);
+            AssertNear("zero multiplier preserves extra candidate weight", 3f, zeroMultiplier[1].weight);
         }
 
-        // DiaryPromptEnchantmentCandidateSnapshot.From is the one mapping point between the internal
+        // DiaryPromptEnchantmentCandidateSnapshot.From is the internal mapping point between the
         // PromptEnchantment machinery and the public integration DTO (API v6, C-CTX-3). Cover it
         // directly so the contract holds without loading RimWorld: null input, field copy, list
         // independence (the snapshot must not alias the source's lists), and order/weight preserved
@@ -1369,6 +1400,37 @@ namespace DiaryPipelineTests
                 "context line join caps each line",
                 "abcdef; second",
                 PromptContextLines.Join(new List<string> { "abcdefghi", "second" }, 2, 6));
+        }
+
+        private static void TestDiaryListText()
+        {
+            List<string> entries = new List<string>
+            {
+                "gunshot (bleeding, infected)",
+                "chemical damage, moderate"
+            };
+            AssertEqual(
+                "comma-bearing entries join without being split",
+                "gunshot (bleeding, infected), chemical damage, moderate",
+                DiaryListText.JoinComma(entries));
+
+            List<string> withBlank = new List<string> { "first", " ", null, "second, still one item" };
+            AssertEqual(
+                "join skips blank/null entries but preserves comma text",
+                "first, second, still one item",
+                DiaryListText.JoinComma(withBlank));
+
+            List<string> copy = DiaryListText.CopyNonNull(withBlank);
+            AssertEqual("copy removes only null entries", 3, copy.Count);
+            AssertEqual("copy preserves blank strings for DTO fidelity", " ", copy[1]);
+            withBlank[0] = "changed";
+            AssertEqual("copy is independent from source list", "first", copy[0]);
+
+            List<string> target = new List<string>();
+            DiaryListText.AddNonBlank(target, "kept, with comma");
+            DiaryListText.AddNonBlank(target, " ");
+            AssertEqual("add nonblank keeps comma-bearing entry only", 1, target.Count);
+            AssertEqual("add nonblank preserves text", "kept, with comma", target[0]);
         }
 
         private static void TestContextProviderRegistry()

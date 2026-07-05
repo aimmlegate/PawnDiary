@@ -305,25 +305,27 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
+                string pawnForLog = PawnIdForLog(pawn);
                 ApiLogErrorOnce(
-                    "[Pawn Diary] Integration API: GetPawnSummary failed: " + e,
-                    "PawnDiary.Api.PawnSummary.Exception".GetHashCode());
+                    "[Pawn Diary] Integration API: GetPawnSummary for pawn '" + pawnForLog
+                    + "' failed: " + e,
+                    ("PawnDiary.Api.PawnSummary.Exception." + pawnForLog + "." + e.GetType().FullName).GetHashCode());
                 return null;
             }
         }
 
         /// <summary>
-        /// Returns the prompt-enchantment candidates Pawn Diary collected for a pawn right now
-        /// (capability C-CTX-3). This exports the candidate SET the planner chooses among — the
-        /// deterministic input — never the single rolled winner (which uses Rand and varies per
-        /// call). Pass <paramref name="includeImportantEventContext"/> true to also collect the
-        /// DLC social-status candidates (royal title / ideology role) that only enter the pool for
-        /// important events, mirroring the prompt-time collection.
+        /// Returns the prompt-enchantment candidates Pawn Diary prepared for a pawn right now
+        /// (capability C-CTX-3). This exports the candidate SET the planner chooses among after
+        /// suppression, live event/condition candidates, and weight multipliers, but before the
+        /// single rolled winner. Pass <paramref name="includeImportantEventContext"/> true to also
+        /// collect the DLC social-status candidates (royal title / ideology role) that only enter the
+        /// pool for important events, mirroring the prompt-time collection.
         /// Returns an empty list — never throws — for a null pawn, no game, off-thread call, when
         /// the master integration toggle is off, when the player has disabled prompt enchantments
-        /// in settings, or when no candidates match. Side-effect free: it does not roll the planner
-        /// or feed a prompt; the candidate set is chance-gated per Def policy, so two calls can
-        /// differ, but each call shows exactly what the planner could pick this tick.
+        /// in settings, when the pawn is not diary-eligible, or when no candidates match. Side-effect
+        /// free: it preserves global RNG state, does not roll the planner winner, and does not feed a
+        /// prompt.
         /// </summary>
         public static List<DiaryPromptEnchantmentCandidateSnapshot> GetPromptEnchantments(
             Pawn pawn,
@@ -348,9 +350,11 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
+                string pawnForLog = PawnIdForLog(pawn);
                 ApiLogErrorOnce(
-                    "[Pawn Diary] Integration API: GetPromptEnchantments failed: " + e,
-                    "PawnDiary.Api.PromptEnchantments.Exception".GetHashCode());
+                    "[Pawn Diary] Integration API: GetPromptEnchantments for pawn '" + pawnForLog
+                    + "' failed: " + e,
+                    ("PawnDiary.Api.PromptEnchantments.Exception." + pawnForLog + "." + e.GetType().FullName).GetHashCode());
                 return new List<DiaryPromptEnchantmentCandidateSnapshot>();
             }
         }
@@ -388,6 +392,24 @@ namespace PawnDiary.Integration
             }
 
             UnityEngine.Debug.LogError(message);
+        }
+
+        private static string PawnIdForLog(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return "null-pawn";
+            }
+
+            try
+            {
+                string pawnId = pawn.GetUniqueLoadID();
+                return string.IsNullOrWhiteSpace(pawnId) ? "unknown-pawn" : pawnId;
+            }
+            catch
+            {
+                return "unknown-pawn";
+            }
         }
     }
 }

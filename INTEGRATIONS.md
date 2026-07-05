@@ -106,7 +106,7 @@ var accepted = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
 | `DiaryWritingStyleSnapshot GetWritingStyle(Pawn)` (v3) | The pawn's **base** saved diary writing style. Publishes the diary's own voice instruction (`rule`) so a chat/context mod can — if its player chooses — align its voice with how the pawn writes; Pawn Diary only exposes the style, it never reads or drives another mod's persona. `null` = null/ineligible pawn, no game, or off-main-thread call. This is a side-effect-free read: it never creates a diary record (a pawn with no record yet resolves to the default style), and it excludes temporary hediff style overrides. |
 | `void RegisterPawnContextProvider(string id, Func<Pawn, string> provider)` (v4) | Registers a process-global provider that contributes one compact `key=value` line to each pawn summary. Re-registering the same id replaces the provider. Invalid/off-thread registration is logged once and ignored; a throwing provider is disabled for the rest of the session and logged once. |
 | `DiaryPawnSummarySnapshot GetPawnSummary(Pawn)` (v6) | The structured pawn-summary context Pawn Diary would feed to one of its own prompts — sex, life stage, DLC identity (xenotype / royal title / faith), mood, health, low capacities, top thoughts, and external provider lines — as named DTO fields rather than the internal `key=value` blob, so the assembly can keep evolving prompt text without breaking the contract. `null` = null/ineligible pawn, no game, off-thread call, or master toggle off. **Side-effect free**: it never creates a diary record, queues generation, or spends tokens. |
-| `List<DiaryPromptEnchantmentCandidateSnapshot> GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)` (v6) | The prompt-enchantment candidate **set** the planner would choose among right now — the deterministic input, never the single rolled winner (which uses `Rand` and varies per call). Pass `includeImportantEventContext: true` to also collect the DLC social-status candidates (royal title / ideology role) that only enter the pool for important events. Empty list = null pawn, no game, off-thread call, master toggle off, prompt-enchantments disabled in settings, or no match. Side-effect free: it does not roll the planner or feed a prompt; the candidate set is chance-gated per Def policy, so two calls can differ, but each call shows exactly what the planner could pick this tick. |
+| `List<DiaryPromptEnchantmentCandidateSnapshot> GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)` (v6) | The prompt-enchantment candidate **set** the planner would choose among right now, after hediff-style suppression, live event-window / observed-condition candidates, and normal-context weight multipliers, but before the single winner roll. Pass `includeImportantEventContext: true` to also collect the DLC social-status candidates (royal title / ideology role) that only enter the pool for important events. Empty list = null/ineligible pawn, no game, off-thread call, master toggle off, prompt-enchantments disabled in settings, or no match. Side-effect free: it preserves global RNG state, does not roll the planner winner, does not feed a prompt, and does not spend tokens. |
 
 `ExternalEventRequest` fields: `eventKey`*, `subject`* (required); `sourceId` (recommended, for log
 attribution — defaults to `unknown-source` when blank), `partner`, `summaryText`, `eventLabel`,
@@ -184,14 +184,14 @@ such as "moderate pain", empty when not visible), `bleeding` (localized bucket, 
 visible), `conditions` (`List<string>`, up to two notable visible condition labels). All empty/false
 when the pawn is healthy.
 
-`DiaryPromptEnchantmentCandidateSnapshot` fields: `weight` (resolved selection weight,
-severity/live-state adjusted), `sourceHediffDefName` (defName of the source hediff when applicable,
-empty otherwise), `priorityText` (localized), `conditionText` (localized, e.g. *"in agony (left
-leg)"*), `impactCues` (`List<string>`, e.g. *"life-threatening"*, *"heavy bleeding"*),
-`configuredCues` (`List<string>` — XML-configured cues from the matching Def). List fields are
-independent copies: mutating the underlying state after the call does not change a snapshot the
-caller already holds. A snapshot is the candidate the planner *could* pick, not the rolled winner —
-to get the winner, run your own weighted pick over `weight`.
+`DiaryPromptEnchantmentCandidateSnapshot` fields: `weight` (the post-suppression, post-multiplier
+selection weight the planner would use before its final roll), `sourceHediffDefName` (defName of the
+source hediff when applicable, empty otherwise), `priorityText` (localized), `conditionText`
+(localized, e.g. *"in agony (left leg)"*), `impactCues` (`List<string>`, e.g.
+*"life-threatening"*, *"heavy bleeding"*), `configuredCues` (`List<string>` — XML-configured cues
+from the matching Def). List fields are independent copies: mutating the underlying state after the
+call does not change a snapshot the caller already holds. A snapshot is the candidate the planner
+*could* pick, not the rolled winner — to get the winner, run your own weighted pick over `weight`.
 
 Example:
 

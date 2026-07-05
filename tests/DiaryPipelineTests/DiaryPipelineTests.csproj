@@ -28,6 +28,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryPromptCapture.cs" Link="DiaryPromptCapture.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptTextSanitizer.cs" Link="PromptTextSanitizer.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptContextLines.cs" Link="PromptContextLines.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryListText.cs" Link="DiaryListText.cs" />
     <Compile Include="..\..\Source\Pipeline\ContextProviderRegistry.cs" Link="ContextProviderRegistry.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptEnchantmentPlanner.cs" Link="PromptEnchantmentPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\HediffPersonaOverridePolicy.cs" Link="HediffPersonaOverridePolicy.cs" />

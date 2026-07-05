@@ -90,65 +90,23 @@ namespace PawnDiary
             }
 
             PromptEnchantmentTuning tuning = DiaryTuning.PromptEnchantmentTuning;
-            List<PromptEnchantmentCandidate> candidates = new List<PromptEnchantmentCandidate>();
+            List<PromptEnchantmentCandidate> normalCandidates = new List<PromptEnchantmentCandidate>();
             List<DiaryPromptEnchantmentDef> defs = DefDatabase<DiaryPromptEnchantmentDef>.AllDefsListForReading;
             if (defs != null && defs.Count > 0)
             {
-                candidates = PromptEnchantmentCollector.Collect(
+                normalCandidates = PromptEnchantmentCollector.Collect(
                     pawn,
                     defs,
                     includeImportantEventContext,
                     tuning);
-                candidates = PromptEnchantmentPlanner.WithoutSuppressedHediffSources(
-                    candidates,
-                    suppressedHediffDefNames);
-                ApplyNormalCandidateWeightMultiplier(candidates, normalCandidateWeightMultiplier);
             }
 
-            AddExtraCandidates(candidates, extraCandidates);
+            List<PromptEnchantmentCandidate> candidates = PromptEnchantmentPlanner.PrepareCandidatesForBuild(
+                normalCandidates,
+                extraCandidates,
+                normalCandidateWeightMultiplier,
+                suppressedHediffDefNames);
             return PromptEnchantmentPlanner.Build(candidates, tuning, Rand.Range(0f, 1f));
-        }
-
-        private static void ApplyNormalCandidateWeightMultiplier(List<PromptEnchantmentCandidate> candidates,
-            float multiplier)
-        {
-            if (candidates == null || candidates.Count == 0)
-            {
-                return;
-            }
-
-            float safeMultiplier = float.IsNaN(multiplier) || multiplier < 0f ? 0f : multiplier;
-            if (safeMultiplier == 1f)
-            {
-                return;
-            }
-
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                PromptEnchantmentCandidate candidate = candidates[i];
-                if (candidate != null)
-                {
-                    candidate.weight *= safeMultiplier;
-                }
-            }
-        }
-
-        private static void AddExtraCandidates(List<PromptEnchantmentCandidate> candidates,
-            IList<PromptEnchantmentCandidate> extraCandidates)
-        {
-            if (candidates == null || extraCandidates == null || extraCandidates.Count == 0)
-            {
-                return;
-            }
-
-            for (int i = 0; i < extraCandidates.Count; i++)
-            {
-                PromptEnchantmentCandidate candidate = extraCandidates[i];
-                if (candidate != null)
-                {
-                    candidates.Add(candidate);
-                }
-            }
         }
     }
 }

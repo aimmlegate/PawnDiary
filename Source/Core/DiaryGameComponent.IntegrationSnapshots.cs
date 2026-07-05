@@ -76,21 +76,30 @@ namespace PawnDiary
                 return null;
             }
 
-            return DiaryContextBuilder.BuildPawnSummarySnapshot(pawn);
+            UnityEngine.Random.State randomState = UnityEngine.Random.state;
+            try
+            {
+                return DiaryContextBuilder.BuildPawnSummarySnapshot(pawn);
+            }
+            finally
+            {
+                UnityEngine.Random.state = randomState;
+            }
         }
 
         /// <summary>
         /// Collects prompt-enchantment candidates for the public integration API (API v6, capability
-        /// C-CTX-3). Exports the candidate SET the planner would choose among right now (the
-        /// deterministic input), never the single rolled winner. Returns an empty list when
-        /// enchantments are disabled in settings or no candidates match.
+        /// C-CTX-3). Exports the candidate SET the planner would choose among right now after
+        /// suppression, live event/condition candidates, and weight multipliers, but before the
+        /// single rolled winner. Returns an empty list when ineligible, disabled, or no candidates
+        /// match.
         /// </summary>
         internal List<DiaryPromptEnchantmentCandidateSnapshot> PromptEnchantmentCandidatesFor(
             Pawn pawn, bool includeImportantEventContext)
         {
             List<DiaryPromptEnchantmentCandidateSnapshot> snapshots =
                 new List<DiaryPromptEnchantmentCandidateSnapshot>();
-            if (pawn == null)
+            if (!IsDiaryEligible(pawn))
             {
                 return snapshots;
             }
@@ -104,22 +113,40 @@ namespace PawnDiary
             }
 
             PromptEnchantmentTuning tuning = DiaryTuning.PromptEnchantmentTuning;
+            List<PromptEnchantmentCandidate> normalCandidates = new List<PromptEnchantmentCandidate>();
             List<DiaryPromptEnchantmentDef> defs =
                 DefDatabase<DiaryPromptEnchantmentDef>.AllDefsListForReading;
-            if (defs == null || defs.Count == 0)
+            if (defs != null && defs.Count > 0)
             {
-                return snapshots;
+                Rand.PushState();
+                try
+                {
+                    normalCandidates = PromptEnchantmentCollector.Collect(
+                        pawn,
+                        defs,
+                        includeImportantEventContext,
+                        tuning);
+                }
+                finally
+                {
+                    Rand.PopState();
+                }
             }
 
-            // Mirrors PromptEnchantments.RuleFor's collection step without the suppression pass or the
-            // final Rand roll. Suppression (suppressedHediffDefNames) is intentionally not applied:
-            // the export shows what COULD be chosen right now, including candidates a prompt-time call
-            // might suppress because they are already voiced by a hediff style override.
-            List<PromptEnchantmentCandidate> candidates = PromptEnchantmentCollector.Collect(
-                pawn,
-                defs,
-                includeImportantEventContext,
-                tuning);
+            // Mirror PromptEnchantmentRuleFor: live event/condition biasing feeds the same pool as
+            // ordinary XML health candidates, then suppression and normal-weight damping run before
+            // the final weighted roll. The export stops just before that roll.
+            float eventWindowNormalMultiplier;
+            List<PromptEnchantmentCandidate> extraCandidates =
+                ActiveEventWindowPromptCandidates(pawn, out eventWindowNormalMultiplier);
+            float observedConditionNormalMultiplier;
+            extraCandidates.AddRange(
+                ActiveObservedConditionPromptCandidates(pawn, out observedConditionNormalMultiplier));
+            List<PromptEnchantmentCandidate> candidates = PromptEnchantmentPlanner.PrepareCandidatesForBuild(
+                normalCandidates,
+                extraCandidates,
+                eventWindowNormalMultiplier * observedConditionNormalMultiplier,
+                HediffPersonaOverrides.SuppressedPromptHediffDefNamesFor(pawn));
 
             for (int i = 0; i < candidates.Count; i++)
             {

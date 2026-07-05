@@ -150,6 +150,66 @@ namespace PawnDiary
             return kept;
         }
 
+        /// <summary>
+        /// Prepares the same candidate pool <see cref="Build"/> should pick from: normal XML/health
+        /// candidates first have hediff-style suppression and the live normal-weight multiplier applied;
+        /// already-biased extra candidates are appended unchanged.
+        /// </summary>
+        public static List<PromptEnchantmentCandidate> PrepareCandidatesForBuild(
+            IList<PromptEnchantmentCandidate> normalCandidates,
+            IList<PromptEnchantmentCandidate> extraCandidates,
+            float normalCandidateWeightMultiplier,
+            IList<string> suppressedHediffDefNames)
+        {
+            List<PromptEnchantmentCandidate> prepared =
+                WithoutSuppressedHediffSources(normalCandidates, suppressedHediffDefNames);
+            ApplyNormalCandidateWeightMultiplier(prepared, normalCandidateWeightMultiplier);
+            AddExtraCandidates(prepared, extraCandidates);
+            return prepared;
+        }
+
+        private static void ApplyNormalCandidateWeightMultiplier(List<PromptEnchantmentCandidate> candidates,
+            float multiplier)
+        {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return;
+            }
+
+            float safeMultiplier = float.IsNaN(multiplier) || multiplier < 0f ? 0f : multiplier;
+            if (safeMultiplier == 1f)
+            {
+                return;
+            }
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                PromptEnchantmentCandidate candidate = candidates[i];
+                if (candidate != null)
+                {
+                    candidate.weight *= safeMultiplier;
+                }
+            }
+        }
+
+        private static void AddExtraCandidates(List<PromptEnchantmentCandidate> candidates,
+            IList<PromptEnchantmentCandidate> extraCandidates)
+        {
+            if (candidates == null || extraCandidates == null || extraCandidates.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < extraCandidates.Count; i++)
+            {
+                PromptEnchantmentCandidate candidate = extraCandidates[i];
+                if (candidate != null)
+                {
+                    candidates.Add(candidate);
+                }
+            }
+        }
+
         private static float TotalWeight(IList<PromptEnchantmentCandidate> candidates)
         {
             if (candidates == null)

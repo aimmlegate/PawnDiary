@@ -1,8 +1,7 @@
 // Public read-only DTO for integration adapters that want the prompt-enchantment candidates Pawn
-// Diary collected for a pawn (API v6, capability C-CTX-3). This is the deterministic INPUT side of
-// the enchantment machinery: the candidate set the planner chooses among, not the single rolled
-// winner. See design/EXTERNAL_API_CAPABILITIES.md §3.8 rule 2 ("Deterministic inputs over rolled
-// outputs").
+// Diary prepared for a pawn (API v6, capability C-CTX-3). This is the input side of the enchantment
+// machinery: the post-suppression, post-multiplier candidate set the planner chooses among, not the
+// single rolled winner. See design/EXTERNAL_API_CAPABILITIES.md §3.8.
 //
 // Keep this class plain: fields only, primitives/strings/lists only, no live RimWorld objects.
 //
@@ -22,7 +21,7 @@ namespace PawnDiary.Integration
     /// </summary>
     public sealed class DiaryPromptEnchantmentCandidateSnapshot
     {
-        /// <summary>Resolved selection weight (severity- and live-state-adjusted). Stable per call.</summary>
+        /// <summary>Resolved selection weight after live-state adjustment and normal-context multipliers.</summary>
         public float weight;
 
         /// <summary>defName of the hediff this candidate came from, when applicable. Empty otherwise.</summary>
@@ -44,7 +43,7 @@ namespace PawnDiary.Integration
         /// Maps one internal candidate to a public snapshot, copying every list so the snapshot is
         /// independent of the source after this call. Returns null when the candidate is null.
         /// </summary>
-        public static DiaryPromptEnchantmentCandidateSnapshot From(PromptEnchantmentCandidate candidate)
+        internal static DiaryPromptEnchantmentCandidateSnapshot From(PromptEnchantmentCandidate candidate)
         {
             if (candidate == null)
             {

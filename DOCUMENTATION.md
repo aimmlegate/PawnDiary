@@ -289,16 +289,19 @@ can read our understanding of a pawn without us driving another model.
 `DiaryHealthSummarySnapshot` sub-DTO, low capacities, top thoughts, and the API v4 provider lines)
 but as named DTO fields rather than the internal `key=value` blob, so the assembly can keep evolving
 prompt text without breaking the additive-only contract. Both the prompt string and the snapshot
-format from one shared `PawnSummaryFacts` gather, so they cannot drift apart; the composite
+format from one shared `PawnSummaryFacts` gather, so they cannot drift apart; comma-bearing labels
+stay as structured list entries until the final prompt string join, and the composite
 `BuildHealthSummary` was split into `CollectHealthFacts` + `FormatHealthSummary` + DTO fields along
 the way. `PawnDiaryApi.GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)`
 returns the candidate **set** the planner would choose among right now
-(`List<DiaryPromptEnchantmentCandidateSnapshot>`), never the single rolled winner (which uses `Rand`
-and varies per call); each candidate mirrors the internal `PromptEnchantmentCandidate` (weight,
+(`List<DiaryPromptEnchantmentCandidateSnapshot>`), after hediff-style suppression, live event-window
+/ observed-condition candidates, and normal-context weight multipliers, but before the single rolled
+winner. Each candidate mirrors the internal `PromptEnchantmentCandidate` (post-multiplier weight,
 source hediff defName, priority/condition text, impact/configured cues) with independent list
-copies. Both are main-thread only, gated by `allowExternalIntegrations`, return their safe empty
-value instead of throwing, never create a diary record, and — for `GetPromptEnchantments` — empty
-out when the player has disabled prompt enchantments in settings.
+copies. Both are main-thread only, gated by `allowExternalIntegrations`, preserve global RNG state,
+return their safe empty value instead of throwing, never create a diary record, and — for
+`GetPromptEnchantments` — empty out when the player has disabled prompt enchantments in settings or
+the pawn is not diary-eligible.
 
 `integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
 separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
