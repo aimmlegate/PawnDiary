@@ -15,7 +15,7 @@ namespace PawnDiary.Ingestion
     /// Captures one caller-authored diary page and emits it as a completed solo or pairwise entry.
     /// Built by <see cref="PawnDiaryApi.SubmitDirectEntry"/>.
     /// </summary>
-    public sealed class ExternalDirectEntrySignal : DiarySignal
+    internal sealed class ExternalDirectEntrySignal : DiarySignal
     {
         // Defensive summary cap. Parser safety bound, not feature policy; body/title caps live in
         // DiaryTuningDef XML. extraContext caps + reserved-key filtering live in the shared
@@ -58,6 +58,7 @@ namespace PawnDiary.Ingestion
                 ? "unknown-source"
                 : request.sourceId.Trim();
             bool hasPartnerText = partner != null && !string.IsNullOrWhiteSpace(partnerText);
+            bool forceRecord = request.forceRecord;
 
             // Direct prose can stand alone without XML prompt policy. If an External-domain group does
             // claim the key, its label/toggle/styling still apply.
@@ -70,11 +71,14 @@ namespace PawnDiary.Ingestion
                 SourceId = sourceId,
                 SubjectPawnId = subject.GetUniqueLoadID(),
                 PartnerPawnId = hasPartnerText ? partner.GetUniqueLoadID() : string.Empty,
-                SubjectEligible = DiaryGameComponent.Instance != null
-                    && DiaryGameComponent.Instance.CanWriteExternalDirectEntryFor(subject),
-                PartnerEligible = hasPartnerText
-                    && DiaryGameComponent.Instance != null
-                    && DiaryGameComponent.Instance.CanWriteExternalDirectEntryFor(partner),
+                SubjectEligible = forceRecord
+                    ? DiaryGameComponent.IsDiaryEligible(subject)
+                    : DiaryGameComponent.Instance != null
+                        && DiaryGameComponent.Instance.CanWriteExternalDirectEntryFor(subject),
+                PartnerEligible = hasPartnerText && (forceRecord
+                    ? DiaryGameComponent.IsDiaryEligible(partner)
+                    : DiaryGameComponent.Instance != null
+                        && DiaryGameComponent.Instance.CanWriteExternalDirectEntryFor(partner)),
                 HasGroup = group != null,
                 GroupRequired = false
             };
@@ -91,11 +95,13 @@ namespace PawnDiary.Ingestion
 
         public override DiaryEventData Payload => payload;
 
+        public override bool ForceRecord => request != null && request.forceRecord;
+
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: payload.SubjectEligible,
-                userEnabled: group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                userEnabled: ForceRecord || group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
                 signalEnabled: true,
                 ambientSignalEnabled: true);
         }
@@ -138,7 +144,7 @@ namespace PawnDiary.Ingestion
             string instruction = group == null ? string.Empty : InteractionGroups.InstructionForGroup(group);
 
             if (decision == CaptureDecision.GeneratePair
-                && sink.CanWriteExternalDirectEntryFor(partner)
+                && CanWritePartnerDirectEntry(sink)
                 && !string.IsNullOrWhiteSpace(partnerText))
             {
                 DiaryEvent pairEvent = sink.AddPairwiseEvent(subject, partner, payload.EventKey, label,
@@ -183,6 +189,13 @@ namespace PawnDiary.Ingestion
             }
 
             return string.IsNullOrWhiteSpace(label) ? payload.EventKey : label;
+        }
+
+        private bool CanWritePartnerDirectEntry(DiaryGameComponent sink)
+        {
+            return ForceRecord
+                ? DiaryGameComponent.IsDiaryEligible(partner)
+                : sink.CanWriteExternalDirectEntryFor(partner);
         }
 
         private static string RawTextFor(Pawn pawn, string label, string prose, string summary)

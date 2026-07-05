@@ -10,7 +10,7 @@ namespace PawnDiary
     /// <summary>
     /// Stable decoration names used by XML and the pure decorator.
     /// </summary>
-    public static class DiaryTextDecorationKinds
+    internal static class DiaryTextDecorationKinds
     {
         public const string StaggeredWordSizes = "StaggeredWordSizes";
         public const string DimmedWords = "DimmedWords";
@@ -21,7 +21,7 @@ namespace PawnDiary
     /// Stable text scopes. DirectSpeech is the default so visual distortions stay inside explicit
     /// speech blocks unless XML opts into a wider scope.
     /// </summary>
-    public static class DiaryTextDecorationScopes
+    internal static class DiaryTextDecorationScopes
     {
         public const string All = "All";
         public const string Body = "Body";

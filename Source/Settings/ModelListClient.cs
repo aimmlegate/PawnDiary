@@ -15,7 +15,7 @@ namespace PawnDiary
     /// Async HTTP client that fetches available model IDs from a compatible endpoint and parses the
     /// JSON response with the mod's Mono-safe MiniJson helper.
     /// </summary>
-    public static class ModelListClient
+    internal static class ModelListClient
     {
         // Shared HttpClient with no built-in timeout; per-request timeouts are set via CancellationTokenSource.
         private static readonly HttpClient Client = new HttpClient
@@ -156,7 +156,7 @@ namespace PawnDiary
     /// capability the provider advertised. The capability map only contains entries that included a
     /// reasoning object; models without one are simply absent and treated as "unknown" by callers.
     /// </summary>
-    public sealed class ModelListResult
+    internal sealed class ModelListResult
     {
         /// <summary>Distinct, sorted model IDs returned by the endpoint.</summary>
         public readonly List<string> Models;

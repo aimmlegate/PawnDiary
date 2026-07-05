@@ -1793,6 +1793,9 @@ namespace DiaryPipelineTests
                 "the ceiling constant is the documented parser limit",
                 64,
                 ExternalEventRequestText.MaxRequestContextLines);
+            AssertTrue(
+                "ordinary context overflow is dropped after protected fields fill the ceiling",
+                cappedContext.IndexOf("free_0=", StringComparison.Ordinal) < 0);
         }
 
         private static int CountContextFields(string context)

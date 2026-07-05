@@ -14,7 +14,7 @@ using Verse;
 
 namespace PawnDiary
 {
-    public static class DiaryContextBuilder
+    internal static class DiaryContextBuilder
     {
         private const int MaxActiveMapConditions = 3;
         private const int MaxThreatLetterScanBack = 30;
@@ -603,7 +603,7 @@ namespace PawnDiary
                 parts.Add("faith=" + facts.faith);
             }
 
-            // API v4 lets adapter/personality mods add compact identity context such as
+            // The public context-provider hook lets adapter/personality mods add compact identity context such as
             // "personality=blunt, curious". Providers run in the impure snapshot phase (inside
             // CollectPawnSummaryFacts), and only cleaned strings continue into the prompt pipeline.
             if (facts.providerLines != null && facts.providerLines.Count > 0)
@@ -638,7 +638,7 @@ namespace PawnDiary
         }
 
         // Builds the SAME pawn-summary context BuildPawnSummary feeds into a prompt, but as a
-        // structured public DTO instead of a `key=value` blob (API v6, capability C-CTX-2). This is
+        // structured public DTO instead of a `key=value` blob. This is
         // the "machinery as a service" read: a chat/context mod can read our understanding of the
         // pawn without us driving another model. Side-effect free — never creates a diary record.
         //

@@ -13,7 +13,7 @@ namespace PawnDiary
     /// <summary>
     /// Converts current runtime/save objects into pure pipeline contracts.
     /// </summary>
-    public static class DiaryPipelineAdapters
+    internal static class DiaryPipelineAdapters
     {
         public static DiaryPromptRequest BuildPromptRequest(
             DiaryEvent diaryEvent,

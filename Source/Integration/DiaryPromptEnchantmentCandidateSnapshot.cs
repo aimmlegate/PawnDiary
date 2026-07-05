@@ -1,5 +1,5 @@
 // Public read-only DTO for integration adapters that want the prompt-enchantment candidates Pawn
-// Diary prepared for a pawn (API v6, capability C-CTX-3). This is the input side of the enchantment
+// Diary prepared for a pawn. This is the input side of the enchantment
 // machinery: the post-suppression, post-multiplier candidate set the planner chooses among, not the
 // single rolled winner. See design/EXTERNAL_API_CAPABILITIES.md §3.8.
 //

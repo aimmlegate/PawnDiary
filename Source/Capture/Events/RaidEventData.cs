@@ -24,7 +24,7 @@ namespace PawnDiary.Capture
     /// every per-pawn payload because catalog dispatch is per-pawn — each Decide call must be
     /// self-contained.
     /// </summary>
-    public class RaidEventData : DiaryEventData
+    internal class RaidEventData : DiaryEventData
     {
         /// <summary>Sentinel substituted when the raid carries no faction (AGENTS.md section 12
         /// English carve-out: structured sentinels are intentionally not localized).</summary>

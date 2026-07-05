@@ -692,7 +692,7 @@ namespace PawnDiary
         /// Unknown roles are ignored (no slot is mutated), preserving the historical no-op
         /// fall-through. The per-role bodies collapsed into <see cref="ApplyLlmResultToSlot"/>.
         /// </summary>
-        public void ApplyLlmResult(LlmGenerationResult result)
+        internal void ApplyLlmResult(LlmGenerationResult result)
         {
             if (result == null)
             {
@@ -726,7 +726,7 @@ namespace PawnDiary
         /// Builds a read-only view of this event for the given pawn's POV, or null if the pawn is not involved.
         /// For two-pawn events, includes a LinkedEntryView previewing the other pawn's entry.
         /// </summary>
-        public DiaryEntryView ToViewFor(string pawnId, bool archivedForScans = false)
+        internal DiaryEntryView ToViewFor(string pawnId, bool archivedForScans = false)
         {
             string povRole = RoleForPawn(pawnId);
             if (string.IsNullOrWhiteSpace(povRole))
@@ -1259,7 +1259,7 @@ namespace PawnDiary
         /// Builds the pure decoration context for a POV. This combines saved pawn facts with stable
         /// event metadata; callers can select XML rules from the returned data without touching Pawn.
         /// </summary>
-        public DiaryTextDecorationContext TextDecorationContextForRole(string povRole)
+        internal DiaryTextDecorationContext TextDecorationContextForRole(string povRole)
         {
             DiaryTextDecorationContext context = new DiaryTextDecorationContext
             {

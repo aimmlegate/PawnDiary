@@ -15,7 +15,7 @@ namespace PawnDiary
     /// generate a persona-independent death description grounded in damage, organ, illness, and
     /// nearby context.
     /// </summary>
-    public static class DeathContextCache
+    internal static class DeathContextCache
     {
         private static readonly Dictionary<string, string> CachedByPawnId = new Dictionary<string, string>();
         private static readonly Queue<string> CachedPawnOrder = new Queue<string>();

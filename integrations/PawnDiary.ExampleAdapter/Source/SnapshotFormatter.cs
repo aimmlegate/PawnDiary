@@ -31,7 +31,7 @@ namespace PawnDiaryExampleAdapter
 
         public static string FormatApiVersion(int version)
         {
-            return "PawnDiaryApi.ApiVersion → " + version;
+            return "ApiVersion → " + version;
         }
 
         // ---- SubmitEvent outcome -------------------------------------------------

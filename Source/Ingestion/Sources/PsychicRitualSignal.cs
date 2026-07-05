@@ -20,7 +20,7 @@ namespace PawnDiary.Ingestion
     /// <see cref="PsychicRitualCompletedPatch"/> and submitted via
     /// <see cref="DiaryEvents.Submit(DiaryFanoutSignal)"/>.
     /// </summary>
-    public sealed class PsychicRitualFanoutSignal : DiaryFanoutSignal
+    internal sealed class PsychicRitualFanoutSignal : DiaryFanoutSignal
     {
         private const string PsychicRitualClassifierPrefix = "PsychicRitual";
 

@@ -17,7 +17,7 @@ namespace PawnDiary
     /// <summary>
     /// Defensively captures gained temporary memories through MemoryThoughtHandler.TryGainMemory.
     /// </summary>
-    public static class ThoughtGainPatch
+    internal static class ThoughtGainPatch
     {
         /// <summary>
         /// Patches MemoryThoughtHandler.TryGainMemory(Thought_Memory, Pawn), if it can still be

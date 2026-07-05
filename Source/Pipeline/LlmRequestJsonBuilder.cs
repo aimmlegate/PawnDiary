@@ -13,7 +13,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain request-shape snapshot for serializing one LLM generation HTTP body.
     /// </summary>
-    public class LlmRequestJsonInput
+    internal class LlmRequestJsonInput
     {
         public ApiCompatibilityMode apiMode;
         public string modelName;
@@ -27,7 +27,7 @@ namespace PawnDiary
     /// <summary>
     /// Builds JSON request bodies for the supported OpenAI-compatible generation modes.
     /// </summary>
-    public static class LlmRequestJsonBuilder
+    internal static class LlmRequestJsonBuilder
     {
         /// <summary>
         /// Returns the JSON body for one generation request in the selected compatibility mode.

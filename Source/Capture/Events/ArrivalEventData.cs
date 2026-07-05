@@ -9,7 +9,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one pawn becoming part of the colony.
     /// </summary>
-    public class ArrivalEventData : DiaryEventData
+    internal class ArrivalEventData : DiaryEventData
     {
         public const string DefNameToken = "PawnDiary_Arrival";
 

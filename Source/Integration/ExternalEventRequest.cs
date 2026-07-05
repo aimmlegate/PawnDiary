@@ -69,6 +69,14 @@ namespace PawnDiary.Integration
         /// event. False means they supplement the normal live candidate pool.</summary>
         public bool replacePromptEnchantments;
 
+        /// <summary>
+        /// When true, this valid request bypasses soft recording gates: the external API budget,
+        /// group/user toggles, and dedup windows. It does not bypass required fields, main-thread/game
+        /// readiness, the master integration toggle, missing External group XML for ordinary
+        /// SubmitEvent calls, or base diary-owner eligibility for the subject pawn.
+        /// </summary>
+        public bool forceRecord;
+
         /// <summary>Optional custom dedup key. Blank uses the default key (eventKey + pawn or
         /// canonical pawn pair). Supply one when several related submissions should collapse into
         /// a single diary moment within the dedup window.</summary>

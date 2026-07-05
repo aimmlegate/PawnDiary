@@ -14,7 +14,7 @@ namespace PawnDiary
     /// <summary>
     /// Captures a pawn's body-modification stance without leaking live Pawn objects into pure policy.
     /// </summary>
-    public static class BodyModContext
+    internal static class BodyModContext
     {
         private static readonly PropertyInfo IsGhoulProperty = typeof(Pawn).GetProperty("IsGhoul");
         private static readonly FieldInfo MutantField = typeof(Pawn).GetField("mutant");

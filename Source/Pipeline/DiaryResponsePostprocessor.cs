@@ -8,7 +8,7 @@ namespace PawnDiary
     /// <summary>
     /// Converts parser output plus response rules into a typed persistence plan.
     /// </summary>
-    public static class DiaryResponsePostprocessor
+    internal static class DiaryResponsePostprocessor
     {
         public static DiaryResponsePlan ApplySuccess(string rawVisibleResponse, DiaryResponseRules rules)
         {

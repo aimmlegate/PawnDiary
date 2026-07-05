@@ -12,7 +12,7 @@ namespace PawnDiary
     /// <summary>
     /// Pure prompt gate for saved observed-condition rows.
     /// </summary>
-    public static class ObservedConditionPromptActivity
+    internal static class ObservedConditionPromptActivity
     {
         /// <summary>
         /// Returns true while a condition has really started and is either still observed or still inside

@@ -20,7 +20,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one TaleRecorder event. Filled by DiaryGameComponent.RecordTale from the
     /// live Tale + TaleDef after the impure classification steps run.
     /// </summary>
-    public class TaleEventData : DiaryEventData
+    internal class TaleEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.Tale;
 
@@ -131,11 +131,11 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>The shape the impure Tale emit should build for a decision.</summary>
-        public enum TaleEmitShape { Drop, Batch, Solo, Pair }
+        internal enum TaleEmitShape { Drop, Batch, Solo, Pair }
 
         /// <summary>Pure routing result for TaleSignal.Emit: shape + whether it is a neutral
         /// death-description + (for Solo) which captured pawn is the POV.</summary>
-        public struct TaleEmitPlan
+        internal struct TaleEmitPlan
         {
             public readonly TaleEmitShape Shape;
             public readonly bool DeathDescription;

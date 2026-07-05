@@ -23,7 +23,7 @@ namespace PawnDiary
     /// Guarded, impure reads of base-game pawn state needed to snapshot display-only diary facts at
     /// event-record time. All accessors return plain values safe to store on the persisted model.
     /// </summary>
-    public static class PawnFactCapture
+    internal static class PawnFactCapture
     {
         /// <summary>
         /// Snapshots the pawn's visible hediffs and traits as a serialized fact string for the XML

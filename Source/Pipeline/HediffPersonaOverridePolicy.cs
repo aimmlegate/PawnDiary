@@ -23,7 +23,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain snapshot of one active hediff on the prompt POV pawn.
     /// </summary>
-    public sealed class HediffPersonaOverrideFact
+    internal sealed class HediffPersonaOverrideFact
     {
         public string defName;
         public string label;
@@ -35,7 +35,7 @@ namespace PawnDiary
     /// Result of the hediff-persona match. The matched hediff names let prompt-time callers avoid
     /// repeating the same condition as both a writing-style override and an "important context" cue.
     /// </summary>
-    public sealed class HediffPersonaOverrideSelection
+    internal sealed class HediffPersonaOverrideSelection
     {
         public string personaDefName = string.Empty;
         public List<string> matchedHediffDefNames = new List<string>();
@@ -44,7 +44,7 @@ namespace PawnDiary
     /// <summary>
     /// Selects the temporary writing-style override that should apply to a prompt, if any.
     /// </summary>
-    public static class HediffPersonaOverridePolicy
+    internal static class HediffPersonaOverridePolicy
     {
         public static string SelectPersonaDefName(IList<HediffPersonaOverrideRule> rules,
             IList<HediffPersonaOverrideFact> hediffs)

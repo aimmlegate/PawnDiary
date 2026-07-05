@@ -15,7 +15,7 @@ namespace PawnDiary.Ingestion
     /// Captures one romance-relation change and emits it as a pairwise diary event. Built by
     /// <see cref="PawnRelationAddPatch"/> and submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class RomanceSignal : DiarySignal
+    internal sealed class RomanceSignal : DiarySignal
     {
         private readonly Pawn pawn;
         private readonly Pawn otherPawn;

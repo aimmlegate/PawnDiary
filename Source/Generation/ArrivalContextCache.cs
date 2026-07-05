@@ -13,7 +13,7 @@ namespace PawnDiary
     /// colony. If the postfix cannot consume the cache, the periodic free-colonist scan still records
     /// a generic arrival entry later.
     /// </summary>
-    public static class ArrivalContextCache
+    internal static class ArrivalContextCache
     {
         private static readonly Dictionary<string, string> CachedByPawnId = new Dictionary<string, string>();
         private static readonly Queue<string> CachedPawnOrder = new Queue<string>();

@@ -25,7 +25,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one mental-state event. Filled by DiaryGameComponent.RecordMentalState
     /// from the live Pawn + MentalStateDef (+ optional otherPawn from the hook).
     /// </summary>
-    public class MentalStateEventData : DiaryEventData
+    internal class MentalStateEventData : DiaryEventData
     {
         /// <summary>RimWorld's stable defName for the social-fight mental state. Hardcoded because
         /// this is a specific vanilla defName we classify on, not an XML-tunable token.</summary>

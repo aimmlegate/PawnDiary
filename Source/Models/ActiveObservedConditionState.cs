@@ -67,7 +67,7 @@ namespace PawnDiary
         }
 
         /// <summary>Projects this saved row into the Verse-free snapshot the pure policy reads.</summary>
-        public ObservedConditionStateSnapshot ToSnapshot()
+        internal ObservedConditionStateSnapshot ToSnapshot()
         {
             return new ObservedConditionStateSnapshot
             {
@@ -88,7 +88,7 @@ namespace PawnDiary
         }
 
         /// <summary>Copies the policy's post-decision snapshot back onto this saved row.</summary>
-        public void CopyFrom(ObservedConditionStateSnapshot snapshot)
+        internal void CopyFrom(ObservedConditionStateSnapshot snapshot)
         {
             if (snapshot == null)
             {
@@ -111,7 +111,7 @@ namespace PawnDiary
         }
 
         /// <summary>Creates a fresh saved row from a policy snapshot (used when a condition starts).</summary>
-        public static ActiveObservedConditionState FromSnapshot(ObservedConditionStateSnapshot snapshot)
+        internal static ActiveObservedConditionState FromSnapshot(ObservedConditionStateSnapshot snapshot)
         {
             ActiveObservedConditionState state = new ActiveObservedConditionState();
             state.CopyFrom(snapshot);

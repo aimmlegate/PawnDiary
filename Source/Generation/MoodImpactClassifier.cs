@@ -23,7 +23,7 @@ namespace PawnDiary
     /// state and the ThoughtDef database, so it is an impure policy helper despite living apart from
     /// the context collectors.
     /// </summary>
-    public static class MoodImpactClassifier
+    internal static class MoodImpactClassifier
     {
         /// <summary>
         /// Determines whether a GameCondition has a positive, negative, or neutral mood impact on a

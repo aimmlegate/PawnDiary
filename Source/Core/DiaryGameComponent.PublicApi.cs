@@ -16,7 +16,7 @@ namespace PawnDiary
         /// Compact status snapshot for the selected-pawn Diary command. It keeps the gizmo out of the
         /// saved event internals while still showing whether pages are being written or newly ready.
         /// </summary>
-        public struct DiaryCommandStatus
+        internal struct DiaryCommandStatus
         {
             public int completedCount;
             public int unacknowledgedCount;
@@ -38,7 +38,7 @@ namespace PawnDiary
         /// event references; real <see cref="DiaryEntryView" /> objects are built later for the
         /// selected year only.
         /// </summary>
-        public sealed class DiaryTabYearIndex
+        internal sealed class DiaryTabYearIndex
         {
             private struct Candidate
             {
@@ -215,7 +215,7 @@ namespace PawnDiary
         /// Incremental, main-thread builder for a pawn's Diary tab year index. It deliberately avoids
         /// background threads because the scan can touch RimWorld/Verse state and saved mod objects.
         /// </summary>
-        public sealed class DiaryTabYearIndexBuild
+        internal sealed class DiaryTabYearIndexBuild
         {
             private enum BuildPhase
             {
@@ -568,7 +568,7 @@ namespace PawnDiary
         /// Starts a frame-sliced Diary tab index build. Call <see cref="DiaryTabYearIndexBuild.ProcessSlice" />
         /// from the UI until <see cref="DiaryTabYearIndexBuild.IsComplete" /> is true.
         /// </summary>
-        public DiaryTabYearIndexBuild BeginTabYearIndexBuild(
+        internal DiaryTabYearIndexBuild BeginTabYearIndexBuild(
             Pawn pawn,
             bool showLlmDebugInfo,
             bool showGeneratingEntries,
@@ -644,7 +644,7 @@ namespace PawnDiary
         /// Per-frame caller: the optional command overlay calls this from GUI draw. A
         /// cache miss returns an empty status rather than touching saved diary state during selection.
         /// </remarks>
-        public DiaryCommandStatus CommandStatusFor(Pawn pawn)
+        internal DiaryCommandStatus CommandStatusFor(Pawn pawn)
         {
             if (pawn == null)
             {
@@ -660,7 +660,7 @@ namespace PawnDiary
         /// Updates the command-status cache from a completed sliced tab index. The Diary tab calls this
         /// when it finishes loading so acknowledgement does not kick off a second history scan.
         /// </summary>
-        public void AcknowledgeGeneratedEntriesFor(Pawn pawn, int completedCount, int pendingCount, DiaryRenderToken token)
+        internal void AcknowledgeGeneratedEntriesFor(Pawn pawn, int completedCount, int pendingCount, DiaryRenderToken token)
         {
             if (pawn == null)
             {
@@ -681,7 +681,7 @@ namespace PawnDiary
         /// Marks the currently completed pages for a pawn as seen. Called when the player opens that
         /// pawn's Diary tab, clearing the command's "new page" count while preserving in-flight status.
         /// </summary>
-        public void AcknowledgeGeneratedEntriesFor(Pawn pawn)
+        internal void AcknowledgeGeneratedEntriesFor(Pawn pawn)
         {
             if (pawn == null)
             {
@@ -770,7 +770,7 @@ namespace PawnDiary
         /// its <see cref="DiaryEntryView"/> list only when it differs, so it does not re-classify and
         /// re-parse every entry on every frame. See ITab_Pawn_Diary.FillTab.
         /// </summary>
-        public DiaryRenderToken RenderTokenFor(Pawn pawn)
+        internal DiaryRenderToken RenderTokenFor(Pawn pawn)
         {
             PawnDiaryRecord diary = pawn == null ? null : FindDiary(pawn, false);
             string pawnId = pawn?.GetUniqueLoadID();
@@ -785,7 +785,7 @@ namespace PawnDiary
         /// Pairwise entries reset both POVs when both are eligible so the linked preview stays in sync.
         /// Returns false when the event cannot be found, is already being written, or generation is off.
         /// </summary>
-        public bool RegenerateEntry(Pawn pawn, DiaryEntryView entry)
+        internal bool RegenerateEntry(Pawn pawn, DiaryEntryView entry)
         {
             if (pawn == null || entry == null || entry.Archived || string.IsNullOrWhiteSpace(entry.EventId))
             {
@@ -882,7 +882,7 @@ namespace PawnDiary
         /// Returns null when the event was not recorded, belongs to another pawn, or has not
         /// produced visible LLM text yet; callers should keep vanilla click behavior in that case.
         /// </summary>
-        public DiaryEntryView GeneratedEntryForPlayLogEntry(Pawn pawn, int playLogEntryId)
+        internal DiaryEntryView GeneratedEntryForPlayLogEntry(Pawn pawn, int playLogEntryId)
         {
             if (!IsDiaryEligible(pawn) || playLogEntryId < 0)
             {

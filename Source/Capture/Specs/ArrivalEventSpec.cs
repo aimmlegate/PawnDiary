@@ -1,7 +1,7 @@
 // Spec for Arrival. Thin wrapper around the pure ArrivalEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class ArrivalEventSpec : DiaryEventSpec
+    internal class ArrivalEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Arrival;
 

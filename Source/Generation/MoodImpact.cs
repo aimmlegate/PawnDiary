@@ -15,7 +15,7 @@ namespace PawnDiary
     /// pick the matching localized text. The string values are persisted and re-parsed, so they must
     /// stay exactly "positive" / "negative" / "neutral".
     /// </summary>
-    public static class MoodImpact
+    internal static class MoodImpact
     {
         /// <summary>The event lifted the pawn's mood.</summary>
         public const string Positive = "positive";

@@ -1,6 +1,6 @@
 // Public outcome of an integration API SubmitEvent call. Lives in PawnDiary.Integration because it
-// is part of the documented adapter contract (API v23): it lets a caller tell apart the distinct
-// reasons a submission did not record, instead of collapsing them into one boolean.
+// is part of the documented adapter contract: it lets a caller tell apart the distinct reasons a
+// submission did not record, instead of collapsing them into one boolean.
 //
 // New to C#/RimWorld? See AGENTS.md.
 namespace PawnDiary.Integration

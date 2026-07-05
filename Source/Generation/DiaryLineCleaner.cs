@@ -14,7 +14,7 @@ namespace PawnDiary
     /// contain rich-text tags and line breaks and returns a single trimmed line. Has no dependency
     /// on RimWorld/Verse/Unity, so it is safe to unit-test in a plain console harness.
     /// </summary>
-    public static class DiaryLineCleaner
+    internal static class DiaryLineCleaner
     {
         // Matches any RimWorld rich-text tag fragment such as <b>, </b>, <size=20>, <color=#FF00FF>.
         // Non-greedy so it removes one tag at a time rather than swallowing text between two tags.

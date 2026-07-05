@@ -57,6 +57,7 @@ namespace DiaryCapturePolicyTests
             TestAbilityCooldownWeightedChance();
             TestAbilityBuildGameContextFormat();
             TestExternalDecide();
+            TestExternalForceDecision();
             TestExternalDedupKey();
             TestExternalBuildGameContextFormat();
             TestArrivalDecide();
@@ -2412,6 +2413,24 @@ namespace DiaryCapturePolicyTests
             // Catalog dispatch: the registered spec routes to the same pure decision.
             AssertEqual("catalog dispatches External decision", CaptureDecision.GenerateSolo,
                 DiaryEventCatalog.Get(DiaryEventType.External).Decide(External(), Ctx()));
+        }
+
+        private static void TestExternalForceDecision()
+        {
+            AssertEqual("external force null data drops", CaptureDecision.Drop,
+                ExternalEventData.ForceDecision(null));
+            AssertEqual("external force empty key drops", CaptureDecision.Drop,
+                ExternalEventData.ForceDecision(External(key: "")));
+            AssertEqual("external force still needs required group", CaptureDecision.Drop,
+                ExternalEventData.ForceDecision(External(hasGroup: false)));
+            AssertEqual("external force allows optional missing group", CaptureDecision.GenerateSolo,
+                ExternalEventData.ForceDecision(External(hasGroup: false, groupRequired: false)));
+            AssertEqual("external force still needs eligible subject", CaptureDecision.Drop,
+                ExternalEventData.ForceDecision(External(subjectEligible: false)));
+            AssertEqual("external force records solo", CaptureDecision.GenerateSolo,
+                ExternalEventData.ForceDecision(External()));
+            AssertEqual("external force records eligible partner as pair", CaptureDecision.GeneratePair,
+                ExternalEventData.ForceDecision(External(partner: "P2", partnerEligible: true)));
         }
 
         private static void TestExternalDedupKey()

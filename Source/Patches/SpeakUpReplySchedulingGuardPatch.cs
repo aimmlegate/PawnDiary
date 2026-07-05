@@ -12,7 +12,7 @@ namespace PawnDiary
     /// <summary>
     /// Blocks SpeakUp reply scheduling during Pawn Diary's own social-log text rendering.
     /// </summary>
-    public static class SpeakUpReplySchedulingGuardPatch
+    internal static class SpeakUpReplySchedulingGuardPatch
     {
         private const string DialogManagerTypeName = "SpeakUp.DialogManager";
         private const string EnsueMethodName = "Ensue";

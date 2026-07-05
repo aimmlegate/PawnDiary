@@ -9,7 +9,7 @@ namespace PawnDiary.Ingestion
     /// <summary>
     /// Carries one selected pawn arc reflection into the shared dispatch path.
     /// </summary>
-    public sealed class ArcReflectionSignal : DiarySignal
+    internal sealed class ArcReflectionSignal : DiarySignal
     {
         private readonly ArcReflectionEventData payload;
         private readonly Pawn pawn;

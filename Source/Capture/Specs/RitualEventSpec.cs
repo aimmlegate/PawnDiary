@@ -2,7 +2,7 @@
 // organizer/target/participant/spectator; all valid entries route to solo generation.
 namespace PawnDiary.Capture
 {
-    public class RitualEventSpec : DiaryEventSpec
+    internal class RitualEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Ritual;
 

@@ -1,4 +1,4 @@
-// Runtime bridge for API v10 entry-status listeners. Other mods register callbacks that receive
+// Runtime bridge for public entry-status listeners. Other mods register callbacks that receive
 // read-only DiaryEntryStatusSnapshot DTOs after Pawn Diary changes a saved entry POV's lifecycle
 // state. The registry itself is pure; this wrapper owns RimWorld thread/settings guards and logging.
 //

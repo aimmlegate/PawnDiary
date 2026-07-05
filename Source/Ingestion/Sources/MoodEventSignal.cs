@@ -19,7 +19,7 @@ namespace PawnDiary.Ingestion
     /// <see cref="DiaryEvents.Submit(DiaryFanoutSignal)"/>. The condition-level gates (user toggle) run
     /// in the constructor; if they fail the fan-out yields nothing.
     /// </summary>
-    public sealed class MoodEventFanoutSignal : DiaryFanoutSignal
+    internal sealed class MoodEventFanoutSignal : DiaryFanoutSignal
     {
         private readonly bool valid;
         private readonly string colonyDedupKey;

@@ -10,12 +10,30 @@
   <PawnDiaryExampleAdapter.QuietMomentLabel>quiet moment</PawnDiaryExampleAdapter.QuietMomentLabel>
 
   <!-- ── API Explorer window chrome ─────────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Window.DragHint>drag here to move the API explorer</PawnDiaryExampleAdapter.Window.DragHint>
+
   <PawnDiaryExampleAdapter.Header.Subject>Subject</PawnDiaryExampleAdapter.Header.Subject>
   <PawnDiaryExampleAdapter.Header.Partner>Partner</PawnDiaryExampleAdapter.Header.Partner>
   <PawnDiaryExampleAdapter.Header.None>(none)</PawnDiaryExampleAdapter.Header.None>
+  <PawnDiaryExampleAdapter.Status.Ready>● ready</PawnDiaryExampleAdapter.Status.Ready>
+  <PawnDiaryExampleAdapter.Status.NotReady>○ not ready</PawnDiaryExampleAdapter.Status.NotReady>
+  <PawnDiaryExampleAdapter.Status.Disabled>○ disabled</PawnDiaryExampleAdapter.Status.Disabled>
+  <PawnDiaryExampleAdapter.Status.Tooltip>IsReady={0}; IsExternalApiEnabled={1}. The master switch is in Pawn Diary's main mod settings.</PawnDiaryExampleAdapter.Status.Tooltip>
 
   <PawnDiaryExampleAdapter.Form.PickMethod>Pick a method from the tree.</PawnDiaryExampleAdapter.Form.PickMethod>
   <PawnDiaryExampleAdapter.Form.Invoke>Invoke</PawnDiaryExampleAdapter.Form.Invoke>
+  <PawnDiaryExampleAdapter.Form.Reset>Reset</PawnDiaryExampleAdapter.Form.Reset>
+  <PawnDiaryExampleAdapter.Form.Target>target — subject: {0}   partner: {1}</PawnDiaryExampleAdapter.Form.Target>
+  <PawnDiaryExampleAdapter.Help.MethodBody>Category: {0}
+
+{1}
+
+Header pawn pickers supply subject and partner. Form values persist while you switch methods; Reset restores defaults. Invoke appends the exact API result to the log.</PawnDiaryExampleAdapter.Help.MethodBody>
+
+  <!-- ── Method tree: search + filtering ─────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Tree.SearchPlaceholder>search methods…</PawnDiaryExampleAdapter.Tree.SearchPlaceholder>
+  <PawnDiaryExampleAdapter.Tree.ClearFilter>Clear the filter</PawnDiaryExampleAdapter.Tree.ClearFilter>
+  <PawnDiaryExampleAdapter.Tree.NoMatches>No methods match “{0}”.</PawnDiaryExampleAdapter.Tree.NoMatches>
 
   <PawnDiaryExampleAdapter.SetEnabledToggle>enabled</PawnDiaryExampleAdapter.SetEnabledToggle>
   <PawnDiaryExampleAdapter.IncludeImportantToggle>include important-event context</PawnDiaryExampleAdapter.IncludeImportantToggle>
@@ -28,6 +46,7 @@
   <PawnDiaryExampleAdapter.Field.PromptFragment>promptFragment</PawnDiaryExampleAdapter.Field.PromptFragment>
   <PawnDiaryExampleAdapter.Field.EnchantmentCandidates>promptEnchantmentCandidates (one per line)</PawnDiaryExampleAdapter.Field.EnchantmentCandidates>
   <PawnDiaryExampleAdapter.Field.EnchantmentMode>enchantment mode</PawnDiaryExampleAdapter.Field.EnchantmentMode>
+  <PawnDiaryExampleAdapter.Field.ForceRecord>forceRecord</PawnDiaryExampleAdapter.Field.ForceRecord>
   <PawnDiaryExampleAdapter.Field.DedupKey>dedupKey</PawnDiaryExampleAdapter.Field.DedupKey>
   <PawnDiaryExampleAdapter.Field.DedupTicks>dedupTicks (0 = default)</PawnDiaryExampleAdapter.Field.DedupTicks>
   <PawnDiaryExampleAdapter.Field.PovRole>povRole (blank = default)</PawnDiaryExampleAdapter.Field.PovRole>
@@ -62,6 +81,48 @@
   <PawnDiaryExampleAdapter.Field.StyleSourceId>sourceId</PawnDiaryExampleAdapter.Field.StyleSourceId>
   <PawnDiaryExampleAdapter.Field.StyleRule>rule</PawnDiaryExampleAdapter.Field.StyleRule>
 
+  <!-- ── API Explorer popover help ───────────────────────────────────────────────────────── -->
+  <PawnDiaryExampleAdapter.Help.EventKey>Stable adapter event key. It should match an External-domain group defName or another key your adapter documents.</PawnDiaryExampleAdapter.Help.EventKey>
+  <PawnDiaryExampleAdapter.Help.Summary>Short factual event summary. Pawn Diary uses this as source context, not as final diary prose.</PawnDiaryExampleAdapter.Help.Summary>
+  <PawnDiaryExampleAdapter.Help.EventLabel>Optional compact label for grouping and diagnostics. Leave blank to let Pawn Diary fall back to the event key or group label.</PawnDiaryExampleAdapter.Help.EventLabel>
+  <PawnDiaryExampleAdapter.Help.ExtraContext>Optional metadata lines. Use one key=value per line. Blank lines and lines starting with # are ignored.</PawnDiaryExampleAdapter.Help.ExtraContext>
+  <PawnDiaryExampleAdapter.Help.PromptFragment>Optional extra prompt context owned by the adapter. Use it for facts, not instructions that fight Pawn Diary's system prompt.</PawnDiaryExampleAdapter.Help.PromptFragment>
+  <PawnDiaryExampleAdapter.Help.EnchantmentCandidates>Optional prompt-enchantment candidate lines. Each non-empty line is parsed as one candidate.</PawnDiaryExampleAdapter.Help.EnchantmentCandidates>
+  <PawnDiaryExampleAdapter.Help.EnchantmentMode>Keep leaves existing candidates alone; add appends adapter candidates; replace uses only adapter candidates when any are present.</PawnDiaryExampleAdapter.Help.EnchantmentMode>
+  <PawnDiaryExampleAdapter.Help.ForceRecord>For valid write requests, bypass external budget, group/user toggles, and dedup windows. It still requires main-thread readiness, the master integration toggle, required fields, and a diary-eligible subject.</PawnDiaryExampleAdapter.Help.ForceRecord>
+  <PawnDiaryExampleAdapter.Help.DedupKey>Optional adapter-owned deduplication key. Requests with the same key inside the dedup window collapse.</PawnDiaryExampleAdapter.Help.DedupKey>
+  <PawnDiaryExampleAdapter.Help.DedupTicks>Optional dedup window in game ticks. Use 0 or blank for Pawn Diary's default policy.</PawnDiaryExampleAdapter.Help.DedupTicks>
+  <PawnDiaryExampleAdapter.Help.PovRole>Optional point-of-view role for previews or reads. Blank lets the API choose the default role.</PawnDiaryExampleAdapter.Help.PovRole>
+  <PawnDiaryExampleAdapter.Help.PromptInstruction>Adapter-owned instruction for SubmitPromptEntry. Pawn Diary still supplies persona, safety, style, and pawn memory.</PawnDiaryExampleAdapter.Help.PromptInstruction>
+  <PawnDiaryExampleAdapter.Help.DirectText>Final subject diary prose for SubmitDirectEntry. This bypasses the main LLM rewrite.</PawnDiaryExampleAdapter.Help.DirectText>
+  <PawnDiaryExampleAdapter.Help.DirectPartnerText>Optional final partner POV prose. It is used only when a distinct partner pawn is selected.</PawnDiaryExampleAdapter.Help.DirectPartnerText>
+  <PawnDiaryExampleAdapter.Help.DirectTitle>Optional subject title. Leave blank if you want title generation or the normal fallback title.</PawnDiaryExampleAdapter.Help.DirectTitle>
+  <PawnDiaryExampleAdapter.Help.DirectPartnerTitle>Optional partner title. It is used only when a distinct partner pawn is selected.</PawnDiaryExampleAdapter.Help.DirectPartnerTitle>
+  <PawnDiaryExampleAdapter.Help.DirectGenerateTitle>When enabled, Pawn Diary may generate a missing title even though the body text is caller-authored.</PawnDiaryExampleAdapter.Help.DirectGenerateTitle>
+  <PawnDiaryExampleAdapter.Help.ReadEntryHandle>Remembered handles come from submit calls that recorded an entry. Manual eventId+povRole is useful after copying a handle from the log.</PawnDiaryExampleAdapter.Help.ReadEntryHandle>
+  <PawnDiaryExampleAdapter.Help.ManualEventId>Stable event id to read when you are not using a remembered handle.</PawnDiaryExampleAdapter.Help.ManualEventId>
+  <PawnDiaryExampleAdapter.Help.ManualPovRole>POV role paired with the manual event id, usually initiator or recipient.</PawnDiaryExampleAdapter.Help.ManualPovRole>
+  <PawnDiaryExampleAdapter.Help.MaxCount>Maximum number of rows to return for recent-title, context, or bundle reads.</PawnDiaryExampleAdapter.Help.MaxCount>
+  <PawnDiaryExampleAdapter.Help.ApplyQuery>Enable to exercise the overloads that accept DiaryEntryTitleQuery filters.</PawnDiaryExampleAdapter.Help.ApplyQuery>
+  <PawnDiaryExampleAdapter.Help.QDomain>Filter by diary domain, such as External, Interaction, or Machinery.</PawnDiaryExampleAdapter.Help.QDomain>
+  <PawnDiaryExampleAdapter.Help.QAtmosphereCue>Filter by the atmosphere cue stored on matching diary entries.</PawnDiaryExampleAdapter.Help.QAtmosphereCue>
+  <PawnDiaryExampleAdapter.Help.QPovRole>Filter by POV role, usually initiator or recipient.</PawnDiaryExampleAdapter.Help.QPovRole>
+  <PawnDiaryExampleAdapter.Help.QSourceId>Filter entries created by one integration source id.</PawnDiaryExampleAdapter.Help.QSourceId>
+  <PawnDiaryExampleAdapter.Help.QEventKey>Filter entries created with one adapter event key.</PawnDiaryExampleAdapter.Help.QEventKey>
+  <PawnDiaryExampleAdapter.Help.QDateContains>Filter by a substring in the display date text.</PawnDiaryExampleAdapter.Help.QDateContains>
+  <PawnDiaryExampleAdapter.Help.QImportant>Tri-state filter for important-event rows.</PawnDiaryExampleAdapter.Help.QImportant>
+  <PawnDiaryExampleAdapter.Help.QHasTitle>Tri-state filter for rows that have a completed title.</PawnDiaryExampleAdapter.Help.QHasTitle>
+  <PawnDiaryExampleAdapter.Help.QHasGeneratedText>Tri-state filter for rows that have completed body text.</PawnDiaryExampleAdapter.Help.QHasGeneratedText>
+  <PawnDiaryExampleAdapter.Help.QIncludeActive>Include hot saved entries that are still active in the diary store.</PawnDiaryExampleAdapter.Help.QIncludeActive>
+  <PawnDiaryExampleAdapter.Help.QIncludeArchived>Include compact archived entries as well as hot entries.</PawnDiaryExampleAdapter.Help.QIncludeArchived>
+  <PawnDiaryExampleAdapter.Help.BundleUseQuery>Use the context-bundle overload that accepts a DiaryEntryTitleQuery.</PawnDiaryExampleAdapter.Help.BundleUseQuery>
+  <PawnDiaryExampleAdapter.Help.BundleUseImportant>Use the context-bundle overload that accepts includeImportant.</PawnDiaryExampleAdapter.Help.BundleUseImportant>
+  <PawnDiaryExampleAdapter.Help.IncludeImportant>Include important-event context in prompt enchantments or context bundles.</PawnDiaryExampleAdapter.Help.IncludeImportant>
+  <PawnDiaryExampleAdapter.Help.SetEnabled>Sets the selected pawn's per-pawn diary generation toggle.</PawnDiaryExampleAdapter.Help.SetEnabled>
+  <PawnDiaryExampleAdapter.Help.StyleSourceId>Owner id for this style override. Only the same source id can clear its own override.</PawnDiaryExampleAdapter.Help.StyleSourceId>
+  <PawnDiaryExampleAdapter.Help.StyleRule>Free-form style rule layered above the pawn's base writing style.</PawnDiaryExampleAdapter.Help.StyleRule>
+  <PawnDiaryExampleAdapter.Help.Hooks>Shows the example adapter's live entry-status listener events and pawn-context provider invocation count.</PawnDiaryExampleAdapter.Help.Hooks>
+
   <!-- ── Read Entry tab hints ───────────────────────────────────────────────────────────── -->
   <PawnDiaryExampleAdapter.ReadEntry.HandleHint>Pick a remembered handle (from a submit), or type eventId+povRole below.</PawnDiaryExampleAdapter.ReadEntry.HandleHint>
   <PawnDiaryExampleAdapter.ReadEntry.NoHandles>No remembered handles yet — submit something first.</PawnDiaryExampleAdapter.ReadEntry.NoHandles>
@@ -73,6 +134,7 @@
   <!-- ── Result log ──────────────────────────────────────────────────────────────────────── -->
   <PawnDiaryExampleAdapter.Log.Empty>No invocations yet — pick a method and press Invoke.</PawnDiaryExampleAdapter.Log.Empty>
   <PawnDiaryExampleAdapter.Log.NoSelection>Select an entry to see its detail.</PawnDiaryExampleAdapter.Log.NoSelection>
+  <PawnDiaryExampleAdapter.Log.ApiDisabled>External API is disabled in Pawn Diary's main mod settings.</PawnDiaryExampleAdapter.Log.ApiDisabled>
   <PawnDiaryExampleAdapter.Log.Copy>Copy</PawnDiaryExampleAdapter.Log.Copy>
   <PawnDiaryExampleAdapter.Log.Clear>Clear</PawnDiaryExampleAdapter.Log.Clear>
 
@@ -80,6 +142,7 @@
   <PawnDiaryExampleAdapter.Quick.NoPawn>No eligible colonist found.</PawnDiaryExampleAdapter.Quick.NoPawn>
   <PawnDiaryExampleAdapter.Quick.Submitted>Submitted example event for {0}: {1}.</PawnDiaryExampleAdapter.Quick.Submitted>
   <PawnDiaryExampleAdapter.Quick.NotSubmitted>Example event for {0} was NOT recorded: {1}.</PawnDiaryExampleAdapter.Quick.NotSubmitted>
+  <PawnDiaryExampleAdapter.Quick.ApiDisabled>External API is disabled in Pawn Diary's main mod settings.</PawnDiaryExampleAdapter.Quick.ApiDisabled>
   <PawnDiaryExampleAdapter.Quick.PreviewLogged>Preview written to Player.log.</PawnDiaryExampleAdapter.Quick.PreviewLogged>
   <PawnDiaryExampleAdapter.Quick.BundleLogged>Context bundle for {0} written to Player.log.</PawnDiaryExampleAdapter.Quick.BundleLogged>
 

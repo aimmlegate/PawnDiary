@@ -20,7 +20,7 @@ namespace PawnDiary.Ingestion
     /// Captures one colonist's current work moment and, if the weighted roll passes, emits a solo work
     /// entry. Built by the component's work scan and submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class WorkSignal : DiarySignal
+    internal sealed class WorkSignal : DiarySignal
     {
         private readonly Pawn pawn;
         private readonly WorkGiverDef workGiverDef;

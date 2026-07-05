@@ -18,7 +18,7 @@ namespace PawnDiary.Ingestion
     /// mental-break event. Built by <see cref="MentalStateStartPatch"/> and submitted via
     /// <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class MentalStateSignal : DiarySignal
+    internal sealed class MentalStateSignal : DiarySignal
     {
         private readonly Pawn pawn;
         private readonly MentalStateDef stateDef;

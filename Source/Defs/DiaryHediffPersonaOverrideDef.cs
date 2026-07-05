@@ -29,7 +29,7 @@ namespace PawnDiary
         /// <summary>
         /// Converts the XML Def into the pure matching DTO used by prompt generation.
         /// </summary>
-        public HediffPersonaOverrideRule ToPolicyRule()
+        internal HediffPersonaOverrideRule ToPolicyRule()
         {
             return new HediffPersonaOverrideRule
             {

@@ -18,7 +18,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one external-mod event. Filled by ExternalEventSignal from the validated
     /// API request, then handed to Decide() for the pure decision.
     /// </summary>
-    public class ExternalEventData : DiaryEventData
+    internal class ExternalEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.External;
 
@@ -85,6 +85,35 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
+            return PairOrSoloDecision(data);
+        }
+
+        /// <summary>
+        /// Forced integration submissions still need a coherent external payload and a diary-eligible
+        /// subject, but they intentionally skip soft gates such as user/group toggles and dedup.
+        /// </summary>
+        public static CaptureDecision ForceDecision(ExternalEventData data)
+        {
+            if (data == null || string.IsNullOrEmpty(data.EventKey))
+            {
+                return CaptureDecision.Drop;
+            }
+
+            if (data.GroupRequired && !data.HasGroup)
+            {
+                return CaptureDecision.Drop;
+            }
+
+            if (!data.SubjectEligible)
+            {
+                return CaptureDecision.Drop;
+            }
+
+            return PairOrSoloDecision(data);
+        }
+
+        private static CaptureDecision PairOrSoloDecision(ExternalEventData data)
+        {
             bool distinctPartner = !string.IsNullOrEmpty(data.PartnerPawnId)
                 && !string.Equals(data.SubjectPawnId, data.PartnerPawnId, StringComparison.Ordinal);
             if (distinctPartner && data.PartnerEligible)

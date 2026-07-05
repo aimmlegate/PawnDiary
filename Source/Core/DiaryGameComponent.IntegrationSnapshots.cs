@@ -294,7 +294,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Publishes the current public lifecycle snapshot for one event POV to API v10 listeners.
+        /// Publishes the current public lifecycle snapshot for one event POV to registered listeners.
         /// This is intentionally component-owned rather than DiaryEvent-owned: building the public DTO
         /// needs the active/archive stores, group display data, and current integration settings.
         /// </summary>
@@ -520,8 +520,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Builds the structured pawn-summary snapshot for the public integration API (API v6,
-        /// capability C-CTX-2). Side-effect free: the snapshot reads live pawn state only via
+        /// Builds the structured pawn-summary snapshot for the public integration API. Side-effect
+        /// free: the snapshot reads live pawn state only via
         /// <see cref="DiaryContextBuilder.BuildPawnSummarySnapshot"/>, so — unlike
         /// <see cref="WritingStyleSnapshotFor"/> — it never touches the diary record and cannot create
         /// one. Returns null for an ineligible pawn (the same humanlike-colonist gate the other
@@ -546,8 +546,8 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Collects prompt-enchantment candidates for the public integration API (API v6, capability
-        /// C-CTX-3). Exports the candidate SET the planner would choose among right now after
+        /// Collects prompt-enchantment candidates for the public integration API. Exports the
+        /// candidate SET the planner would choose among right now after
         /// suppression, live event/condition candidates, and weight multipliers, but before the
         /// single rolled winner. Returns an empty list when ineligible, disabled, or no candidates
         /// match.

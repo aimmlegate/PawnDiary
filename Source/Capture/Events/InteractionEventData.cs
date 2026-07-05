@@ -14,7 +14,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one social interaction. Filled by DiaryGameComponent.RecordInteraction
     /// after the impure group classification + per-pawn eligibility checks run.
     /// </summary>
-    public class InteractionEventData : DiaryEventData
+    internal class InteractionEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.Interaction;
 
@@ -89,7 +89,7 @@ namespace PawnDiary.Capture
         }
 
         /// <summary>The shape the impure interaction emit should build for a decision.</summary>
-        public enum InteractionEmitShape { Drop, Solo, Pair, Batch }
+        internal enum InteractionEmitShape { Drop, Solo, Pair, Batch }
 
         /// <summary>
         /// Pure routing for the impure Emit step: maps the catalog decision to the emit shape.

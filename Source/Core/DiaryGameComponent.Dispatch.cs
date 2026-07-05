@@ -63,6 +63,8 @@ namespace PawnDiary
                 return false;
             }
 
+            bool forceRecord = signal.ForceRecord;
+
             // Dedup CHECK first, before any impure payload work. Two reasons:
             //   1. It restores the pre-refactor ordering for sources whose old RecordXxx checked
             //      dedup before drawing impure state — notably Ability, which used to check dedup
@@ -74,7 +76,8 @@ namespace PawnDiary
             // whose roll fails its cooldown-weighted chance) must not consume the dedup window.
             string key = signal.DedupKey;
             int windowTicks = signal.DedupWindowTicks;
-            if (!string.IsNullOrEmpty(key)
+            if (!forceRecord
+                && !string.IsNullOrEmpty(key)
                 && IsRecentlyRecorded(recentEvents, key, windowTicks))
             {
                 return false;
@@ -92,14 +95,23 @@ namespace PawnDiary
             }
 
             CaptureDecision decision;
-            if (!TryDecide(payload, signal.BuildContext(), out decision))
+            if (forceRecord)
+            {
+                decision = ForcedDecisionFor(payload);
+                if (decision == CaptureDecision.Drop)
+                {
+                    return false;
+                }
+            }
+            else if (!TryDecide(payload, signal.BuildContext(), out decision))
             {
                 return false;
             }
 
             string eventTypeKey = EventTypeDedupKeyFor(signal, payload, decision, key);
             int eventTypeWindowTicks = signal.EventTypeDedupWindowTicks;
-            if (!string.IsNullOrEmpty(eventTypeKey)
+            if (!forceRecord
+                && !string.IsNullOrEmpty(eventTypeKey)
                 && IsRecentlyRecorded(recentEvents, eventTypeKey, eventTypeWindowTicks))
             {
                 return false;
@@ -265,6 +277,14 @@ namespace PawnDiary
             return string.IsNullOrEmpty(sourceDedupKey)
                 ? GenericEventTypeDedup.KeyFor(payload, decision)
                 : string.Empty;
+        }
+
+        private static CaptureDecision ForcedDecisionFor(DiaryEventData payload)
+        {
+            ExternalEventData external = payload as ExternalEventData;
+            return external == null
+                ? CaptureDecision.Drop
+                : ExternalEventData.ForceDecision(external);
         }
 
         // ── Emit surface for DiarySignal.Emit ──

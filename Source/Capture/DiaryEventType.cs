@@ -10,7 +10,7 @@
 // stay out of the enum until they have an XxxEventData, XxxEventSpec, Register() call, and tests.
 namespace PawnDiary.Capture
 {
-    public enum DiaryEventType
+    internal enum DiaryEventType
     {
         // ── Migrated to the Event Catalog pattern ──
         Thought,

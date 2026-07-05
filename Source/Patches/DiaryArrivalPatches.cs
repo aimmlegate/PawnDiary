@@ -14,7 +14,7 @@ namespace PawnDiary
     /// Captures player-colonist arrivals at the Pawn.SetFaction convergence point.
     /// </summary>
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.SetFaction))]
-    public static class PawnSetFactionPatch
+    internal static class PawnSetFactionPatch
     {
         /// <summary>
         /// Harmony Prefix for Pawn.SetFaction. Captures the pre-change faction and recruiter before

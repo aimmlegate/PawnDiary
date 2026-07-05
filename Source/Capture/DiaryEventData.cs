@@ -7,7 +7,7 @@
 // The reducer (XxxEventSpec / XxxEventData.Decide) reads it and decides what to do.
 namespace PawnDiary.Capture
 {
-    public abstract class DiaryEventData
+    internal abstract class DiaryEventData
     {
         /// <summary>Which kind of event this payload represents. Set by each subclass constructor
         /// or override; the catalog dispatches on this value.</summary>

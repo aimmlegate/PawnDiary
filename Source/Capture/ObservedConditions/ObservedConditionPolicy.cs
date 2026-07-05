@@ -11,7 +11,7 @@ namespace PawnDiary
     /// Stateless lifecycle diff for observed conditions. Ticks only gate debounce here; whether a
     /// condition is active is decided purely by "is it in this scan's observations?".
     /// </summary>
-    public static class ObservedConditionPolicy
+    internal static class ObservedConditionPolicy
     {
         /// <summary>
         /// Diffs <paramref name="observations"/> (what live state shows now) against

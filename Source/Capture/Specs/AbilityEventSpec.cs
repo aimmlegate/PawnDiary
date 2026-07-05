@@ -2,7 +2,7 @@
 // random sampling; this Spec delegates the final pure decision to AbilityEventData.
 namespace PawnDiary.Capture
 {
-    public class AbilityEventSpec : DiaryEventSpec
+    internal class AbilityEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Ability;
 

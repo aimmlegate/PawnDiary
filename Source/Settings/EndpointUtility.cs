@@ -8,7 +8,7 @@ namespace PawnDiary
     /// Static helpers to normalize endpoint URLs and build the paths expected by each supported
     /// compatibility mode.
     /// </summary>
-    public static class EndpointUtility
+    internal static class EndpointUtility
     {
         /// <summary>
         /// Strips trailing slashes and known generation/model suffixes so the endpoint can be used

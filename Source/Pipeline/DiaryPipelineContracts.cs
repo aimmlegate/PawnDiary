@@ -11,7 +11,7 @@ namespace PawnDiary
     /// Stable role names used by the pure pipeline contracts. They mirror DiaryEvent's persisted role
     /// strings without making the pure layer depend on the save model.
     /// </summary>
-    public static class DiaryPipelineRoles
+    internal static class DiaryPipelineRoles
     {
         public const string Initiator = "initiator";
         public const string Recipient = "recipient";
@@ -22,7 +22,7 @@ namespace PawnDiary
     /// Stable prompt-template keys understood by the pure planner. The impure XML adapter maps these
     /// names to <c>DiaryPromptTemplateDef</c> values; the planner only treats them as strings.
     /// </summary>
-    public static class DiaryPipelineTemplates
+    internal static class DiaryPipelineTemplates
     {
         public const string PairDefault = "PairDefault";
         public const string PairImportant = "PairImportant";
@@ -43,7 +43,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain snapshot of one point of view inside a recorded diary event.
     /// </summary>
-    public class DiaryPovPayload
+    internal class DiaryPovPayload
     {
         public string role;
         public string pawnId;
@@ -64,7 +64,7 @@ namespace PawnDiary
     /// Display-only facts captured at event time or derived by the adapter for the UI layer. Pure
     /// prompt code may carry these through response rules, but it must not ask Unity to render them.
     /// </summary>
-    public class DiaryDisplayPayload
+    internal class DiaryDisplayPayload
     {
         public string colorCue;
         public bool important = true;
@@ -75,7 +75,7 @@ namespace PawnDiary
     /// Existing code currently projects this from DiaryEvent; future event listeners can build it
     /// before persistence once the capture layer is split further.
     /// </summary>
-    public class DiaryEventPayload
+    internal class DiaryEventPayload
     {
         public string eventId;
         public int tick;
@@ -137,7 +137,7 @@ namespace PawnDiary
     /// Plain copy of one XML prompt field. The adapter copies Def fields into this class so prompt
     /// planning does not hold DiaryPromptFieldDef references.
     /// </summary>
-    public class DiaryPromptFieldPolicy
+    internal class DiaryPromptFieldPolicy
     {
         public bool enabled = true;
         public string label;
@@ -148,7 +148,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain copy of one XML prompt template plus its code fallback values.
     /// </summary>
-    public class DiaryTemplatePolicy
+    internal class DiaryTemplatePolicy
     {
         public string templateKey;
         public string systemPrompt;
@@ -164,7 +164,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain copy of the event group policy relevant to prompt selection and display hints.
     /// </summary>
-    public class DiaryGroupPolicy
+    internal class DiaryGroupPolicy
     {
         public string defName;
         public string domain;
@@ -183,7 +183,7 @@ namespace PawnDiary
     /// Complete prompt-policy snapshot for one planning pass. XML/Def lookups happen before this
     /// object is built; pure code only receives this copy.
     /// </summary>
-    public class DiaryPolicySnapshot
+    internal class DiaryPolicySnapshot
     {
         public DiaryGroupPolicy group = new DiaryGroupPolicy();
         public List<DiaryTemplatePolicy> templates = new List<DiaryTemplatePolicy>();
@@ -207,7 +207,7 @@ namespace PawnDiary
     /// Input to the pure prompt planner. Impure callers resolve writing-style text, prompt enchantments,
     /// localized direct-speech snippets, and XML policy snapshots before constructing this request.
     /// </summary>
-    public class DiaryPromptRequest
+    internal class DiaryPromptRequest
     {
         public DiaryEventPayload payload;
         public DiaryPolicySnapshot policy;
@@ -226,7 +226,7 @@ namespace PawnDiary
     /// Plain rules captured when a prompt is queued and reused after the model responds. Response
     /// parsing and postprocessing must not reread game state.
     /// </summary>
-    public class DiaryResponseRules
+    internal class DiaryResponseRules
     {
         public string eventId;
         public string targetRole;
@@ -251,7 +251,7 @@ namespace PawnDiary
     /// Pure prompt-planning result. The impure queueing layer stamps the user prompt on DiaryEvent,
     /// records endpoint metadata, and passes the prompts to LlmClient.
     /// </summary>
-    public class DiaryPromptPlan
+    internal class DiaryPromptPlan
     {
         public string eventId;
         public string povRole;
@@ -266,7 +266,7 @@ namespace PawnDiary
     /// <summary>
     /// Pure response-postprocessing result. The persistence adapter applies this to DiaryEvent.
     /// </summary>
-    public class DiaryResponsePlan
+    internal class DiaryResponsePlan
     {
         public string eventId;
         public string povRole;

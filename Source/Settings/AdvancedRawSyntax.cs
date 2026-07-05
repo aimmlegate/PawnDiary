@@ -8,7 +8,7 @@ using System.Globalization;
 namespace PawnDiary
 {
     /// <summary>Validation issue kinds for raw Advanced settings table syntax.</summary>
-    public enum AdvancedRawSyntaxIssue
+    internal enum AdvancedRawSyntaxIssue
     {
         None,
         ExpectedThoughtProgressionColumns,
@@ -28,14 +28,14 @@ namespace PawnDiary
     }
 
     /// <summary>One parsed <c>stageIndex:severity</c> token in a thought progression rule.</summary>
-    public class AdvancedRawSyntaxStage
+    internal class AdvancedRawSyntaxStage
     {
         public string stageIndex;
         public string severity;
     }
 
     /// <summary>One parsed raw-table line, kept as strings so the UI can display exactly what was typed.</summary>
-    public class AdvancedRawSyntaxLine
+    internal class AdvancedRawSyntaxLine
     {
         public int lineNumber;
         public string rawText;
@@ -46,7 +46,7 @@ namespace PawnDiary
     }
 
     /// <summary>The first validation error found in an Advanced raw table.</summary>
-    public class AdvancedRawSyntaxError
+    internal class AdvancedRawSyntaxError
     {
         public int lineNumber;
         public string rawText;
@@ -55,7 +55,7 @@ namespace PawnDiary
     }
 
     /// <summary>Parsed syntax state for an Advanced raw table.</summary>
-    public class AdvancedRawSyntaxCheck
+    internal class AdvancedRawSyntaxCheck
     {
         public string schemaName;
         public bool valid = true;
@@ -69,7 +69,7 @@ namespace PawnDiary
     /// Knows which raw Advanced fields have structured syntax and validates them without RimWorld or
     /// Unity objects. New to C#/RimWorld? See AGENTS.md ("Defs") for why these strings mirror XML.
     /// </summary>
-    public static class AdvancedRawSyntax
+    internal static class AdvancedRawSyntax
     {
         public const string WeatherMentionChancesField = "weatherMentionChances";
         public const string RitualQualityBandsField = "ritualQualityBands";

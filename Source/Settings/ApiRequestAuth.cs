@@ -10,7 +10,7 @@ namespace PawnDiary
     /// <summary>
     /// Applies one lane's configured API-key style to request headers or the URL.
     /// </summary>
-    public static class ApiRequestAuth
+    internal static class ApiRequestAuth
     {
         /// <summary>Adds query-parameter auth when the selected auth mode requires it.</summary>
         public static string ApplyQueryAuth(string url, string apiKey, ApiAuthMode authMode)

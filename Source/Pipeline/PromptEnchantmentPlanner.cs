@@ -45,7 +45,7 @@ namespace PawnDiary
     /// factors make the lasting context less likely to be selected and relax normal-context suppression
     /// back toward 1.0 without needing RimWorld state in the calculation.
     /// </summary>
-    public static class PromptEnchantmentDecayPolicy
+    internal static class PromptEnchantmentDecayPolicy
     {
         public static float AgeFactor(int nowTick, int startedTick, int decayTicks, float minMultiplier)
         {
@@ -99,7 +99,7 @@ namespace PawnDiary
     /// One collected prompt-enchantment option. It intentionally stores only primitive/localized text
     /// snapshots, never live <c>Pawn</c>, <c>Hediff</c>, or XML Def objects.
     /// </summary>
-    public sealed class PromptEnchantmentCandidate
+    internal sealed class PromptEnchantmentCandidate
     {
         public float weight;
         public string sourceHediffDefName;
@@ -113,7 +113,7 @@ namespace PawnDiary
     /// Pure selector/formatter for prompt enchantments. The caller supplies the random roll so tests
     /// can cover exact weighted-pick boundaries without touching RimWorld's global RNG.
     /// </summary>
-    public static class PromptEnchantmentPlanner
+    internal static class PromptEnchantmentPlanner
     {
         public static string Build(IList<PromptEnchantmentCandidate> candidates,
             PromptEnchantmentTuning tuning, float roll01)

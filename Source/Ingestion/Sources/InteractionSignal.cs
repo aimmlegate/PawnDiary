@@ -18,7 +18,7 @@ namespace PawnDiary.Ingestion
     /// Captures one social interaction row and emits it via the route the catalog chose. Built by
     /// <see cref="PlayLogAddPatch"/> and submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class InteractionSignal : DiarySignal
+    internal sealed class InteractionSignal : DiarySignal
     {
         private readonly Pawn initiator;
         private readonly Pawn recipient;

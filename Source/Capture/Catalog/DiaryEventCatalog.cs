@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace PawnDiary.Capture
 {
-    public static class DiaryEventCatalog
+    internal static class DiaryEventCatalog
     {
         private static readonly Dictionary<DiaryEventType, DiaryEventSpec> Specs =
             new Dictionary<DiaryEventType, DiaryEventSpec>();

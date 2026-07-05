@@ -19,7 +19,7 @@ namespace PawnDiary.Ingestion
     /// page. Built by <see cref="PawnKillPatch"/> and submitted via
     /// <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class DeathFallbackSignal : DiarySignal
+    internal sealed class DeathFallbackSignal : DiarySignal
     {
         // Synthetic defName for the neutral final death page (stable save/classification token).
         internal const string DeathFallbackDefName = "PawnDiary_DeathFallback";

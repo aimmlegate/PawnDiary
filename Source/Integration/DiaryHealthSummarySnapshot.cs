@@ -1,5 +1,5 @@
 // Public read-only DTO for integration adapters that want the structured pawn-summary context
-// (API v6, capability C-CTX-2). Keep this class plain: fields only, strings/bools/lists only, no
+// Keep this class plain: fields only, strings/bools/lists only, no
 // live RimWorld objects.
 //
 // This is the structured breakout of the composite `health=` line the diary builds for its own

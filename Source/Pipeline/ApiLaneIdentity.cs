@@ -11,7 +11,7 @@ namespace PawnDiary
     /// intentionally compare different fields: generation gates include effective auth, model-list
     /// fetches use exact raw row values, and UI connection tests also include reasoning effort.
     /// </summary>
-    public struct ApiLaneIdentity : IEquatable<ApiLaneIdentity>
+    internal struct ApiLaneIdentity : IEquatable<ApiLaneIdentity>
     {
         private readonly string key;
 
@@ -179,7 +179,7 @@ namespace PawnDiary
     /// Sanitized API lane labels for debug logs and settings connection-test logs. These labels are
     /// intentionally English diagnostics and never include API keys or URL query/fragment text.
     /// </summary>
-    public static class ApiLaneLabels
+    internal static class ApiLaneLabels
     {
         /// <summary>Formats one endpoint/model/mode tuple for logs without leaking query-string keys.</summary>
         public static string Label(string endpointUrl, string modelName, ApiCompatibilityMode apiMode)

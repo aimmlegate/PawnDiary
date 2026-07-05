@@ -5,7 +5,7 @@ namespace PawnDiary
     /// <summary>
     /// Formats assembled prompt text for in-game inspection when prompt test mode is enabled.
     /// </summary>
-    public static class DiaryPromptCapture
+    internal static class DiaryPromptCapture
     {
         public const string SystemHeader = "SYSTEM PROMPT";
         public const string UserHeader = "USER PROMPT";

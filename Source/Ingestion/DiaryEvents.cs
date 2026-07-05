@@ -14,7 +14,7 @@ namespace PawnDiary.Ingestion
     /// Static façade for submitting captured game events into the diary pipeline. Safe to call from a
     /// Harmony patch at any time: it no-ops when no game is loaded.
     /// </summary>
-    public static class DiaryEvents
+    internal static class DiaryEvents
     {
         /// <summary>Submits a single captured event (solo or pairwise).</summary>
         public static void Submit(DiarySignal signal)

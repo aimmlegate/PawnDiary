@@ -1,7 +1,7 @@
 // Spec for Death fallback. Thin wrapper around the pure DeathEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class DeathEventSpec : DiaryEventSpec
+    internal class DeathEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Death;
 

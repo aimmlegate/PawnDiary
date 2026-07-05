@@ -1,7 +1,7 @@
 // Spec for Progression. Thin wrapper around the pure ProgressionEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class ProgressionEventSpec : DiaryEventSpec
+    internal class ProgressionEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Progression;
 

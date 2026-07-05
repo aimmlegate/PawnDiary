@@ -9,7 +9,7 @@ namespace PawnDiary
     /// <summary>
     /// One diary page that can become evidence for an arc reflection.
     /// </summary>
-    public class ArcMemoryCandidate
+    internal class ArcMemoryCandidate
     {
         public string eventId;
         public string pawnId;
@@ -35,7 +35,7 @@ namespace PawnDiary
     /// <summary>
     /// Selector input. All numbers are copied from XML/default tuning by the runtime caller.
     /// </summary>
-    public class ArcMemorySelectionRequest
+    internal class ArcMemorySelectionRequest
     {
         public List<ArcMemoryCandidate> candidates = new List<ArcMemoryCandidate>();
         public List<string> recentlyUsedEventIds = new List<string>();
@@ -49,7 +49,7 @@ namespace PawnDiary
     /// <summary>
     /// Selector output plus diagnostics.
     /// </summary>
-    public class ArcMemorySelectionResult
+    internal class ArcMemorySelectionResult
     {
         public List<ArcMemoryCandidate> selected = new List<ArcMemoryCandidate>();
         public int candidateCount;
@@ -59,7 +59,7 @@ namespace PawnDiary
     /// <summary>
     /// Filters and weighted-samples existing diary pages for an arc prompt.
     /// </summary>
-    public static class ArcReflectionMemorySelector
+    internal static class ArcReflectionMemorySelector
     {
         public static ArcMemorySelectionResult Select(ArcMemorySelectionRequest request)
         {

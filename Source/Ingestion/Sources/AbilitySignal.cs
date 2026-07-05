@@ -24,7 +24,7 @@ namespace PawnDiary.Ingestion
     /// Built by <see cref="AbilityActivateLocalPatch"/> / <see cref="AbilityActivateGlobalPatch"/> and
     /// submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class AbilitySignal : DiarySignal
+    internal sealed class AbilitySignal : DiarySignal
     {
         private static readonly FieldInfo AbilityPawnField = AccessTools.Field(typeof(Ability), "pawn");
 

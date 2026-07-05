@@ -6,7 +6,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Testable scheduling and threshold rules for once-per-quadrum long reflections.
     /// </summary>
-    public static class QuadrumReflectionPolicy
+    internal static class QuadrumReflectionPolicy
     {
         /// <summary>
         /// Returns true once this pawn's deterministic spread day has arrived inside the quadrum's

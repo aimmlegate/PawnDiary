@@ -19,7 +19,7 @@ namespace PawnDiary
     /// Describes a single generation request to a compatible LLM endpoint.
     /// Populated by the diary system and passed to <see cref="LlmClient.Enqueue"/>.
     /// </summary>
-    public class LlmGenerationRequest
+    internal class LlmGenerationRequest
     {
         /// <summary>Identifies the game event this generation is for (e.g. "Raid_12").</summary>
         public string eventId;
@@ -163,7 +163,7 @@ namespace PawnDiary
     /// Results are written to a <see cref="ConcurrentQueue{T}"/> and drained on the
     /// main RimWorld tick by <c>DiaryGameComponent.GameComponentTick</c>.
     /// </summary>
-    public static class LlmClient
+    internal static class LlmClient
     {
         /// <summary>Maximum retry attempts for a single request before giving up.</summary>
         private const int MaxAttempts = 3;

@@ -21,7 +21,7 @@ namespace PawnDiary
     /// reads <see cref="DiaryTuning"/>, and walks the loaded cue defs. Returns the winner's
     /// <c>rule</c> text, or <c>string.Empty</c> when humor is not selected this entry.
     /// </summary>
-    public static class HumorCues
+    internal static class HumorCues
     {
         /// <summary>
         /// Returns the chosen cue's rule text for this event, or <c>string.Empty</c> when no cue is

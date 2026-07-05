@@ -13,7 +13,7 @@ namespace PawnDiary
     /// The response shape an API lane speaks. Kept separate from the settings enum so this parser
     /// stays independent from RimWorld settings/save-load types.
     /// </summary>
-    public enum LlmResponseMode
+    internal enum LlmResponseMode
     {
         OpenAIChatCompletions,
         OpenAIResponses
@@ -24,7 +24,7 @@ namespace PawnDiary
     /// reasoning blocks/self-edit transcripts, and apply the local length/sentence cleanup before
     /// diary text is saved.
     /// </summary>
-    public static class LlmResponseParser
+    internal static class LlmResponseParser
     {
         /// <summary>
         /// Parses the endpoint JSON body into the dictionary shape used by the response extractor.

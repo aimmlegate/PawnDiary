@@ -12,7 +12,7 @@ namespace PawnDiary.Ingestion
     /// Captures one newly-started pawn inspiration and emits it as a solo diary event. Built by
     /// <see cref="InspirationStartPatch"/> and submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class InspirationSignal : DiarySignal
+    internal sealed class InspirationSignal : DiarySignal
     {
         private readonly Pawn pawn;
         private readonly InspirationDef inspirationDef;

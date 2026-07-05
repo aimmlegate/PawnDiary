@@ -9,7 +9,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one successful ability activation.
     /// </summary>
-    public class AbilityEventData : DiaryEventData
+    internal class AbilityEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.Ability;
 

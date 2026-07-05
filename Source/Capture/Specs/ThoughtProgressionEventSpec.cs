@@ -1,7 +1,7 @@
 // Spec for ThoughtProgression. Thin wrapper around the pure ThoughtProgressionEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class ThoughtProgressionEventSpec : DiaryEventSpec
+    internal class ThoughtProgressionEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.ThoughtProgression;
 

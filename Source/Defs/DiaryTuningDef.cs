@@ -499,7 +499,7 @@ namespace PawnDiary
     // Accessor for the single DiaryTuningDef. Caches the lookup and falls back to a default
     // instance (with the field initializers above) if no Def is loaded, so the code never
     // NullReferences and behaves identically to the pre-Def version when the XML is absent.
-    public static class DiaryTuning
+    internal static class DiaryTuning
     {
         private static DiaryTuningDef cached;
         private static readonly DiaryTuningDef Fallback = new DiaryTuningDef();

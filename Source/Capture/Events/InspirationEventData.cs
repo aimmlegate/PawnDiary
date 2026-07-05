@@ -14,7 +14,7 @@ namespace PawnDiary.Capture
     /// Captured facts for an inspiration event. Filled by DiaryGameComponent.RecordInspiration from
     /// the live Pawn + InspirationDef.
     /// </summary>
-    public class InspirationEventData : DiaryEventData
+    internal class InspirationEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.Inspiration;
 

@@ -1,7 +1,7 @@
 // Spec for Raid. Thin wrapper around the pure RaidEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class RaidEventSpec : DiaryEventSpec
+    internal class RaidEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Raid;
 

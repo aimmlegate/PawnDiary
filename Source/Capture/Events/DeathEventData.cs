@@ -7,7 +7,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one fallback death-description event.
     /// </summary>
-    public class DeathEventData : DiaryEventData
+    internal class DeathEventData : DiaryEventData
     {
         public const string DefNameToken = "PawnDiary_DeathFallback";
 

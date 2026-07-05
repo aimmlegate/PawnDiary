@@ -6,7 +6,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one active need/thought stage becoming diary-worthy.
     /// </summary>
-    public class ThoughtProgressionEventData : DiaryEventData
+    internal class ThoughtProgressionEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.ThoughtProgression;
 

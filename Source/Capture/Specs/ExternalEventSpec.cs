@@ -1,7 +1,7 @@
 // Spec for External (integration-API events). Thin wrapper around the pure ExternalEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class ExternalEventSpec : DiaryEventSpec
+    internal class ExternalEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.External;
 

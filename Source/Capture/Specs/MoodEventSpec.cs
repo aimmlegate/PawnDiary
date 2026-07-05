@@ -2,7 +2,7 @@
 // future home for per-source metadata (weight, prompt-template key, RNG filters) once we need it.
 namespace PawnDiary.Capture
 {
-    public class MoodEventSpec : DiaryEventSpec
+    internal class MoodEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.MoodEvent;
 

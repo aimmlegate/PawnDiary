@@ -9,7 +9,7 @@ namespace PawnDiary
     /// Ensures the hidden Diary inspect tab is registered before RimWorld lays out inspect tabs.
     /// </summary>
     [HarmonyPatch(typeof(InspectPaneUtility), "DoTabs")]
-    public static class DiaryInspectTabRegistrationPatch
+    internal static class DiaryInspectTabRegistrationPatch
     {
         /// <summary>
         /// Runs just before RimWorld draws the inspect-tab strip, keeping the Diary tab registered.

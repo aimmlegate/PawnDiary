@@ -8,7 +8,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one sampled current-work signal.
     /// </summary>
-    public class WorkEventData : DiaryEventData
+    internal class WorkEventData : DiaryEventData
     {
         public const string PassionDefName = "PawnDiary_WorkPassion";
         public const string StrainDefName = "PawnDiary_WorkStrain";

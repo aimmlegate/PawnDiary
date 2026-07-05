@@ -5,7 +5,7 @@
 namespace PawnDiary.Integration
 {
     /// <summary>
-    /// Optional filters for title/context snapshot reads. API v19 adds the richer metadata filters
+    /// Optional filters for title/context snapshot reads. The richer metadata filters
     /// while keeping blank/default fields equivalent to the original v5 query.
     /// </summary>
     public sealed class DiaryEntryTitleQuery

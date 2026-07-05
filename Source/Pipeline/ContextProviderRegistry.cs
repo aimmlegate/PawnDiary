@@ -69,9 +69,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Same collection as <see cref="BuildContextLines"/>, but returns the individual cleaned
-        /// lines instead of joining them. Used by the public pawn-summary snapshot (API v6, C-CTX-2),
-        /// which keeps each provider's contribution as its own list entry rather than collapsing them
-        /// into one string.
+        /// lines instead of joining them. Used by the public pawn-summary snapshot, which keeps each
+        /// provider's contribution as its own list entry rather than collapsing them into one string.
         /// </summary>
         public List<string> BuildContextLineList(
             TContext context,

@@ -1,5 +1,5 @@
 // Public read-only DTO for integration adapters that want the pawn summary Pawn Diary builds for
-// its own prompts (API v6, capability C-CTX-2). This is the "machinery as a service" export: a chat
+// its own prompts. This is the "machinery as a service" export: a chat
 // or context mod can read the SAME understanding of the pawn the diary feeds the LLM, so its output
 // can reflect the diary without Pawn Diary driving another model directly.
 //
@@ -70,7 +70,7 @@ namespace PawnDiary.Integration
         public System.Collections.Generic.List<string> topThoughts = new System.Collections.Generic.List<string>();
 
         /// <summary>
-        /// External context-provider lines (API v4, C-CTX-1) — the contributions other mods made to
+        /// External context-provider lines — the contributions other mods made to
         /// this pawn's summary, kept verbatim (each provider owns its own `key=`). Empty when no
         /// provider returned a line. These are the same cleaned strings that join the prompt summary.
         /// </summary>

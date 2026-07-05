@@ -1,4 +1,4 @@
-// The request object for API v22 wrapped prompt-entry submissions. It extends the ordinary external
+// The request object for wrapped prompt-entry submissions. It extends the ordinary external
 // event request with a required prompt instruction while keeping Pawn Diary in charge of persona,
 // safety, context, style, budget, queueing, parsing, and persistence.
 //

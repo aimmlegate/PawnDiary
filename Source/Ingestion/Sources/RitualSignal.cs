@@ -21,7 +21,7 @@ namespace PawnDiary.Ingestion
     /// and submitted via <see cref="DiaryEvents.Submit(DiaryFanoutSignal)"/>. The ritual-level gates
     /// (group classification + user toggle, non-cancelled) run in the constructor.
     /// </summary>
-    public sealed class RitualFanoutSignal : DiaryFanoutSignal
+    internal sealed class RitualFanoutSignal : DiaryFanoutSignal
     {
         internal const string RitualOutcomeFinished = "finished";
         private const string RitualTargetRoleLabel = "target";

@@ -3,7 +3,7 @@
 // prompt group, not the DiaryEventType.
 namespace PawnDiary.Capture
 {
-    public class QuestEventSpec : DiaryEventSpec
+    internal class QuestEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Quest;
 

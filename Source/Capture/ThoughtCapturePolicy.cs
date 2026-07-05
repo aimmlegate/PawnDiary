@@ -13,7 +13,7 @@ namespace PawnDiary.Capture
     /// Read-only view of the Thought signal policy at the moment an event is being decided. The
     /// caller fills this from DiarySignalPolicies.* getters.
     /// </summary>
-    public class ThoughtCapturePolicy
+    internal class ThoughtCapturePolicy
     {
         /// <summary>Thoughts whose defName contains any of these tokens are dropped outright.</summary>
         public IReadOnlyList<string> IgnoreTokens;

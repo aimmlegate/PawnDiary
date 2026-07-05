@@ -22,7 +22,7 @@ namespace PawnDiary.Ingestion
     /// <see cref="DiaryGameComponent.RecordQuestEnded"/> and submitted via
     /// <see cref="DiaryEvents.Submit(DiaryFanoutSignal)"/>.
     /// </summary>
-    public sealed class QuestFanoutSignal : DiaryFanoutSignal
+    internal sealed class QuestFanoutSignal : DiaryFanoutSignal
     {
         // Defensive caps for the prose fields embedded in the prompt (stable parser/length caps, not
         // tunable feature policy — AGENTS.md section 12). Moved from DiaryGameComponent.Quests.cs.

@@ -34,7 +34,7 @@ namespace PawnDiary
     }
 
     /// <summary>Pure policy helpers for API lane auth and transient-failure cooldown.</summary>
-    public static class ApiEndpointPolicy
+    internal static class ApiEndpointPolicy
     {
         private const int BaseCooldownSeconds = 10;
         private const int MaxCooldownSeconds = 300;

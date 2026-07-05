@@ -8,7 +8,7 @@ namespace PawnDiary
     /// <summary>
     /// Result of evaluating a milestone-style progression rule.
     /// </summary>
-    public class ProgressionMilestoneDecision
+    internal class ProgressionMilestoneDecision
     {
         public int newHighestMilestone;
         public bool shouldEmit;
@@ -18,7 +18,7 @@ namespace PawnDiary
     /// <summary>
     /// Result of evaluating a bounded level increase such as psylink level.
     /// </summary>
-    public class ProgressionLevelDecision
+    internal class ProgressionLevelDecision
     {
         public int newHighestLevel;
         public bool shouldEmit;
@@ -28,7 +28,7 @@ namespace PawnDiary
     /// <summary>
     /// Pure helpers for scanner bookkeeping. They know nothing about Pawn, SkillRecord, Hediff, or DLC.
     /// </summary>
-    public static class ProgressionMilestonePolicy
+    internal static class ProgressionMilestonePolicy
     {
         public static ProgressionMilestoneDecision EvaluateSkillMilestone(int currentLevel,
             bool hasPassion, IList<int> configuredMilestones, int previousRecordedMilestone,

@@ -5,7 +5,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one yearly/major-event pawn arc reflection.
     /// </summary>
-    public class ArcReflectionEventData : DiaryEventData
+    internal class ArcReflectionEventData : DiaryEventData
     {
         public const string DefNameToken = "PawnArcReflection";
 

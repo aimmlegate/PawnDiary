@@ -9,7 +9,7 @@ namespace PawnDiary
     /// <summary>
     /// Length-capping helpers that never split a UTF-16 surrogate pair.
     /// </summary>
-    public static class TextTruncation
+    internal static class TextTruncation
     {
         /// <summary>
         /// Returns the first <paramref name="maxChars"/> characters of <paramref name="value"/> without

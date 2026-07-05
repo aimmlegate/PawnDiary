@@ -7,7 +7,7 @@ namespace PawnDiary
     /// <summary>
     /// XML/default cadence knobs copied into the pure schedule evaluator.
     /// </summary>
-    public class ArcReflectionScheduleTuning
+    internal class ArcReflectionScheduleTuning
     {
         public bool enabled = true;
         public int maxEntriesPerYear = 2;
@@ -20,7 +20,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain copy of the pawn's saved arc schedule state for one decision.
     /// </summary>
-    public class ArcReflectionScheduleSnapshot
+    internal class ArcReflectionScheduleSnapshot
     {
         public int lastArcEntryTick = -1;
         public int lastArcEntryYear = int.MinValue;
@@ -31,7 +31,7 @@ namespace PawnDiary
     /// <summary>
     /// The schedule decision plus diagnostics for dev tooling.
     /// </summary>
-    public class ArcReflectionScheduleDecision
+    internal class ArcReflectionScheduleDecision
     {
         public bool allowed;
         public bool forced;
@@ -43,7 +43,7 @@ namespace PawnDiary
     /// <summary>
     /// Decides whether annual forced or major-event arc reflection cadence allows an entry.
     /// </summary>
-    public static class ArcReflectionSchedulePolicy
+    internal static class ArcReflectionSchedulePolicy
     {
         public static ArcReflectionScheduleDecision Evaluate(ArcReflectionScheduleSnapshot state,
             ArcReflectionScheduleTuning tuning, int currentTick, int currentYear, int dayOfYear,

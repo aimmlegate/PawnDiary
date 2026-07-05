@@ -8,7 +8,7 @@ namespace PawnDiary
     /// <summary>
     /// Converts stable game-context markers into source-domain names without touching RimWorld.
     /// </summary>
-    public static class DiaryEventDomainClassifier
+    internal static class DiaryEventDomainClassifier
     {
         public const string Interaction = "Interaction";
         public const string MentalState = "MentalState";

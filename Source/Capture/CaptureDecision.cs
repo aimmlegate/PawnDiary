@@ -7,7 +7,7 @@
 // can choose the final event shape while DiaryGameComponent performs only the side effects.
 namespace PawnDiary.Capture
 {
-    public enum CaptureDecision
+    internal enum CaptureDecision
     {
         /// <summary>Drop the event entirely: it failed an eligibility gate, a token filter, or the
         /// magnitude threshold.</summary>

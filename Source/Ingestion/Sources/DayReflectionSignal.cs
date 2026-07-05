@@ -19,7 +19,7 @@ namespace PawnDiary.Ingestion
     /// Carries one pawn's already-aggregated day or quadrum reflection (payload + pre-built text) and
     /// emits it as a solo entry. Built by the component's summary flush.
     /// </summary>
-    public sealed class DayReflectionSignal : DiarySignal
+    internal sealed class DayReflectionSignal : DiarySignal
     {
         private readonly DayReflectionEventData payload;
         private readonly Pawn pawn;

@@ -18,7 +18,7 @@ namespace PawnDiary
     /// <summary>
     /// Reads stable key/value fields from a saved diary context string.
     /// </summary>
-    public static class DiaryContextFields
+    internal static class DiaryContextFields
     {
         /// <summary>
         /// Returns the trimmed value for an exact context key, or an empty string when absent.

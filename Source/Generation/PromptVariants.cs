@@ -21,7 +21,7 @@ namespace PawnDiary
     /// Selects one wording from an optional variant pool, deterministically by seed. Pure: no RNG,
     /// no game types. Used for the per-group instruction and tone pools.
     /// </summary>
-    public static class PromptVariants
+    internal static class PromptVariants
     {
         /// <summary>
         /// Returns one non-empty entry from <paramref name="variants"/>, chosen deterministically by

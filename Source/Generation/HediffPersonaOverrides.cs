@@ -8,7 +8,7 @@ namespace PawnDiary
     /// <summary>
     /// Resolves temporary writing-style overrides caused by active pawn hediffs.
     /// </summary>
-    public static class HediffPersonaOverrides
+    internal static class HediffPersonaOverrides
     {
         /// <summary>
         /// Returns the prompt-ready writing-style rule, using a saved external override first, then a

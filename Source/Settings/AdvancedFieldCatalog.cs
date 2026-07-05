@@ -22,7 +22,7 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>Scalar field kinds the Advanced tab can render and persist.</summary>
-    public enum AdvancedFieldType
+    internal enum AdvancedFieldType
     {
         Bool,
         Int,
@@ -33,7 +33,7 @@ namespace PawnDiary
     }
 
     /// <summary>Which top-level tab a group belongs to: numeric tuning vs prompt text.</summary>
-    public enum AdvancedFieldCategory
+    internal enum AdvancedFieldCategory
     {
         Tuning,
         Prompts
@@ -44,7 +44,7 @@ namespace PawnDiary
     /// value range (for sliders/clamping), and a cached reflection accessor bound to a resolver that
     /// returns the live Def instance. Knows how to read/write/format/parse its own value.
     /// </summary>
-    public class AdvancedFieldDescriptor
+    internal class AdvancedFieldDescriptor
     {
         public string key;              // "defName.fieldName"
         public string groupKey;         // localization key for the group header
@@ -599,7 +599,7 @@ namespace PawnDiary
     }
 
     /// <summary>A named group of Advanced fields (one section in the left rail of the Advanced tab).</summary>
-    public class AdvancedFieldGroup
+    internal class AdvancedFieldGroup
     {
         public string groupKey;
         public string displayName;
@@ -630,7 +630,7 @@ namespace PawnDiary
     /// Static catalog of all editable Advanced fields, grouped for the left rail. Also owns the
     /// one-time snapshot of pristine XML defaults and the apply-override-to-Def logic.
     /// </summary>
-    public static class AdvancedFieldCatalog
+    internal static class AdvancedFieldCatalog
     {
         private static readonly List<AdvancedFieldGroup> groups = new List<AdvancedFieldGroup>();
         private static readonly List<AdvancedFieldDescriptor> all = new List<AdvancedFieldDescriptor>();

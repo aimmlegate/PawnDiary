@@ -11,7 +11,7 @@ namespace PawnDiary
     /// <summary>
     /// Stable public entry point for selecting, serializing, and applying diary text decorations.
     /// </summary>
-    public static class DiaryTextDecorations
+    internal static class DiaryTextDecorations
     {
         /// <summary>
         /// Returns the matching rules for a text scope, sorted by sequence.

@@ -20,7 +20,7 @@ namespace PawnDiary
     /// <summary>
     /// Guarded accessors for pawn state owned by optional paid DLCs.
     /// </summary>
-    public static class DlcContext
+    internal static class DlcContext
     {
         /// <summary>
         /// Biotech: the pawn's xenotype label (e.g. "Sanguophage", "Hussar"). Empty without

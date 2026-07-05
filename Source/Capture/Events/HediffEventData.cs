@@ -22,7 +22,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one hediff signal. Filled by DiaryGameComponent.RecordHediffSignal from
     /// the live Pawn + Hediff + the matched DiaryInteractionGroupDef's HediffSignalPolicy.
     /// </summary>
-    public class HediffEventData : DiaryEventData
+    internal class HediffEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.Hediff;
 

@@ -19,7 +19,7 @@ namespace PawnDiary.Ingestion
     /// <see cref="PawnSetFactionPatch"/> and by the starting-colonist scan, then submitted via
     /// <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class ArrivalSignal : DiarySignal
+    internal sealed class ArrivalSignal : DiarySignal
     {
         // Stable save/classification tokens for the synthetic arrival event (moved from
         // DiaryGameComponent: the arrival group key and the arrival defName).

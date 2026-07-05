@@ -26,13 +26,28 @@ MSBuild integrations\PawnDiary.RimTalkBridge\Source\PawnDiaryRimTalkBridge.cspro
 Explorer**: a developer tool that lets you exercise every public `PawnDiaryApi` method from a
 three-pane window (method tree | form | running result log) plus four `[DebugAction]` quick
 actions. Open it in Dev mode → Debug Actions → **Pawn Diary Example Adapter** → **Open API
-explorer…**. The daily-event timer that used to live here is gone; the *Submit example event (random
-colonist)…* quick action replaces it as the canonical minimal `SubmitEvent` example — copy that
-request shape (and the matching group XML in `1.6/Defs/DiaryExternalGroups_Example.xml`) to start a
-real adapter, and swap the dev-action trigger for a hook into your target mod.
+explorer…**. The method tree has a search box (filters by method/summary/category), per-category
+collapse, visible plain-language descriptions under each endpoint signature, and hover tooltips
+showing each method's full label and summary; the form pane names the subject/partner a call will
+target, uses multiline editors for prose/context fields, and can reset the shared form state;
+hovering method titles and field labels shows short help popovers; the result log keeps short
+histories compact so the selected detail stays visible and colours rows by outcome. The window opens
+after closing the Debug Actions launcher and provides a thin drag strip so it behaves as a movable,
+resizeable overlay while outside clicks pass through to normal game UI/camera controls.
+Its readiness badge and Readiness methods show both `IsReady` and the player-controlled
+`IsExternalApiEnabled` master switch, and non-readiness invokes are skipped while the master switch is
+off.
+All request fields start with quiet-moment sample values for quick submit/preview testing. A concise
+walkthrough lives in `PawnDiary.ExampleAdapter/API_EXPLORER.md`. The write forms expose the public
+v1 `forceRecord` flag and default it on so repeated smoke-test clicks are not hidden by dedup or
+budget guardrails. The daily-event timer that used to live here is gone. All direct API calls now
+live in `PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs`, with XML doc comments explaining
+each method's args and safe return value. Copy that file plus the matching group XML in
+`1.6/Defs/DiaryExternalGroups_Example.xml` to start a real adapter, then replace the quick
+debug-action trigger with a hook into your target mod.
 
 The example adapter also demonstrates the two process-global hooks an integration normally
-registers, in `ExampleAdapterGameComponent`:
+registers, through `PawnDiaryExampleApi.RegisterHooksOnce()`:
 
 - `RegisterEntryStatusListener` — fired on the main thread after a saved POV's status changes; the
   explorer records each firing in its **Hooks → Activity log** tab so you can prove it works.

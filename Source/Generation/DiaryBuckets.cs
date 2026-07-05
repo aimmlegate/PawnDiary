@@ -15,7 +15,7 @@ namespace PawnDiary
     /// context. Each method takes a primitive and returns a string; none read live game state. The
     /// thresholds are read from <see cref="DiaryTuningDef"/> via <see cref="DiaryTuning.Current"/>.
     /// </summary>
-    public static class DiaryBuckets
+    internal static class DiaryBuckets
     {
         /// <summary>
         /// Formats an opinion score (-100..100) as a localized relation-band token. Kept as a

@@ -8,7 +8,7 @@ namespace PawnDiary
     /// <summary>
     /// Plain, testable facts for a signal that may start or end an event window.
     /// </summary>
-    public sealed class EventWindowSignalFacts
+    internal sealed class EventWindowSignalFacts
     {
         public string source;
         public string defName;
@@ -32,7 +32,7 @@ namespace PawnDiary
     /// <summary>
     /// Stateless trigger matching for event windows.
     /// </summary>
-    public static class EventWindowPolicy
+    internal static class EventWindowPolicy
     {
         public static bool Matches(EventWindowTriggerRule rule, EventWindowSignalFacts facts)
         {

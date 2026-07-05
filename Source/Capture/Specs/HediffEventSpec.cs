@@ -1,7 +1,7 @@
 // Spec for Hediff. Thin wrapper around the pure HediffEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class HediffEventSpec : DiaryEventSpec
+    internal class HediffEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Hediff;
 

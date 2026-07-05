@@ -55,7 +55,7 @@ namespace PawnDiary
     /// <summary>
     /// Stateless paragraph splitter for diary prose. Verse/Unity-free.
     /// </summary>
-    public static class DiaryParagraphReflow
+    internal static class DiaryParagraphReflow
     {
         // RimWorld's in-game calendar starts at year 5500, so a plausible year is "55" followed by
         // two digits. Matching only that range avoids treating arbitrary 4-digit numbers (a wall

@@ -23,7 +23,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one colonist reacting to a completed or failed quest. Filled by
     /// DiaryGameComponent.RecordQuestEnded inside the per-pawn fan-out loop.
     /// </summary>
-    public class QuestEventData : DiaryEventData
+    internal class QuestEventData : DiaryEventData
     {
         /// <summary>Signal for a freshly accepted quest. Also the XML group classifier key.</summary>
         public const string SignalAccepted = "accepted";

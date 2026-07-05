@@ -163,7 +163,7 @@ namespace PawnDiary
         }
 
         /// <summary>Projects the timing policy the pure planner needs.</summary>
-        public ObservedConditionDefSnapshot ToDefSnapshot()
+        internal ObservedConditionDefSnapshot ToDefSnapshot()
         {
             return ObservedConditionDefSnapshot.Create(
                 EffectiveConditionKey(), startDebounceTicks, endDebounceTicks);

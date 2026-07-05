@@ -10,7 +10,7 @@ namespace PawnDiary.Capture
     /// Plain snapshot of a pawn's attitude toward body modification. Filled by BodyModContext at the
     /// impure edge, consumed here by pure policy code.
     /// </summary>
-    public class BodyModStanceFacts
+    internal class BodyModStanceFacts
     {
         public bool HasCravesTrait;
         public bool HasDespisesTrait;
@@ -22,7 +22,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Stateless token policy for artificial-part gains and natural-part losses.
     /// </summary>
-    public static class BodyPartEventPolicy
+    internal static class BodyPartEventPolicy
     {
         public const string KindAddedPart = "addedpart";
         public const string KindOrganicPart = "organicpart";

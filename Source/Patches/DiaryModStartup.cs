@@ -13,7 +13,7 @@ using Verse;
 namespace PawnDiary
 {
     [StaticConstructorOnStartup]
-    public static class DiaryModStartup
+    internal static class DiaryModStartup
     {
         private static bool postStartupInjectionDone;
 

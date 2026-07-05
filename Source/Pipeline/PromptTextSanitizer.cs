@@ -10,7 +10,7 @@ namespace PawnDiary
     /// Stateless prompt-text cleanup. It has no RimWorld/Verse dependency, so tests can cover the
     /// exact sentence-capping and line-guard behavior used by the runtime prompt adapters.
     /// </summary>
-    public static class PromptTextSanitizer
+    internal static class PromptTextSanitizer
     {
         public const int DefaultMaxLocalizedSentences = 2;
 

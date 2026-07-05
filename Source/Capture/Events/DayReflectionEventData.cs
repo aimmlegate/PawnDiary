@@ -9,7 +9,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one pawn day or quadrum reflection candidate.
     /// </summary>
-    public class DayReflectionEventData : DiaryEventData
+    internal class DayReflectionEventData : DiaryEventData
     {
         public const string DefNameToken = "DayReflection";
         public const string QuadrumDefNameToken = "QuadrumReflection";

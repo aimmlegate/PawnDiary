@@ -18,7 +18,7 @@ namespace PawnDiary.Ingestion
     /// to the ambient batcher). Built by <see cref="ThoughtGainPatch"/> and submitted via
     /// <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class ThoughtSignal : DiarySignal
+    internal sealed class ThoughtSignal : DiarySignal
     {
         private readonly Pawn pawn;
         private readonly Thought_Memory thought;

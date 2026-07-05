@@ -16,7 +16,7 @@ namespace PawnDiary
     /// Captures accepted quests through the canonical Quest.Accept lifecycle hook.
     /// </summary>
     [HarmonyPatch(typeof(Quest), nameof(Quest.Accept), new[] { typeof(Pawn) })]
-    public static class QuestAcceptPatch
+    internal static class QuestAcceptPatch
     {
         /// <summary>
         /// Harmony Postfix for Quest.Accept. Forwards the freshly accepted quest to
@@ -44,7 +44,7 @@ namespace PawnDiary
     /// <summary>
     /// Defensively patches the generated quest-accept UI closure as a fallback to Quest.Accept.
     /// </summary>
-    public static class QuestUiAcceptPatch
+    internal static class QuestUiAcceptPatch
     {
         private const string AcceptClosureTypeName = "RimWorld.MainTabWindow_Quests+<>c__DisplayClass83_1";
         private const string AcceptActionMethodName = "<AcceptQuestByInterface>g__AcceptAction|1";
@@ -117,7 +117,7 @@ namespace PawnDiary
     /// Captures completed and failed quest endings from Quest.End.
     /// </summary>
     [HarmonyPatch(typeof(Quest), nameof(Quest.End))]
-    public static class QuestEndPatch
+    internal static class QuestEndPatch
     {
         /// <summary>
         /// Harmony Postfix for Quest.End. Forwards Success/Fail outcomes to

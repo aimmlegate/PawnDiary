@@ -14,7 +14,7 @@ namespace PawnDiary
     /// Captures vanilla social PlayLog additions and forwards eligible interactions to the diary.
     /// </summary>
     [HarmonyPatch(typeof(PlayLog), nameof(PlayLog.Add))]
-    public static class PlayLogAddPatch
+    internal static class PlayLogAddPatch
     {
         // Reflection accessors for private fields on PlayLogEntry_Interaction — RimWorld doesn't
         // expose these publicly, so we read them via Harmony's AccessTools.
@@ -88,7 +88,7 @@ namespace PawnDiary
     /// Overrides generated direct-speech PlayLog row text without affecting ordinary vanilla rows.
     /// </summary>
     [HarmonyPatch]
-    public static class PlayLogGeneratedSpeechTextPatch
+    internal static class PlayLogGeneratedSpeechTextPatch
     {
         /// <summary>
         /// Finds the concrete interaction text renderer for this RimWorld build. In 1.6 the public
@@ -142,7 +142,7 @@ namespace PawnDiary
     /// Opens the Diary tab from social-log clicks when a generated diary entry exists for that row.
     /// </summary>
     [HarmonyPatch(typeof(PlayLogEntry_Interaction), nameof(PlayLogEntry_Interaction.ClickedFromPOV))]
-    public static class PlayLogInteractionClickPatch
+    internal static class PlayLogInteractionClickPatch
     {
         /// <summary>
         /// Harmony Prefix for social interaction log clicks. When this exact PlayLog row has a
@@ -225,7 +225,7 @@ namespace PawnDiary
     /// Captures direct relation additions so romance relation changes can become pairwise entries.
     /// </summary>
     [HarmonyPatch(typeof(Pawn_RelationsTracker), nameof(Pawn_RelationsTracker.AddDirectRelation))]
-    public static class PawnRelationAddPatch
+    internal static class PawnRelationAddPatch
     {
         // Reflection accessor for the private Pawn_RelationsTracker.pawn field so we can read the
         // subject pawn (the tracker's owner). Mirrors the MentalStateHandler.pawn pattern.

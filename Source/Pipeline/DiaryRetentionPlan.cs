@@ -18,7 +18,7 @@ namespace PawnDiary
     /// Outcome of planning one per-pawn retention pass: how many oldest pages each pawn drops, and the
     /// union of ids/keys still referenced by some pawn afterwards.
     /// </summary>
-    public sealed class DiaryRetentionResult
+    internal sealed class DiaryRetentionResult
     {
         /// <summary>True when at least one pawn was over the cap and has pages to drop.</summary>
         public bool TrimmedAny;
@@ -41,7 +41,7 @@ namespace PawnDiary
     /// Plans a per-pawn diary history cap. Kept separate from the component/repository so the
     /// trim-and-keep decision can be unit-tested without RimWorld.
     /// </summary>
-    public static class DiaryRetentionPlan
+    internal static class DiaryRetentionPlan
     {
         /// <summary>
         /// Plans a retention pass without mutating the inputs. Each pawn keeps its newest

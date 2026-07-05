@@ -6,7 +6,7 @@ namespace PawnDiary
     /// <summary>
     /// Decides when lifecycle boundary entries should constrain later diary pages.
     /// </summary>
-    public static class DiaryLifeBoundaryPolicy
+    internal static class DiaryLifeBoundaryPolicy
     {
         /// <summary>
         /// A death page is terminal only while there is no live pawn with the same load ID.

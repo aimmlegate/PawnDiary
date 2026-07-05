@@ -13,7 +13,7 @@ namespace PawnDiary
     /// Extracts compact sentence snippets from diary text for prompt context. Pure: no game state,
     /// no Defs, no localization, and no IO.
     /// </summary>
-    public static class DiarySentenceExcerpt
+    internal static class DiarySentenceExcerpt
     {
         private static readonly Regex RichTextTagRegex = new Regex("<.*?>");
         private static readonly Regex WhitespaceRegex = new Regex("\\s+");

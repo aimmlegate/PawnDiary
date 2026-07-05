@@ -32,7 +32,7 @@ namespace PawnDiary.Ingestion
     /// matching subclass and hands it to <see cref="DiaryEvents.Submit(DiarySignal)"/>; the shared
     /// dispatcher (DiaryGameComponent.Dispatch) runs the universal steps and calls <see cref="Emit"/>.
     /// </summary>
-    public abstract class DiarySignal
+    internal abstract class DiarySignal
     {
         /// <summary>
         /// The plain, RimWorld-free payload the catalog decides on. Carries the event type plus the
@@ -46,6 +46,13 @@ namespace PawnDiary.Ingestion
         /// thread, so it may read Settings / DefDatabase / the tick manager.
         /// </summary>
         public abstract CaptureContext BuildContext();
+
+        /// <summary>
+        /// True only for explicit integration-API requests that ask the dispatcher to bypass soft
+        /// drop gates (dedup, user/group toggles, and source policy drops). Native gameplay signals
+        /// keep the default false value so their existing capture policy is unchanged.
+        /// </summary>
+        public virtual bool ForceRecord => false;
 
         /// <summary>
         /// Dedup key for this event (raw, source-prefixed, e.g. <c>"thought|pawnId|defName"</c>).
@@ -95,7 +102,7 @@ namespace PawnDiary.Ingestion
     /// colonist list can never consume the whole window. The per-pawn set stays source-specific and
     /// lives in <see cref="PerPawnSignals"/>.
     /// </summary>
-    public abstract class DiaryFanoutSignal
+    internal abstract class DiaryFanoutSignal
     {
         /// <summary>
         /// One dedup key for the whole fan-out (raw, source-prefixed, e.g.

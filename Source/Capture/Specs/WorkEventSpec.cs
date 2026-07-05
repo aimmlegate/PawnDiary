@@ -1,7 +1,7 @@
 // Spec for Work. Thin wrapper around the pure WorkEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class WorkEventSpec : DiaryEventSpec
+    internal class WorkEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Work;
 

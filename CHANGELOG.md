@@ -2,14 +2,63 @@
 
 Milestone history of Pawn Diary, newest first. Grouped by milestone, not by commit; routine
 refactors, rebuilt DLLs, and follow-up fixes are folded into the feature bullet they shipped with.
-Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
+Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The public integration
+contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
+pre-release version ladder for project history.
 
 ## 2026-07-05
+
+- **Public integration API v1 — first release numbering.** `PawnDiaryApi.ApiVersion` is now `1`
+  for the first public release. Public v1 includes the full integration surface built during the
+  pre-release ladder, including read snapshots, context providers, status listeners, prompt-entry
+  previews, direct entries, submit outcomes, and forced external recording. Future additions will
+  increment to v2+ instead of continuing the internal pre-release numbering.
+
+- **External API master-switch status.** The main-mod *Allow external mod integrations* setting is
+  the player-facing global enable/disable switch for the public API and remains enabled by default.
+  `PawnDiaryApi.IsExternalApiEnabled` now exposes that switch separately from `IsReady`, and the
+  example adapter checks it in the API Explorer badge, Readiness tree, and quick debug actions before
+  running non-readiness calls.
+
+- **Copyable example adapter API layer.** Refactored the example adapter so
+  `Source/PawnDiaryExampleApi.cs` is the only source file that calls `PawnDiaryApi` directly. It
+  wraps every explorer/quick-action interaction with XML doc comments describing each method's
+  purpose, required args, and safe return value, while the explorer UI and debug actions now call
+  through that facade. Updated the public integration docs to point adapter authors at that file.
+
+- **External API request-context ceiling enforced.** `ExternalEventRequestText.JoinRequestContext`
+  now applies the 64-field absolute ceiling to the whole saved request context, not just the
+  protected prompt-field block. When prompt instructions/fragments/enchantment candidates fill the
+  ceiling, ordinary `extraContext` overflow is dropped instead of growing saved `gameContext`.
+
+- **Forced external recording.**
+  Added `forceRecord` to `ExternalEventRequest` (and therefore `ExternalPromptEntryRequest`) plus
+  `ExternalDirectEntryRequest`. A valid forced write skips the external prompt budget, group/user
+  toggles, source dedup, and generic event-type dedup so adapter-owned triggers can guarantee a
+  diary event is created. It still respects required fields, main-thread/game readiness, the master
+  integration toggle, required External group XML for ordinary `SubmitEvent`, and base diary-owner
+  eligibility. Direct entries also bypass the per-pawn generation-enabled/incapacitation checks when
+  storing caller-authored prose. The example API Explorer exposes the flag on all write forms and
+  defaults it on for quick smoke testing.
 
 - **In-game API Explorer for the integration surface.** Rewrote
   `integrations/PawnDiary.ExampleAdapter/` from a one-event-per-day timer into a developer tool that
   drives **every** public `PawnDiaryApi` method from a three-pane Dev-mode window (method tree |
-  request form | append-only result log with copy/clear). It also ships four `[DebugAction]` quick
+  request form | append-only result log with copy/clear). The method tree has a live search box
+  (filters by method/summary/category and force-expands matches), per-category collapse instead of a
+  single all-or-nothing toggle, and left-aligned rows with a full-label+summary hover tooltip; the
+  form pane wraps a long summary instead of clipping it and shows which subject/partner a call will
+  target, uses width-aware labeled fields, switches prose/context inputs to multiline editors, and
+  adds a reset button for the shared form state; a second polish pass replaced rough form-height
+  guesses with width-aware row measurement, moved method/field help into hover popovers on the title
+  and label text, and added `integrations/PawnDiary.ExampleAdapter/API_EXPLORER.md` as a short
+  operator guide; every request field now starts with a concrete quiet-moment sample value so submit,
+  preview, direct-entry, style, read, and query forms need minimal typing; the explorer window is now
+  a draggable, resizeable debug overlay with an explicit drag strip, closes the Debug Actions
+  launcher after opening, and remains open while outside clicks pass through to normal game UI/camera
+  controls; endpoint rows now show plain-language descriptions directly in the method tree; the result log de-duplicates
+  the echoed method name, keeps short histories compact so details stay visible, and colours each line
+  by outcome (green success / orange failure / grey neutral). It also ships four `[DebugAction]` quick
   actions under a new *Pawn Diary Example Adapter* category (open explorer, submit example event,
   preview example prompt, dump context bundle to log), and keeps its role as the canonical
   integration example: `ExampleAdapterGameComponent` still registers the two process-global hooks
@@ -26,15 +75,15 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 - **External API short guide.** Added `EXTERNAL_API.md` as a one-page overview of the
   `PawnDiary.Integration` surface for mod authors: 30-second quickstart, a capability table mapping
-  common goals to the right call (v1–v23), the three submission paths side by side, and the hard
+  common goals to the right public v1 call, the three submission paths side by side, and the hard
   rules (main-thread, never-throws, master toggle, `eventKey` is save-data, additive-only,
   prompt-ownership, token budget). It links out to the full `INTEGRATIONS.md` contract, the
   `integrations/PawnDiary.ExampleAdapter/` template, and `DOCUMENTATION.md §3.7`. The README now has
   a *For Other Mods* section pointing at all three. No code or contract change — documentation only.
 
-- **Integration API follow-up — read-path, encapsulation, determinism, and outcome surface.** A batch
-  of review follow-ups landed across the integration API:
-  - **v23 — `SubmitEventOutcome`.** `PawnDiaryApi.ApiVersion` is now `23`. Added
+- **Pre-public integration follow-up — read-path, encapsulation, determinism, and outcome surface.**
+  A batch of review follow-ups landed across the integration API before the public v1 reset:
+  - **SubmitEventOutcome.** Added
     `SubmitEvent(ExternalEventRequest, out SubmitEventOutcome)` and the `SubmitEventOutcome` enum
     (`Recorded`, `InvalidRequest`, `OffThread`, `Ineligible`, `DroppedBudget`, `DroppedByPipeline`)
     so adapters can distinguish the reasons a submission did not record instead of collapsing them

@@ -1,7 +1,7 @@
 // Spec for DayReflection. Thin wrapper around the pure DayReflectionEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class DayReflectionEventSpec : DiaryEventSpec
+    internal class DayReflectionEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.DayReflection;
 

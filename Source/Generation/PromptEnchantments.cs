@@ -74,7 +74,7 @@ namespace PawnDiary
     /// Public facade for optional prompt enchantments. It gates settings/Def lookup, asks the impure
     /// collector for plain candidates, then supplies the final RimWorld random roll to the planner.
     /// </summary>
-    public static class PromptEnchantments
+    internal static class PromptEnchantments
     {
         /// <summary>
         /// Returns one live context prompt for this pawn, or empty when disabled/no match.

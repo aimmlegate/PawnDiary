@@ -15,7 +15,7 @@ namespace PawnDiary
     /// Captures pawn death details around Pawn.Kill so death diary entries keep cause context.
     /// </summary>
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.Kill))]
-    public static class PawnKillPatch
+    internal static class PawnKillPatch
     {
         /// <summary>
         /// Harmony Prefix for Pawn.Kill. Captures death cause details for colonists before vanilla

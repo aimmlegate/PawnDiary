@@ -12,7 +12,7 @@ namespace PawnDiary
     /// Converts a plain event payload plus a plain policy snapshot into the exact prompt envelope sent
     /// to the LLM transport layer.
     /// </summary>
-    public static class DiaryPromptPlanner
+    internal static class DiaryPromptPlanner
     {
         public static DiaryPromptPlan Build(DiaryPromptRequest request)
         {

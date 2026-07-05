@@ -3,7 +3,7 @@
 // metadata (weight, prompt-template key, RNG filters) once we need it.
 namespace PawnDiary.Capture
 {
-    public class ThoughtEventSpec : DiaryEventSpec
+    internal class ThoughtEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Thought;
 

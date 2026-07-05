@@ -31,7 +31,7 @@ using Verse;
 
 namespace PawnDiary
 {
-    public static class PersonaAffinity
+    internal static class PersonaAffinity
     {
         // Extra roll weight added per pawn-theme a style matches. Layered on top of the flat base
         // weight in DiaryPersonas, so a style that hits two of the pawn's themes is strongly

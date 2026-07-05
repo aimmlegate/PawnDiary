@@ -19,7 +19,7 @@ namespace PawnDiary.Ingestion
     /// Captures one worsening situational thought stage and emits a solo diary page. Built by the
     /// component's thought-progression scan.
     /// </summary>
-    public sealed class ThoughtProgressionSignal : DiarySignal
+    internal sealed class ThoughtProgressionSignal : DiarySignal
     {
         private readonly Pawn pawn;
         private readonly ThoughtDef thoughtDef;

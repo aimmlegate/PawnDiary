@@ -373,7 +373,7 @@ namespace PawnDiary
     /// <summary>
     /// Accessor for the single DiaryUiStyleDef with safe code fallbacks when XML is absent.
     /// </summary>
-    public static class DiaryUiStyles
+    internal static class DiaryUiStyles
     {
         private static DiaryUiStyleDef cached;
         private static readonly DiaryUiStyleDef Fallback = new DiaryUiStyleDef();

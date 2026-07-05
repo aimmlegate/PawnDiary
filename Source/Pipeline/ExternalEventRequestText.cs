@@ -164,7 +164,8 @@ namespace PawnDiary
                 protectedFields,
                 Math.Min(protectedFields.Count, MaxRequestContextLines),
                 int.MaxValue);
-            string ordinaryContext = JoinAdapterExtraContext(extraContext);
+            int remainingContextSlots = Math.Max(0, MaxRequestContextLines - protectedFields.Count);
+            string ordinaryContext = JoinAdapterExtraContext(extraContext, remainingContextSlots);
             if (string.IsNullOrEmpty(protectedContext))
             {
                 return ordinaryContext;
@@ -231,8 +232,14 @@ namespace PawnDiary
         /// </summary>
         internal static string JoinAdapterExtraContext(IEnumerable<string> lines)
         {
+            return JoinAdapterExtraContext(lines, MaxExtraContextLines);
+        }
+
+        private static string JoinAdapterExtraContext(IEnumerable<string> lines, int maxLines)
+        {
             List<string> kept = new List<string>();
-            if (lines == null)
+            int effectiveMaxLines = Math.Min(MaxExtraContextLines, maxLines);
+            if (lines == null || effectiveMaxLines <= 0)
             {
                 return string.Empty;
             }
@@ -246,7 +253,7 @@ namespace PawnDiary
                 }
 
                 kept.Add(line);
-                if (kept.Count >= MaxExtraContextLines)
+                if (kept.Count >= effectiveMaxLines)
                 {
                     break;
                 }

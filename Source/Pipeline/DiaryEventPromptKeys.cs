@@ -9,7 +9,7 @@ namespace PawnDiary
     /// Builds the ordered prompt-policy key list for one event. The pure layer does not know which
     /// XML Defs are loaded; it only supplies the candidate keys in priority order.
     /// </summary>
-    public static class DiaryEventPromptKeys
+    internal static class DiaryEventPromptKeys
     {
         public static List<string> CandidateKeys(DiaryEventPayload payload, string groupDefName,
             string classifierKey, string fallbackEventKey)

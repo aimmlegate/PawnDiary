@@ -20,7 +20,7 @@ namespace PawnDiary.Capture
     /// Pure policy for deciding whether a transient dedup entry is still live. Extracted from the
     /// RimWorld-coupled dedup store so the per-key-window rule is unit-testable.
     /// </summary>
-    public static class RecentEventExpiry
+    internal static class RecentEventExpiry
     {
         /// <summary>
         /// True when the entry has aged past ITS OWN recorded window as of <paramref name="now"/>.

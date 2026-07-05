@@ -13,7 +13,7 @@ namespace PawnDiary.Capture
     /// the type system without making DiaryEventSpec generic, and a generic base would break the
     /// catalog's single Dictionary.
     /// </summary>
-    public abstract class DiaryEventSpec
+    internal abstract class DiaryEventSpec
     {
         /// <summary>Which DiaryEventType this Spec handles. Must match the catalog key it is
         /// registered under.</summary>

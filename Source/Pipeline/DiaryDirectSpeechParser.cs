@@ -10,7 +10,7 @@ namespace PawnDiary
     /// Stateless helpers for splitting generated diary prose into ordinary lines and explicit
     /// direct-speech blocks.
     /// </summary>
-    public static class DiaryDirectSpeechParser
+    internal static class DiaryDirectSpeechParser
     {
         public const string DefaultOpenMarker = "[[speech]]";
         public const string DefaultCloseMarker = "[[/speech]]";
@@ -155,7 +155,7 @@ namespace PawnDiary
     /// <summary>
     /// One parsed generated-text line, tagged when it came from an explicit direct-speech block.
     /// </summary>
-    public struct DiaryDirectSpeechLine
+    internal struct DiaryDirectSpeechLine
     {
         public readonly string line;
         public readonly bool directSpeech;

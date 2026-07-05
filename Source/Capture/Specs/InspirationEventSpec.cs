@@ -1,7 +1,7 @@
 // Spec for Inspiration events. Thin wrapper around the pure InspirationEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class InspirationEventSpec : DiaryEventSpec
+    internal class InspirationEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Inspiration;
 

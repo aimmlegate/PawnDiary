@@ -1,7 +1,7 @@
 // Spec for Romance. Thin wrapper around the pure RomanceEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class RomanceEventSpec : DiaryEventSpec
+    internal class RomanceEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Romance;
 

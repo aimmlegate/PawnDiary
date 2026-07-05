@@ -1,7 +1,7 @@
 // Spec for ArcReflection. Thin wrapper around the pure ArcReflectionEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class ArcReflectionEventSpec : DiaryEventSpec
+    internal class ArcReflectionEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.ArcReflection;
 

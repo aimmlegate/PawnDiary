@@ -56,6 +56,14 @@ namespace PawnDiary.Integration
         /// <summary>Optional extra saved context lines, each "key=value"; cleaned and capped like SubmitEvent.</summary>
         public List<string> extraContext;
 
+        /// <summary>
+        /// When true, this valid direct entry bypasses soft recording gates: the external API budget,
+        /// group/user toggles, dedup windows, and per-pawn generation-enabled/incapacitated checks.
+        /// It does not bypass required fields, main-thread/game readiness, the master integration
+        /// toggle, or base diary-owner eligibility for the subject pawn.
+        /// </summary>
+        public bool forceRecord;
+
         /// <summary>Optional custom dedup key. Blank uses eventKey + pawn/pair.</summary>
         public string dedupKey;
 

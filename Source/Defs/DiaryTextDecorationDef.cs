@@ -19,7 +19,7 @@ namespace PawnDiary
     /// <summary>
     /// Loads the active decoration rules from XML. Falls back to the same defaults if the Def is absent.
     /// </summary>
-    public static class DiaryTextDecorationDefs
+    internal static class DiaryTextDecorationDefs
     {
         private static DiaryTextDecorationDef cached;
         // Defs load once at startup, so we resolve the lookup a single time. `resolved` lets us

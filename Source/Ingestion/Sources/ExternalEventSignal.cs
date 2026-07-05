@@ -2,6 +2,8 @@
 // PawnDiaryApi.SubmitEvent validates a request from another mod, wraps it in this signal, and
 // submits it through the same DiaryEvents front door every native Harmony hook uses, so external
 // events get the full standard treatment: pure Decide, dedup window, group toggles, LLM queue.
+// The forceRecord flag keeps the same capture/emit shape but asks Dispatch to skip the soft
+// budget/dedup/toggle drops for adapter-owned moments that must create a diary event.
 //
 // The pure decision + game-context format live in Source/Capture/Events/ExternalEventData.cs.
 // New to C#/RimWorld? See AGENTS.md.
@@ -17,7 +19,7 @@ namespace PawnDiary.Ingestion
     /// <see cref="PawnDiaryApi.SubmitEvent"/> / prompt-entry submission and submitted via
     /// <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class ExternalEventSignal : DiarySignal
+    internal sealed class ExternalEventSignal : DiarySignal
     {
         private readonly Pawn subject;
         private readonly Pawn partner;
@@ -84,11 +86,13 @@ namespace PawnDiary.Ingestion
 
         public override DiaryEventData Payload => payload;
 
+        public override bool ForceRecord => request != null && request.forceRecord;
+
         public override CaptureContext BuildContext()
         {
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: payload.SubjectEligible,
-                userEnabled: group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                userEnabled: ForceRecord || group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
                 signalEnabled: true,
                 ambientSignalEnabled: true);
         }

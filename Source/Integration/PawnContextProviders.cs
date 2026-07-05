@@ -1,4 +1,4 @@
-// Runtime bridge for API v4 pawn-context providers. Other mods register a Func<Pawn,string>; this
+// Runtime bridge for public pawn-context providers. Other mods register a Func<Pawn,string>; this
 // runner invokes those delegates during the existing impure pawn-summary snapshot and returns only
 // cleaned strings for the prompt pipeline.
 using System;
@@ -44,7 +44,7 @@ namespace PawnDiary.Integration
 
         /// <summary>
         /// Same as <see cref="BuildContextLines"/> but returns the individual cleaned lines instead of
-        /// joining them. Used by the public pawn-summary snapshot (API v6, C-CTX-2), which keeps each
+        /// joining them. Used by the public pawn-summary snapshot, which keeps each
         /// provider's contribution as its own list entry. Returns an empty list under the same guards.
         /// </summary>
         public static List<string> BuildContextLineList(Pawn pawn)

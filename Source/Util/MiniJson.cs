@@ -14,7 +14,7 @@ namespace PawnDiary
     /// literals true/false/null map to bool/null. This matches the shape the callers
     /// previously consumed from JavaScriptSerializer.DeserializeObject.
     /// </summary>
-    public static class MiniJson
+    internal static class MiniJson
     {
         private const int MaxDepth = 256;
 

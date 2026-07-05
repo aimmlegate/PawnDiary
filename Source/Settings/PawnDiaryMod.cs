@@ -7,7 +7,7 @@ using Verse;
 namespace PawnDiary
 {
     /// <summary>Top-level page selection in the Pawn Diary settings window.</summary>
-    public enum PawnDiarySettingsTab
+    internal enum PawnDiarySettingsTab
     {
         Main,
         Prompts,
@@ -16,7 +16,7 @@ namespace PawnDiary
     }
 
     /// <summary>Advanced field-list filter selected by the settings window.</summary>
-    public enum AdvancedFieldFilterMode
+    internal enum AdvancedFieldFilterMode
     {
         All,
         Changed,

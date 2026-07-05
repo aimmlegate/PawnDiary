@@ -2,7 +2,8 @@
 
 A one-page overview for mod authors who want another mod to read or write a colonist's diary.
 For the full contract, see [`INTEGRATIONS.md`](INTEGRATIONS.md). For a buildable template, copy
-[`integrations/PawnDiary.ExampleAdapter/`](integrations/PawnDiary.ExampleAdapter/).
+[`integrations/PawnDiary.ExampleAdapter/`](integrations/PawnDiary.ExampleAdapter/) and start with
+`Source/PawnDiaryExampleApi.cs`, the single documented example file that calls `PawnDiaryApi`.
 
 > **Public surface:** the `PawnDiary.Integration` namespace — `PawnDiaryApi` (static facade) plus
 > plain request/snapshot DTOs. Anything outside that namespace is internal and may change.
@@ -16,10 +17,11 @@ lets *your* mod do the same thing: push a moment into a pawn's diary, read diary
 your own pawn context into Pawn Diary's prompts. Your adapter stays a normal mod — Pawn Diary owns
 the LLM call, prompt framing, safety text, parsing, persistence, and the Diary tab.
 
-Current contract version: `PawnDiaryApi.ApiVersion == 23`. Feature-detect before using newer members:
+Current contract version: `PawnDiaryApi.ApiVersion == 1`. Future additive members will bump this to
+`2+`; feature-detect before using those future members:
 
 ```csharp
-if (PawnDiaryApi.ApiVersion >= 23) { /* use a newer member */ }
+if (PawnDiaryApi.ApiVersion >= 2) { /* use a future member */ }
 ```
 
 ---
@@ -28,7 +30,13 @@ if (PawnDiaryApi.ApiVersion >= 23) { /* use a newer member */ }
 
 1. **Reference** `1.6/Assemblies/PawnDiary.dll` (`<Private>false</Private>` — don't bundle it).
 2. **Load after** Pawn Diary (add it to your `About.xml` `<modDependencies>` or `<loadAfter>`).
-3. **Submit** an event from a main-thread hook:
+3. **Check status** before doing work:
+
+```csharp
+if (!PawnDiaryApi.IsReady || !PawnDiaryApi.IsExternalApiEnabled) return;
+```
+
+4. **Submit** an event from a main-thread hook:
 
 ```csharp
 using PawnDiary.Integration;
@@ -63,21 +71,23 @@ That's it. Open the pawn's Diary tab and trigger your hook.
 
 ## What can the API do?
 
-| You want to… | Call | Since |
-|---|---|---|
-| Push an event for Pawn Diary to write about | `SubmitEvent` / `SubmitEventWithHandle` | v1 / v8 |
-| Push your **own final prose**, no LLM rewrite | `SubmitDirectEntry` | v9 |
-| Push an entry **idea** (instruction), Pawn Diary writes it | `SubmitPromptEntry` | v22 |
-| Know *why* a submit didn't record | `SubmitEvent(req, out SubmitEventOutcome)` | v23 |
-| Inspect the prompt an event would produce (no tokens spent) | `PreviewPrompt` | v15 / v22 |
-| Be told when an entry finishes generating | `RegisterEntryStatusListener` | v10 |
-| Poll one entry's status / read its prose | `GetEntryStatus` / `GetEntrySnapshot` | v8 / v17 |
-| Read recent titles, memory summaries, or counts | `GetRecentEntryTitles` / `GetContextSnapshot` / `GetEntryStats` | v2 / v7 / v20 |
-| Read the structured pawn summary Pawn Diary would prompt with | `GetPawnSummary` | v6 |
-| Read the live condition/enchantment candidates | `GetPromptEnchantments` | v6 |
-| Read or set the pawn's writing style / generation toggle | `GetWritingStyle`, `SetWritingStyleOverride`, `IsDiaryGenerationEnabled`… | v3 / v12–14 |
-| Contribute one `key=value` context line to every pawn summary | `RegisterPawnContextProvider` | v4 |
-| Get style + summary + enchantments + recent memory in one call | `GetContextBundle` | v21 |
+| You want to… | Call |
+|---|---|
+| Check whether the API can be used right now | `IsReady` + `IsExternalApiEnabled` |
+| Push an event for Pawn Diary to write about | `SubmitEvent` / `SubmitEventWithHandle` |
+| Push your **own final prose**, no LLM rewrite | `SubmitDirectEntry` |
+| Push an entry **idea** (instruction), Pawn Diary writes it | `SubmitPromptEntry` |
+| Know *why* a submit didn't record | `SubmitEvent(req, out SubmitEventOutcome)` |
+| Force a valid external write through soft drops | `request.forceRecord = true` |
+| Inspect the prompt an event would produce (no tokens spent) | `PreviewPrompt` |
+| Be told when an entry finishes generating | `RegisterEntryStatusListener` |
+| Poll one entry's status / read its prose | `GetEntryStatus` / `GetEntrySnapshot` |
+| Read recent titles, memory summaries, or counts | `GetRecentEntryTitles` / `GetContextSnapshot` / `GetEntryStats` |
+| Read the structured pawn summary Pawn Diary would prompt with | `GetPawnSummary` |
+| Read the live condition/enchantment candidates | `GetPromptEnchantments` |
+| Read or set the pawn's writing style / generation toggle | `GetWritingStyle`, `SetWritingStyleOverride`, `IsDiaryGenerationEnabled`… |
+| Contribute one `key=value` context line to every pawn summary | `RegisterPawnContextProvider` |
+| Get style + summary + enchantments + recent memory in one call | `GetContextBundle` |
 
 Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API reference.
 
@@ -93,9 +103,10 @@ Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API
   unclaimed key, exhausted budget, or pipeline drop. One log line per cause, attributed to your
   `sourceId`.
 - **Master toggle.** Players can disable all integrations in Pawn Diary's settings
-  (*Allow external mod integrations*). When off, submissions and reads return safe empty values and
-  registered providers/listeners are not invoked — but registration is still accepted, so things
-  work again if the player re-enables.
+  (*Allow external mod integrations*, enabled by default). Check `PawnDiaryApi.IsExternalApiEnabled`
+  before doing adapter work. When off, submissions and reads return safe empty values and registered
+  providers/listeners are not invoked — but registration is still accepted, so things work again if
+  the player re-enables.
 - **`eventKey` is save-data.** It's stored on diary events like a defName. **Never rename one** you
   have shipped. Lowercase, `snake_case`, prefixed with your mod's short name (`youradapter_*`).
 - **Additive only.** The public surface only ever grows — members are added, never renamed, removed,
@@ -108,7 +119,10 @@ Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API
   `SubmitDirectEntry` only when it may queue title generation) reserve against an XML-tuned rolling
   budget with per-source and global caps. State is transient (not saved). If you burst-submit and
   start getting `DroppedBudget`, back off — the reservation is refunded when the pipeline drops a
-  valid event, so drops don't permanently consume your window.
+  valid event, so drops don't permanently consume your window. For rare adapter-owned triggers that
+  must create a diary event, set `forceRecord=true` on write request DTOs; it bypasses budget,
+  group/user toggles, and dedup, but not required fields, main-thread readiness, the master toggle,
+  ordinary `SubmitEvent` group XML, or diary-owner eligibility.
 
 ---
 
@@ -117,8 +131,8 @@ Full signatures and field semantics: [`INTEGRATIONS.md`](INTEGRATIONS.md) § API
 | Path | Who writes the prose? | LLM tokens spent? | External group required? |
 |---|---|---|---|
 | `SubmitEvent` / `SubmitEventWithHandle` | Pawn Diary (normal generation) | Yes | **Yes** (claims `eventKey`) |
-| `SubmitPromptEntry` (v22) | Pawn Diary, from your instruction | Yes | Optional |
-| `SubmitDirectEntry` (v9) | **You** (final text passed in) | No (unless title generation) | Optional |
+| `SubmitPromptEntry` | Pawn Diary, from your instruction | Yes | Optional |
+| `SubmitDirectEntry` | **You** (final text passed in) | No (unless title generation) | Optional |
 
 ---
 
@@ -135,7 +149,8 @@ are independent copies: mutating game state after the call does not change a sna
 
 - **Full contract & field-by-field semantics** — [`INTEGRATIONS.md`](INTEGRATIONS.md)
 - **Buildable reference adapter** — [`integrations/PawnDiary.ExampleAdapter/`](integrations/PawnDiary.ExampleAdapter/)
-  (copy it and swap the timer for your trigger); see also [`integrations/README.md`](integrations/README.md)
+  (copy it, start with `Source/PawnDiaryExampleApi.cs`, and swap the quick debug action for your
+  trigger); see also [`integrations/README.md`](integrations/README.md)
 - **Architecture / data flow** — [`DOCUMENTATION.md`](DOCUMENTATION.md) §3.7
 - **Planned (not-yet-shipped) capabilities** — [`design/EXTERNAL_API_CAPABILITIES.md`](design/EXTERNAL_API_CAPABILITIES.md)
 - **Test the pipeline in-game** — Dev mode → Debug Actions → **Pawn Diary Example Adapter** →

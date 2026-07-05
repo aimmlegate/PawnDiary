@@ -25,7 +25,7 @@ namespace PawnDiary.Capture
     /// are copied onto every per-pawn payload because the catalog dispatch is per-pawn — each Decide
     /// call must be self-contained.
     /// </summary>
-    public class MoodEventData : DiaryEventData
+    internal class MoodEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.MoodEvent;
 

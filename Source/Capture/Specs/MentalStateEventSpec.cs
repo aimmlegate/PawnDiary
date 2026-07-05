@@ -1,7 +1,7 @@
 // Spec for MentalState. Thin wrapper around the pure MentalStateEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class MentalStateEventSpec : DiaryEventSpec
+    internal class MentalStateEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.MentalState;
 

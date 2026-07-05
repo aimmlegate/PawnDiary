@@ -8,13 +8,14 @@
 //
 // The four entries:
 //   1. Open API explorer…       — opens the three-pane window (the main UI).
-//   2. Submit example event…    — the canonical minimal SubmitEvent example (replaces the old
-//                                 daily timer; copy this for a real adapter trigger).
+//   2. Submit example event…    — calls the documented quiet-moment wrapper in
+//                                 PawnDiaryExampleApi.cs.
 //   3. Preview example prompt…  — side-effect-free preview of the same event's assembled prompt.
 //   4. Dump context bundle…     — writes one pawn's full context bundle to Player.log (quick
 //                                 "what does Pawn Diary know about this pawn right now" probe).
 //
 // New to C#/RimWorld? See AGENTS.md. For the public API these call, see EXTERNAL_API.md.
+using System;
 using System.Collections.Generic;
 using System.Text;
 using LudeonTK;
@@ -29,35 +30,33 @@ namespace PawnDiaryExampleAdapter
     /// </summary>
     public static class PawnDiaryExampleDebugActions
     {
-        // The category string is what groups these in the Debug Actions menu.
+        /// <summary>Debug Action category used to group the example adapter actions in RimWorld.</summary>
         private const string Category = "Pawn Diary Example Adapter";
-        private const string SourceId = "aimmlegate.pawndiary.adapter.example";
-        private const string ExampleEventKey = "exampleadapter_quiet_moment";
 
         /// <summary>
-        /// Opens the API Explorer window — the main UI for testing every PawnDiaryApi method.
+        /// Opens the API Explorer window, the main UI for testing every public API wrapper.
         /// </summary>
         [DebugAction(Category, "Open API explorer…", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void OpenApiExplorer()
         {
-            if (!Prefs.DevMode || !PawnDiaryApi.IsReady)
+            if (!Prefs.DevMode || !PawnDiaryExampleApi.IsReady)
             {
                 return;
             }
 
+            CloseDebugLauncherWindows();
             Find.WindowStack.Add(new PawnDiaryApiExplorerWindow());
         }
 
         /// <summary>
-        /// Canonical minimal example: submits one external event for a randomly chosen colonist.
-        /// Copy this method's request shape (and the matching group XML in
-        /// 1.6/Defs/DiaryExternalGroups_Example.xml) to start a real adapter — swap this dev-action
-        /// trigger for a hook into your target mod.
+        /// Submits the documented quiet-moment sample event for a randomly chosen colonist. The
+        /// request shape lives in PawnDiaryExampleApi.BuildQuietMomentRequest so authors can copy the
+        /// integration layer without copying this debug-action UI trigger.
         /// </summary>
         [DebugAction(Category, "Submit example event (random colonist)…", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void SubmitExampleEvent()
         {
-            if (!Prefs.DevMode || !PawnDiaryApi.IsReady)
+            if (!CanUseExternalApi())
             {
                 return;
             }
@@ -69,22 +68,14 @@ namespace PawnDiaryExampleAdapter
                 return;
             }
 
-            bool recorded = PawnDiaryApi.SubmitEvent(new ExternalEventRequest
-            {
-                sourceId = SourceId,
-                eventKey = ExampleEventKey,
-                subject = subject,
-                // Adapter-owned Keyed strings — see Languages/English/Keyed/ExampleAdapter.xml.
-                summaryText = "PawnDiaryExampleAdapter.QuietMomentSummary".Translate(subject.LabelShortCap).Resolve(),
-                eventLabel = "PawnDiaryExampleAdapter.QuietMomentLabel".Translate().Resolve(),
-                extraContext = new List<string> { "origin=example_dev_action" }
-            }, out SubmitEventOutcome outcome);
+            bool recorded = PawnDiaryExampleApi.SubmitQuietMoment(subject, out SubmitEventOutcome outcome);
 
             // Resolve the outcome to a string before interpolation so we don't box the enum through
             // the obsolete Translator.Translate(string, params object[]) overload.
+            string subjectLabel = subject.LabelShortCap.ToString();
             TaggedString msg = recorded
-                ? "PawnDiaryExampleAdapter.Quick.Submitted".Translate(subject.LabelShortCap, outcome.ToString())
-                : "PawnDiaryExampleAdapter.Quick.NotSubmitted".Translate(subject.LabelShortCap, outcome.ToString());
+                ? "PawnDiaryExampleAdapter.Quick.Submitted".Translate(subjectLabel, outcome.ToString())
+                : "PawnDiaryExampleAdapter.Quick.NotSubmitted".Translate(subjectLabel, outcome.ToString());
             Messages.Message(msg, MessageTypeDefOf.NeutralEvent, false);
         }
 
@@ -95,7 +86,7 @@ namespace PawnDiaryExampleAdapter
         [DebugAction(Category, "Preview example event prompt…", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void PreviewExampleEventPrompt()
         {
-            if (!Prefs.DevMode || !PawnDiaryApi.IsReady)
+            if (!CanUseExternalApi())
             {
                 return;
             }
@@ -107,13 +98,7 @@ namespace PawnDiaryExampleAdapter
                 return;
             }
 
-            DiaryPromptPreviewSnapshot preview = PawnDiaryApi.PreviewPrompt(new ExternalEventRequest
-            {
-                sourceId = SourceId,
-                eventKey = ExampleEventKey,
-                subject = subject,
-                summaryText = "PawnDiaryExampleAdapter.QuietMomentSummary".Translate(subject.LabelShortCap).Resolve()
-            });
+            DiaryPromptPreviewSnapshot preview = PawnDiaryExampleApi.PreviewQuietMoment(subject);
 
             if (preview == null)
             {
@@ -139,7 +124,7 @@ namespace PawnDiaryExampleAdapter
         [DebugAction(Category, "Dump context bundle to log…", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void DumpContextBundle()
         {
-            if (!Prefs.DevMode || !PawnDiaryApi.IsReady)
+            if (!CanUseExternalApi())
             {
                 return;
             }
@@ -151,7 +136,7 @@ namespace PawnDiaryExampleAdapter
                 return;
             }
 
-            DiaryContextBundleSnapshot bundle = PawnDiaryApi.GetContextBundle(subject, 5);
+            DiaryContextBundleSnapshot bundle = PawnDiaryExampleApi.GetQuickContextBundle(subject);
             if (bundle == null)
             {
                 Log.Warning("[Pawn Diary Example Adapter] GetContextBundle returned null for " + subject.LabelShortCap + ".");
@@ -162,17 +147,62 @@ namespace PawnDiaryExampleAdapter
             sb.AppendLine("[Pawn Diary Example Adapter] Context bundle for " + subject.LabelShortCap + ":");
             sb.AppendLine(SnapshotFormatter.Format(bundle));
             Log.Message(sb.ToString());
-            Messages.Message("PawnDiaryExampleAdapter.Quick.BundleLogged".Translate(subject.LabelShortCap), MessageTypeDefOf.NeutralEvent, false);
+            Messages.Message("PawnDiaryExampleAdapter.Quick.BundleLogged".Translate(subject.LabelShortCap.ToString()), MessageTypeDefOf.NeutralEvent, false);
         }
 
         // --------------------------------------------------------------------------------------------
         // Helpers
         // --------------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Picks one eligible colony pawn for the quick debug actions.
+        /// </summary>
+        /// <returns>A random eligible pawn, or null when the current map has no usable pawn.</returns>
         private static Pawn PickRandomColonist()
         {
             List<Pawn> pool = ExplorerPawns.EligiblePawns();
             return (pool == null || pool.Count == 0) ? null : pool.RandomElement();
+        }
+
+        /// <summary>
+        /// Checks whether the quick debug actions are allowed to call the example API facade.
+        /// </summary>
+        /// <returns>True when Dev Mode is active, Pawn Diary is ready, and external API access is enabled.</returns>
+        private static bool CanUseExternalApi()
+        {
+            if (!Prefs.DevMode || !PawnDiaryExampleApi.IsReady)
+            {
+                return false;
+            }
+
+            if (PawnDiaryExampleApi.CanUseExternalApi)
+            {
+                return true;
+            }
+
+            Messages.Message("PawnDiaryExampleAdapter.Quick.ApiDisabled".Translate(), MessageTypeDefOf.RejectInput, false);
+            return false;
+        }
+
+        /// <summary>
+        /// Closes RimWorld's debug launcher dialogs before opening the explorer window.
+        /// </summary>
+        private static void CloseDebugLauncherWindows()
+        {
+            List<Window> toClose = new List<Window>();
+            foreach (Window window in Find.WindowStack.Windows)
+            {
+                string typeName = window.GetType().FullName ?? string.Empty;
+                if (typeName.StartsWith("LudeonTK.Dialog_Debug", StringComparison.Ordinal))
+                {
+                    toClose.Add(window);
+                }
+            }
+
+            foreach (Window window in toClose)
+            {
+                window.Close(false);
+            }
         }
     }
 }

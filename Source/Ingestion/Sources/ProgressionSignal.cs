@@ -9,7 +9,7 @@ namespace PawnDiary.Ingestion
     /// <summary>
     /// Carries one already-detected progression moment through the shared catalog dispatcher.
     /// </summary>
-    public sealed class ProgressionSignal : DiarySignal
+    internal sealed class ProgressionSignal : DiarySignal
     {
         private readonly ProgressionEventData payload;
         private readonly Pawn pawn;

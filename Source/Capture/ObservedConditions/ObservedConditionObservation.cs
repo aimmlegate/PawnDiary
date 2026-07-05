@@ -27,7 +27,7 @@ namespace PawnDiary
     /// fields (which Def, which map/pawn) plus optional "evidence" describing the concrete thing that
     /// proves the condition (for example a gray-flesh sample), which later colors the diary page text.
     /// </summary>
-    public sealed class ObservedConditionObservation
+    internal sealed class ObservedConditionObservation
     {
         // Identity: which Def saw this, and the stable key it shares across renames.
         public string conditionDefName;

@@ -19,7 +19,7 @@ namespace PawnDiary.Ingestion
     /// Captures one TaleRecorder event and emits it via the route the catalog chose. Built by
     /// <see cref="TaleRecorderPatch"/> and submitted via <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
-    public sealed class TaleSignal : DiarySignal
+    internal sealed class TaleSignal : DiarySignal
     {
         private readonly Tale tale;
         private readonly TaleDef taleDef;

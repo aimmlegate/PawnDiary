@@ -22,7 +22,7 @@ namespace PawnDiary.Ingestion
     /// <see cref="DiaryEvents.Submit(DiaryFanoutSignal)"/>. All raid-level gates (group classification +
     /// user toggle, valid target map) run in the constructor; if any fails the fan-out yields nothing.
     /// </summary>
-    public sealed class RaidFanoutSignal : DiaryFanoutSignal
+    internal sealed class RaidFanoutSignal : DiaryFanoutSignal
     {
         private readonly bool valid;
         private readonly Map map;

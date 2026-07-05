@@ -19,7 +19,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Captured facts for one pawn's perspective on a finished ritual.
     /// </summary>
-    public class RitualEventData : DiaryEventData
+    internal class RitualEventData : DiaryEventData
     {
         public const string PerspectiveOrganizer = "author";
         public const string PerspectiveTarget = "target";

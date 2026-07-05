@@ -35,7 +35,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 23;
+        public const int ApiVersion = 1;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -45,6 +45,16 @@ namespace PawnDiary.Integration
         public static bool IsReady
         {
             get { return DiaryGameComponent.GamePlaying && DiaryGameComponent.Instance != null; }
+        }
+
+        /// <summary>
+        /// True when the player has enabled Pawn Diary's public integration API in mod settings.
+        /// This is separate from <see cref="IsReady"/>: menus/loading screens can be "enabled but not
+        /// ready", while an active game can be ready but globally disabled by the player.
+        /// </summary>
+        public static bool IsExternalApiEnabled
+        {
+            get { return ExternalIntegrationsAllowed; }
         }
 
         /// <summary>
@@ -228,7 +238,9 @@ namespace PawnDiary.Integration
         /// adapter can tell apart the distinct reasons a submission did not record (invalid request,
         /// off-thread call, ineligible, budget-exhausted, or dropped by the pipeline) instead of
         /// collapsing them into one boolean. Returns true when the event was recorded; otherwise sets
-        /// <paramref name="outcome"/> and returns false. Never throws. API v23.
+        /// <paramref name="outcome"/> and returns false. Never throws. Requests can set
+        /// <see cref="ExternalEventRequest.forceRecord"/> for adapter-controlled moments that should
+        /// bypass soft budget/dedup/user-toggle drops.
         /// </summary>
         public static bool SubmitEvent(ExternalEventRequest request, out SubmitEventOutcome outcome)
         {
@@ -240,8 +252,10 @@ namespace PawnDiary.Integration
                     return false;
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
-                    request, "SubmitEvent", out ExternalApiBudgetReservation reservation))
+                ExternalApiBudgetReservation reservation = null;
+                if (!request.forceRecord
+                    && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
+                        request, "SubmitEvent", out reservation))
                 {
                     outcome = SubmitEventOutcome.DroppedBudget;
                     return false;
@@ -292,8 +306,10 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
-                    request, "SubmitEventWithHandle", out ExternalApiBudgetReservation reservation))
+                ExternalApiBudgetReservation reservation = null;
+                if (!request.forceRecord
+                    && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
+                        request, "SubmitEventWithHandle", out reservation))
                 {
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
@@ -332,8 +348,10 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
-                    request, "SubmitPromptEntry", out ExternalApiBudgetReservation reservation))
+                ExternalApiBudgetReservation reservation = null;
+                if (!request.forceRecord
+                    && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
+                        request, "SubmitPromptEntry", out reservation))
                 {
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
@@ -372,8 +390,10 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForDirectEntry(
-                    request, out ExternalApiBudgetReservation reservation))
+                ExternalApiBudgetReservation reservation = null;
+                if (!request.forceRecord
+                    && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForDirectEntry(
+                        request, out reservation))
                 {
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
@@ -1184,7 +1204,7 @@ namespace PawnDiary.Integration
         }
 
         /// <summary>
-        /// Same validation as the 4-param overload, but also reports a public outcome so the v23
+        /// Same validation as the 4-param overload, but also reports a public outcome so the
         /// <see cref="SubmitEvent(ExternalEventRequest, out SubmitEventOutcome)"/> overload can tell
         /// adapters apart: invalid request, off-thread call, ineligible (no game / master toggle off /
         /// pawn fails owner eligibility), or no External-domain group claiming the key (also folded

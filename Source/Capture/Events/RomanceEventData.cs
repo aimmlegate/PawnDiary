@@ -18,7 +18,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one romance-relation change. Filled by RomanceSignal from the live Pawn
     /// pair + the added PawnRelationDef.
     /// </summary>
-    public class RomanceEventData : DiaryEventData
+    internal class RomanceEventData : DiaryEventData
     {
         /// <summary>Kind token derived from the relation defName: "married" (Spouse),
         /// "lover" (Lover), "divorce" (ExSpouse), "breakup" (ExLover). Falls back to the raw

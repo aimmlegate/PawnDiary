@@ -12,7 +12,7 @@ namespace PawnDiary.Capture
     /// <summary>
     /// Builds transient dedup keys for the generic event-type safety window.
     /// </summary>
-    public static class GenericEventTypeDedup
+    internal static class GenericEventTypeDedup
     {
         private const string Prefix = "event-type";
         private const string EmptySubject = "none";

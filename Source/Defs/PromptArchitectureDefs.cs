@@ -61,7 +61,7 @@ namespace PawnDiary
     /// Lookup helper for event prompt policy. The adapter resolves this on the impure side and copies
     /// only plain strings into the pure pipeline snapshot.
     /// </summary>
-    public static class DiaryEventPrompts
+    internal static class DiaryEventPrompts
     {
         private static readonly Dictionary<string, DiaryEventPromptDef> Fallbacks =
             new Dictionary<string, DiaryEventPromptDef>(StringComparer.OrdinalIgnoreCase);
@@ -163,7 +163,7 @@ namespace PawnDiary
     /// Central lookup helper for prompt templates. Code asks for a stable template key; XML owns the
     /// field list and may override the system prompt or final instruction for that key.
     /// </summary>
-    public static class DiaryPromptTemplates
+    internal static class DiaryPromptTemplates
     {
         public const string PairDefault = "PairDefault";
         public const string PairImportant = "PairImportant";
@@ -465,7 +465,7 @@ namespace PawnDiary
     /// Lookup helper for context reaction policies. New C# trackers can add a reactionKey and XML can
     /// decide whether/how it appears without creating more settings fields.
     /// </summary>
-    public static class DiaryContextReactions
+    internal static class DiaryContextReactions
     {
         public const string ActiveMapConditions = "ActiveMapConditions";
         public const string RecentThreatLetter = "RecentThreatLetter";

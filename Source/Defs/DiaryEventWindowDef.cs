@@ -34,7 +34,7 @@ namespace PawnDiary
         /// <summary>
         /// Copies the XML trigger into the pure matcher contract.
         /// </summary>
-        public EventWindowTriggerRule ToRule()
+        internal EventWindowTriggerRule ToRule()
         {
             return new EventWindowTriggerRule
             {
@@ -134,13 +134,13 @@ namespace PawnDiary
         private List<EventWindowTriggerRule> endRulesCache;
 
         /// <summary>Cached pure trigger rules that can START this window.</summary>
-        public List<EventWindowTriggerRule> StartRules()
+        internal List<EventWindowTriggerRule> StartRules()
         {
             return startRulesCache ?? (startRulesCache = RulesFrom(startSignals));
         }
 
         /// <summary>Cached pure trigger rules that can END this window.</summary>
-        public List<EventWindowTriggerRule> EndRules()
+        internal List<EventWindowTriggerRule> EndRules()
         {
             return endRulesCache ?? (endRulesCache = RulesFrom(endSignals));
         }

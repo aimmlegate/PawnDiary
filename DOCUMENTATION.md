@@ -231,7 +231,7 @@ of dedup instead of clearing the store. The coverage table below lists each sour
 ### 3.7 External integrations (`PawnDiaryApi`)
 
 Other mods push events INTO the diary through one public facade:
-`PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)` (or, since API v23, the
+`PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)` (or the
 `SubmitEvent(ExternalEventRequest, out SubmitEventOutcome)` overload when they need to distinguish
 the reason a submission did not record), when they need to track the created entry
 `SubmitEventWithHandle(ExternalEventRequest)`, or when they already own final prose
@@ -241,7 +241,19 @@ Calls are validated, wrapped so an adapter bug can never break the game loop, ma
 and then submitted as external ingestion signals — so external events get the standard treatment: pure
 `ExternalEventData.Decide`, the shared dedup store (`externalEventDedupTicks`, with a per-request
 override), group enablement when a group applies, and event-store writes. A supplied eligible partner
-makes ordinary external events pairwise; direct entries require nonblank `partnerText` too.
+makes ordinary external events pairwise; direct entries require nonblank `partnerText` too. Write
+request DTOs can set `forceRecord=true` for adapter-owned triggers that must record a diary event.
+Forced writes skip soft gates (external budget, group/user toggles, source and generic dedup); they
+still require valid fields, main-thread/game readiness, the master integration toggle, the ordinary
+`SubmitEvent` group requirement, and a base diary-eligible subject.
+
+The master integration toggle is saved in `PawnDiarySettings.allowExternalIntegrations`, appears on
+the main mod settings page as *Allow external mod integrations*, and defaults to enabled. The public
+facade exposes `PawnDiaryApi.IsExternalApiEnabled` so adapters can distinguish "the game/component is
+not ready yet" (`IsReady=false`) from "the player has disabled external API behavior"
+(`IsExternalApiEnabled=false`). When disabled, submissions and reads return their safe empty values
+and registered providers/listeners are not invoked; registration itself remains accepted so a later
+re-enable works without restarting.
 
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
@@ -266,7 +278,9 @@ budget DTOs) are `internal` — the public adapter contract is only the `PawnDia
 namespace, and `[InternalsVisibleTo("DiaryPipelineTests")]` lets the standalone pure test project
 reach them. A defensive `ExternalEventRequestText.MaxRequestContextLines` (64) caps the total
 `key=value` fields one request can write into saved gameContext, so raising the XML-tuned
-enchantment-candidate cap cannot grow saved state without bound (mirrors `MaxListeners`).
+enchantment-candidate cap cannot grow saved state without bound (mirrors `MaxListeners`). Protected
+prompt fields are added first; ordinary adapter `extraContext` can only use the remaining slots, so a
+candidate-heavy request cannot exceed the same absolute ceiling.
 Saved external `gameContext` always starts with `external=...`; the domain classifier gives that
 marker precedence so adapter-supplied `extraContext` keys cannot make an external page display as a
 native Thought, Work, Hediff, or other built-in event domain. Adapter input is confined to being a
@@ -290,7 +304,8 @@ a transient rolling reservation list (not saved) and evaluates it with the pure
 generation cost from the player's `maxTokens`, the queueable POV count, and optional title follow-up
 tokens; `SubmitPromptEntry` uses that same estimate but does not require an External group; while
 `SubmitDirectEntry` estimates only the title-only requests it can actually queue when
-`generateTitleIfMissing` is true. Prompt-test mode, missing active API lanes, disabled External
+`generateTitleIfMissing` is true. `forceRecord=true` skips this reservation for valid write
+requests. Prompt-test mode, missing active API lanes, disabled External
 groups when present, per-pawn diary-generation disablement, and incapacitation skips do not consume
 budget because they would not enqueue LLM work. The XML knobs live in `DiaryTuningDef`
 (`integrationPromptBudgetEnabled`, `integrationPromptBudgetWindowTicks`,
@@ -303,236 +318,50 @@ then drops the event (dedup window, disabled group, pawn state), so a burst of d
 submissions cannot exhaust an adapter's window without any tokens actually being queued. `SubmitEvent`
 dispatches the signal directly (rather than fire-and-forget) so it can apply that refund while keeping
 its documented "validated and handed off" return; callers needing the real outcome use
-`SubmitEventWithHandle`, or the v23 `SubmitEvent(request, out SubmitEventOutcome)` overload which
+`SubmitEventWithHandle`, or the `SubmitEvent(request, out SubmitEventOutcome)` overload which
 distinguishes `DroppedBudget` from `DroppedByPipeline` and the other drop reasons.
 
-API v2 adds a narrow read side for adapters:
-`PawnDiaryApi.GetRecentEntryTitles(Pawn, int)` returns newest completed `DiaryEntryTitleSnapshot`
-rows for one pawn. The snapshot is intentionally small (`tick`, `date`, `eventId`, `povRole`,
-`title`, `groupLabel`, v18 external attribution fields, `archived`) and omits generated prose,
-prompts, raw responses, and live RimWorld objects. It is main-thread only and returns an empty list
-instead of throwing, matching the adapter-safety rule of `SubmitEvent`.
+The public v1 read side is prompt-free and snapshot-based. `GetRecentEntryTitles`,
+`GetContextSnapshot`, `GetEntryStats`, `GetEntrySnapshot`, and `GetEntryStatus` all read the same hot
+plus compact-archive views used by the Diary tab, apply `DiaryEntryTitleQuery` where relevant, and
+return plain DTOs rather than live RimWorld objects. Snapshots can expose external source
+attribution (`externallyAuthored`, `externalSourceId`), lifecycle status, title/prose presence,
+semantic domain, atmosphere, and aggregate counts, but never prompts, raw provider responses, errors,
+or in-flight pages.
 
-API v5 extends that read with an additive overload:
-`PawnDiaryApi.GetRecentEntryTitles(Pawn, int, DiaryEntryTitleQuery)`. The returned DTO stays the
-same, but callers can filter by semantic domain (`TextDecorationContext.domain`), atmosphere cue,
-POV role, human-readable date fragment, inclusive tick bounds, and active/archived state. The
-filter is applied to the same hot + compact-archive view path as the v2 read, so no new save fields
-or prompt data are exposed.
-API v19 adds more fields to that same query DTO: cleaned external source id, saved event key/source
-defName, paired partner pawn id, importance, title presence, and generated-prose presence. The three
-boolean-style filters are tri-state integers (`-1` any, `0` false, positive true) so older callers
-that leave them at the default keep v5 behavior.
+The public v1 context side exposes the machinery Pawn Diary already builds for prompts without
+driving another LLM call. `GetWritingStyle` publishes the pawn's base saved diary voice;
+`GetAvailableWritingStyles` lists the effective style catalog; `SetWritingStyleOverride` and
+`ResetWritingStyleOverride` manage source-owned temporary voice rules; `RegisterPawnContextProvider`
+adds compact adapter-owned `key=value` lines to pawn summaries; `GetPawnSummary` returns structured
+identity/mood/health/thought/provider facts; `GetPromptEnchantments` returns the prompt-enchantment
+candidate set before the final weighted roll; and `GetContextBundle` packages style, summary,
+enchantments, and recent memory in one DTO.
 
-API v20 adds cheap aggregate stats through `PawnDiaryApi.GetEntryStats(Pawn)` and
-`PawnDiaryApi.GetEntryStats(Pawn, DiaryEntryTitleQuery)`. It reads the same hot and compact archive
-views as the title/context APIs, applies the same `DiaryEntryTitleQuery` filters, deduplicates by
-entry key, and returns primitive counts in `DiaryEntryStatsSnapshot`: total, active/archive split,
-normalized lifecycle buckets, title/prose presence, and newest/oldest tick/date. It does not
-materialize title/prose rows and treats archived stale generation state as failed, matching the
-effective status adapters see elsewhere. The archive scan is capped by
-`integrationStatsMaxArchiveScan` (default 500, newest-first): a long-lived colonist's full archive is
-never walked on one stats read, so counts become approximate beyond the cap — the intended trade for
-a main-thread-cheap aggregate.
+The buildable example adapter keeps all direct public API calls in
+`integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleApi.cs`. That file acts as the
+copyable integration layer: it wraps status checks, submissions, reads, prompt previews, context
+providers, status listeners, and style overrides, with XML doc comments spelling out required args
+and safe return values. The explorer window and quick debug actions call through that facade so
+adapter authors can ignore the UI harness when copying the sample.
 
-API v21 adds the C-CTX-5 context bundle through `PawnDiaryApi.GetContextBundle(...)` overloads.
-`DiaryContextBundleSnapshot` composes the existing base writing style, structured pawn summary,
-prompt-enchantment candidates, and recent generated-entry context into one prompt-free DTO for
-adapters that otherwise call those readers together. The bundle introduces no new policy: the query
-overloads filter only `recentContext`, and `includeImportantEventContext` affects only
-`promptEnchantments`.
+`SubmitEventWithHandle` returns stable `DiaryEntryHandle` values when the pipeline creates an entry,
+and `RegisterEntryStatusListener` lets adapters receive compact lifecycle snapshots after a POV's
+main text or title status changes. `SubmitDirectEntry` creates normal saved diary events from
+caller-authored prose without queuing the main LLM rewrite; optional caller titles are cleaned and
+stored immediately, and `generateTitleIfMissing` may use the existing title-only path when enabled.
+`forceRecord=true` still requires a base diary-eligible subject, but bypasses soft direct-entry gates
+so caller-authored prose can be stored for adapter-owned triggers.
 
-API v3 adds one more read-only accessor: `PawnDiaryApi.GetWritingStyle(Pawn)` returns a small
-`DiaryWritingStyleSnapshot` (`styleDefName`, `label`, `rule`) carrying a pawn's **base** saved
-writing style — the same plain-language voice instruction the diary feeds its own prompts. It only
-*publishes* the style so a chat/context mod can align its voice with how the pawn writes; Pawn Diary
-never reads or drives another mod's persona. Like the title reader it is main-thread only and returns
-`null` instead of throwing. It is deliberately side-effect free: it resolves through `FindDiary(pawn,
-false)` so an external read never creates a diary record (a pawn with no record yet resolves to the
-default style), it excludes temporary hediff-driven style overrides (prompt-time only), and it
-carries no internal theme tags. API v13 external writing-style overrides also do not change this
-snapshot: v3 remains the base-style read.
-
-API v4 adds `PawnDiaryApi.RegisterPawnContextProvider(string id, Func<Pawn, string> provider)`.
-Registered providers run during `DiaryContextBuilder.BuildPawnSummary`, after DLC identity lines
-(`xenotype=`, `title=`, `faith=`) and before transient state (`mood=`, `health=`), so a personality
-mod can contribute one compact line such as `personality=blunt, curious`. The provider receives the
-live `Pawn` only in this impure snapshot phase; its return value is cleaned by the pure
-`PromptContextLines` helper (`OneLine`, `;`→`,`, count/length caps) before entering the prompt
-payload. A throwing provider is disabled and logged once. Registration is capped at 32 distinct ids
-(a churning-id adapter cannot grow the registry without bound) and re-registering an existing id
-replaces it in place; the registry is unsynchronized and is read only on the main thread, mirroring
-the main-thread rule the API enforces on registration. The settings master switch
-`allowExternalIntegrations` gates external submissions, read calls, and provider invocation.
-
-API v6 adds the "machinery as a service" reads (capability C-CTX-2 / C-CTX-3): two structured,
-side-effect-free exports of the prompt context Pawn Diary builds internally, so a chat/context mod
-can read our understanding of a pawn without us driving another model.
-`PawnDiaryApi.GetPawnSummary(Pawn)` returns a `DiaryPawnSummarySnapshot` — the same facts
-`BuildPawnSummary` would feed a prompt (sex, life stage, DLC identity, mood, health broken out into a
-`DiaryHealthSummarySnapshot` sub-DTO, low capacities, top thoughts, and the API v4 provider lines)
-but as named DTO fields rather than the internal `key=value` blob, so the assembly can keep evolving
-prompt text without breaking the additive-only contract. Both the prompt string and the snapshot
-format from one shared `PawnSummaryFacts` gather, so they cannot drift apart; comma-bearing labels
-stay as structured list entries until the final prompt string join, and the composite
-`BuildHealthSummary` was split into `CollectHealthFacts` + `FormatHealthSummary` + DTO fields along
-the way. `PawnDiaryApi.GetPromptEnchantments(Pawn, bool includeImportantEventContext = false)`
-returns the candidate **set** the planner would choose among right now
-(`List<DiaryPromptEnchantmentCandidateSnapshot>`), after hediff-style suppression, live event-window
-/ observed-condition candidates, and normal-context weight multipliers, but before the single rolled
-winner. Each candidate mirrors the internal `PromptEnchantmentCandidate` (post-multiplier weight,
-source hediff defName, priority/condition text, impact/configured cues) with independent list
-copies. Both are main-thread only, gated by `allowExternalIntegrations`, preserve global RNG state,
-return their safe empty value instead of throwing, never create a diary record, and — for
-`GetPromptEnchantments` — empty out when the player has disabled prompt enchantments in settings or
-the pawn is not diary-eligible.
-
-API v7 adds the prose-level memory read:
-`PawnDiaryApi.GetContextSnapshot(Pawn, int maxEntries)` plus the
-`DiaryEntryTitleQuery` overload. It returns a `DiaryContextSnapshot` whose entries are newest-first
-`DiaryEntryProseSnapshot` rows: title/fallback label metadata, semantic domain/atmosphere, archived
-flag, v18 external attribution fields, and the first sentence of completed player-visible generated
-prose. It reads the same hot and compact archive views as the Diary tab and v2/v5 title API, applies
-the same filters (including the v19 richer filters) and entry-key deduplication, and caps returned
-entries and summary length through `DiaryTuningDef`
-(`integrationContextMaxEntries`, `integrationContextSummaryMaxChars`). It never exposes prompts,
-raw provider responses, errors, in-flight pages, or raw fallback facts; `null` means the call was not
-allowed or the pawn is invalid, while an empty `entries` list means the pawn simply has no completed
-generated pages in the requested window. The snapshot's `newestTick`/`oldestTick` (and matching
-dates) are computed by an explicit min/max scan, not positional reads of the first/last entry: the
-entries list is assembled hot-first then archive (newest-first within each store, not globally
-tick-sorted), so a backdated archive row would otherwise be misreported as the oldest.
-
-API v8 adds tracked entry handles and status snapshots. `SubmitEventWithHandle` keeps the older
-`SubmitEvent` behavior intact but, when the pipeline actually creates an entry, returns a
-`DiaryEventSubmissionResult` with a subject `DiaryEntryHandle` and, for pairwise entries, a partner
-handle. A valid request that is deduped, disabled by policy, or dropped for eligibility returns
-`recorded=false` instead of a handle. `PawnDiaryApi.GetEntryStatus(DiaryEntryHandle)` and the
-`GetEntryStatus(string eventId, string povRole)` overload resolve those opaque handles back to the
-saved diary store and return a `DiaryEntryStatusSnapshot`: main generation status booleans, title
-status, date/tick, group/domain/atmosphere metadata, archived flags, and a capped first-sentence
-summary only after generated prose exists. In v18 the same DTO also carries external attribution
-fields for adapter-authored/influenced entries. It never exposes prompts, raw provider responses, or
-live game objects; `null` means no game, off-thread call, master toggle off, invalid handle, or an
-entry that has since been pruned.
-
-API v9 adds direct text injection through
-`PawnDiaryApi.SubmitDirectEntry(ExternalDirectEntryRequest)`. It creates a normal saved
-`DiaryEvent`, writes caller-authored subject prose directly into the generated-text slot, marks that
-POV complete/unread, and returns the same `DiaryEventSubmissionResult` handle shape as v8. It does
-not queue the main LLM rewrite or store prompts/raw responses. Optional caller titles are cleaned and
-stored immediately; when `generateTitleIfMissing` is true, blank titles may use the existing
-title-only LLM path only if the player has title generation enabled. Direct entries still respect the
-master integrations toggle, main-thread rule, dedup, group toggle when an External group claims the
-key, per-pawn diary generation enablement, and incapacitation skips. Unlike `SubmitEvent`, the
-External group is optional for direct text: an unclaimed key still records under the External domain
-using the raw key as label fallback. Body/title caps come from `DiaryTuningDef`
-(`integrationDirectTextMaxChars`, `integrationDirectTitleMaxChars`).
-
-API v10 adds entry lifecycle listeners. `PawnDiaryApi.RegisterEntryStatusListener(string id,
-Action<DiaryEntryStatusSnapshot> listener)` registers or replaces a process-global callback, and
-`UnregisterEntryStatusListener(string id)` removes it. Listeners receive the same compact snapshot
-shape as `GetEntryStatus` after a pawn-owned event POV changes main or title lifecycle state:
-queued, completed, failed, skipped, prompt-only, title queued/completed/failed, or direct injected.
-Callbacks run on the main thread, never receive prompts/raw responses/live pawns, and are suppressed
-while the master **Allow external mod integrations** toggle is off. A throwing listener is logged
-once and disabled for the session so it cannot break the game loop or later notifications.
-
-API v11 adds `PawnDiaryApi.IsDiaryEligible(Pawn)`, a side-effect-free preflight for adapter code. It
-returns true only when the public integration surface is available, the pawn passes the diary-owner
-rules (humanlike colonist old enough for first-person writing), and the saved per-pawn diary
-generation flag is still enabled. That last check is the same flag toggled from the Diary tab and
-the dev event panel, so adapters can avoid submitting pages for a pawn the player has silenced.
-
-API v12 adds `PawnDiaryApi.GetAvailableWritingStyles()`, a side-effect-free catalog read for
-adapter-side pickers and diagnostics. It returns the same `DiaryWritingStyleSnapshot` shape as v3,
-but for every effective style Pawn Diary can assign: XML Def styles after settings-backed edits, plus
-custom styles saved in settings. The read is main-thread-only, respects the master external
-integrations toggle, and returns an empty list instead of throwing when unavailable.
-
-API v13 adds `PawnDiaryApi.SetWritingStyleOverride(Pawn, string sourceId, string rule)` and
-`ResetWritingStyleOverride(Pawn, string sourceId)`. The set call stores a cleaned, capped free-form
-rule plus its owning source id on the pawn diary record. Prompt resolution checks that saved external
-override first, before temporary hediff style overrides and before the base saved style; reset clears
-it only when no override exists or the same source owns the active override. The override is
-prompt-facing only: it does not mutate `personaDefName`, does not change the v3 base-style snapshot,
-and is sanitized again on save load before prompt use.
-
-API v14 adds `PawnDiaryApi.IsDiaryGenerationEnabled(Pawn)` and
-`SetDiaryGenerationEnabled(Pawn, bool enabled)` for the same saved per-pawn generation flag used by
-the Diary tab and dev event panel. The read is side-effect free and defaults to true for an otherwise
-eligible pawn that has no diary record yet. The write uses base diary-owner eligibility instead of
-the v11 `IsDiaryEligible` preflight, so an adapter can re-enable a pawn after the saved flag has been
-turned off; re-enabling queues pending generation work for that pawn again.
-
-API v15 adds `PawnDiaryApi.PreviewPrompt(ExternalEventRequest, string povRole = null)`, a
-side-effect-free diagnostic preview for ordinary External event prompts. The component builds a
-throwaway `DiaryEvent` from the same request fields `SubmitEvent` would use, feeds it through the
-same prompt planner, and returns `DiaryPromptPreviewSnapshot` with system/user/combined prompt text
-plus prompt metadata. It never registers the event, cross-references pawn diaries, consumes dedup
-windows, queues generation, or spends tokens. Because live prompt policy can roll prompt
-enchantments and humor cues, the preview wraps the build in RNG save/restore so adapter diagnostics
-do not perturb later gameplay or generation. Pairwise recipient previews set
-`requiresPriorPovText=true` when the real later prompt may include the generated initiator entry,
-which preview cannot know before an LLM call exists.
-
-API v16 extends ordinary `ExternalEventRequest` submissions with protected prompt context:
-`promptFragment`, `promptEnchantmentCandidates`, and `replacePromptEnchantments`. The fragment is
-cleaned/capped, stored ahead of ordinary `extraContext` as `external_prompt_fragment`, and exposed by
-first-person prompt templates without giving the adapter control of the system prompt, persona/style
-framing, event prompt, localization, or safety language. Candidate lines are sanitized like
-`extraContext`, saved as numbered context fields, and converted back into
-`PromptEnchantmentCandidate` rows during prompt resolution. By default they supplement live
-health/event-window candidates; when `replacePromptEnchantments` is true and at least one external
-candidate survives cleanup, live candidates are suppressed for that event. Ordinary `extraContext`
-lines using those protected keys are ignored, so adapters must use the dedicated v16 fields rather
-than spoofing prompt-fragment/enchantment fields manually. Caps and planner weight are XML-tuned
-through `DiaryTuningDef` (`integrationPromptFragmentMaxChars`,
-`integrationPromptEnchantmentMaxCandidates`, `integrationPromptEnchantmentCandidateMaxChars`,
-`integrationPromptEnchantmentCandidateWeight`).
-
-API v17 adds `PawnDiaryApi.GetEntrySnapshot(DiaryEntryHandle)` and
-`GetEntrySnapshot(string eventId, string povRole)`, the single-entry counterpart to the v7 context
-snapshot and v8 status read. It resolves a hot `DiaryEvent` or compact `ArchivedDiaryEntry` into
-`DiaryEntrySnapshot`: handle, lifecycle/title booleans, date/tick, group/domain/atmosphere metadata,
-the completed player-visible generated prose, and a capped first-sentence summary. It still omits
-prompts, raw provider responses, errors, fallback facts, and live game objects. The handle overload
-uses the handle's pawn id for exact compact-archive lookup; the id/role overload mirrors
-`GetEntryStatus(string, string)` for reflection-style adapters.
-
-API v18 adds external authorship metadata to the entry snapshot DTO family without new save data or
-new API methods. `DiaryEntryTitleSnapshot`, `DiaryEntryProseSnapshot`,
-`DiaryEntryStatusSnapshot`, and `DiaryEntrySnapshot` now include `externallyAuthored` and
-`externalSourceId`, derived from the saved External context marker and cleaned adapter source id.
-The Diary tab uses the same `DiaryEntryView.ExternalSourceId` value to render a localized footer
-beside any model/status provenance, so direct-injected or externally submitted pages visibly show
-which adapter wrote or influenced them.
-
-API v19 ships RD-7 richer filtering as additive fields on `DiaryEntryTitleQuery`, shared by
-`GetRecentEntryTitles` and `GetContextSnapshot`. The runtime still snapshots one `DiaryEntryView`
-into plain `DiaryEntryTitleFilterFacts`, then the pure `DiaryEntryTitleFilter` applies the query, so
-partner/source/event/importance/title/prose filtering stays testable and works for both hot events
-and compact archived entries.
-
-API v20 ships RD-6 cheap entry stats. `GetEntryStats` reuses the same active/archive scan and
-`DiaryEntryTitleFilterFacts` path as title/context reads, then feeds matching rows into the pure
-`DiaryEntryStatsAccumulator`. The public DTO stays primitive-only and prompt-free: adapters get
-counts and newest/oldest range metadata, not generated prose, prompts, raw responses, or live
-RimWorld objects.
-
-API v21 ships C-CTX-5 context bundles. `GetContextBundle` calls the same helpers as
-`GetWritingStyle`, `GetPawnSummary`, `GetPromptEnchantments`, and `GetContextSnapshot`, then returns
-their DTOs together in `DiaryContextBundleSnapshot`. It remains main-thread-only, respects the
-master integration toggle and per-pawn diary eligibility, and never exposes prompts, raw provider
-responses, raw fallback facts, or live RimWorld objects.
-
-API v22 ships wrapped prompt entries. `ExternalPromptEntryRequest` inherits the ordinary external
-event fields and adds required `promptInstruction`; `SubmitPromptEntry` and the matching
-`PreviewPrompt(ExternalPromptEntryRequest, string povRole = null)` overload place that instruction
-inside protected prompt context as `external_prompt_instruction`. The live generation path still uses
-Pawn Diary's ordinary persona/style, safety, context, response rules, status lifecycle, budget guard,
-title follow-ups, and storage. Unlike ordinary `SubmitEvent`, an External group is optional for this
-path, but a matching group still contributes label/toggle/styling/prompt metadata.
+`PreviewPrompt(ExternalEventRequest, string povRole = null)` and
+`PreviewPrompt(ExternalPromptEntryRequest, string povRole = null)` build side-effect-free prompt
+snapshots with RNG save/restore. They never register an event, cross-reference pawn diaries, consume
+dedup windows, queue generation, or spend tokens. `ExternalPromptEntryRequest` adds required
+`promptInstruction`; the live generation path stores it as protected `external_prompt_instruction`
+context while Pawn Diary still owns persona/style, safety, context, parser expectations, budget,
+title follow-ups, and storage. Ordinary external requests can also provide `promptFragment`,
+`promptEnchantmentCandidates`, and `replacePromptEnchantments`; those fields are cleaned, capped, and
+protected from `extraContext` spoofing.
 
 `integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
 separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
@@ -703,9 +532,18 @@ tab instead of the catch-all.
 drives every public `PawnDiaryApi` method from a three-pane UI (method tree | request form | running
 result log). It exists so adapter authors and the maintainer can probe the contract interactively
 without writing throwaway code. Open it via Dev mode → Debug Actions → *Pawn Diary Example Adapter*
-→ *Open API explorer…*. The same mod also registers the two process-global hooks
-(`RegisterEntryStatusListener`, `RegisterPawnContextProvider`) as live examples and exposes their
-activity in the explorer's Hooks tab. Its pure text-parsing helpers are unit-tested by
+→ *Open API explorer…*. The method tree supports filtering/collapse, the request form exposes
+width-aware single-line fields plus multiline editors for prose/context values and a shared-state
+reset button, method rows show plain-language endpoint descriptions under each API signature,
+method titles and field labels show short help popovers on hover, and the result log keeps short
+histories compact so the selected detail stays visible. All request fields start with quiet-moment
+sample values for quick submit/preview testing. Opening the explorer closes the Debug Actions
+launcher, and the window has a thin drag strip so it behaves as a movable, resizeable debug overlay:
+clicking outside it keeps it open while normal game UI/camera input still passes through. A concise operator guide lives at
+`integrations/PawnDiary.ExampleAdapter/API_EXPLORER.md`. The same mod also registers the two process-global hooks
+(`RegisterEntryStatusListener`, `RegisterPawnContextProvider`) through the copyable
+`PawnDiaryExampleApi.cs` facade and exposes their activity in the explorer's Hooks tab. Its pure
+text-parsing helpers are unit-tested by
 `tests/ExampleAdapterParsingTests/`.
 
 ### 5.1 Observed conditions (lasting game state, Plan 12)

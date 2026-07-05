@@ -1,7 +1,7 @@
 // Spec for Interaction. Thin wrapper around the pure InteractionEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class InteractionEventSpec : DiaryEventSpec
+    internal class InteractionEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Interaction;
 

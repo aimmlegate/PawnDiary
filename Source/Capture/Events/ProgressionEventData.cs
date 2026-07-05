@@ -9,7 +9,7 @@ namespace PawnDiary.Capture
     /// Captured facts for one progression signal such as a passion skill milestone, psylink level,
     /// xenotype change, or royal title change.
     /// </summary>
-    public class ProgressionEventData : DiaryEventData
+    internal class ProgressionEventData : DiaryEventData
     {
         public const string SkillMilestoneDefName = "SkillMilestone";
         public const string PsylinkLevelDefName = "PsylinkLevel";

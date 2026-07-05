@@ -22,7 +22,7 @@ namespace PawnDiary
     /// Captures successful vanilla Tales for diary event classification.
     /// </summary>
     [HarmonyPatch(typeof(TaleRecorder), nameof(TaleRecorder.RecordTale))]
-    public static class TaleRecorderPatch
+    internal static class TaleRecorderPatch
     {
         /// <summary>
         /// Harmony Postfix for TaleRecorder.RecordTale. The returned Tale is null when vanilla
@@ -49,7 +49,7 @@ namespace PawnDiary
     /// Captures successful mental-state starts for social-fight and mental-break diary entries.
     /// </summary>
     [HarmonyPatch(typeof(MentalStateHandler), "TryStartMentalState")]
-    public static class MentalStateStartPatch
+    internal static class MentalStateStartPatch
     {
         // Reflection accessor for the private MentalStateHandler.pawn field so we can read the subject pawn.
         private static readonly FieldInfo PawnField = AccessTools.Field(typeof(MentalStateHandler), "pawn");
@@ -92,7 +92,7 @@ namespace PawnDiary
     /// Captures accepted pawn inspirations after vanilla applies them.
     /// </summary>
     [HarmonyPatch(typeof(InspirationHandler), nameof(InspirationHandler.TryStartInspiration))]
-    public static class InspirationStartPatch
+    internal static class InspirationStartPatch
     {
         /// <summary>
         /// Harmony Postfix for InspirationHandler.TryStartInspiration. Records only successful
@@ -119,7 +119,7 @@ namespace PawnDiary
     /// Captures mood-affecting game conditions when they are registered.
     /// </summary>
     [HarmonyPatch(typeof(GameConditionManager), nameof(GameConditionManager.RegisterCondition))]
-    public static class GameConditionStartPatch
+    internal static class GameConditionStartPatch
     {
         /// <summary>
         /// Harmony Postfix for GameConditionManager.RegisterCondition. Detects
@@ -153,7 +153,7 @@ namespace PawnDiary
     /// Captures successful raid-like incident execution after spawned threats are available.
     /// </summary>
     [HarmonyPatch(typeof(IncidentWorker), nameof(IncidentWorker.TryExecute))]
-    public static class RaidExecutePatch
+    internal static class RaidExecutePatch
     {
         /// <summary>
         /// Harmony Postfix for IncidentWorker.TryExecute. Submits a
@@ -206,7 +206,7 @@ namespace PawnDiary
     /// Captures spawned things as generic event-window signals.
     /// </summary>
     [HarmonyPatch(typeof(Thing), nameof(Thing.SpawnSetup), new[] { typeof(Map), typeof(bool) })]
-    public static class ThingSpawnedEventWindowPatch
+    internal static class ThingSpawnedEventWindowPatch
     {
         /// <summary>
         /// Harmony Postfix for Thing.SpawnSetup. Respawns during save/load are skipped so loading a
@@ -235,7 +235,7 @@ namespace PawnDiary
     /// Captures biological birthdays for XML event-window rules.
     /// </summary>
     [HarmonyPatch(typeof(Pawn_AgeTracker), "BirthdayBiological")]
-    public static class BiologicalBirthdayEventWindowPatch
+    internal static class BiologicalBirthdayEventWindowPatch
     {
         private static readonly FieldInfo PawnField = AccessTools.Field(typeof(Pawn_AgeTracker), "pawn");
 
@@ -260,7 +260,7 @@ namespace PawnDiary
     /// <summary>
     /// Captures ThingComp proximity letters for XML event-window rules.
     /// </summary>
-    public static class ProximityLetterEventWindowPatch
+    internal static class ProximityLetterEventWindowPatch
     {
         private const string TargetTypeName = "RimWorld.CompProximityLetter";
         private const string PropsTypeName = "RimWorld.CompProperties_ProximityLetter";
@@ -418,7 +418,7 @@ namespace PawnDiary
     /// <summary>
     /// Captures completed void monolith activations for XML event-window rules.
     /// </summary>
-    public static class VoidMonolithActivationEventWindowPatch
+    internal static class VoidMonolithActivationEventWindowPatch
     {
         private const string TargetTypeName = "RimWorld.Building_VoidMonolith";
         private const string TargetMethodName = "Activate";
@@ -539,7 +539,7 @@ namespace PawnDiary
     /// <summary>
     /// Captures prisoner breakouts for XML event-window rules.
     /// </summary>
-    public static class PrisonBreakEventWindowPatch
+    internal static class PrisonBreakEventWindowPatch
     {
         private const string TargetTypeName = "RimWorld.PrisonBreakUtility";
         private const string TargetMethodName = "StartPrisonBreak";
@@ -604,7 +604,7 @@ namespace PawnDiary
     /// Captures generic letter signals for XML event-window rules.
     /// </summary>
     [HarmonyPatch(typeof(SignalAction_Letter), "DoAction")]
-    public static class SignalActionLetterEventWindowPatch
+    internal static class SignalActionLetterEventWindowPatch
     {
         /// <summary>
         /// Harmony Postfix for SignalAction_Letter.DoAction. The hook forwards stable localization
@@ -673,7 +673,7 @@ namespace PawnDiary
     /// Captures completed Ideology ritual outcomes after vanilla applies their effects.
     /// </summary>
     [HarmonyPatch(typeof(LordJob_Ritual), "ApplyOutcome")]
-    public static class RitualOutcomePatch
+    internal static class RitualOutcomePatch
     {
         /// <summary>
         /// Harmony Postfix for LordJob_Ritual.ApplyOutcome. Runs after vanilla outcome effects and
@@ -699,7 +699,7 @@ namespace PawnDiary
     /// Captures completed Anomaly psychic rituals at the LordToil completion point.
     /// </summary>
     [HarmonyPatch(typeof(LordToil_PsychicRitual), "RitualCompleted")]
-    public static class PsychicRitualCompletedPatch
+    internal static class PsychicRitualCompletedPatch
     {
         /// <summary>
         /// Harmony Postfix for LordToil_PsychicRitual.RitualCompleted. Forwards the completed
@@ -726,7 +726,7 @@ namespace PawnDiary
     /// Captures successful ability activations that target local map cells/things.
     /// </summary>
     [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo) })]
-    public static class AbilityActivateLocalPatch
+    internal static class AbilityActivateLocalPatch
     {
         /// <summary>
         /// Harmony Postfix for Ability.Activate(LocalTargetInfo, LocalTargetInfo). Only successful
@@ -751,7 +751,7 @@ namespace PawnDiary
     /// Captures successful ability activations that target the world map.
     /// </summary>
     [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(GlobalTargetInfo) })]
-    public static class AbilityActivateGlobalPatch
+    internal static class AbilityActivateGlobalPatch
     {
         /// <summary>
         /// Harmony Postfix for Ability.Activate(GlobalTargetInfo). Only successful activations are

@@ -7,7 +7,7 @@
 // source goes on that source's policy type (see ThoughtCapturePolicy) or its payload, not here.
 namespace PawnDiary.Capture
 {
-    public class CaptureContext
+    internal class CaptureContext
     {
         /// <summary>True if the pawn qualifies for diary tracking (humanlike colonist). Caller
         /// computes this from Pawn before invoking the catalog.</summary>

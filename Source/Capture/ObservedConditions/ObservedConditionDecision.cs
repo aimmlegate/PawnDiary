@@ -9,7 +9,7 @@ namespace PawnDiary
     /// <summary>
     /// The lifecycle transition the policy decided for one condition identity on this scan.
     /// </summary>
-    public enum ObservedConditionDecisionKind
+    internal enum ObservedConditionDecisionKind
     {
         // Newly observed, still inside the start debounce: remember it, but do not record a page yet.
         StartPending,
@@ -29,7 +29,7 @@ namespace PawnDiary
     /// One instruction for the adapter. <see cref="state"/> always carries the condition's identity and
     /// its post-decision fields (and, for end decisions, the last-seen evidence used for page text).
     /// </summary>
-    public sealed class ObservedConditionDecision
+    internal sealed class ObservedConditionDecision
     {
         public ObservedConditionDecisionKind kind;
         public ObservedConditionStateSnapshot state;
@@ -47,7 +47,7 @@ namespace PawnDiary
     /// <summary>
     /// The full set of decisions for one scan, in no particular order. The adapter applies each in turn.
     /// </summary>
-    public sealed class ObservedConditionPlan
+    internal sealed class ObservedConditionPlan
     {
         public List<ObservedConditionDecision> decisions = new List<ObservedConditionDecision>();
     }

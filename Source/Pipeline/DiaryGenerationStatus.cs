@@ -7,7 +7,7 @@ namespace PawnDiary
     /// <summary>
     /// Stable generation-status strings and pure status decisions shared by the save model and tests.
     /// </summary>
-    public static class DiaryGenerationStatus
+    internal static class DiaryGenerationStatus
     {
         public const string NotGenerated = "not_generated";
         public const string Pending = "pending";

@@ -1,7 +1,7 @@
 // Spec for Tale. Thin wrapper around the pure TaleEventData.Decide.
 namespace PawnDiary.Capture
 {
-    public class TaleEventSpec : DiaryEventSpec
+    internal class TaleEventSpec : DiaryEventSpec
     {
         public override DiaryEventType EventType => DiaryEventType.Tale;
 

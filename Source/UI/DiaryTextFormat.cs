@@ -21,7 +21,7 @@ namespace PawnDiary
     /// stay in sync: text color does not affect glyph width, and the bold spans that do affect it are
     /// applied identically in both passes.
     /// </summary>
-    public static class DiaryTextFormat
+    internal static class DiaryTextFormat
     {
         // Typographic characters built from code points so the source stays pure ASCII (the .cs files
         // carry no BOM, so a raw "smart quote" byte would depend on the compiler's codepage guess).

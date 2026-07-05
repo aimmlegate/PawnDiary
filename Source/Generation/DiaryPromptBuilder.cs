@@ -9,7 +9,7 @@ using System;
 
 namespace PawnDiary
 {
-    public static class DiaryPromptBuilder
+    internal static class DiaryPromptBuilder
     {
         // Prompts intentionally omit any field that is empty or "normal" (see PromptAssembler.AppendField),
         // so the model only ever sees signal — no "health: healthy", no weather indoors, etc.

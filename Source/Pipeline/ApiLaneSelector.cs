@@ -20,7 +20,7 @@ namespace PawnDiary
     /// <summary>
     /// Deterministic, testable lane-selection rules for API routing.
     /// </summary>
-    public static class ApiLaneSelector
+    internal static class ApiLaneSelector
     {
         /// <summary>
         /// Returns the primary lane index. When any ready lanes exist, cooling/unready lanes are

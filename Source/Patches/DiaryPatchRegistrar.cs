@@ -9,7 +9,7 @@ namespace PawnDiary
     /// Registers manual Harmony patches whose target methods are fragile enough that PatchAll should
     /// not discover them directly. Each patch's TryRegister method owns its own warning/no-op path.
     /// </summary>
-    public static class DiaryPatchRegistrar
+    internal static class DiaryPatchRegistrar
     {
         /// <summary>
         /// Registers optional reflection-based patches after the attribute-discovered patches finish.

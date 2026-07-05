@@ -26,7 +26,7 @@ namespace PawnDiary
     /// <see cref="source"/> token that selects which value fills it. <see cref="contextKey"/> is only
     /// used by the <c>GameContext</c> source.
     /// </summary>
-    public class PromptAssemblerField
+    internal class PromptAssemblerField
     {
         public string label;
         public string source;
@@ -40,7 +40,7 @@ namespace PawnDiary
     /// renderer. (Named <c>eventNoun</c>/<c>povName</c> rather than <c>event</c>/<c>pov</c> because
     /// <c>event</c> is a C# keyword; the JSON contract in prompt-lab uses these same names.)
     /// </summary>
-    public class PromptValues
+    internal class PromptValues
     {
         public string eventNoun;
         public string povName;
@@ -73,7 +73,7 @@ namespace PawnDiary
     }
 
     /// <summary>Everything the pure renderer needs to produce one request's prompts.</summary>
-    public class PromptAssemblerInput
+    internal class PromptAssemblerInput
     {
         public string templateKey;
         public List<PromptAssemblerField> fields = new List<PromptAssemblerField>();
@@ -85,14 +85,14 @@ namespace PawnDiary
     }
 
     /// <summary>The assembled system and user prompts.</summary>
-    public class PromptAssemblerResult
+    internal class PromptAssemblerResult
     {
         public string systemPrompt;
         public string userPrompt;
     }
 
     /// <summary>Pure prompt assembly shared by the live mod and the prompt-lab test harness.</summary>
-    public static class PromptAssembler
+    internal static class PromptAssembler
     {
         /// <summary>Assembles both prompts from a single input. Used by the dump tool and tests; the
         /// live mod calls <see cref="RenderUserPrompt"/> and <see cref="ComposeSystem"/> separately.</summary>

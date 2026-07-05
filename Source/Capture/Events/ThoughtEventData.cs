@@ -23,7 +23,7 @@ namespace PawnDiary.Capture
     /// Captured facts for a temporary-thought event. Filled by DiaryGameComponent.RecordThought from
     /// the live Pawn + Thought_Memory, then handed to Decide() for the pure decision.
     /// </summary>
-    public class ThoughtEventData : DiaryEventData
+    internal class ThoughtEventData : DiaryEventData
     {
         public override DiaryEventType EventType => DiaryEventType.Thought;
 

@@ -20,7 +20,7 @@ namespace PawnDiary
     /// <c>NormalizeOnLoad</c> that are pure functions of plain strings/ints; the impure Scribe I/O,
     /// GUID minting, and DefDatabase-backed color-cue resolution stay on the save models themselves.
     /// </summary>
-    public static class DiarySaveNormalization
+    internal static class DiarySaveNormalization
     {
         /// <summary>Mood-impact direction written for mood-event entries that saved no direction.</summary>
         public const string DefaultMoodImpact = "neutral";

@@ -22,7 +22,7 @@ namespace PawnDiary
     /// <summary>
     /// Applies deterministic, display-only pawn-name highlights to Unity rich text.
     /// </summary>
-    public static class DiaryNameHighlighter
+    internal static class DiaryNameHighlighter
     {
         public static string ApplyToRichText(string rich, IEnumerable<DiaryNameHighlight> highlights)
         {

@@ -12,7 +12,7 @@ using Verse;
 namespace PawnDiary
 {
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetGizmos))]
-    public static class PawnDiaryPawnGizmoPatch
+    internal static class PawnDiaryPawnGizmoPatch
     {
         /// <summary>
         /// Adds the Diary command when exactly one eligible colonist pawn is selected.
@@ -24,7 +24,7 @@ namespace PawnDiary
     }
 
     [HarmonyPatch(typeof(Corpse), nameof(Corpse.GetGizmos))]
-    public static class PawnDiaryCorpseGizmoPatch
+    internal static class PawnDiaryCorpseGizmoPatch
     {
         /// <summary>
         /// Adds the Diary command for a selected colonist corpse, preserving the old corpse-tab access.

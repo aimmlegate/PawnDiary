@@ -19,7 +19,7 @@ namespace PawnDiary
     /// </summary>
     [HarmonyPatch(typeof(Pawn_HealthTracker), nameof(Pawn_HealthTracker.AddHediff),
         new[] { typeof(Hediff), typeof(BodyPartRecord), typeof(DamageInfo?), typeof(DamageWorker.DamageResult) })]
-    public static class HealthTrackerAddHediffPatch
+    internal static class HealthTrackerAddHediffPatch
     {
         /// <summary>
         /// Harmony Postfix for Pawn_HealthTracker.AddHediff. Forwards a colonist's newly-added
