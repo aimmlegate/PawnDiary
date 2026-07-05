@@ -33,9 +33,18 @@ namespace PawnDiary.Ingestion
 
         public override CaptureContext BuildContext()
         {
+            // Honor the Advanced-tab "Reflection" filter row (defName `reflection`), which matches
+            // PawnArcReflection via matchDefNames. Without this the player-visible toggle was inert for
+            // arc reflections. Mirrors Hediff/Death/MentalState signals.
+            DiaryInteractionGroupDef group = InteractionGroups.ClassifyDefName(
+                GroupDomain.Reflection, payload.DefName);
+            bool userEnabled = group != null
+                && PawnDiaryMod.Settings != null
+                && PawnDiaryMod.Settings.IsGroupEnabled(group.defName);
+
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: DiaryGameComponent.IsDiaryEligible(pawn),
-                userEnabled: true,
+                userEnabled: userEnabled,
                 signalEnabled: DiaryTuning.Current.arcReflectionEnabled,
                 ambientSignalEnabled: true);
         }

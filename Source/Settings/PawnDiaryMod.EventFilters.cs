@@ -28,6 +28,12 @@ namespace PawnDiary
             }
 
             List<DiaryInteractionGroupDef> groups = EventFilterGroupsForSettings();
+            if (groups == null)
+            {
+                Verse.Log.Error("Event filter groups cannot be null");
+                return;
+            }
+
             Widgets.DrawMenuSection(rect);
             Rect inner = rect.ContractedBy(8f);
             float y = inner.y;
@@ -35,11 +41,14 @@ namespace PawnDiary
             Rect titleRect = new Rect(inner.x, y, inner.width - EventFilterButtonWidth - 8f, EventFilterTitleHeight);
             GameFont previousFont = Text.Font;
             Text.Font = GameFont.Medium;
-            Widgets.LabelFit(titleRect, "PawnDiary.Settings.EventFilters.Title".Translate());
+            if (!string.IsNullOrEmpty("PawnDiary.Settings.EventFilters.Title".Translate()))
+            {
+                Widgets.LabelFit(titleRect, "PawnDiary.Settings.EventFilters.Title".Translate());
+            }
             Text.Font = previousFont;
 
             Rect enableAllRect = new Rect(inner.xMax - EventFilterButtonWidth, y, EventFilterButtonWidth, 28f);
-            if (ButtonTextFit(enableAllRect, "PawnDiary.Settings.EventFilters.EnableAll".Translate()))
+            if (ButtonTextFit(enableAllRect, "PawnDiary.Settings.EventFilters.EnableAll".Translate()) && groups.Count > 0)
             {
                 EnableVisibleEventFilters(groups);
             }
@@ -48,13 +57,21 @@ namespace PawnDiary
             y += EventFilterTitleHeight + 2f;
 
             Rect summaryRect = new Rect(inner.x, y, inner.width, 22f);
-            DrawMutedLabel(summaryRect, "PawnDiary.Settings.EventFilters.Summary".Translate(
+            string summary = "PawnDiary.Settings.EventFilters.Summary".Translate(
                 DisabledVisibleEventFilterCount(groups),
-                groups.Count).ToString());
+                groups.Count).ToString();
+            if (!string.IsNullOrEmpty(summary))
+            {
+                DrawMutedLabel(summaryRect, summary);
+            }
             y += 24f;
 
             Rect helpRect = new Rect(inner.x, y, inner.width, EventFilterHelpHeight);
-            DrawMutedLabel(helpRect, "PawnDiary.Settings.EventFilters.Help".Translate().ToString());
+            string helpText = "PawnDiary.Settings.EventFilters.Help".Translate().ToString();
+            if (!string.IsNullOrEmpty(helpText))
+            {
+                DrawMutedLabel(helpRect, helpText);
+            }
             y += EventFilterHelpHeight + 6f;
 
             Rect listRect = new Rect(inner.x, y, inner.width, Mathf.Max(0f, inner.yMax - y));
@@ -123,6 +140,11 @@ namespace PawnDiary
 
         private static List<DiaryInteractionGroupDef> EventFilterGroupsForSettings()
         {
+            // All non-External, non-package-gated groups are shown — including defaultEnabled=false
+            // rows like questAccepted — so the player can opt INTO a group the XML ships disabled.
+            // External-domain groups are deliberately omitted: their capture is governed by the
+            // master integration switch and adapter XML, not by the automatic-capture filter list.
+            // Package-gated groups are omitted because they are inert by design without their target.
             List<DiaryInteractionGroupDef> result = new List<DiaryInteractionGroupDef>();
             List<DiaryInteractionGroupDef> all = InteractionGroups.All;
             for (int i = 0; i < all.Count; i++)
@@ -130,7 +152,6 @@ namespace PawnDiary
                 DiaryInteractionGroupDef group = all[i];
                 if (group == null
                     || group.domain == GroupDomain.External
-                    || !group.defaultEnabled
                     || group.DisabledByLoadedPackage()
                     || group.MissingRequiredPackage())
                 {

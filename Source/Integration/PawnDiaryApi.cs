@@ -245,6 +245,10 @@ namespace PawnDiary.Integration
         public static bool SubmitEvent(ExternalEventRequest request, out SubmitEventOutcome outcome)
         {
             outcome = SubmitEventOutcome.InvalidRequest;
+            // Declared outside try so the catch block can refund it if Dispatch throws. The reservation
+            // is committed before Dispatch; an exception from the dispatch path must not leak the
+            // reservation for the rest of the rolling window.
+            ExternalApiBudgetReservation reservation = null;
             try
             {
                 if (!TryPrepareExternalEventRequest(request, "SubmitEvent", out _, out _, out outcome))
@@ -252,7 +256,6 @@ namespace PawnDiary.Integration
                     return false;
                 }
 
-                ExternalApiBudgetReservation reservation = null;
                 if (!request.forceRecord
                     && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
                         request, "SubmitEvent", out reservation))
@@ -279,6 +282,12 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
+                // Refund any reservation taken before the throw so a failing dispatch path cannot
+                // falsely consume per-source/global budget until the rolling window expires. The
+                // release is a no-op on null (forceRecord path), and Instance can be in any state after
+                // a throw, so guard both.
+                DiaryGameComponent.Instance?.ReleaseExternalApiBudgetReservation(reservation);
+
                 string sourceForLog = request != null && !string.IsNullOrWhiteSpace(request.sourceId)
                     ? request.sourceId
                     : "unknown-source";
@@ -299,6 +308,8 @@ namespace PawnDiary.Integration
         {
             string sourceId = SourceIdFor(request);
             string eventKey = EventKeyFor(request);
+            // Hoisted out of try so the catch block can refund it if Dispatch throws.
+            ExternalApiBudgetReservation reservation = null;
             try
             {
                 if (!TryPrepareExternalEventRequest(request, "SubmitEventWithHandle", out sourceId, out eventKey))
@@ -306,7 +317,6 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                ExternalApiBudgetReservation reservation = null;
                 if (!request.forceRecord
                     && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
                         request, "SubmitEventWithHandle", out reservation))
@@ -325,6 +335,8 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
+                // Refund any reservation taken before the throw; no-op on null and Instance-guarded.
+                DiaryGameComponent.Instance?.ReleaseExternalApiBudgetReservation(reservation);
                 ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: SubmitEventWithHandle from '" + sourceId + "' failed: " + e,
                     ("PawnDiary.Api.HandleSubmit.Exception." + sourceId).GetHashCode());
@@ -341,6 +353,8 @@ namespace PawnDiary.Integration
         {
             string sourceId = SourceIdFor(request);
             string eventKey = EventKeyFor(request);
+            // Hoisted out of try so the catch block can refund it if Dispatch throws.
+            ExternalApiBudgetReservation reservation = null;
             try
             {
                 if (!TryPrepareExternalPromptEntryRequest(request, "SubmitPromptEntry", out sourceId, out eventKey))
@@ -348,7 +362,6 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                ExternalApiBudgetReservation reservation = null;
                 if (!request.forceRecord
                     && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
                         request, "SubmitPromptEntry", out reservation))
@@ -367,6 +380,8 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
+                // Refund any reservation taken before the throw; no-op on null and Instance-guarded.
+                DiaryGameComponent.Instance?.ReleaseExternalApiBudgetReservation(reservation);
                 ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: SubmitPromptEntry from '" + sourceId + "' failed: " + e,
                     ("PawnDiary.Api.SubmitPromptEntry.Exception." + sourceId).GetHashCode());
@@ -383,6 +398,8 @@ namespace PawnDiary.Integration
         {
             string sourceId = SourceIdFor(request);
             string eventKey = EventKeyFor(request);
+            // Hoisted out of try so the catch block can refund it if Dispatch throws.
+            ExternalApiBudgetReservation reservation = null;
             try
             {
                 if (!TryPrepareExternalDirectEntryRequest(request, out sourceId, out eventKey))
@@ -390,7 +407,6 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                ExternalApiBudgetReservation reservation = null;
                 if (!request.forceRecord
                     && !DiaryGameComponent.Instance.TryReserveExternalApiBudgetForDirectEntry(
                         request, out reservation))
@@ -409,6 +425,8 @@ namespace PawnDiary.Integration
             }
             catch (Exception e)
             {
+                // Refund any reservation taken before the throw; no-op on null and Instance-guarded.
+                DiaryGameComponent.Instance?.ReleaseExternalApiBudgetReservation(reservation);
                 ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: SubmitDirectEntry from '" + sourceId + "' failed: " + e,
                     ("PawnDiary.Api.DirectEntry.Exception." + sourceId).GetHashCode());
@@ -1259,8 +1277,16 @@ namespace PawnDiary.Integration
 
             // Fail loudly-but-once when nobody claims the key: the most common adapter mistake is
             // shipping the C# call without the External-domain group XML, and a silent drop would make
-            // that miserable to debug.
-            if (InteractionGroups.ClassifyExternal(eventKey) == null)
+            // that miserable to debug. ClassifyExternal returns the first matching group but does NOT
+            // apply package gates, so a compatibility group that is inert without its target mod
+            // (enableWhenPackageIdsLoaded / disableWhenPackageIdsLoaded) must be treated as absent here
+            // too — otherwise its key would be accepted and dispatched while the group's prompt policy
+            // is supposed to be dormant. Mirrors how IsGroupEnabled / EventFilterGroupsForSettings
+            // already treat such groups.
+            DiaryInteractionGroupDef claimingGroup = InteractionGroups.ClassifyExternal(eventKey);
+            if (claimingGroup == null
+                || claimingGroup.DisabledByLoadedPackage()
+                || claimingGroup.MissingRequiredPackage())
             {
                 Log.WarningOnce(
                     "[Pawn Diary] Integration API: no External-domain DiaryInteractionGroupDef "

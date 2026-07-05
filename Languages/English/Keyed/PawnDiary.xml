@@ -417,7 +417,7 @@
   <PawnDiary.Settings.EventFilters.EnableAll>Enable all</PawnDiary.Settings.EventFilters.EnableAll>
   <PawnDiary.Settings.EventFilters.EnableAllTip>Enable every event type currently shown in this list.</PawnDiary.Settings.EventFilters.EnableAllTip>
   <PawnDiary.Settings.EventFilters.Changed>changed</PawnDiary.Settings.EventFilters.Changed>
-  <PawnDiary.Settings.EventFilters.RowTip>Automatic capture group: {0}. Disabled groups do not auto-trigger from RimWorld gameplay, but external API requests are not blocked by this filter.</PawnDiary.Settings.EventFilters.RowTip>
+  <PawnDiary.Settings.EventFilters.RowTip>Automatic capture group: {0}. Disabled groups do not auto-trigger from RimWorld gameplay, but external API requests are not blocked by this filter. The Reflection row controls day, quadrum, and life-arc reflection pages.</PawnDiary.Settings.EventFilters.RowTip>
   <PawnDiary.Settings.EventFilters.None>No automatic event groups are available.</PawnDiary.Settings.EventFilters.None>
   <PawnDiary.Settings.Adv.OverrideInherited>Using XML/default; no override set.</PawnDiary.Settings.Adv.OverrideInherited>
   <PawnDiary.Settings.Adv.EffectivePreview>Effective: {0} - {1}</PawnDiary.Settings.Adv.EffectivePreview>

@@ -896,6 +896,14 @@ namespace PawnDiary
 
         /// <summary>
         /// Drops stale group override keys and redundant values after loading or writing settings.
+        ///
+        /// Invariant: this only removes (a) keys no DiaryInteractionGroupDef recognizes and (b) entries
+        /// whose saved value equals the group's current XML <c>defaultEnabled</c>. It intentionally
+        /// KEEPS overrides that differ from the XML default — including disabled-by-default groups a
+        /// player has enabled and enabled-by-default groups a player has disabled — so legitimate
+        /// player config survives XML edits and version upgrades. Package-gated overrides are also
+        /// kept: while a gate is active <see cref="IsGroupEnabled"/> returns false regardless, but the
+        /// override reapplies if the gate later clears. Do not "clean up" such entries here.
         /// </summary>
         private void NormalizeGroupEnabledOverrides()
         {
