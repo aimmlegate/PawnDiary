@@ -21,6 +21,7 @@ Thumbs.db
 .vscode/
 opencode.jsonc
 .output/
+output/
 .agents/
 tmp
 design/
