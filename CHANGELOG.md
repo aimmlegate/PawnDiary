@@ -6,6 +6,14 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-06
+
+- **Example adapter publish payload.** `scripts/publish.ps1` now builds and packages
+  `integrations/PawnDiary.ExampleAdapter/` alongside the main and Russian Workshop payloads. The
+  example payload ships its source code plus `API_EXPLORER.md`, `INTEGRATIONS.md`, and
+  `EXTERNAL_API.md`, rewrites its dependency/load-after metadata to the published core packageId,
+  supports its own Workshop id file/override, and installs a Mods-folder junction by default.
+
 ## 2026-07-05
 
 - **Advanced automatic event filters.** Added an Advanced-tab filter list for

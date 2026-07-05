@@ -19,6 +19,7 @@
     <!-- Same overridable managed-folder property as the core project. -->
     <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
     <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
+    <PawnDiaryReference Condition="'$(PawnDiaryReference)'==''">..\..\..\1.6\Assemblies\PawnDiary.dll</PawnDiaryReference>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -60,7 +61,7 @@
     <!-- The ONLY Pawn Diary reference an adapter needs. Private=False: the game loads the real
          PawnDiary.dll from the core mod; the adapter must never ship its own copy. -->
     <Reference Include="PawnDiary">
-      <HintPath>..\..\..\1.6\Assemblies\PawnDiary.dll</HintPath>
+      <HintPath>$(PawnDiaryReference)</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

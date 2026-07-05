@@ -8,8 +8,8 @@
     <li>1.6</li>
   </supportedVersions>
   <!-- An adapter hard-depends on the Pawn Diary core: it compiles against PawnDiary.dll and its
-       group XML is meaningless without it. NOTE: this packageId is the DEVELOPMENT id of the core
-       mod — update it when the core ships to the Workshop under its release id. -->
+       group XML is meaningless without it. Local development builds use the development packageId;
+       scripts/publish.ps1 rewrites published example payloads to the release packageId. -->
   <modDependencies>
     <li>
       <packageId>aimmlegate.pawndiary.development</packageId>

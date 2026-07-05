@@ -1233,10 +1233,10 @@ script stamps that value into the generated main and Russian localization `About
 
 The script builds a throwaway Release DLL, copies runnable mod files, runtime textures, and reference
 docs into `dist/<published packageId>`, and installs the payloads into the detected RimWorld `Mods`
-folder through junctions by default. The published payload keeps `README.md`, `DOCUMENTATION.md`,
-`CHANGELOG.md`, `EVENT_PROMPT_MAP.md`, and any license file, but intentionally excludes `Source/`,
-`tests/`, `prompt-lab/`, and other development-only files. Pass `-InstallToMods:$false` to prepare
-`dist/` only.
+folder through junctions by default. The published main payload keeps `README.md`,
+`DOCUMENTATION.md`, `CHANGELOG.md`, `EVENT_PROMPT_MAP.md`, and any license file, but intentionally
+excludes `Source/`, `tests/`, `prompt-lab/`, and other development-only files. Pass
+`-InstallToMods:$false` to prepare `dist/` only.
 
 Russian is packaged as a separate Workshop localization mod by default. The script produces the
 normal main payload plus `dist/<published packageId>.russian`; the main payload excludes
@@ -1249,6 +1249,17 @@ item, either pass `-RussianLocalizationPublishedFileId <id>` or store that id in
 `About/PublishedFileId-Russian.txt`; the script copies it into the localization payload as
 `About/PublishedFileId.txt`. Use `-SplitRussianLocalization:$false` or
 `-IncludeRussianInMainPayload` only for a legacy bundled-language payload.
+
+The example adapter is packaged as a third payload by default. The script builds
+`integrations/PawnDiary.ExampleAdapter/Source/PawnDiaryExampleAdapter.csproj` against the freshly
+built core DLL, writes the runnable example mod to `dist/<example adapter packageId>`, rewrites its
+dependency/load-after metadata to the published core packageId, and installs a matching Mods-folder
+junction. Unlike the main Workshop payload, this example payload intentionally ships its `Source/`
+folder plus `API_EXPLORER.md`, `INTEGRATIONS.md`, and `EXTERNAL_API.md`, so adapter authors can open
+the mod and copy the integration pattern directly. Pass `-PublishExampleAdapter:$false` to skip the
+example payload, `-ExampleAdapterPackageId` or `-ExampleAdapterOutDir` to override its identity or
+location, and `-ExampleAdapterPublishedFileId` or `About/PublishedFileId-ExampleAdapter.txt` when
+updating an existing example-adapter Workshop item.
 
 ## 13. When Changing The Mod
 
