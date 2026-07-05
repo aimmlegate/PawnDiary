@@ -211,6 +211,33 @@ function Set-FirstNestedAboutValue {
     return $regex.Replace($Text, ('${1}' + $replacementValue + '${3}'), 1)
 }
 
+function Set-OrAddFirstNestedAboutValue {
+    param(
+        [string]$Text,
+        [string]$ContainerElement,
+        [string]$Element,
+        [string]$Value,
+        [string]$InsertAfterElement
+    )
+
+    $existingRegex = [regex]::new("(?s)(<$ContainerElement(?:\s[^>]*)?>.*?<$Element(?:\s[^>]*)?>\s*)(.*?)(\s*</$Element>)")
+    if ($existingRegex.IsMatch($Text)) {
+        return Set-FirstNestedAboutValue $Text $ContainerElement $Element $Value
+    }
+
+    $escapedValue = [System.Security.SecurityElement]::Escape($Value)
+    $line = "      <$Element>$escapedValue</$Element>"
+    if (-not [string]::IsNullOrWhiteSpace($InsertAfterElement)) {
+        $itemEndRegex = [regex]::new("(?s)(<$ContainerElement(?:\s[^>]*)?>.*?<li(?:\s[^>]*)?>.*?)(\s*</li>)")
+        if ($itemEndRegex.IsMatch($Text)) {
+            return $itemEndRegex.Replace($Text, ('${1}' + [Environment]::NewLine + $line + '${2}'), 1)
+        }
+    }
+
+    $containerEndRegex = [regex]::new("(?s)(<$ContainerElement(?:\s[^>]*)?>.*?)(\s*</$ContainerElement>)")
+    return $containerEndRegex.Replace($Text, ('${1}' + $line + [Environment]::NewLine + '${2}'), 1)
+}
+
 function Escape-XmlText {
     param([string]$Value)
     if ([string]::IsNullOrEmpty($Value)) { return "" }
@@ -464,6 +491,7 @@ function New-ExampleAdapterPayload {
         [string]$Version,
         [string]$CorePackageId,
         [string]$CoreDisplayName,
+        [string]$CorePublishedFileId,
         [string]$BuiltDll,
         [string]$BuiltPdb,
         [string]$PublishedFileId,
@@ -492,6 +520,10 @@ function New-ExampleAdapterPayload {
     $aboutText = Set-OrAddAboutValue $aboutText "modVersion" $Version "packageId"
     $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "packageId" $CorePackageId
     $aboutText = Set-FirstNestedAboutValue $aboutText "modDependencies" "displayName" $CoreDisplayName
+    if (-not [string]::IsNullOrWhiteSpace($CorePublishedFileId)) {
+        $coreSteamUrl = "steam://url/CommunityFilePage/$($CorePublishedFileId.Trim())"
+        $aboutText = Set-OrAddFirstNestedAboutValue $aboutText "modDependencies" "steamWorkshopUrl" $coreSteamUrl "displayName"
+    }
     $aboutText = Set-FirstNestedAboutValue $aboutText "loadAfter" "li" $CorePackageId
     [System.IO.File]::WriteAllText($aboutDestination, $aboutText, (New-Object System.Text.UTF8Encoding($false)))
 
@@ -613,6 +645,12 @@ $buildVersionSlug = Get-SafeFolderName $publishedVersion "release-$(Get-Date -Fo
 $payloadFolderName = Get-SafeFolderName $publishedPackageId "pawn-diary"
 if (-not $OutDir) { $OutDir = Join-Path $repoRoot "dist\$payloadFolderName" }
 if (-not $LinkName) { $LinkName = $payloadFolderName }
+
+$mainPublishedFileIdPath = Join-Path $repoRoot "About\PublishedFileId.txt"
+$mainPublishedFileId = ""
+if (Test-Path -LiteralPath $mainPublishedFileIdPath) {
+    $mainPublishedFileId = [System.IO.File]::ReadAllText($mainPublishedFileIdPath).Trim()
+}
 
 $buildRussianLocalization = [bool]$SplitRussianLocalization
 if ($IncludeRussianInMainPayload) { $buildRussianLocalization = $false }
@@ -850,12 +888,6 @@ foreach ($doc in @("LICENSE", "LICENSE.txt", "LICENSE.md")) {
 
 if ($buildRussianLocalization) {
     Write-Step "Prepare Russian localization payload"
-    $mainPublishedFileIdPath = Join-Path $repoRoot "About\PublishedFileId.txt"
-    $mainPublishedFileId = ""
-    if (Test-Path -LiteralPath $mainPublishedFileIdPath) {
-        $mainPublishedFileId = [System.IO.File]::ReadAllText($mainPublishedFileIdPath).Trim()
-    }
-
     $russianLocalizationName = Get-Utf8TextFromBase64 "UGF3biBEaWFyeSAtINGA0YPRgdGB0LrQsNGPINC70L7QutCw0LvQuNC30LDRhtC40Y8="
 
     $russianPayload = New-RussianLocalizationPayload `
@@ -881,6 +913,7 @@ if ($buildExampleAdapter) {
         -Version $publishedVersion `
         -CorePackageId $publishedPackageId `
         -CoreDisplayName $publishedModName `
+        -CorePublishedFileId $mainPublishedFileId `
         -BuiltDll $builtExampleAdapterDll `
         -BuiltPdb $builtExampleAdapterPdb `
         -PublishedFileId $ExampleAdapterPublishedFileId `
