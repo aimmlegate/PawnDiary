@@ -231,8 +231,10 @@ of dedup instead of clearing the store. The coverage table below lists each sour
 ### 3.7 External integrations (`PawnDiaryApi`)
 
 Other mods push events INTO the diary through one public facade:
-`PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)`, when they need to track the
-created entry `SubmitEventWithHandle(ExternalEventRequest)`, or when they already own final prose
+`PawnDiary.Integration.PawnDiaryApi.SubmitEvent(ExternalEventRequest)` (or, since API v23, the
+`SubmitEvent(ExternalEventRequest, out SubmitEventOutcome)` overload when they need to distinguish
+the reason a submission did not record), when they need to track the created entry
+`SubmitEventWithHandle(ExternalEventRequest)`, or when they already own final prose
 `SubmitDirectEntry(ExternalDirectEntryRequest)`, or when they want Pawn Diary to write from a
 caller-authored instruction `SubmitPromptEntry(ExternalPromptEntryRequest)` (`Source/Integration/`).
 Calls are validated, wrapped so an adapter bug can never break the game loop, main-thread guarded,
@@ -257,6 +259,14 @@ Every `PawnDiaryApi` entry point is main-thread only. Off-main-thread calls retu
 safe value, use a thread-safe diagnostic path, and do not ask RimWorld to marshal work. Adapters that
 collect data on worker threads must own their queue and drain it from a main-thread callback such as
 their own `GameComponentUpdate` or `OnGUI` hook.
+
+The pure `Source/Pipeline` external helpers (`ExternalEventRequestText`, `ExternalDirectEntryText`,
+`ExternalWritingStyleOverrideText`, `ExternalEntryAttribution`, `ExternalApiBudgetPolicy`, and the
+budget DTOs) are `internal` — the public adapter contract is only the `PawnDiary.Integration`
+namespace, and `[InternalsVisibleTo("DiaryPipelineTests")]` lets the standalone pure test project
+reach them. A defensive `ExternalEventRequestText.MaxRequestContextLines` (64) caps the total
+`key=value` fields one request can write into saved gameContext, so raising the XML-tuned
+enchantment-candidate cap cannot grow saved state without bound (mirrors `MaxListeners`).
 Saved external `gameContext` always starts with `external=...`; the domain classifier gives that
 marker precedence so adapter-supplied `extraContext` keys cannot make an external page display as a
 native Thought, Work, Hediff, or other built-in event domain. Adapter input is confined to being a
@@ -285,14 +295,16 @@ groups when present, per-pawn diary-generation disablement, and incapacitation s
 budget because they would not enqueue LLM work. The XML knobs live in `DiaryTuningDef`
 (`integrationPromptBudgetEnabled`, `integrationPromptBudgetWindowTicks`,
 `integrationPromptBudgetMaxRequestsPerSource`, `integrationPromptBudgetMaxRequestsGlobal`,
-`integrationPromptBudgetMaxTokensPerSource`, `integrationPromptBudgetMaxTokensGlobal`). Rejections
-return the existing safe API values (`false` / `recorded=false`) and log once per source/reason. A
-reservation is refunded (`ReleaseExternalApiBudgetReservation`) when the dispatcher then drops the
-event (dedup window, disabled group, pawn state), so a burst of duplicate or invalid submissions
-cannot exhaust an adapter's window without any tokens actually being queued. `SubmitEvent` dispatches
-the signal directly (rather than fire-and-forget) so it can apply that refund while keeping its
-documented "validated and handed off" return; callers needing the real outcome use
-`SubmitEventWithHandle`.
+`integrationPromptBudgetMaxTokensPerSource`, `integrationPromptBudgetMaxTokensGlobal`); a 0/negative
+`windowTicks` is clamped to the default by the tuning accessor, so it never silently disables the
+gate. Rejections return the existing safe API values (`false` / `recorded=false`) and log once per
+source/reason. A reservation is refunded (`ReleaseExternalApiBudgetReservation`) when the dispatcher
+then drops the event (dedup window, disabled group, pawn state), so a burst of duplicate or invalid
+submissions cannot exhaust an adapter's window without any tokens actually being queued. `SubmitEvent`
+dispatches the signal directly (rather than fire-and-forget) so it can apply that refund while keeping
+its documented "validated and handed off" return; callers needing the real outcome use
+`SubmitEventWithHandle`, or the v23 `SubmitEvent(request, out SubmitEventOutcome)` overload which
+distinguishes `DroppedBudget` from `DroppedByPipeline` and the other drop reasons.
 
 API v2 adds a narrow read side for adapters:
 `PawnDiaryApi.GetRecentEntryTitles(Pawn, int)` returns newest completed `DiaryEntryTitleSnapshot`
@@ -318,7 +330,10 @@ views as the title/context APIs, applies the same `DiaryEntryTitleQuery` filters
 entry key, and returns primitive counts in `DiaryEntryStatsSnapshot`: total, active/archive split,
 normalized lifecycle buckets, title/prose presence, and newest/oldest tick/date. It does not
 materialize title/prose rows and treats archived stale generation state as failed, matching the
-effective status adapters see elsewhere.
+effective status adapters see elsewhere. The archive scan is capped by
+`integrationStatsMaxArchiveScan` (default 500, newest-first): a long-lived colonist's full archive is
+never walked on one stats read, so counts become approximate beyond the cap — the intended trade for
+a main-thread-cheap aggregate.
 
 API v21 adds the C-CTX-5 context bundle through `PawnDiaryApi.GetContextBundle(...)` overloads.
 `DiaryContextBundleSnapshot` composes the existing base writing style, structured pawn summary,
@@ -383,7 +398,10 @@ entries and summary length through `DiaryTuningDef`
 (`integrationContextMaxEntries`, `integrationContextSummaryMaxChars`). It never exposes prompts,
 raw provider responses, errors, in-flight pages, or raw fallback facts; `null` means the call was not
 allowed or the pawn is invalid, while an empty `entries` list means the pawn simply has no completed
-generated pages in the requested window.
+generated pages in the requested window. The snapshot's `newestTick`/`oldestTick` (and matching
+dates) are computed by an explicit min/max scan, not positional reads of the first/last entry: the
+entries list is assembled hot-first then archive (newest-first within each store, not globally
+tick-sorted), so a backdated archive row would otherwise be misreported as the oldest.
 
 API v8 adds tracked entry handles and status snapshots. `SubmitEventWithHandle` keeps the older
 `SubmitEvent` behavior intact but, when the pipeline actually creates an entry, returns a

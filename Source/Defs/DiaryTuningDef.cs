@@ -227,6 +227,11 @@ namespace PawnDiary
         // diary history into another prompt.
         public int integrationContextMaxEntries = 8;
         public int integrationContextSummaryMaxChars = 220;
+        // GetEntryStats walks the archive newest-first counting matching rows. Without a cap a
+        // long-lived colonist's full archive would be scanned per stats call. This bounds the scan so
+        // the read stays main-thread cheap; counts are approximate beyond the cap. Sibling reads
+        // (titles, prose) are already bounded by their returned-list limit.
+        public int integrationStatsMaxArchiveScan = 500;
         // Ordinary external-event submissions may add a sanitized prompt fragment and compact
         // prompt-enchantment candidates. These caps keep adapter-authored prompt context bounded.
         public int integrationPromptFragmentMaxChars = 1200;
@@ -575,6 +580,16 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Maximum archive rows scanned by one GetEntryStats call (newest-first). Counts become
+        /// approximate beyond this cap; it exists so a long-lived colonist's full archive is never
+        /// walked on a single main-thread stats read.
+        /// </summary>
+        public static int IntegrationStatsMaxArchiveScan
+        {
+            get { return PositiveOrDefault(Current.integrationStatsMaxArchiveScan, Fallback.integrationStatsMaxArchiveScan); }
+        }
+
+        /// <summary>
         /// Maximum characters in each public integration prose summary.
         /// </summary>
         public static int IntegrationContextSummaryMaxChars
@@ -632,8 +647,10 @@ namespace PawnDiary
 
         /// <summary>
         /// XML-tuned rolling-window budget for external API requests that can enqueue LLM work.
+        /// Internal because <see cref="ExternalApiBudgetTuning"/> is an implementation-only DTO;
+        /// the public integration API never exposes the budget knobs.
         /// </summary>
-        public static ExternalApiBudgetTuning IntegrationPromptBudgetTuning
+        internal static ExternalApiBudgetTuning IntegrationPromptBudgetTuning
         {
             get
             {

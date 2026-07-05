@@ -700,7 +700,22 @@ namespace PawnDiary
             // Provider lines are collected once as a list; BuildPawnSummary joins them with "; " for
             // the prompt blob, BuildPawnSummarySnapshot hands the list straight through so each
             // provider's contribution is its own DTO entry.
-            facts.providerLines = PawnContextProviders.BuildContextLineList(pawn);
+            //
+            // Providers are third-party adapter code. The gather path itself is deterministic, but a
+            // provider may legitimately call Verse Rand (e.g. to pick a flavor line). When this runs
+            // as a public API read (GetPawnSummary / the context bundle) rather than during real
+            // generation, that Rand consumption must not perturb the game's deterministic RNG stream,
+            // so snapshot and restore UnityEngine.Random around the provider invocation. Mirrors the
+            // prompt-preview path.
+            UnityEngine.Random.State providerRandomState = UnityEngine.Random.state;
+            try
+            {
+                facts.providerLines = PawnContextProviders.BuildContextLineList(pawn);
+            }
+            finally
+            {
+                UnityEngine.Random.state = providerRandomState;
+            }
 
             facts.mood = BuildMoodSummary(pawn);
             facts.health = CollectHealthFacts(pawn);

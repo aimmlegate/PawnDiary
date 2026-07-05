@@ -35,7 +35,7 @@ namespace PawnDiary.Integration
         /// members never change behavior incompatibly. Adapters that need a newer member can check
         /// this at load time and degrade gracefully on older Pawn Diary builds.
         /// </summary>
-        public const int ApiVersion = 22;
+        public const int ApiVersion = 23;
 
         /// <summary>
         /// True while a game is loaded and the diary component is alive — the only time
@@ -220,9 +220,22 @@ namespace PawnDiary.Integration
         /// </summary>
         public static bool SubmitEvent(ExternalEventRequest request)
         {
+            return SubmitEvent(request, out SubmitEventOutcome _);
+        }
+
+        /// <summary>
+        /// Same as <see cref="SubmitEvent(ExternalEventRequest)"/> but reports a public outcome so an
+        /// adapter can tell apart the distinct reasons a submission did not record (invalid request,
+        /// off-thread call, ineligible, budget-exhausted, or dropped by the pipeline) instead of
+        /// collapsing them into one boolean. Returns true when the event was recorded; otherwise sets
+        /// <paramref name="outcome"/> and returns false. Never throws. API v23.
+        /// </summary>
+        public static bool SubmitEvent(ExternalEventRequest request, out SubmitEventOutcome outcome)
+        {
+            outcome = SubmitEventOutcome.InvalidRequest;
             try
             {
-                if (!TryPrepareExternalEventRequest(request, "SubmitEvent", out _, out _))
+                if (!TryPrepareExternalEventRequest(request, "SubmitEvent", out _, out _, out outcome))
                 {
                     return false;
                 }
@@ -230,19 +243,24 @@ namespace PawnDiary.Integration
                 if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
                     request, "SubmitEvent", out ExternalApiBudgetReservation reservation))
                 {
+                    outcome = SubmitEventOutcome.DroppedBudget;
                     return false;
                 }
 
                 // Dispatch directly (not fire-and-forget DiaryEvents.Submit) so a deduped/policy-dropped
-                // event refunds its budget reservation instead of burning the adapter's window. Return
-                // contract is unchanged: true = validated and handed to the pipeline (which may decline
-                // it afterwards); callers needing the actual outcome use SubmitEventWithHandle.
+                // event refunds its budget reservation instead of burning the adapter's window. The
+                // outcome distinguishes "dispatched and recorded" from "handed to the pipeline, which
+                // then declined it (group disabled / dedup / pawn state)" — the latter mirrors
+                // SubmitEventWithHandle's recorded=false branch.
                 bool emitted = DiaryGameComponent.Instance.Dispatch(new ExternalEventSignal(request));
                 if (!emitted)
                 {
                     DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
+                    outcome = SubmitEventOutcome.DroppedByPipeline;
+                    return false;
                 }
 
+                outcome = SubmitEventOutcome.Recorded;
                 return true;
             }
             catch (Exception e)
@@ -253,6 +271,7 @@ namespace PawnDiary.Integration
                 ApiLogErrorOnce(
                     "[Pawn Diary] Integration API: SubmitEvent from '" + sourceForLog + "' failed: " + e,
                     ("PawnDiary.Api.Exception." + sourceForLog).GetHashCode());
+                outcome = SubmitEventOutcome.InvalidRequest;
                 return false;
             }
         }
@@ -1161,8 +1180,26 @@ namespace PawnDiary.Integration
             out string sourceId,
             out string eventKey)
         {
+            return TryPrepareExternalEventRequest(request, operation, out sourceId, out eventKey, out _);
+        }
+
+        /// <summary>
+        /// Same validation as the 4-param overload, but also reports a public outcome so the v23
+        /// <see cref="SubmitEvent(ExternalEventRequest, out SubmitEventOutcome)"/> overload can tell
+        /// adapters apart: invalid request, off-thread call, ineligible (no game / master toggle off /
+        /// pawn fails owner eligibility), or no External-domain group claiming the key (also folded
+        /// into InvalidRequest, since fixing it requires an adapter-side change).
+        /// </summary>
+        private static bool TryPrepareExternalEventRequest(
+            ExternalEventRequest request,
+            string operation,
+            out string sourceId,
+            out string eventKey,
+            out SubmitEventOutcome outcome)
+        {
             sourceId = SourceIdFor(request);
             eventKey = EventKeyFor(request);
+            outcome = SubmitEventOutcome.InvalidRequest;
 
             if (request == null)
             {
@@ -1190,11 +1227,13 @@ namespace PawnDiary.Integration
                     + "' was called off the main thread; the call was ignored. Queue the work yourself "
                     + "and drain it from a main-thread hook such as GameComponentUpdate or OnGUI.",
                     ("PawnDiary.Api." + operation + ".OffThread." + sourceId).GetHashCode());
+                outcome = SubmitEventOutcome.OffThread;
                 return false;
             }
 
             if (!ExternalIntegrationsAllowed || !IsReady)
             {
+                outcome = SubmitEventOutcome.Ineligible;
                 return false;
             }
 
@@ -1208,9 +1247,11 @@ namespace PawnDiary.Integration
                     + "claims eventKey '" + eventKey + "' (submitted by '" + sourceId + "'). "
                     + "The adapter must ship a group def that matches this key; the event was ignored.",
                     ("PawnDiary.Api.UnclaimedKey." + eventKey).GetHashCode());
+                // Stays InvalidRequest: an unclaimed key is an adapter-side fix, not a runtime state.
                 return false;
             }
 
+            outcome = SubmitEventOutcome.Recorded;
             return true;
         }
 

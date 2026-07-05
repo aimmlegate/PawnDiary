@@ -10,8 +10,10 @@ namespace PawnDiary
     /// <summary>
     /// XML/default guardrail knobs copied into the pure external API budget evaluator.
     /// Zero disables that specific cap; <see cref="enabled"/> disables the whole budget gate.
+    /// Internal implementation detail; the public integration API never exposes the budget types,
+    /// and <c>DiaryPipelineTests</c> reaches in via <c>[InternalsVisibleTo]</c>.
     /// </summary>
-    public class ExternalApiBudgetTuning
+    internal class ExternalApiBudgetTuning
     {
         public bool enabled = true;
         public int windowTicks = 2500;
@@ -22,9 +24,10 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// One accepted integration request reservation inside the transient rolling window.
+    /// One accepted integration request reservation inside the transient rolling window. Internal:
+    /// threaded through the budget component and the API submit paths, never returned to adapters.
     /// </summary>
-    public class ExternalApiBudgetReservation
+    internal class ExternalApiBudgetReservation
     {
         public int tick;
         public string sourceId;
@@ -32,9 +35,10 @@ namespace PawnDiary
     }
 
     /// <summary>
-    /// Budget decision plus counters useful for API warnings and tests.
+    /// Budget decision plus counters useful for API warnings and tests. Internal: tests are the only
+    /// external consumer, via <c>[InternalsVisibleTo]</c>.
     /// </summary>
-    public class ExternalApiBudgetDecision
+    internal class ExternalApiBudgetDecision
     {
         public bool allowed;
         public string blockReason = string.Empty;
@@ -47,9 +51,11 @@ namespace PawnDiary
 
     /// <summary>
     /// Decides whether adding one estimated token-spending integration request would exceed the
-    /// configured rolling request or token caps.
+    /// configured rolling request or token caps. Internal pure evaluator; the public integration API
+    /// surface is only the submit/handle/status members on <c>PawnDiaryApi</c>, and
+    /// <c>DiaryPipelineTests</c> reaches in via <c>[InternalsVisibleTo]</c>.
     /// </summary>
-    public static class ExternalApiBudgetPolicy
+    internal static class ExternalApiBudgetPolicy
     {
         public const string SourceRequestCapReason = "source_request_cap";
         public const string GlobalRequestCapReason = "global_request_cap";

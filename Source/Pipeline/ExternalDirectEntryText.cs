@@ -8,9 +8,11 @@ using System.Text;
 namespace PawnDiary
 {
     /// <summary>
-    /// Sanitizes direct-entry prose and titles supplied through the public integration API.
+    /// Sanitizes direct-entry prose and titles supplied through the public integration API. Internal
+    /// implementation detail; the public contract lives in <c>PawnDiary.Integration</c>, and
+    /// <c>DiaryPipelineTests</c> reaches in via <c>[InternalsVisibleTo]</c>.
     /// </summary>
-    public static class ExternalDirectEntryText
+    internal static class ExternalDirectEntryText
     {
         /// <summary>
         /// Cleans final diary prose while preserving paragraph breaks. Returns empty for blank input.

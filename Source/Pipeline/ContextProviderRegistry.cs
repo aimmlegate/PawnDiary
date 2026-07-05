@@ -85,9 +85,16 @@ namespace PawnDiary
                 return cleanedLines;
             }
 
-            for (int i = 0; i < order.Count && cleanedLines.Count < maxLines; i++)
+            // Snapshot the id order before invoking providers: a provider callback that re-enters
+            // Register (e.g. registers a new id from inside its own callback) must not mutate the
+            // live `order` list mid-iteration. Each iteration re-looks-up the entry from `providers`
+            // so a replacement or disable is honored, but the set of ids walked is the snapshot taken
+            // here. Mirrors ListenerRegistry.Notify.
+            string[] ids = new string[order.Count];
+            order.CopyTo(ids);
+            for (int i = 0; i < ids.Length && cleanedLines.Count < maxLines; i++)
             {
-                string id = order[i];
+                string id = ids[i];
                 ProviderEntry entry;
                 if (!providers.TryGetValue(id, out entry) || entry.Disabled)
                 {

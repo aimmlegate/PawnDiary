@@ -9,14 +9,24 @@ using System.Collections.Generic;
 namespace PawnDiary
 {
     /// <summary>
-    /// Sanitizes text fields supplied through <c>ExternalEventRequest</c>.
+    /// Sanitizes text fields supplied through <c>ExternalEventRequest</c>. Internal because this is
+    /// implementation detail of the integration adapter layer; the public contract lives in
+    /// <c>PawnDiary.Integration</c>. The standalone <c>DiaryPipelineTests</c> project reaches in via
+    /// <c>[InternalsVisibleTo]</c> in <c>Source/Properties/AssemblyInfo.cs</c>.
     /// </summary>
-    public static class ExternalEventRequestText
+    internal static class ExternalEventRequestText
     {
         public const int MaxExtraContextLines = 16;
         public const int MaxExtraContextLineChars = 200;
         public const int MaxSummaryChars = 800;
         public const int MaxPromptInstructionChars = 2000;
+
+        // Absolute defensive ceiling on the number of "key=value" fields one external request can write
+        // into saved gameContext. Per-source caps (MaxExtraContextLines, the XML-tuned enchantment
+        // candidate cap) bound the common case, but if a tuning author raises the enchantment candidate
+        // cap the protected-field block would grow without a code-level backstop. This mirrors the
+        // MaxListeners/MaxProviders parser-limit pattern: a schema safety limit, not feature policy.
+        public const int MaxRequestContextLines = 64;
         public const string PromptInstructionContextKey = "external_prompt_instruction";
         public const string PromptFragmentContextKey = "external_prompt_fragment";
         public const string PromptEnchantmentModeContextKey = "external_prompt_enchantment_mode";
@@ -138,14 +148,21 @@ namespace PawnDiary
                 protectedFields.Add(PromptEnchantmentModeContextKey + "=" + PromptEnchantmentReplaceMode);
             }
 
-            for (int i = 0; i < candidates.Count; i++)
+            // Bound the protected-field block so the combined saved gameContext can never exceed
+            // MaxRequestContextLines even if a tuning author raises the XML enchantment candidate cap.
+            // The instruction and fragment (when present) plus the mode marker already occupy slots;
+            // the rest are enchantment candidates. Any overflow is dropped here, before the join.
+            int reservedHeadroom = protectedFields.Count;
+            int maxCandidateSlots = Math.Max(0, MaxRequestContextLines - reservedHeadroom);
+            int candidateCount = Math.Min(candidates.Count, maxCandidateSlots);
+            for (int i = 0; i < candidateCount; i++)
             {
                 protectedFields.Add(PromptEnchantmentContextKeyPrefix + (i + 1) + "=" + candidates[i]);
             }
 
             string protectedContext = PromptContextLines.Join(
                 protectedFields,
-                protectedFields.Count,
+                Math.Min(protectedFields.Count, MaxRequestContextLines),
                 int.MaxValue);
             string ordinaryContext = JoinAdapterExtraContext(extraContext);
             if (string.IsNullOrEmpty(protectedContext))

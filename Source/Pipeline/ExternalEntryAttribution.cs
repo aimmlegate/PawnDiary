@@ -7,8 +7,11 @@ namespace PawnDiary
 {
     /// <summary>
     /// Reads external authorship metadata from the stable key/value context saved on diary events.
+    /// Internal implementation detail; the public snapshot DTOs in <c>PawnDiary.Integration</c>
+    /// expose the cleaned result, and <c>DiaryPipelineTests</c> reaches in via
+    /// <c>[InternalsVisibleTo]</c>.
     /// </summary>
-    public static class ExternalEntryAttribution
+    internal static class ExternalEntryAttribution
     {
         /// <summary>
         /// True when a saved game-context string is explicitly marked as coming from the external API.

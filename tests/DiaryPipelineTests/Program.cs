@@ -1763,6 +1763,55 @@ namespace DiaryPipelineTests
                 "second free-form adapter key survives reserved filtering",
                 reservedContext,
                 "weather=clear");
+
+            // CAP: a tuning author may raise the XML-backed enchantment-candidate cap. The protected
+            // field block must never grow saved gameContext without bound — an absolute code-level
+            // ceiling (MaxRequestContextLines) backs the XML per-source caps, mirroring MaxListeners.
+            List<string> manyCandidates = new List<string>();
+            List<string> extraContextOverflow = new List<string>();
+            for (int i = 0; i < 200; i++)
+            {
+                manyCandidates.Add("candidate_" + i);
+                extraContextOverflow.Add("free_" + i);
+            }
+
+            string cappedContext = ExternalEventRequestText.JoinRequestContext(
+                "instruction text",
+                "fragment text",
+                manyCandidates,
+                true,
+                extraContextOverflow,
+                80,
+                200,
+                80);
+
+            int totalFields = CountContextFields(cappedContext);
+            AssertTrue(
+                "total context fields stay under the absolute ceiling even with a huge XML cap",
+                totalFields <= ExternalEventRequestText.MaxRequestContextLines);
+            AssertEqual(
+                "the ceiling constant is the documented parser limit",
+                64,
+                ExternalEventRequestText.MaxRequestContextLines);
+        }
+
+        private static int CountContextFields(string context)
+        {
+            if (string.IsNullOrWhiteSpace(context))
+            {
+                return 0;
+            }
+
+            int count = 0;
+            foreach (string part in context.Split(';'))
+            {
+                if (!string.IsNullOrWhiteSpace(part) && part.IndexOf('=') > 0)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static void TestExternalEntryAttribution()
@@ -1965,6 +2014,35 @@ namespace DiaryPipelineTests
                 "over-cap provider never contributes a line",
                 "a2=x; b=x",
                 capped.BuildContextLines("x", 8, 80, (id, e) => failures.Add(id)));
+
+            // REENTRANCY: a provider that registers a new id from inside its own callback must not
+            // mutate the live `order` list mid-iteration. The walk snapshots the ids first, so the
+            // newly-registered id does not appear in this pass and the original set completes cleanly.
+            // Without the snapshot, List.Add inside the foreach index loop would either grow the walk
+            // unpredictably or, once the loop is refactored to foreach, throw on mutation.
+            ContextProviderRegistry<string> reentrant = new ContextProviderRegistry<string>(32);
+            bool firstCall = true;
+            reentrant.Register("mod.first", context =>
+            {
+                if (firstCall)
+                {
+                    firstCall = false;
+                    // Re-enter Register from inside the provider callback.
+                    reentrant.Register("mod.added_mid_callback", ctx => "added=" + ctx);
+                }
+
+                return "first=" + context;
+            });
+            reentrant.Register("mod.second", context => "second=" + context);
+            List<string> reentrantFailures = new List<string>();
+            AssertEqual(
+                "reentrant registration does not extend the current walk",
+                "first=pass; second=pass",
+                reentrant.BuildContextLines("pass", 8, 80, (id, e) => reentrantFailures.Add(id)));
+            AssertEqual(
+                "mid-callback registration lands for the next pass (appended to order)",
+                "first=again; second=again; added=again",
+                reentrant.BuildContextLines("again", 8, 80, (id, e) => reentrantFailures.Add(id)));
         }
 
         private static void TestEventWindowPolicy()

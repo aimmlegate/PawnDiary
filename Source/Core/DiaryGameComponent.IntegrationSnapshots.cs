@@ -62,6 +62,14 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Archive scan cap for <see cref="EntryStatsFor"/>. The hot path is bounded by the live event
+        /// list (small per pawn); the archive can grow without bound for a long-lived colonist, so the
+        /// newest-first scan stops here. Counts are approximate beyond the cap, which is acceptable for
+        /// an adapter building a picker or a "recent activity" badge.
+        /// </summary>
+        private static int StatsArchiveScanLimit => DiaryTuning.IntegrationStatsMaxArchiveScan;
+
+        /// <summary>
         /// Builds newest-first diary title snapshots for one pawn, filtered by a plain public query.
         /// </summary>
         internal List<DiaryEntryTitleSnapshot> RecentEntryTitleSnapshotsFor(
@@ -733,8 +741,18 @@ namespace PawnDiary
                 return;
             }
 
+            // Newest-first, with a per-call row cap so a long-lived colonist's full archive is never
+            // walked on one stats read. Counts are approximate beyond this cap. The sibling title/prose
+            // reads are already bounded by their returned-list limit; stats has no such natural cap.
+            int scanned = 0;
             for (int i = archivedEntries.Count - 1; i >= 0; i--)
             {
+                if (scanned >= StatsArchiveScanLimit)
+                {
+                    break;
+                }
+
+                scanned++;
                 ArchivedDiaryEntry archivedEntry = archivedEntries[i];
                 TryAccumulateEntryStats(archivedEntry?.ToView(), true, query, emittedKeys, stats);
             }
@@ -869,12 +887,45 @@ namespace PawnDiary
                 return;
             }
 
-            DiaryEntryProseSnapshot newest = snapshot.entries[0];
-            DiaryEntryProseSnapshot oldest = snapshot.entries[snapshot.entries.Count - 1];
-            snapshot.newestTick = newest?.tick ?? 0;
-            snapshot.oldestTick = oldest?.tick ?? 0;
-            snapshot.newestDate = newest?.date ?? string.Empty;
-            snapshot.oldestDate = oldest?.date ?? string.Empty;
+            // Explicit min/max scan rather than positional reads. snapshot.entries is built hot-first
+            // then archive, newest-first within each store, but it is NOT globally sorted by tick — a
+            // backdated archive row appended late would otherwise be reported as the oldest (or a hot
+            // row older than an archive row as the newest). Scan every entry so newest/oldest reflect
+            // the true tick range regardless of insertion order. Ties on newest go to the first seen;
+            // ties on oldest go to the first seen, matching the previous positional behavior for the
+            // common fully-sorted case.
+            int newestTick = int.MinValue;
+            int oldestTick = int.MaxValue;
+            string newestDate = string.Empty;
+            string oldestDate = string.Empty;
+            for (int i = 0; i < snapshot.entries.Count; i++)
+            {
+                DiaryEntryProseSnapshot entry = snapshot.entries[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (entry.tick > newestTick)
+                {
+                    newestTick = entry.tick;
+                    newestDate = entry.date ?? string.Empty;
+                }
+
+                if (entry.tick < oldestTick)
+                {
+                    oldestTick = entry.tick;
+                    oldestDate = entry.date ?? string.Empty;
+                }
+            }
+
+            // If every entry had the sentinel default tick (0), the loop above leaves newestTick at
+            // int.MinValue; fall back to 0 so the snapshot reports a stable, sensible value rather
+            // than the sentinel. This matches the previous behavior for all-zero-tick snapshots.
+            snapshot.newestTick = newestTick == int.MinValue ? 0 : newestTick;
+            snapshot.oldestTick = oldestTick == int.MaxValue ? 0 : oldestTick;
+            snapshot.newestDate = newestDate;
+            snapshot.oldestDate = oldestDate;
         }
 
         private static bool ViewHasCompletedDiaryPage(DiaryEntryView view)

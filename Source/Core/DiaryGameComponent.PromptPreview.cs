@@ -28,6 +28,15 @@ namespace PawnDiary
                 return null;
             }
 
+            // Defense-in-depth: the public PawnDiaryApi.PreviewPrompt wrapper already enforces the
+            // master integration toggle before calling this helper. Mirror it here so a future
+            // internal caller (e.g. a debug action) cannot bypass the player's "Allow external mod
+            // integrations" switch. Same shape as PawnDiaryApi.ExternalIntegrationsAllowed.
+            if (!PawnDiaryMod.Settings.allowExternalIntegrations)
+            {
+                return null;
+            }
+
             string eventKey = request.eventKey.Trim();
             DiaryInteractionGroupDef group = InteractionGroups.ClassifyExternal(eventKey);
             bool groupRequired = !(request is ExternalPromptEntryRequest);

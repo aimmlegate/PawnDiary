@@ -6,6 +6,54 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-05
 
+- **Integration API follow-up — read-path, encapsulation, determinism, and outcome surface.** A batch
+  of review follow-ups landed across the integration API:
+  - **v23 — `SubmitEventOutcome`.** `PawnDiaryApi.ApiVersion` is now `23`. Added
+    `SubmitEvent(ExternalEventRequest, out SubmitEventOutcome)` and the `SubmitEventOutcome` enum
+    (`Recorded`, `InvalidRequest`, `OffThread`, `Ineligible`, `DroppedBudget`, `DroppedByPipeline`)
+    so adapters can distinguish the reasons a submission did not record instead of collapsing them
+    into one boolean. The existing `bool SubmitEvent(request)` is unchanged (delegates to the new
+    overload) — additive only.
+  - **Pipeline surface encapsulation.** The pure `Source/Pipeline` external helpers
+    (`ExternalEventRequestText`, `ExternalDirectEntryText`, `ExternalWritingStyleOverrideText`,
+    `ExternalEntryAttribution`, `ExternalApiBudgetPolicy`, and the budget DTOs) are now `internal`,
+    with `[InternalsVisibleTo("DiaryPipelineTests")]` in `AssemblyInfo.cs`. The public adapter
+    contract is still only the `PawnDiary.Integration` namespace; the pure helpers were `public`
+    only so the standalone test project could reach them, and the test project compiles the `.cs`
+    files directly so it does not need the attribute. Shrinks the reflection-reachable surface.
+  - **Absolute context-line ceiling.** `ExternalEventRequestText.MaxRequestContextLines` (64) caps
+    the total `key=value` fields one external request can write into saved gameContext, so raising
+    the XML-tuned enchantment-candidate cap can no longer grow saved state without bound. Mirrors the
+    `MaxListeners`/`MaxProviders` parser-limit pattern.
+  - **`GetEntryStats` archive scan cap.** Added `integrationStatsMaxArchiveScan` (default 500) to
+    `DiaryTuningDef`. `GetEntryStats` now stops scanning a pawn's archive after that many rows
+    (newest-first) instead of walking the full archive, so a stats read on a long-lived colonist
+    stays main-thread cheap. Counts are approximate beyond the cap.
+  - **`FindByEventAndRole` index.** `DiaryArchiveRepository` now keeps an `(eventId, povRole)` index
+    alongside the existing pawn-id and archive-key indexes, turning the v17 entry-snapshot read's
+    O(archive) newest-first scan into O(1). The original scan stays as a defensive fallback; the
+    index is rebuilt in lockstep on load, add, and remove.
+  - **`ContextProviderRegistry` iteration snapshot.** Provider invocation now snapshots the id order
+    before the loop, so a provider callback that re-enters `Register` mid-iteration cannot mutate the
+    live order list. Mirrors `ListenerRegistry.Notify`.
+  - **Determinism: provider invocation RNG isolation.** `CollectPawnSummaryFacts` now snapshots and
+    restores `UnityEngine.Random.state` around `PawnContextProviders.BuildContextLineList`, so a
+    third-party provider that calls Verse `Rand` during a public pawn-summary read cannot perturb the
+    game's deterministic RNG stream. Mirrors the prompt-preview path.
+  - **Correctness: true min/max tick in context snapshot.** `DiaryContextSnapshot`'s
+    newest/oldest tick+date are now computed by an explicit min/max scan rather than positional reads
+    of `entries[0]`/`entries[Count-1]`. The entries list is built hot-first then archive (newest-first
+    within each store, not globally tick-sorted), so a backdated archive row appended late was
+    previously misreported as the oldest.
+  - **Defense-in-depth: preview helper integration gate.** `DiaryGameComponent.PreviewExternalEventPrompt`
+    now enforces `PawnDiaryMod.Settings.allowExternalIntegrations` directly, not only via the public
+    `PreviewPrompt` wrapper, so a future internal caller (e.g. a debug action) cannot bypass the
+    player's master integration switch.
+  - **Note: budget `windowTicks` clamp.** The review backlog item "clamp negative `windowTicks`" was
+    already fixed before this batch — `NonNegativeOrDefault` is applied at the
+    `DiaryTuning.IntegrationPromptBudgetTuning` accessor, so 0/negative falls back to the default.
+    Verified and explicitly closed.
+
 - **Integration API — game-context injection & budget hardening (review follow-up).** Adapter input
   can no longer forge internal `gameContext` fields. `ExternalEventData.BuildGameContext` now flattens
   the `;` field separator (and line breaks) out of the adapter-controlled `eventKey`/`sourceId` and

@@ -173,6 +173,11 @@
          completed page summaries, each capped to one short sentence. -->
     <integrationContextMaxEntries>8</integrationContextMaxEntries>
     <integrationContextSummaryMaxChars>220</integrationContextSummaryMaxChars>
+    <!-- Public integration API entry-stats read. GetEntryStats counts matching diary rows; without a
+         cap it would walk a pawn's entire archive. This bounds the archive scan per call (newest-first),
+         so an adapter calling stats on a long-lived colonist stays main-thread cheap. Counts become
+         approximate beyond the cap. -->
+    <integrationStatsMaxArchiveScan>500</integrationStatsMaxArchiveScan>
     <!-- External event prompt-fragment and prompt-enchantment candidate caps. These bound
          adapter-authored prompt context before it is stored on the event. -->
     <integrationPromptFragmentMaxChars>1200</integrationPromptFragmentMaxChars>

@@ -6,8 +6,10 @@ namespace PawnDiary
 {
     /// <summary>
     /// Sanitizes external writing-style override text supplied through the public integration API.
+    /// Internal implementation detail; the public contract lives in <c>PawnDiary.Integration</c>,
+    /// and <c>DiaryPipelineTests</c> reaches in via <c>[InternalsVisibleTo]</c>.
     /// </summary>
-    public static class ExternalWritingStyleOverrideText
+    internal static class ExternalWritingStyleOverrideText
     {
         // Defensive caps for untrusted external prompt text. These are schema safety limits rather
         // than tuning policy: style rules should stay compact enough to fit in the system prompt.

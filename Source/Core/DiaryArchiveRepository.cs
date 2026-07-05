@@ -16,6 +16,10 @@ namespace PawnDiary
         private List<ArchivedDiaryEntry> archiveEntries = new List<ArchivedDiaryEntry>();
         private readonly Dictionary<string, List<ArchivedDiaryEntry>> entriesByPawnId = new Dictionary<string, List<ArchivedDiaryEntry>>();
         private readonly Dictionary<string, ArchivedDiaryEntry> entriesByArchiveKey = new Dictionary<string, ArchivedDiaryEntry>();
+        // Lookup by (eventId, povRole) for the public integration API entry-snapshot read, which does
+        // not always know the pawn id. Keyed by EventAndRoleKey; the value is the newest matching row
+        // because rows are appended in archive order and Index overwrites on each insert.
+        private readonly Dictionary<string, ArchivedDiaryEntry> entriesByEventAndRole = new Dictionary<string, ArchivedDiaryEntry>(StringComparer.Ordinal);
 
         public int Count
         {
@@ -32,6 +36,7 @@ namespace PawnDiary
             archiveEntries.Clear();
             entriesByPawnId.Clear();
             entriesByArchiveKey.Clear();
+            entriesByEventAndRole.Clear();
         }
 
         public IReadOnlyList<ArchivedDiaryEntry> EntriesForPawn(string pawnId)
@@ -77,6 +82,17 @@ namespace PawnDiary
             if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(povRole))
             {
                 return null;
+            }
+
+            // O(1) index hit for the common case (the public integration API entry-snapshot read).
+            // The index always holds the newest matching row because Index overwrites on each insert
+            // and rows are appended in archive order. If the index somehow misses (it is rebuilt in
+            // lockstep with the other indexes on load, add, and remove), fall back to the original
+            // newest-first scan so correctness never depends on the index alone.
+            ArchivedDiaryEntry indexed;
+            if (entriesByEventAndRole.TryGetValue(EventAndRoleKey(eventId, povRole), out indexed) && indexed != null)
+            {
+                return indexed;
             }
 
             for (int i = archiveEntries.Count - 1; i >= 0; i--)
@@ -274,6 +290,7 @@ namespace PawnDiary
         {
             entriesByPawnId.Clear();
             entriesByArchiveKey.Clear();
+            entriesByEventAndRole.Clear();
             for (int i = 0; i < archiveEntries.Count; i++)
             {
                 ArchivedDiaryEntry entry = archiveEntries[i];
@@ -327,6 +344,11 @@ namespace PawnDiary
         {
             entriesByArchiveKey[entry.ArchiveKey] = entry;
 
+            // Newest-wins for the (eventId, povRole) index: rows are appended in archive order, so a
+            // later insert for the same key is newer and should win the public lookup. This matches the
+            // backward-scan fallback, which returns the last (newest) match.
+            entriesByEventAndRole[EventAndRoleKey(entry.eventId, entry.povRole)] = entry;
+
             List<ArchivedDiaryEntry> entries;
             if (!entriesByPawnId.TryGetValue(entry.pawnId, out entries))
             {
@@ -335,6 +357,14 @@ namespace PawnDiary
             }
 
             entries.Add(entry);
+        }
+
+        // Stable composite key for the (eventId, povRole) lookup. The unit separator (\x1F) cannot
+        // appear in either field, so the pair round-trips unambiguously. povRole is lowercased to
+        // match the OrdinalIgnoreCase comparison the fallback scan uses.
+        private static string EventAndRoleKey(string eventId, string povRole)
+        {
+            return eventId + '\x1F' + (povRole ?? string.Empty).ToLowerInvariant();
         }
 
         private static bool IsValid(ArchivedDiaryEntry entry)
