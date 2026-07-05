@@ -24,6 +24,7 @@ opencode.jsonc
 output/
 .agents/
 tmp
+docs
 design/
 prompt-lab/
 scripts/
@@ -41,3 +42,9 @@ dist/
 # Steam Workshop item id (account/local-specific; publish.ps1 copies it into dist/ regardless)
 About/PublishedFileId.txt
 
+
+# Agent instruction files — keep these local, out of the shared repo
+/AGENTS.md
+/CLAUDE.md
+/CODEX.md
+/skills/
