@@ -59,6 +59,40 @@ namespace PawnDiary
                 && entriesByArchiveKey.ContainsKey(key);
         }
 
+        public ArchivedDiaryEntry Find(string eventId, string pawnId, string povRole)
+        {
+            string key = ArchivedDiaryEntry.BuildArchiveKey(eventId, pawnId, povRole);
+            if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(pawnId)
+                || string.IsNullOrWhiteSpace(povRole))
+            {
+                return null;
+            }
+
+            ArchivedDiaryEntry entry;
+            return entriesByArchiveKey.TryGetValue(key, out entry) ? entry : null;
+        }
+
+        public ArchivedDiaryEntry FindByEventAndRole(string eventId, string povRole)
+        {
+            if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(povRole))
+            {
+                return null;
+            }
+
+            for (int i = archiveEntries.Count - 1; i >= 0; i--)
+            {
+                ArchivedDiaryEntry entry = archiveEntries[i];
+                if (entry != null
+                    && string.Equals(entry.eventId, eventId, StringComparison.Ordinal)
+                    && string.Equals(entry.povRole, povRole, StringComparison.OrdinalIgnoreCase))
+                {
+                    return entry;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// True when <paramref name="entry"/> is a well-formed archive row this store would accept (the
         /// same gate <see cref="AddOrKeep"/> applies). Lets retention decide a ref is safe to drop while

@@ -1,10 +1,9 @@
-// Logging adapter for RimTalk chat observations. The first bridge milestone is intentionally
-// diagnostic: prove we can see RimTalk chat and read recent Pawn Diary titles before we generate
-// any new diary entries from chat.
+// Logging adapter for RimTalk chat observations. The bridge is intentionally diagnostic for now:
+// prove we can see RimTalk chat and read recent Pawn Diary context before we generate any new diary
+// entries from chat or register prompt variables.
 //
 // New to C#/RimWorld? See AGENTS.md in the Pawn Diary repo.
 using System;
-using System.Collections.Generic;
 using System.Text;
 using PawnDiary.Integration;
 using RimTalk.Data;
@@ -13,11 +12,11 @@ using Verse;
 namespace PawnDiaryRimTalkBridge
 {
     /// <summary>
-    /// Formats RimTalk chat facts and related Pawn Diary title snapshots into developer logs.
+    /// Formats RimTalk chat facts and related Pawn Diary context snapshots into developer logs.
     /// </summary>
     public static class RimTalkChatLogger
     {
-        private const int RecentTitleCount = 3;
+        private const int RecentContextCount = 3;
         private const int MaxLoggedChatText = 500;
         private const int MaxLoggedTitle = 160;
 
@@ -44,11 +43,11 @@ namespace PawnDiaryRimTalkBridge
                     + " id=" + SafeString(talk.Id.ToString())
                     + " text=\"" + CleanForLog(SafeText(talk), MaxLoggedChatText) + "\"");
 
-                LogRecentDiaryTitles("speaker", speaker);
+                LogRecentDiaryContext("speaker", speaker);
                 LogWritingStyle("speaker", speaker);
                 if (!SamePawn(speaker, target))
                 {
-                    LogRecentDiaryTitles("target", target);
+                    LogRecentDiaryContext("target", target);
                     LogWritingStyle("target", target);
                 }
             }
@@ -60,27 +59,27 @@ namespace PawnDiaryRimTalkBridge
             }
         }
 
-        private static void LogRecentDiaryTitles(string role, Pawn pawn)
+        private static void LogRecentDiaryContext(string role, Pawn pawn)
         {
             if (pawn == null)
             {
                 return;
             }
 
-            List<DiaryEntryTitleSnapshot> snapshots = PawnDiaryApi.GetRecentEntryTitles(pawn, RecentTitleCount);
-            if (snapshots == null || snapshots.Count == 0)
+            DiaryContextSnapshot snapshot = PawnDiaryApi.GetContextSnapshot(pawn, RecentContextCount);
+            if (snapshot == null || snapshot.entries == null || snapshot.entries.Count == 0)
             {
                 Log.Message(
                     PawnDiaryRimTalkBridgeMod.LogPrefix
-                    + " recent Pawn Diary titles for " + role + "=" + PawnLabel(pawn, string.Empty)
+                    + " recent Pawn Diary context for " + role + "=" + PawnLabel(pawn, string.Empty)
                     + ": none");
                 return;
             }
 
             StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < snapshots.Count; i++)
+            for (int i = 0; i < snapshot.entries.Count; i++)
             {
-                DiaryEntryTitleSnapshot snapshot = snapshots[i];
+                DiaryEntryProseSnapshot entry = snapshot.entries[i];
                 if (i > 0)
                 {
                     builder.Append(" | ");
@@ -88,18 +87,24 @@ namespace PawnDiaryRimTalkBridge
 
                 builder.Append(i + 1);
                 builder.Append(". ");
-                builder.Append(TitleOrGroup(snapshot));
-                if (!string.IsNullOrWhiteSpace(snapshot.date))
+                builder.Append(TitleOrGroup(entry));
+                if (!string.IsNullOrWhiteSpace(entry.date))
                 {
                     builder.Append(" (");
-                    builder.Append(CleanForLog(snapshot.date, MaxLoggedTitle));
+                    builder.Append(CleanForLog(entry.date, MaxLoggedTitle));
                     builder.Append(")");
+                }
+
+                if (!string.IsNullOrWhiteSpace(entry.summary))
+                {
+                    builder.Append(": ");
+                    builder.Append(CleanForLog(entry.summary, MaxLoggedChatText));
                 }
             }
 
             Log.Message(
                 PawnDiaryRimTalkBridgeMod.LogPrefix
-                + " recent Pawn Diary titles for " + role + "=" + PawnLabel(pawn, string.Empty)
+                + " recent Pawn Diary context for " + role + "=" + PawnLabel(pawn, string.Empty)
                 + ": " + builder);
         }
 
@@ -131,7 +136,7 @@ namespace PawnDiaryRimTalkBridge
                 + " rule=\"" + CleanForLog(style.rule, MaxLoggedChatText) + "\"");
         }
 
-        private static string TitleOrGroup(DiaryEntryTitleSnapshot snapshot)
+        private static string TitleOrGroup(DiaryEntryProseSnapshot snapshot)
         {
             if (snapshot == null)
             {

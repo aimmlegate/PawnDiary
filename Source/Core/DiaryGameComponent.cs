@@ -233,6 +233,7 @@ namespace PawnDiary
             delayedRaidGenerationReadyTicks.Clear();
             recentEventWindowEvents.Clear();
             recentEvents.Clear();
+            ResetExternalApiBudgetState();
             activeEventWindows.Clear();
             activeObservedConditions.Clear();
             recentObservedConditionEvents.Clear();
@@ -275,6 +276,7 @@ namespace PawnDiary
             delayedRaidGenerationReadyTicks.Clear();
             recentEventWindowEvents.Clear();
             recentEvents.Clear();
+            ResetExternalApiBudgetState();
             // Transient observed-condition bookkeeping is rebuilt from scratch; the SAVED
             // activeObservedConditions list is deliberately NOT cleared here so loaded states survive.
             recentObservedConditionEvents.Clear();

@@ -16,6 +16,28 @@ namespace PawnDiary
     public static class DiarySentenceExcerpt
     {
         private static readonly Regex RichTextTagRegex = new Regex("<.*?>");
+        private static readonly Regex WhitespaceRegex = new Regex("\\s+");
+
+        /// <summary>
+        /// Returns the first sentence from <paramref name="text"/>, collapsed onto one line and capped
+        /// from the right. Used by the public integration context snapshot so adapters get a small
+        /// memory excerpt without the full diary prose.
+        /// </summary>
+        public static string FirstSentence(string text, int maxChars)
+        {
+            string cleaned = CleanLine(text);
+            if (string.IsNullOrWhiteSpace(cleaned))
+            {
+                return string.Empty;
+            }
+
+            List<int> ends = SentenceEndIndexes(cleaned);
+            string first = ends.Count == 0
+                ? cleaned
+                : cleaned.Substring(0, ends[0] + 1).Trim();
+
+            return CapFromRight(first, maxChars);
+        }
 
         /// <summary>
         /// Returns the final <paramref name="sentenceCount"/> sentences from <paramref name="text"/>,
@@ -47,6 +69,27 @@ namespace PawnDiary
             }
 
             return CapFromLeft(cleaned.Substring(start).Trim(), maxChars);
+        }
+
+        private static string CapFromRight(string value, int maxChars)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            int cap = Math.Max(0, maxChars);
+            if (cap <= 0 || value.Length <= cap)
+            {
+                return value;
+            }
+
+            if (cap <= 3)
+            {
+                return TextTruncation.SafePrefix(value, cap);
+            }
+
+            return TextTruncation.SafePrefix(value, cap - 3).TrimEnd() + "...";
         }
 
         private static List<int> SentenceEndIndexes(string text)
@@ -117,7 +160,7 @@ namespace PawnDiary
 
             string cleaned = value.Replace("\r", " ").Replace("\n", " ");
             cleaned = RichTextTagRegex.Replace(cleaned, string.Empty);
-            return cleaned.Trim();
+            return WhitespaceRegex.Replace(cleaned, " ").Trim();
         }
     }
 }

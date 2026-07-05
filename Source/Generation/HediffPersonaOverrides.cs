@@ -11,11 +11,17 @@ namespace PawnDiary
     public static class HediffPersonaOverrides
     {
         /// <summary>
-        /// Returns the prompt-ready writing-style rule, using a matching hediff override when present
-        /// and the pawn's saved style otherwise.
+        /// Returns the prompt-ready writing-style rule, using a saved external override first, then a
+        /// matching hediff override when present, then the pawn's saved style.
         /// </summary>
-        public static string RuleFor(Pawn pawn, string fallbackPersonaDefName)
+        public static string RuleFor(Pawn pawn, string fallbackPersonaDefName, string externalOverrideRule = null)
         {
+            string externalRule = ExternalWritingStyleOverrideText.CleanRule(externalOverrideRule);
+            if (!string.IsNullOrWhiteSpace(externalRule))
+            {
+                return externalRule;
+            }
+
             string overridePersonaDefName = SelectionFor(pawn).personaDefName;
             return DiaryPersonas.RuleFor(string.IsNullOrWhiteSpace(overridePersonaDefName)
                 ? fallbackPersonaDefName

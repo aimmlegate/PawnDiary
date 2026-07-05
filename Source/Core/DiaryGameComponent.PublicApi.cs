@@ -953,11 +953,56 @@ namespace PawnDiary
             return FindDiary(pawn, true)?.diaryGenerationEnabled ?? true;
         }
 
-        public void SetDiaryGenerationEnabled(Pawn pawn, bool enabled)
+        /// <summary>
+        /// Public integration preflight: true only when the pawn passes diary-owner eligibility and the
+        /// player's saved per-pawn generation toggle is still enabled. Unlike the debug/UI helper above,
+        /// this does not create a diary record just because an adapter asked.
+        /// </summary>
+        internal bool IsIntegrationEligibleFor(Pawn pawn)
+        {
+            return DiaryGenerationEnabledForIntegration(pawn);
+        }
+
+        /// <summary>
+        /// Public integration read for the saved per-pawn generation flag. This intentionally does
+        /// not create a diary record just because an adapter asked.
+        /// </summary>
+        internal bool DiaryGenerationEnabledForIntegration(Pawn pawn)
         {
             if (!IsDiaryEligible(pawn))
             {
-                return;
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            return diary == null || diary.diaryGenerationEnabled;
+        }
+
+        private static bool HasExternalWritingStyleOverride(PawnDiaryRecord diary)
+        {
+            return !string.IsNullOrWhiteSpace(ExternalWritingStyleOverrideRuleFor(diary));
+        }
+
+        private static string ExternalWritingStyleOverrideRuleFor(PawnDiaryRecord diary)
+        {
+            return ExternalWritingStyleOverrideText.CleanRule(diary?.externalWritingStyleOverrideRule);
+        }
+
+        public void SetDiaryGenerationEnabled(Pawn pawn, bool enabled)
+        {
+            TrySetDiaryGenerationEnabledForIntegration(pawn, enabled);
+        }
+
+        /// <summary>
+        /// Public integration write for the saved per-pawn generation flag. The base diary-owner
+        /// eligibility check is used instead of IsIntegrationEligibleFor so a disabled pawn can be
+        /// re-enabled.
+        /// </summary>
+        internal bool TrySetDiaryGenerationEnabledForIntegration(Pawn pawn, bool enabled)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return false;
             }
 
             PawnDiaryRecord diary = FindDiary(pawn, true);
@@ -968,7 +1013,11 @@ namespace PawnDiary
                 {
                     QueuePendingGenerationsForPawn(pawn.GetUniqueLoadID());
                 }
+
+                return true;
             }
+
+            return false;
         }
 
         public DiaryPersonaDef PersonaFor(Pawn pawn)
@@ -1024,6 +1073,70 @@ namespace PawnDiary
             {
                 diary.personaDefName = persona.defName;
             }
+        }
+
+        /// <summary>
+        /// Saves a prompt-facing external writing-style override above the pawn's base style. The
+        /// caller has already been validated by <see cref="Integration.PawnDiaryApi"/>.
+        /// </summary>
+        internal bool SetExternalWritingStyleOverride(Pawn pawn, string sourceId, string rule)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return false;
+            }
+
+            string cleanedSource = ExternalWritingStyleOverrideText.CleanSourceId(sourceId);
+            string cleanedRule = ExternalWritingStyleOverrideText.CleanRule(rule);
+            if (string.IsNullOrWhiteSpace(cleanedSource) || string.IsNullOrWhiteSpace(cleanedRule))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            if (diary == null)
+            {
+                return false;
+            }
+
+            diary.externalWritingStyleOverrideSourceId = cleanedSource;
+            diary.externalWritingStyleOverrideRule = cleanedRule;
+            return true;
+        }
+
+        /// <summary>
+        /// Clears an external writing-style override when no override exists or the same source owns it.
+        /// A different source cannot silently remove another adapter's active override.
+        /// </summary>
+        internal bool ResetExternalWritingStyleOverride(Pawn pawn, string sourceId)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return false;
+            }
+
+            string cleanedSource = ExternalWritingStyleOverrideText.CleanSourceId(sourceId);
+            if (string.IsNullOrWhiteSpace(cleanedSource))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            if (!HasExternalWritingStyleOverride(diary))
+            {
+                return true;
+            }
+
+            string owner = ExternalWritingStyleOverrideText.CleanSourceId(
+                diary.externalWritingStyleOverrideSourceId);
+            if (!string.Equals(owner, cleanedSource, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            diary.externalWritingStyleOverrideRule = string.Empty;
+            diary.externalWritingStyleOverrideSourceId = string.Empty;
+            return true;
         }
     }
 }

@@ -196,6 +196,8 @@
   <PawnDiary.Tab.ArchivedGenerationFallback>You see that: {0}</PawnDiary.Tab.ArchivedGenerationFallback>
   <PawnDiary.Tab.ArchivedGenerationFallbackUnknown>something happened, but the prompt details were not saved</PawnDiary.Tab.ArchivedGenerationFallbackUnknown>
   <PawnDiary.Tab.ArchivedGenerationFailedFooter>failed to generate</PawnDiary.Tab.ArchivedGenerationFailedFooter>
+  <PawnDiary.Tab.ExternalSourceFooter>external source: {0}</PawnDiary.Tab.ExternalSourceFooter>
+  <PawnDiary.Tab.ExternalSourceWithFooterNote>external source: {0} | {1}</PawnDiary.Tab.ExternalSourceWithFooterNote>
   <PawnDiary.Persona.DefaultLabel>default</PawnDiary.Persona.DefaultLabel>
 
   <!-- Per-entry status shown in the entry header -->

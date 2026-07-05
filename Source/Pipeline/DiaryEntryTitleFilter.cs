@@ -15,6 +15,14 @@ namespace PawnDiary
         public string povRole;
         public string domain;
         public string atmosphereCue;
+        public string sourceId;
+        public string eventKey;
+        public string partnerPawnId;
+        public bool important;
+        public bool hasTitle;
+        public bool hasGeneratedText;
+        public string status;
+        public bool archivedGenerationStale;
         public bool archived;
     }
 
@@ -67,7 +75,37 @@ namespace PawnDiary
                 return false;
             }
 
+            if (!MatchesToken(facts.sourceId, query.sourceId))
+            {
+                return false;
+            }
+
+            if (!MatchesToken(facts.eventKey, query.eventKey))
+            {
+                return false;
+            }
+
+            if (!MatchesToken(facts.partnerPawnId, query.partnerPawnId))
+            {
+                return false;
+            }
+
             if (!ContainsText(facts.date, query.dateContains))
+            {
+                return false;
+            }
+
+            if (!MatchesOptionalBool(facts.important, query.important))
+            {
+                return false;
+            }
+
+            if (!MatchesOptionalBool(facts.hasTitle, query.hasTitle))
+            {
+                return false;
+            }
+
+            if (!MatchesOptionalBool(facts.hasGeneratedText, query.hasGeneratedText))
             {
                 return false;
             }
@@ -85,6 +123,16 @@ namespace PawnDiary
         {
             return string.IsNullOrWhiteSpace(expectedFragment)
                 || (actual ?? string.Empty).IndexOf(expectedFragment.Trim(), StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesOptionalBool(bool actual, int expected)
+        {
+            if (expected < 0)
+            {
+                return true;
+            }
+
+            return expected == 0 ? !actual : actual;
         }
     }
 }

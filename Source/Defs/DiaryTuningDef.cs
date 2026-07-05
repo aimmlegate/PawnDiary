@@ -222,6 +222,29 @@ namespace PawnDiary
         // indicator. These tune the generated display-only fallback.
         public int archivedFallbackTitleWords = 6;
         public int archivedFallbackTextMaxChars = 240;
+        // Public integration API context snapshots expose recent completed prose as first-sentence
+        // summaries. These caps bound the read so a chat adapter cannot accidentally pull a long
+        // diary history into another prompt.
+        public int integrationContextMaxEntries = 8;
+        public int integrationContextSummaryMaxChars = 220;
+        // Ordinary external-event submissions may add a sanitized prompt fragment and compact
+        // prompt-enchantment candidates. These caps keep adapter-authored prompt context bounded.
+        public int integrationPromptFragmentMaxChars = 1200;
+        public int integrationPromptEnchantmentMaxCandidates = 6;
+        public int integrationPromptEnchantmentCandidateMaxChars = 160;
+        public float integrationPromptEnchantmentCandidateWeight = 1.5f;
+        // Direct-text integration writes caller-authored prose straight into the save. These caps keep
+        // a noisy adapter from bloating saves or card headers while remaining XML-tunable.
+        public int integrationDirectTextMaxChars = 4000;
+        public int integrationDirectTitleMaxChars = 120;
+        // Rolling-window guardrails for public integration API calls that can enqueue LLM work.
+        // Counts are per accepted API request; token caps use a conservative maxTokens estimate.
+        public bool integrationPromptBudgetEnabled = true;
+        public int integrationPromptBudgetWindowTicks = 2500;
+        public int integrationPromptBudgetMaxRequestsPerSource = 10;
+        public int integrationPromptBudgetMaxRequestsGlobal = 30;
+        public int integrationPromptBudgetMaxTokensPerSource = 20000;
+        public int integrationPromptBudgetMaxTokensGlobal = 60000;
         // Diary UI long-history indexing is sliced across frames so selecting a pawn never scans
         // thousands of entries in one draw. These cap per-frame work for the tab and command badges.
         public int uiHistoryScanMaxEventsPerFrame = 60;
@@ -544,6 +567,101 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Maximum recent diary prose summaries returned by the public integration context snapshot.
+        /// </summary>
+        public static int IntegrationContextMaxEntries
+        {
+            get { return PositiveOrDefault(Current.integrationContextMaxEntries, Fallback.integrationContextMaxEntries); }
+        }
+
+        /// <summary>
+        /// Maximum characters in each public integration prose summary.
+        /// </summary>
+        public static int IntegrationContextSummaryMaxChars
+        {
+            get { return PositiveOrDefault(Current.integrationContextSummaryMaxChars, Fallback.integrationContextSummaryMaxChars); }
+        }
+
+        /// <summary>
+        /// Maximum characters accepted for an external event's protected prompt fragment.
+        /// </summary>
+        public static int IntegrationPromptFragmentMaxChars
+        {
+            get { return PositiveOrDefault(Current.integrationPromptFragmentMaxChars, Fallback.integrationPromptFragmentMaxChars); }
+        }
+
+        /// <summary>
+        /// Maximum prompt-enchantment candidate lines accepted from one external event.
+        /// </summary>
+        public static int IntegrationPromptEnchantmentMaxCandidates
+        {
+            get { return PositiveOrDefault(Current.integrationPromptEnchantmentMaxCandidates, Fallback.integrationPromptEnchantmentMaxCandidates); }
+        }
+
+        /// <summary>
+        /// Maximum characters in each external prompt-enchantment candidate line.
+        /// </summary>
+        public static int IntegrationPromptEnchantmentCandidateMaxChars
+        {
+            get { return PositiveOrDefault(Current.integrationPromptEnchantmentCandidateMaxChars, Fallback.integrationPromptEnchantmentCandidateMaxChars); }
+        }
+
+        /// <summary>
+        /// XML-tuned planner weight assigned to each external prompt-enchantment candidate.
+        /// </summary>
+        public static float IntegrationPromptEnchantmentCandidateWeight
+        {
+            get { return NonNegativeOrDefault(Current.integrationPromptEnchantmentCandidateWeight, Fallback.integrationPromptEnchantmentCandidateWeight); }
+        }
+
+        /// <summary>
+        /// Maximum saved body length accepted from external direct-text injection.
+        /// </summary>
+        public static int IntegrationDirectTextMaxChars
+        {
+            get { return PositiveOrDefault(Current.integrationDirectTextMaxChars, Fallback.integrationDirectTextMaxChars); }
+        }
+
+        /// <summary>
+        /// Maximum saved title length accepted from external direct-text injection.
+        /// </summary>
+        public static int IntegrationDirectTitleMaxChars
+        {
+            get { return PositiveOrDefault(Current.integrationDirectTitleMaxChars, Fallback.integrationDirectTitleMaxChars); }
+        }
+
+        /// <summary>
+        /// XML-tuned rolling-window budget for external API requests that can enqueue LLM work.
+        /// </summary>
+        public static ExternalApiBudgetTuning IntegrationPromptBudgetTuning
+        {
+            get
+            {
+                DiaryTuningDef tuning = Current;
+                DiaryTuningDef fallback = Fallback;
+                return new ExternalApiBudgetTuning
+                {
+                    enabled = tuning.integrationPromptBudgetEnabled,
+                    windowTicks = NonNegativeOrDefault(
+                        tuning.integrationPromptBudgetWindowTicks,
+                        fallback.integrationPromptBudgetWindowTicks),
+                    maxRequestsPerSource = NonNegativeOrDefault(
+                        tuning.integrationPromptBudgetMaxRequestsPerSource,
+                        fallback.integrationPromptBudgetMaxRequestsPerSource),
+                    maxRequestsGlobal = NonNegativeOrDefault(
+                        tuning.integrationPromptBudgetMaxRequestsGlobal,
+                        fallback.integrationPromptBudgetMaxRequestsGlobal),
+                    maxTokensPerSource = NonNegativeOrDefault(
+                        tuning.integrationPromptBudgetMaxTokensPerSource,
+                        fallback.integrationPromptBudgetMaxTokensPerSource),
+                    maxTokensGlobal = NonNegativeOrDefault(
+                        tuning.integrationPromptBudgetMaxTokensGlobal,
+                        fallback.integrationPromptBudgetMaxTokensGlobal)
+                };
+            }
+        }
+
+        /// <summary>
         /// Maximum saved events the Diary UI may index in one frame while loading a long pawn history.
         /// </summary>
         public static int UiHistoryScanMaxEventsPerFrame
@@ -620,6 +738,11 @@ namespace PawnDiary
         private static float NonNegativeOrDefault(float value, float fallback)
         {
             return value < 0f || float.IsNaN(value) ? fallback : value;
+        }
+
+        private static int NonNegativeOrDefault(int value, int fallback)
+        {
+            return value < 0 ? fallback : value;
         }
 
         private static int PositiveOrDefault(int value, int fallback)

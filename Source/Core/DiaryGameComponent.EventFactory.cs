@@ -75,6 +75,16 @@ namespace PawnDiary
             AddEventRef(initiator, diaryEvent.eventId);
             AddEventRef(recipient, diaryEvent.eventId);
             ApplyDiaryEventLimits();
+            if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
+            {
+                NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);
+            }
+
+            if (diaryEvent.IsSkipped(DiaryEvent.RecipientRole))
+            {
+                NotifyEntryStatusChanged(diaryEvent, DiaryEvent.RecipientRole);
+            }
+
             return diaryEvent;
         }
 
@@ -126,6 +136,11 @@ namespace PawnDiary
             events.Register(diaryEvent);
             AddEventRef(pawn, diaryEvent.eventId);
             ApplyDiaryEventLimits();
+            if (diaryEvent.IsSkipped(DiaryEvent.InitiatorRole))
+            {
+                NotifyEntryStatusChanged(diaryEvent, DiaryEvent.InitiatorRole);
+            }
+
             return diaryEvent;
         }
     }

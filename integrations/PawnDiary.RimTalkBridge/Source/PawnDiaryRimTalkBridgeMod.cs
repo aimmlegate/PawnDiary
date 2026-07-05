@@ -80,7 +80,7 @@ namespace PawnDiaryRimTalkBridge
     /// <summary>Saved settings for the bridge adapter.</summary>
     public class PawnDiaryRimTalkBridgeSettings : ModSettings
     {
-        /// <summary>When true, RimTalk chat is logged with related Pawn Diary title snapshots.</summary>
+        /// <summary>When true, RimTalk chat is logged with related Pawn Diary context snapshots.</summary>
         public bool enabled;
 
         public override void ExposeData()

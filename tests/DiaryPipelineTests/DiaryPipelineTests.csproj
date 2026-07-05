@@ -15,6 +15,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryLifeBoundaryPolicy.cs" Link="DiaryLifeBoundaryPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventPromptKeys.cs" Link="DiaryEventPromptKeys.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEntryTitleFilter.cs" Link="DiaryEntryTitleFilter.cs" />
+    <Compile Include="..\..\Source\Pipeline\DiaryEntryStatsAccumulator.cs" Link="DiaryEntryStatsAccumulator.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryPromptPlanner.cs" Link="DiaryPromptPlanner.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryEventDomainClassifier.cs" Link="DiaryEventDomainClassifier.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryResponsePostprocessor.cs" Link="DiaryResponsePostprocessor.cs" />
@@ -28,6 +29,7 @@
     <Compile Include="..\..\Source\Pipeline\DiaryPromptCapture.cs" Link="DiaryPromptCapture.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptTextSanitizer.cs" Link="PromptTextSanitizer.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptContextLines.cs" Link="PromptContextLines.cs" />
+    <Compile Include="..\..\Source\Pipeline\ListenerRegistry.cs" Link="ListenerRegistry.cs" />
     <Compile Include="..\..\Source\Pipeline\DiaryListText.cs" Link="DiaryListText.cs" />
     <Compile Include="..\..\Source\Pipeline\ContextProviderRegistry.cs" Link="ContextProviderRegistry.cs" />
     <Compile Include="..\..\Source\Pipeline\PromptEnchantmentPlanner.cs" Link="PromptEnchantmentPlanner.cs" />
@@ -40,11 +42,17 @@
     <Compile Include="..\..\Source\Pipeline\ModelReasoningCapability.cs" Link="ModelReasoningCapability.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneIdentity.cs" Link="ApiLaneIdentity.cs" />
     <Compile Include="..\..\Source\Pipeline\DiarySentenceExcerpt.cs" Link="DiarySentenceExcerpt.cs" />
+    <Compile Include="..\..\Source\Pipeline\ExternalEventRequestText.cs" Link="ExternalEventRequestText.cs" />
+    <Compile Include="..\..\Source\Pipeline\ExternalApiBudgetPolicy.cs" Link="ExternalApiBudgetPolicy.cs" />
+    <Compile Include="..\..\Source\Pipeline\ExternalDirectEntryText.cs" Link="ExternalDirectEntryText.cs" />
+    <Compile Include="..\..\Source\Pipeline\ExternalEntryAttribution.cs" Link="ExternalEntryAttribution.cs" />
+    <Compile Include="..\..\Source\Pipeline\ExternalWritingStyleOverrideText.cs" Link="ExternalWritingStyleOverrideText.cs" />
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />
     <Compile Include="..\..\Source\Capture\BodyPartEventPolicy.cs" Link="Capture\BodyPartEventPolicy.cs" />
     <Compile Include="..\..\Source\Integration\DiaryEntryTitleQuery.cs" Link="Integration\DiaryEntryTitleQuery.cs" />
+    <Compile Include="..\..\Source\Integration\DiaryEntryStatsSnapshot.cs" Link="Integration\DiaryEntryStatsSnapshot.cs" />
     <Compile Include="..\..\Source\Integration\DiaryHealthSummarySnapshot.cs" Link="Integration\DiaryHealthSummarySnapshot.cs" />
     <Compile Include="..\..\Source\Integration\DiaryPawnSummarySnapshot.cs" Link="Integration\DiaryPawnSummarySnapshot.cs" />
     <Compile Include="..\..\Source\Integration\DiaryPromptEnchantmentCandidateSnapshot.cs" Link="Integration\DiaryPromptEnchantmentCandidateSnapshot.cs" />

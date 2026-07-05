@@ -403,6 +403,8 @@ namespace PawnDiary
                 Field("what happened", "PovText"),
                 Field("event prompt", "EventPrompt"),
                 Field("event enhancement", "EventEnhancement"),
+                ContextField("external prompt instruction", ExternalEventRequestText.PromptInstructionContextKey),
+                ContextField("external prompt fragment", ExternalEventRequestText.PromptFragmentContextKey),
                 ContextField("quest name", "quest_label"),
                 ContextField("quest lifecycle", "quest_signal"),
                 ContextField("quest faction", "quest_faction"),

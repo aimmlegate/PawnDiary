@@ -29,6 +29,8 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -61,6 +63,8 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -94,6 +98,8 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -129,6 +135,8 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>ritual role</label><source>GameContext</source><contextKey>ritual_role</contextKey></li>
       <li><label>ritual title</label><source>GameContext</source><contextKey>ritual_title</contextKey></li>
       <li><label>ability</label><source>GameContext</source><contextKey>ability_label</contextKey></li>
@@ -158,6 +166,8 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>quest name</label><source>GameContext</source><contextKey>quest_label</contextKey></li>
       <li><label>quest lifecycle</label><source>GameContext</source><contextKey>quest_signal</contextKey></li>
       <li><label>quest faction</label><source>GameContext</source><contextKey>quest_faction</contextKey></li>
@@ -204,6 +214,8 @@
       <li><label>you</label><source>PawnSummary</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>quest name</label><source>GameContext</source><contextKey>quest_label</contextKey></li>
       <li><label>quest lifecycle</label><source>GameContext</source><contextKey>quest_signal</contextKey></li>
       <li><label>quest faction</label><source>GameContext</source><contextKey>quest_faction</contextKey></li>
@@ -249,6 +261,8 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
       <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
       <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>
@@ -290,6 +304,8 @@
       <li><label>instruction</label><source>Instruction</source></li>
       <li><label>event prompt</label><source>EventPrompt</source></li>
       <li><label>event enhancement</label><source>EventEnhancement</source></li>
+      <li><label>external prompt instruction</label><source>GameContext</source><contextKey>external_prompt_instruction</contextKey></li>
+      <li><label>external prompt fragment</label><source>GameContext</source><contextKey>external_prompt_fragment</contextKey></li>
       <li><label>progression kind</label><source>GameContext</source><contextKey>progression_kind</contextKey></li>
       <li><label>skill</label><source>GameContext</source><contextKey>skill</contextKey></li>
       <li><label>skill level</label><source>GameContext</source><contextKey>skill_level</contextKey></li>

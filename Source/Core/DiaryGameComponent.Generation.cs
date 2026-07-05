@@ -231,6 +231,7 @@ namespace PawnDiary
             if (orphanCandidatesLastScan.Contains(key))
             {
                 diaryEvent.ResetPendingToNotGenerated(povRole);
+                NotifyEntryStatusChanged(diaryEvent, povRole);
                 RequestGenerationScan();
                 LogApiDebug("Recovered orphaned pending generation event=" + diaryEvent.eventId + " role=" + povRole);
             }
@@ -467,6 +468,7 @@ namespace PawnDiary
                 if (diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
                 {
                     diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "PawnDiary.Error.SkippedInitiatorFailed".Translate());
+                    NotifyEntryStatusChanged(diaryEvent, DiaryEvent.RecipientRole);
                 }
 
                 return;

@@ -2,5 +2,5 @@
 <LanguageData>
   <PawnDiaryRimTalkBridge.Settings.Category>PawnDiary: RimTalk bridge</PawnDiaryRimTalkBridge.Settings.Category>
   <PawnDiaryRimTalkBridge.Settings.Enabled>Enable bridge logging</PawnDiaryRimTalkBridge.Settings.Enabled>
-  <PawnDiaryRimTalkBridge.Settings.EnabledDesc>Log displayed RimTalk chat plus recent Pawn Diary titles for the speaker and target.</PawnDiaryRimTalkBridge.Settings.EnabledDesc>
+  <PawnDiaryRimTalkBridge.Settings.EnabledDesc>Log displayed RimTalk chat plus recent Pawn Diary context summaries for the speaker and target.</PawnDiaryRimTalkBridge.Settings.EnabledDesc>
 </LanguageData>

@@ -1,0 +1,255 @@
+// Pure cleanup for ordinary external event requests. Both live submissions and prompt previews use
+// this so adapter-supplied summary/context/prompt-fragment text has one set of caps and one
+// sanitation rule.
+//
+// New to C#/RimWorld? See AGENTS.md.
+using System;
+using System.Collections.Generic;
+
+namespace PawnDiary
+{
+    /// <summary>
+    /// Sanitizes text fields supplied through <c>ExternalEventRequest</c>.
+    /// </summary>
+    public static class ExternalEventRequestText
+    {
+        public const int MaxExtraContextLines = 16;
+        public const int MaxExtraContextLineChars = 200;
+        public const int MaxSummaryChars = 800;
+        public const int MaxPromptInstructionChars = 2000;
+        public const string PromptInstructionContextKey = "external_prompt_instruction";
+        public const string PromptFragmentContextKey = "external_prompt_fragment";
+        public const string PromptEnchantmentModeContextKey = "external_prompt_enchantment_mode";
+        public const string PromptEnchantmentReplaceMode = "replace";
+        public const string PromptEnchantmentContextKeyPrefix = "external_prompt_enchantment_";
+
+        /// <summary>
+        /// One-lines and length-caps the adapter's summary so a stray multi-paragraph submission
+        /// cannot distort the prompt or diary card's raw-text row.
+        /// </summary>
+        public static string CleanSummary(string summary)
+        {
+            string cleaned = PromptTextSanitizer.OneLine(summary);
+            return TextTruncation.SafePrefix(cleaned, MaxSummaryChars);
+        }
+
+        /// <summary>
+        /// Sanitizes and joins adapter "key=value" context lines into the semicolon-separated game
+        /// context shape used by diary prompts.
+        /// </summary>
+        public static string JoinExtraContext(List<string> lines)
+        {
+            return PromptContextLines.Join(lines, MaxExtraContextLines, MaxExtraContextLineChars);
+        }
+
+        /// <summary>
+        /// Sanitizes a caller-supplied prompt fragment. It is stored as a normal game-context field,
+        /// so semicolons are flattened before joining to avoid creating accidental extra fields.
+        /// </summary>
+        public static string CleanPromptFragment(string promptFragment, int maxChars)
+        {
+            return PromptContextLines.CleanLine(promptFragment, maxChars);
+        }
+
+        /// <summary>
+        /// Sanitizes the wrapped prompt-entry instruction. The instruction is still one protected
+        /// context field, so semicolons and line breaks are flattened before it reaches templates.
+        /// </summary>
+        public static string CleanPromptInstruction(string promptInstruction)
+        {
+            return PromptContextLines.CleanLine(promptInstruction, MaxPromptInstructionChars);
+        }
+
+        /// <summary>
+        /// Sanitizes one caller-supplied prompt-enchantment candidate line.
+        /// </summary>
+        public static string CleanPromptEnchantmentCandidate(string candidate, int maxChars)
+        {
+            return PromptContextLines.CleanLine(candidate, maxChars);
+        }
+
+        /// <summary>
+        /// Sanitizes and caps the caller-supplied prompt-enchantment candidate list.
+        /// </summary>
+        public static List<string> CleanPromptEnchantmentCandidates(
+            IEnumerable<string> candidates,
+            int maxCount,
+            int maxChars)
+        {
+            List<string> cleaned = new List<string>();
+            if (candidates == null || maxCount <= 0)
+            {
+                return cleaned;
+            }
+
+            foreach (string candidate in candidates)
+            {
+                string line = CleanPromptEnchantmentCandidate(candidate, maxChars);
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                cleaned.Add(line);
+                if (cleaned.Count >= maxCount)
+                {
+                    break;
+                }
+            }
+
+            return cleaned;
+        }
+
+        /// <summary>
+        /// Joins protected v16 prompt fields before ordinary adapter extraContext. Because
+        /// DiaryContextFields.Value returns the first matching key, adapter-supplied duplicates later
+        /// in extraContext cannot override these API-owned fields.
+        /// </summary>
+        public static string JoinRequestContext(
+            string promptInstruction,
+            string promptFragment,
+            IEnumerable<string> promptEnchantmentCandidates,
+            bool replacePromptEnchantments,
+            List<string> extraContext,
+            int promptFragmentMaxChars,
+            int promptEnchantmentMaxCandidates,
+            int promptEnchantmentCandidateMaxChars)
+        {
+            List<string> protectedFields = new List<string>();
+
+            string instruction = CleanPromptInstruction(promptInstruction);
+            if (!string.IsNullOrWhiteSpace(instruction))
+            {
+                protectedFields.Add(PromptInstructionContextKey + "=" + instruction);
+            }
+
+            string fragment = CleanPromptFragment(promptFragment, promptFragmentMaxChars);
+            if (!string.IsNullOrWhiteSpace(fragment))
+            {
+                protectedFields.Add(PromptFragmentContextKey + "=" + fragment);
+            }
+
+            List<string> candidates = CleanPromptEnchantmentCandidates(
+                promptEnchantmentCandidates,
+                promptEnchantmentMaxCandidates,
+                promptEnchantmentCandidateMaxChars);
+            if (candidates.Count > 0 && replacePromptEnchantments)
+            {
+                protectedFields.Add(PromptEnchantmentModeContextKey + "=" + PromptEnchantmentReplaceMode);
+            }
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                protectedFields.Add(PromptEnchantmentContextKeyPrefix + (i + 1) + "=" + candidates[i]);
+            }
+
+            string protectedContext = PromptContextLines.Join(
+                protectedFields,
+                protectedFields.Count,
+                int.MaxValue);
+            string ordinaryContext = JoinExtraContextWithoutProtectedFields(extraContext);
+            if (string.IsNullOrEmpty(protectedContext))
+            {
+                return ordinaryContext;
+            }
+
+            if (string.IsNullOrEmpty(ordinaryContext))
+            {
+                return protectedContext;
+            }
+
+            return protectedContext + "; " + ordinaryContext;
+        }
+
+        /// <summary>
+        /// Converts saved v16 context fields back into pure prompt-enchantment candidates.
+        /// </summary>
+        public static List<PromptEnchantmentCandidate> PromptEnchantmentCandidatesFromContext(
+            string context,
+            int maxCandidates,
+            float weight)
+        {
+            List<PromptEnchantmentCandidate> candidates = new List<PromptEnchantmentCandidate>();
+            if (string.IsNullOrWhiteSpace(context) || maxCandidates <= 0
+                || weight <= 0f || float.IsNaN(weight))
+            {
+                return candidates;
+            }
+
+            for (int i = 1; i <= maxCandidates; i++)
+            {
+                string value = DiaryContextFields.Value(context, PromptEnchantmentContextKeyPrefix + i);
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                candidates.Add(new PromptEnchantmentCandidate
+                {
+                    conditionText = value,
+                    weight = weight
+                });
+            }
+
+            return candidates;
+        }
+
+        /// <summary>
+        /// Returns true when saved context asks external candidates to replace ordinary live
+        /// prompt-enchantment candidates.
+        /// </summary>
+        public static bool PromptEnchantmentsReplaceNormal(string context)
+        {
+            return DiaryContextFields.FieldEquals(
+                context,
+                PromptEnchantmentModeContextKey,
+                PromptEnchantmentReplaceMode);
+        }
+
+        private static string JoinExtraContextWithoutProtectedFields(IEnumerable<string> lines)
+        {
+            List<string> kept = new List<string>();
+            if (lines == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (string rawLine in lines)
+            {
+                string line = PromptContextLines.CleanLine(rawLine, MaxExtraContextLineChars);
+                if (string.IsNullOrWhiteSpace(line) || IsProtectedContextLine(line))
+                {
+                    continue;
+                }
+
+                kept.Add(line);
+                if (kept.Count >= MaxExtraContextLines)
+                {
+                    break;
+                }
+            }
+
+            return PromptContextLines.Join(kept, kept.Count, int.MaxValue);
+        }
+
+        private static bool IsProtectedContextLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return false;
+            }
+
+            int equalsIndex = line.IndexOf('=');
+            if (equalsIndex <= 0)
+            {
+                return false;
+            }
+
+            string key = line.Substring(0, equalsIndex).Trim();
+            return string.Equals(key, PromptInstructionContextKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, PromptFragmentContextKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, PromptEnchantmentModeContextKey, StringComparison.OrdinalIgnoreCase)
+                || key.StartsWith(PromptEnchantmentContextKeyPrefix, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}

@@ -666,6 +666,28 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Stores caller-authored prose as a completed generated entry without recording any LLM prompt
+        /// or raw provider response. Used only by the direct-text integration API.
+        /// </summary>
+        public void MarkInjectedTextComplete(string povRole, string text)
+        {
+            if (string.IsNullOrWhiteSpace(povRole) || string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            DiaryStateVersion.Bump();
+            ref PovSlot slot = ref SlotFor(povRole);
+            slot.generatedText = text;
+            slot.rawResponse = string.Empty;
+            slot.prompt = string.Empty;
+            slot.status = CompleteStatus;
+            slot.error = null;
+            slot.llmEndpoint = string.Empty;
+            slot.llmModel = string.Empty;
+        }
+
+        /// <summary>
         /// Applies an LLM generation result to the appropriate POV slot based on result.povRole.
         /// Unknown roles are ignored (no slot is mutated), preserving the historical no-op
         /// fall-through. The per-role bodies collapsed into <see cref="ApplyLlmResultToSlot"/>.
@@ -1124,6 +1146,41 @@ namespace PawnDiary
         public bool HasGeneratedTextForRole(string povRole)
         {
             return !string.IsNullOrWhiteSpace(GeneratedTextFor(povRole));
+        }
+
+        /// <summary>
+        /// Returns the saved pawn id for a POV role. Integration handles use this to resolve an
+        /// event+role pair back into the same view the Diary tab would show.
+        /// </summary>
+        public string PawnIdForRole(string povRole)
+        {
+            if (RoleEquals(povRole, RecipientRole))
+            {
+                return recipientSlot.pawnId ?? string.Empty;
+            }
+
+            if (RoleEquals(povRole, NeutralRole))
+            {
+                return string.Empty;
+            }
+
+            return initiatorSlot.pawnId ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the main LLM generation status token for a POV role.
+        /// </summary>
+        public string StatusForRole(string povRole)
+        {
+            return StatusFor(povRole) ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the title-generation status token for a POV role.
+        /// </summary>
+        public string TitleStatusForRole(string povRole)
+        {
+            return TitleStatusFor(povRole) ?? string.Empty;
         }
 
         /// <summary>

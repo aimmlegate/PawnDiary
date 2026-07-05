@@ -85,6 +85,7 @@ namespace PawnDiary
             }
 
             diaryEvent.MarkSkipped(povRole, IncapacitatedSkipReason());
+            NotifyEntryStatusChanged(diaryEvent, povRole);
             return true;
         }
 
@@ -127,7 +128,10 @@ namespace PawnDiary
             string pawnId = PawnIdForRole(diaryEvent, povRole);
             PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
-            return HediffPersonaOverrides.RuleFor(pawn, diary?.personaDefName);
+            return HediffPersonaOverrides.RuleFor(
+                pawn,
+                diary?.personaDefName,
+                ExternalWritingStyleOverrideRuleFor(diary));
         }
 
         /// <summary>
@@ -150,25 +154,42 @@ namespace PawnDiary
             }
 
             string pawnId = PawnIdForRole(diaryEvent, povRole);
+            PawnDiaryRecord diary = FindDiaryByPawnId(pawnId);
             Pawn pawn = FindLivePawnByLoadId(pawnId, livePawnsById);
-            List<string> suppressedHediffDefNames = HediffPersonaOverrides.SuppressedPromptHediffDefNamesFor(pawn);
+            List<string> suppressedHediffDefNames = HasExternalWritingStyleOverride(diary)
+                ? new List<string>()
+                : HediffPersonaOverrides.SuppressedPromptHediffDefNamesFor(pawn);
+            List<PromptEnchantmentCandidate> externalCandidates =
+                ExternalEventRequestText.PromptEnchantmentCandidatesFromContext(
+                    diaryEvent == null ? string.Empty : diaryEvent.gameContext,
+                    DiaryTuning.IntegrationPromptEnchantmentMaxCandidates,
+                    DiaryTuning.IntegrationPromptEnchantmentCandidateWeight);
+            bool replaceNormalCandidates = externalCandidates.Count > 0
+                && ExternalEventRequestText.PromptEnchantmentsReplaceNormal(
+                    diaryEvent == null ? string.Empty : diaryEvent.gameContext);
 
             // Both biasing sources feed the same weighted pool. Each can also dampen ordinary health
             // context via its own normal-weight multiplier; the two multipliers compose (e.g. an active
             // gray-flesh condition with multiplier 0 fully overrides normal context).
-            float eventWindowNormalMultiplier;
-            List<PromptEnchantmentCandidate> candidates =
-                ActiveEventWindowPromptCandidates(pawn, out eventWindowNormalMultiplier);
-            float observedConditionNormalMultiplier;
-            candidates.AddRange(
-                ActiveObservedConditionPromptCandidates(pawn, out observedConditionNormalMultiplier));
+            float eventWindowNormalMultiplier = 1f;
+            float observedConditionNormalMultiplier = 1f;
+            List<PromptEnchantmentCandidate> candidates = new List<PromptEnchantmentCandidate>();
+            if (!replaceNormalCandidates)
+            {
+                candidates = ActiveEventWindowPromptCandidates(pawn, out eventWindowNormalMultiplier);
+                candidates.AddRange(
+                    ActiveObservedConditionPromptCandidates(pawn, out observedConditionNormalMultiplier));
+            }
+
+            candidates.AddRange(externalCandidates);
 
             return PromptEnchantments.RuleFor(
                 pawn,
                 diaryEvent != null && diaryEvent.IsImportant(),
                 candidates,
                 eventWindowNormalMultiplier * observedConditionNormalMultiplier,
-                suppressedHediffDefNames);
+                suppressedHediffDefNames,
+                replaceNormalCandidates);
         }
 
         /// <summary>

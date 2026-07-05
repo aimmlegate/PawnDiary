@@ -85,6 +85,10 @@ namespace PawnDiary
         public readonly bool DistortDirectSpeech;
         // Plain saved facts and event metadata used by XML diary text-decoration rules.
         public readonly DiaryTextDecorationContext TextDecorationContext;
+        // Public-API attribution recovered from TextDecorationContext.gameContext. Empty for normal
+        // RimWorld-sourced diary pages.
+        public readonly string ExternalSourceId;
+        public readonly bool ExternallyAuthored;
         public readonly bool Important;     // Visual importance marker derived from the event group
         public readonly LinkedEntryView LinkedEntry; // Preview of the other pawn's entry for the same event (null for solo).
         // Short chat-style subject: stored LLM-generated title only. Empty when no title has
@@ -154,6 +158,8 @@ namespace PawnDiary
             StaggeredIntensity = staggeredIntensity < 0 ? 0 : (staggeredIntensity > 4 ? 4 : staggeredIntensity);
             DistortDirectSpeech = distortDirectSpeech;
             TextDecorationContext = textDecorationContext;
+            ExternalSourceId = ExternalEntryAttribution.SourceIdForContext(textDecorationContext?.gameContext);
+            ExternallyAuthored = !string.IsNullOrWhiteSpace(ExternalSourceId);
             Important = important;
             LinkedEntry = linkedEntry;
             Title = title ?? string.Empty;

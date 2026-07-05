@@ -82,9 +82,10 @@ namespace PawnDiary
         public static string RuleFor(Pawn pawn, bool includeImportantEventContext = false,
             IList<PromptEnchantmentCandidate> extraCandidates = null,
             float normalCandidateWeightMultiplier = 1f,
-            IList<string> suppressedHediffDefNames = null)
+            IList<string> suppressedHediffDefNames = null,
+            bool suppressNormalCandidates = false)
         {
-            if (pawn == null || PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
+            if (PawnDiaryMod.Settings == null || !PawnDiaryMod.Settings.enablePromptEnchantments)
             {
                 return string.Empty;
             }
@@ -92,7 +93,7 @@ namespace PawnDiary
             PromptEnchantmentTuning tuning = DiaryTuning.PromptEnchantmentTuning;
             List<PromptEnchantmentCandidate> normalCandidates = new List<PromptEnchantmentCandidate>();
             List<DiaryPromptEnchantmentDef> defs = DefDatabase<DiaryPromptEnchantmentDef>.AllDefsListForReading;
-            if (defs != null && defs.Count > 0)
+            if (!suppressNormalCandidates && pawn != null && defs != null && defs.Count > 0)
             {
                 normalCandidates = PromptEnchantmentCollector.Collect(
                     pawn,

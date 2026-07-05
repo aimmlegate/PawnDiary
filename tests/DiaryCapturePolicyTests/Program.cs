@@ -2364,7 +2364,8 @@ namespace DiaryCapturePolicyTests
             string partner = "",
             bool subjectEligible = true,
             bool partnerEligible = false,
-            bool hasGroup = true)
+            bool hasGroup = true,
+            bool groupRequired = true)
         {
             return new ExternalEventData
             {
@@ -2376,6 +2377,7 @@ namespace DiaryCapturePolicyTests
                 SubjectEligible = subjectEligible,
                 PartnerEligible = partnerEligible,
                 HasGroup = hasGroup,
+                GroupRequired = groupRequired,
             };
         }
 
@@ -2389,6 +2391,8 @@ namespace DiaryCapturePolicyTests
                 ExternalEventData.Decide(External(key: ""), Ctx()));
             AssertEqual("external unclaimed key drops", CaptureDecision.Drop,
                 ExternalEventData.Decide(External(hasGroup: false), Ctx()));
+            AssertEqual("external optional group records when unclaimed", CaptureDecision.GenerateSolo,
+                ExternalEventData.Decide(External(hasGroup: false, groupRequired: false), Ctx()));
             AssertEqual("external user-disabled group drops", CaptureDecision.Drop,
                 ExternalEventData.Decide(External(), Ctx(user: false)));
             AssertEqual("external signal-disabled drops", CaptureDecision.Drop,

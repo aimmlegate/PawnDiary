@@ -395,7 +395,7 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// True when an entry has a model id worth showing as a quiet provenance hint.
+        /// True when an entry has a provenance/status note worth showing in the footer.
         /// </summary>
         private static bool HasModelName(DiaryEntryView entry)
         {
@@ -803,12 +803,25 @@ namespace PawnDiary
 
         private static string EntryFooterNote(DiaryEntryView entry)
         {
+            string sourceId = entry?.ExternalSourceId ?? string.Empty;
+            string note = string.Empty;
             if (IsArchivedGenerationFallback(entry))
             {
-                return "PawnDiary.Tab.ArchivedGenerationFailedFooter".Translate();
+                note = "PawnDiary.Tab.ArchivedGenerationFailedFooter".Translate();
+            }
+            else
+            {
+                note = entry?.LlmModel ?? string.Empty;
             }
 
-            return entry?.LlmModel ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                return note;
+            }
+
+            return string.IsNullOrWhiteSpace(note)
+                ? "PawnDiary.Tab.ExternalSourceFooter".Translate(sourceId)
+                : "PawnDiary.Tab.ExternalSourceWithFooterNote".Translate(sourceId, note);
         }
 
         private static string ArchivedGenerationFallbackBody(DiaryEntryView entry)

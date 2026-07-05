@@ -26,7 +26,7 @@ MSBuild integrations\PawnDiary.RimTalkBridge\Source\PawnDiaryRimTalkBridge.cspro
 external event per in-game day, plus the External-domain group XML that claims its eventKey and
 the adapter-owned Keyed strings. `PawnDiary.RimTalkBridge/` is the first real adapter scaffold: a
 separate mod that listens to RimTalk chat and, when enabled, logs chat facts plus recent Pawn Diary
-title snapshots for the speaker/target. Its project targets net48/x64 because the current RimTalk
+context summaries for the speaker/target. Its project targets net48/x64 because the current RimTalk
 workshop assembly does. New adapters start from the example unless they need a
 target-mod Harmony patch like the RimTalk bridge. The pre-commit verify hook builds only the core
 mod; adapters are built/deployed manually.

@@ -14,26 +14,28 @@ namespace PawnDiary.Ingestion
 {
     /// <summary>
     /// Captures one integration-API event and emits it as a solo or pairwise diary event. Built by
-    /// <see cref="PawnDiaryApi.SubmitEvent"/> and submitted via
+    /// <see cref="PawnDiaryApi.SubmitEvent"/> / prompt-entry submission and submitted via
     /// <see cref="DiaryEvents.Submit(DiarySignal)"/>.
     /// </summary>
     public sealed class ExternalEventSignal : DiarySignal
     {
-        // Defensive caps so a misbehaving adapter cannot flood one prompt with context. These are
-        // parser-style safety limits, not tunable policy, so they stay hardcoded per AGENTS.md.
-        private const int MaxExtraContextLines = 16;
-        private const int MaxExtraContextLineChars = 200;
-        private const int MaxSummaryChars = 800;
-
         private readonly Pawn subject;
         private readonly Pawn partner;
         private readonly ExternalEventRequest request;
         private readonly DiaryInteractionGroupDef group;
         private readonly ExternalEventData payload;
 
+        private readonly bool groupRequired;
+
         public ExternalEventSignal(ExternalEventRequest request)
+            : this(request, true)
+        {
+        }
+
+        public ExternalEventSignal(ExternalEventRequest request, bool groupRequired)
         {
             this.request = request;
+            this.groupRequired = groupRequired;
 
             // Same guard shape as RomanceSignal: drop (payload stays null) unless a game is playing
             // and the request carries the required pieces. PawnDiaryApi validates first, but the
@@ -47,10 +49,11 @@ namespace PawnDiary.Ingestion
             subject = request.subject;
             partner = request.partner;
 
-            // XML owns which eventKeys count. No matching External-domain group -> no payload ->
-            // the dispatcher drops the event silently (PawnDiaryApi already warned once per key).
+            // Ordinary external events require XML policy to claim the key. Wrapped prompt entries
+            // may run without a group because the caller supplies the event instruction, but an
+            // optional group still contributes label/toggle/styling/prompt metadata when present.
             group = InteractionGroups.ClassifyExternal(request.eventKey.Trim());
-            if (group == null)
+            if (group == null && groupRequired)
             {
                 return;
             }
@@ -65,9 +68,19 @@ namespace PawnDiary.Ingestion
                 PartnerPawnId = partner == null ? string.Empty : partner.GetUniqueLoadID(),
                 SubjectEligible = DiaryGameComponent.IsDiaryEligible(subject),
                 PartnerEligible = partner != null && DiaryGameComponent.IsDiaryEligible(partner),
-                HasGroup = true
+                HasGroup = group != null,
+                GroupRequired = groupRequired
             };
         }
+
+        /// <summary>
+        /// Event created by <see cref="Emit"/>. Null when validation, policy, or dedup dropped the
+        /// request before an entry was written.
+        /// </summary>
+        public DiaryEvent CreatedEvent { get; private set; }
+
+        /// <summary>True when <see cref="CreatedEvent"/> has both subject and partner POVs.</summary>
+        public bool CreatedPairwise { get; private set; }
 
         public override DiaryEventData Payload => payload;
 
@@ -75,7 +88,7 @@ namespace PawnDiary.Ingestion
         {
             return DiaryGameComponent.BuildCaptureContext(
                 eligible: payload.SubjectEligible,
-                userEnabled: PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
+                userEnabled: group == null || PawnDiaryMod.Settings.IsGroupEnabled(group.defName),
                 signalEnabled: true,
                 ambientSignalEnabled: true);
         }
@@ -115,7 +128,7 @@ namespace PawnDiary.Ingestion
             string label = DiaryLineCleaner.CleanLine(request.eventLabel);
             if (string.IsNullOrWhiteSpace(label))
             {
-                label = group.LabelCap.Resolve();
+                label = group == null ? string.Empty : group.LabelCap.Resolve();
             }
 
             if (string.IsNullOrWhiteSpace(label))
@@ -123,20 +136,34 @@ namespace PawnDiary.Ingestion
                 label = payload.EventKey;
             }
 
-            string text = CleanSummary(request.summaryText);
+            string text = ExternalEventRequestText.CleanSummary(request.summaryText);
             if (string.IsNullOrWhiteSpace(text))
             {
                 text = "PawnDiary.Event.External".Translate(subject.LabelShortCap, label).Resolve();
             }
 
+            string promptInstruction = PromptInstructionFor(request);
+            string requestContext = ExternalEventRequestText.JoinRequestContext(
+                promptInstruction,
+                request.promptFragment,
+                request.promptEnchantmentCandidates,
+                request.replacePromptEnchantments,
+                request.extraContext,
+                DiaryTuning.IntegrationPromptFragmentMaxChars,
+                DiaryTuning.IntegrationPromptEnchantmentMaxCandidates,
+                DiaryTuning.IntegrationPromptEnchantmentCandidateMaxChars);
             string gameContext = ExternalEventData.BuildGameContext(
-                payload.EventKey, payload.SourceId, JoinExtraContext(request.extraContext));
-            string instruction = InteractionGroups.InstructionForGroup(group);
+                payload.EventKey,
+                payload.SourceId,
+                requestContext);
+            string instruction = group == null ? string.Empty : InteractionGroups.InstructionForGroup(group);
 
             if (decision == CaptureDecision.GeneratePair)
             {
                 DiaryEvent pairEvent = sink.AddPairwiseEvent(subject, partner, payload.EventKey, label,
                     text, text, instruction, gameContext);
+                CreatedEvent = pairEvent;
+                CreatedPairwise = pairEvent != null;
                 sink.QueuePair(pairEvent);
                 return;
             }
@@ -144,28 +171,16 @@ namespace PawnDiary.Ingestion
             // Solo: the partner (when present but ineligible) still feeds the continuity summary.
             DiaryEvent soloEvent = sink.AddSoloEvent(subject, partner, payload.EventKey, label,
                 text, instruction, gameContext);
+            CreatedEvent = soloEvent;
+            CreatedPairwise = false;
             sink.QueueSolo(soloEvent, DiaryEvent.InitiatorRole);
         }
 
-        // One-lines and length-caps the adapter's summary so a stray multi-paragraph submission
-        // cannot distort the prompt or the diary card's raw-text row.
-        private static string CleanSummary(string summary)
+        private static string PromptInstructionFor(ExternalEventRequest request)
         {
-            string cleaned = PromptTextSanitizer.OneLine(summary);
-            if (cleaned.Length > MaxSummaryChars)
-            {
-                cleaned = cleaned.Substring(0, MaxSummaryChars);
-            }
-
-            return cleaned;
+            ExternalPromptEntryRequest promptRequest = request as ExternalPromptEntryRequest;
+            return promptRequest == null ? null : promptRequest.promptInstruction;
         }
 
-        // Sanitizes and joins the adapter's "key=value" lines into the "; "-separated shape the
-        // game-context format uses everywhere. Semicolons inside a value would break that framing,
-        // so they become commas (same rule as the arrival-context builder).
-        private static string JoinExtraContext(List<string> lines)
-        {
-            return PromptContextLines.Join(lines, MaxExtraContextLines, MaxExtraContextLineChars);
-        }
     }
 }

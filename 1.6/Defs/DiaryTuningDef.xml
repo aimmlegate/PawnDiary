@@ -169,6 +169,28 @@
          prompt facts instead of an endless writing indicator. -->
     <archivedFallbackTitleWords>6</archivedFallbackTitleWords>
     <archivedFallbackTextMaxChars>240</archivedFallbackTextMaxChars>
+    <!-- Public integration API context snapshot. Other mods receive at most this many recent
+         completed page summaries, each capped to one short sentence. -->
+    <integrationContextMaxEntries>8</integrationContextMaxEntries>
+    <integrationContextSummaryMaxChars>220</integrationContextSummaryMaxChars>
+    <!-- External event prompt-fragment and prompt-enchantment candidate caps. These bound
+         adapter-authored prompt context before it is stored on the event. -->
+    <integrationPromptFragmentMaxChars>1200</integrationPromptFragmentMaxChars>
+    <integrationPromptEnchantmentMaxCandidates>6</integrationPromptEnchantmentMaxCandidates>
+    <integrationPromptEnchantmentCandidateMaxChars>160</integrationPromptEnchantmentCandidateMaxChars>
+    <integrationPromptEnchantmentCandidateWeight>1.5</integrationPromptEnchantmentCandidateWeight>
+    <!-- External direct-text injection caps. These bound caller-authored saved prose and titles. -->
+    <integrationDirectTextMaxChars>4000</integrationDirectTextMaxChars>
+    <integrationDirectTitleMaxChars>120</integrationDirectTitleMaxChars>
+    <!-- Public integration API token-spend guardrails. The window is game ticks (60 ticks ≈ 1
+         second). Request caps stop accidental loops; token caps use a conservative maxTokens estimate
+         for queued main entries and title requests. Set a cap to 0 to disable that specific cap. -->
+    <integrationPromptBudgetEnabled>true</integrationPromptBudgetEnabled>
+    <integrationPromptBudgetWindowTicks>2500</integrationPromptBudgetWindowTicks>
+    <integrationPromptBudgetMaxRequestsPerSource>10</integrationPromptBudgetMaxRequestsPerSource>
+    <integrationPromptBudgetMaxRequestsGlobal>30</integrationPromptBudgetMaxRequestsGlobal>
+    <integrationPromptBudgetMaxTokensPerSource>20000</integrationPromptBudgetMaxTokensPerSource>
+    <integrationPromptBudgetMaxTokensGlobal>60000</integrationPromptBudgetMaxTokensGlobal>
     <!-- Diary UI long-history loading budget. Work is sliced across frames so opening a diary with
          thousands of pages does not freeze the game. -->
     <uiHistoryScanMaxEventsPerFrame>60</uiHistoryScanMaxEventsPerFrame>

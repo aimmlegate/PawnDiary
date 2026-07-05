@@ -49,10 +49,17 @@ namespace PawnDiary.Capture
         public bool HasGroup;
 
         /// <summary>
-        /// Pure decision for an external event. Drops when: incomplete data, no matching group,
-        /// the group's signal/user gates are off, or the subject pawn is ineligible. A supplied,
-        /// eligible, distinct partner upgrades the event to a pairwise entry (both POVs); anything
-        /// else records a solo entry from the subject's POV.
+        /// True for ordinary external events, where a group is required to prove XML prompt policy
+        /// claims the key. Direct-text injection owns its prose already, so it sets this false and may
+        /// use a group only when one exists for label/toggle/styling.
+        /// </summary>
+        public bool GroupRequired = true;
+
+        /// <summary>
+        /// Pure decision for an external event. Drops when: incomplete data, a required group is
+        /// missing, the group's signal/user gates are off, or the subject pawn is ineligible. A
+        /// supplied, eligible, distinct partner upgrades the event to a pairwise entry (both POVs);
+        /// anything else records a solo entry from the subject's POV.
         /// </summary>
         public static CaptureDecision Decide(ExternalEventData data, CaptureContext ctx)
         {
@@ -61,7 +68,7 @@ namespace PawnDiary.Capture
                 return CaptureDecision.Drop;
             }
 
-            if (!data.HasGroup)
+            if (data.GroupRequired && !data.HasGroup)
             {
                 return CaptureDecision.Drop;
             }

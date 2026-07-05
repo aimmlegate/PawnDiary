@@ -6,6 +6,120 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-05
 
+- **Integration API v22 — wrapped prompt entries.** `PawnDiaryApi.ApiVersion` is now `22`. Added
+  `ExternalPromptEntryRequest`, `SubmitPromptEntry(...)`, and
+  `PreviewPrompt(ExternalPromptEntryRequest, string povRole = null)`, letting adapters supply a
+  required `promptInstruction` while Pawn Diary keeps the normal persona/style, safety, context,
+  response, budget, lifecycle, title, and persistence wrapper. The instruction is stored as protected
+  `external_prompt_instruction` context, External group XML is optional for this path, and matching
+  groups still contribute label/toggle/styling/prompt metadata.
+- **Integration API v21 — context bundle snapshot.** `PawnDiaryApi.ApiVersion` is now `21`. Added
+  `GetContextBundle(...)` overloads and `DiaryContextBundleSnapshot`, composing the existing base
+  writing-style read, structured pawn summary, prompt-enchantment candidates, and recent
+  generated-entry context into one prompt-free DTO. Query overloads filter only the recent context
+  slice, and `includeImportantEventContext` controls only prompt-enchantment candidates.
+- **Integration API v20 — cheap entry stats.** `PawnDiaryApi.ApiVersion` is now `20`. Added
+  `GetEntryStats(Pawn)` and `GetEntryStats(Pawn, DiaryEntryTitleQuery)`, plus
+  `DiaryEntryStatsSnapshot`, so adapters can count matching active/archived diary rows without
+  materializing title/prose snapshots. Stats include normalized lifecycle buckets, title/prose
+  presence, and newest/oldest tick/date metadata, using the same query filters and entry-key
+  deduplication as the title/context reads.
+- **Integration API v19 — richer title/context filters.** `PawnDiaryApi.ApiVersion` is now `19`.
+  `DiaryEntryTitleQuery` now filters existing title and context snapshot reads by cleaned external
+  `sourceId`, saved `eventKey` / source defName, paired `partnerPawnId`, importance, title presence,
+  and generated-prose presence. Boolean-style filters use tri-state integers (`-1` any, `0` false,
+  positive true), preserving older callers' default behavior.
+- **Integration API v18 — external source attribution.** `PawnDiaryApi.ApiVersion` is now `18`.
+  Externally submitted or direct-injected entries derive `externallyAuthored` and
+  `externalSourceId` from the saved `external=...; source=...` context without new save fields.
+  `DiaryEntryTitleSnapshot`, `DiaryEntryProseSnapshot`, `DiaryEntryStatusSnapshot`, and
+  `DiaryEntrySnapshot` now expose that metadata, and the Diary tab shows the cleaned source id in
+  the entry footer beside model/status provenance.
+- **Integration API v17 — one-entry snapshot read.** `PawnDiaryApi.ApiVersion` is now `17`. Added
+  `GetEntrySnapshot(DiaryEntryHandle)` and `GetEntrySnapshot(string eventId, string povRole)`, plus
+  `DiaryEntrySnapshot`, so adapters can fetch one handled entry after callbacks/status polling. The
+  snapshot returns prompt-free lifecycle/title metadata, domain/atmosphere labels, completed
+  player-visible prose, and a capped summary; it never exposes prompts, raw provider responses,
+  errors, fallback facts, or live game objects. The handle overload can resolve compact archive rows
+  using the handle's pawn id.
+- **Integration API v16 — external prompt fragments and prompt-enchantment inputs.**
+  `PawnDiaryApi.ApiVersion` is now `16`. `ExternalEventRequest` can carry a sanitized
+  `promptFragment`, capped `promptEnchantmentCandidates`, and `replacePromptEnchantments` mode for
+  ordinary `SubmitEvent` / `SubmitEventWithHandle` calls. The fragment is stored as protected
+  event context and exposed through first-person prompt templates while Pawn Diary keeps its normal
+  persona, event, localization, safety, and budget framing. External prompt-enchantment candidates
+  feed the existing planner with XML-tuned caps/weight and can either supplement or replace live
+  candidates for that event.
+- **Integration API MT-7 — token-spend guardrails.** Existing token-spending external API calls now
+  reserve against a transient rolling budget before dispatch: ordinary `SubmitEvent` /
+  `SubmitEventWithHandle` calls estimate main generation plus optional titles, while
+  `SubmitDirectEntry` is guarded only when it can ask for missing title generation. Caps are
+  XML-tunable in `DiaryTuningDef` (`integrationPromptBudget*`) and cover per-source/global request
+  counts plus estimated max-token spend. This adds no public member, so `ApiVersion` stays `15`.
+- **Integration API v15 — prompt preview.** `PawnDiaryApi.ApiVersion` is now `15`. Added
+  `PreviewPrompt(ExternalEventRequest, string povRole = null)` and
+  `DiaryPromptPreviewSnapshot`, letting adapters inspect the assembled External-event system/user
+  prompt without saving a diary event, consuming dedup windows, queueing generation, spending tokens,
+  or leaving RNG changed. The preview uses the same transient event facts and prompt planner as live
+  generation, with a pairwise-recipient flag when the real later prompt may include initiator prose
+  that no preview can know yet.
+- **Integration API v14 — per-pawn generation controls.** `PawnDiaryApi.ApiVersion` is now `14`.
+  Added `IsDiaryGenerationEnabled(Pawn)` and `SetDiaryGenerationEnabled(Pawn, bool enabled)` for the
+  same saved per-pawn generation flag exposed by the Diary tab and dev event panel. The read is
+  side-effect free; the setter uses base owner eligibility so disabled pawns can be re-enabled and
+  requeue pending generation work.
+- **Integration API v13 — external writing-style overrides.** `PawnDiaryApi.ApiVersion` is now `13`.
+  Added `SetWritingStyleOverride(Pawn, string sourceId, string rule)` and
+  `ResetWritingStyleOverride(Pawn, string sourceId)`. Overrides are saved per pawn as sanitized,
+  source-owned free-form prompt rules, win over both the base writing style and temporary hediff
+  style, and reset only for the owning source. `GetWritingStyle` remains the base-style read. While an
+  external override is active, hediff prompt-enchantment suppression no longer acts as though the
+  hediff style were speaking for those conditions.
+- **Integration API v12 — writing-style catalog read.** `PawnDiaryApi.ApiVersion` is now `12`.
+  Added `GetAvailableWritingStyles()`, returning the effective style catalog as
+  `DiaryWritingStyleSnapshot` rows so adapters can build pickers without hardcoding style defNames.
+  The read includes XML styles after settings-backed edits plus custom saved styles, is main-thread
+  only, respects the master integration toggle, and never creates pawn diary state.
+- **Integration API v11 — public eligibility preflight.** `PawnDiaryApi.ApiVersion` is now `11`.
+  Added `IsDiaryEligible(Pawn)`, a side-effect-free main-thread read for adapters that want to
+  preflight a pawn before submitting events or direct text. It returns false when integrations are
+  disabled, no game is loaded, the pawn fails normal diary-owner eligibility, or that pawn's saved
+  diary generation toggle is off in the Diary tab / dev event panel.
+- **External API documentation reconciliation.** Collapsed the API docs to two live documents:
+  `INTEGRATIONS.md` for the shipped v1-v22 adapter contract and
+  `design/EXTERNAL_API_CAPABILITIES.md` for planned future public API capabilities. Removed the
+  stale v4 provider brief and mod-compat API plan to avoid duplicate version ledgers.
+- **Integration API v10 — entry lifecycle listeners.** `PawnDiaryApi.ApiVersion` is now `10`. Added
+  `RegisterEntryStatusListener(string id, Action<DiaryEntryStatusSnapshot>)` and
+  `UnregisterEntryStatusListener(string id)`. Listeners receive the same compact status DTO as
+  `GetEntryStatus` on the main thread after a pawn-owned entry POV changes main or title lifecycle
+  state: queued, completed, failed, skipped, prompt-only, title queued/completed/failed, or direct
+  injected. Listener registration is main-thread-only, replacements keep order, listener exceptions
+  are logged once and disable that listener for the session, and the master integration toggle
+  suppresses delivery without clearing registrations.
+- **Integration API v9 — direct text injection.** `PawnDiaryApi.ApiVersion` is now `9`. Added
+  `SubmitDirectEntry(ExternalDirectEntryRequest)`, which saves caller-authored subject prose directly
+  as completed generated text, optionally records a partner POV when `partnerText` is supplied,
+  accepts caller titles or title-only generation via `generateTitleIfMissing`, and returns the same
+  `DiaryEventSubmissionResult` handle shape as v8. Direct entries use the external dedup/context
+  path, respect player integration and per-pawn generation gates, and can record without an External
+  group while still using one for label/toggle/styling when present.
+- **Integration API v8 — tracked entry handles and status snapshots.** `PawnDiaryApi.ApiVersion` is
+  now `8`. Added `SubmitEventWithHandle(ExternalEventRequest)`, returning a
+  `DiaryEventSubmissionResult` with subject/partner `DiaryEntryHandle` values when an external
+  event actually creates diary entries, plus `GetEntryStatus(DiaryEntryHandle)` and
+  `GetEntryStatus(string eventId, string povRole)`. Status snapshots expose compact generation
+  state, title state, archived flags, display metadata, and a capped generated-prose summary without
+  exposing prompts, raw provider responses, or live game objects. The older `SubmitEvent` remains
+  unchanged for boolean fire-and-forget adapters.
+- **Integration API v7 — recent generated-entry context snapshots.** `PawnDiaryApi.ApiVersion` is
+  now `7`, with `GetContextSnapshot(Pawn, int)` and a filtered overload using
+  `DiaryEntryTitleQuery`. The new `DiaryContextSnapshot` / `DiaryEntryProseSnapshot` DTOs expose
+  newest-first completed generated pages as title/fallback metadata plus a one-sentence summary,
+  capped by `DiaryTuningDef` (`integrationContextMaxEntries`, `integrationContextSummaryMaxChars`).
+  The read walks the same hot/archive views as the Diary tab and title API, applies the same
+  filters/dedup, and never exposes prompts, raw responses, fallback facts, or in-flight pages. The
+  RimTalk bridge now logs these context summaries when enabled.
 - **Agent-guidance maintenance hardening.** Aligned the codebase with the newly documented gotchas:
   `DiaryGameComponent.Instance` is now the live component accessor (`Current` remains only as a
   compile-time-blocked binary alias), `PawnDiaryApi` off-thread diagnostics tell adapters to queue
@@ -134,7 +248,7 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   policy/toggle apply when present, else the master switch + eligibility, while IN-1 keeps its
   required-group rule); and capabilities ship **one at a time as base-mod features**, each with its
   own `ApiVersion` bump in dependency order rather than bundled version waves. §4 reframed as a build
-  queue, MT-6/§3.3/§3.5 and the v4 brief §7 updated, open questions 1 and 5 closed.
+  queue, MT-6/§3.3/§3.5 and the now-retired v4 provider brief updated, open questions 1 and 5 closed.
 - **External-API capability catalog added; API-surface planning restructured.** New
   `design/EXTERNAL_API_CAPABILITIES.md` is now the authority on the *shape* of the public integration
   surface: it folds in a scoping pass' worth of requested capabilities (inbound entry-creation modes —
@@ -145,12 +259,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   requested / proposed / designed), the internal hook it maps to, and its open decision; the doc also
   consolidates the six cross-cutting decisions (async delivery, prompt-bypass vs. consistency,
   injection gating, style override-stack vs. base mutation, consent granularity, versioning) and a
-  strawman v4→v8 sequencing. `MOD_COMPAT_PLAN.md` is retitled to own the *target-mod survey* only and
-  points its ledger at the catalog; the v4 providers brief is reframed as the deep-dive for catalog
-  capability C-CTX-1; `design/README.md` reindexed. No runtime change; `ApiVersion` stays 3.
+  strawman v4→v8 sequencing. The then-current mod-compat plan was retitled to own the *target-mod
+  survey* only and pointed its ledger at the catalog; the v4 providers brief was reframed as the
+  deep-dive for catalog capability C-CTX-1; `design/README.md` reindexed. No runtime change;
+  `ApiVersion` stays 3.
 - **API v4 design brief drafted (design-doc-before-code).** Added
-  `design/API_V4_PAWN_CONTEXT_PROVIDERS.md`, the required design doc for the planned
-  `RegisterPawnContextProvider(id, Func<Pawn,string>)` member (MOD_COMPAT §4.2 / PR 4): public
+  a v4 provider design brief for the planned
+  `RegisterPawnContextProvider(id, Func<Pawn,string>)` member: public
   surface + feature-detection, `extraContext`-identical sanitation and once-disable failure
   isolation, the impure-snapshot purity boundary, pawn-summary placement next to the DLC-identity
   lines, and the RimPsyche consumer snippet. It reconciles the plan's stale "settings toggle mirrors
@@ -159,17 +274,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   A–G option set (master bool / per-provider dict / provider Def / no-toggle / fold-in /
   consumer-owned / hybrid) to be reconsidered before the v4 code PR; the choice stays additive so it
   blocks only the toggle slice, not the rest of the design. No runtime change; `ApiVersion` stays 3.
-  Indexed in `design/README.md` and the MOD_COMPAT §5 PR-4 checklist.
+  Indexed in `design/README.md` and the then-current PR-4 checklist.
 - **LLM response compatibility tightened.** Hardened the pure response parser for common
   OpenAI-compatible/local-model quirks: whole-response Markdown fences are unwrapped, leading
   final-answer labels are stripped after reasoning cleanup, typed content parts can read an
   `output_text` field, and focused parser tests cover the new behavior.
 - **Docs reorg + integration ideas reconciled.** Moved the scattered design/planning markdown
-  (`MOD_COMPAT_PLAN.md`, `EVENT_COVERAGE_PLAN.md`, `BODY_PART_EVENTS_PLAN.md`) into a new `design/`
+  (mod-compat, event-coverage, and body-part plans) into a new `design/`
   folder with a `design/README.md` index, leaving only living top-level docs at the root
   (README, DOCUMENTATION, EVENT_PROMPT_MAP, INTEGRATIONS, CHANGELOG, and the agent files). All
-  external-mod integration ideas are now reconciled into the single design document
-  `design/MOD_COMPAT_PLAN.md`: it gained an API version ledger, folded in the former
+  external-mod integration ideas were reconciled into a single design document: it gained an API
+  version ledger, folded in the former
   `INTEGRATIONS.md` roadmap (now a pointer), recorded the shipped v3 writing-style publish, and
   resolved the version-numbering conflict the writing-style publish created (pawn-context providers
   move to v4, the outbound entry-prose snapshot to a later read slot). Fixed two dead links in `DOCUMENTATION.md`
@@ -182,7 +297,7 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
   carries no internal theme tags; it is main-thread only and returns `null` instead of throwing.
   `ApiVersion` bumped 2 → 3. The RimTalk bridge now logs the resolved style for the speaker and
   target as its proof step, without feeding it back into RimTalk.
-- **RimTalk persona-alignment note saved.** `MOD_COMPAT_PLAN.md` now records the creative rule that
+- **RimTalk persona-alignment note saved.** The then-current mod-compat plan recorded the creative rule that
   Pawn Diary writing styles and RimTalk personas should share pawn identity and memory, while staying
   separate private-writing and spoken-behavior surfaces.
 - **Dev event panel buttons fixed.** `Pawn Diary > Event test panel...` no longer pauses the game,
@@ -260,8 +375,8 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 - **Dev "Force-close active event window" action.** New Pawn Diary debug action lists currently active
   event windows in a picker and force-removes the selected one (brute remove, no end page) — the escape
   hatch for a window stuck open before its timeout. EN/RU strings added.
-- **Mod-compatibility target survey & patch plan (docs only).** New root document
-  `MOD_COMPAT_PLAN.md`: continues the API-v1 integration milestone by picking concrete target
+- **Mod-compatibility target survey & patch plan (docs only).** A new root mod-compat planning
+  document continued the API-v1 integration milestone by picking concrete target
   mods. Surveys popular social-interaction mods (2026-07) and tiers them by mechanism — Tier A
   XML-only compat groups shipped in core behind `enableWhenPackageIdsLoaded` (Vanilla Social
   Interactions Expanded, Hospitality (Continued), SpeakUp, Way Better Romance, Positive

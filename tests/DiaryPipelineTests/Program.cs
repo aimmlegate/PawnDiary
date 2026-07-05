@@ -31,11 +31,17 @@ namespace DiaryPipelineTests
             TestPromptEnchantmentDecayPolicy();
             TestHediffPersonaOverridePolicy();
             TestDiaryEntryTitleFilter();
+            TestDiaryEntryStatsAccumulator();
             TestMemoryDecayXmlPolicy();
             TestObservedConditionDecayXmlPolicy();
             TestColorCueXmlPolicy();
             TestPromptTextSanitizer();
             TestPromptContextLines();
+            TestExternalEventRequestText();
+            TestExternalPromptContextText();
+            TestExternalEntryAttribution();
+            TestExternalApiBudgetPolicy();
+            TestListenerRegistry();
             TestDiaryListText();
             TestContextProviderRegistry();
             TestEventWindowPolicy();
@@ -66,6 +72,8 @@ namespace DiaryPipelineTests
             TestArchiveOverflowSelection();
             TestLifeBoundaryPolicy();
             TestDiarySentenceExcerpt();
+            TestExternalDirectEntryText();
+            TestExternalWritingStyleOverrideText();
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
             TestWritingStyleReachesSystemPrompt();
@@ -932,6 +940,44 @@ namespace DiaryPipelineTests
             AssertNear("zero multiplier preserves extra candidate weight", 3f, zeroMultiplier[1].weight);
         }
 
+        private static void TestListenerRegistry()
+        {
+            ListenerRegistry<string> registry = new ListenerRegistry<string>(2);
+            List<string> calls = new List<string>();
+            List<string> failures = new List<string>();
+
+            AssertTrue("listener registry rejects blank id", !registry.Register(" ", payload => calls.Add(payload)));
+            AssertTrue("listener registry rejects null listener", !registry.Register("a", null));
+            AssertTrue("listener registry accepts first listener", registry.Register("a", payload => calls.Add("a:" + payload)));
+            AssertTrue("listener registry accepts second listener", registry.Register("b", payload => calls.Add("b:" + payload)));
+            AssertTrue("listener registry cap rejects third id", !registry.Register("c", payload => calls.Add("c:" + payload)));
+
+            AssertEqual("listener registry delivers in order", 2, registry.Notify("one", null));
+            AssertEqual("listener registry first call order", "a:one,b:one", string.Join(",", calls.ToArray()));
+
+            AssertTrue("listener registry replaces existing id beyond cap",
+                registry.Register("a", payload => calls.Add("a2:" + payload)));
+            calls.Clear();
+            AssertEqual("listener registry replacement keeps order", 2, registry.Notify("two", null));
+            AssertEqual("listener registry replacement output", "a2:two,b:two", string.Join(",", calls.ToArray()));
+
+            AssertTrue("listener registry unregister removes id", registry.Unregister("b"));
+            calls.Clear();
+            AssertEqual("listener registry notifies remaining after unregister", 1, registry.Notify("three", null));
+            AssertEqual("listener registry remaining output", "a2:three", string.Join(",", calls.ToArray()));
+            AssertTrue("listener registry can reuse slot after unregister",
+                registry.Register("c", payload => calls.Add("c:" + payload)));
+
+            AssertTrue("listener registry throwing replacement accepted",
+                registry.Register("c", payload => { throw new InvalidOperationException("boom"); }));
+            calls.Clear();
+            AssertEqual("listener registry disables throwing listener", 1,
+                registry.Notify("four", (id, exception) => failures.Add(id + ":" + exception.GetType().Name)));
+            AssertEqual("listener registry reports one failure", "c:InvalidOperationException",
+                string.Join(",", failures.ToArray()));
+            AssertEqual("listener registry skips disabled listener later", 1, registry.Notify("five", null));
+        }
+
         // DiaryPromptEnchantmentCandidateSnapshot.From is the internal mapping point between the
         // PromptEnchantment machinery and the public integration DTO (API v6, C-CTX-3). Cover it
         // directly so the contract holds without loading RimWorld: null input, field copy, list
@@ -1337,6 +1383,12 @@ namespace DiaryPipelineTests
                 povRole = "initiator",
                 domain = "External",
                 atmosphereCue = "unsettled",
+                sourceId = "adapter.mod",
+                eventKey = "adapter_confession",
+                partnerPawnId = "Thing_Pawn_2",
+                important = true,
+                hasTitle = true,
+                hasGeneratedText = true,
                 archived = false
             };
 
@@ -1354,6 +1406,18 @@ namespace DiaryPipelineTests
                 DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { povRole = "INITIATOR" }));
             AssertTrue("title filter rejects wrong pov role",
                 !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { povRole = "recipient" }));
+            AssertTrue("title filter matches source id",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { sourceId = "ADAPTER.MOD" }));
+            AssertTrue("title filter rejects wrong source id",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { sourceId = "other.mod" }));
+            AssertTrue("title filter matches event key",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { eventKey = "Adapter_Confession" }));
+            AssertTrue("title filter rejects wrong event key",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { eventKey = "adapter_other" }));
+            AssertTrue("title filter matches partner pawn id",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { partnerPawnId = "Thing_Pawn_2" }));
+            AssertTrue("title filter rejects wrong partner pawn id",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { partnerPawnId = "Thing_Pawn_3" }));
             AssertTrue("title filter matches inclusive tick range",
                 DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { minTick = 1200, maxTick = 1200 }));
             AssertTrue("title filter rejects below min tick",
@@ -1366,12 +1430,104 @@ namespace DiaryPipelineTests
                 !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { dateContains = "Jugust" }));
             AssertTrue("title filter excludes active entries when requested",
                 !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { includeActive = false }));
+            AssertTrue("title filter matches important positive tri-state",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { important = 1 }));
+            AssertTrue("title filter rejects important false tri-state",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { important = 0 }));
+            AssertTrue("title filter matches has-title positive tri-state",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { hasTitle = 1 }));
+            AssertTrue("title filter rejects has-title false tri-state",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { hasTitle = 0 }));
+            AssertTrue("title filter matches generated positive tri-state",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { hasGeneratedText = 1 }));
+            AssertTrue("title filter rejects generated false tri-state",
+                !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { hasGeneratedText = 0 }));
 
             facts.archived = true;
             AssertTrue("title filter includes archived by default",
                 DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery()));
             AssertTrue("title filter excludes archived when requested",
                 !DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { includeArchived = false }));
+
+            facts.important = false;
+            facts.hasTitle = false;
+            facts.hasGeneratedText = false;
+            AssertTrue("title filter matches important false tri-state",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { important = 0 }));
+            AssertTrue("title filter matches has-title false tri-state",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { hasTitle = 0 }));
+            AssertTrue("title filter matches generated false tri-state",
+                DiaryEntryTitleFilter.Matches(facts, new DiaryEntryTitleQuery { hasGeneratedText = 0 }));
+        }
+
+        private static void TestDiaryEntryStatsAccumulator()
+        {
+            DiaryEntryStatsSnapshot stats = new DiaryEntryStatsSnapshot();
+            DiaryEntryStatsAccumulator.Add(stats, new DiaryEntryTitleFilterFacts
+            {
+                tick = 100,
+                date = "1st of Aprimay, 5501",
+                status = DiaryGenerationStatus.Complete,
+                hasTitle = true,
+                hasGeneratedText = true,
+                archived = false
+            });
+            DiaryEntryStatsAccumulator.Add(stats, new DiaryEntryTitleFilterFacts
+            {
+                tick = 200,
+                date = "2nd of Aprimay, 5501",
+                status = DiaryGenerationStatus.Pending,
+                archivedGenerationStale = true,
+                archived = true
+            });
+            DiaryEntryStatsAccumulator.Add(stats, new DiaryEntryTitleFilterFacts
+            {
+                tick = 150,
+                date = "1st of Aprimay evening, 5501",
+                status = DiaryGenerationStatus.Pending,
+                archived = false
+            });
+            DiaryEntryStatsAccumulator.Add(stats, new DiaryEntryTitleFilterFacts
+            {
+                tick = 175,
+                date = "1st of Aprimay night, 5501",
+                status = DiaryGenerationStatus.Skipped,
+                archived = false
+            });
+            DiaryEntryStatsAccumulator.Add(stats, new DiaryEntryTitleFilterFacts
+            {
+                tick = 125,
+                date = "1st of Aprimay afternoon, 5501",
+                status = DiaryGenerationStatus.PromptOnly,
+                archived = false
+            });
+            DiaryEntryStatsAccumulator.Add(stats, new DiaryEntryTitleFilterFacts
+            {
+                tick = 90,
+                date = "15th of Decembary, 5500",
+                status = DiaryGenerationStatus.NotGenerated,
+                archived = false
+            });
+
+            AssertEqual("entry stats total count", 6, stats.total);
+            AssertEqual("entry stats active count", 5, stats.active);
+            AssertEqual("entry stats archived count", 1, stats.archived);
+            AssertEqual("entry stats complete count", 1, stats.complete);
+            AssertEqual("entry stats pending count", 1, stats.pending);
+            AssertEqual("entry stats failed count", 1, stats.failed);
+            AssertEqual("entry stats skipped count", 1, stats.skipped);
+            AssertEqual("entry stats prompt-only count", 1, stats.promptOnly);
+            AssertEqual("entry stats not-generated count", 1, stats.notGenerated);
+            AssertEqual("entry stats title count", 1, stats.withTitle);
+            AssertEqual("entry stats generated text count", 1, stats.withGeneratedText);
+            AssertEqual("entry stats newest tick", 200, stats.newestTick);
+            AssertEqual("entry stats newest date", "2nd of Aprimay, 5501", stats.newestDate);
+            AssertEqual("entry stats oldest tick", 90, stats.oldestTick);
+            AssertEqual("entry stats oldest date", "15th of Decembary, 5500", stats.oldestDate);
+
+            DiaryEntryStatsSnapshot empty = new DiaryEntryStatsSnapshot();
+            DiaryEntryStatsAccumulator.Add(null, new DiaryEntryTitleFilterFacts { tick = 1 });
+            AssertEqual("empty entry stats range defaults", 0, empty.newestTick);
         }
 
         private static void TestPromptContextLines()
@@ -1400,6 +1556,270 @@ namespace DiaryPipelineTests
                 "context line join caps each line",
                 "abcdef; second",
                 PromptContextLines.Join(new List<string> { "abcdefghi", "second" }, 2, 6));
+        }
+
+        private static void TestExternalEventRequestText()
+        {
+            AssertEqual(
+                "external event summary is one prompt line",
+                "First line. Second line.",
+                ExternalEventRequestText.CleanSummary(" First <b>line</b>.\r\nSecond line.\u0007 "));
+
+            string splitSurrogateSummary = new string('a', ExternalEventRequestText.MaxSummaryChars - 1)
+                + char.ConvertFromUtf32(0x1F600);
+            AssertEqual(
+                "external event summary cap does not split surrogate pairs",
+                new string('a', ExternalEventRequestText.MaxSummaryChars - 1),
+                ExternalEventRequestText.CleanSummary(splitSurrogateSummary));
+
+            AssertEqual(
+                "external event extra context uses prompt context cleanup",
+                "mood=grim, focused; place=rec room; ignored=over-cap",
+                ExternalEventRequestText.JoinExtraContext(new List<string>
+                {
+                    "mood=grim; focused",
+                    "place=<b>rec room</b>\r\n",
+                    "ignored=over-cap"
+                }));
+        }
+
+        private static void TestExternalPromptContextText()
+        {
+            AssertEqual(
+                "external prompt fragment uses prompt context cleanup",
+                "Remember the rescued child, avoid omniscience",
+                ExternalEventRequestText.CleanPromptFragment(
+                    " Remember the <b>rescued child</b>;\r\navoid omniscience\u0007 ",
+                    80));
+            AssertEqual(
+                "external prompt instruction uses prompt context cleanup",
+                "Write from the pawn's uncertainty, avoid omniscience",
+                ExternalEventRequestText.CleanPromptInstruction(
+                    " Write from the <b>pawn's uncertainty</b>;\r\navoid omniscience\u0007 "));
+
+            List<string> cleanedCandidates = ExternalEventRequestText.CleanPromptEnchantmentCandidates(
+                new List<string>
+                {
+                    "left arm aches; keep it subtle",
+                    " ",
+                    "voice shaking",
+                    "over cap"
+                },
+                2,
+                80);
+            AssertEqual("external prompt enchantment candidate cap", 2, cleanedCandidates.Count);
+            AssertEqual(
+                "external prompt enchantment candidate semicolon cleanup",
+                "left arm aches, keep it subtle",
+                cleanedCandidates[0]);
+            AssertEqual(
+                "external prompt enchantment candidate skips blanks",
+                "voice shaking",
+                cleanedCandidates[1]);
+
+            string context = ExternalEventRequestText.JoinRequestContext(
+                "describe the favor owed; keep it uneasy",
+                "adapter fragment; protected",
+                new List<string>
+                {
+                    "scar aches; keep it small",
+                    "voice shaking"
+                },
+                true,
+                new List<string>
+                {
+                    "external_prompt_instruction=spoofed",
+                    "external_prompt_fragment=spoofed",
+                    "location=rec room"
+                },
+                80,
+                1,
+                80);
+
+            AssertEqual(
+                "protected external prompt instruction wins over extraContext duplicate",
+                "describe the favor owed, keep it uneasy",
+                DiaryContextFields.Value(context, ExternalEventRequestText.PromptInstructionContextKey));
+            AssertEqual(
+                "protected external prompt fragment wins over extraContext duplicate",
+                "adapter fragment, protected",
+                DiaryContextFields.Value(context, ExternalEventRequestText.PromptFragmentContextKey));
+            AssertContains(
+                "ordinary external context is appended after protected fields",
+                context,
+                "location=rec room");
+            AssertTrue(
+                "replace mode is saved when candidates survive",
+                ExternalEventRequestText.PromptEnchantmentsReplaceNormal(context));
+
+            List<PromptEnchantmentCandidate> parsed =
+                ExternalEventRequestText.PromptEnchantmentCandidatesFromContext(context, 6, 2.5f);
+            AssertEqual("external prompt enchantment context parses capped candidates", 1, parsed.Count);
+            AssertEqual(
+                "external prompt enchantment candidate text round-trips",
+                "scar aches, keep it small",
+                parsed[0].conditionText);
+            AssertNear("external prompt enchantment candidate weight applies", 2.5f, parsed[0].weight);
+
+            string blankReplacementContext = ExternalEventRequestText.JoinRequestContext(
+                null,
+                string.Empty,
+                new List<string> { " " },
+                true,
+                null,
+                80,
+                6,
+                80);
+            AssertTrue(
+                "replace mode is not saved without valid candidates",
+                !ExternalEventRequestText.PromptEnchantmentsReplaceNormal(blankReplacementContext));
+
+            string spoofedContext = ExternalEventRequestText.JoinRequestContext(
+                null,
+                string.Empty,
+                null,
+                false,
+                new List<string>
+                {
+                    "external_prompt_instruction=spoofed instruction",
+                    "external_prompt_fragment=spoofed",
+                    "external_prompt_enchantment_mode=replace",
+                    "external_prompt_enchantment_1=spoofed candidate",
+                    "ordinary=kept"
+                },
+                80,
+                6,
+                80);
+            AssertEqual(
+                "extraContext cannot spoof protected prompt instruction",
+                string.Empty,
+                DiaryContextFields.Value(spoofedContext, ExternalEventRequestText.PromptInstructionContextKey));
+            AssertEqual(
+                "extraContext cannot spoof protected prompt fragment",
+                string.Empty,
+                DiaryContextFields.Value(spoofedContext, ExternalEventRequestText.PromptFragmentContextKey));
+            AssertTrue(
+                "extraContext cannot spoof replace mode",
+                !ExternalEventRequestText.PromptEnchantmentsReplaceNormal(spoofedContext));
+            AssertEqual(
+                "extraContext cannot spoof external prompt enchantments",
+                0,
+                ExternalEventRequestText.PromptEnchantmentCandidatesFromContext(
+                    spoofedContext,
+                    6,
+                    1f).Count);
+            AssertContains(
+                "non-reserved extraContext survives protected filtering",
+                spoofedContext,
+                "ordinary=kept");
+        }
+
+        private static void TestExternalEntryAttribution()
+        {
+            string context = "external=rjw_casual_encounter; source=adapter.mod; mood=grim";
+            AssertEqual(
+                "external attribution source parses",
+                "adapter.mod",
+                ExternalEntryAttribution.SourceIdForContext(context));
+            AssertTrue(
+                "external attribution flag requires source",
+                ExternalEntryAttribution.IsExternallyAuthored(context));
+            AssertEqual(
+                "native source field is ignored without external marker",
+                string.Empty,
+                ExternalEntryAttribution.SourceIdForContext("source=adapter.mod; tale=RaidArrived"));
+            AssertTrue(
+                "blank external source is not attributed",
+                !ExternalEntryAttribution.IsExternallyAuthored("external=event; source= "));
+
+            string splitSurrogateSource = new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars - 1)
+                + char.ConvertFromUtf32(0x1F600);
+            AssertEqual(
+                "external source cap does not split surrogate pairs",
+                new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars - 1),
+                ExternalEntryAttribution.SourceIdForContext("external=event; source=" + splitSurrogateSource));
+        }
+
+        private static void TestExternalApiBudgetPolicy()
+        {
+            ExternalApiBudgetTuning tuning = new ExternalApiBudgetTuning
+            {
+                enabled = true,
+                windowTicks = 100,
+                maxRequestsPerSource = 2,
+                maxRequestsGlobal = 3,
+                maxTokensPerSource = 500,
+                maxTokensGlobal = 800
+            };
+            List<ExternalApiBudgetReservation> recent = new List<ExternalApiBudgetReservation>
+            {
+                new ExternalApiBudgetReservation { tick = 90, sourceId = "adapter.a", estimatedTokens = 100 },
+                new ExternalApiBudgetReservation { tick = 80, sourceId = "adapter.b", estimatedTokens = 200 },
+                new ExternalApiBudgetReservation { tick = -1, sourceId = "adapter.a", estimatedTokens = 900 }
+            };
+
+            ExternalApiBudgetDecision allowed = ExternalApiBudgetPolicy.Evaluate(
+                recent, tuning, 100, " adapter.a ", 300);
+            AssertTrue("budget allows request inside all caps", allowed.allowed);
+            AssertEqual("budget counts in-window source requests", 1, allowed.sourceRequests);
+            AssertEqual("budget counts in-window global requests", 2, allowed.globalRequests);
+            AssertEqual("budget counts in-window source tokens", 100, allowed.sourceTokens);
+            AssertEqual("budget counts in-window global tokens", 300, allowed.globalTokens);
+            AssertEqual("budget stores requested tokens", 300, allowed.requestedTokens);
+
+            ExternalApiBudgetTuning sourceRequestTuning = new ExternalApiBudgetTuning
+            {
+                enabled = true,
+                windowTicks = 100,
+                maxRequestsPerSource = 1,
+                maxRequestsGlobal = 3,
+                maxTokensPerSource = 500,
+                maxTokensGlobal = 800
+            };
+            ExternalApiBudgetDecision sourceRequestCap = ExternalApiBudgetPolicy.Evaluate(
+                recent, sourceRequestTuning, 100, "adapter.a", 100);
+            AssertTrue("budget rejects source request cap", !sourceRequestCap.allowed);
+            AssertEqual("source request cap reason",
+                ExternalApiBudgetPolicy.SourceRequestCapReason,
+                sourceRequestCap.blockReason);
+
+            ExternalApiBudgetTuning globalTokenTuning = new ExternalApiBudgetTuning
+            {
+                enabled = true,
+                windowTicks = 100,
+                maxRequestsPerSource = 2,
+                maxRequestsGlobal = 3,
+                maxTokensPerSource = 1000,
+                maxTokensGlobal = 800
+            };
+            ExternalApiBudgetDecision globalTokenCap = ExternalApiBudgetPolicy.Evaluate(
+                recent, globalTokenTuning, 100, "adapter.c", 600);
+            AssertTrue("budget rejects global token cap", !globalTokenCap.allowed);
+            AssertEqual("global token cap reason",
+                ExternalApiBudgetPolicy.GlobalTokenCapReason,
+                globalTokenCap.blockReason);
+
+            ExternalApiBudgetTuning uncapped = new ExternalApiBudgetTuning
+            {
+                enabled = true,
+                windowTicks = 100,
+                maxRequestsPerSource = 0,
+                maxRequestsGlobal = 0,
+                maxTokensPerSource = 0,
+                maxTokensGlobal = 0
+            };
+            ExternalApiBudgetDecision disabledCaps = ExternalApiBudgetPolicy.Evaluate(
+                recent, uncapped, 100, "adapter.a", 50000);
+            AssertTrue("zero budget caps are disabled", disabledCaps.allowed);
+
+            AssertTrue("window boundary is expired",
+                !ExternalApiBudgetPolicy.IsInsideWindow(
+                    new ExternalApiBudgetReservation { tick = 0, sourceId = "adapter", estimatedTokens = 1 },
+                    100,
+                    100));
+            AssertEqual("blank budget source normalizes",
+                "unknown-source",
+                ExternalApiBudgetPolicy.NormalizeSourceId(" \t "));
         }
 
         private static void TestDiaryListText()
@@ -3170,6 +3590,18 @@ namespace DiaryPipelineTests
         // grinning-face emoji = one high + one low surrogate (two chars).
         private static void TestDiarySentenceExcerpt()
         {
+            AssertEqual("first sentence selected",
+                "First sentence.",
+                DiarySentenceExcerpt.FirstSentence("First sentence. Second sentence! Third sentence?", 200));
+
+            AssertEqual("first sentence cleans rich text and whitespace",
+                "Before alarm.",
+                DiarySentenceExcerpt.FirstSentence("<b>Before</b>\n\talarm. I kept walking.", 200));
+
+            AssertEqual("first sentence without punctuation uses capped prefix",
+                "I kept...",
+                DiarySentenceExcerpt.FirstSentence("I kept walking toward the light", 9));
+
             AssertEqual("last two sentences selected",
                 "Second sentence! Third sentence?",
                 DiarySentenceExcerpt.LastSentences("First sentence. Second sentence! Third sentence?", 2, 200));
@@ -3206,6 +3638,45 @@ namespace DiaryPipelineTests
             AssertEqual("suffix cut between surrogates starts after pair", "ab", suffixCapped);
             AssertTrue("suffix result never starts on a lone low surrogate",
                 suffixCapped.Length == 0 || !char.IsLowSurrogate(suffixCapped[0]));
+        }
+
+        private static void TestExternalDirectEntryText()
+        {
+            AssertEqual("direct prose preserves one blank paragraph",
+                "First line.\n\nSecond line.",
+                ExternalDirectEntryText.CleanProse("  First line.  \r\n\r\n\tSecond line.\u0007  ", 200));
+            AssertEqual("direct prose collapses repeated blank paragraphs",
+                "First.\n\nSecond.",
+                ExternalDirectEntryText.CleanProse("First.\n\n\n\nSecond.", 200));
+            AssertEqual("direct prose cap is surrogate-safe",
+                "ab",
+                ExternalDirectEntryText.CleanProse("ab\U0001F600cd", 3));
+            AssertEqual("direct title is one line and capped",
+                "Title next",
+                ExternalDirectEntryText.CleanTitle(" Title\r\nnext page ", 10));
+            AssertEqual("blank direct prose cleans to empty",
+                string.Empty,
+                ExternalDirectEntryText.CleanProse(" \r\n\t ", 200));
+        }
+
+        private static void TestExternalWritingStyleOverrideText()
+        {
+            AssertEqual("external style override rule is one prompt line",
+                "Write plain. No tags.",
+                ExternalWritingStyleOverrideText.CleanRule("<b>Write</b>\nplain.\tNo tags."));
+            AssertEqual("external style override source id is one line",
+                "adapter.source",
+                ExternalWritingStyleOverrideText.CleanSourceId(" adapter.source\r\n"));
+
+            string splitSurrogateRule = new string('a', ExternalWritingStyleOverrideText.MaxRuleChars - 1)
+                + char.ConvertFromUtf32(0x1F600);
+            AssertEqual("external style override rule cap does not split surrogate pairs",
+                new string('a', ExternalWritingStyleOverrideText.MaxRuleChars - 1),
+                ExternalWritingStyleOverrideText.CleanRule(splitSurrogateRule));
+            AssertEqual("external style override source id is capped",
+                new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars),
+                ExternalWritingStyleOverrideText.CleanSourceId(
+                    new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars + 10)));
         }
 
         // S1: RedactSecrets masks key=/token= query parameters and Bearer tokens in arbitrary text.

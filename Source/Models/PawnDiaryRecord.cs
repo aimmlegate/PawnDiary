@@ -23,6 +23,11 @@ namespace PawnDiary
         // Which writing-style Def this pawn uses for LLM prompts. The field name is legacy save data.
         public string personaDefName;
 
+        // Optional external writing-style override. When set, it sits above the pawn's base style and
+        // temporary hediff style overrides until the owning source clears it through the integration API.
+        public string externalWritingStyleOverrideRule;
+        public string externalWritingStyleOverrideSourceId;
+
         // Per-pawn toggle: when false, this pawn is skipped during diary generation.
         public bool diaryGenerationEnabled = true;
 
@@ -55,6 +60,8 @@ namespace PawnDiary
             Scribe_Values.Look(ref pawnId, "pawnId");
             Scribe_Values.Look(ref pawnName, "pawnName");
             Scribe_Values.Look(ref personaDefName, "personaDefName", DiaryPersonas.Default.defName);
+            Scribe_Values.Look(ref externalWritingStyleOverrideRule, "externalWritingStyleOverrideRule");
+            Scribe_Values.Look(ref externalWritingStyleOverrideSourceId, "externalWritingStyleOverrideSourceId");
             Scribe_Values.Look(ref diaryGenerationEnabled, "diaryGenerationEnabled", true);
             Scribe_Values.Look(ref acknowledgedGeneratedEntryCount, "acknowledgedGeneratedEntryCount", -1);
             Scribe_Values.Look(ref hasUnreadGeneratedEntry, "hasUnreadGeneratedEntry", false);
@@ -71,6 +78,16 @@ namespace PawnDiary
                 if (string.IsNullOrWhiteSpace(personaDefName) || DiaryPersonas.ForDefName(personaDefName) == null)
                 {
                     personaDefName = DiaryPersonas.Default.defName;
+                }
+
+                externalWritingStyleOverrideRule = ExternalWritingStyleOverrideText.CleanRule(
+                    externalWritingStyleOverrideRule);
+                externalWritingStyleOverrideSourceId = ExternalWritingStyleOverrideText.CleanSourceId(
+                    externalWritingStyleOverrideSourceId);
+                if (string.IsNullOrWhiteSpace(externalWritingStyleOverrideRule))
+                {
+                    externalWritingStyleOverrideRule = string.Empty;
+                    externalWritingStyleOverrideSourceId = string.Empty;
                 }
 
                 if (eventIds == null)

@@ -59,6 +59,7 @@ namespace PawnDiary
             if (settings == null)
             {
                 diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoLlmSettings".Translate());
+                NotifyEntryStatusChanged(diaryEvent, povRole);
                 return;
             }
 
@@ -66,6 +67,7 @@ namespace PawnDiary
             {
                 diaryEvent.SetLlmMeta(povRole, PromptTestEndpointLabel, string.Empty);
                 diaryEvent.MarkPromptOnly(povRole, "PawnDiary.Error.PromptTestModeCaptured".Translate());
+                NotifyEntryStatusChanged(diaryEvent, povRole);
                 LogApiDebug("Captured prompt without generation event=" + diaryEvent.eventId + " role=" + povRole);
                 return;
             }
@@ -78,6 +80,7 @@ namespace PawnDiary
             if (targets.Count == 0)
             {
                 diaryEvent.MarkFailed(povRole, "PawnDiary.Error.NoApiConfigured".Translate());
+                NotifyEntryStatusChanged(diaryEvent, povRole);
                 return;
             }
 
@@ -134,6 +137,7 @@ namespace PawnDiary
                 temperature = settings.temperature,
                 responseRules = responseRules
             });
+            NotifyEntryStatusChanged(diaryEvent, povRole);
         }
 
         /// <summary>
@@ -177,6 +181,8 @@ namespace PawnDiary
             {
                 diaryEvent.SetLlmMeta(result.povRole, EndpointUtility.BuildGenerationUrl(result.endpointUrl, result.apiMode), result.modelName);
             }
+
+            NotifyEntryStatusChanged(diaryEvent, result.povRole);
 
             // Generated speech Social-log injection is currently hidden/disabled. RimWorld accepts
             // the synthetic PlayLog row, but it does not reliably appear in the Social tab UI.
@@ -245,7 +251,7 @@ namespace PawnDiary
         /// recovery scan never touches it. If the title call fails, entries without an older
         /// stored title keep a date-only card header.
         /// </summary>
-        private static void ApplyTitleResult(DiaryEvent diaryEvent, LlmGenerationResult result)
+        private void ApplyTitleResult(DiaryEvent diaryEvent, LlmGenerationResult result)
         {
             if (diaryEvent == null || result == null)
             {
@@ -270,6 +276,8 @@ namespace PawnDiary
             {
                 diaryEvent.MarkTitleFailed(result.povRole, result.error);
             }
+
+            NotifyEntryStatusChanged(diaryEvent, result.povRole);
         }
 
         /// <summary>
@@ -279,56 +287,56 @@ namespace PawnDiary
         /// enqueue an <see cref="LlmGenerationRequest"/> with <c>isTitleRequest = true</c>.
         /// On failure (no API configured, lane unavailable) the per-POV title is left untouched.
         /// </summary>
-        private void QueueTitleRequest(DiaryEvent diaryEvent, string povRole, ApiEndpointConfig primaryOverride,
+        private bool QueueTitleRequest(DiaryEvent diaryEvent, string povRole, ApiEndpointConfig primaryOverride,
             Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
             Dictionary<string, Pawn> livePawnsById = null)
         {
             if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole))
             {
-                return;
+                return false;
             }
 
             // Don't double-queue: an existing title or an in-flight title request both skip.
             if (!string.IsNullOrWhiteSpace(diaryEvent.TitleForRole(povRole)))
             {
-                return;
+                return false;
             }
 
             if (diaryEvent.IsTitlePending(povRole))
             {
-                return;
+                return false;
             }
 
             if (!diaryEvent.CanQueueTitleGeneration(povRole))
             {
-                return;
+                return false;
             }
 
             if (!DiaryGenerationEnabledFor(diaryEvent, povRole, boundsCache, livePawnsById))
             {
-                return;
+                return false;
             }
 
             if (ShouldSkipFirstPersonGenerationForIncapacitation(FindLivePawnByLoadId(PawnIdForRole(diaryEvent, povRole), livePawnsById)))
             {
-                return;
+                return false;
             }
 
             PawnDiarySettings settings = PawnDiaryMod.Settings;
             if (settings == null)
             {
-                return;
+                return false;
             }
 
             if (PromptTestModeEnabled())
             {
-                return;
+                return false;
             }
 
             List<ApiEndpointConfig> targets = settings.ActiveEndpoints();
             if (targets == null || targets.Count == 0)
             {
-                return;
+                return false;
             }
 
             ApiEndpointConfig target = FindMatchingActiveLane(targets, primaryOverride);
@@ -392,6 +400,8 @@ namespace PawnDiary
                 temperature = settings.temperature,
                 responseRules = titleRules
             });
+            NotifyEntryStatusChanged(diaryEvent, povRole);
+            return true;
         }
 
         /// <summary>
@@ -415,6 +425,7 @@ namespace PawnDiary
                     && diaryEvent.CanQueueGeneration(DiaryEvent.RecipientRole))
                 {
                     diaryEvent.MarkFailed(DiaryEvent.RecipientRole, "PawnDiary.Error.SkippedInitiatorFailed".Translate());
+                    NotifyEntryStatusChanged(diaryEvent, DiaryEvent.RecipientRole);
                 }
 
                 return;

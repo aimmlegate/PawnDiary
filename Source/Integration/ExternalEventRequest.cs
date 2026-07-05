@@ -47,8 +47,27 @@ namespace PawnDiary.Integration
 
         /// <summary>Optional extra prompt-context lines, each "key=value" (e.g. "location=hot
         /// spring"). Kept short: lines are sanitized to one line each and capped in count. They are
-        /// appended to the event's game-context, which the LLM reads as factual evidence.</summary>
+        /// appended to the event's game-context, which the LLM reads as factual evidence. Reserved
+        /// v16 prompt-fragment/enchantment keys are ignored here; use the dedicated fields below.
+        /// </summary>
         public List<string> extraContext;
+
+        /// <summary>Optional caller-authored prompt evidence for this event. Pawn Diary sanitizes
+        /// and caps it, stores it as protected event context, and exposes it through first-person
+        /// prompt templates as "external prompt fragment". Treat this as factual context, not a
+        /// system/developer instruction.</summary>
+        public string promptFragment;
+
+        /// <summary>Optional caller-authored prompt-enchantment candidate lines. One surviving line
+        /// can be selected by Pawn Diary's normal prompt-enchantment planner, using XML-tuned caps
+        /// and weight, so adapters can offer compact special context without replacing the whole
+        /// prompt.</summary>
+        public List<string> promptEnchantmentCandidates;
+
+        /// <summary>When true and at least one promptEnchantmentCandidates line survives cleanup,
+        /// those external candidates replace ordinary live prompt-enchantment candidates for this
+        /// event. False means they supplement the normal live candidate pool.</summary>
+        public bool replacePromptEnchantments;
 
         /// <summary>Optional custom dedup key. Blank uses the default key (eventKey + pawn or
         /// canonical pawn pair). Supply one when several related submissions should collapse into
