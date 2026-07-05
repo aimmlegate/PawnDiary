@@ -6,6 +6,17 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-05
 
+- **Integration API — game-context injection & budget hardening (review follow-up).** Adapter input
+  can no longer forge internal `gameContext` fields. `ExternalEventData.BuildGameContext` now flattens
+  the `;` field separator (and line breaks) out of the adapter-controlled `eventKey`/`sourceId` and
+  length-caps them, and a shared `ExternalEventRequestText.JoinAdapterExtraContext` rejects any
+  `extraContext` line whose key is a reserved internal key (event-domain markers, death/arrival/
+  reflection markers, classifier value keys, prompt `ContextField` keys, `external_prompt_*`) on both
+  the event and direct-entry paths — closing a first-match bypass that could otherwise smuggle an
+  uncapped `external_prompt_instruction`, spoof `source=`, or force a death/neutral page. The external
+  API budget reservation is now refunded when the dispatcher drops the event (dedup/policy), and
+  `SubmitEvent` dispatches directly so a deduped burst no longer burns an adapter's window. Added
+  capture-policy and pipeline regression tests for both vectors.
 - **Integration API v22 — wrapped prompt entries.** `PawnDiaryApi.ApiVersion` is now `22`. Added
   `ExternalPromptEntryRequest`, `SubmitPromptEntry(...)`, and
   `PreviewPrompt(ExternalPromptEntryRequest, string povRole = null)`, letting adapters supply a

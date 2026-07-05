@@ -259,7 +259,17 @@ collect data on worker threads must own their queue and drain it from a main-thr
 their own `GameComponentUpdate` or `OnGUI` hook.
 Saved external `gameContext` always starts with `external=...`; the domain classifier gives that
 marker precedence so adapter-supplied `extraContext` keys cannot make an external page display as a
-native Thought, Work, Hediff, or other built-in event domain.
+native Thought, Work, Hediff, or other built-in event domain. Adapter input is confined to being a
+*value*, never a structural field. `ExternalEventData.BuildGameContext` flattens the `;` field
+separator (and line breaks) out of the adapter-controlled `eventKey`/`sourceId` and length-caps them
+before they become marker values, so a `;`-laden key cannot forge an extra `key=value` field.
+`ExternalEventRequestText.JoinAdapterExtraContext` — shared by the ordinary event path and the
+direct-entry path — drops any `extraContext` line whose key is a reserved internal game-context key:
+the event-domain markers, the structural death/arrival/reflection markers, classifier value keys,
+prompt `ContextField` keys, and the protected `external_prompt_*` fields (its reserved set is the one
+place to register a new internal key). Free-form adapter keys (`location`, `weather`, ...) still pass
+through. Because `DiaryContextFields` reads first-match, a caller can therefore neither smuggle an
+extra field through a marker nor override an API-owned or internal field.
 That same marker now drives external authorship attribution: `DiaryEntryView` derives a cleaned
 `ExternalSourceId` from the saved `source=` field, the Diary tab shows it in the entry footer, and
 public entry snapshots expose `externallyAuthored` / `externalSourceId` without adding save fields.
@@ -276,7 +286,13 @@ budget because they would not enqueue LLM work. The XML knobs live in `DiaryTuni
 (`integrationPromptBudgetEnabled`, `integrationPromptBudgetWindowTicks`,
 `integrationPromptBudgetMaxRequestsPerSource`, `integrationPromptBudgetMaxRequestsGlobal`,
 `integrationPromptBudgetMaxTokensPerSource`, `integrationPromptBudgetMaxTokensGlobal`). Rejections
-return the existing safe API values (`false` / `recorded=false`) and log once per source/reason.
+return the existing safe API values (`false` / `recorded=false`) and log once per source/reason. A
+reservation is refunded (`ReleaseExternalApiBudgetReservation`) when the dispatcher then drops the
+event (dedup window, disabled group, pawn state), so a burst of duplicate or invalid submissions
+cannot exhaust an adapter's window without any tokens actually being queued. `SubmitEvent` dispatches
+the signal directly (rather than fire-and-forget) so it can apply that refund while keeping its
+documented "validated and handed off" return; callers needing the real outcome use
+`SubmitEventWithHandle`.
 
 API v2 adds a narrow read side for adapters:
 `PawnDiaryApi.GetRecentEntryTitles(Pawn, int)` returns newest completed `DiaryEntryTitleSnapshot`

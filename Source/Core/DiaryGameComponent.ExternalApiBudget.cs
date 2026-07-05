@@ -25,29 +25,54 @@ namespace PawnDiary
 
         /// <summary>
         /// Reserves budget for a normal or wrapped external event, which may enqueue main diary
-        /// generation and optional title follow-ups.
+        /// generation and optional title follow-ups. On success <paramref name="reservation"/> is the
+        /// committed reservation (or null when none was needed) — pass it to
+        /// <see cref="ReleaseExternalApiBudgetReservation"/> if the dispatcher later drops the event.
         /// </summary>
-        internal bool TryReserveExternalApiBudgetForEvent(ExternalEventRequest request, string operation)
+        internal bool TryReserveExternalApiBudgetForEvent(
+            ExternalEventRequest request, string operation, out ExternalApiBudgetReservation reservation)
         {
             return TryReserveExternalApiBudget(
                 request == null ? null : request.sourceId,
                 operation,
-                EstimateExternalEventPromptTokens(request));
+                EstimateExternalEventPromptTokens(request),
+                out reservation);
         }
 
         /// <summary>
-        /// Reserves budget for direct prose only when it can enqueue title generation.
+        /// Reserves budget for direct prose only when it can enqueue title generation. See
+        /// <see cref="TryReserveExternalApiBudgetForEvent"/> for the <paramref name="reservation"/> token.
         /// </summary>
-        internal bool TryReserveExternalApiBudgetForDirectEntry(ExternalDirectEntryRequest request)
+        internal bool TryReserveExternalApiBudgetForDirectEntry(
+            ExternalDirectEntryRequest request, out ExternalApiBudgetReservation reservation)
         {
             return TryReserveExternalApiBudget(
                 request == null ? null : request.sourceId,
                 "SubmitDirectEntry",
-                EstimateExternalDirectEntryTitleTokens(request));
+                EstimateExternalDirectEntryTitleTokens(request),
+                out reservation);
         }
 
-        private bool TryReserveExternalApiBudget(string sourceId, string operation, int estimatedTokens)
+        /// <summary>
+        /// Refunds a reservation whose event the dispatcher ultimately dropped (dedup window, group
+        /// toggle, pawn state) so a burst of duplicate/invalid submissions cannot exhaust an adapter's
+        /// rolling window without any tokens actually being queued. No-op when the request was allowed
+        /// without needing a reservation (token was null).
+        /// </summary>
+        internal void ReleaseExternalApiBudgetReservation(ExternalApiBudgetReservation reservation)
         {
+            if (reservation == null)
+            {
+                return;
+            }
+
+            externalApiBudgetReservations.Remove(reservation);
+        }
+
+        private bool TryReserveExternalApiBudget(
+            string sourceId, string operation, int estimatedTokens, out ExternalApiBudgetReservation reservation)
+        {
+            reservation = null;
             if (estimatedTokens <= 0)
             {
                 return true;
@@ -75,12 +100,13 @@ namespace PawnDiary
                 return false;
             }
 
-            externalApiBudgetReservations.Add(new ExternalApiBudgetReservation
+            reservation = new ExternalApiBudgetReservation
             {
                 tick = currentTick,
                 sourceId = ExternalApiBudgetPolicy.NormalizeSourceId(sourceId),
                 estimatedTokens = estimatedTokens
-            });
+            };
+            externalApiBudgetReservations.Add(reservation);
             return true;
         }
 

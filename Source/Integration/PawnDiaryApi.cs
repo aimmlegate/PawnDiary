@@ -227,12 +227,22 @@ namespace PawnDiary.Integration
                     return false;
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(request, "SubmitEvent"))
+                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
+                    request, "SubmitEvent", out ExternalApiBudgetReservation reservation))
                 {
                     return false;
                 }
 
-                DiaryEvents.Submit(new ExternalEventSignal(request));
+                // Dispatch directly (not fire-and-forget DiaryEvents.Submit) so a deduped/policy-dropped
+                // event refunds its budget reservation instead of burning the adapter's window. Return
+                // contract is unchanged: true = validated and handed to the pipeline (which may decline
+                // it afterwards); callers needing the actual outcome use SubmitEventWithHandle.
+                bool emitted = DiaryGameComponent.Instance.Dispatch(new ExternalEventSignal(request));
+                if (!emitted)
+                {
+                    DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
+                }
+
                 return true;
             }
             catch (Exception e)
@@ -263,13 +273,19 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(request, "SubmitEventWithHandle"))
+                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
+                    request, "SubmitEventWithHandle", out ExternalApiBudgetReservation reservation))
                 {
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
                 ExternalEventSignal signal = new ExternalEventSignal(request);
                 bool emitted = DiaryGameComponent.Instance.Dispatch(signal);
+                if (!emitted)
+                {
+                    DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
+                }
+
                 return SubmissionResultFor(sourceId, eventKey, emitted, signal);
             }
             catch (Exception e)
@@ -297,13 +313,19 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(request, "SubmitPromptEntry"))
+                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForEvent(
+                    request, "SubmitPromptEntry", out ExternalApiBudgetReservation reservation))
                 {
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
                 ExternalEventSignal signal = new ExternalEventSignal(request, false);
                 bool emitted = DiaryGameComponent.Instance.Dispatch(signal);
+                if (!emitted)
+                {
+                    DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
+                }
+
                 return SubmissionResultFor(sourceId, eventKey, emitted, signal);
             }
             catch (Exception e)
@@ -331,13 +353,19 @@ namespace PawnDiary.Integration
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
-                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForDirectEntry(request))
+                if (!DiaryGameComponent.Instance.TryReserveExternalApiBudgetForDirectEntry(
+                    request, out ExternalApiBudgetReservation reservation))
                 {
                     return EmptySubmissionResult(sourceId, eventKey);
                 }
 
                 ExternalDirectEntrySignal signal = new ExternalDirectEntrySignal(request);
                 bool emitted = DiaryGameComponent.Instance.Dispatch(signal);
+                if (!emitted)
+                {
+                    DiaryGameComponent.Instance.ReleaseExternalApiBudgetReservation(reservation);
+                }
+
                 return SubmissionResultFor(sourceId, eventKey, emitted, signal);
             }
             catch (Exception e)

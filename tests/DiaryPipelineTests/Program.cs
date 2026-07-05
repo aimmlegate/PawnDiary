@@ -1712,6 +1712,57 @@ namespace DiaryPipelineTests
                 "non-reserved extraContext survives protected filtering",
                 spoofedContext,
                 "ordinary=kept");
+
+            // SECURITY: adapter extraContext must not be able to set an INTERNAL game-context key —
+            // structural POV/reflection markers, event-domain markers, classifier value keys, or a
+            // prompt ContextField. First-match means a smuggled "death_description=true" would force a
+            // death/neutral page and "quest_label=..." would inject prompt content the API never
+            // sanctioned. Free-form adapter keys (location, weather, ...) stay untouched.
+            string reservedContext = ExternalEventRequestText.JoinRequestContext(
+                null,
+                string.Empty,
+                null,
+                false,
+                new List<string>
+                {
+                    "death_description=true",
+                    "arrival_description=true",
+                    "quest_label=Fake Quest",
+                    "external=spoof",
+                    "signal=accepted",
+                    "work=mining",
+                    "location=rec room",
+                    "weather=clear"
+                },
+                80,
+                6,
+                80);
+            AssertTrue(
+                "extraContext cannot forge death_description",
+                !DiaryContextFields.IsTrue(reservedContext, "death_description"));
+            AssertTrue(
+                "extraContext cannot forge arrival_description",
+                !DiaryContextFields.IsTrue(reservedContext, "arrival_description"));
+            AssertEqual(
+                "extraContext cannot forge a quest prompt ContextField",
+                string.Empty,
+                DiaryContextFields.Value(reservedContext, "quest_label"));
+            AssertEqual(
+                "extraContext cannot forge an event-domain marker",
+                string.Empty,
+                DiaryContextFields.Value(reservedContext, "external"));
+            AssertEqual(
+                "extraContext cannot forge a classifier value key",
+                string.Empty,
+                DiaryContextFields.Value(reservedContext, "signal"));
+            AssertContains(
+                "free-form adapter key survives reserved filtering",
+                reservedContext,
+                "location=rec room");
+            AssertContains(
+                "second free-form adapter key survives reserved filtering",
+                reservedContext,
+                "weather=clear");
         }
 
         private static void TestExternalEntryAttribution()

@@ -147,7 +147,7 @@ namespace PawnDiary
                 protectedFields,
                 protectedFields.Count,
                 int.MaxValue);
-            string ordinaryContext = JoinExtraContextWithoutProtectedFields(extraContext);
+            string ordinaryContext = JoinAdapterExtraContext(extraContext);
             if (string.IsNullOrEmpty(protectedContext))
             {
                 return ordinaryContext;
@@ -206,7 +206,13 @@ namespace PawnDiary
                 PromptEnchantmentReplaceMode);
         }
 
-        private static string JoinExtraContextWithoutProtectedFields(IEnumerable<string> lines)
+        /// <summary>
+        /// Cleans, caps, and joins an adapter's ordinary "key=value" extraContext lines, dropping any
+        /// line whose key is a reserved internal game-context key (see <see cref="IsReservedContextKey"/>).
+        /// Shared by the event path (via <see cref="JoinRequestContext"/>) and the direct-entry path so
+        /// neither can let adapter input forge an internal structural or prompt field.
+        /// </summary>
+        internal static string JoinAdapterExtraContext(IEnumerable<string> lines)
         {
             List<string> kept = new List<string>();
             if (lines == null)
@@ -217,7 +223,7 @@ namespace PawnDiary
             foreach (string rawLine in lines)
             {
                 string line = PromptContextLines.CleanLine(rawLine, MaxExtraContextLineChars);
-                if (string.IsNullOrWhiteSpace(line) || IsProtectedContextLine(line))
+                if (string.IsNullOrWhiteSpace(line) || IsReservedContextLine(line))
                 {
                     continue;
                 }
@@ -232,7 +238,7 @@ namespace PawnDiary
             return PromptContextLines.Join(kept, kept.Count, int.MaxValue);
         }
 
-        private static bool IsProtectedContextLine(string line)
+        private static bool IsReservedContextLine(string line)
         {
             if (string.IsNullOrWhiteSpace(line))
             {
@@ -245,11 +251,67 @@ namespace PawnDiary
                 return false;
             }
 
-            string key = line.Substring(0, equalsIndex).Trim();
-            return string.Equals(key, PromptInstructionContextKey, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(key, PromptFragmentContextKey, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(key, PromptEnchantmentModeContextKey, StringComparison.OrdinalIgnoreCase)
-                || key.StartsWith(PromptEnchantmentContextKeyPrefix, StringComparison.OrdinalIgnoreCase);
+            return IsReservedContextKey(line.Substring(0, equalsIndex));
         }
+
+        /// <summary>
+        /// True when <paramref name="key"/> is a game-context key that Pawn Diary's own pipeline reads
+        /// to drive event-domain classification, POV selection, death/arrival/reflection rendering, or a
+        /// structured prompt field. Adapter-supplied extraContext must never set one of these: because
+        /// <see cref="DiaryContextFields.Value"/> is first-match, a smuggled structural key (e.g.
+        /// "death_description=true") would force a death/neutral page or inject prompt content the API
+        /// did not sanction. Free-form adapter keys (location, weather, mood, ...) are unaffected.
+        ///
+        /// This is the one place that owns the reserved set: when a new internal game-context key is
+        /// added anywhere in the codebase, register it (or its domain prefix) here.
+        /// </summary>
+        internal static bool IsReservedContextKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+            string trimmed = key.Trim();
+            if (ReservedContextKeys.Contains(trimmed))
+            {
+                return true;
+            }
+
+            for (int i = 0; i < ReservedContextKeyPrefixes.Length; i++)
+            {
+                if (trimmed.StartsWith(ReservedContextKeyPrefixes[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Exact reserved keys that have no distinguishing domain prefix. Domain-prefixed keys
+        // (death_*, arrival_*, quest_*, ability_*, external_*, ...) are covered by ReservedContextKeyPrefixes
+        // below, which also future-proofs new sub-keys in those domains.
+        private static readonly HashSet<string> ReservedContextKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Event-domain markers — Source/Pipeline/DiaryEventDomainClassifier.cs
+            "external", "tale", "mood_event", "thought", "inspiration", "romance", "work", "hediff",
+            "mental_state", "raid", "quest", "ritual", "psychic_ritual", "ability", "progression",
+            // Classifier value keys
+            "signal", "part_kind",
+            // Attribution — Source/Pipeline/ExternalEntryAttribution.cs
+            "source",
+            // Prompt ContextField keys with no reserved prefix — Source/Defs/PromptArchitectureDefs.cs
+            "quadrum", "important_entries",
+        };
+
+        // Reserved key families: any adapter key inside one of Pawn Diary's structured domains is
+        // rejected even if a new sub-key is added later. "external_" also subsumes the protected prompt
+        // fields (external_prompt_instruction / _fragment / _enchantment_mode / _enchantment_N).
+        private static readonly string[] ReservedContextKeyPrefixes =
+        {
+            "external_", "death_", "arrival_", "quest_", "ability_", "ritual_", "royal_",
+            "quadrum_", "arc_", "day_", "mood_", "mental_", "psychic_", "ideolog",
+        };
     }
 }

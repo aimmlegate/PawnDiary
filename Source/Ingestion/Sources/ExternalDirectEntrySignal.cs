@@ -17,10 +17,9 @@ namespace PawnDiary.Ingestion
     /// </summary>
     public sealed class ExternalDirectEntrySignal : DiarySignal
     {
-        // Same defensive prompt/context caps as ExternalEventSignal. These are parser safety bounds,
-        // not feature policy; body/title caps live in DiaryTuningDef XML.
-        private const int MaxExtraContextLines = 16;
-        private const int MaxExtraContextLineChars = 200;
+        // Defensive summary cap. Parser safety bound, not feature policy; body/title caps live in
+        // DiaryTuningDef XML. extraContext caps + reserved-key filtering live in the shared
+        // ExternalEventRequestText.JoinAdapterExtraContext used by Emit.
         private const int MaxSummaryChars = 800;
 
         private readonly Pawn subject;
@@ -133,7 +132,9 @@ namespace PawnDiary.Ingestion
 
             string label = BuildLabel();
             string gameContext = ExternalEventData.BuildGameContext(
-                payload.EventKey, payload.SourceId, JoinExtraContext(request.extraContext));
+                payload.EventKey,
+                payload.SourceId,
+                ExternalEventRequestText.JoinAdapterExtraContext(request.extraContext));
             string instruction = group == null ? string.Empty : InteractionGroups.InstructionForGroup(group);
 
             if (decision == CaptureDecision.GeneratePair
@@ -195,14 +196,6 @@ namespace PawnDiary.Ingestion
             return string.IsNullOrWhiteSpace(text)
                 ? "PawnDiary.Event.External".Translate(pawn.LabelShortCap, label).Resolve()
                 : text;
-        }
-
-        // Sanitizes and joins the adapter's "key=value" lines into the "; "-separated shape the
-        // game-context format uses everywhere. Semicolons inside a value become commas via the shared
-        // PromptContextLines helper.
-        private static string JoinExtraContext(List<string> lines)
-        {
-            return PromptContextLines.Join(lines, MaxExtraContextLines, MaxExtraContextLineChars);
         }
     }
 }
