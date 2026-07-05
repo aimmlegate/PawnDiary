@@ -1,6 +1,0 @@
-results/
-*.response.json
-
-# dotnet build artifacts from the golden dump tool (golden/cases.json + golden/expected.json are committed)
-dump/bin/
-dump/obj/

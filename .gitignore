@@ -23,6 +23,10 @@ opencode.jsonc
 .output/
 .agents/
 tmp
+design/
+prompt-lab/
+scripts/
+INTEGRATIONS.md
 
 # Note: 1.6/Assemblies/PawnDiary.dll (and bundled 0Harmony.dll) are committed on purpose
 # so the mod is usable straight from a clone.
