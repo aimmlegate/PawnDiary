@@ -1,3 +1,4 @@
+// XML-backed writing-style Defs and lookup helpers for pawn diary voice rules.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,8 +7,10 @@ using Verse;
 
 namespace PawnDiary
 {
-    // XML-backed writing style for a pawn. The class/field names keep "Persona" for save and Def
-    // compatibility with older Pawn Diary versions, but the player-facing feature is writing styles.
+    /// <summary>
+    /// XML-backed writing style for a pawn. The class/field names keep "Persona" for save and Def
+    /// compatibility with older Pawn Diary versions, but the player-facing feature is writing styles.
+    /// </summary>
     public class DiaryPersonaDef : Def
     {
         // The writing-style rule injected into the LLM system prompt.
@@ -22,8 +25,9 @@ namespace PawnDiary
         public List<string> themes = new List<string>();
     }
 
-    // Central lookup/fallback helper for the writing-style catalog. RimWorld loads Defs from
-    // 1.6/Defs/DiaryPersonaDefs.xml; the hardcoded fallback keeps saves usable if XML is missing.
+    /// <summary>
+    /// Central lookup/fallback helper for the writing-style catalog.
+    /// </summary>
     public static class DiaryPersonas
     {
         // Fixed vocabulary used by PersonaAffinity and the writing-style settings editor. Players can

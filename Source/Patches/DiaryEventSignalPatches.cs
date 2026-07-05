@@ -170,7 +170,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent component = DiaryGameComponent.Current;
+                DiaryGameComponent component = DiaryGameComponent.Instance;
                 if (component == null)
                 {
                     return;
@@ -215,22 +215,16 @@ namespace PawnDiary
         public static void Postfix(Thing __instance, Map map, bool respawningAfterLoad)
         {
             // Hottest hook in the mod: SpawnSetup fires for every projectile, filth, item, and plant.
-            // The bool check cannot throw, so it stays outside the safety wrapper; everything else
-            // goes through the state-passing Run overload so this postfix allocates nothing per call
-            // (a capturing lambda here would allocate a closure for every spawned Thing).
-            if (respawningAfterLoad)
+            // Cheap checks stay outside the wrapper; protected work uses the state-passing Run
+            // overload so this postfix allocates nothing per call.
+            if (respawningAfterLoad || __instance == null || __instance.def == null || !DiaryGameComponent.GamePlaying)
             {
                 return;
             }
 
             DiaryPatchSafety.Run("ThingSpawnedEventWindowPatch", (thing: __instance, map: map), s =>
             {
-                if (s.thing == null || s.thing.def == null)
-                {
-                    return;
-                }
-
-                DiaryGameComponent.Current?.RecordEventWindowThingSpawned(s.thing, s.map);
+                DiaryGameComponent.Instance?.RecordEventWindowThingSpawned(s.thing, s.map);
             });
         }
     }
@@ -258,7 +252,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordEventWindowBirthday(pawn, birthdayAge);
+                DiaryGameComponent.Instance?.RecordEventWindowBirthday(pawn, birthdayAge);
             });
         }
     }
@@ -352,7 +346,7 @@ namespace PawnDiary
                 }
 
                 ThingComp comp = __instance as ThingComp;
-                DiaryGameComponent.Current?.RecordEventWindowProximityLetter(
+                DiaryGameComponent.Instance?.RecordEventWindowProximityLetter(
                     comp?.parent,
                     __state.label,
                     __state.subjectPawn);
@@ -493,7 +487,7 @@ namespace PawnDiary
                 }
 
                 MonolithLevelFacts facts = CurrentLevelFacts();
-                DiaryGameComponent.Current?.RecordEventWindowVoidMonolithActivation(
+                DiaryGameComponent.Instance?.RecordEventWindowVoidMonolithActivation(
                     thing,
                     facts.defName,
                     facts.label,
@@ -598,7 +592,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordEventWindowPrisonBreak(initiator, capturedLabel, capturedPrisoners);
+                DiaryGameComponent.Instance?.RecordEventWindowPrisonBreak(initiator, capturedLabel, capturedPrisoners);
             });
         }
     }
@@ -632,7 +626,7 @@ namespace PawnDiary
                 }
 
                 Pawn subjectPawn = LetterSubjectPawn(__instance, args);
-                DiaryGameComponent.Current?.RecordEventWindowLetter(
+                DiaryGameComponent.Instance?.RecordEventWindowLetter(
                     letterKey,
                     LetterLabel(__instance, subjectPawn, letterKey),
                     subjectPawn);

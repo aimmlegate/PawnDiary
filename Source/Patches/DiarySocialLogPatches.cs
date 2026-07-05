@@ -28,34 +28,34 @@ namespace PawnDiary
         /// </summary>
         public static void Postfix(LogEntry entry)
         {
-            DiaryPatchSafety.Run("PlayLogAddPatch", () =>
+            if (GeneratedSpeechPlayLog.IsAddingGeneratedSpeechEntry)
             {
-                if (GeneratedSpeechPlayLog.IsAddingGeneratedSpeechEntry)
-                {
-                    return;
-                }
+                return;
+            }
 
-                PlayLogEntry_Interaction interactionEntry = entry as PlayLogEntry_Interaction;
-                if (interactionEntry == null)
-                {
-                    return;
-                }
+            PlayLogEntry_Interaction interactionEntry = entry as PlayLogEntry_Interaction;
+            if (interactionEntry == null)
+            {
+                return;
+            }
 
-                InteractionDef interactionDef = IntDefField?.GetValue(interactionEntry) as InteractionDef;
-                Pawn initiator = InitiatorField?.GetValue(interactionEntry) as Pawn;
-                Pawn recipient = RecipientField?.GetValue(interactionEntry) as Pawn;
-                DiaryGameComponent component = DiaryGameComponent.Current;
+            DiaryPatchSafety.Run("PlayLogAddPatch", interactionEntry, s =>
+            {
+                InteractionDef interactionDef = IntDefField?.GetValue(s) as InteractionDef;
+                Pawn initiator = InitiatorField?.GetValue(s) as Pawn;
+                Pawn recipient = RecipientField?.GetValue(s) as Pawn;
+                DiaryGameComponent component = DiaryGameComponent.Instance;
                 if (component == null || !component.ShouldCaptureInteractionFromPlayLog(initiator, recipient, interactionDef))
                 {
                     return;
                 }
 
                 bool renderGameText = component.ShouldRenderInteractionTextFromPlayLog(interactionDef);
-                string initiatorGameText = renderGameText ? GameTextFromPov(interactionEntry, initiator) : string.Empty;
-                string recipientGameText = renderGameText ? GameTextFromPov(interactionEntry, recipient) : string.Empty;
+                string initiatorGameText = renderGameText ? GameTextFromPov(s, initiator) : string.Empty;
+                string recipientGameText = renderGameText ? GameTextFromPov(s, recipient) : string.Empty;
 
                 DiaryEvents.Submit(new InteractionSignal(initiator, recipient, interactionDef,
-                    initiatorGameText, recipientGameText, interactionEntry.LogID));
+                    initiatorGameText, recipientGameText, s.LogID));
             });
         }
 
@@ -165,7 +165,7 @@ namespace PawnDiary
                     return true;
                 }
 
-                DiaryEntryView entry = DiaryGameComponent.Current?.GeneratedEntryForPlayLogEntry(pawn, __instance.LogID);
+                DiaryEntryView entry = DiaryGameComponent.Instance?.GeneratedEntryForPlayLogEntry(pawn, __instance.LogID);
                 if (entry == null)
                 {
                     return true;

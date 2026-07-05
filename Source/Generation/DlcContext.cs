@@ -11,6 +11,7 @@
 // returns string.Empty when the DLC (or the trait) is absent. Callers can therefore append the
 // result unconditionally: a no-DLC game simply omits the line. New DLC-gated pawn reads belong
 // here, in the same shape. See AGENTS.md ("DLC-safety").
+using System.Collections.Generic;
 using RimWorld;
 using Verse;
 
@@ -143,7 +144,7 @@ namespace PawnDiary
 
             // GameComponent_Anomaly is registered by the Anomaly DLC, so it is null in a no-Anomaly
             // game even though ModsConfig already gates above — double-guarding is the contract here.
-            GameComponent_Anomaly anomaly = Current.Game?.GetComponent<GameComponent_Anomaly>();
+            GameComponent_Anomaly anomaly = Verse.Current.Game?.GetComponent<GameComponent_Anomaly>();
             return anomaly != null && anomaly.PawnHasUnnaturalCorpse(pawn);
         }
 
@@ -172,6 +173,36 @@ namespace PawnDiary
                 ? PromptTextSanitizer.LocalizedPromptText(role.LabelForPawn(pawn))
                 : string.Empty;
             return string.IsNullOrWhiteSpace(roleLabel) ? faith : faith + " (" + roleLabel + ")";
+        }
+
+        /// <summary>
+        /// Ideology: stable precept defNames for pure stance/policy checks. Empty without Ideology,
+        /// without an ideoligion, or when the ideoligion has no precepts.
+        /// </summary>
+        public static List<string> IdeologyPreceptDefNames(Pawn pawn)
+        {
+            List<string> names = new List<string>();
+            if (!ModsConfig.IdeologyActive || pawn?.ideo?.Ideo == null)
+            {
+                return names;
+            }
+
+            List<Precept> precepts = pawn.ideo.Ideo.PreceptsListForReading;
+            if (precepts == null)
+            {
+                return names;
+            }
+
+            for (int i = 0; i < precepts.Count; i++)
+            {
+                string defName = precepts[i]?.def?.defName;
+                if (!string.IsNullOrWhiteSpace(defName))
+                {
+                    names.Add(defName);
+                }
+            }
+
+            return names;
         }
 
         /// <summary>

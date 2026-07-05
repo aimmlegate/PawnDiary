@@ -1,5 +1,5 @@
 // The one front door for the whole event system. Every Harmony patch that used to call
-// `DiaryGameComponent.Current?.RecordXxx(...)` now calls `DiaryEvents.Submit(new XxxSignal(...))`.
+// `DiaryGameComponent.Instance?.RecordXxx(...)` now calls `DiaryEvents.Submit(new XxxSignal(...))`.
 // This static class is intentionally tiny: it only forwards to the live component's dispatcher and
 // no-ops when there is no game loaded (the same null-guard the old `?.RecordXxx` calls had).
 //
@@ -24,7 +24,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            DiaryGameComponent.Current?.Dispatch(signal);
+            DiaryGameComponent.Instance?.Dispatch(signal);
         }
 
         /// <summary>Submits a colony-wide event that fans out to one entry per eligible colonist.</summary>
@@ -35,7 +35,7 @@ namespace PawnDiary.Ingestion
                 return;
             }
 
-            DiaryGameComponent.Current?.Dispatch(signal);
+            DiaryGameComponent.Instance?.Dispatch(signal);
         }
     }
 }

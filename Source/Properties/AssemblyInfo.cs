@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+// Assembly metadata for the Pawn Diary RimWorld DLL.
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 

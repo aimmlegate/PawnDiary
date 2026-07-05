@@ -144,7 +144,7 @@ namespace PawnDiary
         /// <summary>
         /// True when the pawn already has a neutral death-description page, so the Tale path and the
         /// Pawn.Kill fallback do not both write one. internal so the Death fallback signal can read it
-        /// via DiaryGameComponent.Current. Moved verbatim from the old DiaryGameComponent.Tales.cs.
+        /// via DiaryGameComponent.Instance. Moved verbatim from the old DiaryGameComponent.Tales.cs.
         /// </summary>
         internal bool HasDeathDescriptionFor(Pawn pawn)
         {

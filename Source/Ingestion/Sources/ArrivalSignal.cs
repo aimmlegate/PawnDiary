@@ -53,7 +53,7 @@ namespace PawnDiary.Ingestion
                 ArrivalContext = arrivalContext,
                 // Needs the live event store; read it through the current component. Matches the old
                 // RecordColonistArrival capture order (drops if an arrival page already exists).
-                HasExistingArrival = DiaryGameComponent.Current?.HasArrivalEventFor(pawnId) ?? false,
+                HasExistingArrival = DiaryGameComponent.Instance?.HasArrivalEventFor(pawnId) ?? false,
             };
         }
 

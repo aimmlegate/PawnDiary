@@ -285,7 +285,7 @@ namespace PawnDiary
 
             Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(12f);
             // Singleton component that owns all diary state for the current game.
-            DiaryGameComponent component = DiaryGameComponent.Current;
+            DiaryGameComponent component = DiaryGameComponent.Instance;
             component?.AcknowledgeGeneratedEntriesFor(pawn);
             ApplyPendingDevPreview(pawn);
 

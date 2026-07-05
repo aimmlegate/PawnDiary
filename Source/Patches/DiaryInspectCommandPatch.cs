@@ -185,7 +185,7 @@ namespace PawnDiary
 
             private void DrawDiaryStatus(Vector2 topLeft, float maxWidth)
             {
-                DiaryGameComponent component = DiaryGameComponent.Current;
+                DiaryGameComponent component = DiaryGameComponent.Instance;
                 if (component == null || diaryPawn == null)
                 {
                     return;

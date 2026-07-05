@@ -40,7 +40,7 @@ namespace PawnDiary.Integration
         /// </summary>
         public static bool IsReady
         {
-            get { return DiaryGameComponent.GamePlaying && DiaryGameComponent.Current != null; }
+            get { return DiaryGameComponent.GamePlaying && DiaryGameComponent.Instance != null; }
         }
 
         /// <summary>
@@ -80,8 +80,9 @@ namespace PawnDiary.Integration
                 {
                     ApiLogErrorOnce(
                         "[Pawn Diary] Integration API: SubmitEvent from '" + sourceId
-                        + "' was called off the main thread; the call was ignored. Submit from the "
-                        + "main thread (e.g. via LongEventHandler.ExecuteWhenFinished).",
+                        + "' was called off the main thread; the call was ignored. Queue the work "
+                        + "yourself and drain it from a main-thread hook such as GameComponentUpdate "
+                        + "or OnGUI.",
                         ("PawnDiary.Api.OffThread." + sourceId).GetHashCode());
                     return false;
                 }
@@ -144,7 +145,7 @@ namespace PawnDiary.Integration
                     return new List<DiaryEntryTitleSnapshot>();
                 }
 
-                return DiaryGameComponent.Current.RecentEntryTitleSnapshotsFor(pawn, maxCount);
+                return DiaryGameComponent.Instance.RecentEntryTitleSnapshotsFor(pawn, maxCount);
             }
             catch (Exception e)
             {
@@ -181,7 +182,7 @@ namespace PawnDiary.Integration
                     return null;
                 }
 
-                return DiaryGameComponent.Current.WritingStyleSnapshotFor(pawn);
+                return DiaryGameComponent.Instance.WritingStyleSnapshotFor(pawn);
             }
             catch (Exception e)
             {
@@ -219,7 +220,7 @@ namespace PawnDiary.Integration
                     return new List<DiaryEntryTitleSnapshot>();
                 }
 
-                return DiaryGameComponent.Current.RecentEntryTitleSnapshotsFor(pawn, maxCount, query);
+                return DiaryGameComponent.Instance.RecentEntryTitleSnapshotsFor(pawn, maxCount, query);
             }
             catch (Exception e)
             {
@@ -301,7 +302,7 @@ namespace PawnDiary.Integration
                     return null;
                 }
 
-                return DiaryGameComponent.Current.PawnSummarySnapshotFor(pawn);
+                return DiaryGameComponent.Instance.PawnSummarySnapshotFor(pawn);
             }
             catch (Exception e)
             {
@@ -346,7 +347,7 @@ namespace PawnDiary.Integration
                     return new List<DiaryPromptEnchantmentCandidateSnapshot>();
                 }
 
-                return DiaryGameComponent.Current.PromptEnchantmentCandidatesFor(pawn, includeImportantEventContext);
+                return DiaryGameComponent.Instance.PromptEnchantmentCandidatesFor(pawn, includeImportantEventContext);
             }
             catch (Exception e)
             {

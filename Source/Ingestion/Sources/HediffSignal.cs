@@ -61,7 +61,7 @@ namespace PawnDiary.Ingestion
             // only — matches the old RecordHediffSignal order, before the catalog decision.)
             if (source == HediffSignalSource.Appeared)
             {
-                DiaryGameComponent.Current?.RememberHediffProgressionState(pawn, hediff, policy);
+                DiaryGameComponent.Instance?.RememberHediffProgressionState(pawn, hediff, policy);
             }
 
             payload = DiaryGameComponent.BuildHediffEventData(pawn, hediff, group, policy, source);

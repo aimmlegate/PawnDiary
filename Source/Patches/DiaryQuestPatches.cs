@@ -31,7 +31,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordQuestAccepted(__instance);
+                DiaryGameComponent.Instance?.RecordQuestAccepted(__instance);
             });
         }
     }
@@ -105,7 +105,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordQuestAccepted(quest);
+                DiaryGameComponent.Instance?.RecordQuestAccepted(quest);
             });
         }
     }
@@ -137,7 +137,7 @@ namespace PawnDiary
                     return;
                 }
 
-                DiaryGameComponent.Current?.RecordQuestEnded(__instance, outcome);
+                DiaryGameComponent.Instance?.RecordQuestEnded(__instance, outcome);
             });
         }
     }

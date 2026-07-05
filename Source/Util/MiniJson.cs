@@ -1,3 +1,4 @@
+// Tiny dependency-free JSON reader for RimWorld's limited Unity Mono runtime.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -17,6 +18,9 @@ namespace PawnDiary
     {
         private const int MaxDepth = 256;
 
+        /// <summary>
+        /// Parses a JSON object, array, string, number, boolean, or null into simple CLR values.
+        /// </summary>
         public static object Deserialize(string json)
         {
             if (string.IsNullOrEmpty(json))

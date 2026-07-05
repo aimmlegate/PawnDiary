@@ -37,7 +37,7 @@ namespace PawnDiary
         /// Returns whether the pawn already has a work diary entry within the window — same work type
         /// only, or different work type only, per <paramref name="sameWorkOnly"/>. Reads saved diary
         /// history so cooldowns survive save/load.
-        /// internal: the WorkSignal capture reads work cooldowns through DiaryGameComponent.Current.
+        /// internal: the WorkSignal capture reads work cooldowns through DiaryGameComponent.Instance.
         /// </summary>
         internal bool HasRecentWorkEvent(Pawn pawn, string currentWorkTypeDefName, int windowTicks, bool sameWorkOnly)
         {

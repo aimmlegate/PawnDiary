@@ -53,7 +53,7 @@ namespace PawnDiary
         {
             get
             {
-                DiaryGameComponent component = DiaryGameComponent.Current;
+                DiaryGameComponent component = DiaryGameComponent.Instance;
                 return component != null && component.HasGeneratedSpeechPlayLogTexts;
             }
         }
@@ -154,7 +154,7 @@ namespace PawnDiary
                 return true;
             }
 
-            text = DiaryGameComponent.Current?.GeneratedSpeechTextForPlayLogEntry(entry.LogID) ?? string.Empty;
+            text = DiaryGameComponent.Instance?.GeneratedSpeechTextForPlayLogEntry(entry.LogID) ?? string.Empty;
             return !string.IsNullOrWhiteSpace(text);
         }
 

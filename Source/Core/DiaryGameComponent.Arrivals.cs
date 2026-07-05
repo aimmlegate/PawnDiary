@@ -49,7 +49,7 @@ namespace PawnDiary
             return true;
         }
 
-        // internal: the ArrivalSignal capture reads this through DiaryGameComponent.Current to drop a
+        // internal: the ArrivalSignal capture reads this through DiaryGameComponent.Instance to drop a
         // duplicate arrival page (the pawn already has one).
         internal bool HasArrivalEventFor(string pawnId)
         {

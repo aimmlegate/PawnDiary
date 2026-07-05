@@ -46,22 +46,16 @@ namespace PawnDiary
         public static void Postfix(MemoryThoughtHandler __instance, Thought_Memory __0)
         {
             // Hot hook: memories are gained constantly (meals, sleep, social slights). The
-            // state-passing Run overload keeps this lambda capture-free so the postfix allocates
-            // nothing per call; the ThoughtSignal below is only built for real, non-null memories.
-            DiaryPatchSafety.Run("ThoughtGainPatch", (handler: __instance, memory: __0), s =>
+            // cheap guards stay outside the wrapper; the ThoughtSignal below is only built for
+            // real, non-null memories.
+            if (__instance == null || __0 == null || __0.def == null || __instance.pawn == null)
             {
-                if (s.handler == null || s.memory == null || s.memory.def == null)
-                {
-                    return;
-                }
+                return;
+            }
 
-                Pawn pawn = s.handler.pawn;
-                if (pawn == null)
-                {
-                    return;
-                }
-
-                DiaryEvents.Submit(new ThoughtSignal(pawn, s.memory));
+            DiaryPatchSafety.Run("ThoughtGainPatch", (pawn: __instance.pawn, memory: __0), s =>
+            {
+                DiaryEvents.Submit(new ThoughtSignal(s.pawn, s.memory));
             });
         }
     }

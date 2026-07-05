@@ -58,12 +58,7 @@ namespace PawnDiary
 
         private static string IdeologyStance(Pawn pawn, List<string> approvePrecepts, List<string> despisePrecepts)
         {
-            if (!ModsConfig.IdeologyActive || pawn?.ideo?.Ideo == null)
-            {
-                return BodyPartEventPolicy.IdeologyNone;
-            }
-
-            List<Precept> precepts = pawn.ideo.Ideo.PreceptsListForReading;
+            List<string> precepts = DlcContext.IdeologyPreceptDefNames(pawn);
             if (precepts == null || precepts.Count == 0)
             {
                 return BodyPartEventPolicy.IdeologyNone;
@@ -72,7 +67,7 @@ namespace PawnDiary
             bool approves = false;
             for (int i = 0; i < precepts.Count; i++)
             {
-                string defName = precepts[i]?.def?.defName;
+                string defName = precepts[i];
                 if (ContainsDefName(despisePrecepts, defName))
                 {
                     return BodyPartEventPolicy.IdeologyDespises;

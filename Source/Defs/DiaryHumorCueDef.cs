@@ -1,3 +1,4 @@
+// XML-backed humor-cue Defs and selection helpers for subtle prompt voice variations.
 using System;
 using System.Collections.Generic;
 using Verse;

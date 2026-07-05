@@ -6,6 +6,13 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state.
 
 ## 2026-07-05
 
+- **Agent-guidance maintenance hardening.** Aligned the codebase with the newly documented gotchas:
+  `DiaryGameComponent.Instance` is now the live component accessor (`Current` remains only as a
+  compile-time-blocked binary alias), `PawnDiaryApi` off-thread diagnostics tell adapters to queue
+  and drain from a real main-thread hook, Ideology precept reads for body-mod policy route through
+  `DlcContext`, hot Harmony hooks do their cheap type/null/game-state exits before entering
+  `DiaryPatchSafety`, missing source-file headers were added, and the build-time Harmony reference
+  now matches the active brrainz Harmony `2.4.1.0` runtime.
 - **Integration API v6 — machinery-as-a-service reads (C-CTX-2 / C-CTX-3).** `PawnDiaryApi.ApiVersion`
   is now `6`, with two structured, side-effect-free reads that expose the prompt context Pawn Diary
   builds internally, so a chat/context mod can mirror our understanding of a pawn without us driving

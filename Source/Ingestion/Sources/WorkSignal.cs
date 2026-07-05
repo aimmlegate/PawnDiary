@@ -5,7 +5,7 @@
 // snapshot (work type, mood classification, persistent cooldowns, weighted roll) and emit now live
 // here, and the Decide/route runs through the shared dispatcher like every other source.
 //
-// Cooldowns read saved diary history through DiaryGameComponent.Current.HasRecentWorkEvent. Pure
+// Cooldowns read saved diary history through DiaryGameComponent.Instance.HasRecentWorkEvent. Pure
 // decision + game-context + defName selection live in Source/Capture/Events/WorkEventData.cs.
 // New to C#/RimWorld? See AGENTS.md ("WorkTypeDef", "WorkGiverDef").
 using System;
@@ -62,14 +62,14 @@ namespace PawnDiary.Ingestion
             bool sameWorkCooldownClear = false;
             if (canRollWorkEvent)
             {
-                sameWorkCooldownClear = !(DiaryGameComponent.Current?.HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, true) ?? false);
+                sameWorkCooldownClear = !(DiaryGameComponent.Instance?.HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, true) ?? false);
             }
 
             bool passedChanceRoll = false;
             if (canRollWorkEvent && sameWorkCooldownClear)
             {
                 float chance = WorkDiaryChance(pawn, workTypeDef, mood);
-                if (DiaryGameComponent.Current?.HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, false) ?? false)
+                if (DiaryGameComponent.Instance?.HasRecentWorkEvent(pawn, workTypeDef.defName, cooldownTicks, false) ?? false)
                 {
                     chance *= Math.Max(0f, DiarySignalPolicies.WorkRecentDifferentTypeMultiplier);
                 }

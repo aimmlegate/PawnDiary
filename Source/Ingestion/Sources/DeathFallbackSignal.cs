@@ -48,7 +48,7 @@ namespace PawnDiary.Ingestion
                 PawnLoadId = pawnId,
                 // Needs the live event store; read it through the current component (non-null while a
                 // pawn is being killed in-game). Matches the old RecordDeathFallback capture order.
-                HasExistingDeathDescription = DiaryGameComponent.Current?.HasDeathDescriptionFor(pawn) ?? false,
+                HasExistingDeathDescription = DiaryGameComponent.Instance?.HasDeathDescriptionFor(pawn) ?? false,
             };
         }
 

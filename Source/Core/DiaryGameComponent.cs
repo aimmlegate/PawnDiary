@@ -46,7 +46,7 @@ namespace PawnDiary
     /// <summary>
     /// Central coordinator for the diary system: records events, queues LLM generation, applies
     /// finished results on ticks/updates, persists everything on save/load, and serves entry views to
-    /// the UI. Reach the live instance via <see cref="Current"/>.
+    /// the UI. Reach the live instance via <see cref="Instance"/>.
     /// </summary>
     public partial class DiaryGameComponent : GameComponent
     {
@@ -208,12 +208,18 @@ namespace PawnDiary
             ResetFreeColonistSnapshot();
         }
 
-        public static DiaryGameComponent Current
+        public static DiaryGameComponent Instance
         {
             get
             {
                 return Verse.Current.Game?.GetComponent<DiaryGameComponent>();
             }
+        }
+
+        [Obsolete("Use Instance. Current is kept only as a binary-compatibility alias.", true)]
+        public static DiaryGameComponent Current
+        {
+            get { return Instance; }
         }
 
         public override void StartedNewGame()

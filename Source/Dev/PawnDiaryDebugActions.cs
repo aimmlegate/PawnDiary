@@ -22,7 +22,7 @@ namespace PawnDiary
         [DebugAction("Pawn Diary", "Event test panel...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void OpenEventTestPanel()
         {
-            if (!Prefs.DevMode || DiaryGameComponent.Current == null)
+            if (!Prefs.DevMode || DiaryGameComponent.Instance == null)
             {
                 return;
             }
@@ -52,7 +52,7 @@ namespace PawnDiary
         [DebugAction("Pawn Diary", "Submit test external event...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void SubmitTestExternalEvent()
         {
-            if (!Prefs.DevMode || DiaryGameComponent.Current == null)
+            if (!Prefs.DevMode || DiaryGameComponent.Instance == null)
             {
                 return;
             }
@@ -106,7 +106,7 @@ namespace PawnDiary
         [DebugAction("Pawn Diary", "Purge archived entries for pawn...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void PurgeArchivedEntriesForPawn()
         {
-            DiaryGameComponent component = DiaryGameComponent.Current;
+            DiaryGameComponent component = DiaryGameComponent.Instance;
             if (!Prefs.DevMode || component == null)
             {
                 return;
@@ -150,7 +150,7 @@ namespace PawnDiary
         [DebugAction("Pawn Diary", "Force-close active event window...", allowedGameStates = AllowedGameStates.PlayingOnMap, actionType = DebugActionType.Action)]
         public static void ForceCloseActiveEventWindow()
         {
-            DiaryGameComponent component = DiaryGameComponent.Current;
+            DiaryGameComponent component = DiaryGameComponent.Instance;
             if (!Prefs.DevMode || component == null)
             {
                 return;
@@ -197,7 +197,7 @@ namespace PawnDiary
 
         private static void HandleExportAllDiariesForDev()
         {
-            DiaryGameComponent component = DiaryGameComponent.Current;
+            DiaryGameComponent component = DiaryGameComponent.Instance;
             if (component == null)
             {
                 Messages.Message(
@@ -258,7 +258,7 @@ namespace PawnDiary
 
         public override void DoWindowContents(Rect inRect)
         {
-            DiaryGameComponent component = DiaryGameComponent.Current;
+            DiaryGameComponent component = DiaryGameComponent.Instance;
             if (!Prefs.DevMode || component == null)
             {
                 Widgets.Label(inRect, "PawnDiary.Dev.EventPanel.NoGame".Translate());

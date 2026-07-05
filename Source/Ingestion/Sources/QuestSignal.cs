@@ -58,7 +58,7 @@ namespace PawnDiary.Ingestion
             // entries on. Isolate it so an event-window failure cannot skip the quest capture.
             try
             {
-                DiaryGameComponent.Current?.RecordEventWindowSignal(
+                DiaryGameComponent.Instance?.RecordEventWindowSignal(
                     DiaryGameComponent.EventWindowSourceQuest, QuestDefName, signal, CleanedLabel, null);
             }
             catch (Exception e)

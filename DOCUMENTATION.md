@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-04
+Last updated: 2026-07-05
 
 Related files:
 
@@ -61,6 +61,8 @@ Workshop payload omits source code and other development-only folders.
 
 The mod is a loaded RimWorld library, not a standalone program. Startup, capture, generation,
 storage, and UI are all framework callbacks around one saved `DiaryGameComponent`.
+Runtime code reaches that saved component through `DiaryGameComponent.Instance`; `Current` is kept
+only as a compile-time-blocked binary-compatibility alias so it does not shadow `Verse.Current`.
 
 This is the top-level shape:
 
@@ -155,6 +157,9 @@ flags.
 
 Completed LLM results are drained from both `GameComponentTick` and `GameComponentUpdate`. That means
 requests already in flight can still finish while the game is paused.
+Do not use `LongEventHandler.ExecuteWhenFinished` as a background-to-main-thread marshal for this
+path; queue results and drain them from a real main-thread hook such as `GameComponentUpdate` or
+`OnGUI`.
 
 ### 3.5 Tick Work And Catch-Up
 
@@ -241,6 +246,10 @@ their own External groups plus optional narrower `DiaryEventPromptDef` rows; the
 the `externalDevTest` group so the Debug Actions entry "Submit test external event..." can
 exercise the whole path with no adapter installed. The full public contract — versioning,
 threading, eventKey conventions, packaging — lives in `INTEGRATIONS.md`.
+Every `PawnDiaryApi` entry point is main-thread only. Off-main-thread calls return the documented
+safe value, use a thread-safe diagnostic path, and do not ask RimWorld to marshal work. Adapters that
+collect data on worker threads must own their queue and drain it from a main-thread callback such as
+their own `GameComponentUpdate` or `OnGUI` hook.
 Saved external `gameContext` always starts with `external=...`; the domain classifier gives that
 marker precedence so adapter-supplied `extraContext` keys cannot make an external page display as a
 native Thought, Work, Hediff, or other built-in event domain.
@@ -1026,10 +1035,13 @@ Never rename a key "for cleanliness" alone.
 - JSON uses `Source/Util/MiniJson.cs`. Do not add `System.Web.Extensions` or external JSON libraries.
 - Harmony is declared as a dependency on `brrainz.harmony` in `About/About.xml`; the Harmony runtime
   comes from that active mod at game-time. Pawn Diary compiles against `Source/Libs/0Harmony.dll`
-  (`Private=False`, so it is never copied to the output) and ships **only** `PawnDiary.dll` — it
-  must never bundle `0Harmony.dll` in `1.6/Assemblies/`.
+  (`Private=False`, so it is never copied to the output), which must match the active brrainz Harmony
+  DLL's assembly version (currently `2.4.1.0` in this checkout). It ships **only**
+  `PawnDiary.dll` — it must never bundle `0Harmony.dll` in `1.6/Assemblies/`.
 - No paid DLC is required. Optional DLC data must no-op cleanly when absent.
-- DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks.
+- DLC pawn data belongs in `DlcContext`, guarded by `ModsConfig.<Dlc>Active` and null checks. This
+  includes Ideology precept/role reads used by body-mod stance policy; other code consumes plain
+  labels, defNames, or booleans from the helper.
 - Avoid `DefDatabase<T>.GetNamed("DlcDef")` for optional content; use string matching or
   `GetNamedSilentFail`.
 
