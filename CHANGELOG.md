@@ -8,6 +8,31 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Integration API validation pass.** Closed five issues found in a focused review of the public
+  integration surface and the automatic event filters:
+  - **Budget reservation leak on dispatch throw.** `SubmitEvent`, `SubmitEventWithHandle`,
+    `SubmitPromptEntry`, and `SubmitDirectEntry` now release their external-API budget reservation
+    from the `catch` block if `Dispatch` throws, so a failing dispatch path can no longer falsely
+    consume per-source/global budget until the rolling window expires.
+  - **Reflection toggle honored.** `DayReflectionSignal` and `ArcReflectionSignal` now respect the
+    Advanced-tab "Reflection" filter row (`IsGroupEnabled`) like other native signals, instead of
+    hardcoding `userEnabled=true`. The single `reflection` group governs day, quadrum, and arc
+    reflection pages. The filter row tooltip now says so.
+  - **External package gates enforced.** The External-domain classifier used by `SubmitEvent`
+    validation now treats a group whose `disableWhenPackageIdsLoaded`/`enableWhenPackageIdsLoaded`
+    gate says it should be inert as unclaimed, matching how `IsGroupEnabled` and the filter UI
+    already treat such groups. A compatibility External group without its target mod no longer
+    accepts its key.
+  - **Disabled-by-default groups visible in the filter UI.** `EventFilterGroupsForSettings` no
+    longer hides `defaultEnabled=false` groups, so players can opt INTO rows like `questAccepted`.
+    A group with no override still inherits its XML default.
+  - **Stale external-API docs corrected.** `SubmitEventOutcome.DroppedByPipeline`, the
+    `INTEGRATIONS.md` submit table, and the example adapter `forceRecord` tooltip no longer claim
+    external events can be dropped by "disabled group"/"user toggles" — external submissions
+    intentionally bypass the player event-filter toggles.
+  - Also documented the `NormalizeGroupEnabledOverrides` invariant (keeps non-default overrides;
+    purges only unknown keys and redundant-equals-default entries). No behavior change there.
+
 - **Example adapter publish payload.** `scripts/publish.ps1` now builds and packages
   `integrations/PawnDiary.ExampleAdapter/` alongside the main and Russian Workshop payloads. The
   example payload ships its source code plus `API_EXPLORER.md`, `INTEGRATIONS.md`, and

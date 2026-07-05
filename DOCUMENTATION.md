@@ -259,11 +259,14 @@ re-enable works without restarting.
 
 For ordinary `SubmitEvent` calls, policy stays in XML: the request's `eventKey` string plays the
 defName role, and an External-domain `DiaryInteractionGroupDef` must claim it (required-match, like
-Romance — an unclaimed key records nothing and logs one warning naming the submitting mod). Adapter
-mods ship their own External groups plus optional narrower `DiaryEventPromptDef` rows; the core
-ships only the `externalDevTest` group so the Debug Actions entry "Submit test external event..."
-can exercise the whole path with no adapter installed. The full public contract — versioning,
-threading, eventKey conventions, packaging — lives in `INTEGRATIONS.md`.
+Romance — an unclaimed key records nothing and logs one warning naming the submitting mod). The
+classifier applies the same package gates as every other domain: an External group that is inert
+(`disableWhenPackageIdsLoaded` active, or `enableWhenPackageIdsLoaded` unsatisfied) is treated as
+absent, so its key is rejected with the same "no group claims eventKey" warning. Adapter mods ship
+their own External groups plus optional narrower `DiaryEventPromptDef` rows; the core ships only the
+`externalDevTest` group so the Debug Actions entry "Submit test external event..." can exercise the
+whole path with no adapter installed. The full public contract — versioning, threading, eventKey
+conventions, packaging — lives in `INTEGRATIONS.md`.
 Wrapped prompt entries are the middle ground between ordinary events and direct text injection: the
 adapter supplies `promptInstruction`, Pawn Diary stores it as protected `external_prompt_instruction`
 context, and the normal first-person prompt wrapper still owns persona/style, safety text, live
@@ -459,8 +462,11 @@ substring-style `matchTokens` only when broad matching is truly intended. Lower 
 specific groups before broad groups. The pure matcher lives in `Source/Capture/GroupNameMatcher.cs`.
 Two package gates control availability: `disableWhenPackageIdsLoaded` silences a group while a
 replacement mod is loaded, and `enableWhenPackageIdsLoaded` keeps a compatibility group inert unless
-one of its target mods is present. External-domain groups classify the integration-API `eventKey`
-strings other mods submit (see §3.7).
+one of its target mods is present. Both gates are enforced uniformly: `IsGroupEnabled`,
+`EventFilterGroupsForSettings`, and the External-domain classifier (`ClassifyExternal` consumers in
+`PawnDiaryApi` and `ExternalEventSignal`) all treat a gated group as inert, so a compatibility group
+sits harmless across automatic capture, the settings UI, and the integration API. External-domain
+groups classify the integration-API `eventKey` strings other mods submit (see §3.7).
 
 Hediff body-part events use the same XML classifier, but classify by a synthetic key when the live
 HediffDef is a body-part change: `BionicArm_addedpart`, `Tentacle_addedpart_organicpart`, or
@@ -761,9 +767,13 @@ Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and them
 
 Advanced starts with automatic event filters. Each visible `DiaryInteractionGroupDef` can be
 disabled per player to stop Pawn Diary's own game listeners and scanners from auto-recording that
-event group; all visible groups inherit enabled XML defaults. These filters intentionally do not
-block external mod API submissions, so adapter-owned triggers remain callable through
-`PawnDiaryApi`. The raw XML override editor is disabled until the experimental override switch is
+event group. The list shows every non-External, non-package-gated group, including
+`defaultEnabled=false` rows (such as `questAccepted`) so the player can opt INTO a group the XML
+ships disabled; a group with no player override still inherits its XML default. The single
+`reflection` row governs all three reflection signals — day, quadrum, and life-arc pages — because
+that group matches `DayReflection`, `QuadrumReflection`, and `PawnArcReflection` via `matchDefNames`.
+These filters intentionally do not block external mod API submissions, so adapter-owned triggers
+remain callable through `PawnDiaryApi`. The raw XML override editor is disabled until the experimental override switch is
 enabled from Main or from the Advanced gate panel; the Prompt tab's experimental prompt-policy drawer
 uses the same gate. Advanced and that prompt drawer share a compact two-pane editor: a left rail of
 groups and a right body that draws one widget per field type -- checkbox, slider, numeric text,

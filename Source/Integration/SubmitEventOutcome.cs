@@ -47,10 +47,11 @@ namespace PawnDiary.Integration
         DroppedBudget = 4,
 
         /// <summary>
-        /// The request was valid and within budget, but the dispatcher dropped it: the matched group
-        /// is disabled in XML, the eventKey is inside its dedup window, or pawn state made it
-        /// ineligible at dispatch time. This is the normal "the pipeline declined afterwards" path
-        /// that also returns <c>recorded=false</c> from
+        /// The request was valid and within budget, but the dispatcher dropped it: the eventKey is
+        /// inside its dedup window, or pawn state made it ineligible at dispatch time. (External
+        /// submissions intentionally bypass player event-filter toggles and set userEnabled=true, so a
+        /// disabled Reflection/Quest/etc. row never drops here.) This is the normal "the pipeline
+        /// declined afterwards" path that also returns <c>recorded=false</c> from
         /// <see cref="PawnDiaryApi.SubmitEventWithHandle"/>.
         /// </summary>
         DroppedByPipeline = 5
