@@ -16,7 +16,7 @@ namespace PawnDiary
         /// Safe to call from the mod settings window; errors are logged once instead of escaping into
         /// RimWorld's settings UI.
         /// </summary>
-        public void ApplyDiaryEventLimitsFromSettings()
+        internal void ApplyDiaryEventLimitsFromSettings()
         {
             try
             {
@@ -32,7 +32,7 @@ namespace PawnDiary
         /// <summary>
         /// Compatibility wrapper for older call sites and dev tools that only knew about the active cap.
         /// </summary>
-        public void ApplyActiveEventLimitFromSettings()
+        internal void ApplyActiveEventLimitFromSettings()
         {
             ApplyDiaryEventLimitsFromSettings();
         }

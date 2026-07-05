@@ -36,7 +36,7 @@ namespace PawnDiary
         /// <summary>
         /// Generic signal entry point used by Harmony patches and existing recorders.
         /// </summary>
-        public void RecordEventWindowSignal(string source, string defName, string signal, string label,
+        internal void RecordEventWindowSignal(string source, string defName, string signal, string label,
             Map map = null, Pawn subjectPawn = null)
         {
             if (!CanRecordGameplayEventNow() || string.IsNullOrWhiteSpace(source))
@@ -85,7 +85,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for successful IncidentWorker.TryExecute signals.
         /// </summary>
-        public void RecordEventWindowIncident(IncidentDef incidentDef, IncidentParms parms)
+        internal void RecordEventWindowIncident(IncidentDef incidentDef, IncidentParms parms)
         {
             if (incidentDef == null)
             {
@@ -104,7 +104,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for Thing.SpawnSetup signals.
         /// </summary>
-        public void RecordEventWindowThingSpawned(Thing thing, Map map)
+        internal void RecordEventWindowThingSpawned(Thing thing, Map map)
         {
             if (thing == null || thing.def == null)
             {
@@ -137,7 +137,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for generic vanilla letters. XML matches the stable letter key.
         /// </summary>
-        public void RecordEventWindowLetter(string letterKey, string label, Pawn subjectPawn)
+        internal void RecordEventWindowLetter(string letterKey, string label, Pawn subjectPawn)
         {
             if (string.IsNullOrWhiteSpace(letterKey))
             {
@@ -156,7 +156,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for biological birthdays, keyed by a stable pseudo-def name.
         /// </summary>
-        public void RecordEventWindowBirthday(Pawn pawn, int birthdayAge)
+        internal void RecordEventWindowBirthday(Pawn pawn, int birthdayAge)
         {
             if (pawn == null)
             {
@@ -175,7 +175,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for newly-added hediffs, keyed by HediffDef name.
         /// </summary>
-        public void RecordEventWindowHediffAdded(Pawn pawn, Hediff hediff)
+        internal void RecordEventWindowHediffAdded(Pawn pawn, Hediff hediff)
         {
             if (pawn == null || hediff == null || hediff.def == null)
             {
@@ -208,7 +208,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for prisoner breakouts. Map-scoped XML rules decide who records it.
         /// </summary>
-        public void RecordEventWindowPrisonBreak(Pawn initiator, string label, List<Pawn> escapingPrisoners)
+        internal void RecordEventWindowPrisonBreak(Pawn initiator, string label, List<Pawn> escapingPrisoners)
         {
             Map map = MapForSignalSubject(initiator) ?? FirstPawnMap(escapingPrisoners);
             string cleanedLabel = DiaryLineCleaner.CleanLine(label);
@@ -228,7 +228,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for ThingComp proximity letters, keyed by the parent ThingDef name.
         /// </summary>
-        public void RecordEventWindowProximityLetter(Thing thing, string label, Pawn subjectPawn)
+        internal void RecordEventWindowProximityLetter(Thing thing, string label, Pawn subjectPawn)
         {
             if (thing == null || thing.def == null)
             {
@@ -258,7 +258,7 @@ namespace PawnDiary
         /// <summary>
         /// Convenience wrapper for completed void monolith activations, keyed by the reached level defName.
         /// </summary>
-        public void RecordEventWindowVoidMonolithActivation(Thing thing, string levelDefName, string label,
+        internal void RecordEventWindowVoidMonolithActivation(Thing thing, string levelDefName, string label,
             Pawn subjectPawn)
         {
             if (thing == null || thing.def == null)

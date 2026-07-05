@@ -8,6 +8,12 @@ pre-release version ladder for project history.
 
 ## 2026-07-05
 
+- **Public surface tightened around `PawnDiary.Integration`.** Internalized non-contract helper
+  types and entry points across capture, ingestion, generation, pipeline, UI, settings helpers, and
+  `DiaryGameComponent` so adapter authors compile against `PawnDiaryApi` and DTOs, not core
+  internals. Public non-Integration types now remain only for RimWorld XML Defs, Scribe/settings
+  data, debug-action discovery, and lifecycle reflection.
+
 - **Public integration API v1 — first release numbering.** `PawnDiaryApi.ApiVersion` is now `1`
   for the first public release. Public v1 includes the full integration surface built during the
   pre-release ladder, including read snapshots, context providers, status listeners, prompt-entry

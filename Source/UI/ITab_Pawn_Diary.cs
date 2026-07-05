@@ -182,7 +182,7 @@ namespace PawnDiary
         /// Requests that the next Diary tab draw for this pawn scroll to the given event card.
         /// Used by the Social-tab play-log click patch.
         /// </summary>
-        public static void RequestScrollToEntry(Pawn pawn, string eventId)
+        internal static void RequestScrollToEntry(Pawn pawn, string eventId)
         {
             pendingScrollPawnId = pawn?.GetUniqueLoadID();
             pendingScrollEventId = eventId;
@@ -191,7 +191,7 @@ namespace PawnDiary
         /// <summary>
         /// Clears a pending scroll request when the tab could not be opened after all.
         /// </summary>
-        public static void ClearPendingScrollRequest()
+        internal static void ClearPendingScrollRequest()
         {
             pendingScrollPawnId = null;
             pendingScrollEventId = null;
@@ -201,7 +201,7 @@ namespace PawnDiary
         /// Opens the Diary tab from a gizmo, social-log link, or linked-entry card even when the
         /// player has hidden the normal inspect-tab button in settings.
         /// </summary>
-        public static InspectTabBase OpenDiaryTab()
+        internal static InspectTabBase OpenDiaryTab()
         {
             DiaryModStartup.EnsureDiaryTabInjected();
             commandOpenRequested = true;
@@ -245,7 +245,7 @@ namespace PawnDiary
         /// <summary>
         /// True when the pawn should have diary UI access, matching the tab's existing visibility rule.
         /// </summary>
-        public static bool CanShowDiaryFor(Pawn pawn)
+        internal static bool CanShowDiaryFor(Pawn pawn)
         {
             return pawn != null && pawn.RaceProps != null && pawn.RaceProps.Humanlike && pawn.IsColonist;
         }

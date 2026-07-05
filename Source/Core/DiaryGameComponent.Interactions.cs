@@ -18,7 +18,7 @@ namespace PawnDiary
         /// Cheap preflight used by the PlayLog.Add patch before it renders RimWorld grammar strings.
         /// The InteractionSignal repeats these checks because settings/XML may change between call sites.
         /// </summary>
-        public bool ShouldCaptureInteractionFromPlayLog(Pawn initiator, Pawn recipient, InteractionDef interactionDef)
+        internal bool ShouldCaptureInteractionFromPlayLog(Pawn initiator, Pawn recipient, InteractionDef interactionDef)
         {
             return CanRecordGameplayEventNow()
                 && initiator != null
@@ -33,7 +33,7 @@ namespace PawnDiary
         /// interaction. Most vanilla rows are safe to render. Some compatibility groups intentionally
         /// skip rendering because another mod's grammar renderer can have gameplay side effects.
         /// </summary>
-        public bool ShouldRenderInteractionTextFromPlayLog(InteractionDef interactionDef)
+        internal bool ShouldRenderInteractionTextFromPlayLog(InteractionDef interactionDef)
         {
             DiaryInteractionGroupDef group = InteractionGroups.Classify(interactionDef);
             if (group != null && !group.captureRenderedGameText)

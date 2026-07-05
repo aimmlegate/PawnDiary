@@ -789,7 +789,7 @@ namespace PawnDiary
         /// Public accessor for finding a DiaryEvent by ID (used by the diary tab to build
         /// linked-entry previews and navigate to the other pawn's entry).
         /// </summary>
-        public DiaryEvent FindEventById(string eventId)
+        internal DiaryEvent FindEventById(string eventId)
         {
             return events.FindEvent(eventId);
         }

@@ -171,7 +171,7 @@ namespace PawnDiary
         /// Public settings hook: when the player enables title generation later, queue titles for
         /// completed active entries once instead of scanning every generation tick forever.
         /// </summary>
-        public void QueueMissingTitlesFromSettings()
+        internal void QueueMissingTitlesFromSettings()
         {
             try
             {

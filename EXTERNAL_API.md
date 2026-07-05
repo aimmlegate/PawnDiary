@@ -6,7 +6,9 @@ For the full contract, see [`INTEGRATIONS.md`](INTEGRATIONS.md). For a buildable
 `Source/PawnDiaryExampleApi.cs`, the single documented example file that calls `PawnDiaryApi`.
 
 > **Public surface:** the `PawnDiary.Integration` namespace — `PawnDiaryApi` (static facade) plus
-> plain request/snapshot DTOs. Anything outside that namespace is internal and may change.
+> plain request/snapshot DTOs. Anything outside that namespace is implementation detail, except
+> public types RimWorld needs for XML Defs, Scribe/settings data, debug actions, and lifecycle
+> reflection.
 
 ---
 

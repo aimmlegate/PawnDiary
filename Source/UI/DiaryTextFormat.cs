@@ -49,7 +49,7 @@ namespace PawnDiary
         /// tags and quoted speech is wrapped in a bold, colored span using <paramref name="quoteColor"/>.
         /// Returns the line unchanged when there is nothing to format.
         /// </summary>
-        public static string ToRichText(string line, Color quoteColor)
+        internal static string ToRichText(string line, Color quoteColor)
         {
             return ToRichText(line, quoteColor, false, 0);
         }
@@ -58,7 +58,7 @@ namespace PawnDiary
         /// Rewrites one already-trimmed line into rich text, optionally adding a dramatic
         /// deterministic distortion to quoted direct speech for strange-chat anomaly pages.
         /// </summary>
-        public static string ToRichText(string line, Color quoteColor, bool distortQuotedSpeech, int seed)
+        internal static string ToRichText(string line, Color quoteColor, bool distortQuotedSpeech, int seed)
         {
             if (string.IsNullOrEmpty(line))
             {
@@ -122,7 +122,7 @@ namespace PawnDiary
         /// Rewrites one ordinary prose line and then applies any XML-selected body decorations.
         /// Direct-speech rules are not passed here; the tab applies those to speech blocks only.
         /// </summary>
-        public static string ToRichText(
+        internal static string ToRichText(
             string line,
             Color quoteColor,
             DiaryTextDecorationPlan decorations,
@@ -132,7 +132,7 @@ namespace PawnDiary
             return ToRichText(line, quoteColor, decorations, seed, baseFontSize, null);
         }
 
-        public static string ToRichText(
+        internal static string ToRichText(
             string line,
             Color quoteColor,
             DiaryTextDecorationPlan decorations,
@@ -150,7 +150,7 @@ namespace PawnDiary
         /// removed by the tab parser, so this treats the whole line as spoken text instead of looking
         /// for quotation marks inside the line.
         /// </summary>
-        public static string ToSpeechBlockRichText(string line, Color quoteColor, bool distortQuotedSpeech, int seed)
+        internal static string ToSpeechBlockRichText(string line, Color quoteColor, bool distortQuotedSpeech, int seed)
         {
             if (string.IsNullOrEmpty(line))
             {
@@ -178,7 +178,7 @@ namespace PawnDiary
         /// Formats one explicit direct-speech block, then applies XML-selected decorations to the
         /// spoken words before the outer quote/color wrapper is added.
         /// </summary>
-        public static string ToSpeechBlockRichText(
+        internal static string ToSpeechBlockRichText(
             string line,
             Color quoteColor,
             DiaryTextDecorationPlan decorations,
@@ -188,7 +188,7 @@ namespace PawnDiary
             return ToSpeechBlockRichText(line, quoteColor, decorations, seed, baseFontSize, null);
         }
 
-        public static string ToSpeechBlockRichText(
+        internal static string ToSpeechBlockRichText(
             string line,
             Color quoteColor,
             DiaryTextDecorationPlan decorations,
@@ -256,7 +256,7 @@ namespace PawnDiary
         /// The input is already rich text, so this walks past existing tags and only wraps visible
         /// words. The seed makes the result random-looking but stable across the measure and draw pass.
         /// </summary>
-        public static string ApplyStaggeredWordSizes(string rich, int intensity, int seed, int baseFontSize)
+        internal static string ApplyStaggeredWordSizes(string rich, int intensity, int seed, int baseFontSize)
         {
             return DiaryTextDecorations.ApplyStaggeredWordSizes(rich, intensity, seed, baseFontSize);
         }

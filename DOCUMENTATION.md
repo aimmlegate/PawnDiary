@@ -272,11 +272,13 @@ safe value, use a thread-safe diagnostic path, and do not ask RimWorld to marsha
 collect data on worker threads must own their queue and drain it from a main-thread callback such as
 their own `GameComponentUpdate` or `OnGUI` hook.
 
-The pure `Source/Pipeline` external helpers (`ExternalEventRequestText`, `ExternalDirectEntryText`,
-`ExternalWritingStyleOverrideText`, `ExternalEntryAttribution`, `ExternalApiBudgetPolicy`, and the
-budget DTOs) are `internal` — the public adapter contract is only the `PawnDiary.Integration`
-namespace, and `[InternalsVisibleTo("DiaryPipelineTests")]` lets the standalone pure test project
-reach them. A defensive `ExternalEventRequestText.MaxRequestContextLines` (64) caps the total
+The public adapter contract is only the `PawnDiary.Integration` namespace: `PawnDiaryApi` plus its
+request/result/snapshot DTOs. Runtime helpers in capture, ingestion, generation, pipeline, UI, and
+settings stay `internal` unless RimWorld needs a public type for XML Def loading, Scribe/save data,
+settings serialization, debug-action discovery, or lifecycle reflection (`Mod`, `GameComponent`,
+`ITab`). `[InternalsVisibleTo("DiaryPipelineTests")]` lets the standalone pure test project reach
+the internal pure helpers without widening the mod's external compile-time surface. A defensive
+`ExternalEventRequestText.MaxRequestContextLines` (64) caps the total
 `key=value` fields one request can write into saved gameContext, so raising the XML-tuned
 enchantment-candidate cap cannot grow saved state without bound (mirrors `MaxListeners`). Protected
 prompt fields are added first; ordinary adapter `extraContext` can only use the remaining slots, so a

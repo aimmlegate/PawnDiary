@@ -109,7 +109,7 @@ namespace PawnDiary
         /// Returns the generated display text for a synthetic PlayLog interaction row, or empty
         /// string for normal vanilla rows.
         /// </summary>
-        public string GeneratedSpeechTextForPlayLogEntry(int playLogEntryId)
+        internal string GeneratedSpeechTextForPlayLogEntry(int playLogEntryId)
         {
             if (playLogEntryId < 0 || generatedSpeechPlayLogTexts == null)
             {
@@ -124,7 +124,7 @@ namespace PawnDiary
         /// True when this game holds at least one generated direct-speech row. The display patch
         /// reads this to skip its per-row lookup entirely in games that never created one.
         /// </summary>
-        public bool HasGeneratedSpeechPlayLogTexts
+        internal bool HasGeneratedSpeechPlayLogTexts
         {
             get { return generatedSpeechPlayLogTexts != null && generatedSpeechPlayLogTexts.Count > 0; }
         }

@@ -943,7 +943,7 @@ namespace PawnDiary
         /// <summary>
         /// Returns whether a pawn has diary generation enabled (defaults to true if no record exists yet).
         /// </summary>
-        public bool DiaryGenerationEnabledFor(Pawn pawn)
+        internal bool DiaryGenerationEnabledFor(Pawn pawn)
         {
             if (!IsDiaryEligible(pawn))
             {
@@ -988,7 +988,7 @@ namespace PawnDiary
             return ExternalWritingStyleOverrideText.CleanRule(diary?.externalWritingStyleOverrideRule);
         }
 
-        public void SetDiaryGenerationEnabled(Pawn pawn, bool enabled)
+        internal void SetDiaryGenerationEnabled(Pawn pawn, bool enabled)
         {
             TrySetDiaryGenerationEnabledForIntegration(pawn, enabled);
         }
@@ -1020,7 +1020,7 @@ namespace PawnDiary
             return false;
         }
 
-        public DiaryPersonaDef PersonaFor(Pawn pawn)
+        internal DiaryPersonaDef PersonaFor(Pawn pawn)
         {
             if (!IsDiaryEligible(pawn))
             {
@@ -1038,7 +1038,7 @@ namespace PawnDiary
         /// an external read stays side-effect free. Temporary hediff style overrides are prompt-time
         /// only and are deliberately not reflected here.
         /// </summary>
-        public Integration.DiaryWritingStyleSnapshot WritingStyleSnapshotFor(Pawn pawn)
+        internal Integration.DiaryWritingStyleSnapshot WritingStyleSnapshotFor(Pawn pawn)
         {
             if (!IsDiaryEligible(pawn))
             {
@@ -1060,7 +1060,7 @@ namespace PawnDiary
             };
         }
 
-        public void SetPersona(Pawn pawn, string personaDefName)
+        internal void SetPersona(Pawn pawn, string personaDefName)
         {
             if (!IsDiaryEligible(pawn))
             {

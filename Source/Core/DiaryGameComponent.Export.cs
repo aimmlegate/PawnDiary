@@ -21,7 +21,7 @@ namespace PawnDiary
         /// event record to a timestamped text file. Returns false instead of throwing so the UI can
         /// show a normal RimWorld message when the OS blocks the write.
         /// </summary>
-        public bool TryExportAllDiariesForDev(out string filePath, out string error)
+        internal bool TryExportAllDiariesForDev(out string filePath, out string error)
         {
             filePath = string.Empty;
             error = string.Empty;

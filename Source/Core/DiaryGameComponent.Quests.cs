@@ -21,7 +21,7 @@ namespace PawnDiary
         /// event-window policy. Accepted quests do not generate diary pages; completed/failed endings
         /// do.
         /// </summary>
-        public void RecordQuestAccepted(Quest quest)
+        internal void RecordQuestAccepted(Quest quest)
         {
             MarkAcceptedQuestSeen(quest);
             DiaryEvents.Submit(new QuestFanoutSignal(quest, QuestEventData.SignalAccepted, "PawnDiary.Event.QuestAccepted"));
@@ -32,7 +32,7 @@ namespace PawnDiary
         /// <c>Quest.End</c>. Only Success and Fail outcomes are forwarded; Success -> "completed",
         /// Fail -> "failed".
         /// </summary>
-        public void RecordQuestEnded(Quest quest, QuestEndOutcome outcome)
+        internal void RecordQuestEnded(Quest quest, QuestEndOutcome outcome)
         {
             string signal = QuestSignalForOutcome(outcome);
             if (string.IsNullOrEmpty(signal))

@@ -208,7 +208,7 @@ namespace PawnDiary
             ResetFreeColonistSnapshot();
         }
 
-        public static DiaryGameComponent Instance
+        internal static DiaryGameComponent Instance
         {
             get
             {
@@ -217,7 +217,7 @@ namespace PawnDiary
         }
 
         [Obsolete("Use Instance. Current is kept only as a binary-compatibility alias.", true)]
-        public static DiaryGameComponent Current
+        internal static DiaryGameComponent Current
         {
             get { return Instance; }
         }

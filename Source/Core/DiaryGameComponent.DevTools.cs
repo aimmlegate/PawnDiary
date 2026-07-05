@@ -16,7 +16,7 @@ namespace PawnDiary
         /// Dev-mode helper used by the Diary tab to seed a pawn with many completed fake pages.
         /// Entries are complete immediately, span many display dates, and never enter the LLM queue.
         /// </summary>
-        public int FillMockDiaryEntriesForDev(Pawn pawn, int targetCount, int targetYears)
+        internal int FillMockDiaryEntriesForDev(Pawn pawn, int targetCount, int targetYears)
         {
             if (!Prefs.DevMode || !IsDiaryEligible(pawn) || targetCount <= 0 || targetYears <= 0)
             {
