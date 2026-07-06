@@ -8,6 +8,11 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Diary tab writing-style opener compacted.** Replaced the full-width Writing style row with a
+  small subtle header icon that opens the same editor and moves the current style/status into the
+  tooltip. Normal diary pages now start directly under the header again; dev-only controls still
+  reserve their own block in dev mode.
+
 - **Writing-style catalog: collision and gap fixes, both languages (Def/localization text, no C#).**
   Review of all 45 English styles found five rule-level weaknesses and two structural issues; fixed
   in English and mirrored in Russian. (1) `small-detail` had lost its direction ("one plain little

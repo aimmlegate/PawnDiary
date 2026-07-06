@@ -57,10 +57,11 @@
     <modelNameHeight>20</modelNameHeight>
     <debugTextTopPadding>8</debugTextTopPadding>
 
-    <!-- Per-pawn writing-style row (Diary tab) -->
-    <writingStyleRowHeight>30</writingStyleRowHeight>
-    <writingStyleRowGap>6</writingStyleRowGap>
-    <writingStyleStatusLeftGap>8</writingStyleStatusLeftGap>
+    <!-- Per-pawn writing-style header icon (Diary tab) -->
+    <writingStyleIconSize>22</writingStyleIconSize>
+    <writingStyleIconRightGap>6</writingStyleIconRightGap>
+    <writingStyleIconAlpha>0.42</writingStyleIconAlpha>
+    <writingStyleIconHoverAlpha>0.82</writingStyleIconHoverAlpha>
 
     <!-- Roleplay text and direct-speech blocks -->
     <roleplayLineGap>5</roleplayLineGap>

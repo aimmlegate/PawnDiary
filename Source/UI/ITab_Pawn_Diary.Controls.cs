@@ -14,32 +14,24 @@ namespace PawnDiary
     public partial class ITab_Pawn_Diary
     {
         /// <summary>
-        /// Returns the height needed for the per-pawn controls above the diary list. The Writing style
-        /// row is always shown to players; the dev-only troubleshooting block is folded into this same
-        /// height only when RimWorld dev mode is on.
+        /// Returns the height needed for per-pawn dev controls above the diary list. The player-facing
+        /// Writing style opener lives in the header icon, so normal play reserves no extra row.
         /// </summary>
         private static float PawnControlsHeight()
         {
-            float height = WritingStyleRowHeight + WritingStyleRowGap;
-            if (Prefs.DevMode)
-            {
-                height += DevControlsHeight;
-            }
-
-            return height;
+            return Prefs.DevMode ? DevControlsHeight : 0f;
         }
 
 
 
         /// <summary>
-        /// Renders the per-pawn Writing style row (always shown to players) plus dev-mode-only
-        /// troubleshooting controls below it. The player row is drawn first so it always appears,
-        /// then the dev block fills the remaining reserved height when RimWorld dev mode is on.
+        /// Renders dev-mode-only troubleshooting controls. Player-facing writing-style editing is
+        /// opened by the compact header icon, so this block is absent in normal play.
         /// </summary>
         private void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
         {
 
-            if (pawn == null || component == null)
+            if (pawn == null || component == null || !Prefs.DevMode)
             {
 
                 return;
@@ -47,34 +39,10 @@ namespace PawnDiary
             }
 
 
-
-            // Player-facing row: a "Writing style" button + status hint. Always visible so players can
-            // experiment with this pawn's voice straight from the Diary tab, no dev mode required.
-            Rect writingStyleRow = new Rect(rect.x, rect.y, rect.width, WritingStyleRowHeight);
-            DrawWritingStyleRow(writingStyleRow, pawn, component);
-
-
-
-            if (!Prefs.DevMode)
-            {
-
-                return;
-
-            }
-
-
-
-            // Dev-only block sits below the player row inside the reserved height. The controls rect
-            // starts after the player row plus its gap.
-            Rect devRect = new Rect(
-                rect.x,
-                writingStyleRow.yMax + WritingStyleRowGap,
-                rect.width,
-                Mathf.Max(0f, rect.height - WritingStyleRowHeight - WritingStyleRowGap));
 
             Listing_Standard listing = new Listing_Standard();
 
-            listing.Begin(devRect);
+            listing.Begin(rect);
 
 
 
@@ -286,9 +254,9 @@ namespace PawnDiary
 
             // The base-style picker used to live here behind ShouldShowPersonaSettings(); it moved to
 
-            // the always-visible player Writing Style dialog (DrawWritingStyleRow above), which also
+            // the player Writing Style dialog opened by the header icon, which also exposes the custom
 
-            // exposes the custom prompt and override explanation, so this dev-only duplicate is gone.
+            // prompt and override explanation, so this dev-only duplicate is gone.
 
             listing.End();
 
@@ -306,63 +274,67 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Draws the always-visible player Writing style row: a button showing the current style plus
-        /// a compact status hint when a custom prompt or a temporary override is active. Clicking the
-        /// button opens <see cref="Dialog_PawnWritingStyle"/>. Read-only here — no save mutation.
+        /// True when the Diary tab should offer the player-facing writing-style editor for this pawn.
+        /// The tab can render children and corpses, but only diary-eligible pawns can store the result.
         /// </summary>
-        private void DrawWritingStyleRow(Rect rect, Pawn pawn, DiaryGameComponent component)
+        private static bool ShouldDrawWritingStyleButton(Pawn pawn, DiaryGameComponent component)
         {
-            // The Diary tab is visible for any humanlike colonist — including children and corpses —
-            // but only diary-eligible pawns can actually store a style (SetPersona/SetCustomWritingStyleRule
-            // require it). Gate the editable row to match, so the editor never opens just to fail on Save.
-            if (!DiaryGameComponent.IsDiaryEligible(pawn))
-            {
-                DrawWritingStyleUnavailable(rect);
-                return;
-            }
+            return pawn != null && component != null && DiaryGameComponent.IsDiaryEligible(pawn);
+        }
 
+        /// <summary>
+        /// Draws the subtle header icon that opens <see cref="Dialog_PawnWritingStyle"/>. It is
+        /// read-only during draw; Save/Reset in the dialog remain the only mutation points.
+        /// </summary>
+        private void DrawWritingStyleHeaderIcon(Rect rect, Pawn pawn, DiaryGameComponent component)
+        {
             WritingStyleResolution resolution = component.ResolveWritingStyleFor(pawn);
 
-            string buttonLabel = "PawnDiary.Tab.WritingStyle".Translate(WritingStyleLabel(resolution));
-            float buttonWidth = Mathf.Min(rect.width * 0.5f, 320f);
-            Rect buttonRect = new Rect(rect.x, rect.y, buttonWidth, rect.height);
-            if (Widgets.ButtonText(buttonRect, buttonLabel))
+            bool hover = Mouse.IsOver(rect);
+            Color oldColor = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, Mathf.Clamp01(hover ? WritingStyleIconHoverAlpha : WritingStyleIconAlpha));
+            if (Widgets.ButtonImage(rect, TexButton.Rename))
             {
-                // Don't open a second editor for the same pawn; a concurrent Save would clobber this one.
-                if (!Find.WindowStack.Windows.OfType<Dialog_PawnWritingStyle>().Any(w => w.IsFor(pawn)))
-                {
-                    Find.WindowStack.Add(new Dialog_PawnWritingStyle(pawn, component));
-                }
+                OpenWritingStyleDialog(pawn, component);
+            }
+            GUI.color = oldColor;
+
+            TooltipHandler.TipRegion(rect, WritingStyleTooltip(resolution));
+        }
+
+        /// <summary>
+        /// Opens one writing-style dialog for the pawn, avoiding duplicate editors that could save over
+        /// each other.
+        /// </summary>
+        private static void OpenWritingStyleDialog(Pawn pawn, DiaryGameComponent component)
+        {
+            if (!Find.WindowStack.Windows.OfType<Dialog_PawnWritingStyle>().Any(w => w.IsFor(pawn)))
+            {
+                Find.WindowStack.Add(new Dialog_PawnWritingStyle(pawn, component));
+            }
+        }
+
+        /// <summary>
+        /// Tooltip text for the icon button: current style first, then the editor affordance and any
+        /// active custom/override status previously shown as row text.
+        /// </summary>
+        private static string WritingStyleTooltip(WritingStyleResolution resolution)
+        {
+            string tooltip =
+                "PawnDiary.Tab.WritingStyle".Translate(WritingStyleLabel(resolution)).Resolve()
+                + "\n\n"
+                + "PawnDiary.Tab.WritingStyleTip".Translate().Resolve();
+            string status = WritingStyleStatusLabel(resolution);
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                tooltip += "\n" + status;
             }
 
-            TooltipHandler.TipRegion(buttonRect, "PawnDiary.Tab.WritingStyleTip".Translate());
-
-            // Status hint to the right of the button: which layer is active right now.
-            Rect statusRect = new Rect(
-                buttonRect.xMax + WritingStyleStatusLeftGap,
-                rect.y,
-                Mathf.Max(0f, rect.width - buttonWidth - WritingStyleStatusLeftGap),
-                rect.height);
-            DrawWritingStyleStatus(statusRect, resolution);
+            return tooltip;
         }
 
         /// <summary>
-        /// Draws a muted "writing style unavailable" hint for pawns the Diary tab shows but that are
-        /// not diary-eligible (children, corpses), so no editable button is offered for them.
-        /// </summary>
-        private static void DrawWritingStyleUnavailable(Rect rect)
-        {
-            TextAnchor oldAnchor = Text.Anchor;
-            Color oldColor = GUI.color;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UiStyle.quietTextColor.ToColor(Color.gray);
-            Widgets.Label(rect, "PawnDiary.Tab.WritingStyleUnavailable".Translate());
-            Text.Anchor = oldAnchor;
-            GUI.color = oldColor;
-        }
-
-        /// <summary>
-        /// Resolves the human-readable label for the effective writing style shown on the row button.
+        /// Resolves the human-readable label for the effective writing style shown in the icon tooltip.
         /// Prefers the active override's label, then the base style label, falling back to "default".
         /// </summary>
         private static string WritingStyleLabel(WritingStyleResolution resolution)
@@ -388,38 +360,28 @@ namespace PawnDiary
         }
 
         /// <summary>
-        /// Draws the compact status hint next to the writing-style button: "Custom", "Override", or
-        /// nothing for a plain base style. Muted color so it does not compete with the diary text.
+        /// Returns the compact status hint for the writing-style tooltip: "Custom", "Override", or
+        /// nothing for a plain base style.
         /// </summary>
-        private static void DrawWritingStyleStatus(Rect rect, WritingStyleResolution resolution)
+        private static string WritingStyleStatusLabel(WritingStyleResolution resolution)
         {
             if (resolution == null)
             {
-                return;
+                return string.Empty;
             }
 
-            string status;
             if (resolution.source == WritingStyleRuleSource.ExternalApiOverride
                 || resolution.source == WritingStyleRuleSource.HediffOverride)
             {
-                status = "PawnDiary.WritingStyle.OverrideActive".Translate();
-            }
-            else if (!string.IsNullOrWhiteSpace(resolution.customRule))
-            {
-                status = "PawnDiary.WritingStyle.CustomActive".Translate();
-            }
-            else
-            {
-                return;
+                return "PawnDiary.WritingStyle.OverrideActive".Translate().Resolve();
             }
 
-            TextAnchor oldAnchor = Text.Anchor;
-            Color oldColor = GUI.color;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            GUI.color = UiStyle.quietTextColor.ToColor(Color.gray);
-            Widgets.Label(rect, status);
-            Text.Anchor = oldAnchor;
-            GUI.color = oldColor;
+            if (!string.IsNullOrWhiteSpace(resolution.customRule))
+            {
+                return "PawnDiary.WritingStyle.CustomActive".Translate().Resolve();
+            }
+
+            return string.Empty;
         }
 
 

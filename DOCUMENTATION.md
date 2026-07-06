@@ -772,9 +772,11 @@ runtime snapshot built in `HediffPersonaOverrides.ResolveWritingStyle`, is:
 3. **Pawn-specific custom prompt** (player-authored from the Diary tab).
 4. **Base selected style** Def rule (lowest).
 
-Generation only consumes the final `rule` string; the Diary tab's Writing Style dialog
-(`Dialog_PawnWritingStyle`) uses the full `WritingStyleResolution` metadata to show the effective
-prompt and explain why a saved custom prompt is temporarily inactive when an override shadows it.
+Generation only consumes the final `rule` string; the Diary tab opens the Writing Style dialog
+(`Dialog_PawnWritingStyle`) from a compact header icon, so the editor affordance does not reserve a
+separate row above the diary pages. The dialog uses the full `WritingStyleResolution` metadata to
+show the effective prompt and explain why a saved custom prompt is temporarily inactive when an
+override shadows it.
 The integration API's `PawnDiaryApi.GetWritingStyle` continues to return the base saved style only
 (custom prompt and temporary overrides are not exposed there).
 

@@ -95,12 +95,13 @@ namespace PawnDiary
         private static float YearFilterHeight => UiStyle.yearFilterHeight;
         private static float YearFilterGap => UiStyle.yearFilterGap;
 
-        // Player-facing writing-style row under the Diary header. Layout values come from XML via
+        // Player-facing writing-style opener in the Diary header. Layout values come from XML via
         // UiStyle (DiaryUiStyleDef). DevControlsHeight is a stable display-only estimate of the dev
         // block (mock/prompt-suite/dev-preview rows) so PawnControlsHeight can reserve its space.
-        private static float WritingStyleRowHeight => UiStyle.writingStyleRowHeight;
-        private static float WritingStyleRowGap => UiStyle.writingStyleRowGap;
-        private static float WritingStyleStatusLeftGap => UiStyle.writingStyleStatusLeftGap;
+        private static float WritingStyleIconSize => UiStyle.writingStyleIconSize;
+        private static float WritingStyleIconRightGap => UiStyle.writingStyleIconRightGap;
+        private static float WritingStyleIconAlpha => UiStyle.writingStyleIconAlpha;
+        private static float WritingStyleIconHoverAlpha => UiStyle.writingStyleIconHoverAlpha;
         private const float DevControlsHeight = 240f;
         private static float YearButtonWidth => UiStyle.yearButtonWidth;
         private static float ModelNameTopPadding => UiStyle.modelNameTopPadding;
@@ -317,24 +318,43 @@ namespace PawnDiary
             int generatingCount = visibleEntriesCache.GeneratingCount;
 
             Rect headerRect = new Rect(rect.x, rect.y, rect.width, 34f);
+            float headerRight = rect.xMax;
+            Rect writingIndicatorRect = Rect.zero;
             if (generatingCount > 0)
             {
-                Rect statusRect = new Rect(
+                writingIndicatorRect = new Rect(
                     rect.xMax - StatusBadgeRightPadding - StatusBadgeWidth,
                     rect.y + 3f,
                     StatusBadgeWidth,
                     StatusBadgeHeight);
-                headerRect.width = Mathf.Max(0f, statusRect.x - rect.x - 8f);
-                DrawWritingIndicator(statusRect);
+                headerRight = writingIndicatorRect.x - 8f;
+            }
+
+            if (ShouldDrawWritingStyleButton(pawn, component))
+            {
+                float iconSize = Mathf.Max(1f, WritingStyleIconSize);
+                Rect writingStyleIconRect = new Rect(
+                    headerRight - iconSize,
+                    rect.y + Mathf.Max(0f, (headerRect.height - iconSize) * 0.5f),
+                    iconSize,
+                    iconSize);
+                DrawWritingStyleHeaderIcon(writingStyleIconRect, pawn, component);
+                headerRight = writingStyleIconRect.x - Mathf.Max(0f, WritingStyleIconRightGap);
+            }
+
+            headerRect.width = Mathf.Max(0f, headerRight - rect.x);
+            if (generatingCount > 0)
+            {
+                DrawWritingIndicator(writingIndicatorRect);
             }
 
             Text.Font = GameFont.Medium;
             Widgets.Label(headerRect, "PawnDiary.Tab.DiaryHeader".Translate(pawn.LabelShortCap));
             Text.Font = GameFont.Small;
 
-            // In normal play the header stands alone; the dev-only controls (and the space they
-            // need) appear only when RimWorld dev mode is on. PawnControlsHeight() returns 0 outside
-            // dev mode, so entries sit directly under the header.
+            // In normal play the header stands alone; its tiny writing-style icon does not reserve a
+            // row. Dev-only controls (and the space they need) appear only when RimWorld dev mode is on.
+            // PawnControlsHeight() returns 0 outside dev mode, so entries sit directly under the header.
             float controlsY = rect.y + 36f;
             float controlsHeight = PawnControlsHeight();
             if (controlsHeight > 0f)
