@@ -53,7 +53,7 @@ Workshop payload omits source code and other development-only folders.
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
-| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`; reset real target: `PawnDiary.RimTalkBridge`). Not loaded in-game until deployed. |
+| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`; first real target: `PawnDiary.RimTalkBridge`). Not loaded in-game until deployed. |
 | `scripts/publish.ps1` | Local Workshop payload prep. |
 | `scripts/deploy-integrations.ps1` | Copies `integrations/` adapters to the RimWorld `Mods/` root as sibling mods. |
 
@@ -379,14 +379,43 @@ not localized text: they explain why a field was kept or cut for tooling, not fo
 Balanced/Compact budgets come from `DiaryContextDetailDef` (`Diary_ContextDetail`), so they can be
 retuned in XML; Full is unbudgeted and preserves the original prompt shape.
 
-`integrations/PawnDiary.RimTalkBridge/` is the first real adapter target, but it has been reset from
-the old log-only diagnostic bridge back to an example-adapter-derived scaffold. It is still a
-separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, but its current source
-has no RimTalk Harmony patch, settings UI, chat logging, diary submissions, or prompt injection.
-Instead, `RimTalkBridgeGameComponent` registers `PawnDiaryRimTalkBridgeApi`, a bridge-named copy of
-the example adapter's facade pattern with inert provider/listener hooks and wrapper methods for the
-public `PawnDiaryApi` calls the planned bridge will need. The executable implementation plan lives in
-`design/RIMTALK_BRIDGE_PLAN.md`.
+`integrations/PawnDiary.RimTalkBridge/` is the first real adapter target: a two-way bridge between
+Pawn Diary and RimTalk, shipped as the separate mod `PawnDiary: RimTalk bridge`. Its behavior is
+gated by an **integration-level** setting (`PawnDiaryRimTalkBridgeSettings.integrationLevel`, an int
+Scribe key so save data stays stable), with `PawnDiaryRimTalkBridgeMod.LevelAtLeast(n)` as the
+null-safe gate everywhere:
+
+- **Off (0)** — no data crosses in either direction.
+- **Shared context (1, default)** — outbound, `DiaryContextInjector` registers a diary-memories
+  section into RimTalk's prompt builder (`ContextHookRegistry.InjectPawnSection` on
+  `ContextCategories.Pawn.Thoughts`, plus a `{{pawn1.diary}}` Scriban variable) and inbound,
+  `PersonaSync` registers a `chat_persona=` pawn-context provider so Pawn Diary summaries see the
+  RimTalk persona. Both directions are additive context only; nothing is mutated.
+- **Shared context + conversations (2)** — additionally, `ConversationTracker` (fed by the
+  `RimTalkCreateInteractionPatch` Harmony postfix on `TalkService.CreateInteraction`) groups displayed
+  chat into conversations, and the important ones become diary entries via `SubmitPromptEntry`.
+  Ordinary chatter is left to the core `rimtalk_chatter` ambient-day-note group (below).
+
+Threading and lifecycle are the two subtle parts. The diary-memory section is served to RimTalk from
+a **cache** that is refreshed only on the main thread (`DiaryContextInjector.RefreshFor`), because
+RimTalk may call the section delegate on a background prompt-assembly task and `PawnDiaryApi` reads
+are main-thread-only; a lock guards the shared cache. `RimTalkBridgeGameComponent` runs one throttled
+(~250-tick) pass that refreshes stale caches, runs the Tier-B persona pass, flushes quiet
+conversations, and drains engine-mode results, and it resets every static cache in `FinalizeInit`
+(statics leak across exit-to-menu + load). All RimTalk-typed methods are `[MethodImpl(NoInlining)]`
+and only reached after the mod's cached `RimTalkActive` (`cj.rimtalk`) guard, so a missing RimTalk can
+never raise `TypeLoadException`. Pure decision logic (conversation assembly, importance, throttling,
+context/persona formatting) lives under `Source/Pure/` and is unit-tested by
+`tests/RimTalkBridgeLogicTests/` without loading the game.
+
+Advanced, off-by-default options: **Tier B** persona-led writing-style override (`PersonaSync` applies
+`SetWritingStyleOverride` from the persona's first sentence, reapplies on persona-hash change, and
+clears via `ResetWritingStyleOverride` when toggled off); **engine mode** (`RimTalkEngineClient` routes
+a conversation entry through `PreviewPrompt` → `AIService.Query<DiaryTextPayload>` →
+`SubmitDirectEntry`, falling back to the normal wrapped submit on any miss so a conversation is never
+lost); and per-pawn/colony/pair throttle knobs (`ThrottlePolicy`, in-memory, not saved). The frozen
+save/registry tokens (source id, `rimtalkbridge_conversation` event key, provider/listener ids) live
+in `BridgeIds`. The full design rationale is in `design/RIMTALK_BRIDGE_PLAN.md`.
 
 Compatibility groups shipped inside this repo for other mods use the group gate
 `enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only

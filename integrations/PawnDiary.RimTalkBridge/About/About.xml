@@ -21,5 +21,14 @@
     <li>aimmlegate.pawndiary.development</li>
     <li>cj.rimtalk</li>
   </loadAfter>
-  <description>Example-adapter-derived scaffold for the planned bridge between Pawn Diary and RimTalk. The old log-only chat listener has been removed; this payload currently registers an inert Pawn Diary API facade and is ready for the design/RIMTALK_BRIDGE_PLAN.md implementation steps. This adapter is deployed as a separate RimWorld mod through scripts/deploy-integrations.ps1.</description>
+  <description>Bridges Pawn Diary and RimTalk so a colonist's chat and their diary share one inner life.
+
+Pick an integration level in the mod settings:
+- Off — nothing flows between the two mods.
+- Shared context (default) — pawns "remember" their diary in conversation: recent diary memories are injected into RimTalk's chat prompts, and each pawn's RimTalk persona is shown to the diary as context. Nothing is written from chat.
+- Shared context + conversations — additionally, important RimTalk conversations (arguments, kindness, urgent news, long exchanges) become diary entries for both participants. Ordinary chatter stays in Pawn Diary's own ambient day-note, not spammed as individual entries.
+
+Advanced options include a persona-led diary voice (experimental), routing conversation entries through RimTalk's own AI provider, and per-day/per-pair throttles.
+
+Requires Pawn Diary and RimTalk. Installs the core "RimTalk conversations" compatibility group in Pawn Diary automatically. Deployed as a separate RimWorld mod via scripts/deploy-integrations.ps1.</description>
 </ModMetaData>

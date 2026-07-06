@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русская локализация моста RimTalk. Текст написан как родной русский, а не калькой с английского.
+     ВНИМАНИЕ (план, п. U4): это черновик агента — требуется финальная вычитка носителем, особенно
+     согласование числительных ("{1} реплик") и тон подсказок. Структурные ключи схемы
+     (chat_persona=, talk_type=, said_N=) остаются английскими и здесь не переводятся. -->
+<LanguageData>
+
+  <!-- Окно настроек -->
+  <PawnDiaryRimTalkBridge.Settings.Category>PawnDiary: мост RimTalk</PawnDiaryRimTalkBridge.Settings.Category>
+  <PawnDiaryRimTalkBridge.Settings.RimTalkMissing>RimTalk нет в списке активных модов — мост бездействует. Настройки ниже всё равно сохраняются.</PawnDiaryRimTalkBridge.Settings.RimTalkMissing>
+  <PawnDiaryRimTalkBridge.Settings.LevelSection>Уровень интеграции</PawnDiaryRimTalkBridge.Settings.LevelSection>
+  <PawnDiaryRimTalkBridge.Settings.LevelOff>Выкл.</PawnDiaryRimTalkBridge.Settings.LevelOff>
+  <PawnDiaryRimTalkBridge.Settings.LevelOffDesc>Данные между Pawn Diary и RimTalk не передаются ни в одну сторону.</PawnDiaryRimTalkBridge.Settings.LevelOffDesc>
+  <PawnDiaryRimTalkBridge.Settings.LevelSharedContext>Общий контекст</PawnDiaryRimTalkBridge.Settings.LevelSharedContext>
+  <PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>Поселенцы помнят свой дневник в разговоре: свежие записи попадают в подсказки RimTalk, а персона RimTalk видна дневнику как контекст. Записи из болтовни не создаются.</PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>
+  <PawnDiaryRimTalkBridge.Settings.LevelConversations>Общий контекст и разговоры</PawnDiaryRimTalkBridge.Settings.LevelConversations>
+  <PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>Всё перечисленное выше, а ещё важные разговоры RimTalk (ссоры, доброта, срочные вести, долгие беседы) становятся записями дневника для обоих участников. Обычная болтовня остаётся в фоновой дневной заметке самого Pawn Diary.</PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>
+  <PawnDiaryRimTalkBridge.Settings.AdvancedSection>Дополнительно</PawnDiaryRimTalkBridge.Settings.AdvancedSection>
+  <PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLine>Добавлять строку голоса дневника в контекст чата</PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLine>
+  <PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLineDesc>Добавляет в подсказку RimTalk одну строку о том, как поселенец ведёт дневник, чтобы чат повторял тот же голос.</PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLineDesc>
+  <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>Голос дневника по характеру (эксперимент)</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>
+  <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>Выводит голос дневника из описания характера в RimTalk. Экспериментально: описание характера — более грубое правило голоса, чем выверенные стили дневника. Выключение возвращает обычные стили.</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>
+  <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>Писать записи разговоров через ИИ RimTalk</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>
+  <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>Использует ИИ-провайдера RimTalk для записей разговоров вместо провайдера Pawn Diary. Если ИИ RimTalk занят или дал сбой, мост возвращается к обычному пути.</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>
+  <PawnDiaryRimTalkBridge.Settings.DevChatLogging>Отладочный журнал чата</PawnDiaryRimTalkBridge.Settings.DevChatLogging>
+  <PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>Пишет в консоль разработчика каждую замеченную строку чата RimTalk и каждое решение моста: сброс разговоров, причины важности, троттлинг, отправки.</PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>
+  <PawnDiaryRimTalkBridge.Settings.ContextEntryCount>Записей дневника на подсказку чата</PawnDiaryRimTalkBridge.Settings.ContextEntryCount>
+  <PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>Окно тишины разговора (тики)</PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>
+  <PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>Строк чата, делающих разговор важным</PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>
+  <PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>Записей разговоров на поселенца в день</PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>
+  <PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>Записей разговоров на колонию в день</PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>
+  <PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>Мин. промежуток на пару (тики)</PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>
+  <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Цитируемых строк чата на запись</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
+
+  <!-- Текст, вставляемый в подсказки RimTalk (уровень 1) -->
+  <PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>свежие записи дневника:</PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>
+  <PawnDiaryRimTalkBridge.Prompt.MemoryLine>— {0} ({1}): {2}</PawnDiaryRimTalkBridge.Prompt.MemoryLine>
+  <PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>голос дневника: {0}</PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>
+  <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Свежие записи дневника этого поселенца и, при желании, строка о голосе его дневника.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
+
+  <!-- Голос дневника по характеру (уровень B) -->
+  <PawnDiaryRimTalkBridge.Persona.VoiceRule>голос, выточенный его характером: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
+
+  <!-- Записи важных разговоров (уровень 2) -->
+  <PawnDiaryRimTalkBridge.Event.ConversationLabel>заметный разговор</PawnDiaryRimTalkBridge.Event.ConversationLabel>
+  <PawnDiaryRimTalkBridge.Event.ConversationSummary>Разговор с {0} — реплик: {1}.</PawnDiaryRimTalkBridge.Event.ConversationSummary>
+  <PawnDiaryRimTalkBridge.Event.ConversationInstruction>Напиши, что этот разговор всколыхнул или изменил в пишущем — чувство и послевкусие, а не пересказ.</PawnDiaryRimTalkBridge.Event.ConversationInstruction>
+  <PawnDiaryRimTalkBridge.Event.SomeonePartner>кое с кем</PawnDiaryRimTalkBridge.Event.SomeonePartner>
+
+</LanguageData>

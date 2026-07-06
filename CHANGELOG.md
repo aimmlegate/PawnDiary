@@ -6,6 +6,34 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-07
+
+- **RimTalk bridge implemented (Steps 2–8).** Turned the reset scaffold into the real two-way bridge
+  between Pawn Diary and RimTalk (`design/RIMTALK_BRIDGE_PLAN.md`), shipped as the separate
+  `PawnDiary: RimTalk bridge` adapter mod. No new core C#/API members were needed — the bridge is
+  built entirely on public API v1.
+  - **Settings + level gating.** New `PawnDiaryRimTalkBridgeMod`/`Settings` with an integration-level
+    dropdown (Off / Shared context / + Conversations), advanced toggles, and numeric throttle knobs.
+    Frozen Scribe keys; the legacy `enabled` key migrates to developer chat logging.
+  - **Level 1 shared context.** `DiaryContextInjector` injects a cached recent-diary-memories section
+    into RimTalk prompts (`InjectPawnSection` on `Pawn.Thoughts` + a `{{pawn1.diary}}` variable);
+    `PersonaSync` surfaces the RimTalk persona to Pawn Diary as a `chat_persona=` context line.
+  - **Persona sync tiers.** Tier A (mutual awareness) ships at level 1; Tier B (experimental,
+    off) derives a persona-led diary writing-style override and clears it on toggle-off.
+  - **Level 2 conversations.** `RimTalkCreateInteractionPatch` + `ConversationTracker` group displayed
+    chat into conversations; `ImportancePolicy`/`ThrottlePolicy` keep only standout, rate-limited ones
+    and submit them via `SubmitPromptEntry` under the new `rimtalkbridgeConversation` External group
+    (`rimtalkbridge_conversation` event key). Ordinary chatter stays in the core `rimtalk_chatter`
+    ambient group.
+  - **Engine mode (advanced, off).** `RimTalkEngineClient` can route a conversation entry through
+    RimTalk's own AI (`PreviewPrompt` → `AIService.Query<DiaryTextPayload>` → `SubmitDirectEntry`),
+    falling back to the normal path on any failure.
+  - **Tests + docs.** Added `tests/RimTalkBridgeLogicTests` (60 assertions over the pure logic),
+    English + natively-drafted Russian localization (RU flagged for a native pass), rewrote
+    `About.xml`/`integrations/README.md`, updated `DOCUMENTATION.md`, and queued the GEN-1 capability
+    in `design/EXTERNAL_API_CAPABILITIES.md`. RimTalk-typed code is isolated behind a `cj.rimtalk`
+    guard + `[NoInlining]` so a missing RimTalk stays inert.
+
 ## 2026-07-06
 
 - **RimTalk ambient compat group added.** Added `1.6/Defs/Compat/DiaryCompat_RimTalk.xml` with
@@ -22,6 +50,10 @@ pre-release version ladder for project history.
   `PawnDiaryRimTalkBridgeApi` facade. The bridge currently has no active RimTalk listener or settings
   UI; `design/RIMTALK_BRIDGE_PLAN.md` is updated to treat this as the new baseline for the full
   implementation.
+
+- **Release 0.3.1 prepared.** Built the DLL, generated the `0.3.1` Release payloads for the main
+  mod and split Russian localization, and force-refreshed both RimWorld Mods-folder junctions. No
+  runtime behavior change.
 
 - **Advanced tab: removed dead duplicate tuning rows.** The thought, ambient-thought,
   thought-progression, pawn-progression, and work knobs appeared twice on the Advanced settings tab:
