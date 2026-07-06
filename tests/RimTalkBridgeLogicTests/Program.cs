@@ -52,6 +52,7 @@ namespace RimTalkBridgeLogicTests
             // ConversationContext
             TestContext_ExtraContextShape();
             TestContext_TranscriptLineCap();
+            TestContext_TranscriptLineCapZeroSuppresses();
             TestContext_DominantKindTieFirstSeen();
 
             Console.WriteLine("==================================================");
@@ -376,6 +377,24 @@ namespace RimTalkBridgeLogicTests
             // 2 header lines + at most 2 quoted lines.
             Assert(ctx.Count == 4, "transcript capped to 2 quoted lines; got " + ctx.Count);
             Assert(ctx[3] == "said_2=bob: two", "second quote is the last; got " + ctx[3]);
+        }
+
+        private static void TestContext_TranscriptLineCapZeroSuppresses()
+        {
+            Conversation c = Conv(
+                LineText("alice", "bob", BridgeTalkKind.Chitchat, "one"),
+                LineText("bob", "alice", BridgeTalkKind.Chitchat, "two"),
+                LineText("alice", "bob", BridgeTalkKind.Chitchat, "three"));
+
+            // cap = 0 means "no transcript": only the two summary headers (talk_type, exchanges).
+            List<string> ctx0 = ConversationContext.BuildExtraContext(c, 0);
+            Assert(ctx0.Count == 2, "cap 0 emits only the 2 headers; got " + ctx0.Count);
+            Assert(ctx0[0] == "talk_type=chitchat", "header still present at cap 0; got " + ctx0[0]);
+            Assert(ctx0[1] == "exchanges=3", "exchange count still present at cap 0; got " + ctx0[1]);
+
+            // Negative cap behaves the same as 0 (defensive: treat <= 0 as "none").
+            List<string> ctxNeg = ConversationContext.BuildExtraContext(c, -1);
+            Assert(ctxNeg.Count == 2, "cap -1 emits only the 2 headers; got " + ctxNeg.Count);
         }
 
         private static void TestContext_DominantKindTieFirstSeen()

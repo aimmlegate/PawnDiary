@@ -20,6 +20,9 @@ namespace PawnDiaryRimTalkBridge
         /// <summary>
         /// Builds context lines: the dominant talk kind, the exchange count, then up to
         /// <paramref name="transcriptLineCap"/> quoted lines "said_N=&lt;speaker&gt;: &lt;text&gt;".
+        /// A cap of 0 or less means "no transcript": the two summary headers (talk_type, exchanges) are
+        /// still emitted, but no quoted lines. This matches the sibling `contextEntryCount &lt;= 0`
+        /// convention (0 = none), so both knobs treat 0 the same way.
         /// </summary>
         public static List<string> BuildExtraContext(Conversation conversation, int transcriptLineCap)
         {
@@ -32,10 +35,16 @@ namespace PawnDiaryRimTalkBridge
             context.Add("talk_type=" + DominantKind(conversation).ToString().ToLowerInvariant());
             context.Add("exchanges=" + conversation.Lines.Count);
 
+            // cap <= 0: suppress the transcript entirely (caller asked for no quoted lines).
+            if (transcriptLineCap <= 0)
+            {
+                return context;
+            }
+
             int quoted = 0;
             for (int i = 0; i < conversation.Lines.Count; i++)
             {
-                if (transcriptLineCap > 0 && quoted >= transcriptLineCap)
+                if (quoted >= transcriptLineCap)
                 {
                     break;
                 }

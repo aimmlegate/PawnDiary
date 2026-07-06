@@ -6,6 +6,61 @@ Companion: [DOCUMENTATION.md](DOCUMENTATION.md) describes the current state. The
 contract starts at `PawnDiaryApi.ApiVersion == 1`; older entries below preserve the internal
 pre-release version ladder for project history.
 
+## 2026-07-07 (adversarial-review fixes)
+
+Addressing findings from an adversarial review of the RimTalk bridge (PR #62). Each fix is shipped
+separately and built.
+
+- **H2 — Engine-mode queries now time out instead of orphaning entries.** `RimTalkEngineClient` raced
+  the `AIService.Query` task against a 120 s `Task.Delay`. A stalled provider now enqueues a failing
+  `EngineResult`, which the main-thread drain turns into the normal-path wrapped submit — closing the
+  hole in the "a conversation is never lost" guarantee. (`RimTalkEngineClient.cs`)
+- **H3 — Engine success now also generates the partner's POV.** Previously an engine-FAILURE produced
+  a pairwise event (both participants) while an engine-SUCCESS produced only the subject's direct
+  entry — so a successful query yielded *fewer* diary entries than a failed one. On engine success the
+  bridge now additionally submits the partner through the normal `SubmitPromptEntry` path (with a
+  distinct `|partner` dedup key), so both paths write both participants. (`RimTalkEngineClient.cs`)
+- **M1 — Tier B override cleanup no longer leaks on non-spawned pawns.** `ResetAllOverrides` and
+  `ResetForNewGame` previously walked only `AllMaps_FreeColonistsSpawned`, so an override placed on a
+  pawn that later went downed / joined a caravan / entered cryptosleep / left the map survived
+  toggle-off and even a colony switch. They now walk `AllMapsCaravansAndTravellingTransporters_Alive_
+  FreeColonists` plus world pawns (deduplicated by load id). `ResetForNewGame` also clears overrides
+  before its bookkeeping, fixing the cross-colony leak. (`PersonaSync.cs`)
+- **M2 — Engine results re-check pawn liveness before submitting.** A background `AIService.Query`
+  captures the subject/partner `Pawn` references; by drain time (possibly after a save/load) either
+  may be despawned or destroyed. `DrainResults` now re-validates `subject.Spawned` on the success path
+  and falls back to the normal wrapped submit when it fails (which re-validates eligibility itself).
+  `SubmitPartnerPov` already guarded both pawns. (`RimTalkEngineClient.cs`)
+- **M3 — Registration calls isolated in the mod constructor.** `DiaryContextInjector.RegisterAll()`
+  and `PersonaSync.RegisterContextProvider()` are now each wrapped in try/catch, matching the
+  existing `PatchAll` isolation. A future PawnDiary/RimTalk API rename now degrades to "that one hook
+  disabled" instead of throwing out of the constructor and taking down the settings UI.
+  (`PawnDiaryRimTalkBridgeMod.cs`)
+- **M4 — Core `PawnDiary.dll` delta verified harmless.** The +512 B core DLL change in the bridge
+  reset commit (`74e09fc1`) touched no core `Source/` files, which looked like an unreviewed change.
+  A clean rebuild of `main`'s source produces a byte-identical DLL (same size, same md5), so the
+  committed DLL already matches source — the delta was just a rebuild-to-match-source, not a hidden
+  C# change. No action beyond this confirmation.
+- **M5 — `transcriptLineCap = 0` now suppresses the transcript.** Previously a cap of 0 disabled the
+  limit and quoted every line (the `> 0` guard was inverted relative to its intent), so a player
+  asking for "no quoted chat lines" got the maximum. `BuildExtraContext` now treats `<= 0` as "no
+  transcript" (only the `talk_type`/`exchanges` headers emit), matching the sibling
+  `contextEntryCount <= 0` convention. Added `cap=0` and `cap=-1` coverage; pure suite now 64/64.
+  (`ConversationContext.cs`, `tests/RimTalkBridgeLogicTests/Program.cs`)
+- **M6 — Level-1 cache refresh TTL decoupled from the conversation quiet window.** The cache TTL
+  reused `conversationQuietTicks`, so lowering that knob (to flush chat faster) silently dropped the
+  refresh TTL to as low as 250 ticks and forced `GetContextSnapshot`/`GetWritingStyle` to run for
+  every colonist every pass. The TTL now has its own floor (`ContextRefreshTtlFloorTicks = 2500`);
+  the quiet window may still raise it, but never below the floor. A status listener already
+  invalidates on entry changes, so unchanged pawns are the only thing affected by the floor.
+  (`RimTalkBridgeGameComponent.cs`)
+- **L9 — `FinalizeInit` comment no longer misleading.** Said "schedule the first pass one interval
+  out" but `lastPassTick = 0` fires the pass on the next tick; rewrote the comment to match.
+  (`RimTalkBridgeGameComponent.cs`)
+- **H1 remains open.** The Level-1 outbound mechanism (`InjectPawnSection`) may not render if RimTalk's
+  configured preset does not iterate injected sections. This needs in-game verification (U1) and the
+  `RegisterPawnHook(Append)` fallback is queued for after that spike; no behavioral change yet.
+
 ## 2026-07-07
 
 - **RimTalk bridge implemented (Steps 2–8).** Turned the reset scaffold into the real two-way bridge

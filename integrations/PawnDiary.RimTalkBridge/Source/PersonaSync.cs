@@ -88,12 +88,15 @@ namespace PawnDiaryRimTalkBridge
         }
 
         /// <summary>
-        /// Clears the bridge's writing-style overrides from all live colonists and forgets our
-        /// bookkeeping. Called on toggle-off and on new-game reset.
+        /// Clears the bridge's writing-style overrides from every pawn we may have touched, and forgets
+        /// our bookkeeping. Called on toggle-off and on new-game reset. Walks a broad pawn set — not
+        /// just spawned free colonists — so an override placed on a pawn that later went downed, joined
+        /// a caravan, entered cryptosleep, or left the map is still cleared. PawnDiary refuses to clear
+        /// another source's override, so touching untouched pawns is a safe no-op.
         /// </summary>
         public static void ResetAllOverrides()
         {
-            foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
+            foreach (Pawn pawn in TouchedPawns())
             {
                 PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
             }
@@ -102,13 +105,46 @@ namespace PawnDiaryRimTalkBridge
         }
 
         /// <summary>
-        /// Forgets in-memory bookkeeping on load. Overrides themselves are re-applied idempotently by
-        /// the next Tier B pass, so no live reset is needed here (statics-leak gotcha, SKILL.md).
+        /// Clears overrides AND bookkeeping on load. Overrides placed in a previous colony are owned by
+        /// PawnDiary's per-pawn saved state; clearing them here (against the broad pawn set) prevents a
+        /// stale bridge voice from surviving a colony switch when Tier B was on at save time.
         /// </summary>
         public static void ResetForNewGame()
         {
+            // Clear overrides BEFORE wiping the bookkeeping: TouchedPawns() reads AppliedPersonaHash to
+            // resolve pawns we tracked. Order matters here.
+            foreach (Pawn pawn in TouchedPawns())
+            {
+                PawnDiaryApi.ResetWritingStyleOverride(pawn, BridgeIds.ModId);
+            }
+
             AppliedPersonaHash.Clear();
             tierBWasActive = false;
+        }
+
+        // Every pawn the bridge may have given a Tier B override: spawned free colonists, caravans and
+        // traveling transport pods, plus world pawns (covers downed/caravan/cryptosleep/departed).
+        // Deduplicated by load id so a pawn present in two sources is reset once.
+        private static IEnumerable<Pawn> TouchedPawns()
+        {
+            HashSet<string> seen = new HashSet<string>();
+            foreach (Pawn pawn in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists)
+            {
+                if (pawn != null && seen.Add(pawn.GetUniqueLoadID()))
+                {
+                    yield return pawn;
+                }
+            }
+            if (Find.WorldPawns != null)
+            {
+                foreach (Pawn pawn in Find.WorldPawns.AllPawnsAlive)
+                {
+                    if (pawn != null && seen.Add(pawn.GetUniqueLoadID()))
+                    {
+                        yield return pawn;
+                    }
+                }
+            }
         }
 
         /// <summary>Applies or refreshes one pawn's Tier B override. Main thread. Names RimTalk types.</summary>

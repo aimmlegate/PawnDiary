@@ -24,6 +24,14 @@ namespace PawnDiaryRimTalkBridge
         // idempotent, so a coarse cadence keeps overhead off the per-frame path (performance gotcha).
         private const int PassIntervalTicks = 250;
 
+        // Minimum TTL for the Level-1 diary-section cache refresh. A status listener already
+        // invalidates the cache immediately when an entry changes, so this TTL only bounds how often
+        // UNCHANGED pawns get re-read. It must NOT be coupled to conversationQuietTicks: that knob is
+        // about chat flush latency and can be lowered to 250, which would otherwise force
+        // GetContextSnapshot + GetWritingStyle to run for every colonist on every pass. This floor
+        // keeps the refresh cost bounded regardless of the conversation setting (performance gotcha).
+        private const int ContextRefreshTtlFloorTicks = 2500;
+
         // Last tick the pass ran. Compared by elapsed time (now - last), never TicksGame % N, so a dev
         // time-skip or save/load cannot desync the cadence (SKILL.md "Persistence & ticking").
         private int lastPassTick;
@@ -44,7 +52,8 @@ namespace PawnDiaryRimTalkBridge
             PersonaSync.ResetForNewGame();
             ConversationTracker.ResetForNewGame();
             RimTalkEngineClient.ResetForNewGame();
-            // Schedule the first pass one interval out so load settles before we touch pawns.
+            // The next GameComponentTick fires the first pass immediately (now - 0 >= interval for any
+            // loaded game's TicksGame), which is fine — the caches were just cleared above.
             lastPassTick = 0;
         }
 
@@ -77,7 +86,9 @@ namespace PawnDiaryRimTalkBridge
 
         /// <summary>
         /// Level 1: rebuild the RimTalk diary section for colonists whose cache is stale or expired.
-        /// The TTL reuses the conversation quiet window as a convenient "how fresh is fresh enough" knob.
+        /// The TTL is floored at <see cref="ContextRefreshTtlFloorTicks"/> so lowering the conversation
+        /// quiet window (a chat-flush latency knob) cannot accidentally turn this into a per-pass
+        /// snapshot storm. A status listener still invalidates the cache immediately on entry changes.
         /// </summary>
         private void RefreshContextCaches(int now)
         {
@@ -86,8 +97,11 @@ namespace PawnDiaryRimTalkBridge
                 return;
             }
 
+            // The quiet-ticks value is allowed to raise the TTL (a slower chat flush implies "fresh
+            // enough" can be coarser too), but never to lower it below the floor.
             PawnDiaryRimTalkBridgeSettings settings = PawnDiaryRimTalkBridgeMod.Settings;
-            int ttl = settings != null ? settings.conversationQuietTicks : 2500;
+            int quietTicks = settings != null ? settings.conversationQuietTicks : ContextRefreshTtlFloorTicks;
+            int ttl = quietTicks > ContextRefreshTtlFloorTicks ? quietTicks : ContextRefreshTtlFloorTicks;
 
             foreach (Pawn pawn in PawnsFinder.AllMaps_FreeColonistsSpawned)
             {
