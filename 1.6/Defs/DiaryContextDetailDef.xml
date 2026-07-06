@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Prompt context-detail budgets for the Balanced and Compact presets. Full is unbudgeted (it keeps
+  the original prompt shape). These are character budgets: after the always-kept core facts, the
+  selector fills the remaining budget with the highest-scoring optional fields and cuts the rest.
+
+  Edit values and restart the game to retune how aggressively Balanced/Compact trim context, without
+  recompiling. Every value here matches the code fallback, so deleting this file or omitting a field
+  keeps the same behavior. A non-positive value falls back to the built-in default.
+-->
+<Defs>
+
+  <PawnDiary.DiaryContextDetailDef>
+    <defName>Diary_ContextDetail</defName>
+
+    <!-- Standard interaction / solo entries -->
+    <balancedDefaultBudget>1400</balancedDefaultBudget>
+    <compactDefaultBudget>750</compactDefaultBudget>
+
+    <!-- Day / quadrum / arc reflections (longer, so a larger budget) -->
+    <balancedReflectionBudget>1900</balancedReflectionBudget>
+    <compactReflectionBudget>1150</compactReflectionBudget>
+
+    <!-- Neutral death / arrival descriptions -->
+    <balancedNeutralBudget>1250</balancedNeutralBudget>
+    <compactNeutralBudget>850</compactNeutralBudget>
+  </PawnDiary.DiaryContextDetailDef>
+
+</Defs>

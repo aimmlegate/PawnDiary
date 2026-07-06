@@ -1308,6 +1308,7 @@
   <!-- Per-pawn Writing Style editor (Diary tab). Player-facing; keep localization-friendly. -->
   <PawnDiary.Tab.WritingStyle>Writing style: {0}</PawnDiary.Tab.WritingStyle>
   <PawnDiary.Tab.WritingStyleTip>Open this pawn's writing-style editor to choose the base style, write a pawn-specific prompt, or see why a temporary override is active.</PawnDiary.Tab.WritingStyleTip>
+  <PawnDiary.Tab.WritingStyleUnavailable>Writing style is available once this colonist is old enough to keep a diary.</PawnDiary.Tab.WritingStyleUnavailable>
   <PawnDiary.WritingStyle.EditorTitle>{0} - Writing Style</PawnDiary.WritingStyle.EditorTitle>
   <PawnDiary.WritingStyle.BaseStyle>Base style: {0}</PawnDiary.WritingStyle.BaseStyle>
   <PawnDiary.WritingStyle.BasePrompt>Base prompt</PawnDiary.WritingStyle.BasePrompt>
@@ -1325,5 +1326,6 @@
   <PawnDiary.WritingStyle.ExternalSourceLabel>external integration</PawnDiary.WritingStyle.ExternalSourceLabel>
   <PawnDiary.WritingStyle.Saved>Writing style saved.</PawnDiary.WritingStyle.Saved>
   <PawnDiary.WritingStyle.Reset>Custom prompt cleared.</PawnDiary.WritingStyle.Reset>
+  <PawnDiary.WritingStyle.SaveFailed>This pawn can no longer keep a diary, so the writing style was not saved.</PawnDiary.WritingStyle.SaveFailed>
 
 </LanguageData>

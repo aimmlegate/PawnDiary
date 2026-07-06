@@ -62,18 +62,31 @@ namespace PawnDiary
     }
 
     /// <summary>
+    /// Character budgets for the Balanced/Compact presets, split by prompt family (standard entry,
+    /// reflection, and neutral death/arrival). Pure data with code-default values; the impure
+    /// <c>ContextDetailPolicy</c> supplies XML-tuned overrides. Full is unbudgeted and not stored here.
+    /// Keeping the numbers here (rather than as C# consts) lets them be retuned from XML per AGENTS.md.
+    /// </summary>
+    internal sealed class PromptContextBudgets
+    {
+        public int balancedDefault = 1400;
+        public int compactDefault = 750;
+        public int balancedReflection = 1900;
+        public int compactReflection = 1150;
+        public int balancedNeutral = 1250;
+        public int compactNeutral = 850;
+
+        /// <summary>Built-in defaults, used whenever no XML-backed budgets are injected.</summary>
+        public static readonly PromptContextBudgets Defaults = new PromptContextBudgets();
+    }
+
+    /// <summary>
     /// Deterministic budgeted selector for prompt fields. It never summarizes or rewrites values; it
     /// only keeps or drops complete fields so the saved prompt is easy to audit.
     /// </summary>
     internal static class PromptContextSelector
     {
         private const int FullBudget = int.MaxValue;
-        private const int BalancedDefaultBudget = 1400;
-        private const int CompactDefaultBudget = 750;
-        private const int BalancedReflectionBudget = 1900;
-        private const int CompactReflectionBudget = 1150;
-        private const int BalancedNeutralBudget = 1250;
-        private const int CompactNeutralBudget = 850;
 
         private sealed class Candidate
         {
@@ -96,13 +109,14 @@ namespace PawnDiary
             PromptValues values,
             string domain,
             string gameContext,
-            PromptContextDetailLevel level)
+            PromptContextDetailLevel level,
+            PromptContextBudgets budgets = null)
         {
             PromptContextDetailLevel normalizedLevel = Normalize(level);
             List<Candidate> candidates = BuildCandidates(templateKey, fields, values, domain, gameContext, normalizedLevel);
             PromptContextSelectionResult result = new PromptContextSelectionResult();
             result.report.level = normalizedLevel;
-            result.report.budgetChars = BudgetFor(templateKey, normalizedLevel);
+            result.report.budgetChars = BudgetFor(templateKey, normalizedLevel, budgets);
             result.report.inputChars = TotalChars(candidates);
 
             if (normalizedLevel == PromptContextDetailLevel.Full)
@@ -492,13 +506,14 @@ namespace PawnDiary
             };
         }
 
-        private static int BudgetFor(string templateKey, PromptContextDetailLevel level)
+        private static int BudgetFor(string templateKey, PromptContextDetailLevel level, PromptContextBudgets budgets)
         {
             if (level == PromptContextDetailLevel.Full)
             {
                 return FullBudget;
             }
 
+            PromptContextBudgets b = budgets ?? PromptContextBudgets.Defaults;
             bool reflection = Eq(templateKey, DiaryPipelineTemplates.SoloDayReflection)
                 || Eq(templateKey, DiaryPipelineTemplates.SoloQuadrumReflection)
                 || Eq(templateKey, DiaryPipelineTemplates.SoloArcReflection);
@@ -506,10 +521,10 @@ namespace PawnDiary
                 || Eq(templateKey, DiaryPipelineTemplates.ArrivalDescription);
             if (level == PromptContextDetailLevel.Balanced)
             {
-                return reflection ? BalancedReflectionBudget : neutral ? BalancedNeutralBudget : BalancedDefaultBudget;
+                return reflection ? b.balancedReflection : neutral ? b.balancedNeutral : b.balancedDefault;
             }
 
-            return reflection ? CompactReflectionBudget : neutral ? CompactNeutralBudget : CompactDefaultBudget;
+            return reflection ? b.compactReflection : neutral ? b.compactNeutral : b.compactDefault;
         }
 
         private static int TotalChars(List<Candidate> candidates)
@@ -546,8 +561,10 @@ namespace PawnDiary
                 return false;
             }
 
+            // Match PromptAssembler.AppendField exactly (ordinal, case-sensitive) so Full stays a
+            // faithful pass-through: a value that the renderer would keep must never be dropped here.
             string trimmed = value.Trim();
-            return !Eq(trimmed, "none") && !Eq(trimmed, "n/a") && !Eq(trimmed, "unknown");
+            return trimmed != "none" && trimmed != "n/a" && trimmed != "unknown";
         }
 
         private static string Preview(string value)

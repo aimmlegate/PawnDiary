@@ -33,7 +33,8 @@ namespace PawnDiary
                 values,
                 payload.domain,
                 payload.gameContext,
-                request.contextDetailLevel);
+                request.contextDetailLevel,
+                request.contextBudgets);
 
             string userPrompt = PromptAssembler.RenderUserPrompt(
                 ToAssemblerFields(contextSelection.fields),

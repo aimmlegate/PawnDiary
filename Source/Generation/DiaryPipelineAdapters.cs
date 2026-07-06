@@ -45,6 +45,9 @@ namespace PawnDiary
                 entryText = entryText,
                 directSpeechInstruction = titleRequest ? string.Empty : DirectSpeechInstructionFor(diaryEvent, normalizedRole),
                 contextDetailLevel = PromptContextSelector.Normalize(contextDetailLevel),
+                // Snapshot the XML-tuned budgets on the main thread (DefDatabase read); the pure planner
+                // and off-thread worker only ever see the resulting plain data.
+                contextBudgets = ContextDetailPolicy.Budgets(),
                 maxTokens = maxTokens
             };
         }

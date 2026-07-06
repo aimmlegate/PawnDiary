@@ -220,6 +220,8 @@ namespace PawnDiary
         public string entryText;
         public string directSpeechInstruction;
         public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
+        // Optional XML-backed Balanced/Compact budgets; null makes the selector use its code defaults.
+        public PromptContextBudgets contextBudgets;
         public int maxTokens;
     }
 

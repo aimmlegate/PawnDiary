@@ -312,6 +312,15 @@ namespace PawnDiary
         /// </summary>
         private void DrawWritingStyleRow(Rect rect, Pawn pawn, DiaryGameComponent component)
         {
+            // The Diary tab is visible for any humanlike colonist — including children and corpses —
+            // but only diary-eligible pawns can actually store a style (SetPersona/SetCustomWritingStyleRule
+            // require it). Gate the editable row to match, so the editor never opens just to fail on Save.
+            if (!DiaryGameComponent.IsDiaryEligible(pawn))
+            {
+                DrawWritingStyleUnavailable(rect);
+                return;
+            }
+
             WritingStyleResolution resolution = component.ResolveWritingStyleFor(pawn);
 
             string buttonLabel = "PawnDiary.Tab.WritingStyle".Translate(WritingStyleLabel(resolution));
@@ -319,7 +328,11 @@ namespace PawnDiary
             Rect buttonRect = new Rect(rect.x, rect.y, buttonWidth, rect.height);
             if (Widgets.ButtonText(buttonRect, buttonLabel))
             {
-                Find.WindowStack.Add(new Dialog_PawnWritingStyle(pawn, component));
+                // Don't open a second editor for the same pawn; a concurrent Save would clobber this one.
+                if (!Find.WindowStack.Windows.OfType<Dialog_PawnWritingStyle>().Any(w => w.IsFor(pawn)))
+                {
+                    Find.WindowStack.Add(new Dialog_PawnWritingStyle(pawn, component));
+                }
             }
 
             TooltipHandler.TipRegion(buttonRect, "PawnDiary.Tab.WritingStyleTip".Translate());
@@ -331,6 +344,21 @@ namespace PawnDiary
                 Mathf.Max(0f, rect.width - buttonWidth - WritingStyleStatusLeftGap),
                 rect.height);
             DrawWritingStyleStatus(statusRect, resolution);
+        }
+
+        /// <summary>
+        /// Draws a muted "writing style unavailable" hint for pawns the Diary tab shows but that are
+        /// not diary-eligible (children, corpses), so no editable button is offered for them.
+        /// </summary>
+        private static void DrawWritingStyleUnavailable(Rect rect)
+        {
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UiStyle.quietTextColor.ToColor(Color.gray);
+            Widgets.Label(rect, "PawnDiary.Tab.WritingStyleUnavailable".Translate());
+            Text.Anchor = oldAnchor;
+            GUI.color = oldColor;
         }
 
         /// <summary>
@@ -374,12 +402,6 @@ namespace PawnDiary
             if (resolution.source == WritingStyleRuleSource.ExternalApiOverride
                 || resolution.source == WritingStyleRuleSource.HediffOverride)
             {
-                status = "PawnDiary.WritingStyle.OverrideActive".Translate();
-            }
-            else if (WritingStyleResolutionPolicy.CustomSuppressedByOverride(resolution))
-            {
-                // Custom exists but is shadowed by an override (handled above as OverrideActive, but
-                // kept defensively in case the source enum expands).
                 status = "PawnDiary.WritingStyle.OverrideActive".Translate();
             }
             else if (!string.IsNullOrWhiteSpace(resolution.customRule))

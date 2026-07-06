@@ -371,6 +371,14 @@ title follow-ups, and storage. Ordinary external requests can also provide `prom
 `promptEnchantmentCandidates`, and `replacePromptEnchantments`; those fields are cleaned, capped, and
 protected from `extraContext` spoofing.
 
+The preview snapshot additionally reports `contextDetailLevel` (the effective global preset) and a
+`contextPresets` list — one `DiaryPromptContextPresetPreview` per preset (Full/Balanced/Compact) with
+that preset's `budgetChars`, assembled prompt text, and `keptFields`/`cutFields` diagnostics. The
+per-field `reason` strings are fixed-English diagnostic tokens (like the `event:`/`sex=` sentinels),
+not localized text: they explain why a field was kept or cut for tooling, not for player display.
+Balanced/Compact budgets come from `DiaryContextDetailDef` (`Diary_ContextDetail`), so they can be
+retuned in XML; Full is unbudgeted and preserves the original prompt shape.
+
 `integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
 separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
 Pawn Diary, RimTalk, and Harmony. When its single setting is enabled, it patches RimTalk's accepted

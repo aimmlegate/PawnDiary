@@ -15,6 +15,12 @@ namespace PawnDiary
         public const int DefaultMaxLocalizedSentences = 2;
 
         private static readonly Regex RichTextTagRegex = new Regex("<.*?>");
+        // Player-authored free-form prompt text may legitimately contain angle brackets, e.g.
+        // "write <short> sentences" or "keep it < 3 lines". The one-line path strips any "<...>" run
+        // because it cleans controlled localized guidance, but the multiline player path must strip
+        // ONLY known Unity/RimWorld rich-text tags so it never eats real instructions.
+        private static readonly Regex KnownRichTextTagRegex = new Regex(
+            "</?(?:b|i|size|color|material|quad)\\b[^>]*>", RegexOptions.IgnoreCase);
         private static readonly Regex WhitespaceRegex = new Regex("\\s+");
 
         /// <summary>
@@ -52,7 +58,7 @@ namespace PawnDiary
                 return string.Empty;
             }
 
-            string withoutTags = RichTextTagRegex.Replace(value, string.Empty);
+            string withoutTags = KnownRichTextTagRegex.Replace(value, string.Empty);
             StringBuilder builder = new StringBuilder(withoutTags.Length);
             for (int i = 0; i < withoutTags.Length; i++)
             {

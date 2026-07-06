@@ -1060,19 +1060,22 @@ namespace PawnDiary
             };
         }
 
-        internal void SetPersona(Pawn pawn, string personaDefName)
+        internal bool SetPersona(Pawn pawn, string personaDefName)
         {
             if (!IsDiaryEligible(pawn))
             {
-                return;
+                return false;
             }
 
             DiaryPersonaDef persona = DiaryPersonas.Resolve(personaDefName);
             PawnDiaryRecord diary = FindDiary(pawn, true);
-            if (diary != null)
+            if (diary == null)
             {
-                diary.personaDefName = persona.defName;
+                return false;
             }
+
+            diary.personaDefName = persona.defName;
+            return true;
         }
 
         /// <summary>
@@ -1102,13 +1105,17 @@ namespace PawnDiary
                 return false;
             }
 
-            PawnDiaryRecord diary = FindDiary(pawn, true);
+            string cleaned = PlayerWritingStyleText.CleanRule(rule);
+            // Clearing the custom prompt must not materialize a diary record for a pawn that has none
+            // yet (e.g. Reset on a pawn the player only inspected); only create when there is text.
+            PawnDiaryRecord diary = FindDiary(pawn, !string.IsNullOrEmpty(cleaned));
             if (diary == null)
             {
-                return false;
+                // No record and nothing to store: the pawn is already in the desired cleared state.
+                return string.IsNullOrEmpty(cleaned);
             }
 
-            diary.customWritingStyleRule = PlayerWritingStyleText.CleanRule(rule);
+            diary.customWritingStyleRule = cleaned;
             return true;
         }
 

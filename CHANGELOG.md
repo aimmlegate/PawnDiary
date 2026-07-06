@@ -25,7 +25,12 @@ pre-release version ladder for project history.
   > Pawn custom prompt > Base style, resolved by a new pure `WritingStyleResolutionPolicy` with full
   test coverage; generation still consumes only the final rule string. The integration API
   `GetWritingStyle` is unchanged (base saved style only). The dev-only base-style picker that used to
-  live behind `showPersonaSettings` is superseded by the new player dialog.
+  live behind `showPersonaSettings` is superseded by the new player dialog. Post-review hardening: the
+  row is hidden for pawns that cannot keep a diary (children, corpses) so Save no longer silently
+  no-ops; the editor caps custom text live with a character counter, refuses a duplicate dialog for the
+  same pawn, no longer mints an empty record on Reset, and its override-explanation panel is clamped so
+  it never overlaps the buttons. The custom-prompt sanitizer now keeps free-form angle brackets (e.g.
+  "write &lt;short&gt; sentences"), stripping only known rich-text tags.
 
 - **Prompt context detail levels.** Added global `Full` / `Balanced` / `Compact` context presets
   plus per-API-lane overrides. `Full` keeps the old prompt shape; lower presets run a pure,
@@ -33,7 +38,9 @@ pre-release version ladder for project history.
   smaller context budget on the most relevant optional fields for the event domain. The Main tab now
   includes a context-detail section showing what each preset sends and cuts. Live failover lanes
   receive their own pre-rendered prompt variant, so a
-  compact fallback model is not handed the richer primary lane prompt.
+  compact fallback model is not handed the richer primary lane prompt. The Balanced/Compact character
+  budgets live in `DiaryContextDetailDef` (`Diary_ContextDetail`) with code fallbacks, so they can be
+  retuned in XML without recompiling; `Full` remains a faithful pass-through of the original prompt.
 
 - **Example adapter preview art.** Added a developer-themed `About/Preview.png` for the example
   adapter/template Workshop payload, derived from the main Pawn Diary preview with API/template

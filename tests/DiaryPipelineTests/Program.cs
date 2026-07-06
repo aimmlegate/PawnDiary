@@ -553,6 +553,30 @@ namespace DiaryPipelineTests
             AssertTrue("compact report cut reasons are populated",
                 !string.IsNullOrWhiteSpace(compact.contextSelectionReport.cut[0].reason));
 
+            // XML-backed budgets are injected through the request; a tiny budget must cut strictly more
+            // than the default. This proves ContextDetailPolicy.Budgets() reaches the pure selector.
+            DiaryPromptPlan balancedDefaultBudget = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = combatPayload,
+                policy = Policy(combat: true, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                promptEnchantment = severeLongContext,
+                contextDetailLevel = PromptContextDetailLevel.Balanced
+            });
+            DiaryPromptPlan balancedTinyBudget = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = combatPayload,
+                policy = Policy(combat: true, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                promptEnchantment = severeLongContext,
+                contextDetailLevel = PromptContextDetailLevel.Balanced,
+                contextBudgets = new PromptContextBudgets { balancedDefault = 1 }
+            });
+            AssertTrue("injected budgets reach the selector",
+                balancedDefaultBudget.contextSelectionReport.budgetChars == 1400);
+            AssertTrue("tiny injected budget cuts more than default balanced",
+                balancedTinyBudget.contextSelectionReport.cut.Count > balancedDefaultBudget.contextSelectionReport.cut.Count);
+
             DiaryEventPayload progressionPayload = SoloPayload(
                 "e-context-progression",
                 "skill milestone",
@@ -1453,6 +1477,24 @@ namespace DiaryPipelineTests
                 "external prompt text handles sentence without terminal punctuation",
                 "One long localized label without punctuation",
                 PromptTextSanitizer.LocalizedPromptText("One long localized label without punctuation"));
+
+            // Multiline (player-authored) path: keep free-form angle brackets, strip only known tags.
+            AssertEqual(
+                "multiline keeps non-tag angle brackets",
+                "write <5> words",
+                PromptTextSanitizer.Multiline("write <5> words"));
+            AssertEqual(
+                "multiline still strips known rich-text tags",
+                "be bold",
+                PromptTextSanitizer.Multiline("be <b>bold</b>"));
+            AssertEqual(
+                "multiline preserves paragraph line breaks",
+                "line one\nline two",
+                PromptTextSanitizer.Multiline("line one\r\nline two"));
+            AssertEqual(
+                "player custom rule keeps <short> instruction",
+                "write <short> sentences",
+                PlayerWritingStyleText.CleanRule("write <short> sentences"));
         }
 
         private static void TestDiaryEntryTitleFilter()

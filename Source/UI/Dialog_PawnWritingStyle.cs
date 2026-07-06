@@ -107,6 +107,10 @@ namespace PawnDiary
             float y = inRect.y + HeaderHeight + FieldGap;
             float contentWidth = inRect.width;
 
+            // Reserve the bottom button row up front so the override panel below can be clamped to the
+            // space above it instead of ever drawing over Save/Reset/Load/Close.
+            Rect buttonRow = new Rect(inRect.x, inRect.yMax - ButtonHeight - Padding, contentWidth, ButtonHeight);
+
             // Base style picker.
             Rect pickerRect = new Rect(inRect.x, y, contentWidth, LineHeight);
             DrawBaseStylePicker(pickerRect, resolution);
@@ -119,15 +123,17 @@ namespace PawnDiary
                 BasePromptFor(pendingBaseStyleDefName),
                 ref basePromptScroll) + FieldGap;
 
-            // Editable custom prompt. The buffer is mutated in place by the text area; commit happens
-            // only on Save.
+            // Editable custom prompt. The buffer is mutated in place by the text area (capped live to
+            // MaxRuleChars); commit to the record happens only on Save. The label shows a live count.
+            string customLabel = "PawnDiary.WritingStyle.CustomPrompt".Translate().ToString()
+                + "  " + customRuleBuffer.Length + "/" + PlayerWritingStyleText.MaxRuleChars;
             y += DrawLabeledScrollText(
                 new Rect(inRect.x, y, contentWidth, PromptAreaHeight),
-                "PawnDiary.WritingStyle.CustomPrompt".Translate(),
+                customLabel,
                 customRuleBuffer,
                 ref customScroll,
                 editable: true,
-                editedText: text => customRuleBuffer = text ?? string.Empty) + FieldGap;
+                editedText: text => customRuleBuffer = ClampCustomInput(text)) + FieldGap;
 
             // Effective prompt preview (reflects the live override status, not the edited buffer).
             y += DrawLabeledScrollText(
@@ -136,12 +142,13 @@ namespace PawnDiary
                 EffectivePromptForDisplay(resolution),
                 ref effectiveScroll) + FieldGap;
 
-            // Override explanation panel (only drawn when an override is active or the custom prompt
-            // is being shadowed).
-            y += DrawOverrideExplanation(new Rect(inRect.x, y, contentWidth, 0f), resolution) + FieldGap;
+            // Override explanation panel (only when an override is active), clamped to the space left
+            // above the button row so it can never overlap the buttons.
+            float overrideAvailable = buttonRow.y - FieldGap - y;
+            DrawOverrideExplanation(new Rect(inRect.x, y, contentWidth, 0f), resolution, overrideAvailable);
 
             // Buttons anchored to the bottom of the window.
-            DrawButtons(new Rect(inRect.x, inRect.yMax - ButtonHeight - Padding, contentWidth, ButtonHeight), resolution);
+            DrawButtons(buttonRow, resolution);
         }
 
         private string Title()
@@ -238,11 +245,19 @@ namespace PawnDiary
         /// shadowed custom prompt). The panel explains *why* the effective prompt differs from the
         /// base/custom choice, using distinct text for external-API vs hediff overrides.
         /// </summary>
-        private float DrawOverrideExplanation(Rect rect, WritingStyleResolution resolution)
+        private float DrawOverrideExplanation(Rect rect, WritingStyleResolution resolution, float availableHeight)
         {
             if (resolution == null
                 || (resolution.source != WritingStyleRuleSource.ExternalApiOverride
                     && resolution.source != WritingStyleRuleSource.HediffOverride))
+            {
+                return 0f;
+            }
+
+            // Never draw past the reserved button row: cap to the space actually left above it. If
+            // there is not even room for the minimum panel, skip it (the status hint still conveys it).
+            float maxHeight = Mathf.Min(ExplanationMaxHeight, availableHeight);
+            if (maxHeight < ExplanationMinHeight)
             {
                 return 0f;
             }
@@ -271,7 +286,7 @@ namespace PawnDiary
             float height = Mathf.Clamp(
                 Text.CalcHeight(explanation, rect.width - Padding * 2f) + Padding * 2f,
                 ExplanationMinHeight,
-                ExplanationMaxHeight);
+                maxHeight);
             Rect panelRect = new Rect(rect.x, rect.y, rect.width, height);
             Widgets.DrawBoxSolid(panelRect, new Color(0.12f, 0.10f, 0.04f, 0.55f));
             Widgets.Label(panelRect.ContractedBy(Padding), explanation);
@@ -295,12 +310,23 @@ namespace PawnDiary
 
             if (Widgets.ButtonText(saveRect, "PawnDiary.WritingStyle.SaveForPawn".Translate()))
             {
-                Save();
-                Messages.Message(
-                    "PawnDiary.WritingStyle.Saved".Translate(),
-                    MessageTypeDefOf.NeutralEvent,
-                    false);
-                Close();
+                if (Save())
+                {
+                    Messages.Message(
+                        "PawnDiary.WritingStyle.Saved".Translate(),
+                        MessageTypeDefOf.NeutralEvent,
+                        false);
+                    Close();
+                }
+                else
+                {
+                    // The setters no-op for a pawn that is no longer diary-eligible (e.g. it died and
+                    // became a corpse while the dialog was open). Tell the player instead of lying.
+                    Messages.Message(
+                        "PawnDiary.WritingStyle.SaveFailed".Translate(),
+                        MessageTypeDefOf.RejectInput,
+                        false);
+                }
             }
 
             if (Widgets.ButtonText(resetRect, "PawnDiary.WritingStyle.ResetToBase".Translate()))
@@ -327,22 +353,49 @@ namespace PawnDiary
         /// Commits the in-dialog base style selection and custom prompt to the pawn's diary record.
         /// Sanitization happens inside the setters; a blank custom prompt clears the override.
         /// </summary>
-        private void Save()
+        private bool Save()
         {
             if (component == null || pawn == null)
             {
-                return;
+                return false;
             }
 
+            bool ok = true;
             if (!string.IsNullOrWhiteSpace(pendingBaseStyleDefName))
             {
-                component.SetPersona(pawn, pendingBaseStyleDefName);
+                ok &= component.SetPersona(pawn, pendingBaseStyleDefName);
             }
 
-            component.SetCustomWritingStyleRule(pawn, customRuleBuffer);
+            ok &= component.SetCustomWritingStyleRule(pawn, customRuleBuffer);
 
             // Reflect the sanitized save back into the buffer so a follow-up edit starts clean.
             customRuleBuffer = component.CustomWritingStyleRuleFor(pawn);
+            return ok;
+        }
+
+        /// <summary>
+        /// Caps live editor input to <see cref="PlayerWritingStyleText.MaxRuleChars"/> without splitting
+        /// a UTF-16 surrogate pair, so a large paste cannot balloon the buffer (nor the per-repaint
+        /// sanitizer that runs over it). Final sanitization still happens on Save.
+        /// </summary>
+        private static string ClampCustomInput(string text)
+        {
+            string next = text ?? string.Empty;
+            if (next.Length > PlayerWritingStyleText.MaxRuleChars)
+            {
+                next = TextTruncation.SafePrefix(next, PlayerWritingStyleText.MaxRuleChars);
+            }
+
+            return next;
+        }
+
+        /// <summary>
+        /// True when this dialog is editing <paramref name="candidate"/>. The Diary tab checks this
+        /// before opening a second editor for the same pawn, whose Save would clobber the first.
+        /// </summary>
+        internal bool IsFor(Pawn candidate)
+        {
+            return candidate != null && candidate == pawn;
         }
 
         /// <summary>
