@@ -808,8 +808,8 @@ reasoning-style lines, or terminal periods are treated as unusable model output.
 
 ## 7. Settings And UI
 
-The settings window is split into **Main**, **Prompts**, **Styles**, and **Advanced** tabs. Main
-covers API lanes, routing mode, prompt context detail, request tuning, title generation,
+The settings window is split into **Main**, **Prompts**, **Styles**, **Events**, and **Advanced** tabs. Main
+covers API lanes, routing mode, request tuning, a dedicated prompt context detail section, title generation,
 atmospheric formatting, prompt enchantments, the "Show experimental XML override pages" switch, one
 shared random-generation weight for optional chance-gated pages, and diary-event retention caps. Dev mode
 exposes prompt-test mode and extra diagnostics in settings; bulk export
@@ -819,12 +819,18 @@ save-data folder, and copies the generated file path to the clipboard.
 Connection rows use a fixed label column and shared right-side action-button columns so endpoint,
 model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned across localized UI
 text.
-The global prompt context detail setting defaults to `Full`. Each API lane can inherit that setting
-or force its own `Full`, `Balanced`, or `Compact` level, so a small fallback/local model can receive a
-shorter prompt without changing richer primary lanes. Live generation first builds the full plan only
-to resolve prompt routing and forced-model hints, then pre-renders prompt variants for the selected
-primary lane and its failover lanes at each lane's effective detail level. Retry within one lane
-reuses that lane's variant; failover switches to the next lane's pre-rendered variant.
+The global prompt context detail setting defaults to `Full` and is shown in its own section at the
+bottom of the Main tab. The `Full`, `Balanced`, and `Compact` rows are the selector: clicking a row
+changes the shared setting. The section starts with a "never cut" line for core event text, point of
+view, role names, required instructions, output rules, and safe wrapped external prompts, then shows
+an illustrative "sent vs cut first" display for the presets. The display is not a live prompt
+preview; it explains the selector's shape so players can see which kinds of facts lower presets keep
+and trim. Each API lane can inherit the global setting or force its own `Full`, `Balanced`, or
+`Compact` level, so a small fallback/local model can receive a shorter prompt without changing
+richer primary lanes. Live generation first builds the full plan only to resolve prompt routing and
+forced-model hints, then pre-renders prompt variants for the selected primary lane and its failover
+lanes at each lane's effective detail level. Retry within one lane reuses that lane's variant;
+failover switches to the next lane's pre-rendered variant.
 
 ```mermaid
 flowchart LR
@@ -856,13 +862,9 @@ stays blank so Shared/event prompts remains the only place that displays shared 
 Prompt-policy fields backed by XML translation keys are also literal override boxes only: blank means
 the XML/Keyed default is still used at generation time, while node settings never expose the raw key
 fields or copy their resolved text into editable overrides.
-The Prompts tab also has a context-detail preview drawer. It renders one synthetic high-context
-example through `Full`, `Balanced`, and `Compact`, shows approximate character/token counts, and
-lists the fields cut by each lower preset with selector reasons so players can see the tradeoff
-before changing global or per-lane settings.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
-Advanced starts with automatic event filters. Each visible `DiaryInteractionGroupDef` can be
+Events is the home for automatic event filters. Each visible `DiaryInteractionGroupDef` can be
 disabled per player to stop Pawn Diary's own game listeners and scanners from auto-recording that
 event group. The list shows every non-External, non-package-gated group, including
 `defaultEnabled=false` rows (such as `questAccepted`) so the player can opt INTO a group the XML
@@ -870,7 +872,7 @@ ships disabled; a group with no player override still inherits its XML default. 
 `reflection` row governs all three reflection signals — day, quadrum, and life-arc pages — because
 that group matches `DayReflection`, `QuadrumReflection`, and `PawnArcReflection` via `matchDefNames`.
 These filters intentionally do not block external mod API submissions, so adapter-owned triggers
-remain callable through `PawnDiaryApi`. The raw XML override editor is disabled until the experimental override switch is
+remain callable through `PawnDiaryApi`. The raw XML override editor on Advanced is disabled until the experimental override switch is
 enabled from Main or from the Advanced gate panel; the Prompt tab's experimental prompt-policy drawer
 uses the same gate. Advanced and that prompt drawer share a compact two-pane editor: a left rail of
 groups and a right body that draws one widget per field type -- checkbox, slider, numeric text,

@@ -8,6 +8,13 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Settings tab cleanup.** Moved automatic event filters out of Advanced into a dedicated Events
+  tab, moved the global `Full` / `Balanced` / `Compact` context-detail selector into its own Main
+  tab section at the bottom of the page, and replaced the old Prompts drawer with a Main-tab cut/add
+  comparison showing what each context preset sends and trims. The context-detail preset rows are
+  now selectable directly, `Full` no longer shows a meaningless cut row, and the section includes a
+  "never cut" line for core prompt facts.
+
 - **Per-pawn custom writing-style prompt.** Players can now experiment with a pawn's voice directly
   from that pawn's Diary tab. A new always-visible "Writing style" row opens an editor dialog where
   the player can pick the base style, read its prompt, write a pawn-specific custom prompt, preview
@@ -23,9 +30,9 @@ pre-release version ladder for project history.
 - **Prompt context detail levels.** Added global `Full` / `Balanced` / `Compact` context presets
   plus per-API-lane overrides. `Full` keeps the old prompt shape; lower presets run a pure,
   deterministic field selector that always keeps core event/instruction facts, then spends a
-  smaller context budget on the most relevant optional fields for the event domain. The Prompts tab
-  now includes a context-detail preview drawer showing example prompts, kept/cut counts, and cut
-  reasons for every preset. Live failover lanes receive their own pre-rendered prompt variant, so a
+  smaller context budget on the most relevant optional fields for the event domain. The Main tab now
+  includes a context-detail section showing what each preset sends and cuts. Live failover lanes
+  receive their own pre-rendered prompt variant, so a
   compact fallback model is not handed the richer primary lane prompt.
 
 - **Example adapter preview art.** Added a developer-themed `About/Preview.png` for the example
