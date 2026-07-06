@@ -12,12 +12,44 @@ namespace PawnDiary
     /// the two stopped being interchangeable: a saved key value is a lookup token, not prose, so it
     /// cannot be carried into a literal-text field without printing the raw key. The prompt-enchantment
     /// <c>frequency</c> XML alias was also removed from Advanced settings because <c>chance</c> is the
-    /// canonical editable control. Rather than mis-migrate these values, we drop the orphaned entries so
+    /// canonical editable control. The signal-mirror <c>Diary_Tuning.*</c> rows (thought/ambient/
+    /// progression/work knobs) were removed because <see cref="DiarySignalPolicies"/> reads the policy
+    /// def first, masking them. Rather than mis-migrate these values, we drop the orphaned entries so
     /// they stop lingering in the settings file and shadowing nothing. Harmless when absent (players who
     /// never ran an interim build that exposed the removed editors).
     /// </summary>
     internal static class TuningOverrideMigration
     {
+        // Full override keys ("defName.fieldName") for editors removed because the field's runtime value
+        // is owned elsewhere. These are matched in FULL, not by suffix: each dead Diary_Tuning.* field
+        // shares its trailing field name with a LIVE DiarySignalPolicy_*.<field> row (most sharply
+        // thoughtProgressionRules, whose name is identical on both defs), so a suffix match would wrongly
+        // prune the live signal override too. See AdvancedFieldCatalog signal-policy section.
+        private static readonly string[] RemovedExactKeys =
+        {
+            "Diary_Tuning.thoughtDedupTicks",
+            "Diary_Tuning.thoughtMinMoodOffset",
+            "Diary_Tuning.thoughtEatingMinMoodOffset",
+            "Diary_Tuning.thoughtIgnoreTokens",
+            "Diary_Tuning.thoughtBypassThresholdTokens",
+            "Diary_Tuning.thoughtEatingTokens",
+            "Diary_Tuning.thoughtAmbientTokens",
+            "Diary_Tuning.thoughtAmbientWindowTicks",
+            "Diary_Tuning.thoughtAmbientMinEventsToWrite",
+            "Diary_Tuning.thoughtAmbientMaxSampleLines",
+            "Diary_Tuning.thoughtProgressionScanIntervalTicks",
+            "Diary_Tuning.thoughtProgressionDedupTicks",
+            "Diary_Tuning.thoughtProgressionRules",
+            "Diary_Tuning.progressionScanIntervalTicks",
+            "Diary_Tuning.workScanIntervalTicks",
+            "Diary_Tuning.workBaseChance",
+            "Diary_Tuning.workSameTypeCooldownTicks",
+            "Diary_Tuning.workRecentDifferentTypeMultiplier",
+            "Diary_Tuning.workPassionChanceMultiplier",
+            "Diary_Tuning.workNegativeChanceMultiplier",
+            "Diary_Tuning.workDarkStudyChanceMultiplier",
+            "Diary_Tuning.workLowSkillThreshold",
+        };
         // Override keys are "defName.fieldName" (nested policy fields keep their batch./hediff. prefix),
         // so each removed field below is matched as a trailing ".<field name>". The leading dot anchors
         // the match to a whole segment, so e.g. ".priorityKey" never matches a retained ".promptPriorityText".
@@ -38,6 +70,17 @@ namespace PawnDiary
             if (string.IsNullOrEmpty(key))
             {
                 return false;
+            }
+
+            // Full-key matches first (signal-mirror tuning rows): these must NOT be reachable through
+            // IsRemovedFieldName, whose "." + fieldName probe can never equal a "defName.fieldName" key,
+            // so the shared field name (thoughtProgressionRules) stays editable on the live signal def.
+            for (int i = 0; i < RemovedExactKeys.Length; i++)
+            {
+                if (string.Equals(key, RemovedExactKeys[i], StringComparison.Ordinal))
+                {
+                    return true;
+                }
             }
 
             for (int i = 0; i < RemovedFieldKeySuffixes.Length; i++)

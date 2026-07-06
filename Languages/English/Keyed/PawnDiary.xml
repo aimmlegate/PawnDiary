@@ -470,10 +470,8 @@
   <PawnDiary.Settings.Adv.Group.Enchantment>Prompt enchantment tuning</PawnDiary.Settings.Adv.Group.Enchantment>
   <PawnDiary.Settings.Adv.Group.Consciousness>Consciousness gates</PawnDiary.Settings.Adv.Group.Consciousness>
   <PawnDiary.Settings.Adv.Group.Buckets>Beauty / mood / pain / opinion</PawnDiary.Settings.Adv.Group.Buckets>
-  <PawnDiary.Settings.Adv.Group.Thought>Thought thresholds</PawnDiary.Settings.Adv.Group.Thought>
   <PawnDiary.Settings.Adv.Group.Scanners>Scanner intervals</PawnDiary.Settings.Adv.Group.Scanners>
   <PawnDiary.Settings.Adv.Group.BodyParts>Body-part events</PawnDiary.Settings.Adv.Group.BodyParts>
-  <PawnDiary.Settings.Adv.Group.Work>Work sampling</PawnDiary.Settings.Adv.Group.Work>
   <PawnDiary.Settings.Adv.Group.DayReflection>Day reflection</PawnDiary.Settings.Adv.Group.DayReflection>
   <PawnDiary.Settings.Adv.Group.Quadrum>Quadrum reflection</PawnDiary.Settings.Adv.Group.Quadrum>
   <PawnDiary.Settings.Adv.Group.Arc>Arc reflection</PawnDiary.Settings.Adv.Group.Arc>
@@ -638,7 +636,6 @@
   <PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>Same pawn + break is recorded once per this window.</PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>
   <PawnDiary.Settings.Adv.Help.taleDedupTicks>Same TaleDef + pawn is recorded once per this window.</PawnDiary.Settings.Adv.Help.taleDedupTicks>
   <PawnDiary.Settings.Adv.Help.moodEventDedupTicks>Same mood-event GameConditionDef is recorded once per colony per this window.</PawnDiary.Settings.Adv.Help.moodEventDedupTicks>
-  <PawnDiary.Settings.Adv.Help.thoughtDedupTicks>Same pawn + thought is recorded once per this window.</PawnDiary.Settings.Adv.Help.thoughtDedupTicks>
   <PawnDiary.Settings.Adv.Help.romanceDedupTicks>Same romance relation change for a pawn pair is recorded once per this window.</PawnDiary.Settings.Adv.Help.romanceDedupTicks>
   <PawnDiary.Settings.Adv.Help.raidDedupTicks>Same raid incident key is recorded once per this window.</PawnDiary.Settings.Adv.Help.raidDedupTicks>
   <PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>Ordinary raids wait this many ticks before the LLM request so text can lean into the approach. Drop-pod raids and infestations bypass it.</PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>
@@ -689,13 +686,6 @@
   <PawnDiary.Settings.Adv.Help.opinionFriendly>Opinion at/above this reads as 'friendly'.</PawnDiary.Settings.Adv.Help.opinionFriendly>
   <PawnDiary.Settings.Adv.Help.opinionNeutralAbove>Opinion above this reads as 'neutral' (else worse).</PawnDiary.Settings.Adv.Help.opinionNeutralAbove>
   <PawnDiary.Settings.Adv.Help.opinionStrainedAbove>Opinion above this reads as 'strained' (else 'hostile').</PawnDiary.Settings.Adv.Help.opinionStrainedAbove>
-  <PawnDiary.Settings.Adv.Help.thoughtMinMoodOffset>Minimum |mood offset| for a general thought to be recorded.</PawnDiary.Settings.Adv.Help.thoughtMinMoodOffset>
-  <PawnDiary.Settings.Adv.Help.thoughtEatingMinMoodOffset>Minimum |mood offset| for an eating-related thought.</PawnDiary.Settings.Adv.Help.thoughtEatingMinMoodOffset>
-  <PawnDiary.Settings.Adv.Help.thoughtAmbientWindowTicks>Ambient temporary thoughts collect until the day changes or this quiet window passes.</PawnDiary.Settings.Adv.Help.thoughtAmbientWindowTicks>
-  <PawnDiary.Settings.Adv.Help.thoughtAmbientMinEventsToWrite>Drop ambient notes unless at least this many thoughts accumulated.</PawnDiary.Settings.Adv.Help.thoughtAmbientMinEventsToWrite>
-  <PawnDiary.Settings.Adv.Help.thoughtAmbientMaxSampleLines>Most ambient-thought evidence lines kept in one prompt.</PawnDiary.Settings.Adv.Help.thoughtAmbientMaxSampleLines>
-  <PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>How often the situational-need thought scanner runs.</PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>
-  <PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>Same progression signal recorded once per this window.</PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>
   <PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>How often the hediff severity-step scanner runs.</PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>HediffDef defNames forced to anomalous tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>HediffDef defNames forced to crude tier, one per line.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>
@@ -710,15 +700,6 @@
   <PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>Added parts below this efficiency are crude when no stronger tier signal exists.</PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>Added parts at or below this efficiency are prosthetic when no stronger tier signal exists.</PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>
   <PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>Added parts at or below this efficiency are bionic; higher values become archotech.</PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>
-  <PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>How often the slow pawn-progression scanner runs.</PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>
-  <PawnDiary.Settings.Adv.Help.workScanIntervalTicks>How often the work-sampling scanner runs.</PawnDiary.Settings.Adv.Help.workScanIntervalTicks>
-  <PawnDiary.Settings.Adv.Help.workBaseChance>Base probability per scan that a working pawn writes about that work.</PawnDiary.Settings.Adv.Help.workBaseChance>
-  <PawnDiary.Settings.Adv.Help.workSameTypeCooldownTicks>After a work entry for one WorkTypeDef, suppress that type for this long.</PawnDiary.Settings.Adv.Help.workSameTypeCooldownTicks>
-  <PawnDiary.Settings.Adv.Help.workRecentDifferentTypeMultiplier>Chance multiplier when the pawn had any other work entry inside the cooldown.</PawnDiary.Settings.Adv.Help.workRecentDifferentTypeMultiplier>
-  <PawnDiary.Settings.Adv.Help.workPassionChanceMultiplier>Chance multiplier when the pawn has passion for the work.</PawnDiary.Settings.Adv.Help.workPassionChanceMultiplier>
-  <PawnDiary.Settings.Adv.Help.workNegativeChanceMultiplier>Chance multiplier for frustrating or negative work.</PawnDiary.Settings.Adv.Help.workNegativeChanceMultiplier>
-  <PawnDiary.Settings.Adv.Help.workDarkStudyChanceMultiplier>Chance multiplier for studying in the dark.</PawnDiary.Settings.Adv.Help.workDarkStudyChanceMultiplier>
-  <PawnDiary.Settings.Adv.Help.workLowSkillThreshold>Best relevant skill below this reads as uncertain or frustrating.</PawnDiary.Settings.Adv.Help.workLowSkillThreshold>
   <PawnDiary.Settings.Adv.Help.daySummaryEnabled>Master toggle for end-of-day summaries (off = old per-source ambient notes).</PawnDiary.Settings.Adv.Help.daySummaryEnabled>
   <PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>Most highlights woven into one day reflection.</PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>
   <PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>Opinion swing (vs day-start) that becomes a social-dynamic signal.</PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>
