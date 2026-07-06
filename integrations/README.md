@@ -54,11 +54,12 @@ registers, through `PawnDiaryExampleApi.RegisterHooksOnce()`:
 - `RegisterPawnContextProvider` — fired during prompt context collection; the adapter contributes one
   `example_traits=…` line per pawn and bumps a counter visible in the same tab.
 
-`PawnDiary.RimTalkBridge/` is the first real adapter scaffold: a separate mod that listens to RimTalk
-chat and, when enabled, logs chat facts plus recent Pawn Diary context summaries for the
-speaker/target. Its project targets net48/x64 because the current RimTalk workshop assembly does.
-New adapters start from the example unless they need a target-mod Harmony patch like the RimTalk
-bridge. The pre-commit verify hook builds only the core mod; adapters are built/deployed manually.
+`PawnDiary.RimTalkBridge/` is the first real adapter target, currently reset to the example-adapter
+shape: a GameComponent registration point plus a bridge-named `PawnDiaryApi` facade. It no longer
+contains the old log-only RimTalk Harmony patch or settings UI. Its project stays net48/x64 because
+the planned RimTalk hook code will reference the current RimTalk workshop assembly. Follow
+`design/RIMTALK_BRIDGE_PLAN.md` for the next bridge implementation steps. The pre-commit verify hook
+builds only the core mod; adapters are built/deployed manually.
 
 The explorer's pure text-parsing helpers (`ExplorerParsing.cs`) are unit-tested by
 `tests/ExampleAdapterParsingTests/`:

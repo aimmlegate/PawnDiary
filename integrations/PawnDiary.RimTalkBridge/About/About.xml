@@ -9,10 +9,6 @@
   </supportedVersions>
   <modDependencies>
     <li>
-      <packageId>brrainz.harmony</packageId>
-      <displayName>Harmony</displayName>
-    </li>
-    <li>
       <packageId>aimmlegate.pawndiary.development</packageId>
       <displayName>Pawn Diary</displayName>
     </li>
@@ -22,9 +18,8 @@
     </li>
   </modDependencies>
   <loadAfter>
-    <li>brrainz.harmony</li>
     <li>aimmlegate.pawndiary.development</li>
     <li>cj.rimtalk</li>
   </loadAfter>
-  <description>Minimal developer bridge between Pawn Diary and RimTalk. When enabled, it logs displayed RimTalk chat facts and recent Pawn Diary context summaries for the speaking pawn and target pawn. This adapter is deployed as a separate RimWorld mod through scripts/deploy-integrations.ps1.</description>
+  <description>Example-adapter-derived scaffold for the planned bridge between Pawn Diary and RimTalk. The old log-only chat listener has been removed; this payload currently registers an inert Pawn Diary API facade and is ready for the design/RIMTALK_BRIDGE_PLAN.md implementation steps. This adapter is deployed as a separate RimWorld mod through scripts/deploy-integrations.ps1.</description>
 </ModMetaData>

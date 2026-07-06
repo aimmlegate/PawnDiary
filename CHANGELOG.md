@@ -8,6 +8,14 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **RimTalk bridge reset to adapter scaffold.** Removed the old log-only RimTalk bridge source
+  (`RimTalkCreateInteractionPatch`, `RimTalkChatLogger`, and the single-checkbox Mod/settings
+  class), dropped its stale Keyed settings strings and unused Harmony/RimTalk compile references,
+  and replaced it with an example-adapter-derived `RimTalkBridgeGameComponent` plus
+  `PawnDiaryRimTalkBridgeApi` facade. The bridge currently has no active RimTalk listener or settings
+  UI; `design/RIMTALK_BRIDGE_PLAN.md` is updated to treat this as the new baseline for the full
+  implementation.
+
 - **Advanced tab: removed dead duplicate tuning rows.** The thought, ambient-thought,
   thought-progression, pawn-progression, and work knobs appeared twice on the Advanced settings tab:
   once in the numeric tuning groups (bound to `DiaryTuningDef`) and once in the signal-policy groups
@@ -23,7 +31,7 @@ pre-release version ladder for project history.
   behavior change — only unreachable UI. Pure coverage added in `DiaryPipelineTests`.
 
 - **RimTalk bridge implementation plan recorded.** Added `design/RIMTALK_BRIDGE_PLAN.md`: the
-  approved step-by-step plan that turns the log-only RimTalk bridge into the full adapter
+  approved step-by-step plan that turns the RimTalk bridge into the full adapter
   (settings-driven integration levels, diary-context injection into RimTalk prompts via its
   `ContextHookRegistry`, important-conversation capture through `SubmitPromptEntry`, code-only
   persona/writing-style sync tiers, optional RimTalk-provider engine mode) plus a core

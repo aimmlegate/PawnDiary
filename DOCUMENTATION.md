@@ -53,7 +53,7 @@ Workshop payload omits source code and other development-only folders.
 | `Source/UI/` | Diary inspect tab, card rendering, paging, formatting. |
 | `tests/` | Standalone pure-helper test projects. |
 | `prompt-lab/` | Prompt fixture and variant validation harness. |
-| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`; current real scaffold: `PawnDiary.RimTalkBridge`). Not loaded in-game until deployed. |
+| `integrations/` | Adapter mods for other mods (each its own mod; template: `PawnDiary.ExampleAdapter`; reset real target: `PawnDiary.RimTalkBridge`). Not loaded in-game until deployed. |
 | `scripts/publish.ps1` | Local Workshop payload prep. |
 | `scripts/deploy-integrations.ps1` | Copies `integrations/` adapters to the RimWorld `Mods/` root as sibling mods. |
 
@@ -379,14 +379,14 @@ not localized text: they explain why a field was kept or cut for tooling, not fo
 Balanced/Compact budgets come from `DiaryContextDetailDef` (`Diary_ContextDetail`), so they can be
 retuned in XML; Full is unbudgeted and preserves the original prompt shape.
 
-`integrations/PawnDiary.RimTalkBridge/` is the first diagnostic consumer of that read side. It is a
-separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, and hard-depends on
-Pawn Diary, RimTalk, and Harmony. When its single setting is enabled, it patches RimTalk's accepted
-chat boundary (`TalkService.CreateInteraction(Pawn, TalkResponse)`) and logs the displayed chat
-facts, recent Pawn Diary context summaries (`GetContextSnapshot`), and the resolved base writing
-style (`GetWritingStyle`) for the speaker and target. It does not submit diary
-events or feed RimTalk prompts yet; it proves the observation/context path first, and the
-writing-style log is publish-only — the bridge never pushes the style back into RimTalk.
+`integrations/PawnDiary.RimTalkBridge/` is the first real adapter target, but it has been reset from
+the old log-only diagnostic bridge back to an example-adapter-derived scaffold. It is still a
+separate mod named `PawnDiary: RimTalk bridge`, deployed beside the core mod, but its current source
+has no RimTalk Harmony patch, settings UI, chat logging, diary submissions, or prompt injection.
+Instead, `RimTalkBridgeGameComponent` registers `PawnDiaryRimTalkBridgeApi`, a bridge-named copy of
+the example adapter's facade pattern with inert provider/listener hooks and wrapper methods for the
+public `PawnDiaryApi` calls the planned bridge will need. The executable implementation plan lives in
+`design/RIMTALK_BRIDGE_PLAN.md`.
 
 Compatibility groups shipped inside this repo for other mods use the group gate
 `enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only

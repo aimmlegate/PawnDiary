@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Separate RimWorld adapter mod for RimTalk. References are compile-time only:
-     RimWorld loads Harmony, PawnDiary.dll, and RimTalk.dll from their owning mods. -->
+<!-- Separate RimWorld adapter mod for RimTalk. The current reset scaffold references only
+     PawnDiary.dll; RimTalk/Harmony compile references return when the design plan adds target-mod
+     hooks again. -->
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -10,15 +11,14 @@
     <OutputType>Library</OutputType>
     <RootNamespace>PawnDiaryRimTalkBridge</RootNamespace>
     <AssemblyName>PawnDiaryRimTalkBridge</AssemblyName>
-    <!-- RimTalk's workshop assembly targets .NET Framework 4.8, so this adapter must compile
-         against the same framework even though the Pawn Diary core stays net472. -->
+    <!-- Keep v4.8 because the planned RimTalk hook code will reference RimTalk's net48 assembly.
+         The Pawn Diary core stays net472. -->
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <LangVersion>7.3</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <RimWorldManaged Condition="'$(RimWorldManaged)'=='' and '$(RIMWORLD_MANAGED)'!=''">$(RIMWORLD_MANAGED)</RimWorldManaged>
     <RimWorldManaged Condition="'$(RimWorldManaged)'==''">D:\SteamLibrary\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
-    <RimTalkAssembly Condition="'$(RimTalkAssembly)'==''">D:\SteamLibrary\steamapps\workshop\content\294100\3551203752\1.6\Assemblies\RimTalk.dll</RimTalkAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -49,16 +49,8 @@
       <HintPath>$(RimWorldManaged)\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>..\..\..\Source\Libs\0Harmony.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="PawnDiary">
       <HintPath>..\..\..\1.6\Assemblies\PawnDiary.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="RimTalk">
-      <HintPath>$(RimTalkAssembly)</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
