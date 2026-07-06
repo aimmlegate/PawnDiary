@@ -1,6 +1,6 @@
 // Top-level settings-window layout for Pawn Diary. Detail renderers live in the sibling partial
-// files so the RimWorld Mod entry point is not also one monolithic IMGUI class. The window has four
-// top-level pages: Main, Prompts, Styles, and Advanced.
+// files so the RimWorld Mod entry point is not also one monolithic IMGUI class. The window has five
+// top-level pages: Main, Prompts, Styles, Events, and Advanced.
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -30,7 +30,8 @@ namespace PawnDiary
         /// <summary>
         /// Draws the settings window behind a compact tab button row.
         /// Main holds connection/generation basics, Prompts holds all prompt editing, Styles holds
-        /// writing-style editing, and Advanced holds low-level XML parameters behind an opt-in gate.
+        /// writing-style editing, Events holds automatic-capture filters, and Advanced holds
+        /// low-level XML parameters behind an opt-in gate.
         /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
@@ -57,6 +58,9 @@ namespace PawnDiary
                     return;
                 case PawnDiarySettingsTab.Styles:
                     DrawStyleSettingsTab(pageRect);
+                    return;
+                case PawnDiarySettingsTab.Events:
+                    DrawEventFiltersSettingsTab(pageRect);
                     return;
                 case PawnDiarySettingsTab.Tuning:
                     DrawAdvancedSettingsTab(pageRect);
@@ -85,6 +89,7 @@ namespace PawnDiary
             DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Main, "PawnDiary.Settings.Tab.Main");
             DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Prompts, "PawnDiary.Settings.Tab.Prompts");
             DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Styles, "PawnDiary.Settings.Tab.Styles");
+            DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Events, "PawnDiary.Settings.Tab.Events");
             DrawSettingsTabButton(ref x, inRect.y, PawnDiarySettingsTab.Tuning, "PawnDiary.Settings.Tab.Tuning");
 
             return new Rect(
@@ -96,35 +101,19 @@ namespace PawnDiary
 
         private void DrawAdvancedSettingsTab(Rect inRect)
         {
-            const float gap = 8f;
             if (Settings.showExperimentalAdvancedOverrides)
             {
-                float filterHeight = Mathf.Clamp(inRect.height * 0.34f, 220f, 330f);
-                Rect filterRect = new Rect(inRect.x, inRect.y, inRect.width, filterHeight);
-                DrawEventFilterPanel(filterRect);
-                Rect rawRect = new Rect(
-                    inRect.x,
-                    filterRect.yMax + gap,
-                    inRect.width,
-                    Mathf.Max(0f, inRect.yMax - filterRect.yMax - gap));
-                DrawAdvancedTab(rawRect, AdvancedFieldCategory.Tuning);
+                DrawAdvancedTab(inRect, AdvancedFieldCategory.Tuning);
                 return;
             }
 
-            float lockedHeight = 128f;
-            Rect eventFilterRect = new Rect(
-                inRect.x,
-                inRect.y,
-                inRect.width,
-                Mathf.Max(220f, inRect.height - lockedHeight - gap));
-            DrawEventFilterPanel(eventFilterRect);
+            DrawAdvancedLockedPanel(inRect);
+        }
 
-            Rect lockedRect = new Rect(
-                inRect.x,
-                eventFilterRect.yMax + gap,
-                inRect.width,
-                Mathf.Min(lockedHeight, Mathf.Max(0f, inRect.yMax - eventFilterRect.yMax - gap)));
-            DrawAdvancedLockedPanel(lockedRect);
+        /// <summary>Events settings page: automatic-capture filters only.</summary>
+        private void DrawEventFiltersSettingsTab(Rect inRect)
+        {
+            DrawEventFilterPanel(inRect);
         }
 
         private void DrawAdvancedLockedPanel(Rect inRect)
@@ -228,6 +217,11 @@ namespace PawnDiary
                     "PawnDiary.Settings.AllowExternalIntegrations".Translate(),
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());
+
+                Rect contextRect = listing.GetRect(28f);
+                DrawGlobalContextDetailRow(contextRect, 230f);
+                listing.Gap(4f);
+
                 bool advancedVisibleBefore = Settings.showExperimentalAdvancedOverrides;
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.ShowExperimentalAdvancedOverrides".Translate(),
@@ -288,7 +282,7 @@ namespace PawnDiary
             {
                 listing.Gap(4f);
                 DrawPromptStudio(listing, false);
-                DrawContextDetailPreviewDrawer(listing);
+                DrawSimulatedPromptExampleDrawer(listing);
                 DrawExperimentalPromptOverridesDrawer(listing);
             }
             finally
@@ -507,7 +501,7 @@ namespace PawnDiary
             }
 
             // Generation controls only. Prompt and style editors live on dedicated tabs.
-            height += 411f;
+            height += 445f;
             if (Prefs.DevMode)
             {
                 height += 34f;

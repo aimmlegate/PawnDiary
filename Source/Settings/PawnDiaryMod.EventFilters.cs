@@ -1,4 +1,4 @@
-// Advanced-tab event filter UI for Pawn Diary. These controls edit saved per-event-group automatic
+// Events-tab filter UI for Pawn Diary. These controls edit saved per-event-group automatic
 // capture toggles; they do not edit XML prompt policy and they do not affect external API requests.
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ namespace PawnDiary
         private Vector2 eventFilterScrollPosition;
 
         /// <summary>
-        /// Draws the saved automatic-capture filter list shown at the top of the Advanced tab.
+        /// Draws the saved automatic-capture filter list on the Events tab.
         /// </summary>
         private void DrawEventFilterPanel(Rect rect)
         {

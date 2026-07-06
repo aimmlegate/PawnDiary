@@ -359,31 +359,12 @@
   <PawnDiary.Settings.ExperimentalPromptOverridesHelp>Raw XML Def fields for prompt templates, prompt weights, and hidden prompt policy. Use only when testing; normal shared and event prompts above are the stable editor.</PawnDiary.Settings.ExperimentalPromptOverridesHelp>
   <PawnDiary.Settings.ExperimentalPromptOverridesShow>Open drawer</PawnDiary.Settings.ExperimentalPromptOverridesShow>
   <PawnDiary.Settings.ExperimentalPromptOverridesHide>Close drawer</PawnDiary.Settings.ExperimentalPromptOverridesHide>
-  <PawnDiary.Settings.ContextPreviewTitle>Context detail preview</PawnDiary.Settings.ContextPreviewTitle>
-  <PawnDiary.Settings.ContextPreviewHelp>Shows one synthetic high-context prompt through Full, Balanced, and Compact. Cut reasons come from the same selector used for live generation.</PawnDiary.Settings.ContextPreviewHelp>
-  <PawnDiary.Settings.ContextPreviewShow>Preview</PawnDiary.Settings.ContextPreviewShow>
-  <PawnDiary.Settings.ContextPreviewHide>Hide</PawnDiary.Settings.ContextPreviewHide>
-  <PawnDiary.Settings.ContextPreviewSummary>{0}/{1} chars kept (~{2} tokens), {3} field(s) cut</PawnDiary.Settings.ContextPreviewSummary>
-  <PawnDiary.Settings.ContextPreviewCuts>Cut fields</PawnDiary.Settings.ContextPreviewCuts>
-  <PawnDiary.Settings.ContextPreviewNoCuts>No fields cut.</PawnDiary.Settings.ContextPreviewNoCuts>
-  <PawnDiary.Settings.ContextPreviewMoreCuts>- plus {0} more cut field(s)</PawnDiary.Settings.ContextPreviewMoreCuts>
-  <PawnDiary.Settings.ContextPreview.Sample.Label>Raid</PawnDiary.Settings.ContextPreview.Sample.Label>
-  <PawnDiary.Settings.ContextPreview.Sample.EventNoun>raid</PawnDiary.Settings.ContextPreview.Sample.EventNoun>
-  <PawnDiary.Settings.ContextPreview.Sample.GameContext>raid=RaidEnemy; label=Raid; faction=Pirates; points=850; arrival_mode=EdgeWalkIn; strategy=ImmediateAttack; progression=SkillMilestone; progression_kind=skill; skill=Shooting; skill_level=10; previous_skill_milestone=8; passion=major; ability=WordOfJoy; ability_label=Word of joy; ability_category=Psycast; ability_target=Self; ability_cooldown_ticks=60000; quest_label=Outpost rescue; quest_signal=accepted; quest_faction=Outlander; quest_rewards=medicine x20; royal_title=Yeoman; ideological_role=Moral guide</PawnDiary.Settings.ContextPreview.Sample.GameContext>
-  <PawnDiary.Settings.ContextPreview.Sample.Instruction>Write the entry around the immediate danger and the pawn's own reaction.</PawnDiary.Settings.ContextPreview.Sample.Instruction>
-  <PawnDiary.Settings.ContextPreview.Sample.NeutralText>Raiders reached the north ridge while Alice was hauling medicine.</PawnDiary.Settings.ContextPreview.Sample.NeutralText>
-  <PawnDiary.Settings.ContextPreview.Sample.PawnName>Alice</PawnDiary.Settings.ContextPreview.Sample.PawnName>
-  <PawnDiary.Settings.ContextPreview.Sample.PawnSummary>sex=female; life_stage=adult; mood=stressed; health=bleeding cut on left arm; low_capacities=moving; thoughts=slept in cold</PawnDiary.Settings.ContextPreview.Sample.PawnSummary>
-  <PawnDiary.Settings.ContextPreview.Sample.Surroundings>outdoors, cold rain, recent threat: Raid</PawnDiary.Settings.ContextPreview.Sample.Surroundings>
-  <PawnDiary.Settings.ContextPreview.Sample.Continuity>Bob: friendly; colony doctor; saved Alice after infection</PawnDiary.Settings.ContextPreview.Sample.Continuity>
-  <PawnDiary.Settings.ContextPreview.Sample.LastOpener>The rain found every gap in the roof.</PawnDiary.Settings.ContextPreview.Sample.LastOpener>
-  <PawnDiary.Settings.ContextPreview.Sample.PreviousEnding>I stopped before the door. The rain was still coming down.</PawnDiary.Settings.ContextPreview.Sample.PreviousEnding>
-  <PawnDiary.Settings.ContextPreview.Sample.Weapon>bolt-action rifle</PawnDiary.Settings.ContextPreview.Sample.Weapon>
-  <PawnDiary.Settings.ContextPreview.Sample.EventPrompt>Write the raid as a real colony emergency, not as a battle report.</PawnDiary.Settings.ContextPreview.Sample.EventPrompt>
-  <PawnDiary.Settings.ContextPreview.Sample.EventEnhancement>Anchor the entry in one supplied danger, injury, or duty.</PawnDiary.Settings.ContextPreview.Sample.EventEnhancement>
-  <PawnDiary.Settings.ContextPreview.Sample.PersonaVoice>How this pawn tends to write: one concrete fact, then a short uneasy judgment.</PawnDiary.Settings.ContextPreview.Sample.PersonaVoice>
-  <PawnDiary.Settings.ContextPreview.Sample.PromptEnchantment>Her left arm is bleeding and cold rain is making her hands clumsy.</PawnDiary.Settings.ContextPreview.Sample.PromptEnchantment>
-  <PawnDiary.Settings.ContextPreview.Sample.DirectSpeech>Use direct speech only for exact supplied words.</PawnDiary.Settings.ContextPreview.Sample.DirectSpeech>
+  <PawnDiary.Settings.SimulatedPromptExampleTitle>Simulated example prompt</PawnDiary.Settings.SimulatedPromptExampleTitle>
+  <PawnDiary.Settings.SimulatedPromptExampleHelp>Opens a made-up prompt example for reading the prompt shape without building live selector diagnostics.</PawnDiary.Settings.SimulatedPromptExampleHelp>
+  <PawnDiary.Settings.SimulatedPromptExampleShow>Open drawer</PawnDiary.Settings.SimulatedPromptExampleShow>
+  <PawnDiary.Settings.SimulatedPromptExampleHide>Close drawer</PawnDiary.Settings.SimulatedPromptExampleHide>
+  <PawnDiary.Settings.SimulatedPromptExampleLabel>Example writer request</PawnDiary.Settings.SimulatedPromptExampleLabel>
+  <PawnDiary.Settings.SimulatedPromptExampleText>system prompt:&#10;Write 1-3 short first-person RimWorld diary lines. Use only supplied facts. Do not invent names, motives, outcomes, or places.&#10;&#10;user prompt:&#10;event: Raid&#10;pov: Alice&#10;role: initiator&#10;text: Raiders reached the north ridge while Alice was hauling medicine.&#10;context: Alice is stressed, bleeding from her left arm, outside in cold rain, and carrying a bolt-action rifle. Bob is nearby and the colony doctor is moving toward the hospital.&#10;instruction: Write around the immediate danger and Alice's own reaction.&#10;style: one concrete fact, then a short uneasy judgment.&#10;output: diary text only.</PawnDiary.Settings.SimulatedPromptExampleText>
   <PawnDiary.Settings.PersonaStudioTitle>Writing styles</PawnDiary.Settings.PersonaStudioTitle>
   <PawnDiary.Settings.PersonaStudioHelp>Edit writing-style labels, style rules, and theme tags from DiaryPersonaDefs.xml, or add your own. Tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
   <PawnDiary.Settings.PersonaStudioSummary>{0} styles total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>
@@ -419,6 +400,7 @@
   <PawnDiary.Settings.Tab.Tuning>Advanced</PawnDiary.Settings.Tab.Tuning>
   <PawnDiary.Settings.Tab.Prompts>Prompts</PawnDiary.Settings.Tab.Prompts>
   <PawnDiary.Settings.Tab.Styles>Styles</PawnDiary.Settings.Tab.Styles>
+  <PawnDiary.Settings.Tab.Events>Events</PawnDiary.Settings.Tab.Events>
   <PawnDiary.Settings.Adv.Summary>{0} value(s) customized from XML defaults.</PawnDiary.Settings.Adv.Summary>
   <PawnDiary.Settings.Adv.Filter>Filter</PawnDiary.Settings.Adv.Filter>
   <PawnDiary.Settings.Adv.FilterMode.All>All</PawnDiary.Settings.Adv.FilterMode.All>

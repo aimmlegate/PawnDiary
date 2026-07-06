@@ -808,8 +808,8 @@ reasoning-style lines, or terminal periods are treated as unusable model output.
 
 ## 7. Settings And UI
 
-The settings window is split into **Main**, **Prompts**, **Styles**, and **Advanced** tabs. Main
-covers API lanes, routing mode, prompt context detail, request tuning, title generation,
+The settings window is split into **Main**, **Prompts**, **Styles**, **Events**, and **Advanced** tabs. Main
+covers API lanes, routing mode, request tuning, global prompt context detail, title generation,
 atmospheric formatting, prompt enchantments, the "Show experimental XML override pages" switch, one
 shared random-generation weight for optional chance-gated pages, and diary-event retention caps. Dev mode
 exposes prompt-test mode and extra diagnostics in settings; bulk export
@@ -841,7 +841,9 @@ flowchart LR
 
 Prompts is the home for normal prompt text editing: the four shared system prompts plus per-event
 prompt/enhancement/forced-model overrides. Its prompt-type picker uses compact labels and keeps
-internal event keys out of the visible menu. When the Main-tab experimental XML override switch is
+internal event keys out of the visible menu. It also has a collapsed simulated prompt drawer that
+shows one made-up writer request for checking the general prompt shape without invoking the live
+context selector or showing field-cut diagnostics. When the Main-tab experimental XML override switch is
 enabled, Prompts also shows a collapsed **Experimental prompt policy overrides** drawer. That drawer,
 not the normal prompt editor, exposes prompt-related XML from `DiaryPromptDef`,
 `DiaryPromptTemplateDef`, `DiaryPromptEnchantmentDef`, `DiaryHumorCueDef`,
@@ -856,13 +858,9 @@ stays blank so Shared/event prompts remains the only place that displays shared 
 Prompt-policy fields backed by XML translation keys are also literal override boxes only: blank means
 the XML/Keyed default is still used at generation time, while node settings never expose the raw key
 fields or copy their resolved text into editable overrides.
-The Prompts tab also has a context-detail preview drawer. It renders one synthetic high-context
-example through `Full`, `Balanced`, and `Compact`, shows approximate character/token counts, and
-lists the fields cut by each lower preset with selector reasons so players can see the tradeoff
-before changing global or per-lane settings.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
-Advanced starts with automatic event filters. Each visible `DiaryInteractionGroupDef` can be
+Events is the home for automatic event filters. Each visible `DiaryInteractionGroupDef` can be
 disabled per player to stop Pawn Diary's own game listeners and scanners from auto-recording that
 event group. The list shows every non-External, non-package-gated group, including
 `defaultEnabled=false` rows (such as `questAccepted`) so the player can opt INTO a group the XML
@@ -870,7 +868,7 @@ ships disabled; a group with no player override still inherits its XML default. 
 `reflection` row governs all three reflection signals — day, quadrum, and life-arc pages — because
 that group matches `DayReflection`, `QuadrumReflection`, and `PawnArcReflection` via `matchDefNames`.
 These filters intentionally do not block external mod API submissions, so adapter-owned triggers
-remain callable through `PawnDiaryApi`. The raw XML override editor is disabled until the experimental override switch is
+remain callable through `PawnDiaryApi`. The raw XML override editor on Advanced is disabled until the experimental override switch is
 enabled from Main or from the Advanced gate panel; the Prompt tab's experimental prompt-policy drawer
 uses the same gate. Advanced and that prompt drawer share a compact two-pane editor: a left rail of
 groups and a right body that draws one widget per field type -- checkbox, slider, numeric text,

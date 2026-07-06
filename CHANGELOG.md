@@ -8,6 +8,11 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Settings tab cleanup.** Moved automatic event filters out of Advanced into a dedicated Events
+  tab, moved the global `Full` / `Balanced` / `Compact` context-detail selector into the Main
+  diary-writing settings, removed the live context-detail preview drawer from Prompts, and replaced
+  it with a lightweight simulated prompt example drawer.
+
 - **Per-pawn custom writing-style prompt.** Players can now experiment with a pawn's voice directly
   from that pawn's Diary tab. A new always-visible "Writing style" row opens an editor dialog where
   the player can pick the base style, read its prompt, write a pawn-specific custom prompt, preview

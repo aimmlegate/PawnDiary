@@ -12,6 +12,7 @@ namespace PawnDiary
         Main,
         Prompts,
         Styles,
+        Events,
         Tuning
     }
 
@@ -48,8 +49,8 @@ namespace PawnDiary
         private PawnDiarySettingsTab settingsTab = PawnDiarySettingsTab.Main;
         // Raw prompt-template fields are hidden behind an experimental drawer in the Prompts tab.
         private bool experimentalPromptOverridesExpanded;
-        // Prompt-context preview drawer in the Prompts tab.
-        private bool contextDetailPreviewExpanded;
+        // Simulated prompt example drawer in the Prompts tab.
+        private bool simulatedPromptExampleExpanded;
         // Which Advanced group is selected in the Advanced-tab left rail, and the live name filter.
         private string selectedAdvancedGroupKey;
         private string advancedFilter;
@@ -81,7 +82,7 @@ namespace PawnDiary
         private const float EventPromptTextAreaHeight = 88f;
         private const float SystemPromptTextAreaHeight = 138f;
         private const float PersonaRuleTextAreaHeight = 96f;
-        private const float RequestTuningBlockHeight = 228f;
+        private const float RequestTuningBlockHeight = 198f;
         private const float ExperimentalPromptOverridesDrawerHeight = 620f;
         private const string PromptStudioSystemPrefix = "system:";
         private const string PromptStudioEventPrefix = "event:";

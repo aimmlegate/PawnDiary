@@ -183,10 +183,6 @@ namespace PawnDiary
             DrawRoutingModeRow(routingRect, 230f);
             y += rowHeight + gap;
 
-            Rect contextRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
-            DrawGlobalContextDetailRow(contextRect, 230f);
-            y += rowHeight + gap;
-
             Rect tempRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
             Settings.temperature = DrawSliderRow(tempRect, "PawnDiary.Settings.Temperature".Translate(Settings.temperature.ToString("0.00")), Settings.temperature, 0f, 2f);
             y += rowHeight + gap;
