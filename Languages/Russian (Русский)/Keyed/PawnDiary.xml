@@ -339,10 +339,6 @@
   <PawnDiary.Settings.RestorePromptDefault>Вернуть из XML</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Изменено вручную</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Из XML</PawnDiary.Settings.PromptStatusDefault>
-  <PawnDiary.Settings.ExperimentalPromptOverridesTitle>Экспериментальные переопределения политики запросов</PawnDiary.Settings.ExperimentalPromptOverridesTitle>
-  <PawnDiary.Settings.ExperimentalPromptOverridesHelp>Сырые XML Def-поля для шаблонов, весов и скрытой политики запросов. Используйте только для тестов; обычные общие и событийные запросы выше остаются стабильным редактором.</PawnDiary.Settings.ExperimentalPromptOverridesHelp>
-  <PawnDiary.Settings.ExperimentalPromptOverridesShow>Открыть</PawnDiary.Settings.ExperimentalPromptOverridesShow>
-  <PawnDiary.Settings.ExperimentalPromptOverridesHide>Закрыть</PawnDiary.Settings.ExperimentalPromptOverridesHide>
   <PawnDiary.Settings.PersonaStudioTitle>Манеры письма</PawnDiary.Settings.PersonaStudioTitle>
   <PawnDiary.Settings.PersonaStudioHelp>Редактируйте названия, правила стиля и метки из DiaryPersonaDefs.xml или добавляйте свои. Метки задают начальный выбор для новых поселенцев.</PawnDiary.Settings.PersonaStudioHelp>
   <PawnDiary.Settings.PersonaStudioSummary>Манер: {0}; своих: {1}; изменено: {2}</PawnDiary.Settings.PersonaStudioSummary>

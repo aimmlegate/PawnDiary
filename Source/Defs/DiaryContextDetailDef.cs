@@ -16,16 +16,16 @@ namespace PawnDiary
     public class DiaryContextDetailDef : Def
     {
         // Standard interaction / solo entries.
-        public int balancedDefaultBudget = 1400;
-        public int compactDefaultBudget = 750;
+        public int balancedDefaultBudget = 650;
+        public int compactDefaultBudget = 350;
 
         // Day / quadrum / arc reflections (longer, so a larger budget).
-        public int balancedReflectionBudget = 1900;
-        public int compactReflectionBudget = 1150;
+        public int balancedReflectionBudget = 1000;
+        public int compactReflectionBudget = 600;
 
         // Neutral death / arrival descriptions.
-        public int balancedNeutralBudget = 1250;
-        public int compactNeutralBudget = 850;
+        public int balancedNeutralBudget = 600;
+        public int compactNeutralBudget = 400;
     }
 
     /// <summary>

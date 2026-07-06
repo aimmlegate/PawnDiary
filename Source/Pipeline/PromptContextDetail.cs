@@ -69,12 +69,16 @@ namespace PawnDiary
     /// </summary>
     internal sealed class PromptContextBudgets
     {
-        public int balancedDefault = 1400;
-        public int compactDefault = 750;
-        public int balancedReflection = 1900;
-        public int compactReflection = 1150;
-        public int balancedNeutral = 1250;
-        public int compactNeutral = 850;
+        // Tuned so Balanced/Compact visibly trim optional context on ordinary events. The old values
+        // (1400/750/1900/1150/1250/850) were so generous that Balanced never cut anything and Compact
+        // only cut the richest events. These match 1.6/Defs/DiaryContextDetailDef.xml; both are
+        // XML-tweakable there, and a non-positive authored value falls back to the numbers here.
+        public int balancedDefault = 650;
+        public int compactDefault = 350;
+        public int balancedReflection = 1000;
+        public int compactReflection = 600;
+        public int balancedNeutral = 600;
+        public int compactNeutral = 400;
 
         /// <summary>Built-in defaults, used whenever no XML-backed budgets are injected.</summary>
         public static readonly PromptContextBudgets Defaults = new PromptContextBudgets();

@@ -8,6 +8,20 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Prompt context detail presets now visibly trim context.** Retuned the Balanced/Compact character
+  budgets down so the presets actually change the prompt on ordinary events: the previous values
+  (Balanced 1400/1900/1250, Compact 750/1150/850 for standard/reflection/neutral) were so generous
+  that Balanced never cut anything and Compact only cut the richest events, so toggling the selector
+  looked like a no-op in the prompt preview. New budgets are Balanced 650/1000/600 and Compact
+  350/600/400, which drop the weakest optional fields (continuity hints, low-signal tone/setting) on
+  ordinary non-trivial events while keeping the strongest cues (severe pawn state, combat tools, event
+  guidance). `Full` is unchanged and still a faithful pass-through. All six family-level budgets
+  remain XML-tweakable in `DiaryContextDetailDef` (`Diary_ContextDetail`) with code fallbacks.
+
+- **Prompt settings UI simplified.** Removed the experimental prompt-policy override drawer from
+  Prompts and dropped the illustrative "Never cut" row from the Main-tab prompt context detail
+  section, leaving the supported prompt editor and `Full` / `Balanced` / `Compact` selector visible.
+
 - **Diary tab writing-style opener compacted.** Replaced the full-width Writing style row with a
   small subtle header icon that opens the same editor and moves the current style/status into the
   tooltip. Normal diary pages now start directly under the header again; dev-only controls still

@@ -47,8 +47,6 @@ namespace PawnDiary
         private Vector2 styleSettingsScrollPosition;
         // Which top-level settings page is open.
         private PawnDiarySettingsTab settingsTab = PawnDiarySettingsTab.Main;
-        // Raw prompt-template fields are hidden behind an experimental drawer in the Prompts tab.
-        private bool experimentalPromptOverridesExpanded;
         // Which Advanced group is selected in the Advanced-tab left rail, and the live name filter.
         private string selectedAdvancedGroupKey;
         private string advancedFilter;
@@ -81,7 +79,6 @@ namespace PawnDiary
         private const float SystemPromptTextAreaHeight = 138f;
         private const float PersonaRuleTextAreaHeight = 96f;
         private const float RequestTuningBlockHeight = 198f;
-        private const float ExperimentalPromptOverridesDrawerHeight = 620f;
         private const string PromptStudioSystemPrefix = "system:";
         private const string PromptStudioEventPrefix = "event:";
         private const string ApiMoveUpSymbol = "↑";

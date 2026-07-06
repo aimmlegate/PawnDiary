@@ -520,7 +520,9 @@ namespace DiaryPipelineTests
             combatPayload.initiator.pawnSummary = "sex=female; mood=stressed; health=bleeding cut; thoughts=slept in cold";
             combatPayload.initiator.surroundings = "outdoors, cold rain, recent threat: Raid";
             combatPayload.initiator.continuity = "Bob: friendly";
-            combatPayload.initiator.previousEntryEnding = "I stopped before the door. The rain was still coming down.";
+            combatPayload.initiator.previousEntryEnding =
+                "I stopped before the door. The rain was still coming down. "
+                + "The rest of the thought circles the same fear long enough that Compact should spend its budget elsewhere.";
             string severeLongContext = "bleeding " + new string('x', 520);
 
             DiaryPromptRequest fullRequest = new DiaryPromptRequest
@@ -573,7 +575,7 @@ namespace DiaryPipelineTests
                 contextBudgets = new PromptContextBudgets { balancedDefault = 1 }
             });
             AssertTrue("injected budgets reach the selector",
-                balancedDefaultBudget.contextSelectionReport.budgetChars == 1400);
+                balancedDefaultBudget.contextSelectionReport.budgetChars == 650);
             AssertTrue("tiny injected budget cuts more than default balanced",
                 balancedTinyBudget.contextSelectionReport.cut.Count > balancedDefaultBudget.contextSelectionReport.cut.Count);
 

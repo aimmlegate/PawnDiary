@@ -325,8 +325,6 @@
   <PawnDiary.Settings.ContextDetail.Compact>Compact</PawnDiary.Settings.ContextDetail.Compact>
   <PawnDiary.Settings.ContextDetailSectionTitle>Prompt context detail</PawnDiary.Settings.ContextDetailSectionTitle>
   <PawnDiary.Settings.ContextDetailSectionHelp>Illustrative only: live events use real captured facts. Click a preset row to choose how much optional context is sent or cut.</PawnDiary.Settings.ContextDetailSectionHelp>
-  <PawnDiary.Settings.ContextDetail.NeverCutLabel>Never cut</PawnDiary.Settings.ContextDetail.NeverCutLabel>
-  <PawnDiary.Settings.ContextDetail.NeverCutText>Core event text, point of view, role names, required instructions, output rules, and safe wrapped external prompts.</PawnDiary.Settings.ContextDetail.NeverCutText>
   <PawnDiary.Settings.ContextDetail.RowTip>Click a row to use that context detail level.</PawnDiary.Settings.ContextDetail.RowTip>
   <PawnDiary.Settings.ContextDetail.AddedLabel>Sent</PawnDiary.Settings.ContextDetail.AddedLabel>
   <PawnDiary.Settings.ContextDetail.CutLabel>Cut first</PawnDiary.Settings.ContextDetail.CutLabel>
@@ -345,7 +343,7 @@
   <PawnDiary.Settings.PromptStudioTitle>Shared and event prompts</PawnDiary.Settings.PromptStudioTitle>
   <PawnDiary.Settings.ShowPromptStudio>Show prompts</PawnDiary.Settings.ShowPromptStudio>
   <PawnDiary.Settings.HidePromptStudio>Hide prompts</PawnDiary.Settings.HidePromptStudio>
-  <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts, per-event prompt guidance, and optional event model routing. Use Prompt policy and weights for templates, field lists, prompt cues, and prompt-weight tuning.</PawnDiary.Settings.PromptStudioHelp>
+  <PawnDiary.Settings.PromptStudioHelp>Edit shared system prompts, per-event prompt guidance, and optional event model routing. Template fields and hidden prompt policy remain XML-owned.</PawnDiary.Settings.PromptStudioHelp>
   <PawnDiary.Settings.PromptStudioSummary>{0} XML prompt templates and {1} event prompt types loaded; {2} event types customized in settings</PawnDiary.Settings.PromptStudioSummary>
   <PawnDiary.Settings.PromptStudioXmlNote>Field lists, event filters, group instructions, and writing-style catalog defaults are still edited in XML, then applied after restarting RimWorld.</PawnDiary.Settings.PromptStudioXmlNote>
   <PawnDiary.Settings.ResetEventPromptOverrides>Restore event defaults</PawnDiary.Settings.ResetEventPromptOverrides>
@@ -367,10 +365,6 @@
   <PawnDiary.Settings.RestorePromptDefault>Restore XML default</PawnDiary.Settings.RestorePromptDefault>
   <PawnDiary.Settings.PromptStatusCustomized>Customized from the XML default</PawnDiary.Settings.PromptStatusCustomized>
   <PawnDiary.Settings.PromptStatusDefault>Using the XML default</PawnDiary.Settings.PromptStatusDefault>
-  <PawnDiary.Settings.ExperimentalPromptOverridesTitle>Experimental prompt policy overrides</PawnDiary.Settings.ExperimentalPromptOverridesTitle>
-  <PawnDiary.Settings.ExperimentalPromptOverridesHelp>Raw XML Def fields for prompt templates, prompt weights, and hidden prompt policy. Use only when testing; normal shared and event prompts above are the stable editor.</PawnDiary.Settings.ExperimentalPromptOverridesHelp>
-  <PawnDiary.Settings.ExperimentalPromptOverridesShow>Open drawer</PawnDiary.Settings.ExperimentalPromptOverridesShow>
-  <PawnDiary.Settings.ExperimentalPromptOverridesHide>Close drawer</PawnDiary.Settings.ExperimentalPromptOverridesHide>
   <PawnDiary.Settings.PersonaStudioTitle>Writing styles</PawnDiary.Settings.PersonaStudioTitle>
   <PawnDiary.Settings.PersonaStudioHelp>Edit writing-style labels, style rules, and theme tags from DiaryPersonaDefs.xml, or add your own. Tags drive the first-roll weighting for new pawns.</PawnDiary.Settings.PersonaStudioHelp>
   <PawnDiary.Settings.PersonaStudioSummary>{0} styles total, {1} custom, {2} edited</PawnDiary.Settings.PersonaStudioSummary>

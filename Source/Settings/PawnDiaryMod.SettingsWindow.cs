@@ -39,7 +39,6 @@ namespace PawnDiary
             Settings.personaPresets.EnsureList();
             // Apply any completed async API-tool results on the main thread before drawing rows.
             apiConnectionController.ApplyPendingResults();
-            NormalizeAdvancedSettingsVisibility();
 
             // One-shot on open: refresh reasoning capability for any configured row whose (endpoint,
             // model) capability is not yet cached. Best-effort background refresh; providers that do
@@ -69,17 +68,6 @@ namespace PawnDiary
                     DrawMainTab(pageRect);
                     return;
             }
-        }
-
-        /// <summary>Collapses experimental drawers while the raw override surface is disabled.</summary>
-        private void NormalizeAdvancedSettingsVisibility()
-        {
-            if (Settings.showExperimentalAdvancedOverrides)
-            {
-                return;
-            }
-
-            experimentalPromptOverridesExpanded = false;
         }
 
         /// <summary>Draws top-level settings tabs as plain RimWorld list buttons.</summary>
@@ -218,15 +206,10 @@ namespace PawnDiary
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());
 
-                bool advancedVisibleBefore = Settings.showExperimentalAdvancedOverrides;
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.ShowExperimentalAdvancedOverrides".Translate(),
                     ref Settings.showExperimentalAdvancedOverrides,
                     "PawnDiary.Settings.ShowExperimentalAdvancedOverridesTip".Translate());
-                if (advancedVisibleBefore && !Settings.showExperimentalAdvancedOverrides)
-                {
-                    NormalizeAdvancedSettingsVisibility();
-                }
 
                 if (Prefs.DevMode)
                 {
@@ -258,10 +241,7 @@ namespace PawnDiary
             Settings.ClampValues();
         }
 
-        /// <summary>
-        /// Prompts settings page. Normal prompt editing stays focused on shared system prompts and
-        /// event prompts; raw template policy overrides live in a separate experimental drawer.
-        /// </summary>
+        /// <summary>Prompts settings page for shared system prompts and per-event prompt guidance.</summary>
         private void DrawPromptSettingsTab(Rect inRect)
         {
             DrawSharedPromptSettingsPage(inRect);
@@ -279,7 +259,6 @@ namespace PawnDiary
             {
                 listing.Gap(4f);
                 DrawPromptStudio(listing, false);
-                DrawExperimentalPromptOverridesDrawer(listing);
             }
             finally
             {
@@ -292,53 +271,6 @@ namespace PawnDiary
                 promptSettingsScrollPosition.y,
                 0f,
                 Mathf.Max(0f, lastPromptSettingsContentHeight - outRect.height));
-        }
-
-        private void DrawExperimentalPromptOverridesDrawer(Listing_Standard listing)
-        {
-            if (!Settings.showExperimentalAdvancedOverrides)
-            {
-                experimentalPromptOverridesExpanded = false;
-                return;
-            }
-
-            listing.Gap(12f);
-            Rect headerRect = listing.GetRect(76f);
-            Widgets.DrawMenuSection(headerRect);
-            Rect innerRect = headerRect.ContractedBy(8f);
-            Rect buttonRect = new Rect(innerRect.xMax - 118f, innerRect.y, 118f, 28f);
-            Rect titleRect = new Rect(innerRect.x, innerRect.y, Mathf.Max(0f, innerRect.width - 126f), 28f);
-
-            GameFont previousFont = Text.Font;
-            Text.Font = GameFont.Medium;
-            Widgets.LabelFit(titleRect, "PawnDiary.Settings.ExperimentalPromptOverridesTitle".Translate());
-            Text.Font = previousFont;
-
-            if (ButtonTextFit(
-                buttonRect,
-                (experimentalPromptOverridesExpanded
-                    ? "PawnDiary.Settings.ExperimentalPromptOverridesHide"
-                    : "PawnDiary.Settings.ExperimentalPromptOverridesShow").Translate()))
-            {
-                experimentalPromptOverridesExpanded = !experimentalPromptOverridesExpanded;
-                if (experimentalPromptOverridesExpanded)
-                {
-                    advancedFilter = string.Empty;
-                    advancedFieldFilterMode = AdvancedFieldFilterMode.All;
-                }
-            }
-
-            Rect helpRect = new Rect(innerRect.x, titleRect.yMax + 4f, innerRect.width, innerRect.yMax - titleRect.yMax - 4f);
-            DrawMutedLabel(helpRect, "PawnDiary.Settings.ExperimentalPromptOverridesHelp".Translate().ToString());
-
-            if (!experimentalPromptOverridesExpanded)
-            {
-                return;
-            }
-
-            listing.Gap(8f);
-            Rect advancedRect = listing.GetRect(ExperimentalPromptOverridesDrawerHeight);
-            DrawAdvancedTab(advancedRect, AdvancedFieldCategory.Prompts);
         }
 
         /// <summary>Writing-style settings page, separated from prompt text editing.</summary>

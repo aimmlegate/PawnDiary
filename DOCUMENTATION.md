@@ -709,8 +709,8 @@ Context detail presets:
 | Preset | Budget target | Selection behavior | Intended use |
 |---|---:|---|---|
 | `Full` | unlimited | Passes through every renderable template field. | Compatibility and larger models. |
-| `Balanced` | 1,400 chars default; 1,900 reflection; 1,250 neutral death/arrival | Keeps required fields, then preserves high-signal optional context such as severe pawn state, combat tools, event guidance, domain-specific quest/ritual/ability/progression facts, and threatening surroundings. | General small models where most flavor should survive. |
-| `Compact` | 750 chars default; 1,150 reflection; 850 neutral death/arrival | Keeps the same required fields but cuts aggressively, usually dropping weaker continuity, numeric metadata, ordinary tone/setting, and broad low-signal context first. | Very small or local fallback models. |
+| `Balanced` | 650 chars default; 1,000 reflection; 600 neutral death/arrival | Keeps required fields, then preserves high-signal optional context such as severe pawn state, combat tools, event guidance, domain-specific quest/ritual/ability/progression facts, and threatening surroundings. On ordinary events it also drops the weakest optional fields (routine continuity hints, low-signal tone/setting). | General small models where the strongest flavor should survive. |
+| `Compact` | 350 chars default; 600 reflection; 400 neutral death/arrival | Keeps the same required fields but cuts aggressively, usually dropping weaker continuity, numeric metadata, ordinary tone/setting, and broad low-signal context first. | Very small or local fallback models. |
 
 The selector never rewrites, compresses, or summarizes a field value. It either keeps the complete
 `label: value` line or cuts that entire field. This is deliberate: prompt previews and saved debug
@@ -850,11 +850,10 @@ model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned 
 text.
 The global prompt context detail setting defaults to `Full` and is shown in its own section at the
 bottom of the Main tab. The `Full`, `Balanced`, and `Compact` rows are the selector: clicking a row
-changes the shared setting. The section starts with a "never cut" line for core event text, point of
-view, role names, required instructions, output rules, and safe wrapped external prompts, then shows
-an illustrative "sent vs cut first" display for the presets. The display is not a live prompt
-preview; it explains the selector's shape so players can see which kinds of facts lower presets keep
-and trim. Each API lane can inherit the global setting or force its own `Full`, `Balanced`, or
+changes the shared setting. The section shows an illustrative "sent vs cut first" display for the
+presets. The display is not a live prompt preview; it explains the selector's shape so players can
+see which kinds of facts lower presets keep and trim. Each API lane can inherit the global setting
+or force its own `Full`, `Balanced`, or
 `Compact` level, so a small fallback/local model can receive a shorter prompt without changing
 richer primary lanes. Live generation first builds the full plan only to resolve prompt routing and
 forced-model hints, then pre-renders prompt variants for the selected primary lane and its failover
@@ -876,21 +875,9 @@ flowchart LR
 
 Prompts is the home for normal prompt text editing: the four shared system prompts plus per-event
 prompt/enhancement/forced-model overrides. Its prompt-type picker uses compact labels and keeps
-internal event keys out of the visible menu. When the Main-tab experimental XML override switch is
-enabled, Prompts also shows a collapsed **Experimental prompt policy overrides** drawer. That drawer,
-not the normal prompt editor, exposes prompt-related XML from `DiaryPromptDef`,
-`DiaryPromptTemplateDef`, `DiaryPromptEnchantmentDef`, `DiaryHumorCueDef`,
-`DiaryEventWindowDef`, `DiaryObservedConditionDef`, `DiaryInteractionGroupDef`, and
-`DiaryHediffPersonaOverrideDef`. It includes template prompt text, final instructions, template
-field lists, include/exclude prompt switches, per-template token caps, prompt cue text, prompt
-weights, event-window/observed-condition prompt biasing and decay, observed-condition
-force-stop/cooldown/suppression/evidence-label caps, group instructions/tone variants,
-batch/promotion weights, humor cue rules/weights, and hediff-driven writing-style override policy.
-Template prompt text boxes are raw per-template overrides; blank means "inherit" and intentionally
-stays blank so Shared/event prompts remains the only place that displays shared system prompt text.
-Prompt-policy fields backed by XML translation keys are also literal override boxes only: blank means
-the XML/Keyed default is still used at generation time, while node settings never expose the raw key
-fields or copy their resolved text into editable overrides.
+internal event keys out of the visible menu. It no longer exposes the experimental raw
+prompt-policy drawer; template fields, prompt weights, hidden prompt policy, and other prompt Def
+schema remain XML-owned instead of being edited through the normal settings UI.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
 Events is the home for automatic event filters. Each visible `DiaryInteractionGroupDef` can be
@@ -902,8 +889,7 @@ ships disabled; a group with no player override still inherits its XML default. 
 that group matches `DayReflection`, `QuadrumReflection`, and `PawnArcReflection` via `matchDefNames`.
 These filters intentionally do not block external mod API submissions, so adapter-owned triggers
 remain callable through `PawnDiaryApi`. The raw XML override editor on Advanced is disabled until the experimental override switch is
-enabled from Main or from the Advanced gate panel; the Prompt tab's experimental prompt-policy drawer
-uses the same gate. Advanced and that prompt drawer share a compact two-pane editor: a left rail of
+enabled from Main or from the Advanced gate panel. Advanced uses a compact two-pane editor: a left rail of
 groups and a right body that draws one widget per field type -- checkbox, slider, numeric text,
 single-line text, or multi-line text/list/table area -- with per-field and per-group reset, accent
 coloring for customized values, a name filter that

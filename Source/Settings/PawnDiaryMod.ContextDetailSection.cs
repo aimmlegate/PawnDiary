@@ -7,8 +7,7 @@ namespace PawnDiary
 {
     public partial class PawnDiaryMod
     {
-        private const float ContextDetailDisplayHeight = 376f;
-        private const float ContextDetailInvariantRowHeight = 58f;
+        private const float ContextDetailDisplayHeight = 314f;
         private const float ContextDetailFullRowHeight = 58f;
         private const float ContextDetailPresetRowHeight = 84f;
 
@@ -25,10 +24,6 @@ namespace PawnDiary
             Rect helpRect = new Rect(innerRect.x, y, innerRect.width, 40f);
             DrawMutedLabel(helpRect, "PawnDiary.Settings.ContextDetailSectionHelp".Translate().ToString());
             y += helpRect.height + 8f;
-
-            DrawContextDetailInvariantRow(
-                new Rect(innerRect.x, y, innerRect.width, ContextDetailInvariantRowHeight));
-            y += ContextDetailInvariantRowHeight + 4f;
 
             DrawContextDetailPresetRow(
                 new Rect(innerRect.x, y, innerRect.width, ContextDetailFullRowHeight),
@@ -49,29 +44,6 @@ namespace PawnDiary
                 PromptContextDetailLevel.Compact,
                 "PawnDiary.Settings.ContextDetail.Compact.Added",
                 "PawnDiary.Settings.ContextDetail.Compact.Cut");
-        }
-
-        private static void DrawContextDetailInvariantRow(Rect rect)
-        {
-            Widgets.DrawHighlight(rect);
-            Rect inner = rect.ContractedBy(6f);
-            const float nameWidth = 166f;
-            const float gap = 6f;
-
-            GameFont previousFont = Text.Font;
-            TextAnchor previousAnchor = Text.Anchor;
-
-            Text.Font = GameFont.Medium;
-            Text.Anchor = TextAnchor.MiddleLeft;
-            Widgets.LabelFit(new Rect(inner.x, inner.y, nameWidth, inner.height), "PawnDiary.Settings.ContextDetail.NeverCutLabel".Translate());
-
-            Text.Font = GameFont.Tiny;
-            Text.Anchor = TextAnchor.UpperLeft;
-            Rect textRect = new Rect(inner.x + nameWidth + gap, inner.y, Mathf.Max(0f, inner.width - nameWidth - gap), inner.height);
-            Widgets.LabelFit(textRect, "PawnDiary.Settings.ContextDetail.NeverCutText".Translate().ToString());
-
-            Text.Anchor = previousAnchor;
-            Text.Font = previousFont;
         }
 
         private static void DrawContextDetailPresetRow(Rect rect, PromptContextDetailLevel level, string addedKey, string cutKey)
