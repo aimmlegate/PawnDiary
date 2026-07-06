@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Compatibility group for RimTalk (cj.rimtalk). RimTalk logs each AI chat line as a
+     RimTalkInteraction PlayLog entry; without this group the Interaction catch-all would turn each
+     line into its own diary event. This routes those lines into one ambient day-note per pawn.
+     Inert and invisible unless RimTalk is in the mod list (enableWhenPackageIdsLoaded). -->
+<Defs>
+
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>rimtalk_chatter</defName>
+    <label>RimTalk conversations</label>
+    <order>17</order>
+    <domain>Interaction</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <captureRenderedGameText>true</captureRenderedGameText>
+    <enableWhenPackageIdsLoaded>
+      <li>cj.rimtalk</li>
+    </enableWhenPackageIdsLoaded>
+    <batch>
+      <mode>AmbientDayNote</mode>
+      <windowTicks>60000</windowTicks>
+      <maxEvents>999</maxEvents>
+      <syntheticDefName>RimTalkAmbientDay</syntheticDefName>
+      <labelKey>PawnDiary.Event.AmbientSocialLabel</labelKey>
+      <headerKey>PawnDiary.Event.AmbientSocialHeader</headerKey>
+      <fallbackKey>PawnDiary.Event.AmbientSocialFallback</fallbackKey>
+      <instructionKey>PawnDiary.Event.AmbientSocialInstruction</instructionKey>
+      <minEventsToWrite>8</minEventsToWrite>
+      <maxSampleLines>3</maxSampleLines>
+    </batch>
+    <promotion>
+      <baseChance>0.005</baseChance>
+      <maxChance>0.08</maxChance>
+      <opinionStrongBonus>0.025</opinionStrongBonus>
+      <opinionStrongThreshold>40</opinionStrongThreshold>
+      <opinionAsymmetryBonus>0.025</opinionAsymmetryBonus>
+      <opinionAsymmetryThreshold>40</opinionAsymmetryThreshold>
+      <needLowBonus>0.025</needLowBonus>
+      <needLowThreshold>0.25</needLowThreshold>
+      <moodExtremeBonus>0.025</moodExtremeBonus>
+      <moodLowThreshold>0.25</moodLowThreshold>
+    </promotion>
+    <instruction>ordinary conversation during the day - treat it as passing talk unless mood, need, or the pair's history makes a line land harder</instruction>
+    <instructions>
+      <li>day-to-day talk - pick the one supplied line or moment that left a trace, and why it did</li>
+      <li>day-to-day talk - write the feeling under the words: ease, friction, or distance</li>
+      <li>day-to-day talk - keep it small and true; no invented quotes beyond the supplied lines</li>
+    </instructions>
+    <tone>with light, everyday social texture</tone>
+    <tones>
+      <li>loose and conversational, like talk drifting through the room</li>
+      <li>plain and observant, small words carrying small weights</li>
+    </tones>
+    <matchDefNames>
+      <li>RimTalkInteraction</li>
+    </matchDefNames>
+    <matchPackageIds>
+      <li>cj.rimtalk</li>
+    </matchPackageIds>
+  </PawnDiary.DiaryInteractionGroupDef>
+
+</Defs>

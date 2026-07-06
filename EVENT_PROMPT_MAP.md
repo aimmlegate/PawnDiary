@@ -288,6 +288,7 @@ Template side effects:
 ```mermaid
 flowchart LR
     subgraph Batches["Current batch groups"]
+        BG0["rimtalk_chatter<br/>AmbientDayNote<br/>window 60000<br/>min 8, sample 3<br/>promotion enabled<br/>RimTalk gated"]
         BG1["speakup_chitchat<br/>AmbientDayNote<br/>window 60000<br/>min 8, sample 3<br/>promotion enabled"]
         BG2["strangechat<br/>AmbientDayNote<br/>window 60000<br/>min 3, sample 5<br/>promotion enabled"]
         BG3["smalltalk<br/>AmbientDayNote<br/>window 60000<br/>min 3, sample 5<br/>promotion enabled"]
@@ -351,6 +352,7 @@ Source recording weights:
 | Source | Current formula or value |
 |---|---|
 | Shared generation chance | `PawnDiarySettings.generationChanceWeight`, default `1`, clamped `0..5`. |
+| RimTalk chatter promotion | Same as SpeakUp: `base 0.005 + bonuses`, capped `0.08`, then multiplied by shared generation chance. Gated on packageId `cj.rimtalk` and exact interaction defName `RimTalkInteraction`. |
 | SpeakUp chatter promotion | `base 0.005 + bonuses`, capped `0.08`, then multiplied by shared generation chance. Bonuses: strong opinion `+0.025` at abs opinion `>=40`; opinion asymmetry `+0.025` at delta `>=40`; low food/rest/joy `+0.025` at `<=0.25`; low mood `+0.025` at `<=0.25`. |
 | Strange chat promotion | `base 0.04 + bonuses`, capped `0.6`, then multiplied by shared generation chance. Bonuses: strong opinion `+0.25`; opinion asymmetry `+0.2`; low need `+0.2`; low mood `+0.2`; same thresholds as above. |
 | Small talk promotion | Same as strange chat: `base 0.04`, cap `0.6`, bonuses `+0.25/+0.2/+0.2/+0.2`, then shared generation chance. |

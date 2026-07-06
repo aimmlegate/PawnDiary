@@ -6,6 +6,12 @@
   <speakup_chitchat.instructions.1>болтовня SpeakUp: покажи чувство под пустяком, будь то лёгкость, неловкость, давление или отстранённость</speakup_chitchat.instructions.1>
   <speakup_chitchat.instructions.2>болтовня SpeakUp: обычный ритм важен только настолько, насколько его делает важным состояние поселенца</speakup_chitchat.instructions.2>
   <speakup_chitchat.tone>с лёгкой, повседневной социальной фактурой</speakup_chitchat.tone>
+  <rimtalk_chatter.label>Разговоры RimTalk</rimtalk_chatter.label>
+  <rimtalk_chatter.instruction>обычный дневной разговор; считай его проходной речью, если настроение, нужда или история пары не делают строку важнее</rimtalk_chatter.instruction>
+  <rimtalk_chatter.instructions.0>повседневный разговор: выбери одну переданную реплику или момент, оставивший след, и почему он задел</rimtalk_chatter.instructions.0>
+  <rimtalk_chatter.instructions.1>повседневный разговор: пиши чувство под словами — лёгкость, трение или расстояние</rimtalk_chatter.instructions.1>
+  <rimtalk_chatter.instructions.2>повседневный разговор: держи запись малой и точной; не выдумывай цитаты сверх переданных строк</rimtalk_chatter.instructions.2>
+  <rimtalk_chatter.tone>с лёгкой, повседневной социальной фактурой</rimtalk_chatter.tone>
   <romance.label>Романтика и свидания</romance.label>
   <romance.instruction>искра между двумя людьми: шаг навстречу, украдкой брошенный взгляд, шёпот обещания или разбитое сердце</romance.instruction>
   <romance.instructions.0>романтика: используй только уже переданные или явно подразумеваемые телесные признаки — расстояние, дыхание, заминку или прикосновение, если оно названо</romance.instructions.0>
@@ -365,6 +371,8 @@
   <romance.tones.1>тихо и вдумчиво, с упором на то, что изменилось</romance.tones.1>
   <romance_relation.tones.0>формально, но судьбоносно, с тихой сдержанностью</romance_relation.tones.0>
   <romance_relation.tones.1>лично и обнажённо, с упором на сдвиг связи</romance_relation.tones.1>
+  <rimtalk_chatter.tones.0>свободно и разговорно, будто речь проходит через комнату</rimtalk_chatter.tones.0>
+  <rimtalk_chatter.tones.1>просто и наблюдательно, маленькие слова несут малый вес</rimtalk_chatter.tones.1>
   <slavery.tones.0>гнетуще и тяжело, с упором на контроль</slavery.tones.0>
   <slavery.tones.1>тихо непокорно, со злостью, удержанной под давлением</slavery.tones.1>
   <speakup_chitchat.tones.0>свободно и разговорно, как обычная речь, проходящая через комнату</speakup_chitchat.tones.0>

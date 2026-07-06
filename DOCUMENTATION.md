@@ -391,6 +391,11 @@ public `PawnDiaryApi` calls the planned bridge will need. The executable impleme
 Compatibility groups shipped inside this repo for other mods use the group gate
 `enableWhenPackageIdsLoaded` (inverse of `disableWhenPackageIdsLoaded`): the group is enabled only
 while one of the listed target mods is in the mod list, so it sits fully inert otherwise.
+`1.6/Defs/Compat/DiaryCompat_RimTalk.xml` adds `rimtalk_chatter`, an Interaction-domain compat
+group gated on RimTalk's packageId (`cj.rimtalk`). It claims `RimTalkInteraction` PlayLog rows before
+the broad `other` fallback can see them, captures the rendered chat text, and routes ordinary chatter
+through the same `AmbientDayNote` batching/promotion policy as SpeakUp. With RimTalk absent, the row
+does not appear in event settings and has no runtime effect.
 
 ## 4. Event Sources
 
@@ -456,7 +461,7 @@ XML owns policy that designers should be able to change without recompiling.
 
 | XML file | Owns |
 |---|---|
-| `DiaryInteractionGroupDefs.xml` | event classification, group instructions/tones, batching, hediff modes, colors, default enablement |
+| `DiaryInteractionGroupDefs.xml` / `Defs/Compat/*.xml` | event classification, group instructions/tones, batching, hediff modes, colors, default enablement, optional-mod compat groups |
 | `DiaryEventWindowDefs.xml` | one-shot or timed story windows from game signals |
 | `DiaryObservedConditionDefs.xml` | live-state conditions such as map danger, game conditions, evidence things, and visible hediffs |
 | `DiaryEventPromptDefs.xml` | event prompt text, enhancements, and optional forced model names |

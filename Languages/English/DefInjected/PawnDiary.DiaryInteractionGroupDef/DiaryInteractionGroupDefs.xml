@@ -6,6 +6,12 @@
   <speakup_chitchat.instructions.1>SpeakUp chatter - focus on the feeling under the small talk: ease, awkwardness, pressure, or distance</speakup_chitchat.instructions.1>
   <speakup_chitchat.instructions.2>SpeakUp chatter - let the ordinary rhythm matter only if the pawn&apos;s state makes it matter</speakup_chitchat.instructions.2>
   <speakup_chitchat.tone>with light, everyday social texture</speakup_chitchat.tone>
+  <rimtalk_chatter.label>RimTalk conversations</rimtalk_chatter.label>
+  <rimtalk_chatter.instruction>ordinary conversation during the day - treat it as passing talk unless mood, need, or the pair&apos;s history makes a line land harder</rimtalk_chatter.instruction>
+  <rimtalk_chatter.instructions.0>day-to-day talk - pick the one supplied line or moment that left a trace, and why it did</rimtalk_chatter.instructions.0>
+  <rimtalk_chatter.instructions.1>day-to-day talk - write the feeling under the words: ease, friction, or distance</rimtalk_chatter.instructions.1>
+  <rimtalk_chatter.instructions.2>day-to-day talk - keep it small and true; no invented quotes beyond the supplied lines</rimtalk_chatter.instructions.2>
+  <rimtalk_chatter.tone>with light, everyday social texture</rimtalk_chatter.tone>
   <romance.label>Romance &amp; dating</romance.label>
   <romance.instruction>a spark between two people—an advance, a stolen glance, a whispered promise, or a heart breaking</romance.instruction>
   <romance.instructions.0>romance — use body cues already supplied or clearly implied: distance, breath, hesitation, or touch if stated</romance.instructions.0>
@@ -296,6 +302,8 @@
   <romance.tones.1>quietly reflective, focused on what changed</romance.tones.1>
   <romance_relation.tones.0>formal and life-changing, with quiet restraint</romance_relation.tones.0>
   <romance_relation.tones.1>private and raw, focused on the bond shifting</romance_relation.tones.1>
+  <rimtalk_chatter.tones.0>loose and conversational, like talk drifting through the room</rimtalk_chatter.tones.0>
+  <rimtalk_chatter.tones.1>plain and observant, small words carrying small weights</rimtalk_chatter.tones.1>
   <slavery.tones.0>oppressive and heavy, focused on control</slavery.tones.0>
   <slavery.tones.1>quietly defiant, with anger kept under pressure</slavery.tones.1>
   <speakup_chitchat.tones.0>loose and conversational, like ordinary talk passing through the room</speakup_chitchat.tones.0>

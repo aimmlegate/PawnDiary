@@ -8,6 +8,13 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **RimTalk ambient compat group added.** Added `1.6/Defs/Compat/DiaryCompat_RimTalk.xml` with
+  `rimtalk_chatter`, gated on `cj.rimtalk`, matching `RimTalkInteraction`, and routing ordinary
+  RimTalk PlayLog chat rows into `AmbientDayNote` batching with the SpeakUp promotion policy instead
+  of letting the broad Interaction fallback create one diary candidate per chat line. Added EN/RU
+  DefInjected text, updated the event map/docs, and marked Step 1 complete in
+  `design/RIMTALK_BRIDGE_PLAN.md`.
+
 - **RimTalk bridge reset to adapter scaffold.** Removed the old log-only RimTalk bridge source
   (`RimTalkCreateInteractionPatch`, `RimTalkChatLogger`, and the single-checkbox Mod/settings
   class), dropped its stale Keyed settings strings and unused Harmony/RimTalk compile references,
