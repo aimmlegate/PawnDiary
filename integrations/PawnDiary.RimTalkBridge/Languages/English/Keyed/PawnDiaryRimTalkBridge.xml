@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- All player-facing / LLM-facing strings for the RimTalk bridge. Structured prompt schema
+     labels (chat_persona=, talk_type=, exchanges=, said_N=) intentionally stay English in code —
+     they are machine-readable keys, not prose (see DOCUMENTATION.md §12 carve-outs). -->
+<LanguageData>
+
+  <!-- Mod settings window -->
+  <PawnDiaryRimTalkBridge.Settings.Category>PawnDiary: RimTalk bridge</PawnDiaryRimTalkBridge.Settings.Category>
+  <PawnDiaryRimTalkBridge.Settings.RimTalkMissing>RimTalk is not in the active mod list, so the bridge is idle. Settings below still save.</PawnDiaryRimTalkBridge.Settings.RimTalkMissing>
+  <PawnDiaryRimTalkBridge.Settings.LevelSection>Integration level</PawnDiaryRimTalkBridge.Settings.LevelSection>
+  <PawnDiaryRimTalkBridge.Settings.LevelOff>Off</PawnDiaryRimTalkBridge.Settings.LevelOff>
+  <PawnDiaryRimTalkBridge.Settings.LevelOffDesc>No data flows between Pawn Diary and RimTalk in either direction.</PawnDiaryRimTalkBridge.Settings.LevelOffDesc>
+  <PawnDiaryRimTalkBridge.Settings.LevelSharedContext>Shared context</PawnDiaryRimTalkBridge.Settings.LevelSharedContext>
+  <PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>Pawns remember their diary in conversation: recent diary memories flow into RimTalk prompts, and each pawn's RimTalk persona is visible to the diary as context. No entries are created from chat.</PawnDiaryRimTalkBridge.Settings.LevelSharedContextDesc>
+  <PawnDiaryRimTalkBridge.Settings.LevelConversations>Shared context + conversations</PawnDiaryRimTalkBridge.Settings.LevelConversations>
+  <PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>Everything above, plus important RimTalk conversations (arguments, kindness, urgent news, long exchanges) become diary entries for both participants. Ordinary chatter stays in the ambient day note handled by Pawn Diary itself.</PawnDiaryRimTalkBridge.Settings.LevelConversationsDesc>
+  <PawnDiaryRimTalkBridge.Settings.AdvancedSection>Advanced</PawnDiaryRimTalkBridge.Settings.AdvancedSection>
+  <PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLine>Include diary-voice line in chat context</PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLine>
+  <PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLineDesc>Adds one line describing how the pawn writes their diary to the RimTalk prompt section, so chat can echo the same voice.</PawnDiaryRimTalkBridge.Settings.IncludeDiaryVoiceLineDesc>
+  <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>Persona-led diary voice (experimental)</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoice>
+  <PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>Shapes each pawn's diary writing voice from their RimTalk character description. Experimental: a character description is a cruder voice rule than the curated diary styles. Turning this off restores the normal styles.</PawnDiaryRimTalkBridge.Settings.PersonaLedDiaryVoiceDesc>
+  <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>Write conversation entries through RimTalk's AI</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngine>
+  <PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>Uses RimTalk's configured AI provider to write the bridge's conversation entries instead of Pawn Diary's own provider. Falls back to the normal path when RimTalk's AI is busy or fails.</PawnDiaryRimTalkBridge.Settings.UseRimTalkEngineDesc>
+  <PawnDiaryRimTalkBridge.Settings.DevChatLogging>Developer chat logging</PawnDiaryRimTalkBridge.Settings.DevChatLogging>
+  <PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>Logs every observed RimTalk chat line and every bridge decision (conversation flushes, importance reasons, throttling, submissions) to the dev console.</PawnDiaryRimTalkBridge.Settings.DevChatLoggingDesc>
+  <PawnDiaryRimTalkBridge.Settings.ContextEntryCount>Diary memories per chat prompt</PawnDiaryRimTalkBridge.Settings.ContextEntryCount>
+  <PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>Conversation quiet window (ticks)</PawnDiaryRimTalkBridge.Settings.ConversationQuietTicks>
+  <PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>Chat lines that make a talk important</PawnDiaryRimTalkBridge.Settings.MinRepliesForImportant>
+  <PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>Conversation entries per pawn per day</PawnDiaryRimTalkBridge.Settings.PerPawnDailyCap>
+  <PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>Conversation entries per colony per day</PawnDiaryRimTalkBridge.Settings.ColonyDailyCap>
+  <PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>Minimum gap per pawn pair (ticks)</PawnDiaryRimTalkBridge.Settings.PairMinGapTicks>
+  <PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>Quoted chat lines per entry</PawnDiaryRimTalkBridge.Settings.TranscriptLineCap>
+
+  <!-- Text injected into RimTalk prompts (level 1). The header/line/voice strings are prose the
+       chat LLM reads, so they are localized; RU should keep them short and native. -->
+  <PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>recent diary memories:</PawnDiaryRimTalkBridge.Prompt.DiaryMemoriesHeader>
+  <PawnDiaryRimTalkBridge.Prompt.MemoryLine>- {0} ({1}): {2}</PawnDiaryRimTalkBridge.Prompt.MemoryLine>
+  <PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>diary voice: {0}</PawnDiaryRimTalkBridge.Prompt.DiaryVoiceLine>
+  <PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>Recent Pawn Diary memories for this pawn, plus an optional line describing their diary-writing voice.</PawnDiaryRimTalkBridge.Prompt.DiaryVariableDesc>
+
+  <!-- Tier B persona-led diary voice: the style rule Pawn Diary receives as an override. -->
+  <PawnDiaryRimTalkBridge.Persona.VoiceRule>voice shaped by their character: {0}</PawnDiaryRimTalkBridge.Persona.VoiceRule>
+
+  <!-- Important-conversation diary entries (level 2). -->
+  <PawnDiaryRimTalkBridge.Event.ConversationLabel>notable conversation</PawnDiaryRimTalkBridge.Event.ConversationLabel>
+  <PawnDiaryRimTalkBridge.Event.ConversationSummary>Talked with {0} — {1} exchanges.</PawnDiaryRimTalkBridge.Event.ConversationSummary>
+  <PawnDiaryRimTalkBridge.Event.ConversationInstruction>Write what this conversation stirred or changed for the writer — the feeling and aftermath, not a transcript.</PawnDiaryRimTalkBridge.Event.ConversationInstruction>
+  <PawnDiaryRimTalkBridge.Event.SomeonePartner>someone</PawnDiaryRimTalkBridge.Event.SomeonePartner>
+
+</LanguageData>

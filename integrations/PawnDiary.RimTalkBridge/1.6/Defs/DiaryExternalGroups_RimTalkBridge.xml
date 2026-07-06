@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  The bridge's half of the Pawn Diary contract: an External-domain group that CLAIMS the eventKey the
+  bridge submits for important RimTalk conversations. Without a claiming group, SubmitPromptEntry
+  records nothing (Pawn Diary logs one warning naming the source). label/instruction/tones are
+  DefInjected-localizable inside this adapter mod, exactly like Pawn Diary's own groups.
+
+  matchDefNames MUST stay in sync with BridgeIds.ConversationEventKey ("rimtalkbridge_conversation").
+  This is a frozen save token — never rename it after release.
+-->
+<Defs>
+  <PawnDiary.DiaryInteractionGroupDef>
+    <defName>rimtalkbridgeConversation</defName>
+    <label>notable conversations</label>
+    <order>1010</order>
+    <domain>External</domain>
+    <defaultEnabled>true</defaultEnabled>
+    <important>false</important>
+    <instruction>a conversation that mattered today; write what it stirred or settled, not a transcript</instruction>
+    <tones>
+      <li>attentive to what was said and what was held back</li>
+      <li>honest about how the exchange landed</li>
+    </tones>
+    <matchDefNames>
+      <li>rimtalkbridge_conversation</li>
+    </matchDefNames>
+  </PawnDiary.DiaryInteractionGroupDef>
+</Defs>

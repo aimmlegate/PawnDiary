@@ -54,12 +54,33 @@ registers, through `PawnDiaryExampleApi.RegisterHooksOnce()`:
 - `RegisterPawnContextProvider` — fired during prompt context collection; the adapter contributes one
   `example_traits=…` line per pawn and bumps a counter visible in the same tab.
 
-`PawnDiary.RimTalkBridge/` is the first real adapter target, currently reset to the example-adapter
-shape: a GameComponent registration point plus a bridge-named `PawnDiaryApi` facade. It no longer
-contains the old log-only RimTalk Harmony patch or settings UI. Its project stays net48/x64 because
-the planned RimTalk hook code will reference the current RimTalk workshop assembly. Follow
-`design/RIMTALK_BRIDGE_PLAN.md` for the next bridge implementation steps. The pre-commit verify hook
-builds only the core mod; adapters are built/deployed manually.
+`PawnDiary.RimTalkBridge/` is the first real adapter target: a two-way bridge between Pawn Diary and
+RimTalk, gated by an **integration-level** dropdown in its own mod settings (see
+`design/RIMTALK_BRIDGE_PLAN.md` for the full design and `DOCUMENTATION.md` for shipped behavior):
+
+- **Off** — no data flows in either direction.
+- **Shared context** (default, level 1) — recent diary memories are injected into RimTalk's chat
+  prompts (via `ContextHookRegistry.InjectPawnSection` + a `{{pawn1.diary}}` variable), and each
+  pawn's RimTalk persona is surfaced to Pawn Diary as a `chat_persona=` context-provider line. Purely
+  additive context; no state is mutated.
+- **Shared context + conversations** (level 2) — important RimTalk conversations additionally become
+  diary entries for both participants (`SubmitPromptEntry`), while ordinary chatter is left to the
+  core `rimtalk_chatter` ambient-day-note compat group.
+
+Advanced toggles cover a Tier-B persona-led writing-style override, an experimental "RimTalk as the
+diary LLM" engine mode (`PreviewPrompt` → `AIService.Query` → `SubmitDirectEntry`, with a safe
+fallback), and per-pawn/colony/pair throttles. Its project stays net48/x64 because the RimTalk hook
+code references the RimTalk workshop assembly (`$(RimTalkAssembly)` MSBuild property).
+
+The bridge's pure decision logic (conversation assembly, importance, throttling, context formatting)
+is unit-tested by `tests/RimTalkBridgeLogicTests/`, run the same way as the example adapter's tests:
+
+```
+dotnet run --project tests/RimTalkBridgeLogicTests/RimTalkBridgeLogicTests.csproj
+```
+
+The pre-commit verify hook builds only the core mod; adapters (and their pure tests) are built, run,
+and deployed manually.
 
 The explorer's pure text-parsing helpers (`ExplorerParsing.cs`) are unit-tested by
 `tests/ExampleAdapterParsingTests/`:

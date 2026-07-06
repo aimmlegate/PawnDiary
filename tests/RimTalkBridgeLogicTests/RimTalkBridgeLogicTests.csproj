@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pure bridge helpers only. This project must compile WITHOUT RimWorld/RimTalk/Verse/Unity
+         (AGENTS.md / SKILL.md rule): every file linked here lives under the bridge's Source/Pure/. -->
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ContextFormat.cs" Link="ContextFormat.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationAssembly.cs" Link="ConversationAssembly.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ConversationContext.cs" Link="ConversationContext.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ImportancePolicy.cs" Link="ImportancePolicy.cs" />
+    <Compile Include="..\..\integrations\PawnDiary.RimTalkBridge\Source\Pure\ThrottlePolicy.cs" Link="ThrottlePolicy.cs" />
+  </ItemGroup>
+</Project>
