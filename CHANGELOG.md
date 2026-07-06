@@ -8,6 +8,170 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Writing-style catalog: collision and gap fixes, both languages (Def/localization text, no C#).**
+  Review of all 45 English styles found five rule-level weaknesses and two structural issues; fixed
+  in English and mirrored in Russian. (1) `small-detail` had lost its direction ("one plain little
+  detail" made it a duplicate of `spare-iceberg` on small models) — the detail is now explicitly
+  something that got better, held, or eased. (2) `contained-fire` had the weakest mechanic in the
+  file ("feeling under a plain surface" is not executable at 8B) — now: plain calm sentences, then
+  one short sentence admitting the held-in pressure via a single heat word. (3) `blank-bliss` no
+  longer compares itself to joywire (a style the model never sees in the same request). (4)
+  `dread-image` ("then stop") and `thought-current` ("a flowing sentence", singular) no longer cap
+  entry length, so they compose with the 2-5 sentence important templates. (5) Example-domain
+  de-clustering: walls appeared in five examples, doors in four, meals in four — swapped five
+  examples to fresh domains (smoke/watch, winter/woodpile, fire/sand, barracks, lamp) so example
+  leakage on small models stops skewing diaries toward walls; the iconic examples (iceberg's cold
+  meal, clerk-nightmare's complaint-filing meal) were kept. (6) New style `verdict-first`
+  (`DiaryPersona_BluntVerdict`, themes hostile+grim; RU «сперва-приговор»): opens with a blunt
+  one-or-two-word verdict, then the fact that earned it — the hostile theme had only three styles
+  (vs nineteen grim) and all three were wit-shaped, leaving abrasive pawns without a blunt voice.
+  Catalog is now 46 styles in both languages; XML parses, RU/EN parity suite passes (795
+  assertions). Known non-changes: `lost-thread` vs `slipping-thread` stay close by design (one is
+  hediff-gated), and `heavy-haze`'s atmospheric opener deliberately coexists with the base prompt's
+  no-weather-opener rule (smoke/dim light are not weather).
+
+- **Russian writing styles and humor cues: pattern check (localization text only, no C#).**
+  Follow-up review of the two layers whose Russian versions are by design *assembled from native
+  Russian patterns*, not translated. The 20 humor cues were confirmed already native (labels like
+  «авось-пройдёт», «ну-и-ладно», genres like объяснительная and ведомость) with four touch-ups:
+  removed the meta word «русским» from the understatement rule, replaced the anachronism «мемов»
+  with «кривляния», gave the «авось» spirit to the conditional-cop-out rule, and rebuilt
+  «баланс-сошёлся» around the native «зато» construction. The six new syntax personas were
+  re-anchored in recognizable Russian prose manners (author names stay out of the file per the
+  standing convention): the run-on style is framed as одно-дыхание polysyndeton, the formal style
+  now keeps a присутственная-книга clerical register («Заношу для порядка... Больше доложить
+  некому»), the self-debate style gains the repeated-word signature «впрочем» (repeated word is a
+  sanctioned mechanical signature), the counting style opens with «держаться за счёт», and the
+  sideways opener got the deadpan «Да, и ещё:». Also fixed calques in the two prompt wrappers every
+  entry passes through: `PersonaVoice` («не играй чат-персонажа», «крылатые фразы» — wrong sense
+  for catchphrases) → «не разыгрывай персонажа, не вешай на поселенца словечек сверх правила», and
+  `HumorVoice` («сухую русскую интонацию», «мем») → «необязательная поблажка... Не шути в лоб».
+  All touched files parse; RU/EN Keyed parity suite passes (795 assertions).
+
+- **Russian prompt naturalization pass (localization text only, no C#).** Follow-up to the Russian
+  sync after review feedback: the fresh Russian prompt text carried literal English calques.
+  Reworked ~60 lines across the five Russian prompt files into natural Russian while keeping every
+  rule's meaning and mechanics: base prompts ("Если поля это поддерживают" -> "Если данные это
+  позволяют", "не заставляй запись иметь всё сразу" -> "не пытайся уместить всё сразу", the opener
+  rule rephrased, priority ladder simplified), speech instructions rewritten without the technical
+  "по умолчанию без блока речи" framing, `Event.Raid` smoothed («Тревога подняла на ноги всё
+  поселение, и {0} вместе со всеми» — still gender-neutral), and calqued pool lines fixed
+  ("ещё весит к ночи" -> "к ночи так и не отпустил", "пиши туннель момента" -> "пиши сузившийся
+  мир", "переигрывает в памяти" -> "прокручивает в памяти", "встань на сторону" -> "реши
+  однозначно, как оно ложится", and similar), plus three new persona rules smoothed. Also unified
+  the response-format verb to «Выведи» across all Russian prompts (the file mixed «Верни»/«Выведи»)
+  and fixed one wrong prefix inconsistency (тяжкая -> тягостная работа). All five files parse; the
+  RU/EN Keyed parity suite passes (795 assertions); pool counts unchanged (120 indexed entries).
+
+- **Prompt diversity pass, Russian sync (localization text only, no C#).** Brought the Russian
+  patch up to parity with diversity batches 1-3, closing the displacement gap those batches noted.
+  Authored in the established Russian register, not literally translated. (1) DefInjected
+  `DiaryInteractionGroupDef`: indexed `instructions.0-2` entries for all 23 newly pooled groups
+  (69 lines), restoring Russian instruction text that the non-empty English pools had displaced —
+  instruction-pool coverage is now 40/40 groups in both languages. (2) DefInjected
+  `DiaryPromptDef`: the shared and reflection system prompts gained the opener-variance rule
+  (quoting the Russian field label «моё последнее начало») and a stock-phrase ban built from
+  *Russian* LLM clichés («сердце ёкнуло», «мурашки по коже», «по спине пробежал холодок», «не мог
+  не», «ком в горле»); title prompts gained the do-not-continue guard. (3) DefInjected
+  `DiaryPromptTemplateDef`: Russian 2-5 sentence `systemPrompt`/`finalInstruction`/
+  `recipientFinalInstruction` for `SoloImportant`/`PairImportant`/`PairCombat`; label hygiene
+  mirrored where the Russian labels had the same problems (`конец моей прошлой записи (для
+  связности; не пересказывать)`, `личная запись инициатора (адресат её не видел; для связности, не
+  упоминать)`, recharge hint on «перезарядка способности», Title field label «запись дневника для
+  заголовка»). (4) DefInjected `DiaryPersonaDef`: the six syntax-outlier styles authored in Russian
+  (`на-одном-дыхании`, `казённое-обращение`, `спор-с-собой`, `счёт-по-пальцам`, `на-ты-с-собой`,
+  `вход-сбоку`) with fresh Russian examples on the shared repair-scene convention, plus the same
+  six fixed-count rule loosenings as English. (5) Keyed: both direct-speech instructions flipped to
+  default-no-speech (worked example removed), and `Event.Raid` reworded to onset-neutral
+  («{0} застигла тревога, поднятая по всему поселению») — the verb agrees with «тревога», keeping
+  the line gender-neutral for any pawn name; `Event.Interaction` was already label-first in Russian
+  and stays unchanged. Verified: XML parse on all five touched Russian files; RU/EN Keyed parity
+  suite still passes (DiaryPipelineTests, 795 assertions); pool/persona counts match English
+  (120 indexed instruction entries = 40 groups x 3; 45 style rules).
+
+- **Prompt diversity pass, batch 3 (English prompt text only, no C#).** Widened the writing-style
+  catalog along the syntax axis and cleaned up model-facing field labels. (1) Six new
+  `DiaryPersonaDef` styles that vary sentence *syntax* rather than mood, because the catalog
+  clustered around terse fragment shapes that converge at 8B: `run-on-breath` (and-chained run-on,
+  then a flat stop), `formal-address` (stiff address to the diary itself), `self-debate`
+  (question-and-answer turns in the pawn's own voice), `counted-things` (counting habit, numbers as
+  words), `second-person` (the pawn addresses themselves as "you"), and `sideways-open` (least
+  important true detail first). All follow the house format (mechanical signature + synthetic
+  example + themes) and avoid typography tricks that small models cannot reproduce. Additive and
+  save-safe; no existing style was removed. (2) Reworded six style rules that fixed a hard per-entry
+  sentence count (spare-iceberg, sharp-inversion, solemn-consequence, polite-needle, quiet-paradox,
+  compressed-lyric) into per-sentence shapes so they compose with the new 2-5 sentence
+  important/combat templates instead of clamping them to one or two lines. (3) Field label hygiene
+  in `DiaryPromptTemplateDefs.xml`: the `raid points` row in all nine templates that carried it is
+  now `enabled=false` (raw storyteller points invited number-echoing; arrival mode + strategy carry
+  the meaning, and the value stays in saved `gameContext`) — disabled rather than deleted because
+  Russian localizes field labels by index (`fields.N.label`), and removing a row would shift every
+  later index and mis-align the RU translations; `ability cooldown ticks` is now
+  self-interpreting (`ability recharge ticks (long recharge = rarer, weightier use)`); `my last
+  opener (not repeat)` became `my last opening line (do not reuse)` with the five system-prompt
+  references updated in the same change; `previous diary ending (continue from this)` became `how my
+  previous entry ended (continuity; do not retell it)` (the old wording invited retelling the prior
+  entry); `initiator diary (hidden context)` became `initiator's private entry (you never read it;
+  keep continuity, never mention it)`; `major_xenotype` lost its stray underscore. The C# fallback
+  field lists in `PromptArchitectureDefs.cs` intentionally keep the old labels (XML-first practice).
+  The pawn-summary-on-default-templates experiment stays unshipped: it is gated on a live prompt-lab
+  A/B and the local endpoint had no model loaded. Verified: XML parse on all touched files, all
+  three pure suites (795 + 89 + 67), prompt-lab `check-golden` 8/8, and an `--all-variants` dry run
+  (new opener label rendered 5320 times, zero `raid points:` lines). RU status (English-first):
+  the six new styles are not yet RU-injected, so Russian games show them in English until the RU
+  pass; the label renames only change the English defaults — Russian keeps its own indexed
+  `fields.N.label` injections, which stay correctly aligned because no field row was removed.
+
+- **Prompt diversity pass, batch 2 (English prompt text only, no C#).** Extended per-entry
+  instruction rotation to the rest of the high-traffic event groups and fixed the two raw event
+  lines models were echoing badly. (1) Added `instructions` variant pools (3 lenses each, picked
+  per entry by the existing stable-hash rotation) to 23 groups that previously had only a single
+  fixed instruction: dayreflection, workRoutine/workPassion/workStrain, thoughtOther, heartfelt,
+  animal, teaching, socialfight, inspiration, hediffMajorHealth, talework/talequality/taleincident/
+  talehealth/talequiet, moodeventPositive/Negative/Mixed, romance_relation, strangechat, and the
+  `other`/`taleother` fallbacks — instruction pools now cover 40 of 87 groups, including every
+  frequent one. Each pool rotates a different angle (body/material, relational, consequence) so
+  repeated events of the same kind stop receiving identical guidance. (2) Raw event text:
+  `PawnDiary.Event.Interaction` no longer says "had a {label} interaction" (models echoed the word
+  "interaction"; now "Between {0} and {2}: {1}.", label-agnostic), and `PawnDiary.Event.Raid` no
+  longer says "lived through a raid" (past-completed tense contradicted the raid prompt's
+  anticipation framing and the line also serves friendly forces and infestations; now "{0} heard
+  the alarm go up across the colony."). Mental-break/inspiration lines keep no terminal period on
+  purpose — the `ReasonSuffix` concatenation supplies it. (3) Title flow guards: the title system
+  and user instructions now explicitly forbid continuing/rewriting the entry (observed 12B failure
+  mode), and the Title template's field label changed from `entry` to `diary entry to title` so
+  the entry text arrives with leading task context. Bad echoes of the new label would bypass the
+  parser's `entry:` strip-list, but such titles already fail the title contract and fall back to
+  the entry's opening words. Verified: XML parse on all four touched files, all three pure test
+  suites (795 + 89 + 67 assertions; DiaryPipelineTests reads the live Keyed XML), prompt-lab
+  `check-golden` 8/8, and an `--all-variants` dry run rendering 336 prompts with the new pool
+  variants plus the new title label. Known RU gap (deliberate English-first pass): the existing 17
+  pools are fully injected in Russian (`group.instructions.N`), but the 23 new pools are not yet —
+  and because a non-empty pool replaces the singular field, Russian games will send these groups'
+  instruction lines in English (displacing the translated singular) until the Russian pass adds
+  matching indexed entries.
+
+- **Prompt diversity pass, batch 1 (English prompt text only, no C#).** Three changes aimed at
+  richer, less repetitive diary text across small local models (8B-70B). (1) The shared first-person
+  and reflection system prompts gained two targeted anti-sameness rules: vary the entry opening (not
+  the weather, not "Today", never the words in "my last opener") and avoid a short list of stock
+  phrases ("heart skipped a beat", "shivers down my spine", "I couldn't help but", "a testament to",
+  "the weight of it all"). (2) The interaction direct-speech instructions (initiator + solo) were
+  flipped to default-no-speech: the old wording led with the positive case and a worked
+  `[[speech]]` example, and models from 8B to 675B were copying it into invented quotes; the new
+  wording states that notes almost never contain the pawn's real words and allows one speech line
+  only when they do. The recipient instruction was already default-off and is unchanged. (3)
+  `SoloImportant`, `PairImportant`, and `PairCombat` templates now override the shared prompts with
+  a 2-5 sentence variant, matching 2-5 final/recipient instructions, and `maxTokens=200` (player
+  default cap is 100), so raids, weddings, and fights get more page weight than small talk while
+  mundane shapes stay 1-3. Also fixed the stale `humorChance` value in `EVENT_PROMPT_MAP.md` (0.10
+  -> 0.20) and corrected the `DiaryPromptDef.xml` header comment: XML is authoritative and the C#
+  field initializers are an emergency fallback that may lag. Verified with XML parse checks,
+  prompt-lab `check-golden` (8/8), and an `--all-variants` dry run showing the new system prompt,
+  final instructions, and speech rules composing correctly (1400 fixture prompts on the 2-5 path).
+  Russian Keyed/DefInjected text intentionally not yet retuned; it needs its own pass, not a literal
+  translation.
+
 - **Settings tab cleanup.** Moved automatic event filters out of Advanced into a dedicated Events
   tab, moved the global `Full` / `Balanced` / `Compact` context-detail selector into its own Main
   tab section at the bottom of the page, and replaced the old Prompts drawer with a Main-tab cut/add

@@ -13,7 +13,7 @@
   <DiaryPromptTemplate_PairDefault.fields.10.label>способность</DiaryPromptTemplate_PairDefault.fields.10.label>
   <DiaryPromptTemplate_PairDefault.fields.11.label>тип способности</DiaryPromptTemplate_PairDefault.fields.11.label>
   <DiaryPromptTemplate_PairDefault.fields.12.label>цель способности</DiaryPromptTemplate_PairDefault.fields.12.label>
-  <DiaryPromptTemplate_PairDefault.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairDefault.fields.13.label>
+  <DiaryPromptTemplate_PairDefault.fields.13.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_PairDefault.fields.13.label>
   <DiaryPromptTemplate_PairDefault.fields.14.label>приближение рейда</DiaryPromptTemplate_PairDefault.fields.14.label>
   <DiaryPromptTemplate_PairDefault.fields.15.label>тактика рейда</DiaryPromptTemplate_PairDefault.fields.15.label>
   <DiaryPromptTemplate_PairDefault.fields.16.label>сила рейда</DiaryPromptTemplate_PairDefault.fields.16.label>
@@ -24,7 +24,19 @@
   <DiaryPromptTemplate_PairDefault.fields.21.label>тон</DiaryPromptTemplate_PairDefault.fields.21.label>
   <DiaryPromptTemplate_PairDefault.fields.22.label>отношения</DiaryPromptTemplate_PairDefault.fields.22.label>
   <DiaryPromptTemplate_PairDefault.fields.23.label>моё последнее начало (не повторять)</DiaryPromptTemplate_PairDefault.fields.23.label>
-  <DiaryPromptTemplate_PairDefault.fields.24.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairDefault.fields.24.label>
+  <DiaryPromptTemplate_PairDefault.fields.24.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_PairDefault.fields.24.label>
+  <!-- Важные/боевые шаблоны: собственный системный промпт на 2–5 предложений и свои финальные
+       инструкции (общие говорят «1–3», а малые модели слушаются последней длины). -->
+  <DiaryPromptTemplate_PairImportant.systemPrompt>Напиши 2–5 предложений дневника от первого лица в заданной манере поселенца. Это событие для него важно: дай записи развернуться, а не сжимай всё в одну строку.
+Опирайся только на переданные поля. Факты важнее стиля: не добавляй людей, места, реплики, мотивы, исходы, лечение и скачки во времени.
+Порядок такой: сначала само событие, затем подсказка события и инструкция группы, и только потом тон и манера письма. Юмор и особые подсказки — необязательный акцент.
+Сделай факты живыми здесь и сейчас. Возьми одну-две конкретные чувственные детали, эмоциональный укол или маленькое последствие из контекста; не пытайся уместить всё сразу. Не пересказывай сухо.
+Каждую запись начинай по-новому: не с погоды, не со слова «Сегодня» и не повторяя слов из поля «моё последнее начало».
+Избегай штампов вроде «сердце ёкнуло», «мурашки по коже», «по спине пробежал холодок», «не мог не», «ком в горле».
+Прямая речь только когда в заметках есть слова, которые поселенец действительно говорит вслух: их пиши как [[speech]]слова[[/speech]], чужие слова пересказывай.
+Выведи только текст дневника. Закончи обычным знаком препинания.</DiaryPromptTemplate_PairImportant.systemPrompt>
+  <DiaryPromptTemplate_PairImportant.finalInstruction>Напиши 2–5 предложений дневника от первого лица как этот поселенец о событии выше. Момент стоит большего, чем беглая пометка, но не раздувай: если фактов мало, пусть запись выйдет короче — сам факт и реакция поселенца, без натяжки. Выведи только запись.</DiaryPromptTemplate_PairImportant.finalInstruction>
+  <DiaryPromptTemplate_PairImportant.recipientFinalInstruction>Напиши 2–5 предложений дневника от первого лица адресата о событии выше. Запись инициатора дана только для связности; не пиши так, будто адресат её читал. Момент стоит большего, чем беглая пометка, но не раздувай: если фактов мало, пусть запись выйдет короче — сам факт и реакция поселенца, без натяжки. Выведи только запись.</DiaryPromptTemplate_PairImportant.recipientFinalInstruction>
   <DiaryPromptTemplate_PairImportant.fields.0.label>событие</DiaryPromptTemplate_PairImportant.fields.0.label>
   <DiaryPromptTemplate_PairImportant.fields.1.label>точка зрения</DiaryPromptTemplate_PairImportant.fields.1.label>
   <DiaryPromptTemplate_PairImportant.fields.2.label>роль</DiaryPromptTemplate_PairImportant.fields.2.label>
@@ -38,7 +50,7 @@
   <DiaryPromptTemplate_PairImportant.fields.10.label>способность</DiaryPromptTemplate_PairImportant.fields.10.label>
   <DiaryPromptTemplate_PairImportant.fields.11.label>тип способности</DiaryPromptTemplate_PairImportant.fields.11.label>
   <DiaryPromptTemplate_PairImportant.fields.12.label>цель способности</DiaryPromptTemplate_PairImportant.fields.12.label>
-  <DiaryPromptTemplate_PairImportant.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairImportant.fields.13.label>
+  <DiaryPromptTemplate_PairImportant.fields.13.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_PairImportant.fields.13.label>
   <DiaryPromptTemplate_PairImportant.fields.14.label>приближение рейда</DiaryPromptTemplate_PairImportant.fields.14.label>
   <DiaryPromptTemplate_PairImportant.fields.15.label>тактика рейда</DiaryPromptTemplate_PairImportant.fields.15.label>
   <DiaryPromptTemplate_PairImportant.fields.16.label>сила рейда</DiaryPromptTemplate_PairImportant.fields.16.label>
@@ -49,8 +61,18 @@
   <DiaryPromptTemplate_PairImportant.fields.21.label>тон</DiaryPromptTemplate_PairImportant.fields.21.label>
   <DiaryPromptTemplate_PairImportant.fields.22.label>отношения</DiaryPromptTemplate_PairImportant.fields.22.label>
   <DiaryPromptTemplate_PairImportant.fields.23.label>моё последнее начало (не повторять)</DiaryPromptTemplate_PairImportant.fields.23.label>
-  <DiaryPromptTemplate_PairImportant.fields.24.label>дневник инициатора (скрытый контекст)</DiaryPromptTemplate_PairImportant.fields.24.label>
-  <DiaryPromptTemplate_PairImportant.fields.25.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairImportant.fields.25.label>
+  <DiaryPromptTemplate_PairImportant.fields.24.label>личная запись инициатора (адресат её не видел; для связности, не упоминать)</DiaryPromptTemplate_PairImportant.fields.24.label>
+  <DiaryPromptTemplate_PairImportant.fields.25.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_PairImportant.fields.25.label>
+  <DiaryPromptTemplate_PairCombat.systemPrompt>Напиши 2–5 предложений дневника от первого лица в заданной манере поселенца. Это событие для него важно: дай записи развернуться, а не сжимай всё в одну строку.
+Опирайся только на переданные поля. Факты важнее стиля: не добавляй людей, места, реплики, мотивы, исходы, лечение и скачки во времени.
+Порядок такой: сначала само событие, затем подсказка события и инструкция группы, и только потом тон и манера письма. Юмор и особые подсказки — необязательный акцент.
+Сделай факты живыми здесь и сейчас. Возьми одну-две конкретные чувственные детали, эмоциональный укол или маленькое последствие из контекста; не пытайся уместить всё сразу. Не пересказывай сухо.
+Каждую запись начинай по-новому: не с погоды, не со слова «Сегодня» и не повторяя слов из поля «моё последнее начало».
+Избегай штампов вроде «сердце ёкнуло», «мурашки по коже», «по спине пробежал холодок», «не мог не», «ком в горле».
+Прямая речь только когда в заметках есть слова, которые поселенец действительно говорит вслух: их пиши как [[speech]]слова[[/speech]], чужие слова пересказывай.
+Выведи только текст дневника. Закончи обычным знаком препинания.</DiaryPromptTemplate_PairCombat.systemPrompt>
+  <DiaryPromptTemplate_PairCombat.finalInstruction>Напиши 2–5 предложений дневника от первого лица как этот поселенец о событии выше. Момент стоит большего, чем беглая пометка, но не раздувай: если фактов мало, пусть запись выйдет короче — сам факт и реакция поселенца, без натяжки. Выведи только запись.</DiaryPromptTemplate_PairCombat.finalInstruction>
+  <DiaryPromptTemplate_PairCombat.recipientFinalInstruction>Напиши 2–5 предложений дневника от первого лица адресата о событии выше. Запись инициатора дана только для связности; не пиши так, будто адресат её читал. Момент стоит большего, чем беглая пометка, но не раздувай: если фактов мало, пусть запись выйдет короче — сам факт и реакция поселенца, без натяжки. Выведи только запись.</DiaryPromptTemplate_PairCombat.recipientFinalInstruction>
   <DiaryPromptTemplate_PairCombat.fields.0.label>событие</DiaryPromptTemplate_PairCombat.fields.0.label>
   <DiaryPromptTemplate_PairCombat.fields.1.label>точка зрения</DiaryPromptTemplate_PairCombat.fields.1.label>
   <DiaryPromptTemplate_PairCombat.fields.2.label>роль</DiaryPromptTemplate_PairCombat.fields.2.label>
@@ -64,7 +86,7 @@
   <DiaryPromptTemplate_PairCombat.fields.10.label>способность</DiaryPromptTemplate_PairCombat.fields.10.label>
   <DiaryPromptTemplate_PairCombat.fields.11.label>тип способности</DiaryPromptTemplate_PairCombat.fields.11.label>
   <DiaryPromptTemplate_PairCombat.fields.12.label>цель способности</DiaryPromptTemplate_PairCombat.fields.12.label>
-  <DiaryPromptTemplate_PairCombat.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairCombat.fields.13.label>
+  <DiaryPromptTemplate_PairCombat.fields.13.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_PairCombat.fields.13.label>
   <DiaryPromptTemplate_PairCombat.fields.14.label>приближение рейда</DiaryPromptTemplate_PairCombat.fields.14.label>
   <DiaryPromptTemplate_PairCombat.fields.15.label>тактика рейда</DiaryPromptTemplate_PairCombat.fields.15.label>
   <DiaryPromptTemplate_PairCombat.fields.16.label>сила рейда</DiaryPromptTemplate_PairCombat.fields.16.label>
@@ -77,8 +99,8 @@
   <DiaryPromptTemplate_PairCombat.fields.23.label>отношения</DiaryPromptTemplate_PairCombat.fields.23.label>
   <DiaryPromptTemplate_PairCombat.fields.24.label>моё последнее начало (не повторять)</DiaryPromptTemplate_PairCombat.fields.24.label>
   <DiaryPromptTemplate_PairCombat.fields.25.label>оружие</DiaryPromptTemplate_PairCombat.fields.25.label>
-  <DiaryPromptTemplate_PairCombat.fields.26.label>дневник инициатора (скрытый контекст)</DiaryPromptTemplate_PairCombat.fields.26.label>
-  <DiaryPromptTemplate_PairCombat.fields.27.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairCombat.fields.27.label>
+  <DiaryPromptTemplate_PairCombat.fields.26.label>личная запись инициатора (адресат её не видел; для связности, не упоминать)</DiaryPromptTemplate_PairCombat.fields.26.label>
+  <DiaryPromptTemplate_PairCombat.fields.27.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_PairCombat.fields.27.label>
   <DiaryPromptTemplate_PairBatched.fields.0.label>событие</DiaryPromptTemplate_PairBatched.fields.0.label>
   <DiaryPromptTemplate_PairBatched.fields.1.label>точка зрения</DiaryPromptTemplate_PairBatched.fields.1.label>
   <DiaryPromptTemplate_PairBatched.fields.2.label>роль</DiaryPromptTemplate_PairBatched.fields.2.label>
@@ -92,7 +114,7 @@
   <DiaryPromptTemplate_PairBatched.fields.10.label>способность</DiaryPromptTemplate_PairBatched.fields.10.label>
   <DiaryPromptTemplate_PairBatched.fields.11.label>тип способности</DiaryPromptTemplate_PairBatched.fields.11.label>
   <DiaryPromptTemplate_PairBatched.fields.12.label>цель способности</DiaryPromptTemplate_PairBatched.fields.12.label>
-  <DiaryPromptTemplate_PairBatched.fields.13.label>перезарядка способности</DiaryPromptTemplate_PairBatched.fields.13.label>
+  <DiaryPromptTemplate_PairBatched.fields.13.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_PairBatched.fields.13.label>
   <DiaryPromptTemplate_PairBatched.fields.14.label>приближение рейда</DiaryPromptTemplate_PairBatched.fields.14.label>
   <DiaryPromptTemplate_PairBatched.fields.15.label>тактика рейда</DiaryPromptTemplate_PairBatched.fields.15.label>
   <DiaryPromptTemplate_PairBatched.fields.16.label>сила рейда</DiaryPromptTemplate_PairBatched.fields.16.label>
@@ -102,7 +124,7 @@
   <DiaryPromptTemplate_PairBatched.fields.20.label>обстановка</DiaryPromptTemplate_PairBatched.fields.20.label>
   <DiaryPromptTemplate_PairBatched.fields.21.label>тон</DiaryPromptTemplate_PairBatched.fields.21.label>
   <DiaryPromptTemplate_PairBatched.fields.22.label>моё последнее начало (не повторять)</DiaryPromptTemplate_PairBatched.fields.22.label>
-  <DiaryPromptTemplate_PairBatched.fields.23.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_PairBatched.fields.23.label>
+  <DiaryPromptTemplate_PairBatched.fields.23.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_PairBatched.fields.23.label>
   <DiaryPromptTemplate_SoloDefault.fields.0.label>событие</DiaryPromptTemplate_SoloDefault.fields.0.label>
   <DiaryPromptTemplate_SoloDefault.fields.1.label>точка зрения</DiaryPromptTemplate_SoloDefault.fields.1.label>
   <DiaryPromptTemplate_SoloDefault.fields.2.label>что произошло</DiaryPromptTemplate_SoloDefault.fields.2.label>
@@ -130,7 +152,7 @@
   <DiaryPromptTemplate_SoloDefault.fields.24.label>способность</DiaryPromptTemplate_SoloDefault.fields.24.label>
   <DiaryPromptTemplate_SoloDefault.fields.25.label>тип способности</DiaryPromptTemplate_SoloDefault.fields.25.label>
   <DiaryPromptTemplate_SoloDefault.fields.26.label>цель способности</DiaryPromptTemplate_SoloDefault.fields.26.label>
-  <DiaryPromptTemplate_SoloDefault.fields.27.label>перезарядка способности</DiaryPromptTemplate_SoloDefault.fields.27.label>
+  <DiaryPromptTemplate_SoloDefault.fields.27.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_SoloDefault.fields.27.label>
   <DiaryPromptTemplate_SoloDefault.fields.28.label>приближение рейда</DiaryPromptTemplate_SoloDefault.fields.28.label>
   <DiaryPromptTemplate_SoloDefault.fields.29.label>тактика рейда</DiaryPromptTemplate_SoloDefault.fields.29.label>
   <DiaryPromptTemplate_SoloDefault.fields.30.label>сила рейда</DiaryPromptTemplate_SoloDefault.fields.30.label>
@@ -140,7 +162,16 @@
   <DiaryPromptTemplate_SoloDefault.fields.34.label>обстановка</DiaryPromptTemplate_SoloDefault.fields.34.label>
   <DiaryPromptTemplate_SoloDefault.fields.35.label>тон</DiaryPromptTemplate_SoloDefault.fields.35.label>
   <DiaryPromptTemplate_SoloDefault.fields.36.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloDefault.fields.36.label>
-  <DiaryPromptTemplate_SoloDefault.fields.37.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloDefault.fields.37.label>
+  <DiaryPromptTemplate_SoloDefault.fields.37.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_SoloDefault.fields.37.label>
+  <DiaryPromptTemplate_SoloImportant.systemPrompt>Напиши 2–5 предложений дневника от первого лица в заданной манере поселенца. Это событие для него важно: дай записи развернуться, а не сжимай всё в одну строку.
+Опирайся только на переданные поля. Факты важнее стиля: не добавляй людей, места, реплики, мотивы, исходы, лечение и скачки во времени.
+Порядок такой: сначала само событие, затем подсказка события и инструкция группы, и только потом тон и манера письма. Юмор и особые подсказки — необязательный акцент.
+Сделай факты живыми здесь и сейчас. Возьми одну-две конкретные чувственные детали, эмоциональный укол или маленькое последствие из контекста; не пытайся уместить всё сразу. Не пересказывай сухо.
+Каждую запись начинай по-новому: не с погоды, не со слова «Сегодня» и не повторяя слов из поля «моё последнее начало».
+Избегай штампов вроде «сердце ёкнуло», «мурашки по коже», «по спине пробежал холодок», «не мог не», «ком в горле».
+Прямая речь только когда в заметках есть слова, которые поселенец действительно говорит вслух: их пиши как [[speech]]слова[[/speech]], чужие слова пересказывай.
+Выведи только текст дневника. Закончи обычным знаком препинания.</DiaryPromptTemplate_SoloImportant.systemPrompt>
+  <DiaryPromptTemplate_SoloImportant.finalInstruction>Напиши 2–5 предложений дневника от первого лица как этот поселенец о событии выше. Момент стоит большего, чем беглая пометка, но не раздувай: если фактов мало, пусть запись выйдет короче — сам факт и реакция поселенца, без натяжки. Выведи только запись.</DiaryPromptTemplate_SoloImportant.finalInstruction>
   <DiaryPromptTemplate_SoloImportant.fields.0.label>событие</DiaryPromptTemplate_SoloImportant.fields.0.label>
   <DiaryPromptTemplate_SoloImportant.fields.1.label>точка зрения</DiaryPromptTemplate_SoloImportant.fields.1.label>
   <DiaryPromptTemplate_SoloImportant.fields.2.label>что произошло</DiaryPromptTemplate_SoloImportant.fields.2.label>
@@ -169,7 +200,7 @@
   <DiaryPromptTemplate_SoloImportant.fields.25.label>способность</DiaryPromptTemplate_SoloImportant.fields.25.label>
   <DiaryPromptTemplate_SoloImportant.fields.26.label>тип способности</DiaryPromptTemplate_SoloImportant.fields.26.label>
   <DiaryPromptTemplate_SoloImportant.fields.27.label>цель способности</DiaryPromptTemplate_SoloImportant.fields.27.label>
-  <DiaryPromptTemplate_SoloImportant.fields.28.label>перезарядка способности</DiaryPromptTemplate_SoloImportant.fields.28.label>
+  <DiaryPromptTemplate_SoloImportant.fields.28.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_SoloImportant.fields.28.label>
   <DiaryPromptTemplate_SoloImportant.fields.29.label>приближение рейда</DiaryPromptTemplate_SoloImportant.fields.29.label>
   <DiaryPromptTemplate_SoloImportant.fields.30.label>тактика рейда</DiaryPromptTemplate_SoloImportant.fields.30.label>
   <DiaryPromptTemplate_SoloImportant.fields.31.label>сила рейда</DiaryPromptTemplate_SoloImportant.fields.31.label>
@@ -179,7 +210,7 @@
   <DiaryPromptTemplate_SoloImportant.fields.35.label>обстановка</DiaryPromptTemplate_SoloImportant.fields.35.label>
   <DiaryPromptTemplate_SoloImportant.fields.36.label>тон</DiaryPromptTemplate_SoloImportant.fields.36.label>
   <DiaryPromptTemplate_SoloImportant.fields.37.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloImportant.fields.37.label>
-  <DiaryPromptTemplate_SoloImportant.fields.38.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloImportant.fields.38.label>
+  <DiaryPromptTemplate_SoloImportant.fields.38.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_SoloImportant.fields.38.label>
   <DiaryPromptTemplate_SoloInternalState.fields.0.label>событие</DiaryPromptTemplate_SoloInternalState.fields.0.label>
   <DiaryPromptTemplate_SoloInternalState.fields.1.label>точка зрения</DiaryPromptTemplate_SoloInternalState.fields.1.label>
   <DiaryPromptTemplate_SoloInternalState.fields.2.label>что произошло</DiaryPromptTemplate_SoloInternalState.fields.2.label>
@@ -203,7 +234,7 @@
   <DiaryPromptTemplate_SoloInternalState.fields.20.label>способность</DiaryPromptTemplate_SoloInternalState.fields.20.label>
   <DiaryPromptTemplate_SoloInternalState.fields.21.label>тип способности</DiaryPromptTemplate_SoloInternalState.fields.21.label>
   <DiaryPromptTemplate_SoloInternalState.fields.22.label>цель способности</DiaryPromptTemplate_SoloInternalState.fields.22.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.23.label>перезарядка способности</DiaryPromptTemplate_SoloInternalState.fields.23.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.23.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_SoloInternalState.fields.23.label>
   <DiaryPromptTemplate_SoloInternalState.fields.24.label>приближение рейда</DiaryPromptTemplate_SoloInternalState.fields.24.label>
   <DiaryPromptTemplate_SoloInternalState.fields.25.label>тактика рейда</DiaryPromptTemplate_SoloInternalState.fields.25.label>
   <DiaryPromptTemplate_SoloInternalState.fields.26.label>сила рейда</DiaryPromptTemplate_SoloInternalState.fields.26.label>
@@ -213,7 +244,7 @@
   <DiaryPromptTemplate_SoloInternalState.fields.30.label>обстановка</DiaryPromptTemplate_SoloInternalState.fields.30.label>
   <DiaryPromptTemplate_SoloInternalState.fields.31.label>тон</DiaryPromptTemplate_SoloInternalState.fields.31.label>
   <DiaryPromptTemplate_SoloInternalState.fields.32.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloInternalState.fields.32.label>
-  <DiaryPromptTemplate_SoloInternalState.fields.33.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloInternalState.fields.33.label>
+  <DiaryPromptTemplate_SoloInternalState.fields.33.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_SoloInternalState.fields.33.label>
   <DiaryPromptTemplate_SoloBatched.fields.0.label>событие</DiaryPromptTemplate_SoloBatched.fields.0.label>
   <DiaryPromptTemplate_SoloBatched.fields.1.label>точка зрения</DiaryPromptTemplate_SoloBatched.fields.1.label>
   <DiaryPromptTemplate_SoloBatched.fields.2.label>что произошло</DiaryPromptTemplate_SoloBatched.fields.2.label>
@@ -237,7 +268,7 @@
   <DiaryPromptTemplate_SoloBatched.fields.20.label>способность</DiaryPromptTemplate_SoloBatched.fields.20.label>
   <DiaryPromptTemplate_SoloBatched.fields.21.label>тип способности</DiaryPromptTemplate_SoloBatched.fields.21.label>
   <DiaryPromptTemplate_SoloBatched.fields.22.label>цель способности</DiaryPromptTemplate_SoloBatched.fields.22.label>
-  <DiaryPromptTemplate_SoloBatched.fields.23.label>перезарядка способности</DiaryPromptTemplate_SoloBatched.fields.23.label>
+  <DiaryPromptTemplate_SoloBatched.fields.23.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_SoloBatched.fields.23.label>
   <DiaryPromptTemplate_SoloBatched.fields.24.label>приближение рейда</DiaryPromptTemplate_SoloBatched.fields.24.label>
   <DiaryPromptTemplate_SoloBatched.fields.25.label>тактика рейда</DiaryPromptTemplate_SoloBatched.fields.25.label>
   <DiaryPromptTemplate_SoloBatched.fields.26.label>сила рейда</DiaryPromptTemplate_SoloBatched.fields.26.label>
@@ -247,7 +278,7 @@
   <DiaryPromptTemplate_SoloBatched.fields.30.label>обстановка</DiaryPromptTemplate_SoloBatched.fields.30.label>
   <DiaryPromptTemplate_SoloBatched.fields.31.label>тон</DiaryPromptTemplate_SoloBatched.fields.31.label>
   <DiaryPromptTemplate_SoloBatched.fields.32.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloBatched.fields.32.label>
-  <DiaryPromptTemplate_SoloBatched.fields.33.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloBatched.fields.33.label>
+  <DiaryPromptTemplate_SoloBatched.fields.33.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_SoloBatched.fields.33.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.0.label>событие</DiaryPromptTemplate_SoloDayReflection.fields.0.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.1.label>точка зрения</DiaryPromptTemplate_SoloDayReflection.fields.1.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.2.label>что произошло</DiaryPromptTemplate_SoloDayReflection.fields.2.label>
@@ -272,7 +303,7 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.21.label>способность</DiaryPromptTemplate_SoloDayReflection.fields.21.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.22.label>тип способности</DiaryPromptTemplate_SoloDayReflection.fields.22.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.23.label>цель способности</DiaryPromptTemplate_SoloDayReflection.fields.23.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.24.label>перезарядка способности</DiaryPromptTemplate_SoloDayReflection.fields.24.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.24.label>перезарядка способности (долгая — значит применяется реже и весит больше)</DiaryPromptTemplate_SoloDayReflection.fields.24.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.25.label>приближение рейда</DiaryPromptTemplate_SoloDayReflection.fields.25.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.26.label>тактика рейда</DiaryPromptTemplate_SoloDayReflection.fields.26.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.27.label>сила рейда</DiaryPromptTemplate_SoloDayReflection.fields.27.label>
@@ -282,7 +313,7 @@
   <DiaryPromptTemplate_SoloDayReflection.fields.31.label>обстановка</DiaryPromptTemplate_SoloDayReflection.fields.31.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.32.label>тон</DiaryPromptTemplate_SoloDayReflection.fields.32.label>
   <DiaryPromptTemplate_SoloDayReflection.fields.33.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloDayReflection.fields.33.label>
-  <DiaryPromptTemplate_SoloDayReflection.fields.34.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloDayReflection.fields.34.label>
+  <DiaryPromptTemplate_SoloDayReflection.fields.34.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_SoloDayReflection.fields.34.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.systemPrompt>Напиши 4-7 предложений от первого лица: редкое длинное размышление за квадрум жизни поселенца.
 Сохрани манеру письма. Упомяни хотя бы две переданные даты естественно, не как ведомость.
 Свяжи события во времени: что изменилось, что продолжало болеть, что стало важным, что теперь понятно.
@@ -299,7 +330,7 @@
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>важных записей</DiaryPromptTemplate_SoloQuadrumReflection.fields.8.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>обстановка</DiaryPromptTemplate_SoloQuadrumReflection.fields.9.label>
   <DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloQuadrumReflection.fields.10.label>
-  <DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>
+  <DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_SoloQuadrumReflection.fields.11.label>
   <DiaryPromptTemplate_SoloArcReflection.systemPrompt>Напиши 5-8 предложений от первого лица: редкое личное размышление о жизненном пути.
 Сохрани манеру письма и нынешнее понимание себя. Переданные воспоминания — материал, а не список обязательных пунктов.
 Свяжи несколько воспоминаний с тем, каким становится поселенец: что изменилось, что возвращается, о чём есть сожаление, страх, желание или новое понимание.
@@ -319,7 +350,7 @@
   <DiaryPromptTemplate_SoloArcReflection.fields.11.label>обязательный годовой итог</DiaryPromptTemplate_SoloArcReflection.fields.11.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.12.label>обстановка</DiaryPromptTemplate_SoloArcReflection.fields.12.label>
   <DiaryPromptTemplate_SoloArcReflection.fields.13.label>моё последнее начало (не повторять)</DiaryPromptTemplate_SoloArcReflection.fields.13.label>
-  <DiaryPromptTemplate_SoloArcReflection.fields.14.label>предыдущая концовка дневника (продолжить отсюда)</DiaryPromptTemplate_SoloArcReflection.fields.14.label>
+  <DiaryPromptTemplate_SoloArcReflection.fields.14.label>конец моей прошлой записи (для связности; не пересказывать)</DiaryPromptTemplate_SoloArcReflection.fields.14.label>
   <DiaryPromptTemplate_DeathDescription.fields.0.label>событие</DiaryPromptTemplate_DeathDescription.fields.0.label>
   <DiaryPromptTemplate_DeathDescription.fields.1.label>подсказка события</DiaryPromptTemplate_DeathDescription.fields.1.label>
   <DiaryPromptTemplate_DeathDescription.fields.2.label>усиление события</DiaryPromptTemplate_DeathDescription.fields.2.label>
@@ -336,5 +367,5 @@
   <DiaryPromptTemplate_ArrivalDescription.fields.5.label>факты прибытия</DiaryPromptTemplate_ArrivalDescription.fields.5.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.6.label>сведения о поселенце</DiaryPromptTemplate_ArrivalDescription.fields.6.label>
   <DiaryPromptTemplate_ArrivalDescription.fields.7.label>обстановка</DiaryPromptTemplate_ArrivalDescription.fields.7.label>
-  <DiaryPromptTemplate_Title.fields.0.label>запись</DiaryPromptTemplate_Title.fields.0.label>
+  <DiaryPromptTemplate_Title.fields.0.label>запись дневника для заголовка</DiaryPromptTemplate_Title.fields.0.label>
 </LanguageData>

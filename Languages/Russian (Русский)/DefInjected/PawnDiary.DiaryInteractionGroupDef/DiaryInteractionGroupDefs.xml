@@ -14,6 +14,9 @@
   <romance.tone>с нежным, трепетным теплом</romance.tone>
   <romance_relation.label>Романтические вехи</romance_relation.label>
   <romance_relation.instruction>отношения становятся официальными, оформляются или рвутся; в центре перемена между двумя людьми, не переписка и не отчёт</romance_relation.instruction>
+  <romance_relation.instructions.0>перемена уз: пиши «до» и «после» — одно, что вчера было можно, а сегодня стало иначе</romance_relation.instructions.0>
+  <romance_relation.instructions.1>перемена уз: пиши вес огласки — что поселение теперь видит, когда эти двое стоят рядом</romance_relation.instructions.1>
+  <romance_relation.instructions.2>перемена уз: пиши личный счёт — надежду, страх, облегчение или горе, смотря по тому, соединяет перемена или рвёт</romance_relation.instructions.2>
   <romance_relation.tone>с сокровенным эмоциональным весом</romance_relation.tone>
   <recruit.label>Вербовка и плен</recruit.label>
   <recruit.instruction>напряжение тюремщика и пленника: контакт, слом воли или первые семена бунта</recruit.instruction>
@@ -29,6 +32,9 @@
   <trial.tone>с напряжённым, формальным давлением</trial.tone>
   <strangechat.label>Странный разговор</strangechat.label>
   <strangechat.instruction>что-то неправильное в обычном разговоре: странная беседа оставляет тревогу в воздухе. Не объясняй её</strangechat.instruction>
+  <strangechat.instructions.0>неправильный разговор: привяжи неправильность к чему-то одному — выбору слова, паузе, слишком долгому взгляду — и не давай ей разрешиться</strangechat.instructions.0>
+  <strangechat.instructions.1>неправильный разговор: пиши эхо после — фразу, которая крутится в голове и никак не складывается во что-то безобидное</strangechat.instructions.1>
+  <strangechat.instructions.2>неправильный разговор: пиши, как поселенец проверяет себя — может, устал, может, померещилось — и не может решить</strangechat.instructions.2>
   <strangechat.tone>с ползущим ужасом; неправильность не разрешай</strangechat.tone>
   <anomaly.label>Аномалия и тьма</anomaly.label>
   <anomaly.instruction>что-то неправильное в обычном обмене: голос, фраза, взгляд или тишина оставляют тревогу. Держи это близко к ощущениям поселенца и не объясняй</anomaly.instruction>
@@ -44,12 +50,21 @@
   <ritual.tone>с торжественным, церемониальным весом</ritual.tone>
   <animal.label>Уход за животными</animal.label>
   <animal.instruction>тихая связь — разговор с животным, приручение, дрессировка или прощание</animal.instruction>
+  <animal.instructions.0>момент с животным: пиши конкретное поведение зверя из переданного момента — уши, вес, дыхание, упрямство или доверие</animal.instructions.0>
+  <animal.instructions.1>момент с животным: пиши, как легко рядом с тем, кто ничего не ждёт и не отвечает словами</animal.instructions.1>
+  <animal.instructions.2>момент с животным: пиши практическую сторону на ощупь — корм, терпение, повторение — и сдвинулось ли со зверем дело хоть на шаг</animal.instructions.2>
   <animal.tone>с тихой, мягкой нежностью</animal.tone>
   <heartfelt.label>Душевный разговор</heartfelt.label>
   <heartfelt.instruction>обмен теплом — глубокий разговор, добрые слова или мягкая рука, поддержавшая кого-то</heartfelt.instruction>
+  <heartfelt.instructions.0>тепло между людьми: назови конкретный жест из заметок и ту настороженность, которую он снял</heartfelt.instructions.0>
+  <heartfelt.instructions.1>тепло между людьми: напиши, что поселенец не сумел сказать в ответ, не выдумывая цитат</heartfelt.instructions.1>
+  <heartfelt.instructions.2>тепло между людьми: пиши, что осталось после — в комнате легче, работа мягче, этим вечером не так одиноко</heartfelt.instructions.2>
   <heartfelt.tone>с мягким, нежным теплом</heartfelt.tone>
   <teaching.label>Обучение и уроки</teaching.label>
   <teaching.instruction>урок, переданный дальше — взрослый учит ребёнка или играет с ним</teaching.instruction>
+  <teaching.instructions.0>урок: напиши момент, когда он дошёл или не дошёл — взгляд, повтор, маленькая победа</teaching.instructions.0>
+  <teaching.instructions.1>урок: напиши, чего стоит быть тем, кто объясняет — терпение, повторение и странная гордость, когда наконец дошло</teaching.instructions.1>
+  <teaching.instructions.2>урок: напиши скрытую перемену ролей — кто на самом деле у кого учился, только из переданного момента</teaching.instructions.2>
   <teaching.tone>с терпеливой, тихой нежностью</teaching.tone>
   <smalltalk.label>Обычная болтовня</smalltalk.label>
   <smalltalk.instruction>праздная болтовня: мелкий разговор, который заполняет тишину</smalltalk.instruction>
@@ -59,12 +74,21 @@
   <smalltalk.tone>с лёгкой, непринуждённой близостью</smalltalk.tone>
   <dayreflection.label>Итог дня</dayreflection.label>
   <dayreflection.instruction>тихое вечернее размышление, оглядывающееся на весь день</dayreflection.instruction>
+  <dayreflection.instructions.0>итог дня: выбери из переданного один момент, который к ночи так и не отпустил, и дай остальному дню осесть вокруг него</dayreflection.instructions.0>
+  <dayreflection.instructions.1>итог дня: взвесь день как потраченные силы — что он забрал, что вернул, что осталось на завтра</dayreflection.instructions.1>
+  <dayreflection.instructions.2>итог дня: пиши отход ко сну телом — койка, тепло, ломота, голод или тишина — и сквозь них переданные моменты дня</dayreflection.instructions.2>
   <dayreflection.tone>с тихим, оседающим вечерним покоем</dayreflection.tone>
   <arrival.label>Появление</arrival.label>
   <other.label>Тихий день</other.label>
   <other.instruction>социальное взаимодействие между поселенцами</other.instruction>
+  <other.instructions.0>обычный обмен: найди в заметках ту одну конкретную деталь, ради которой это стоило записать</other.instructions.0>
+  <other.instructions.1>обычный обмен: напиши, что этот момент говорит об отношениях этих двоих — только из переданных фактов</other.instructions.1>
+  <other.instructions.2>обычный обмен: коротко и честно — что случилось и какой мелкий след от этого остался</other.instructions.2>
   <socialfight.label>Потасовки</socialfight.label>
   <socialfight.instruction>сорвавшиеся нервы: двое сошлись врукопашную. Пиши это как жар и удар</socialfight.instruction>
+  <socialfight.instructions.0>драка: пиши сузившийся мир — звук пропадает, руки действуют первыми, комната тесна</socialfight.instructions.0>
+  <socialfight.instructions.1>драка: пиши первую минуту после — дыхание, костяшки, кто отвёл глаза, что теперь сломано между ними</socialfight.instructions.1>
+  <socialfight.instructions.2>драка: пиши цену под злостью — стыд, облегчение или обиду, которая поселилась надолго</socialfight.instructions.2>
   <socialfight.tone>с резкой адреналиновой яростью</socialfight.tone>
   <insultspree.label>Поток оскорблений</insultspree.label>
   <insultspree.instruction>поселенец срывается в повторяющуюся словесную жестокость; предпочитай настоящие записи об оскорблениях из журнала, когда они есть</insultspree.instruction>
@@ -83,35 +107,62 @@
   <talecombat.tone>со страхом и нутряной опасностью</talecombat.tone>
   <talehealth.label>Здоровье и медицина</talehealth.label>
   <talehealth.instruction>хрупкость тела: операция, болезнь, переохлаждение или выздоровление. Пиши страх, облегчение или доверие</talehealth.instruction>
+  <talehealth.instructions.0>хрупкость тела: пиши, каково отдать себя в чужие руки — лежать смирно, потолок и свет, доверяя или нет</talehealth.instructions.0>
+  <talehealth.instructions.1>хрупкость тела: пиши пересчёт после — что ещё работает, что болит, что ощущается чужим</talehealth.instructions.1>
+  <talehealth.instructions.2>хрупкость тела: пиши благодарность за саму заботу или обиду на неё, не выдумывая, кто что делал</talehealth.instructions.2>
   <talehealth.tone>с хрупким страхом и облегчением</talehealth.tone>
   <talelife.label>Жизненные вехи</talelife.label>
   <talelife.instruction>поворотная точка: рождение, плен, привязанность или новое начало. Пиши это как изменившуюся жизнь</talelife.instruction>
   <talelife.tone>с тихим весом поворотной точки</talelife.tone>
   <talequality.label>Шедевры и легендарные изделия</talequality.label>
   <talequality.instruction>руки сделали нечто долговечное: гордость, усталость и вес созидания</talequality.instruction>
+  <talequality.instructions.0>добротная вещь: пиши саму вещь — волокно, кромку, отделку, посадку, деталь, которую заметит только мастер</talequality.instructions.0>
+  <talequality.instructions.1>добротная вещь: пиши часы, вложенные в неё, и странную пустоту сразу после завершения</talequality.instructions.1>
+  <talequality.instructions.2>добротная вещь: пиши, как она переживёт этот день — кто будет ею пользоваться или носить её, держась переданных фактов</talequality.instructions.2>
   <talequality.tone>с гордым, до костей усталым удовлетворением</talequality.tone>
   <talework.label>Труд и достижения</talework.label>
   <talework.instruction>удовлетворение от труда: ремесло, изучение, добыча или выросший навык. Гордость должна быть приземлённой</talework.instruction>
+  <talework.instructions.0>памятная работа: пиши сам результат — вот что теперь есть, чего утром ещё не было</talework.instructions.0>
+  <talework.instructions.1>памятная работа: пиши, как умение показало себя — шаг, что раньше давался с трудом, вышел сам собой</talework.instructions.1>
+  <talework.instructions.2>памятная работа: пиши усталость, которая ощущается заслуженной, и одну деталь, которую поселенец с гордостью прокручивает в памяти</talework.instructions.2>
   <talework.tone>с ровной, приземлённой гордостью</talework.tone>
   <taleanomaly.label>Ужас аномалии</taleanomaly.label>
   <taleanomaly.instruction>аномалия, мутация, контакт с пустотой или неестественное последствие; пиши страх как увиденное вблизи - запах, свет, кожа, память - и никогда не объясняй источник</taleanomaly.instruction>
   <taleanomaly.tone>со страхом и жутью, достаточно близкой, чтобы заразить страницу</taleanomaly.tone>
   <taleincident.label>Рейды, бедствия и события поселения</taleincident.label>
   <taleincident.instruction>поселение потрясено: рейд, бедствие или кризис. Пиши, каково было это пережить</taleincident.instruction>
+  <taleincident.instructions.0>потрясение: пиши только свой угол события — то, что поселенец сам видел или делал, а не весь кризис целиком</taleincident.instructions.0>
+  <taleincident.instructions.1>потрясение: пиши тело под тревогой — звук, бег, руки делают заученное раньше, чем догоняет мысль</taleincident.instructions.1>
+  <taleincident.instructions.2>потрясение: пиши, что теперь иначе — увиденный урон, сломанный распорядок или привычная безопасность, в которую больше не верится; только переданные исходы</taleincident.instructions.2>
   <taleincident.tone>с шатким, оглушённым напряжением бедствия</taleincident.tone>
   <talequiet.label>Тихие личные моменты</talequiet.label>
   <talequiet.instruction>тихая заметка: отдых, молитва или мелкое смущение. Кратко и лично</talequiet.instruction>
+  <talequiet.instructions.0>тихая мелочь: пусть она нарочно останется маленькой — один момент, одно чувство, без морали</talequiet.instructions.0>
+  <talequiet.instructions.1>тихая мелочь: пиши её как украденное время — кусочек дня, который принадлежал только поселенцу</talequiet.instructions.1>
+  <talequiet.instructions.2>тихая мелочь: если кольнуло или смутило, скажи честно, насколько — мелочь, а запомнится</talequiet.instructions.2>
   <talequiet.tone>с маленькой, потаённой тишиной</talequiet.tone>
   <taleother.label>Примечательный день</taleother.label>
   <taleother.instruction>примечательное несоциальное событие RimWorld с участием поселенца</taleother.instruction>
+  <taleother.instructions.0>памятный случай: сначала назови сам факт, затем — как поселенец его про себя оценивает: гордость, тревога или пожатие плеч</taleother.instructions.0>
+  <taleother.instructions.1>памятный случай: напиши, почему именно он останется в памяти, когда рутина недели забудется</taleother.instructions.1>
+  <taleother.instructions.2>памятный случай: привяжи его к месту и телу — где поселенец стоял и что делали его руки</taleother.instructions.2>
   <moodeventPositive.label>Положительные события настроения</moodeventPositive.label>
   <moodeventPositive.instruction>что-то подняло настроение: хорошее событие в масштабе поселения, от которого отпускает сердце</moodeventPositive.instruction>
+  <moodeventPositive.instructions.0>общая удача: пиши общую лёгкость — плечи опустились, шутки вернулись, работа пошла веселее</moodeventPositive.instructions.0>
+  <moodeventPositive.instructions.1>общая удача: пиши личную долю поселенца в общем благе, опираясь на переданное условие</moodeventPositive.instructions.1>
+  <moodeventPositive.instructions.2>общая удача: пиши настороженность под облегчением — радоваться, пока длится, на этой-то планете</moodeventPositive.instructions.2>
   <moodeventPositive.tone>с приподнятым, отпущенным духом</moodeventPositive.tone>
   <moodeventNegative.label>Отрицательные события настроения</moodeventNegative.label>
   <moodeventNegative.instruction>что-то давит: плохое событие в масштабе поселения, от которого внутри становится туго</moodeventNegative.instruction>
+  <moodeventNegative.instructions.0>общая тягота: пиши, как условие дотягивается до распорядка самого поселенца — свет, еда, сон, нервы или работа</moodeventNegative.instructions.0>
+  <moodeventNegative.instructions.1>общая тягота: пиши настроение поселения по приметам — ответы короче, комнаты пустее, двери закрываются раньше</moodeventNegative.instructions.1>
+  <moodeventNegative.instructions.2>общая тягота: пиши простую арифметику — сколько ещё можно терпеть и что закончится первым, только из переданных фактов</moodeventNegative.instructions.2>
   <moodeventNegative.tone>с придавливающим напряжением</moodeventNegative.tone>
   <moodeventMixed.label>Неоднозначные события настроения</moodeventMixed.label>
   <moodeventMixed.instruction>условие задевает всех по-разному; пиши, как оно ощущается именно этому поселенцу</moodeventMixed.instruction>
+  <moodeventMixed.instructions.0>неровное условие: реши однозначно, как оно ложится именно на этого поселенца — легче ему или тяжелее, строго по переданным фактам</moodeventMixed.instructions.0>
+  <moodeventMixed.instructions.1>неровное условие: пиши разницу — что оно делает с этим поселенцем и что, судя по всему, с остальными рядом</moodeventMixed.instructions.1>
+  <moodeventMixed.instructions.2>неровное условие: пиши саму странность, давящую на чувства и настроение, не объясняя её механику</moodeventMixed.instructions.2>
   <moodeventMixed.tone>с тревожным, неоднозначным зарядом</moodeventMixed.tone>
   <moodeventOther.label>Мимолётные настроения</moodeventOther.label>
   <moodeventOther.instruction>событие в масштабе поселения, влияющее на настроение поселенца</moodeventOther.instruction>
@@ -132,21 +183,36 @@
   <thoughtNegative.tone>с низким, ноющим грузом</thoughtNegative.tone>
   <thoughtOther.label>Мимолётные мысли</thoughtOther.label>
   <thoughtOther.instruction>временная мысль мелькнула в уме поселенца. Соизмеряй силу с эффектом на настроение</thoughtOther.instruction>
+  <thoughtOther.instructions.0>мимолётная мысль: пиши, как она пришла посреди дела и была отпущена или оставлена; соизмеряй с влиянием на настроение</thoughtOther.instructions.0>
+  <thoughtOther.instructions.1>мимолётная мысль: пиши, что она ненадолго изменила — шаг, аппетит, терпение или внимание; соизмеряй с влиянием на настроение</thoughtOther.instructions.1>
+  <thoughtOther.instructions.2>мимолётная мысль: пиши её как внутреннюю погоду — она подкрашивает час, но событием не становится; соизмеряй с влиянием на настроение</thoughtOther.instructions.2>
   <thoughtOther.tone>с мимолётным, полуощутимым сдвигом</thoughtOther.tone>
   <inspiration.label>Вдохновение</inspiration.label>
   <inspiration.instruction>внезапная полезная ясность: ум поселенца загорается целью. Опирайся на вид вдохновения и причину, если игра её дала</inspiration.instruction>
+  <inspiration.instructions.0>озарение: напиши миг, когда сошлось — посреди дела, на полушаге, глядя в пустоту, — и план сложился целиком</inspiration.instructions.0>
+  <inspiration.instructions.1>озарение: пиши зуд начать сейчас — инструменты пересчитаны, сон подождёт, следующий час уже расписан</inspiration.instructions.1>
+  <inspiration.instructions.2>озарение: пиши и сомнение следом — слишком складно, слишком быстро, но попробовать стоит; не выдумывай успеха</inspiration.instructions.2>
   <inspiration.tone>с ярким, сосредоточенным порывом</inspiration.tone>
   <workDarkStudy.label>Тёмные исследования</workDarkStudy.label>
   <workDarkStudy.instruction>тёмные изыскания должны тревожить каждый раз; пиши работу как личный контакт с чем-то неправильным, жутким и неразрешённым</workDarkStudy.instruction>
   <workDarkStudy.tone>с ползущим, неразрешённым ужасом</workDarkStudy.tone>
   <workPassion.label>Любимая работа</workPassion.label>
   <workPassion.instruction>работа задевает увлечение поселенца: положительная, сосредоточенная, тихо приятная, но без вида, будто в поселении легко</workPassion.instruction>
+  <workPassion.instructions.0>любимая работа: пиши растворение в деле — время пропадает, руки сами знают что делать, работа ведёт, а не подгоняет</workPassion.instructions.0>
+  <workPassion.instructions.1>любимая работа: назови одну мелочь ремесла, сделанную в точности как надо, и тихое удовольствие от неё</workPassion.instructions.1>
+  <workPassion.instructions.2>любимая работа: пусть поселенец признает, что делал бы это даже в плохой день, не притворяясь, что жизнь здесь легка</workPassion.instructions.2>
   <workPassion.tone>с приземлённым удовлетворением</workPassion.tone>
   <workStrain.label>Тягостная работа</workStrain.label>
   <workStrain.instruction>работа кажется скучной, грязной, неловкой или досадной; особенно уборка, чёрный труд или дело, где поселенцу не хватает навыка</workStrain.instruction>
+  <workStrain.instructions.0>тягостная работа: пиши трение — грязь, повторение, инструмент, который сопротивляется, или умение, которого не хватает</workStrain.instructions.0>
+  <workStrain.instructions.1>тягостная работа: пиши жалобу тела — спина, руки, колени, глаза — и мысленный счёт, сколько ещё осталось</workStrain.instructions.1>
+  <workStrain.instructions.2>тягостная работа: пиши затаённую досаду и куда поселенец её девает — в инструмент, в распорядок или в себя</workStrain.instructions.2>
   <workStrain.tone>с усталым раздражением</workStrain.tone>
   <workRoutine.label>Рутинная работа</workRoutine.label>
   <workRoutine.instruction>обычная работа в поселении без сильного увлечения и без провала: нейтрально, практично, кратко, с фактурой задачи</workRoutine.instruction>
+  <workRoutine.instructions.0>рутинная работа: держись самой фактуры — земля, сталь, ткань, камень, смазка или зерно — и того, что делали руки</workRoutine.instructions.0>
+  <workRoutine.instructions.1>рутинная работа: пиши ритм и то, куда уходили мысли, пока руки работали</workRoutine.instructions.1>
+  <workRoutine.instructions.2>рутинная работа: назови простой итог — грядка закончена, штабель выше, пол чист — и скажи, стоил ли он этих часов</workRoutine.instructions.2>
   <workRoutine.tone>с ровной, будничной рутиной</workRoutine.tone>
   <hediffPartGainedAnomalous.label>Аномальные изменения тела</hediffPartGainedAnomalous.label>
   <hediffPartGainedAnomalous.instruction>тело поселенца вырастило или получило живую аномальную плоть; сделай перемену близкой и тревожной - тепло под кожей, движение там, где должна быть неподвижность, пульс или чужая фактура - через подсказку отношения и не объясняй биологию</hediffPartGainedAnomalous.instruction>
@@ -165,6 +231,9 @@
   <hediffAnomalyCompulsion.tone>с навязчивым, неестественным давлением на мысль и плоть</hediffAnomalyCompulsion.tone>
   <hediffMajorHealth.label>Серьёзные перемены здоровья</hediffMajorHealth.label>
   <hediffMajorHealth.instruction>новое или ухудшающееся состояние здоровья, которое держалось весь день</hediffMajorHealth.instruction>
+  <hediffMajorHealth.instructions.0>затяжная хворь: назови, где она сидит — грудь, живот, кожа, суставы — и как сегодня изменила одно обычное дело</hediffMajorHealth.instructions.0>
+  <hediffMajorHealth.instructions.1>затяжная хворь: пиши сделку с собой — что поселенец всё равно сделал, что отложил, что скрыл от остальных</hediffMajorHealth.instructions.1>
+  <hediffMajorHealth.instructions.2>затяжная хворь: пиши, как поселенец прислушивается к телу — проверяет слишком часто и боится завтрашней проверки; лечения не выдумывай</hediffMajorHealth.instructions.2>
   <hediffMajorHealth.tone>с телесной тревогой и уязвимостью</hediffMajorHealth.tone>
   <raid.label>Рейды</raid.label>
   <raid.instruction>поселение ждёт рейд, который уже начался, но может ещё приближаться: тревога, оружие, позиции и задержанное дыхание до столкновения. Пиши ожидание боя, если факты не показывают, что бой уже дошёл до поселенцев</raid.instruction>

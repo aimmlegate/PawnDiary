@@ -30,7 +30,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_StoicSurvivor</defName>
     <label>spare-iceberg</label>
-    <rule>This pawn tends to write two short concrete sentences: visible action first, feeling only implied by the final detail. No explanation. For example: "Meal gone cold. I ate anyway."</rule>
+    <rule>This pawn tends to write short concrete sentences: visible action first, feeling only implied by the final detail. No explanation. For example: "Meal gone cold. I ate anyway."</rule>
     <themes>
       <li>grim</li>
     </themes>
@@ -39,7 +39,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_FieryHothead</defName>
     <label>sharp-inversion</label>
-    <rule>This pawn tends to write one neat sentence that turns on a sharp last clause. The turn should judge the situation, not invent new facts. For example: "They called the meal lavish, which was optimistic."</rule>
+    <rule>This pawn tends to write neat sentences that turn on a sharp last clause. The turn should judge the situation, not invent new facts. For example: "They called the barracks cozy, which was optimistic."</rule>
     <themes>
       <li>hostile</li>
       <li>social</li>
@@ -49,7 +49,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_MelancholyDreamer</defName>
     <label>thought-current</label>
-    <rule>This pawn tends to let one sensation carry into one thought in a flowing sentence. Keep the event anchored in the middle. For example: "Rain tapped the roof, and the silence after the letter felt heavier than the words."</rule>
+    <rule>This pawn tends to write flowing sentences where a sensation carries into a thought. Keep the event anchored in the middle. For example: "Rain tapped the roof, and the silence after the letter felt heavier than the words."</rule>
     <themes>
       <li>dramatic</li>
       <li>anxious</li>
@@ -59,7 +59,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_EarnestOptimist</defName>
     <label>small-detail</label>
-    <rule>This pawn tends to name one plain little detail after the event and let it carry the mood. No moralizing. For example: "The heater came back. The baby's cry softened."</rule>
+    <rule>This pawn tends to end on one small thing that got better, held, or eased after the event, and lets it carry the mood. No moralizing. For example: "The heater came back. The baby's cry softened."</rule>
     <themes>
       <li>warm</li>
     </themes>
@@ -78,7 +78,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_BlissLobotomyHaze</defName>
     <label>blank-bliss</label>
-    <rule>This pawn tends to write from a deeper, emptier happiness than joywire: one simple pleasant sensation, then the event as if its sharp edges cannot stay in mind. Keep the supplied facts understandable, but let concern and consequence fall away. For example: "The light was soft. I carried the medicine where it needed to go. Everyone's voices felt far and gentle."</rule>
+    <rule>This pawn tends to write from a deep, empty happiness: one simple pleasant sensation, then the event as if its sharp edges cannot stay in mind. Keep the supplied facts understandable, but let concern and consequence fall away. For example: "The light was soft. I carried the medicine where it needed to go. Everyone's voices felt far and gentle."</rule>
     <themes>
       <li>warm</li>
       <li>whimsical</li>
@@ -89,6 +89,16 @@
     <defName>DiaryPersona_CynicalRealist</defName>
     <label>dry-plain</label>
     <rule>This pawn tends to state the fact in plain words, then add one dry, practical judgment. Keep the joke smaller than the event. For example: "The trap worked. Nice of it to remember its job."</rule>
+    <themes>
+      <li>hostile</li>
+      <li>grim</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_BluntVerdict</defName>
+    <label>verdict-first</label>
+    <rule>This pawn tends to open with a blunt one-word or two-word verdict — waste, good, bad idea, fine — then give the fact that earned it. No softening, no apology. For example: "Waste of a morning. The pump chewed another seal."</rule>
     <themes>
       <li>hostile</li>
       <li>grim</li>
@@ -117,7 +127,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_GrimVeteran</defName>
     <label>witness-report</label>
-    <rule>This pawn tends to write clipped witness notes in this order: what was seen, what changed, what remains uncertain. For example: "South wall cracked. We sealed it. I still listened."</rule>
+    <rule>This pawn tends to write clipped witness notes in this order: what was seen, what changed, what remains uncertain. For example: "Smoke over the treeline. We doubled the watch. No one came."</rule>
     <themes>
       <li>grim</li>
       <li>anxious</li>
@@ -137,7 +147,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_NobleIdealist</defName>
     <label>solemn-consequence</label>
-    <rule>This pawn tends to write one restrained sentence about responsibility and consequence. No grand speech. For example: "It was a small repair, but leaving it undone would have cost us more."</rule>
+    <rule>This pawn tends to write restrained sentences that weigh responsibility and consequence. No grand speech. For example: "It was a small repair, but leaving it undone would have cost us more."</rule>
     <themes>
       <li>noble</li>
       <li>warm</li>
@@ -147,7 +157,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_BitterLoner</defName>
     <label>polite-needle</label>
-    <rule>This pawn tends to write a composed sentence that ends with one small social sting. Do not invent dialogue. For example: "Everyone admired the fix once the hard part was finished."</rule>
+    <rule>This pawn tends to write composed sentences and end the entry with one small social sting. Do not invent dialogue. For example: "Everyone admired the fix once the hard part was finished."</rule>
     <themes>
       <li>hostile</li>
       <li>social</li>
@@ -252,7 +262,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_TheatricalTragedian</defName>
     <label>dread-image</label>
-    <rule>This pawn tends to use one dark sensory image after the fact, then stop before melodrama. For example: "The fire died down. The smoke tasted like warning."</rule>
+    <rule>This pawn tends to allow one dark sensory image after the facts and pulls back before melodrama; everything else stays plain. For example: "The fire died down. The smoke tasted like warning."</rule>
     <themes>
       <li>dramatic</li>
       <li>grim</li>
@@ -262,7 +272,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_SwaggeringBraggart</defName>
     <label>earnest-undercut</label>
-    <rule>This pawn tends to frame their own part a little too proudly, then undercut it with the actual result. Only claim actions the event gives them. For example: "I marched in ready to save the wall. Mostly I held the nails."</rule>
+    <rule>This pawn tends to frame their own part a little too proudly, then undercut it with the actual result. Only claim actions the event gives them. For example: "I marched in ready to fight the fire. Mostly I fetched sand."</rule>
     <themes>
       <li>social</li>
       <li>whimsical</li>
@@ -272,7 +282,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_RamblingOldTimer</defName>
     <label>labor-fate</label>
-    <rule>This pawn tends to compare the event to labor, weather, hunger, or fate in one weighty clause. Keep the comparison grounded. For example: "The wall took the rain like a tired back taking another load."</rule>
+    <rule>This pawn tends to compare the event to labor, weather, hunger, or fate in one weighty clause. Keep the comparison grounded. For example: "The winter ate the woodpile like an old debt coming due."</rule>
     <themes>
       <li>grim</li>
       <li>dramatic</li>
@@ -292,7 +302,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_DetachedPhilosopher</defName>
     <label>quiet-paradox</label>
-    <rule>This pawn tends to turn the event into one spare paradox or lesson. Keep it concrete, not mystical. For example: "The door held because it bent first."</rule>
+    <rule>This pawn tends to close on one spare paradox or lesson drawn from the event; anything before it stays plain. Keep it concrete, not mystical. For example: "The door held because it bent first."</rule>
     <themes>
       <li>analytical</li>
       <li>noble</li>
@@ -302,7 +312,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_ImagistMinimalist</defName>
     <label>compressed-lyric</label>
-    <rule>This pawn tends to write three concrete fragments: object, motion, aftermath. No explanation. For example: "Cold rice. Red knuckles. Empty bowl."</rule>
+    <rule>This pawn tends to write concrete fragments in threes: object, motion, aftermath. No explanation. For example: "Cold rice. Red knuckles. Empty bowl."</rule>
     <themes>
       <li>dramatic</li>
     </themes>
@@ -342,10 +352,77 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_LowKeyRapper</defName>
     <label>contained-fire</label>
-    <rule>This pawn tends to write controlled first-person feeling under a plain surface. One restrained pressure word is enough. For example: "I said little while we worked, but I was burning all the same."</rule>
+    <rule>This pawn tends to write the event in plain, calm words, then one short sentence admitting the pressure held in — carried by a single heat word (burning, boiling, humming). For example: "I said little while we worked, but I was burning all the same."</rule>
     <themes>
       <li>dramatic</li>
       <li>social</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <!--
+    Syntax-outlier styles (prompt-diversity pass, batch 3). The catalog clustered around terse
+    fragment shapes; these six push sentence SYNTAX outward instead — run-ons, formal address,
+    self-debate, counting, second person, sideways openings — so small models produce visibly
+    different prose per style without typography tricks (CAPS/italics do not land on small models).
+  -->
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_BreathlessChronicler</defName>
+    <label>run-on-breath</label>
+    <rule>This pawn tends to write one long run-on sentence that keeps adding clauses with "and", then stops at a short flat sentence. Every clause must stay factual; the rush lives in the joining, not in new events. For example: "The wall came down and the dust got into everything and we hauled beams until dark and nobody said much. It held."</rule>
+    <themes>
+      <li>anxious</li>
+      <li>dramatic</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_FormalCorrespondent</defName>
+    <label>formal-address</label>
+    <rule>This pawn tends to open by addressing the diary itself with stiff formality, then reports the fact in plain words. Do not invent a recipient or letters from other people. For example: "I record it here so it is recorded somewhere: the harvest came in short. There is no one else to tell."</rule>
+    <themes>
+      <li>noble</li>
+      <li>analytical</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_SecondGuesser</defName>
+    <label>self-debate</label>
+    <rule>This pawn tends to state the fact, then argue with themselves about it in short question-and-answer turns. Both voices are the pawn's own, and the answers must not add new facts. For example: "The trade went through. Good price, I thought. Was it? It was. Probably."</rule>
+    <themes>
+      <li>anxious</li>
+      <li>analytical</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_QuietCounter</defName>
+    <label>counted-things</label>
+    <rule>This pawn tends to count what can be counted: two or three counted details, then what the numbers mean for them. Write the numbers as words, never as a list or table. For example: "Two graves. One shovel. The ground was harder than last time."</rule>
+    <themes>
+      <li>analytical</li>
+      <li>grim</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_SelfAddresser</defName>
+    <label>second-person</label>
+    <rule>This pawn tends to write to themselves in the second person: state the plain fact, then tell "you" what you did or should have known. Keep the scolding or coaxing tied to the supplied event. For example: "The fence gave out again. You knew it would, and you walked past it anyway."</rule>
+    <themes>
+      <li>anxious</li>
+      <li>grim</li>
+    </themes>
+  </PawnDiary.DiaryPersonaDef>
+
+  <PawnDiary.DiaryPersonaDef>
+    <defName>DiaryPersona_SidewaysStarter</defName>
+    <label>sideways-open</label>
+    <rule>This pawn tends to open with the least important true detail in the notes, then land the real event beside it. Both parts must come from supplied context; do not explain the mismatch. For example: "The kettle needed descaling. Also, raiders came over the east ridge."</rule>
+    <themes>
+      <li>whimsical</li>
+      <li>analytical</li>
     </themes>
   </PawnDiary.DiaryPersonaDef>
 
@@ -391,7 +468,7 @@
   <PawnDiary.DiaryPersonaDef>
     <defName>DiaryPersona_InhumanizedVoid</defName>
     <label>void-silence</label>
-    <rule>This pawn tends to write with cold void detachment: one plain fact, then one dark spatial or bodily image. Keep it sparse, inhuman, and grounded in the supplied event. For example: "The door opened. The dark behind it counted my breath."</rule>
+    <rule>This pawn tends to write with cold void detachment: one plain fact, then one dark spatial or bodily image. Keep it sparse, inhuman, and grounded in the supplied event. For example: "The lamp guttered. The dark leaned in to count my breath."</rule>
     <themes>
       <li>void</li>
       <li>grim</li>

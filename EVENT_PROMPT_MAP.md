@@ -258,7 +258,7 @@ flowchart TD
     Pick --> ContextLine["important context: priority; condition; cues<br/>cue cap = 3"]
 
     Queue --> HumorGate["HumorCueFor uses same template gate"]
-    HumorGate --> HumorChance["DiaryTuning.humorChance = 0.10"]
+    HumorGate --> HumorChance["DiaryTuning.humorChance = 0.20"]
     HumorChance --> HumorTier["Light or gallows by event stakes"]
     HumorTier --> HumorPick["Weighted pick from DiaryHumorCueDefs<br/>all current cue weights = 1"]
     HumorPick --> PersonaBlock
@@ -361,7 +361,7 @@ Source recording weights:
 | Day reflection highlights | Max `3`. Important event weight is `1` for combat and `0.7` for other important events. Hediff day signal default `0.8`. Opinion shift weight is `0.6 * min(2, abs(delta)/15)`. Filler weight is `0.15`, only when at least two filler moments exist. Weighted selection is without replacement with floor `0.0001`; if selected highlights contain no important signal, the strongest important candidate replaces the lightest selected highlight. |
 | Quadrum reflection | Enabled. Due date is deterministic per pawn/quadrum inside final `3` days. Requires `6` important entries. Sends at most `8` weighted highlights. Max response tokens `350`. Highlight weights reuse combat `1` and other important `0.7`. |
 | Arc reflection | Enabled. One forced yearly entry after day `45` when enough memories exist; optional second major-event entry after `30` days. A forced attempt that has too few memories backs off for `60000` ticks before rescanning. Samples up to `8` hot/archive diary memories, de-duplicates by event id, filters to current-year memories when the year is known, excludes reflections/death descriptions/recently used ids, and caps repeated domain/group memories. Memory weights are base `10`, important `+20`, same-quadrum `+10`, generated text `+5`, progression `+20`, and high-stakes `+15`; high-stakes is inherent for romance, hediff, progression, and death markers, plus XML defName token matches. Max response tokens `420`. |
-| Humor cues | Base gate `0.10`. High-stakes events use gallows cues; other events use light cues. All current humor cue XML rows have weight `1`. |
+| Humor cues | Base gate `0.20`. High-stakes events use gallows cues; other events use light cues. All current humor cue XML rows have weight `1`. |
 
 Prompt-enchantment selection formula:
 
@@ -519,7 +519,7 @@ flowchart TD
     Plan --> User["userPrompt<br/>structured label: value lines plus final instruction"]
     User --> Fields["Template field list from DiaryPromptTemplateDefs.xml"]
     Fields --> Skip["PromptAssembler skips blank values<br/>and sentinels none, n/a, unknown"]
-    Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opener"]
+    Fields --> Common["Common first-person fields:<br/>event, pov, raw evidence, instruction,<br/>event prompt, event enhancement,<br/>important context, setting, tone, last opening line"]
     Fields --> PairFields["Pair extras:<br/>role, with, relationship,<br/>hidden initiator diary for PairImportant and PairCombat"]
     Fields --> CombatFields["Combat extras:<br/>you, weapon"]
     Fields --> SourceFacts["Context facts:<br/>quest, ritual, ability, raid,<br/>progression skill/psylink/xenotype/title,<br/>royal title, ideoligion role"]
@@ -533,11 +533,11 @@ Current template keys:
 | Key | Trigger | Current special behavior |
 |---|---|---|
 | `PairDefault` | Pair, non-combat, non-batched, non-important group | Relationship field; style/enchantment allowed. |
-| `PairImportant` | Pair, non-combat, non-batched, important or missing group | Relationship plus hidden initiator field; style/enchantment allowed. |
-| `PairCombat` | Pair and combat group, including MentalState domain | Pawn summary, weapon, hidden initiator field; style/enchantment allowed. |
+| `PairImportant` | Pair, non-combat, non-batched, important or missing group | Relationship plus hidden initiator field; style/enchantment allowed; 2-5 sentence system/final/recipient instructions; `maxTokens=200`. |
+| `PairCombat` | Pair and combat group, including MentalState domain | Pawn summary, weapon, hidden initiator field; style/enchantment allowed; 2-5 sentence system/final/recipient instructions; `maxTokens=200`. |
 | `PairBatched` | Pair and `batch=` marker, unless combat | No relationship or hidden initiator field; style/enchantment allowed. |
 | `SoloDefault` | Solo, non-batched, non-internal, non-important group | Style/enchantment allowed. |
-| `SoloImportant` | Solo important or solo batched combat | Pawn summary; style/enchantment allowed. |
+| `SoloImportant` | Solo important or solo batched combat | Pawn summary; style/enchantment allowed; 2-5 sentence system/final instructions; `maxTokens=200`. |
 | `SoloInternalState` | Solo with `mood_event=`, `thought=`, `inspiration=`, `work=`, or `hediff=` | Internal-state facts; style/enchantment allowed. |
 | `SoloBatched` | Solo with `batch=`, non-combat | Batched evidence; style/enchantment allowed. |
 | `SoloDayReflection` | `day_reflection=true` | Direct speech disabled; style/enchantment allowed. |

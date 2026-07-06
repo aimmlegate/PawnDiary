@@ -174,6 +174,11 @@
     <domain>Romance</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>a relationship becoming official, formalized, or broken; center the change between the two people without treating it like a chat log</instruction>
+    <instructions>
+      <li>a bond changing state — write the before and after: one thing that was allowed yesterday and is different today</li>
+      <li>a bond changing state — write the weight of it being known: what the colony now sees when the two stand together</li>
+      <li>a bond changing state — write the private ledger: hope, fear, relief, or grief, matched to whether the change joins or breaks</li>
+    </instructions>
     <tone>with intimate emotional weight</tone>
     <tones>
       <li>formal and life-changing, with quiet restraint</li>
@@ -304,6 +309,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <instruction>something wrong in ordinary conversation--a strange chat that leaves unease lingering. Don't explain it away</instruction>
+    <instructions>
+      <li>a wrong conversation — pin the wrongness to one concrete carrier: a word choice, a pause, a look held too long; never resolve it</li>
+      <li>a wrong conversation — write the after-echo: the phrase that keeps replaying and refuses to mean anything safe</li>
+      <li>a wrong conversation — write the pawn checking themselves: maybe tired, maybe imagining it, not convinced either way</li>
+    </instructions>
     <tone>with creeping dread; never resolve the wrongness</tone>
     <tones>
       <li>ordinary on the surface, wrong underneath</li>
@@ -476,6 +486,11 @@
       <maxSampleLines>5</maxSampleLines>
     </batch>
     <instruction>a quiet bond—chatting with an animal, taming, training, or letting one go</instruction>
+    <instructions>
+      <li>an animal moment — write the creature's concrete behavior in the supplied moment: ears, weight, breath, stubbornness, or trust</li>
+      <li>an animal moment — write the ease of company that expects nothing and does not talk back</li>
+      <li>an animal moment — write the practical side by feel: feed, patience, repetition, and whether the animal gave an inch today</li>
+    </instructions>
     <tone>with quiet, gentle fondness</tone>
     <tones>
       <li>soft and patient, focused on trust through action</li>
@@ -504,6 +519,11 @@
     <domain>Interaction</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>warmth exchanged—a deep talk, kind words, or a gentle hand steadying someone</instruction>
+    <instructions>
+      <li>warmth between people — write the specific gesture from the notes and the guard it lowered</li>
+      <li>warmth between people — write what the pawn did not manage to say back, without inventing quoted words</li>
+      <li>warmth between people — write the after-effect: the room easier, the work lighter, the pawn less alone tonight</li>
+    </instructions>
     <tone>with soft, tender warmth</tone>
     <tones>
       <li>gentle and open, letting warmth show plainly</li>
@@ -549,6 +569,11 @@
       <maxSampleLines>5</maxSampleLines>
     </batch>
     <instruction>a lesson passed down—an adult teaching or playing with a child</instruction>
+    <instructions>
+      <li>a lesson shared — write the moment it landed or refused to land: the look, the retry, the small win</li>
+      <li>a lesson shared — write what it takes to be the one explaining: patience, repetition, and the odd pride when it sticks</li>
+      <li>a lesson shared — write the role reversal underneath: who was really learning from whom, using only the supplied moment</li>
+    </instructions>
     <tone>with patient, quiet fondness</tone>
     <tones>
       <li>patient and instructive, focused on small progress</li>
@@ -640,6 +665,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <instruction>a quiet end-of-day reflection looking back on the whole day</instruction>
+    <instructions>
+      <li>day's end — pick the one supplied moment that still has weight tonight and let the rest of the day settle around it</li>
+      <li>day's end — weigh the day as spent strength: what it took, what it gave back, what is left for tomorrow</li>
+      <li>day's end — write the body settling down: bunk, warmth, ache, hunger, or quiet, and let the supplied moments pass through it</li>
+    </instructions>
     <tone>with a quiet, settling, end-of-day calm</tone>
     <tones>
       <li>tired and reflective, weighing what still matters</li>
@@ -850,6 +880,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a social interaction between the pawns</instruction>
+    <instructions>
+      <li>an ordinary exchange — find the one concrete detail in the notes that made this worth writing down</li>
+      <li>an ordinary exchange — write what it says about where the two of them stand, using only the supplied relationship facts</li>
+      <li>an ordinary exchange — keep it brief and true: what happened, and the small trace it left on the day</li>
+    </instructions>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -884,6 +919,11 @@
     <domain>MentalState</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>tempers snapped—two people came to blows. Write it as heat and impact</instruction>
+    <instructions>
+      <li>a fistfight — write the tunnel of it: sound dropping away, hands acting first, the room too small</li>
+      <li>a fistfight — write the first minute after: breath, knuckles, who looked away, what is now broken between them</li>
+      <li>a fistfight — write the cost under the anger: shame, relief, or the grudge settling in for a long stay</li>
+    </instructions>
     <tone>with raw, adrenal fury</tone>
     <tones>
       <li>fast and physical, driven by impact and breath</li>
@@ -1106,6 +1146,11 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>the body's fragility—surgery, illness, exposure, or recovery. Write fear, relief, or trust</instruction>
+    <instructions>
+      <li>the body's fragility — write the handing over: lying still, someone else's hands, ceiling and light, trusting or not</li>
+      <li>the body's fragility — write the count afterward: what still works, what hurts, what feels borrowed</li>
+      <li>the body's fragility — write gratitude or resentment toward the care itself, without inventing who did what</li>
+    </instructions>
     <tone>with fragile fear and relief</tone>
     <tones>
       <li>fragile and clinical, focused on body and risk</li>
@@ -1160,6 +1205,11 @@
     <domain>Tale</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>hands that made something lasting—pride, exhaustion, and the weight of creation</instruction>
+    <instructions>
+      <li>something well made — write the object itself: grain, edge, finish, fit, the detail only its maker will ever notice</li>
+      <li>something well made — write the hours inside it and the strange emptiness right after finishing</li>
+      <li>something well made — write it outliving the day: who might use it, wear it, or stand behind it, sticking to supplied facts</li>
+    </instructions>
     <tone>with proud, bone-tired satisfaction</tone>
     <tones>
       <li>proud and tactile, focused on hands and material</li>
@@ -1178,6 +1228,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>the satisfaction of labor—craft, study, mining, or a skill grown. Keep it proud but grounded</instruction>
+    <instructions>
+      <li>work worth noting — write the result as evidence: what exists now that did not exist this morning</li>
+      <li>work worth noting — write the skill showing itself: a step that used to be hard going easy under the hands</li>
+      <li>work worth noting — write the tiredness that feels earned, and the one detail the pawn keeps replaying with pride</li>
+    </instructions>
     <tone>with steady, grounded pride</tone>
     <tones>
       <li>steady and practical, pride kept close to the work</li>
@@ -1226,6 +1281,11 @@
     <defaultEnabled>true</defaultEnabled>
     <colorCue>combat</colorCue>
     <instruction>the colony shaken—raid, disaster, or crisis. Write what it felt like to live through it</instruction>
+    <instructions>
+      <li>the colony shaken — write one narrow slice the pawn actually saw or did, not the whole crisis</li>
+      <li>the colony shaken — write the body under alarm: sound, running, hands doing the drill before thought catches up</li>
+      <li>the colony shaken — write what is different now: damage seen, routine broken, or safety no longer assumed; only supplied outcomes</li>
+    </instructions>
     <tone>with reeling, disaster-shocked tension</tone>
     <tones>
       <li>reeling and urgent, focused on the scramble</li>
@@ -1273,6 +1333,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a quiet aside—recreation, prayer, or small embarrassment. Brief and personal</instruction>
+    <instructions>
+      <li>a quiet aside — keep it small on purpose: one moment, one feeling, no lesson attached</li>
+      <li>a quiet aside — write it as stolen time: a pocket of the day that belonged to the pawn alone</li>
+      <li>a quiet aside — if it stung or embarrassed, write the honest size of the sting: small, but it will be remembered</li>
+    </instructions>
     <tone>with small, private quiet</tone>
     <tones>
       <li>private and spare, one small feeling held close</li>
@@ -1304,6 +1369,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a notable non-social RimWorld tale involving the pawn</instruction>
+    <instructions>
+      <li>a notable moment — name the real fact first, then the pawn's honest measure of it: pride, unease, or a shrug</li>
+      <li>a notable moment — write why this one will be remembered when the week's routine is forgotten</li>
+      <li>a notable moment — ground it in place and body: where the pawn stood and what their hands were doing</li>
+    </instructions>
     <catchAll>true</catchAll>
   </PawnDiary.DiaryInteractionGroupDef>
 
@@ -1316,6 +1386,11 @@
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>something lifted—a positive colony-wide event that eases the heart</instruction>
+    <instructions>
+      <li>a good turn for everyone — write the shared ease: shoulders down, jokes returning, work moving lighter</li>
+      <li>a good turn for everyone — write this pawn's private slice of the common good, grounded in the supplied condition</li>
+      <li>a good turn for everyone — write the wariness under the relief: enjoying it while it lasts, on this planet</li>
+    </instructions>
     <tone>with a lifted, eased spirit</tone>
     <tones>
       <li>open and eased, letting relief into the sentence</li>
@@ -1388,6 +1463,11 @@
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>something weighing—a negative colony-wide event that strains the spirit</instruction>
+    <instructions>
+      <li>a shared weight — write how the condition reaches this pawn's own routine: light, food, sleep, tempers, or work</li>
+      <li>a shared weight — write the colony's mood as observed evidence: shorter answers, emptier rooms, doors closing earlier</li>
+      <li>a shared weight — write the endurance arithmetic: how long this can be borne and what runs out first, using only supplied facts</li>
+    </instructions>
     <tone>with a weighed-down strain</tone>
     <tones>
       <li>heavy and low, every detail pressing downward</li>
@@ -1409,6 +1489,11 @@
     <domain>MoodEvent</domain>
     <defaultEnabled>true</defaultEnabled>
     <instruction>a condition that touches each person differently—write how it feels to this pawn</instruction>
+    <instructions>
+      <li>a condition felt unevenly — commit to this pawn's side of it: better or worse for them specifically, per the supplied facts</li>
+      <li>a condition felt unevenly — write the gap: what it does to this pawn versus what it seems to do to others nearby</li>
+      <li>a condition felt unevenly — write the strangeness itself pressing on senses and mood, without explaining its mechanics</li>
+    </instructions>
     <tone>with an uneasy, conditional charge</tone>
     <tones>
       <li>uneasy and conditional, the pawn unsure how to feel</li>
@@ -1859,6 +1944,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>a temporary thought that crossed the pawn's mind. Match the intensity to the mood effect</instruction>
+    <instructions>
+      <li>a passing thought — write it arriving mid-task and either dropped or kept; scale it to the mood effect</li>
+      <li>a passing thought — write what it briefly changed: pace, appetite, patience, or attention; scale it to the mood effect</li>
+      <li>a passing thought — write it as private weather that colors the hour without becoming an event; scale it to the mood effect</li>
+    </instructions>
     <tone>with a passing, half-felt shift</tone>
     <tones>
       <li>brief and half-felt, gone almost as it arrives</li>
@@ -1877,6 +1967,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <instruction>a sudden useful clarity—write the pawn's mind catching fire with purpose, grounded in the specific kind of inspiration and any reason the game gives</instruction>
+    <instructions>
+      <li>sudden clarity — write the moment it clicked: mid-task, mid-step, staring at nothing, then the plan standing whole</li>
+      <li>sudden clarity — write the itch to start now: tools listed, sleep negotiable, the next hour already spoken for</li>
+      <li>sudden clarity — write the doubt riding along: too good, too fast, but worth trying anyway; do not invent success</li>
+    </instructions>
     <tone>with bright, focused momentum</tone>
     <tones>
       <li>bright and decisive, thought turning into a plan</li>
@@ -1923,6 +2018,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>work that touches one of the pawn's passions—positive, focused, quietly satisfying, without pretending the colony is easy</instruction>
+    <instructions>
+      <li>loved work — write absorption: time going missing, hands sure of themselves, the task pulling instead of pushing</li>
+      <li>loved work — write one small craft detail done exactly right and the private satisfaction it carries</li>
+      <li>loved work — let the pawn admit they would do this even on a bad day, without pretending the colony is easy</li>
+    </instructions>
     <tone>with grounded satisfaction</tone>
     <tones>
       <li>focused and satisfied, pleasure kept practical</li>
@@ -1941,6 +2041,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>work that feels dull, grimy, clumsy, or frustrating—negative when it is cleaning/dumb labor or when the pawn lacks skill</instruction>
+    <instructions>
+      <li>grinding work — write the friction: dirt, repetition, a tool that fights back, or skill that is not enough</li>
+      <li>grinding work — write the body's complaint: back, hands, knees, eyes, and the count of how much is still left</li>
+      <li>grinding work — write the resentment kept quiet and where the pawn puts it: the tool, the schedule, or themselves</li>
+    </instructions>
     <tone>with weary irritation</tone>
     <tones>
       <li>weary and blunt, frustration in the hands</li>
@@ -1959,6 +2064,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>false</important>
     <instruction>ordinary colony work with no strong passion or failure signal—neutral, practical, brief, and grounded in the texture of the task</instruction>
+    <instructions>
+      <li>ordinary work — anchor on the task's material: soil, steel, cloth, stone, grease, or grain, and what the hands did with it</li>
+      <li>ordinary work — write the rhythm of it and where the mind wandered while the hands kept going</li>
+      <li>ordinary work — write the small result: a row done, a stack higher, a floor clean, and whether it felt worth the hours</li>
+    </instructions>
     <tone>with steady, matter-of-fact routine</tone>
     <tones>
       <li>matter-of-fact and rhythmic, ordinary work continuing</li>
@@ -2171,6 +2281,11 @@
     <defaultEnabled>true</defaultEnabled>
     <important>true</important>
     <instruction>a new or worsening health condition that stayed with the pawn through the day</instruction>
+    <instructions>
+      <li>a lasting condition — write where it sits: chest, gut, skin, joints, and how it changed one ordinary task today</li>
+      <li>a lasting condition — write the bargaining: what the pawn did anyway, skipped, or hid from the others</li>
+      <li>a lasting condition — write the listening: checking the body's signals too often, and the fear of what tomorrow's check will say; do not invent treatment</li>
+    </instructions>
     <tone>with bodily unease and vulnerability</tone>
     <tones>
       <li>vulnerable and bodily, symptoms shaping every thought</li>

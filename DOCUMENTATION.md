@@ -672,10 +672,18 @@ title requests.
 
 Prompt policy layers:
 
-1. Shared system prompts from `DiaryPromptDef`.
+1. Shared system prompts from `DiaryPromptDef`. The shared first-person prompt asks for 1-3
+   sentences and carries two anti-sameness rules (vary the opening; avoid a short list of stock
+   phrases). The important/combat templates (`SoloImportant`, `PairImportant`, `PairCombat`)
+   override it with a 2-5 sentence variant, matching 2-5 final instructions, and a 200-token
+   response cap so high-stakes moments get more page weight than small talk.
 2. Structured fields from `DiaryPromptTemplateDef`.
 3. Event prompt/enhancement/forced-model rows from `DiaryEventPromptDef`.
-4. Interaction-group instructions and tones.
+4. Interaction-group instructions and tones. Groups may carry `instructions`/`tones` variant pools
+   next to the legacy singular fields; a non-empty pool fully replaces the singular value and one
+   variant is picked per entry by a stable hash, so repeated events of the same kind rotate their
+   angle instead of always receiving the same guidance. Most high-traffic groups now ship both
+   pools.
 5. Writing style from the pawn's saved `DiaryPersonaDef`, unless temporarily overridden by hediff.
 6. Optional prompt enchantments, event windows, observed conditions, and humor cues.
 
@@ -741,6 +749,13 @@ compatibility, but player-facing text should call them writing styles. Hediff st
 prompt-time only and never change the saved picker value. External writing-style overrides are saved
 separately above the base style and are owned by the adapter `sourceId` that set them.
 
+The stock catalog deliberately spreads styles across sentence *syntax*, not just mood: besides the
+terse/fragment presets it includes six syntax-outlier styles (run-on chains, formal address to the
+diary, self-debate in question-and-answer turns, counting habits, second-person self-address, and
+least-important-detail-first openings). Style rules avoid hard per-entry sentence counts so they
+compose with both the shared 1-3 sentence prompt and the 2-5 sentence important/combat templates;
+a rule may still fix a *shape* (for example fragment triplets), just not the entry length.
+
 Each pawn can also carry an optional **pawn-specific custom writing-style prompt** authored by the
 player from the pawn's Diary tab (`PawnDiaryRecord.customWritingStyleRule`). Blank means "use the
 selected base style"; nonblank means "use this prompt when no higher-priority override is active." It
@@ -805,7 +820,11 @@ arrival instruction asks the model to connect those facts with the starting scen
 the pawn plausibly reached that beginning.
 
 Direct speech is allowed only in selected first-person interaction prompts, and only inside a closed
-`[[speech]]...[[/speech]]` block. Generated Social-log speech injection remains disabled/hidden; the
+`[[speech]]...[[/speech]]` block. The speech instruction is phrased default-off: the model is told
+that the notes almost never contain the POV pawn's actual spoken words and to write a private
+reaction with no speech markup unless the notes really quote or report words the pawn said (small
+and large models alike were inventing quotes when the old wording led with the positive case and a
+worked speech example). Generated Social-log speech injection remains disabled/hidden; the
 saved setting exists only for compatibility.
 
 Title generation is enabled by default. Main entries queue their own title request after successful
@@ -1034,7 +1053,7 @@ psylink, which is bright-psychic rather than horror. `colorCue` is saved per-eve
 entries keep whatever cue they were recorded with.
 
 **Render-time paragraph reflow (default atmosphere).** Because prompts only ever ask for sentence
-counts (1-3, 2-4, 4-7, 5-8) and never for explicit paragraph breaks, a multi-sentence entry arrives
+counts (1-3, 2-5, 2-4, 4-7, 5-8) and never for explicit paragraph breaks, a multi-sentence entry arrives
 as a single line that would otherwise wrap as one dense block. For the ordinary (non-Fractured /
 -Unsettled /-Memorial) atmosphere, `NormalRoleplayBlocks` runs each prose line through the pure
 `DiaryParagraphReflow.ReflowLine` helper and turns the returned chunks into separate paragraph
