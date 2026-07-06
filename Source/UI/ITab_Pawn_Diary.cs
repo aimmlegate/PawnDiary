@@ -94,6 +94,14 @@ namespace PawnDiary
         private static float LinkedEntryTotalHeight => UiStyle.linkedEntryTotalHeight;
         private static float YearFilterHeight => UiStyle.yearFilterHeight;
         private static float YearFilterGap => UiStyle.yearFilterGap;
+
+        // Player-facing writing-style row under the Diary header. Layout values come from XML via
+        // UiStyle (DiaryUiStyleDef). DevControlsHeight is a stable display-only estimate of the dev
+        // block (mock/prompt-suite/dev-preview rows) so PawnControlsHeight can reserve its space.
+        private static float WritingStyleRowHeight => UiStyle.writingStyleRowHeight;
+        private static float WritingStyleRowGap => UiStyle.writingStyleRowGap;
+        private static float WritingStyleStatusLeftGap => UiStyle.writingStyleStatusLeftGap;
+        private const float DevControlsHeight = 240f;
         private static float YearButtonWidth => UiStyle.yearButtonWidth;
         private static float ModelNameTopPadding => UiStyle.modelNameTopPadding;
         private static float ModelNameHeight => UiStyle.modelNameHeight;

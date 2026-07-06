@@ -1317,4 +1317,25 @@
   <PawnDiary.Bucket.Effect.Negative>negative</PawnDiary.Bucket.Effect.Negative>
   <PawnDiary.Bucket.Effect.StrongNegative>strong negative</PawnDiary.Bucket.Effect.StrongNegative>
 
+  <!-- Per-pawn Writing Style editor (Diary tab). Player-facing; keep localization-friendly. -->
+  <PawnDiary.Tab.WritingStyle>Writing style: {0}</PawnDiary.Tab.WritingStyle>
+  <PawnDiary.Tab.WritingStyleTip>Open this pawn's writing-style editor to choose the base style, write a pawn-specific prompt, or see why a temporary override is active.</PawnDiary.Tab.WritingStyleTip>
+  <PawnDiary.WritingStyle.EditorTitle>{0} - Writing Style</PawnDiary.WritingStyle.EditorTitle>
+  <PawnDiary.WritingStyle.BaseStyle>Base style: {0}</PawnDiary.WritingStyle.BaseStyle>
+  <PawnDiary.WritingStyle.BasePrompt>Base prompt</PawnDiary.WritingStyle.BasePrompt>
+  <PawnDiary.WritingStyle.CustomPrompt>Custom prompt for this pawn (optional)</PawnDiary.WritingStyle.CustomPrompt>
+  <PawnDiary.WritingStyle.EffectivePrompt>Effective prompt (what the writer sees)</PawnDiary.WritingStyle.EffectivePrompt>
+  <PawnDiary.WritingStyle.SaveForPawn>Save for pawn</PawnDiary.WritingStyle.SaveForPawn>
+  <PawnDiary.WritingStyle.ResetToBase>Reset to base</PawnDiary.WritingStyle.ResetToBase>
+  <PawnDiary.WritingStyle.LoadBasePrompt>Load base prompt</PawnDiary.WritingStyle.LoadBasePrompt>
+  <PawnDiary.WritingStyle.Close>Close</PawnDiary.WritingStyle.Close>
+  <PawnDiary.WritingStyle.OverrideExternal>An integration ({0}) is temporarily supplying this pawn's writing style.</PawnDiary.WritingStyle.OverrideExternal>
+  <PawnDiary.WritingStyle.OverrideHediff>A health condition is temporarily changing this pawn's writing style ({0}).</PawnDiary.WritingStyle.OverrideHediff>
+  <PawnDiary.WritingStyle.CustomInactiveDueToOverride>The custom prompt saved for this pawn is inactive while the override is in effect.</PawnDiary.WritingStyle.CustomInactiveDueToOverride>
+  <PawnDiary.WritingStyle.CustomActive>Custom prompt set</PawnDiary.WritingStyle.CustomActive>
+  <PawnDiary.WritingStyle.OverrideActive>Override active</PawnDiary.WritingStyle.OverrideActive>
+  <PawnDiary.WritingStyle.ExternalSourceLabel>external integration</PawnDiary.WritingStyle.ExternalSourceLabel>
+  <PawnDiary.WritingStyle.Saved>Writing style saved.</PawnDiary.WritingStyle.Saved>
+  <PawnDiary.WritingStyle.Reset>Custom prompt cleared.</PawnDiary.WritingStyle.Reset>
+
 </LanguageData>

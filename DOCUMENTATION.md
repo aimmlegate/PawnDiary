@@ -1,6 +1,6 @@
 # Pawn Diary - Maintainer Guide
 
-Last updated: 2026-07-05
+Last updated: 2026-07-06
 
 Related files:
 
@@ -732,6 +732,28 @@ Writing styles are backed by `DiaryPersonaDef`. Some code and save fields still 
 compatibility, but player-facing text should call them writing styles. Hediff style overrides are
 prompt-time only and never change the saved picker value. External writing-style overrides are saved
 separately above the base style and are owned by the adapter `sourceId` that set them.
+
+Each pawn can also carry an optional **pawn-specific custom writing-style prompt** authored by the
+player from the pawn's Diary tab (`PawnDiaryRecord.customWritingStyleRule`). Blank means "use the
+selected base style"; nonblank means "use this prompt when no higher-priority override is active." It
+is saved on the pawn's own diary record, so it never touches `DiaryPersonaDef` XML or the global
+`PersonaPresetStore` catalog. The custom prompt keeps line breaks (sanitized by the pure
+`PlayerWritingStyleText.CleanRule`, which wraps `PromptTextSanitizer.Multiline`) so the editor stays
+readable, unlike the one-line external-API override sanitizer.
+
+The effective writing-style priority, resolved by the pure `WritingStyleResolutionPolicy` from a
+runtime snapshot built in `HediffPersonaOverrides.ResolveWritingStyle`, is:
+
+1. **External API override** rule (adapter-owned, highest).
+2. **Hediff override** style rule (temporary, while the condition is present).
+3. **Pawn-specific custom prompt** (player-authored from the Diary tab).
+4. **Base selected style** Def rule (lowest).
+
+Generation only consumes the final `rule` string; the Diary tab's Writing Style dialog
+(`Dialog_PawnWritingStyle`) uses the full `WritingStyleResolution` metadata to show the effective
+prompt and explain why a saved custom prompt is temporarily inactive when an override shadows it.
+The integration API's `PawnDiaryApi.GetWritingStyle` continues to return the base saved style only
+(custom prompt and temporary overrides are not exposed there).
 
 The writing-style rule is appended to the **system prompt** for first-person shapes, never rendered
 as a field in the **user** prompt. The single load-bearing line is

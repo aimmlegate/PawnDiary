@@ -28,6 +28,12 @@ namespace PawnDiary
         public string externalWritingStyleOverrideRule;
         public string externalWritingStyleOverrideSourceId;
 
+        // Optional pawn-specific custom writing-style prompt. Blank means "use the selected base style";
+        // nonblank means "use this prompt when no higher-priority override is active." It lives on the
+        // pawn's own record, so it never touches DiaryPersonaDef XML or global PersonaPresetStore settings.
+        // The effective priority is External API override > Hediff override > Pawn custom > Base style.
+        public string customWritingStyleRule;
+
         // Per-pawn toggle: when false, this pawn is skipped during diary generation.
         public bool diaryGenerationEnabled = true;
 
@@ -62,6 +68,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref personaDefName, "personaDefName", DiaryPersonas.Default.defName);
             Scribe_Values.Look(ref externalWritingStyleOverrideRule, "externalWritingStyleOverrideRule");
             Scribe_Values.Look(ref externalWritingStyleOverrideSourceId, "externalWritingStyleOverrideSourceId");
+            Scribe_Values.Look(ref customWritingStyleRule, "customWritingStyleRule");
             Scribe_Values.Look(ref diaryGenerationEnabled, "diaryGenerationEnabled", true);
             Scribe_Values.Look(ref acknowledgedGeneratedEntryCount, "acknowledgedGeneratedEntryCount", -1);
             Scribe_Values.Look(ref hasUnreadGeneratedEntry, "hasUnreadGeneratedEntry", false);
@@ -89,6 +96,10 @@ namespace PawnDiary
                     externalWritingStyleOverrideRule = string.Empty;
                     externalWritingStyleOverrideSourceId = string.Empty;
                 }
+
+                // Player-authored custom prompt keeps its line breaks (so the editor stays readable),
+                // so it uses the multiline sanitizer rather than the one-line external override cleaner.
+                customWritingStyleRule = PlayerWritingStyleText.CleanRule(customWritingStyleRule);
 
                 if (eventIds == null)
                 {

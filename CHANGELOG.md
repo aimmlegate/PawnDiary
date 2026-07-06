@@ -8,6 +8,18 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Per-pawn custom writing-style prompt.** Players can now experiment with a pawn's voice directly
+  from that pawn's Diary tab. A new always-visible "Writing style" row opens an editor dialog where
+  the player can pick the base style, read its prompt, write a pawn-specific custom prompt, preview
+  the effective prompt, and see an explanation when a temporary override (hediff or external
+  integration) shadows their choice. The custom prompt is saved per pawn
+  (`PawnDiaryRecord.customWritingStyleRule`, additive save key) and never touches base style Defs or
+  the global `PersonaPresetStore`. Effective priority is now External API override > Hediff override
+  > Pawn custom prompt > Base style, resolved by a new pure `WritingStyleResolutionPolicy` with full
+  test coverage; generation still consumes only the final rule string. The integration API
+  `GetWritingStyle` is unchanged (base saved style only). The dev-only base-style picker that used to
+  live behind `showPersonaSettings` is superseded by the new player dialog.
+
 - **Prompt context detail levels.** Added global `Full` / `Balanced` / `Compact` context presets
   plus per-API-lane overrides. `Full` keeps the old prompt shape; lower presets run a pure,
   deterministic field selector that always keeps core event/instruction facts, then spends a

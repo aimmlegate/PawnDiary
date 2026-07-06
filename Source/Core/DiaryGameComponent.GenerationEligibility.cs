@@ -119,7 +119,8 @@ namespace PawnDiary
 
         /// <summary>
         /// Resolves the LLM writing-style rule string for a given POV in an event, falling back to the XML default.
-        /// Active hediff override rules may temporarily replace the saved style while the condition is present.
+        /// Effective priority is External API override &gt; Hediff override &gt; Pawn custom prompt &gt; base style,
+        /// so a non-blank custom prompt replaces the saved style only when no higher override is active.
         /// </summary>
         private string PersonaRuleFor(DiaryEvent diaryEvent, string povRole,
             Dictionary<string, Pawn> livePawnsById = null)
@@ -131,7 +132,8 @@ namespace PawnDiary
             return HediffPersonaOverrides.RuleFor(
                 pawn,
                 diary?.personaDefName,
-                ExternalWritingStyleOverrideRuleFor(diary));
+                ExternalWritingStyleOverrideRuleFor(diary),
+                diary?.customWritingStyleRule);
         }
 
         /// <summary>

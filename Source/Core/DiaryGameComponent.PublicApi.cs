@@ -1076,6 +1076,64 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns this pawn's saved custom writing-style prompt (player-authored from the Diary tab),
+        /// or empty if none. Reads the saved field directly without triggering record creation.
+        /// </summary>
+        internal string CustomWritingStyleRuleFor(Pawn pawn)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return string.Empty;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            return diary == null ? string.Empty : diary.customWritingStyleRule ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Saves a player-authored custom writing-style prompt for this pawn. An empty/whitespace rule
+        /// clears the override so the pawn falls back to its selected base style. The rule is sanitized
+        /// (line breaks preserved) before it is written to the record.
+        /// </summary>
+        internal bool SetCustomWritingStyleRule(Pawn pawn, string rule)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return false;
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, true);
+            if (diary == null)
+            {
+                return false;
+            }
+
+            diary.customWritingStyleRule = PlayerWritingStyleText.CleanRule(rule);
+            return true;
+        }
+
+        /// <summary>
+        /// Builds the full effective writing-style resolution for the pawn Diary tab UI. Snapshots the
+        /// external, hediff, base, and custom candidates, then resolves the winner so the dialog can
+        /// show the effective prompt and explain why a custom prompt (if any) is inactive.
+        /// </summary>
+        internal WritingStyleResolution ResolveWritingStyleFor(Pawn pawn)
+        {
+            if (!IsDiaryEligible(pawn))
+            {
+                return HediffPersonaOverrides.ResolveWritingStyle(null, null, null, null, null);
+            }
+
+            PawnDiaryRecord diary = FindDiary(pawn, false);
+            return HediffPersonaOverrides.ResolveWritingStyle(
+                pawn,
+                diary?.personaDefName,
+                diary?.externalWritingStyleOverrideRule,
+                diary?.customWritingStyleRule,
+                diary?.externalWritingStyleOverrideSourceId);
+        }
+
+        /// <summary>
         /// Saves a prompt-facing external writing-style override above the pawn's base style. The
         /// caller has already been validated by <see cref="Integration.PawnDiaryApi"/>.
         /// </summary>

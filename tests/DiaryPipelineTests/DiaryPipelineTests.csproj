@@ -48,6 +48,8 @@
     <Compile Include="..\..\Source\Pipeline\ExternalDirectEntryText.cs" Link="ExternalDirectEntryText.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalEntryAttribution.cs" Link="ExternalEntryAttribution.cs" />
     <Compile Include="..\..\Source\Pipeline\ExternalWritingStyleOverrideText.cs" Link="ExternalWritingStyleOverrideText.cs" />
+    <Compile Include="..\..\Source\Pipeline\PlayerWritingStyleText.cs" Link="PlayerWritingStyleText.cs" />
+    <Compile Include="..\..\Source\Pipeline\WritingStyleResolutionPolicy.cs" Link="WritingStyleResolutionPolicy.cs" />
     <Compile Include="..\..\Source\Pipeline\TextTruncation.cs" Link="TextTruncation.cs" />
     <Compile Include="..\..\Source\Pipeline\ApiLaneSelector.cs" Link="ApiLaneSelector.cs" />
     <Compile Include="..\..\Source\Pipeline\LlmRequestJsonBuilder.cs" Link="LlmRequestJsonBuilder.cs" />
