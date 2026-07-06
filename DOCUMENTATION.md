@@ -669,6 +669,17 @@ Prompt policy layers:
 5. Writing style from the pawn's saved `DiaryPersonaDef`, unless temporarily overridden by hediff.
 6. Optional prompt enchantments, event windows, observed conditions, and humor cues.
 
+Prompt context detail is applied after those layers have produced the full typed prompt value set,
+but before `PromptAssembler` renders the user prompt. `Full` is the compatibility preset and keeps
+the current template field list unchanged. `Balanced` and `Compact` run the pure
+`PromptContextSelector`: core event facts, role names, direct instructions, external wrapped-prompt
+fields, and structural reflection/death/arrival fields are always kept; optional continuity,
+enchantment, relationship, setting, pawn-summary, hidden-humor, and broad game-context fields are
+ranked by event domain and field source, then kept until the preset's character budget is spent. The
+selector is deterministic, records kept/cut fields with reasons, and never changes saved
+`gameContext` or archived diary data. A cut only means that field is omitted from this one LLM user
+prompt.
+
 Prompt Studio can override shared system prompts and per-event prompt/enhancement/forced-model text.
 Saved override keys must stay stable because they are part of mod settings.
 
@@ -735,9 +746,9 @@ reasoning-style lines, or terminal periods are treated as unusable model output.
 ## 7. Settings And UI
 
 The settings window is split into **Main**, **Prompts**, **Styles**, and **Advanced** tabs. Main
-covers API lanes, routing mode, request tuning, title generation, atmospheric formatting, prompt
-enchantments, the "Show experimental XML override pages" switch, one shared random-generation weight
-for optional chance-gated pages, and diary-event retention caps. Dev mode
+covers API lanes, routing mode, prompt context detail, request tuning, title generation,
+atmospheric formatting, prompt enchantments, the "Show experimental XML override pages" switch, one
+shared random-generation weight for optional chance-gated pages, and diary-event retention caps. Dev mode
 exposes prompt-test mode and extra diagnostics in settings; bulk export
 lives in RimWorld's Debug Actions menu. The export writes every saved hot page, compact archived
 page, archive-only orphan row, and backing event record to `PawnDiaryExports/` under RimWorld's
@@ -745,6 +756,12 @@ save-data folder, and copies the generated file path to the clipboard.
 Connection rows use a fixed label column and shared right-side action-button columns so endpoint,
 model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned across localized UI
 text.
+The global prompt context detail setting defaults to `Full`. Each API lane can inherit that setting
+or force its own `Full`, `Balanced`, or `Compact` level, so a small fallback/local model can receive a
+shorter prompt without changing richer primary lanes. Live generation first builds the full plan only
+to resolve prompt routing and forced-model hints, then pre-renders prompt variants for the selected
+primary lane and its failover lanes at each lane's effective detail level. Retry within one lane
+reuses that lane's variant; failover switches to the next lane's pre-rendered variant.
 
 Prompts is the home for normal prompt text editing: the four shared system prompts plus per-event
 prompt/enhancement/forced-model overrides. Its prompt-type picker uses compact labels and keeps
@@ -763,6 +780,10 @@ stays blank so Shared/event prompts remains the only place that displays shared 
 Prompt-policy fields backed by XML translation keys are also literal override boxes only: blank means
 the XML/Keyed default is still used at generation time, while node settings never expose the raw key
 fields or copy their resolved text into editable overrides.
+The Prompts tab also has a context-detail preview drawer. It renders one synthetic high-context
+example through `Full`, `Balanced`, and `Compact`, shows approximate character/token counts, and
+lists the fields cut by each lower preset with selector reasons so players can see the tradeoff
+before changing global or per-lane settings.
 Styles is the writing-style editor for `DiaryPersonaDef` labels, rules, and theme tags.
 
 Advanced starts with automatic event filters. Each visible `DiaryInteractionGroupDef` can be

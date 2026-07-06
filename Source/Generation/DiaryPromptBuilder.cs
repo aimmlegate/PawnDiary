@@ -19,7 +19,8 @@ namespace PawnDiary
             string personaRule,
             string promptEnchantment,
             int maxTokens = 0,
-            string humorCue = null)
+            string humorCue = null,
+            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
             // In a paired event the recipient writes second, so it sees the initiator's finished entry
             // as hidden context. Only the recipient POV carries that prior entry.
@@ -29,7 +30,7 @@ namespace PawnDiary
                 ? DiaryLineCleaner.CleanLine(diaryEvent.initiatorGeneratedText)
                 : null;
 
-            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, initiatorEntry, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, initiatorEntry, null, false, maxTokens, contextDetailLevel);
         }
 
         public static DiaryPromptPlan BuildInteractionPromptPlan(
@@ -38,9 +39,10 @@ namespace PawnDiary
             string personaRule,
             string promptEnchantment,
             int maxTokens = 0,
-            string humorCue = null)
+            string humorCue = null,
+            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
-            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, null, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, povRole, personaRule, promptEnchantment, humorCue, null, null, false, maxTokens, contextDetailLevel);
         }
 
         /// <summary>
@@ -48,9 +50,12 @@ namespace PawnDiary
         /// descriptions. It deliberately omits style, relationship continuity, and first-person
         /// POV fields because this output is a factual death note, not a diary entry.
         /// </summary>
-        public static DiaryPromptPlan BuildDeathDescriptionPromptPlan(DiaryEvent diaryEvent, int maxTokens = 0)
+        public static DiaryPromptPlan BuildDeathDescriptionPromptPlan(
+            DiaryEvent diaryEvent,
+            int maxTokens = 0,
+            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
-            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens, contextDetailLevel);
         }
 
         /// <summary>
@@ -58,9 +63,12 @@ namespace PawnDiary
         /// pawn became part of the colony. Starting pawns get scenario context; later pawns get the
         /// SetFaction/join facts captured at runtime.
         /// </summary>
-        public static DiaryPromptPlan BuildArrivalDescriptionPromptPlan(DiaryEvent diaryEvent, int maxTokens = 0)
+        public static DiaryPromptPlan BuildArrivalDescriptionPromptPlan(
+            DiaryEvent diaryEvent,
+            int maxTokens = 0,
+            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
-            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens);
+            return BuildPromptPlan(diaryEvent, DiaryEvent.NeutralRole, string.Empty, string.Empty, string.Empty, null, null, false, maxTokens, contextDetailLevel);
         }
 
         /// <summary>
@@ -112,7 +120,8 @@ namespace PawnDiary
             string priorInitiatorEntry,
             string entryText,
             bool titleRequest,
-            int maxTokens)
+            int maxTokens,
+            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
             DiaryPromptRequest request = DiaryPipelineAdapters.BuildPromptRequest(
                 diaryEvent,
@@ -123,7 +132,8 @@ namespace PawnDiary
                 priorInitiatorEntry,
                 entryText,
                 titleRequest,
-                maxTokens);
+                maxTokens,
+                contextDetailLevel);
             return DiaryPromptPlanner.Build(request);
         }
     }

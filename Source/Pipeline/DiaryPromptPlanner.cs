@@ -27,9 +27,16 @@ namespace PawnDiary
             DiaryTemplatePolicy template = policy.Template(templateKey);
             string finalInstruction = FinalInstructionFor(request, template);
             PromptValues values = ProjectValues(template, payload, request);
+            PromptContextSelectionResult contextSelection = PromptContextSelector.Select(
+                templateKey,
+                template.fields,
+                values,
+                payload.domain,
+                payload.gameContext,
+                request.contextDetailLevel);
 
             string userPrompt = PromptAssembler.RenderUserPrompt(
-                ToAssemblerFields(template.fields),
+                ToAssemblerFields(contextSelection.fields),
                 values,
                 finalInstruction);
 
@@ -48,6 +55,7 @@ namespace PawnDiary
                 systemPrompt = systemPrompt,
                 userPrompt = userPrompt,
                 debugLabel = templateKey + ":" + (request.povRole ?? string.Empty),
+                contextSelectionReport = contextSelection.report,
                 responseRules = DiaryResponseRules.ForRequest(payload.eventId, request.povRole,
                     request.titleRequest, responseMaxTokens)
             };

@@ -8,6 +8,14 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Prompt context detail levels.** Added global `Full` / `Balanced` / `Compact` context presets
+  plus per-API-lane overrides. `Full` keeps the old prompt shape; lower presets run a pure,
+  deterministic field selector that always keeps core event/instruction facts, then spends a
+  smaller context budget on the most relevant optional fields for the event domain. The Prompts tab
+  now includes a context-detail preview drawer showing example prompts, kept/cut counts, and cut
+  reasons for every preset. Live failover lanes receive their own pre-rendered prompt variant, so a
+  compact fallback model is not handed the richer primary lane prompt.
+
 - **Example adapter preview art.** Added a developer-themed `About/Preview.png` for the example
   adapter/template Workshop payload, derived from the main Pawn Diary preview with API/template
   visual cues and an `Example API Adapter` subtitle.

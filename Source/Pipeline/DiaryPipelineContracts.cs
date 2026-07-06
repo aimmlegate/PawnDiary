@@ -219,6 +219,7 @@ namespace PawnDiary
         public string priorInitiatorEntry;
         public string entryText;
         public string directSpeechInstruction;
+        public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
         public int maxTokens;
     }
 
@@ -260,6 +261,7 @@ namespace PawnDiary
         public string systemPrompt;
         public string userPrompt;
         public string debugLabel;
+        public PromptContextSelectionReport contextSelectionReport;
         public DiaryResponseRules responseRules = new DiaryResponseRules();
     }
 

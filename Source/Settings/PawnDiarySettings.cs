@@ -40,6 +40,8 @@ namespace PawnDiary
         // any other known tag (think/thinking/reasoning/analysis/thought/reflection/scratchpad) is
         // ALSO stripped so exotic wrappers a model emits do not leak into saved diary text.
         public string reasoningTag = PawnDiarySettings.DefaultReasoningTag;
+        // Optional prompt-context detail override for this lane. Inherit preserves the global setting.
+        public PromptContextDetailOverride contextDetailOverride = PromptContextDetailOverride.Inherit;
 
         public ApiEndpointConfig()
         {
@@ -65,7 +67,8 @@ namespace PawnDiary
                 customAuthHeaderName = customAuthHeaderName,
                 apiMode = apiMode,
                 reasoningEffort = reasoningEffort,
-                reasoningTag = reasoningTag
+                reasoningTag = reasoningTag,
+                contextDetailOverride = contextDetailOverride
             };
         }
 
@@ -81,6 +84,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref apiMode, "apiMode", ApiCompatibilityMode.OpenAIChatCompletions);
             Scribe_Values.Look(ref reasoningEffort, "reasoningEffort", PawnDiarySettings.DefaultReasoningEffort);
             Scribe_Values.Look(ref reasoningTag, "reasoningTag", PawnDiarySettings.DefaultReasoningTag);
+            Scribe_Values.Look(ref contextDetailOverride, "contextDetailOverride", PromptContextDetailOverride.Inherit);
         }
     }
 
@@ -133,6 +137,9 @@ namespace PawnDiary
         // Master toggle for live prompt enchantments. When true, first-person diary prompts may get
         // one live health/status hint weighted by DiaryPromptEnchantmentDefs.xml.
         public bool enablePromptEnchantments = true;
+        // Global prompt-context detail level. Full preserves the original prompt shape; smaller levels
+        // dynamically choose the most relevant optional fields for small local models.
+        public PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full;
         // Master switch for public integration API behavior. Registration remains harmless while this
         // is off, but external submissions, reads, and provider invocations no-op.
         public bool allowExternalIntegrations = true;
@@ -225,6 +232,7 @@ namespace PawnDiary
             Scribe_Values.Look(ref generateTitles, "generateTitles", true);
             Scribe_Values.Look(ref enableAtmosphericFormatting, "enableAtmosphericFormatting", true);
             Scribe_Values.Look(ref enablePromptEnchantments, "enablePromptEnchantments", true);
+            Scribe_Values.Look(ref contextDetailLevel, "contextDetailLevel", PromptContextDetailLevel.Full);
             Scribe_Values.Look(ref allowExternalIntegrations, "allowExternalIntegrations", true);
             Scribe_Values.Look(ref injectGeneratedSpeechToPlayLog, "injectGeneratedSpeechToPlayLog", false);
             Scribe_Values.Look(ref systemPromptOverride, "systemPromptOverride", string.Empty);
@@ -460,6 +468,7 @@ namespace PawnDiary
                 endpoint.apiMode = NormalizeApiMode(endpoint.apiMode);
                 endpoint.reasoningEffort = NormalizeReasoningEffort(endpoint.reasoningEffort);
                 endpoint.reasoningTag = NormalizeReasoningTag(endpoint.reasoningTag);
+                endpoint.contextDetailOverride = NormalizeContextDetailOverride(endpoint.contextDetailOverride);
             }
         }
 
@@ -536,6 +545,26 @@ namespace PawnDiary
         public static ApiCompatibilityMode NormalizeApiMode(ApiCompatibilityMode mode)
         {
             return ApiEndpointPolicy.NormalizeApiMode(mode);
+        }
+
+        /// <summary>Normalizes invalid prompt-context detail values loaded from settings.</summary>
+        public static PromptContextDetailLevel NormalizeContextDetailLevel(PromptContextDetailLevel level)
+        {
+            return PromptContextSelector.Normalize(level);
+        }
+
+        /// <summary>Normalizes invalid per-lane prompt-context detail override values.</summary>
+        public static PromptContextDetailOverride NormalizeContextDetailOverride(PromptContextDetailOverride value)
+        {
+            return PromptContextSelector.NormalizeOverride(value);
+        }
+
+        /// <summary>Resolves the context detail level used by one API lane against the global setting.</summary>
+        public PromptContextDetailLevel EffectiveContextDetailLevel(ApiEndpointConfig endpoint)
+        {
+            return PromptContextSelector.Resolve(
+                contextDetailLevel,
+                endpoint == null ? PromptContextDetailOverride.Inherit : endpoint.contextDetailOverride);
         }
 
         // ---- Interaction group helpers ----
@@ -799,6 +828,7 @@ namespace PawnDiary
             maxConcurrentRequests = Mathf.Clamp(maxConcurrentRequests, 1, 16);
             maxTokens = Mathf.Clamp(maxTokens, 32, 2048);
             temperature = Mathf.Clamp(temperature, 0f, 2f);
+            contextDetailLevel = NormalizeContextDetailLevel(contextDetailLevel);
             injectGeneratedSpeechToPlayLog = false;
             systemPromptOverride = systemPromptOverride ?? string.Empty;
             systemPromptReflectionOverride = systemPromptReflectionOverride ?? string.Empty;

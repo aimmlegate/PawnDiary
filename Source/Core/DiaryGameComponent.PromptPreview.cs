@@ -111,18 +111,30 @@ namespace PawnDiary
                     && DiaryEvent.RoleEquals(povRole, DiaryEvent.RecipientRole)
                     && initiatorQueueable;
 
-                DiaryPromptPlan promptPlan = DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
-                    previewEvent,
-                    povRole,
-                    PersonaRuleFor(previewEvent, povRole),
-                    PromptEnchantmentRuleFor(previewEvent, povRole),
-                    0,
-                    HumorCueFor(previewEvent));
+                string personaRule = PersonaRuleFor(previewEvent, povRole);
+                string promptEnchantment = PromptEnchantmentRuleFor(previewEvent, povRole);
+                string humorCue = HumorCueFor(previewEvent);
+                Func<PromptContextDetailLevel, DiaryPromptPlan> planFactory = level =>
+                    DiaryPromptBuilder.BuildSequentialInteractionPromptPlan(
+                        previewEvent,
+                        povRole,
+                        personaRule,
+                        promptEnchantment,
+                        0,
+                        humorCue,
+                        level);
+
+                PromptContextDetailLevel selectedLevel = PawnDiarySettings.NormalizeContextDetailLevel(
+                    PawnDiaryMod.Settings.contextDetailLevel);
+                DiaryPromptPlan promptPlan = planFactory(selectedLevel);
 
                 if (promptPlan == null)
                 {
                     return null;
                 }
+
+                System.Collections.Generic.List<DiaryPromptContextPresetPreview> presetPreviews =
+                    BuildContextPresetPreviews(planFactory);
 
                 DiaryEventPayload previewPayload = DiaryPipelineAdapters.ToPayload(previewEvent);
                 DiaryPolicySnapshot previewPolicy = DiaryPipelineAdapters.PolicyFor(previewPayload);
@@ -140,10 +152,12 @@ namespace PawnDiary
                     eventPromptKey = previewPolicy?.group?.eventPromptKey ?? string.Empty,
                     forcedModelName = promptPlan.forcedModelName ?? string.Empty,
                     maxTokens = promptPlan.responseRules?.maxTokens ?? 0,
+                    contextDetailLevel = selectedLevel.ToString(),
                     requiresPriorPovText = requiresPriorPovText,
                     systemPrompt = promptPlan.systemPrompt ?? string.Empty,
                     userPrompt = promptPlan.userPrompt ?? string.Empty,
-                    combinedPrompt = DiaryPromptCapture.Format(promptPlan.systemPrompt, promptPlan.userPrompt)
+                    combinedPrompt = DiaryPromptCapture.Format(promptPlan.systemPrompt, promptPlan.userPrompt),
+                    contextPresets = presetPreviews
                 };
             }
             finally
@@ -278,6 +292,77 @@ namespace PawnDiary
         {
             ExternalPromptEntryRequest promptRequest = request as ExternalPromptEntryRequest;
             return promptRequest == null ? null : promptRequest.promptInstruction;
+        }
+
+        private static System.Collections.Generic.List<DiaryPromptContextPresetPreview> BuildContextPresetPreviews(
+            Func<PromptContextDetailLevel, DiaryPromptPlan> planFactory)
+        {
+            System.Collections.Generic.List<DiaryPromptContextPresetPreview> previews =
+                new System.Collections.Generic.List<DiaryPromptContextPresetPreview>();
+            AddContextPresetPreview(previews, planFactory, PromptContextDetailLevel.Full);
+            AddContextPresetPreview(previews, planFactory, PromptContextDetailLevel.Balanced);
+            AddContextPresetPreview(previews, planFactory, PromptContextDetailLevel.Compact);
+            return previews;
+        }
+
+        private static void AddContextPresetPreview(
+            System.Collections.Generic.List<DiaryPromptContextPresetPreview> previews,
+            Func<PromptContextDetailLevel, DiaryPromptPlan> planFactory,
+            PromptContextDetailLevel level)
+        {
+            DiaryPromptPlan plan = planFactory(level);
+            if (plan == null)
+            {
+                return;
+            }
+
+            PromptContextSelectionReport report = plan.contextSelectionReport ?? new PromptContextSelectionReport();
+            previews.Add(new DiaryPromptContextPresetPreview
+            {
+                level = level.ToString(),
+                budgetChars = report.budgetChars,
+                inputChars = report.inputChars,
+                outputChars = report.outputChars,
+                systemPrompt = plan.systemPrompt ?? string.Empty,
+                userPrompt = plan.userPrompt ?? string.Empty,
+                combinedPrompt = DiaryPromptCapture.Format(plan.systemPrompt, plan.userPrompt),
+                keptFields = PublicFieldReports(report.kept),
+                cutFields = PublicFieldReports(report.cut)
+            });
+        }
+
+        private static System.Collections.Generic.List<DiaryPromptContextFieldPreview> PublicFieldReports(
+            System.Collections.Generic.List<PromptContextFieldReport> reports)
+        {
+            System.Collections.Generic.List<DiaryPromptContextFieldPreview> result =
+                new System.Collections.Generic.List<DiaryPromptContextFieldPreview>();
+            if (reports == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < reports.Count; i++)
+            {
+                PromptContextFieldReport report = reports[i];
+                if (report == null)
+                {
+                    continue;
+                }
+
+                result.Add(new DiaryPromptContextFieldPreview
+                {
+                    label = report.label ?? string.Empty,
+                    source = report.source ?? string.Empty,
+                    contextKey = report.contextKey ?? string.Empty,
+                    valuePreview = report.valuePreview ?? string.Empty,
+                    score = report.score,
+                    chars = report.chars,
+                    required = report.required,
+                    reason = report.reason ?? string.Empty
+                });
+            }
+
+            return result;
         }
 
         private static string ResolvePreviewPovRole(

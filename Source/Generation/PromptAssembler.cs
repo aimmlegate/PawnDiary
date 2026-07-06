@@ -166,6 +166,15 @@ namespace PawnDiary
             return baseText.TrimEnd() + "\n\n" + personaVoiceBlock;
         }
 
+        /// <summary>
+        /// Resolves one source/contextKey pair exactly as the renderer will. The context selector uses
+        /// this public pure helper so preview reports and the final prompt cannot drift.
+        /// </summary>
+        public static string ResolveFieldValue(string source, string contextKey, PromptValues values)
+        {
+            return ResolveSource(new PromptAssemblerField { source = source, contextKey = contextKey }, values);
+        }
+
         // Maps a stable source token to its value in the bag. Mirrors the Node harness's sourceValue;
         // both must agree (the golden check enforces it).
         private static string ResolveSource(PromptAssemblerField field, PromptValues v)

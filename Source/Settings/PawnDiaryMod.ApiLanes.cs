@@ -183,6 +183,10 @@ namespace PawnDiary
             DrawRoutingModeRow(routingRect, 230f);
             y += rowHeight + gap;
 
+            Rect contextRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
+            DrawGlobalContextDetailRow(contextRect, 230f);
+            y += rowHeight + gap;
+
             Rect tempRect = new Rect(innerRect.x, y, innerRect.width, rowHeight);
             Settings.temperature = DrawSliderRow(tempRect, "PawnDiary.Settings.Temperature".Translate(Settings.temperature.ToString("0.00")), Settings.temperature, 0f, 2f);
             y += rowHeight + gap;
@@ -214,6 +218,32 @@ namespace PawnDiary
                 };
                 Find.WindowStack.Add(new FloatMenu(options));
             }
+        }
+
+        private static void DrawGlobalContextDetailRow(Rect rect, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, Mathf.Min(labelWidth, rect.width * 0.45f), rect.height);
+            Rect buttonRect = new Rect(labelRect.xMax + 8f, rect.y, Mathf.Max(0f, rect.xMax - labelRect.xMax - 8f), rect.height);
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ContextDetail".Translate());
+            TooltipHandler.TipRegion(labelRect, "PawnDiary.Settings.ContextDetailTip".Translate());
+            if (Widgets.ButtonText(buttonRect, ContextDetailLabel(Settings.contextDetailLevel).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>
+                {
+                    ContextDetailOption(PromptContextDetailLevel.Full),
+                    ContextDetailOption(PromptContextDetailLevel.Balanced),
+                    ContextDetailOption(PromptContextDetailLevel.Compact)
+                };
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private static FloatMenuOption ContextDetailOption(PromptContextDetailLevel level)
+        {
+            return new FloatMenuOption(ContextDetailLabel(level).Translate(), delegate
+            {
+                Settings.contextDetailLevel = PawnDiarySettings.NormalizeContextDetailLevel(level);
+            });
         }
 
         private static FloatMenuOption ApiRoutingOption(ApiLaneRoutingMode mode)
@@ -284,6 +314,10 @@ namespace PawnDiary
             float y = headerRect.yMax + gap;
             Rect modeRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
             DrawCompatibilityModeRow(modeRect, endpoint, 94f);
+
+            y += lineHeight + gap;
+            Rect contextDetailRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
+            DrawLaneContextDetailRow(contextDetailRect, endpoint, 94f);
 
             y += lineHeight + gap;
             Rect endpointRect = new Rect(innerRect.x, y, innerRect.width, lineHeight);
@@ -389,7 +423,7 @@ namespace PawnDiary
         /// </summary>
         private static float ApiEndpointRowHeight(ApiEndpointConfig endpoint, int statusLineCount)
         {
-            float height = HasApiAdvancedRow(endpoint) ? 247f : 214f;
+            float height = HasApiAdvancedRow(endpoint) ? 280f : 247f;
             return height + (Mathf.Max(0, statusLineCount) * 26f);
         }
 
@@ -434,6 +468,62 @@ namespace PawnDiary
                     return "PawnDiary.Settings.ApiCompatibility.Responses";
                 default:
                     return "PawnDiary.Settings.ApiCompatibility.Chat";
+            }
+        }
+
+        /// <summary>Draws the per-lane prompt-context detail override selector.</summary>
+        private static void DrawLaneContextDetailRow(Rect rect, ApiEndpointConfig endpoint, float labelWidth)
+        {
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect buttonRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelWidth - 4f, rect.height);
+            Widgets.LabelFit(labelRect, "PawnDiary.Settings.ContextDetail".Translate());
+            TooltipHandler.TipRegion(labelRect, "PawnDiary.Settings.ContextDetailLaneTip".Translate());
+            if (Widgets.ButtonText(buttonRect, ContextDetailOverrideLabel(endpoint.contextDetailOverride).Translate()))
+            {
+                List<FloatMenuOption> options = new List<FloatMenuOption>
+                {
+                    ContextDetailOverrideOption(endpoint, PromptContextDetailOverride.Inherit),
+                    ContextDetailOverrideOption(endpoint, PromptContextDetailOverride.Full),
+                    ContextDetailOverrideOption(endpoint, PromptContextDetailOverride.Balanced),
+                    ContextDetailOverrideOption(endpoint, PromptContextDetailOverride.Compact)
+                };
+                Find.WindowStack.Add(new FloatMenu(options));
+            }
+        }
+
+        private static FloatMenuOption ContextDetailOverrideOption(ApiEndpointConfig endpoint, PromptContextDetailOverride value)
+        {
+            return new FloatMenuOption(ContextDetailOverrideLabel(value).Translate(), delegate
+            {
+                endpoint.contextDetailOverride = PawnDiarySettings.NormalizeContextDetailOverride(value);
+            });
+        }
+
+        private static string ContextDetailLabel(PromptContextDetailLevel level)
+        {
+            switch (PromptContextSelector.Normalize(level))
+            {
+                case PromptContextDetailLevel.Balanced:
+                    return "PawnDiary.Settings.ContextDetail.Balanced";
+                case PromptContextDetailLevel.Compact:
+                    return "PawnDiary.Settings.ContextDetail.Compact";
+                default:
+                    return "PawnDiary.Settings.ContextDetail.Full";
+            }
+        }
+
+        private static string ContextDetailOverrideLabel(PromptContextDetailOverride value)
+        {
+            switch (PromptContextSelector.NormalizeOverride(value))
+            {
+                case PromptContextDetailOverride.Full:
+                    return "PawnDiary.Settings.ContextDetail.Full";
+                case PromptContextDetailOverride.Balanced:
+                    return "PawnDiary.Settings.ContextDetail.Balanced";
+                case PromptContextDetailOverride.Compact:
+                    return "PawnDiary.Settings.ContextDetail.Compact";
+                default:
+                    return "PawnDiary.Settings.ContextDetail.Inherit";
             }
         }
 

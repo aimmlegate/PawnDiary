@@ -24,7 +24,8 @@ namespace PawnDiary
             string priorInitiatorEntry,
             string entryText,
             bool titleRequest,
-            int maxTokens)
+            int maxTokens,
+            PromptContextDetailLevel contextDetailLevel = PromptContextDetailLevel.Full)
         {
             DiaryEventPayload payload = ToPayload(diaryEvent);
             string normalizedRole = string.IsNullOrWhiteSpace(povRole) ? DiaryPipelineRoles.Initiator : povRole;
@@ -43,6 +44,7 @@ namespace PawnDiary
                 priorInitiatorEntry = priorInitiatorEntry,
                 entryText = entryText,
                 directSpeechInstruction = titleRequest ? string.Empty : DirectSpeechInstructionFor(diaryEvent, normalizedRole),
+                contextDetailLevel = PromptContextSelector.Normalize(contextDetailLevel),
                 maxTokens = maxTokens
             };
         }
