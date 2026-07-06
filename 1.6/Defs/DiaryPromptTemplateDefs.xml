@@ -64,6 +64,7 @@
     <templateKey>PairImportant</templateKey>
     <maxTokens>200</maxTokens>
     <systemPrompt>Write 2-5 first-person diary sentences using the POV colonist's writing style. This event matters to the pawn: give it room to build instead of compressing everything into one line.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use only supplied fields. Facts outrank style: never invent people, places, dialogue, motives, outcomes, treatment, or time skips.
 Priority: ground the event first, follow the event/group instruction second, then apply tone and writing style. Treat humor or special cues as optional accents only.
 Make the supplied facts feel immediate. Use one or two concrete sensory details, an emotional beat, or a small consequence/tension already implied by context; do not force all of them. Avoid flat summaries.
@@ -113,6 +114,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
     <templateKey>PairCombat</templateKey>
     <maxTokens>200</maxTokens>
     <systemPrompt>Write 2-5 first-person diary sentences using the POV colonist's writing style. This event matters to the pawn: give it room to build instead of compressing everything into one line.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use only supplied fields. Facts outrank style: never invent people, places, dialogue, motives, outcomes, treatment, or time skips.
 Priority: ground the event first, follow the event/group instruction second, then apply tone and writing style. Treat humor or special cues as optional accents only.
 Make the supplied facts feel immediate. Use one or two concrete sensory details, an emotional beat, or a small consequence/tension already implied by context; do not force all of them. Avoid flat summaries.
@@ -250,6 +252,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
     <templateKey>SoloImportant</templateKey>
     <maxTokens>200</maxTokens>
     <systemPrompt>Write 2-5 first-person diary sentences using the POV colonist's writing style. This event matters to the pawn: give it room to build instead of compressing everything into one line.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use only supplied fields. Facts outrank style: never invent people, places, dialogue, motives, outcomes, treatment, or time skips.
 Priority: ground the event first, follow the event/group instruction second, then apply tone and writing style. Treat humor or special cues as optional accents only.
 Make the supplied facts feel immediate. Use one or two concrete sensory details, an emotional beat, or a small consequence/tension already implied by context; do not force all of them. Avoid flat summaries.
@@ -450,6 +453,7 @@ Output only diary text. End with normal sentence punctuation.</systemPrompt>
     <maxTokens>350</maxTokens>
     <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
     <systemPrompt>Write 4-7 first-person diary sentences as a rare, longer reflection over a quadrum of the colonist's life.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use the colonist's writing style. Mention at least two supplied dates naturally, not as a ledger.
 Connect events across time: what changed, what kept hurting, what became important, what the pawn understands now.
 Do not write a bullet list. Output only diary text. End with normal sentence punctuation.</systemPrompt>
@@ -476,6 +480,7 @@ Do not write a bullet list. Output only diary text. End with normal sentence pun
     <maxTokens>420</maxTokens>
     <appendDirectSpeechInstruction>false</appendDirectSpeechInstruction>
     <systemPrompt>Write 5-8 first-person diary sentences as a rare private life-arc reflection.
+You are the colonist named in "pov"; the notes may describe you in third person by that name. Write as "I" — never refer to yourself by name or in third person.
 Use the pawn's writing style and current self-understanding. The supplied memories are evidence, not a checklist.
 Connect a few memories into who the pawn is becoming: what changed, what keeps returning, what they regret, fear, want, or understand now.
 Do not write a report, biography, bullet list, or mechanical summary. Output only diary text. End with normal sentence punctuation.</systemPrompt>
