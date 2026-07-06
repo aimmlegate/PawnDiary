@@ -8,6 +8,29 @@ pre-release version ladder for project history.
 
 ## 2026-07-06
 
+- **Advanced tab: removed dead duplicate tuning rows.** The thought, ambient-thought,
+  thought-progression, pawn-progression, and work knobs appeared twice on the Advanced settings tab:
+  once in the numeric tuning groups (bound to `DiaryTuningDef`) and once in the signal-policy groups
+  (bound to `DiarySignalPolicyDef`). Because `DiarySignalPolicies` reads the policy def first and the
+  shipped `DiarySignalPolicyDefs.xml` sets every value, editing the tuning-tab copy did nothing — they
+  were silent no-op controls. Removed the 22 dead rows (the whole "Thought thresholds" and "Work
+  sampling" groups plus the masked "Dedup"/"Scanner intervals" entries); the live editors remain in the
+  "Signal: …" groups, which already carried equivalent tooltips. The `DiaryTuningDef` fields and their
+  XML values are kept as the documented fallback for third-party XML patches. `TuningOverrideMigration`
+  now prunes any previously-saved override for these rows by exact key (so the live
+  `DiarySignalPolicy_ThoughtProgression.thoughtProgressionRules` override, which shares a field name, is
+  never dropped); orphaned EN/RU help + group-header Keyed strings removed. No save-format or runtime
+  behavior change — only unreachable UI. Pure coverage added in `DiaryPipelineTests`.
+
+- **RimTalk bridge implementation plan recorded.** Added `design/RIMTALK_BRIDGE_PLAN.md`: the
+  approved step-by-step plan that turns the log-only RimTalk bridge into the full adapter
+  (settings-driven integration levels, diary-context injection into RimTalk prompts via its
+  `ContextHookRegistry`, important-conversation capture through `SubmitPromptEntry`, code-only
+  persona/writing-style sync tiers, optional RimTalk-provider engine mode) plus a core
+  `rimtalk_chatter` ambient compat group that stops the Interaction catch-all from turning every
+  RimTalk chat line into its own diary event candidate. Open decisions are marked U1–U9 in the
+  plan. No runtime change yet.
+
 - **Prompt context detail presets now visibly trim context.** Retuned the Balanced/Compact character
   budgets down so the presets actually change the prompt on ordinary events: the previous values
   (Balanced 1400/1900/1250, Compact 750/1150/850 for standard/reflection/neutral) were so generous

@@ -163,6 +163,33 @@ namespace DiaryPipelineTests
 
             AssertTrue("second pass is a no-op",
                 TuningOverrideMigration.PruneRemovedFieldKeys(overrides) == 0);
+
+            // Signal-mirror tuning rows (Diary_Tuning.thought*/work*/progression*) were removed from the
+            // Advanced tab because DiarySignalPolicies reads the policy def first, masking them. Their
+            // overrides prune by EXACT key so the live DiarySignalPolicy_*.<field> rows — which can share
+            // a trailing field name (thoughtProgressionRules) — and unrelated Diary_Tuning.* rows are
+            // never dropped.
+            Dictionary<string, string> signalMirror = new Dictionary<string, string>
+            {
+                { "Diary_Tuning.workBaseChance", "0.5" },
+                { "Diary_Tuning.thoughtProgressionRules", "food|NeedFood|2:1" },
+                { "DiarySignalPolicy_ThoughtProgression.thoughtProgressionRules", "food|NeedFood|2:1" },
+                { "Diary_Tuning.socialFightDedupTicks", "1250" },
+            };
+
+            int signalRemoved = TuningOverrideMigration.PruneRemovedFieldKeys(signalMirror);
+
+            AssertTrue("prunes exactly the two dead signal-mirror tuning overrides", signalRemoved == 2);
+            AssertTrue("drops dead Diary_Tuning.workBaseChance",
+                !signalMirror.ContainsKey("Diary_Tuning.workBaseChance"));
+            AssertTrue("drops dead Diary_Tuning.thoughtProgressionRules",
+                !signalMirror.ContainsKey("Diary_Tuning.thoughtProgressionRules"));
+            AssertTrue("keeps the live signal-policy thoughtProgressionRules override (same field name)",
+                signalMirror.ContainsKey("DiarySignalPolicy_ThoughtProgression.thoughtProgressionRules"));
+            AssertTrue("keeps the unrelated live Diary_Tuning.socialFightDedupTicks override",
+                signalMirror.ContainsKey("Diary_Tuning.socialFightDedupTicks"));
+            AssertTrue("signal-mirror second pass is a no-op",
+                TuningOverrideMigration.PruneRemovedFieldKeys(signalMirror) == 0);
         }
 
         private static void TestAdvancedRawSyntax()

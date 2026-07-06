@@ -1197,7 +1197,10 @@ namespace PawnDiary
                 .Int("mentalBreakDedupTicks", 0, 100000)
                 .Int("taleDedupTicks", 0, 100000)
                 .Int("moodEventDedupTicks", 0, 100000)
-                .Int("thoughtDedupTicks", 0, 100000)
+                // thoughtDedupTicks intentionally omitted: DiarySignalPolicies reads the Thought
+                // policy def first, so this tuning field is masked. Edit it in the "Signal: Thought"
+                // group (dedupTicks) instead. The DiaryTuningDef field survives only as the fallback
+                // for that getter when a signal def is absent.
                 .Int("romanceDedupTicks", 0, 100000)
                 .Int("raidDedupTicks", 0, 100000)
                 .Int("raidGenerationDelayTicks", 0, 100000)
@@ -1269,23 +1272,18 @@ namespace PawnDiary
                 .StringList("positiveMoodConditionDefNames")
                 .StringList("negativeMoodConditionDefNames");
 
-            b.Tuning("Thought thresholds", "PawnDiary.Settings.Adv.Group.Thought")
-                .Float("thoughtMinMoodOffset", 0f, 100f, false)
-                .Float("thoughtEatingMinMoodOffset", 0f, 100f, false)
-                .StringList("thoughtIgnoreTokens")
-                .StringList("thoughtBypassThresholdTokens")
-                .StringList("thoughtEatingTokens")
-                .StringList("thoughtAmbientTokens")
-                .Int("thoughtAmbientWindowTicks", 0, 600000)
-                .Int("thoughtAmbientMinEventsToWrite", 0, 50)
-                .Int("thoughtAmbientMaxSampleLines", 0, 50);
+            // The "Thought thresholds" tuning group was removed: every field it held
+            // (thoughtMinMoodOffset, thought*Tokens, thoughtAmbient*) is read via DiarySignalPolicies,
+            // which consults the Thought / AmbientThought policy defs first, so the tuning rows were
+            // dead controls. Their live editors are the "Signal: Thought" / "Signal: AmbientThought"
+            // groups below. The DiaryTuningDef fields remain as the getter fallbacks.
 
             b.Tuning("Scanner intervals", "PawnDiary.Settings.Adv.Group.Scanners")
-                .Int("thoughtProgressionScanIntervalTicks", 0, 600000)
-                .Int("thoughtProgressionDedupTicks", 0, 100000)
-                .CustomLongText("thoughtProgressionRules", FormatThoughtProgressionRules, ParseThoughtProgressionRules)
+                // thoughtProgression* and progressionScanIntervalTicks are omitted for the same reason
+                // (masked by the ThoughtProgression / Progression policy defs — edit them in the
+                // matching "Signal:" groups). hediffProgression / skill-milestone / psylink fields have
+                // no signal-policy mirror and are read straight from tuning, so they stay here.
                 .Int("hediffProgressionScanIntervalTicks", 0, 600000)
-                .Int("progressionScanIntervalTicks", 0, 600000)
                 .IntList("progressionSkillMilestones")
                 .StringList("psylinkHediffDefNames");
 
@@ -1304,15 +1302,9 @@ namespace PawnDiary
                 .Float("bodyPartProstheticEfficiencyMax", 0f, 2f, true)
                 .Float("bodyPartBionicEfficiencyMax", 0f, 2f, true);
 
-            b.Tuning("Work sampling", "PawnDiary.Settings.Adv.Group.Work")
-                .Int("workScanIntervalTicks", 0, 600000)
-                .Float("workBaseChance", 0f, 1f, true)
-                .Int("workSameTypeCooldownTicks", 0, 600000)
-                .Float("workRecentDifferentTypeMultiplier", 0f, 5f, true)
-                .Float("workPassionChanceMultiplier", 0f, 5f, true)
-                .Float("workNegativeChanceMultiplier", 0f, 5f, true)
-                .Float("workDarkStudyChanceMultiplier", 0f, 5f, true)
-                .Int("workLowSkillThreshold", 0, 20);
+            // The "Work sampling" tuning group was removed: every work* field is read via
+            // DiarySignalPolicies (Work policy def first), so the tuning rows were dead. The live
+            // editors are the "Signal: Work" group below; the DiaryTuningDef fields stay as fallbacks.
 
             b.Tuning("Day reflection", "PawnDiary.Settings.Adv.Group.DayReflection")
                 .Bool("daySummaryEnabled")
@@ -1364,6 +1356,11 @@ namespace PawnDiary
             // ---- Signal policies (DiarySignalPolicyDef). The accessor returns a fallback def when a
             // signal def is absent, so editing never crashes; values use -1 as the "inherit tuning"
             // sentinel, which the snapshot preserves across Reset.
+            // These groups are the LIVE editors for the thought/ambient/progression/work knobs. The
+            // matching DiaryTuningDef rows were removed from the tuning groups above because
+            // DiarySignalPolicies reads the policy def first and only falls back to tuning when a
+            // signal value is the -1 sentinel (and the shipped policy defs set every value), which made
+            // those tuning rows dead. See TuningOverrideMigration for the one-time override cleanup.
             b.Signal("DiarySignalPolicy_Thought", "Thought", "PawnDiary.Settings.Adv.Group.SignalThought")
                 .Bool("enabled")
                 .Int("dedupTicks", 0, 100000)

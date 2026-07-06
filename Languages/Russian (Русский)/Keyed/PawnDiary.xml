@@ -433,10 +433,8 @@
   <PawnDiary.Settings.Adv.Group.Enchantment>Важный контекст</PawnDiary.Settings.Adv.Group.Enchantment>
   <PawnDiary.Settings.Adv.Group.Consciousness>Сознание</PawnDiary.Settings.Adv.Group.Consciousness>
   <PawnDiary.Settings.Adv.Group.Buckets>Среда / настроение / боль</PawnDiary.Settings.Adv.Group.Buckets>
-  <PawnDiary.Settings.Adv.Group.Thought>Мысли</PawnDiary.Settings.Adv.Group.Thought>
   <PawnDiary.Settings.Adv.Group.Scanners>Проверки</PawnDiary.Settings.Adv.Group.Scanners>
   <PawnDiary.Settings.Adv.Group.BodyParts>События частей тела</PawnDiary.Settings.Adv.Group.BodyParts>
-  <PawnDiary.Settings.Adv.Group.Work>Работа</PawnDiary.Settings.Adv.Group.Work>
   <PawnDiary.Settings.Adv.Group.DayReflection>Итог дня</PawnDiary.Settings.Adv.Group.DayReflection>
   <PawnDiary.Settings.Adv.Group.Quadrum>Итог квадрума</PawnDiary.Settings.Adv.Group.Quadrum>
   <PawnDiary.Settings.Adv.Group.Arc>Годовая арка</PawnDiary.Settings.Adv.Group.Arc>
@@ -594,7 +592,6 @@
   <PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>Тот же поселенец и тот же срыв записываются один раз за это окно.</PawnDiary.Settings.Adv.Help.mentalBreakDedupTicks>
   <PawnDiary.Settings.Adv.Help.taleDedupTicks>То же событие истории и поселенец записываются один раз за это окно.</PawnDiary.Settings.Adv.Help.taleDedupTicks>
   <PawnDiary.Settings.Adv.Help.moodEventDedupTicks>То же событие настроения записывается один раз на поселение за это окно.</PawnDiary.Settings.Adv.Help.moodEventDedupTicks>
-  <PawnDiary.Settings.Adv.Help.thoughtDedupTicks>Тот же поселенец и та же мысль записываются один раз за это окно.</PawnDiary.Settings.Adv.Help.thoughtDedupTicks>
   <PawnDiary.Settings.Adv.Help.romanceDedupTicks>То же изменение отношений пары записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.romanceDedupTicks>
   <PawnDiary.Settings.Adv.Help.raidDedupTicks>Тот же ключ рейда записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.raidDedupTicks>
   <PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>Обычный рейд ждёт столько тиков перед запросом к модели, чтобы текст мог поймать приближение. Рейды из капсул и насекомые не ждут.</PawnDiary.Settings.Adv.Help.raidGenerationDelayTicks>
@@ -645,13 +642,6 @@
   <PawnDiary.Settings.Adv.Help.opinionFriendly>Отношение от этого значения считается дружелюбным.</PawnDiary.Settings.Adv.Help.opinionFriendly>
   <PawnDiary.Settings.Adv.Help.opinionNeutralAbove>Отношение выше этого считается нейтральным; иначе хуже.</PawnDiary.Settings.Adv.Help.opinionNeutralAbove>
   <PawnDiary.Settings.Adv.Help.opinionStrainedAbove>Отношение выше этого считается натянутым; иначе враждебным.</PawnDiary.Settings.Adv.Help.opinionStrainedAbove>
-  <PawnDiary.Settings.Adv.Help.thoughtMinMoodOffset>Минимальный |эффект настроения| для записи обычной мысли.</PawnDiary.Settings.Adv.Help.thoughtMinMoodOffset>
-  <PawnDiary.Settings.Adv.Help.thoughtEatingMinMoodOffset>Минимальный |эффект настроения| для мысли о еде.</PawnDiary.Settings.Adv.Help.thoughtEatingMinMoodOffset>
-  <PawnDiary.Settings.Adv.Help.thoughtAmbientWindowTicks>Фоновые временные мысли собираются до смены дня или конца этого тихого окна.</PawnDiary.Settings.Adv.Help.thoughtAmbientWindowTicks>
-  <PawnDiary.Settings.Adv.Help.thoughtAmbientMinEventsToWrite>Не писать фоновую заметку, если мыслей меньше этого числа.</PawnDiary.Settings.Adv.Help.thoughtAmbientMinEventsToWrite>
-  <PawnDiary.Settings.Adv.Help.thoughtAmbientMaxSampleLines>Сколько строк фоновых мыслей максимум оставить в запросе.</PawnDiary.Settings.Adv.Help.thoughtAmbientMaxSampleLines>
-  <PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>Как часто проверяются текущие нужды.</PawnDiary.Settings.Adv.Help.thoughtProgressionScanIntervalTicks>
-  <PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>Тот же сигнал развития записывается один раз за это окно.</PawnDiary.Settings.Adv.Help.thoughtProgressionDedupTicks>
   <PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>Как часто сканируется переход состояния здоровья на новую ступень тяжести.</PawnDiary.Settings.Adv.Help.hediffProgressionScanIntervalTicks>
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>HediffDef defName, которые всегда считаются аномальными частями; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideAnomalous>
   <PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>HediffDef defName, которые всегда считаются грубыми частями; по одному на строку.</PawnDiary.Settings.Adv.Help.bodyPartTierOverrideCrude>
@@ -666,15 +656,6 @@
   <PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>Если нет более сильного сигнала, установленные части ниже этой эффективности считаются грубыми.</PawnDiary.Settings.Adv.Help.bodyPartCrudeEfficiencyBelow>
   <PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>Если нет более сильного сигнала, установленные части до этой эффективности считаются протезами.</PawnDiary.Settings.Adv.Help.bodyPartProstheticEfficiencyMax>
   <PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>Установленные части до этой эффективности считаются бионикой; выше - архотеком.</PawnDiary.Settings.Adv.Help.bodyPartBionicEfficiencyMax>
-  <PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>Как часто проверяется медленное развитие поселенца.</PawnDiary.Settings.Adv.Help.progressionScanIntervalTicks>
-  <PawnDiary.Settings.Adv.Help.workScanIntervalTicks>Как часто проверяется текущая работа.</PawnDiary.Settings.Adv.Help.workScanIntervalTicks>
-  <PawnDiary.Settings.Adv.Help.workBaseChance>Базовая вероятность за проверку: поселенец на работе напишет об этой работе.</PawnDiary.Settings.Adv.Help.workBaseChance>
-  <PawnDiary.Settings.Adv.Help.workSameTypeCooldownTicks>После записи о типе работы подавлять тот же тип столько тиков.</PawnDiary.Settings.Adv.Help.workSameTypeCooldownTicks>
-  <PawnDiary.Settings.Adv.Help.workRecentDifferentTypeMultiplier>Множитель шанса, если недавно была запись о другой работе.</PawnDiary.Settings.Adv.Help.workRecentDifferentTypeMultiplier>
-  <PawnDiary.Settings.Adv.Help.workPassionChanceMultiplier>Множитель шанса, если у поселенца есть страсть к этой работе.</PawnDiary.Settings.Adv.Help.workPassionChanceMultiplier>
-  <PawnDiary.Settings.Adv.Help.workNegativeChanceMultiplier>Множитель шанса для неприятной или раздражающей работы.</PawnDiary.Settings.Adv.Help.workNegativeChanceMultiplier>
-  <PawnDiary.Settings.Adv.Help.workDarkStudyChanceMultiplier>Множитель шанса для изучения тьмы.</PawnDiary.Settings.Adv.Help.workDarkStudyChanceMultiplier>
-  <PawnDiary.Settings.Adv.Help.workLowSkillThreshold>Лучший подходящий навык ниже этого уровня звучит неуверенно.</PawnDiary.Settings.Adv.Help.workLowSkillThreshold>
   <PawnDiary.Settings.Adv.Help.daySummaryEnabled>Главный переключатель вечерних итогов; выкл. = старые фоновые заметки по источникам.</PawnDiary.Settings.Adv.Help.daySummaryEnabled>
   <PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>Сколько моментов максимум вплести в один итог дня.</PawnDiary.Settings.Adv.Help.daySummaryMaxHighlights>
   <PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>Сдвиг отношения с начала дня, который становится социальным сигналом.</PawnDiary.Settings.Adv.Help.daySummaryOpinionDeltaThreshold>

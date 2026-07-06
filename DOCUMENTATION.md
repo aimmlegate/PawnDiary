@@ -899,9 +899,13 @@ and "Copy changed summary". The copy action is intentionally only a plain text r
 combine authored help with the live value, XML default, range, and customized status. Tuning contains
 XML-owned parameters (dedup windows, ability sampling,
 surroundings, weather chances, ritual quality labels, mood-condition families, health/enchantment
-thresholds, body-part event tier/attitude policy, mood/pain/opinion buckets, thought token lists,
-thought progression rules, scanner intervals, work sampling, day/quadrum/arc reflection weights,
-signal policies, context reactions).
+thresholds, body-part event tier/attitude policy, mood/pain/opinion buckets, hediff/skill scanner
+intervals, day/quadrum/arc reflection weights, signal policies, context reactions). The thought,
+ambient-thought, thought-progression, pawn-progression, and work knobs are edited **only** in the
+signal-policy groups (`DiarySignalPolicyDef`): `DiarySignalPolicies` reads the policy def before
+falling back to `DiaryTuningDef`, so the duplicate rows that also existed in the tuning groups were
+dead controls and were removed (the `DiaryTuningDef` fields remain solely as the getter fallback when
+a signal def is absent; `TuningOverrideMigration` prunes any saved override for the removed rows).
 Field labels span the full row width so long names never clip. The catalog (`AdvancedFieldCatalog`)
 is declarative and drives both the UI and the runtime override seam. Static tuning fields build during
 settings load; Def-backed prompt-policy groups are appended lazily after `DefDatabase` has loaded, so
