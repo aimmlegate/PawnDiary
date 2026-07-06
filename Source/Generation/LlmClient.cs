@@ -101,6 +101,23 @@ namespace PawnDiary
         /// background HTTP worker can clean the model text without rereading game state or XML.
         /// </summary>
         public DiaryResponseRules responseRules;
+
+        /// <summary>
+        /// Optional prompt variants keyed by API lane. Main-thread generation fills this when context
+        /// detail differs per lane; the background worker only selects between pre-rendered strings.
+        /// </summary>
+        public Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants;
+    }
+
+    /// <summary>
+    /// Pre-rendered prompt text for one API lane. Kept separate from the transport settings so
+    /// failover can honor each lane's context-detail override without touching game state off-thread.
+    /// </summary>
+    internal class LlmPromptVariant
+    {
+        public string systemPrompt;
+        public string rawText;
+        public PromptContextDetailLevel contextDetailLevel;
     }
 
     /// <summary>
@@ -155,6 +172,12 @@ namespace PawnDiary
         /// branches on this to route the result to the title handler instead of the main-entry
         /// handler. Defaults to false so existing main-entry results behave exactly as before.</summary>
         public bool isTitleRequest;
+
+        /// <summary>
+        /// Prompt text actually sent to the successful lane. This can differ from the queued primary
+        /// prompt when failover lands on a lane with a different context-detail override.
+        /// </summary>
+        public string sentRawText;
     }
 
     /// <summary>
@@ -738,6 +761,7 @@ namespace PawnDiary
                     request.reasoningEffort = PawnDiarySettings.NormalizeReasoningEffort(target.reasoningEffort);
                     request.reasoningTag = PawnDiarySettings.NormalizeReasoningTag(target.reasoningTag);
                     string laneLabel = LaneLabel(request);
+                    ApplyPromptVariantForCurrentLane(request);
 
                     // Reuse the gate captured at enqueue for the first lane; create per-lane gates
                     // for failover lanes. Each is acquired and released as the same reference here.
@@ -791,7 +815,8 @@ namespace PawnDiary
                                 apiKey = request.apiKey,
                                 authMode = request.authMode,
                                 customAuthHeaderName = request.customAuthHeaderName,
-                                isTitleRequest = request.isTitleRequest
+                                isTitleRequest = request.isTitleRequest,
+                                sentRawText = request.rawText
                             });
                             return;
                         }
@@ -1146,6 +1171,24 @@ namespace PawnDiary
                 maxTokens = request.maxTokens,
                 temperature = request.temperature
             });
+        }
+
+        private static void ApplyPromptVariantForCurrentLane(LlmGenerationRequest request)
+        {
+            if (request == null || request.promptVariants == null || request.promptVariants.Count == 0)
+            {
+                return;
+            }
+
+            ApiLaneIdentity key = LaneIdentity(request);
+            LlmPromptVariant variant;
+            if (key.Empty || !request.promptVariants.TryGetValue(key, out variant) || variant == null)
+            {
+                return;
+            }
+
+            request.systemPrompt = variant.systemPrompt ?? string.Empty;
+            request.rawText = variant.rawText ?? string.Empty;
         }
 
         /// <summary>

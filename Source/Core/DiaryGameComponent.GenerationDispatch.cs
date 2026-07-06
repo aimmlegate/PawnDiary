@@ -21,6 +21,8 @@ namespace PawnDiary
         private const int TitleMaxTokens = 40;
         private const string PromptTestEndpointLabel = "prompt-test-mode";
 
+        private delegate DiaryPromptPlan PromptPlanFactory(PromptContextDetailLevel contextDetailLevel);
+
         private static bool PromptTestModeEnabled()
         {
             return Prefs.DevMode && PawnDiaryMod.Settings != null && PawnDiaryMod.Settings.promptTestMode;
@@ -30,11 +32,11 @@ namespace PawnDiary
         /// Final impure step before LLM dispatch: stamps the planned prompt on the event, records
         /// endpoint metadata, marks the event queued, and enqueues the request to <see cref="LlmClient"/>.
         /// </summary>
-        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, DiaryPromptPlan promptPlan,
+        private void QueuePrompt(DiaryEvent diaryEvent, string povRole, PromptPlanFactory promptPlanFactory,
             ApiEndpointConfig primaryOverride = null, Dictionary<string, DiaryBoundsCacheEntry> boundsCache = null,
             Dictionary<string, Pawn> livePawnsById = null)
         {
-            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlan == null)
+            if (diaryEvent == null || string.IsNullOrWhiteSpace(povRole) || promptPlanFactory == null)
             {
                 return;
             }
@@ -49,10 +51,6 @@ namespace PawnDiary
                 return;
             }
 
-            string rawText = promptPlan.userPrompt ?? string.Empty;
-            string capturedPrompt = DiaryPromptCapture.Format(promptPlan.systemPrompt, rawText);
-            diaryEvent.SetPrompt(povRole, PromptTestModeEnabled() ? capturedPrompt : rawText);
-
             // Fetch settings once into a local so the method operates on one consistent snapshot
             // (matching QueueTitleRequest) instead of reaching the global static at every step.
             PawnDiarySettings settings = PawnDiaryMod.Settings;
@@ -63,8 +61,28 @@ namespace PawnDiary
                 return;
             }
 
+            // Build a Full plan first to resolve template choice and forced-model routing metadata.
+            // After lane selection we pre-render one prompt variant per effective context preset so
+            // failover lanes can honor their own overrides without touching game state off-thread.
+            DiaryPromptPlan routingPlan = promptPlanFactory(PromptContextDetailLevel.Full);
+            if (routingPlan == null)
+            {
+                return;
+            }
+
             if (PromptTestModeEnabled())
             {
+                PromptContextDetailLevel testLevel = PawnDiarySettings.NormalizeContextDetailLevel(settings.contextDetailLevel);
+                DiaryPromptPlan testPlan = testLevel == PromptContextDetailLevel.Full
+                    ? routingPlan
+                    : promptPlanFactory(testLevel);
+                if (testPlan == null)
+                {
+                    return;
+                }
+
+                string testRawText = testPlan.userPrompt ?? string.Empty;
+                diaryEvent.SetPrompt(povRole, DiaryPromptCapture.Format(testPlan.systemPrompt, testRawText));
                 diaryEvent.SetLlmMeta(povRole, PromptTestEndpointLabel, string.Empty);
                 diaryEvent.MarkPromptOnly(povRole, "PawnDiary.Error.PromptTestModeCaptured".Translate());
                 NotifyEntryStatusChanged(diaryEvent, povRole);
@@ -87,12 +105,29 @@ namespace PawnDiary
             string selectionReason;
             bool forcePrimaryLane;
             ApiEndpointConfig target = SelectApiTarget(diaryEvent, povRole, targets, primaryOverride,
-                promptPlan.forcedModelName, settings.apiRoutingMode, out selectionReason, out forcePrimaryLane);
+                routingPlan.forcedModelName, settings.apiRoutingMode, out selectionReason, out forcePrimaryLane);
             List<ApiEndpointConfig> failoverTargets = BuildFailoverTargets(targets, target);
+            PromptContextDetailLevel contextDetailLevel = settings.EffectiveContextDetailLevel(target);
+            DiaryPromptPlan promptPlan = PromptPlanForContextLevel(contextDetailLevel, routingPlan, promptPlanFactory);
+            if (promptPlan == null)
+            {
+                return;
+            }
+
+            Dictionary<ApiLaneIdentity, LlmPromptVariant> promptVariants = BuildPromptVariants(
+                settings, target, failoverTargets, routingPlan, contextDetailLevel, promptPlan, promptPlanFactory);
+            if (promptVariants == null)
+            {
+                return;
+            }
+
+            string rawText = promptPlan.userPrompt ?? string.Empty;
+            diaryEvent.SetPrompt(povRole, rawText);
             LogApiDebug(
                 "Queue event=" + diaryEvent.eventId
                 + " role=" + povRole
                 + " primary=" + LaneLabel(target)
+                + " context=" + contextDetailLevel
                 + " reason=" + selectionReason
                 + " failovers=[" + LaneList(failoverTargets) + "]");
 
@@ -135,9 +170,98 @@ namespace PawnDiary
                 timeoutSeconds = settings.timeoutSeconds,
                 maxTokens = requestMaxTokens,
                 temperature = settings.temperature,
-                responseRules = responseRules
+                responseRules = responseRules,
+                promptVariants = promptVariants
             });
             NotifyEntryStatusChanged(diaryEvent, povRole);
+        }
+
+        private static DiaryPromptPlan PromptPlanForContextLevel(
+            PromptContextDetailLevel level,
+            DiaryPromptPlan fullPlan,
+            PromptPlanFactory promptPlanFactory)
+        {
+            PromptContextDetailLevel normalized = PawnDiarySettings.NormalizeContextDetailLevel(level);
+            if (normalized == PromptContextDetailLevel.Full)
+            {
+                return fullPlan;
+            }
+
+            return promptPlanFactory == null ? null : promptPlanFactory(normalized);
+        }
+
+        private static Dictionary<ApiLaneIdentity, LlmPromptVariant> BuildPromptVariants(
+            PawnDiarySettings settings,
+            ApiEndpointConfig primary,
+            List<ApiEndpointConfig> failovers,
+            DiaryPromptPlan fullPlan,
+            PromptContextDetailLevel primaryLevel,
+            DiaryPromptPlan primaryPlan,
+            PromptPlanFactory promptPlanFactory)
+        {
+            Dictionary<ApiLaneIdentity, LlmPromptVariant> variants = new Dictionary<ApiLaneIdentity, LlmPromptVariant>();
+            Dictionary<PromptContextDetailLevel, DiaryPromptPlan> plansByLevel = new Dictionary<PromptContextDetailLevel, DiaryPromptPlan>();
+            plansByLevel[PromptContextDetailLevel.Full] = fullPlan;
+            plansByLevel[PawnDiarySettings.NormalizeContextDetailLevel(primaryLevel)] = primaryPlan;
+
+            if (!AddPromptVariant(variants, plansByLevel, settings, primary, promptPlanFactory))
+            {
+                return null;
+            }
+
+            if (failovers != null)
+            {
+                for (int i = 0; i < failovers.Count; i++)
+                {
+                    if (!AddPromptVariant(variants, plansByLevel, settings, failovers[i], promptPlanFactory))
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            return variants;
+        }
+
+        private static bool AddPromptVariant(
+            Dictionary<ApiLaneIdentity, LlmPromptVariant> variants,
+            Dictionary<PromptContextDetailLevel, DiaryPromptPlan> plansByLevel,
+            PawnDiarySettings settings,
+            ApiEndpointConfig lane,
+            PromptPlanFactory promptPlanFactory)
+        {
+            if (variants == null || plansByLevel == null || settings == null || lane == null)
+            {
+                return true;
+            }
+
+            ApiLaneIdentity key = ApiLaneIdentity.ForGate(
+                lane.url, lane.model, lane.apiMode, lane.authMode, lane.customAuthHeaderName, lane.apiKey);
+            if (key.Empty || variants.ContainsKey(key))
+            {
+                return true;
+            }
+
+            PromptContextDetailLevel level = settings.EffectiveContextDetailLevel(lane);
+            DiaryPromptPlan plan;
+            if (!plansByLevel.TryGetValue(level, out plan))
+            {
+                plan = PromptPlanForContextLevel(level, plansByLevel[PromptContextDetailLevel.Full], promptPlanFactory);
+                if (plan == null)
+                {
+                    return false;
+                }
+
+                plansByLevel[level] = plan;
+            }
+
+            variants[key] = new LlmPromptVariant
+            {
+                systemPrompt = plan.systemPrompt ?? string.Empty,
+                rawText = plan.userPrompt ?? string.Empty,
+                contextDetailLevel = level
+            };
+            return true;
         }
 
         /// <summary>
@@ -165,6 +289,11 @@ namespace PawnDiary
             {
                 ApplyTitleResult(diaryEvent, result);
                 return;
+            }
+
+            if (result.success && result.sentRawText != null)
+            {
+                diaryEvent.SetPrompt(result.povRole, result.sentRawText);
             }
 
             diaryEvent.ApplyLlmResult(result);

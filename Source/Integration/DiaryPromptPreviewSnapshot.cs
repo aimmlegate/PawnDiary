@@ -3,8 +3,37 @@
 // saved diary entry or an LLM response.
 //
 // New to C#/RimWorld? See AGENTS.md.
+using System.Collections.Generic;
+
 namespace PawnDiary.Integration
 {
+    /// <summary>One kept or cut prompt field in a context-detail preview report.</summary>
+    public sealed class DiaryPromptContextFieldPreview
+    {
+        public string label = string.Empty;
+        public string source = string.Empty;
+        public string contextKey = string.Empty;
+        public string valuePreview = string.Empty;
+        public int score;
+        public int chars;
+        public bool required;
+        public string reason = string.Empty;
+    }
+
+    /// <summary>One context-detail preset preview: prompt text plus kept/cut field diagnostics.</summary>
+    public sealed class DiaryPromptContextPresetPreview
+    {
+        public string level = string.Empty;
+        public int budgetChars;
+        public int inputChars;
+        public int outputChars;
+        public string systemPrompt = string.Empty;
+        public string userPrompt = string.Empty;
+        public string combinedPrompt = string.Empty;
+        public List<DiaryPromptContextFieldPreview> keptFields = new List<DiaryPromptContextFieldPreview>();
+        public List<DiaryPromptContextFieldPreview> cutFields = new List<DiaryPromptContextFieldPreview>();
+    }
+
     /// <summary>
     /// Side-effect-free preview of the prompt Pawn Diary would send for one external-event POV.
     /// </summary>
@@ -43,6 +72,9 @@ namespace PawnDiary.Integration
         /// <summary>Response token cap selected by the template/request rules.</summary>
         public int maxTokens;
 
+        /// <summary>Context-detail level used by systemPrompt/userPrompt/combinedPrompt.</summary>
+        public string contextDetailLevel = string.Empty;
+
         /// <summary>
         /// True when this recipient preview cannot include the real hidden initiator entry because no
         /// LLM generation has happened. The live recipient prompt may gain that extra context later.
@@ -57,5 +89,8 @@ namespace PawnDiary.Integration
 
         /// <summary>Human-readable combined prompt using the same format as prompt-test mode.</summary>
         public string combinedPrompt = string.Empty;
+
+        /// <summary>All context-detail preset previews for the same event/POV.</summary>
+        public List<DiaryPromptContextPresetPreview> contextPresets = new List<DiaryPromptContextPresetPreview>();
     }
 }

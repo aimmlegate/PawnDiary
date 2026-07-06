@@ -16,6 +16,8 @@ namespace DiaryPipelineTests
         {
             TestCombatPromptPlan();
             TestSoloPromptPlan();
+            TestPromptContextDetailSelection();
+            TestPromptContextDetailOverrideResolution();
             TestOwnedPromptTextIsNotSentenceCapped();
             TestPromptTemplatePolicyReachesPromptPlan();
             TestQuestPromptPlanFields();
@@ -502,6 +504,83 @@ namespace DiaryPipelineTests
             AssertEqual("solo rule role", DiaryPipelineRoles.Initiator, plan.responseRules.targetRole);
             AssertEqual("solo forced model carried", "story-model", plan.forcedModelName);
             AssertTrue("solo forced model not prompt text", !plan.userPrompt.Contains("story-model"));
+        }
+
+        private static void TestPromptContextDetailSelection()
+        {
+            DiaryEventPayload combatPayload = PairPayload(
+                "e-context-combat",
+                "raid",
+                "Alice fired at raiders by the north wall.",
+                "Bob ducked behind the sandbags.");
+            combatPayload.domain = "Raid";
+            combatPayload.gameContext = "raid=RaidEnemy; arrival_mode=EdgeWalkIn; strategy=ImmediateAttack; points=850";
+            combatPayload.initiator.pawnSummary = "sex=female; mood=stressed; health=bleeding cut; thoughts=slept in cold";
+            combatPayload.initiator.surroundings = "outdoors, cold rain, recent threat: Raid";
+            combatPayload.initiator.continuity = "Bob: friendly";
+            combatPayload.initiator.previousEntryEnding = "I stopped before the door. The rain was still coming down.";
+            string severeLongContext = "bleeding " + new string('x', 520);
+
+            DiaryPromptRequest fullRequest = new DiaryPromptRequest
+            {
+                payload = combatPayload,
+                policy = Policy(combat: true, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                promptEnchantment = severeLongContext,
+                contextDetailLevel = PromptContextDetailLevel.Full
+            };
+            DiaryPromptPlan full = DiaryPromptPlanner.Build(fullRequest);
+
+            DiaryPromptRequest compactRequest = new DiaryPromptRequest
+            {
+                payload = combatPayload,
+                policy = Policy(combat: true, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                promptEnchantment = severeLongContext,
+                contextDetailLevel = PromptContextDetailLevel.Compact
+            };
+            DiaryPromptPlan compact = DiaryPromptPlanner.Build(compactRequest);
+
+            AssertContains("full includes continuity", full.userPrompt,
+                "previous diary ending (continue from this): I stopped before the door.");
+            AssertContains("compact keeps core event", compact.userPrompt,
+                "what happened: Alice fired at raiders by the north wall.");
+            AssertContains("compact keeps combat weapon", compact.userPrompt, "weapon: knife");
+            AssertTrue("compact cuts previous ending", !compact.userPrompt.Contains("previous diary ending"));
+            AssertTrue("compact report contains cuts", compact.contextSelectionReport.cut.Count > 0);
+            AssertTrue("compact report cut reasons are populated",
+                !string.IsNullOrWhiteSpace(compact.contextSelectionReport.cut[0].reason));
+
+            DiaryEventPayload progressionPayload = SoloPayload(
+                "e-context-progression",
+                "skill milestone",
+                "Alice reached Construction 12.");
+            progressionPayload.gameContext = "progression=SkillMilestone; progression_kind=skill; skill=Construction; skill_level=12; previous_skill_milestone=8; passion=major";
+            DiaryPromptPlan progressionCompact = DiaryPromptPlanner.Build(new DiaryPromptRequest
+            {
+                payload = progressionPayload,
+                policy = Policy(combat: false, important: true),
+                povRole = DiaryPipelineRoles.Initiator,
+                contextDetailLevel = PromptContextDetailLevel.Compact
+            });
+
+            AssertContains("compact keeps progression kind", progressionCompact.userPrompt, "progression kind: skill");
+            AssertContains("compact keeps progression skill", progressionCompact.userPrompt, "skill: Construction");
+            AssertContains("compact keeps progression level", progressionCompact.userPrompt, "skill level: 12");
+        }
+
+        private static void TestPromptContextDetailOverrideResolution()
+        {
+            AssertTrue("invalid global detail normalizes to Full",
+                PromptContextSelector.Normalize((PromptContextDetailLevel)999) == PromptContextDetailLevel.Full);
+            AssertTrue("invalid lane override normalizes to Inherit",
+                PromptContextSelector.NormalizeOverride((PromptContextDetailOverride)999) == PromptContextDetailOverride.Inherit);
+            AssertTrue("inherit uses global",
+                PromptContextSelector.Resolve(PromptContextDetailLevel.Balanced, PromptContextDetailOverride.Inherit)
+                == PromptContextDetailLevel.Balanced);
+            AssertTrue("lane override wins",
+                PromptContextSelector.Resolve(PromptContextDetailLevel.Full, PromptContextDetailOverride.Compact)
+                == PromptContextDetailLevel.Compact);
         }
 
         private static void TestOwnedPromptTextIsNotSentenceCapped()

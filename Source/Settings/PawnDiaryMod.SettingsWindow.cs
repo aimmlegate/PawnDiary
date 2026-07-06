@@ -288,6 +288,7 @@ namespace PawnDiary
             {
                 listing.Gap(4f);
                 DrawPromptStudio(listing, false);
+                DrawContextDetailPreviewDrawer(listing);
                 DrawExperimentalPromptOverridesDrawer(listing);
             }
             finally
