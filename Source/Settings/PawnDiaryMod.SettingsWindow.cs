@@ -218,9 +218,7 @@ namespace PawnDiary
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());
 
-                Rect contextRect = listing.GetRect(28f);
-                DrawGlobalContextDetailRow(contextRect, 230f);
-                listing.Gap(4f);
+                DrawContextDetailSection(listing);
 
                 bool advancedVisibleBefore = Settings.showExperimentalAdvancedOverrides;
                 listing.CheckboxLabeled(
@@ -282,7 +280,6 @@ namespace PawnDiary
             {
                 listing.Gap(4f);
                 DrawPromptStudio(listing, false);
-                DrawSimulatedPromptExampleDrawer(listing);
                 DrawExperimentalPromptOverridesDrawer(listing);
             }
             finally
@@ -501,7 +498,7 @@ namespace PawnDiary
             }
 
             // Generation controls only. Prompt and style editors live on dedicated tabs.
-            height += 445f;
+            height += 790f;
             if (Prefs.DevMode)
             {
                 height += 34f;

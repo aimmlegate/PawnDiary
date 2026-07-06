@@ -49,8 +49,6 @@ namespace PawnDiary
         private PawnDiarySettingsTab settingsTab = PawnDiarySettingsTab.Main;
         // Raw prompt-template fields are hidden behind an experimental drawer in the Prompts tab.
         private bool experimentalPromptOverridesExpanded;
-        // Simulated prompt example drawer in the Prompts tab.
-        private bool simulatedPromptExampleExpanded;
         // Which Advanced group is selected in the Advanced-tab left rail, and the live name filter.
         private string selectedAdvancedGroupKey;
         private string advancedFilter;

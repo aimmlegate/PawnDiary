@@ -809,7 +809,7 @@ reasoning-style lines, or terminal periods are treated as unusable model output.
 ## 7. Settings And UI
 
 The settings window is split into **Main**, **Prompts**, **Styles**, **Events**, and **Advanced** tabs. Main
-covers API lanes, routing mode, request tuning, global prompt context detail, title generation,
+covers API lanes, routing mode, request tuning, a dedicated prompt context detail section, title generation,
 atmospheric formatting, prompt enchantments, the "Show experimental XML override pages" switch, one
 shared random-generation weight for optional chance-gated pages, and diary-event retention caps. Dev mode
 exposes prompt-test mode and extra diagnostics in settings; bulk export
@@ -819,12 +819,15 @@ save-data folder, and copies the generated file path to the clipboard.
 Connection rows use a fixed label column and shared right-side action-button columns so endpoint,
 model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned across localized UI
 text.
-The global prompt context detail setting defaults to `Full`. Each API lane can inherit that setting
-or force its own `Full`, `Balanced`, or `Compact` level, so a small fallback/local model can receive a
-shorter prompt without changing richer primary lanes. Live generation first builds the full plan only
-to resolve prompt routing and forced-model hints, then pre-renders prompt variants for the selected
-primary lane and its failover lanes at each lane's effective detail level. Retry within one lane
-reuses that lane's variant; failover switches to the next lane's pre-rendered variant.
+The global prompt context detail setting defaults to `Full` and is shown in its own Main-tab section
+with an illustrative "sent vs cut first" display for `Full`, `Balanced`, and `Compact`. The display
+is not a live prompt preview; it explains the selector's shape so players can see which kinds of
+facts lower presets keep and trim. Each API lane can inherit the global setting or force its own
+`Full`, `Balanced`, or `Compact` level, so a small fallback/local model can receive a shorter prompt
+without changing richer primary lanes. Live generation first builds the full plan only to resolve
+prompt routing and forced-model hints, then pre-renders prompt variants for the selected primary lane
+and its failover lanes at each lane's effective detail level. Retry within one lane reuses that
+lane's variant; failover switches to the next lane's pre-rendered variant.
 
 ```mermaid
 flowchart LR
@@ -841,9 +844,7 @@ flowchart LR
 
 Prompts is the home for normal prompt text editing: the four shared system prompts plus per-event
 prompt/enhancement/forced-model overrides. Its prompt-type picker uses compact labels and keeps
-internal event keys out of the visible menu. It also has a collapsed simulated prompt drawer that
-shows one made-up writer request for checking the general prompt shape without invoking the live
-context selector or showing field-cut diagnostics. When the Main-tab experimental XML override switch is
+internal event keys out of the visible menu. When the Main-tab experimental XML override switch is
 enabled, Prompts also shows a collapsed **Experimental prompt policy overrides** drawer. That drawer,
 not the normal prompt editor, exposes prompt-related XML from `DiaryPromptDef`,
 `DiaryPromptTemplateDef`, `DiaryPromptEnchantmentDef`, `DiaryHumorCueDef`,
