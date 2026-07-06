@@ -80,10 +80,12 @@ flowchart TD
     I -- "Yes" --> K["Save diary event"]
     K --> L{"Generate now?"}
     L -- "No" --> M["Pending or catch-up"]
-    L -- "Yes" --> N["Build prompt"]
-    N --> O["LLM request"]
-    O --> P["Apply result"]
-    P --> K
+    L -- "Yes" --> N["Build full prompt plan"]
+    N --> O["Select context detail"]
+    O --> P["Render lane prompt variant"]
+    P --> U["LLM request"]
+    U --> V["Apply result"]
+    V --> K
     K --> Q["Archive old display rows"]
     K --> R["Diary UI"]
     Q --> R
@@ -680,6 +682,45 @@ selector is deterministic, records kept/cut fields with reasons, and never chang
 `gameContext` or archived diary data. A cut only means that field is omitted from this one LLM user
 prompt.
 
+There is no random chance in context trimming. The selector uses fixed scores so a given event,
+template, context detail level, and prompt-field list always produce the same kept/cut result. The
+only "probability-like" behavior is upstream: optional pages, prompt enchantments, observed-condition
+cues, and humor cues may or may not be present before the selector runs. Once they are in the typed
+prompt values, `PromptContextSelector` treats them deterministically.
+
+Context detail presets:
+
+| Preset | Budget target | Selection behavior | Intended use |
+|---|---:|---|---|
+| `Full` | unlimited | Passes through every renderable template field. | Compatibility and larger models. |
+| `Balanced` | 1,400 chars default; 1,900 reflection; 1,250 neutral death/arrival | Keeps required fields, then preserves high-signal optional context such as severe pawn state, combat tools, event guidance, domain-specific quest/ritual/ability/progression facts, and threatening surroundings. | General small models where most flavor should survive. |
+| `Compact` | 750 chars default; 1,150 reflection; 850 neutral death/arrival | Keeps the same required fields but cuts aggressively, usually dropping weaker continuity, numeric metadata, ordinary tone/setting, and broad low-signal context first. | Very small or local fallback models. |
+
+The selector never rewrites, compresses, or summarizes a field value. It either keeps the complete
+`label: value` line or cuts that entire field. This is deliberate: prompt previews and saved debug
+prompts remain auditable, and the cut report can name exactly which field was removed.
+
+```mermaid
+flowchart TD
+    A["DiaryEvent + live context snapshot"] --> B["DiaryPipelineAdapters.BuildPromptRequest"]
+    B --> C["DiaryPromptPlanner.Build"]
+    C --> D["Project full PromptValues"]
+    D --> E{"Context detail"}
+    E -- "Full" --> F["Keep renderable template fields"]
+    E -- "Balanced / Compact" --> G["Build field candidates"]
+    G --> H["Always keep required core fields"]
+    G --> I["Score optional fields by source, domain, and context key"]
+    H --> J["Spend preset character budget"]
+    I --> J
+    J --> K["Keep highest-priority optional fields"]
+    J --> L["Cut remaining complete fields"]
+    F --> M["PromptAssembler renders user prompt"]
+    K --> M
+    L --> N["Selection report: kept, cut, chars, reasons"]
+    M --> O["DiaryPromptPlan.userPrompt"]
+    N --> O
+```
+
 Prompt Studio can override shared system prompts and per-event prompt/enhancement/forced-model text.
 Saved override keys must stay stable because they are part of mod settings.
 
@@ -762,6 +803,19 @@ shorter prompt without changing richer primary lanes. Live generation first buil
 to resolve prompt routing and forced-model hints, then pre-renders prompt variants for the selected
 primary lane and its failover lanes at each lane's effective detail level. Retry within one lane
 reuses that lane's variant; failover switches to the next lane's pre-rendered variant.
+
+```mermaid
+flowchart LR
+    A["Global context detail"] --> C["Effective level"]
+    B["API lane override"] --> C
+    C --> D["Render prompt variant for lane"]
+    D --> E["LlmGenerationRequest.promptVariants"]
+    E --> F["Try primary lane"]
+    F -- "retry same lane" --> F
+    F -- "failover" --> G["Apply next lane's pre-rendered variant"]
+    G --> H["Send request"]
+    H --> I["Successful result stores prompt actually sent"]
+```
 
 Prompts is the home for normal prompt text editing: the four shared system prompts plus per-event
 prompt/enhancement/forced-model overrides. Its prompt-type picker uses compact labels and keeps
