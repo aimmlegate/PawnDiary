@@ -76,6 +76,8 @@ namespace DiaryPipelineTests
             TestDiarySentenceExcerpt();
             TestExternalDirectEntryText();
             TestExternalWritingStyleOverrideText();
+            TestPlayerWritingStyleText();
+            TestWritingStyleResolutionPolicy();
             TestSurrogateSafeTruncation();
             TestRedactSecrets();
             TestWritingStyleReachesSystemPrompt();
@@ -3888,6 +3890,98 @@ namespace DiaryPipelineTests
                 new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars),
                 ExternalWritingStyleOverrideText.CleanSourceId(
                     new string('s', ExternalWritingStyleOverrideText.MaxSourceIdChars + 10)));
+        }
+
+        // Player-authored custom writing-style prompts keep their line breaks (so the editor stays
+        // readable) but still strip rich-text tags, control chars (except newlines), trailing
+        // whitespace per line, and excessive blank runs, with a surrogate-safe length cap.
+        private static void TestPlayerWritingStyleText()
+        {
+            AssertEqual("blank player rule cleans to empty",
+                string.Empty,
+                PlayerWritingStyleText.CleanRule("   \r\n\t  "));
+            AssertEqual("player rule preserves intended line breaks",
+                "First line.\nSecond line.\n\nParagraph two.",
+                PlayerWritingStyleText.CleanRule("First line.\r\nSecond line.\r\n\r\n\r\nParagraph two."));
+            AssertEqual("player rule strips rich-text tags",
+                "Write plain. No tags.",
+                PlayerWritingStyleText.CleanRule("<b>Write</b> plain. No tags."));
+            AssertEqual("player rule removes non-linebreak control chars",
+                "No bell here",
+                PlayerWritingStyleText.CleanRule("No bell\u0007 here"));
+            AssertEqual("player rule trims trailing/leading whitespace per line",
+                "Keep left only\ntrailing gone too",
+                PlayerWritingStyleText.CleanRule("Keep left only   \n  trailing gone too   "));
+
+            // Surrogate pair at the cap boundary: must not split the emoji, mirroring the external rule.
+            string splitSurrogate = new string('a', PlayerWritingStyleText.MaxRuleChars - 1)
+                + char.ConvertFromUtf32(0x1F600);
+            AssertEqual("player rule cap does not split surrogate pairs",
+                new string('a', PlayerWritingStyleText.MaxRuleChars - 1),
+                PlayerWritingStyleText.CleanRule(splitSurrogate));
+        }
+
+        // The effective writing-style priority is External API override > Hediff override > Pawn
+        // custom prompt > Base style. Each layer is absent when its candidate string is blank, and the
+        // resolver reports which layer won so the UI can explain an inactive custom prompt.
+        private static void TestWritingStyleResolutionPolicy()
+        {
+            const string baseRule = "base-rule";
+            const string customRule = "custom-rule";
+            const string hediffRule = "hediff-rule";
+            const string externalRule = "external-rule";
+
+            WritingStyleResolution external = WritingStyleResolutionPolicy.Resolve(
+                baseRule, customRule, "DiaryPersona_Flu", "flu", hediffRule, "adapter.source", externalRule);
+            AssertEqual("external API override wins over hediff/custom/base",
+                externalRule, external.rule);
+            AssertTrue("external override is reported as the source",
+                external.source == WritingStyleRuleSource.ExternalApiOverride);
+
+            WritingStyleResolution hediff = WritingStyleResolutionPolicy.Resolve(
+                baseRule, customRule, "DiaryPersona_Flu", "flu", hediffRule, "adapter.source", null);
+            AssertEqual("hediff override wins over pawn custom and base",
+                hediffRule, hediff.rule);
+            AssertTrue("hediff override is reported as the source",
+                hediff.source == WritingStyleRuleSource.HediffOverride);
+
+            WritingStyleResolution custom = WritingStyleResolutionPolicy.Resolve(
+                baseRule, customRule, null, null, null, null, null);
+            AssertEqual("pawn custom prompt wins over base",
+                customRule, custom.rule);
+            AssertTrue("pawn custom is reported as the source",
+                custom.source == WritingStyleRuleSource.PawnCustom);
+
+            WritingStyleResolution blankCustom = WritingStyleResolutionPolicy.Resolve(
+                baseRule, "   ", null, null, null, null, null);
+            AssertEqual("blank custom prompt falls back to base",
+                baseRule, blankCustom.rule);
+            AssertTrue("base style is reported when custom is blank",
+                blankCustom.source == WritingStyleRuleSource.BaseStyle);
+
+            WritingStyleResolution blankExternal = WritingStyleResolutionPolicy.Resolve(
+                baseRule, null, null, null, null, "adapter.source", "   ");
+            AssertEqual("blank external override rule is ignored",
+                baseRule, blankExternal.rule);
+            AssertTrue("blank external falls through to base",
+                blankExternal.source == WritingStyleRuleSource.BaseStyle);
+
+            WritingStyleResolution blankHediff = WritingStyleResolutionPolicy.Resolve(
+                baseRule, customRule, "  ", "label", "   ", null, null);
+            AssertEqual("blank hediff rule falls through to custom",
+                customRule, blankHediff.rule);
+            AssertTrue("blank hediff falls through to custom source",
+                blankHediff.source == WritingStyleRuleSource.PawnCustom);
+
+            // Custom suppression helper: an active override shadows a non-empty custom prompt.
+            AssertTrue("custom is reported suppressed by external override",
+                WritingStyleResolutionPolicy.CustomSuppressedByOverride(external));
+            AssertTrue("custom is reported suppressed by hediff override",
+                WritingStyleResolutionPolicy.CustomSuppressedByOverride(hediff));
+            AssertTrue("custom is not suppressed when it is the active source",
+                !WritingStyleResolutionPolicy.CustomSuppressedByOverride(custom));
+            AssertTrue("custom suppression is false with no custom prompt",
+                !WritingStyleResolutionPolicy.CustomSuppressedByOverride(blankCustom));
         }
 
         // S1: RedactSecrets masks key=/token= query parameters and Bearer tokens in arbitrary text.

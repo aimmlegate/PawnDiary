@@ -14,18 +14,27 @@ namespace PawnDiary
     public partial class ITab_Pawn_Diary
     {
         /// <summary>
-        /// Returns the height needed for the per-pawn controls above the diary list.
-        /// Dev-only rows are omitted in normal play, keeping the tab focused on entries.
+        /// Returns the height needed for the per-pawn controls above the diary list. The Writing style
+        /// row is always shown to players; the dev-only troubleshooting block is folded into this same
+        /// height only when RimWorld dev mode is on.
         /// </summary>
         private static float PawnControlsHeight()
         {
-            return 0f;
+            float height = WritingStyleRowHeight + WritingStyleRowGap;
+            if (Prefs.DevMode)
+            {
+                height += DevControlsHeight;
+            }
+
+            return height;
         }
 
 
 
         /// <summary>
-        /// Renders the per-pawn generation toggle plus dev-mode-only troubleshooting controls.
+        /// Renders the per-pawn Writing style row (always shown to players) plus dev-mode-only
+        /// troubleshooting controls below it. The player row is drawn first so it always appears,
+        /// then the dev block fills the remaining reserved height when RimWorld dev mode is on.
         /// </summary>
         private void DrawPawnControls(Pawn pawn, DiaryGameComponent component, Rect rect)
         {
@@ -39,6 +48,13 @@ namespace PawnDiary
 
 
 
+            // Player-facing row: a "Writing style" button + status hint. Always visible so players can
+            // experiment with this pawn's voice straight from the Diary tab, no dev mode required.
+            Rect writingStyleRow = new Rect(rect.x, rect.y, rect.width, WritingStyleRowHeight);
+            DrawWritingStyleRow(writingStyleRow, pawn, component);
+
+
+
             if (!Prefs.DevMode)
             {
 
@@ -48,9 +64,17 @@ namespace PawnDiary
 
 
 
+            // Dev-only block sits below the player row inside the reserved height. The controls rect
+            // starts after the player row plus its gap.
+            Rect devRect = new Rect(
+                rect.x,
+                writingStyleRow.yMax + WritingStyleRowGap,
+                rect.width,
+                Mathf.Max(0f, rect.height - WritingStyleRowHeight - WritingStyleRowGap));
+
             Listing_Standard listing = new Listing_Standard();
 
-            listing.Begin(rect);
+            listing.Begin(devRect);
 
 
 
@@ -260,49 +284,11 @@ namespace PawnDiary
 
 
 
-            // Writing-style picker. Options come from DiaryPersonaDefs.xml so new presets can be added
+            // The base-style picker used to live here behind ShouldShowPersonaSettings(); it moved to
 
-            // without touching UI code; the choice is saved per pawn and used for future generations.
+            // the always-visible player Writing Style dialog (DrawWritingStyleRow above), which also
 
-            if (ShouldShowPersonaSettings())
-            {
-
-                DiaryPersonaDef persona = component.PersonaFor(pawn);
-
-                if (listing.ButtonText("PawnDiary.Tab.PersonaButton".Translate(PersonaLabel(persona))))
-                {
-
-                    List<FloatMenuOption> options = DiaryPersonas.All
-
-                        .OrderBy(PersonaLabel)
-
-                        .Select(option =>
-
-                        {
-
-                            DiaryPersonaDef selected = option;
-
-                            return new FloatMenuOption(PersonaLabel(selected), delegate
-
-                            {
-
-                                component.SetPersona(pawn, selected.defName);
-
-                            });
-
-                        })
-
-                        .ToList();
-
-
-
-                    Find.WindowStack.Add(new FloatMenu(options));
-
-                }
-
-            }
-
-
+            // exposes the custom prompt and override explanation, so this dev-only duplicate is gone.
 
             listing.End();
 
@@ -320,23 +306,98 @@ namespace PawnDiary
 
 
         /// <summary>
-        /// Returns the human-readable label for a writing style, falling back to "default" if null
-        /// or to defName if the label is blank.
+        /// Draws the always-visible player Writing style row: a button showing the current style plus
+        /// a compact status hint when a custom prompt or a temporary override is active. Clicking the
+        /// button opens <see cref="Dialog_PawnWritingStyle"/>. Read-only here — no save mutation.
         /// </summary>
-        private static string PersonaLabel(DiaryPersonaDef persona)
+        private void DrawWritingStyleRow(Rect rect, Pawn pawn, DiaryGameComponent component)
         {
+            WritingStyleResolution resolution = component.ResolveWritingStyleFor(pawn);
 
-            if (persona == null)
+            string buttonLabel = "PawnDiary.Tab.WritingStyle".Translate(WritingStyleLabel(resolution));
+            float buttonWidth = Mathf.Min(rect.width * 0.5f, 320f);
+            Rect buttonRect = new Rect(rect.x, rect.y, buttonWidth, rect.height);
+            if (Widgets.ButtonText(buttonRect, buttonLabel))
             {
-
-                return "PawnDiary.Persona.DefaultLabel".Translate();
-
+                Find.WindowStack.Add(new Dialog_PawnWritingStyle(pawn, component));
             }
 
+            TooltipHandler.TipRegion(buttonRect, "PawnDiary.Tab.WritingStyleTip".Translate());
 
+            // Status hint to the right of the button: which layer is active right now.
+            Rect statusRect = new Rect(
+                buttonRect.xMax + WritingStyleStatusLeftGap,
+                rect.y,
+                Mathf.Max(0f, rect.width - buttonWidth - WritingStyleStatusLeftGap),
+                rect.height);
+            DrawWritingStyleStatus(statusRect, resolution);
+        }
 
-            return string.IsNullOrWhiteSpace(persona.label) ? persona.defName : persona.label;
+        /// <summary>
+        /// Resolves the human-readable label for the effective writing style shown on the row button.
+        /// Prefers the active override's label, then the base style label, falling back to "default".
+        /// </summary>
+        private static string WritingStyleLabel(WritingStyleResolution resolution)
+        {
+            if (resolution == null)
+            {
+                return "PawnDiary.Persona.DefaultLabel".Translate();
+            }
 
+            switch (resolution.source)
+            {
+                case WritingStyleRuleSource.ExternalApiOverride:
+                    return "PawnDiary.WritingStyle.ExternalSourceLabel".Translate();
+                case WritingStyleRuleSource.HediffOverride:
+                    return string.IsNullOrWhiteSpace(resolution.hediffStyleLabel)
+                        ? (resolution.hediffStyleDefName ?? string.Empty)
+                        : resolution.hediffStyleLabel;
+                default:
+                    return string.IsNullOrWhiteSpace(resolution.baseStyleLabel)
+                        ? (resolution.baseStyleDefName ?? string.Empty)
+                        : resolution.baseStyleLabel;
+            }
+        }
+
+        /// <summary>
+        /// Draws the compact status hint next to the writing-style button: "Custom", "Override", or
+        /// nothing for a plain base style. Muted color so it does not compete with the diary text.
+        /// </summary>
+        private static void DrawWritingStyleStatus(Rect rect, WritingStyleResolution resolution)
+        {
+            if (resolution == null)
+            {
+                return;
+            }
+
+            string status;
+            if (resolution.source == WritingStyleRuleSource.ExternalApiOverride
+                || resolution.source == WritingStyleRuleSource.HediffOverride)
+            {
+                status = "PawnDiary.WritingStyle.OverrideActive".Translate();
+            }
+            else if (WritingStyleResolutionPolicy.CustomSuppressedByOverride(resolution))
+            {
+                // Custom exists but is shadowed by an override (handled above as OverrideActive, but
+                // kept defensively in case the source enum expands).
+                status = "PawnDiary.WritingStyle.OverrideActive".Translate();
+            }
+            else if (!string.IsNullOrWhiteSpace(resolution.customRule))
+            {
+                status = "PawnDiary.WritingStyle.CustomActive".Translate();
+            }
+            else
+            {
+                return;
+            }
+
+            TextAnchor oldAnchor = Text.Anchor;
+            Color oldColor = GUI.color;
+            Text.Anchor = TextAnchor.MiddleLeft;
+            GUI.color = UiStyle.quietTextColor.ToColor(Color.gray);
+            Widgets.Label(rect, status);
+            Text.Anchor = oldAnchor;
+            GUI.color = oldColor;
         }
 
 

@@ -40,6 +40,60 @@ namespace PawnDiary
         }
 
         /// <summary>
+        /// Returns prompt-safe multiline text: rich-text tags are removed and control characters
+        /// (except line breaks) become spaces, runs of blank lines collapse, trailing whitespace on
+        /// each line is trimmed, and surrounding whitespace is trimmed. Unlike <see cref="OneLine"/>
+        /// it deliberately keeps newlines so player-authored prompt rules stay readable in the editor.
+        /// </summary>
+        public static string Multiline(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string withoutTags = RichTextTagRegex.Replace(value, string.Empty);
+            StringBuilder builder = new StringBuilder(withoutTags.Length);
+            for (int i = 0; i < withoutTags.Length; i++)
+            {
+                char ch = withoutTags[i];
+                // Keep CR/LF line breaks; convert every other control char to a space so we do not
+                // inject stray vertical tabs, form feeds, or NULs into the prompt.
+                if (ch == '\n' || ch == '\r')
+                {
+                    builder.Append(ch);
+                }
+                else if (char.IsControl(ch))
+                {
+                    builder.Append(' ');
+                }
+                else
+                {
+                    builder.Append(ch);
+                }
+            }
+
+            // Normalize line endings to LF without merging blank lines across paragraph breaks:
+            // CRLF -> LF, then any lone CR -> LF. Runs of blank lines are collapsed to a single blank
+            // line below, after per-line trailing whitespace is trimmed.
+            string normalized = builder.ToString().Replace("\r\n", "\n").Replace('\r', '\n');
+            string[] lines = normalized.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                lines[i] = WhitespaceRegex.Replace(lines[i], " ").Trim();
+            }
+
+            string joined = string.Join("\n", lines);
+            // Three or more consecutive LFs (i.e. one or more blank lines between text) collapse to
+            // exactly two (a single blank line), keeping paragraph spacing readable without huge gaps.
+            return MultilineBlankRunRegex.Replace(joined, "\n\n").Trim();
+        }
+
+        // Collapses three or more consecutive LFs (one or more blank lines between text) to exactly
+        // two (a single blank line), keeping paragraph spacing readable without huge gaps.
+        private static readonly Regex MultilineBlankRunRegex = new Regex("\n{3,}");
+
+        /// <summary>
         /// Cleans localized prompt guidance to one line and keeps at most the first two sentences.
         /// </summary>
         public static string LocalizedPromptText(string value)

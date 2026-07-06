@@ -146,6 +146,13 @@ namespace PawnDiary
         public float modelNameHeight = 20f;
         public float debugTextTopPadding = 8f;
 
+        // ---- Per-pawn writing-style row ----
+        // The single player-facing row under the Diary header: a "Writing style" button plus an
+        // optional status hint when a custom prompt or a temporary override is active.
+        public float writingStyleRowHeight = 30f;
+        public float writingStyleRowGap = 6f;
+        public float writingStyleStatusLeftGap = 8f;
+
         // ---- Roleplay text and direct-speech blocks ----
         public float roleplayLineGap = 5f;
         public float roleplayParagraphGap = 8f;
