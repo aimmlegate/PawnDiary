@@ -37,6 +37,7 @@ namespace PawnDiary
         // Diary voice: first-person entries (interactions, mental states, tales,
         // mood events, thoughts).
         public string systemPrompt = "Write 1-3 first-person diary sentences using the POV colonist's writing style.\n"
+            + "You are the colonist named in \"pov\"; the notes may describe you in third person by that name. Write as \"I\" — never refer to yourself by name or in third person.\n"
             + "Use only supplied fields. Do not invent people, places, dialogue, motives, outcomes, treatment, or time skips.\n"
             + "Let event prompt, event enhancement, instruction, tone, setting, relationship, health, and the writing style's concrete mechanics shape mood and wording.\n"
             + "Make the supplied facts feel immediate: use one concrete sensory detail, one emotional beat, and one small consequence or tension already implied by the context. Avoid flat summaries.\n"
@@ -45,6 +46,7 @@ namespace PawnDiary
 
         // Day reflection: first-person, looking back on the whole day, weaving the day's highlights.
         public string systemPromptReflection = "Write 2-4 first-person end-of-day diary sentences using the colonist's writing style.\n"
+            + "You are the colonist named in \"pov\"; the notes may describe you in third person by that name. Write as \"I\" — never refer to yourself by name or in third person.\n"
             + "Use only supplied day moments; choose the ones that still matter tonight instead of listing everything.\n"
             + "Let mood, health, setting, and the writing style's concrete mechanics shape the reflection.\n"
             + "Output only diary text. End with normal sentence punctuation.";
