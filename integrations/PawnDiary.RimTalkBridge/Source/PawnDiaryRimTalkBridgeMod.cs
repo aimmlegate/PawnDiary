@@ -78,8 +78,26 @@ namespace PawnDiaryRimTalkBridge
 
             // Register the bridge's process-global hooks. The mod constructor runs once per process,
             // so it owns registration; the per-game GameComponent owns periodic work and cache resets.
-            DiaryContextInjector.RegisterAll();     // RimTalk prompt section/variable + diary status listener
-            PersonaSync.RegisterContextProvider();  // Tier A "chat_persona=" line into Pawn Diary summaries
+            // Each registration is isolated like PatchAll above: a future PawnDiary or RimTalk rename
+            // must degrade to "that one hook disabled" rather than taking down the whole mod ctor
+            // (and with it the settings UI this mod also owns).
+            try
+            {
+                DiaryContextInjector.RegisterAll();     // RimTalk prompt section/variable + diary status listener
+            }
+            catch (Exception e)
+            {
+                Log.Error(LogPrefix + " failed to register the diary-context hooks; Level 1 outbound is disabled: " + e);
+            }
+
+            try
+            {
+                PersonaSync.RegisterContextProvider();  // Tier A "chat_persona=" line into Pawn Diary summaries
+            }
+            catch (Exception e)
+            {
+                Log.Error(LogPrefix + " failed to register the persona context provider; Tier A is disabled: " + e);
+            }
 
             Log.Message(LogPrefix + " initialized.");
         }
