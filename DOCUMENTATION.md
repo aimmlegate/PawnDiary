@@ -819,15 +819,18 @@ save-data folder, and copies the generated file path to the clipboard.
 Connection rows use a fixed label column and shared right-side action-button columns so endpoint,
 model, API-key, auth, reasoning-effort, and reasoning-tag controls stay aligned across localized UI
 text.
-The global prompt context detail setting defaults to `Full` and is shown in its own Main-tab section
-with an illustrative "sent vs cut first" display for `Full`, `Balanced`, and `Compact`. The display
-is not a live prompt preview; it explains the selector's shape so players can see which kinds of
-facts lower presets keep and trim. Each API lane can inherit the global setting or force its own
-`Full`, `Balanced`, or `Compact` level, so a small fallback/local model can receive a shorter prompt
-without changing richer primary lanes. Live generation first builds the full plan only to resolve
-prompt routing and forced-model hints, then pre-renders prompt variants for the selected primary lane
-and its failover lanes at each lane's effective detail level. Retry within one lane reuses that
-lane's variant; failover switches to the next lane's pre-rendered variant.
+The global prompt context detail setting defaults to `Full` and is shown in its own section at the
+bottom of the Main tab. The `Full`, `Balanced`, and `Compact` rows are the selector: clicking a row
+changes the shared setting. The section starts with a "never cut" line for core event text, point of
+view, role names, required instructions, output rules, and safe wrapped external prompts, then shows
+an illustrative "sent vs cut first" display for the presets. The display is not a live prompt
+preview; it explains the selector's shape so players can see which kinds of facts lower presets keep
+and trim. Each API lane can inherit the global setting or force its own `Full`, `Balanced`, or
+`Compact` level, so a small fallback/local model can receive a shorter prompt without changing
+richer primary lanes. Live generation first builds the full plan only to resolve prompt routing and
+forced-model hints, then pre-renders prompt variants for the selected primary lane and its failover
+lanes at each lane's effective detail level. Retry within one lane reuses that lane's variant;
+failover switches to the next lane's pre-rendered variant.
 
 ```mermaid
 flowchart LR

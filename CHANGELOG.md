@@ -10,8 +10,10 @@ pre-release version ladder for project history.
 
 - **Settings tab cleanup.** Moved automatic event filters out of Advanced into a dedicated Events
   tab, moved the global `Full` / `Balanced` / `Compact` context-detail selector into its own Main
-  tab section, and replaced the old Prompts drawer with a Main-tab cut/add comparison showing what
-  each context preset sends and trims.
+  tab section at the bottom of the page, and replaced the old Prompts drawer with a Main-tab cut/add
+  comparison showing what each context preset sends and trims. The context-detail preset rows are
+  now selectable directly, `Full` no longer shows a meaningless cut row, and the section includes a
+  "never cut" line for core prompt facts.
 
 - **Per-pawn custom writing-style prompt.** Players can now experiment with a pawn's voice directly
   from that pawn's Diary tab. A new always-visible "Writing style" row opens an editor dialog where

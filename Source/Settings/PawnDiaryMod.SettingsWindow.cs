@@ -218,8 +218,6 @@ namespace PawnDiary
                     ref Settings.allowExternalIntegrations,
                     "PawnDiary.Settings.AllowExternalIntegrationsTip".Translate());
 
-                DrawContextDetailSection(listing);
-
                 bool advancedVisibleBefore = Settings.showExperimentalAdvancedOverrides;
                 listing.CheckboxLabeled(
                     "PawnDiary.Settings.ShowExperimentalAdvancedOverrides".Translate(),
@@ -245,6 +243,7 @@ namespace PawnDiary
                     PawnDiarySettings.MaxGenerationChanceWeight);
                 DrawMaxActiveDiaryEventsField(listing);
                 DrawMaxArchivedDiaryEventsField(listing);
+                DrawContextDetailSection(listing);
 
             }
             finally

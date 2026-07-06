@@ -324,11 +324,13 @@
   <PawnDiary.Settings.ContextDetail.Balanced>Balanced</PawnDiary.Settings.ContextDetail.Balanced>
   <PawnDiary.Settings.ContextDetail.Compact>Compact</PawnDiary.Settings.ContextDetail.Compact>
   <PawnDiary.Settings.ContextDetailSectionTitle>Prompt context detail</PawnDiary.Settings.ContextDetailSectionTitle>
-  <PawnDiary.Settings.ContextDetailSectionHelp>Illustrative only: live events use real captured facts, but the selector follows this shape when deciding what to send or cut.</PawnDiary.Settings.ContextDetailSectionHelp>
+  <PawnDiary.Settings.ContextDetailSectionHelp>Illustrative only: live events use real captured facts. Click a preset row to choose how much optional context is sent or cut.</PawnDiary.Settings.ContextDetailSectionHelp>
+  <PawnDiary.Settings.ContextDetail.NeverCutLabel>Never cut</PawnDiary.Settings.ContextDetail.NeverCutLabel>
+  <PawnDiary.Settings.ContextDetail.NeverCutText>Core event text, point of view, role names, required instructions, output rules, and safe wrapped external prompts.</PawnDiary.Settings.ContextDetail.NeverCutText>
+  <PawnDiary.Settings.ContextDetail.RowTip>Click a row to use that context detail level.</PawnDiary.Settings.ContextDetail.RowTip>
   <PawnDiary.Settings.ContextDetail.AddedLabel>Sent</PawnDiary.Settings.ContextDetail.AddedLabel>
   <PawnDiary.Settings.ContextDetail.CutLabel>Cut first</PawnDiary.Settings.ContextDetail.CutLabel>
   <PawnDiary.Settings.ContextDetail.Full.Added>All renderable event, pawn, surroundings, continuity, prior-entry, weapon, and domain metadata.</PawnDiary.Settings.ContextDetail.Full.Added>
-  <PawnDiary.Settings.ContextDetail.Full.Cut>Nothing except empty or unsafe fields.</PawnDiary.Settings.ContextDetail.Full.Cut>
   <PawnDiary.Settings.ContextDetail.Balanced.Added>Required facts plus high-signal cues: danger, severe health or mood, direct instructions, event guidance.</PawnDiary.Settings.ContextDetail.Balanced.Added>
   <PawnDiary.Settings.ContextDetail.Balanced.Cut>Weak continuity, ordinary setting or tone, low-priority numbers, duplicate metadata.</PawnDiary.Settings.ContextDetail.Balanced.Cut>
   <PawnDiary.Settings.ContextDetail.Compact.Added>Required facts plus the strongest useful cue, such as danger, injury, duty, or a key relation.</PawnDiary.Settings.ContextDetail.Compact.Added>
